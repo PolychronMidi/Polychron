@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Filesystem-IPC client to the Python worker — drop-in replacement for
+ * Filesystem-IPC client to the Python worker -- drop-in replacement for
  * `_worker_http.js`'s `workerRequest` with the same {status, json, raw,
  * error} return shape.
  *
@@ -23,15 +23,15 @@
  *   - Atomic-rename writes: never see partial reads
  *
  * MCP wire spec is preserved at the boundary: Claude Code still talks
- * HTTP/SSE to `/mcp/*`. This module governs only the INTERNAL proxy ↔
+ * HTTP/SSE to `/mcp/*`. This module governs only the INTERNAL proxy <->
  * worker leg, invoked via the transport router when
  * `HME_WORKER_TRANSPORT=filesystem|hybrid`.
  *
- * Endpoint mapping (HTTP path → worker_queue endpoint):
- *   POST /tool/<name>     → endpoint="tool", body={name, args}
- *   POST /enrich          → endpoint="enrich"
- *   POST /enrich_prompt   → endpoint="enrich_prompt"
- *   POST /audit           → endpoint="audit"
+ * Endpoint mapping (HTTP path -> worker_queue endpoint):
+ *   POST /tool/<name>     -> endpoint="tool", body={name, args}
+ *   POST /enrich          -> endpoint="enrich"
+ *   POST /enrich_prompt   -> endpoint="enrich_prompt"
+ *   POST /audit           -> endpoint="audit"
  *
  * Endpoints NOT supported by worker_queue.py (and thus NOT FS-eligible):
  *   GET /tools/list, GET /health, GET /version, GET /transcript, etc.
@@ -58,7 +58,7 @@ function _atomicWrite(target, content) {
 /**
  * Wait for results/<jobId>.json to appear, with timeout. Returns
  * parsed contents on success, or null on timeout. Polls every 25ms
- * for the first second, then 100ms thereafter — fast enough that p99
+ * for the first second, then 100ms thereafter -- fast enough that p99
  * dispatch latency stays under the per-tool work cost while keeping
  * idle CPU low.
  */
@@ -73,7 +73,7 @@ function _waitForResult(jobId, timeoutMs) {
         try { return resolve(JSON.parse(text)); }
         catch (_e) { return resolve({ _parseError: true, raw: text }); }
       } catch (_e) {
-        // not yet — continue
+        // not yet -- continue
       }
       const elapsed = Date.now() - start;
       if (elapsed >= timeoutMs) return resolve(null);
@@ -86,7 +86,7 @@ function _waitForResult(jobId, timeoutMs) {
 
 /**
  * Translate an HTTP-style (method, path, body) into a worker_queue
- * envelope. Returns null if the endpoint isn't FS-eligible — caller
+ * envelope. Returns null if the endpoint isn't FS-eligible -- caller
  * (the router) interprets null as "fall back to HTTP".
  */
 function _toEnvelope(method, reqPath, body) {

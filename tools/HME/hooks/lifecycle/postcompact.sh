@@ -40,13 +40,13 @@ if [[ ${#PARTS[@]} -gt 0 ]]; then
 fi
 
 # Log post-compact event. The statusline meter hasn't fired yet with the new (reset) context value,
-# so used_pct here is still the pre-compact reading — the delta between this and the next
+# so used_pct here is still the pre-compact reading -- the delta between this and the next
 # statusline update shows how much context was freed.
 CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
 LOG="$PROJECT/output/metrics/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
-  # FAIL-LOUD: same rationale as precompact.sh — corrupted statusline JSON
+  # FAIL-LOUD: same rationale as precompact.sh -- corrupted statusline JSON
   # would silently produce all-null calibration rows.
   _PC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_jq_err_$$")
   USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>"$_PC_JQ_ERR" || echo "null")
@@ -64,11 +64,11 @@ else
   echo "{\"ts\":\"$TS\",\"event\":\"post_compact\",\"stale_used_pct\":null,\"stale_remaining_pct\":null}" >> "$LOG"
 fi
 
-# Reset context meter — compaction freed the window. Only clear token counts;
+# Reset context meter -- compaction freed the window. Only clear token counts;
 # used_pct will be written by statusLine on the next assistant message.
 echo '{}' > "${HME_CTX_FILE:-/tmp/claude-context.json}"
 
-# Re-orient after compaction — surface current session state directly
+# Re-orient after compaction -- surface current session state directly
 ORIENT=""
 PS="${METRICS_DIR:-$PROJECT/output/metrics}/pipeline-summary.json"
 if [ -f "$PS" ]; then
@@ -85,7 +85,7 @@ PENDING=$(_nexus_pending)
 
 # F2: Re-prime the onboarding walkthrough after compaction. If state is mid-
 # walkthrough, the agent lost conversational memory of WHY they're in that
-# state — reinject the current step + target so they can resume cleanly.
+# state -- reinject the current step + target so they can resume cleanly.
 if ! _onb_is_graduated; then
   ONB_STEP="$(_onb_step_label)"
   ONB_TARGET="$(_onb_target)"
@@ -96,21 +96,21 @@ fi
 echo -e "[PostCompact] Context compacted. Session state:$ORIENT" >&2
 
 # H-compact optimization #11 + #7: hydrate the new window from the latest
-# chain link. This is the REAL purpose of the chain system — the new
+# chain link. This is the REAL purpose of the chain system -- the new
 # conversation wakes up with structured session state from the link, not
 # from scratch. Dumps the link YAML to stderr so Claude sees it as part
 # of post-compaction context.
 LATEST_LINK="${METRICS_DIR:-$PROJECT/output/metrics}/chain-history/latest.yaml"
 if [ -f "$LATEST_LINK" ]; then
   echo "" >&2
-  echo "━━━ CHAIN LINK HYDRATION (PostCompact) ━━━" >&2
+  echo "=== CHAIN LINK HYDRATION (PostCompact) ===" >&2
   echo "  Loading state from: $(readlink -f "$LATEST_LINK")" >&2
   # FAIL-LOUD: was `2>/dev/null >&2` which silenced ImportError / SyntaxError
   # / KeyError. The script's own try/except only covers the file-load; any
   # other crash silently swallowed the entire hydration. Now stderr is
   # captured and bridged to errors.log; stdout still goes to >&2 as banner.
   # Redirection ORDER matters: bash processes left-to-right, so do `>&2`
-  # FIRST (fd1 → original stderr) then `2>"$_POSTC_PY_ERR"` (fd2 → file).
+  # FIRST (fd1 -> original stderr) then `2>"$_POSTC_PY_ERR"` (fd2 -> file).
   # The reverse order makes fd1 follow fd2 into the file and silently logs
   # every banner line as "python3 failed:".
   _POSTC_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_py_err_$$")
@@ -173,7 +173,7 @@ PYEOF
     done < "$_POSTC_PY_ERR"
   fi
   rm -f "$_POSTC_PY_ERR" 2>/dev/null
-  echo "━━━ END CHAIN LINK HYDRATION ━━━" >&2
+  echo "=== END CHAIN LINK HYDRATION ===" >&2
 fi
 
 exit 0

@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# universal-pulse-supervisor.sh — keep universal_pulse.py alive.
+# universal-pulse-supervisor.sh -- keep universal_pulse.py alive.
 #
 # universal_pulse proactively probes every critical HME element (proxy,
 # worker, llamacpp_daemon, hook-latency freshness, process CPU saturation)
 # at a fixed cadence. When a target is unresponsive past the streak
 # threshold, it appends a one-line entry to log/hme-errors.log so LIFESAVER
-# fires at the next turn boundary — NOT 48 minutes later when a user
+# fires at the next turn boundary -- NOT 48 minutes later when a user
 # happens to notice.
 #
 # Why this exists alongside proxy-supervisor.sh:
 #   proxy-supervisor only watches the proxy /health endpoint. If the proxy
 #   itself is fine but the WORKER is GIL-locked, proxy-supervisor has no
-#   opinion — the hang goes undetected. universal_pulse fills that gap
+#   opinion -- the hang goes undetected. universal_pulse fills that gap
 #   (and every similar one for llamacpp_daemon / hook bridges / etc.).
 #
 # Design mirrors proxy-supervisor.sh:
@@ -19,7 +19,7 @@
 #     New invocations with an alive PID silently no-op.
 #   - Spawns universal_pulse.py; polls its heartbeat every 15s.
 #   - If heartbeat is >90s stale, kills the child and respawns.
-#   - Respects maintenance flag — skips restarts during planned windows.
+#   - Respects maintenance flag -- skips restarts during planned windows.
 
 set +e
 
@@ -111,12 +111,12 @@ _up_loop() {
     age=$(_up_heartbeat_age)
 
     if ! _up_alive "$cp"; then
-      _up_log "child dead — respawning"
+      _up_log "child dead -- respawning"
       _up_spawn_child
       continue
     fi
     if [ "$age" -gt "$_UP_STALE_THRESHOLD" ]; then
-      _up_log "heartbeat stale (${age}s > ${_UP_STALE_THRESHOLD}s) — child pid=$cp appears hung; killing + respawn"
+      _up_log "heartbeat stale (${age}s > ${_UP_STALE_THRESHOLD}s) -- child pid=$cp appears hung; killing + respawn"
       _up_kill_child
       _up_spawn_child
       continue
@@ -129,13 +129,13 @@ _up_start() {
   local existing
   existing=$(cat "$_UP_PID_FILE" 2>/dev/null)
   if _up_alive "$existing"; then
-    _up_log "already running pid=$existing — no-op"
+    _up_log "already running pid=$existing -- no-op"
     return 0
   fi
   # Fork into background.
   nohup bash "$0" _loop </dev/null >/dev/null 2>&1 &
   disown $! 2>/dev/null
-  # No sleep — the parent process of Claude code is waiting on us.
+  # No sleep -- the parent process of Claude code is waiting on us.
 }
 
 _up_stop() {

@@ -20,7 +20,7 @@ const { CHILDREN } = require('./children');
 const LOG_DIR = path.join(PROJECT_ROOT, 'log');
 
 //  Supervisor state
-const _children = new Map(); // name → { spec, proc, restarts, lastStart, lastHealthy, healthy }
+const _children = new Map(); // name -> { spec, proc, restarts, lastStart, lastHealthy, healthy }
 
 function _logPath(name) {
   return path.join(LOG_DIR, `hme-${name}.out`);
@@ -60,11 +60,11 @@ async function _startChild(spec) {
   // Pre-flight: if something is already serving on the health URL (surviving
   // process from a prior proxy run), adopt it rather than spawning a new one.
   // Without this, the new spawn immediately fails with EADDRINUSE and the
-  // health loop never gets a chance to adopt — triggering the restart loop.
+  // health loop never gets a chance to adopt -- triggering the restart loop.
   if (spec.healthUrl) {
     const alreadyServing = await _probe(spec.healthUrl);
     if (alreadyServing) {
-      console.log(`[supervisor] ${spec.name} — already serving at ${spec.healthUrl}, adopting (no spawn)`);
+      console.log(`[supervisor] ${spec.name} -- already serving at ${spec.healthUrl}, adopting (no spawn)`);
       _children.set(spec.name, {
         spec,
         proc: null,
@@ -117,12 +117,12 @@ async function _healthLoop() {
     if (!alive) {
       // Before giving up or spawning a new one, check if something is already
       // serving on the health URL (e.g. a previous process that survived a proxy
-      // restart). If healthy, adopt it — no spawn needed, reset restart counter.
+      // restart). If healthy, adopt it -- no spawn needed, reset restart counter.
       if (spec.healthUrl) {
         const alreadyServing = await _probe(spec.healthUrl);
         if (alreadyServing) {
           if (state.restarts > 0 || state.gaveUp) {
-            console.log(`[supervisor] ${spec.name} — surviving process adopted at ${spec.healthUrl}, resetting restarts`);
+            console.log(`[supervisor] ${spec.name} -- surviving process adopted at ${spec.healthUrl}, resetting restarts`);
             emit({ event: 'child_adopted', child: spec.name });
           }
           state.proc = null;
@@ -139,14 +139,14 @@ async function _healthLoop() {
         }
       }
 
-      // Nothing serving — apply restart limit and backoff
+      // Nothing serving -- apply restart limit and backoff
       if (state.restarts >= spec.maxRestarts) {
         if (!state.gaveUp) {
           const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
           const sentinel = path.join(PROJECT_ROOT, 'tmp', 'hme-supervisor-abandoned');
-          const msg = `[supervisor] ${spec.name} hit restart limit (${spec.maxRestarts}) — giving up`;
+          const msg = `[supervisor] ${spec.name} hit restart limit (${spec.maxRestarts}) -- giving up`;
           // Tail of child stderr goes in the sentinel JSON (read by i/status),
-          // NOT into hme-errors.log — one event must not flood the LIFESAVER
+          // NOT into hme-errors.log -- one event must not flood the LIFESAVER
           // scanner with 20+ lines. hme-errors.log stays one-line-per-event.
           let childTail = '';
           let childLogPath = '';
@@ -191,19 +191,19 @@ async function _healthLoop() {
       continue;
     }
 
-    // Process alive — check health URL
+    // Process alive -- check health URL
     const sinceStart = Date.now() - state.lastStart;
     if (sinceStart < spec.startupMs) continue; // still warming up
 
     const healthy = await _probe(spec.healthUrl);
     if (healthy) {
-      state.restarts = 0;  // reset on confirmed health — stale count cleared
+      state.restarts = 0;  // reset on confirmed health -- stale count cleared
       state.gaveUp = false;
     }
     state.lastHealthy = healthy ? Date.now() : state.lastHealthy;
 
     if (!healthy && state.healthy) {
-      // Was healthy, now isn't — log degradation + mark degradation start.
+      // Was healthy, now isn't -- log degradation + mark degradation start.
       console.warn(`[supervisor] ${spec.name} health degraded`);
       emit({ event: 'child_unhealthy', child: spec.name });
       state.degradedSince = Date.now();
@@ -214,7 +214,7 @@ async function _healthLoop() {
     } else if (state.degradedSince) {
       // Escalate: a process that's alive but unresponsive for HANG_KILL_MS
       // is GIL-saturated / deadlocked. The default probe loop only marks
-      // unhealthy and waits — which means a stuck worker stays stuck
+      // unhealthy and waits -- which means a stuck worker stays stuck
       // forever (observed 48 min of 99.9% CPU on a single thread with
       // all HTTP handlers starved). Kill SIGTERM so the exit path fires
       // and the next loop spawn gets a fresh process. Phase-B SIGKILL
@@ -223,12 +223,12 @@ async function _healthLoop() {
       const HANG_FORCE_MS = HANG_KILL_MS * 2;
       const degradedFor = Date.now() - state.degradedSince;
       if (degradedFor >= HANG_FORCE_MS && state.proc) {
-        console.error(`[supervisor] ${spec.name} hung ${Math.round(degradedFor/1000)}s — SIGKILL`);
+        console.error(`[supervisor] ${spec.name} hung ${Math.round(degradedFor/1000)}s -- SIGKILL`);
         emit({ event: 'child_force_killed', child: spec.name, degradedMs: degradedFor });
         try { process.kill(state.proc.pid, 'SIGKILL'); } catch (_e) { /* exit handler clears state */ }
         state.degradedSince = null;
       } else if (degradedFor >= HANG_KILL_MS && !state.termSent && state.proc) {
-        console.error(`[supervisor] ${spec.name} hung ${Math.round(degradedFor/1000)}s — SIGTERM`);
+        console.error(`[supervisor] ${spec.name} hung ${Math.round(degradedFor/1000)}s -- SIGTERM`);
         emit({ event: 'child_hang_killed', child: spec.name, degradedMs: degradedFor });
         try { process.kill(state.proc.pid, 'SIGTERM'); } catch (_e) { /* exit handler clears state */ }
         state.termSent = true;
@@ -278,7 +278,7 @@ function status() {
 // healthLoop polls every 10s after initial startup delay.
 let _started = false;
 
-// Graceful shutdown — unified entry point for every signal/crash path.
+// Graceful shutdown -- unified entry point for every signal/crash path.
 // Idempotent: repeated calls (e.g. SIGTERM arriving while already draining)
 // are no-ops. Drains the HTTP server if registered, kills children, exits.
 let _shuttingDown = false;
@@ -308,11 +308,11 @@ function _gracefulShutdown(reason, exitCode = 0) {
       drained = true;
       finish();
     });
-    // Drain deadline — if connections hang (e.g. long SSE), force-exit anyway.
+    // Drain deadline -- if connections hang (e.g. long SSE), force-exit anyway.
     setTimeout(() => {
       if (drained) return;
       drained = true;
-      console.error(`[supervisor] drain deadline (${DRAIN_TIMEOUT_MS}ms) — force-closing`);
+      console.error(`[supervisor] drain deadline (${DRAIN_TIMEOUT_MS}ms) -- force-closing`);
       finish();
     }, DRAIN_TIMEOUT_MS).unref();
   } else {
@@ -320,7 +320,7 @@ function _gracefulShutdown(reason, exitCode = 0) {
   }
 }
 
-// Install process-wide shutdown handlers. Safe to call without start() — the
+// Install process-wide shutdown handlers. Safe to call without start() -- the
 // drain logic doesn't depend on children existing. Should run in every mode
 // (even SUPERVISE=0) so the proxy cleans up HTTP connections on signal/crash.
 let _handlersInstalled = false;
@@ -329,15 +329,15 @@ function installShutdownHandlers() {
   _handlersInstalled = true;
 
   // Fallback: if the process exits by any path we didn't catch below, still
-  // try to take children down. Synchronous — event loop is closing here.
+  // try to take children down. Synchronous -- event loop is closing here.
   process.on('exit', () => killAll('SIGTERM'));
 
-  // Signal-driven shutdowns — all route through the unified drain path.
+  // Signal-driven shutdowns -- all route through the unified drain path.
   process.on('SIGTERM', () => _gracefulShutdown('SIGTERM', 0));
   process.on('SIGINT',  () => _gracefulShutdown('SIGINT',  0));
   process.on('SIGHUP',  () => _gracefulShutdown('SIGHUP',  0));
 
-  // Crash-driven shutdowns — log diagnostics, then drain cleanly. Without
+  // Crash-driven shutdowns -- log diagnostics, then drain cleanly. Without
   // these, a middleware crash leaves children orphaned and ports bound.
   process.on('uncaughtException', (err) => {
     console.error('[supervisor] uncaughtException:', err && err.stack || err);
@@ -358,7 +358,7 @@ function start() {
       await _startChild(spec);
     }
   })().catch((err) => console.error('[supervisor] start sequence error:', err.message));
-  // Health loop — starts after longest startup window
+  // Health loop -- starts after longest startup window
   const maxStartup = Math.max(...CHILDREN.map((c) => c.startupMs));
   setTimeout(() => {
     _healthLoop();
@@ -369,9 +369,9 @@ function start() {
 
 //  Ad-hoc process spawn (TTL-bounded, no restart)
 // Exposed via /hme/spawn so Claude (or any other caller) can launch short-lived
-// helpers without the Bash tool's run_in_background — no task-notification on
+// helpers without the Bash tool's run_in_background -- no task-notification on
 // exit, auto-reaped after ttl_sec, tracked by id.
-const _adhoc = new Map();  // id → { spec, proc, startedAt, ttlSec }
+const _adhoc = new Map();  // id -> { spec, proc, startedAt, ttlSec }
 
 function adhocSpawn({ name, cmd, args, env, cwd, ttl_sec }) {
   const id = (name || 'adhoc') + '_' + Math.random().toString(36).slice(2, 10);
@@ -388,7 +388,7 @@ function adhocSpawn({ name, cmd, args, env, cwd, ttl_sec }) {
   const state = { spec: { name, cmd, args }, proc, startedAt: Date.now(), ttlSec, logPath };
   _adhoc.set(id, state);
   proc.on('exit', () => { fs.closeSync(logFd); });
-  // Auto-reap on TTL expiry — SIGTERM, then SIGKILL after 2s grace.
+  // Auto-reap on TTL expiry -- SIGTERM, then SIGKILL after 2s grace.
   setTimeout(() => {
     if (proc.exitCode !== null) return; // already exited
     try { process.kill(proc.pid, 'SIGTERM'); } catch (_e) { /* already exited */ }

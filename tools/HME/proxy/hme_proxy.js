@@ -3,7 +3,7 @@
  * HME inference proxy + process supervisor.
  *
  * Single entry point for the entire HME runtime:
- *   - Forwards Claude Code → Anthropic, stripping boilerplate and injecting
+ *   - Forwards Claude Code -> Anthropic, stripping boilerplate and injecting
  *     jurisdiction context / session status.
  *   - Owns the MCP server and shim as supervised child processes. Claude Code
  *     connects via SSE: ANTHROPIC_BASE_URL=http://127.0.0.1:9099, MCP URL
@@ -40,7 +40,7 @@ const { shouldInject, buildStatusContext, buildJurisdictionContext, injectIntoSy
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 
 // Proxy wire-level version. Single source of truth is
-// tools/HME/config/versions.json — bump it to version the three components
+// tools/HME/config/versions.json -- bump it to version the three components
 // together. A three-way mismatch surfaces via `hme-cli --version`.
 const PROXY_VERSION = (() => {
   try {
@@ -74,10 +74,10 @@ console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
 // All Claude Code lifecycle events funnel through a SINGLE forwarder script
 // (hooks/_proxy_bridge.sh) that POSTs to this proxy's /hme/lifecycle endpoint.
 // The proxy dispatches to the appropriate bash hooks and returns {stdout,
-// stderr, exit_code} — the forwarder relays each back to Claude Code's plugin
+// stderr, exit_code} -- the forwarder relays each back to Claude Code's plugin
 // machinery, preserving block decisions, banners, and exit codes.
 //
-// This is the single minimal compromise with Claude Code — one stateless
+// This is the single minimal compromise with Claude Code -- one stateless
 // 10-line bash script Claude Code is allowed to know about; all logic lives
 // here in proxy-land.
 //
@@ -107,7 +107,7 @@ async function _runInlineFallback(event, stdinJson) {
     // to the proxy's stderr so any banners (LIFESAVER, NEXUS,
     // AUTO-COMPLETENESS) land in the same place regardless of which
     // path fired. Previously the inline path truncated stdout to 200
-    // chars — banners that grew past that limit vanished for inline
+    // chars -- banners that grew past that limit vanished for inline
     // fires while remaining visible for /hme/lifecycle fires.
     if (r.stderr && r.stderr.length > 0) {
       process.stderr.write(`[hme-proxy] inline ${event} stderr:\n${r.stderr}\n`);
@@ -128,8 +128,8 @@ _runInlineFallback('SessionStart', '{}');
 //  HME full-bypass: legacy inline-tool path (disabled by default)
 // Claude Code has no MCP connection to us for HME tools (.mcp.json was
 // deleted in the MCP decoupling). Two possible Claude-facing surfaces exist:
-//   1. DEFAULT: Claude invokes HME via Bash(`npm run <tool>`) — the npm
-//      scripts dispatch to scripts/hme-cli.js → worker HTTP. Tool injection
+//   1. DEFAULT: Claude invokes HME via Bash(`npm run <tool>`) -- the npm
+//      scripts dispatch to scripts/hme-cli.js -> worker HTTP. Tool injection
 //      below is skipped.
 //   2. LEGACY (opt-in, HME_INJECT_TOOLS=1): the proxy injects HME tool
 //      schemas into payload.tools; when the response contains HME_* tool_uses,
@@ -156,7 +156,7 @@ function _stripHmePrefixOutgoing(payload) {
       }
     }
   }
-  // Remove any deprecated mcp__HME__* tools from payload.tools — they would
+  // Remove any deprecated mcp__HME__* tools from payload.tools -- they would
   // collide with our proxy-injected HME_ versions on the next step.
   if (Array.isArray(payload.tools)) {
     const before = payload.tools.length;
@@ -178,7 +178,7 @@ function _sanitizePayload(payload) {
       return true;
     });
     if (msg.content.length === 0) {
-      // Preserve the turn boundary — inject a minimal placeholder.
+      // Preserve the turn boundary -- inject a minimal placeholder.
       msg.content = [{ type: 'text', text: '(content stripped by hme-proxy)' }];
     }
   }
@@ -192,7 +192,7 @@ async function _injectHmeTools(payload) {
   if (!Array.isArray(payload.tools)) payload.tools = [];
   try {
     const schemas = await hmeDispatcher.getSchemasCached();
-    // Strip any cache_control markers from the tools array — Claude Code may
+    // Strip any cache_control markers from the tools array -- Claude Code may
     // put ttl='1h' markers on messages, and adding ttl='5m' (ephemeral) to
     // tools triggers a 400: "ttl='1h' block must not come after ttl='5m' block"
     // since tools are processed before messages. Leave cache_control entirely
@@ -345,14 +345,14 @@ function handleRequest(clientReq, clientRes) {
 
       let bodyDirtiedByStrip = false;
       if (isAnthropic) {
-        // Scrub any cache_control from system blocks — old proxy versions added
+        // Scrub any cache_control from system blocks -- old proxy versions added
         // them, and stale markers in conversation history cause Anthropic 400
         // TTL ordering errors. Must run before any system mutation.
         if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
         const b = stripBoilerplate(payload);
         const s = stripSemanticRedundancy(payload);
         const r = _stripHmePrefixOutgoing(payload);
-        // HME tool injection (full bypass) — await so tools are in payload
+        // HME tool injection (full bypass) -- await so tools are in payload
         // before we serialize and forward upstream.
         const n = await _injectHmeTools(payload);
         // Safety: any strip above may have reduced a text block to an empty
@@ -390,7 +390,7 @@ function handleRequest(clientReq, clientRes) {
         }
         // Run middleware pipeline. Must run AFTER scan so middleware sees the
         // reconciled tool_use/tool_result pairs. Returns true if any
-        // middleware mutated the payload (via ctx.markDirty()) — we need to
+        // middleware mutated the payload (via ctx.markDirty()) -- we need to
         // re-serialize before forwarding.
         try {
           const mwDirtied = await middleware.runPipeline(payload, scan, session);
@@ -429,7 +429,7 @@ function handleRequest(clientReq, clientRes) {
         // and every Read's result with dir-rules + callers + hypotheses
         // via read_context.js / dir_context.js. Any "write without HME
         // read" is therefore inherent to the first edit in a session and
-        // transient by design — not worth emitting 100+ violations/round
+        // transient by design -- not worth emitting 100+ violations/round
         // or aborting the pipeline over.
       }
 
@@ -461,9 +461,9 @@ function handleRequest(clientReq, clientRes) {
     if (outBody.length > 0) upstreamHeaders['content-length'] = String(outBody.length);
 
     // Out-of-band auth injection. Loopback callers (e.g. the MCP
-    // server's overdrive path) POST to the proxy without auth — they
+    // server's overdrive path) POST to the proxy without auth -- they
     // can't forward Claude Code's ambient Authorization header because
-    // they aren't in the Claude-Code→proxy request chain. When the
+    // they aren't in the Claude-Code->proxy request chain. When the
     // incoming request has no auth AND comes from localhost AND the
     // upstream is Anthropic, read the Claude Code OAuth token from
     // ~/.claude/.credentials.json and inject it. Same credential the
@@ -488,7 +488,7 @@ function handleRequest(clientReq, clientRes) {
             console.error(`[hme-proxy] injected OAuth token for loopback out-of-band request (path=${clientReq.url})`);
           }
         } catch (_err) {
-          // Credentials unreadable — fall through with no auth, upstream
+          // Credentials unreadable -- fall through with no auth, upstream
           // will 401 and the caller sees the error. Not silent.
           console.error(`[hme-proxy] auth injection failed: ${_err.message}`);
         }
@@ -573,7 +573,7 @@ function handleRequest(clientReq, clientRes) {
         // Apply SSE transforms only if this is an SSE response being forwarded.
         const isSseFinal = (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
         if (isSseFinal && !final) {
-          // Original streaming path (no HME interception happened) — pipe
+          // Original streaming path (no HME interception happened) -- pipe
           // through the Transform for Bash run_in_background rewriting.
           const { SseTransform } = require('./sse_transform');
           const { runInBackgroundRewrite, longLeadingSleepRewrite } = require('./sse_rewriters');
@@ -598,10 +598,10 @@ function handleRequest(clientReq, clientRes) {
         // Turn-end heuristic: a single user turn can issue many upstream
         // completions (tool-use continuation loops, subagent dispatches).
         // Without this check the Stop fallback fires on EVERY completion
-        // whose response lands ≥30s after the last Stop hit, re-running
+        // whose response lands >=30s after the last Stop hit, re-running
         // auto-commit + LIFESAVER + psycho_stop mid-turn. We only fire
         // when the final assistant message contains no tool_use blocks
-        // (i.e. the model is not about to call another tool) — that
+        // (i.e. the model is not about to call another tool) -- that
         // approximates "real turn end" without needing stream-end
         // signaling from Claude Code.
         const _hasToolUse = (() => {
@@ -653,7 +653,7 @@ function handleRequest(clientReq, clientRes) {
     // byte under contention. The request budget IS bounded by claude's
     // own subprocess timeout (computed dynamically in
     // buddy_handoff.py:cmd_consult, max(1800, transcript_mb * 30 + 600)),
-    // so the proxy's role is NOT to be the tighter bound — a truly
+    // so the proxy's role is NOT to be the tighter bound -- a truly
     // hung call dies at the claude-subprocess level. 30 min covers
     // Anthropic's worst-case turnaround on multi-MB resumes plus a
     // safety margin; smaller prompts complete in seconds and aren't
@@ -721,7 +721,7 @@ function runTestMode() {
 if (process.argv.includes('--test')) {
   runTestMode();
 } else {
-  // Always require supervisor — its signal handlers (SIGHUP, uncaughtException,
+  // Always require supervisor -- its signal handlers (SIGHUP, uncaughtException,
   // etc.) are load-bearing even when SUPERVISE=0. Only the child-start sequence
   // is gated behind SUPERVISE.
   const supervisor = require('./supervisor/index');

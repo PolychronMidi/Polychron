@@ -11,7 +11,7 @@
  * warn-large-bash-output` toggles it, and the proxy / stop_chain enforce
  * it on matching events.
  *
- * This particular policy is illustrative, not load-bearing — it warns
+ * This particular policy is illustrative, not load-bearing -- it warns
  * when a Bash tool returned >50KB of output, on the theory that giant
  * bash outputs often signal "you should have used grep / head / tail
  * to reduce noise before showing this to the agent." Tweak the threshold

@@ -9,7 +9,7 @@
  * holograph and post_hooks are diagnostic side-effects with no decisions.
  * Wrapping them keeps the chain working while pure-JS conversions land
  * incrementally. The PROCESS BOUNDARY between the evaluator and bash means
- * an `exit 0` from a shell stage exits only the child — the evaluator
+ * an `exit 0` from a shell stage exits only the child -- the evaluator
  * cannot be bypassed.
  */
 
@@ -136,7 +136,7 @@ source "${path.join(STAGE_DIR, stageName + '.sh')}"
     try {
       child.stdin.write(stdinJson || '');
       child.stdin.end();
-    } catch (_e) { /* swallow — child error/close handler will resolve */ }
+    } catch (_e) { /* swallow -- child error/close handler will resolve */ }
   });
 }
 

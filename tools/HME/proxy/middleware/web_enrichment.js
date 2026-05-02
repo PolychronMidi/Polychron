@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Web tool envelopment — emits activity events for WebFetch / WebSearch so
+ * Web tool envelopment -- emits activity events for WebFetch / WebSearch so
  * they're visible to the coherence tracker and session telemetry. No footer
  * enrichment: external URLs/queries rarely intersect internal KB, and
  * padding every web result with silence would be noise. Extension point:

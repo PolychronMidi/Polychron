@@ -6,7 +6,7 @@
 # Usage: result=$(_safe_curl "http://..." '{"key":"val"}')
 # Threshold sourced from (in order): the streak calibrator's adaptive file
 # at tmp/hme-streak-warn.txt (written by activity/streak_calibrator.py each
-# round — closes the observation→action loop), then .env's HME_STREAK_WARN,
+# round -- closes the observation->action loop), then .env's HME_STREAK_WARN,
 # then 5 as final fallback. The calibrator file overrides .env so the system
 # self-tunes without requiring a manual .env edit.
 _hme_load_streak_warn() {
@@ -24,7 +24,7 @@ _hme_load_streak_warn() {
 _HME_CURL_STREAK_WARN="$(_hme_load_streak_warn)"
 # Streak file lives under $PROJECT_ROOT/tmp/ per the "no duplicate output dirs"
 # rule in CLAUDE.md. Resolved at call time so a missing PROJECT_ROOT at source
-# time doesn't lock us into /tmp/ — the .env load at the top of this file runs
+# time doesn't lock us into /tmp/ -- the .env load at the top of this file runs
 # first, so by the time _safe_curl is called PROJECT_ROOT is almost always set.
 _hme_curl_streak_path() {
   if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/tmp" ]; then
@@ -35,7 +35,7 @@ _hme_curl_streak_path() {
 }
 # During a planned proxy/worker restart (proxy-maintenance.sh start), the
 # fail-LOUD path in _proxy_bridge.sh is suppressed. _safe_curl must honor
-# the SAME flag — otherwise its streak counter ticks up during legitimate
+# the SAME flag -- otherwise its streak counter ticks up during legitimate
 # restart windows and LIFESAVER fires spurious errors (rc=7/rc=28) that
 # are actually "caller intentionally cycled the worker", not a real
 # outage. Returns 0 if flag present AND within its declared TTL.
@@ -76,7 +76,7 @@ _safe_curl() {
   fi
   # FAIL-LOUD: capture curl stderr; if non-zero exit AND stderr written,
   # log the curl error message itself (not just rc) so we know WHY (DNS,
-  # SSL, malformed URL, etc.) — was previously suppressed and we lost
+  # SSL, malformed URL, etc.) -- was previously suppressed and we lost
   # information about every transient failure.
   local curl_err
   curl_err=$(mktemp 2>/dev/null || echo "/tmp/_safe_curl_err_$$")
@@ -88,7 +88,7 @@ _safe_curl() {
     rc=$?
   fi
   if [ $rc -ne 0 ]; then
-    # Planned maintenance — don't log, don't increment streak. The operator
+    # Planned maintenance -- don't log, don't increment streak. The operator
     # already announced the window via proxy-maintenance.sh.
     if _hme_maintenance_active; then
       echo ''
@@ -118,18 +118,18 @@ _safe_curl() {
       if [ "$streak" -ge "${_HME_CURL_STREAK_WARN:-5}" ]; then
         _sev="ERROR"
       fi
-      # FAIL-LOUD on alert-sink writes — was 2>/dev/null; if errors.log
+      # FAIL-LOUD on alert-sink writes -- was 2>/dev/null; if errors.log
       # itself is unwritable, that failure must NOT be silent.
       printf '[%s] [_safe_curl] %s %s failed (rc=%d, streak=%d)%s\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_sev" "$url" "$rc" "$streak" \
-        "${curl_msg:+ — $curl_msg}" \
+        "${curl_msg:+ -- $curl_msg}" \
         >> "$PROJECT_ROOT/log/hme-errors.log"
     fi
     rm -f "$curl_err" 2>/dev/null
     echo ''
     return 0
   fi
-  # Success — reset streak.
+  # Success -- reset streak.
   rm -f "$curl_err" 2>/dev/null
   [ -f "$streak_file" ] && rm -f "$streak_file" 2>/dev/null
   echo "$out"

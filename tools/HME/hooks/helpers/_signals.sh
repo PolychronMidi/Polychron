@@ -2,11 +2,11 @@
 # HME unified signal bus (MVP).
 #
 # An append-only event log at output/metrics/hme-signals.jsonl. Proxy
-# middleware, hook scripts, and activity emitters can all append — readers
+# middleware, hook scripts, and activity emitters can all append -- readers
 # tail the file to see what fired, when, and from where. Replaces the
 # patchwork of tmp/ files + _nexus.sh string parsing as the SINGLE source
 # of truth for "what happened in this session." The _nexus_* helpers
-# still exist — they're just no longer the ONLY answer to "is this
+# still exist -- they're just no longer the ONLY answer to "is this
 # lifecycle event done?"
 #
 # Schema (one JSON object per line):

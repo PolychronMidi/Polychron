@@ -9,12 +9,12 @@
 # pure no-op.
 #
 # Design constraint: rewrites MUST produce equivalent or superior output.
-# Never degrade the agent's observed result — that'd break the "tool
+# Never degrade the agent's observed result -- that'd break the "tool
 # falls into hand" experience. Safe translations only:
 #
-#   `grep -rn <pat> tools/HME` → `i/hme-read query=<pat>`  # KB-enriched
-#   `find src -name <pat>`     → `i/hme-read mode=find query=<pat>`
-#   `cat log/hme-errors.log`   → `i/status mode=coherence`  # indirect polling
+#   `grep -rn <pat> tools/HME` -> `i/hme-read query=<pat>`  # KB-enriched
+#   `find src -name <pat>`     -> `i/hme-read mode=find query=<pat>`
+#   `cat log/hme-errors.log`   -> `i/status mode=coherence`  # indirect polling
 #
 # Skipped translations (too lossy):
 #   - raw ls (too structural)
@@ -28,7 +28,7 @@
 _INTENT_CMD="$CMD"
 _INTENT_REWROTE=""
 
-# grep -rn <pattern> tools/HME/...  →  i/hme-read query=<pattern>
+# grep -rn <pattern> tools/HME/...  ->  i/hme-read query=<pattern>
 #
 # Only rewrites when the search scope is entirely within tools/HME/ AND
 # the pattern is a single symbol-like token (not a regex). Raw grep is

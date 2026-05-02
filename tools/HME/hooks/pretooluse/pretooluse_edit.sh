@@ -2,7 +2,7 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true
-# PreToolUse: Edit — ellipsis-stub block (true pre-execution reject) + onboarding
+# PreToolUse: Edit -- ellipsis-stub block (true pre-execution reject) + onboarding
 # warn. Activity emission, BRIEF check, and KB enrichment moved to proxy middleware.
 INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
@@ -11,7 +11,7 @@ NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 # Coupling-aware antagonism warning: if this edit's module and a module
 # edited earlier this turn are registered as a strong antagonist pair
 # (r <= -0.3 in hme-coupling.json), surface it. The pair probably needs
-# SEPARATE commits — antagonistic modules resist simultaneous change and
+# SEPARATE commits -- antagonistic modules resist simultaneous change and
 # commingling them masks which edit is responsible for a downstream drift.
 # Observe-only warning (stderr); never blocks. Silent when no antagonists
 # are registered (data-driven dormancy).
@@ -40,7 +40,7 @@ except Exception:
 PYEOF
 )
       if [ -n "$_AB_HIT" ]; then
-        echo "[hme] COUPLING WARNING: $_MODULE_BASE ↔ $_prior_mod are registered antagonists (r=$_AB_HIT). Consider separate commits — commingling antagonistic edits makes drift attribution harder." >&2
+        echo "[hme] COUPLING WARNING: $_MODULE_BASE <-> $_prior_mod are registered antagonists (r=$_AB_HIT). Consider separate commits -- commingling antagonistic edits makes drift attribution harder." >&2
       fi
     done < "$_TURN_EDIT_STATE"
   fi
@@ -51,7 +51,7 @@ fi
 
 # Mid-pipeline src edit block. JS counterpart: block-mid-pipeline-write.
 if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
-  _emit_block "ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT edit src/ code mid-pipeline — the pipeline's behavior is being measured against the code state at launch. Wait for completion; use HME tools (i/learn, i/review, i/trace) or edit tooling/docs in the meantime."
+  _emit_block "ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT edit src/ code mid-pipeline -- the pipeline's behavior is being measured against the code state at launch. Wait for completion; use HME tools (i/learn, i/review, i/trace) or edit tooling/docs in the meantime."
   exit 2
 fi
 
@@ -77,7 +77,7 @@ if echo "$FILE" | grep -qE '/metrics/'; then
 fi
 
 if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
-  _emit_block "BLOCKED: Edit new_string contains comment-ellipsis stub placeholder. Use the ACTUAL replacement content — no stubs."
+  _emit_block "BLOCKED: Edit new_string contains comment-ellipsis stub placeholder. Use the ACTUAL replacement content -- no stubs."
   exit 2
 fi
 
@@ -85,7 +85,7 @@ fi
 # absolute path matching the host's checkout) baked into source/script
 # content. The proper resolution is `$PROJECT_ROOT` (set by .env load),
 # `$CLAUDE_PROJECT_DIR` (Claude Code env var), or walk-up-from
-# $BASH_SOURCE — never a hardcoded host-specific string.
+# $BASH_SOURCE -- never a hardcoded host-specific string.
 #
 # The guard is only meaningful when we know the actual project root to
 # match against. In production hook invocation $PROJECT_ROOT is always
@@ -96,7 +96,7 @@ if [ -n "${PROJECT_ROOT:-}" ] \
    && echo "$FILE" | grep -qE '\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$' \
    && ! echo "$NEW_STRING" | grep -qE '"PROJECT_ROOT":[^,}]*"'"$PROJECT_ROOT"'"' \
    && ! echo "$FILE" | grep -qE '(/\.env(\.[a-z]+)?$|/README(\.[a-z]+)?$|/CLAUDE\.md$|/tools/HME/KB/devlog/|/doc/[^/]+\.md$|/doc/archive/)'; then
-  _emit_block "BLOCKED: Edit new_string contains hardcoded project root '$PROJECT_ROOT'. Use \$PROJECT_ROOT (already set by .env via _safety.sh) or \$CLAUDE_PROJECT_DIR (Claude Code env var) — never a host-specific path. The .env file itself is the only legitimate place for the literal path; it's checked-in but each clone overrides it. Exempt files: README, CLAUDE.md, devlog snapshots."
+  _emit_block "BLOCKED: Edit new_string contains hardcoded project root '$PROJECT_ROOT'. Use \$PROJECT_ROOT (already set by .env via _safety.sh) or \$CLAUDE_PROJECT_DIR (Claude Code env var) -- never a host-specific path. The .env file itself is the only legitimate place for the literal path; it's checked-in but each clone overrides it. Exempt files: README, CLAUDE.md, devlog snapshots."
   exit 2
 fi
 
@@ -115,39 +115,39 @@ for i, line in enumerate(content.split('\n'), 1):
         break
 " "")
   if [ -n "$_SPAM_HIT" ]; then
-    _emit_block "BLOCKED: Edit new_string contains a run of 4+ identical decoration characters ($_SPAM_HIT). Visual-decoration spam (runs of dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing) is banned. Use plain text; normalize markdown table separators to 3 dashes per cell; demote headings to depth ≤3. Append the literal token spam-ok on a line to opt out where genuinely required."
+    _emit_block "BLOCKED: Edit new_string contains a run of 4+ identical decoration characters ($_SPAM_HIT). Visual-decoration spam (runs of dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing) is banned. Use plain text; normalize markdown table separators to 3 dashes per cell; demote headings to depth <=3. Append the literal token spam-ok on a line to opt out where genuinely required."
     exit 2
   fi
 fi
 
-# Pre-save pattern lint — block new_string before it lands if it introduces
+# Pre-save pattern lint -- block new_string before it lands if it introduces
 # forbidden patterns. Each block cites the rule + the fix, so the message
 # alone is enough for the agent to correct the edit.
 if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
   if echo "$NEW_STRING" | grep -qE '\bglobalThis\.|(^|[^a-zA-Z_])global\.[a-zA-Z_]'; then
-    _emit_block "BLOCKED: new_string uses global. or globalThis. — 5 Core Principles #1 forbids these. Reference the global directly (declared in globals.d.ts)."
+    _emit_block "BLOCKED: new_string uses global. or globalThis. -- 5 Core Principles #1 forbids these. Reference the global directly (declared in globals.d.ts)."
     exit 2
   fi
   if echo "$NEW_STRING" | grep -qE '\|\|[[:space:]]*(0|\[\]|\{\})([^a-zA-Z0-9_]|$)'; then
-    _emit_block "BLOCKED: new_string uses || 0 / || [] / || {} fallback — 5 Core Principles #2 requires fail-fast. Use validator.optionalFinite(val, fallback) or validator.create('Module') + required checks."
+    _emit_block "BLOCKED: new_string uses || 0 / || [] / || {} fallback -- 5 Core Principles #2 requires fail-fast. Use validator.optionalFinite(val, fallback) or validator.create('Module') + required checks."
     exit 2
   fi
   if echo "$NEW_STRING" | grep -qE '\.getSnapshot\(\)[[:space:]]*\.[[:space:]]*couplingMatrix'; then
-    _emit_block "BLOCKED: new_string reads .couplingMatrix off getSnapshot() — forbidden outside coupling engine / meta-controllers (local/no-direct-coupling-matrix-read). Register a bias via conductorIntelligence instead."
+    _emit_block "BLOCKED: new_string reads .couplingMatrix off getSnapshot() -- forbidden outside coupling engine / meta-controllers (local/no-direct-coupling-matrix-read). Register a bias via conductorIntelligence instead."
     exit 2
   fi
   if echo "$NEW_STRING" | grep -qE '\bconsole\.warn\b' && ! echo "$NEW_STRING" | grep -qE "console\.warn\([^)]*['\"]Acceptable warning:"; then
-    _emit_block "BLOCKED: console.warn without 'Acceptable warning:' prefix — CLAUDE.md Code Style rule. Format: console.warn('Acceptable warning: <message>')."
+    _emit_block "BLOCKED: console.warn without 'Acceptable warning:' prefix -- CLAUDE.md Code Style rule. Format: console.warn('Acceptable warning: <message>')."
     exit 2
   fi
   if echo "$NEW_STRING" | grep -qE 'setBinaural\s*\(\s*([0-7](\.[0-9]+)?|1[3-9]|[2-9][0-9])\b'; then
-    _emit_block "BLOCKED: setBinaural called outside alpha range 8–12Hz — Hard Rule (binaural is imperceptible neurostimulation only). Clamp to [8, 12]."
+    _emit_block "BLOCKED: setBinaural called outside alpha range 8-12Hz -- Hard Rule (binaural is imperceptible neurostimulation only). Clamp to [8, 12]."
     exit 2
   fi
 
-  # Semantic bugfix lookup — ask the worker if this module has a known bugfix
+  # Semantic bugfix lookup -- ask the worker if this module has a known bugfix
   # in KB that scores high against the current edit intent. High-confidence
-  # hits (score ≥ 0.6) block: the edit is likely re-introducing a past bug.
+  # hits (score >= 0.6) block: the edit is likely re-introducing a past bug.
   # Cache in /tmp by content hash so repeat attempts don't re-query.
   MODULE=$(basename "$FILE" | sed 's/\.[^.]*$//')
   if [ -n "$MODULE" ] && [ ${#NEW_STRING} -gt 20 ]; then
@@ -170,7 +170,7 @@ except Exception:
   pass
 " 2>/dev/null)
     if [ -n "$BLOCK_HIT" ]; then
-      _emit_block "BLOCKED: KB has a bugfix entry \"$BLOCK_HIT\" that strongly matches this module. Review it via learn(query='$MODULE') before editing — the edit may re-introduce a past bug."
+      _emit_block "BLOCKED: KB has a bugfix entry \"$BLOCK_HIT\" that strongly matches this module. Review it via learn(query='$MODULE') before editing -- the edit may re-introduce a past bug."
       exit 2
     fi
   fi
@@ -187,7 +187,7 @@ fi
 # Unbriefed-edit detection + auto-brief injection.
 #
 # Prior design observed unbriefed edits (edit_without_brief event) but
-# deliberately did NOT auto-fetch the brief — auto-BRIEFing was thought
+# deliberately did NOT auto-fetch the brief -- auto-BRIEFing was thought
 # to defeat the read_coverage metric (which measures "did agent read
 # before edit?"). The split below preserves the metric AND auto-injects:
 #   - read_coverage / _nexus_has BRIEF: still ONLY incremented by an
@@ -204,7 +204,7 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
   if [ -n "$_auto_module" ] && ! _nexus_has BRIEF "$_auto_module"; then
     if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ]; then
       # Horizon VII maturity: caused_by = the file path being edited
-      # without a prior brief — the cause IS the unbriefed edit target.
+      # without a prior brief -- the cause IS the unbriefed edit target.
       python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
         --event=edit_without_brief \
         --file="$FILE" \

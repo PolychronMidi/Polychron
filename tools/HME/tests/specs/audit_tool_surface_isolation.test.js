@@ -3,7 +3,7 @@
 // invocation construction. Verifies that probe commands ARE wrapped
 // with `systemd-run --scope` + the documented resource caps, without
 // actually running a fork-bomb (which would risk another host crash
-// even with isolation in place — proving the containment empirically
+// even with isolation in place -- proving the containment empirically
 // requires controlled experimentation outside this test harness).
 //
 // What's tested here: argument-construction discipline. If anyone
@@ -53,7 +53,7 @@ test('audit-tool-surface: SAFE_NO_ARGS_ALLOWLIST is an explicit allowlist (not b
   // Inversion check: must use ALLOWLIST shape (`name in ALLOWLIST`)
   // not the prior blocklist shape (`name not in DESTRUCTIVE`). The
   // blocklist let new tools default to "probe everything" which is
-  // exactly the failure mode that crashed the host — new heavy tools
+  // exactly the failure mode that crashed the host -- new heavy tools
   // would be auto-probed before being reviewed.
   assert.match(src, /SAFE_NO_ARGS_ALLOWLIST\s*=\s*\{/,
     'must define SAFE_NO_ARGS_ALLOWLIST as a set');
@@ -82,7 +82,7 @@ test('audit-tool-surface: typo probe uses an action= arg unlikely to collide', (
     const content = fs.readFileSync(f, 'utf8');
     assert.ok(
       !content.includes('garbage-mode-xyz'),
-      `${f} contains the typo sentinel — pick a different sentinel for the probe`,
+      `${f} contains the typo sentinel -- pick a different sentinel for the probe`,
     );
   }
 });

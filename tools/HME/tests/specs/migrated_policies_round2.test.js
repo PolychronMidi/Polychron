@@ -15,7 +15,7 @@ function _ctx(overrides = {}) {
   };
 }
 
-// ── block-mid-pipeline-write ─────────────────────────────────────────
+// -- block-mid-pipeline-write -----------------------------------------
 const midPipeline = require('../../policies/builtin/block-mid-pipeline-write');
 
 test('mid-pipeline: deny when run.lock exists + path is in src/', async () => {
@@ -65,7 +65,7 @@ test('mid-pipeline: allow non-src path even with run.lock present', async () => 
   }
 });
 
-// ── block-comment-ellipsis-stub ──────────────────────────────────────
+// -- block-comment-ellipsis-stub --------------------------------------
 const stub = require('../../policies/builtin/block-comment-ellipsis-stub');
 
 test('ellipsis-stub: deny on classic comment-stub', async () => {
@@ -90,7 +90,7 @@ test('ellipsis-stub: allow code that legitimately mentions ellipsis (no stub-ver
   assert.strictEqual(r.decision, 'allow');
 });
 
-// ── block-secret-content-pattern ─────────────────────────────────────
+// -- block-secret-content-pattern -------------------------------------
 const secretContent = require('../../policies/builtin/block-secret-content-pattern');
 
 test('secret-content: deny on api_key=longstring', async () => {
@@ -115,7 +115,7 @@ test('secret-content: allow code without secret-shaped pattern', async () => {
   assert.strictEqual(r.decision, 'allow');
 });
 
-// ── block-mkdir-misplaced-log-tmp ─────────────────────────────────────
+// -- block-mkdir-misplaced-log-tmp -------------------------------------
 const mkdirLogTmp = require('../../policies/builtin/block-mkdir-misplaced-log-tmp');
 
 test('mkdir-log-tmp: deny mkdir of nested log/', async () => {
@@ -138,7 +138,7 @@ test('mkdir-log-tmp: allow mkdir without log or tmp', async () => {
   assert.strictEqual(r.decision, 'allow');
 });
 
-// ── block-mkdir-misplaced-metrics ─────────────────────────────────────
+// -- block-mkdir-misplaced-metrics -------------------------------------
 const mkdirMetrics = require('../../policies/builtin/block-mkdir-misplaced-metrics');
 
 test('mkdir-metrics: deny mkdir of nested metrics/', async () => {

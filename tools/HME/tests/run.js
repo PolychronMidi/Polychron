@@ -10,9 +10,9 @@
  *   - proxy/worker_queue.js (drop+wait round-trip)
  *
  * Run: node tools/HME/tests/run.js
- *      npm run test:hme   (after wiring into package.json — see README)
+ *      npm run test:hme   (after wiring into package.json -- see README)
  *
- * Each test file exports nothing — it registers tests via node:test's
+ * Each test file exports nothing -- it registers tests via node:test's
  * `test()` API and they run when executed. This runner just requires
  * each file in order and lets node:test report.
  */
@@ -22,7 +22,7 @@ const fs = require('fs');
 
 // Several specs (metaprofile fixtures, src/index DI graph) read
 // process.env.PROJECT_ROOT to locate config/. Anchor it to the repo root
-// derived from this file's path so the suite is hermetic — no caller
+// derived from this file's path so the suite is hermetic -- no caller
 // needs to export PROJECT_ROOT manually.
 if (!process.env.PROJECT_ROOT) {
   process.env.PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
@@ -44,13 +44,13 @@ if (files.length === 0) {
 // The 2026-05-01 incident: drum_kit_rotator and rhythm_flair both stub
 // `global.validator` inside their loaders; a missing restore left the
 // stub on globalThis, and metaprofile_next_level's pair_gain_ceiling
-// test then loaded src/index — which called validator.create(...)
+// test then loaded src/index -- which called validator.create(...)
 // .optionalFinite, which the stub didn't carry. Crash. The fix at the
 // time was per-callsite save/restore; this tripwire is the structural
 // guarantee it can't recur.
 //
 // Watching only the small set of keys tests are KNOWN to stub. (Watching
-// every key on globalThis is a non-starter — src/index legitimately
+// every key on globalThis is a non-starter -- src/index legitimately
 // registers ~500 modules as globals during DI bootstrap.)
 //
 // Critically, baseline is captured AFTER loading src/utils so the REAL
@@ -96,7 +96,7 @@ process.on('exit', () => {
   }
   if (leaks.length > 0) {
     console.error(
-      `\n[run.js] test-stub global pollution detected — ${leaks.length} ` +
+      `\n[run.js] test-stub global pollution detected -- ${leaks.length} ` +
       `known-stub-prone key(s) diverged across the suite:\n` +
       leaks.join('\n') +
       `\nUse tools/HME/tests/with_globals.js to scope mutations.\n`

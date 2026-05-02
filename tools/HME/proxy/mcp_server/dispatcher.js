@@ -1,11 +1,11 @@
 'use strict';
 // Dispatches MCP tools/list and tools/call to the Python worker over plain HTTP.
 // Worker endpoints:
-//   GET  /tools/list       → {"tools": [ {name, description, inputSchema}, ... ]}
-//   POST /tool/<name>      body = kwargs JSON → {ok, result} | {ok:false, error}
+//   GET  /tools/list       -> {"tools": [ {name, description, inputSchema}, ... ]}
+//   POST /tool/<name>      body = kwargs JSON -> {ok, result} | {ok:false, error}
 //   GET  /health           readiness probe
 //
-// HTTP plumbing is shared via ../_worker_http.js — single source of truth
+// HTTP plumbing is shared via ../_worker_http.js -- single source of truth
 // for socket setup, timeout handling, JSON parsing. This module owns only
 // MCP-specific concerns: schema caching, throw-on-error semantics, and
 // content-block envelope formatting.

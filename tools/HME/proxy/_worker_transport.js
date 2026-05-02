@@ -1,17 +1,17 @@
 'use strict';
 /**
- * Transport router for proxy → worker dispatch. Picks between HTTP
+ * Transport router for proxy -> worker dispatch. Picks between HTTP
  * (`_worker_http.js`) and filesystem queue (`_worker_fs.js`) based on
  * `HME_WORKER_TRANSPORT` env var:
  *
- *   http     (default)  — legacy localhost HTTP path
- *   hybrid              — FS for endpoints worker_queue.py covers
+ *   http     (default)  -- legacy localhost HTTP path
+ *   hybrid              -- FS for endpoints worker_queue.py covers
  *                         (POST /tool/*, /enrich, /enrich_prompt,
  *                         /audit); HTTP for everything else (light
  *                         endpoints + endpoints worker_queue doesn't
  *                         handle). RECOMMENDED when running with the
  *                         worker_queue watcher active (which it is by
- *                         default — worker.py:main() starts it).
+ *                         default -- worker.py:main() starts it).
  *
  * Pure-FS mode isn't offered: `worker_queue.py` only handles a subset
  * of the worker's HTTP endpoints, so paths like /tools/list, /health,
@@ -20,7 +20,7 @@
  *
  * The MCP wire spec is unaffected: Claude Code still talks HTTP/SSE
  * to /mcp/* on the proxy. This router governs only the INTERNAL
- * proxy ↔ worker leg.
+ * proxy <-> worker leg.
  */
 
 const httpBackend = require('./_worker_http');
@@ -30,7 +30,7 @@ const MODE = (process.env.HME_WORKER_TRANSPORT || 'http').toLowerCase();
 const VALID_MODES = new Set(['http', 'hybrid']);
 const RESOLVED = VALID_MODES.has(MODE) ? MODE : 'http';
 
-// Endpoints the FS transport supports — must match the set
+// Endpoints the FS transport supports -- must match the set
 // `worker_queue.py:_dispatch` handles. In hybrid mode, ONLY these
 // route through FS; everything else (GET /tools/list, GET /health,
 // GET /version, GET /transcript, POST /reindex, etc.) stays on HTTP.

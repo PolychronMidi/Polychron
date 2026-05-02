@@ -1,5 +1,5 @@
 {
-  "description": "HyperMeta Ecstasy hooks — ALL events route through a single stateless forwarder (_proxy_bridge.sh) that POSTs to the proxy's /hme/lifecycle endpoint. All hook LOGIC lives in proxy-land (tools/HME/proxy/hook_bridge.js). The individual hook scripts in hooks/{lifecycle,pretooluse,posttooluse}/ are still invoked — but by the proxy, not by Claude Code directly. This is the single minimal coupling surface with Claude Code's plugin system.",
+  "description": "HyperMeta Ecstasy hooks -- ALL events route through a single stateless forwarder (_proxy_bridge.sh) that POSTs to the proxy's /hme/lifecycle endpoint. All hook LOGIC lives in proxy-land (tools/HME/proxy/hook_bridge.js). The individual hook scripts in hooks/{lifecycle,pretooluse,posttooluse}/ are still invoked -- but by the proxy, not by Claude Code directly. This is the single minimal coupling surface with Claude Code's plugin system.",
   "hooks": {
     "SessionStart": [
       {

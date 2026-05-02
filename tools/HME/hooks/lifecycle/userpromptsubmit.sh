@@ -5,7 +5,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # MUST RUN BEFORE: stop
 # COORDINATES WITH: precompact, sessionstart
 #
-# Fires at the start of each user turn — clears per-turn state files,
+# Fires at the start of each user turn -- clears per-turn state files,
 # emits the turn_start signal, runs autocommit + LIFESAVER scans, and
 # scores satisfaction for the just-finished prior turn. The Stop hook
 # at turn end relies on the per-turn files this hook clears.
@@ -15,7 +15,7 @@ PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 # Clear per-turn edit tracker (consumed by the coupling-antagonism warning
 # in pretooluse_edit.sh) and the per-turn auto-brief dedup tracker
 # (consumed by the brief-injection in pretooluse_edit.sh/pretooluse_write.sh).
-# Scope is a single user turn, not the whole session — without these resets
+# Scope is a single user turn, not the whole session -- without these resets
 # the "per-turn" claim is false and the dedup persists permanently.
 if [ -n "${PROJECT_ROOT:-}" ]; then
   rm -f "${PROJECT_ROOT}/tmp/hme-turn-edits.txt" \
@@ -26,14 +26,14 @@ _signal_emit turn_start userpromptsubmit turn '{}'
 
 # SatisfactionCapture (PAI v6.3.0 import #8). Score the new prompt 1-10 as
 # a satisfaction signal for the just-finished turn and append to
-# output/metrics/satisfaction.jsonl. Critical PAI fix: NEVER null —
+# output/metrics/satisfaction.jsonl. Critical PAI fix: NEVER null --
 # neutral / unmatched prompts score 5. Best-effort: a missing python or
 # malformed prompt should not block the turn.
 if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
   PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true
 fi
 
-# Auto-commit snapshot (fail-fast-hardened — see _autocommit.sh).
+# Auto-commit snapshot (fail-fast-hardened -- see _autocommit.sh).
 # The helper records failures to four independent channels and owns the
 # sticky fail flag + attempt counter that survives hook restarts. We must
 # NOT die on its return code; the LIFESAVER scan below and the
@@ -41,7 +41,7 @@ fi
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_autocommit.sh"
 _ac_do_commit userpromptsubmit.sh || true
 
-# Reset the psychopathic-polling counter at turn start — the counter
+# Reset the psychopathic-polling counter at turn start -- the counter
 # accumulates within a turn and would never reset without this. The
 # pretooluse_bash hook reads and increments it; this hook resets it.
 rm -f /tmp/polychron-task-poll-count 2>/dev/null
@@ -73,10 +73,10 @@ with open('$_CORRECTION_FILE', 'a') as f:
   fi
 fi
 
-# LIFESAVER — autocommit fail-flag check (runs FIRST, unconditional).
+# LIFESAVER -- autocommit fail-flag check (runs FIRST, unconditional).
 # The general error-log scan below picks up NEW lines in hme-errors.log,
 # but the autocommit can silently die in ways that leave the log
-# unchanged — .env unloadable, log/ dir missing, _proxy_bridge dropping
+# unchanged -- .env unloadable, log/ dir missing, _proxy_bridge dropping
 # stderr. The sticky fail-flag from _autocommit.sh is independent of all
 # of those: it lives under tmp/ which is always writable, and its mere
 # existence means the last autocommit failed and has NOT yet been
@@ -87,7 +87,7 @@ fi
 _AC_FLAG_CHECK="${_AC_FAIL_FLAG:-${PROJECT_ROOT}/tmp/hme-autocommit.fail}"
 if [ -f "$_AC_FLAG_CHECK" ]; then
   _AC_FLAG_BODY=$(cat "$_AC_FLAG_CHECK" 2>/dev/null)
-  _AC_BANNER="🚨 LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE
+  _AC_BANNER="[ALERT] LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE
 
 $_AC_FLAG_BODY
 
@@ -95,7 +95,7 @@ The autocommit helper left this flag behind. Last attempt did not
 succeed, which means working-tree changes have NOT been committed.
 Diagnose: check git status in the project root; read log/hme-errors.log;
 inspect tmp/hme-autocommit.err if present; verify .env loaded PROJECT_ROOT.
-Fix the root cause. Do not silence the alert — the flag clears automatically
+Fix the root cause. Do not silence the alert -- the flag clears automatically
 on the next successful autocommit. Dampening the detector is a structural
 violation caught by the LifesaverIntegrityVerifier at weight 5.0."
   echo "" >&2
@@ -115,10 +115,10 @@ print(json.dumps(payload))
 " <<< "$_AC_BANNER"
 fi
 
-# LIFESAVER — HME Error Log Monitor
+# LIFESAVER -- HME Error Log Monitor
 # LIFE-OR-DEATH: HME components write errors to log/hme-errors.log.
 # THIS is the ONLY mechanism that makes those errors visible to this agent.
-# Every error, everywhere, MUST be diagnosed and FIXED. Not acknowledged — FIXED.
+# Every error, everywhere, MUST be diagnosed and FIXED. Not acknowledged -- FIXED.
 # An error that is seen and not fixed is WORSE than an unseen error.
 PROJECT="$PROJECT_ROOT"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
@@ -137,19 +137,19 @@ if [ -f "$ERROR_LOG" ]; then
 
   if [ "$TOTAL" -gt "$LAST" ]; then
     NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" | sort -u)
-    # DO NOT advance watermark here — Stop hook is the only gate that advances it.
+    # DO NOT advance watermark here -- Stop hook is the only gate that advances it.
     # If watermark advanced here, unfixed errors vanish when Stop sees TOTAL==TURNSTART.
     # Emit to stderr (local proxy log) AND stdout as UserPromptSubmit additionalContext
     # so the proxy bridge relays it back into Claude's turn context. Stderr-only
     # was the old path; the proxy bridge drops stderr entirely (see _proxy_bridge.sh),
     # which meant every LIFESAVER alert since plugin mode was silently discarded.
-    # Minimal banner — CLAUDE.md already mandates the 1-2-3 diagnose-fix-
+    # Minimal banner -- CLAUDE.md already mandates the 1-2-3 diagnose-fix-
     # verify response to errors. Re-emitting that boilerplate every turn is
     # context tax; the unread error list alone is the load-bearing signal.
     echo "" >&2
-    echo "LIFESAVER — unresolved errors in hme-errors.log:" >&2
+    echo "LIFESAVER -- unresolved errors in hme-errors.log:" >&2
     echo "$NEW_ERRORS" >&2
-    BANNER="LIFESAVER — unresolved errors in hme-errors.log, fix root-cause before proceeding:
+    BANNER="LIFESAVER -- unresolved errors in hme-errors.log, fix root-cause before proceeding:
 ${NEW_ERRORS}"
     # Block ONLY if the supervisor-abandoned sentinel currently exists
     # (live catastrophic state, not historical log entry). Otherwise
@@ -167,14 +167,14 @@ payload = {
         'additionalContext': banner
     },
     'decision': 'block' if block else 'allow',
-    'reason': 'LIFESAVER: worker supervisor abandoned — restart before proceeding.' if block else 'LIFESAVER: unresolved errors in hme-errors.log.'
+    'reason': 'LIFESAVER: worker supervisor abandoned -- restart before proceeding.' if block else 'LIFESAVER: unresolved errors in hme-errors.log.'
 }
 print(json.dumps(payload))
 " <<< "$BANNER"
   fi
 fi
 
-# HME critical todos — surface unresolved critical items at turn start
+# HME critical todos -- surface unresolved critical items at turn start
 # Reads the HME store, filters critical+open items, emits them so the agent
 # cannot miss LIFESAVER alerts, high-priority work, or unresolved trigger notes.
 #
@@ -222,7 +222,7 @@ if echo "$PROMPT" | grep -qiE 'evolve|evolution|next round|run main|pipeline|lab
   echo 'EVOLUTION CONTEXT: `i/hme-read target=<module> mode=before` before edits, `i/review mode=forget` after changes, `i/learn title="..." content="..." category=pattern` after confirmed rounds. Past round context lives in KB (query via `i/learn query=...`); the journal.md archive is historical only.' >&2
 fi
 
-# Context-aware reminders — ONLY fire when there's a real behavior signal
+# Context-aware reminders -- ONLY fire when there's a real behavior signal
 # this turn. The previous path emitted an unconditional "PLAN DISCIPLINE"
 # boilerplate + a rotating reminder-of-the-day every turn; both duplicate
 # CLAUDE.md and added ~500 chars/turn of context tax. Silent is the default;
@@ -230,7 +230,7 @@ fi
 NEXUS_FILE="$PROJECT_ROOT/tmp/hme-nexus.state"
 OVERRIDE_REMINDER=""
 
-# Many edits but no REVIEW marker → nudge toward i/review
+# Many edits but no REVIEW marker -> nudge toward i/review
 # `grep -c` always prints a number to stdout AND exits 1 on no-match.
 # The previous `|| echo 0` form added a SECOND "0" to stdout when grep
 # exited nonzero, producing multiline `_EDIT_CT="0\n0"` that broke the
@@ -244,14 +244,14 @@ else
   _REVIEW_CT=0
 fi
 if [ "$_EDIT_CT" -gt 3 ] && [ "$_REVIEW_CT" -eq 0 ]; then
-  OVERRIDE_REMINDER="$_EDIT_CT unreviewed edits — run \`i/review mode=forget\` before stopping."
+  OVERRIDE_REMINDER="$_EDIT_CT unreviewed edits -- run \`i/review mode=forget\` before stopping."
 fi
 
 # High bash call streak from prior turn (poll counter left behind)
 if [ -z "$OVERRIDE_REMINDER" ] && [ -f "/tmp/polychron-bash-call-count" ]; then
   _BASH_CT=$(cat /tmp/polychron-bash-call-count 2>/dev/null || echo 0)
   if [ "$_BASH_CT" -gt 8 ]; then
-    OVERRIDE_REMINDER="Prior turn had $_BASH_CT+ bash calls — prefer an Explore agent for multi-file research."
+    OVERRIDE_REMINDER="Prior turn had $_BASH_CT+ bash calls -- prefer an Explore agent for multi-file research."
   fi
 fi
 

@@ -9,7 +9,7 @@
 //   3. The emitted stdout contains a sentinel matching the marker regex
 //      from _markers.js
 //
-// We don't actually fire Agent here — that requires a live proxy. We
+// We don't actually fire Agent here -- that requires a live proxy. We
 // verify the producer half of the contract; the consumer half is
 // covered by the bridge's own tests.
 

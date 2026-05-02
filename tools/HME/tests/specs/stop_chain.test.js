@@ -76,7 +76,7 @@ test('stop_chain: runStopChain with empty payload returns shape {stdout, stderr,
     assert.strictEqual(typeof result.stdout, 'string');
     assert.strictEqual(typeof result.stderr, 'string');
     assert.strictEqual(typeof result.exit_code, 'number');
-    assert.strictEqual(result.exit_code, 0, 'exit_code is always 0 — chain crashes do not wedge agent');
+    assert.strictEqual(result.exit_code, 0, 'exit_code is always 0 -- chain crashes do not wedge agent');
   }));
 
 test('stop_chain: runStopChain handles malformed JSON without throwing',

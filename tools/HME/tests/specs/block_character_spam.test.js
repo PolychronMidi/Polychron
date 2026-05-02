@@ -10,7 +10,7 @@ const policy = require('../../policies/builtin/block-character-spam');
 const _eq = (n) => '='.repeat(n);
 const _dash = (n) => '-'.repeat(n);
 const _hash = (n) => '#'.repeat(n);
-const _box = (n) => '─'.repeat(n);
+const _box = (n) => '-'.repeat(n);
 
 function _ctx(overrides = {}) {
   return {

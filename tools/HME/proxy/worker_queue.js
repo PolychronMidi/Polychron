@@ -2,7 +2,7 @@
 /**
  * Filesystem-IPC client for the HME worker.
  *
- * Architectural intent (lesson #1 — make the proxy/worker accelerators,
+ * Architectural intent (lesson #1 -- make the proxy/worker accelerators,
  * not single points of failure): callers can address the worker via
  * filesystem queue files instead of synchronous HTTP. The HTTP path
  * remains for backward compatibility; the queue path lets callers
@@ -30,7 +30,7 @@
  *   - waitForResult returns null on timeout (caller decides degradation).
  *   - call() composes drop + wait with a single timeout.
  *
- * No retries here — that's a caller policy. A failed call returns null;
+ * No retries here -- that's a caller policy. A failed call returns null;
  * caller can retry, fall back, or surface to the user.
  */
 
@@ -69,7 +69,7 @@ function dropJob(endpoint, body) {
  * Poll the results directory for a job's response. Returns the parsed
  * JSON on success, null on timeout. Deletes the result file when read.
  *
- * Polling interval defaults to 50ms — fast enough for sub-second jobs,
+ * Polling interval defaults to 50ms -- fast enough for sub-second jobs,
  * cheap enough to not pin a CPU. For long-running jobs callers can
  * raise pollMs.
  */

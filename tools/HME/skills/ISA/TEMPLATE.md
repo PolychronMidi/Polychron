@@ -6,9 +6,9 @@ created: <YYYY-MM-DDTHH:MM:SSZ>
 updated: <YYYY-MM-DDTHH:MM:SSZ>
 checkpoint: disabled
 # Set checkpoint: enabled to opt this ISA into CheckpointPerISC auto-commits
-# (tools/HME/scripts/isa/checkpoint_hook.py). When enabled, every [ ]→[x]
+# (tools/HME/scripts/isa/checkpoint_hook.py). When enabled, every [ ]->[x]
 # transition fires one git commit referencing the criterion id, sidecar-state
-# tracked at .checkpoint-state.json. Default disabled — enable explicitly
+# tracked at .checkpoint-state.json. Default disabled -- enable explicitly
 # only when criteria are atomic enough that one commit per transition is
 # meaningful, otherwise the per-turn autocommit is the right granularity.
 ---
@@ -25,10 +25,10 @@ checkpoint: disabled
 
 ## Problem
 <!-- What is broken / missing? Describe the current state in concrete
-     terms — symptoms, not diagnoses. Required at E2+. -->
+     terms -- symptoms, not diagnoses. Required at E2+. -->
 
 ## Vision
-<!-- What does done feel like? Experiential intent — euphoric surprise
+<!-- What does done feel like? Experiential intent -- euphoric surprise
      test: when this is right, the user will recognize it instantly.
      Required at E3+. -->
 
@@ -56,7 +56,7 @@ checkpoint: disabled
      Granularity rule: "split until each criterion is one binary tool
      probe."
      ID-stability rule: never renumber on edit. Splits become ISC-N.M.
-     Drops become tombstones (`- [ ] ISC-N: [DROPPED — see Decisions]`).
+     Drops become tombstones (`- [ ] ISC-N: [DROPPED -- see Decisions]`).
      Anti-criteria: at least one `- [ ] ISC-N: Anti: <what must NOT happen>`.
      Antecedents: at least one when goal is experiential.
 
@@ -87,11 +87,11 @@ checkpoint: disabled
 
 | feature | satisfies | depends_on | parallelizable |
 |---------|-----------|------------|----------------|
-| <name> | ISC-N | — | yes/no |
+| <name> | ISC-N | -- | yes/no |
 
 ## Decisions
-<!-- Timestamped log. `refined: …` for ISC tightening. `dead end: …`
-     for paths abandoned. `show your math: …` when soft floors aren't
+<!-- Timestamped log. `refined: ...` for ISC tightening. `dead end: ...`
+     for paths abandoned. `show your math: ...` when soft floors aren't
      met. Any phase. -->
 
 ## Changelog
@@ -105,6 +105,6 @@ checkpoint: disabled
 
 ## Verification
 <!-- Evidence per ISC. One block per criterion at completion. Format:
-     `ISC-N: <probe-type> — <one-line evidence>`. -->
+     `ISC-N: <probe-type> -- <one-line evidence>`. -->
 
-- ISC-1: <probe-type> — <command output / read content / screenshot>
+- ISC-1: <probe-type> -- <command output / read content / screenshot>

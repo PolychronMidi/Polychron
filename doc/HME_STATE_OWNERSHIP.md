@@ -49,62 +49,62 @@ These are the structural risk. Each row needs an explicit strategy.
 ### `log/hme-errors.log`
 
 **Writers:**
-- `tools/HME/activity/universal_pulse.py` — `[universal_pulse]` prefix (self-origin)
-- `tools/HME/proxy/middleware/hme_log_watermark.js` — escalated ERROR lines from `log/hme.log`
-- `tools/HME/proxy/middleware/mcp_fail_scan.js` — agent FAIL strings
-- `tools/HME/hooks/lifecycle/userpromptsubmit.sh` — autocommit failure banners (via `_autocommit.sh`)
-- `tools/HME/hooks/helpers/_autocommit.sh` — direct append on commit failure
-- `tools/HME/hooks/helpers/safety/curl.sh` — `_safe_curl` failure entries
-- `tools/HME/hooks/helpers/safety/misc_safe.sh` — `_safe_*` helper failures
-- `tools/HME/hooks/lifecycle/sessionstart.sh` — broken-hook detection at boot
-- `tools/HME/hooks/_proxy_bridge.sh` — proxy-down LIFESAVER banner (fail-loud channel)
-- `tools/HME/hooks/direct/autocommit-direct.sh` — fail-loud channel for direct autocommit
-- `tools/HME/hooks/direct/proxy-watchdog.sh` — supervisor-abandoned sentinel
-- `tools/HME/hooks/pretooluse/pretooluse_check_pipeline.sh` — pipeline-status fail entries
-- `tools/HME/hooks/direct_dispatch.sh` — proxy-down direct-mode dispatch failures
-- `tools/HME/hooks/log-tool-call.sh` — tool-call telemetry write failures
-- `tools/HME/hooks/helpers/_resolve_bg_stub.sh` — background-stub resolution failures
-- `tools/HME/hooks/lifecycle/postcompact.sh` — post-compact reconciliation failures
-- `tools/HME/hooks/lifecycle/precompact.sh` — pre-compact preservation failures
-- `tools/HME/hooks/lifecycle/stop/_preamble.sh` — Stop-chain preamble setup failures (jq/transcript reads)
-- `tools/HME/hooks/lifecycle/stop/detectors.sh` — Stop-chain detector dispatch failures
-- `tools/HME/hooks/lifecycle/stop/holograph.sh` — Stop-time holograph render failures
-- `tools/HME/hooks/pretooluse/pretooluse_grep.sh` — Grep guard failures
-- `tools/HME/hooks/pretooluse/pretooluse_read.sh` — Read guard failures
-- `tools/HME/hooks/pretooluse/pretooluse_hme_primer.sh` — primer injection failures
-- `tools/HME/hooks/posttooluse/posttooluse_read_kb.sh` — post-Read KB-brief failures
-- `tools/HME/hooks/pretooluse/bash/reader_guards.sh` — reader-guard helper failures (cat/head/tail/sed)
-- `tools/HME/hooks/pretooluse/bash/cwd_rewrite.sh` — cwd-rewrite helper failures
-- `tools/HME/hooks/pretooluse/bash/blackbox_guards.sh` — blackbox-guard helper failures (sudo/curl|sh)
+- `tools/HME/activity/universal_pulse.py` -- `[universal_pulse]` prefix (self-origin)
+- `tools/HME/proxy/middleware/hme_log_watermark.js` -- escalated ERROR lines from `log/hme.log`
+- `tools/HME/proxy/middleware/mcp_fail_scan.js` -- agent FAIL strings
+- `tools/HME/hooks/lifecycle/userpromptsubmit.sh` -- autocommit failure banners (via `_autocommit.sh`)
+- `tools/HME/hooks/helpers/_autocommit.sh` -- direct append on commit failure
+- `tools/HME/hooks/helpers/safety/curl.sh` -- `_safe_curl` failure entries
+- `tools/HME/hooks/helpers/safety/misc_safe.sh` -- `_safe_*` helper failures
+- `tools/HME/hooks/lifecycle/sessionstart.sh` -- broken-hook detection at boot
+- `tools/HME/hooks/_proxy_bridge.sh` -- proxy-down LIFESAVER banner (fail-loud channel)
+- `tools/HME/hooks/direct/autocommit-direct.sh` -- fail-loud channel for direct autocommit
+- `tools/HME/hooks/direct/proxy-watchdog.sh` -- supervisor-abandoned sentinel
+- `tools/HME/hooks/pretooluse/pretooluse_check_pipeline.sh` -- pipeline-status fail entries
+- `tools/HME/hooks/direct_dispatch.sh` -- proxy-down direct-mode dispatch failures
+- `tools/HME/hooks/log-tool-call.sh` -- tool-call telemetry write failures
+- `tools/HME/hooks/helpers/_resolve_bg_stub.sh` -- background-stub resolution failures
+- `tools/HME/hooks/lifecycle/postcompact.sh` -- post-compact reconciliation failures
+- `tools/HME/hooks/lifecycle/precompact.sh` -- pre-compact preservation failures
+- `tools/HME/hooks/lifecycle/stop/_preamble.sh` -- Stop-chain preamble setup failures (jq/transcript reads)
+- `tools/HME/hooks/lifecycle/stop/detectors.sh` -- Stop-chain detector dispatch failures
+- `tools/HME/hooks/lifecycle/stop/holograph.sh` -- Stop-time holograph render failures
+- `tools/HME/hooks/pretooluse/pretooluse_grep.sh` -- Grep guard failures
+- `tools/HME/hooks/pretooluse/pretooluse_read.sh` -- Read guard failures
+- `tools/HME/hooks/pretooluse/pretooluse_hme_primer.sh` -- primer injection failures
+- `tools/HME/hooks/posttooluse/posttooluse_read_kb.sh` -- post-Read KB-brief failures
+- `tools/HME/hooks/pretooluse/bash/reader_guards.sh` -- reader-guard helper failures (cat/head/tail/sed)
+- `tools/HME/hooks/pretooluse/bash/cwd_rewrite.sh` -- cwd-rewrite helper failures
+- `tools/HME/hooks/pretooluse/bash/blackbox_guards.sh` -- blackbox-guard helper failures (sudo/curl|sh)
 
-All entries above this line use the `_safe_*` fail-loud helper pattern: write to `hme-errors.log` only on INTERNAL helper failure (jq parse, py3 timeout, curl error). This keeps the `_safe_*` invariant — the helper either succeeds or self-reports — without each call site needing custom error plumbing.
+All entries above this line use the `_safe_*` fail-loud helper pattern: write to `hme-errors.log` only on INTERNAL helper failure (jq parse, py3 timeout, curl error). This keeps the `_safe_*` invariant -- the helper either succeeds or self-reports -- without each call site needing custom error plumbing.
 
 **Reader:** `tools/HME/hooks/lifecycle/stop/lifesaver.sh` (and `userpromptsubmit.sh` mid-turn)
 
 **Coordination strategy:**
-- Append-only (POSIX guarantees atomic appends ≤ PIPE_BUF for single `write()` calls; all writers should use single-line appends)
+- Append-only (POSIX guarantees atomic appends <= PIPE_BUF for single `write()` calls; all writers should use single-line appends)
 - Source-tag prefix is the discrimination key. lifesaver.sh now classifies entries by tag prefix to demote self-origin to reveal-register (peer-review iter 130 fix). New writers MUST prefix with a recognizable tag and register the tag in `tools/HME/proxy/middleware/_markers.js` HME_SELFORIGIN_*.
 
 ### `tmp/hme-nexus.state`
 
 **Writers:**
-- `tools/HME/proxy/middleware/index.js` — `_nexusMark` from middleware (Edit/Write/Read/HME_*)
-- `tools/HME/hooks/posttooluse/posttooluse_hme_review.sh` — clears EDIT, marks REVIEW
-- `tools/HME/hooks/lifecycle/stop/nexus_audit.sh` — periodic audit/prune
-- `tools/HME/hooks/lifecycle/userpromptsubmit.sh` — turnstart context
-- `tools/HME/hooks/lifecycle/sessionstart.sh` — boot reconciliation
+- `tools/HME/proxy/middleware/index.js` -- `_nexusMark` from middleware (Edit/Write/Read/HME_*)
+- `tools/HME/hooks/posttooluse/posttooluse_hme_review.sh` -- clears EDIT, marks REVIEW
+- `tools/HME/hooks/lifecycle/stop/nexus_audit.sh` -- periodic audit/prune
+- `tools/HME/hooks/lifecycle/userpromptsubmit.sh` -- turnstart context
+- `tools/HME/hooks/lifecycle/sessionstart.sh` -- boot reconciliation
 
 **Coordination strategy:**
 - Append-only writes
 - Periodic prune to bounded line count (`_nexus_prune_clean_edits`)
-- ⚠ **Risk**: `nexus_audit.sh` rewrites the file (truncate + re-write) which can collide with a concurrent middleware append. No `flock` currently. **Open work item**.
+- [!] **Risk**: `nexus_audit.sh` rewrites the file (truncate + re-write) which can collide with a concurrent middleware append. No `flock` currently. **Open work item**.
 
 ### `tmp/hme-tab.txt`
 
 **Writers:**
-- `tools/HME/hooks/posttooluse/posttooluse_write.sh` — file-path append via `_append_file_to_tab` helper
-- `tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh` — KB anchor pending entries
-- `tools/HME/hooks/lifecycle/sessionstart.sh` — boot-time reconciliation
+- `tools/HME/hooks/posttooluse/posttooluse_write.sh` -- file-path append via `_append_file_to_tab` helper
+- `tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh` -- KB anchor pending entries
+- `tools/HME/hooks/lifecycle/sessionstart.sh` -- boot-time reconciliation
 - (other posttooluse hooks calling `_append_file_to_tab`)
 
 **Reader:** `precompact.sh`, `postcompact.sh` for compaction-time context

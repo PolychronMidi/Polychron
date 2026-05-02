@@ -44,13 +44,13 @@ results.push(test('passthrough on non-demand output', () => {
 }));
 
 results.push(test('NEXUS block preserved unchanged (no rewrite)', () => {
-  const raw = '{"decision":"block","reason":"NEXUS — 1 unreviewed edit(s). Run i/review mode=forget."}';
+  const raw = '{"decision":"block","reason":"NEXUS -- 1 unreviewed edit(s). Run i/review mode=forget."}';
   const out = rewriter.rewriteStopOutput(raw);
   assert.strictEqual(out, raw, 'NEXUS block must NOT be rewritten -- the directive content must reach the agent');
 }));
 
 results.push(test('LIFESAVER banner preserved unchanged (no rewrite)', () => {
-  const raw = '🚨 LIFESAVER — ERRORS FIRED DURING THIS TURN';
+  const raw = '[ALERT] LIFESAVER -- ERRORS FIRED DURING THIS TURN';
   const out = rewriter.rewriteStopOutput(raw);
   assert.strictEqual(out, raw, 'LIFESAVER banner must NOT be rewritten -- alert content must reach the agent');
 }));
@@ -72,7 +72,7 @@ results.push(test('feature flag HME_DOMINANCE=0 also passthrough (regression: wa
   process.env.HME_DOMINANCE = '0';
   delete require.cache[require.resolve('./middleware/dominance_response_rewriter')];
   const r2 = require('./middleware/dominance_response_rewriter');
-  const raw = '{"decision":"block","reason":"NEXUS — 1 unreviewed edit(s)."}';
+  const raw = '{"decision":"block","reason":"NEXUS -- 1 unreviewed edit(s)."}';
   const out = r2.rewriteStopOutput(raw);
   assert.strictEqual(out, raw, 'with flag=0, output must be unchanged');
   process.env.HME_DOMINANCE = oldFlag;

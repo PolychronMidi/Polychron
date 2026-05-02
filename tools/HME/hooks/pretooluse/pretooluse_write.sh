@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true
-# HME PreToolUse: Write — enforce lab rules, block memory saves, detect secrets
+# HME PreToolUse: Write -- enforce lab rules, block memory saves, detect secrets
 INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 CONTENT=$(_safe_jq "$INPUT" '.tool_input.content' '')
 
 # Mid-pipeline src edit block. JS counterpart: block-mid-pipeline-write.
 if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
-  _emit_block "ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT write src/ code mid-pipeline — the pipeline's behavior is being measured against the code state at launch. Wait for completion; use HME tools or edit tooling/docs in the meantime."
+  _emit_block "ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT write src/ code mid-pipeline -- the pipeline's behavior is being measured against the code state at launch. Wait for completion; use HME tools or edit tooling/docs in the meantime."
   exit 2
 fi
 
-# Block writes to the auto-memory directory — HME KB is the canonical
+# Block writes to the auto-memory directory -- HME KB is the canonical
 # place for cross-session knowledge. JS counterpart: block-memory-dir-writes.
 if _policy_enabled block-memory-dir-writes && echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
   _emit_block "BLOCKED: The .claude/projects memory directory is deprecated. Use HME KB instead: i/learn title=\"...\" content=\"...\" category=\"feedback\". Memories that point at behavioral rules belong in CLAUDE.md, not memory/."
@@ -43,14 +43,14 @@ fi
 
 # Hardcoded-project-root guard. Mirrors the Edit-side check in
 # pretooluse_edit.sh. The literal path-to-project string baked into
-# any non-.env / non-README source file is a portability bug —
+# any non-.env / non-README source file is a portability bug --
 # resolve via $PROJECT_ROOT or $CLAUDE_PROJECT_DIR instead.
 if [ -n "${PROJECT_ROOT:-}" ] \
    && echo "$CONTENT" | grep -qF "$PROJECT_ROOT" \
    && echo "$FILE" | grep -qE '\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$' \
    && ! echo "$CONTENT" | grep -qE '"PROJECT_ROOT":[^,}]*"'"$PROJECT_ROOT"'"' \
    && ! echo "$FILE" | grep -qE '(/\.env(\.[a-z]+)?$|/README(\.[a-z]+)?$|/CLAUDE\.md$|/tools/HME/KB/devlog/|/doc/[^/]+\.md$|/doc/archive/)'; then
-  _emit_block "BLOCKED: Write content contains hardcoded project root '$PROJECT_ROOT'. Use \$PROJECT_ROOT (already set by .env via _safety.sh) or \$CLAUDE_PROJECT_DIR (Claude Code env var) — never a host-specific path. The .env file itself is the only legitimate place for the literal path; it's checked-in but each clone overrides it. Exempt files: README, CLAUDE.md, devlog snapshots."
+  _emit_block "BLOCKED: Write content contains hardcoded project root '$PROJECT_ROOT'. Use \$PROJECT_ROOT (already set by .env via _safety.sh) or \$CLAUDE_PROJECT_DIR (Claude Code env var) -- never a host-specific path. The .env file itself is the only legitimate place for the literal path; it's checked-in but each clone overrides it. Exempt files: README, CLAUDE.md, devlog snapshots."
   exit 2
 fi
 
@@ -76,12 +76,12 @@ for i, line in enumerate(content.split('\n'), 1):
         break
 " "")
   if [ -n "$_SPAM_HIT" ]; then
-    _emit_block "BLOCKED: Write content contains a run of 4+ identical decoration characters ($_SPAM_HIT). Visual-decoration spam (runs of dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing) is banned. Use plain text; normalize markdown table separators to 3 dashes per cell; demote headings to depth ≤3. Append the literal token spam-ok on a line to opt out where genuinely required."
+    _emit_block "BLOCKED: Write content contains a run of 4+ identical decoration characters ($_SPAM_HIT). Visual-decoration spam (runs of dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing) is banned. Use plain text; normalize markdown table separators to 3 dashes per cell; demote headings to depth <=3. Append the literal token spam-ok on a line to opt out where genuinely required."
     exit 2
   fi
 fi
 
-# Block stub/placeholder writes — LLM-generated code with comment-ellipsis
+# Block stub/placeholder writes -- LLM-generated code with comment-ellipsis
 # elision patterns destroys files by replacing real content with placeholder
 # references. JS counterpart: block-comment-ellipsis-stub.
 if _policy_enabled block-comment-ellipsis-stub && echo "$CONTENT" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
@@ -101,12 +101,12 @@ fi
 # Catches: logger.warning(...background...) and logger.warning(...warm...failed/error...) in HME server code.
 if echo "$FILE" | grep -q 'tools/HME/service/server'; then
   if echo "$CONTENT" | grep -qE 'logger\.warning\(.*\b(background|warm.*fail|warm.*error|onnx.*failed|VRAM TIGHT|lazy warm)\b'; then
-    _emit_block "BLOCKED: Expected background failure logged as WARNING — use logger.info. Only critical failures (interactive timeout, HTTP 500) should be WARNING in HME server. See ANTIPATTERN: stderr-to-UI popup spam."
+    _emit_block "BLOCKED: Expected background failure logged as WARNING -- use logger.info. Only critical failures (interactive timeout, HTTP 500) should be WARNING in HME server. See ANTIPATTERN: stderr-to-UI popup spam."
     exit 2
   fi
 fi
 # Enrich: semantic-validate src/ writes via /validate. Blocks on high-confidence
-# bugfix match (score ≥ 0.6); emits category-aware enrichment notice on warnings.
+# bugfix match (score >= 0.6); emits category-aware enrichment notice on warnings.
 if echo "$FILE" | grep -qE '/Polychron/src/'; then
   MODULE=$(_extract_module "$FILE")
   VAL_CACHE="/tmp/hme-write-validate-$(printf '%s' "$MODULE" | sha1sum | cut -c1-16).json"
@@ -147,7 +147,7 @@ except Exception:
   pass
 " 2>/dev/null)
   if [ -n "$WARN_TITLES" ]; then
-    _emit_enrich_allow "Writing to $MODULE — KB rules/antipatterns may apply:
+    _emit_enrich_allow "Writing to $MODULE -- KB rules/antipatterns may apply:
 $WARN_TITLES"
     _streak_tick 10
     exit 0
@@ -155,7 +155,7 @@ $WARN_TITLES"
 fi
 # Auto-brief on Write (mirror of pretooluse_edit.sh): inject hme-read
 # brief as additionalContext when target lives under a tracked tree and
-# hasn't been BRIEFed yet. Does NOT mark BRIEF — preserves read_coverage
+# hasn't been BRIEFed yet. Does NOT mark BRIEF -- preserves read_coverage
 # metric semantics. Emits auto_brief_injected for separate tracking.
 # Disable: HME_AUTO_BRIEF_ON_EDIT=0
 _AUTO_BRIEF_JSON=""
@@ -175,7 +175,7 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
     fi
     if [ "${HME_AUTO_BRIEF_ON_EDIT:-1}" != "0" ] && [ -z "${_AUTO_BRIEF_SKIP:-}" ] \
         && [ -n "$_AUTO_BRIEF_TURN_FILE" ]; then
-      # Fast path via /enrich (~70ms) + file head — same budget as
+      # Fast path via /enrich (~70ms) + file head -- same budget as
       # pretooluse_edit.sh. Write may target a new file (head empty);
       # KB hits alone are still useful in that case.
       _kb_hits=$(curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \

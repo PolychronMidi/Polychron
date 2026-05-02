@@ -16,7 +16,7 @@
  * Distinction from `_processed` dedup: `_processed` is correctness-
  * critical (its absence re-fired onToolResult on historical events,
  * silently corrupting nexus EDIT state). The 5 caches here are
- * performance-only — losing them costs latency, not correctness.
+ * performance-only -- losing them costs latency, not correctness.
  *
  * Usage:
  *   const PersistentMap = require('./_persistent_map');

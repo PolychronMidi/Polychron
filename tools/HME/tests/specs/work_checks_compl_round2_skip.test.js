@@ -1,5 +1,5 @@
 'use strict';
-// Regression tests for the round-2 auto-completeness skip — when the
+// Regression tests for the round-2 auto-completeness skip -- when the
 // assistant's response to round 1 was already "Nothing missed" /
 // "Confirmed nothing remains", round 2 is pure context burn and must
 // NOT fire.
@@ -79,7 +79,7 @@ test('compl-round2-skip: round 2 is suppressed when round-1 response was "Nothin
     assert.strictEqual(counterValues.length, 1, 'one counter slot');
     assert.strictEqual(counterValues[0], 1, 'round 1 advanced counter to 1');
     // Now simulate round-2 trigger: assistant's MOST RECENT message in the
-    // transcript is already "Nothing missed." → skip should fire
+    // transcript is already "Nothing missed." -> skip should fire
     const ctx2 = _ctxStub(sandbox, transcript);
     const result = await policy.run(ctx2);
     assert.strictEqual(result.decision, 'allow', 'round 2 must NOT deny when round-1 was nothing-missed');
@@ -100,7 +100,7 @@ test('compl-round2-skip: round 2 STILL fires when round-1 response was substanti
     await policy.run(ctx1);
     const ctx2 = _ctxStub(sandbox, transcript);
     const result = await policy.run(ctx2);
-    assert.strictEqual(result.decision, 'deny', 'substantive response → round 2 still fires');
+    assert.strictEqual(result.decision, 'deny', 'substantive response -> round 2 still fires');
     assert.ok(result.reason.includes('round 2/2'), 'round 2 deny reason');
   }));
 
@@ -121,5 +121,5 @@ test('compl-round2-skip: long response containing "nothing missed" mid-sentence 
     await policy.run(ctx1);
     const ctx2 = _ctxStub(sandbox, transcript);
     const result = await policy.run(ctx2);
-    assert.strictEqual(result.decision, 'deny', 'long response → round 2 still fires (length gate prevents false skip)');
+    assert.strictEqual(result.decision, 'deny', 'long response -> round 2 still fires (length gate prevents false skip)');
   }));

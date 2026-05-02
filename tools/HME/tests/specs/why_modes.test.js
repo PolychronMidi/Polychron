@@ -1,6 +1,6 @@
 'use strict';
 // Smoke tests for the i/why mode dispatcher. These run the actual
-// scripts via Bash — purpose is to catch dispatch breakage (wrong mode
+// scripts via Bash -- purpose is to catch dispatch breakage (wrong mode
 // routing, missing scripts, syntax errors), not to validate output
 // content (which depends on live state).
 

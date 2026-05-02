@@ -5,37 +5,37 @@
  * Current architecture: NEXUS / LIFESAVER / auto-completeness /
  * exhaust_check fire in the Stop hook chain and emit `decision: block`
  * with prose imperatives the agent must react to on its next turn.
- * Every "🚨 LIFESAVER — ERRORS FIRED" / "NEXUS — N unreviewed edits" /
+ * Every "[ALERT] LIFESAVER -- ERRORS FIRED" / "NEXUS -- N unreviewed edits" /
  * "AUTO-COMPLETENESS INJECT" the agent sees is the tool shouting at
  * the agent.
  *
  * Dominance register: the gate fires internally, its REMEDIATION runs
  * as middleware action, and the agent's next-turn context receives the
- * completed remediation as compact findings — not as a demand.
+ * completed remediation as compact findings -- not as a demand.
  *
  * Concretely for each gate:
  *
- *   NEXUS unreviewed-edits → middleware invokes `i/review mode=forget`
+ *   NEXUS unreviewed-edits -> middleware invokes `i/review mode=forget`
  *     itself, captures warnings, and folds them into a single compact
  *     block injected at the top of the next turn's system context
- *     ("auto-reviewed: 3 warnings — …"). The agent does not get a
+ *     ("auto-reviewed: 3 warnings -- ..."). The agent does not get a
  *     "RUN i/review BEFORE STOPPING" imperative.
  *
- *   LIFESAVER unresolved errors → middleware attempts the standard
+ *   LIFESAVER unresolved errors -> middleware attempts the standard
  *     recovery path (maintenance-flag the window, restart the worker
  *     if appropriate, clear recent_errors, re-probe). If recovery
  *     succeeds silently, the gate's block is SUPPRESSED. If recovery
  *     fails, the gate converts to a compact fault card (no exclamation,
  *     no imperative verbs) appended to system context.
  *
- *   auto-completeness inject → middleware scans the agent's last
+ *   auto-completeness inject -> middleware scans the agent's last
  *     response for deferred items. If the items are auto-fixable (edits
  *     to known paths, re-runs of deterministic tools), it dispatches
  *     them via the existing OVERDRIVE_VIA_SUBAGENT sentinel path. The
  *     agent's next turn sees "auto-continued: <items>" not "enumerate
  *     and do ALL of it".
  *
- *   exhaust_check → same treatment. Deferral phrases trigger silent
+ *   exhaust_check -> same treatment. Deferral phrases trigger silent
  *     follow-up dispatch, not a blocking imperative.
  *
  * The dominance layer's job is REGISTER TRANSLATION: take the underlying
@@ -47,7 +47,7 @@
  * NEXUS additionally invokes a synchronous i/review run (cooldown-gated
  * to one per minute) so the rewritten card can embed actual review
  * findings inline rather than just labeling the trigger. The other
- * three arms emit their register-translated cards directly — the
+ * three arms emit their register-translated cards directly -- the
  * underlying hooks are already doing the detection; the rewriter
  * surfaces it as observation.
  */
@@ -65,31 +65,31 @@ const DOMINANCE_ENABLED = process.env.HME_DOMINANCE === '1';
 // Demand-register markers the gates emit. When seen in a Stop hook
 // response, the dominance layer replaces the block with a compact
 // observation card instead of passing the imperative through.
-// stop.sh output is JSON-encoded (`{"decision":"block","reason":"NEXUS — …"}`),
+// stop.sh output is JSON-encoded (`{"decision":"block","reason":"NEXUS -- ..."}`),
 // so marker phrases live INSIDE a quoted string, not at line-start.
 // Previous `^...` multi-line anchors never matched against real stop.sh
-// output — four of the five demand patterns were effectively dead code,
+// output -- four of the five demand patterns were effectively dead code,
 // letting demand-register imperatives pass through to the agent
 // unchanged despite HME_DOMINANCE=1. Caught by contract test + peer
 // review. Drop the line-start anchors; phrases are distinctive enough.
 const DEMAND_MARKERS = [
-  /🚨 LIFESAVER/,
-  /NEXUS — \d+ unreviewed edit/,
+  /[ALERT] LIFESAVER/,
+  /NEXUS -- \d+ unreviewed edit/,
   /AUTO-COMPLETENESS INJECT/,
   /EXHAUST PROTOCOL VIOLATION/,
   /STOP\. Re-read CLAUDE\.md/,
 ];
 
-// NEXUS auto-review remediation arm — wired per peer-review iter 145.
+// NEXUS auto-review remediation arm -- wired per peer-review iter 145.
 // When the rewriter sees an unreviewed-edit NEXUS, it doesn't just label
-// the demand as "auto-review queued" — it ACTUALLY RUNS the review
+// the demand as "auto-review queued" -- it ACTUALLY RUNS the review
 // synchronously and embeds the result inline. Bounded timeout (10s) so
 // a stuck review can't wedge the Stop hook indefinitely.
 //
 // Rate-limit: one auto-review per COOLDOWN_SEC across all Stop hooks.
 // Without this guard, every Stop hook with NEXUS fires a subprocess
 // that itself spawns a claude --resume subprocess (via dispatch_thread)
-// — potentially every turn, costing real subscription tokens. The
+// -- potentially every turn, costing real subscription tokens. The
 // cooldown is read/written via tmp/hme-dominance-review-cooldown so
 // across-process invocations share state.
 const { execSync } = require('child_process');
@@ -171,7 +171,7 @@ function _translateDemand(_text) {
 module.exports = {
   name: 'dominance_response_rewriter',
 
-  // This middleware doesn't live in the normal proxy response cycle —
+  // This middleware doesn't live in the normal proxy response cycle --
   // it runs in a dedicated "post-stop-hook" path that the hook_bridge
   // calls after assembling stop chain output. Until that path is wired
   // into hook_bridge.js, this module is a no-op stub that can be

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Autocommit — fail-fast-hardened single source of truth.
+# Autocommit -- fail-fast-hardened single source of truth.
 #
 # Why this exists in its own helper:
 #
@@ -21,28 +21,28 @@
 #      scan checks for this file's existence independently of log content.
 #   3. A monotonic attempt counter (_AC_COUNTER) increments on entry,
 #      resets on success. If it climbs to 3+, the AutocommitHealthVerifier
-#      fails the HCI at weight 5.0 — same tier as LifesaverIntegrity.
+#      fails the HCI at weight 5.0 -- same tier as LifesaverIntegrity.
 #   4. Failures are logged to FOUR independent channels in parallel. All
 #      four must fail simultaneously for the error to go silent; any one
 #      surviving reveals the failure.
 #
 # Channels on failure:
-#   A. sticky fail-flag file  → checked every UserPromptSubmit directly
-#   B. hme-errors.log         → LIFESAVER scan picks up new lines
-#   C. stderr                 → _proxy_bridge drops, but visible locally
-#   D. activity bridge        → coherence_violation event, picked up by
+#   A. sticky fail-flag file  -> checked every UserPromptSubmit directly
+#   B. hme-errors.log         -> LIFESAVER scan picks up new lines
+#   C. stderr                 -> _proxy_bridge drops, but visible locally
+#   D. activity bridge        -> coherence_violation event, picked up by
 #                               downstream metrics and the HCI verifier
 #
 # Callers use:
 #   _ac_do_commit "caller-name"
-# and MUST NOT die on its return code — this function owns its own failure
+# and MUST NOT die on its return code -- this function owns its own failure
 # bookkeeping. The return code is informational for the caller only.
 
 # Derive project root via the three reliable strategies:
 #   1. $PROJECT_ROOT (set by _safety.sh before this helper is sourced)
 #   2. $CLAUDE_PROJECT_DIR (set by Claude Code in every hook invocation)
 #   3. Walk up from $BASH_SOURCE[0] looking for .git + src/
-# No host-specific hardcoded fallback — fail loud if all three miss.
+# No host-specific hardcoded fallback -- fail loud if all three miss.
 _AC_SELF="${BASH_SOURCE[0]}"
 _AC_ROOT=""
 if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
@@ -79,7 +79,7 @@ _AC_COUNTER_FAIL_THRESHOLD=3
 #
 # Helper: write a failure to every channel we can reach. Every channel is
 # individually `|| true` guarded because we are the fallback of last
-# resort — we never die for logging reasons.
+# resort -- we never die for logging reasons.
 
 _ac_record_failure() {
   local reason="$*"
@@ -92,7 +92,7 @@ _ac_record_failure() {
   echo "[$ts] $reason" > "$_AC_FAIL_FLAG" 2>/dev/null || true
 
   # Channel B: hme-errors.log for LIFESAVER pickup next UserPromptSubmit.
-  # log/ may not exist — silently create before writing.
+  # log/ may not exist -- silently create before writing.
   mkdir -p "$(dirname "$_AC_ERROR_LOG")" 2>/dev/null || true
   echo "[$ts] [autocommit] $reason" >> "$_AC_ERROR_LOG" 2>/dev/null || true
 
@@ -145,7 +145,7 @@ _ac_success() {
 
 #
 # Core autocommit operation. Returns 0 on success, 1 on failure.
-# Callers MUST append `|| true` at the call site — we own our bookkeeping
+# Callers MUST append `|| true` at the call site -- we own our bookkeeping
 # and the return is informational only. The hook must NOT exit on our
 # failure (the remaining lifecycle work still needs to run).
 #
@@ -156,7 +156,7 @@ _ac_do_commit() {
   local caller="${1:-unknown}"
   _ac_begin
 
-  # Prereq validation — using _AC_ROOT derived from our own path, NOT
+  # Prereq validation -- using _AC_ROOT derived from our own path, NOT
   # from $PROJECT_ROOT. This is load-bearing: the original silent-failure
   # bug was precisely PROJECT_ROOT being unset.
   if [ -z "$_AC_ROOT" ] || [ ! -d "$_AC_ROOT" ]; then
@@ -164,11 +164,11 @@ _ac_do_commit() {
     return 1
   fi
   if [ ! -d "$_AC_ROOT/.git" ]; then
-    _ac_record_failure "[$caller] .git not found at $_AC_ROOT — not a git repo or wrong root"
+    _ac_record_failure "[$caller] .git not found at $_AC_ROOT -- not a git repo or wrong root"
     return 1
   fi
   if [ ! -d "$_AC_ROOT/src" ]; then
-    _ac_record_failure "[$caller] src/ not found at $_AC_ROOT — not a Polychron checkout"
+    _ac_record_failure "[$caller] src/ not found at $_AC_ROOT -- not a Polychron checkout"
     return 1
   fi
 
@@ -179,11 +179,11 @@ _ac_do_commit() {
   # shellcheck disable=SC2094
   exec 9>"$_AC_LOCK_FILE"
   if ! flock -w 30 9 2>/dev/null; then
-    # Proceed without the lock — a silent skip is worse than a race.
+    # Proceed without the lock -- a silent skip is worse than a race.
     _ac_record_failure "[$caller] flock timeout 30s on $_AC_LOCK_FILE (proceeding unlocked)"
   fi
 
-  # git add — failures previously went silently to 2>/dev/null; now captured.
+  # git add -- failures previously went silently to 2>/dev/null; now captured.
   if ! git -C "$_AC_ROOT" add -A >"$_ac_err_buf" 2>&1; then
     _ac_record_failure "[$caller] git add -A failed: $(head -c 400 "$_ac_err_buf" 2>/dev/null | tr '\n' ' ')"
     rm -f "$_ac_err_buf" 2>/dev/null
@@ -200,7 +200,7 @@ _ac_do_commit() {
     exec 9>&-
     return 0
   fi
-  # "nothing to commit" on stdout is not an error — tree matches HEAD.
+  # "nothing to commit" on stdout is not an error -- tree matches HEAD.
   if grep -q "nothing to commit" "$_ac_err_buf" 2>/dev/null; then
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
@@ -229,7 +229,7 @@ _ac_do_commit() {
     # shellcheck source=/dev/null
     source "$_AC_ROOT/tools/HME/hooks/helpers/_nexus.sh" 2>/dev/null
     if declare -F _nexus_mark >/dev/null; then
-      _nexus_mark COMMIT_FAILED "autocommit failed twice — uncommitted changes may exist" 2>/dev/null || true
+      _nexus_mark COMMIT_FAILED "autocommit failed twice -- uncommitted changes may exist" 2>/dev/null || true
     fi
   fi
   rm -f "$_ac_err_buf" 2>/dev/null
@@ -256,7 +256,7 @@ _ac_is_healthy() {
       ''|*[!0-9]*) n=0 ;;
     esac
     if [ "$n" -ge "$_AC_COUNTER_FAIL_THRESHOLD" ]; then
-      echo "autocommit counter at $n (≥$_AC_COUNTER_FAIL_THRESHOLD attempts without success)" >&2
+      echo "autocommit counter at $n (>=$_AC_COUNTER_FAIL_THRESHOLD attempts without success)" >&2
       return 1
     fi
   fi

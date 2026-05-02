@@ -48,13 +48,13 @@ else
   _fail "tools/HME/KB missing or has no lance tables"
 fi
 
-# todos.json ≥ 8 entries
+# todos.json >= 8 entries
 if [ -f tools/HME/KB/todos.json ]; then
   TODO_COUNT=$(python3 -c 'import json; d=json.load(open("tools/HME/KB/todos.json")); print(len(d) if isinstance(d,list) else len(d.get("todos",[])))' 2>/dev/null || echo 0)
   if [ "$TODO_COUNT" -ge 8 ]; then
-    _ok "todos.json has ≥8 entries ($TODO_COUNT)"
+    _ok "todos.json has >=8 entries ($TODO_COUNT)"
   else
-    _fail "todos.json has $TODO_COUNT entries (expected ≥8)"
+    _fail "todos.json has $TODO_COUNT entries (expected >=8)"
   fi
 else
   _fail "tools/HME/KB/todos.json missing"
@@ -65,7 +65,7 @@ MCP_REFS=$(grep -rn "mcp__HME__" tools/HME/hooks/ 2>/dev/null | grep -v -E '(^[^
 if [ -z "$MCP_REFS" ]; then
   _ok "no non-legacy mcp__HME__ references in tools/HME/hooks/"
 else
-  # Filter further — only fail on active-code references, not comments
+  # Filter further -- only fail on active-code references, not comments
   ACTIVE_REFS=$(echo "$MCP_REFS" | grep -v -E '\.sh:[0-9]+:[[:space:]]*#|\.py:[0-9]+:[[:space:]]*#' | grep -v -E "TOOL_NAME.*mcp__HME__|HME_status.*mcp__HME__status" || true)
   if [ -z "$ACTIVE_REFS" ]; then
     _ok "mcp__HME__ references in hooks are legacy-compat only"
@@ -123,7 +123,7 @@ else
   # If the worker is down, the rest of the smoke tests will cascade fail.
   # Print a summary and bail early rather than spamming the log.
   echo
-  echo "Worker unreachable — skipping tool smoke tests. Start the worker and re-run."
+  echo "Worker unreachable -- skipping tool smoke tests. Start the worker and re-run."
   echo
   echo "Summary: $PASS passed, $FAIL failed."
   exit 1
@@ -164,7 +164,7 @@ _tool_check_bg 5 "i/hme-admin action=selftest" ./i/hme-admin action=selftest &
 _tool_check_bg 6 "i/todo action=list" ./i/todo action=list &
 _tool_check_bg 7 "i/hme-read target=conductorState" ./i/hme-read target=conductorState &
 _tool_check_bg 8 "i/hme _mode_pipeline" ./i/hme _mode_pipeline &
-# Slot 9 — verbose selftest, reused for HCI/symlink checks.
+# Slot 9 -- verbose selftest, reused for HCI/symlink checks.
 ( ./i/hme-admin action=selftest modules=verbose > "$SMOKE_TMP/selftest-verbose.out" 2>&1 ) &
 
 wait
@@ -181,7 +181,7 @@ for slot in 1 2 3 4 5 6 7 8; do
   fi
 done
 
-# Slot 9 — parse the verbose selftest output we captured in parallel.
+# Slot 9 -- parse the verbose selftest output we captured in parallel.
 SELFTEST=$(cat "$SMOKE_TMP/selftest-verbose.out" 2>/dev/null)
 if echo "$SELFTEST" | grep -qE 'HCI -- [0-9]+/100'; then
   _ok "selftest reports HCI score"

@@ -8,8 +8,8 @@
 #
 # Consumes the hook INPUT JSON on stdin and prints the (possibly rewritten)
 # JSON on stdout. Behavior:
-#   - If .tool_response doesn't contain a bg-stub → pass through unchanged.
-#   - If it does → extract task-id, locate /tmp/claude-*/*/tasks/<id>.output,
+#   - If .tool_response doesn't contain a bg-stub -> pass through unchanged.
+#   - If it does -> extract task-id, locate /tmp/claude-*/*/tasks/<id>.output,
 #     poll (1s interval, up to max-wait-seconds) for the file to contain
 #     the optional must-contain-marker (or just to be non-empty if no
 #     marker specified). On success, swap .tool_response to the file
@@ -18,10 +18,10 @@
 # Why this exists: when Bash auto-backgrounds a long command, every hook
 # consuming .tool_response sees the useless stub instead of the real
 # output. Centralising the resolution here keeps every HME sub-hook
-# (review, hme_read, learn, …) inheriting the resolved result from a
+# (review, hme_read, learn, ...) inheriting the resolved result from a
 # single code path rather than each re-implementing the wait.
 #
-# Must be invoked WITHIN a set +e block in the caller — this helper uses
+# Must be invoked WITHIN a set +e block in the caller -- this helper uses
 # `|| true` on jq/cat fragments so partial failures don't wedge the pipe.
 
 _rbg_input="$(cat)"
@@ -69,7 +69,7 @@ while [ "$_rbg_waited" -lt "$_rbg_max_wait" ]; do
 done
 
 if [ -z "$_rbg_output_path" ]; then
-  # Timed out — surface diagnostically, pass through original.
+  # Timed out -- surface diagnostically, pass through original.
   echo "[_resolve_bg_stub] task ${_rbg_task_id} unresolved after ${_rbg_max_wait}s${_rbg_must_contain:+ (marker=$_rbg_must_contain)}" >&2
   printf '%s' "$_rbg_input"
   exit 0
@@ -95,7 +95,7 @@ if [ -s "$_rbg_rewrite_err" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_RO
 fi
 rm -f "$_rbg_rewrite_err" 2>/dev/null
 if [ -z "$_rbg_rewritten" ]; then
-  # jq blew up (logged above) — pass through to avoid wedging downstream.
+  # jq blew up (logged above) -- pass through to avoid wedging downstream.
   printf '%s' "$_rbg_input"
   exit 0
 fi

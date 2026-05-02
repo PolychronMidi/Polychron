@@ -27,7 +27,7 @@ function _dirIntentHealthLine() {
     if (c.drifted) parts.push(`${c.drifted} drifted`);
     if (c.invalid) parts.push(`${c.invalid} invalid`);
     if (parts.length === 0) return null;
-    return `dir-intent: ${parts.join(', ')} — run build-dir-intent-index.py to investigate`;
+    return `dir-intent: ${parts.join(', ')} -- run build-dir-intent-index.py to investigate`;
   } catch (_err) {
     return null;
   }
@@ -173,7 +173,7 @@ function _buildStatusContextRaw() {
 
   const lines = ['[HME status]'];
   if (cohLine) lines.push(cohLine);
-  if (editCount >= 5) lines.push(`nexus: ${editCount} unreviewed edits — run review(mode='forget')`);
+  if (editCount >= 5) lines.push(`nexus: ${editCount} unreviewed edits -- run review(mode='forget')`);
   if (dirHealth) lines.push(dirHealth);
   for (const e of errors) lines.push(`error: ${e}`);
   for (const a of activity) lines.push(a.trim());

@@ -4,7 +4,7 @@
 // Several specs (drum_kit_rotator, rhythm_flair) need to mutate
 // `global.validator` / `global.rf` / `global.<index>` to inject test
 // doubles for code that pulls those symbols off the global object at
-// require-time. Doing the mutate-then-restore by hand is fragile — a
+// require-time. Doing the mutate-then-restore by hand is fragile -- a
 // missed restore poisons every later spec in the run.js single-process
 // suite. (Pollution incident 2026-05-01: drum_kit_rotator's stub
 // `validator` lacked `optionalFinite`, breaking metaprofile tests that

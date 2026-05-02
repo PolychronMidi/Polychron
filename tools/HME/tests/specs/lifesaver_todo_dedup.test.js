@@ -101,7 +101,7 @@ test('lifesaver-todo dedup: structurally-different errors stay distinct', () => 
     const result = _runPython(sandbox, `
 from server.tools_analysis.todo import register_todo_from_lifesaver, _load_todos
 import json
-# Different ERROR CLASSES — must NOT collapse.
+# Different ERROR CLASSES -- must NOT collapse.
 register_todo_from_lifesaver("llamacpp_offload_invariant", "GPU1 has 17342 MB free, coder needs ~22049 MB", "CRITICAL")
 register_todo_from_lifesaver("llamacpp_offload_invariant", "model crash: segfault in attention layer", "CRITICAL")
 register_todo_from_lifesaver("rag_proxy", "shim connection refused", "WARNING")
@@ -194,7 +194,7 @@ devlog_dir = os.path.join("${sandbox}", "tools", "HME", "KB", "devlog")
 devlog_files = sorted(os.listdir(devlog_dir)) if os.path.exists(devlog_dir) else []
 print(json.dumps({
   "detected_complete": detection["complete"],
-  "archive_message_present": "📦 Set archived" in out,
+  "archive_message_present": "[BOX] Set archived" in out,
   "devlog_count": len(devlog_files),
   "devlog_filename_pattern": all("test-set-name" in f for f in devlog_files) if devlog_files else False,
   "spec_has_phase_0_placeholder": "### Phase 0: <next initiative" in spec_md,
@@ -202,7 +202,7 @@ print(json.dumps({
   "spec_has_generic_title": spec_md.startswith("# Polychron Active SPEC"),
   "spec_preamble_no_buddy_specific": "buddy_system" not in spec_md and "Co-Buddy Fanout" not in spec_md,
   "spec_no_old_phases": "_Phase 0 complete_" not in spec_md and "_Phase 1 complete_" not in spec_md,
-  "todo_reset_to_fresh": "(empty — populate from the new set" in todo_md,
+  "todo_reset_to_fresh": "(empty -- populate from the new set" in todo_md,
 }))
 `);
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
@@ -293,7 +293,7 @@ test('archive: clear refuses to archive when set is not complete', () => {
     const fs2 = require('fs');
     const p2 = require('path');
     fs2.mkdirSync(p2.join(sandbox, 'doc'), { recursive: true });
-    // Phase has open `[ ]` items — set not complete
+    // Phase has open `[ ]` items -- set not complete
     fs2.writeFileSync(p2.join(sandbox, 'doc', 'SPEC.md'),
       `# SPEC\n\n## Phases\n\n### Phase 0: wip\n\n- [x] [easy] Done item\n- [ ] [hard] Still open\n`
     );
@@ -305,7 +305,7 @@ out = hme_todo(action="clear")
 spec_md = open(os.path.join("${sandbox}", "doc", "SPEC.md")).read()
 import json
 print(json.dumps({
-  "no_archive_message": "📦 Set archived" not in out,
+  "no_archive_message": "[BOX] Set archived" not in out,
   "blocker_message_shown": "Set not yet complete" in out,
   "spec_unchanged": "Still open" in spec_md,
 }))

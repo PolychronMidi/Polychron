@@ -3,8 +3,8 @@
  * Inspect Claude Code's outgoing request payload.
  *
  * When HME_DUMP_SYSTEM_PROMPT=1, writes:
- *   tmp/claude-system-prompt.txt   — formatted view of payload.system
- *   tmp/claude-full-payload.json   — full request body (system + tools +
+ *   tmp/claude-system-prompt.txt   -- formatted view of payload.system
+ *   tmp/claude-full-payload.json   -- full request body (system + tools +
  *                                    messages + model + all params),
  *                                    pretty-printed JSON. Lets the
  *                                    operator see exactly what Anthropic
@@ -12,9 +12,9 @@
  *                                    that live OUTSIDE the system prompt.
  *
  * Position in order.json determines what you see:
- *   - At the TOP of the order array → captures Claude Code's payload
+ *   - At the TOP of the order array -> captures Claude Code's payload
  *     before any HME middleware modifies it (the "raw" view).
- *   - At the BOTTOM → captures the final payload going upstream, including
+ *   - At the BOTTOM -> captures the final payload going upstream, including
  *     all HME injections.
  *
  * Off by default: zero cost when HME_DUMP_SYSTEM_PROMPT is unset or 0.
@@ -55,7 +55,7 @@ module.exports = {
     } catch (err) {
       ctx.warn(`dump_system: write failed: ${err.message}`);
     }
-    // Full-payload dump — see exactly what Anthropic receives, including
+    // Full-payload dump -- see exactly what Anthropic receives, including
     // tool definitions, message history, sampling params. Skips the
     // `messages` array's content text bodies to keep the file under
     // control on large transcripts (we mostly care about the SHAPE,

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Enricher closed-loop efficacy measurement — wired per the original
+ * Enricher closed-loop efficacy measurement -- wired per the original
  * Phase intent + iter 145 anti-pattern fix.
  *
  * Two-pass observer. First pass (`onToolResult`): when an enricher's
@@ -10,7 +10,7 @@
  * with which enrichers fired. Second pass (also `onToolResult` but
  * looking BACKWARD): for the just-completed tool_use, check whether
  * its INPUT references any identifier injected by the prior tool's
- * enricher footers. If yes, the prior enricher was acted-upon —
+ * enricher footers. If yes, the prior enricher was acted-upon --
  * increment its hit/acted counters in
  * tmp/hme-enricher-efficacy-rates.json. The aggregate rates are
  * available to sibling middleware via `getEnricherEfficacy(name)`
@@ -20,7 +20,7 @@
  *   - WRITE side: fire-event log to hme-enricher-efficacy.jsonl
  *   - READ side: per-enricher rate file at hme-enricher-efficacy-rates.json
  *     ({"dir_context": {"fired": N, "acted": M, "rate": M/N}, ...})
- *   - PUBLIC: getEnricherEfficacy(name) → {fired, acted, rate}
+ *   - PUBLIC: getEnricherEfficacy(name) -> {fired, acted, rate}
  *
  * What this is NOT yet (named honestly so the gap is visible):
  *   - Adaptive throttling: enrichers don't yet read their own rates
@@ -29,7 +29,7 @@
  *     next layer. The MEASUREMENT side is now load-bearing.
  *
  * Enricher identifier extractors:
- *   - dir_context: `[HME dir:<name>]` → name as identifier
+ *   - dir_context: `[HME dir:<name>]` -> name as identifier
  *   - edit_context: KB-title quotes, locked-key short forms
  *   - read_context: callers paths, hypothesis IDs
  *   - grep_neighborhood: file paths in the neighborhood footer
@@ -54,7 +54,7 @@ const ENRICHER_MARKERS = {
 // Extractors that return the identifiers each enricher injected. Looked
 // up in the tool_result text after the enricher's marker matched.
 // Identifiers are strings the agent might subsequently reference in a
-// tool_use input — file paths, module/function names, KB titles.
+// tool_use input -- file paths, module/function names, KB titles.
 const IDENTIFIER_EXTRACTORS = {
   // dir name from `[HME dir:<name>]`
   'dir_context': (text) => {
@@ -93,7 +93,7 @@ const IDENTIFIER_EXTRACTORS = {
     while ((m = pathRe.exec(section)) !== null) out.push(m[1]);
     return out.slice(0, 20);
   },
-  // identifiers from the [err] line — function names, file paths
+  // identifiers from the [err] line -- function names, file paths
   'bash_enrichment': (text) => {
     const out = [];
     const idx = text.indexOf('\n[err]');
@@ -110,11 +110,11 @@ const IDENTIFIER_EXTRACTORS = {
   },
 };
 
-// Pending-injection map: tool_use_id → { fired_enrichers, identifiers }.
+// Pending-injection map: tool_use_id -> { fired_enrichers, identifiers }.
 // Populated when a tool_result lands; consumed when the NEXT tool_use's
 // input contains any of the recorded identifiers.
 const _pending = new Map();
-const _MAX_PENDING_AGE_MS = 5 * 60_000; // 5 min — older entries pruned
+const _MAX_PENDING_AGE_MS = 5 * 60_000; // 5 min -- older entries pruned
 
 function _prunePending() {
   const cutoff = Date.now() - _MAX_PENDING_AGE_MS;
@@ -164,7 +164,7 @@ function _recordFire(hits) {
     const tail = lines.slice(-5000).join('\n') + '\n';
     fs.writeFileSync(METRICS + '.tmp', tail);
     fs.renameSync(METRICS + '.tmp', METRICS);
-  } catch (_e) { /* silent-ok: telemetry only — fire log is recoverable */ }
+  } catch (_e) { /* silent-ok: telemetry only -- fire log is recoverable */ }
 }
 
 /**
@@ -255,7 +255,7 @@ module.exports = {
       n_identifiers: identifiers.length,
     });
 
-    // Stash the watch list. If toolUse has no id (rare path), skip —
+    // Stash the watch list. If toolUse has no id (rare path), skip --
     // we can't correlate against the next tool_use without an id.
     const tid = toolUse && toolUse.id;
     if (tid) {

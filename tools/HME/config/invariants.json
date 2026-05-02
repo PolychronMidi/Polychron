@@ -17,12 +17,12 @@
     "kb_freshness": "Warn if no KB entry has been updated within max_age_days days (staleness signal)",
     "shell_output_empty": "Run shell command; pass if stdout is empty, fail if any output produced. Use for git-clean checks.",
     "metric_has_variance": "A pipeline-metric JSON file's field must have >= min_distinct values across its recent history. Catches silent zero-valued-metric cascades where the whole observability substrate reports null/0 because one upstream input is broken.",
-    "correlation_direction": "A named correlation's sign must match expectation (positive|negative) with minimum |r|. The ultimate anti-drift check: detects when HME's self-metric is actively ANTI-correlated with musical outcome — i.e., HME thinks it's improving while the music gets worse. Fires the 'optimization direction is wrong' alarm.",
+    "correlation_direction": "A named correlation's sign must match expectation (positive|negative) with minimum |r|. The ultimate anti-drift check: detects when HME's self-metric is actively ANTI-correlated with musical outcome -- i.e., HME thinks it's improving while the music gets worse. Fires the 'optimization direction is wrong' alarm.",
     "activity_events_balanced": "Paired activity events (start_event + end_event) must fire with matching counts in the recent window. Catches observability regressions where a refactor drops one of a paired emission silently.",
     "activity_field_sanity": "A named field on recent activity events must match an expected regex. Catches garbage-value bugs (e.g. file_written emitting module='<UUID>' from infrastructure files instead of real module basenames).",
-    "same_commit_determinism": "Consecutive pipeline runs from the SAME commit must produce metric values within tolerance. Non-determinism means either random inputs (clock-dependent verifier) or cached state leaking between runs — both invalidate the metric.",
+    "same_commit_determinism": "Consecutive pipeline runs from the SAME commit must produce metric values within tolerance. Non-determinism means either random inputs (clock-dependent verifier) or cached state leaking between runs -- both invalidate the metric.",
     "invariant_chronically_failing": "Escalation: another invariant has been FAILing for N consecutive runs. Catches the meta-pattern where alarms become background noise and never get fixed.",
-    "eslint_concordance_complete": "Single source of truth for JS↔Python rule pairing. Validates that (a) every file in scripts/eslint-rules/*.js (minus index.js) appears in _js_rules with a known status, (b) every entry with status='ported' names a python_invariant id that exists in the invariants list, and (c) no _js_rules entry names a rule file that no longer exists. Replaces the hand-maintained parity table in scripts/eslint-rules/README.md; adding a rule on either side without updating _js_rules fails the battery."
+    "eslint_concordance_complete": "Single source of truth for JS<->Python rule pairing. Validates that (a) every file in scripts/eslint-rules/*.js (minus index.js) appears in _js_rules with a known status, (b) every entry with status='ported' names a python_invariant id that exists in the invariants list, and (c) no _js_rules entry names a rule file that no longer exists. Replaces the hand-maintained parity table in scripts/eslint-rules/README.md; adding a rule on either side without updating _js_rules fails the battery."
   },
   "_js_rules": {
     "_comment": "Concordance map between custom ESLint rules (scripts/eslint-rules/*.js) and their Python invariants. Status values: 'ported' = has a Python equivalent registered under python_invariant; 'js_only' = architecturally JS-specific (composition engine, CommonJS, JS globals) or covered by Python language/tooling conventions (PEP8, raise semantics). This block is the source of truth for the README parity table and is validated by the eslint_concordance_complete invariant.",
@@ -30,7 +30,7 @@
       {"name": "no-empty-catch", "status": "ported", "python_invariant": "hme-py-no-silent-catchall", "reason": "Silent `except Exception: pass` is the direct Python analog of an empty catch block."},
       {"name": "no-silent-early-return", "status": "ported", "python_invariant": "hme-py-no-silent-fallback", "reason": "Silent `except Exception: return <empty default>` without a logger call is the Python form of the R33-class silent-failure pattern."},
       {"name": "no-non-ascii", "status": "ported", "python_invariant": "hme-py-no-non-ascii", "reason": "Same copy-paste failure mode (NBSP, curly quotes, zero-width spaces) in Python source. Python port uses an expanded INTENTIONAL_UNICODE allowlist for legitimate typography in docstrings."},
-      {"name": "no-doubled-fallback", "status": "ported", "python_invariant": "hme-py-no-doubled-fallback", "reason": "`dict.get(k, DEFAULT) or X` silently coerces legitimate falsy values — same class of bug as the regimeClassifier 0→0.5 tension incident that motivated the JS rule."},
+      {"name": "no-doubled-fallback", "status": "ported", "python_invariant": "hme-py-no-doubled-fallback", "reason": "`dict.get(k, DEFAULT) or X` silently coerces legitimate falsy values -- same class of bug as the regimeClassifier 0->0.5 tension incident that motivated the JS rule."},
       {"name": "no-or-fallback-on-config-read", "status": "conventions_cover", "python_invariant": null, "reason": "Partial coverage via hme-py-no-os-environ (forces ENV.get() helper) and hme-py-no-doubled-fallback (catches the .get(k, D) or X variant). Python has no equivalent to the JS `_cc`/`_atsc` config-section naming convention, so a strict port would be noisy on legitimate `.get(k) or {}` idioms."},
       {"name": "only-error-throws", "status": "js_only", "python_invariant": null, "reason": "Python's `raise` statement already requires a BaseException subclass at runtime; raising a literal raises TypeError immediately. No static check needed."},
       {"name": "case-conventions", "status": "js_only", "python_invariant": null, "reason": "Python has PEP8 (snake_case for functions/vars, PascalCase for classes) enforced by ruff/flake8/black. Not re-enforcing in the battery."},
@@ -66,7 +66,7 @@
     },
     {
       "id": "hooks-registered",
-      "description": "Every TOP-LEVEL hook script (the ones the proxy dispatcher calls directly) must be referenced in tools/HME/proxy/hook_bridge.js. Sub-dispatched scripts (posttooluse_addknowledge.sh, posttooluse_hme_*.sh, posttooluse_write.sh, posttooluse_agent.sh, pretooluse_check_pipeline.sh) are invoked from within other hooks based on CMD contents, not dispatched directly — they're excluded from this check and verified separately by the scripts that call them.",
+      "description": "Every TOP-LEVEL hook script (the ones the proxy dispatcher calls directly) must be referenced in tools/HME/proxy/hook_bridge.js. Sub-dispatched scripts (posttooluse_addknowledge.sh, posttooluse_hme_*.sh, posttooluse_write.sh, posttooluse_agent.sh, pretooluse_check_pipeline.sh) are invoked from within other hooks based on CMD contents, not dispatched directly -- they're excluded from this check and verified separately by the scripts that call them.",
       "type": "files_referenced",
       "glob": "tools/HME/hooks/**/*.sh",
       "exclude": [
@@ -96,7 +96,7 @@
     },
     {
       "id": "eslint-concordance-complete",
-      "description": "Single source of truth for ESLint-rule <-> Python-invariant pairing lives in invariants.json under _js_rules. Every file in scripts/eslint-rules/*.js (minus index.js) must appear there with a known status; every status='ported' entry must name a python_invariant id that exists; no _js_rules entry may point to a deleted rule file. Guards against drift between the two sides — adding a rule on either side without updating the concordance fails the battery.",
+      "description": "Single source of truth for ESLint-rule <-> Python-invariant pairing lives in invariants.json under _js_rules. Every file in scripts/eslint-rules/*.js (minus index.js) must appear there with a known status; every status='ported' entry must name a python_invariant id that exists; no _js_rules entry may point to a deleted rule file. Guards against drift between the two sides -- adding a rule on either side without updating the concordance fails the battery.",
       "type": "eslint_concordance_complete",
       "severity": "error"
     },
@@ -206,7 +206,7 @@
     },
     {
       "id": "proxy-fail-scan-exists",
-      "description": "FAIL-scan middleware must exist in the proxy (moved from log-tool-call.sh after the MCP decoupling — log-tool-call.sh itself is now a stub)",
+      "description": "FAIL-scan middleware must exist in the proxy (moved from log-tool-call.sh after the MCP decoupling -- log-tool-call.sh itself is now a stub)",
       "type": "patterns_all_in_file",
       "path": "tools/HME/proxy/middleware/mcp_fail_scan.js",
       "patterns": [
@@ -260,7 +260,7 @@
     },
     {
       "id": "hme-http-handlers-exist",
-      "description": "HTTP handlers + store modules must exist — absorbed into worker.py after the shim split (was hme_http.py pre-decoupling)",
+      "description": "HTTP handlers + store modules must exist -- absorbed into worker.py after the shim split (was hme_http.py pre-decoupling)",
       "type": "file_exists",
       "path": "tools/HME/service/hme_http_handlers.py",
       "severity": "error"
@@ -447,7 +447,7 @@
     },
     {
       "id": "hooks-json-points-to-bridge",
-      "description": "hooks.json must route every event through _proxy_bridge.sh — the single entrypoint that forwards lifecycle events to the proxy-side dispatcher",
+      "description": "hooks.json must route every event through _proxy_bridge.sh -- the single entrypoint that forwards lifecycle events to the proxy-side dispatcher",
       "type": "pattern_in_file",
       "path": "tools/HME/hooks/hooks.json",
       "pattern": "_proxy_bridge\\.sh",
@@ -548,7 +548,7 @@
     },
     {
       "id": "hme-py-no-non-ascii",
-      "description": "Python equivalent of ESLint local/no-non-ascii (scripts/eslint-rules/no-non-ascii.js). HME Python source must be ASCII except for an allowlist of legitimate typography (em-dash, arrows, box-drawing, Greek, accented Latin) declared in check-py-no-non-ascii.py. Blocks the copy-paste failure mode: NBSP, curly quotes, zero-width spaces, BOM — invisible chars that break regex matching and produce diff noise.",
+      "description": "Python equivalent of ESLint local/no-non-ascii (scripts/eslint-rules/no-non-ascii.js). HME Python source must be ASCII except for an allowlist of legitimate typography (em-dash, arrows, box-drawing, Greek, accented Latin) declared in check-py-no-non-ascii.py. Blocks the copy-paste failure mode: NBSP, curly quotes, zero-width spaces, BOM -- invisible chars that break regex matching and produce diff noise.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-py-no-non-ascii.py tools/HME/service",
       "js_equivalent": "no-non-ascii",
@@ -556,7 +556,7 @@
     },
     {
       "id": "hme-py-no-doubled-fallback",
-      "description": "Python equivalent of ESLint local/no-doubled-fallback (scripts/eslint-rules/no-doubled-fallback.js). Detects `dict.get(key, DEFAULT) or X` where DEFAULT is nontrivial — either the outer `or` is dead code OR it silently rewrites legitimate falsy values (empty list, 0, False) to X. The JS rule caught a regimeClassifier bug where every real 0-tension reading got coerced to 0.5; same class of bug in Python.",
+      "description": "Python equivalent of ESLint local/no-doubled-fallback (scripts/eslint-rules/no-doubled-fallback.js). Detects `dict.get(key, DEFAULT) or X` where DEFAULT is nontrivial -- either the outer `or` is dead code OR it silently rewrites legitimate falsy values (empty list, 0, False) to X. The JS rule caught a regimeClassifier bug where every real 0-tension reading got coerced to 0.5; same class of bug in Python.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-py-no-doubled-fallback.py tools/HME/service",
       "js_equivalent": "no-doubled-fallback",
@@ -982,7 +982,7 @@
     },
     {
       "id": "proxy-extended-injections",
-      "description": "Proxy must inject open hypotheses and semantic drift warnings alongside jurisdiction context (Phase 3.1/3.3 — moved to context.js during the middleware split)",
+      "description": "Proxy must inject open hypotheses and semantic drift warnings alongside jurisdiction context (Phase 3.1/3.3 -- moved to context.js during the middleware split)",
       "type": "patterns_all_in_file",
       "path": "tools/HME/proxy/context.js",
       "patterns": [
@@ -1001,7 +1001,7 @@
     },
     {
       "id": "coherence-has-variance",
-      "description": "hme_coherence must show non-degenerate variance across rounds. If it stays at a single value (usually 0) for many rounds, the read_coverage → coherence → musical_correlation → kb_trust cascade is silently broken. This invariant caught a months-long regression where the activity_log middleware emitted file_written events without the hme_read_prior field. min_distinct=3 because 0/1 outliers can occur even when upstream is broken — we need real motion to declare the cascade healthy.",
+      "description": "hme_coherence must show non-degenerate variance across rounds. If it stays at a single value (usually 0) for many rounds, the read_coverage -> coherence -> musical_correlation -> kb_trust cascade is silently broken. This invariant caught a months-long regression where the activity_log middleware emitted file_written events without the hme_read_prior field. min_distinct=3 because 0/1 outliers can occur even when upstream is broken -- we need real motion to declare the cascade healthy.",
       "type": "metric_has_variance",
       "path": "output/metrics/hme-musical-correlation.json",
       "history_key": "history",
@@ -1023,7 +1023,7 @@
     },
     {
       "id": "clap-tension-has-variance",
-      "description": "CLAP tension query peak must vary across rounds. Flat CLAP means the CLAP model isn't sensitive to the compositional motion the pipeline produces — either broken inference or the compositions are all semantically identical to CLAP.",
+      "description": "CLAP tension query peak must vary across rounds. Flat CLAP means the CLAP model isn't sensitive to the compositional motion the pipeline produces -- either broken inference or the compositions are all semantically identical to CLAP.",
       "type": "metric_has_variance",
       "path": "output/metrics/hme-musical-correlation.json",
       "history_key": "history",
@@ -1045,7 +1045,7 @@
     },
     {
       "id": "pipeline-start-end-balanced",
-      "description": "Every pipeline_start must be followed by exactly one pipeline_run in the recent activity window. Catches observability regressions where a refactor drops emission of one of the paired events — the pipeline owns its own instrumentation, and a missing emission silently breaks every downstream slicer.",
+      "description": "Every pipeline_start must be followed by exactly one pipeline_run in the recent activity window. Catches observability regressions where a refactor drops emission of one of the paired events -- the pipeline owns its own instrumentation, and a missing emission silently breaks every downstream slicer.",
       "type": "activity_events_balanced",
       "path": "output/metrics/hme-activity.jsonl",
       "start_event": "pipeline_start",
@@ -1056,7 +1056,7 @@
     },
     {
       "id": "pipeline-run-round-balanced",
-      "description": "Every pipeline_run must be paired with a round_complete event in the recent window. R23: window narrowed from 500 to 100 to self-heal faster — a persistent historical imbalance (pre-R17 duplicate emissions) otherwise pins the invariant to old state. At 100 events (~3-4 pipeline pairs), only recent behavior matters.",
+      "description": "Every pipeline_run must be paired with a round_complete event in the recent window. R23: window narrowed from 500 to 100 to self-heal faster -- a persistent historical imbalance (pre-R17 duplicate emissions) otherwise pins the invariant to old state. At 100 events (~3-4 pipeline pairs), only recent behavior matters.",
       "type": "activity_events_balanced",
       "path": "output/metrics/hme-activity.jsonl",
       "start_event": "pipeline_run",
@@ -1068,7 +1068,7 @@
     },
     {
       "id": "file-written-module-sane",
-      "description": "file_written events must carry module names that look like real source file basenames — alphanumeric with underscore/dash/dot, 1-64 chars. Catches infrastructure leaks: LanceDB UUIDs, timestamps, hex strings that indicate the watcher filter is letting noise through.",
+      "description": "file_written events must carry module names that look like real source file basenames -- alphanumeric with underscore/dash/dot, 1-64 chars. Catches infrastructure leaks: LanceDB UUIDs, timestamps, hex strings that indicate the watcher filter is letting noise through.",
       "type": "activity_field_sanity",
       "path": "output/metrics/hme-activity.jsonl",
       "event": "file_written",
@@ -1092,7 +1092,7 @@
     },
     {
       "id": "predictions-log-gap-bounded",
-      "description": "predictions_log_size minus predictions_total measures how many stale predictions linger from previous rounds. Flagged only when gap GROWS round-over-round — transient high gaps from accumulated history (before truncation catches up) are normal. Arc IV retirement candidate if this keeps flapping; otherwise converges after 2-3 rounds of the 50-line cap taking effect.",
+      "description": "predictions_log_size minus predictions_total measures how many stale predictions linger from previous rounds. Flagged only when gap GROWS round-over-round -- transient high gaps from accumulated history (before truncation catches up) are normal. Arc IV retirement candidate if this keeps flapping; otherwise converges after 2-3 rounds of the 50-line cap taking effect.",
       "type": "shell_output_empty",
       "shell": "python3 -c \"import json, os; p='output/metrics/hme-prediction-accuracy.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; rds=d.get('rounds') or []; print('insufficient history') if len(rds) < 2 else None; gap=lambda r: (r.get('predictions_log_size') or 0)-(r.get('predictions_total') or 0); cur=gap(rds[-1]) if rds else 0; prev=gap(rds[-2]) if len(rds)>=2 else 0; print(f'gap rose: {prev}->{cur} (threshold: +20)') if cur - prev > 20 else None\"",
       "severity": "warning"
@@ -1118,21 +1118,21 @@
     },
     {
       "id": "legacy-override-chronically-zero",
-      "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at error severity after 5 zero rounds — by that point the signal is strong enough to demand action, not just warn. Escalation path: instrument (R11) → warn (3 rounds) → error (5 rounds). Retired ids (those in legacy-override-retirement-log.jsonl) are excluded so historical zero rows don't flag already-removed overrides. entropy-cap-0.19 (R13) and phase-trust-seesaw (R15) were the first retirements via this pattern.",
+      "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at error severity after 5 zero rounds -- by that point the signal is strong enough to demand action, not just warn. Escalation path: instrument (R11) -> warn (3 rounds) -> error (5 rounds). Retired ids (those in legacy-override-retirement-log.jsonl) are excluded so historical zero rows don't flag already-removed overrides. entropy-cap-0.19 (R13) and phase-trust-seesaw (R15) were the first retirements via this pattern.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='output/metrics/legacy-override-history.jsonl'; rp='output/metrics/legacy-override-retirement-log.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; retired={json.loads(l).get('id') for l in open(rp) if l.strip() and json.loads(l).get('action') != 'keep'} if os.path.isfile(rp) else set(); ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; ids -= retired; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds — RETIRE: '+i for i in zero))\"",
+      "shell": "python3 -c \"import json, os; p='output/metrics/legacy-override-history.jsonl'; rp='output/metrics/legacy-override-retirement-log.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; retired={json.loads(l).get('id') for l in open(rp) if l.strip() and json.loads(l).get('action') != 'keep'} if os.path.isfile(rp) else set(); ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; ids -= retired; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds -- RETIRE: '+i for i in zero))\"",
       "severity": "error"
     },
     {
       "id": "hypermeta-legacy-overrides-covered",
-      "description": "Every LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js must match at least one call site in SpecialCaps source. An id with zero matches means its detector regex drifted (variable renamed, refactored out, etc.) — silently disarming the jurisdiction gate. registeredByLegacyId must have a positive count for every allowlisted id.",
+      "description": "Every LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js must match at least one call site in SpecialCaps source. An id with zero matches means its detector regex drifted (variable renamed, refactored out, etc.) -- silently disarming the jurisdiction gate. registeredByLegacyId must have a positive count for every allowlisted id.",
       "type": "shell_output_empty",
       "shell": "python3 -c \"import json; d=json.load(open('output/metrics/hypermeta-jurisdiction.json')); reg=d.get('registeredByLegacyId',{}); legacy=d.get('legacyOverrides',[]); missing=[l['id'] for l in legacy if reg.get(l['id'],0)==0]; print('\\n'.join('legacy id has zero matches: '+m for m in missing))\"",
       "severity": "error"
     },
     {
       "id": "no-invariant-chronically-failing",
-      "description": "Meta-invariant: another invariant must not have been FAILing for ≥10 consecutive runs. Catches the meta-pattern where alarms become background noise and never get addressed.",
+      "description": "Meta-invariant: another invariant must not have been FAILing for >=10 consecutive runs. Catches the meta-pattern where alarms become background noise and never get addressed.",
       "type": "invariant_chronically_failing",
       "path": "output/metrics/hme-invariant-history.json",
       "min_streak": 10,
@@ -1140,7 +1140,7 @@
     },
     {
       "id": "coherence-tracks-musical-outcome",
-      "description": "The ultimate anti-drift check: hme_coherence must be at least WEAKLY positively correlated with the musical verdict, not flat and not inverse. A strongly negative correlation means HME's process discipline is actively hurting the music — the whole optimization direction is wrong. This invariant is INERT when the correlation is degenerate (that's covered by coherence-has-variance); it only fires once there's enough signal to judge direction.",
+      "description": "The ultimate anti-drift check: hme_coherence must be at least WEAKLY positively correlated with the musical verdict, not flat and not inverse. A strongly negative correlation means HME's process discipline is actively hurting the music -- the whole optimization direction is wrong. This invariant is INERT when the correlation is degenerate (that's covered by coherence-has-variance); it only fires once there's enough signal to judge direction.",
       "type": "correlation_direction",
       "path": "output/metrics/hme-musical-correlation.json",
       "correlations_key": "correlations",
@@ -1152,28 +1152,28 @@
     },
     {
       "id": "envelope-shift-bounded",
-      "description": "R22 #5: envelope-shift is the center-of-mass movement of the legendary state distribution across first-half vs second-half of accumulated snapshots. average_relative_shift > 0.5 means the 'normal' state itself is drifting fast — distinct from single-round drift (which Arc III's legendary-drift-bounded catches). Large envelope shift = regime change, not anomaly.",
+      "description": "R22 #5: envelope-shift is the center-of-mass movement of the legendary state distribution across first-half vs second-half of accumulated snapshots. average_relative_shift > 0.5 means the 'normal' state itself is drifting fast -- distinct from single-round drift (which Arc III's legendary-drift-bounded catches). Large envelope shift = regime change, not anomaly.",
       "type": "shell_output_empty",
       "shell": "python3 -c \"import json, os; p='output/metrics/hme-envelope-shift.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; shift=d.get('average_relative_shift'); print(f'envelope shift {shift} > 0.5 (regime change), top field: {d.get(\\\"top_shifted_fields\\\",[{}])[0].get(\\\"field\\\",\\\"?\\\")}') if isinstance(shift, (int, float)) and shift > 0.5 else None\"",
       "severity": "warning"
     },
     {
       "id": "cross-arc-hidden-drift-detector",
-      "description": "R22 #10: fires specifically when Arc I says consensus is LOW (substrates agree) AND Arc III says drift IS DETECTED AND Arc IV says invariants healthy. This combination means 'state has drifted but every substrate voter missed it' — the exact hidden-drift scenario Arc III was designed for. Distinct from any single-arc invariant.",
+      "description": "R22 #10: fires specifically when Arc I says consensus is LOW (substrates agree) AND Arc III says drift IS DETECTED AND Arc IV says invariants healthy. This combination means 'state has drifted but every substrate voter missed it' -- the exact hidden-drift scenario Arc III was designed for. Distinct from any single-arc invariant.",
       "type": "shell_output_empty",
       "shell": "python3 -c \"import json, os; c=json.load(open('output/metrics/hme-consensus.json')) if os.path.isfile('output/metrics/hme-consensus.json') else {}; d=json.load(open('output/metrics/hme-legendary-drift.json')) if os.path.isfile('output/metrics/hme-legendary-drift.json') else {}; hit=c.get('divergence') == 'low' and d.get('status') == 'drift_detected'; print(f'hidden drift: consensus-low divergence BUT drift detected (score {d.get(\\\"drift_score\\\")}). Substrates all report healthy while state has departed envelope.') if hit else None\"",
       "severity": "error"
     },
     {
       "id": "legendary-drift-bounded",
-      "description": "Arc III: current round's HME state must stay within 2σ envelope of prior legendary rounds (mean |z-score| across numeric state fields < 2.0). Preemptive detection: fires BEFORE the listening verdict fails, catching drift toward non-legendary territory. Reads metrics/hme-legendary-drift.json. Inert until envelope is computable (5+ snapshots).",
+      "description": "Arc III: current round's HME state must stay within 2sigma envelope of prior legendary rounds (mean |z-score| across numeric state fields < 2.0). Preemptive detection: fires BEFORE the listening verdict fails, catching drift toward non-legendary territory. Reads metrics/hme-legendary-drift.json. Inert until envelope is computable (5+ snapshots).",
       "type": "shell_output_empty",
       "shell": "python3 -c \"import json, os; p='output/metrics/hme-legendary-drift.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; outs=','.join(o.get('field','') for o in d.get('outliers',[])[:3]); print(f'drift={d.get(\\\"drift_score\\\")} > {d.get(\\\"drift_threshold\\\")} top_outliers=[{outs}]') if d.get('status') == 'drift_detected' else None\"",
       "severity": "warning"
     },
     {
       "id": "patterns-have-action-on-match",
-      "description": "Arc II: every matched pattern in metrics/hme-pattern-matches.json must carry non-empty action_summary + action_steps. A pattern that triggers without defining what to do is decorative — it flags a condition but gives the agent no script to run. The registry's value is action-grounding, not just condition-detection.",
+      "description": "Arc II: every matched pattern in metrics/hme-pattern-matches.json must carry non-empty action_summary + action_steps. A pattern that triggers without defining what to do is decorative -- it flags a condition but gives the agent no script to run. The registry's value is action-grounding, not just condition-detection.",
       "type": "shell_output_empty",
       "shell": "python3 -c \"import json, os; p='output/metrics/hme-pattern-matches.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; bad=[m['id'] for m in d.get('matches',[]) if not m.get('action_summary') or not m.get('action_steps')]; print('\\n'.join('pattern matched without action: '+i for i in bad))\"",
       "severity": "error"
@@ -1187,14 +1187,14 @@
     },
     {
       "id": "consensus-not-divergent",
-      "description": "Arc I: cross-substrate consensus. Fires when divergence='high' (stdev > 0.4). R24 #5: suppresses the warning when the same outlier voter has persisted for 3+ consecutive rounds AND listening verdict remains legendary — a stable dissent is an accepted regime state, not a regression. New divergences and voter changes still fire.",
+      "description": "Arc I: cross-substrate consensus. Fires when divergence='high' (stdev > 0.4). R24 #5: suppresses the warning when the same outlier voter has persisted for 3+ consecutive rounds AND listening verdict remains legendary -- a stable dissent is an accepted regime state, not a regression. New divergences and voter changes still fire.",
       "type": "shell_output_empty",
       "shell": "python3 -c \"import json, os; p='output/metrics/hme-consensus.json'; ts='output/metrics/hme-arc-timeseries.jsonl'; d=json.load(open(p)) if os.path.isfile(p) else {}; rows=[json.loads(l) for l in open(ts)] if os.path.isfile(ts) else []; tail=rows[-2:] if len(rows)>=2 else []; cur_outs=sorted(o.get('voter','') for o in d.get('outliers',[])); persistent=len(tail)==2 and all(sorted(r.get('arc_i',{}).get('outlier_voters') or []) == cur_outs for r in tail) and len(cur_outs)>0; outs=','.join(cur_outs); print(f'consensus divergent (new): stdev={d.get(\\\"stdev\\\")} mean={d.get(\\\"mean\\\")} outliers=[{outs}]') if d.get('divergence') == 'high' and not persistent else None\"",
       "severity": "warning"
     },
     {
       "id": "coherence-tracks-hci",
-      "description": "Fallback anchor for coherence-tracks-musical-outcome. verdict_numeric collapses to 1.0 for every STABLE run (most rounds), making its correlation permanently degenerate. hci has real variance (94.7→96.5 across recent rounds); hme_coherence correlated with hci_normalized is the working alternative. Inert until both metrics have 3+ distinct values.",
+      "description": "Fallback anchor for coherence-tracks-musical-outcome. verdict_numeric collapses to 1.0 for every STABLE run (most rounds), making its correlation permanently degenerate. hci has real variance (94.7->96.5 across recent rounds); hme_coherence correlated with hci_normalized is the working alternative. Inert until both metrics have 3+ distinct values.",
       "type": "correlation_direction",
       "path": "output/metrics/hme-musical-correlation.json",
       "correlations_key": "correlations",
@@ -1206,7 +1206,7 @@
     },
     {
       "id": "rounds-have-identity",
-      "description": "Every round snapshot must have a round_id so downstream analyzers (intention-gap, reflexivity, trajectory) can cross-reference. Anonymous rounds collapse into unordered history. allow_null=false because null means 'no identity at all' here, not 'cold start' — identity should be present on every single round.",
+      "description": "Every round snapshot must have a round_id so downstream analyzers (intention-gap, reflexivity, trajectory) can cross-reference. Anonymous rounds collapse into unordered history. allow_null=false because null means 'no identity at all' here, not 'cold start' -- identity should be present on every single round.",
       "type": "metric_has_variance",
       "path": "output/metrics/hme-musical-correlation.json",
       "history_key": "history",

@@ -2,7 +2,7 @@
 /**
  * Unified hook-time policy registry. Adapted from FailproofAI's framework
  * (their `BuiltinPolicyDefinition` shape + three-scope config + first-deny-
- * wins evaluator), narrowed to Polychron's enforcement layers 7–11
+ * wins evaluator), narrowed to Polychron's enforcement layers 7-11
  * (PreToolUse / PostToolUse / Stop / proxy middleware).
  *
  * Design intent: every hook-time rule shares the same registration shape
@@ -18,16 +18,16 @@
  * unification plan) for the cross-layer discovery story.
  *
  * Decision shape (matches stop_chain conventions):
- *   ctx.deny(reason)        → block, first-deny-wins
- *   ctx.instruct(message)   → accumulate as additionalContext (where supported)
- *   ctx.allow(message?)     → continue silently (or with optional message)
+ *   ctx.deny(reason)        -> block, first-deny-wins
+ *   ctx.instruct(message)   -> accumulate as additionalContext (where supported)
+ *   ctx.allow(message?)     -> continue silently (or with optional message)
  *
  * Match semantics:
- *   - `events: ['PreToolUse']`        → fires only on PreToolUse hook
- *   - `events: ['PreToolUse','PostToolUse']` → fires on both
- *   - `tools: ['Bash']`               → restricts to Bash tool calls
- *   - `tools: ['Edit','Write','MultiEdit']` → fires on any of those
- *   - `tools` omitted                 → all tools
+ *   - `events: ['PreToolUse']`        -> fires only on PreToolUse hook
+ *   - `events: ['PreToolUse','PostToolUse']` -> fires on both
+ *   - `tools: ['Bash']`               -> restricts to Bash tool calls
+ *   - `tools: ['Edit','Write','MultiEdit']` -> fires on any of those
+ *   - `tools` omitted                 -> all tools
  *
  * Loading:
  *   - Built-in policies live in tools/HME/policies/builtin/*.js

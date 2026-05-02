@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME PostToolUse: `i/learn` dispatch — clear pending KB entries from
+# HME PostToolUse: `i/learn` dispatch -- clear pending KB entries from
 # tab after an ADD call. Only fires when the learn call is an add (title +
-# content provided) — search, remove, list, etc. should not clear the KB tab.
+# content provided) -- search, remove, list, etc. should not clear the KB tab.
 #
 # Called by posttooluse_bash.sh on Bash tool calls matching `i/learn`.
 # Parses title/content/action out of tool_input.command; only clears the tab
@@ -10,12 +10,12 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
-# Fail-fast on CLI transport errors — never clear KB tab if the learn call
+# Fail-fast on CLI transport errors -- never clear KB tab if the learn call
 # didn't actually land. Silent clear here was the class-of-bug pattern the
 # whole MCP decoupling is meant to eliminate.
 TOOL_RESULT=$(_safe_jq "$INPUT" '.tool_response' '')
 if echo "$TOOL_RESULT" | grep -q '^hme-cli:'; then
-  echo "NEXUS: learn CLI failed — KB tab NOT cleared. Investigate worker/shim health before re-running." >&2
+  echo "NEXUS: learn CLI failed -- KB tab NOT cleared. Investigate worker/shim health before re-running." >&2
   exit 0
 fi
 

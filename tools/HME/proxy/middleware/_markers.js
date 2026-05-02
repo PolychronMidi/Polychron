@@ -3,20 +3,20 @@
  * Central registry of cross-component marker strings.
  *
  * Pattern A (from the persistent-thread architectural review): the same
- * fragility shows up across multiple files — a producer emits a string,
+ * fragility shows up across multiple files -- a producer emits a string,
  * a consumer parses it with assumed grammar, and there's no schema or
  * test pinning the two together. Examples surfaced during the review:
  *
  *   - synthesis_reasoning emits `[[HME_AGENT_TASK req_id=<hex>...]]`,
- *     subagent_bridge.js parses `HME reasoning for ([a-f0-9]{12,})` —
+ *     subagent_bridge.js parses `HME reasoning for ([a-f0-9]{12,})` --
  *     two files, no shared constant, recently broken once already.
  *
  *   - context_budget.js regex-matches `[HME dir:`, `[HME:edit]`,
- *     `[HME:read]`, `[err]`, `[HME neighborhood` — each marker owned by
+ *     `[HME:read]`, `[err]`, `[HME neighborhood` -- each marker owned by
  *     a different sibling middleware, none cross-referenced.
  *
  *   - posttooluse_hme_review.sh greps `<!-- HME_REVIEW_VERDICT: ... -->`
- *     emitted from onboarding_chain.emit_review_verdict_marker — a wording
+ *     emitted from onboarding_chain.emit_review_verdict_marker -- a wording
  *     drift on either side silently breaks the parse.
  *
  * Centralizing these here gives every consumer + producer a single source
@@ -30,7 +30,7 @@
  */
 
 const MARKERS = {
-  // Subagent dispatch sentinel — synthesis_reasoning.py emits, the agent
+  // Subagent dispatch sentinel -- synthesis_reasoning.py emits, the agent
   // (or i/thread send) executes, subagent_bridge.js captures the result
   // when Agent path is used.
   HME_AGENT_TASK: {
@@ -43,7 +43,7 @@ const MARKERS = {
     reqIdRegex: /HME reasoning for ([a-f0-9]{12,})\b/,
   },
 
-  // Review verdict — onboarding_chain.emit_review_verdict_marker writes
+  // Review verdict -- onboarding_chain.emit_review_verdict_marker writes
   // an HTML-style comment that posttooluse_hme_review.sh greps to clear
   // EDIT-NEXUS state. Drift in either side hangs the stop chain.
   HME_REVIEW_VERDICT: {
@@ -94,13 +94,13 @@ const MARKERS = {
     sentinel: '[hme auto-brief: <module>]',
   },
 
-  // Scaffolding-warning prefixes — the "detect scaffolding-only warnings
+  // Scaffolding-warning prefixes -- the "detect scaffolding-only warnings
   // and treat verdict as clean" convention. Three sites use the same
   // alternation `(HOOK CHANGE|DOC CHECK|SKIPPED|KB):`. Iter 120 peer-
   // review noted that a single-needle registry entry would miss a drop
   // (e.g. one site removes SKIPPED but the registry only checks for it).
   // Per-term entries force the verifier to confirm ALL FOUR alternation
-  // members survive in ALL THREE sites — drop one anywhere, verifier
+  // members survive in ALL THREE sites -- drop one anywhere, verifier
   // breaks.
   HME_SCAFFOLD_HOOK_CHANGE: {
     producer: 'tools/HME/service/server/tools_analysis/review_unified.py',
@@ -127,7 +127,7 @@ const MARKERS = {
     sentinel: 'SKIPPED',
   },
 
-  // Detector verdict names — produced by run_all.py's per-detector
+  // Detector verdict names -- produced by run_all.py's per-detector
   // printout, consumed by detectors.sh's case statement. Rename of
   // any one side silently defaults downstream gates to "ok". Needle
   // `psycho_stop=` uniquely identifies the verdict-print format.
@@ -137,7 +137,7 @@ const MARKERS = {
     sentinel: 'psycho_stop',
   },
 
-  // Self-origin error tags — added per peer-review iter 130's
+  // Self-origin error tags -- added per peer-review iter 130's
   // observation that hme-errors.log mixes worker/daemon/supervisor
   // failures with agent failures. lifesaver.sh now classifies by
   // these tags to demote self-origin entries to reveal-register

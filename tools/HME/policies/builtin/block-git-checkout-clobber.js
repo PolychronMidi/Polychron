@@ -1,7 +1,7 @@
 'use strict';
 /**
  * Block `git checkout HEAD~N -- .` and `git stash && git checkout`
- * patterns — both can clobber the working tree (including freshly
+ * patterns -- both can clobber the working tree (including freshly
  * popped stashes) and require `git fsck --lost-found` recovery. Use
  * `git show HEAD~N -- <path>` (read-only stdout) or `git worktree add`
  * (isolated checkout) for prior-state inspection.

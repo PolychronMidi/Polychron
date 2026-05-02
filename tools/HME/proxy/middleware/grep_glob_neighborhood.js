@@ -3,14 +3,14 @@
  * Grep/Glob semantic-neighborhood enrichment.
  *
  * When a Grep or Glob result concentrates hits in an unexplored directory
- * (≥3 hits, no prior Read from that dir in the last 20 min), append a
+ * (>=3 hits, no prior Read from that dir in the last 20 min), append a
  * compact directory preview to the tool_result: `ls` of the dir plus each
  * file's first docstring/comment line.
  *
  * Purpose: surface parallel subsystems that search alone wouldn't reveal.
  * Canonical failure this exists to prevent: "I grepped for 'provider', got
  * 9 hits in tools/HME/service/.../synthesis/, didn't realize that's a whole
- * parallel cascade already — wrote a duplicate module from scratch."
+ * parallel cascade already -- wrote a duplicate module from scratch."
  *
  * Explored-directory tracking uses Read tool_results as the explored signal.
  * Enrichment also marks the dir as explored so repeated greps in the same
@@ -28,12 +28,12 @@ const MAX_DIRS_ENRICHED = 2;
 const EXPLORED_TTL_MS = 20 * 60 * 1000;
 
 // Only semantically enrich grep patterns that look like a symbol or
-// architectural concept — skip regex-heavy / path-heavy patterns.
+// architectural concept -- skip regex-heavy / path-heavy patterns.
 const SYMBOL_LIKE_RE = /^[A-Za-z_][A-Za-z0-9_]{2,}$/;
 const FIREWALL_CATEGORIES = new Set(['architecture', 'decision', 'bugfix', 'antipattern', 'constitution']);
 const FIREWALL_MIN_SCORE = 0.5;
 
-// dirPath (absolute) → timestamp ms
+// dirPath (absolute) -> timestamp ms
 const _explored = new Map();
 
 function _markExplored(absDir) {
@@ -93,10 +93,10 @@ function _firstDocLine(filePath) {
     try {
       n = fs.readSync(fd, buf, 0, 600, 0);
     } finally {
-      // Always close — readSync can throw on raced symlinks / EIO and
+      // Always close -- readSync can throw on raced symlinks / EIO and
       // the previous code leaked the fd in that path. Across thousands
       // of grep enrichments this exhausts the proxy's fd budget.
-      try { fs.closeSync(fd); } catch (_) { /* silent-ok: close-after-read — fd was successfully opened, so close is bookkeeping; the read result is already in `buf`. A close failure here (rare: ENOSPC on metadata update) can't corrupt the already-read buffer */ }
+      try { fs.closeSync(fd); } catch (_) { /* silent-ok: close-after-read -- fd was successfully opened, so close is bookkeeping; the read result is already in `buf`. A close failure here (rare: ENOSPC on metadata update) can't corrupt the already-read buffer */ }
     }
     const head = buf.toString('utf8', 0, n);
     // Python triple-quoted docstring at top
@@ -118,7 +118,7 @@ function _firstDocLine(filePath) {
     }
     return '';
   } catch (_e) {
-    /* silent-ok: best-effort enrichment — _firstDocLine is a footer
+    /* silent-ok: best-effort enrichment -- _firstDocLine is a footer
        detail; if the file can't be opened/read, returning '' just
        means this one enrichment hint is missing, not that the
        middleware failed. Caller renders the footer either way. */
@@ -131,7 +131,7 @@ function _buildDirSummary(absDir, budgetBytes) {
   try {
     entries = fs.readdirSync(absDir, { withFileTypes: true });
   } catch (_e) {
-    /* silent-ok: best-effort enrichment — missing dir / permission
+    /* silent-ok: best-effort enrichment -- missing dir / permission
        flap on a stat path returns null, caller skips the dir
        summary. No safety contract depends on this. */
     return null;
@@ -150,7 +150,7 @@ function _buildDirSummary(absDir, budgetBytes) {
       line = `  ${ent.name}/`;
     } else {
       const doc = _firstDocLine(path.join(absDir, ent.name));
-      line = doc ? `  ${ent.name} — ${doc}` : `  ${ent.name}`;
+      line = doc ? `  ${ent.name} -- ${doc}` : `  ${ent.name}`;
     }
     const nextLen = used + line.length + 1; // + newline
     if (nextLen > budgetBytes) break;
@@ -161,7 +161,7 @@ function _buildDirSummary(absDir, budgetBytes) {
   if (lines.length === 0) return null;
   const remaining = files.length - shownCount;
   if (remaining > 0) {
-    const tail = `  … (+${remaining} more)`;
+    const tail = `  ... (+${remaining} more)`;
     if (used + tail.length + 1 <= budgetBytes) {
       lines.push(tail);
     }
@@ -175,7 +175,7 @@ module.exports = {
   async onToolResult({ toolUse, toolResult, ctx }) {
     const name = toolUse.name || '';
 
-    // Read → track its directory as explored; don't enrich.
+    // Read -> track its directory as explored; don't enrich.
     if (name === 'Read') {
       const fp = (toolUse.input && (toolUse.input.file_path || toolUse.input.path)) || '';
       if (fp) {
@@ -190,7 +190,7 @@ module.exports = {
     const text = _textOf(toolResult);
     if (!text) return;
 
-    // Semantic firewall — when the grep pattern is a bare symbol, check if KB
+    // Semantic firewall -- when the grep pattern is a bare symbol, check if KB
     // has a high-signal architecture/bugfix/antipattern entry for it. This
     // catches queries like `couplingMatrix` or `VALIDATED_GLOBALS` before
     // the agent duplicates effort.
@@ -205,7 +205,7 @@ module.exports = {
         const cat = String(e.category ? e.category : '');
         if (score < FIREWALL_MIN_SCORE || !FIREWALL_CATEGORIES.has(cat)) continue;
         const title = String(e.title ? e.title : '').slice(0, 120);
-        if (title) firewallLines.push(`[${cat}] "${title}" — relevant; learn(query='${pattern}') for detail`);
+        if (title) firewallLines.push(`[${cat}] "${title}" -- relevant; learn(query='${pattern}') for detail`);
       }
     }
 
@@ -220,7 +220,7 @@ module.exports = {
       dirCounts.set(dir, (dirCounts.get(dir) || 0) + 1);
     }
 
-    // Unexplored dirs with ≥ MIN_HITS, sorted by hit count descending.
+    // Unexplored dirs with >= MIN_HITS, sorted by hit count descending.
     const hot = [...dirCounts.entries()]
       .filter(([d, n]) => n >= MIN_HITS_PER_DIR && !_isExplored(d))
       .sort((a, b) => b[1] - a[1])

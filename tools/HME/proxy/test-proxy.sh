@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Side test for hme_proxy.js — proves the proxy works WITHOUT touching mainline.
+# Side test for hme_proxy.js -- proves the proxy works WITHOUT touching mainline.
 # Spins up a mock upstream + the proxy, sends a test payload, checks the response.
 # Exit 0 = PASS, exit 1 = FAIL.
 set -euo pipefail
@@ -22,7 +22,7 @@ echo "=== HME Proxy Side Test ==="
 echo ""
 
 # 1. Test --test mode (offline scan, no network)
-echo "Test 1: --test mode (no read → coherence violation)"
+echo "Test 1: --test mode (no read -> coherence violation)"
 RESULT=$(echo '{"model":"claude-sonnet-4-20250514","messages":[{"role":"user","content":"hello"},{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Edit","input":{"file_path":"src/conductor/conductorIntelligence.js","old_string":"a","new_string":"b"}}]}]}' \
   | PROJECT_ROOT="$PROJECT_ROOT" node "$PROXY_SCRIPT" --test 2>/dev/null || true)
 if echo "$RESULT" | grep -q '"violation": true'; then
@@ -34,7 +34,7 @@ else
 fi
 
 echo ""
-echo "Test 2: --test mode (read before write → no violation)"
+echo "Test 2: --test mode (read before write -> no violation)"
 RESULT=$(echo '{"model":"claude-sonnet-4-20250514","messages":[{"role":"user","content":"hello"},{"role":"assistant","content":[{"type":"tool_use","id":"t0","name":"mcp__HME__read","input":{"target":"conductorIntelligence"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"t0","content":"ok"}]},{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Edit","input":{"file_path":"src/conductor/conductorIntelligence.js","old_string":"a","new_string":"b"}}]}]}' \
   | PROJECT_ROOT="$PROJECT_ROOT" node "$PROXY_SCRIPT" --test 2>/dev/null || true)
 if echo "$RESULT" | grep -q '"violation": false'; then
@@ -46,7 +46,7 @@ else
 fi
 
 echo ""
-echo "Test 3: --test mode (no write intent → no violation)"
+echo "Test 3: --test mode (no write intent -> no violation)"
 RESULT=$(echo '{"model":"claude-sonnet-4-20250514","messages":[{"role":"user","content":"hello"},{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"src/conductor/conductorIntelligence.js"}}]}]}' \
   | PROJECT_ROOT="$PROJECT_ROOT" node "$PROXY_SCRIPT" --test 2>/dev/null || true)
 if echo "$RESULT" | grep -q '"violation": false'; then
@@ -59,7 +59,7 @@ fi
 
 # 2. Start mock upstream (echoes back a valid Anthropic-shaped response)
 echo ""
-echo "Test 4: live proxy → mock upstream (round-trip)"
+echo "Test 4: live proxy -> mock upstream (round-trip)"
 node -e "
 const http = require('http');
 const s = http.createServer((req, res) => {
@@ -101,7 +101,7 @@ else
   PASS=false
 fi
 
-# Send a real-shaped payload through proxy → mock upstream
+# Send a real-shaped payload through proxy -> mock upstream
 RESPONSE=$(curl -sf --max-time 5 -X POST "http://127.0.0.1:${PROXY_PORT}/v1/messages" \
   -H "content-type: application/json" \
   -H "x-api-key: test-key" \
@@ -110,7 +110,7 @@ RESPONSE=$(curl -sf --max-time 5 -X POST "http://127.0.0.1:${PROXY_PORT}/v1/mess
   2>/dev/null || echo "FAIL")
 
 if echo "$RESPONSE" | grep -q '"mock response"'; then
-  echo "  PASS: round-trip through proxy → mock upstream works"
+  echo "  PASS: round-trip through proxy -> mock upstream works"
 else
   echo "  FAIL: round-trip failed"
   echo "  got: $RESPONSE"
@@ -275,13 +275,13 @@ else
 fi
 
 # Verify the X-HME-Upstream header was stripped (not forwarded to mock)
-# The mock would need to echo headers back for this — skip for now, trust the code
+# The mock would need to echo headers back for this -- skip for now, trust the code
 
 echo ""
 echo "Test 8: default upstream (no X-HME-Upstream header) goes to Anthropic default"
 # We can't test real Anthropic, but verify the proxy doesn't crash on a
 # request without the header. Since our mock is on a different port than
-# DEFAULT_UPSTREAM, this will 502 — which proves the proxy tried to reach
+# DEFAULT_UPSTREAM, this will 502 -- which proves the proxy tried to reach
 # the default, not the mock.
 RESPONSE=$(curl -sf --max-time 3 -X POST "http://127.0.0.1:${PROXY_PORT}/v1/messages" \
   -H "content-type: application/json" \
@@ -293,7 +293,7 @@ RESPONSE=$(curl -sf --max-time 3 -X POST "http://127.0.0.1:${PROXY_PORT}/v1/mess
 # This should either get a real Anthropic error (auth failed) or a proxy 502.
 # Either way, it proves the proxy routed to the DEFAULT upstream, not the mock.
 if echo "$RESPONSE" | grep -qE '"type":"error"|TIMEOUT_OR_ERROR'; then
-  echo "  PASS: no X-HME-Upstream → routed to default (Anthropic), got expected error/timeout"
+  echo "  PASS: no X-HME-Upstream -> routed to default (Anthropic), got expected error/timeout"
 else
   echo "  INFO: unexpected response (may have hit real Anthropic): $(echo "$RESPONSE" | head -c 200)"
 fi
@@ -312,7 +312,7 @@ mkdir -p "$VALVE_DIR/log"
 mkdir -p "$VALVE_DIR/tools/HME/activity"
 cp "$PROJECT_ROOT/tools/HME/activity/emit.py" "$VALVE_DIR/tools/HME/activity/emit.py" 2>/dev/null || true
 
-# Start proxy pointed at a dead upstream (port 19999 — nothing listening)
+# Start proxy pointed at a dead upstream (port 19999 -- nothing listening)
 HME_PROXY_PORT=$PROXY_PORT \
 HME_PROXY_UPSTREAM_HOST=127.0.0.1 \
 HME_PROXY_UPSTREAM_PORT=19999 \
@@ -323,7 +323,7 @@ PROJECT_ROOT="$VALVE_DIR" \
 PROXY_PID=$!
 sleep 1
 
-# Send 3 requests — each will fail (connection refused to port 19999)
+# Send 3 requests -- each will fail (connection refused to port 19999)
 for i in 1 2 3; do
   curl -sf --max-time 3 -X POST "http://127.0.0.1:${PROXY_PORT}/v1/messages" \
     -H "content-type: application/json" \
@@ -367,9 +367,9 @@ rm -rf "$VALVE_DIR"
 echo ""
 echo "=== Side Test Summary ==="
 if $PASS; then
-  echo "ALL TESTS PASSED — proxy is safe to activate on mainline"
+  echo "ALL TESTS PASSED -- proxy is safe to activate on mainline"
   exit 0
 else
-  echo "SOME TESTS FAILED — DO NOT activate proxy on mainline"
+  echo "SOME TESTS FAILED -- DO NOT activate proxy on mainline"
   exit 1
 fi

@@ -18,10 +18,10 @@ const SET_RHYTHM = path.join(REPO, 'src', 'rhythm', 'setRhythm.js');
 const RHYTHM_VALUES = path.join(REPO, 'src', 'rhythm', 'rhythmValues.js');
 
 // rhythmValues.swingOffset() re-reads `rf` and `m` at CALL time, so we
-// can't withGlobals-scope them around the loader — the test body needs
+// can't withGlobals-scope them around the loader -- the test body needs
 // them visible AFTER load. Validator IS the leak class (its replacement
 // breaks unrelated specs); scope just that one per loader call. The
-// indices/rf/m are legitimately registered as globals by src/utils —
+// indices/rf/m are legitimately registered as globals by src/utils --
 // our test stubs OVERRIDE them per loadRhythmValues call. After-hook
 // restores the real bindings; `_setRfQueue` is test-only so deleted.
 require('../../../../src/utils');

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Buddy system init helper — invoked by sessionstart.sh on every new HME
+# Buddy system init helper -- invoked by sessionstart.sh on every new HME
 # session when .env BUDDY_SYSTEM=1. Spawns BUDDY_COUNT persistent Claude
 # Code subagent sessions whose sids are recorded in tmp/hme-buddy-N.sid
 # (or tmp/hme-buddy.sid for N=1, back-compat with single-buddy era).
@@ -32,7 +32,7 @@ fi
 BUDDY_SYSTEM="${BUDDY_SYSTEM:-1}"
 [ "$BUDDY_SYSTEM" = "0" ] && exit 0
 
-# Hand-off mode flag — resolved early; the short-circuit block runs
+# Hand-off mode flag -- resolved early; the short-circuit block runs
 # AFTER BUDDY_COUNT and _FLOORS are populated below (so it has access
 # to those values when forcing count=1).
 if [ -z "${BUDDY_HANDOFF:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
@@ -50,7 +50,7 @@ if [ -z "${BUDDY_COUNT:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
   [ -n "$_envline" ] && BUDDY_COUNT="${_envline#BUDDY_COUNT=}"
 fi
 BUDDY_COUNT="${BUDDY_COUNT:-1}"
-# Sanity bound — N>10 is almost certainly a typo and would burn quota.
+# Sanity bound -- N>10 is almost certainly a typo and would burn quota.
 case "$BUDDY_COUNT" in
   ''|*[!0-9]*) BUDDY_COUNT=1 ;;
   *)
@@ -60,14 +60,14 @@ case "$BUDDY_COUNT" in
 esac
 
 # Per-buddy model floors (comma-separated, length must equal BUDDY_COUNT).
-# Floor is the MINIMUM tier the buddy will run at — `effective =
+# Floor is the MINIMUM tier the buddy will run at -- `effective =
 # max(item_tier, buddy_floor)` per task. floor=easy means "stay dynamic,
 # accept whatever tier the task carries"; floor=medium forces every easy
 # task UP to medium; floor=hard wastes Opus on every easy task.
 #
 # Special value `auto`:
 #   - When count < 3 (fewer buddies than difficulty levels), all floors
-#     default to `easy` so each buddy stays fully dynamic per task — the
+#     default to `easy` so each buddy stays fully dynamic per task -- the
 #     dispatcher picks the model from the task's tier, not the buddy's.
 #   - When count >= 3 (at least one slot per tier), specialize the first
 #     three slots as [easy, medium, hard] and default extras to `easy`
@@ -98,7 +98,7 @@ fi
 mkdir -p "$_REPO_ROOT/tmp"
 
 # Hand-off paradigm: when BUDDY_HANDOFF=1 and tmp/hme-buddy-primary.sid
-# carries a sid, that session IS the buddy — no fresh `claude -p` spawn.
+# carries a sid, that session IS the buddy -- no fresh `claude -p` spawn.
 # Bootstrap a back-compat tmp/hme-buddy.sid pointer so legacy consumers
 # see the primary. Companion .floor / .effort_floor files are preserved
 # from the primary's metadata, defaulting to easy / low when absent.
@@ -111,7 +111,7 @@ mkdir -p "$_REPO_ROOT/tmp"
 # code path that didn't include the inline mirror.
 if [ "$BUDDY_HANDOFF" = "1" ]; then
   # Hand-off paradigm fundamentally has ONE primary at a time.
-  # Multi-buddy fanout (BUDDY_COUNT>1) is mutually exclusive — force
+  # Multi-buddy fanout (BUDDY_COUNT>1) is mutually exclusive -- force
   # count=1 so a fall-through fresh spawn produces one inaugural
   # primary, not N fresh buddies.
   if [ "$BUDDY_COUNT" -gt 1 ]; then
@@ -119,7 +119,7 @@ if [ "$BUDDY_HANDOFF" = "1" ]; then
     _FLOORS=("${_FLOORS[0]:-easy}")
   fi
   # Auto-retire the previous primary if its context already crosses
-  # BUDDY_RETIRE_PCT — fires BEFORE the HANDOFF short-circuit so a
+  # BUDDY_RETIRE_PCT -- fires BEFORE the HANDOFF short-circuit so a
   # too-full primary can't be inherited; the script then falls through
   # to a fresh spawn. Best-effort (silent on failure); manual
   # `i/handoff auto_retire_check` is always available as the explicit
@@ -153,12 +153,12 @@ if [ "$BUDDY_HANDOFF" = "1" ]; then
       exit 0
     fi
   fi
-  # No primary recorded yet — fall through to legacy spawn path. The
+  # No primary recorded yet -- fall through to legacy spawn path. The
   # _spawn_buddy helper records the spawned sid as the inaugural primary.
   # Defensive: a legacy tmp/hme-buddy.sid from a pre-paradigm session
   # would short-circuit the inaugural spawn (`_spawn_buddy`'s "already
   # active" guard returns early when sid_file is non-empty). Under
-  # HANDOFF=1, primary.sid is the authoritative "buddy alive" signal —
+  # HANDOFF=1, primary.sid is the authoritative "buddy alive" signal --
   # absence of primary.sid means we have no inheritance, so any existing
   # legacy file is stale and must be cleared before fall-through.
   rm -f "$_REPO_ROOT/tmp/hme-buddy.sid" \
@@ -171,13 +171,13 @@ fi
 #   N>1: tmp/hme-buddy-1.sid, tmp/hme-buddy-2.sid, ...
 _spawn_buddy() {
   local slot="$1" floor="$2" sid_file="$3"
-  # Already active — sid file present and non-empty.
+  # Already active -- sid file present and non-empty.
   if [ -f "$sid_file" ] && [ -s "$sid_file" ]; then
     return 0
   fi
   # Spawn delegated to tools/HME/scripts/buddy_spawn.py (the canonical
   # spawn implementation, shared with cmd_ensure_primary in
-  # buddy_handoff.py). SessionStart wants fire-and-forget — we
+  # buddy_handoff.py). SessionStart wants fire-and-forget -- we
   # background and disown so the SessionStart hook returns
   # immediately. The synchronous-spawn caller (ensure_primary) imports
   # buddy_spawn.spawn_buddy directly for a blocking call.

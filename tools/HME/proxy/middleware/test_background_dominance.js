@@ -91,7 +91,7 @@ async function main() {
   const pipeline = require('./index.js');
   pipeline.loadAll();
 
-  //  Scenario 1: bg-stub + allowlisted command + task file present → REPLACE
+  //  Scenario 1: bg-stub + allowlisted command + task file present -> REPLACE
   const realOutput = '# Round Coherence Score\n\nAll good.\n<!-- HME_REVIEW_VERDICT: clean -->\n';
   const { base: base1, outPath: _out1 } = await setupFakeTask('test1abc', realOutput);
   // Wait briefly so mtime is in the past (completion heuristic requires
@@ -114,7 +114,7 @@ async function main() {
   );
   cleanup(base1);
 
-  //  Scenario 2: bg-stub + NON-allowlisted command → PASS THROUGH
+  //  Scenario 2: bg-stub + NON-allowlisted command -> PASS THROUGH
   const payload2 = buildPayload('tu-test-2', 'test2abc', 'ls -la');
   await pipeline.runPipeline(payload2, {}, 'test-session');
   const tr2 = payload2.messages[1].content[0];
@@ -127,13 +127,13 @@ async function main() {
     'scenario 2: skip marker present',
   );
 
-  //  Scenario 3: bg-stub + allowlisted command + task file ABSENT → retry requested
+  //  Scenario 3: bg-stub + allowlisted command + task file ABSENT -> retry requested
   const payload3 = buildPayload('tu-test-3', 'test3missing', 'i/status mode=coherence');
   await pipeline.runPipeline(payload3, {}, 'test-session');
   const tr3 = payload3.messages[1].content[0];
   assert(
     resultText(tr3).includes('unresolved'),
-    'scenario 3: missing task file → unresolved marker',
+    'scenario 3: missing task file -> unresolved marker',
   );
   assert(
     resultText(tr3).includes('will retry on next turn'),

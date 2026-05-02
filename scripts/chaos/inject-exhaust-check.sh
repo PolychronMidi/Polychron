@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Chaos verifier for the exhaust_check detector. Asserts that the closing
-# pattern "Remaining items / TBD: + bullets" gets caught — and that brief
+# pattern "Remaining items / TBD: + bullets" gets caught -- and that brief
 # mentions of TBD without a follow-on bullet enumeration get a pass.
 #
 # Born from the catastrophic failure where I produced exactly that pattern
@@ -40,10 +40,10 @@ for fname in "${!_expected[@]}"; do
   fi
   actual=$(python3 "$_DETECTOR" "$fixture" 2>&1 | tail -1)
   if [ "$actual" = "$expected" ]; then
-    echo "  PASS: $fname → $actual"
+    echo "  PASS: $fname -> $actual"
     _pass=$((_pass + 1))
   else
-    echo "  FAIL: $fname → got '$actual', expected '$expected'"
+    echo "  FAIL: $fname -> got '$actual', expected '$expected'"
     _fail=$((_fail + 1))
   fi
 done
@@ -53,5 +53,5 @@ if [ "$_fail" -gt 0 ]; then
   echo "chaos FAIL: $_fail/$((_pass + _fail)) exhaust_check verifications missed; the detector is broken or weakened"
   exit 1
 fi
-echo "chaos PASS: $_pass/$_pass exhaust_check fixtures produce correct verdict — detector is alive"
+echo "chaos PASS: $_pass/$_pass exhaust_check fixtures produce correct verdict -- detector is alive"
 exit 0

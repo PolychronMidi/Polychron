@@ -31,7 +31,7 @@ test('telemetry: exports the six channels + record', _withSandbox(async (_sb, t)
   assert.ok(t.PATHS && typeof t.PATHS === 'object');
 }));
 
-test('telemetry: info → JSONL append to hme-activity.jsonl', _withSandbox(async (sb, t) => {
+test('telemetry: info -> JSONL append to hme-activity.jsonl', _withSandbox(async (sb, t) => {
   t.info('test_info_event', { foo: 'bar', n: 1 });
   const file = path.join(sb, 'output', 'metrics', 'hme-activity.jsonl');
   assert.ok(fs.existsSync(file), 'info channel must create the activity log');
@@ -43,7 +43,7 @@ test('telemetry: info → JSONL append to hme-activity.jsonl', _withSandbox(asyn
   assert.ok(typeof parsed.ts === 'number');
 }));
 
-test('telemetry: error → human-readable line + JSON tail in hme-errors.log', _withSandbox(async (sb, t) => {
+test('telemetry: error -> human-readable line + JSON tail in hme-errors.log', _withSandbox(async (sb, t) => {
   t.error('test_error_event', { reason: 'something broke', context: 'in unit test' });
   const file = path.join(sb, 'log', 'hme-errors.log');
   assert.ok(fs.existsSync(file), 'error channel must create hme-errors.log');
@@ -54,7 +54,7 @@ test('telemetry: error → human-readable line + JSON tail in hme-errors.log', _
   assert.match(line, /\{"event":"test_error_event"/);
 }));
 
-test('telemetry: metric → JSONL append to hme-hook-latency.jsonl', _withSandbox(async (sb, t) => {
+test('telemetry: metric -> JSONL append to hme-hook-latency.jsonl', _withSandbox(async (sb, t) => {
   t.metric('hook_latency_test', { hook: 'stop', duration_ms: 117 });
   const file = path.join(sb, 'log', 'hme-hook-latency.jsonl');
   assert.ok(fs.existsSync(file));
@@ -64,7 +64,7 @@ test('telemetry: metric → JSONL append to hme-hook-latency.jsonl', _withSandbo
   assert.strictEqual(parsed.duration_ms, 117);
 }));
 
-test('telemetry: audit → JSONL append to hme-audit.jsonl', _withSandbox(async (sb, t) => {
+test('telemetry: audit -> JSONL append to hme-audit.jsonl', _withSandbox(async (sb, t) => {
   t.audit('audit_test', { caller: 'test', action: 'verify' });
   const file = path.join(sb, 'log', 'hme-audit.jsonl');
   assert.ok(fs.existsSync(file));
@@ -78,7 +78,7 @@ test('telemetry: debug is silent unless TELEMETRY_DEBUG=1', _withSandbox(async (
   // observe stderr from the test process, but at minimum it should not
   // throw and should not create any file).
   t.debug('debug_event', { x: 1 });
-  // No file path for debug — verified by the absence of a debug file.
+  // No file path for debug -- verified by the absence of a debug file.
   assert.ok(!t.PATHS.debug, 'debug channel has no file destination');
 }));
 

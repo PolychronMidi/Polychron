@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Directory-intent enrichment — reads metrics/hme-dir-intent.json and injects
+ * Directory-intent enrichment -- reads metrics/hme-dir-intent.json and injects
  * the closest ancestor directory's local rules when a tool touches a file.
  *
  * Fires on Read/Edit/Write/Grep/Glob. Walks up from the target path to the
@@ -8,7 +8,7 @@
  * no tracked ancestor, when rules list is empty, or when the tool_result
  * already has an HME footer (idempotency guard).
  *
- * Info / children are NEVER auto-injected — they're surfaced only when the
+ * Info / children are NEVER auto-injected -- they're surfaced only when the
  * agent reads the README explicitly. Rules are the high-value, low-drift slice.
  */
 
@@ -21,7 +21,7 @@ const INTENT_PATH = path.join(METRICS_DIR, 'hme-dir-intent.json');
 const MAX_RULES_INJECTED = 2;
 const MAX_FOOTER_CHARS = 180;
 
-// Mtime-only cache — pure Pattern C fix. The previous 60s clock TTL was
+// Mtime-only cache -- pure Pattern C fix. The previous 60s clock TTL was
 // the exact staleness-source removing Pattern C was supposed to eliminate;
 // mtimeCache with ttlMs=0 means "serve cached until the file actually
 // changes on disk." Peer-review (iter 103) caught the contradiction.
@@ -36,7 +36,7 @@ function _loadIndex(_projectRoot) {
   try {
     indexPair = _intentCache.get(INTENT_PATH, () => {
       if (!fs.existsSync(INTENT_PATH)) return { index: {}, empty: true };
-      // Let parse/read errors PROPAGATE out of the loader — mtimeCache
+      // Let parse/read errors PROPAGATE out of the loader -- mtimeCache
       // will not store on throw. Prior behavior caught the error and
       // cached the empty sentinel against the real mtime, which then
       // served empty permanently (until next file rewrite bumped mtime)

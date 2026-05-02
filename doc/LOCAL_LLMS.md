@@ -17,7 +17,7 @@ user query
             -> reasoner (cloud)       synthesize: final answer
 ```
 
-The arbiter is the stage that was hallucinating file paths in v5 — inventing modules like `utils/threshold_scoring.js` that never existed. v6's training fixes this by teaching the model to refuse when a module isn't in the registry passed into the prompt.
+The arbiter is the stage that was hallucinating file paths in v5 -- inventing modules like `utils/threshold_scoring.js` that never existed. v6's training fixes this by teaching the model to refuse when a module isn't in the registry passed into the prompt.
 
 ## Serving stack
 
@@ -36,11 +36,11 @@ Both services use `Restart=on-failure` with a 5 s back-off, so a crash self-heal
 
 Switched in commit `0577c0f7`. llama.cpp gives:
 
-- **Parallel slot execution** via `--parallel N` — llamacpp is one-at-a-time per instance.
-- **Loose LoRA adapters** via `--lora FILE.gguf` — no merge step needed, swap at runtime via `POST /lora-adapters`.
-- **Per-slot KV cache** with `cache_prompt` — warm contexts without llamacpp's context[] hack.
-- **No CUDA toolkit needed** — the Vulkan backend runs with just the stock NVIDIA driver, which is critical on Maxwell (M40) where modern CUDA toolchains have dropped sm_52 support.
-- **Standard OpenAI API** — not vendor-locked, drop-in replacement for any OpenAI-SDK consumer.
+- **Parallel slot execution** via `--parallel N` -- llamacpp is one-at-a-time per instance.
+- **Loose LoRA adapters** via `--lora FILE.gguf` -- no merge step needed, swap at runtime via `POST /lora-adapters`.
+- **Per-slot KV cache** with `cache_prompt` -- warm contexts without llamacpp's context[] hack.
+- **No CUDA toolkit needed** -- the Vulkan backend runs with just the stock NVIDIA driver, which is critical on Maxwell (M40) where modern CUDA toolchains have dropped sm_52 support.
+- **Standard OpenAI API** -- not vendor-locked, drop-in replacement for any OpenAI-SDK consumer.
 
 ### Shim in front (`hme_http.py`)
 
@@ -96,43 +96,43 @@ The arbiter's domain knowledge lives in its LoRA adapter, not the base model. To
 
 ### One-time dependencies
 
-- `trl` + `bitsandbytes` (0.43.3 on Maxwell — 0.49+ drops sm_52 and crashes with `ops.cu:62 named symbol not found`)
+- `trl` + `bitsandbytes` (0.43.3 on Maxwell -- 0.49+ drops sm_52 and crashes with `ops.cu:62 named symbol not found`)
 - `peft`, `transformers`, `accelerate`, `datasets` (already present)
-- phi-4 HF safetensors (~28 GB) **only during training** — delete after LoRA GGUF export
+- phi-4 HF safetensors (~28 GB) **only during training** -- delete after LoRA GGUF export
 
 ### Corpus
 
 `tools/HME/scripts/finetune-arbiter-v6.py` generates two corpora from the same factual base:
 
-- `tools/models/training/hme-corpus-v6.jsonl` — **1962 arbiter planning examples** (system → user → assistant ChatML)
-- `tools/models/training/hme-coder-corpus-v6.jsonl` — **1622 coder extraction examples** (same factual base, different output format)
+- `tools/models/training/hme-corpus-v6.jsonl` -- **1962 arbiter planning examples** (system -> user -> assistant ChatML)
+- `tools/models/training/hme-coder-corpus-v6.jsonl` -- **1622 coder extraction examples** (same factual base, different output format)
 
 Sections inside each:
 
 | Section | Purpose | Examples |
 
-| A | Factual lookup (module → path → subsystem) | 1308 |
-| B | Planning (arbiter only) — 3-5 step investigation format | 600 |
-| C | Extraction (coder only) — FILE/FUNCTION/SIGNALS/CONNECTS | 300 |
-| D | Refusals — fake module names the model must reject | 40 |
+| A | Factual lookup (module -> path -> subsystem) | 1308 |
+| B | Planning (arbiter only) -- 3-5 step investigation format | 600 |
+| C | Extraction (coder only) -- FILE/FUNCTION/SIGNALS/CONNECTS | 300 |
+| D | Refusals -- fake module names the model must reject | 40 |
 | E | Architecture Q&A (load order, firewall ports, layer isolation) | 14 |
 
 Sections A, D, E are shared between both corpora. B is arbiter-only. C is coder-only.
 
 ### Training script
 
-`tools/HME/scripts/train_arbiter_v6.py` — TRL SFTTrainer + PEFT QLoRA. Quirks that matter on M40:
+`tools/HME/scripts/train_arbiter_v6.py` -- TRL SFTTrainer + PEFT QLoRA. Quirks that matter on M40:
 
-- **bf16 off, fp16 off, tf32 off** — Maxwell doesn't support tf32, bf16 is emulated in software and crashes the GradScaler with a BFloat16 dtype mismatch. Running full-precision fp32 compute is the only path that works; adafactor handles the optimizer state efficiently enough that this isn't the memory killer you'd expect.
-- **bnb compute dtype = fp16** — not bf16, same reason.
-- **`CUDA_VISIBLE_DEVICES=0`** and `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` — pins training to whichever M40 has full headroom, prevents fragmentation death.
-- **grad_accum = 8**, batch = 1 — effective batch 8, fits in ~13 GB for phi-4 training.
-- **LoRA r=32, alpha=64**, targets `q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj` — produces ~60M trainable params (0.4% of phi-4).
+- **bf16 off, fp16 off, tf32 off** -- Maxwell doesn't support tf32, bf16 is emulated in software and crashes the GradScaler with a BFloat16 dtype mismatch. Running full-precision fp32 compute is the only path that works; adafactor handles the optimizer state efficiently enough that this isn't the memory killer you'd expect.
+- **bnb compute dtype = fp16** -- not bf16, same reason.
+- **`CUDA_VISIBLE_DEVICES=0`** and `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` -- pins training to whichever M40 has full headroom, prevents fragmentation death.
+- **grad_accum = 8**, batch = 1 -- effective batch 8, fits in ~13 GB for phi-4 training.
+- **LoRA r=32, alpha=64**, targets `q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj` -- produces ~60M trainable params (0.4% of phi-4).
 
 Flags:
 
 ```bash
-# Sanity (50 steps, small slice) — proves the pipeline works before committing hours
+# Sanity (50 steps, small slice) -- proves the pipeline works before committing hours
 python3 tools/HME/scripts/train_arbiter_v6.py --sanity --base phi4
 
 # Full run, warm-started from sanity checkpoint to save the first epoch
@@ -143,8 +143,8 @@ python3 tools/HME/scripts/train_arbiter_v6.py --base phi4 \
 
 **Timing on one M40 #B (nothing else running on that GPU):**
 
-- Sanity: ~27 minutes (50 steps × 30 s/step)
-- Full v6 run warm-started + 1 epoch: **~4 hours 22 minutes** (233 steps × 64 s/step)
+- Sanity: ~27 minutes (50 steps * 30 s/step)
+- Full v6 run warm-started + 1 epoch: **~4 hours 22 minutes** (233 steps * 64 s/step)
 - Final v6 eval metrics: loss 0.152, token accuracy 96.4%, entropy 0.16
 
 **Before starting:** one M40 must be completely free. In practice this means temporarily stopping the coder llama-server or keeping it on the other M40. The arbiter stays up the whole time because it's Q4_K_M GGUF served by a process that doesn't care about the fine-tuning job happening elsewhere.
@@ -169,7 +169,7 @@ The produced file is ~85 MB for an r=32 LoRA on phi-4. f16 is lossless for this 
 
 1. Copy / symlink the new GGUF to the path the unit expects (`/home/jah/Polychron/metrics/hme-arbiter-vN-lora.gguf` or edit the unit).
 2. `sudo systemctl restart llamacpp-arbiter`
-3. `curl -s http://127.0.0.1:8080/health` — wait for `{"status":"ok"}`.
+3. `curl -s http://127.0.0.1:8080/health` -- wait for `{"status":"ok"}`.
 4. Send a real planning query and verify the output uses only registry module names.
 
 If you want a side-by-side A/B, run two llama-server instances on different ports with different `--lora` flags and compare on the same queries.
@@ -187,7 +187,7 @@ nvidia-smi --query-compute-apps=pid,process_name,used_gpu_memory --format=csv
 
 ### Arbiter failed to start
 
-1. `tail -40 /var/log/llamacpp-arbiter.log` — look for `ErrorOutOfDeviceMemory` or `failed to load model`.
+1. `tail -40 /var/log/llamacpp-arbiter.log` -- look for `ErrorOutOfDeviceMemory` or `failed to load model`.
 2. If OOM: check which Vulkan index actually has headroom right now (`--list-devices`), edit the unit's `--device Vulkan<N>` to match, `sudo systemctl daemon-reload && sudo systemctl restart llamacpp-arbiter`.
 3. If "failed to load model": the path in the unit is wrong or the file is missing. `ls -la` the path, check symlinks.
 4. If the LoRA is the problem: try starting the arbiter without `--lora` to isolate. A malformed adapter GGUF produces a tensor-shape mismatch error, not OOM.
@@ -214,10 +214,10 @@ Requires the server to have been started with `--lora-init-without-apply` or to 
 
 Ordered roughly by impact vs effort.
 
-1. **Validate v6 arbiter in real use (1–2 days, zero effort).** It passed one test query cleanly, but the real test is a round of evolution work. Watch for path hallucination, poor step decomposition, or ignoring the registry. If issues surface, the fix is to the corpus, not the training loop.
+1. **Validate v6 arbiter in real use (1-2 days, zero effort).** It passed one test query cleanly, but the real test is a round of evolution work. Watch for path hallucination, poor step decomposition, or ignoring the registry. If issues surface, the fix is to the corpus, not the training loop.
 
 2. **Train a coder LoRA on the v6 coder corpus (~6 hours, ~60 GB temporary disk).** Same pipeline as the arbiter. The corpus already exists (`tools/models/training/hme-coder-corpus-v6.jsonl`, 1622 examples). Needs:
-   - Download `Qwen/Qwen3-Coder-30B-A3B-Instruct` HF safetensors (~60 GB, temporary — delete after LoRA GGUF export)
+   - Download `Qwen/Qwen3-Coder-30B-A3B-Instruct` HF safetensors (~60 GB, temporary -- delete after LoRA GGUF export)
    - Sanity run on 50 steps (~45 min on 30B)
    - Full 1 epoch warm-started (~5 hours)
    - Convert LoRA to GGUF, add `--lora` to `llamacpp-coder.service`, restart

@@ -1,4 +1,4 @@
-# Auto-commit snapshot (fail-fast-hardened — see _autocommit.sh).
+# Auto-commit snapshot (fail-fast-hardened -- see _autocommit.sh).
 # The helper owns all bookkeeping: four-channel failure logging, sticky
 # fail flag, attempt counter, derivation of the project root independent
 # of $PROJECT_ROOT. We must NOT die on its return code; remaining

@@ -1,5 +1,5 @@
 'use strict';
-// Jurisdiction context — bias bounds, KB staleness, open hypotheses,
+// Jurisdiction context -- bias bounds, KB staleness, open hypotheses,
 // semantic drift. All file-backed manifest loaders live here.
 
 const fs = require('fs');
@@ -43,7 +43,7 @@ function loadBiasManifest() {
       }
     }
   } catch (_err) {
-    // manifest absent or malformed — zone-match only
+    // manifest absent or malformed -- zone-match only
   }
   _biasLoadedAt = now;
   return _biasByFile;
@@ -132,30 +132,30 @@ function buildJurisdictionContext(filePaths) {
     if (!inZone && bias.length === 0 && !stale && hypotheses.length === 0 && !drifted) continue;
     anyMatched = true;
     lines.push(`### ${rel}`);
-    if (inZone) lines.push(`- Zone: hypermeta jurisdiction — controller authority boundary`);
+    if (inZone) lines.push(`- Zone: hypermeta jurisdiction -- controller authority boundary`);
     if (bias.length > 0) {
-      lines.push(`- Bias bounds (${bias.length}) — locked by manifest, validated by check-hypermeta-jurisdiction:`);
+      lines.push(`- Bias bounds (${bias.length}) -- locked by manifest, validated by check-hypermeta-jurisdiction:`);
       for (const b of bias.slice(0, 8)) lines.push(`    ${b.key}: [${b.lo}, ${b.hi}]`);
-      if (bias.length > 8) lines.push(`    … (+${bias.length - 8} more)`);
+      if (bias.length > 8) lines.push(`    ... (+${bias.length - 8} more)`);
     }
     if (stale) {
       const ds = typeof stale.staleness_days === 'number' ? `${stale.staleness_days.toFixed(1)}d` : '?';
       lines.push(`- KB status: ${stale.status}  (${stale.kb_entries_matched} entry matches, delta ${ds})`);
     }
     if (hypotheses.length > 0) {
-      lines.push(`- Open hypotheses (${hypotheses.length}) — this edit may confirm or refute:`);
+      lines.push(`- Open hypotheses (${hypotheses.length}) -- this edit may confirm or refute:`);
       for (const h of hypotheses.slice(0, 4)) {
         lines.push(`    \`${h.id}\`: ${String(h.claim || '').slice(0, 140)}`);
         lines.push(`      falsifier: ${String(h.falsification || '').slice(0, 120)}`);
       }
-      if (hypotheses.length > 4) lines.push(`    … (+${hypotheses.length - 4} more)`);
+      if (hypotheses.length > 4) lines.push(`    ... (+${hypotheses.length - 4} more)`);
     }
     if (drifted) {
       const fieldsChanged = (drifted.diffs || [])
         .filter((d) => d.field !== 'content_hash_prefix')
         .map((d) => d.field);
       lines.push(
-        `- ⚠ KB semantic drift: the baseline signature for this module has diverged ` +
+        `- [!] KB semantic drift: the baseline signature for this module has diverged ` +
           `(${fieldsChanged.length} structural field(s): ${fieldsChanged.slice(0, 4).join(', ')}). ` +
           `KB description may be wrong.`,
       );
@@ -167,7 +167,7 @@ function buildJurisdictionContext(filePaths) {
     '',
     '## HME Jurisdiction Context (proxy-injected)',
     '',
-    'Write-bearing tool calls in this turn target files tracked by the hypermeta layer. Before editing, confirm the changes respect the constraints below — check-hypermeta-jurisdiction.js will fail the pipeline otherwise.',
+    'Write-bearing tool calls in this turn target files tracked by the hypermeta layer. Before editing, confirm the changes respect the constraints below -- check-hypermeta-jurisdiction.js will fail the pipeline otherwise.',
     '',
     ...lines,
   ].join('\n');

@@ -5,7 +5,7 @@ _signal_emit turn_complete stop.sh turn '{}'
 
 # HME activity bridge: emit turn_complete
 # Snapshots the CHAT TURN boundary for metrics/hme-activity.jsonl. This is
-# NOT round_complete — that fires on pipeline finish (posttooluse_bash.sh
+# NOT round_complete -- that fires on pipeline finish (posttooluse_bash.sh
 # after `npm run main`). Chat turns happen every few seconds in active use;
 # evolution rounds happen on pipeline cadence. Conflating them collapsed
 # the coherence-score window to stale data. Separate events keep the
@@ -20,7 +20,7 @@ _emit_activity turn_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 # history. Resolution-velocity is computed across the rolling window and used
 # (observe-only for now) to recommend the next turn's HME_STREAK_WARN.
 # See tools/HME/activity/streak_calibrator.py. Silent-fail to keep stop.sh
-# non-fragile — this is telemetry, not a gate.
+# non-fragile -- this is telemetry, not a gate.
 PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/streak_calibrator.py" --record \
   > /dev/null 2>&1 &
 
@@ -36,14 +36,14 @@ if [ -n "$_EDIT_FILES" ]; then
 fi
 
 # Buddy hand-off paradigm: per-turn auto_retire_check. Without this, the
-# 90% retire threshold was documentation-only — `auto_retire_check` was
+# 90% retire threshold was documentation-only -- `auto_retire_check` was
 # defined but had no caller, so a primary that crossed BUDDY_RETIRE_PCT
 # during a turn would just sit there until the next SessionStart (or
 # never, if compaction hit first). Per-turn fire is safe because the
-# turn just finished — no in-flight tasks to disrupt. Wrapped in a
+# turn just finished -- no in-flight tasks to disrupt. Wrapped in a
 # subshell with `|| true` so any failure mode (file missing, python
 # import error, transcript read error, retire write error) reduces to
-# a no-op-pass — a hook that fail-loud on optional checks would
+# a no-op-pass -- a hook that fail-loud on optional checks would
 # become the new silent-failure-class the audit-silent-failure-class
 # verifier exists to catch.
 if [ "${BUDDY_HANDOFF:-0}" = "1" ]; then

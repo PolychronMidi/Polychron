@@ -2,7 +2,7 @@
 'use strict';
 /**
  * Standalone CLI for the Stop hook policy chain. Runs without the proxy
- * daemon — implements the filesystem-IPC architectural lesson: the proxy
+ * daemon -- implements the filesystem-IPC architectural lesson: the proxy
  * is an accelerator, not a single point of failure. When the proxy is up,
  * `_proxy_bridge.sh` posts Stop events to it and the proxy invokes
  * `runStopChain` in-process. When the proxy is unreachable, the bridge
@@ -28,7 +28,7 @@
  *
  * Other lifecycle events (UserPromptSubmit, PreToolUse, etc.) currently
  * still require the proxy. Extending direct-mode to them is a separate
- * pass — Stop is the load-bearing one because losing it lets uncommitted/
+ * pass -- Stop is the load-bearing one because losing it lets uncommitted/
  * unreviewed work escape the turn.
  */
 
@@ -55,7 +55,7 @@ async function main() {
 
 main().catch((err) => {
   // Chain-level crash. Write the error to stderr so LIFESAVER can pick
-  // it up next turn, but exit 0 — never wedge the agent on infra failure.
+  // it up next turn, but exit 0 -- never wedge the agent on infra failure.
   process.stderr.write(`[stop_chain/cli] crash: ${err.stack || err.message}\n`);
   process.exit(0);
 });

@@ -25,7 +25,7 @@ function _withSandbox(fn) {
       await fn(sandbox, cfg);
     } finally {
       // process.env.PROJECT_ROOT = undefined sets the literal string
-      // 'undefined' — corrupts any later test that uses `||` fallback.
+      // 'undefined' -- corrupts any later test that uses `||` fallback.
       // Delete the key when original was unset.
       if (originalRoot === undefined) delete process.env.PROJECT_ROOT;
       else process.env.PROJECT_ROOT = originalRoot;
@@ -68,12 +68,12 @@ test('config: local file overrides project file', _withSandbox(async (sandbox, c
   _writeJson(path.join(sandbox, 'config', 'policies.json'),       { enabled: ['shared'] });
   _writeJson(path.join(sandbox, 'config', 'policies.local.json'), { disabled: ['shared'] });
   cfg.reset();
-  // Both files merge by union; disable wins → effectively disabled.
+  // Both files merge by union; disable wins -> effectively disabled.
   assert.strictEqual(cfg.isEnabled('shared', true), false);
 }));
 
 test('config: params first-defined-wins (project before local? local before project?)', _withSandbox(async (sandbox, cfg) => {
-  // Lookup order: local → project. First-defined-wins.
+  // Lookup order: local -> project. First-defined-wins.
   _writeJson(path.join(sandbox, 'config', 'policies.local.json'), { params: { foo: { x: 'local-value' } } });
   _writeJson(path.join(sandbox, 'config', 'policies.json'),       { params: { foo: { x: 'project-value' } } });
   cfg.reset();

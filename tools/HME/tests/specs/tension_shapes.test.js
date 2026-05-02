@@ -36,8 +36,8 @@ test('tensionShapeCurve: descending returns 1 - progress', () => {
   assert.strictEqual(curve('descending', 0.75), 0.25);
 });
 
-test('tensionShapeCurve: arch (default) is sin(progress * π) — peak at 0.5', () => {
-  // Default branch when shape is missing or unknown → arch.
+test('tensionShapeCurve: arch (default) is sin(progress * pi) -- peak at 0.5', () => {
+  // Default branch when shape is missing or unknown -> arch.
   const peak = curve('arch', 0.5);
   assert.ok(peak > 0.99 && peak <= 1.0, `expected ~1 at 0.5, got ${peak}`);
   assert.ok(curve('arch', 0) < 0.001);
@@ -60,6 +60,6 @@ test('tensionShapeCurve: erratic returns finite numbers (smoke test)', () => {
 });
 
 test('tensionShapeCurve: unknown shape falls through to arch (default)', () => {
-  // Same as arch — sin(progress * π).
+  // Same as arch -- sin(progress * pi).
   assert.strictEqual(curve('totally-not-a-shape', 0.5), curve('arch', 0.5));
 });

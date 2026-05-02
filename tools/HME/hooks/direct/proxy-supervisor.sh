@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# proxy-supervisor.sh — long-running watchdog that keeps the HME proxy
+# proxy-supervisor.sh -- long-running watchdog that keeps the HME proxy
 # alive without needing SessionStart to fire.
 #
 # Design:
@@ -9,7 +9,7 @@
 #   - The loop polls /health every 10 seconds. If the probe fails for 3
 #     consecutive polls, the supervisor spawns the proxy and resumes
 #     polling. Consecutive-miss threshold avoids racing with planned
-#     restarts — during a maintenance window, the probe may fail once or
+#     restarts -- during a maintenance window, the probe may fail once or
 #     twice while a caller cycles the proxy.
 #   - Runs indefinitely (until killed). Use `proxy-supervisor.sh stop`
 #     or `kill $(cat tmp/hme-proxy-supervisor.pid)` to stop it.
@@ -17,19 +17,19 @@
 # Why this exists in addition to proxy-watchdog.sh:
 #   The watchdog fires ONCE per session at SessionStart. If the proxy
 #   crashes mid-session, the watchdog doesn't help until the next
-#   session. The supervisor covers the gap — continuous monitoring plus
+#   session. The supervisor covers the gap -- continuous monitoring plus
 #   automatic respawn.
 #
 # Interaction with proxy-maintenance.sh:
 #   When a maintenance flag is active, the supervisor skips the spawn
-#   attempt — the caller is intentionally cycling the proxy and will
+#   attempt -- the caller is intentionally cycling the proxy and will
 #   bring it back up. The supervisor resumes normal behavior after the
 #   flag expires.
 
 set +e
 
 # Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
-# No host-specific hardcoded fallback — if all three fail the
+# No host-specific hardcoded fallback -- if all three fail the
 # environment is broken; supervisor exits cleanly rather than guess.
 _SV_ROOT=""
 if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
@@ -51,7 +51,7 @@ if [ -z "$_SV_ROOT" ]; then
   exit 0
 fi
 
-# Absolute path to THIS script — used by the `start` subcommand's
+# Absolute path to THIS script -- used by the `start` subcommand's
 # `source '$_SV_SELF' _loop` fork-to-daemon line. Was previously
 # undefined, which meant the spawn executed `source '' _loop` and
 # silently failed with "bash: line 1: : No such file or directory",
@@ -156,8 +156,8 @@ _sv_spawn_and_verify() {
 
 _sv_tail_proxy_log() {
   # Return the last N non-blank lines from hme-proxy.out, filtered to the
-  # most recent spawn's failure trace. The proxy crash cause — e.g. the
-  # ReferenceError that killed it for an entire session earlier — is
+  # most recent spawn's failure trace. The proxy crash cause -- e.g. the
+  # ReferenceError that killed it for an entire session earlier -- is
   # almost always in those last lines. Surfacing them in the supervisor
   # log and the LIFESAVER banner cuts diagnosis from "tail a file and
   # guess" to "read the banner".
@@ -173,13 +173,13 @@ _sv_tail_proxy_log() {
 _sv_fire_crashloop_lifesaver() {
   local fails="$1"
   local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
-  local msg="[$ts] [proxy-supervisor] CRASH LOOP DETECTED — proxy failed to start $fails times in a row. Respawn backing off. Root cause is likely in hme_proxy.js or its environment (.env, context.js, node modules). Fix the proxy startup before expecting recovery."
+  local msg="[$ts] [proxy-supervisor] CRASH LOOP DETECTED -- proxy failed to start $fails times in a row. Respawn backing off. Root cause is likely in hme_proxy.js or its environment (.env, context.js, node modules). Fix the proxy startup before expecting recovery."
   # Channel 1: error log for LIFESAVER pickup.
   mkdir -p "$(dirname "$_SV_ERROR_LOG")" 2>/dev/null
   echo "$msg" >> "$_SV_ERROR_LOG" 2>/dev/null
   # Channel 2: lifecycle log for operator audit trail, plus a tail of the
   # proxy log so the crash trace lives alongside the "I gave up" marker.
-  _sv_log "CRASH LOOP: $fails consecutive spawn failures — backing off"
+  _sv_log "CRASH LOOP: $fails consecutive spawn failures -- backing off"
   _sv_log "last 20 lines of hme-proxy.out at the time of failure:"
   {
     local line
@@ -199,7 +199,7 @@ _sv_loop() {
   # The pid-file-only check (kill -0 on existing pid) had a TOCTOU
   # window: between the kill -0 and our `echo $$ > pidfile`, another
   # _sv_loop could acquire and write its own pid. flock closes that
-  # window — two simultaneous _sv_loop invocations contend for the
+  # window -- two simultaneous _sv_loop invocations contend for the
   # same lock fd; the loser bails. The pid-file is still written
   # alongside so external observers can read which pid holds the
   # supervisor (flock -n doesn't expose owner-pid via filesystem).
@@ -280,12 +280,12 @@ _sv_loop() {
     else
       misses=$((misses + 1))
       if _sv_is_maintenance_active; then
-        # During maintenance, ignore misses — the caller will bring the
+        # During maintenance, ignore misses -- the caller will bring the
         # proxy back up. Reset counter so we don't spawn during a later
         # planned window.
         misses=0
       elif [ "$misses" -ge "$_SV_MISS_THRESHOLD" ]; then
-        _sv_log "proxy down for $misses polls — respawning"
+        _sv_log "proxy down for $misses polls -- respawning"
         if _sv_spawn_and_verify; then
           _sv_log "spawn verified healthy"
           consecutive_spawn_fails=0
@@ -316,11 +316,11 @@ case "$_action" in
         echo "proxy-supervisor: already running (pid=$existing)" >&2
         exit 0
       fi
-      # Stale pid file — remove before respawning.
+      # Stale pid file -- remove before respawning.
       rm -f "$_SV_PID_FILE"
     fi
     # Detach. Because this script is invoked from a hook chain, we must
-    # return control to the caller immediately — the loop runs in a
+    # return control to the caller immediately -- the loop runs in a
     # forked process.
     setsid nohup bash -c "source '$_SV_SELF' _loop" \
       >> "$_SV_LIFECYCLE_LOG" 2>&1 < /dev/null &
@@ -362,7 +362,7 @@ case "$_action" in
     ;;
   _loop)
     # Internal: the detached loop body. Never call this directly from the
-    # command line — start it via `start`.
+    # command line -- start it via `start`.
     _sv_loop
     ;;
   *)

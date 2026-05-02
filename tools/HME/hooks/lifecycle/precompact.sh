@@ -19,7 +19,7 @@ if [[ -f "$TAB" && -s "$TAB" ]]; then
   # Pending KB anchors
   KB_LINES=$(grep '^KB:' "$TAB" 2>/dev/null)
   if [[ -n "$KB_LINES" ]]; then
-    PARTS+=("PENDING KB ANCHORS — save with add_knowledge before compaction:")
+    PARTS+=("PENDING KB ANCHORS -- save with add_knowledge before compaction:")
     PARTS+=("$KB_LINES")
     PARTS+=("")
   fi
@@ -27,7 +27,7 @@ if [[ -f "$TAB" && -s "$TAB" ]]; then
   # Tracked note files (from background tasks, writes, agents)
   FILE_LINES=$(grep '^FILE:' "$TAB" 2>/dev/null)
   if [[ -n "$FILE_LINES" ]]; then
-    PARTS+=("TRACKED NOTE FILES — check these after compaction:")
+    PARTS+=("TRACKED NOTE FILES -- check these after compaction:")
     PARTS+=("$FILE_LINES")
     PARTS+=("")
   fi
@@ -41,7 +41,7 @@ if [[ -n "$FOUND" ]]; then
   while IFS= read -r f; do
     # Match whole line, not substring. Previously a path like
     # `tmp/note.md` was suppressed because a tracked path
-    # `tmp/note.md.bak` contained it as a prefix — falsely treating
+    # `tmp/note.md.bak` contained it as a prefix -- falsely treating
     # legitimately-untracked files as tracked.
     grep -qFx "$f" "$TAB" 2>/dev/null || UNTRACKED+="  $f"$'\n'
   done <<< "$FOUND"
@@ -51,7 +51,7 @@ if [[ -n "$FOUND" ]]; then
   fi
 fi
 
-## L17: Conversation entanglement — inject system self-model into compaction context
+## L17: Conversation entanglement -- inject system self-model into compaction context
 ENTANGLE="$PROJECT/tmp/hme-entanglement.json"
 if [[ -f "$ENTANGLE" ]]; then
   # Build compact summary from entanglement checkpoint
@@ -105,13 +105,13 @@ if [ -f "$LATEST_LINK" ]; then
   LINK_AGE=$(( $(date +%s) - $(stat -c %Y "$LATEST_LINK" 2>/dev/null || echo 0) ))
   if [ "$LINK_AGE" -lt 600 ]; then
     _NEEDS_FALLBACK=0
-    echo "[PreCompact] chain link fresh (age ${LINK_AGE}s) — preemption fired cleanly" >&2
+    echo "[PreCompact] chain link fresh (age ${LINK_AGE}s) -- preemption fired cleanly" >&2
   fi
 fi
 if [ "$_NEEDS_FALLBACK" -eq 1 ] && [ -f "$CHAIN_SCRIPT" ]; then
-  echo "[PreCompact] preemption missed — taking fallback snapshot NOW" >&2
+  echo "[PreCompact] preemption missed -- taking fallback snapshot NOW" >&2
   PROJECT_ROOT="$PROJECT" python3 "$CHAIN_SCRIPT" --imminent > /dev/null 2>&1
 fi
 
-echo "[PreCompact] Context compaction starting — chain link ready for postcompact hydration" >&2
+echo "[PreCompact] Context compaction starting -- chain link ready for postcompact hydration" >&2
 exit 0

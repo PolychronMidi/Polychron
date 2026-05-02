@@ -1,6 +1,6 @@
 # Metaprofiles
 
-Coordinated initial conditions for the relationship layer. Conductor profiles set per-beat parameters. Composer profiles select which composers are active. Metaprofiles configure the *meta-layer* — the 18 hypermeta controllers, coupling topology, trust ecology bias, and regime targets — so the system self-calibrates toward a specific musical character.
+Coordinated initial conditions for the relationship layer. Conductor profiles set per-beat parameters. Composer profiles select which composers are active. Metaprofiles configure the *meta-layer* -- the 18 hypermeta controllers, coupling topology, trust ecology bias, and regime targets -- so the system self-calibrates toward a specific musical character.
 
 Metaprofiles don't override controllers. They set targets that controllers self-calibrate toward. The regime self-balancer already has a target distribution; a metaprofile changes what that target is. The coupling gain escalation already has a ceiling; a metaprofile raises or lowers it.
 
@@ -8,14 +8,14 @@ Metaprofiles don't override controllers. They set targets that controllers self-
 
 A metaprofile is a JSON object declaring six axes (regime, coupling, trust, tension, energy, phase) plus orchestration metadata (`sectionAffinity`, `minDwellSections`). Controllers read the active profile every tick, so mid-run switches propagate immediately.
 
-The `default` metaprofile encodes the implicit baseline that every other profile is normalized against. Controllers call `metaProfiles.scaleFactor(axis, key)` — which returns `activeProfile[axis][key] / defaultProfile[axis][key]` — and multiply their `_BASE` constants by that factor. When no metaprofile is active or the axis is disabled, `scaleFactor` returns 1.0 and controllers fall through to their unmodified `_BASE` value.
+The `default` metaprofile encodes the implicit baseline that every other profile is normalized against. Controllers call `metaProfiles.scaleFactor(axis, key)` -- which returns `activeProfile[axis][key] / defaultProfile[axis][key]` -- and multiply their `_BASE` constants by that factor. When no metaprofile is active or the axis is disabled, `scaleFactor` returns 1.0 and controllers fall through to their unmodified `_BASE` value.
 
 Schema validation runs once at module load: every profile must declare every axis key with the correct type, regime targets must sum to 1.0, tension floor must be below ceiling, and `sectionAffinity` entries must be known section types. Malformed profiles fail fast with a named error.
 
 ## Profile dimensions
 
 ### Regime distribution targets
-What the regime self-balancer steers toward. The most audible dimension — determines whether the composition feels settled, searching, or volatile.
+What the regime self-balancer steers toward. The most audible dimension -- determines whether the composition feels settled, searching, or volatile.
 
 | Profile | coherent | evolving | exploring |
 -
@@ -79,7 +79,7 @@ How tension builds across sections. Defines the target tension curve that the te
 | anthemic | arch | 0.35 | 0.85 |
 
 ### Energy envelope
-Density and flicker range — overall energy level and rhythmic volatility.
+Density and flicker range -- overall energy level and rhythmic volatility.
 
 - **densityTarget**: target density mean (0-1)
 - **flickerRange**: [lo, hi] for per-beat flicker
@@ -95,7 +95,7 @@ Density and flicker range — overall energy level and rhythmic volatility.
 | anthemic | 0.65 | [0.05, 0.18] |
 
 ### Phase energy
-How the polyrhythmic layers interact — locked, drifting, or repelling.
+How the polyrhythmic layers interact -- locked, drifting, or repelling.
 
 - **lockBias**: tendency toward phase-locked behavior (0 = free, 1 = locked)
 - **layerIndependence**: CIM base level (0 = fully coordinated, 1 = fully independent)
@@ -143,29 +143,29 @@ Resolution runs once at module load before validation. The resolver deep-copies 
 
 ### Time-varying axes (envelopes)
 
-Any scalar or pair axis value can be replaced with an envelope `{from, to, curve?}` — the value evolves across the profile's activation.
+Any scalar or pair axis value can be replaced with an envelope `{from, to, curve?}` -- the value evolves across the profile's activation.
 
-**Live**: `tense.tension.ceiling` = `{from: 0.70, to: 0.90, curve: 'ascending'}` with `minDwellSections: 2`. `regimeReactiveDamping._getMaxTension` calls `metaProfiles.progressedScaleFactor('tension', 'ceiling')`, and `main.js` updates `metaProfiles.setActivationProgress(elapsed / minDwellSections)` per section. So when tense is active for its 2-section hold, the tension ceiling rises 0.70 → 0.80 → 0.90 across the activation, on top of the existing per-section ascending tension shape — building pressure realized in two dimensions.
+**Live**: `tense.tension.ceiling` = `{from: 0.70, to: 0.90, curve: 'ascending'}` with `minDwellSections: 2`. `regimeReactiveDamping._getMaxTension` calls `metaProfiles.progressedScaleFactor('tension', 'ceiling')`, and `main.js` updates `metaProfiles.setActivationProgress(elapsed / minDwellSections)` per section. So when tense is active for its 2-section hold, the tension ceiling rises 0.70 -> 0.80 -> 0.90 across the activation, on top of the existing per-section ascending tension shape -- building pressure realized in two dimensions.
 
-Curves: `linear` (default), `ascending` (alias), `descending` (reverse), `arch` (sine peak at midpoint). `getAxisValue` collapses envelopes to mid-progress (0.5) for simple consumers; controllers wanting time resolution use either `getAxisValueAt(axis, key, fallback, progress)` (explicit progress) or `progressedScaleFactor(axis, key)` (reads internal `_activationProgress` set by main.js — the `_BASE * factor` pattern).
+Curves: `linear` (default), `ascending` (alias), `descending` (reverse), `arch` (sine peak at midpoint). `getAxisValue` collapses envelopes to mid-progress (0.5) for simple consumers; controllers wanting time resolution use either `getAxisValueAt(axis, key, fallback, progress)` (explicit progress) or `progressedScaleFactor(axis, key)` (reads internal `_activationProgress` set by main.js -- the `_BASE * factor` pattern).
 
 ### Stochastic axes (distributions)
 
-Scalar axis values can also be replaced with a distribution descriptor `{mean, std, skew?}` — controllers calling `metaProfiles.sampleAxisValue` or `metaProfiles.sampledScaleFactor` draw a fresh Box-Muller-Gaussian sample per tick, biased by `skew` (cubic warp on the standardized variate). Adds organic micro-variation without manual jitter.
+Scalar axis values can also be replaced with a distribution descriptor `{mean, std, skew?}` -- controllers calling `metaProfiles.sampleAxisValue` or `metaProfiles.sampledScaleFactor` draw a fresh Box-Muller-Gaussian sample per tick, biased by `skew` (cubic warp on the standardized variate). Adds organic micro-variation without manual jitter.
 
-**Live**: `chaotic.energy.densityTarget` = `{mean: 0.75, std: 0.06}`. `regimeReactiveDamping._getMaxDensity` uses `sampledScaleFactor` so density jitters around the mean each tick when chaotic is active — built-in flicker behavior with no manual feedback loop.
+**Live**: `chaotic.energy.densityTarget` = `{mean: 0.75, std: 0.06}`. `regimeReactiveDamping._getMaxDensity` uses `sampledScaleFactor` so density jitters around the mean each tick when chaotic is active -- built-in flicker behavior with no manual feedback loop.
 
 `getAxisValue` collapses distributions to mean (the deterministic stand-in); `sampleAxisValue` / `sampledScaleFactor` sample. Schema rejects negative `std`. `scaleFactor` collapses to mean for backwards-compatible callers.
 
 ### Profile embedding (vector space)
 
-`metaProfileDefinitions.axisVector(profile)` flattens every axis-key into a fixed-length numeric vector (distributions → mean, envelopes → midpoint, pairs → both endpoints, categorical `tension.shape` → ordinal). `distance(a, b)` returns cosine distance in that space; `nearest(name, k)` returns the top-k closest profiles (excluding self and `default`).
+`metaProfileDefinitions.axisVector(profile)` flattens every axis-key into a fixed-length numeric vector (distributions -> mean, envelopes -> midpoint, pairs -> both endpoints, categorical `tension.shape` -> ordinal). `distance(a, b)` returns cosine distance in that space; `nearest(name, k)` returns the top-k closest profiles (excluding self and `default`).
 
-**Live**: when no trigger fires, `main.js` rotation sorts the section-affinity candidate pool by axisVector distance to the previously-active profile and randomly picks from the nearest 3. Smoother sonic transitions — adjacent sections feel related rather than randomly different.
+**Live**: when no trigger fires, `main.js` rotation sorts the section-affinity candidate pool by axisVector distance to the previously-active profile and randomly picks from the nearest 3. Smoother sonic transitions -- adjacent sections feel related rather than randomly different.
 
 ```js
-metaProfileDefinitions.distance('chaotic', 'volatile');     // smaller — both high-exploring
-metaProfileDefinitions.distance('chaotic', 'meditative');   // larger  — opposite poles
+metaProfileDefinitions.distance('chaotic', 'volatile');     // smaller -- both high-exploring
+metaProfileDefinitions.distance('chaotic', 'meditative');   // larger  -- opposite poles
 metaProfileDefinitions.nearest('atmospheric', 3);           // 3 profiles closest to atmospheric
 ```
 
@@ -181,7 +181,7 @@ Profiles can declare entry conditions over runtime signals:
 }
 ```
 
-Expressions parse as `<signal> <op> <value>` where op ∈ `> >= < <= == !=` and value is numeric or `true`/`false`. `metaProfiles.evaluateTriggers(snapshot)` walks every registered profile's `enter` list and returns the highest-priority match `{profile, priority, condition}` or `null`.
+Expressions parse as `<signal> <op> <value>` where op  in  `> >= < <= == !=` and value is numeric or `true`/`false`. `metaProfiles.evaluateTriggers(snapshot)` walks every registered profile's `enter` list and returns the highest-priority match `{profile, priority, condition}` or `null`.
 
 **Live**: `chaotic` declares `couplingStrength > 0.7`. `main.js` builds a snapshot from `systemDynamicsProfiler.getSnapshot()` (couplingStrength, effectiveDimensionality, velocity, curvature, entropyAmplification) and calls `evaluateTriggers` at every section boundary. Triggered profiles pre-empt section-affinity rotation, subject to dwell-guard and `canSwitch`. So when coupling spikes mid-piece, chaotic surfaces regardless of section type.
 
@@ -195,19 +195,19 @@ The closing piece is `i/sensitivity`:
 i/sensitivity
 ```
 
-Reads the JSONL log, emits a per-profile score distribution (n, mean, std, p10/p50/p90, min/max), per-(profile, sectionType) breakdown, ranking by mean score, and a stability classification per profile (stable / moderate / volatile / insufficient — based on coefficient of variation `std/|mean|`). Writes machine-readable JSON to `output/metrics/metaprofile-sensitivity.json` and a Markdown summary to stdout. Evolution priority can later consume this to recommend profile changes when a low-ranked profile dominates the rotation, or when a top-ranked profile is volatile (high score but unstable).
+Reads the JSONL log, emits a per-profile score distribution (n, mean, std, p10/p50/p90, min/max), per-(profile, sectionType) breakdown, ranking by mean score, and a stability classification per profile (stable / moderate / volatile / insufficient -- based on coefficient of variation `std/|mean|`). Writes machine-readable JSON to `output/metrics/metaprofile-sensitivity.json` and a Markdown summary to stdout. Evolution priority can later consume this to recommend profile changes when a low-ranked profile dominates the rotation, or when a top-ranked profile is volatile (high score but unstable).
 
 ### Substrate-level fields
 
-The 6 axes (regime / coupling / trust / tension / energy / phase) are scaling layer — they multiply existing controllers. The substrate-level optional fields below let a metaprofile actively *choose what's playing*, not just *how loud each dial is*. All optional; profiles without them remain valid.
+The 6 axes (regime / coupling / trust / tension / energy / phase) are scaling layer -- they multiply existing controllers. The substrate-level optional fields below let a metaprofile actively *choose what's playing*, not just *how loud each dial is*. All optional; profiles without them remain valid.
 
 | Field | Schema | Live consumer | Effect |
 |---|---|---|---|
 | `composerFamilies` | `{ familyName: weight }` | `factoryFamilies.getComposerFamiliesOrFail` multiplies its computed weight by `metaProfiles.getComposerFamilyWeight(name)` | Biases the composer pool. `chaotic` favors development+rhythmicDrive; `meditative` favors harmonicMotion+diatonicCore. The composition's **emission strategy** changes with the metaprofile, not just its parameters. |
 | `conductorAffinity` / `conductorAntipathy` | `string[]` | `conductorConfigDynamics.applyPhaseProfile` honors via `metaProfiles.preferConductorProfile` / `avoidConductorProfile` | Closes the orthogonality gap between meta and conductor profiles. `meditative` prefers `atmospheric`/`meditative` conductors; avoids `chaotic`. |
 | `sectionArc` | `string[]` (one per section) | `main.js` section selection consults `metaProfiles.getSectionArcOverride()` | Profile owns the structural sequence when length matches `totalSections`, otherwise falls through to weighted-random. |
-| `layerVariants` | `{ L1: name, L2: name }` | `factoryFamilies.getComposerFamiliesOrFail` reads `metaProfiles.getComposerFamilyWeightForLayer(family, LM.activeLayer)`. Built-in `polyrhythmic_split` declares `{ L1: 'anthemic', L2: 'elegiac' }` — when active, L1 calls anthemic's composer pool while L2 calls elegiac's. Other layer-aware accessors: `getActiveForLayer(layer)`, `getAxisForLayer(axis, layer)`. | Two polyrhythmic layers run independent metaprofile axes simultaneously — L1 builds while L2 releases, etc. |
-| `disableControllers` | `string[]` | `pairGainCeilingController.updatePair` short-circuits when `metaProfiles.isControllerDisabled('pair_gain_ceiling')` returns true. `meditative` lists both `antagonism_bridges` (Python-side via metaprofile-active.json) and `pair_gain_ceiling` (JS-side gated). | Subtractive — silences entire subsystems instead of just damping them. |
+| `layerVariants` | `{ L1: name, L2: name }` | `factoryFamilies.getComposerFamiliesOrFail` reads `metaProfiles.getComposerFamilyWeightForLayer(family, LM.activeLayer)`. Built-in `polyrhythmic_split` declares `{ L1: 'anthemic', L2: 'elegiac' }` -- when active, L1 calls anthemic's composer pool while L2 calls elegiac's. Other layer-aware accessors: `getActiveForLayer(layer)`, `getAxisForLayer(axis, layer)`. | Two polyrhythmic layers run independent metaprofile axes simultaneously -- L1 builds while L2 releases, etc. |
+| `disableControllers` | `string[]` | `pairGainCeilingController.updatePair` short-circuits when `metaProfiles.isControllerDisabled('pair_gain_ceiling')` returns true. `meditative` lists both `antagonism_bridges` (Python-side via metaprofile-active.json) and `pair_gain_ceiling` (JS-side gated). | Subtractive -- silences entire subsystems instead of just damping them. |
 | `couplingPairs` | `[[axisA, axisB], ...]` | `pairGainCeilingController.getPairState` lerps prescribed pairs' initial ceiling 50% toward maxCeiling. Persisted in `output/metrics/metaprofile-active.json` so `coupling_bridges.py` can consult. | Prescribes coupling topology directly instead of letting it emerge from runtime correlation. |
 
 ### Custom registries
@@ -224,19 +224,19 @@ echo '{"name":"my_drift","inherits":"atmospheric","tension":{"shape":"flat","flo
 ### File structure
 
 ```
-src/conductor/metaProfiles.js                  — registry, loader, scaleFactor, dwell, envelope/trigger/attribution
-src/conductor/metaProfileDefinitions.js        — built-in definitions + schema validator + resolver
-config/metaprofiles/*.json                     — project-local custom profiles (loaded at boot)
-output/metrics/metaprofile-active.json         — current active profile (atomic write)
-output/metrics/metaprofile-history.jsonl       — every transition this run, append-only
-output/metrics/metaprofile-attribution.jsonl   — per-section attribution (profile + score) for empirical tuning
+src/conductor/metaProfiles.js                  -- registry, loader, scaleFactor, dwell, envelope/trigger/attribution
+src/conductor/metaProfileDefinitions.js        -- built-in definitions + schema validator + resolver
+config/metaprofiles/*.json                     -- project-local custom profiles (loaded at boot)
+output/metrics/metaprofile-active.json         -- current active profile (atomic write)
+output/metrics/metaprofile-history.jsonl       -- every transition this run, append-only
+output/metrics/metaprofile-attribution.jsonl   -- per-section attribution (profile + score) for empirical tuning
 ```
 
 ### Section rotation, dwell, env-var disable
 
-When `ACTIVE_META_PROFILE` is null, `main.js` rotates profiles per section using each profile's `sectionAffinity`. The dwell guard skips a switch attempt if the active profile has not held for `minDwellSections` yet — controllers get time to converge toward the current targets before the next pivot.
+When `ACTIVE_META_PROFILE` is null, `main.js` rotates profiles per section using each profile's `sectionAffinity`. The dwell guard skips a switch attempt if the active profile has not held for `minDwellSections` yet -- controllers get time to converge toward the current targets before the next pivot.
 
-For A/B debugging, set `METAPROFILE_DISABLE_AXES=tension,coupling` to suppress specific axes. Suppressed axes are read as null and controllers fall back to their `_BASE` constants — so you can isolate which axis is responsible for an observed behavioural change.
+For A/B debugging, set `METAPROFILE_DISABLE_AXES=tension,coupling` to suppress specific axes. Suppressed axes are read as null and controllers fall back to their `_BASE` constants -- so you can isolate which axis is responsible for an observed behavioural change.
 
 ### Profile schema
 
@@ -288,7 +288,7 @@ Every axis is connected to a real controller. All read dynamically per-tick so m
 | Density | `regimeReactiveDamping` | `_getMaxDensity()` | Swing amplitude scaled by densityTarget |
 | Coupling | `pairGainCeilingController` | `_couplingScale()` | Scales all pair gain ceilings (base, min, max) |
 | Trust cap/floor | `adaptiveTrustScores` | `_getTrustCeiling()`/`_getDecayFloor()` | Dominance cap + starvation floor |
-| Trust concentration | `adaptiveTrustScores` | `_getConcentrationScale()` | EMA learning rate → narrows or widens competition |
+| Trust concentration | `adaptiveTrustScores` | `_getConcentrationScale()` | EMA learning rate -> narrows or widens competition |
 | Phase/CIM | `coordinationIndependenceManager` | `_getRegimeTarget()` | Biases coordination dial toward independence or lock |
 | Antagonism threshold | `coupling_bridges.py` | reads `metaprofile-active.json` | Qualification cutoff for antagonism bridge candidates |
 
@@ -296,12 +296,12 @@ Every axis is connected to a real controller. All read dynamically per-tick so m
 
 The `tension.shape` field drives a per-section tension modulation curve:
 
-- **flat** — constant 0.5 across all sections (ambient, no arc)
-- **ascending** — linear 0→1 across sections (building to climax)
-- **descending** — linear 1→0 across sections (release / denouement)
-- **arch** — sine curve peaking at mid-piece (default, classic arc)
-- **sawtooth** — repeating 0→1 ramp with resets (pulsing tension)
-- **erratic** — quasi-random multi-frequency oscillation (chaotic texture)
+- **flat** -- constant 0.5 across all sections (ambient, no arc)
+- **ascending** -- linear 0->1 across sections (building to climax)
+- **descending** -- linear 1->0 across sections (release / denouement)
+- **arch** -- sine curve peaking at mid-piece (default, classic arc)
+- **sawtooth** -- repeating 0->1 ramp with resets (pulsing tension)
+- **erratic** -- quasi-random multi-frequency oscillation (chaotic texture)
 
 ### Selection
 
@@ -340,11 +340,11 @@ Orthogonal. Conductor profiles set what happens *within each beat* (composers, v
 
 Test sketches in `lab/sketches.js`:
 
-- **metaprofile-atmospheric-to-chaotic** — A/B test: atmospheric for sections 0-2, hot-switch to chaotic at section 3. Validates pivot behavior.
-- **metaprofile-meditative** — full run with meditative profile. Validates high coherence, low density, tight flicker.
-- **metaprofile-volatile** — full run with volatile. Validates maximum exploring, independent layers.
-- **metaprofile-elegiac** — full run with elegiac. Validates the descending tension shape (release / denouement arc).
-- **metaprofile-anthemic** — full run with anthemic. Validates locked-step shared peak (high coupling + arch tension + locked phases).
+- **metaprofile-atmospheric-to-chaotic** -- A/B test: atmospheric for sections 0-2, hot-switch to chaotic at section 3. Validates pivot behavior.
+- **metaprofile-meditative** -- full run with meditative profile. Validates high coherence, low density, tight flicker.
+- **metaprofile-volatile** -- full run with volatile. Validates maximum exploring, independent layers.
+- **metaprofile-elegiac** -- full run with elegiac. Validates the descending tension shape (release / denouement arc).
+- **metaprofile-anthemic** -- full run with anthemic. Validates locked-step shared peak (high coupling + arch tension + locked phases).
 
 You can combine any conductor profile with any metaprofile:
 - `atmospheric` conductor + `atmospheric` meta = maximally ambient
@@ -363,4 +363,4 @@ Metaprofiles are a new evolution axis. HME can:
 - Crystallize "this metaprofile + this conductor profile produced LEGENDARY" patterns
 - Auto-derive new metaprofiles from empirically successful parameter combinations
 
-The evolution priority system (`compute-evolution-priority.js`) gains a new signal: when the trajectory shows plateau, it can suggest a metaprofile switch rather than a code change — the cheapest possible intervention with the largest behavioral impact.
+The evolution priority system (`compute-evolution-priority.js`) gains a new signal: when the trajectory shows plateau, it can suggest a metaprofile switch rather than a code change -- the cheapest possible intervention with the largest behavioral impact.

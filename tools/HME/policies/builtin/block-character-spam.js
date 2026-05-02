@@ -1,7 +1,7 @@
 'use strict';
 /**
  * Block Write/Edit tool calls whose content contains 4+ identical
- * non-word, non-whitespace, non-paren/bracket characters in a row —
+ * non-word, non-whitespace, non-paren/bracket characters in a row --
  * targets visual-decoration spam (runs of dashes, equals, hashes,
  * pipes, tildes, slashes, unicode box-drawing).
  *
@@ -31,11 +31,11 @@ function _scan(content) {
 
 const REASON_PREFIX =
   'BLOCKED: content contains a run of 4+ identical decoration characters ' +
-  '(line {LINE}: {CHAR}×{LEN}). Visual-decoration spam — runs of ' +
-  'dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing — ' +
+  '(line {LINE}: {CHAR}*{LEN}). Visual-decoration spam -- runs of ' +
+  'dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing -- ' +
   'is banned across the project. Use plain text instead of divider bars; ' +
   'normalize markdown table separators to 3 dashes per cell (`| --- |`); ' +
-  'demote headings to depth ≤3. If the run is genuinely required (e.g. ' +
+  'demote headings to depth <=3. If the run is genuinely required (e.g. ' +
   'discussing git conflict markers), append the inline marker `' + ALLOW_TOKEN + '` ' +
   'to that line to opt out.';
 

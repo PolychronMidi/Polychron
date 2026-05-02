@@ -3,7 +3,7 @@
 When LOC pressure forces a file split, the extracted child commonly
 references symbols still in the parent (or vice versa) by bare name.
 Python's late-binding lets that "work" at runtime if the load order
-happens to be parent-first — but it explodes when the child is loaded
+happens to be parent-first -- but it explodes when the child is loaded
 first, when the parent is invoked as `__main__`, or when bytecode is
 cached against a partially-loaded module. Every "worker is unresponsive"
 incident in this repo so far has traced back to one of those three modes.
@@ -29,7 +29,7 @@ binds names at lookup time and `child`'s globals never had `A`.
 
 ## The patterns that work
 
-### 1. One-way data flow → top-level import
+### 1. One-way data flow -> top-level import
 
 If parent has constants/helpers child needs, and child has nothing parent
 needs, just import them at child's top:
@@ -40,19 +40,19 @@ needs, just import them at child's top:
         return A.upper()
 
 If parent legitimately needs to re-export `_do_thing` for backwards-
-compat, keep the bottom import in parent — that's safe because by the
+compat, keep the bottom import in parent -- that's safe because by the
 time line 200 of parent runs, lines 1-199 have already bound parent's
 own symbols, so child's `from .parent_helpers import A` finds it.
 
-This is the default pattern — use it when you can.
+This is the default pattern -- use it when you can.
 
-### 2. Mutual references → lazy module-attribute access
+### 2. Mutual references -> lazy module-attribute access
 
 When parent and child genuinely each reference symbols from the other,
 top-level back-imports cycle. Use lazy module attribute access at call
 time:
 
-    # child.py — no top-level import of parent
+    # child.py -- no top-level import of parent
     def _do_thing():
         from . import parent
         return parent.A.upper()
@@ -61,10 +61,10 @@ The cost: an extra dict lookup per call (negligible). The win: works
 under any load order, parent invoked as `__main__`, partial loads
 during reload, or any combination.
 
-### 3. Mutable shared state → import the holder, not the binding
+### 3. Mutable shared state -> import the holder, not the binding
 
 If parent owns a mutable container (`_state: dict = {}`) and child
-mutates it, importing `_state` once is fine — it's a pointer to the
+mutates it, importing `_state` once is fine -- it's a pointer to the
 container, not a snapshot. **But** if parent later reassigns
 (`_state = {...}` or `init()` overwrites a path string), child's
 binding goes stale. For values reassigned after init, prefer:
@@ -86,12 +86,12 @@ recorder method read the empty string forever.
 ### Anti-pattern: top-level back-import
 
     # child.py
-    from .parent import A             # ← top-level
+    from .parent import A             # <- top-level
     def _do_thing(): return A.upper()
 
     # parent.py
     A = "hello"
-    from .child import _do_thing      # ← bottom-level
+    from .child import _do_thing      # <- bottom-level
 
 Loading parent first works. Loading child first cycles. CI doesn't
 notice because tests usually trigger one specific load order. Production
@@ -111,12 +111,12 @@ at the call site instead.
 ### Anti-pattern: parent has hyphens in its filename
 
     # parent's filename: audit-shell-undefined-vars.py
-    # → can't be imported as `audit-shell-undefined-vars`
-    # → child can't `from audit-shell-undefined-vars import _strip`
+    # -> can't be imported as `audit-shell-undefined-vars`
+    # -> child can't `from audit-shell-undefined-vars import _strip`
 
 Fix: rename the parent to use underscores. Update string-form callers
 (`os.path.join("scripts", "X.py")`) at the same time. The Python
-identifier rule isn't optional — every workaround for it is more
+identifier rule isn't optional -- every workaround for it is more
 complex than the rename.
 
 ## When in doubt

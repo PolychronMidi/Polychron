@@ -1,5 +1,5 @@
 'use strict';
-// Transitional shell wrapper. holograph is a diagnostic snapshot — emits
+// Transitional shell wrapper. holograph is a diagnostic snapshot -- emits
 // no decisions; wrap unchanged.
 //
 // MUST RUN AFTER: work_checks, anti_patterns, detectors

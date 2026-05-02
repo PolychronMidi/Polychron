@@ -9,7 +9,7 @@ if echo "$TRIMMED_CHECK" | grep -qE '^npm run main' && ! _onb_is_graduated; then
   fi
 fi
 
-# Strip explicit timeouts — all project scripts handle timeouts inline.
+# Strip explicit timeouts -- all project scripts handle timeouts inline.
 # Uses updatedInput to silently remove timeout and let the command proceed.
 TIMEOUT=$(_safe_jq "$INPUT" '.tool_input.timeout' '')
 if [ -n "$TIMEOUT" ] && [ "$TIMEOUT" != "0" ]; then
@@ -17,10 +17,10 @@ if [ -n "$TIMEOUT" ] && [ "$TIMEOUT" != "0" ]; then
   # Build updatedInput: command + run_in_background (if set) + no timeout
   if [ "$RUN_BG" = "true" ]; then
     jq -n --arg cmd "$CMD" \
-      '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd,"run_in_background":true}},"systemMessage":"timeout removed — all project scripts handle timeouts inline"}'
+      '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd,"run_in_background":true}},"systemMessage":"timeout removed -- all project scripts handle timeouts inline"}'
   else
     jq -n --arg cmd "$CMD" \
-      '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd}},"systemMessage":"timeout removed — all project scripts handle timeouts inline"}'
+      '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd}},"systemMessage":"timeout removed -- all project scripts handle timeouts inline"}'
   fi
   exit 0
 fi

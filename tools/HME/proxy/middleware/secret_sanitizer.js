@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Secret sanitizer — scrub credential-like patterns from tool output before
+ * Secret sanitizer -- scrub credential-like patterns from tool output before
  * the model sees it. Pattern catalog adapted from FailproofAI's
  * sanitize-{api-keys,jwt,bearer-tokens,private-key-content,connection-strings}
  * built-ins. Each match is replaced with a stable marker (`<REDACTED:type>`)
@@ -10,7 +10,7 @@
  * `npm config get`, or `env` can leak tokens into the model's context. Once
  * in context, the agent can echo them back, paste them into other tools,
  * commit them, or include them in error reports. Sanitization at the
- * tool_result boundary is the cheapest, most reliable mitigation — far
+ * tool_result boundary is the cheapest, most reliable mitigation -- far
  * better than relying on training data to suppress leakage.
  *
  * Ordering: runs BEFORE bash_enrichment (which appends [err] footers) and
@@ -54,7 +54,7 @@ const PATTERNS = [
   // Discord bot tokens (3-segment, base64ish).
   [/\b[MN][A-Za-z\d]{23}\.[\w-]{6}\.[\w-]{27,}\b/g, '<REDACTED:discord-token>'],
 
-  // JSON Web Tokens — three-segment base64url separated by dots, header
+  // JSON Web Tokens -- three-segment base64url separated by dots, header
   // typically begins with eyJ (decoded `{"`).
   [/\beyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\b/g, '<REDACTED:jwt>'],
 
@@ -63,7 +63,7 @@ const PATTERNS = [
   // Authorization Basic headers.
   [/\bBasic\s+[A-Za-z0-9+/=]{20,}\b/g, 'Basic <REDACTED:basic-auth>'],
 
-  // PEM private key blocks — replace the whole block (header to footer).
+  // PEM private key blocks -- replace the whole block (header to footer).
   // RSA / OPENSSH / EC / DSA / generic "PRIVATE KEY".
   [
     /-----BEGIN (?:RSA |OPENSSH |EC |DSA |ENCRYPTED |PGP )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |OPENSSH |EC |DSA |ENCRYPTED |PGP )?PRIVATE KEY-----/g,
@@ -79,7 +79,7 @@ const PATTERNS = [
 ];
 // anti-fork-end: secret-sanitizer-patterns
 
-// Substitution markers we ALREADY emit — used to suppress double-redaction
+// Substitution markers we ALREADY emit -- used to suppress double-redaction
 // across proxy restarts where tool_results re-enter the pipeline.
 const REDACTED_MARKER_RE = /<REDACTED:[a-z\-]+>/;
 
@@ -90,7 +90,7 @@ function _textOf(toolResult) {
     // Join with '\n' so word boundaries are preserved across blocks. Joining
     // with '' caused regexes anchored on \b to silently miss secrets that
     // happened to be in their own block (verified by tests/specs/
-    // secret_sanitizer.test.js — `before` block + key block + `after`
+    // secret_sanitizer.test.js -- `before` block + key block + `after`
     // block became `beforeKEYafter`, killing the leading `\b`).
     return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('\n');
   }
@@ -133,7 +133,7 @@ module.exports = {
   name: 'secret_sanitizer',
 
   onToolResult({ toolUse, toolResult, ctx }) {
-    // Apply to ALL tools, not just Bash — Read, Grep, web fetches, etc. can
+    // Apply to ALL tools, not just Bash -- Read, Grep, web fetches, etc. can
     // also leak secrets. Cost is one regex sweep per tool_result; the
     // patterns are pre-compiled and short-circuit on no match.
     const text = _textOf(toolResult);

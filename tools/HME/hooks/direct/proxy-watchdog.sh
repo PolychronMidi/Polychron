@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# proxy-watchdog.sh — SessionStart hook that detects proxy-down and
+# proxy-watchdog.sh -- SessionStart hook that detects proxy-down and
 # respawns the HME proxy. Idempotent: if the proxy is already alive, no-op.
 #
 # Why this exists:
@@ -11,7 +11,7 @@
 #
 # This watchdog runs at SessionStart, probes the proxy's /health, and
 # spawns it via the same setsid nohup pattern polychron-launch.sh uses
-# if unreachable. It does NOT start the llama-server or other children —
+# if unreachable. It does NOT start the llama-server or other children --
 # only the proxy itself. Single responsibility.
 #
 # Safety:
@@ -95,7 +95,7 @@ while [ "$_waited" -lt 8 ]; do
   if curl -sf --max-time 1 "$_WD_URL" >/dev/null 2>&1; then
     ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
     echo "[$ts] [proxy-watchdog] proxy respawned (pid=$_WD_PID) after ${_waited}s" >&2
-    # Clear the sticky proxy-down flag — the next UserPromptSubmit
+    # Clear the sticky proxy-down flag -- the next UserPromptSubmit
     # should not emit the offline banner.
     rm -f "$_WD_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
     # Emit a one-shot recovery note into hme-errors.log so the log

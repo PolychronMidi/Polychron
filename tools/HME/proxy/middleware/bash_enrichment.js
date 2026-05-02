@@ -1,10 +1,10 @@
 'use strict';
 /**
- * Bash error surfacing — when a Bash result contains an error signal buried
+ * Bash error surfacing -- when a Bash result contains an error signal buried
  * in long output (Traceback / ERROR / FAIL / segfault / OOM), append one
  * line with the matching snippet so the agent has a TL;DR pointer. Clean
  * runs pass through untouched. Destructive-command flags and file-write
- * KB summaries were removed as noise — the agent already knows what
+ * KB summaries were removed as noise -- the agent already knows what
  * command they ran, and per-file KB state is never agent-actionable.
  */
 
@@ -26,9 +26,9 @@ function _textOf(toolResult) {
 
 function _firstErrorSnippet(text) {
   // Return the matching line PLUS up to 2 trailing context lines, capped
-  // by total bytes — long Python tracebacks routinely exceed 120 chars
+  // by total bytes -- long Python tracebacks routinely exceed 120 chars
   // before reaching the salient phrase (e.g. `OutOfMemoryError: CUDA
-  // out of memory. Tried to allocate …`). Slicing to per-line 120
+  // out of memory. Tried to allocate ...`). Slicing to per-line 120
   // chars used to crop to a path prefix and drop the diagnosis.
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {

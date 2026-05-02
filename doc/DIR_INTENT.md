@@ -6,7 +6,7 @@ Aggregated into `output/metrics/hme-dir-intent.json` by `scripts/pipeline/hme/bu
 
 ## When to add a README
 
-Not every directory — only **cohesion boundaries**:
+Not every directory -- only **cohesion boundaries**:
 
 - Subsystem roots (`src/conductor`, `src/crossLayer`)
 - Architectural zones (`tools/HME/proxy`, `tools/HME/proxy/middleware`, `scripts/pipeline/validators`)
@@ -19,7 +19,7 @@ Leaf dirs where the dirname is self-documenting don't need one unless a local ru
 ```markdown
 # Subsystem Name
 
-Normal human-facing README content — headings, prose, links. Renders on GitHub
+Normal human-facing README content -- headings, prose, links. Renders on GitHub
 without the metadata below showing. Write it as you would any README.
 
 ## Whatever sections make sense for humans
@@ -28,14 +28,14 @@ without the metadata below showing. Write it as you would any README.
 
 <!-- HME-DIR-INTENT
 rules:
-  - Never hand-tune meta-controller constants — modify controller logic instead
+  - Never hand-tune meta-controller constants -- modify controller logic instead
   - Bias bounds are locked; snapshot after structural changes with <command>
 -->
 ```
 
 ### Fields
 
-- **`rules`** — list of terse imperative strings. Each item is ONE rule. No "should"/"might" — either a rule or it doesn't belong. Rules that duplicate `CLAUDE.md` verbatim are flagged as redundant (CLAUDE.md covers global; READMEs cover local).
+- **`rules`** -- list of terse imperative strings. Each item is ONE rule. No "should"/"might" -- either a rule or it doesn't belong. Rules that duplicate `CLAUDE.md` verbatim are flagged as redundant (CLAUDE.md covers global; READMEs cover local).
 
 ### `intro` is implicit
 
@@ -43,9 +43,9 @@ The aggregator captures everything above the `<!-- HME-DIR-INTENT -->` block and
 
 ## What NOT to put in rules
 
-- **Global rules** already in `CLAUDE.md` (fail-fast, no globals, self-registration, etc.) — flagged as redundant.
-- **File-listing / changelog / prose that paraphrases code** — the code and git history are authoritative.
-- **Cross-directory references** — a rule about directory A should live in A's README, not B's.
+- **Global rules** already in `CLAUDE.md` (fail-fast, no globals, self-registration, etc.) -- flagged as redundant.
+- **File-listing / changelog / prose that paraphrases code** -- the code and git history are authoritative.
+- **Cross-directory references** -- a rule about directory A should live in A's README, not B's.
 
 ## Aggregator behavior
 
@@ -56,9 +56,9 @@ The aggregator captures everything above the `<!-- HME-DIR-INTENT -->` block and
 3. Computes drift signature: `(file_count_depth_1, file_list_hash, manager_file_content_hash_prefix)`
 4. Compares against stored signature in `output/metrics/hme-dir-signatures.json`; flags drift
 5. Writes `output/metrics/hme-dir-intent.json`
-6. Flags candidate dirs missing a README (≥5 source files + `index.js`/`__init__.py`/`Manager.js`)
+6. Flags candidate dirs missing a README (>=5 source files + `index.js`/`__init__.py`/`Manager.js`)
 
-READMEs without the `<!-- HME-DIR-INTENT -->` block are ignored — they're normal human READMEs using some other convention (e.g., HuggingFace model cards).
+READMEs without the `<!-- HME-DIR-INTENT -->` block are ignored -- they're normal human READMEs using some other convention (e.g., HuggingFace model cards).
 
 ## Proxy middleware integration
 
@@ -75,11 +75,11 @@ READMEs without the `<!-- HME-DIR-INTENT -->` block are ignored — they're norm
 
 - `output/metrics/hme-dir-signatures.json` stores each directory's last-known signature
 - On aggregation: if current signature diverges, the directory is tagged `drifted: true` in the index
-- The middleware still injects rules even when drifted, but adds a `(drifted)` tag — rules age slower than prose, but the agent should be skeptical
+- The middleware still injects rules even when drifted, but adds a `(drifted)` tag -- rules age slower than prose, but the agent should be skeptical
 - `review(mode='health')` surfaces drifted and invalid entries
 
 ## Trade-offs
 
-- **No per-rule drift protection** — rules are imperatives that tend to remain valid across implementation changes. A stale rule gets corrected by a human.
-- **No auto-generation** — READMEs are authored. The aggregator is read-only.
-- **Single source of truth** — the file is both the human-facing README and the machine-parseable source. No sidecar files.
+- **No per-rule drift protection** -- rules are imperatives that tend to remain valid across implementation changes. A stale rule gets corrected by a human.
+- **No auto-generation** -- READMEs are authored. The aggregator is read-only.
+- **Single source of truth** -- the file is both the human-facing README and the machine-parseable source. No sidecar files.

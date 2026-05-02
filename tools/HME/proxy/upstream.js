@@ -29,7 +29,7 @@ function resolveUpstream(req) {
 }
 
 //  Emergency valve
-// N consecutive upstream failures → write CRITICAL alert, disable proxy, exit.
+// N consecutive upstream failures -> write CRITICAL alert, disable proxy, exit.
 const EMERGENCY_THRESHOLD = 3;
 let _consecutiveFailures = 0;
 let _valveTripped = false;
@@ -51,11 +51,11 @@ function tripEmergencyValve(lastErr) {
     let envContent = fs.readFileSync(envPath, 'utf8');
     envContent = envContent.replace(
       /^HME_PROXY_ENABLED=.*/m,
-      'HME_PROXY_ENABLED=0  # EMERGENCY VALVE tripped — proxy self-disabled',
+      'HME_PROXY_ENABLED=0  # EMERGENCY VALVE tripped -- proxy self-disabled',
     );
     fs.writeFileSync(envPath, envContent);
   } catch (_e) {
-    console.error('[hme-proxy] WARNING: could not update .env — manually set HME_PROXY_ENABLED=0');
+    console.error('[hme-proxy] WARNING: could not update .env -- manually set HME_PROXY_ENABLED=0');
   }
 
   emit({ event: 'proxy_emergency', reason: lastErr, source: 'emergency_valve' });

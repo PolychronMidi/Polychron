@@ -39,14 +39,14 @@ moduleLifecycle.declare({
 
 ```
 require time
-  └─ declare() called → manifest queued
-     └─ if every dep is already bound: instantiate eagerly, bind globals,
+  +- declare() called -> manifest queued
+     +- if every dep is already bound: instantiate eagerly, bind globals,
         run post-init wiring fields
-     └─ else: defer (joins the pending pool)
+     +- else: defer (joins the pending pool)
 
 initializeAll() (called from main.js BEFORE assertBootstrapGlobals)
-  └─ topo-sort drains pending manifests + legacy registerInitializer entries
-  └─ runs <name>:lateInit registerInitializer entries (post-boot wiring that
+  +- topo-sort drains pending manifests + legacy registerInitializer entries
+  +- runs <name>:lateInit registerInitializer entries (post-boot wiring that
      needs all modules loaded; e.g. eventBus subscriptions)
 ```
 
@@ -65,7 +65,7 @@ The last row deserves explanation: `eventBus.on(...)` subscriptions, late
 cross-module wiring, and any setup that depends on modules that haven't been
 declared yet must use `registerInitializer` from inside the `init()` body. The
 registry stores it under `<name>:lateInit` and runs it during the
-initializeAll() topo-sort drain — by that point every module is loaded.
+initializeAll() topo-sort drain -- by that point every module is loaded.
 
 ## Migration patterns
 
@@ -130,11 +130,11 @@ moduleLifecycle.declare({
 
 Today the project has 4 parallel registries:
 
-- `moduleLifecycle` — boot order, manifest declarations, lifecycle hooks
-- `crossLayerRegistry` — cross-layer module registration + scoped resets
-- `conductorIntelligence` — recorders, state providers, density bias, scoped resets
-- `feedbackRegistry` — feedback loop topology declarations
-- `metaControllerRegistry` — hypermeta controller registry
+- `moduleLifecycle` -- boot order, manifest declarations, lifecycle hooks
+- `crossLayerRegistry` -- cross-layer module registration + scoped resets
+- `conductorIntelligence` -- recorders, state providers, density bias, scoped resets
+- `feedbackRegistry` -- feedback loop topology declarations
+- `metaControllerRegistry` -- hypermeta controller registry
 
 The manifest fields (`crossLayerScopes`, `conductorScopes`, `recorder`,
 `stateProvider`) absorb the most common operations of `crossLayerRegistry` and
@@ -163,10 +163,10 @@ The manifest fields (`crossLayerScopes`, `conductorScopes`, `recorder`,
 
 ## Verifiers
 
-- `check-safe-preboot-audit` — ratchets safePreBoot wrap count downward.
-- `check-module-manifests` — validates manifest shape, subsystem, provides
+- `check-safe-preboot-audit` -- ratchets safePreBoot wrap count downward.
+- `check-module-manifests` -- validates manifest shape, subsystem, provides
   consistency.
-- `no-bare-declared-global-in-init` (ESLint, warn) — flags bare references
+- `no-bare-declared-global-in-init` (ESLint, warn) -- flags bare references
   to declared modules inside init() bodies; should use `deps.X` or alias
   via `const X = deps.X`.
 

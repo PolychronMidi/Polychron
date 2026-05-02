@@ -1,15 +1,15 @@
 'use strict';
 /**
- * Edit context — fires on Edit/Write/NotebookEdit when the target file has
+ * Edit context -- fires on Edit/Write/NotebookEdit when the target file has
  * bias-bounds locked in scripts/pipeline/bias-bounds-manifest.json. Shows
  * the exact locked parameters with their current [lo, hi] ranges and the
  * snapshot command the agent must run if the new bounds are intentional.
  *
  * For Edit specifically: if old_string or new_string mentions one of the
  * manifest keys, it's treated as a HIGH-signal hit (the edit is definitely
- * touching a locked param) and gets an `⚠` prefix.
+ * touching a locked param) and gets an `[!]` prefix.
  *
- * Silent for files with no locked bias — which is the vast majority.
+ * Silent for files with no locked bias -- which is the vast majority.
  */
 
 const path = require('path');
@@ -39,7 +39,7 @@ module.exports = {
     if (!fp) return;
     const rel = _relPath(fp, ctx.PROJECT_ROOT);
 
-    // Semantic validate — module stem is the query; /validate returns
+    // Semantic validate -- module stem is the query; /validate returns
     // bugfix/antipattern hits if the KB has relevant entries. Surface as
     // warning, title-only. Fires for every Edit/Write/NotebookEdit.
     const stem = path.basename(fp, path.extname(fp));
@@ -51,7 +51,7 @@ module.exports = {
       for (const b of blocks) {
         if (typeof b.score === 'number' && b.score >= BUGFIX_MIN_SCORE) {
           const t = String(b.title ? b.title : '').slice(0, 90);
-          if (t) semanticLines.push(`⚠ bugfix:"${t}"`);
+          if (t) semanticLines.push(`[!] bugfix:"${t}"`);
           if (semanticLines.length >= 1) break;
         }
       }
@@ -59,7 +59,7 @@ module.exports = {
         if (semanticLines.length >= 2) break;
         if (typeof w.score === 'number' && w.score >= ANTIPATTERN_MIN_SCORE) {
           const t = String(w.title ? w.title : '').slice(0, 90);
-          if (t) semanticLines.push(`⚠ rule:"${t}"`);
+          if (t) semanticLines.push(`[!] rule:"${t}"`);
         }
       }
     }
@@ -68,7 +68,7 @@ module.exports = {
     if (locks.length === 0 && semanticLines.length === 0) return;
 
     // Detect whether the edit directly touches any of the locked keys.
-    // Coerce to string defensively — a malformed agent payload (or a
+    // Coerce to string defensively -- a malformed agent payload (or a
     // future tool variant) could deliver an array/object here, which
     // would make `String.prototype.includes` throw and the whole
     // onToolResult would silently reject.
@@ -85,13 +85,13 @@ module.exports = {
     // Peer-review iter 133: only surface when the edit ACTUALLY touches
     // a locked key. The previous unconditional `locks.length > 0` branch
     // emitted `bias-bounds: ...` on every edit to a file that merely
-    // contains locked params, even when the edit didn't graze them —
+    // contains locked params, even when the edit didn't graze them --
     // pure noise the agent already had via CLAUDE.md's static rule.
     // The `bias-touch` variant (touched > 0) is the actionable case.
     if (touched.length > 0) {
       const shown = touched.slice(0, 3).map((l) => `${l.key}=[${l.lo},${l.hi}]`).join(' ');
       const tail = touched.length > 3 ? ` +${touched.length - 3}` : '';
-      footerLines.push(`⚠ bias-touch: ${shown}${tail} — snapshot:${SNAPSHOT_CMD}`);
+      footerLines.push(`[!] bias-touch: ${shown}${tail} -- snapshot:${SNAPSHOT_CMD}`);
     }
     for (const line of semanticLines) footerLines.push(line);
 

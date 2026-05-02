@@ -1,19 +1,19 @@
-# `mcp_server/` — minimal MCP skeleton
+# `mcp_server/` -- minimal MCP skeleton
 
 In-process MCP (Model Context Protocol) server, hosted by `hme_proxy.js`
-on the proxy port. Currently dormant — no `.mcp.json` registers this
+on the proxy port. Currently dormant -- no `.mcp.json` registers this
 server with Claude Code; HME tools reach the agent via Bash(`i/<tool>`)
 shell wrappers + tool injection, not MCP. See repo-level [README.md](../../../../README.md)
 and [doc/HME.md](../../../../doc/HME.md) for the active surface.
 
 ## What's here
 
-Four files, ≤200 lines each, single concern per file:
+Four files, <=200 lines each, single concern per file:
 
 | File           | Concern                                                       |
 | --- | --- |
 | `index.js`     | HTTP route handler for `/mcp/sse` + `/mcp/messages` + `/mcp/health` |
-| `session.js`   | session-id ↔ SSE response stream map; 10-min TTL reaper        |
+| `session.js`   | session-id <-> SSE response stream map; 10-min TTL reaper        |
 | `protocol.js`  | JSON-RPC + SSE framing primitives                             |
 | `dispatcher.js`| forwards `tools/list` + `tools/call` to the Python worker    |
 
@@ -55,8 +55,8 @@ prefer the MCP-native UX, but is not the recommended path.
 
 ## Filesystem-IPC hybrid (implemented, opt-in)
 
-The MCP wire spec at the boundary (Claude Code ↔ proxy) is HTTP/SSE
-and that's preserved. But the INTERNAL leg (proxy ↔ worker tool
+The MCP wire spec at the boundary (Claude Code <-> proxy) is HTTP/SSE
+and that's preserved. But the INTERNAL leg (proxy <-> worker tool
 dispatch) can route through the existing
 [`tools/HME/service/worker_queue.py`](../../service/worker_queue.py)
 filesystem watcher instead of HTTP. Activate via:
@@ -68,40 +68,40 @@ HME_WORKER_TRANSPORT=hybrid
 
 Routing decision (in [`../_worker_transport.js`](../_worker_transport.js)):
 - `POST /tool/<name>`, `POST /enrich`, `POST /enrich_prompt`,
-  `POST /audit` → filesystem queue (worker_queue.py drains)
+  `POST /audit` -> filesystem queue (worker_queue.py drains)
 - Everything else (`GET /tools/list`, `GET /health`, `GET /version`,
-  `GET /transcript`, `POST /reindex`, etc.) → HTTP
+  `GET /transcript`, `POST /reindex`, etc.) -> HTTP
 
 Wire (driven by worker_queue.py's existing schema):
 - Request: `tmp/hme-worker-queue/<endpoint>/<jobId>.json` with
-  `{jobId, endpoint, body, ts}` — atomic temp+rename
-- Result: `tmp/hme-worker-results/<jobId>.json` — atomic temp+rename;
+  `{jobId, endpoint, body, ts}` -- atomic temp+rename
+- Result: `tmp/hme-worker-results/<jobId>.json` -- atomic temp+rename;
   caller unlinks after read
 
 Tradeoffs vs HTTP-only:
-- ✅ SIGKILL-survivable: if the worker dies mid-tool-call, the job
+- [x] SIGKILL-survivable: if the worker dies mid-tool-call, the job
   file stays in the queue; the next worker boot's watcher picks it up
-- ✅ Audit trail: every tool call leaves a result file
-- ✅ No socket lifecycle issues (ECONNRESET, half-open sockets, port
+- [x] Audit trail: every tool call leaves a result file
+- [x] No socket lifecycle issues (ECONNRESET, half-open sockets, port
   collisions); proxy and worker just read/write files
-- ✅ Atomic-rename writes — never see partial reads
-- ❌ ~1-5ms FS tax per call (negligible vs typical tool-call wall-time
+- [x] Atomic-rename writes -- never see partial reads
+- [ ] ~1-5ms FS tax per call (negligible vs typical tool-call wall-time
   which is hundreds of ms to seconds)
-- ❌ Polling-based on the worker side (50ms default; tunable via
-  `HME_WORKER_FS_POLL_MS`) — not inotify
+- [ ] Polling-based on the worker side (50ms default; tunable via
+  `HME_WORKER_FS_POLL_MS`) -- not inotify
 
 The MCP wire spec is fully unaffected: external clients keep talking
-HTTP/SSE to `/mcp/*`. Same pattern as `_proxy_bridge.sh` ↔ proxy ↔
-direct dispatch — boundary stays standards-compliant; internal legs
+HTTP/SSE to `/mcp/*`. Same pattern as `_proxy_bridge.sh` <-> proxy <->
+direct dispatch -- boundary stays standards-compliant; internal legs
 use whatever transport is most bug-proof for their workload.
 
 Coverage: routing logic tested in
 [`tools/HME/tests/specs/worker_transport_router.test.js`](../../tests/specs/worker_transport_router.test.js)
-— 5 cases including hybrid-routes-tool-to-FS and hybrid-keeps-health-on-HTTP.
+-- 5 cases including hybrid-routes-tool-to-FS and hybrid-keeps-health-on-HTTP.
 
 ## Tests
 
-No dedicated tests for this directory — the HME unit tests
+No dedicated tests for this directory -- the HME unit tests
 (`tools/HME/tests/specs/`) exercise worker dispatch via
 `worker_client.js` (which now shares `_worker_http.js`), so the shared
 plumbing is covered transitively. Adding RuleTester-style fixtures for

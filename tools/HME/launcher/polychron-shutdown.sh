@@ -26,14 +26,14 @@ PID_FILE="$PROJECT_ROOT/log/hme-pids"
 _term_pid() {
   local pid="$1" label="$2"
   if kill -0 "$pid" 2>/dev/null; then
-    kill -TERM "$pid" 2>/dev/null && echo "[shutdown] SIGTERM → ${label} (${pid})" >&2
+    kill -TERM "$pid" 2>/dev/null && echo "[shutdown] SIGTERM -> ${label} (${pid})" >&2
   fi
 }
 
 _kill_pid() {
   local pid="$1" label="$2"
   if kill -0 "$pid" 2>/dev/null; then
-    kill -KILL "$pid" 2>/dev/null && echo "[shutdown] SIGKILL → ${label} (${pid})" >&2
+    kill -KILL "$pid" 2>/dev/null && echo "[shutdown] SIGKILL -> ${label} (${pid})" >&2
   fi
 }
 
@@ -58,7 +58,7 @@ _PATTERNS=(
   "llama-server.*8081"
 )
 for pat in "${_PATTERNS[@]}"; do
-  pkill -TERM -f "$pat" 2>/dev/null && echo "[shutdown] SIGTERM → $pat" >&2 || true
+  pkill -TERM -f "$pat" 2>/dev/null && echo "[shutdown] SIGTERM -> $pat" >&2 || true
 done
 
 sleep 3
@@ -69,7 +69,7 @@ for label in "${!_TRACKED_PIDS[@]}"; do
   _kill_pid "${_TRACKED_PIDS[$label]}" "$label"
 done
 for pat in "${_PATTERNS[@]}"; do
-  pkill -KILL -f "$pat" 2>/dev/null && echo "[shutdown] SIGKILL → $pat" >&2 || true
+  pkill -KILL -f "$pat" 2>/dev/null && echo "[shutdown] SIGKILL -> $pat" >&2 || true
 done
 
 # 4. Cleanup

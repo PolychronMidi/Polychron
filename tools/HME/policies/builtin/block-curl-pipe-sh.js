@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Block `curl ... | sh` and `wget ... | bash` and variants — primary
+ * Block `curl ... | sh` and `wget ... | bash` and variants -- primary
  * supply-chain attack pattern. JS port of the bash gate in
  * tools/HME/hooks/pretooluse/bash/blackbox_guards.sh; the bash gate
  * remains primary while bash dispatch flows through pretooluse_bash.sh,

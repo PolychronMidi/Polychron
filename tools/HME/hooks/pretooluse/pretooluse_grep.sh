@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# PreToolUse: Grep — prevent content-mode grep from leaking guarded files.
+# PreToolUse: Grep -- prevent content-mode grep from leaking guarded files.
 # files_with_matches / count modes are always safe (paths/numbers only); content
 # mode returns matching lines which can leak theory essay text, jsonl corpus
 # entries, etc. Block content-mode when the search path or any match would land
@@ -12,7 +12,7 @@ SEARCH_PATH=$(_safe_jq "$INPUT" '.tool_input.path' '')
 OUTPUT_MODE=$(_safe_jq "$INPUT" '.tool_input.output_mode' 'files_with_matches')
 GLOB=$(_safe_jq "$INPUT" '.tool_input.glob' '')
 
-# Only content mode is dangerous — default (files_with_matches) and count are fine.
+# Only content mode is dangerous -- default (files_with_matches) and count are fine.
 if [ "$OUTPUT_MODE" != "content" ]; then
   exit 0
 fi
@@ -59,7 +59,7 @@ fi
 rm -f "$_PG_GATE_ERR" 2>/dev/null
 
 if [ -n "$HIT" ]; then
-  _emit_block "BLOCKED: Grep output_mode='content' on guarded path '$HIT' can leak the file's contents into context. Use output_mode='files_with_matches' (default) or 'count' — or narrow the path to a non-guarded subtree."
+  _emit_block "BLOCKED: Grep output_mode='content' on guarded path '$HIT' can leak the file's contents into context. Use output_mode='files_with_matches' (default) or 'count' -- or narrow the path to a non-guarded subtree."
   exit 2
 fi
 

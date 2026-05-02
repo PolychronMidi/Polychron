@@ -1,5 +1,5 @@
 'use strict';
-// Regression tests for the proxy → worker transport router. Verifies
+// Regression tests for the proxy -> worker transport router. Verifies
 // that hybrid mode routes FS-eligible endpoints through the FS
 // backend and routes everything else through HTTP, and that http
 // mode never touches FS.
@@ -63,7 +63,7 @@ test('worker_transport: invalid mode falls back to http',
 test('worker_transport: hybrid mode routes /tool/* through filesystem',
   _withSandbox({ transport: 'hybrid' }, async (sandbox) => {
     const tr = require(path.join(PROXY_DIR, '_worker_transport'));
-    // Fire a /tool/foo request with very short timeout — no worker
+    // Fire a /tool/foo request with very short timeout -- no worker
     // running, so it'll time out. The KEY assertion is that the request
     // file lands in tmp/hme-worker-queue/tool/ (proving FS routing was
     // taken), NOT that we get a real result.
@@ -87,7 +87,7 @@ test('worker_transport: hybrid mode does NOT route /health through filesystem',
     const tr = require(path.join(PROXY_DIR, '_worker_transport'));
     // /health is not FS-eligible, so it stays on HTTP. With no worker
     // listening on 127.0.0.1:9098 (default WORKER_PORT), HTTP transport
-    // returns a transport error — but crucially, no FS file is written.
+    // returns a transport error -- but crucially, no FS file is written.
     const queueRoot = path.join(sandbox, 'tmp', 'hme-worker-queue');
     await tr.workerRequest('GET', '/health', null, 200);
     // No queue dir should exist (HTTP path didn't touch FS).

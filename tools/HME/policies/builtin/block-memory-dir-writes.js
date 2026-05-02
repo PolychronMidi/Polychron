@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Block writes to .claude/projects/.../memory/ — that directory is
+ * Block writes to .claude/projects/.../memory/ -- that directory is
  * deprecated. Cross-session knowledge belongs in HME KB (`i/learn`);
  * behavioral rules belong in CLAUDE.md.
  */

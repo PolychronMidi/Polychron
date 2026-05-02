@@ -1,5 +1,5 @@
 'use strict';
-// Activity log middleware — emits activity events for every completed tool
+// Activity log middleware -- emits activity events for every completed tool
 // execution. Replaces log-tool-call.sh's transcript/activity emission and
 // the various posttooluse_*.sh activity hooks.
 
@@ -17,7 +17,7 @@ module.exports = {
     const input = toolUse.input || {};
     const filePath = input.file_path || input.path || '';
     // Renamed from `module` because that shadows the CommonJS-injected
-    // per-file `module` binding — silent footgun if a future edit ever
+    // per-file `module` binding -- silent footgun if a future edit ever
     // reaches for `module.exports` or any reflection inside this scope.
     const moduleName = _extractModule(filePath);
 
@@ -37,7 +37,7 @@ module.exports = {
     if (name === 'Edit' || name === 'NotebookEdit' || name === 'Write') {
       // Compute hme_read_prior: was this file (or its module) recently
       // briefed via Read / HME tool / Grep? Without this field,
-      // coherence-score read_coverage is always 0/N — the root cause of
+      // coherence-score read_coverage is always 0/N -- the root cause of
       // the cascade of zero-valued Phase 2-6 metrics.
       const hmeReadPrior = (ctx.nexusHas && (
         (moduleName && ctx.nexusHas('BRIEF', moduleName)) ||

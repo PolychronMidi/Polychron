@@ -68,7 +68,7 @@ _safe_py3() {
 #
 # Use this for any hook that invokes local-LLM reasoning or long-running
 # subprocesses. The R30-R31 pattern of `timeout 30 ... || true` silently
-# swallowed failures and left LIFESAVER blind — this helper makes that
+# swallowed failures and left LIFESAVER blind -- this helper makes that
 # class of failure impossible by construction.
 #
 # Usage: _lifesaver_bg <label> <timeout-seconds> <output-file> <command...>
@@ -83,11 +83,11 @@ _lifesaver_bg() {
     local rc=$?
     mkdir -p "$PROJECT_ROOT/log" 2>/dev/null
     if [ "$rc" -ne 0 ]; then
-      printf '[%s] [%s] FAILED (rc=%d, timeout=%ss) — check %s\n' \
+      printf '[%s] [%s] FAILED (rc=%d, timeout=%ss) -- check %s\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$label" "$rc" "$tmo" "$outfile" \
         >> "$errlog" 2>/dev/null
     elif [ ! -s "$outfile" ]; then
-      printf '[%s] [%s] produced EMPTY output (rc=0 but no stdout) — downstream may be unreachable\n' \
+      printf '[%s] [%s] produced EMPTY output (rc=0 but no stdout) -- downstream may be unreachable\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$label" \
         >> "$errlog" 2>/dev/null
     fi

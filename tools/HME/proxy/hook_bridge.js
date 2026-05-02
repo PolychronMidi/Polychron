@@ -1,24 +1,24 @@
 'use strict';
 /**
- * Lifecycle event bridge: Claude Code hooks → proxy-native dispatch.
+ * Lifecycle event bridge: Claude Code hooks -> proxy-native dispatch.
  *
- * The ONLY Claude-Code-side script is tools/HME/hooks/_proxy_bridge.sh — a
+ * The ONLY Claude-Code-side script is tools/HME/hooks/_proxy_bridge.sh -- a
  * 10-line forwarder that POSTs whatever stdin it receives to
  *   POST /hme/lifecycle?event=<EventName>
  * and relays the response JSON back to Claude Code's plugin machinery
  * (stdout/stderr/exit_code).
  *
  * This module owns the proxy-side dispatch:
- *   SessionStart      → sessionstart.sh
- *   UserPromptSubmit  → userpromptsubmit.sh
- *   Stop              → stop.sh
- *   PreToolUse        → routed by tool_name to pretooluse_<tool>.sh (+ primer)
- *   PostToolUse       → log-tool-call.sh + routed posttool hooks
- *   PreCompact        → precompact.sh
- *   PostCompact       → postcompact.sh
+ *   SessionStart      -> sessionstart.sh
+ *   UserPromptSubmit  -> userpromptsubmit.sh
+ *   Stop              -> stop.sh
+ *   PreToolUse        -> routed by tool_name to pretooluse_<tool>.sh (+ primer)
+ *   PostToolUse       -> log-tool-call.sh + routed posttool hooks
+ *   PreCompact        -> precompact.sh
+ *   PostCompact       -> postcompact.sh
  *
  * Everything funnels through `dispatchEvent(eventName, stdinJson)` which
- * returns `{stdout, stderr, exit_code}` — the shape the forwarder sends
+ * returns `{stdout, stderr, exit_code}` -- the shape the forwarder sends
  * back to Claude Code.
  *
  * This replaces the three direct-function calls the proxy made in a
@@ -36,7 +36,7 @@ const LIFECYCLE = path.join(HOOKS_DIR, 'lifecycle');
 const PRETOOLUSE = path.join(HOOKS_DIR, 'pretooluse');
 const POSTTOOLUSE = path.join(HOOKS_DIR, 'posttooluse');
 
-// Tool-name → pretooluse script.
+// Tool-name -> pretooluse script.
 const PRETOOL_SCRIPTS = {
   Edit: [path.join(PRETOOLUSE, 'pretooluse_edit.sh')],
   MultiEdit: [path.join(PRETOOLUSE, 'pretooluse_edit.sh')],
@@ -49,7 +49,7 @@ const PRETOOL_SCRIPTS = {
   ToolSearch: [path.join(PRETOOLUSE, 'pretooluse_toolsearch.sh')],
 };
 
-// Tool-name → posttooluse scripts (log-tool-call runs for all).
+// Tool-name -> posttooluse scripts (log-tool-call runs for all).
 const UNIVERSAL_POSTTOOL = [path.join(HOOKS_DIR, 'log-tool-call.sh')];
 const POSTTOOL_SCRIPTS = {
   Bash: [
@@ -65,7 +65,7 @@ const POSTTOOL_SCRIPTS = {
 
 /**
  * Invoke a single bash hook with the given stdin payload. Returns a Promise
- * resolving to {stdout, stderr, exit_code}. Never throws — errors become
+ * resolving to {stdout, stderr, exit_code}. Never throws -- errors become
  * exit_code=-1 with an error message on stderr.
  */
 function runHook(scriptPath, stdinJson, timeoutMs = 30_000) {
@@ -118,11 +118,11 @@ function runHook(scriptPath, stdinJson, timeoutMs = 30_000) {
 /**
  * Run a chain of hooks for a single event. Each hook receives the SAME
  * stdin payload. Outputs concatenate; the first non-zero exit_code is
- * preserved (but remaining hooks still run — mirrors Claude Code's default
+ * preserved (but remaining hooks still run -- mirrors Claude Code's default
  * hook-chain behavior where later hooks don't depend on earlier exit codes).
  *
  * Exception: hook output containing `{"decision":"block"...}` halts the
- * chain — a blocking decision from any hook supersedes later hooks.
+ * chain -- a blocking decision from any hook supersedes later hooks.
  */
 async function runChain(scripts, stdinJson, timeoutMs = 30_000) {
   let combinedStdout = '';
@@ -155,7 +155,7 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
     registry = require('../policies/registry');
     config = require('../policies/config');
   } catch (_e) {
-    return null; // policies/ missing or broken — skip silently, bash gates still run
+    return null; // policies/ missing or broken -- skip silently, bash gates still run
   }
   try {
     registry.loadBuiltins();
@@ -268,13 +268,13 @@ async function dispatchEvent(eventName, stdinJson) {
       const tool = _toolName(empty);
       // Unified registry: run any JS-implemented PreToolUse policies that
       // match this tool BEFORE shelling to bash gates. First deny short-
-      // circuits the bash chain too — saves a subprocess spawn when the
+      // circuits the bash chain too -- saves a subprocess spawn when the
       // JS layer already blocks. Disabled policies are skipped via the
       // three-scope config (i/policies disable <name>).
       const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;
       const scripts = PRETOOL_SCRIPTS[tool] || [];
-      // HME primer runs before first HME_* tool each session — always chain it
+      // HME primer runs before first HME_* tool each session -- always chain it
       // for any HME_-prefixed tool, the primer self-guards against re-fire.
       if (tool.startsWith('HME_') || tool.startsWith('mcp__HME__')) {
         scripts.unshift(path.join(PRETOOLUSE, 'pretooluse_hme_primer.sh'));

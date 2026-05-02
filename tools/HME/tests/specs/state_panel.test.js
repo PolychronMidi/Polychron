@@ -44,10 +44,10 @@ test('i/state shows multi-timescale phase line when timeseries exists', () => {
     'hme-coherence-timeseries.jsonl');
   if (!fs.existsSync(ts)) return;
   const r = _run();
-  // Format: "1m  ago +N.N · 1h  ago +N.N · 1d  ago +N.N · peak NN (Nh ago)"
+  // Format: "1m  ago +N.N . 1h  ago +N.N . 1d  ago +N.N . peak NN (Nh ago)"
   assert.match(
     r.stdout,
-    /1m\s+ago\s+[+\-\d.]+\s+·\s+1h\s+ago\s+[+\-\d.]+\s+·\s+1d\s+ago\s+[+\-\d.]+\s+·\s+peak\s+\d+/,
+    /1m\s+ago\s+[+\-\d.]+\s+.\s+1h\s+ago\s+[+\-\d.]+\s+.\s+1d\s+ago\s+[+\-\d.]+\s+.\s+peak\s+\d+/,
     `expected multi-timescale phase line; got:\n${r.stdout}`
   );
 });
@@ -180,15 +180,15 @@ test('i/why mode=fractal-shape renders Horizon X tensegrity-shape table', () => 
   assert.strictEqual(r.status, 0);
   assert.match(r.stdout, /Fractal-shape signature|Gini/);
   // Should report at least one scale
-  assert.match(r.stdout, /project→subsystem|verifier→category|kb→category/);
+  assert.match(r.stdout, /project->subsystem|verifier->category|kb->category/);
 });
 
 test('i/why mode=fractal-shape includes the expansion scales (L0 + policy)', () => {
   const r = _runWhy(['mode=fractal-shape']);
   assert.strictEqual(r.status, 0);
   // Both scales added during the X expansion should render
-  assert.match(r.stdout, /L0→consumers/, 'L0→consumers scale missing from fractal-shape');
-  assert.match(r.stdout, /policy→event/, 'policy→event scale missing from fractal-shape');
+  assert.match(r.stdout, /L0->consumers/, 'L0->consumers scale missing from fractal-shape');
+  assert.match(r.stdout, /policy->event/, 'policy->event scale missing from fractal-shape');
 });
 
 test('i/why mode=fractal-shape reports uniform-baseline verdict', () => {
@@ -199,11 +199,11 @@ test('i/why mode=fractal-shape reports uniform-baseline verdict', () => {
 });
 
 test('i/why mode=fractal-shape history=true renders trend section', () => {
-  // Run twice to ensure history has ≥2 entries
+  // Run twice to ensure history has >=2 entries
   _runWhy(['mode=fractal-shape']);
   const r = _runWhy(['mode=fractal-shape', 'history=true']);
   assert.strictEqual(r.status, 0);
-  // Either reports a trend or the "need ≥2 for trend" message
+  // Either reports a trend or the "need >=2 for trend" message
   assert.match(r.stdout, /Tensegrity-shape trend over time|mean-Gini trend|no history yet|need.*for trend/);
 });
 
@@ -214,7 +214,7 @@ test('i/status mode=multi-axis-band reads proposed band when persisted', () => {
   assert.strictEqual(r.status, 0);
   // When the proposal file exists, the multi-axis-band view shows
   // the proposed-aggregate-band line. If band-tuning didn't write
-  // (e.g. no verdicts), the test still passes — the conditional
+  // (e.g. no verdicts), the test still passes -- the conditional
   // matches both shapes.
   assert.match(r.stdout, /(proposed aggregate band|Multi-axis chaordic bands)/);
 });
@@ -269,7 +269,7 @@ test('i/learn action=suggest_predecessors returns ranked similarity matches', ()
     encoding: 'utf8',
     // 30s timeout flaked at the edge whenever the embedder wasn't
     // already warm (e.g. immediately after a `clear_index` rebuild
-    // or worker restart — first call costs ~25-30s for embedder
+    // or worker restart -- first call costs ~25-30s for embedder
     // cold-start). 60s buys headroom while still failing fast on
     // real hangs. Direct manual invocation confirms the call itself
     // returns within ~30s when the embedder warms.
@@ -286,7 +286,7 @@ test('conjugate-channel V-coupling: tightening file lifecycle is sane', () => {
   const fs = require('node:fs');
   const path = require('node:path');
   const tighteningPath = path.join(PROJECT_ROOT, 'tmp', 'hme-band-tightening.json');
-  // Run the verifier — outcome depends on current data state, but the
+  // Run the verifier -- outcome depends on current data state, but the
   // marker should be either (a) present with the correct schema if FAIL
   // fired, or (b) absent if PASS fired and cleanup ran.
   const r = spawnSync('python3', ['-c',
@@ -311,7 +311,7 @@ test('conjugate-channel V-coupling: tightening file lifecycle is sane', () => {
 
 test('i/holograph mode=trajectory renders horizon evolution over time', () => {
   // Run once to ensure history has at least 1 snapshot, then again so
-  // we have 2 (the trajectory view requires ≥2 to render side-by-side).
+  // we have 2 (the trajectory view requires >=2 to render side-by-side).
   spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
     encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT },
@@ -349,7 +349,7 @@ test('i/state surfaces agent-loop-quality verifier inline', () => {
   assert.strictEqual(r.status, 0);
   // Either the agent-loop line is visible (verifier present in snapshot)
   // OR the panel renders without it (snapshot/verifier absent)
-  assert.match(r.stdout, /(agent-loop\s+[·!]\s+(PASS|FAIL|WARN))|HME state panel/);
+  assert.match(r.stdout, /(agent-loop\s+[.!]\s+(PASS|FAIL|WARN))|HME state panel/);
 });
 
 test('i/why mode=kb-context <id> renders entry context', () => {
@@ -399,9 +399,9 @@ test('i/why mode=causality --chain recursively walks caused_by chains', () => {
   // or reports no events of that type yet
   assert.match(r.stdout, /Recursive causal chain|No 'brief_recorded' events found/);
   // If chain rendered, it must show either at least one arrow or a
-  // terminal/leaf marker — proves the walker actually traversed.
+  // terminal/leaf marker -- proves the walker actually traversed.
   if (r.stdout.includes('Recursive causal chain')) {
-    assert.match(r.stdout, /▶|└─|terminal|leaf description|cycle detected/);
+    assert.match(r.stdout, />|+-|terminal|leaf description|cycle detected/);
   }
 });
 
@@ -468,7 +468,7 @@ test('i/why mode=verifier-utility persists auto-prune marker (Horizon VI maturit
   const r = _runWhy(['mode=verifier-utility']);
   assert.strictEqual(r.status, 0);
   // Marker may not exist if no always-PASS verifiers (rare); both are
-  // valid outcomes — test asserts the marker has the right shape if present.
+  // valid outcomes -- test asserts the marker has the right shape if present.
   if (fs.existsSync(prunePath)) {
     const body = JSON.parse(fs.readFileSync(prunePath, 'utf8'));
     assert.ok('candidates' in body);
@@ -480,7 +480,7 @@ test('i/why mode=verifier-utility persists auto-prune marker (Horizon VI maturit
 test('agent-loop-quality verifier writes tier marker (Horizon IV maturity)', () => {
   const fs = require('node:fs');
   const path = require('node:path');
-  // Run the verifier directly via Python — same path the snapshot pass takes.
+  // Run the verifier directly via Python -- same path the snapshot pass takes.
   const r = spawnSync('python3', ['-c',
     `import sys; sys.path.insert(0, '${path.join(PROJECT_ROOT, 'tools/HME/scripts')}'); ` +
     'from verify_coherence.code_audits import AgentLoopQualityVerifier; ' +
@@ -488,7 +488,7 @@ test('agent-loop-quality verifier writes tier marker (Horizon IV maturity)', () 
   ], { encoding: 'utf8', timeout: 15000 });
   assert.strictEqual(r.status, 0);
   // Tier marker is conditional on having data; only PASS/FAIL paths write it.
-  // SKIP path (no activity) skips the marker — both are valid.
+  // SKIP path (no activity) skips the marker -- both are valid.
   const tierPath = path.join(PROJECT_ROOT, 'tmp', 'hme-agent-loop-tier.json');
   if (fs.existsSync(tierPath)) {
     const body = JSON.parse(fs.readFileSync(tierPath, 'utf8'));
@@ -519,7 +519,7 @@ test('conjugate-channel SKIP path refreshes license when streak active', () => {
   // proposal based on legendary streak alone (composition-aware fast
   // feedback). Test: invoke the verifier directly and check the
   // marker file gets a `streak-aware-skip-refresh` trigger when the
-  // streak is ≥2 (and the verifier returns SKIP).
+  // streak is >=2 (and the verifier returns SKIP).
   const fs = require('node:fs');
   const path = require('node:path');
   const tighteningPath = path.join(PROJECT_ROOT, 'tmp', 'hme-band-tightening.json');
@@ -538,7 +538,7 @@ test('conjugate-channel SKIP path refreshes license when streak active', () => {
     assert.strictEqual(r.status, 0);
     const [status, streakStr] = r.stdout.trim().split('|');
     const streak = parseInt(streakStr, 10);
-    // If status=SKIP AND streak ≥ 2, the file should be a
+    // If status=SKIP AND streak >= 2, the file should be a
     // streak-aware-skip-refresh proposal. Otherwise behavior unchanged.
     if (status === 'SKIP' && streak >= 2 && fs.existsSync(tighteningPath)) {
       const body = JSON.parse(fs.readFileSync(tighteningPath, 'utf8'));
@@ -604,7 +604,7 @@ test('compute-coherence-budget handles bidirectional band adjustment (widen + na
   const outExisted = fs.existsSync(outPath);
   const outPrev = outExisted ? fs.readFileSync(outPath, 'utf8') : null;
   try {
-    // Stage a positive-delta (widen) proposal — license-to-explore signal
+    // Stage a positive-delta (widen) proposal -- license-to-explore signal
     fs.mkdirSync(path.dirname(tighteningPath), { recursive: true });
     fs.writeFileSync(tighteningPath, JSON.stringify({
       ts: Date.now() / 1000,
@@ -639,7 +639,7 @@ test('compute-coherence-budget handles bidirectional band adjustment (widen + na
   }
 });
 
-test('compute-coherence-budget consumes V→IX band-tightening proposal', () => {
+test('compute-coherence-budget consumes V->IX band-tightening proposal', () => {
   // Verifies the cross-horizon coupling: when conjugate-channel writes
   // tmp/hme-band-tightening.json, the next pipeline run's
   // compute-coherence-budget reads it and narrows the band. The first
@@ -673,7 +673,7 @@ test('compute-coherence-budget consumes V→IX band-tightening proposal', () => 
         env: { ...process.env, PROJECT_ROOT } });
     if (r.status !== 0) {
       // Pipeline may legitimately fail in test environment (missing
-      // dependencies upstream). Bail gracefully — the assertion target
+      // dependencies upstream). Bail gracefully -- the assertion target
       // is "tightening was attempted", not "full pipeline ran".
       return;
     }
@@ -760,7 +760,7 @@ test('subagent_bridge captures Agent result + writes to tmp/hme-subagent-results
     assert.ok(!fs.existsSync(queuePath), 'queue entry not removed from active dir');
   } finally {
     // Clean up test artifacts. Use existence checks rather than
-    // try/catch — fail-fast policy disallows empty catches, and these
+    // try/catch -- fail-fast policy disallows empty catches, and these
     // paths legitimately may or may not exist depending on whether the
     // test reached the move-to-done branch.
     if (fs.existsSync(resultPath)) fs.unlinkSync(resultPath);
@@ -819,7 +819,7 @@ test('i/why mode=causality depth= clamps to safe range', () => {
   const r = _runWhy(['mode=causality', 'brief_recorded', '--chain', 'depth=999']);
   assert.strictEqual(r.status, 0);
   // depth is clamped to 20 internally; output should NOT actually walk
-  // 999 levels (sanity bound — runtime would explode otherwise)
+  // 999 levels (sanity bound -- runtime would explode otherwise)
   // Assertion is just non-crash + non-empty output
   assert.ok(r.stdout.length > 0);
 });

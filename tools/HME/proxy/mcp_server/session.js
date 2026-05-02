@@ -1,5 +1,5 @@
 'use strict';
-// Session state: session_id → SSE response stream. Claude Code opens an SSE
+// Session state: session_id -> SSE response stream. Claude Code opens an SSE
 // connection, we assign a session_id, and all subsequent POSTs to
 // /mcp/messages?session_id=<id> push their JSON-RPC responses back through
 // that SSE stream.
@@ -7,7 +7,7 @@
 const crypto = require('crypto');
 const { sseEvent } = require('./protocol');
 
-// id → { res, createdAt, lastEvent, initialized }
+// id -> { res, createdAt, lastEvent, initialized }
 const _sessions = new Map();
 const SESSION_TTL_MS = 10 * 60 * 1000; // reap streams that haven't seen traffic in 10 min
 
@@ -48,7 +48,7 @@ function send(id, jsonrpcMessage) {
     s.lastEvent = Date.now();
     return true;
   } catch (err) {
-    // Don't silently delete the session — log first so a flaky client
+    // Don't silently delete the session -- log first so a flaky client
     // socket is observable. The previous silent-swallow let SSE
     // disconnects rot until "worker health degraded with no clue why."
     console.error(`[mcp_server] SSE send failed for session ${id}, removing: ${err && err.message ? err.message : err}`);

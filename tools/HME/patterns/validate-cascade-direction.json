@@ -1,7 +1,7 @@
 {
   "id": "validate-cascade-direction",
   "category": "validation",
-  "description": "When prediction recall is persistently low (<=0.5) while the dependency graph looks correct, suspect cascade direction bug in generate-predictions.js::buildAdjacency. Demonstrated R14: adj[to].add(from) made BFS find upstream DEPENDENCIES instead of downstream CONSUMERS — editing X predicted files X reads from, not files that read X. Fixed by inverting to adj[from].add(to). Pattern: low recall + known shifts = suspect cascade direction.",
+  "description": "When prediction recall is persistently low (<=0.5) while the dependency graph looks correct, suspect cascade direction bug in generate-predictions.js::buildAdjacency. Demonstrated R14: adj[to].add(from) made BFS find upstream DEPENDENCIES instead of downstream CONSUMERS -- editing X predicted files X reads from, not files that read X. Fixed by inverting to adj[from].add(to). Pattern: low recall + known shifts = suspect cascade direction.",
   "trigger": {
     "kind": "metric_threshold",
     "source": "metrics/hme-prediction-accuracy.json",

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Polychron launcher — starts the full HME stack (no VS Code).
+# Polychron launcher -- starts the full HME stack (no VS Code).
 #
 # Start order:
 #   1. HME proxy (supervises worker.py + llamacpp_daemon/ package automatically)
-#   2. llama-server instances (arbiter :8080, coder :8081) — if HME_AUTOLAUNCH_LLAMA=1
-#   3. Health check — waits for proxy to be ready
+#   2. llama-server instances (arbiter :8080, coder :8081) -- if HME_AUTOLAUNCH_LLAMA=1
+#   3. Health check -- waits for proxy to be ready
 #
 # Idempotent: each component is skipped if already running on its port.
-# PID file: log/hme-pids  — records PIDs started by this launcher for
+# PID file: log/hme-pids  -- records PIDs started by this launcher for
 # polychron-shutdown.sh to target precisely.
 
 set -u
@@ -15,7 +15,7 @@ set -o pipefail
 # Not using `set -e`: per-component startup is intentionally resilient
 # (skip if port already healthy, fall back gracefully). But trap EXIT
 # to clean up orphan nohup'd children if the launcher aborts mid-flight
-# — without this, a SIGINT during proxy startup left a zombie proxy
+# -- without this, a SIGINT during proxy startup left a zombie proxy
 # process that the shutdown script couldn't always find later.
 _orphan_pids=""
 _track_orphan() { _orphan_pids="$_orphan_pids $1"; }
@@ -39,7 +39,7 @@ if [ -f "$_ENV_FILE" ]; then
   source "$_ENV_FILE"
   set +a
 else
-  echo "[launch] WARNING: .env not found at $_ENV_FILE — using defaults" >&2
+  echo "[launch] WARNING: .env not found at $_ENV_FILE -- using defaults" >&2
 fi
 
 PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
@@ -86,7 +86,7 @@ else
   if _port_healthy "${PROXY_URL}/health"; then
     echo "[launch] proxy ready after ${_waited}s" >&2
   else
-    echo "[launch] ERROR: proxy did not become healthy within ${PROXY_STARTUP_TIMEOUT}s — aborting" >&2
+    echo "[launch] ERROR: proxy did not become healthy within ${PROXY_STARTUP_TIMEOUT}s -- aborting" >&2
     exit 1
   fi
 fi
@@ -104,7 +104,7 @@ _start_llama() {
     return 0
   fi
   if [ ! -f "$model" ]; then
-    echo "[launch] WARN: llama-server ${name} model not found: $model — skipping" >&2
+    echo "[launch] WARN: llama-server ${name} model not found: $model -- skipping" >&2
     return 1
   fi
   local log="$PROJECT_ROOT/log/llama-server-${name}.log"
@@ -137,16 +137,16 @@ fi
 
 echo "[launch] health check..." >&2
 _proxy_status=$(curl -sf --max-time 3 "${PROXY_URL}/health" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "unreachable")
-echo "[launch]   proxy  → ${_proxy_status}" >&2
+echo "[launch]   proxy  -> ${_proxy_status}" >&2
 
 _worker_status=$(curl -sf --max-time 3 "http://127.0.0.1:9098/health" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'), d.get('phase',''))" 2>/dev/null || echo "starting...")
-echo "[launch]   worker → ${_worker_status}" >&2
+echo "[launch]   worker -> ${_worker_status}" >&2
 
 if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ]; then
   _arb_ok=$(_llama_healthy "${HME_ARBITER_PORT:-8080}" && echo "ok" || echo "starting...")
   _cod_ok=$(_llama_healthy "${HME_CODER_PORT:-8081}" && echo "ok" || echo "starting...")
-  echo "[launch]   arbiter llama → ${_arb_ok}" >&2
-  echo "[launch]   coder llama   → ${_cod_ok}" >&2
+  echo "[launch]   arbiter llama -> ${_arb_ok}" >&2
+  echo "[launch]   coder llama   -> ${_cod_ok}" >&2
 fi
 
 # 4. ANTHROPIC_BASE_URL bridge
@@ -159,7 +159,7 @@ fi
 #
 # Two-pronged fix:
 #   a) Merge ANTHROPIC_BASE_URL into .vscode/settings.json's
-#      terminal.integrated.env.{linux,osx,windows} — covers integrated
+#      terminal.integrated.env.{linux,osx,windows} -- covers integrated
 #      terminal launches of claude (e.g. `claude -p` from VSCode terminal).
 #   b) Detect already-running claude binaries that lack the var in their
 #      env and warn with a one-line fix command. Covers the case where
@@ -181,10 +181,10 @@ if exists:
     except json.JSONDecodeError as exc:
         # VSCode settings.json supports JSONC (comments + trailing commas).
         # Strict json.loads fails on those. Refusing to overwrite is the
-        # safe default — a destructive rewrite would wipe the user's
+        # safe default -- a destructive rewrite would wipe the user's
         # config. Print a clear instruction instead.
         print(f"[launch] WARN: .vscode/settings.json is not strict JSON "
-              f"(parse error: {exc}). Refusing to auto-edit — please add "
+              f"(parse error: {exc}). Refusing to auto-edit -- please add "
               f"manually:", file=sys.stderr)
         print(f"[launch]   \"terminal.integrated.env.linux\": "
               f"{{\"ANTHROPIC_BASE_URL\": \"{base_url}\"}}", file=sys.stderr)
@@ -202,7 +202,7 @@ for key in ("terminal.integrated.env.linux",
 if changed:
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
-    print(f"[launch] .vscode/settings.json updated — "
+    print(f"[launch] .vscode/settings.json updated -- "
           f"terminal env injects ANTHROPIC_BASE_URL={base_url}",
           file=sys.stderr)
 else:
@@ -220,7 +220,7 @@ PYEOF
   done
   if [ -n "$_bypass_pids" ]; then
     echo "[launch] WARN: claude binary(s) running WITHOUT" \
-         "ANTHROPIC_BASE_URL — bypassing proxy:" >&2
+         "ANTHROPIC_BASE_URL -- bypassing proxy:" >&2
     echo "[launch]   PIDs:$_bypass_pids" >&2
     echo "[launch]   These won't route through HME middleware." >&2
     echo "[launch]   Fix: close VSCode, then relaunch from a shell" \
@@ -229,6 +229,6 @@ PYEOF
   fi
 fi
 
-echo "[launch] stack up — PIDs logged to ${PID_FILE}" >&2
+echo "[launch] stack up -- PIDs logged to ${PID_FILE}" >&2
 # Mark success so the EXIT trap leaves the stack alone.
 _LAUNCH_OK=1

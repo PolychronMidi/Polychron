@@ -5,15 +5,15 @@
   "trigger": {
     "kind": "persistent_drift_with_healthy_verdict",
     "source": "metrics/hme-arc-timeseries.jsonl + metrics/hme-legendary-drift.json",
-    "check": "python3 -c \"import json, os; p='metrics/hme-arc-timeseries.jsonl'; d=json.load(open('metrics/hme-legendary-drift.json')) if os.path.isfile('metrics/hme-legendary-drift.json') else {}; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; tail=rows[-3:]; top_outlier=(d.get('outliers') or [{}])[0].get('field'); hci_stable=len(tail)>=3 and all(isinstance(r.get('arc_iii',{}).get('top_outlier_field'),str) and r['arc_iii']['top_outlier_field']==top_outlier for r in tail); print(f'regime shift accepted: {top_outlier} persisted 3+ rounds, verdict legendary — envelope update recommended') if hci_stable and top_outlier else None\"",
+    "check": "python3 -c \"import json, os; p='metrics/hme-arc-timeseries.jsonl'; d=json.load(open('metrics/hme-legendary-drift.json')) if os.path.isfile('metrics/hme-legendary-drift.json') else {}; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; tail=rows[-3:]; top_outlier=(d.get('outliers') or [{}])[0].get('field'); hci_stable=len(tail)>=3 and all(isinstance(r.get('arc_iii',{}).get('top_outlier_field'),str) and r['arc_iii']['top_outlier_field']==top_outlier for r in tail); print(f'regime shift accepted: {top_outlier} persisted 3+ rounds, verdict legendary -- envelope update recommended') if hci_stable and top_outlier else None\"",
     "matches_when": "same top outlier field for 3+ consecutive rounds while verdict remains legendary"
   },
   "action": {
-    "summary": "Accept regime shift — update Arc III envelope to recent-only snapshots.",
+    "summary": "Accept regime shift -- update Arc III envelope to recent-only snapshots.",
     "auto_apply": true,
     "auto_apply_script": "scripts/pipeline/hme/auto-apply-regime-shift.py",
     "steps": [
-      "Confirm HCI has been ≥95 across the persistent-drift window.",
+      "Confirm HCI has been >=95 across the persistent-drift window.",
       "Log the epoch transition in metrics/hme-epoch-transitions.jsonl with timestamp + reason (auto-applied).",
       "Exponential weighting in compute-legendary-drift.py already adapts the envelope; auto-apply verifies decay coefficient is tuned (R25: 0.7).",
       "Verify next pipeline's drift score drops toward 0 as envelope adapts."

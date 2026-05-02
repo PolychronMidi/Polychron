@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nexus — shared lifecycle state for the hook web.
+# Nexus -- shared lifecycle state for the hook web.
 # Every hook sources this. State lives in tmp/hme-nexus.state.
 # Format: TYPE:TIMESTAMP:PAYLOAD (one per line, grep-friendly).
 
@@ -67,7 +67,7 @@ _nexus_list() {
 }
 
 # Drop EDIT entries whose file currently matches git HEAD (net-zero
-# change — typically from an edit-then-revert sequence within one turn).
+# change -- typically from an edit-then-revert sequence within one turn).
 # Without this, NEXUS flagged "N unreviewed edits" even when the working
 # tree was clean relative to HEAD, forcing the agent to run review on
 # phantom changes. The metric now reflects actual divergence, not the
@@ -83,12 +83,12 @@ _nexus_prune_clean_edits() {
   while IFS= read -r _line; do
     [ -z "$_line" ] && continue
     if [[ "$_line" == EDIT:* ]]; then
-      # EDIT:TIMESTAMP:PAYLOAD — payload is the file path
+      # EDIT:TIMESTAMP:PAYLOAD -- payload is the file path
       local _fp
       _fp="$(printf '%s' "$_line" | cut -d: -f3-)"
       if [ -n "$_fp" ] && [ -e "$_fp" ]; then
         if git -C "$PROJECT_ROOT" diff --quiet HEAD -- "$_fp" 2>/dev/null; then
-          # File matches HEAD — drop this EDIT entry (net zero change)
+          # File matches HEAD -- drop this EDIT entry (net zero change)
           continue
         fi
       fi
@@ -112,7 +112,7 @@ _nexus_pending() {
   fi
   local ri_count; ri_count=$(_nexus_get REVIEW_ISSUES)
   if [ -n "$ri_count" ] && [ "$ri_count" -gt 3 ] 2>/dev/null; then
-    issues="${issues}\n  - ${ri_count} unresolved review issue(s) — fix then re-run review(mode='forget') until count drops to 0"
+    issues="${issues}\n  - ${ri_count} unresolved review issue(s) -- fix then re-run review(mode='forget') until count drops to 0"
   fi
   local verdict; verdict=$(_nexus_get PIPELINE)
   if [ "$verdict" = "STABLE" ] || [ "$verdict" = "EVOLVED" ]; then
@@ -121,19 +121,19 @@ _nexus_pending() {
     fi
   fi
   if [ "$verdict" = "FAILED" ] || [ "$verdict" = "DRIFTED" ]; then
-    issues="${issues}\n  - Pipeline $verdict — needs diagnosis before stopping"
+    issues="${issues}\n  - Pipeline $verdict -- needs diagnosis before stopping"
   fi
   local commit_fail; commit_fail=$(_nexus_get COMMIT_FAILED)
   if [ -n "$commit_fail" ]; then
-    issues="${issues}\n  - COMMIT FAILED: $commit_fail — run 'git status' and commit manually"
+    issues="${issues}\n  - COMMIT FAILED: $commit_fail -- run 'git status' and commit manually"
   fi
   # Onboarding: if state is 'verified', the agent has a clean pipeline but
-  # hasn't called learn() yet — graduation requires it.
+  # hasn't called learn() yet -- graduation requires it.
   local _onb_f="$PROJECT_ROOT/tmp/hme-onboarding.state"
   if [ -f "$_onb_f" ]; then
     local _onb_s; _onb_s="$(cat "$_onb_f" 2>/dev/null | tr -d '[:space:]')"
     if [ "$_onb_s" = "verified" ]; then
-      issues="${issues}\n  - Onboarding step 8/8: pipeline STABLE but learn() not called — run learn(title='round summary', content='...') to graduate"
+      issues="${issues}\n  - Onboarding step 8/8: pipeline STABLE but learn() not called -- run learn(title='round summary', content='...') to graduate"
     fi
   fi
   echo -e "$issues"
@@ -143,7 +143,7 @@ _nexus_pending() {
 # emits a `brief_recorded` activity event so downstream can see WHICH paths
 # are firing. Centralizes what was previously 4 independent _nexus_add
 # call sites (posttooluse_read_kb, posttooluse_hme_read, pretooluse_grep,
-# nexus_tracking.js middleware) — each can still call _nexus_add directly
+# nexus_tracking.js middleware) -- each can still call _nexus_add directly
 # for backward compat, but new paths should use _brief_add.
 _brief_add() {
   local target="${1:-}" source="${2:-unknown}"
@@ -152,7 +152,7 @@ _brief_add() {
   # of whether downstream looks up by module / basename / abs path.
   _nexus_add BRIEF "$target"
   if [[ "$target" == */* ]]; then
-    # It's a path — also store basename and module stem
+    # It's a path -- also store basename and module stem
     local _basename _stem
     _basename="$(basename "$target")"
     _stem="${_basename%.*}"

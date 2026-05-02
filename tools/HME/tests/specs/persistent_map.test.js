@@ -40,7 +40,7 @@ test('PersistentMap: latest-wins on duplicate key', () => {
   assert.strictEqual(m2.get('k'), 'third', 'latest write wins on reload');
 });
 
-test('PersistentMap: missing file → empty map', () => {
+test('PersistentMap: missing file -> empty map', () => {
   const m = new PersistentMap(_tmp('does-not-exist.jsonl'));
   assert.strictEqual(m.size, 0);
   assert.strictEqual(m.get('anything'), undefined);

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Direct autocommit — runs from Claude Code's hook settings.json WITHOUT
+# Direct autocommit -- runs from Claude Code's hook settings.json WITHOUT
 # going through the HME proxy.
 #
 # Why this exists:
 #
 # The primary hook path goes through _proxy_bridge.sh, which POSTs to the
 # HME proxy on port 9099. If the proxy is DOWN (crashed, restarting, not
-# yet started), _proxy_bridge.sh fail-opens with exit 0 — Claude Code
+# yet started), _proxy_bridge.sh fail-opens with exit 0 -- Claude Code
 # thinks the hook succeeded and NOTHING runs. No autocommit. No LIFESAVER.
 # Silence.
 #
@@ -14,7 +14,7 @@
 # It runs unconditionally, regardless of proxy state, and commits the
 # working tree through the _autocommit.sh helper. If the proxy IS up and
 # ALSO did an autocommit, the second attempt safely no-ops ("nothing to
-# commit" → success path in the helper).
+# commit" -> success path in the helper).
 #
 # Requirements:
 #  - Must NOT source _safety.sh. _safety.sh has `set -euo pipefail` plus
@@ -26,7 +26,7 @@
 #  - Must exit 0 unconditionally. Blocking Claude Code on autocommit
 #    failure would create a worse problem than silent failure.
 
-set +e  # explicitly NOT fail-fast — we own our bookkeeping
+set +e  # explicitly NOT fail-fast -- we own our bookkeeping
 
 # Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
 _DIRECT_ROOT=""
@@ -52,7 +52,7 @@ fi
 # Consume stdin (Claude Code hook payload) so the caller doesn't block.
 cat >/dev/null 2>&1
 
-# Source the helper. Use the repo copy — it's derived independently of env.
+# Source the helper. Use the repo copy -- it's derived independently of env.
 _HELPER="$_DIRECT_ROOT/tools/HME/hooks/helpers/_autocommit.sh"
 if [ ! -f "$_HELPER" ]; then
   # Even the helper is missing. Last-resort: append one line to stderr and
@@ -72,7 +72,7 @@ source "$_HELPER"
 
 # Track HEAD before the commit so we can detect whether a NEW commit
 # landed. _ac_do_commit returns 0 for both "committed something" and
-# "nothing to commit" — the only way to distinguish is HEAD movement.
+# "nothing to commit" -- the only way to distinguish is HEAD movement.
 _AC_HEAD_BEFORE=$(git -C "$_DIRECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")
 
 # The helper owns everything: counter, fail flag, log, retries. We just
@@ -81,7 +81,7 @@ _ac_do_commit "direct-${1:-unknown}" || true
 
 # Auto-fire i/review on any NEW commit touching code/tooling. Previously
 # this lived only in posttooluse_bash.sh, gated on the user manually
-# running `git commit` via the Bash tool — which never happens in normal
+# running `git commit` via the Bash tool -- which never happens in normal
 # autocommit flow. Result: review hadn't fired in days. Now any commit
 # (manual via Bash tool OR autocommit-direct OR proxy autocommit) that
 # touches src/tools/HME/scripts/lab triggers the review.
@@ -90,7 +90,7 @@ if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE"
   # SPEC/TODO same-commit invariant (skill-set pattern, soft-warning form):
   # if src/** changed in this commit AND neither doc/SPEC.md nor doc/TODO.md
   # changed, surface a drift warning to hme-errors.log (LIFESAVER picks it
-  # up next turn). Soft warning rather than hard block — autocommit fires
+  # up next turn). Soft warning rather than hard block -- autocommit fires
   # frequently and intermediate commits during a multi-step landing
   # legitimately may not touch the spec yet. Drift is the SUSTAINED-not-
   # touching-spec pattern; one-off skips are fine. The watchdog tier is
@@ -115,7 +115,7 @@ if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE"
         _AR_RC=$?
         if [ "$_AR_RC" -ne 0 ]; then
           _AR_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
-          echo "[$_AR_TS] [review_auto_fire_direct] FAILED (rc=$_AR_RC) — see tmp/hme-review-auto.out" \
+          echo "[$_AR_TS] [review_auto_fire_direct] FAILED (rc=$_AR_RC) -- see tmp/hme-review-auto.out" \
             >> "$_DIRECT_ROOT/log/hme-errors.log"
         fi
       ) >/dev/null 2>&1 &

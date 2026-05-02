@@ -27,7 +27,7 @@ const ROTATOR = path.join(REPO, 'src', 'rhythm', 'drums', 'drumKitRotator.js');
 // around just the loader. Scope only the validator stub per-call
 // (its replacement is the actual leak class), and snapshot+restore the
 // indices at end-of-file. src/utils legitimately registers the indices
-// as globals — the test stubs OVERRIDE them per loadRotator call, but
+// as globals -- the test stubs OVERRIDE them per loadRotator call, but
 // we restore the originals at suite end so the tripwire reads zero drift.
 require('../../../../src/utils');
 const _REAL_VALIDATOR = global.validator;
@@ -61,7 +61,7 @@ const L1_FOUNDATION_LEAD_SNARES = new Set(['snare1', 'snare4']);
 const L2_FOUNDATION_LEAD_SNARES = new Set(['snare2', 'snare3']);
 
 function loadRotator(sectionIdx, phraseIdx, measureIdx = 0, beatIdx = 0) {
-  // Scope ONLY validator — its replacement is the leak class run.js
+  // Scope ONLY validator -- its replacement is the leak class run.js
   // tracks. The indices stay set across the test body because the
   // rotator's getL1Preset/getL2Preset re-read them at call time.
   // File-level after() cleans the indices on suite end.
@@ -166,7 +166,7 @@ test('determinism: same (section, phrase) yields same preset', () => {
 });
 
 test('layer separation: L1 and L2 pick different presets in same phrase', () => {
-  // L1 uses presetIndex(0), L2 uses presetIndex(1) — they should never
+  // L1 uses presetIndex(0), L2 uses presetIndex(1) -- they should never
   // be in lockstep. Across 8 phrases at most a handful can collide.
   let lockstep = 0;
   for (let p = 0; p < 8; p++) {
@@ -215,7 +215,7 @@ test('flair: foundation-anchored even in flair mode (kicks stay {kick1,kick3})',
 
 test('flair: normal mode pins to one preset per phrase (no per-beat drift)', () => {
   // Normal (non-flair) mode must NOT vary across beats of the same
-  // phrase — that's the per-phrase grounding contract.
+  // phrase -- that's the per-phrase grounding contract.
   const cymbals = new Set();
   for (let m = 0; m < 4; m++) {
     for (let b = 0; b < 4; b++) {
@@ -234,5 +234,5 @@ test('source: phraseIndex multiplier is coprime with preset count', () => {
   // Preset count is 4 (L1_PRESETS.length). Phrase multiplier must be
   // coprime with 4 so every phrase advances the preset cycle.
   assert.notStrictEqual(phraseMult % 4, 0,
-    `phrase multiplier ${phraseMult} must be coprime with preset count 4 — preset rotation collapses otherwise`);
+    `phrase multiplier ${phraseMult} must be coprime with preset count 4 -- preset rotation collapses otherwise`);
 });

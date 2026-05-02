@@ -3,7 +3,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
 # PostToolUse: `i/review` dispatch (called by posttooluse_bash.sh).
 # Parses the review mode out of tool_input.command (either `mode=forget` or
-# `--mode forget`) — default digest.
+# `--mode forget`) -- default digest.
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 MODE=$(echo "$CMD" | grep -oE '\bmode[= ][a-z_]+' | head -1 | sed -E 's/^.*mode[= ]//')
@@ -15,7 +15,7 @@ if [ "$MODE" = "forget" ]; then
   # HME proxy. Direct-to-api.anthropic.com sessions (VS Code Claude Code with
   # no HME_PROXY_URL) never trigger the middleware, so without the shell-hook
   # path here, EDIT entries accumulated indefinitely and stop.sh blocked
-  # forever. _nexus_clear_type is idempotent — double-clear is safe when both
+  # forever. _nexus_clear_type is idempotent -- double-clear is safe when both
   # paths fire.
   # Note: parent posttooluse_bash.sh already resolved any background-task
   # stub via _resolve_bg_stub.sh before dispatching here, so .tool_response
@@ -24,14 +24,14 @@ if [ "$MODE" = "forget" ]; then
   # REVIEW_PARSE_FAILED branch; the proxy middleware background_dominance.js
   # handles those on the API-stream side for the model's next turn.
   TOOL_RESULT=$(_safe_jq "$INPUT" '.tool_response' '')
-  # Fail-fast on CLI transport errors — `hme-cli: request failed ...` means
+  # Fail-fast on CLI transport errors -- `hme-cli: request failed ...` means
   # the worker was down or the request timed out. Never interpret that as
   # "review passed with zero issues"; mark CLI_FAILURE in nexus so stop.sh
   # blocks until the user notices.
   if echo "$TOOL_RESULT" | grep -q '^hme-cli:'; then
-    _nexus_mark REVIEW_CLI_FAILURE "review CLI failed — worker down or request timed out"
+    _nexus_mark REVIEW_CLI_FAILURE "review CLI failed -- worker down or request timed out"
     _nexus_mark REVIEW_ISSUES "?"
-    echo "NEXUS: review CLI call failed — worker down? Cannot trust REVIEW_ISSUES state. Re-run i/review mode=forget after fixing." >&2
+    echo "NEXUS: review CLI call failed -- worker down? Cannot trust REVIEW_ISSUES state. Re-run i/review mode=forget after fixing." >&2
     exit 0
   fi
   # Canonical verdict detection.
@@ -44,7 +44,7 @@ if [ "$MODE" = "forget" ]; then
   # If the marker is present, trust it exclusively and skip prose parsing.
   # Prose-count patterns ("Found N issues total") are fallback only, kept
   # for older review outputs that predate the marker.
-  # `|| true` on every grep is load-bearing — under `set -euo pipefail` a
+  # `|| true` on every grep is load-bearing -- under `set -euo pipefail` a
   # grep that legitimately finds nothing returns 1 and would kill the hook
   # before the drift-detection branch runs, letting format drift masquerade
   # as a silent pass. Trailing `|| true` converts "no match" to empty string.
@@ -67,7 +67,7 @@ if [ "$MODE" = "forget" ]; then
         # SKIPPED / KB reminders are prompts-to-consider, not code defects.
         # workflow_audit.py already filters them out of the actionable count
         # (line 467-469). If every warning in this review is a scaffolding
-        # reminder, treat it as CLEAN for nexus purposes — otherwise the
+        # reminder, treat it as CLEAN for nexus purposes -- otherwise the
         # stop hook blocks forever on reviews that have nothing actionable.
         _ACTIONABLE_COUNT=$(echo "$TOOL_RESULT" \
           | awk '/^## Warnings \(/,/^##[^#]/' \
@@ -75,11 +75,11 @@ if [ "$MODE" = "forget" ]; then
           | head -1)
         _SCAFFOLD_COUNT=$(echo "$TOOL_RESULT" \
           | awk '/^## Warnings \(/,/^##[^#]/' \
-          | grep -cE '\] (HOOK CHANGE|DOC CHECK|SKIPPED|KB):|audit skipped\s*[:—]' \
+          | grep -cE '\] (HOOK CHANGE|DOC CHECK|SKIPPED|KB):|audit skipped\s*[:--]' \
           | head -1)
         if [ "${_ACTIONABLE_COUNT:-0}" -gt 0 ] \
            && [ "${_SCAFFOLD_COUNT:-0}" -eq "${_ACTIONABLE_COUNT:-0}" ]; then
-          # All warnings are scaffolding — treat as clean for nexus.
+          # All warnings are scaffolding -- treat as clean for nexus.
           _nexus_clear_type REVIEW_ISSUES
           _EDIT_COUNT_CLEARED=$(_nexus_count EDIT)
           _nexus_clear_type EDIT
@@ -87,16 +87,16 @@ if [ "$MODE" = "forget" ]; then
           echo "NEXUS: review warnings are all scaffolding reminders (no actionable defects); EDIT cleared." >&2
         elif [ -n "$ISSUES_COUNT" ] && [ "$ISSUES_COUNT" -gt 0 ] 2>/dev/null; then
           _nexus_mark REVIEW_ISSUES "$ISSUES_COUNT"
-          echo "NEXUS: ${ISSUES_COUNT} review issue(s) found — fix and re-run i/review mode=forget until 0." >&2
+          echo "NEXUS: ${ISSUES_COUNT} review issue(s) found -- fix and re-run i/review mode=forget until 0." >&2
         else
           _nexus_mark REVIEW_ISSUES "?"
-          echo "NEXUS: review reported warnings (exact count unavailable) — fix and re-run i/review mode=forget." >&2
+          echo "NEXUS: review reported warnings (exact count unavailable) -- fix and re-run i/review mode=forget." >&2
         fi
         ;;
       error)
-        _nexus_mark REVIEW_CLI_FAILURE "review emitted verdict=error — server-side exception during what_did_i_forget"
+        _nexus_mark REVIEW_CLI_FAILURE "review emitted verdict=error -- server-side exception during what_did_i_forget"
         _nexus_mark REVIEW_ISSUES "?"
-        echo "NEXUS: review server-side error — see worker log. Re-run i/review mode=forget after fixing." >&2
+        echo "NEXUS: review server-side error -- see worker log. Re-run i/review mode=forget after fixing." >&2
         exit 0
         ;;
       *)
@@ -112,20 +112,20 @@ if [ "$MODE" = "forget" ]; then
     _nexus_clear_type REVIEW_CLI_FAILURE
     _nexus_clear_type REVIEW_PARSE_FAILED
     _nexus_mark REVIEW_ISSUES "$ISSUES_COUNT"
-    echo "NEXUS: ${ISSUES_COUNT} review issue(s) found — fix and re-run i/review mode=forget until 0." >&2
+    echo "NEXUS: ${ISSUES_COUNT} review issue(s) found -- fix and re-run i/review mode=forget until 0." >&2
   elif echo "$TOOL_RESULT" | grep -qE 'Found 0 issues total|^All clean$|review passed'; then
     # Legacy path: no marker, but an explicit zero-issues sentinel.
     _nexus_clear_type REVIEW_CLI_FAILURE
     _nexus_clear_type REVIEW_PARSE_FAILED
     _nexus_clear_type REVIEW_ISSUES
   else
-    # No canonical marker, no legacy sentinel — the server output has drifted
+    # No canonical marker, no legacy sentinel -- the server output has drifted
     # OR the worker returned a non-review payload. Refuse to silently claim
     # review passed. This is the exact path that let the missing-sentinel bug
     # masquerade as "clean" before the marker was added to the regex.
-    _nexus_mark REVIEW_PARSE_FAILED "review output missing HME_REVIEW_VERDICT marker and all legacy sentinels — sentinel list drifted from server emit"
+    _nexus_mark REVIEW_PARSE_FAILED "review output missing HME_REVIEW_VERDICT marker and all legacy sentinels -- sentinel list drifted from server emit"
     _nexus_mark REVIEW_ISSUES "?"
-    echo "NEXUS: review output missing canonical HME_REVIEW_VERDICT marker — server/hook sentinel contract broken. Investigate emit_review_verdict_marker() before proceeding." >&2
+    echo "NEXUS: review output missing canonical HME_REVIEW_VERDICT marker -- server/hook sentinel contract broken. Investigate emit_review_verdict_marker() before proceeding." >&2
     exit 0
   fi
   # Point to next step

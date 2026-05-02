@@ -11,7 +11,7 @@ const WRITE_INTENT_TOOLS = new Set([
 ]);
 
 // HME_READ_TOOLS / KB_BRIEFING_RE / writeIntentCalled-without-hmeRead:
-// DELETED. This detector was measuring an obsolete contract — "did the
+// DELETED. This detector was measuring an obsolete contract -- "did the
 // agent explicitly invoke the MCP-era HME_read tool before editing?".
 // That tool name doesn't exist in the current shell-wrapper architecture,
 // and auto-enrichment middleware (edit_context.js, dir_context.js,
@@ -20,7 +20,7 @@ const WRITE_INTENT_TOOLS = new Set([
 // on 100% of edits, aborting the pipeline over a false positive.
 //
 // The real signal ("is the agent informed before editing?") is now
-// carried by the auto-enrichment middleware itself — each Edit's result
+// carried by the auto-enrichment middleware itself -- each Edit's result
 // gets `[HME:edit]` KB footer appended before the NEXT turn sees it,
 // informing all subsequent edits. First-edit-before-any-enrichment is
 // the only genuine gap and is inherently transient.
@@ -61,7 +61,7 @@ function _isBoilerplateText(text) {
 }
 
 // Only scan the last RECENT_MSG_WINDOW messages for mutable strip operations.
-// Older messages are already cached by Anthropic — mutating them busts the
+// Older messages are already cached by Anthropic -- mutating them busts the
 // cache prefix and inflates token costs by 12x.
 const RECENT_MSG_WINDOW = 8;
 
@@ -69,7 +69,7 @@ function stripBoilerplate(payload) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   let strippedCount = 0;
   const stripped_samples = {};
-  // Only strip recent messages — mutating older ones busts the Anthropic cache.
+  // Only strip recent messages -- mutating older ones busts the Anthropic cache.
   const recentStart = Math.max(0, payload.messages.length - RECENT_MSG_WINDOW);
   for (const msg of payload.messages.slice(recentStart)) {
     if (!msg || !Array.isArray(msg.content)) continue;
@@ -135,13 +135,13 @@ function stripBoilerplate(payload) {
 }
 
 //  Semantic-redundancy strip
-// C. Dup Read tool_results for same file (no intervening Edit) → stub earlier.
-// D. Oversize Bash bodies > D_MAX_BYTES → head+elision+tail.
-// E. Identical ide_selection blocks (cross-message) → keep first.
-// F. Identical system-reminder blocks (within-message) → keep first.
-// H. Compaction notes → preserve first per payload.
-// I. Monitor timeout reminders → preserve first per payload.
-// J. Deferred-tools schema blocks → preserve first per payload.
+// C. Dup Read tool_results for same file (no intervening Edit) -> stub earlier.
+// D. Oversize Bash bodies > D_MAX_BYTES -> head+elision+tail.
+// E. Identical ide_selection blocks (cross-message) -> keep first.
+// F. Identical system-reminder blocks (within-message) -> keep first.
+// H. Compaction notes -> preserve first per payload.
+// I. Monitor timeout reminders -> preserve first per payload.
+// J. Deferred-tools schema blocks -> preserve first per payload.
 const D_MAX_BYTES = 50_000;
 const D_HEAD_BYTES = 20_000;
 const D_TAIL_BYTES = 20_000;
@@ -197,7 +197,7 @@ function stripSemanticRedundancy(payload) {
     }
   }
 
-  // C + D pass — only on recent messages to avoid busting the Anthropic cache
+  // C + D pass -- only on recent messages to avoid busting the Anthropic cache
   // prefix. Older dup-reads and oversize bashes are already cached upstream.
   const cdStart = Math.max(0, payload.messages.length - RECENT_MSG_WINDOW);
   const lastReadByFile = new Map();
@@ -216,7 +216,7 @@ function stripSemanticRedundancy(payload) {
       if (srcUse.name === 'Read') {
         const fp = (srcUse.input && (srcUse.input.file_path || srcUse.input.path)) || null;
         const rawText = _textOf(block);
-        // Dup-read collapse (same file re-read with identical content → earlier one stripped)
+        // Dup-read collapse (same file re-read with identical content -> earlier one stripped)
         if (fp) {
           const hash = _hashText(rawText);
           const prev = lastReadByFile.get(fp);
@@ -233,7 +233,7 @@ function stripSemanticRedundancy(payload) {
           const head = rawText.slice(0, D_HEAD_BYTES);
           const tail = rawText.slice(-D_TAIL_BYTES);
           const elided = rawText.length - head.length - tail.length;
-          _setText(block, head + `\n…<${elided} bytes elided by hme-proxy — use offset+limit for paginated reads>…\n` + tail);
+          _setText(block, head + `\n...<${elided} bytes elided by hme-proxy -- use offset+limit for paginated reads>...\n` + tail);
           bump('oversize_read_trim');
         }
       }
@@ -243,7 +243,7 @@ function stripSemanticRedundancy(payload) {
           const head = rawText.slice(0, D_HEAD_BYTES);
           const tail = rawText.slice(-D_TAIL_BYTES);
           const elided = rawText.length - head.length - tail.length;
-          _setText(block, head + `\n…<${elided} bytes elided by hme-proxy>…\n` + tail);
+          _setText(block, head + `\n...<${elided} bytes elided by hme-proxy>...\n` + tail);
           bump('oversize_bash_trim');
         }
       }
@@ -256,7 +256,7 @@ function stripSemanticRedundancy(payload) {
   const MONITOR_TIMEOUT_RE = /<system-reminder>\s*\[SYSTEM NOTIFICATION[\s\S]*?Monitor timed out[\s\S]*?<\/system-reminder>/g;
   const DEFERRED_TOOLS_RE = /<system-reminder>\s*The following deferred tools are now available[\s\S]*?<\/system-reminder>/g;
   // K: background-task exit notifications. Strip ALL occurrences (not
-  // preserve-first) — they're exit telemetry for processes we've already
+  // preserve-first) -- they're exit telemetry for processes we've already
   // moved past. Matches both the bare <task-notification> form and the
   // common wrapping <system-reminder>...[SYSTEM NOTIFICATION...<task-notification>...</task-notification></system-reminder>.
   const TASK_NOTIFICATION_RE = /<task-notification>[\s\S]*?<\/task-notification>/g;

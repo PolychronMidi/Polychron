@@ -8,10 +8,10 @@
  *    written to: /tmp/claude-<uid>/-*\/<session>/tasks/<taskId>.output"
  * and the real output lands in that file later. Downstream consumers
  * (both the *model* on subsequent turns AND local posttooluse hooks)
- * see only the stub — which is useless: no markers, no verdicts, no
+ * see only the stub -- which is useless: no markers, no verdicts, no
  * actual command output. Three concrete breakages we've hit:
  *   1. NEXUS: `i/review mode=forget` stubs never carry the
- *      `HME_REVIEW_VERDICT` marker → EDIT entries accumulate forever.
+ *      `HME_REVIEW_VERDICT` marker -> EDIT entries accumulate forever.
  *   2. `i/status` and friends return stubs the model can't reason about.
  *   3. Any structured-output command loses its structure to the stub.
  *
@@ -29,7 +29,7 @@
  *     we give up and annotate the stub. In practice, most HME commands
  *     finish within 60s on warm GPUs.
  *
- * Scope: only acts on commands matching DOMINATE_CMD_RE — the `i/*`
+ * Scope: only acts on commands matching DOMINATE_CMD_RE -- the `i/*`
  * wrappers and project scripts whose output is structured and consumed
  * downstream. Generic long builds / test runs fall through so the proxy
  * doesn't block the API response waiting on a 10-minute compile.
@@ -41,7 +41,7 @@ const path = require('path');
 const BG_STUB_RE = /Command running in background with ID:\s*([a-zA-Z0-9]+)/;
 
 // Allowlist of command patterns whose real output we should resolve.
-// Kept intentionally narrow — generic commands pass through unchanged.
+// Kept intentionally narrow -- generic commands pass through unchanged.
 // Includes: `i/<tool>` (HME shell wrappers, with or without `./` prefix),
 // `npm run X` / `yarn X`, `make X`, `python3 scripts/*.py`, `node
 // scripts/*.js`, `bash scripts/*.sh`.
@@ -57,7 +57,7 @@ const POLL_INTERVAL_MS = Number(process.env.HME_BG_DOMINANCE_POLL_MS) || 1_000;
 // false positives when the command is mid-inference and pauses output
 // for a few seconds; mtime-quiescent shuts that case down because any
 // incoming write bumps mtime forward. 3 reads + 2.5s mtime-quiescent
-// gives a 4-second floor on completion detection — empirically the
+// gives a 4-second floor on completion detection -- empirically the
 // shortest real HME command returns in ~5s so we don't miss completions.
 const STABLE_READS_REQUIRED = 3;
 const MTIME_QUIESCENT_MS = 2_500;
@@ -71,7 +71,7 @@ function _textOf(toolResult) {
 
 function _findTaskOutput(taskId) {
   // Output files live under /tmp/claude-<uid>/<path-encoded-project>/tasks/<taskId>.output.
-  // Walk /tmp/claude-* → project subdir → tasks/. Avoid shell-out; pure fs
+  // Walk /tmp/claude-* -> project subdir -> tasks/. Avoid shell-out; pure fs
   // so the middleware stays self-contained.
   const base = '/tmp';
   let claudeDirs;
@@ -154,7 +154,7 @@ module.exports = {
     const filePath = await _awaitCompletion(taskId, POLL_TIMEOUT_MS);
     if (!filePath) {
       // Task still unfinished. Request a retry on the next turn rather
-      // than accepting the stub forever — ctx.retryNextTurn removes the
+      // than accepting the stub forever -- ctx.retryNextTurn removes the
       // dedup for this tool_use.id so the middleware re-enters (bounded
       // by MAX_RETRIES so a stuck task doesn't loop forever).
       const attempt = ctx.retryNextTurn(toolUse.id);
@@ -195,7 +195,7 @@ module.exports = {
       const head = realOutput.slice(0, SIDE);
       const tail = realOutput.slice(-SIDE);
       const elided = realOutput.length - head.length - tail.length;
-      payload = head + `\n…(middle ${elided} chars elided by hme bg-dominance)…\n` + tail;
+      payload = head + `\n...(middle ${elided} chars elided by hme bg-dominance)...\n` + tail;
     }
     ctx.replaceResult(
       toolResult,

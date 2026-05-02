@@ -1,10 +1,10 @@
 'use strict';
-// proxy_autocommit.js — request-driven autocommit middleware.
+// proxy_autocommit.js -- request-driven autocommit middleware.
 //
 // Fail-fast-hardened. Writes to the SAME state files as
 // tools/HME/hooks/helpers/_autocommit.sh so the AutocommitHealthVerifier
 // sees failures regardless of which code path fired. Previously this
-// module had `if (!root) return;` — the exact structural-dampening
+// module had `if (!root) return;` -- the exact structural-dampening
 // failure mode the system has been hit by repeatedly.
 
 const fs = require('fs');
@@ -19,7 +19,7 @@ const LAST_SUCCESS_REL = path.join(STATE_DIR, 'hme-autocommit.last-success');
 
 // Derive project root from THIS file's own path. Not from ctx, not from
 // env, not from cwd. The original silent-failure bug was exactly the
-// dependency on ctx.PROJECT_ROOT being defined — when it wasn't, the
+// dependency on ctx.PROJECT_ROOT being defined -- when it wasn't, the
 // `if (!root) return;` line swallowed every failure mode silently.
 // This module lives at tools/HME/proxy/middleware/proxy_autocommit.js,
 // so the project root is four levels up.
@@ -34,7 +34,7 @@ function _ts() {
 // into the proxy request handler.
 function _recordFailure(root, caller, reason) {
   const ts = _ts();
-  // Channel A: sticky fail flag under tmp/. Overwrite — latest wins.
+  // Channel A: sticky fail flag under tmp/. Overwrite -- latest wins.
   try {
     fs.mkdirSync(path.join(root, STATE_DIR), { recursive: true });
     fs.writeFileSync(path.join(root, FAIL_FLAG_REL),
@@ -46,7 +46,7 @@ function _recordFailure(root, caller, reason) {
     fs.appendFileSync(path.join(root, ERR_LOG),
       `[${ts}] [autocommit:proxy] [${caller}] ${reason}\n`);
   } catch (_) { /* best-effort */ }
-  // Channel C: stderr — ends up in hme-proxy.out.
+  // Channel C: stderr -- ends up in hme-proxy.out.
   try {
     process.stderr.write(`[autocommit:proxy FAIL ${ts}] [${caller}] ${reason}\n`);
   } catch (_) { /* best-effort */ }
@@ -103,7 +103,7 @@ function _attemptCommit(root, caller) {
     return;
   }
   if (!fs.existsSync(path.join(root, 'src'))) {
-    _recordFailure(root, caller, `src/ not found at ${root} — not a Polychron checkout`);
+    _recordFailure(root, caller, `src/ not found at ${root} -- not a Polychron checkout`);
     return;
   }
 
@@ -118,13 +118,13 @@ function _attemptCommit(root, caller) {
     return;
   }
   if (!dirty.trim()) {
-    // Clean tree — count as success so the counter doesn't climb.
+    // Clean tree -- count as success so the counter doesn't climb.
     _recordSuccess(root);
     return;
   }
 
   try {
-    // CLAUDE.md explicitly forbids `git add -A` / `git add .` — those
+    // CLAUDE.md explicitly forbids `git add -A` / `git add .` -- those
     // can accidentally include sensitive files (.env, credentials) or
     // large binaries. Stage tracked-only updates with `-u`, then
     // selectively add new files matching code/doc/config extensions.
@@ -148,7 +148,7 @@ function _attemptCommit(root, caller) {
 
   // Use array form so the timestamp cannot shell-inject. Previous code
   // was `git commit -m "${ts}"` interpolated into a string passed to
-  // execSync — not a vulnerability with ISO timestamps, but the array
+  // execSync -- not a vulnerability with ISO timestamps, but the array
   // form is the right pattern.
   const tstamp = new Date().toISOString().slice(0, 19);
   let r = spawnSync('git', ['commit', '-m', tstamp, '--quiet'],
@@ -157,7 +157,7 @@ function _attemptCommit(root, caller) {
   let combined = (r.stderr || '') + (r.stdout || '');
   if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
 
-  // Retry once — transient index-lock contention is the expected case.
+  // Retry once -- transient index-lock contention is the expected case.
   r = spawnSync('git', ['commit', '-m', `${tstamp}-retry`, '--quiet'],
     { cwd: root, timeout: 5000, encoding: 'utf8' });
   if (r.status === 0) { _recordSuccess(root); return; }
@@ -174,7 +174,7 @@ module.exports = {
   onRequest({ payload, ctx }) {
     if (!payload || !Array.isArray(payload.messages)) return;
     // Prefer ctx.PROJECT_ROOT if present, fall back to the path-derived
-    // root. Do NOT silently skip when ctx is missing — the old code did
+    // root. Do NOT silently skip when ctx is missing -- the old code did
     // exactly that and it was the root cause of the recurring silent
     // failure. If both ctx and derivation are bogus, the prereq checks
     // inside _attemptCommit record the failure to all four channels.

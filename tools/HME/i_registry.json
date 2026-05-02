@@ -74,7 +74,7 @@
       "safe_no_args": true
     },
     "holograph": {
-      "description": "Interstellar overview — single ~12-line panel summarizing all 10 HME horizons (HCI phase, agent-loop, conjugate quadrant, KB graph density, fractal Gini trend, ground-truth verdicts, band proposal, causality marker, etc). Pure composition over existing data. The asymptote of the observability triad — when you want every dimension at once. `mode=trajectory` shows horizon evolution over recent invocations.",
+      "description": "Interstellar overview -- single ~12-line panel summarizing all 10 HME horizons (HCI phase, agent-loop, conjugate quadrant, KB graph density, fractal Gini trend, ground-truth verdicts, band proposal, causality marker, etc). Pure composition over existing data. The asymptote of the observability triad -- when you want every dimension at once. `mode=trajectory` shows horizon evolution over recent invocations.",
       "category": "diagnostic",
       "usage": "i/holograph  |  i/holograph mode=trajectory",
       "examples": [
@@ -83,7 +83,7 @@
       ]
     },
     "timeline": {
-      "description": "Unified audit trail — chronological view of HME's silent automations (auto-reload, KB draft writes, posttooluse hooks, fs_watcher events) joined into one timeline. Answers 'what has HME done in the last N minutes?' without reading 5+ files.",
+      "description": "Unified audit trail -- chronological view of HME's silent automations (auto-reload, KB draft writes, posttooluse hooks, fs_watcher events) joined into one timeline. Answers 'what has HME done in the last N minutes?' without reading 5+ files.",
       "category": "diagnostic",
       "usage": "i/timeline [window=<5m|1h|30s>]",
       "examples": [
@@ -93,7 +93,7 @@
       ]
     },
     "state": {
-      "description": "Unified state panel — every state machine HME tracks, in one ~10-line view.",
+      "description": "Unified state panel -- every state machine HME tracks, in one ~10-line view.",
       "category": "diagnostic",
       "usage": "i/state  |  i/state mode=brief",
       "modes": ["full (default)", "brief"],
@@ -348,7 +348,7 @@
       ]
     },
     "consult": {
-      "description": "Manually invoke a specific buddy (active primary OR retired senior) for a tough problem (BUDDY_HANDOFF=1). The primary is the inherited active buddy from the prior session; seniors are retired primaries in tmp/hme-buddy-seniors/. Each call grows the target's transcript — reserve for problems where their depth would unlock the answer.",
+      "description": "Manually invoke a specific buddy (active primary OR retired senior) for a tough problem (BUDDY_HANDOFF=1). The primary is the inherited active buddy from the prior session; seniors are retired primaries in tmp/hme-buddy-seniors/. Each call grows the target's transcript -- reserve for problems where their depth would unlock the answer.",
       "category": "orchestration",
       "usage": "i/consult sid=<sid> question=\"...\"  (or primary=<sid>, buddy=<sid>, senior=<sid> as role-named aliases)",
       "examples": [

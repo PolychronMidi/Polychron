@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Cascade-prediction injection — wires the Phase 6.1 `injected` arm
+ * Cascade-prediction injection -- wires the Phase 6.1 `injected` arm
  * named-but-unbuilt for months and surfaced by peer-review iter 145.
  *
  * On every Edit/Write/NotebookEdit tool result, calls the worker's
@@ -19,7 +19,7 @@
  * unchanged (no footer). The fire-event log in context_budget.js
  * picks up cascade-fires alongside the other enrichers.
  *
- * Footer cap: ≤6 predicted modules + total count, ≤180 chars total
+ * Footer cap: <=6 predicted modules + total count, <=180 chars total
  * to match dir_context.js's MAX_FOOTER_CHARS budget.
  */
 
@@ -33,7 +33,7 @@ const WORKER_PORT = (() => {
 
 const MAX_PREDICTED_SHOWN = 6;
 const MAX_FOOTER_CHARS = 180;
-const REQUEST_TIMEOUT_MS = 1500;  // tight — this fires on every Edit, must not stall
+const REQUEST_TIMEOUT_MS = 1500;  // tight -- this fires on every Edit, must not stall
 
 const TARGET_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit', 'MultiEdit']);
 
@@ -71,7 +71,7 @@ module.exports = {
     if (!toolUse || !TARGET_TOOLS.has(toolUse.name || '')) return;
     const fp = (toolUse.input && toolUse.input.file_path) || '';
     if (!fp) return;
-    // Skip non-source paths — node_modules, generated dirs, the metrics
+    // Skip non-source paths -- node_modules, generated dirs, the metrics
     // logs themselves. Cascade analysis is meaningful only for code.
     if (/\/(node_modules|__pycache__|\.git|out|dist)\//.test(fp)) return;
     if (/\/output\/metrics\//.test(fp)) return;
@@ -80,16 +80,16 @@ module.exports = {
     if (!result || !result.logged) return;
     const predicted = Array.isArray(result.predicted) ? result.predicted : [];
     if (predicted.length === 0) {
-      // Logged but no affected modules — not worth a footer.
+      // Logged but no affected modules -- not worth a footer.
       ctx.emit({ event: 'cascade_prediction_empty', target: result.target || path.basename(fp) });
       return;
     }
     const shown = predicted.slice(0, MAX_PREDICTED_SHOWN).join(', ');
     const tail = predicted.length > MAX_PREDICTED_SHOWN
       ? ` +${predicted.length - MAX_PREDICTED_SHOWN}` : '';
-    let footer = `\n[HME cascade] ${result.target} → may ripple to: ${shown}${tail}`;
+    let footer = `\n[HME cascade] ${result.target} -> may ripple to: ${shown}${tail}`;
     if (footer.length > MAX_FOOTER_CHARS) {
-      footer = footer.slice(0, MAX_FOOTER_CHARS - 1) + '…';
+      footer = footer.slice(0, MAX_FOOTER_CHARS - 1) + '...';
     }
     ctx.appendToResult(toolResult, footer);
     ctx.markDirty();

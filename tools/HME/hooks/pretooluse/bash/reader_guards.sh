@@ -1,4 +1,4 @@
-# Block cat/head/tail/less/more against context-guarded paths — otherwise Bash
+# Block cat/head/tail/less/more against context-guarded paths -- otherwise Bash
 # becomes the loophole that bypasses pretooluse_read.sh's blocklist.
 # Uses shlex tokenization so we only match ACTUAL invocations (not path tokens
 # buried in string literals, heredocs, or unrelated arguments).
@@ -22,9 +22,9 @@ blocked_exts = d.get("blocked_extensions", [])
 paginated = d.get("paginated_paths", [])
 READERS = {"cat", "less", "more", "bat", "batcat", "head", "tail", "xxd", "od"}
 # Tools that reveal content but whose "path argument" isn't the first non-flag.
-# sed -n 'Np' <file>       — file is last arg; program is positional 1
-# awk '<prog>' <file>      — first positional is program, second is file
-# diff <a> <b>             — both args are files we'd reveal
+# sed -n 'Np' <file>       -- file is last arg; program is positional 1
+# awk '<prog>' <file>      -- first positional is program, second is file
+# diff <a> <b>             -- both args are files we'd reveal
 SPECIAL_READERS = {"sed", "awk", "diff"}
 # git subcommands that dump file content
 GIT_CONTENT_SUBS = {"diff", "show", "log", "blame", "cat-file"}
@@ -92,7 +92,7 @@ while i < len(tokens):
             sub = tokens[k]
             break
         if sub in GIT_CONTENT_SUBS:
-            # Scan remaining tokens for path arguments — git diff reveals
+            # Scan remaining tokens for path arguments -- git diff reveals
             # anything it mentions as a pathspec. `git show HEAD:path` uses
             # a colon-joined ref:path form; extract the path part.
             for t in tokens[i + 2:]:
@@ -156,7 +156,7 @@ while i < len(tokens):
                 continue
             positional += 1
             # sed/awk program is positional #1 ONLY when not already given via flag.
-            # diff has no program — both positionals are files.
+            # diff has no program -- both positionals are files.
             if cmd_name in ("sed", "awk") and positional == 1 and not program_specified_via_flag:
                 j += 1
                 continue

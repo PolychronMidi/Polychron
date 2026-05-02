@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Code statusLine handler — receives session JSON on stdin.
+# Claude Code statusLine handler -- receives session JSON on stdin.
 # Writes real context data to HME_CTX_FILE (PTY sessions) or /tmp/claude-context.json.
 # Fields: used_pct, remaining_pct, size, model_id, model_name (all from API, no fabrication).
 input=$(cat)

@@ -1,6 +1,6 @@
-# LIFESAVER — mid-turn error detection
+# LIFESAVER -- mid-turn error detection
 # LIFE-OR-DEATH: Catch errors that fired in HME components DURING this turn.
-# Block stopping — errors that appeared while you worked MUST be fixed before return.
+# Block stopping -- errors that appeared while you worked MUST be fixed before return.
 # Acknowledging without fixing is the violation this system exists to prevent.
 PROJECT="$PROJECT_ROOT"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
@@ -66,12 +66,12 @@ if [ -f "$ERROR_LOG" ]; then
   # Self-origin source tags: writers that ONLY emit self-health alerts
   # (operator/supervisor concerns, not agent code issues). Lines with
   # these tags are classified as observation-only regardless of severity
-  # word (CRITICAL/ERROR included) — the agent has no causal path to
+  # word (CRITICAL/ERROR included) -- the agent has no causal path to
   # fix a CPU-saturated worker daemon, so surfacing as a block-decision
   # is a false-positive that flooded the alert chain. The history note
   # in the original classifier rewrite ("source-tag whitelist that kept
   # missing real failures") referred to GLOBAL whitelisting; this is
-  # tighter — only writers in this list, only when matched at the
+  # tighter -- only writers in this list, only when matched at the
   # canonical [tag] position at line start.
   _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
   _CANARY_RE='\[CANARY-'
@@ -108,15 +108,15 @@ if [ -f "$ERROR_LOG" ]; then
       jq -n \
         --arg errors "$AGENT_ERRORS" \
         --arg self "$SELF_ERRORS" \
-        '{"decision":"block","reason":("🚨 LIFESAVER — AGENT-ORIGIN ERRORS FIRED THIS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor — informational, not your problem to fix from this turn):\n" + $self + "]" else "" end) + "\n\nYou MUST: 1) diagnose root cause  2) implement fix  3) verify fix.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
+        '{"decision":"block","reason":("[ALERT] LIFESAVER -- AGENT-ORIGIN ERRORS FIRED THIS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor -- informational, not your problem to fix from this turn):\n" + $self + "]" else "" end) + "\n\nYou MUST: 1) diagnose root cause  2) implement fix  3) verify fix.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
       _stderr_verdict "BLOCK: lifesaver $((TOTAL - TURN_START_LINE))err"
       exit 0
     elif [ -n "$SELF_ERRORS" ]; then
-      # Self-origin only — surface as observation, do not block. The
+      # Self-origin only -- surface as observation, do not block. The
       # operator/supervisor handles these; the agent has no causal path.
       jq -n \
         --arg self "$SELF_ERRORS" \
-        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[hme self-health] " + $self + "\n(observability only — supervisor/operator concern, not agent action)")}}'
+        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[hme self-health] " + $self + "\n(observability only -- supervisor/operator concern, not agent action)")}}'
       _stderr_verdict "PASS: lifesaver self-only"
       exit 0
     fi
@@ -128,7 +128,7 @@ if [ -f "$ERROR_LOG" ]; then
   # Apply the SAME severity + canary filtering as the new-errors branch above.
   # Without this, an alert-chain canary written between turns (or any
   # WARN/INFO/DEBUG/NOTICE-tagged observation entry) would surface as an
-  # "UNADDRESSED ERROR" and falsely block — the canary IS addressed (it's
+  # "UNADDRESSED ERROR" and falsely block -- the canary IS addressed (it's
   # consumed silently when scanned), and observation entries are not agent-
   # actionable. This branch was missing the filtering entirely, causing the
   # exact "CANARY-... alert-chain self-test injection" false-block the user
@@ -158,18 +158,18 @@ if [ -f "$ERROR_LOG" ]; then
       jq -n \
         --arg errors "$UNFIXED_AGENT" \
         --arg self "$UNFIXED_SELF" \
-        '{"decision":"block","reason":("🚨 LIFESAVER — UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor — informational, not your problem to fix from this turn):\n" + $self + "]" else "" end) + "\n\nThese errors were shown at turn start but NOT fixed. Fix them now.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
+        '{"decision":"block","reason":("[ALERT] LIFESAVER -- UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor -- informational, not your problem to fix from this turn):\n" + $self + "]" else "" end) + "\n\nThese errors were shown at turn start but NOT fixed. Fix them now.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
       _stderr_verdict "BLOCK: lifesaver prior-turn"
       exit 0
     elif [ -n "$UNFIXED_SELF" ]; then
-      # Self-origin observations only — surface as additionalContext, don't block.
+      # Self-origin observations only -- surface as additionalContext, don't block.
       jq -n \
         --arg self "$UNFIXED_SELF" \
-        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[hme self-health, prior turn] " + $self + "\n(observability only — supervisor/operator concern, not agent action)")}}'
+        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[hme self-health, prior turn] " + $self + "\n(observability only -- supervisor/operator concern, not agent action)")}}'
       _stderr_verdict "PASS: lifesaver prior-turn self-only"
       exit 0
     fi
-    # Canary-only or empty after filter — silent pass; watermark already advanced.
+    # Canary-only or empty after filter -- silent pass; watermark already advanced.
     _stderr_verdict "PASS: lifesaver prior-turn canary-only"
   fi
 fi

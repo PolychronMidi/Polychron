@@ -3,12 +3,12 @@
  * Block stop if a git merge/rebase is in progress with unresolved conflicts.
  * Pattern lifted from FailproofAI's `require-no-conflicts-before-stop`.
  * Polychron's CLAUDE.md says "investigate before deleting or overwriting"
- * unfamiliar state — this enforces that for the most common case (an
+ * unfamiliar state -- this enforces that for the most common case (an
  * abandoned rebase or merge with `<<<<<<<` markers in tracked files). spam-ok
  *
  * Detection layered: cheapest check first.
- *   1. .git/MERGE_HEAD or .git/REBASE_HEAD presence → in-progress operation.
- *   2. `git diff --name-only --diff-filter=U` → unmerged files.
+ *   1. .git/MERGE_HEAD or .git/REBASE_HEAD presence -> in-progress operation.
+ *   2. `git diff --name-only --diff-filter=U` -> unmerged files.
  *
  * Both checks have ~ms cost on a normal repo; both fail-soft if git is
  * unavailable (returns allow rather than blocking on infrastructure issues).
@@ -21,7 +21,7 @@ const { PROJECT_ROOT } = require('../../shared');
 
 function hasInProgressMergeOrRebase() {
   const gitDir = path.join(PROJECT_ROOT, '.git');
-  if (!fs.existsSync(gitDir)) return null; // not a git repo — skip
+  if (!fs.existsSync(gitDir)) return null; // not a git repo -- skip
   for (const marker of ['MERGE_HEAD', 'REBASE_HEAD', 'CHERRY_PICK_HEAD', 'rebase-merge', 'rebase-apply']) {
     if (fs.existsSync(path.join(gitDir, marker))) return marker;
   }
@@ -53,7 +53,7 @@ module.exports = {
       return ctx.allow();
     }
 
-    const lines = ['CONFLICTS BLOCK STOP — unresolved git state:'];
+    const lines = ['CONFLICTS BLOCK STOP -- unresolved git state:'];
     if (inProgress) {
       lines.push(`  - in-progress operation: ${inProgress}`);
     }

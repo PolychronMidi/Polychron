@@ -2,7 +2,7 @@
 /**
  * Block Write tool calls whose content matches credential-like patterns
  * (api_key=<long-string>, password=<long-string>, etc.). Complements
- * block-secrets-write (filename-based) — this one catches the case where
+ * block-secrets-write (filename-based) -- this one catches the case where
  * the FILENAME is innocuous but the CONTENT is a credential.
  *
  * JS port of the secret-pattern detector in pretooluse_write.sh.

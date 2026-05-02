@@ -53,9 +53,9 @@ test('i/timeline run-length-collapses consecutive same events', () => {
   // If there are any RL-collapsed entries, they appear as `Nx event_name`.
   // We don't assert presence (depends on activity), but if there are
   // multi-count entries, none of them should have count <2.
-  const matches = r.stdout.match(/^\s*\d{2}:\d{2}:\d{2}.*?(\d+)× /gm) || [];
+  const matches = r.stdout.match(/^\s*\d{2}:\d{2}:\d{2}.*?(\d+)* /gm) || [];
   for (const m of matches) {
-    const n = parseInt(m.match(/(\d+)×/)[1], 10);
+    const n = parseInt(m.match(/(\d+)*/)[1], 10);
     assert.ok(n >= 2, `RL-collapse should only show count for 2+ events, got ${n} in: ${m}`);
   }
 });
@@ -70,5 +70,5 @@ test('i/timeline invalid window= falls back to default', () => {
 test('i/timeline header reports raw vs grouped event counts', () => {
   const r = _run(['window=1h']);
   assert.strictEqual(r.status, 0);
-  assert.match(r.stdout, /\d+ raw events → \d+ grouped/);
+  assert.match(r.stdout, /\d+ raw events -> \d+ grouped/);
 });

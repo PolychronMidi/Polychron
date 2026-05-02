@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Integration smoke test — fires /indexing-mode end-to-end and asserts:
+# Integration smoke test -- fires /indexing-mode end-to-end and asserts:
 #   1. daemon + worker are reachable at boot
 #   2. coder is healthy before the cycle starts
 #   3. /indexing-mode returns a non-error result within 120s
@@ -31,7 +31,7 @@ echo "=== HME indexing-mode end-to-end smoke test ==="
 # --- Assertion 1: daemon + worker reachable ---
 echo "[1/5] daemon + worker reachable"
 if ! curl -sf -o /dev/null "$_DAEMON_URL/health"; then
-  _skip "daemon unreachable at $_DAEMON_URL — is the HME proxy supervisor running?"
+  _skip "daemon unreachable at $_DAEMON_URL -- is the HME proxy supervisor running?"
 fi
 _pass "daemon reachable at $_DAEMON_URL"
 if ! curl -sf -o /dev/null "$_WORKER_URL/health"; then
@@ -46,7 +46,7 @@ echo "[2/5] coder healthy at baseline"
 _waited=0
 until curl -sf "$_CODER_URL/health" 2>/dev/null | grep -q "ok"; do
   if [ "$_waited" -ge 120 ]; then
-    _fail "coder not healthy after 120s baseline wait — can't establish baseline (cold-boot from disk should never exceed 90s)"
+    _fail "coder not healthy after 120s baseline wait -- can't establish baseline (cold-boot from disk should never exceed 90s)"
   fi
   sleep 3
   _waited=$((_waited + 3))
@@ -80,7 +80,7 @@ until curl -sf "$_CODER_URL/health" 2>/dev/null | grep -q "ok"; do
   _tend=$(date +%s)
   _elapsed=$((_tend - _t0))
   if [ "$_elapsed" -ge 120 ]; then
-    _fail "coder not healthy after ${_elapsed}s post-indexing-mode — stuck respawn? Check llamacpp_daemon.out for 'resume failed' or 'coder unhealthy' loops"
+    _fail "coder not healthy after ${_elapsed}s post-indexing-mode -- stuck respawn? Check llamacpp_daemon.out for 'resume failed' or 'coder unhealthy' loops"
   fi
   sleep 3
 done

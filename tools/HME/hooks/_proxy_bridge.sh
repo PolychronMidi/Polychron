@@ -6,7 +6,7 @@
 # CRITICAL CHANGE (fail-LOUD, not fail-open):
 #
 # The old code exited 0 silently when the proxy was unreachable. That was
-# the single largest silent-failure mode in the HME stack — proxy dies,
+# the single largest silent-failure mode in the HME stack -- proxy dies,
 # every hook silently succeeds, LIFESAVER never fires (LIFESAVER itself
 # lives inside the proxy), autocommits stop happening, KB briefings stop
 # injecting, and the user is none the wiser. This recurred 20+ times.
@@ -24,11 +24,11 @@
 EVENT="${1:-unknown}"
 PORT="${HME_PROXY_PORT:-9099}"
 
-# Recursion guard for thread children — narrow to events that would
+# Recursion guard for thread children -- narrow to events that would
 # cause an auto-loop or pointless work. Original cut bypassed every
 # event, which silently disabled PreToolUse safety (run.lock guard,
 # secret detection, etc.) in the child session. Per CLAUDE.md the
-# run.lock guard is "Enforced by PreToolUse hook + deny rule" — losing
+# run.lock guard is "Enforced by PreToolUse hook + deny rule" -- losing
 # that half is real risk if the persistent subagent ever gains tool
 # access. Keep PreToolUse / PostToolUse running; bypass only the
 # loop-shaped lifecycle events.
@@ -47,7 +47,7 @@ BODY=$(cat)
 #   1. $PROJECT_ROOT (set by .env load if _safety.sh sourced upstream)
 #   2. $CLAUDE_PROJECT_DIR (set by Claude Code in every hook invocation)
 #   3. Walk up from $BASH_SOURCE looking for .git + src/ pair
-# No hardcoded host-path fallback — if the above three fail, the
+# No hardcoded host-path fallback -- if the above three fail, the
 # invocation environment is fundamentally broken and the hook should
 # fail loud rather than guess.
 _PB_SELF="${BASH_SOURCE[0]}"
@@ -86,7 +86,7 @@ if [ -n "$_PB_ROOT" ]; then
     fi
   fi
   if [ "$_PB_SV_ALIVE" = "0" ] && [ -x "$_PB_SUPERVISOR_SCRIPT" ]; then
-    # Detached start. The supervisor's own start path is idempotent —
+    # Detached start. The supervisor's own start path is idempotent --
     # if it WAS already running we just haven't updated the pid file,
     # the second start will no-op. This never waits.
     bash "$_PB_SUPERVISOR_SCRIPT" start >/dev/null 2>&1 &
@@ -95,7 +95,7 @@ if [ -n "$_PB_ROOT" ]; then
 
   # Same pattern for universal-pulse-supervisor: every hook invocation
   # cheaply verifies the active-probe daemon is alive. This is the
-  # LIFESAVER gap-filler — without it, a GIL-saturated worker can stay
+  # LIFESAVER gap-filler -- without it, a GIL-saturated worker can stay
   # unresponsive for 48+ minutes before anyone notices (confirmed
   # incident, Apr 24 2026). The pulse runs its own health probes against
   # proxy/worker/llamacpp/CPU-saturation and writes to hme-errors.log
@@ -124,11 +124,11 @@ RESP=$(curl -sf --max-time 60 -X POST \
   "http://127.0.0.1:${PORT}/hme/lifecycle?event=${EVENT}" 2>/dev/null)
 
 # One-shot retry after 500ms if the first POST failed. Covers the narrow
-# window where the proxy has just finished a restart — /health may be
+# window where the proxy has just finished a restart -- /health may be
 # returning 200 while /hme/lifecycle is still warming its route handler
 # by ~100-400ms. Without the retry, ANY hook firing during that window
 # logs "proxy unreachable" even though maintenance flag was set seconds
-# earlier. The retry is a 500ms delay + single re-attempt — cheap for
+# earlier. The retry is a 500ms delay + single re-attempt -- cheap for
 # the happy path (instant skip), buys silent recovery on transient.
 if [ -z "$RESP" ]; then
   sleep 0.5
@@ -139,7 +139,7 @@ if [ -z "$RESP" ]; then
 fi
 
 if [ -z "$RESP" ]; then
-  # Proxy unreachable. Direct-mode fallback — implements the filesystem-IPC
+  # Proxy unreachable. Direct-mode fallback -- implements the filesystem-IPC
   # architectural lesson: the proxy is an accelerator, not a single point
   # of failure. For events that have a daemon-less Node CLI (currently:
   # Stop), shell out to the CLI directly so the chain still fires.
@@ -154,7 +154,7 @@ if [ -z "$RESP" ]; then
 
   _PB_DIRECT_DISPATCH="$_PB_ROOT/tools/HME/hooks/direct_dispatch.sh"
   if [ -n "$_PB_ROOT" ] && [ -x "$_PB_DIRECT_DISPATCH" ]; then
-    # General direct-mode dispatch — runs the appropriate hook chain for
+    # General direct-mode dispatch -- runs the appropriate hook chain for
     # the current event without the proxy. Mirrors hook_bridge.js routing.
     # Stop has a JS policy evaluator (with explicit decision contract);
     # other events use bash hooks. Either way, the architectural property
@@ -165,10 +165,10 @@ if [ -z "$RESP" ]; then
     [ -n "$_PB_DIRECT_STDOUT" ] && printf '%s' "$_PB_DIRECT_STDOUT"
     [ -s "$_PB_DIRECT_ERR" ] && cat "$_PB_DIRECT_ERR" >&2
     rm -f "$_PB_DIRECT_ERR" 2>/dev/null
-    # Lifecycle audit (NOT hme-errors.log — direct-mode is a degraded but
+    # Lifecycle audit (NOT hme-errors.log -- direct-mode is a degraded but
     # functional state, not an error that LIFESAVER should surface).
     mkdir -p "$_PB_ROOT/log" 2>/dev/null
-    echo "[$_PB_TS] [proxy-bridge] ${EVENT} ran in direct-mode (proxy down) — exit_code=${_PB_DIRECT_RC}" \
+    echo "[$_PB_TS] [proxy-bridge] ${EVENT} ran in direct-mode (proxy down) -- exit_code=${_PB_DIRECT_RC}" \
       >> "$_PB_ROOT/log/hme-proxy-lifecycle.log"
     # Sticky proxy-down flag still set so the recovery banner fires
     # when the proxy comes back up (next successful POST).
@@ -188,14 +188,14 @@ if [ -z "$RESP" ]; then
   # Flag format: two lines.
   #   line 1: ISO8601 timestamp the maintenance window started
   #   line 2: integer TTL seconds
-  # Malformed or expired flag is ignored — we fail-LOUD as normal.
+  # Malformed or expired flag is ignored -- we fail-LOUD as normal.
   _PB_MAINT_FLAG="$_PB_ROOT/tmp/hme-proxy-maintenance.flag"
   _PB_MAINT_ACTIVE=0
   if [ -n "$_PB_ROOT" ] && [ -f "$_PB_MAINT_FLAG" ]; then
     _PB_MAINT_START=$(sed -n '1p' "$_PB_MAINT_FLAG" 2>/dev/null)
     _PB_MAINT_TTL=$(sed -n '2p' "$_PB_MAINT_FLAG" 2>/dev/null)
     case "$_PB_MAINT_TTL" in
-      ''|*[!0-9]*) ;;  # malformed — fall through to fail-LOUD
+      ''|*[!0-9]*) ;;  # malformed -- fall through to fail-LOUD
       *)
         _PB_MAINT_EPOCH=$(date -d "$_PB_MAINT_START" +%s 2>/dev/null || echo 0)
         _PB_NOW_EPOCH=$(date +%s 2>/dev/null || echo 0)
@@ -222,14 +222,14 @@ if [ -z "$RESP" ]; then
   # Channel A: hme-errors.log for LIFESAVER text-scan pickup.
   # Stderr suppression intentionally REMOVED here: if errors.log itself
   # is unwritable (the canonical alert sink for the whole HME chain), the
-  # write error MUST surface — silent-fail on the alert sink is the
+  # write error MUST surface -- silent-fail on the alert sink is the
   # exact failure mode the LIFESAVER chain is supposed to prevent. The
   # other 3 channels (stderr banner, JSON, sticky flag) still carry the
   # signal even if this write succeeds.
   if [ -n "$_PB_ROOT" ]; then
     mkdir -p "$_PB_ROOT/log" 2>/dev/null
     echo "$_PB_MSG" >> "$_PB_ROOT/log/hme-errors.log"
-    # Channel B: sticky proxy-down flag — separate from autocommit flag.
+    # Channel B: sticky proxy-down flag -- separate from autocommit flag.
     mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
     echo "$_PB_MSG" > "$_PB_ROOT/tmp/hme-proxy-down.flag"
   fi
@@ -242,11 +242,11 @@ if [ -z "$RESP" ]; then
   # and SessionStart. These events accept additionalContext in their
   # hookSpecificOutput and relay it to the agent's next turn. For Stop /
   # PreToolUse / PostToolUse / PreCompact / PostCompact, emitting a JSON
-  # block here would wedge the turn, so we keep them silent on stdout —
+  # block here would wedge the turn, so we keep them silent on stdout --
   # the other three channels carry the signal.
   case "$EVENT" in
     UserPromptSubmit|SessionStart)
-      _PB_BANNER="🚨 LIFESAVER - HME PROXY OFFLINE - ALL HOOK LOGIC SILENTLY DISABLED
+      _PB_BANNER="[ALERT] LIFESAVER - HME PROXY OFFLINE - ALL HOOK LOGIC SILENTLY DISABLED
 
 The HME proxy on 127.0.0.1:${PORT} is not responding. This means:
   - No LIFESAVER alerts will fire from the proxy path this turn
@@ -268,7 +268,7 @@ Check:   curl -sf http://127.0.0.1:${PORT}/health"
   exit 0
 fi
 
-# Proxy responded — clear the sticky down-flag, and emit a one-shot
+# Proxy responded -- clear the sticky down-flag, and emit a one-shot
 # recovery banner if the flag was set (meaning the proxy WAS down before
 # this call). The recovery banner parallels the fail-LOUD banner so the
 # user knows normal service resumed.
@@ -283,7 +283,7 @@ if [ -n "$_PB_ROOT" ] && [ -f "$_PB_ROOT/tmp/hme-proxy-down.flag" ]; then
   _PB_RECOVERY_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
   rm -f "$_PB_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
   mkdir -p "$_PB_ROOT/log" 2>/dev/null
-  # Audit trail for recoveries — a separate file from the error log.
+  # Audit trail for recoveries -- a separate file from the error log.
   echo "[$_PB_RECOVERY_TS] [proxy-bridge] HME proxy recovered on 127.0.0.1:${PORT} (event=${EVENT})" \
     >> "$_PB_ROOT/log/hme-proxy-lifecycle.log"
   echo "[proxy-bridge RECOVERED $_PB_RECOVERY_TS] HME proxy on 127.0.0.1:${PORT} responding again" >&2

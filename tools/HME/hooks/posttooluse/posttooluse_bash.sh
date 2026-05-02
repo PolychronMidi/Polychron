@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME PostToolUse: Bash — background file tracking + Evolver phase triggers + nexus state
+# HME PostToolUse: Bash -- background file tracking + Evolver phase triggers + nexus state
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../helpers/_tab_helpers.sh"
 source "$SCRIPT_DIR/../helpers/_nexus.sh"
@@ -19,7 +19,7 @@ BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 # sub-hook dispatched below inherits the resolved INPUT, so review /
 # hme_read / learn / etc. see real output instead of the stub. The proxy
 # middleware background_dominance.js handles the same resolution on the
-# API-stream side for the model — two complementary layers.
+# API-stream side for the model -- two complementary layers.
 _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub.sh" 10 "" || true)
 [ -n "$_RESOLVED" ] && INPUT="$_RESOLVED"
 
@@ -27,7 +27,7 @@ _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub
 #   [enqueue: tier=<easy|medium|hard> text="<one-line>" source="<who>"]
 # automatically materializes as a task in tmp/hme-buddy-queue/pending/.
 # Lets any HME tool (or any Bash command) declare follow-up work
-# without each tool needing its own integration code — symmetric with
+# without each tool needing its own integration code -- symmetric with
 # the [no-work] and [picked-difficulty:] sentinels we already use.
 # Multiple matches per tool output are all enqueued.
 #
@@ -59,7 +59,7 @@ if [ "$_DISP_MODE" = "claude-resume" ] || [ "$_DISP_MODE" = "synthesis" ]; then
         [ -z "$_ENQ_TIER" ] && _ENQ_TIER="medium"
         [ -z "$_ENQ_SRC" ] && _ENQ_SRC="enqueue-sentinel"
         [ -z "$_ENQ_TEXT" ] && continue
-        # Background fire — never block the parent hook.
+        # Background fire -- never block the parent hook.
         ("$_DISPATCH_CLI" enqueue tier="$_ENQ_TIER" text="$_ENQ_TEXT" source="$_ENQ_SRC" \
           > /dev/null 2>&1) &
         disown 2>/dev/null || true
@@ -72,7 +72,7 @@ else
   # "I emitted [enqueue: ...] but nothing happened" debugging gap.
   _ENQ_PEEK=$(_safe_jq "$INPUT" '.tool_response' '' | grep -oE '\[enqueue:[^]]+\]' | head -3)
   if [ -n "$_ENQ_PEEK" ]; then
-    echo "[enqueue-sentinel] dispatch disabled — $(echo "$_ENQ_PEEK" | wc -l) enqueue sentinel(s) seen but not queued. Set BUDDY_SYSTEM=1 (claude-resume) OR HME_DISPATCH_MODE=synthesis (route through HME's synthesis cascade) in .env to activate." >&2
+    echo "[enqueue-sentinel] dispatch disabled -- $(echo "$_ENQ_PEEK" | wc -l) enqueue sentinel(s) seen but not queued. Set BUDDY_SYSTEM=1 (claude-resume) OR HME_DISPATCH_MODE=synthesis (route through HME's synthesis cascade) in .env to activate." >&2
   fi
 fi
 
@@ -94,7 +94,7 @@ fi
 if echo "$CMD" | grep -q 'npm run main'; then
   _signal_emit pipeline_finished posttooluse_bash pipeline "{\"exit_code\":$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // 0' '0')}"
   # ANTI-STOP: when the pipeline fails at lint/typecheck, diagnose and fix without pausing.
-  # Stopping after a failure — asking, summarizing, or waiting — is the psychopathic antipattern.
+  # Stopping after a failure -- asking, summarizing, or waiting -- is the psychopathic antipattern.
   # Review warnings are NEVER ignorable: fix every one before proceeding.
   EXIT_CODE_CHECK=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
   if [ "$EXIT_CODE_CHECK" != "0" ]; then
@@ -106,10 +106,10 @@ if echo "$CMD" | grep -q 'npm run main'; then
       | head -1 | sed 's/^[[:space:]]*//' | cut -c1-180)
     cat >&2 <<ANTIMSG
 
-  PIPELINE FAILED — DO NOT STOP — FIX IT NOW
+  PIPELINE FAILED -- DO NOT STOP -- FIX IT NOW
   Stopping, summarizing, or asking what to do next is the psychopathic antipattern.
   Read the error above, diagnose the root cause, fix it, rerun. No pausing.
-  Review warnings are never "pre-existing" — fix every one in the review output.
+  Review warnings are never "pre-existing" -- fix every one in the review output.
 
   Diagnose via HME: i/trace target="${_FIRST_ERR:-<paste error text>}" mode=diagnose
   (Pulls source trace + similar historical bugs from KB for this failure class.)
@@ -122,7 +122,7 @@ ANTIMSG
   fi
   # LIFESAVER: Scan pipeline summary for errors in non-fatal steps.
   # These are real failures (Traceback, CUDA OOM, RuntimeError) that the
-  # pipeline continued past. They MUST be addressed — not ignored.
+  # pipeline continued past. They MUST be addressed -- not ignored.
   PROJECT="$PROJECT_ROOT"
   SUMMARY_FILE="$PROJECT/output/metrics/pipeline-summary.json"
   if [ -f "$SUMMARY_FILE" ]; then
@@ -143,7 +143,7 @@ if lines:
       cat >&2 <<ERRMSG
 
 
-  PIPELINE ERRORS DETECTED — DO NOT IGNORE
+  PIPELINE ERRORS DETECTED -- DO NOT IGNORE
 
 $ERROR_STEPS
 
@@ -184,7 +184,7 @@ if echo "$CMD" | grep -q 'npm run main'; then
     VERDICT=$(_safe_py3 "import json; print(json.load(open('$FP')).get('verdict','UNKNOWN'))" "UNKNOWN")
     WALL_S=$(_safe_py3 "import json; d=json.load(open('$PROJECT/output/metrics/pipeline-summary.json')); print(int(d.get('wallTimeSeconds',0)))" "0")
     # pipeline_run + round_complete + HCI are all emitted by main-pipeline.js
-    # itself — agent-independent observability. The hook no longer needs to
+    # itself -- agent-independent observability. The hook no longer needs to
     # re-emit. It still owns nexus + onboarding state advancement below
     # because those are tied to Claude's Bash-tool invocation context.
     if [ "$PASSED" = "0" ]; then
@@ -203,7 +203,7 @@ if echo "$CMD" | grep -q 'npm run main'; then
           PROJECT_ROOT="$PROJECT" python3 "$PROJECT/scripts/hme/draft-learn.py" \
             --verdict="$VERDICT" --session="$SESSION_ID" --out="$DRAFT_PATH" \
             >/dev/null 2>&1 && \
-            echo "[hme-learn] $VERDICT verdict — KB draft written to tmp/hme-learn-draft.json. Accept with: i/learn action=add accept_draft=true" >&2
+            echo "[hme-learn] $VERDICT verdict -- KB draft written to tmp/hme-learn-draft.json. Accept with: i/learn action=add accept_draft=true" >&2
           # Horizon VII instrumentation: emit kb_draft_written event with
           # caused_by = the verdict that triggered the draft. Lets
           # `i/why mode=causality kb_draft_written` resolve via Tier-1.5.
@@ -224,7 +224,7 @@ if echo "$CMD" | grep -q 'npm run main'; then
 fi
 
 # Nexus: track git commits made via the Bash tool.
-# (Auto-fire i/review on commit was MOVED to autocommit-direct.sh — this
+# (Auto-fire i/review on commit was MOVED to autocommit-direct.sh -- this
 # hook only fires when the user manually runs `git commit` via Bash, which
 # is rare. Autocommits go through autocommit-direct.sh, which now detects
 # HEAD movement post-commit and fires the same review autofire there. So

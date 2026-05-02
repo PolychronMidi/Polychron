@@ -18,7 +18,7 @@
  * Rewriters run left-to-right. When a rewriter returns `{events}`, the
  * remaining rewriters run on each element in the list.
  *
- * `ctx` is a Map shared across events for a single stream — use it to
+ * `ctx` is a Map shared across events for a single stream -- use it to
  * accumulate tool_use input fragments across content_block_delta events.
  *
  * Non-SSE bytes pass through unchanged (comments `:` lines, keepalives).
@@ -84,7 +84,7 @@ class SseTransform extends Transform {
     while ((idx = this._buf.indexOf('\n\n')) !== -1) {
       const raw = this._buf.slice(0, idx);
       this._buf = this._buf.slice(idx + 2);
-      if (!raw.trim()) continue; // empty event — just keepalive separator
+      if (!raw.trim()) continue; // empty event -- just keepalive separator
 
       // Parse event:/data: lines
       let eventName = '';
@@ -96,7 +96,7 @@ class SseTransform extends Transform {
         if (line.startsWith('data:')) { dataLines.push(line.slice(5).trim()); continue; }
       }
       if (isComment && dataLines.length === 0) {
-        // Pure comment event (: ping) — pass through verbatim
+        // Pure comment event (: ping) -- pass through verbatim
         this.push(raw + '\n\n');
         continue;
       }
@@ -109,7 +109,7 @@ class SseTransform extends Transform {
       let data;
       try { data = JSON.parse(payloadStr); }
       catch (_err) {
-        // Not JSON — forward verbatim.
+        // Not JSON -- forward verbatim.
         this.push(raw + '\n\n');
         continue;
       }
@@ -125,7 +125,7 @@ class SseTransform extends Transform {
   }
 
   _flush(cb) {
-    // Emit any trailing incomplete event as-is (rare — Anthropic terminates cleanly).
+    // Emit any trailing incomplete event as-is (rare -- Anthropic terminates cleanly).
     if (this._buf.length > 0) this.push(this._buf);
     cb();
   }

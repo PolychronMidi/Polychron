@@ -1,16 +1,16 @@
 'use strict';
 /**
- * Read context — appends ACTIONABLE intel to Read tool_results:
+ * Read context -- appends ACTIONABLE intel to Read tool_results:
  *
- *   1. Open hypothesis for this module → claim text + falsifier, so the agent
+ *   1. Open hypothesis for this module -> claim text + falsifier, so the agent
  *      knows what invariant an edit must preserve (or explicitly falsify).
- *   2. Callers of this module → list of files that import it, so the agent
+ *   2. Callers of this module -> list of files that import it, so the agent
  *      knows the blast radius before changing any signature.
- *   3. KB semantic drift → warn that the stored KB description for this
+ *   3. KB semantic drift -> warn that the stored KB description for this
  *      module is stale, so the agent doesn't cargo-cult from memory and
  *      instead verifies from the code they just read.
  *
- * Silent when none of these apply — most reads get no footer.
+ * Silent when none of these apply -- most reads get no footer.
  * Callers are cached per-session to amortize the rg subprocess cost.
  */
 
@@ -32,7 +32,7 @@ const CALLER_SCAN_DIRS = ['src', 'tools/HME'];
 // first ~50 reads. Each lookup costs ~30-100ms (recursive grep across
 // src + tools/HME); warm-start saves that cost on bounce. Persistence
 // abstraction: see middleware/_persistent_map.js. Caches are perf-only,
-// not correctness-critical (mismatched cache → fresh grep computes the
+// not correctness-critical (mismatched cache -> fresh grep computes the
 // truth anyway).
 const PersistentMap = require('./_persistent_map');
 const _callerCache = new PersistentMap('tmp/hme-mw-cache-callers.jsonl', { cap: 5000 });
@@ -41,7 +41,7 @@ function _stemOf(fp) {
   return path.basename(fp, path.extname(fp));
 }
 
-// Files that export API — worth computing callers for. Skip tests, configs, docs.
+// Files that export API -- worth computing callers for. Skip tests, configs, docs.
 function _isExportableModule(fp) {
   if (!fp) return false;
   const rel = fp.includes('/Polychron/') ? fp.slice(fp.indexOf('/Polychron/') + 11) : fp;
@@ -59,7 +59,7 @@ function _findCallers(projectRoot, filePath) {
     return [];
   }
   // Match relative requires/imports ending in this basename. POSIX ERE for
-  // plain grep — (require|from), optional whitespace + paren, a quote, any
+  // plain grep -- (require|from), optional whitespace + paren, a quote, any
   // non-quote chars, /stem, closing quote, optional paren.
   // Escape ERE meta in the stem before interpolation. Filenames with `.`,
   // `|`, `+`, `[`, `]`, `(`, `)`, `*`, `?`, `^`, `$`, `\` would otherwise
@@ -72,7 +72,7 @@ function _findCallers(projectRoot, filePath) {
   try {
     out = execFileSync('grep', args, { cwd: projectRoot, encoding: 'utf8', timeout: 3000, maxBuffer: 128 * 1024 });
   } catch (_e) {
-    // grep exits 1 on no matches; any error → treat as no callers (silent)
+    // grep exits 1 on no matches; any error -> treat as no callers (silent)
     _callerCache.set(filePath, []);
     return [];
   }
@@ -107,7 +107,7 @@ module.exports = {
     if (drift) {
       const diffs = Array.isArray(drift.diffs) ? drift.diffs : [];
       const fields = diffs.filter((d) => d.field !== 'content_hash_prefix').map((d) => d.field).slice(0, 3).join(', ');
-      lines.push(`KB stale (${fields || 'structural'}) — trust code, not cache`);
+      lines.push(`KB stale (${fields || 'structural'}) -- trust code, not cache`);
     }
 
     if (_isExportableModule(fp)) {
@@ -125,7 +125,7 @@ module.exports = {
       if (top && typeof top.score === 'number' && top.score >= SEMANTIC_HINT_MIN_SCORE
           && SEMANTIC_HINT_CATEGORIES.has(top.category)) {
         const title = String(top.title || '').slice(0, 100);
-        if (title) lines.push(`KB:${top.category} "${title}" — learn(query='${stem}')`);
+        if (title) lines.push(`KB:${top.category} "${title}" -- learn(query='${stem}')`);
       }
     }
 

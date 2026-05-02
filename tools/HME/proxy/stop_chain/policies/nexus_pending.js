@@ -1,10 +1,10 @@
 'use strict';
 /**
- * Pure-JS port of nexus_pending.sh — late lifecycle audit.
+ * Pure-JS port of nexus_pending.sh -- late lifecycle audit.
  * Reads tmp/hme-nexus.state markers and tmp/hme-onboarding.state, emits a
  * `deny` if the run has unresolved REVIEW issues, an uncommitted PIPELINE
  * verdict, a COMMIT_FAILED marker, or the onboarding "verified-but-no-learn"
- * state. EDIT-count is handled by the early gate (nexus_edit_check) — this
+ * state. EDIT-count is handled by the early gate (nexus_edit_check) -- this
  * stage covers everything else `_nexus_pending` checked.
  */
 
@@ -45,7 +45,7 @@ module.exports = {
   async run(ctx) {
     const issues = [];
 
-    // EDIT count — the early gate already blocks if >0, but if that gate
+    // EDIT count -- the early gate already blocks if >0, but if that gate
     // was disabled or bypassed (defense-in-depth), still report here.
     const editCount = nexusCount('EDIT');
     if (editCount > 0) {
@@ -55,7 +55,7 @@ module.exports = {
     const reviewIssuesRaw = nexusGet('REVIEW_ISSUES');
     const reviewIssues = parseInt(reviewIssuesRaw, 10);
     if (Number.isFinite(reviewIssues) && reviewIssues > 3) {
-      issues.push(`  - ${reviewIssues} unresolved review issue(s) — fix then re-run review(mode='forget') until count drops to 0`);
+      issues.push(`  - ${reviewIssues} unresolved review issue(s) -- fix then re-run review(mode='forget') until count drops to 0`);
     }
 
     const verdict = nexusGet('PIPELINE');
@@ -65,12 +65,12 @@ module.exports = {
       }
     }
     if (verdict === 'FAILED' || verdict === 'DRIFTED') {
-      issues.push(`  - Pipeline ${verdict} — needs diagnosis before stopping`);
+      issues.push(`  - Pipeline ${verdict} -- needs diagnosis before stopping`);
     }
 
     const commitFail = nexusGet('COMMIT_FAILED');
     if (commitFail) {
-      issues.push(`  - COMMIT FAILED: ${commitFail} — run 'git status' and commit manually`);
+      issues.push(`  - COMMIT FAILED: ${commitFail} -- run 'git status' and commit manually`);
     }
 
     if (fs.existsSync(ONBOARDING_FILE)) {
@@ -78,11 +78,11 @@ module.exports = {
       try { onbState = fs.readFileSync(ONBOARDING_FILE, 'utf8').trim(); }
       catch (_e) { /* ignore */ }
       if (onbState === 'verified') {
-        issues.push(`  - Onboarding step 8/8: pipeline STABLE but learn() not called — run learn(title='round summary', content='...') to graduate`);
+        issues.push(`  - Onboarding step 8/8: pipeline STABLE but learn() not called -- run learn(title='round summary', content='...') to graduate`);
       }
     }
 
     if (issues.length === 0) return ctx.allow();
-    return ctx.deny(`NEXUS — incomplete lifecycle steps:\n${issues.join('\n')}\n\nFinish these before stopping.`);
+    return ctx.deny(`NEXUS -- incomplete lifecycle steps:\n${issues.join('\n')}\n\nFinish these before stopping.`);
   },
 };

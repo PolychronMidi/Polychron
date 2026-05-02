@@ -1,7 +1,7 @@
 {
   "id": "retire-legacy-override-after-5-zero-rounds",
   "category": "retirement",
-  "description": "A legacy override with 0 fires AND 0 entries across 5+ consecutive pipeline rounds is a data-proven removal candidate. First demonstrated R13 (entropy-cap-0.19) and R15 (phase-trust-seesaw + graduated). Pattern: instrument → measure → threshold at 5 zero rounds → remove source + state init + allowlist entry → append retirement log entry.",
+  "description": "A legacy override with 0 fires AND 0 entries across 5+ consecutive pipeline rounds is a data-proven removal candidate. First demonstrated R13 (entropy-cap-0.19) and R15 (phase-trust-seesaw + graduated). Pattern: instrument -> measure -> threshold at 5 zero rounds -> remove source + state init + allowlist entry -> append retirement log entry.",
   "trigger": {
     "kind": "file_shell",
     "source": "metrics/legacy-override-history.jsonl",

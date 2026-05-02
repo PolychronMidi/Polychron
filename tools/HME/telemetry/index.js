@@ -2,20 +2,20 @@
 /**
  * Consolidated HME telemetry surface. Single `record(category, event,
  * fields)` entry that fan-outs to the right files based on category.
- * Existing emission paths (emit.py, statusline, etc.) remain — this
+ * Existing emission paths (emit.py, statusline, etc.) remain -- this
  * module is an additive umbrella that lets new code emit ONCE and have
  * the appropriate channels updated together.
  *
  * Categories:
- *   info     → activity stream JSONL (output/metrics/hme-activity.jsonl)
- *   error    → log/hme-errors.log (LIFESAVER scans this; surface fast)
- *   metric   → log/hme-hook-latency.jsonl (used by universal_pulse for p95)
- *   audit    → log/hme-audit.jsonl (forensic trail; never read by hot path)
- *   debug    → stderr only (silent in production unless TELEMETRY_DEBUG=1)
+ *   info     -> activity stream JSONL (output/metrics/hme-activity.jsonl)
+ *   error    -> log/hme-errors.log (LIFESAVER scans this; surface fast)
+ *   metric   -> log/hme-hook-latency.jsonl (used by universal_pulse for p95)
+ *   audit    -> log/hme-audit.jsonl (forensic trail; never read by hot path)
+ *   debug    -> stderr only (silent in production unless TELEMETRY_DEBUG=1)
  *
  * Privacy posture: every category honors HME_TELEMETRY_DISABLE=<comma-list>
  * env var. Disabling 'info' suppresses activity emissions but keeps errors
- * flowing — sensible default for opt-out.
+ * flowing -- sensible default for opt-out.
  *
  * Synchronous file appends throughout. emit.py was a detached subprocess
  * for historical reasons (Python required for the JSON formatting it
@@ -94,7 +94,7 @@ function record(category, event, fields) {
 }
 
 /**
- * Convenience wrappers — the common cases.
+ * Convenience wrappers -- the common cases.
  */
 function info(event, fields)   { record('info', event, fields); }
 function error(event, fields)  { record('error', event, fields); }

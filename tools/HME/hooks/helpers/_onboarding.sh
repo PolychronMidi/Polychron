@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# HME onboarding shell helpers — thin bridge to server/onboarding_chain.py
+# HME onboarding shell helpers -- thin bridge to server/onboarding_chain.py
 #
 # Every hook that needs to read/write onboarding state sources this file.
 # State itself lives in tmp/hme-onboarding.state (single line) and
 # tmp/hme-onboarding.target (briefed module name).
 #
-# The Python CLI is the source of truth — shell helpers are just ergonomic.
+# The Python CLI is the source of truth -- shell helpers are just ergonomic.
 # Falls back gracefully to "graduated" if Python is unavailable.
 
 _ONB_PROJECT="$PROJECT_ROOT"
@@ -13,10 +13,10 @@ _ONB_STATE_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.state"
 _ONB_TARGET_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.target"
 _ONB_PY="${_ONB_PROJECT}/tools/HME/service/server/onboarding_chain.py"
 
-# Ordered state list — must match STATES in onboarding_chain.py
+# Ordered state list -- must match STATES in onboarding_chain.py
 # Source of truth is the Python module; this array mirrors it. C1: a codegen
 # check could pull STATES from onboarding_chain.py on every source. For now
-# the arrays are kept in sync manually — if they drift, _onb_is_graduated
+# the arrays are kept in sync manually -- if they drift, _onb_is_graduated
 # becomes unreliable.
 _ONB_STATES=(boot selftest_ok targeted edited reviewed piped verified graduated)
 
@@ -75,7 +75,7 @@ _onb_before() {
   ! _onb_at_or_past "$target"
 }
 
-# Forward-only advance — refuses to move backward
+# Forward-only advance -- refuses to move backward
 _onb_advance_to() {
   local target="$1"
   if _onb_before "$target"; then
@@ -91,17 +91,17 @@ _onb_step_label() {
   case "$s" in
     boot)        echo "1/7 boot check (run i/hme-admin action=selftest)" ;;
     selftest_ok) echo "2/7 pick evolution target (run i/evolve focus=design)" ;;
-    targeted)    echo "3/7 edit target module (Edit tool — briefing auto-chains)" ;;
+    targeted)    echo "3/7 edit target module (Edit tool -- briefing auto-chains)" ;;
     edited)      echo "4/7 audit changes (run i/review mode=forget)" ;;
     reviewed)    echo "5/7 run pipeline (Bash: npm run main)" ;;
     piped)       echo "6/7 await verdict (hooks advance automatically)" ;;
-    verified)    echo "7/7 persist learning (run i/learn title=… content=…)" ;;
+    verified)    echo "7/7 persist learning (run i/learn title=... content=...)" ;;
     graduated)   echo "graduated" ;;
     *)           echo "unknown ($s)" ;;
   esac
 }
 
-# Initialize state file — called from sessionstart.sh. Once graduated,
+# Initialize state file -- called from sessionstart.sh. Once graduated,
 # stays graduated: the onboarding walkthrough is a first-run experience,
 # not a per-session ritual. Re-booting it every session meant users who
 # completed onboarding still saw step-1 "run hme_admin selftest" guidance

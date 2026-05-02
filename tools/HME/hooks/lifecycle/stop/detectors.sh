@@ -1,7 +1,7 @@
 # Consolidated detector run
 # All 6 stop-side detectors (poll_count / idle_after_bg / psycho_stop /
 # ack_skip / abandon_check / stop_work) run in ONE python3 invocation via
-# run_all.py — parse the transcript once, share the cache, amortize the
+# run_all.py -- parse the transcript once, share the cache, amortize the
 # ~400ms python-interpreter startup that used to fire per detector.
 # Previous p95 was 5.5s (n=78); consolidated is ~170ms on small
 # transcripts, grows sub-linearly with transcript size.
@@ -27,8 +27,8 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # If run_all crashes we fall back to defaults above (equivalent to old
   # `|| echo ok` per-detector fallbacks).
   # FAIL-LOUD: stderr captured + bridged. A run_all crash silently
-  # disabled all 9 stop-side detectors — psycho_stop, exhaust_check,
-  # fabrication_check, etc. — letting the agent stop on broken work.
+  # disabled all 9 stop-side detectors -- psycho_stop, exhaust_check,
+  # fabrication_check, etc. -- letting the agent stop on broken work.
   _DET_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_det_py_err_$$")
   _RUN_ALL_OUT=$(timeout 3 python3 "$_DETECTORS_DIR/run_all.py" "$TRANSCRIPT_PATH" 2>"$_DET_PY_ERR" || true)
   if [ -s "$_DET_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
@@ -64,7 +64,7 @@ fi
 
 # Persist verdicts for downstream consumers (anti_patterns.sh, work_checks.sh).
 # The chain runs each stage in a subshell now, so consumers can no longer
-# rely on inherited bash variables — they source this file at the top.
+# rely on inherited bash variables -- they source this file at the top.
 _DETECTOR_VERDICTS_FILE="${PROJECT_ROOT:-/home/jah/Polychron}/tmp/hme-stop-detector-verdicts.env"
 mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
 {
@@ -85,7 +85,7 @@ mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
   echo "SUMMARY_FORMAT=$SUMMARY_FORMAT"
 } > "$_DETECTOR_VERDICTS_FILE"
 
-# senior_consult_debt — informational notice (NOT a hard block on first
+# senior_consult_debt -- informational notice (NOT a hard block on first
 # fire, per the buddy paradigm's gradual-tightening discipline). When
 # the turn touched buddy-paradigm design-space files without an
 # i/consult invocation, surface a stderr reminder so the operator and
@@ -95,28 +95,28 @@ mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
 if [ "$SENIOR_CONSULT_DEBT" = "consult-debt" ]; then
   echo "[senior_consult_debt] design-space changes shipped without "\
 "consulting the buddy. Checkpoint via i/consult OR explicitly note "\
-"why solo was right. (Currently informational — see "\
+"why solo was right. (Currently informational -- see "\
 "BUDDY_SYSTEM.md wisdom section.)" >&2
 elif [ "$SENIOR_CONSULT_DEBT" = "consult-thin" ]; then
   echo "[senior_consult_debt] consult invoked but produced zero "\
-"crystallized KB entries — either the question was thin or the senior "\
+"crystallized KB entries -- either the question was thin or the senior "\
 "saw nothing worth crystallizing. Watch for a chronic pattern (see "\
-"BUDDY_SYSTEM.md Section C — Goodhart-bait risk)." >&2
+"BUDDY_SYSTEM.md Section C -- Goodhart-bait risk)." >&2
 fi
 
-# ignore_and_trample — hard block. The user sent a new message
+# ignore_and_trample -- hard block. The user sent a new message
 # mid-response and the agent's reply did not open with an
 # acknowledgment ("Acknowledged <one-word> input" or "Wrapping up
 # this quickly first."). Continuing prior work without acknowledging
-# is the exact "Sorry — you sent the new message and I just kept
+# is the exact "Sorry -- you sent the new message and I just kept
 # going" failure mode this detector exists to prevent.
 #
-# Block JSON goes to STDOUT (not stderr) — the stop_chain JS evaluator
+# Block JSON goes to STDOUT (not stderr) -- the stop_chain JS evaluator
 # (tools/HME/proxy/stop_chain/shell_policy.js:defaultParseDecision)
 # parses stdout for `{"decision":"block",...}`. No exit 2 needed; the
 # chain's orchestrator handles deny propagation.
 if [ "$IGNORE_AND_TRAMPLE" = "ignore-and-trample" ]; then
   cat <<'_IT_MSG'
-{"decision": "block", "reason": "IGNORE-AND-TRAMPLE VIOLATION: A user message arrived mid-response (system-reminder embedded in a tool_result) but your reply did not acknowledge it immediately. Required openers: \"Acknowledged <one-word> input\" (then either address it now, or — only if current work doesn't conflict — say \"Wrapping up this quickly first.\"). Resume now: acknowledge the user's message in your next text, then either address it or wrap up the current work coherently."}
+{"decision": "block", "reason": "IGNORE-AND-TRAMPLE VIOLATION: A user message arrived mid-response (system-reminder embedded in a tool_result) but your reply did not acknowledge it immediately. Required openers: \"Acknowledged <one-word> input\" (then either address it now, or -- only if current work doesn't conflict -- say \"Wrapping up this quickly first.\"). Resume now: acknowledge the user's message in your next text, then either address it or wrap up the current work coherently."}
 _IT_MSG
 fi

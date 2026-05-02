@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Restart the full HME stack — shutdown then launch.
+# Restart the full HME stack -- shutdown then launch.
 # Useful after config changes or when the stack is in a bad state.
 
 set -u

@@ -1,11 +1,11 @@
 'use strict';
 /**
- * HME tool dispatcher — full-bypass of Claude Code's MCP path for HME tools.
+ * HME tool dispatcher -- full-bypass of Claude Code's MCP path for HME tools.
  *
  * Architecture:
  *  - Proxy fetches tool schemas from the Python worker (/tools/list) and
  *    caches them. On every outgoing Anthropic request, the schemas are
- *    injected into payload.tools with an `HME_` prefix — Claude Code has
+ *    injected into payload.tools with an `HME_` prefix -- Claude Code has
  *    no MCP connection to us; these tools exist only in the outgoing wire.
  *  - On the return path, if the Anthropic response contains any `HME_*`
  *    tool_use blocks, the proxy enters a continuation loop: it executes
@@ -15,11 +15,11 @@
  *    no more `HME_*` tool_uses. Only that final, HME-free response is
  *    forwarded to Claude Code.
  *
- * Claude Code therefore never sees HME tool_use blocks — dispatch is fully
+ * Claude Code therefore never sees HME tool_use blocks -- dispatch is fully
  * internal to the proxy+worker. Native tool_use (Edit, Read, Bash) passes
  * through in the normal response flow.
  *
- * Cost: streaming is lost for any turn that uses an HME tool — the proxy
+ * Cost: streaming is lost for any turn that uses an HME tool -- the proxy
  * must buffer the response to detect HME_*. Native-only turns stream
  * unchanged (this module isn't invoked for them).
  */
@@ -222,11 +222,11 @@ async function _callAnthropic(payload, upstreamOpts) {
  *   original response unchanged).
  *
  * Params:
- *   initialResponseBuf — Buffer of the first response body (SSE or JSON)
- *   initialHeaders, initialStatus — from the first response
- *   originalPayload — the request payload we just sent (messages so far)
- *   upstreamOpts — {host, port, tls, path, method, headers} for continuation
- *   isStreaming — whether the original request had stream:true (affects parsing)
+ *   initialResponseBuf -- Buffer of the first response body (SSE or JSON)
+ *   initialHeaders, initialStatus -- from the first response
+ *   originalPayload -- the request payload we just sent (messages so far)
+ *   upstreamOpts -- {host, port, tls, path, method, headers} for continuation
+ *   isStreaming -- whether the original request had stream:true (affects parsing)
  */
 async function maybeHandleHme(initialResponseBuf, initialHeaders, initialStatus,
                                originalPayload, upstreamOpts, isStreaming) {
@@ -261,7 +261,7 @@ async function maybeHandleHme(initialResponseBuf, initialHeaders, initialStatus,
 
     lastResponse = await _callAnthropic(currentPayload, upstreamOpts);
     if (lastResponse.status < 200 || lastResponse.status >= 300) {
-      // Propagate the error upstream — return what we got.
+      // Propagate the error upstream -- return what we got.
       return {
         finalBody: lastResponse.body,
         finalHeaders: lastResponse.headers,

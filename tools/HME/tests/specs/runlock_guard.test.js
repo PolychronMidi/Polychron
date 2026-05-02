@@ -61,7 +61,7 @@ test('runlock: lock token in non-deletion context is allowed', async () => {
 });
 
 test('runlock: variable-substitution split bypass is NOT caught (documented limitation)', async () => {
-  // BASE=run; rm tmp/$BASE.lock — the source contains "$BASE.lock" not
+  // BASE=run; rm tmp/$BASE.lock -- the source contains "$BASE.lock" not
   // "run.lock". Argv tokenization can't see the runtime variable
   // substitution. Documented bypass; covered by settings.json deny rule
   // as defense-in-depth.

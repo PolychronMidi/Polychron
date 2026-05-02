@@ -12,7 +12,7 @@ function _ctx(overrides = {}) {
   };
 }
 
-// ── block-curl-pipe-sh ────────────────────────────────────────────────
+// -- block-curl-pipe-sh ------------------------------------------------
 const curl = require('../../policies/builtin/block-curl-pipe-sh');
 
 test('curl-pipe-sh: deny on curl|sh', async () => {
@@ -35,7 +35,7 @@ test('curl-pipe-sh: allow grep on curl output (no shell pipe)', async () => {
   assert.strictEqual(r.decision, 'allow');
 });
 
-// ── block-secrets-write ──────────────────────────────────────────────
+// -- block-secrets-write ----------------------------------------------
 const secrets = require('../../policies/builtin/block-secrets-write');
 
 test('secrets: deny id_rsa', async () => {
@@ -65,7 +65,7 @@ test('secrets: allow non-credential filename containing "key" word', async () =>
   assert.strictEqual(r.decision, 'allow');
 });
 
-// ── block-misplaced-log-tmp ──────────────────────────────────────────
+// -- block-misplaced-log-tmp ------------------------------------------
 const logTmp = require('../../policies/builtin/block-misplaced-log-tmp');
 
 test('log-tmp: deny nested log/ outside project root', async () => {
@@ -83,7 +83,7 @@ test('log-tmp: allow project-root tmp/', async () => {
   assert.strictEqual(r.decision, 'allow');
 });
 
-// ── block-misplaced-metrics ──────────────────────────────────────────
+// -- block-misplaced-metrics ------------------------------------------
 const metrics = require('../../policies/builtin/block-misplaced-metrics');
 
 test('metrics: deny scripts/metrics/', async () => {
@@ -96,7 +96,7 @@ test('metrics: allow output/metrics/', async () => {
   assert.strictEqual(r.decision, 'allow');
 });
 
-// ── block-memory-dir-writes ──────────────────────────────────────────
+// -- block-memory-dir-writes ------------------------------------------
 const memory = require('../../policies/builtin/block-memory-dir-writes');
 
 test('memory: deny .claude/projects memory dir', async () => {

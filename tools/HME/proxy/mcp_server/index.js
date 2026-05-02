@@ -1,22 +1,22 @@
 'use strict';
 /**
- * MCP server — proxy-native implementation of the Model Context Protocol.
+ * MCP server -- proxy-native implementation of the Model Context Protocol.
  *
  * Serves two endpoints to Claude Code at /mcp/*:
- *   GET  /mcp/sse                       → open long-lived SSE stream. First
+ *   GET  /mcp/sse                       -> open long-lived SSE stream. First
  *                                          event is `endpoint` pointing at the
  *                                          /messages URL + session_id.
- *   POST /mcp/messages?session_id=<id>  → JSON-RPC request. Response is
+ *   POST /mcp/messages?session_id=<id>  -> JSON-RPC request. Response is
  *                                          delivered as an SSE event on the
  *                                          matching stream.
  *
  * JSON-RPC methods handled:
- *   initialize                  — capabilities handshake
- *   notifications/initialized   — ack (no response)
- *   tools/list                  — dispatcher.listTools()
- *   tools/call                  — dispatcher.callTool()
- *   resources/list, prompts/list— return empty arrays
- *   ping                        — pong
+ *   initialize                  -- capabilities handshake
+ *   notifications/initialized   -- ack (no response)
+ *   tools/list                  -- dispatcher.listTools()
+ *   tools/call                  -- dispatcher.callTool()
+ *   resources/list, prompts/list-- return empty arrays
+ *   ping                        -- pong
  *
  * Any other method returns a JSON-RPC MethodNotFound error.
  *
@@ -76,7 +76,7 @@ async function _handleRpc(sessionId, msg) {
       // Re-initialize on the same session is idempotent but worth flagging.
       const sess = session.get(sessionId);
       if (sess && sess.initialized) {
-        logger.warn(`initialize called twice on session=${sessionId} — returning current capabilities`);
+        logger.warn(`initialize called twice on session=${sessionId} -- returning current capabilities`);
       } else {
         session.markInitialized(sessionId);
       }
@@ -112,11 +112,11 @@ async function _handleRpc(sessionId, msg) {
             const { emit } = require('../shared');
             emit({ event: 'mcp_hang_kill', tool: name, elapsed_ms: elapsed });
             killChild('worker', 'SIGKILL');
-            logger.error(`tools/call '${name}' hung > ${timeoutMs}ms — killed worker (supervisor will restart)`);
+            logger.error(`tools/call '${name}' hung > ${timeoutMs}ms -- killed worker (supervisor will restart)`);
           } catch (kerr) {
             logger.error(`hang-kill failed: ${kerr.message}`);
           }
-          return jsonrpcError(id, -32000, `Tool '${name}' timed out after ${timeoutMs}ms — worker restarting, retry shortly`);
+          return jsonrpcError(id, -32000, `Tool '${name}' timed out after ${timeoutMs}ms -- worker restarting, retry shortly`);
         }
         throw err;
       }
@@ -155,7 +155,7 @@ async function handleMessagesPost(req, res, sessionId) {
   res.writeHead(202, { 'content-type': 'application/json' });
   res.end('{"accepted":true}');
 
-  // JSON-RPC 2.0 supports batch requests: array of requests → array of
+  // JSON-RPC 2.0 supports batch requests: array of requests -> array of
   // responses. Dispatch each in parallel, filter out notification nulls.
   if (Array.isArray(msg)) {
     if (msg.length === 0) {

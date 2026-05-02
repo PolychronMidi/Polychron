@@ -22,7 +22,7 @@ _HME_HOOK_START_NS="$(date +%s%N)"
 _HME_HOOK_NAME="$(basename "${BASH_SOURCE[1]:-unknown}" .sh)"
 _HME_HOOK_VERDICT=""
 
-# 4) Tunable constants — set before any sub-file references them.
+# 4) Tunable constants -- set before any sub-file references them.
 _HME_HTTP_PORT=9098
 _HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'

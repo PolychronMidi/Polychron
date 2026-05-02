@@ -59,7 +59,7 @@ function load() {
     if (!cfg) continue;
     for (const n of _normalizeArray(cfg.enabled)) enabled.add(n);
     for (const n of _normalizeArray(cfg.disabled)) disabled.add(n);
-    // Params: first file that defines a key wins (no merge — explicit
+    // Params: first file that defines a key wins (no merge -- explicit
     // override, matches FailproofAI's policyParams behavior).
     if (cfg.params && typeof cfg.params === 'object') {
       for (const [name, p] of Object.entries(cfg.params)) {

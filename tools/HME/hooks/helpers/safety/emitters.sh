@@ -4,7 +4,7 @@
 # additionalContext reaches Claude's next-turn context (load-bearing for
 # the KB briefing / onboarding primer chain); systemMessage reaches the
 # user terminal only (legacy display mirror). Previously we only emitted
-# systemMessage, which meant Claude NEVER saw hook-injected briefings —
+# systemMessage, which meant Claude NEVER saw hook-injected briefings --
 # the documented "hook-chaining" of KB briefing into Edit was silently
 # broken for months. Proxy coherence_violation (inference_write_without_hme_read)
 # was firing correctly against this gap the whole time.
@@ -29,5 +29,5 @@ _is_project_src() { echo "$1" | grep -qE "$_HME_SRC_PATTERN"; }
 _is_project_edit_src() { echo "$1" | grep -qE "$_HME_EDIT_PATTERN"; }
 
 # Extract module name: strip directory + any file extension.
-# "src/foo/barBaz.js" → "barBaz"
+# "src/foo/barBaz.js" -> "barBaz"
 _extract_module() { basename "$1" | sed 's/\.[^.]*$//'; }

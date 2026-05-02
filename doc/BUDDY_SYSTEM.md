@@ -1,4 +1,4 @@
-# BUDDY_SYSTEM — guide
+# BUDDY_SYSTEM -- guide
 
 > Persistent peer subagent, auto-initiated per HME session. All
 > reasoning calls (review reflection, OVERDRIVE cascade,
@@ -15,20 +15,20 @@ primaries on standby for tough problems.
 
 **Lifecycle:**
 
-1. **Bootstrap** — at SessionStart, `buddy_init.sh` reads
+1. **Bootstrap** -- at SessionStart, `buddy_init.sh` reads
    `tmp/hme-buddy-primary.sid`. If present, that sid is the buddy
    (no fresh `claude -p` spawn); the legacy `tmp/hme-buddy.sid` pointer
    mirrors it for back-compat. If absent, a fresh primary is spawned and
    its sid recorded as the inaugural primary.
-2. **Use** — the primary serves all reasoning calls normally; its
+2. **Use** -- the primary serves all reasoning calls normally; its
    transcript grows like any persistent buddy.
-3. **Auto-retire** — when the primary's context % crosses
+3. **Auto-retire** -- when the primary's context % crosses
    `BUDDY_RETIRE_PCT` (default 90), `i/handoff auto_retire_check` (or a
    manual `i/handoff retire`) moves it to
    `tmp/hme-buddy-seniors/<sid>.json` with retire metadata
    (`retired_at`, `context_at_retire`, `reason`). The primary pointers
    are cleared so the next SessionStart spawns a fresh primary.
-4. **Consult** — seniors are NOT auto-routed; their accumulated context
+4. **Consult** -- seniors are NOT auto-routed; their accumulated context
    is preserved. Use `i/consult senior=<sid> question="..."` to invoke
    a specific senior manually for a tough problem. Each consult call
    grows the senior's transcript like a normal claude invocation.
@@ -38,13 +38,13 @@ primaries on standby for tough problems.
 - Multi-buddy spawns N fresh sessions per HME session, none with deep
   context until they accumulate.
 - Hand-off carries the prior session's depth forward as the next
-  session's *primary* — Day-N's primary is the prior day's primary,
+  session's *primary* -- Day-N's primary is the prior day's primary,
   inherited with full transcript. The primary becomes a senior only
   after retirement.
 - Auto-compaction is avoided for primaries: a primary at 90% retires
   INTO the senior pool before compaction would wipe its context,
   preserving the accumulated state in immutable transcript form for
-  later consult. (Seniors face a different risk — heavy consult load
+  later consult. (Seniors face a different risk -- heavy consult load
   can push them past auto-compaction with nowhere to retire to. See
   open question 5.)
 
@@ -63,13 +63,13 @@ i/consult senior=<sid> question="..."                 # explicit: target retired
 **Bootstrap data flow (file map):**
 
 ```
-tmp/hme-buddy-primary.sid          ← current primary's session id
-tmp/hme-buddy-primary.floor        ← model floor (default: easy = dynamic)
-tmp/hme-buddy-primary.effort_floor ← effort floor (default: low = dynamic)
-tmp/hme-buddy.sid                  ← legacy pointer; mirrors primary.sid
-tmp/hme-buddy-seniors/<sid>.json   ← per-senior retire metadata
-tmp/hme-buddy-seniors/_index.jsonl ← append-only retirement log
-tmp/hme-buddy-handoff-log.json     ← optional snapshot from `status --json`
+tmp/hme-buddy-primary.sid          <- current primary's session id
+tmp/hme-buddy-primary.floor        <- model floor (default: easy = dynamic)
+tmp/hme-buddy-primary.effort_floor <- effort floor (default: low = dynamic)
+tmp/hme-buddy.sid                  <- legacy pointer; mirrors primary.sid
+tmp/hme-buddy-seniors/<sid>.json   <- per-senior retire metadata
+tmp/hme-buddy-seniors/_index.jsonl <- append-only retirement log
+tmp/hme-buddy-handoff-log.json     <- optional snapshot from `status --json`
 ```
 
 **`.env` knobs:**
@@ -90,30 +90,30 @@ comma-separated list of task tiers that route through the free
 synthesis cascade (NVIDIA/Cerebras/Groq/Gemini) instead of the buddy.
 Tiers NOT in the list still go to the buddy (claude-resume), conserving
 session quota for work that actually needs it. The canonical setting
-is `easy` — easy work doesn't need Opus/Sonnet reasoning, so it
+is `easy` -- easy work doesn't need Opus/Sonnet reasoning, so it
 shouldn't burn the buddy's transcript. Empty (default) = no override
 and `HME_DISPATCH_MODE` alone decides routing. Setting
 `HME_DISPATCH_MODE=synthesis` is equivalent to listing every tier (all
-work to free cascade), which usually isn't what you want — leaves the
+work to free cascade), which usually isn't what you want -- leaves the
 primary buddy idle. The `i/dispatch status` line surfaces the active
 split: `workers: 1 claude-resume + 1 synthesis pseudo (per-tier
 routing: synthesis=easy, others=claude-resume)`.
 
-**Open prototype questions** — known-fuzzy areas worth iterating on
+**Open prototype questions** -- known-fuzzy areas worth iterating on
 with the inheriting agent. Each is a concrete decision the design
 hasn't pinned down yet; the next session can pick one up when there's
 idle time and the inherited buddy (whether they're still the active
 primary or have since retired into the senior pool) should expect to
 be consulted on the rationale:
 
-1. **Hot-path auto-retire (primary path) — RESOLVED.**
+1. **Hot-path auto-retire (primary path) -- RESOLVED.**
    `auto_retire_check` previously had no caller; the 90% safety
    claim was documentation, not enforcement. Now wired into the
    Stop-hook chain at
    [`tools/HME/hooks/lifecycle/stop/post_hooks.sh`](../tools/HME/hooks/lifecycle/stop/post_hooks.sh)
    (per-turn fire under `BUDDY_HANDOFF=1`, subshell-isolated with
    `|| true` so optional-check failure can't block turn end).
-   **Replacement-on-retire — option D shipped:** when primary
+   **Replacement-on-retire -- option D shipped:** when primary
    retires, pointer is cleared. The next dispatcher drain (or a
    manual `i/handoff ensure_primary` call) lazily spawns a fresh
    primary via `cmd_ensure_primary` in
@@ -121,7 +121,7 @@ be consulted on the rationale:
    which invokes `buddy_init.sh` and polls `primary.sid` for up to
    `--wait` seconds. The 10-30s spawn cost lands as first-task
    latency, which would otherwise be paid through ephemeral
-   fall-through anyway — same total cost, different code path.
+   fall-through anyway -- same total cost, different code path.
    Buddy_dispatcher's drain (line 933 onward) now performs the
    ensure_primary check before discovery.
 
@@ -129,62 +129,62 @@ be consulted on the rationale:
    span multiple Claude turns may still want a dispatcher-internal
    between-tasks check (currently the per-turn Stop-hook fire is
    the only mid-session retire trigger); and `_pick_buddy_for_task`
-   itself doesn't ensure_primary — only the drain entry does. If
+   itself doesn't ensure_primary -- only the drain entry does. If
    tasks arrive faster than a drain cycle's reset, that's the next
    tightening. (Behavior under retire mid-dispatch: in-flight
    tasks complete on the soon-to-retire primary; subsequent tasks
    get the fresh primary the next drain spawns.)
-2. **Transcript GC — RESOLVED.** `_buddy_context_used` returns None
+2. **Transcript GC -- RESOLVED.** `_buddy_context_used` returns None
    ONLY when the transcript file is gone (Claude Code purged it or
    it never existed); when the file exists with no assistant events
-   yet, it returns a 0-token dict — that's the post-spawn
+   yet, it returns a 0-token dict -- that's the post-spawn
    pre-first-turn state and shows up cleanly as `ctx=0.0%` already.
    So the only new state to surface is the genuine staleness signal.
-   `cmd_status` now prints `ctx=missing  (transcript purged —
+   `cmd_status` now prints `ctx=missing  (transcript purged --
    primary is stale)` when the path resolution fails, mirroring
    Q5's senior-pool `[stale]` flag. Decision (per 0e7fbf4d):
-   "keep using" rather than auto-retire on null — silent retire on
+   "keep using" rather than auto-retire on null -- silent retire on
    a measurement gap is exactly the failure class HME exists to
    prevent.
-3. **Specialization carry-forward — REJECTED, "fresh dynamic" is
+3. **Specialization carry-forward -- REJECTED, "fresh dynamic" is
    correct.** Decision (per 0e7fbf4d, settled): pinning the next
    primary to a derived floor (medium/hard) would *reduce* its range
-   — easy=low-effort doesn't necessarily mean the buddy can't do
+   -- easy=low-effort doesn't necessarily mean the buddy can't do
    hard, but a medium-floor primary REFUSES easy work the previous
    one happily handled. Specialization makes a senior valuable for
    *consult*, not as a constraint on the next primary's intake. If
    specialization carry-forward ever matters in practice, it should
    surface as a *bootstrap-prompt hint* ("your senior specialized in
-   audio coupling") rather than a floor lock — that mechanism
+   audio coupling") rather than a floor lock -- that mechanism
    doesn't exist yet, but rejecting the floor-derive path keeps the
    future option open.
-4. **Dynamic per-tier override near retirement — option (a) rejected
+4. **Dynamic per-tier override near retirement -- option (a) rejected
    on operator correction; (b) on hold.** The buddy's lean was
-   option (a) — lower `BUDDY_RETIRE_PCT` default 90→85 — based on
+   option (a) -- lower `BUDDY_RETIRE_PCT` default 90->85 -- based on
    an assumed auto-compaction threshold of ~90%. **Operator
    correction:** auto-compaction sits at 100%, not 90%. The existing
    90% retire threshold already gives a 10% safety margin, which is
    adequate; lowering further would just retire too early without
-   solving the "preserve quota for hard" problem. Option (b) — ship
+   solving the "preserve quota for hard" problem. Option (b) -- ship
    the dispatcher reroute when ctx > 75% (or some configurable
    threshold), widening `HME_DISPATCH_SYNTHESIS_TIERS` to include
-   medium — remains a real but complex design call. Operator hold;
+   medium -- remains a real but complex design call. Operator hold;
    `DEFAULT_RETIRE_PCT = 90.0` per the explicit comment in
    buddy_handoff.py: "don't lower this, there is already a 10%
    margin between this point and auto-compaction which happens at
    100%."
-5. **Senior staleness vs tombstoning — RESOLVED.** `_list_seniors`
+5. **Senior staleness vs tombstoning -- RESOLVED.** `_list_seniors`
    flags `transcript_missing=True` when the senior's JSONL has been
    purged (Claude Code can rotate transcripts); status displays
    `[stale: transcript missing]`. Direction (per 0e7fbf4d, settled):
-   warn-and-try, NOT refuse — caller may have local knowledge (backup
+   warn-and-try, NOT refuse -- caller may have local knowledge (backup
    transcript path, transient network blip, just-purged-but-recoverable).
    Refusing creates a hard wall; warn-and-try preserves agency and
    lets `claude --resume`'s own error surface the actual cause. The
    only open piece would be a `--ignore-stale` opt-out for a
-   false-positive problem that hasn't manifested — defer until it
+   false-positive problem that hasn't manifested -- defer until it
    does.
-6. **Promotion-from-senior coherence — RESOLVED.** `_promote()` now
+6. **Promotion-from-senior coherence -- RESOLVED.** `_promote()` now
    checks whether the target sid is currently in the senior pool;
    if so, it moves `seniors/<sid>.json` to
    `seniors/_archive/<sid>.json` before establishing the new primary
@@ -196,15 +196,15 @@ be consulted on the rationale:
    the workflow stays unblocked (e.g. an operator manually promoting
    a senior back into service after compaction recovery).
 7. **Concurrent consult races.** Two `i/consult` calls to the same sid
-   both invoke `claude --resume` — the CLI may not be re-entrant on a
+   both invoke `claude --resume` -- the CLI may not be re-entrant on a
    single session. Question: add a per-sid lockfile
    (`tmp/hme-consult-lock/<sid>`) with stale-detection? What's the
    right TTL for "lock is stale, the prior consult must have crashed"?
-8. **Senior pool unbounded growth — RESOLVED (8a); expertise routing
+8. **Senior pool unbounded growth -- RESOLVED (8a); expertise routing
    DEFERRED (8b).** (8a, shipped) `i/handoff archive sid=<X>`
    subcommand moves a senior to `seniors/_archive/<sid>.json` while
    keeping it callable via `i/consult` (which now searches both
-   active pool and archive — archiving means "hidden from default
+   active pool and archive -- archiving means "hidden from default
    status," not "removed from consultable pool"). Status shows a
    hint when seniors >= 10. No automatic GC; operator picks which
    to age out. (8b, deferred) Auto-derived `expertise_topics` needs
@@ -212,17 +212,17 @@ be consulted on the rationale:
    self-declaration prompt at retire time (which is its own design
    pass). Defer until one of those mechanisms lands; without it,
    the field would be either empty or noisy.
-9. **Consult-driven senior protection — RESOLVED.** Decision (per
+9. **Consult-driven senior protection -- RESOLVED.** Decision (per
    0e7fbf4d, settled): warn-and-proceed at 80% pre-compaction floor.
    Refuse is too aggressive without manifest harm; snapshot is
    underspecified ("snapshot where, restored how"). `cmd_consult` now
    checks the senior's ctx before invoking `claude --resume`; if
-   ctx ≥ 80%, prints a stderr WARNING with the cooldown-aware
+   ctx >= 80%, prints a stderr WARNING with the cooldown-aware
    wording. Cool-down at `tmp/hme-consult-warn-cooldown/<sid>` (mtime
    based, 1h window): the FIRST warn for a given senior in 1h goes
    loud; subsequent warns drop to `[debug]` so the operator isn't
    trained to ignore the signal. Protection lives at the call site
-   (cmd_consult), not the dispatcher — seniors aren't dispatch
+   (cmd_consult), not the dispatcher -- seniors aren't dispatch
    targets, so the dispatcher has no causal lever to act before
    tokens are added.
 
@@ -230,7 +230,7 @@ Anyone implementing one of these should update both this section
 (remove the question, document the answer) and the test file with a
 regression test that locks the new behavior in.
 
-**Wisdom for inheriting primaries** — non-obvious things the docs
+**Wisdom for inheriting primaries** -- non-obvious things the docs
 don't otherwise capture. Surfaced by 0e7fbf4d (the inaugural primary
 who built this paradigm) during a review consult, paraphrased:
 
@@ -241,7 +241,7 @@ who built this paradigm) during a review consult, paraphrased:
   costs to consult. Favor batched consults (one prompt with three
   questions) over three sequential calls. Don't consult for
   lookups grep can answer.
-- **KB crystallization is the durability boundary — both versions
+- **KB crystallization is the durability boundary -- both versions
   shipped.** A senior's accumulated wisdom lives in a transcript that
   auto-compaction can wipe at any time. HME's KB (`tools/HME/KB/`
   lance tables, accessed via `i/learn`) survives compactions,
@@ -264,7 +264,7 @@ who built this paradigm) during a review consult, paraphrased:
   Heavy fires first; light only runs when heavy produced zero blocks
   (avoids double-prompting). Without crystallization, the senior pool
   is "a stack of fragile preservations" (0e7fbf4d's framing).
-- **Detector measures consult events, not consult quality —
+- **Detector measures consult events, not consult quality --
   Goodhart-bait risk; quality proxy now available.** The
   `senior_consult_debt.py` detector counts consult invocations. An
   agent optimizing for the cheapest satisfaction path produces
@@ -274,14 +274,14 @@ who built this paradigm) during a review consult, paraphrased:
   (via the `# crystallized: ...` stderr lines). Future iteration:
   weight the detector verdict by response length + crystallize count
   so a consult that produced no KB anchors counts less than one that
-  did. Not yet implemented — the detector quality proxy is the
+  did. Not yet implemented -- the detector quality proxy is the
   next concrete step in the chain.
 - **Proxy upstream timeout is buddy-paradigm-load-bearing.** The
   HME proxy at `tools/HME/proxy/hme_proxy.js` enforces a unified
   30-minute upstream timeout via `UPSTREAM_TIMEOUT_MS = 1_800_000`.
   This was previously 120s sync / 600s streaming and tripped the
   emergency valve repeatedly when `claude --resume` calls on
-  multi-MB buddy transcripts hit Anthropic's API — Anthropic's
+  multi-MB buddy transcripts hit Anthropic's API -- Anthropic's
   worst-case turnaround on a 22MB resume can exceed 600s. Three
   consecutive timeouts disable the proxy via `HME_PROXY_ENABLED=0`,
   forcing manual recovery. **DO NOT tighten this timeout** unless
@@ -293,21 +293,21 @@ who built this paradigm) during a review consult, paraphrased:
   both the primary pointer trio (sid + floor + effort_floor) AND the
   legacy mirror trio inline at promote time. `buddy_init.sh`'s
   HANDOFF mirror block at SessionStart is a *safety net*, not the
-  canonical actuator — it catches edge cases like a manual edit of
+  canonical actuator -- it catches edge cases like a manual edit of
   `primary.sid` or a primary written by a future writer that doesn't
   go through `_promote()`. **Two-part rule for new writers of
   `primary.sid`:** (a) write the full trio (sid + floor + effort_floor)
-  for the role being established — falling back to default values for
+  for the role being established -- falling back to default values for
   any field is fine but the file must exist; (b) if writing during a
   fresh spawn (inaugural primary path), also mirror to the legacy
   trio for the dispatcher's back-compat path. Spawn implementation
   lives in [`tools/HME/scripts/buddy_spawn.py`](../tools/HME/scripts/buddy_spawn.py)
   and is shared by both `buddy_init.sh` (backgrounded at SessionStart)
   and `cmd_ensure_primary` (synchronous from the dispatcher's lazy
-  spawn) — single source of truth for the spawn semantics.
+  spawn) -- single source of truth for the spawn semantics.
 - **No expertise routing across handoffs.** The senior pool has no
   concept of "this senior knows about subsystem X". A future primary
-  with N seniors has no routing hint — they pick whichever sid feels
+  with N seniors has no routing hint -- they pick whichever sid feels
   right. If specialization matters across handoffs (it likely will
   once the pool grows), record `expertise_topics: [...]` at retire
   time (see open question 8).
@@ -317,7 +317,7 @@ who built this paradigm) during a review consult, paraphrased:
   `buddy_spawn.py`, `buddy_init.sh`, `post_hooks.sh`, `i/consult`,
   `i/handoff`), checkpoint with a consult before declaring done.
   Solo work in this code area is the failure mode. **Detector:**
-  `tools/HME/scripts/detectors/senior_consult_debt.py` — wired into
+  `tools/HME/scripts/detectors/senior_consult_debt.py` -- wired into
   the Stop-hook chain via `run_all.py`'s detector list and
   `detectors.sh`'s verdict parser. Fires informational on first
   hit (stderr reminder); elevate to a hard block if the pattern
@@ -326,7 +326,7 @@ who built this paradigm) during a review consult, paraphrased:
   design-space edit is what trips the verdict.
 
 This document captures what the buddy and the prompt-engineering
-experiments produced across a 145-iteration session — not as a static
+experiments produced across a 145-iteration session -- not as a static
 record, but as the living calibration surface the system evolves
 against. New experiments should land here as they prove out; failed
 patterns should be documented as anti-patterns rather than silently
@@ -359,10 +359,10 @@ fresh-spawning per task.
 - Not a persistent agent. When the session ends, the specialization
   ends. New session = fresh buddy.
 - The `buddy_system` itself (single persistent peer for synthesis
-  routing) is not user-invocable — it auto-initializes at SessionStart
+  routing) is not user-invocable -- it auto-initializes at SessionStart
   when `.env BUDDY_SYSTEM=1`. Toggle via `.env BUDDY_SYSTEM=0` to
   disable. (A separate `i/dispatch` CLI exists for the **task
-  dispatcher** fanout — different layer, different concern. The
+  dispatcher** fanout -- different layer, different concern. The
   back-compat alias `i/buddy` forwards to `i/dispatch`. See `doc/SPEC.md`
   archive devlogs for the dispatcher's architecture.)
 
@@ -374,11 +374,11 @@ These limits emerged from peer-review. Naming them prevents misuse:
   buddy has is in the JSONL transcript. Specialization is real for
   the session length and trivially false outside it.
 - **Self-suspicion without prompting.** The buddy will not volunteer
-  "I might be wrong about this in a way I can't introspect" — that
+  "I might be wrong about this in a way I can't introspect" -- that
   operation has to be prompt-induced.
 - **Aesthetic / empathy / puzzlement registers.** The forensic
   methodology is structurally cold. Naming code beautiful, marking
-  cultural artifacts, sustained not-understanding — these require a
+  cultural artifacts, sustained not-understanding -- these require a
   partner-review register the methodology can't produce.
 - **Counterfactual experimentation.** The buddy reasons; it does not
   run pipelines. Predictions are predictions; reconciliation against
@@ -388,7 +388,7 @@ These limits emerged from peer-review. Naming them prevents misuse:
 
 ---
 
-## Prompt engineering — what works
+## Prompt engineering -- what works
 
 The current `_REVIEW_SYSTEM` and `workflow_audit.py` user-prompt
 construction encode these patterns. They were chosen empirically
@@ -406,7 +406,7 @@ pair."
 produces a finding regardless of code quality. The model
 pattern-matches the framing, not the code.
 
-**Anti-pattern:** "Find the worst non-obvious failure mode" — leading,
+**Anti-pattern:** "Find the worst non-obvious failure mode" -- leading,
 produces inventions. Replace with "if there is a tier-1 finding,
 flag it; otherwise say 'no tier-1 issues'."
 
@@ -417,11 +417,11 @@ the offending line(s) verbatim from the file, (2) explain why what
 the code does diverges from what its name/docstring/comments imply,
 (3) cite file:line."
 
-**Why it works:** "Cite file:line" alone wasn't enough — the model
+**Why it works:** "Cite file:line" alone wasn't enough -- the model
 would invent line content. Requiring the quote BEFORE the reasoning
 dramatically reduces hallucinated line-numbers / fabricated symbols.
 
-**Anti-pattern:** "Tell me about bug X" — open-ended, no anchor.
+**Anti-pattern:** "Tell me about bug X" -- open-ended, no anchor.
 Replace with "Quote the specific line, then explain the divergence."
 
 ### 3. Promise-vs-delivers framing (primary lens)
@@ -437,7 +437,7 @@ a load-bearing signal."
 findings that quote-anchor naturally.
 
 **Anti-pattern:** Probe-class checklist (10 categories with
-"py/js/sh" hints) — leads the model to find one of each category.
+"py/js/sh" hints) -- leads the model to find one of each category.
 Replaced with "categories as vocabulary, not gates."
 
 ### 4. Structural skeptic mode (NOT confidence floor)
@@ -446,19 +446,19 @@ Replaced with "categories as vocabulary, not gates."
 probabilistic: if you can quote a line AND state a specific
 divergence it creates, flag it."
 
-**Why it works:** A previous version used `≥95% confidence` as the
+**Why it works:** A previous version used `>=95% confidence` as the
 floor. Self-reported LM confidence is unmeasurable; a confidence
 floor pushes toward silence on subtle bugs (the exact class the
 reviewer exists to catch). Quote+divergence is a binary the model
 CAN reliably answer.
 
-**Anti-pattern:** "Only flag if you're 95%+ confident" — the model's
+**Anti-pattern:** "Only flag if you're 95%+ confident" -- the model's
 confidence is uncalibrated. Replace with quote-availability test.
 
 ### 5. Self-reflective framing (highest-signal probe)
 
 The buddy's sharpest critiques came when prompted to examine its own
-prior moves: "Earlier you flagged X — does that hold?" "What did you
+prior moves: "Earlier you flagged X -- does that hold?" "What did you
 systematically decline?" "What might you have rationalized as a
 finding?"
 
@@ -474,7 +474,7 @@ output and into actual judgment.
 ### 6. "Anything missing?" as a separate prompt
 
 After a structured prompt produces findings, a follow-up "anything
-missing? — across what you've reviewed, any residual pattern you
+missing? -- across what you've reviewed, any residual pattern you
 were tracking?" squeezes signal that no individual targeted prompt
 asked for.
 
@@ -488,13 +488,13 @@ the categories below; they are descriptive grammar."
 
 **Why it works:** Earlier versions listed probe classes ("Empty-value
 masquerading as default", "Append-only growth", etc.) as a probe
-RUBRIC — the model produced findings to match each class. Reframed
+RUBRIC -- the model produced findings to match each class. Reframed
 as vocabulary the model uses to *describe* a real divergence, not as
 gates to satisfy.
 
 ---
 
-## Prompt engineering — what doesn't work
+## Prompt engineering -- what doesn't work
 
 Anti-patterns surfaced empirically. Avoid:
 
@@ -511,7 +511,7 @@ tier-gate. Let the prompt's specificity narrow the model's attention.
 
 ### Demand-register imperatives in the prompt
 
-"You MUST flag", "every bug must be cited", "do NOT miss any" —
+"You MUST flag", "every bug must be cited", "do NOT miss any" --
 produces inflation. The model finds something to satisfy the
 imperative.
 
@@ -531,7 +531,7 @@ when needed.
 
 ### Confidence-floor gates
 
-"Only flag if 95%+ confident" — unmeasurable, asymmetrically rewards
+"Only flag if 95%+ confident" -- unmeasurable, asymmetrically rewards
 silence.
 
 **Use instead:** Structural test (quote-availability +
@@ -550,7 +550,7 @@ or specific-architectural-question).
 
 ## Architectural patterns the buddy surfaced
 
-Across 145 iterations the buddy named four recurring patterns —
+Across 145 iterations the buddy named four recurring patterns --
 **but a follow-up review (iter 146) collapsed A and D into a single
 underlying shape:** "two parties depend on a name agreeing across
 files; agreement isn't enforced." That meta-pattern is the real
@@ -565,16 +565,16 @@ should generalize**: the marker registry currently only covers
 regex/text markers in tool output; it should extend to file paths,
 sentinel constants, and any cross-component agreed name. Without
 that widening, the very class Pattern A names (rename drift)
-recurs in scopes the verifier doesn't police — confirmed by the
-buddy iter 146 catching the `tmp/hme-thread.sid` → `tmp/hme-buddy.sid`
+recurs in scopes the verifier doesn't police -- confirmed by the
+buddy iter 146 catching the `tmp/hme-thread.sid` -> `tmp/hme-buddy.sid`
 rename leaving stale references in `agent_direct.py`'s docstring
 and error messages, exactly because path strings weren't in the
 markers registry's scope.
 
-### Pattern A+D (unified) — Cross-component agreed-upon names without enforcement
+### Pattern A+D (unified) -- Cross-component agreed-upon names without enforcement
 
-Multiple layers (bash hooks ↔ Python worker ↔ JS proxy middleware,
-or producer ↔ consumer within one runtime) depend on a literal
+Multiple layers (bash hooks <-> Python worker <-> JS proxy middleware,
+or producer <-> consumer within one runtime) depend on a literal
 agreeing across files. A rename on either side silently breaks the
 pair. The literal can be a regex marker, a file path, a sentinel
 return code, an env-var name, a JSON field name, or a cache-validity
@@ -582,9 +582,9 @@ attribute.
 
 **Mitigation surfaces (each covers one slice of the pattern):**
 - `tools/HME/proxy/middleware/_markers.js` registry +
-  `scripts/audit-marker-registry.py` verifier — covers regex/text
+  `scripts/audit-marker-registry.py` verifier -- covers regex/text
   markers in tool output. Should extend to file paths and sentinels.
-- `_warm_ctx_fresh_p()` in `synthesis_warm.py` — replaces shared-
+- `_warm_ctx_fresh_p()` in `synthesis_warm.py` -- replaces shared-
   attribute `_kb_version` cache-validity gate with file-mtime check;
   consolidates 6 readers through one helper.
 
@@ -594,7 +594,7 @@ paths (e.g. `tmp/hme-buddy.sid`), env-var names (`BUDDY_SYSTEM`,
 verifier becomes a general agreement-enforcer rather than only a
 text-marker checker.
 
-### Pattern B — Silent-on-failure mis-applied
+### Pattern B -- Silent-on-failure mis-applied
 
 `except Exception: pass` is correct for telemetry hot-paths but
 wrong for load-bearing safety checks. The codebase has hundreds of
@@ -604,7 +604,7 @@ sites; the audit can't tell which is which automatically.
 `scripts/audit-silent-failure-class.py` verifier (advisory weight in
 HCI).
 
-### Pattern C — In-memory cache without fs-mtime invalidation
+### Pattern C -- In-memory cache without fs-mtime invalidation
 
 Long-running daemons cache by path with clock-only TTL. Files
 mutate; cache serves stale until clock expires.
@@ -653,8 +653,8 @@ ack-without-fix, exhaust, abandon, dismissive-stop, etc.) and zero
 for the parallel human-side patterns (unwired remediation arms,
 "MVP scope" comments, Phase-N deferrals, dead injection flags).
 
-**Mitigation:** `scripts/audit-human-deferred.py` — symmetric audit
-surfaces human-side parallels. Tightened from 250 → 27 hits via
+**Mitigation:** `scripts/audit-human-deferred.py` -- symmetric audit
+surfaces human-side parallels. Tightened from 250 -> 27 hits via
 DETECTION_CONTEXT filter so the signal is actionable.
 
 ### HME as extended cognitive nervous system
@@ -683,16 +683,16 @@ output. The specialization is the point.
 
 ---
 
-## Operating modes — when the buddy adds value
+## Operating modes -- when the buddy adds value
 
 ### High-value uses
 
 - **Review reflection on substantive diffs.** The buddy reads the
   diff via git, applies the calibrated review prompt, returns
-  quote-grounded findings. Hit rate ≥80% real bugs when the prompt
+  quote-grounded findings. Hit rate >=80% real bugs when the prompt
   is well-formed.
 - **Architectural questions across files.** "How do A and B coordinate?"
-  "What's the contract between X and Y?" — leverages cross-call
+  "What's the contract between X and Y?" -- leverages cross-call
   context the main agent doesn't have.
 - **Peer-review of own infrastructure.** Asking the buddy about the
   routing path it lives on produces sharper findings than asking the
@@ -706,7 +706,7 @@ output. The specialization is the point.
   a Claude subprocess on "what's the value of X."
 - **Generic prompts without lens.** Produces filler. Use targeted
   framings.
-- **High-frequency calls.** The cooldown gate exists for a reason —
+- **High-frequency calls.** The cooldown gate exists for a reason --
   every call spawns a `claude --resume` subprocess that bills the
   user's account. Per-edit usage is wasteful.
 - **Asking for help with what the buddy can already see.** If the
@@ -725,7 +725,7 @@ end of session start. The helper:
 1. Checks `.env BUDDY_SYSTEM` (default 1).
 2. Resolves `BUDDY_COUNT` (default 1, capped at 10).
 3. Resolves per-slot model floors via `BUDDY_MODEL_FLOORS`. Floor is
-   the MINIMUM tier the buddy runs at — `effective = max(item_tier,
+   the MINIMUM tier the buddy runs at -- `effective = max(item_tier,
    buddy_floor)`. `floor=easy` keeps the buddy fully dynamic (accept
    any tier the task carries); higher floors force escalation. The
    special value `auto`:
@@ -751,7 +751,7 @@ shows `slot`, `floor`, `effort_floor`, `sid`, and a context-used bar
 read from the buddy's own transcript JSONL (~/.claude/projects/.../
 <sid>.jsonl). The `tokens` figure sums `input_tokens +
 cache_creation_input_tokens + cache_read_input_tokens` from the most
-recent assistant event with usage data — that's the authoritative
+recent assistant event with usage data -- that's the authoritative
 count of context the model just saw. Default window is 1M (Opus 4.7);
 override per-buddy via `HME_BUDDY_CTX_WINDOW` for sessions running
 smaller models.
@@ -823,11 +823,11 @@ guard, secret detection).
 
 Open work surfaces, ranked by buddy's iter-146 leverage analysis (highest
 impact first). The first item already has a starter implementation
-shipped this turn — `_PARTNER_SYSTEM` in `synthesis_config.py` — to
+shipped this turn -- `_PARTNER_SYSTEM` in `synthesis_config.py` -- to
 move the work from "documented future direction" to "available
 register, in use to be measured."
 
-### 1. Partner-review register (HIGHEST LEVERAGE — starter shipped)
+### 1. Partner-review register (HIGHEST LEVERAGE -- starter shipped)
 
 The doc itself names methodology coldness as a structural blindspot:
 forensic peer-review can't perform aesthetic judgment, future-
@@ -847,7 +847,7 @@ added to `tools/HME/service/server/tools_analysis/synthesis/synthesis_config.py`
 (performs the six register-operations the forensic methodology
 can't: mark beauty, name cultural artifacts, hold puzzlement, ask
 "should this exist", future-maintainer empathy, aesthetic gestalt).
-Routing path: `i/review mode=partner [changed_files=...]` —
+Routing path: `i/review mode=partner [changed_files=...]` --
 implementation in `review_unified.py`'s `partner` mode arm.
 Reads the diff via git, invokes `_reasoning_think` with
 `_PARTNER_SYSTEM`, returns a partner-letter rather than tier-1
@@ -863,8 +863,8 @@ The buddy reasons about cascade predictions but cannot test them.
 Replay-style infrastructure (run a compressed pipeline slice with
 buddy-suggested change vs without) would close the prediction-vs-
 reality loop. The cascade `injected=true` arm is wired (write side);
-the read side — reconciler scoring predictions against fingerprint
-shifts — is still unbuilt.
+the read side -- reconciler scoring predictions against fingerprint
+shifts -- is still unbuilt.
 
 ### 3. Multi-buddy roles
 
@@ -928,5 +928,5 @@ This document and the calibrated `_REVIEW_SYSTEM` co-evolve. If a
 new prompt-engineering experiment produces consistent gains across
 multiple sessions, encode it here AND in the prompt. If a pattern
 documented here stops working, mark it as deprecated rather than
-deleting — knowing why something stopped working is more valuable
+deleting -- knowing why something stopped working is more valuable
 than knowing it once worked.

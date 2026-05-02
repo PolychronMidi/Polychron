@@ -6,7 +6,7 @@
 #
 # Same role as the other chaos injectors: keep self-coherence probes
 # honest. A detector whose verdict-output goes silent is worse than no
-# detector — it produces false confidence that the antipattern is being
+# detector -- it produces false confidence that the antipattern is being
 # caught when it isn't.
 set -u
 set -o pipefail
@@ -42,10 +42,10 @@ for fname in "${!_expected[@]}"; do
   fi
   actual=$(python3 "$_DETECTOR" "$fixture" 2>&1 | tail -1)
   if [ "$actual" = "$expected" ]; then
-    echo "  PASS: $fname → $actual"
+    echo "  PASS: $fname -> $actual"
     _pass=$((_pass + 1))
   else
-    echo "  FAIL: $fname → got '$actual', expected '$expected'"
+    echo "  FAIL: $fname -> got '$actual', expected '$expected'"
     _fail=$((_fail + 1))
   fi
 done
@@ -55,5 +55,5 @@ if [ "$_fail" -gt 0 ]; then
   echo "chaos FAIL: $_fail/$((_pass + _fail)) early_stop verifications missed; the detector is broken or weakened"
   exit 1
 fi
-echo "chaos PASS: $_pass/$_pass early_stop fixtures produce correct verdict — detector is alive"
+echo "chaos PASS: $_pass/$_pass early_stop fixtures produce correct verdict -- detector is alive"
 exit 0

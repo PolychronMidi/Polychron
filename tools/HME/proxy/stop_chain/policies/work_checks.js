@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Pure-JS port of work_checks.sh — STOP_WORK / EXHAUST_CHECK gates plus
+ * Pure-JS port of work_checks.sh -- STOP_WORK / EXHAUST_CHECK gates plus
  * the AUTO-COMPLETENESS INJECT counter. Verdicts come from the verdicts
  * file; the enforcement reminder still goes to stderr; the inject counter
  * lives in tmp/hme-completeness-injected.json (50-entry cap, FIFO eviction).
@@ -26,33 +26,33 @@ const COMPL_MAX = 2;
 
 const REASONS = {
   STOP_WORK_DISMISSIVE:
-    'STOP-WORK ANTIPATTERN: You responded with dismissive text instead of doing work. Re-read the user prompt and the conversation. There is always pending work after a user message — find it and do it. If genuinely nothing remains, explain what was completed and why.',
+    'STOP-WORK ANTIPATTERN: You responded with dismissive text instead of doing work. Re-read the user prompt and the conversation. There is always pending work after a user message -- find it and do it. If genuinely nothing remains, explain what was completed and why.',
   STOP_WORK_TEXT_ONLY:
     'STOP-WORK ANTIPATTERN: Your last turn was a short text-only response with no tool calls. If there is remaining work, continue it now. If you genuinely completed everything, provide a substantive summary of what was done.',
   EXHAUST:
     'EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items (TBD/noted/remaining tools) without fixing them. Every enumerated item must be fixed in the same turn. Resume and implement the highest-leverage items now.',
   SCOPE_ESCAPE:
-    'SCOPE-ESCAPE VIOLATION: Final text dismissed a problem by labeling it pre-existing / unrelated / not-introduced-here / out-of-scope-of-this-turn instead of fixing it. The rule is: if you saw it, fix it. "Pre-existing" is not a permission slip to skip work. Either (a) fix the problem in this turn, or (b) if fixing is genuinely wrong (e.g. would break an unrelated boundary), say so explicitly and explain why fixing is the wrong move — do NOT just label-and-stop. The rescue clause "and I fixed it" / "now resolved" suppresses this gate, so the path forward is always to fix.',
+    'SCOPE-ESCAPE VIOLATION: Final text dismissed a problem by labeling it pre-existing / unrelated / not-introduced-here / out-of-scope-of-this-turn instead of fixing it. The rule is: if you saw it, fix it. "Pre-existing" is not a permission slip to skip work. Either (a) fix the problem in this turn, or (b) if fixing is genuinely wrong (e.g. would break an unrelated boundary), say so explicitly and explain why fixing is the wrong move -- do NOT just label-and-stop. The rescue clause "and I fixed it" / "now resolved" suppresses this gate, so the path forward is always to fix.',
   PHANTOM_CAPABILITY:
-    'PHANTOM CAPABILITY: Your closing summary declared a thinking/delegation capability that is NOT in the closed enumeration at tools/HME/scripts/detectors/_capability_enum.py. Inventing generic labels ("decomposition", "tradeoff analysis", "deep reasoning") is a CRITICAL FAILURE — it does NOT contribute to the tier floor. Either (a) replace the declaration with a verbatim name from the enumeration, (b) anchor the declaration with verification evidence (`(verified)`, code-quoted output, tool-call trace) within 240 chars after the name, or (c) drop the declaration. New capabilities are added by editing _capability_enum.py and bumping ENUMERATION_VERSION — never by ad-hoc invention at run time.',
+    'PHANTOM CAPABILITY: Your closing summary declared a thinking/delegation capability that is NOT in the closed enumeration at tools/HME/scripts/detectors/_capability_enum.py. Inventing generic labels ("decomposition", "tradeoff analysis", "deep reasoning") is a CRITICAL FAILURE -- it does NOT contribute to the tier floor. Either (a) replace the declaration with a verbatim name from the enumeration, (b) anchor the declaration with verification evidence (`(verified)`, code-quoted output, tool-call trace) within 240 chars after the name, or (c) drop the declaration. New capabilities are added by editing _capability_enum.py and bumping ENUMERATION_VERSION -- never by ad-hoc invention at run time.',
   PHANTOM_PARAPHRASE:
-    'PHANTOM PARAPHRASE (soft): Your text contained a paraphrase of a real capability (e.g. "first-principles decomposition" instead of "FirstPrinciples"). This is the shape of an agent reaching for an enumeration name without committing. Rewrite using the verbatim name from _capability_enum.py, OR drop the language if you did not actually invoke that capability. Soft flag — does not block, but the meta-detector tracks the rate.',
+    'PHANTOM PARAPHRASE (soft): Your text contained a paraphrase of a real capability (e.g. "first-principles decomposition" instead of "FirstPrinciples"). This is the shape of an agent reaching for an enumeration name without committing. Rewrite using the verbatim name from _capability_enum.py, OR drop the language if you did not actually invoke that capability. Soft flag -- does not block, but the meta-detector tracks the rate.',
   ADVISOR_MISSING_PRE_BUILD:
-    'ADVISOR DOCTRINE (Rule 2 — pre-BUILD): Tier ≥ E2 work just hit a BUILD/commit boundary without an advisor consult (`i/consult`). Either (a) call i/consult now with the proposed approach, (b) explicitly note "solo was right" in text with reasoning (mechanical rename, no decision to crystallize, etc.), or (c) escalate the tier — if no advisor is needed this should not be E2+. Doctrine reference: PAI v6.3.0 Verification Doctrine Rule 2.',
+    'ADVISOR DOCTRINE (Rule 2 -- pre-BUILD): Tier >= E2 work just hit a BUILD/commit boundary without an advisor consult (`i/consult`). Either (a) call i/consult now with the proposed approach, (b) explicitly note "solo was right" in text with reasoning (mechanical rename, no decision to crystallize, etc.), or (c) escalate the tier -- if no advisor is needed this should not be E2+. Doctrine reference: PAI v6.3.0 Verification Doctrine Rule 2.',
   ADVISOR_MISSING_POST_DELIVER:
-    'ADVISOR DOCTRINE (Rule 2 — post-deliverable): A durable deliverable just landed and you are about to set phase: complete without a final advisor consult. Call i/consult once on the finished work asking "any gaps before declaring done?" — OR explicitly mark the rationale for skipping. Doctrine reference: PAI v6.3.0 Verification Doctrine Rule 2 step 3.',
+    'ADVISOR DOCTRINE (Rule 2 -- post-deliverable): A durable deliverable just landed and you are about to set phase: complete without a final advisor consult. Call i/consult once on the finished work asking "any gaps before declaring done?" -- OR explicitly mark the rationale for skipping. Doctrine reference: PAI v6.3.0 Verification Doctrine Rule 2 step 3.',
   ADVISOR_SILENTLY_SKIPPED:
-    'ADVISOR DOCTRINE (E4/E5 floor): Tier ≥ E4 work completed with zero `i/consult` invocations and no solo-rationale clause. At Deep/Comprehensive effort, the advisor must fire at least once OR the agent must explicitly justify why solo was right. Re-evaluate tier or add the consult.',
+    'ADVISOR DOCTRINE (E4/E5 floor): Tier >= E4 work completed with zero `i/consult` invocations and no solo-rationale clause. At Deep/Comprehensive effort, the advisor must fire at least once OR the agent must explicitly justify why solo was right. Re-evaluate tier or add the consult.',
   ADVISOR_CONFLICT_CAP:
-    'ADVISOR DOCTRINE (Rule 3 — conflict cap): The advisor was re-called more than 2 times on the same conflict_id (see tmp/hme-advisor-conflicts.jsonl). Hard cap exceeded. Escalate to the user instead of re-calling — keep the loop bounded.',
+    'ADVISOR DOCTRINE (Rule 3 -- conflict cap): The advisor was re-called more than 2 times on the same conflict_id (see tmp/hme-advisor-conflicts.jsonl). Hard cap exceeded. Escalate to the user instead of re-calling -- keep the loop bounded.',
   SUMMARY_MISSING:
-    'STOP-THE-LINE FORMAT VIOLATION: Tier ≥ E3 (Algorithm) work closed without the required === SUMMARY === block. PAI v6.3.0 doctrine: "Format violations outrank output length, output quality, and output detail." Append the closing block before stopping. Required fields: [ITERATION], [CONTENT], [STORY] (4 bullets: problem | what we did | how it went | what\'s next), and [VOICE] <name>: <8-16 word summary>. Either (a) emit the block now, or (b) re-classify the tier — if no summary is needed, this work was lighter than E3 and the classifier should reflect that.',
+    'STOP-THE-LINE FORMAT VIOLATION: Tier >= E3 (Algorithm) work closed without the required === SUMMARY === block. PAI v6.3.0 doctrine: "Format violations outrank output length, output quality, and output detail." Append the closing block before stopping. Required fields: [ITERATION], [CONTENT], [STORY] (4 bullets: problem | what we did | how it went | what\'s next), and [VOICE] <name>: <8-16 word summary>. Either (a) emit the block now, or (b) re-classify the tier -- if no summary is needed, this work was lighter than E3 and the classifier should reflect that.',
   SUMMARY_MALFORMED:
     'STOP-THE-LINE FORMAT VIOLATION: Closing summary block is present but missing required fields. Every Algorithm-tier turn must include all 7 elements: === SUMMARY === banner, [ITERATION]:, [CONTENT]:, [STORY]: with all 4 bullets (problem, what we did, how it went, what\'s next), and [VOICE] <name>: <8-16 word closing line>. Re-emit the block with every field populated; this is a structural gate, not a soft preference.',
   COMPL_ROUND_1:
-    "AUTO-COMPLETENESS INJECT (round 1/2): Before stopping, enumerate everything that might still be missing, unfinished, deferred, flagged, a possible gap, or worth doing relative to THIS TURN's work. Then do ALL of it — no deferrals, no flagging, no punts. If truly nothing remains, state 'Nothing missed' explicitly. This is the auto-injected version of the user's usual 'what's missing? do all' follow-up.",
+    "AUTO-COMPLETENESS INJECT (round 1/2): Before stopping, enumerate everything that might still be missing, unfinished, deferred, flagged, a possible gap, or worth doing relative to THIS TURN's work. Then do ALL of it -- no deferrals, no flagging, no punts. If truly nothing remains, state 'Nothing missed' explicitly. This is the auto-injected version of the user's usual 'what's missing? do all' follow-up.",
   COMPL_ROUND_2:
-    "AUTO-COMPLETENESS INJECT (round 2/2 — safety net): Last chance to catch unfinished or skipped work before the turn ends. If you claimed 'Nothing missed' in the last response, are you SURE nothing else is worth doing? Anything you'd normally flag as 'could be followed up' or 'worth investigating separately' — do it now. If confirmed nothing remains, say so plainly and the turn will end.",
+    "AUTO-COMPLETENESS INJECT (round 2/2 -- safety net): Last chance to catch unfinished or skipped work before the turn ends. If you claimed 'Nothing missed' in the last response, are you SURE nothing else is worth doing? Anything you'd normally flag as 'could be followed up' or 'worth investigating separately' -- do it now. If confirmed nothing remains, say so plainly and the turn will end.",
 };
 
 const ENFORCEMENT_REMINDER =
@@ -62,8 +62,8 @@ const ENFORCEMENT_REMINDER =
 const HOOK_INJECT_PREFIXES = [
   'Stop hook feedback:',
   'AUTO-COMPLETENESS INJECT',
-  '🚨 LIFESAVER',
-  'NEXUS —',
+  '[ALERT] LIFESAVER',
+  'NEXUS --',
   '[[HME_AGENT_TASK',
   'PreToolUse:',
   'PostToolUse:',
@@ -95,7 +95,7 @@ function readVerdicts() {
 
 function lastAssistantText(transcriptPath) {
   // Read the most recent assistant turn's text content from the
-  // transcript JSONL. Used by the round-2 skip check below — when the
+  // transcript JSONL. Used by the round-2 skip check below -- when the
   // agent's response to round 1 was already a clean "nothing missed"
   // declaration, round 2 is pure context burn and should NOT fire.
   if (!transcriptPath) return '';
@@ -128,7 +128,7 @@ function lastAssistantText(transcriptPath) {
 // Match the "nothing missed" / "confirmed nothing remains" no-op response
 // shape exactly. Conservative: only short responses that EQUAL one of these
 // declarations qualify. A long answer that happens to contain "nothing
-// missed" mid-sentence does NOT match — those legitimately preceded real
+// missed" mid-sentence does NOT match -- those legitimately preceded real
 // work and round 2 should still fire.
 function isNothingMissedResponse(text) {
   if (!text) return false;
@@ -230,7 +230,7 @@ function loadComplStore() {
 }
 
 function saveComplStore(store) {
-  // Cap at 50 entries — drop oldest by insertion order (object iteration order).
+  // Cap at 50 entries -- drop oldest by insertion order (object iteration order).
   const keys = Object.keys(store);
   if (keys.length > 50) {
     for (const k of keys.slice(0, keys.length - 50)) delete store[k];
@@ -248,7 +248,7 @@ module.exports = {
   async run(ctx) {
     const v = readVerdicts();
     // Substantive denies carry their own actionable message. The
-    // generic ENFORCEMENT_REMINDER on top of those is noise — the
+    // generic ENFORCEMENT_REMINDER on top of those is noise -- the
     // "8x STOP. Re-read CLAUDE.md" pattern visible in test runs
     // before this gate. Emit the reminder ONLY when no specific
     // deny will fire below, so the agent gets a single coherent
@@ -283,7 +283,7 @@ module.exports = {
     if (v.SUMMARY_FORMAT === 'summary_missing')   return ctx.deny(REASONS.SUMMARY_MISSING);
     if (v.SUMMARY_FORMAT === 'summary_malformed') return ctx.deny(REASONS.SUMMARY_MALFORMED);
 
-    // Auto-completeness inject — fires up to COMPL_MAX times per user-turn.
+    // Auto-completeness inject -- fires up to COMPL_MAX times per user-turn.
     // PRIOR FIX REMOVED: previously this skipped when any earlier policy
     // (PSYCHOPATHIC-STOP, etc.) already denied. That meant the user only
     // saw the EARLIEST deny, never auto-completeness. The user's repeated
@@ -318,7 +318,7 @@ module.exports = {
     const next = count + 1;
     // Round-2 skip: if the assistant's response to round 1 was a clean
     // "nothing missed" / "confirmed nothing remains" no-op, round 2 is
-    // pure context burn — it provokes another no-op response and adds
+    // pure context burn -- it provokes another no-op response and adds
     // zero value. Advance the counter to MAX (spending the budget) and
     // return allow without firing the deny. Round 1 still fires
     // unconditionally as the safety check; only the redundant round 2
@@ -340,7 +340,7 @@ module.exports = {
       // be", "worth investigating", etc.), name them specifically in
       // the inject so the agent must resolve each to evidence or drop
       // it. Without this, speculation accumulates across turns into
-      // permanent fog. Compresses the speculation→evidence distance
+      // permanent fog. Compresses the speculation->evidence distance
       // by making the prompt actionable instead of generic.
       const lastAssistant = lastAssistantText(transcriptPath);
       const specs = scanSpeculation(lastAssistant);
@@ -352,7 +352,7 @@ module.exports = {
           `speculation-shaped phrase(s). Each must resolve to evidence ` +
           `(grep/Read the relevant code and either confirm or refute) or be ` +
           `dropped before stopping. NEVER leave speculation as a parting ` +
-          `note — it becomes permanent fog otherwise.\n\n` +
+          `note -- it becomes permanent fog otherwise.\n\n` +
           enumerated;
         return ctx.deny(targeted);
       }

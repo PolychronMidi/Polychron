@@ -19,12 +19,12 @@ if ! echo "$CMD" | grep -qE '(^|[[:space:]/])i/status\b'; then
 fi
 
 # Count status(mode='pipeline') calls in the current assistant turn. Also
-# track parse failures — a handful of malformed lines is expected, but if
+# track parse failures -- a handful of malformed lines is expected, but if
 # EVERY line fails to parse, the transcript format has drifted and the
 # polling guard is silently disabled. Surface that to hme-errors.log.
 # FAIL-LOUD: was `2>/dev/null` which silenced ImportError / SyntaxError /
 # UnicodeDecodeError. The script's own try/except covers file-read; any
-# other crash silently disabled the polling gate (CALL_COUNT=0 → fail-OPEN).
+# other crash silently disabled the polling gate (CALL_COUNT=0 -> fail-OPEN).
 _PCP_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pcp_py_err_$$")
 _STATUS_COUNT_PARSE=$(python3 - "$TRANSCRIPT_PATH" <<'PYEOF' 2>"$_PCP_PY_ERR"
 import json, os, re, sys
@@ -32,7 +32,7 @@ path = sys.argv[1]
 try:
     data = open(path).read()
 except Exception as e:
-    # Transcript unreadable — emit sentinel so the shell layer can log.
+    # Transcript unreadable -- emit sentinel so the shell layer can log.
     print(f"0 UNREADABLE:{type(e).__name__}")
     sys.exit(0)
 lines = data.strip().split('\n')
@@ -67,7 +67,7 @@ for line in reversed(lines):
                     if block.get('input', {}).get('mode') == 'pipeline':
                         count += 1
 # Emit: <count> <sentinel-or-nothing>. Sentinel ALL_PARSE_FAILED fires when
-# we saw lines but parsed none — format drift, polling guard ineffective.
+# we saw lines but parsed none -- format drift, polling guard ineffective.
 if parse_ok == 0 and parse_fail > 10:
     print(f"{count} ALL_PARSE_FAILED:{parse_fail}")
 else:
@@ -85,7 +85,7 @@ if [ -s "$_PCP_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/lo
 fi
 rm -f "$_PCP_PY_ERR" 2>/dev/null
 if [ -n "$_SENTINEL" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
-  # Drop stderr suppression — write failure should surface (rare; would
+  # Drop stderr suppression -- write failure should surface (rare; would
   # indicate full disk / permission flap on log/ which has bigger problems).
   printf '[%s] [pretooluse_check_pipeline] transcript parse drift: %s (polling guard ineffective)\n' \
     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_SENTINEL" >> "$PROJECT_ROOT/log/hme-errors.log"

@@ -2,7 +2,7 @@
 # Policy-enabled helper for bash gates that have a JS-policy counterpart in
 # tools/HME/policies/builtin/. Reads the same three-scope config as
 # i/policies (project/local/global) and returns the same enable/disable
-# answer — so `i/policies disable <name>` works uniformly across both
+# answer -- so `i/policies disable <name>` works uniformly across both
 # the JS layer (live in proxy-up mode) and the bash layer (live in
 # proxy-down direct-mode).
 #
@@ -14,7 +14,7 @@
 #   source tools/HME/hooks/helpers/_policy_enabled.sh
 #   _policy_enabled block-curl-pipe-sh || return 0   # skip the gate when disabled
 #
-# Returns: 0 (enabled — caller should run the gate) or 1 (disabled —
+# Returns: 0 (enabled -- caller should run the gate) or 1 (disabled --
 # caller should skip). When neither list mentions the policy, returns 0
 # (default-enabled per the registered policy's defaultEnabled flag,
 # which for every migrated bash gate is true).
@@ -26,7 +26,7 @@
 _policy_enabled() {
   local name="$1"
   [ -z "$name" ] && return 0
-  command -v jq >/dev/null 2>&1 || return 0  # no jq → can't read config → assume enabled
+  command -v jq >/dev/null 2>&1 || return 0  # no jq -> can't read config -> assume enabled
 
   local project_root="${PROJECT_ROOT:-/home/jah/Polychron}"
   local files=(
@@ -42,7 +42,7 @@ _policy_enabled() {
       return 1
     fi
   done
-  # No disable found → enabled (defaultEnabled=true is the convention for
+  # No disable found -> enabled (defaultEnabled=true is the convention for
   # every bash-gate-with-JS-counterpart we currently have).
   return 0
 }

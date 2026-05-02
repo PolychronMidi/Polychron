@@ -16,7 +16,7 @@ _DETECTORS_DIR="${PROJECT_ROOT:-/home/jah/Polychron}/tools/HME/scripts/detectors
 
 # Context meter: merge token counts into existing statusLine data
 # StatusLine writes authoritative used_pct/remaining_pct/size from the API.
-# Stop hook only adds input_tokens/output_tokens from the transcript — never
+# Stop hook only adds input_tokens/output_tokens from the transcript -- never
 # overwrites used_pct (that would replace real API data with a fabricated estimate).
 _CTX_OUT="${HME_CTX_FILE:-/tmp/claude-context.json}"
 _CTX_TRANSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')

@@ -28,7 +28,7 @@
  * Output shape: same JSON, with content possibly mutated by registered middleware.
  *
  * Process boundary: stdin capped at 4MB, exit 0 on chain crash (callers
- * decide how to handle a missing pipeline output — never wedge them).
+ * decide how to handle a missing pipeline output -- never wedge them).
  */
 
 const middleware = require('./middleware');

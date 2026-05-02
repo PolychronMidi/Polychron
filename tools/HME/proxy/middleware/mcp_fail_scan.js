@@ -8,7 +8,7 @@ const path = require('path');
 
 const ERR_LOG = 'log/hme-errors.log';
 const FAIL_RE = /\bFAIL(ED)?\b/;
-// PASS as a substring used to suppress legitimate FAIL reports —
+// PASS as a substring used to suppress legitimate FAIL reports --
 // `"FAILED: my_test (after PASS in fixture setup)"` contains both,
 // the skip fired, and the failure was silently dropped. Anchor PASS
 // to a verdict position (start-of-line or after whitespace + colon)

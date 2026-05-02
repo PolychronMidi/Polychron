@@ -35,6 +35,6 @@ else
   echo "--- selftest output (relevant lines) ---"
   echo "$_out" | grep -E "daemon thread|Self-Test:" || true
   # Leave the injection in place so an operator can inspect.
-  echo "(injection left in $_DAEMON_LOG — marker: $_marker)"
+  echo "(injection left in $_DAEMON_LOG -- marker: $_marker)"
   exit 1
 fi

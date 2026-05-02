@@ -25,7 +25,7 @@ module.exports = {
     const lockFile = path.join(projectRoot, 'tmp', 'run.lock');
     if (!fs.existsSync(lockFile)) return ctx.allow();
     return ctx.deny(
-      'ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT write src/ code mid-pipeline — the pipeline\'s behavior is being measured against the code state at launch. Wait for completion; use HME tools or edit tooling/docs in the meantime.'
+      'ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT write src/ code mid-pipeline -- the pipeline\'s behavior is being measured against the code state at launch. Wait for completion; use HME tools or edit tooling/docs in the meantime.'
     );
   },
 };

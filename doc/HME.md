@@ -1,6 +1,6 @@
 # Hypermeta Ecstasy
 
-> Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
+> Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible -- not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
 HME is integrated into one executive. **10 MCP tools** (agent-facing) plus a self-coherence substrate of verifiers weighted 0-5 each, producing an aggregate HME Coherence Index (HCI) on a 0-100 scale. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Lifecycle hooks enforce workflow automatically, including the evolution loop. A local-LLM subagent pipeline (Explore + Plan modes) with a domain-specialized QLoRA-fine-tuned arbiter handles code research at amateur-hardware speeds.
 
@@ -17,28 +17,28 @@ No layer is optional. Removing any one collapses the executive.
 | **Hooks** | `tools/HME/hooks/` + `~/.claude/settings.json` | Automated workflow enforcement + evolution loop driver (pre/post tool use, session lifecycle) |
 | **Lab** | `lab/` | Experimental harness for isolated prototyping |
 
-On top of that substrate, Phase 1-6 (landed 2026-04-15) adds 30 observability/governance features: the activity bridge, inference proxy, pipeline policy gate, staleness + drift + cascade indexes, hypothesis registry, crystallizer, musical correlation, trust-weighted KB, coherence budget, negative space discovery, human ground truth, reflexivity model, constitutional identity, and a multi-agent scaffold. Surfaced through 23 new `status(mode=...)` branches (activity, staleness, coherence, blindspots, hypotheses, drift, accuracy, crystallized, music_truth, kb_trust, intention_gap, self_audit, probes, trajectory, budget, negative_space, cognitive_load, ground_truth, constitution, doc_drift, generalizations, reflexivity, multi_agent) — search this file for "Phase N.M of the feature mapping" for each subsystem's narrative.
+On top of that substrate, Phase 1-6 (landed 2026-04-15) adds 30 observability/governance features: the activity bridge, inference proxy, pipeline policy gate, staleness + drift + cascade indexes, hypothesis registry, crystallizer, musical correlation, trust-weighted KB, coherence budget, negative space discovery, human ground truth, reflexivity model, constitutional identity, and a multi-agent scaffold. Surfaced through 23 new `status(mode=...)` branches (activity, staleness, coherence, blindspots, hypotheses, drift, accuracy, crystallized, music_truth, kb_trust, intention_gap, self_audit, probes, trajectory, budget, negative_space, cognitive_load, ground_truth, constitution, doc_drift, generalizations, reflexivity, multi_agent) -- search this file for "Phase N.M of the feature mapping" for each subsystem's narrative.
 
-## Phase 7: Four-Arc Framework (R18-R31, 2026-04-19 → 2026-04-20)
+## Phase 7: Four-Arc Framework (R18-R31, 2026-04-19 -> 2026-04-20)
 
 Phases 1-6 produced seven independent observability substrates. Phase 7 made them interlock. Four arcs + seven emergent behaviors + tool-surface rebuild:
 
-**Arc I — Cross-Substrate Consensus** (R18, `scripts/pipeline/hme/compute-consensus.js`). Seven voters (hci / invariants / prediction_recall / verdict / axis_cost_trend / clap / listening_verdict) each produce a scalar in [-1, +1]. Mean = consensus; stdev = divergence signal. Since R29, a `composition_reality_overrides_substrate_divergence` rule demotes divergence to `low_override_by_reality` when the user verdict has been legendary for 3+ rounds AND HCI ≥ 95.
+**Arc I -- Cross-Substrate Consensus** (R18, `scripts/pipeline/hme/compute-consensus.js`). Seven voters (hci / invariants / prediction_recall / verdict / axis_cost_trend / clap / listening_verdict) each produce a scalar in [-1, +1]. Mean = consensus; stdev = divergence signal. Since R29, a `composition_reality_overrides_substrate_divergence` rule demotes divergence to `low_override_by_reality` when the user verdict has been legendary for 3+ rounds AND HCI >= 95.
 
-**Arc II — Pattern Registry** (R20, `tools/HME/patterns/*.json`). Meta-patterns as declarative JSON: trigger.check (shell expression), action.steps, action.auto_apply flag, history of instantiations. Matcher at `scripts/pipeline/hme/match-patterns.py` evaluates all patterns each round. R25 added auto-apply — matched patterns with `auto_apply: true` run their action script automatically (non-destructive only).
+**Arc II -- Pattern Registry** (R20, `tools/HME/patterns/*.json`). Meta-patterns as declarative JSON: trigger.check (shell expression), action.steps, action.auto_apply flag, history of instantiations. Matcher at `scripts/pipeline/hme/match-patterns.py` evaluates all patterns each round. R25 added auto-apply -- matched patterns with `auto_apply: true` run their action script automatically (non-destructive only).
 
-**Arc III — Inverse Reasoning** (R21, `scripts/pipeline/hme/compute-legendary-drift.py`). Each round snapshots 14 state dimensions into `output/metrics/hme-legendary-states.jsonl`. Envelope = exponentially-weighted (decay 0.85) median + stdev per field. Current round's per-field z-score flags outliers; mean |z| is the drift score. Fires BEFORE verdict fails, catching drift toward non-legendary territory. R29 added `legendary_confirmed` filter + HCI≥95 envelope membership.
+**Arc III -- Inverse Reasoning** (R21, `scripts/pipeline/hme/compute-legendary-drift.py`). Each round snapshots 14 state dimensions into `output/metrics/hme-legendary-states.jsonl`. Envelope = exponentially-weighted (decay 0.85) median + stdev per field. Current round's per-field z-score flags outliers; mean |z| is the drift score. Fires BEFORE verdict fails, catching drift toward non-legendary territory. R29 added `legendary_confirmed` filter + HCI>=95 envelope membership.
 
-**Arc IV — Meta-Measurement** (R19, `scripts/pipeline/hme/compute-invariant-efficacy.py`). Classifies every invariant as load-bearing (cited in commits + firing), load-bearing-historical (cited + passing), structural (existence checks), decorative (never fired / never cited), or flappy (fires without citation). R23's structural-subclass heuristic splits legitimately-decorative-forever from retirement-worthy. Retirement log at `output/metrics/hme-invariant-retirement-log.jsonl` codifies removal decisions.
+**Arc IV -- Meta-Measurement** (R19, `scripts/pipeline/hme/compute-invariant-efficacy.py`). Classifies every invariant as load-bearing (cited in commits + firing), load-bearing-historical (cited + passing), structural (existence checks), decorative (never fired / never cited), or flappy (fires without citation). R23's structural-subclass heuristic splits legitimately-decorative-forever from retirement-worthy. Retirement log at `output/metrics/hme-invariant-retirement-log.jsonl` codifies removal decisions.
 
 **Emergent behaviors** (not explicitly built):
 1. Consensus synthesis (Arc I direct)
 2. Pattern matching (Arc II direct)
 3. Drift detection (Arc III direct)
 4. Efficacy classification (Arc IV direct)
-5. Action synthesis — `scripts/pipeline/hme/propose-next-actions.py` reads all four arcs and produces prioritized action queue at `output/metrics/hme-next-actions.json`. Empty queue = healthy quiescent state.
-6. Auto-diagnosis — `scripts/pipeline/hme/auto-investigate.py` runs read-only diagnostic steps for matched patterns; findings at `output/metrics/hme-investigation-reports.jsonl`.
-7. Auto-apply — matched patterns with `auto_apply: true` run their action script automatically (R25).
+5. Action synthesis -- `scripts/pipeline/hme/propose-next-actions.py` reads all four arcs and produces prioritized action queue at `output/metrics/hme-next-actions.json`. Empty queue = healthy quiescent state.
+6. Auto-diagnosis -- `scripts/pipeline/hme/auto-investigate.py` runs read-only diagnostic steps for matched patterns; findings at `output/metrics/hme-investigation-reports.jsonl`.
+7. Auto-apply -- matched patterns with `auto_apply: true` run their action script automatically (R25).
 
 **Arc-freeze discipline** (R29, `tools/HME/config/arc-freeze.json`): no new voters, patterns, invariants, or arc scripts for N pipeline runs. Thaw conditions: runs elapse OR user verdict changes OR HCI drops <95 for 2+ rounds. Prevents substrate-self-iteration drift.
 
@@ -54,7 +54,7 @@ Phases 1-6 produced seven independent observability substrates. Phase 7 made the
 | `i/evolve` (no args) | Routes to substrate-view actions (data-first) |
 | `i/status` (no args) | Routes to substrate-view brief (replaces legacy 20-section dump) |
 
-`userpromptsubmit.sh` auto-captures `listening verdict: X` from user messages → ground-truth entry (listening voter in Arc I becomes automatic). `posttooluse_bash.sh` auto-fires `i/review mode=forget` after git commits.
+`userpromptsubmit.sh` auto-captures `listening verdict: X` from user messages -> ground-truth entry (listening voter in Arc I becomes automatic). `posttooluse_bash.sh` auto-fires `i/review mode=forget` after git commits.
 
 Full narrative of each round and the meta-lessons: see [HME_SELF_COHERENCE.md](HME_SELF_COHERENCE.md) Rounds 8-14.
 
@@ -71,15 +71,15 @@ Observe (tools surface patterns)
 ```
 
 **What self-evolution looks like in practice:**
-- After a confirmed round, `learn(title='...', content='...')` persists calibration anchors — the KB grows with each cycle
+- After a confirmed round, `learn(title='...', content='...')` persists calibration anchors -- the KB grows with each cycle
 - `learn(action='compact')` periodically deduplicates, keeping the KB sharp
 - `learn(action='dream')` discovers hidden connections between distant entries
-- `review(mode='docs')` verifies docs match implementation — when they diverge, docs get updated
+- `review(mode='docs')` verifies docs match implementation -- when they diverge, docs get updated
 - `learn(action='health')` finds stale references, aged entries, dead file pointers
-- Hooks can be extended when new anti-patterns emerge — `fix_antipattern` synthesizes enforcement
+- Hooks can be extended when new anti-patterns emerge -- `fix_antipattern` synthesizes enforcement
 - The Evolver's own phases can be refined based on KB entries about what works
 
-**The ecstatic principle:** Intelligence that makes working with it genuinely pleasurable. Every tool should feel like it reads your mind. Every constraint should prevent a mistake you'd regret. Every hook should arrive at exactly the right moment. When the system achieves this, using it is not just productive — it's ecstatic.
+**The ecstatic principle:** Intelligence that makes working with it genuinely pleasurable. Every tool should feel like it reads your mind. Every constraint should prevent a mistake you'd regret. Every hook should arrive at exactly the right moment. When the system achieves this, using it is not just productive -- it's ecstatic.
 
 ## Installation Topology
 
@@ -90,7 +90,7 @@ tools/HME/               The single source of truth
     plugin.json                         Plugin metadata (name, version, description)
   mcp/                                  Python MCP server
     server/
-      (main.py removed — worker.py is the entry point since the MCP decoupling)
+      (main.py removed -- worker.py is the entry point since the MCP decoupling)
       context.py                        Shared engine references (project_engine, etc.);
                                           holds _NullMCP default so daemon-side imports don't crash
       lifecycle_writers.py              Single-writer registry (6 domains: llama-server, embedders,
@@ -100,18 +100,18 @@ tools/HME/               The single source of truth
       health_summary.py                 Operator-facing health command (hme_admin action=health)
       helpers.py                        Budget limits, formatters; loads project-rules.json
       tools_analysis/                   Public tool surface (6 agent-callable) lives here:
-        evolution_evolve.py               evolve — evolution planning hub
-        review_unified.py                 review — post-pipeline review hub
-        learn_unified.py                  learn — unified KB interface
-        trace_unified.py                  trace — signal flow tracing
-        evolution_admin.py                hme_admin — selftest / reload / index / warm / fix_antipattern
-        todo.py                           hme_todo — hierarchical todo (hidden utility, merged into TodoWrite)
-        read_unified.py                   read — smart code reader (HIDDEN: auto-chained into Edit hooks, not agent-callable)
-        status_unified.py                 status — lifecycle surfacer (HIDDEN: used by internal banners)
+        evolution_evolve.py               evolve -- evolution planning hub
+        review_unified.py                 review -- post-pipeline review hub
+        learn_unified.py                  learn -- unified KB interface
+        trace_unified.py                  trace -- signal flow tracing
+        evolution_admin.py                hme_admin -- selftest / reload / index / warm / fix_antipattern
+        todo.py                           hme_todo -- hierarchical todo (hidden utility, merged into TodoWrite)
+        read_unified.py                   read -- smart code reader (HIDDEN: auto-chained into Edit hooks, not agent-callable)
+        status_unified.py                 status -- lifecycle surfacer (HIDDEN: used by internal banners)
         tools_passthru.py                 grep / glob_search / edit (HIDDEN: enriched passthrus of native tools)
         runtime.py                        beat_snapshot helper (called by trace)
         workflow.py                       before_editing briefing (called by Edit hook)
-        enrich_prompt.py                  enrich_prompt — local prompt enrichment
+        enrich_prompt.py                  enrich_prompt -- local prompt enrichment
         (+ ~20 internal modules: coupling, reasoning, symbols, etc.)
       tools_search.py                   Internal: low-level search helpers (used by learn/trace)
       tools_knowledge.py                Internal: KB CRUD (used by learn)
@@ -130,7 +130,7 @@ tools/HME/               The single source of truth
     verify-coherence.py                   Unified HCI engine (65 verifiers, 0-100 score)
     verify-doc-sync.py                    Stale tool name drift detector
     verify-onboarding-flow.py             18-test dry run of onboarding state machine
-    verify-states-sync.py                 Python↔shell STATES list diff
+    verify-states-sync.py                 Python<->shell STATES list diff
     snapshot-holograph.py                 Time-travel snapshot + --diff + --replay
     analyze-hci-trajectory.py             HCI trend + linear-regression forecast
     analyze-tool-effectiveness.py         Multi-window (1h/6h/24h) session stats
@@ -140,7 +140,7 @@ tools/HME/               The single source of truth
     memetic-drift.py                      CLAUDE.md rule violation scanner (H16)
     promote-global-kb.py                  Cross-project KB promotion (H12)
     build-dashboard.py                    Interactive plotly.js dashboard
-    emit-hci-signal.py                    HCI → composition-layer signal (H15 scaffold)
+    emit-hci-signal.py                    HCI -> composition-layer signal (H15 scaffold)
     finetune-arbiter.py                   QLoRA training entry (H10)
     learn-stopwords.py                    Self-improving stopwords (H7)
     predict-hci.py                        Predictive HCI model (H9)
@@ -151,8 +151,8 @@ tools/HME/               The single source of truth
 ```
 ~/.claude/skills/HME  -> tools/HME/skills/
 ```
-(The former `~/tools/HME/KB → tools/HME/service/` symlink was removed when HME
-decoupled from Claude Code's MCP system — see "Tool Invocation" below.)
+(The former `~/tools/HME/KB -> tools/HME/service/` symlink was removed when HME
+decoupled from Claude Code's MCP system -- see "Tool Invocation" below.)
 
 ### Databases
 ```
@@ -173,13 +173,13 @@ there's no `npm run` preamble and no caller-side flag boilerplate:
 
 ```
 i/review  mode=forget
-i/learn   title="…" content="…"
+i/learn   title="..." content="..."
 i/trace   target=<module> mode=impact
 i/evolve  focus=<axis>
 i/status                              # pipeline status
 i/state                               # unified state-machine snapshot (Horizon II seed)
 i/timeline                            # chronological audit trail of silent automations
-i/why     mode=<…>                    # 14 causality modes (see AGENT_PRIMER.md)
+i/why     mode=<...>                    # 14 causality modes (see AGENT_PRIMER.md)
 i/hme-admin action=selftest
 i/todo    action=list
 i/hme-read target=<module>
@@ -192,17 +192,17 @@ All routes go through `scripts/hme-cli.js`, which POSTs `/tool/<name>` on the
 worker (`tools/HME/service/worker.py`, default port 9098). RAG config lives in
 `tools/HME/config/rag.json` (migrated from the former `mcpServers.HME` block).
 The proxy at port 9099 still intercepts inference calls for observability and
-injection — it just no longer speaks MCP to Claude Code.
+injection -- it just no longer speaks MCP to Claude Code.
 
 ## HME Worker HTTP
 
 The Python worker at `mcp/worker.py` exposes endpoints used by hooks and other HME components:
-- `POST /enrich` — KB top-k retrieval for hybrid context injection
-- `POST /enrich_prompt` — Full reasoning-model prompt enrichment (200s timeout)
-- `POST /validate` — Rule validation + constraint warnings
-- `POST /audit` — Post-change boundary audit
-- `POST /transcript` — Session narrative mirroring into KB
-- `GET /health` — Readiness check
+- `POST /enrich` -- KB top-k retrieval for hybrid context injection
+- `POST /enrich_prompt` -- Full reasoning-model prompt enrichment (200s timeout)
+- `POST /validate` -- Rule validation + constraint warnings
+- `POST /audit` -- Post-change boundary audit
+- `POST /transcript` -- Session narrative mirroring into KB
+- `GET /health` -- Readiness check
 
 ## Self-coherence probes (added 2026-04-23)
 
@@ -220,9 +220,9 @@ Selftest now runs these additional structural probes beyond the legacy 17:
 | meta-invariant coverage | non-owner module calls a protected mutation (runs `scripts/check-single-writer-coverage.py`) |
 | HME dogfooding | HME's own Python obeys the no-silent-catch rule (runs `scripts/check-hme-dogfooding.py`) |
 | invariant genealogy | share of invariants with `born_from` origin citation |
-| temporal drift | selftest result flips PASS→FAIL after ≥3 PASSes (from `hme-coherence-timeseries.jsonl`) |
+| temporal drift | selftest result flips PASS->FAIL after >=3 PASSes (from `hme-coherence-timeseries.jsonl`) |
 
-Chaos verifiers at [scripts/chaos/](../scripts/chaos/) inject faults and assert the corresponding probe catches them — `run-all.sh` runs the full battery.
+Chaos verifiers at [scripts/chaos/](../scripts/chaos/) inject faults and assert the corresponding probe catches them -- `run-all.sh` runs the full battery.
 
 ## Stop-hook behavioral detectors
 
@@ -237,12 +237,12 @@ Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py),
 | `abandon_check` | Spawned an Agent for KB work instead of using HME tools directly |
 | `stop_work` | Final turn is dismissive ("no response requested", "all done") or text-only and < 200 chars |
 | `fabrication_check` | Asserted a quantitative pipeline invariant ("held steady", "stayed constant") without reading the artifact that would prove it |
-| `early_stop` | Open-ended HME round ("do all" / "anything missing" / "push further") + final text enumerated remaining gaps + no tool calls followed. KB `dae793e748f9` — the "anything missing? / do all" ceremony is formally antipattern. |
-| `exhaust_check` | Unconditional sister of `early_stop`: ANY final text with a deferral phrase (`noted not fixed`, `remaining tools`, `TBD:`, `not yet fixed`, `for a future turn`, 30+ phrases) followed by 3+ bullet lines. Doesn't gate on user prompt — enumeration-of-deferred-work is always a violation. Born 2026-04-23 when `early_stop`'s phrase list missed the "Round complete... two minor UX gaps left as-is" closing pattern. |
+| `early_stop` | Open-ended HME round ("do all" / "anything missing" / "push further") + final text enumerated remaining gaps + no tool calls followed. KB `dae793e748f9` -- the "anything missing? / do all" ceremony is formally antipattern. |
+| `exhaust_check` | Unconditional sister of `early_stop`: ANY final text with a deferral phrase (`noted not fixed`, `remaining tools`, `TBD:`, `not yet fixed`, `for a future turn`, 30+ phrases) followed by 3+ bullet lines. Doesn't gate on user prompt -- enumeration-of-deferred-work is always a violation. Born 2026-04-23 when `early_stop`'s phrase list missed the "Round complete... two minor UX gaps left as-is" closing pattern. |
 | `senior_consult_debt` | Touched buddy-paradigm design-space files (`buddy_handoff.py`, `buddy_init.sh`, `BUDDY_SYSTEM.md`, `i/consult`, `i/handoff`) without invoking `i/consult` (verdict `consult-debt`) or invoked `i/consult` but produced zero `# crystallized:` markers in tool_results (verdict `consult-thin`). Quality proxy added per Section C of 0e7fbf4d's review to prevent Goodhart-bait satisfaction. |
-| `ignore_and_trample` | A user message arrived mid-response (Claude Code embeds it as `The user sent a new message while you were working` inside a tool_result) but the agent's NEXT assistant text did not open with `Acknowledged <one-word> input` or `Wrapping up this quickly first.`. Hard block — continuing prior work without acknowledgment is the exact "Sorry — you sent the new message and I just kept going" failure. |
+| `ignore_and_trample` | A user message arrived mid-response (Claude Code embeds it as `The user sent a new message while you were working` inside a tool_result) but the agent's NEXT assistant text did not open with `Acknowledged <one-word> input` or `Wrapping up this quickly first.`. Hard block -- continuing prior work without acknowledgment is the exact "Sorry -- you sent the new message and I just kept going" failure. |
 
-Add a new detector by: (1) create `tools/HME/scripts/detectors/<name>.py` with a `main()` that prints one verdict line, (2) register in `DETECTORS` in `run_all.py`, (3) add a verdict-handling block in `tools/HME/hooks/lifecycle/stop/detectors.sh` (emit `{"decision":"block",...}` JSON to **stdout** for hard-block; print to stderr for informational). Pair with fixture cases in `scripts/detectors/test_detector_chain.py` and a chaos injector under `scripts/chaos/` — an un-chaos-verified detector decays silently into an always-PASS.
+Add a new detector by: (1) create `tools/HME/scripts/detectors/<name>.py` with a `main()` that prints one verdict line, (2) register in `DETECTORS` in `run_all.py`, (3) add a verdict-handling block in `tools/HME/hooks/lifecycle/stop/detectors.sh` (emit `{"decision":"block",...}` JSON to **stdout** for hard-block; print to stderr for informational). Pair with fixture cases in `scripts/detectors/test_detector_chain.py` and a chaos injector under `scripts/chaos/` -- an un-chaos-verified detector decays silently into an always-PASS.
 
 ## Setup
 
@@ -250,7 +250,7 @@ Source tracked in `tools/HME/`. Knowledge base at `tools/HME/KB/` (lance tables,
 
 ## Evolution Loop Integration
 
-HME is the cognitive backbone of every evolution phase. The loop is driven by lifecycle hooks rather than a dedicated subagent — each phase calls HME tools directly.
+HME is the cognitive backbone of every evolution phase. The loop is driven by lifecycle hooks rather than a dedicated subagent -- each phase calls HME tools directly.
 
 | Phase | HME Role | Tools |
 --
@@ -264,9 +264,9 @@ HME is the cognitive backbone of every evolution phase. The loop is driven by li
 
 **After every confirmed round:**
 1. File watcher auto-reindexes (or `hme_admin(action='index')` for batch changes)
-2. `learn(title='...', content='...', category='pattern')` — persist calibration anchors to KB
-3. `learn(action='compact')` — if KB > 30 entries, deduplicate
-4. `learn(action='promote_discovery', id=…)` if a KB entry has matured into a universal principle (promotes into `doc/hme-discoveries.md`)
+2. `learn(title='...', content='...', category='pattern')` -- persist calibration anchors to KB
+3. `learn(action='compact')` -- if KB > 30 entries, deduplicate
+4. `learn(action='promote_discovery', id=...)` if a KB entry has matured into a universal principle (promotes into `doc/hme-discoveries.md`)
 5. Update CLAUDE.md and relevant doc files if architectural rules changed
 
 **Retired:** `output/metrics/journal.md` is no longer an active surface (deprecated). Existing content kept as historical archive; evolution tooling still reads it for past-round context.
@@ -278,8 +278,8 @@ The lab (`lab/run.js` + `lab/sketches.js`) is HME's experimental substrate. Lab 
 **Lab rules (enforced by hooks):**
 - Every `postBoot()` must create AUDIBLE behavior via real monkey-patching
 - No empty sketches (just calling `setActiveProfile` tests nothing)
-- No `V` (validator) in lab — use `Number.isFinite` directly
-- No `crossLayerHelpers` — use inline layer logic
+- No `V` (validator) in lab -- use `Number.isFinite` directly
+- No `crossLayerHelpers` -- use inline layer logic
 - Don't return values from void functions
 
 **Lab + KB cycle:**
@@ -291,29 +291,29 @@ The lab (`lab/run.js` + `lab/sketches.js`) is HME's experimental substrate. Lab 
 
 ## Mandatory Workflow
 
-The per-session walkthrough that enforces this workflow is specified in [HME_ONBOARDING_FLOW.md](HME_ONBOARDING_FLOW.md) — a linear state machine driven by a chain-decider middleman ([onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py)) living inside the MCP server. New sessions start in state `boot` and graduate only after one full loop (selftest → evolve → edit → review → pipeline → commit → learn). The KB briefing that used to be a separate `read(target, mode='before')` step is now auto-chained into every `Edit` via the pretooluse hook.
+The per-session walkthrough that enforces this workflow is specified in [HME_ONBOARDING_FLOW.md](HME_ONBOARDING_FLOW.md) -- a linear state machine driven by a chain-decider middleman ([onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py)) living inside the MCP server. New sessions start in state `boot` and graduate only after one full loop (selftest -> evolve -> edit -> review -> pipeline -> commit -> learn). The KB briefing that used to be a separate `read(target, mode='before')` step is now auto-chained into every `Edit` via the pretooluse hook.
 
 ### Before Editing Code
 
-The `pretooluse_edit.sh` hook surfaces KB constraints automatically whenever you call the native `Edit` tool on a file under `/src/`. You do NOT need to call any HME tool first — the briefing is auto-chained into every Edit. KB constraints appear as `systemMessage` on the permission-allow response before the edit runs.
+The `pretooluse_edit.sh` hook surfaces KB constraints automatically whenever you call the native `Edit` tool on a file under `/src/`. You do NOT need to call any HME tool first -- the briefing is auto-chained into every Edit. KB constraints appear as `systemMessage` on the permission-allow response before the edit runs.
 
-The full-briefing internal function (`read(target, mode='before')`) still exists as a hidden utility for scripted use, but agents never call it directly — hooks handle everything transparently.
+The full-briefing internal function (`read(target, mode='before')`) still exists as a hidden utility for scripted use, but agents never call it directly -- hooks handle everything transparently.
 
 ### After Code Changes
 
-1. **`i/review mode=forget`** — auto-detects changed files from git. Checks against KB constraints, boundary rules, L0 channels, doc needs. Optionally pass `changed_files=file1.js,file2.js` to override.
+1. **`i/review mode=forget`** -- auto-detects changed files from git. Checks against KB constraints, boundary rules, L0 channels, doc needs. Optionally pass `changed_files=file1.js,file2.js` to override.
 2. File watcher auto-reindexes on save (5s debounce, 5min cooldown between full reindexes)
 3. For batch changes: `i/hme-admin action=index` once at the end
 
 ### After Confirmed Round
 
-1. `i/learn title=… content=… category=pattern` for calibration anchors, decisions, anti-patterns
+1. `i/learn title=... content=... category=pattern` for calibration anchors, decisions, anti-patterns
 2. Use `tags=supersedes:<id>` / `tags=derived_from:<id>` / `tags=contradicts:<id>` to link related entries (see `i/why mode=kb-context <id>` for traversal)
 3. Update docs: CLAUDE.md, relevant doc/*.md files
 
 ### For Any Search
 
-Use `i/learn query=…` for KB semantic search, `i/trace target=…` for signal flow / caller chains, or the native `Grep` tool (which is passthru-enriched with KB context via the HME hook). All searches add KB cross-referencing that bare Grep misses.
+Use `i/learn query=...` for KB semantic search, `i/trace target=...` for signal flow / caller chains, or the native `Grep` tool (which is passthru-enriched with KB context via the HME hook). All searches add KB cross-referencing that bare Grep misses.
 
 ### When Pipeline Fails
 
@@ -323,21 +323,21 @@ Read pipeline output, then `i/evolve focus=blast query=<symbol>` for dependency 
 
 Three orthogonal observability surfaces cover the entire "what's happening in HME right now" question space:
 
-- **`i/state`** — snapshot of every state machine (onboarding, NEXUS, pipeline lock, fingerprint verdict, KB freshness, HCI multi-timescale phase, last hot-reload, pending KB drafts) in one ~10-line view.
-- **`i/why mode=…`** — causality. 14 modes spanning verifier internals (`mode=verifier <name>`), HCI regression (`mode=hci-drop`), KB structure (`mode=kb-graph` / `mode=kb-context <id>`), pre-edit prediction (`mode=predict <file>`), ground-truth signatures (`mode=conscience`), tensegrity-shape (`mode=fractal-shape`), and free-text retrieval (`mode=search` / `--deep`). Run `i/help why` for the full list.
-- **`i/timeline`** — chronological audit trail of silent automations (auto-reload, KB drafts, fs_watcher events, hook firings) joined into one run-length-collapsed view. Default 30m window; `window=5m|1h` to narrow/widen.
+- **`i/state`** -- snapshot of every state machine (onboarding, NEXUS, pipeline lock, fingerprint verdict, KB freshness, HCI multi-timescale phase, last hot-reload, pending KB drafts) in one ~10-line view.
+- **`i/why mode=...`** -- causality. 14 modes spanning verifier internals (`mode=verifier <name>`), HCI regression (`mode=hci-drop`), KB structure (`mode=kb-graph` / `mode=kb-context <id>`), pre-edit prediction (`mode=predict <file>`), ground-truth signatures (`mode=conscience`), tensegrity-shape (`mode=fractal-shape`), and free-text retrieval (`mode=search` / `--deep`). Run `i/help why` for the full list.
+- **`i/timeline`** -- chronological audit trail of silent automations (auto-reload, KB drafts, fs_watcher events, hook firings) joined into one run-length-collapsed view. Default 30m window; `window=5m|1h` to narrow/widen.
 
 See [doc/HME_HORIZONS.md](HME_HORIZONS.md) for the architectural trajectory each tool advances.
 
 ## Testing & Chaos
 
-HME ships three smoke-test scripts and a chaos-injection battery. Run any directly — they're self-contained bash scripts that boot the components they need and tear down on exit.
+HME ships three smoke-test scripts and a chaos-injection battery. Run any directly -- they're self-contained bash scripts that boot the components they need and tear down on exit.
 
 | Script | What it asserts |
 | --- | --- |
 | `scripts/test/smoke-test-i-wrappers.sh` | Every `i/*` shell wrapper resolves + returns a non-error response |
-| `scripts/test/smoke-test-indexing-mode.sh` | Full `/indexing-mode` cycle: daemon+worker reachable → coder suspended → embedders reloaded → index runs → coder respawns healthy → selftest still READY |
-| `scripts/test/test-lifecycle-writers.py` | Unit test for `server/lifecycle_writers.py` — 7 assertions covering registry load, accept/reject/unknown-domain, override rejection, idempotency |
+| `scripts/test/smoke-test-indexing-mode.sh` | Full `/indexing-mode` cycle: daemon+worker reachable -> coder suspended -> embedders reloaded -> index runs -> coder respawns healthy -> selftest still READY |
+| `scripts/test/test-lifecycle-writers.py` | Unit test for `server/lifecycle_writers.py` -- 7 assertions covering registry load, accept/reject/unknown-domain, override rejection, idempotency |
 
 Chaos injectors live in `scripts/chaos/`:
 
@@ -347,7 +347,7 @@ Chaos injectors live in `scripts/chaos/`:
 | `inject-duplicate-llama-server.sh` | Spawns a decoy process matching the llama-server pgrep pattern; asserts the `llama-server count` probe catches the count exceeding topology |
 | `run-all.sh` | Runs every injector as a battery; any injector whose probe doesn't catch it is a dead probe |
 
-Run after any selftest-probe change: `bash scripts/chaos/run-all.sh`. A probe that can't detect the fault it was written to catch is worse than no probe — it produces false confidence.
+Run after any selftest-probe change: `bash scripts/chaos/run-all.sh`. A probe that can't detect the fault it was written to catch is worse than no probe -- it produces false confidence.
 
 ## Operator Commands
 
@@ -356,13 +356,13 @@ Run after any selftest-probe change: `bash scripts/chaos/run-all.sh`. A probe th
 | `i/hme-admin action=selftest` | Full self-check; ~15 probes covering tool registration, docs, index, KB, llamacpp, version consistency, single-writer invariants, timeseries drift |
 | `i/hme-admin action=health` | Operator triage view: daemon PID+uptime, worker PID+uptime, llama aliases, /health states, per-GPU VRAM, recent errors, version banner, single-writer domain snapshot |
 | `i/hme-admin action=reload modules=<name>` | Hot-reload one or more tool modules without restarting the worker (runs against `tool_registry._TOOLS`) |
-| `i/hme-admin action=index` | Incremental reindex. R97: now routes through the daemon's GPU-orchestrated `indexing-mode` (same path as `clear_index`) instead of calling `_index_main` directly — eliminates the coder-on-GPU1 race that used to corrupt CUDA context every reindex. |
-| `i/hme-admin action=clear_index` | Full reindex via daemon's GPU-orchestrated indexing-mode (suspends coder → moves embedders to cuda:1 → indexes → restores) |
+| `i/hme-admin action=index` | Incremental reindex. R97: now routes through the daemon's GPU-orchestrated `indexing-mode` (same path as `clear_index`) instead of calling `_index_main` directly -- eliminates the coder-on-GPU1 race that used to corrupt CUDA context every reindex. |
+| `i/hme-admin action=clear_index` | Full reindex via daemon's GPU-orchestrated indexing-mode (suspends coder -> moves embedders to cuda:1 -> indexes -> restores) |
 
 ### Indexing-mode: pinned, no migration (R97)
 
 Prior incarnations of indexing-mode suspended coder, migrated embedders
-cuda:0 → cuda:1 for dedicated throughput, ran the index, and migrated
+cuda:0 -> cuda:1 for dedicated throughput, ran the index, and migrated
 them back. That migration dance repeatedly triggered "CUDA error: illegal
 memory access" because M40 Maxwell + PyTorch's caching allocator don't
 survive frequent `model.to(device)` churn. Every prior session's "implement
@@ -374,7 +374,7 @@ stay pinned to their boot-time device (`HME_RAG_GPU=0`, cuda:0). Indexing
 runs in-place on whatever GPU they occupy. Coder stays up throughout.
 
 The ~30% embedder throughput cost from sharing cuda:0 with arbiter during
-indexing is accepted — it's orders of magnitude cheaper than the 45+
+indexing is accepted -- it's orders of magnitude cheaper than the 45+
 minutes of manual recovery each migration-caused CUDA corruption used to
 cost. If cuda:0's VRAM pressure becomes a real problem in the future,
 lower `HME_CODE_EMBED_BATCH` or `max_seq_length` rather than reintroducing
@@ -389,7 +389,7 @@ automated code path should set it.
 [rag_engines.py:reload_on_device](../tools/HME/service/rag_engines.py). If
 a migration ever does happen (via the escape hatch) and corrupts CUDA,
 the worker self-exits via `os._exit(98)` and the proxy supervisor
-respawns it with a fresh CUDA context — zero manual intervention.
+respawns it with a fresh CUDA context -- zero manual intervention.
 | `i/hme --version` | Print cli / proxy / worker versions and warn on drift |
 
 **KB entries worth querying when working on HME internals:**
@@ -406,7 +406,7 @@ The 2026-04-22 indexing-mode incident ([7 root causes](../tools/HME/KB/)) was pe
 | PYTORCH_CUDA_ALLOC_CONF timing | `2a6479eb0877` | `i/learn query="PYTORCH_CUDA_ALLOC_CONF"` |
 | planned-restart cooldown bypass | `743b9ddea0a2` | `i/learn query="planned restart cooldown"` |
 
-These entries document the root-cause chain end-to-end, not just the symptoms. Before touching `llamacpp_daemon.py`, `rag_engines.py`, or the indexing-mode flow, query the relevant entry — tonight's 6-hour investigation is a one-liner away.
+These entries document the root-cause chain end-to-end, not just the symptoms. Before touching `llamacpp_daemon.py`, `rag_engines.py`, or the indexing-mode flow, query the relevant entry -- tonight's 6-hour investigation is a one-liner away.
 
 **Programmatic arbiter health** (from `Arbiter.ts`):
 
@@ -447,13 +447,13 @@ The loop drives until `max_iterations` is reached or `done_signal` appears in th
 | Field | Description |
 --
 | `enabled` | `true` to activate (set `false` to pause without deleting) |
-| `iteration` | Auto-incremented by the hook — do not set manually |
+| `iteration` | Auto-incremented by the hook -- do not set manually |
 | `max_iterations` | Hard cap (0 = unlimited) |
 | `done_signal` | String Claude outputs to signal completion |
 
 The prompt body (everything after the second ``) is injected verbatim as the next user prompt.
 
-**Note:** Hooks are registered in top-level `~/.claude/settings.json` and pick up edits at the next session start. The `HME@polychron-local` plugin has been retired — no plugin cache refresh is required.
+**Note:** Hooks are registered in top-level `~/.claude/settings.json` and pick up edits at the next session start. The `HME@polychron-local` plugin has been retired -- no plugin cache refresh is required.
 
 ## When to Use What
 
@@ -468,20 +468,20 @@ The prompt body (everything after the second ``) is injected verbatim as the nex
 | Find exact variable name | `find("varName", mode="grep")` |
 | Check KB for stale entries | `learn(action='health')` |
 | Understand a module deeply | `read("moduleName", mode="story")` |
-| Preview rename impact | `find("oldName→newName", mode="rename")` |
+| Preview rename impact | `find("oldName->newName", mode="rename")` |
 | What should I work on next? | `evolve()` |
 | Post-pipeline review | `review()` or `review(mode='full')` |
 | Trace a signal through the system | `trace("emergentRhythm")` |
 | Search the KB | `learn(query='coupling constraints')` |
 | Add a KB entry | `learn(title='...', content='...', category='pattern')` |
 | Enrich a prompt with project context | `enrich_prompt(prompt='...', frame='focus on...')` |
-| Search 2-3 specific files | Read tool (not HME — overkill) |
+| Search 2-3 specific files | Read tool (not HME -- overkill) |
 
-## The Public Tool Surface — Complete Reference
+## The Public Tool Surface -- Complete Reference
 
-Six agent-callable MCP tools route every public capability: `evolve`, `review`, `learn`, `trace`, `hme_admin`, and `hme_todo` (hierarchical todo). Internal helpers (`search_code`, `find_callers`, `module_intel`, `before_editing`, etc.) are called BY these tools — agents never invoke them directly. The `read` tool exists as a hidden utility auto-chained into the Edit hook.
+Six agent-callable MCP tools route every public capability: `evolve`, `review`, `learn`, `trace`, `hme_admin`, and `hme_todo` (hierarchical todo). Internal helpers (`search_code`, `find_callers`, `module_intel`, `before_editing`, etc.) are called BY these tools -- agents never invoke them directly. The `read` tool exists as a hidden utility auto-chained into the Edit hook.
 
-### 1. `evolve(focus)` — "What should I work on next?"
+### 1. `evolve(focus)` -- "What should I work on next?"
 
 | focus | What it does |
 --
@@ -491,11 +491,11 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 | `"pipeline"` | Pipeline-based evolution suggestions |
 | `"patterns"` | Meta-patterns across journal rounds: confirm rates, subsystem receptivity |
 | `"seed"` | Auto-generate starter KB entries for high-dependency modules with zero coverage |
-| `"contradict"` | Full KB pairwise contradiction scan — finds conflicting entries, suggests resolution |
-| `"stress"` | Adversarial self-play — 35 enforcement probes across LIFESAVER, hooks, ESLint, feedback graph, selftest |
-| `"invariants"` | Declarative invariant battery — loads checks from `config/invariants.json`. 10 check types, extensible without Python changes |
+| `"contradict"` | Full KB pairwise contradiction scan -- finds conflicting entries, suggests resolution |
+| `"stress"` | Adversarial self-play -- 35 enforcement probes across LIFESAVER, hooks, ESLint, feedback graph, selftest |
+| `"invariants"` | Declarative invariant battery -- loads checks from `config/invariants.json`. 10 check types, extensible without Python changes |
 
-### 2. `review(mode, ...)` — Post-pipeline review hub
+### 2. `review(mode, ...)` -- Post-pipeline review hub
 
 | mode | Extra params | What it does |
 -
@@ -512,7 +512,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 | `"docs"` | | Verify docs match implementation |
 | `"full"` | | Sequential: digest + regime + trust |
 
-### 3. `read(target, mode)` — Smart code reader
+### 3. `read(target, mode)` -- Smart code reader
 
 **Auto-detection** (mode="auto", default): format determines behavior.
 
@@ -520,7 +520,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 
 | `"src/path/file.js"` | File structure + KB context |
 | `"src/path/file.js:10-50"` | Extract lines 10-50 |
-| `"src/path/file.js:42"` | Line 42 ± 10 lines context |
+| `"src/path/file.js:42"` | Line 42 +/- 10 lines context |
 | `"functionName"` (camelCase) | Get function body, or module story if it's a src/ module |
 | `"anything else"` | Semantic code search (top 5) |
 
@@ -538,7 +538,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 | `"callers"` | All call sites of the target |
 | `"deps"` | Dependency graph for a file |
 
-### 4. `learn(...)` — Unified KB interface
+### 4. `learn(...)` -- Unified KB interface
 
 **Auto-detection** from parameters (no mode needed):
 
@@ -556,25 +556,25 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 | `"compact"` | Deduplicate similar entries (threshold=0.85) |
 | `"export"` | Export entire KB as markdown |
 | `"graph"` | Spreading-activation knowledge graph (uses `query`) |
-| `"dream"` | Pairwise similarity pass — discover hidden connections |
+| `"dream"` | Pairwise similarity pass -- discover hidden connections |
 | `"health"` | KB staleness check (stale file refs, wrong line counts) |
 
 **Categories:** `architecture`, `decision`, `pattern`, `bugfix`, `general`
 **Relation types:** `caused_by`, `fixed_by`, `depends_on`, `contradicts`, `similar_to`, `supersedes`
 
-### 5. `trace(target, mode, section, limit)` — Signal flow tracing
+### 5. `trace(target, mode, section, limit)` -- Signal flow tracing
 
 | mode | What it does |
 -
-| `"auto"` (default) | Detects: beat key (S3/2:1:3:0/400) → snapshot; L0 channel → cascade; else → module |
+| `"auto"` (default) | Detects: beat key (S3/2:1:3:0/400) -> snapshot; L0 channel -> cascade; else -> module |
 | `"snapshot"` | Full state at one beat: regime, trust, coupling labels, notes. Beat key formats: `S3`, `2:1:3:0`, `400` |
 | `"cascade"` | L0 channel cascade trace, 3 hops deep |
 | `"module"` | Per-section trace: regime, tension, trust scores, value ranges |
-| `"causal"` | Causal trace: constant → controller → metric → musical effect |
+| `"causal"` | Causal trace: constant -> controller -> metric -> musical effect |
 | `"interaction"` | Correlate two modules' trust scores: cooperative/competitive/independent |
 | `"delta"` | Compare current vs previous pipeline run: feature deltas, regime shifts, trust changes |
 
-### 6. `hme_admin(action, modules, antipattern, hook_target)` — HME maintenance
+### 6. `hme_admin(action, modules, antipattern, hook_target)` -- HME maintenance
 
 | action | What it does |
 
@@ -589,7 +589,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 
 `hook_target` options: `pretooluse_bash`, `pretooluse_edit`, `pretooluse_read`, `pretooluse_grep`, `pretooluse_write`, `posttooluse_bash`, `stop`, `userpromptsubmit`.
 
-`enrich_prompt` is an internal function accessible via HTTP shim (`/enrich_prompt`) — not an MCP tool.
+`enrich_prompt` is an internal function accessible via HTTP shim (`/enrich_prompt`) -- not an MCP tool.
 
 ## Knowledge KB
 
@@ -597,7 +597,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 
 | Category | Count | What to Store | Example |
 --
-| `architecture` | 27 | Boundary rules, module profiles, system topology | "feedbackOscillator — 198 lines, highest hotspot rate 31.7%" |
+| `architecture` | 27 | Boundary rules, module profiles, system topology | "feedbackOscillator -- 198 lines, highest hotspot rate 31.7%" |
 | `decision` | 17 | Calibration anchors, threshold choices, confirmed rounds | "R80 LEGENDARY: complexity triple-bridge" |
 | `pattern` | 15 | Anti-patterns, proven patterns, evolution recipes | "antagonism bridge: couple BOTH sides of antagonist pair" |
 | `bugfix` | 9 | Root causes, fixes, prevention rules | "perceptual OOM: force CPU when llama.cpp warm contexts resident" |
@@ -608,20 +608,20 @@ All hooks live in `tools/HME/hooks/` as standalone scripts, registered in `hooks
 
 ### Activity Bridge
 
-Phase 1 of the [openshell feature mapping](openshell_features_to_mimic.md). Hooks emit structured events into `output/metrics/hme-activity.jsonl` (gitignored, append-only). Every line is one JSON object: `{event, ts, session, ...}`. The shared writer is `tools/HME/activity/emit.py` — a zero-dependency CLI invoked from bash hooks in the background.
+Phase 1 of the [openshell feature mapping](openshell_features_to_mimic.md). Hooks emit structured events into `output/metrics/hme-activity.jsonl` (gitignored, append-only). Every line is one JSON object: `{event, ts, session, ...}`. The shared writer is `tools/HME/activity/emit.py` -- a zero-dependency CLI invoked from bash hooks in the background.
 
 | Event | Source | Agent-independent? | Fields |
 | --- | --- | --- | --- |
-| `edit_pending` | `pretooluse_edit.sh` (Claude Edit) | no — Claude-only | file, module, hme_read_prior |
-| `file_written` | `watcher.py` filesystem watcher + proxy middleware | **yes** — any editor triggers it | file, module, hme_read_prior |
-| `coherence_violation` | `posttooluse_edit.sh` | no — Claude-only | file, module, reason |
-| `pipeline_start` | `main-pipeline.js` | **yes** — pipeline emits directly | session |
-| `pipeline_run` | `main-pipeline.js` | **yes** — pipeline emits directly | verdict, passed, wall_s, hci |
-| `round_complete` | `main-pipeline.js` | **yes** — pipeline emits directly | verdict, passed, session |
-| `turn_complete` | `stop.sh` | no — Claude-only | session |
-| `inference_call` | `hme_proxy.js` | no — proxy-routed only | model, messages, injected |
+| `edit_pending` | `pretooluse_edit.sh` (Claude Edit) | no -- Claude-only | file, module, hme_read_prior |
+| `file_written` | `watcher.py` filesystem watcher + proxy middleware | **yes** -- any editor triggers it | file, module, hme_read_prior |
+| `coherence_violation` | `posttooluse_edit.sh` | no -- Claude-only | file, module, reason |
+| `pipeline_start` | `main-pipeline.js` | **yes** -- pipeline emits directly | session |
+| `pipeline_run` | `main-pipeline.js` | **yes** -- pipeline emits directly | verdict, passed, wall_s, hci |
+| `round_complete` | `main-pipeline.js` | **yes** -- pipeline emits directly | verdict, passed, session |
+| `turn_complete` | `stop.sh` | no -- Claude-only | session |
+| `inference_call` | `hme_proxy.js` | no -- proxy-routed only | model, messages, injected |
 
-Query the stream via `status(mode='activity')` — surfaces event counts, coherence ratio (writes with vs. without prior HME read), pipeline runs, and recent writes. Window defaults to "round" (events since last `round_complete`).
+Query the stream via `status(mode='activity')` -- surfaces event counts, coherence ratio (writes with vs. without prior HME read), pipeline runs, and recent writes. Window defaults to "round" (events since last `round_complete`).
 
 The bridge is additive: no state is kept outside the JSONL itself, and `activity_digest.py` reads the tail lazily. Phases 2 and 3 share this event stream.
 
@@ -631,9 +631,9 @@ Phase 2 of the feature mapping. `tools/HME/proxy/hme_proxy.js` is a Node.js HTTP
 
 Every request is scanned stateless-ly: the full `messages` array is walked for `tool_use` blocks and write-bearing tool calls (`Edit`, `Write`, `NotebookEdit`). Every call emits one `inference_call` event into `output/metrics/hme-activity.jsonl`.
 
-The legacy `write_without_hme_read` / `inference_write_without_hme_read` detection was retired (Apr 2026). It enforced a legacy-MCP contract ("did the agent explicitly invoke `HME_read` before Edit?") that no longer maps to the architecture — HME read now happens via `Bash(i/hme-read …)` shell wrappers AND every `Edit` / `Read` tool_result is auto-enriched with KB context by the `edit_context.js` / `read_context.js` / `dir_context.js` middleware. The detector was firing false positives on 100% of edits; check-hme-coherence was aborting the pipeline over 200+ false violations per round.
+The legacy `write_without_hme_read` / `inference_write_without_hme_read` detection was retired (Apr 2026). It enforced a legacy-MCP contract ("did the agent explicitly invoke `HME_read` before Edit?") that no longer maps to the architecture -- HME read now happens via `Bash(i/hme-read ...)` shell wrappers AND every `Edit` / `Read` tool_result is auto-enriched with KB context by the `edit_context.js` / `read_context.js` / `dir_context.js` middleware. The detector was firing false positives on 100% of edits; check-hme-coherence was aborting the pipeline over 200+ false violations per round.
 
-Streaming SSE responses pipe through verbatim — no buffering, no latency penalty. The proxy never modifies request bodies in v1 (observability only). System-prompt injection is deliberately deferred to a future phase so the observation signal can be validated in isolation.
+Streaming SSE responses pipe through verbatim -- no buffering, no latency penalty. The proxy never modifies request bodies in v1 (observability only). System-prompt injection is deliberately deferred to a future phase so the observation signal can be validated in isolation.
 
 Test mode: `node tools/HME/proxy/hme_proxy.js --test < payload.json` prints the scan result and exits non-zero on violation. Used by unit tests without spinning up a listener.
 
@@ -641,21 +641,21 @@ Test mode: `node tools/HME/proxy/hme_proxy.js --test < payload.json` prints the 
 
 Phase 3 of the feature mapping. `scripts/pipeline/check-hme-coherence.js` runs as a PRE_COMPOSITION step in `main-pipeline.js` (after `check-registration-coherence`, before `check-safe-preboot-audit`). It reads the activity stream, slices to the current round (events since the last `round_complete`), and fails the pipeline if any `coherence_violation` events fired.
 
-As of Apr 2026, the `write_without_hme_read` variant of `coherence_violation` is no longer emitted (see "Inference Proxy" above for rationale). `productive_incoherence` events still fire for exploratory writes into KB-uncovered modules — those are suggestion signal, not violations, and do not fail the pipeline.
+As of Apr 2026, the `write_without_hme_read` variant of `coherence_violation` is no longer emitted (see "Inference Proxy" above for rationale). `productive_incoherence` events still fire for exploratory writes into KB-uncovered modules -- those are suggestion signal, not violations, and do not fail the pipeline.
 
-Output: `output/metrics/hme-violations.json` — a full audit record with meta (window size, write coverage %), violations array (split by hook vs proxy source), and ISO timestamps. Picked up by `posttooluse_bash.sh`'s LIFESAVER scanner when the pipeline completes.
+Output: `output/metrics/hme-violations.json` -- a full audit record with meta (window size, write coverage %), violations array (split by hook vs proxy source), and ISO timestamps. Picked up by `posttooluse_bash.sh`'s LIFESAVER scanner when the pipeline completes.
 
 ### KB Staleness Index
 
 Phase 2.2 of the feature mapping. `scripts/pipeline/build-kb-staleness-index.py` runs as a POST_COMPOSITION step, cross-references KB entry timestamps (lance `knowledge` table) against source-file mtimes and `file_written` events from the activity bridge, and writes `output/metrics/kb-staleness.json`. Every module lands in one of three buckets:
 
-- **FRESH** — most recent KB entry touching the module is newer than (or within `HME_STALENESS_STALE_DAYS`, default 7d, of) the last file write.
-- **STALE** — module has KB coverage but edits have outpaced it by > threshold.
-- **MISSING** — no KB entry mentions the module at all.
+- **FRESH** -- most recent KB entry touching the module is newer than (or within `HME_STALENESS_STALE_DAYS`, default 7d, of) the last file write.
+- **STALE** -- module has KB coverage but edits have outpaced it by > threshold.
+- **MISSING** -- no KB entry mentions the module at all.
 
 Surfaced via `status(mode='staleness')`. Read by the inference proxy at request time to annotate jurisdiction injections (see below) and by the coherence-score computer.
 
-Matching uses word-boundary regex on title/tags (primary) and content (only for stems ≥6 chars), so short names like "Motif" don't over-match generic prose.
+Matching uses word-boundary regex on title/tags (primary) and content (only for stems >=6 chars), so short names like "Motif" don't over-match generic prose.
 
 ### Round Coherence Score
 
@@ -666,8 +666,8 @@ coherence_score = read_coverage * violation_penalty * staleness_penalty
 ```
 
 - `read_coverage` = `file_written` events with `hme_read_prior=true` / total writes
-- `violation_penalty` = `max(0, 1 − violation_count × 0.1)`
-- `staleness_penalty` = 1 − (touches on STALE/MISSING modules / touches with index info)
+- `violation_penalty` = `max(0, 1 - violation_count * 0.1)`
+- `staleness_penalty` = 1 - (touches on STALE/MISSING modules / touches with index info)
 
 Output: `output/metrics/hme-coherence.json` with score, delta vs previous round, and per-component breakdown. Surfaced via `status(mode='coherence')`.
 
@@ -676,10 +676,10 @@ Output: `output/metrics/hme-coherence.json` with score, delta vs previous round,
 Phase 2.4 of the feature mapping. `tools_analysis/blindspots.py` walks the full activity-bridge history, splits events into closed rounds at each `round_complete`, and over the last N rounds (default 10, `HME_BLINDSPOT_WINDOW` env var) computes three coverage gaps:
 
 - Subsystems (utils/conductor/rhythm/time/composers/fx/crossLayer/writer/play) with zero `file_written` events in the window
-- Modules written chronically without a prior HME read (≥2 occurrences)
+- Modules written chronically without a prior HME read (>=2 occurrences)
 - Touched modules that have no KB coverage at all (cross-reference with the staleness index)
 
-Surfaced via `status(mode='blindspots')`. Factual coverage data, not a critique — the decision about whether to rotate attention remains the agent's.
+Surfaced via `status(mode='blindspots')`. Factual coverage data, not a critique -- the decision about whether to rotate attention remains the agent's.
 
 ### Causal Cascade Indexing
 
@@ -714,29 +714,29 @@ Set `HME_PROXY_INJECT=0` to disable injection and run the proxy in pure observab
 
 ### Hypothesis Lifecycle Registry
 
-Phase 3.1 of the feature mapping. Every causal claim the Evolver makes about the system gets a first-class machine-queryable record in `output/metrics/hme-hypotheses.json` — proposer round, claim, **falsification criterion**, list of rounds in which the hypothesis was tested, status (OPEN/CONFIRMED/REFUTED/INCONCLUSIVE/ABANDONED), and the modules it applies to.
+Phase 3.1 of the feature mapping. Every causal claim the Evolver makes about the system gets a first-class machine-queryable record in `output/metrics/hme-hypotheses.json` -- proposer round, claim, **falsification criterion**, list of rounds in which the hypothesis was tested, status (OPEN/CONFIRMED/REFUTED/INCONCLUSIVE/ABANDONED), and the modules it applies to.
 
 CRUD via the existing `learn` tool (no new top-level tool):
 
-- `learn(action='hypothesize', title=CLAIM, content=FALSIFIER, tags=[modules], query=ROUND, listening_notes=evidence)` — register
-- `learn(action='hypothesis_test', remove=ID, content=VERDICT, query=ROUND, listening_notes=evidence)` — record a test
-- `learn(action='hypotheses')` or `status(mode='hypotheses')` — list all, grouped by status
+- `learn(action='hypothesize', title=CLAIM, content=FALSIFIER, tags=[modules], query=ROUND, listening_notes=evidence)` -- register
+- `learn(action='hypothesis_test', remove=ID, content=VERDICT, query=ROUND, listening_notes=evidence)` -- record a test
+- `learn(action='hypotheses')` or `status(mode='hypotheses')` -- list all, grouped by status
 
-The proxy loads OPEN hypotheses at request time and injects them for any write target whose module appears in a hypothesis's modules list — so the Evolver sees relevant standing claims before it makes an edit that might confirm or refute them.
+The proxy loads OPEN hypotheses at request time and injects them for any write target whose module appears in a hypothesis's modules list -- so the Evolver sees relevant standing claims before it makes an edit that might confirm or refute them.
 
 ### Productive Incoherence Detection
 
 Phase 3.2 of the feature mapping. The coherence score previously penalized every write-without-HME-read equally. `posttooluse_edit.sh` cross-references the KB staleness index at emit time and emits:
 
-- **Productive incoherence** — module has MISSING KB coverage, so there was nothing meaningful to read first. Emits `productive_incoherence` (rewarded) plus a `learn_suggested` hint for the Evolver to capture findings afterward.
+- **Productive incoherence** -- module has MISSING KB coverage, so there was nothing meaningful to read first. Emits `productive_incoherence` (rewarded) plus a `learn_suggested` hint for the Evolver to capture findings afterward.
 
-The companion "lazy violation" branch (FRESH-coverage + no read-before) was retired with the rest of the `write_without_hme_read` detector — auto-enrichment middleware covers that case without needing a manual read. `productive_incoherence` survives because the MISSING-coverage signal is genuinely useful (suggests `learn()`) rather than a false-alarm source.
+The companion "lazy violation" branch (FRESH-coverage + no read-before) was retired with the rest of the `write_without_hme_read` detector -- auto-enrichment middleware covers that case without needing a manual read. `productive_incoherence` survives because the MISSING-coverage signal is genuinely useful (suggests `learn()`) rather than a false-alarm source.
 
 `compute-coherence-score.js` gains an `exploration_bonus` term:
 
 ```
-score = read_coverage × violation_penalty × staleness_penalty × exploration_bonus
-exploration_bonus = 1 + min(0.2, productive_incoherence_count × 0.05)
+score = read_coverage * violation_penalty * staleness_penalty * exploration_bonus
+exploration_bonus = 1 + min(0.2, productive_incoherence_count * 0.05)
 ```
 
 A round with 4+ productive explorations can gain up to +20% on top of the base score. Keeps HME disciplined in well-understood territory while actively rewarding the Evolver for pushing into uncharted ground.
@@ -745,11 +745,11 @@ A round with 4+ productive explorations can gain up to +20% on top of the base s
 
 Phase 3.3 of the feature mapping. Staleness says "the file was edited after the KB entry". Drift says "even if the KB entry is recent, the module's structural relationships have shifted enough that the description is likely wrong". Two scripts implement this:
 
-- `scripts/pipeline/capture-kb-signatures.py` — bootstraps/refreshes `output/metrics/kb-signatures.json`. For every KB entry, picks a candidate module (from title → tags → content), then computes a mechanical structural signature: caller count (from dependency graph), provides/consumes globals, bias registration keys, firewall ports, L0 channel reads/writes, content hash prefix. Captured at learn time; re-run to refresh baselines.
+- `scripts/pipeline/capture-kb-signatures.py` -- bootstraps/refreshes `output/metrics/kb-signatures.json`. For every KB entry, picks a candidate module (from title -> tags -> content), then computes a mechanical structural signature: caller count (from dependency graph), provides/consumes globals, bias registration keys, firewall ports, L0 channel reads/writes, content hash prefix. Captured at learn time; re-run to refresh baselines.
 
-- `scripts/pipeline/check-kb-semantic-drift.py` — runs every pipeline. Re-derives each module's current signature and diffs against the baseline. Entries with ≥2 structural differences (tunable via `HME_DRIFT_THRESHOLD`) are flagged in `output/metrics/hme-semantic-drift.json`. Surfaced via `status(mode='drift')`.
+- `scripts/pipeline/check-kb-semantic-drift.py` -- runs every pipeline. Re-derives each module's current signature and diffs against the baseline. Entries with >=2 structural differences (tunable via `HME_DRIFT_THRESHOLD`) are flagged in `output/metrics/hme-semantic-drift.json`. Surfaced via `status(mode='drift')`.
 
-Parallel signature index, not an extension to the lance schema — works without touching existing KB entries.
+Parallel signature index, not an extension to the lance schema -- works without touching existing KB entries.
 
 ### Prediction Accuracy Scoring
 
@@ -757,51 +757,51 @@ Phase 3.4 of the feature mapping. Every time `trace(target, mode='impact')` runs
 
 A post-composition reconciler (`scripts/pipeline/reconcile-predictions.js`) reads the log + `output/metrics/fingerprint-comparison.json` after the pipeline, then classifies each prediction:
 
-- **Confirmed** — predicted module appears in the fingerprint delta
-- **Refuted** — predicted but didn't shift
-- **Missed** — shifted but was not in any prediction
+- **Confirmed** -- predicted module appears in the fingerprint delta
+- **Refuted** -- predicted but didn't shift
+- **Missed** -- shifted but was not in any prediction
 
-Computes per-round accuracy + an exponential moving average (α=0.2) across 50 rounds into `output/metrics/hme-prediction-accuracy.json`. Surfaced via `status(mode='accuracy')`.
+Computes per-round accuracy + an exponential moving average (alpha=0.2) across 50 rounds into `output/metrics/hme-prediction-accuracy.json`. Surfaced via `status(mode='accuracy')`.
 
 Rising EMA = HME's causal model is learning. Falling EMA = predictions diverging from reality, which is a stronger signal than staleness alone (staleness says a file changed, low accuracy says HME's understanding of what the file *does* is wrong).
 
 ### Pattern Crystallization
 
-Phase 3.5 of the feature mapping. `tools_analysis/crystallizer.py` scans the KB every pipeline for multi-round patterns: groups entries by substantive tag membership (metadata tags like `legendary`/`stable`/`bugfix` blacklisted), then for each tag pools all `R\d+` round references from member content. Clusters with ≥3 members across ≥3 distinct rounds qualify as crystallized patterns and land in `output/metrics/hme-crystallized.json`.
+Phase 3.5 of the feature mapping. `tools_analysis/crystallizer.py` scans the KB every pipeline for multi-round patterns: groups entries by substantive tag membership (metadata tags like `legendary`/`stable`/`bugfix` blacklisted), then for each tag pools all `R\d+` round references from member content. Clusters with >=3 members across >=3 distinct rounds qualify as crystallized patterns and land in `output/metrics/hme-crystallized.json`.
 
 Each pattern record includes: shared tags (strict intersection of member tag sets), pooled round list, synthesis (first sentence of the most recent member), and member KB entry ids for traceability.
 
 Run on demand: `learn(action='crystallize')`. Read: `status(mode='crystallized')`.
 
-Rule-based in v1 — no LLM synthesis. First run promoted 19 patterns from 116 entries (`emergentMelodicEngine` 8 members × 8 rounds, `antagonism-bridge` 6 × 7, `melodic-coupling` 6 × 6, etc.) — exactly the standing principles the Evolver previously had to reconstruct from journal archaeology each session.
+Rule-based in v1 -- no LLM synthesis. First run promoted 19 patterns from 116 entries (`emergentMelodicEngine` 8 members * 8 rounds, `antagonism-bridge` 6 * 7, `melodic-coupling` 6 * 6, etc.) -- exactly the standing principles the Evolver previously had to reconstruct from journal archaeology each session.
 
 ### Musical Ground Truth Correlation
 
-Phase 4.1 of the feature mapping — **the external anchor**. Every previous HME metric (coherence, prediction accuracy, staleness, drift, crystallization) is internally circular. `scripts/pipeline/compute-musical-correlation.js` runs post-composition to correlate HME's self-assessment signals against the actual musical output the pipeline produced:
+Phase 4.1 of the feature mapping -- **the external anchor**. Every previous HME metric (coherence, prediction accuracy, staleness, drift, crystallization) is internally circular. `scripts/pipeline/compute-musical-correlation.js` runs post-composition to correlate HME's self-assessment signals against the actual musical output the pipeline produced:
 
 - `hme_coherence` vs `fingerprint_verdict` (numeric: STABLE=1, EVOLVED=1.1, DRIFTED=0)
 - `hme_coherence` vs `perceptual_complexity_avg` (EnCodec section tension)
 - `hme_coherence` vs `clap_tension` (CLAP query peak)
 - same triplet for `hme_prediction_accuracy`
 
-Computes rolling-window Pearson correlation over the last 20 rounds, keeps 60 rounds of history in `output/metrics/hme-musical-correlation.json`. If the strongest correlation drops below 0.2 over ≥5 points, emits a FATAL warning: HME's self-model has decoupled from musical outcomes and is optimizing its own metrics without that optimization translating to emergence.
+Computes rolling-window Pearson correlation over the last 20 rounds, keeps 60 rounds of history in `output/metrics/hme-musical-correlation.json`. If the strongest correlation drops below 0.2 over >=5 points, emits a FATAL warning: HME's self-model has decoupled from musical outcomes and is optimizing its own metrics without that optimization translating to emergence.
 
-Surfaced via `status(mode='music_truth')`. The correlation trend is the ultimate validator for the entire HME architecture — a perfectly coherent HME that produces musically incoherent compositions has optimized the wrong thing entirely.
+Surfaced via `status(mode='music_truth')`. The correlation trend is the ultimate validator for the entire HME architecture -- a perfectly coherent HME that produces musically incoherent compositions has optimized the wrong thing entirely.
 
 ### Trust-Weighted KB
 
 Phase 4.2 of the feature mapping. Every KB entry gains an epistemic trust weight derived from the round it was written in:
 
 ```
-trust = 0.4 × coherence_at_write
-      + 0.3 × accuracy_at_write
-      + 0.2 × verdict_bonus
-      + 0.1 × age_decay
+trust = 0.4 * coherence_at_write
+      + 0.3 * accuracy_at_write
+      + 0.2 * verdict_bonus
+      + 0.1 * age_decay
 ```
 
-`scripts/pipeline/compute-kb-trust-weights.py` matches each entry's timestamp against the musical-correlation and prediction-accuracy histories (within 14 days), falling back to a 0.5 uniform prior when history is too sparse or distant. Tiers: HIGH ≥ 0.75, MED ≥ 0.5, LOW < 0.5. Requires ≥3 history points before history-derived components activate (otherwise a single degenerate round would drag every entry's trust to the floor).
+`scripts/pipeline/compute-kb-trust-weights.py` matches each entry's timestamp against the musical-correlation and prediction-accuracy histories (within 14 days), falling back to a 0.5 uniform prior when history is too sparse or distant. Tiers: HIGH >= 0.75, MED >= 0.5, LOW < 0.5. Requires >=3 history points before history-derived components activate (otherwise a single degenerate round would drag every entry's trust to the floor).
 
-Output: `output/metrics/kb-trust-weights.json` keyed by entry id with trust score, tier, and per-component breakdown. Parallel index — no modifications to the lance schema.
+Output: `output/metrics/kb-trust-weights.json` keyed by entry id with trust score, tier, and per-component breakdown. Parallel index -- no modifications to the lance schema.
 
 Surfaced via `status(mode='kb_trust')`. The proxy reads this file at injection time and labels injected entries by tier so the Evolver sees *how well HME knows something*, not just *what HME knows*.
 
@@ -809,70 +809,70 @@ Surfaced via `status(mode='kb_trust')`. The proxy reads this file at injection t
 
 Phase 4.3 of the feature mapping. `scripts/pipeline/compute-intention-gap.js` reads the HME todo store (`tools/HME/KB/todos.json`) and cross-references each todo against `file_written` events from the activity bridge. Every trackable todo lands in one of three buckets:
 
-- **fully_executed** — status=completed+done=true AND at least one file/module mentioned in the todo text appears in the round's write events
-- **partially_executed** — status=completed but none of the expected targets were actually written
-- **abandoned** — status=pending/in_progress at round end, with at least one trackable target
+- **fully_executed** -- status=completed+done=true AND at least one file/module mentioned in the todo text appears in the round's write events
+- **partially_executed** -- status=completed but none of the expected targets were actually written
+- **abandoned** -- status=pending/in_progress at round end, with at least one trackable target
 
 Untrackable todos (completed with no file references) are dropped from the gap metric.
 
-Improvement vs doc: doc proposed parsing proposed evolutions out of the prose journal. The todo store gives the same signal in clean JSON form — no fuzzy text parsing. Every todo already has `text`, `status`, `done`, `ts`.
+Improvement vs doc: doc proposed parsing proposed evolutions out of the prose journal. The todo store gives the same signal in clean JSON form -- no fuzzy text parsing. Every todo already has `text`, `status`, `done`, `ts`.
 
-Rolling 30-round EMA in `output/metrics/hme-intention-gap.json`. Surfaced via `status(mode='intention_gap')`. Over many rounds, structural patterns emerge — certain subsystems consistently proposed-but-not-executed (blind spots with extra friction), certain file combinations consistently partial (boundary complexity underestimated).
+Rolling 30-round EMA in `output/metrics/hme-intention-gap.json`. Surfaced via `status(mode='intention_gap')`. Over many rounds, structural patterns emerge -- certain subsystems consistently proposed-but-not-executed (blind spots with extra friction), certain file combinations consistently partial (boundary complexity underestimated).
 
 ### HME Self-Audit
 
 Phase 4.4 of the feature mapping. `tools_analysis/self_audit.py` queries three utility signals and surfaces architectural inefficiencies as *evolution candidates*:
 
-1. **KB category usage** — categories with ≥15 entries and zero retrievals (UNUSED), or ≥10 entries with retrievals < entries/10 (UNDER_QUERIED)
-2. **Silent injections** — proxy `jurisdiction_inject` events not followed by `i/hme-read` in the same session before `round_complete`
-3. **Cascade overconfidence** — prediction-accuracy EMA < 0.5 over ≥5 rounds
+1. **KB category usage** -- categories with >=15 entries and zero retrievals (UNUSED), or >=10 entries with retrievals < entries/10 (UNDER_QUERIED)
+2. **Silent injections** -- proxy `jurisdiction_inject` events not followed by `i/hme-read` in the same session before `round_complete`
+3. **Cascade overconfidence** -- prediction-accuracy EMA < 0.5 over >=5 rounds
 
-Data sources: `tools/HME/KB/knowledge_access.json`, `output/metrics/hme-activity.jsonl`, `output/metrics/hme-prediction-accuracy.json`. Read-only — never modifies anything, just reports.
+Data sources: `tools/HME/KB/knowledge_access.json`, `output/metrics/hme-activity.jsonl`, `output/metrics/hme-prediction-accuracy.json`. Read-only -- never modifies anything, just reports.
 
-Surfaced via `status(mode='self_audit')`. This is the first step toward HME being subject to the same "structural over parametric" and "never delete — implement" laws that govern Polychron itself: when HME identifies a part of its own architecture that isn't working, that becomes an evolution candidate alongside Polychron candidates in Phase 3 selection.
+Surfaced via `status(mode='self_audit')`. This is the first step toward HME being subject to the same "structural over parametric" and "never delete -- implement" laws that govern Polychron itself: when HME identifies a part of its own architecture that isn't working, that becomes an evolution candidate alongside Polychron candidates in Phase 3 selection.
 
 ### Adversarial Self-Probing
 
-Phase 4.5 of the feature mapping. `tools_analysis/probe.py` generates *candidate* probes — deliberately boundary-pushing evolution proposals targeting modules where HME's current model is most likely to be wrong.
+Phase 4.5 of the feature mapping. `tools_analysis/probe.py` generates *candidate* probes -- deliberately boundary-pushing evolution proposals targeting modules where HME's current model is most likely to be wrong.
 
 Candidates are drawn from the intersection of:
 
-1. **Subsystem intersection modules** — modules whose forward edges cross ≥3 distinct subsystems (from the dependency graph). These are structural intersection points where cascade confidence is most likely mis-calibrated.
-2. **KB trust gaps** — modules with NONE or LOW trust-tier KB coverage (score multiplier ×2).
-3. **Cascade accuracy** — if the prediction-accuracy EMA is unknown or below 0.5, everything gets a ×2 multiplier because the cascade model itself is suspect.
+1. **Subsystem intersection modules** -- modules whose forward edges cross >=3 distinct subsystems (from the dependency graph). These are structural intersection points where cascade confidence is most likely mis-calibrated.
+2. **KB trust gaps** -- modules with NONE or LOW trust-tier KB coverage (score multiplier *2).
+3. **Cascade accuracy** -- if the prediction-accuracy EMA is unknown or below 0.5, everything gets a *2 multiplier because the cascade model itself is suspect.
 
 For each candidate, the probe carries a predicted cascade summary (depth-2 forward reach, direct callers, feedback loops) and a predicted_confidence tier. The agent runs the probe in a lab sketch (never `main`), observes the actual outcome, and feeds the delta back into HME's trust weights and cascade model.
 
-Surfaced via `status(mode='probes')`. This module never *runs* a probe — it produces candidates and lets the agent decide which to execute. Controlled failure is more epistemically valuable than repeated success in familiar territory; the probe mechanism gives HME a way to actively stress-test its own model rather than waiting for the agent to accidentally discover blind spots.
+Surfaced via `status(mode='probes')`. This module never *runs* a probe -- it produces candidates and lets the agent decide which to execute. Controlled failure is more epistemically valuable than repeated success in familiar territory; the probe mechanism gives HME a way to actively stress-test its own model rather than waiting for the agent to accidentally discover blind spots.
 
 ### Compositional Trajectory
 
 Phase 5.1 of the feature mapping. `scripts/pipeline/compute-compositional-trajectory.js` fits a linear trend to the last 20 rounds of perceptual signals from `output/metrics/hme-musical-correlation.json`:
 
-- `perceptual_complexity_avg` — average EnCodec section tension
-- `clap_tension` — CLAP tension-query peak similarity
-- `encodec_entropy_avg` — mean codebook entropy
+- `perceptual_complexity_avg` -- average EnCodec section tension
+- `clap_tension` -- CLAP tension-query peak similarity
+- `encodec_entropy_avg` -- mean codebook entropy
 
 Per-signal slope is classified GROWING / PLATEAU / DECLINING against a per-signal threshold. Overall verdict is a majority vote with PLATEAU as the conservative tiebreaker.
 
-Output: `output/metrics/hme-trajectory.json` with per-signal slope/intercept/variance and a rolling 60-round verdict history. Surfaced via `status(mode='trajectory')`. Feeds the coherence budget — when the trajectory shows PLATEAU or DECLINING, HME's guidance shifts toward structural novelty regardless of how well individual rounds are executed.
+Output: `output/metrics/hme-trajectory.json` with per-signal slope/intercept/variance and a rolling 60-round verdict history. Surfaced via `status(mode='trajectory')`. Feeds the coherence budget -- when the trajectory shows PLATEAU or DECLINING, HME's guidance shifts toward structural novelty regardless of how well individual rounds are executed.
 
 ### Coherence Budget (Homeostatic Governance)
 
-Phase 5.2 of the feature mapping — **the inversion point**. The previous phases all optimized HME toward more discipline. This one recognizes that maximum discipline may suppress the productive chaos that generates musical emergence — and instead *calibrates* coherence to an optimal band derived from history.
+Phase 5.2 of the feature mapping -- **the inversion point**. The previous phases all optimized HME toward more discipline. This one recognizes that maximum discipline may suppress the productive chaos that generates musical emergence -- and instead *calibrates* coherence to an optimal band derived from history.
 
 `scripts/pipeline/compute-coherence-budget.js` algorithm:
 
-1. Read musical-correlation history and compute each round's composite musical-outcome score (`0.5 × perceptual_complexity + 0.3 × clap_tension + 0.2 × verdict_numeric`).
-2. Take the top quartile of rounds by outcome — "the good rounds".
+1. Read musical-correlation history and compute each round's composite musical-outcome score (`0.5 * perceptual_complexity + 0.3 * clap_tension + 0.2 * verdict_numeric`).
+2. Take the top quartile of rounds by outcome -- "the good rounds".
 3. The optimal coherence band = [25th, 75th] percentile of `hme_coherence` values in those good rounds.
 4. If history has <8 rounds, use a prior band of [0.55, 0.85].
 5. Classify current coherence as BELOW / OPTIMAL / ABOVE the band and emit a prescription:
-   - **BELOW**: TIGHTEN — proxy injects forcefully (full KB context + bias bounds + open hypotheses)
+   - **BELOW**: TIGHTEN -- proxy injects forcefully (full KB context + bias bounds + open hypotheses)
    - **OPTIMAL**: NORMAL injection
-   - **ABOVE**: RELAX — proxy skips non-critical warnings, allows writes into low-coverage territory without emitting `coherence_violation`, flags the round as "emergence-licensed"
+   - **ABOVE**: RELAX -- proxy skips non-critical warnings, allows writes into low-coverage territory without emitting `coherence_violation`, flags the round as "emergence-licensed"
 
-Output: `output/metrics/hme-coherence-budget.json` with band, current state, and prescription. Surfaced via `status(mode='budget')`. Stops maximizing coherence and starts *governing* it homeostatically — the same pattern Polychron's own conductors use for density, tension, and flicker.
+Output: `output/metrics/hme-coherence-budget.json` with band, current state, and prescription. Surfaced via `status(mode='budget')`. Stops maximizing coherence and starts *governing* it homeostatically -- the same pattern Polychron's own conductors use for density, tension, and flicker.
 
 ### Architectural Negative Space Discovery
 
@@ -880,10 +880,10 @@ Phase 5.3 of the feature mapping. `tools_analysis/negative_space.py` finds struc
 
 Two mechanical detectors (v1 deliberately avoids semantic similarity):
 
-1. **Feedback loop near-misses** — for each registered feedback loop, compute the set of modules whose dependency-graph edges touch ≥⌊|loop|/2⌋ of the loop's participants but aren't themselves registered in the loop. Universal infrastructure modules (those with producer fan-out ≥30) are filtered out so `validator`/`clamps`/`index` don't dominate. Top candidate on first run: `stutterVariants → entropy-regulator` at 1.0 confidence (3/3 participants touched, not in loop).
-2. **Co-consumed orphan pairs** — module pairs imported together by ≥5 shared consumers (excluding universal modules) with no direct producer→consumer edge between them. The architecture treats them as functionally related without explicit wiring. Top result: `stutterNotes ↔ stutterVariants` (20 shared consumers).
+1. **Feedback loop near-misses** -- for each registered feedback loop, compute the set of modules whose dependency-graph edges touch >=⌊|loop|/2⌋ of the loop's participants but aren't themselves registered in the loop. Universal infrastructure modules (those with producer fan-out >=30) are filtered out so `validator`/`clamps`/`index` don't dominate. Top candidate on first run: `stutterVariants -> entropy-regulator` at 1.0 confidence (3/3 participants touched, not in loop).
+2. **Co-consumed orphan pairs** -- module pairs imported together by >=5 shared consumers (excluding universal modules) with no direct producer->consumer edge between them. The architecture treats them as functionally related without explicit wiring. Top result: `stutterNotes <-> stutterVariants` (20 shared consumers).
 
-Surfaced via `status(mode='negative_space')`. These become first-class evolution candidates that the agent didn't have to think of — they emerge from HME's structural model of the system.
+Surfaced via `status(mode='negative_space')`. These become first-class evolution candidates that the agent didn't have to think of -- they emerge from HME's structural model of the system.
 
 ### Cognitive Load Modeling
 
@@ -891,23 +891,23 @@ Phase 5.4 of the feature mapping. HME models Polychron's architecture and its ow
 
 `tools_analysis/cognitive_load.py` walks the activity bridge and computes per-closed-round load signatures: total tool calls, file writes, edit pendings. Maintains a rolling distribution and classifies the current session:
 
-- **LOW** — tool_calls below p50 of historical workload
-- **MEDIUM** — tool_calls above p50
-- **MEDIUM_HIGH** — tool_calls and file_writes both above p75
-- **HIGH** — tool_calls above p90 (top decile of workloads)
+- **LOW** -- tool_calls below p50 of historical workload
+- **MEDIUM** -- tool_calls above p50
+- **MEDIUM_HIGH** -- tool_calls and file_writes both above p75
+- **HIGH** -- tool_calls above p90 (top decile of workloads)
 
-Output: `output/metrics/hme-cognitive-load.json` with current signature, historical distribution, and load level. Surfaced via `status(mode='cognitive_load')`. Needs ≥5 closed rounds before percentile classification activates.
+Output: `output/metrics/hme-cognitive-load.json` with current signature, historical distribution, and load level. Surfaced via `status(mode='cognitive_load')`. Needs >=5 closed rounds before percentile classification activates.
 
-### Reflexivity Model — Injected vs Clean Predictions
+### Reflexivity Model -- Injected vs Clean Predictions
 
-Phase 6.1 of the feature mapping. HME's prediction accuracy scores have been contaminated by HME's own injections: when the cascade indexer predicts that editing X will affect Y and Z, and the proxy surfaces that prediction to the Evolver before the edit, the resulting "confirmation" is partly self-fulfilling — the Evolver knew the prediction and acted on it.
+Phase 6.1 of the feature mapping. HME's prediction accuracy scores have been contaminated by HME's own injections: when the cascade indexer predicts that editing X will affect Y and Z, and the proxy surfaces that prediction to the Evolver before the edit, the resulting "confirmation" is partly self-fulfilling -- the Evolver knew the prediction and acted on it.
 
 Fix: every `cascade_prediction` record carries an `injected: bool` flag. `reconcile-predictions.js` splits predictions into two buckets:
 
-- **Clean bucket** — predictions made post-hoc with no injection influence. True accuracy test of the cascade model.
-- **Injected bucket** — predictions the Evolver saw before acting. Measures *influence*, not *accuracy*.
+- **Clean bucket** -- predictions made post-hoc with no injection influence. True accuracy test of the cascade model.
+- **Injected bucket** -- predictions the Evolver saw before acting. Measures *influence*, not *accuracy*.
 
-A `reflexivity_ratio` per round records what fraction of predicted modules came from injected predictions. High injected-bucket confirmation but flat clean-bucket accuracy means HME is changing what the Evolver does without actually predicting better — influence without understanding. Surfaced via `status(mode='reflexivity')`.
+A `reflexivity_ratio` per round records what fraction of predicted modules came from injected predictions. High injected-bucket confirmation but flat clean-bucket accuracy means HME is changing what the Evolver does without actually predicting better -- influence without understanding. Surfaced via `status(mode='reflexivity')`.
 
 ### Constitutional Identity Layer
 
@@ -915,9 +915,9 @@ Phase 6.2 of the feature mapping. CLAUDE.md says what Polychron *can't be* (proh
 
 `scripts/pipeline/derive-constitution.py` extracts constitutional claims from three evidence sources:
 
-1. **Structural** — every feedback loop and firewall port in `output/metrics/feedback_graph.json` is an architectural invariant. All confidence 1.0.
-2. **Methodological** — crystallized patterns with ≥4 rounds and ≥3 members become standing architectural fixtures. Confidence scales with evidence breadth.
-3. **Musical** — human ground truth entries with compelling/surprising/moving sentiment, grouped by (section, moment_type). Confidence scales with record count.
+1. **Structural** -- every feedback loop and firewall port in `output/metrics/feedback_graph.json` is an architectural invariant. All confidence 1.0.
+2. **Methodological** -- crystallized patterns with >=4 rounds and >=3 members become standing architectural fixtures. Confidence scales with evidence breadth.
+3. **Musical** -- human ground truth entries with compelling/surprising/moving sentiment, grouped by (section, moment_type). Confidence scales with record count.
 
 Each claim carries an evidence trail: rounds, pattern ids, ground-truth ids. Surfaced via `status(mode='constitution')`. First run produced **37 claims**: 20 structural + 16 methodological + 1 musical from 19 crystallized patterns and 1 ground-truth entry.
 
@@ -925,14 +925,14 @@ The distinction between rules and identity is the one that allows genuine evolut
 
 ### Doc Drift Detection
 
-Phase 6.3 of the feature mapping — living documentation as detection, not auto-generation. `scripts/pipeline/detect-doc-drift.py` cross-references the KB's architectural claims against the hand-maintained docs:
+Phase 6.3 of the feature mapping -- living documentation as detection, not auto-generation. `scripts/pipeline/detect-doc-drift.py` cross-references the KB's architectural claims against the hand-maintained docs:
 
 - KB entries referencing modules that no longer exist in `src/`
 - Backtick-fenced module-name tokens in ARCHITECTURE.md / SUBSYSTEMS.md / HME.md / TUNING_MAP.md / CLAUDE.md that don't resolve to a source file
-- Hard rules that have generated ≥5 productive_incoherence events (blocking exploration — refinement candidate)
-- Hard rules with zero coherence_violation events over ≥10 closed rounds (consistently honored — constitutional promotion candidate)
+- Hard rules that have generated >=5 productive_incoherence events (blocking exploration -- refinement candidate)
+- Hard rules with zero coherence_violation events over >=10 closed rounds (consistently honored -- constitutional promotion candidate)
 
-Output: `output/metrics/hme-doc-drift.json`. v1 is deliberately noisy — checks only backtick-fenced tokens to avoid false positives from natural English. Surfaced via `status(mode='doc_drift')`. DETECTION signal only; human review required before claiming any doc change.
+Output: `output/metrics/hme-doc-drift.json`. v1 is deliberately noisy -- checks only backtick-fenced tokens to avoid false positives from natural English. Surfaced via `status(mode='doc_drift')`. DETECTION signal only; human review required before claiming any doc change.
 
 ### Generalization Extraction
 
@@ -942,31 +942,31 @@ Phase 6.4 of the feature mapping, rewritten in R97 after the original pipeline p
 
 1. [`extract-generalizations.py`](../scripts/pipeline/hme/extract-generalizations.py) scores every crystallized pattern on `project_specificity`: the fraction of camelCase-split tokens in tags + synthesis that match a **dynamically-built** project vocabulary (bias-bounds manifest + L0 channel names + subsystem directory names + hand-curated seeds). Tokens like `emergentMelodicEngine` now score high where the old hardcoded-list version scored 0.00. Patterns below threshold 0.3 become candidates. Writes `metrics/hme-generalizations.json`.
 
-2. [`synthesize-generalizations.py`](../scripts/pipeline/hme/synthesize-generalizations.py) sends each candidate through the **free-tier reasoning API cascade** (Groq → Cerebras → Mistral → NVIDIA → OpenRouter → local arbiter fallback) — NOT the 4GB local arbiter that produced vague waffle. The prompt demands three structured fields: **invariant**, **falsifiable prediction for similar systems**, **counterexample that would disprove it**. Anything missing a field is rejected as tautology (`REJECT` or missing-label). Surviving drafts go to `output/metrics/hme-discoveries-draft.jsonl` (gitignored; regenerated every run).
+2. [`synthesize-generalizations.py`](../scripts/pipeline/hme/synthesize-generalizations.py) sends each candidate through the **free-tier reasoning API cascade** (Groq -> Cerebras -> Mistral -> NVIDIA -> OpenRouter -> local arbiter fallback) -- NOT the 4GB local arbiter that produced vague waffle. The prompt demands three structured fields: **invariant**, **falsifiable prediction for similar systems**, **counterexample that would disprove it**. Anything missing a field is rejected as tautology (`REJECT` or missing-label). Surviving drafts go to `output/metrics/hme-discoveries-draft.jsonl` (gitignored; regenerated every run).
 
-3. **Novelty + stability gates** (enforced by step 2): a new draft whose invariant matches any existing one at cosine-similarity ≥0.90 is dropped as duplicate. A draft whose text survives ≥3 consecutive runs unchanged flips `promotable=true`.
+3. **Novelty + stability gates** (enforced by step 2): a new draft whose invariant matches any existing one at cosine-similarity >=0.90 is dropped as duplicate. A draft whose text survives >=3 consecutive runs unchanged flips `promotable=true`.
 
-**Human-curated promotion** — only the user can move a draft from jsonl into the permanent record:
+**Human-curated promotion** -- only the user can move a draft from jsonl into the permanent record:
 
-- `learn(action='discoveries')` — list drafts with stability + promotable flag.
-- `learn(action='promote_discovery', remove=<draft_id>, listening_notes=<optional annotation>)` — append to `doc/hme-discoveries.md` + remove from draft stream. Refuses if `promotable=false`. This keeps auto-generated sludge strictly out of the claims file.
+- `learn(action='discoveries')` -- list drafts with stability + promotable flag.
+- `learn(action='promote_discovery', remove=<draft_id>, listening_notes=<optional annotation>)` -- append to `doc/hme-discoveries.md` + remove from draft stream. Refuses if `promotable=false`. This keeps auto-generated sludge strictly out of the claims file.
 
 Surfaced also via `status(mode='generalizations')`.
 
 ### Multi-Agent Observability Scaffold
 
-Phase 6.5 of the feature mapping. HME can't unilaterally split the Evolver into Perceiver / Proposer / Implementer agents — that's a process-level decision outside HME's jurisdiction. What HME provides is the scaffold so that IF the loop is run multi-agent, HME tracks inter-agent coherence.
+Phase 6.5 of the feature mapping. HME can't unilaterally split the Evolver into Perceiver / Proposer / Implementer agents -- that's a process-level decision outside HME's jurisdiction. What HME provides is the scaffold so that IF the loop is run multi-agent, HME tracks inter-agent coherence.
 
 Activity events gain an optional `role` field (perceiver / proposer / implementer / single). Hypotheses and todos gain an optional `agent_role` tag. `tools_analysis/multi_agent.py` computes:
 
-- **perceiver → proposer coherence** — fraction of proposer-role hypotheses that share modules with recent perceiver-role activity
-- **proposer → implementer coherence** — fraction of implementer-role file_written events targeting modules mentioned in proposer-role todos/hypotheses
+- **perceiver -> proposer coherence** -- fraction of proposer-role hypotheses that share modules with recent perceiver-role activity
+- **proposer -> implementer coherence** -- fraction of implementer-role file_written events targeting modules mentioned in proposer-role todos/hypotheses
 
-When all events carry `role=single`, inter-agent coherence is N/A — single-agent operation isn't broken, it just can't be scored against the multi-agent ideal. Surfaced via `status(mode='multi_agent')`.
+When all events carry `role=single`, inter-agent coherence is N/A -- single-agent operation isn't broken, it just can't be scored against the multi-agent ideal. Surfaced via `status(mode='multi_agent')`.
 
-### Human Ground Truth — The Grounding Anchor
+### Human Ground Truth -- The Grounding Anchor
 
-Phase 5.5 of the feature mapping — the answer to the circularity problem. Every HME metric eventually grounds out in HME's own outputs. Musical correlation was a partial external anchor but EnCodec and CLAP measure audio features, not musical meaning. The only complete anchor is a human listener finding the composition genuinely moving.
+Phase 5.5 of the feature mapping -- the answer to the circularity problem. Every HME metric eventually grounds out in HME's own outputs. Musical correlation was a partial external anchor but EnCodec and CLAP measure audio features, not musical meaning. The only complete anchor is a human listener finding the composition genuinely moving.
 
 `tools_analysis/ground_truth.py` makes human feedback a first-class HME signal:
 
@@ -979,10 +979,10 @@ learn(action='ground_truth',
 ```
 
 Records land in two places:
-1. `output/metrics/hme-ground-truth.jsonl` — append-only stream keyed by timestamp
+1. `output/metrics/hme-ground-truth.jsonl` -- append-only stream keyed by timestamp
 2. The KB via `add_knowledge`, tagged `human_ground_truth`, category `decision`
 
-**Trust override**: `compute-kb-trust-weights.py` detects the `human_ground_truth` tag and unconditionally assigns tier HIGH (trust=1.0). When an HME prediction conflicts with a ground-truth entry, the ground-truth wins and the conflict is surfaced. HME can be as sophisticated as it becomes, but the ultimate coherence validator is whether a human finds the music meaningful — and the system should never be able to optimize its way around that.
+**Trust override**: `compute-kb-trust-weights.py` detects the `human_ground_truth` tag and unconditionally assigns tier HIGH (trust=1.0). When an HME prediction conflicts with a ground-truth entry, the ground-truth wins and the conflict is surfaced. HME can be as sophisticated as it becomes, but the ultimate coherence validator is whether a human finds the music meaningful -- and the system should never be able to optimize its way around that.
 
 Surfaced via `status(mode='ground_truth')`.
 
@@ -998,22 +998,22 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_grep.sh` | PreToolUse | Grep | Surface live KB relevance via shim (titles only); multiline exempt |
 | `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement; **correct** timeout via `updatedInput` (strips timeout silently, command proceeds) |
-| `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Silent capture** — writes tasks directly to HME todo store (todos.json), blocks native TodoWrite with no further action required |
-| `pretooluse_hme_primer.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `i/<hme-tool>`) | **Enrich** — inject `AGENT_PRIMER.md` once per session via `systemMessage` on first HME tool call; appends mandatory boot check directive (run `i/hme-admin action=selftest` + `i/evolve focus=invariants`); clears flag so it only fires once |
-| `pretooluse_check_pipeline.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `i/status`) | **Redirect** — deny repeated status calls (polling anti-pattern); pipeline status surfaces automatically via posttooluse hook |
-| `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents → route to local llama.cpp agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on llama.cpp unreachable or empty answer |
+| `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Silent capture** -- writes tasks directly to HME todo store (todos.json), blocks native TodoWrite with no further action required |
+| `pretooluse_hme_primer.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `i/<hme-tool>`) | **Enrich** -- inject `AGENT_PRIMER.md` once per session via `systemMessage` on first HME tool call; appends mandatory boot check directive (run `i/hme-admin action=selftest` + `i/evolve focus=invariants`); clears flag so it only fires once |
+| `pretooluse_check_pipeline.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `i/status`) | **Redirect** -- deny repeated status calls (polling anti-pattern); pipeline status surfaces automatically via posttooluse hook |
+| `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents -> route to local llama.cpp agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on llama.cpp unreachable or empty answer |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: detect HME calls (`Bash(i/<hme-tool>)` or legacy `mcp__HME__*`) and warn to stderr on 15-30s threshold |
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers (verdict + wall time in header) + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main`; **emit `pipeline_run`** activity event with verdict/wall/hci |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
 | `posttooluse_read_kb.sh` | PostToolUse | Read | Silent KB enrichment after file reads of project source files; reset streak |
 | `posttooluse_todowrite.sh` | PostToolUse | TodoWrite | Mirror completed onboarding steps back to the HME todo store so the sidebar stays in sync with agent-visible todos |
 | `pretooluse_toolsearch.sh` | PreToolUse | ToolSearch | Guard against tool-search polling; enrich with KB tool-surface context for the search query |
-| `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog ≥ 3/5 files; **emit `file_written`** + **split into `coherence_violation` (lazy) vs `productive_incoherence` (exploratory)** using the KB staleness index |
+| `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog >= 3/5 files; **emit `file_written`** + **split into `coherence_violation` (lazy) vs `productive_incoherence` (exploratory)** using the KB staleness index |
 | `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |
 | `posttooluse_agent.sh` | PostToolUse | Agent | Track subagent background output files to tab |
 | `posttooluse_hme_read.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `i/hme-read`) | Track briefed files to NEXUS; reset streak |
 | `posttooluse_hme_review.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `i/review`) | Clear NEXUS edit backlog on `mode=forget`; point to next step (pipeline / commit) |
-| `posttooluse_addknowledge.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `i/learn`) | Clear `KB:` entries from tab after `i/learn title=… content=…` add call |
+| `posttooluse_addknowledge.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `i/learn`) | Clear `KB:` entries from tab after `i/learn title=... content=...` add call |
 | `userpromptsubmit.sh` | UserPromptSubmit | * | Inject Evolver context on evolution-related prompts |
 | `precompact.sh` | PreCompact | * | Surface `KB:`/`FILE:` entries from tab + untracked `tmp/` files |
 | `postcompact.sh` | PostCompact | * | Re-surface the same tab state after compaction |
@@ -1025,9 +1025,9 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 2. Add entry to `hooks/hooks.json` with `${CLAUDE_PLUGIN_ROOT}/hooks/your_hook.sh`
 3. Document in this table
 
-### Bash-gate ↔ JS-policy unification
+### Bash-gate <-> JS-policy unification
 
-When adding a bash gate that has a JS-policy counterpart in [tools/HME/policies/builtin/](../tools/HME/policies/builtin/), source [hooks/helpers/_policy_enabled.sh](../tools/HME/hooks/helpers/_policy_enabled.sh) and wrap the gate body in `if _policy_enabled <kebab-name> && <existing-condition>; then …`. The helper reads the same `config/policies.json` config that `i/policies` writes, so `i/policies disable <name>` works uniformly across both proxy-up (JS) and proxy-down direct-mode (bash) paths. Without this guard, disabling a JS policy leaves the bash gate firing — the "disable-doesn't-fully-disable" wart now closed across all 7 currently-duplicated rules.
+When adding a bash gate that has a JS-policy counterpart in [tools/HME/policies/builtin/](../tools/HME/policies/builtin/), source [hooks/helpers/_policy_enabled.sh](../tools/HME/hooks/helpers/_policy_enabled.sh) and wrap the gate body in `if _policy_enabled <kebab-name> && <existing-condition>; then ...`. The helper reads the same `config/policies.json` config that `i/policies` writes, so `i/policies disable <name>` works uniformly across both proxy-up (JS) and proxy-down direct-mode (bash) paths. Without this guard, disabling a JS policy leaves the bash gate firing -- the "disable-doesn't-fully-disable" wart now closed across all 7 currently-duplicated rules.
 
 ## Polychron-Specific Features
 
@@ -1050,27 +1050,27 @@ ranked cascade of free-tier API providers. Reasoning tasks prefer the API
 cascade (better quality, faster time-to-first-token); coder tasks and the
 arbiter triage stay local.
 
-**GPU0 — Arbiter** (`phi-4-Q4_K_M.gguf`, served as `hme-arbiter`):
+**GPU0 -- Arbiter** (`phi-4-Q4_K_M.gguf`, served as `hme-arbiter`):
 - Port 8080, Vulkan1 (Tesla M40), full-offload invariant enforced by the daemon
-- Specialized persona: domain-aware hallucination guard — auto-discovers real module names via `src/crossLayer/**/*.js` glob, lists known signal fields
+- Specialized persona: domain-aware hallucination guard -- auto-discovers real module names via `src/crossLayer/**/*.js` glob, lists known signal fields
 - Runs Stage 1.5: triages GPU0/GPU1 output for conflicts
 - Three severity levels: `ALIGNED` (pass through), `MINOR` (advisory note injected), `COMPLEX` (escalate to Stage 1.75)
 - Configured via `HME_ARBITER_MODEL` (default alias `hme-arbiter`)
 
-**GPU1 — Coder** (`qwen3-coder-30b-Q4_K_M.gguf`, served as `qwen3-coder:30b`):
+**GPU1 -- Coder** (`qwen3-coder-30b-Q4_K_M.gguf`, served as `qwen3-coder:30b`):
 - Port 8081, Vulkan2 (Tesla M40), full-offload invariant enforced
-- Specialized persona: "expert code extractor — facts, file paths, module names, no speculation"
+- Specialized persona: "expert code extractor -- facts, file paths, module names, no speculation"
 - Runs Stage 1A in parallel two-stage synthesis
-- Default model for `_local_think` with the `coder` profile — structural code extraction, caller analysis, `review(mode='health')`, `learn(action='graph')`
+- Default model for `_local_think` with the `coder` profile -- structural code extraction, caller analysis, `review(mode='health')`, `learn(action='graph')`
 - Configured via `HME_CODER_MODEL` (alias `qwen3-coder:30b`)
 
-**Reasoning — API cascade** (`synthesis_reasoning.call(profile='reasoning')`):
-- Ranked list: Gemini 2.5-pro → Groq → OpenRouter → Cerebras → Gemini flash tiers
-- Each slot has its own quota/RPM/circuit-breaker; walks best→worst until one succeeds
+**Reasoning -- API cascade** (`synthesis_reasoning.call(profile='reasoning')`):
+- Ranked list: Gemini 2.5-pro -> Groq -> OpenRouter -> Cerebras -> Gemini flash tiers
+- Each slot has its own quota/RPM/circuit-breaker; walks best->worst until one succeeds
 - Used by `reasoning.py`, `reasoning_think.py`, `digest_analysis.py`, `enrich_prompt.py`, `evolution_strategies.py`, `runtime.py`, `workflow_audit.py`
 - Local fallback: the coder instance above when every ranked slot is exhausted
 
-**Failure recovery:** Each local instance has a 3-state circuit breaker (CLOSED → OPEN → HALF_OPEN) that replaces fixed cooldowns. 3 failures within 60s opens the circuit (blocks calls for 15s recovery). Every API provider enforces its own daily quota and RPM via `synthesis_reasoning`.
+**Failure recovery:** Each local instance has a 3-state circuit breaker (CLOSED -> OPEN -> HALF_OPEN) that replaces fixed cooldowns. 3 failures within 60s opens the circuit (blocks calls for 15s recovery). Every API provider enforces its own daily quota and RPM via `synthesis_reasoning`.
 
 **Env-load invariant** (fail-fast at `hme_env.py` import): `HME_ARBITER_MODEL != HME_CODER_MODEL`. The two local aliases must be distinct so the fallback chain always has an independent last resort.
 
@@ -1090,13 +1090,13 @@ OPENROUTER_API_KEY=...
 
 ### Warm KV Context System
 
-Each model maintains an independent pre-tokenized KV context cache. The system prompt + KB prefix (~1000 tokens) is pre-processed once and reused across calls — subsequent calls skip re-tokenization entirely.
+Each model maintains an independent pre-tokenized KV context cache. The system prompt + KB prefix (~1000 tokens) is pre-processed once and reused across calls -- subsequent calls skip re-tokenization entirely.
 
 **How it works:**
 - On the first interactive synthesis call, `_ensure_warm()` spawns a background daemon thread that primes all three models in parallel via `_prime_all_gpus()`
-- Each model gets a *different* warm context tailored to its persona — not a shared global cache
+- Each model gets a *different* warm context tailored to its persona -- not a shared global cache
 - Warm context is embedded in the PROMPT field (not `system=`), so llama.cpp's KV cache captures it
-- On subsequent `_local_think` calls with `system=_THINK_SYSTEM`, the system auto-swaps `system=` for `context=warm_ctx` transparently — no caller changes needed
+- On subsequent `_local_think` calls with `system=_THINK_SYSTEM`, the system auto-swaps `system=` for `context=warm_ctx` transparently -- no caller changes needed
 - Arbiter passes `payload["context"] = arbiter_warm_ctx` for every conflict check
 
 **Staleness detection:**
@@ -1106,28 +1106,28 @@ Each model maintains an independent pre-tokenized KV context cache. The system p
 - `warm_context_status()` returns per-model: primed, tokens cached, age (seconds), kb_fresh flag
 
 **Manual control:**
-- `hme_admin(action='warm')` — prime all three GPU warm contexts + Tier 1/2 pre-edit cache
-- `warm_context_status()` — inspect current state of all three contexts
+- `hme_admin(action='warm')` -- prime all three GPU warm contexts + Tier 1/2 pre-edit cache
+- `warm_context_status()` -- inspect current state of all three contexts
 
 ### Five-Stage Synthesis Pipeline
 
 `_parallel_two_stage_think` runs a five-stage pipeline for maximum quality:
 
 ```
-Stage 1A (GPU0 extract)  ┐
-                            ├ parallel > Stage 1.5: Arbiter triage
-Stage 1B (GPU1 analyze) ┘
-        │
-        ├ ALIGNED  → proceed to Stage 2
-        ├ MINOR    → inject advisory note, proceed to Stage 2
-        └ COMPLEX  → Stage 1.75: GPU1 deep resolution → Stage 2
+Stage 1A (GPU0 extract)  +
+                            + parallel > Stage 1.5: Arbiter triage
+Stage 1B (GPU1 analyze) +
+        |
+        + ALIGNED  -> proceed to Stage 2
+        + MINOR    -> inject advisory note, proceed to Stage 2
+        + COMPLEX  -> Stage 1.75: GPU1 deep resolution -> Stage 2
 
-Stage 2 (GPU1 final synthesis)  →  result + pipeline trace
+Stage 2 (GPU1 final synthesis)  ->  result + pipeline trace
 ```
 
 Every output from `_parallel_two_stage_think` ends with a pipeline trace line:
 ```
-*pipeline: 1A:Xc → 1B:Xc → arbiter:SEVERITY → 2:Xc*
+*pipeline: 1A:Xc -> 1B:Xc -> arbiter:SEVERITY -> 2:Xc*
 ```
 (where `Xc` = token count per stage)
 
@@ -1137,29 +1137,29 @@ Structured traces are logged to `log/synthesis-traces.jsonl` and arbiter decisio
 
 ### Think Session Memory
 
-HME maintains a rolling window of the last 3 think Q&A pairs within a session. These are injected as "Previous think exchanges this session" at the top of every subsequent `think` call — giving the reasoning model continuity across calls without bloating individual prompts.
+HME maintains a rolling window of the last 3 think Q&A pairs within a session. These are injected as "Previous think exchanges this session" at the top of every subsequent `think` call -- giving the reasoning model continuity across calls without bloating individual prompts.
 
-- `store_think_history(about, answer)` — persists a Q&A pair (auto-called after each successful think)
-- `get_think_history_context()` — returns formatted history block for injection
-- Max 3 pairs (`_THINK_HISTORY_MAX=3`) — oldest pair drops when window is full
+- `store_think_history(about, answer)` -- persists a Q&A pair (auto-called after each successful think)
+- `get_think_history_context()` -- returns formatted history block for injection
+- Max 3 pairs (`_THINK_HISTORY_MAX=3`) -- oldest pair drops when window is full
 - History survives across tool calls within a session; resets on server restart
 
 ### Unified Session Narrative (4th Context Layer)
 
-A running prose thread of what's happening this session — orthogonal to KB (static facts), warm KV context (static persona), and think history (narrow Q&A).
+A running prose thread of what's happening this session -- orthogonal to KB (static facts), warm KV context (static persona), and think history (narrow Q&A).
 
-**What it provides:** session direction, key decisions, pipeline verdicts, arbiter resolutions — a coherent "what we're building and what was decided" context available to ALL models.
+**What it provides:** session direction, key decisions, pipeline verdicts, arbiter resolutions -- a coherent "what we're building and what was decided" context available to ALL models.
 
 **Architecture:** NOT baked into warm KV cache (too dynamic). A live string prepended to every synthesis call's prompt. Updated automatically by:
 - Every `evolve(focus='think')` call (via `store_think_history`)
 - Every `learn(title=, content=)` add call (new calibration anchor logged)
 - Every `_resolve_complex_conflict` call (COMPLEX arbiter resolution logged)
 
-**Injection points:** Every `_local_think(system=_THINK_SYSTEM)` call (GPU0, GPU1) and every `_arbiter_check` prompt — so all three models share the same session thread.
+**Injection points:** Every `_local_think(system=_THINK_SYSTEM)` call (GPU0, GPU1) and every `_arbiter_check` prompt -- so all three models share the same session thread.
 
 **API:**
-- `append_session_narrative(event, content)` — external callers (pipeline hooks, evolution tools) can push events
-- `get_session_narrative(categories=['think','edit','search'])` — returns formatted narrative block, optionally filtered by category (commit/pipeline/think/search/edit/review/kb/other)
+- `append_session_narrative(event, content)` -- external callers (pipeline hooks, evolution tools) can push events
+- `get_session_narrative(categories=['think','edit','search'])` -- returns formatted narrative block, optionally filtered by category (commit/pipeline/think/search/edit/review/kb/other)
 - Max 10 events (`_SESSION_NARRATIVE_MAX=10`); oldest drops when full
 - `hme_admin(mode='selftest')` shows event count under "session narrative"
 
@@ -1193,19 +1193,19 @@ hme_admin(action='clear_index')  # full rebuild from scratch
 **Concurrent reindex coalesces.** The watcher, scheduled refresh, and manual `hme_admin(action='index')` triggers all fire independently and regularly overlap. The daemon's `/indexing-mode` endpoint serializes them through a single lock and the second caller waits for the first to finish, then returns the in-flight result tagged `coalesced=True`. No "already in progress" error, no warning log; overlap is the design. User-visible output renders the coalesced case as `[main] files=N indexed=N ... (coalesced into in-progress reindex)`. See `tools/HME/service/llamacpp_daemon/indexing.py` and the regression test at `tools/HME/tests/specs/indexing_mode_coalesce.test.js`.
 
 ### KB Maintenance
-- Periodic: `learn(action='health')` — find stale refs, wrong line counts
-- After 30+ entries: `learn(action='compact')` — deduplicate
-- Backup: `learn(action='export')` — dump all entries as markdown
-- Discovery: `learn(action='dream')` — find hidden connections
+- Periodic: `learn(action='health')` -- find stale refs, wrong line counts
+- After 30+ entries: `learn(action='compact')` -- deduplicate
+- Backup: `learn(action='export')` -- dump all entries as markdown
+- Discovery: `learn(action='dream')` -- find hidden connections
 
 ### Doc Sync
 `review(mode='docs')` verifies docs match implementation.
 
 ### HME Self-Maintenance
 When tools feel wrong (missing context, stale results, slow synthesis):
-1. `hme_admin(action='selftest')` — selftest + introspection
-2. `learn(action='health')` — find stale or conflicting KB entries
-3. `learn(action='compact')` — deduplicate
-4. `review(mode='docs')` — verify docs match reality
-5. `hme_admin(action='reload', modules='all')` — hot-reload all tool modules
-6. Check hooks in `tools/HME/hooks/hooks.json` — are they triggering?
+1. `hme_admin(action='selftest')` -- selftest + introspection
+2. `learn(action='health')` -- find stale or conflicting KB entries
+3. `learn(action='compact')` -- deduplicate
+4. `review(mode='docs')` -- verify docs match reality
+5. `hme_admin(action='reload', modules='all')` -- hot-reload all tool modules
+6. Check hooks in `tools/HME/hooks/hooks.json` -- are they triggering?

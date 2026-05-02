@@ -1,24 +1,24 @@
 'use strict';
 /**
- * Cross-layer rule meta-registry. Discovery-only — does NOT execute rules
+ * Cross-layer rule meta-registry. Discovery-only -- does NOT execute rules
  * across layers (each layer keeps its own execution path because the
  * timing properties are load-bearing). Returns unified metadata for every
  * rule in the codebase, regardless of which enforcement layer it lives in.
  *
  * Layers covered (per the unification analysis):
- *   - hook        — tools/HME/policies/builtin/*.js (already unified, registry)
- *   - eslint      — scripts/eslint-rules/*.js
- *   - hci         — tools/HME/scripts/verify_coherence/*.py (verifier classes)
- *   - hypermeta   — scripts/bias-bounds-manifest.json + check-hypermeta-jurisdiction.js
- *   - audit       — scripts/audit-*.py
- *   - boot        — src/play/fullBootstrap.js (advisory + critical globals)
- *   - middleware  — tools/HME/proxy/middleware/*.js
+ *   - hook        -- tools/HME/policies/builtin/*.js (already unified, registry)
+ *   - eslint      -- scripts/eslint-rules/*.js
+ *   - hci         -- tools/HME/scripts/verify_coherence/*.py (verifier classes)
+ *   - hypermeta   -- scripts/bias-bounds-manifest.json + check-hypermeta-jurisdiction.js
+ *   - audit       -- scripts/audit-*.py
+ *   - boot        -- src/play/fullBootstrap.js (advisory + critical globals)
+ *   - middleware  -- tools/HME/proxy/middleware/*.js
  *
  * Not covered (intentional):
  *   - runtime invariants in src/ (validator.create() + emissionGateway etc.)
  *     are too pervasive and don't have stable named identities. Listing
  *     every single _safety.assertFinite call is noise, not signal.
- *   - CLAUDE.md prose rules — these are LLM-readable text, not executable
+ *   - CLAUDE.md prose rules -- these are LLM-readable text, not executable
  *     rules with names.
  *
  * Each adapter returns an array of:
@@ -37,7 +37,7 @@ const PROJECT_ROOT = process.env.PROJECT_ROOT
 // Adapters
 
 function _scanHookPolicies() {
-  // Reuses the existing registry — the canonical source.
+  // Reuses the existing registry -- the canonical source.
   try {
     const registry = require('./registry');
     const config = require('./config');
@@ -164,7 +164,7 @@ function _scanBootValidators() {
     name: 'boot-validated-globals',
     layer: 'boot',
     category: 'invariant',
-    description: 'Critical globals validated at pipeline boot. Missing critical → throw; advisory (@boot-advisory) → warn.',
+    description: 'Critical globals validated at pipeline boot. Missing critical -> throw; advisory (@boot-advisory) -> warn.',
     file: 'src/play/fullBootstrap.js',
     status: 'always',
   }];

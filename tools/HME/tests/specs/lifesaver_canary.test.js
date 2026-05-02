@@ -121,7 +121,7 @@ test('lifesaver: UNADDRESSED branch BLOCKS on real agent-origin error', () => {
   }
 });
 
-test('lifesaver: UNADDRESSED branch with mixed canary+agent-error → blocks on agent, consumes canary', () => {
+test('lifesaver: UNADDRESSED branch with mixed canary+agent-error -> blocks on agent, consumes canary', () => {
   const r = _withLifesaverSandbox([
     '[2026-04-26T07:00:00Z] [CANARY-canary-mix-789] alert-chain self-test injection',
     '[2026-04-26T07:00:01Z] [foo] real agent-actionable failure',

@@ -2,7 +2,7 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
-# PostToolUse: Edit — coverage classification + user-facing review reminders.
+# PostToolUse: Edit -- coverage classification + user-facing review reminders.
 # Nexus EDIT tracking lives in BOTH the proxy middleware (nexus_tracking.js)
 # and this shell hook. Middleware covers proxy-routed sessions; the shell
 # fallback below covers direct-to-API sessions (VS Code Claude Code) where
@@ -19,7 +19,7 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
 fi
 
 # CheckpointPerISC (PAI v6.3.0 import #6). When an ISA.md is edited, fire
-# the checkpoint hook in the background — it's a no-op for ISAs that
+# the checkpoint hook in the background -- it's a no-op for ISAs that
 # haven't opted in via `checkpoint: enabled` and idempotent against
 # already-recorded transitions, so unconditional firing is safe.
 if [[ "$FILE" == */ISA.md ]]; then
@@ -27,7 +27,7 @@ if [[ "$FILE" == */ISA.md ]]; then
     >/dev/null 2>&1 &
 fi
 
-# Rebuild dir-intent index on README.md edits — same as posttooluse_write.sh.
+# Rebuild dir-intent index on README.md edits -- same as posttooluse_write.sh.
 if [[ "$FILE" == */README.md ]]; then
   python3 "$PROJECT_ROOT/scripts/pipeline/hme/build-dir-intent-index.py" \
     >/dev/null 2>&1 &
@@ -44,7 +44,7 @@ if echo "$FILE" | grep -qE '/Polychron/src/conductor/' \
    && echo "$NEW_STRING" | grep -qE 'conductorIntelligence\.register(Trust|Coupling|Jurisdiction)Bias\b'; then
   _lifesaver_bg "bias_bounds_snapshot" 60 "$PROJECT_ROOT/tmp/hme-bias-bounds-snapshot.out" \
     node "$PROJECT_ROOT/scripts/pipeline/validators/check-hypermeta-jurisdiction.js" --snapshot-bias-bounds
-  echo "[hme] bias registration edited — snapshotting bias-bounds manifest (hme-bias-bounds-snapshot.out)" >&2
+  echo "[hme] bias registration edited -- snapshotting bias-bounds manifest (hme-bias-bounds-snapshot.out)" >&2
 fi
 
 if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy))/'; then
@@ -53,10 +53,10 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
   if _nexus_has BRIEF "$MODULE" || _nexus_has BRIEF "$FILE"; then
     HME_READ_PRIOR=true
   fi
-  # Coverage classification — emit productive_incoherence for exploratory
+  # Coverage classification -- emit productive_incoherence for exploratory
   # writes into KB-uncovered territory (still useful: suggests learn()).
   # The "coherence_violation / write_without_hme_read" emission was removed
-  # — it was measuring a legacy MCP-era contract that doesn't match the
+  # -- it was measuring a legacy MCP-era contract that doesn't match the
   # current architecture (auto-enrichment middleware attaches KB context
   # to every Edit tool_result automatically, so "write without HME read"
   # is no longer meaningful signal; check-hme-coherence was aborting the
@@ -82,11 +82,11 @@ else:
     fi
   fi
 
-  # Edit count reminders are owned by the proxy status block — no STDERR here.
+  # Edit count reminders are owned by the proxy status block -- no STDERR here.
 
   if ! _onb_is_graduated && [ "$(_onb_state)" = "targeted" ]; then
     _onb_advance_to edited
-    # Onboarding advance is surfaced by the proxy status block — silent here.
+    # Onboarding advance is surfaced by the proxy status block -- silent here.
   fi
 fi
 

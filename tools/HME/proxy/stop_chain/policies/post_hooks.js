@@ -1,5 +1,5 @@
 'use strict';
-// Transitional shell wrapper. post_hooks bundle late-stage diagnostics —
+// Transitional shell wrapper. post_hooks bundle late-stage diagnostics --
 // no decisions; wrap unchanged.
 //
 // MUST RUN AFTER: holograph, work_checks

@@ -1,20 +1,20 @@
 'use strict';
 /**
- * SSE event rewriters — plug into SseTransform.
+ * SSE event rewriters -- plug into SseTransform.
  *
  * Rewriter signature: (eventName, data, ctx) => replacement
  *   - return data (unchanged or mutated): emit normally
  *   - return null: drop the event
  *   - return { events: [[name, data], ...] }: emit list in order (replaces)
  *
- * Rewriters run left-to-right — order matters.
+ * Rewriters run left-to-right -- order matters.
  */
 
-// NOTE: `hmePrefixRestore` was removed — with full bypass, Claude Code never
+// NOTE: `hmePrefixRestore` was removed -- with full bypass, Claude Code never
 // sees HME tool_uses (the proxy handles dispatch internally and strips them
 // from the response before forwarding). No restoration needed.
 
-//  Rewriter: Bash run_in_background → /hme/spawn
+//  Rewriter: Bash run_in_background -> /hme/spawn
 // Holds all `content_block_delta` events for a Bash tool_use until the
 // corresponding `content_block_stop`, parses the accumulated input, and if
 // run_in_background=true, replaces the command with a synchronous curl to
@@ -41,7 +41,7 @@ function runInBackgroundRewrite(eventName, data, ctx) {
   let holds = ctx.get(key);
   if (!holds) { holds = new Map(); ctx.set(key, holds); }
 
-  // Track Bash tool_use blocks — start holding their deltas.
+  // Track Bash tool_use blocks -- start holding their deltas.
   if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') {
     if (data.content_block.name === 'Bash') {
       holds.set(data.index, {
@@ -61,7 +61,7 @@ function runInBackgroundRewrite(eventName, data, ctx) {
       if (!state.firstDeltaShape) {
         state.firstDeltaShape = { type: data.type, index: data.index };
       }
-      return null; // drop — we re-emit on content_block_stop
+      return null; // drop -- we re-emit on content_block_stop
     }
     return data;
   }
@@ -74,7 +74,7 @@ function runInBackgroundRewrite(eventName, data, ctx) {
 
     let input = null;
     try { input = JSON.parse(state.partial); }
-    catch (_e) { /* malformed partial — emit as-is so the error surfaces */ }
+    catch (_e) { /* malformed partial -- emit as-is so the error surfaces */ }
 
     let finalInput = input;
     if (input && input.run_in_background === true && typeof input.command === 'string') {
@@ -92,7 +92,7 @@ function runInBackgroundRewrite(eventName, data, ctx) {
         delta: { type: 'input_json_delta', partial_json: JSON.stringify(finalInput) },
       }]);
     } else if (state.partial) {
-      // Malformed JSON — replay the original partial so the client can error.
+      // Malformed JSON -- replay the original partial so the client can error.
       events.push(['content_block_delta', {
         type: 'content_block_delta',
         index: data.index,
@@ -105,7 +105,7 @@ function runInBackgroundRewrite(eventName, data, ctx) {
   return data;
 }
 
-//  Rewriter: long-leading-sleep → no-op-prefix rewrite
+//  Rewriter: long-leading-sleep -> no-op-prefix rewrite
 //
 // Claude Code's built-in Bash safety filter rejects commands that start
 // with `sleep N` (where N is large) to prevent the agent from burning
@@ -119,14 +119,14 @@ function runInBackgroundRewrite(eventName, data, ctx) {
 //
 // Strategy: prefix leading `sleep N` with a no-op command so the leading
 // token is `:` (true), not sleep. The pattern `sleep N; CMD` or
-// `sleep N && CMD` becomes `: ; sleep N; CMD` — semantically identical,
+// `sleep N && CMD` becomes `: ; sleep N; CMD` -- semantically identical,
 // no command deleted or reordered, leading token is `:`.
 //
 // Trigger: command starts with `sleep <integer>` followed by `;`, `&&`,
 // `||`, or `|`. Also handles compound statements inside `bash -c`/`sh -c`.
-// Agent-initiated short sleeps (sleep 2 / sleep 5) are not rewritten —
+// Agent-initiated short sleeps (sleep 2 / sleep 5) are not rewritten --
 // Claude Code's filter targets long waits only, and rewriting every
-// small sleep would be noisy. Threshold: leading sleep ≥ 10s → rewrite.
+// small sleep would be noisy. Threshold: leading sleep >= 10s -> rewrite.
 const LEADING_SLEEP_RE = /^\s*sleep\s+(\d+)\s*([;&|])/;
 const LEADING_SLEEP_MIN_REWRITE = 10;  // seconds
 
@@ -147,13 +147,13 @@ function longLeadingSleepRewrite(eventName, data, ctx) {
   // Uses the same per-index hold pattern as runInBackgroundRewrite so
   // both rewriters see the fully-assembled tool_use input on the stop
   // event. They share the `bash_hold` ctx key, but both read-not-mutate
-  // the .partial string until content_block_stop — safe to co-exist as
+  // the .partial string until content_block_stop -- safe to co-exist as
   // long as we don't duplicate the emit logic. This rewriter ONLY runs
   // on the stop event and only emits if it actually needs to rewrite.
   if (eventName !== 'content_block_stop' || !data) return data;
   const holds = ctx.get('bash_hold');
   if (!holds) return data;
-  // Peek — don't delete; runInBackgroundRewrite (run AFTER this in the
+  // Peek -- don't delete; runInBackgroundRewrite (run AFTER this in the
   // chain) will handle deletion + final emit.
   const state = holds.get(data.index);
   if (!state) return data;

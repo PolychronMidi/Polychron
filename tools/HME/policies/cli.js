@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * `i/policies` CLI — discover and configure unified hook-time policies.
+ * `i/policies` CLI -- discover and configure unified hook-time policies.
  *
  * Subcommands:
  *   list                       List every registered policy with status (en/dis/default).
@@ -120,11 +120,11 @@ function cmdShow(name) {
 
 function _scopeFile(scope) {
   const files = config._scopeFiles();
-  // Indices: 0=local, 1=project. Global scope was dropped — config is
+  // Indices: 0=local, 1=project. Global scope was dropped -- config is
   // project-only now.
   if (scope === 'local') return files[0];
   if (scope === 'global') {
-    throw new Error('global scope removed — use --scope=project (default) or --scope=local');
+    throw new Error('global scope removed -- use --scope=project (default) or --scope=local');
   }
   return files[1]; // project (default)
 }
@@ -143,7 +143,7 @@ function _writeMutation(name, listKey, action, scope) {
   cfg[listKey] = Array.from(set).sort();
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(cfg, null, 2) + '\n');
-  console.log(`${listKey}: ${action === 'add' ? '+' : '-'}${name} → ${file}`);
+  console.log(`${listKey}: ${action === 'add' ? '+' : '-'}${name} -> ${file}`);
   config.reset();
   return 0;
 }

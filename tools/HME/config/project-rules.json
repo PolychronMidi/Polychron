@@ -3,11 +3,11 @@
   "stale_path_patterns": [
     {
       "pattern": "tools/HME/mcp/server",
-      "reason": "stale: tools/HME/mcp/server → tools/HME/service/server (renamed; surfaced via 3 broken import sites)"
+      "reason": "stale: tools/HME/mcp/server -> tools/HME/service/server (renamed; surfaced via 3 broken import sites)"
     },
     {
       "pattern": "[\"']mcp[\"'],\\s*[\"']server[\"']",
-      "reason": "stale: os.path.join(..., \"mcp\", \"server\", ...) → \"service\", \"server\""
+      "reason": "stale: os.path.join(..., \"mcp\", \"server\", ...) -> \"service\", \"server\""
     }
   ],
   "atomic_write_path_patterns": [

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
-# Derive project root from this script's location — never from $(pwd), which
+# Derive project root from this script's location -- never from $(pwd), which
 # yields garbage when the script is invoked from anywhere other than its own
 # directory. HME_PROJECT_ROOT feeds the server's projectRoot so log/metrics/tmp
 # writes land at the real root.

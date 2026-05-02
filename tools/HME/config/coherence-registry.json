@@ -1,5 +1,5 @@
 {
-  "_doc": "HME coherence registry — the claim 'no layer is optional' made testable. Each subsystem lists the artifacts it produces (for freshness checks) and what it depends on (for failure cascading). verify-coherence.sh walks this graph, reports pass/fail per subsystem, and emits a coherence_gap event when a declared capability has no backing artifact.",
+  "_doc": "HME coherence registry -- the claim 'no layer is optional' made testable. Each subsystem lists the artifacts it produces (for freshness checks) and what it depends on (for failure cascading). verify-coherence.sh walks this graph, reports pass/fail per subsystem, and emits a coherence_gap event when a declared capability has no backing artifact.",
   "freshness_ceilings": {
     "default_seconds": 86400,
     "pipeline_seconds": 3600,
@@ -8,7 +8,7 @@
   "subsystems": [
     {
       "id": "activity_bridge",
-      "description": "Per-round event stream — round_complete, file_written, brief_recorded, coherence_violation",
+      "description": "Per-round event stream -- round_complete, file_written, brief_recorded, coherence_violation",
       "artifacts": [{ "path": "output/metrics/hme-activity.jsonl", "freshness": "default" }],
       "public_surfaces": ["status(mode='activity')", "status(mode='blindspots')"],
       "depends_on": []
@@ -21,13 +21,13 @@
         { "path": "tmp/hme-errors.turnstart", "freshness": null, "allow_empty": true },
         { "path": "tmp/hme-errors.lastread", "freshness": null, "allow_empty": true }
       ],
-      "_freshness_note": "These files update ON ACTIVITY (turn start, error surfacing, watermark advance) — NOT on a periodic heartbeat. A quiet session with no errors legitimately keeps these unchanged for hours; the previous 'session' (300s) ceiling flagged that quiet state as unhealthy, inverting the semantics. Staleness check is now disabled (null); existence-and-not-empty-unless-allow_empty is the only guard.",
+      "_freshness_note": "These files update ON ACTIVITY (turn start, error surfacing, watermark advance) -- NOT on a periodic heartbeat. A quiet session with no errors legitimately keeps these unchanged for hours; the previous 'session' (300s) ceiling flagged that quiet state as unhealthy, inverting the semantics. Staleness check is now disabled (null); existence-and-not-empty-unless-allow_empty is the only guard.",
       "public_surfaces": ["stop.sh LIFESAVER block", "userpromptsubmit.sh error banner"],
       "depends_on": []
     },
     {
       "id": "streak_calibrator",
-      "description": "Adaptive LIFESAVER threshold (observation→action feedback loop)",
+      "description": "Adaptive LIFESAVER threshold (observation->action feedback loop)",
       "artifacts": [
         { "path": "output/metrics/hme-streak-calibration.json", "freshness": "default", "allow_empty": true },
         { "path": "tmp/hme-streak-warn.txt", "freshness": "default", "allow_empty": true }
@@ -87,7 +87,7 @@
       "id": "hooks_lifecycle",
       "description": "PreToolUse/PostToolUse/Stop enforcement layer",
       "artifacts": [{ "path": "tmp/hme-nexus.state", "freshness": null, "allow_empty": true }],
-      "_freshness_note": "nexus.state updates on Edit events only. Quiet span ≠ broken hooks. Periodic-heartbeat semantics would require a synthetic touch, which adds no real signal.",
+      "_freshness_note": "nexus.state updates on Edit events only. Quiet span != broken hooks. Periodic-heartbeat semantics would require a synthetic touch, which adds no real signal.",
       "public_surfaces": ["NEXUS blocks", "mid-pipeline edit gate", "snapshot verdict gate", "register*Bias auto-snapshot"],
       "depends_on": ["proxy"]
     }

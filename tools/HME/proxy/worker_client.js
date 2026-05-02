@@ -6,7 +6,7 @@
  *
  * Failure policy: enrichment is non-fatal (tools must always flow) so calls
  * resolve null rather than rejecting. BUT silent-null-forever is a worse
- * failure mode than loud — a quiet 100% drop rate masquerades as "no KB
+ * failure mode than loud -- a quiet 100% drop rate masquerades as "no KB
  * matches found." So we log every transport failure to stderr (captured by
  * log/hme-proxy.out) AND track a rolling failure counter; once it crosses
  * a streak threshold, we surface a warning so the next tool call has a hint
@@ -19,7 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 // Route through the transport selector. /validate + /enrich aren't
-// FS-eligible so they always land on HTTP regardless of mode — but
+// FS-eligible so they always land on HTTP regardless of mode -- but
 // going through the router keeps the single decision point in one
 // place (and lets future endpoints opt into FS by adding them to
 // `_fsEligible` in `_worker_transport.js`).

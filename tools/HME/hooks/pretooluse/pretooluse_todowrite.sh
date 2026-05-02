@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME PreToolUse: TodoWrite — merge native payload with HME store (lifesaver,
+# HME PreToolUse: TodoWrite -- merge native payload with HME store (lifesaver,
 # onboarding, hme_todo items) and emit the merged list as updatedInput so the
 # agent's session-visible todo list includes all HME-managed items.
 #
@@ -8,7 +8,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # TodoWrite behaves exactly like native TodoWrite except that criticals,
 # onboarding walkthroughs, and hme_todo subs also appear in the list.
 #
-# The merge logic lives in _todo_merge.py — a standalone Python script that
+# The merge logic lives in _todo_merge.py -- a standalone Python script that
 # bypasses server/tools_analysis/__init__.py (which requires a live FastMCP).
 INPUT=$(cat)
 PROJECT="$PROJECT_ROOT"

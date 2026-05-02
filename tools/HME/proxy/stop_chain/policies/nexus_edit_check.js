@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Pure-JS port of nexus_edit_check.sh — early-firing EDIT-count gate.
+ * Pure-JS port of nexus_edit_check.sh -- early-firing EDIT-count gate.
  * Reads tmp/hme-nexus.state, prunes EDIT entries whose files match HEAD
  * (net-zero edits), and emits a `deny` if any unreviewed edits remain.
  */
@@ -37,10 +37,10 @@ function pruneCleanEdits() {
       if (filepath && fs.existsSync(filepath)) {
         try {
           execFileSync('git', ['-C', PROJECT_ROOT, 'diff', '--quiet', 'HEAD', '--', filepath]);
-          // exit 0 → no diff against HEAD → drop the entry.
+          // exit 0 -> no diff against HEAD -> drop the entry.
           continue;
         } catch (_e) {
-          // exit !=0 → diff present, keep the entry. Fall through.
+          // exit !=0 -> diff present, keep the entry. Fall through.
         }
       }
     }
@@ -91,7 +91,7 @@ module.exports = {
     if (editCount === 0) return ctx.allow();
     const hints = await fetchKbHints();
     return ctx.deny(
-      `NEXUS — ${editCount} unreviewed edit(s). Run \`i/review mode=forget\` before stopping.${hints}`
+      `NEXUS -- ${editCount} unreviewed edit(s). Run \`i/review mode=forget\` before stopping.${hints}`
     );
   },
 };

@@ -3,13 +3,13 @@
 //
 // The tripwire installed in run.js detects test-stub leaks (validator,
 // rf, m, sectionIndex, ...) by snapshotting at suite start and diffing
-// at suite exit. This spec verifies the diff logic in isolation —
+// at suite exit. This spec verifies the diff logic in isolation --
 // builds a fake "before" snapshot, mutates globalThis, and asserts the
 // detector flags the change. Without this meta-test, a subtle bug in
 // the snapshot/diff (e.g. wrong key in the watch list, identity vs
 // equality compare) would silently disable the entire safeguard.
 //
-// We test the diff logic, NOT the actual run.js boot sequence —
+// We test the diff logic, NOT the actual run.js boot sequence --
 // running run.js inside a test would recurse. The watch keys and the
 // classification rules are pure data; the test mirrors them inline so
 // any future divergence between this spec and run.js fails the test.
@@ -17,7 +17,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 
-// Mirror of run.js's _STUB_PRONE_KEYS — duplicated intentionally so a
+// Mirror of run.js's _STUB_PRONE_KEYS -- duplicated intentionally so a
 // future widen of the watch list also surfaces here.
 const STUB_PRONE_KEYS = [
   'validator', 'rf', 'm',
@@ -72,7 +72,7 @@ test('tripwire: stub installation WITH restore stays silent', () => {
   const had = Object.prototype.hasOwnProperty.call(global, 'validator');
   const prior = global.validator;
   global.validator = { stub: true };
-  // Caller restores — same pattern with_globals applies.
+  // Caller restores -- same pattern with_globals applies.
   if (had) global.validator = prior; else delete global.validator;
   const leaks = diffAgainstBaseline(baseline);
   assert.deepStrictEqual(leaks.filter((m) => m.startsWith('validator:')), [],

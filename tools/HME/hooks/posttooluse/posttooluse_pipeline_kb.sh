@@ -9,7 +9,7 @@ CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 echo "$CMD" | grep -q 'npm run main' || exit 0
 
 PROJECT="$PROJECT_ROOT"
-# All metrics live under output/metrics/ since the Apr 2026 bulk migration —
+# All metrics live under output/metrics/ since the Apr 2026 bulk migration --
 # the previous `$PROJECT/metrics/...` path silently no-op'd on every
 # `npm run main` completion (file never existed at the old location).
 SUMMARY="${METRICS_DIR:-$PROJECT/output/metrics}/trace-summary.json"
@@ -42,7 +42,7 @@ try:
     tab = os.path.join('$PROJECT', 'tmp', 'hme-tab.txt')
     os.makedirs(os.path.dirname(tab), exist_ok=True)
     with open(tab, 'a') as f:
-        f.write(f'KB: pipeline run complete — {SUMMARY_LINE}\n')
+        f.write(f'KB: pipeline run complete -- {SUMMARY_LINE}\n')
 except Exception as e:
     print(f'Could not parse trace-summary: {e}', file=sys.stderr)
 " >&2

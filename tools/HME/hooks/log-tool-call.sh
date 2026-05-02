@@ -7,7 +7,7 @@
 set -e
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/helpers/_safety.sh"
 set +e
-# PostToolUse hook — logs every tool call from the main Claude Code session
+# PostToolUse hook -- logs every tool call from the main Claude Code session
 # to the HME session transcript JSONL and the HTTP shim.
 #
 # Input (stdin): JSON from Claude Code hook system:
@@ -55,7 +55,7 @@ if [ -f "$TS_FILE" ]; then
   rm -f "$TS_FILE" 2>/dev/null
 fi
 
-# HME tools are now invoked via Bash(i/<tool>) shell wrappers — tool_name is
+# HME tools are now invoked via Bash(i/<tool>) shell wrappers -- tool_name is
 # "Bash" and the actual HME call lives in tool_input.command. Detect by
 # matching `i/<tool>` at a word boundary. Also keep the legacy mcp__HME__
 # pattern so historical transcripts keep emitting streak resets.
@@ -65,7 +65,7 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _IS_HME_CALL=1
   _HME_TOOL="${TOOL_NAME#mcp__HME__}"
 elif [[ "$TOOL_NAME" == "Bash" ]]; then
-  # Match i/<tool> ONLY when it appears in an invocation position — start of
+  # Match i/<tool> ONLY when it appears in an invocation position -- start of
   # command, or after a shell separator (;|&&|||&|(|`|bash |sh |exec |time ).
   # Previously matched any whitespace/slash prefix, which caused false
   # positives like `grep i/review foo.txt` (a grep arg, not an invocation)
@@ -96,14 +96,14 @@ if [ "$_IS_HME_CALL" = "1" ] && [ "$ELAPSED_S" -gt 0 ]; then
   if [ "$ELAPSED_S" -ge "$THRESHOLD" ]; then
     echo "LIFESAVER: HME tool '${_HME_TOOL}' took ${ELAPSED_S}s (threshold: ${THRESHOLD}s)." >&2
     echo "  Slow HME tools = stuck synthesis or model not loaded. Check:" >&2
-    echo "  1. llamacpp ps — is qwen3:30b-a3b or qwen3-coder:30b actually running?" >&2
+    echo "  1. llamacpp ps -- is qwen3:30b-a3b or qwen3-coder:30b actually running?" >&2
     echo "  2. HME log for _local_think TIMEOUT / REFUSED entries" >&2
-    echo "  3. _local_think has 60s interactive timeout — if it exceeded that, something else blocked" >&2
+    echo "  3. _local_think has 60s interactive timeout -- if it exceeded that, something else blocked" >&2
   fi
 fi
 
 # Build transcript entry. FAIL-LOUD: was `2>/dev/null` which silently
-# dropped the whole transcript line on jq failure — agent-visibility into
+# dropped the whole transcript line on jq failure -- agent-visibility into
 # tool history vanished without trace.
 _LTC_BUILD_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ltc_build_err_$$")
 ENTRY=$(jq -nc \
@@ -127,12 +127,12 @@ rm -f "$_LTC_BUILD_ERR" 2>/dev/null
 [ -z "$ENTRY" ] && exit 0
 
 # 1. Append to JSONL + hme.log
-# PROJECT_ROOT comes from .env via _safety.sh. Never fall back to CWD/pwd — the
+# PROJECT_ROOT comes from .env via _safety.sh. Never fall back to CWD/pwd -- the
 # hook's .cwd field is the TOOL's working directory (which can be anywhere in
 # the tree), and using it as PROJECT_ROOT silently spawns duplicate log/
 # directories in subprojects.
 if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
-  echo "log-tool-call: PROJECT_ROOT unset or invalid ($PROJECT_ROOT) — skipping transcript write" >&2
+  echo "log-tool-call: PROJECT_ROOT unset or invalid ($PROJECT_ROOT) -- skipping transcript write" >&2
   exit 0
 fi
 LOG_FILE="$PROJECT_ROOT/log/session-transcript.jsonl"

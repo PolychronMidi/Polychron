@@ -1,10 +1,10 @@
 'use strict';
-// Daemon-thread error watermark — scans the tail of log/hme.log for new
+// Daemon-thread error watermark -- scans the tail of log/hme.log for new
 // ERROR-level lines since the last tool call and appends them to
 // log/hme-errors.log so stop.sh's lifesaver check picks them up.
 // Replaces log-tool-call.sh's hme.log watermark block.
 //
-// Runs on every completed HME_ tool call (proxy normalizes mcp__HME__* → HME_*).
+// Runs on every completed HME_ tool call (proxy normalizes mcp__HME__* -> HME_*).
 
 const fs = require('fs');
 const path = require('path');
@@ -47,7 +47,7 @@ module.exports = {
       return;
     }
 
-    // Log rotation → reset watermark.
+    // Log rotation -> reset watermark.
     if (curSize < lastSize) lastSize = 0;
     if (curSize <= lastSize) return;
 
@@ -60,7 +60,7 @@ module.exports = {
       const chunk = buf.toString('utf8');
       const newErrors = chunk.split('\n').filter((l) => ERR_LINE_RE.test(l)).slice(0, 20);
       // Peer-review iter 120: previously the watermark advanced even
-      // when appendFileSync to errLog threw — so on a transient
+      // when appendFileSync to errLog threw -- so on a transient
       // permission-flap or full-disk, errors were silently dropped from
       // the LIFESAVER escalation channel forever. Now: append FIRST,
       // verify (re-throw on failure so the outer catch logs it), then

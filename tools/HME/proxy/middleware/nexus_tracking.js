@@ -1,7 +1,7 @@
 'use strict';
-// NEXUS backlog tracking — adds EDIT entries on Edit/Write for src/ or
+// NEXUS backlog tracking -- adds EDIT entries on Edit/Write for src/ or
 // tools/HME/ paths, clears BRIEF on new edits, sets BRIEF on HME_read.
-// _stripHmePrefixOutgoing normalizes mcp__HME__* → HME_* before middleware
+// _stripHmePrefixOutgoing normalizes mcp__HME__* -> HME_* before middleware
 // runs, so all name checks here use the canonical HME_ prefix.
 
 function _extractModule(fp) {
@@ -51,7 +51,7 @@ module.exports = {
     }
 
     // Also detect review invocations via the Bash wrapper (i/review). The
-    // old MCP tool HME_review no longer exists — the current agent path is
+    // old MCP tool HME_review no longer exists -- the current agent path is
     // Bash(`i/review mode=forget`) which dispatches via scripts/hme-cli.js.
     // Without this, nexus would never see review events and stop.sh would
     // block indefinitely after each edit.

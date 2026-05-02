@@ -1,8 +1,8 @@
 'use strict';
 // Regression tests for the two new pretooluse_bash sub-hooks:
-//   - bash/log_first.sh — block re-running lint/tc when log is fresh and
+//   - bash/log_first.sh -- block re-running lint/tc when log is fresh and
 //     no source has changed.
-//   - bash/kb_spam.sh — block i/learn invocations with title="Feedback:..."
+//   - bash/kb_spam.sh -- block i/learn invocations with title="Feedback:..."
 //
 // Both shipped in response to a real user correction: the agent re-ran
 // `npm run test:hme` three times to grep different parts of the same
@@ -22,7 +22,7 @@ const LOG_FIRST = path.join(REPO, 'tools', 'HME', 'hooks', 'pretooluse', 'bash',
 const KB_SPAM = path.join(REPO, 'tools', 'HME', 'hooks', 'pretooluse', 'bash', 'kb_spam.sh');
 
 // _safety.sh re-asserts `set -euo pipefail` and resolves PROJECT_ROOT from the
-// real project — sourcing it under a tmp PROJECT_ROOT crashes the harness.
+// real project -- sourcing it under a tmp PROJECT_ROOT crashes the harness.
 // The sub-hooks we test only use _emit_block from safety, so stub it directly.
 function runSubhook(subhookPath, cmd, projectRoot = REPO) {
   const script = `

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# PostToolUse: TodoWrite — mirror high-priority native todos into HME store as
+# PostToolUse: TodoWrite -- mirror high-priority native todos into HME store as
 # critical=true so they surface in the userpromptsubmit LIFESAVER banner.
-# Advisory only — exits 0 always, never blocks the tool call.
+# Advisory only -- exits 0 always, never blocks the tool call.
 INPUT=$(cat)
 
 PORT="${HME_MCP_PORT:-9098}"
 HEALTH_URL="http://127.0.0.1:${PORT}/health"
 SYNC_URL="http://127.0.0.1:${PORT}/hme/todo"
 
-# Fast reachability check — skip silently if worker is down.
+# Fast reachability check -- skip silently if worker is down.
 curl -s --max-time 1 "$HEALTH_URL" >/dev/null 2>&1 || exit 0
 
 # Extract todos array from tool_input.

@@ -2,12 +2,12 @@
 /**
  * Shared low-level HTTP client to the Python worker (port WORKER_PORT,
  * default 9098). Single source of truth for socket setup, timeout
- * handling, content-length headers, and JSON parsing — used by both
+ * handling, content-length headers, and JSON parsing -- used by both
  * `mcp_server/dispatcher.js` (throw-on-error semantics) and
  * `worker_client.js` (null-on-error semantics, with telemetry).
  *
  * Failure semantics are caller-controlled: this module returns a
- * structured result and does not log or throw — callers wrap it.
+ * structured result and does not log or throw -- callers wrap it.
  *
  * Returns: Promise<{status, json, raw, error}>
  *   - status: HTTP status code (number) on response, 0 on transport failure
@@ -16,12 +16,12 @@
  *   - error:  null on success, Error instance on transport-level failure
  *
  * Bug-proofing rationale:
- *   - Single timeout path (req.on('timeout', destroy + reject)) — no double-fire
- *   - JSON parse never throws — caller checks `json === null` for parse failure
+ *   - Single timeout path (req.on('timeout', destroy + reject)) -- no double-fire
+ *   - JSON parse never throws -- caller checks `json === null` for parse failure
  *   - Transport-level errors (ECONNREFUSED, ETIMEDOUT, etc.) surface as
  *     `{status: 0, error: <Error>}` rather than rejecting the promise.
  *     Callers that want throw-semantics check the result and throw.
- *   - Same Content-Length / body encoding rules in one place — adding a
+ *   - Same Content-Length / body encoding rules in one place -- adding a
  *     new endpoint can't drift away from them.
  */
 

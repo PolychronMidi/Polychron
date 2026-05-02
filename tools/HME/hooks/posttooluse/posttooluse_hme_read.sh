@@ -6,12 +6,12 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
-# Fail-fast on CLI transport errors — never mark BRIEF if the read never
+# Fail-fast on CLI transport errors -- never mark BRIEF if the read never
 # actually retrieved KB context. Otherwise pretooluse_edit.sh would see a
 # spurious BRIEF and let the edit through unbriefed.
 TOOL_RESULT=$(_safe_jq "$INPUT" '.tool_response' '')
 if echo "$TOOL_RESULT" | grep -q '^hme-cli:'; then
-  echo "NEXUS: hme-read CLI failed — BRIEF NOT marked. Investigate worker/shim health before editing this file." >&2
+  echo "NEXUS: hme-read CLI failed -- BRIEF NOT marked. Investigate worker/shim health before editing this file." >&2
   exit 0
 fi
 

@@ -16,21 +16,21 @@
  *       Fired on every Anthropic request after strip + scan, before inject.
  *
  * ctx exposes:
- *   - emit(fields)                        — activity event via emit.py
- *   - nexusAdd/Mark/ClearType/Has/Count   — tmp/hme-nexus.state operations
- *   - warn(msg)                           — log to stderr with [middleware] prefix
- *   - markDirty()                         — signal payload needs re-serialize
- *   - hasHmeFooter(result, marker)        — idempotency guard for enrichment
- *   - appendToResult(result, text)        — append text to tool_result (any shape)
- *   - replaceResult(result, text)         — REPLACE tool_result content entirely
+ *   - emit(fields)                        -- activity event via emit.py
+ *   - nexusAdd/Mark/ClearType/Has/Count   -- tmp/hme-nexus.state operations
+ *   - warn(msg)                           -- log to stderr with [middleware] prefix
+ *   - markDirty()                         -- signal payload needs re-serialize
+ *   - hasHmeFooter(result, marker)        -- idempotency guard for enrichment
+ *   - appendToResult(result, text)        -- append text to tool_result (any shape)
+ *   - replaceResult(result, text)         -- REPLACE tool_result content entirely
  *                                           (use when authoritative real output
  *                                           supersedes a stub, e.g. background
  *                                           task resolution)
- *   - retryNextTurn(toolUseId)            — remove dedup so middleware re-enters
+ *   - retryNextTurn(toolUseId)            -- remove dedup so middleware re-enters
  *                                           on a future turn; bounded by
  *                                           _MAX_RETRIES to avoid infinite loops
- *   - retryAttempt(toolUseId)             — how many retries so far (0 = first)
- *   - retriesRemaining(toolUseId)         — remaining budget before permanent
+ *   - retryAttempt(toolUseId)             -- how many retries so far (0 = first)
+ *   - retriesRemaining(toolUseId)         -- remaining budget before permanent
  *                                           pass-through
  */
 
@@ -134,7 +134,7 @@ function nexusClearType(type) {
       const ts = new Date().toISOString();
       fs.appendFileSync(
         errLog,
-        `[${ts}] [nexus-audit] suspicious clear: ${type} removed=${removed} caller=${caller} since_boot_ms=${sinceBootMs} (proxy restarted within ${_RESTART_SUSPICION_WINDOW_MS}ms — possible historical-event re-fire; verify with tmp/hme-middleware-processed.jsonl)\n`
+        `[${ts}] [nexus-audit] suspicious clear: ${type} removed=${removed} caller=${caller} since_boot_ms=${sinceBootMs} (proxy restarted within ${_RESTART_SUSPICION_WINDOW_MS}ms -- possible historical-event re-fire; verify with tmp/hme-middleware-processed.jsonl)\n`
       );
     } catch (_e) { /* never fail */ }
   }
@@ -160,7 +160,7 @@ function nexusHas(type, payload) {
     if (!fs.existsSync(NEXUS_FILE)) return false;
     const lines = fs.readFileSync(NEXUS_FILE, 'utf8').split('\n');
     if (payload) {
-      // Parse `${type}:${ts}:${payload}` explicitly — the previous
+      // Parse `${type}:${ts}:${payload}` explicitly -- the previous
       // `endsWith(:payload)` heuristic could match unrelated lines whose
       // timestamp suffix coincidentally ended with the literal needle,
       // and broke entirely on payloads that themselves contain a colon.
@@ -179,22 +179,22 @@ function nexusHas(type, payload) {
   }
 }
 
-// Per-pipeline-run dirty flag — set via ctx.markDirty() when a middleware
+// Per-pipeline-run dirty flag -- set via ctx.markDirty() when a middleware
 // mutates the payload. hme_proxy.js uses this to decide whether to
 // re-serialize the body before forwarding upstream.
 let _pipelineDirty = false;
 
 // Idempotency guard for footer injection. Because _processed is in-memory,
 // a proxy restart causes all historical tool_results to look "new" and get
-// re-enriched. Each middleware passes its OWN marker to the guard — not a
-// shared HME prefix — so multiple middleware can enrich the same result
+// re-enriched. Each middleware passes its OWN marker to the guard -- not a
+// shared HME prefix -- so multiple middleware can enrich the same result
 // without blocking each other, while still preventing self-restacking.
 
 // Retry-count map for middleware that need to re-enter on future turns
 // (e.g. background_dominance when a task hasn't finished within the
 // current turn's wait window). Bounded per tool_use.id so a permanently
 // stuck task doesn't retry forever.
-const _retryCount = new Map(); // tool_use.id → attempts
+const _retryCount = new Map(); // tool_use.id -> attempts
 const _MAX_RETRIES = 3;
 
 function _toolResultText(toolResult) {
@@ -223,7 +223,7 @@ const ctx = {
     return _toolResultText(toolResult).includes(marker);
   },
   // Append text to a tool_result regardless of whether content is a string,
-  // array-of-blocks, or null. Shared by all middleware — do not copy locally.
+  // array-of-blocks, or null. Shared by all middleware -- do not copy locally.
   appendToResult: (toolResult, text) => {
     if (typeof toolResult.content === 'string') {
       toolResult.content = toolResult.content + text;
@@ -251,7 +251,7 @@ const ctx = {
     }
   },
   // Tell the pipeline to allow this tool_use.id to re-enter on a future
-  // turn — used by middleware whose work is unfinished (e.g. background
+  // turn -- used by middleware whose work is unfinished (e.g. background
   // task still running). Bounded by _MAX_RETRIES so a stuck task
   // doesn't retry forever. Returns the attempt count AFTER the call so
   // callers can log or short-circuit.
@@ -285,14 +285,14 @@ function register(mod) {
 //  Tool-result deduplication
 // Each tool_use.id fires onToolResult exactly once across THE LIFETIME OF
 // THE CONVERSATION. The map persists to disk so a proxy restart mid-
-// conversation doesn't re-fire onToolResult on every historical event —
+// conversation doesn't re-fire onToolResult on every historical event --
 // a real failure mode that wiped nexus EDIT tracking when middleware like
 // `nexus_tracking` re-cleared state on historical Bash i/review calls.
 //
 // Persistence layer: tmp/hme-middleware-processed.jsonl. Append-only,
 // best-effort. Loaded on first access, lazily. LRU eviction in memory;
 // the file may exceed the in-memory cap but trim-on-load handles that.
-const _processed = new Map(); // id → insertion timestamp
+const _processed = new Map(); // id -> insertion timestamp
 const _PROCESSED_CAP = 50_000;
 const _PROCESSED_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-middleware-processed.jsonl');
 let _processedLoaded = false;
@@ -314,7 +314,7 @@ function _loadProcessed() {
         }
       } catch (_e) { /* skip malformed line */ }
     }
-    // Cap to LRU-most-recent _PROCESSED_CAP — keys() iterates insertion order.
+    // Cap to LRU-most-recent _PROCESSED_CAP -- keys() iterates insertion order.
     if (_processed.size > _PROCESSED_CAP) {
       const excess = _processed.size - _PROCESSED_CAP;
       let i = 0;
@@ -332,7 +332,7 @@ function _persistProcessedEntry(id, ts) {
   try {
     fs.mkdirSync(path.dirname(_PROCESSED_FILE), { recursive: true });
     fs.appendFileSync(_PROCESSED_FILE, JSON.stringify({ id, ts }) + '\n');
-  } catch (_e) { /* best-effort — never block hot path */ }
+  } catch (_e) { /* best-effort -- never block hot path */ }
 }
 
 function _markProcessed(id) {
@@ -351,7 +351,7 @@ function _markProcessed(id) {
   _maybeCompact();
 }
 
-// Periodic compaction — file is append-only so it grows even when the
+// Periodic compaction -- file is append-only so it grows even when the
 // in-memory cap evicts. Compact when file > 8MB by rewriting from the
 // current in-memory state. Called opportunistically from _markProcessed
 // to avoid a startup blocker.
@@ -404,7 +404,7 @@ function _pairToolResults(payload) {
   return events;
 }
 
-//  Single-event entry — universal middleware runner. Any caller can apply
+//  Single-event entry -- universal middleware runner. Any caller can apply
 //  the middleware pipeline to a SINGLE tool-result event without going
 //  through the request-shaped runPipeline path. Same architectural shape
 //  as stop_chain/cli.js: any process can invoke the pipeline without
@@ -416,7 +416,7 @@ function _pairToolResults(payload) {
 //    const dirty = await middleware.runOnToolResult(toolUse, toolResult, { filter });
 //
 //  The `filter` option (Set<string>) restricts execution to a named
-//  subset — e.g. `new Set(['secret_sanitizer'])` for sanitization-only.
+//  subset -- e.g. `new Set(['secret_sanitizer'])` for sanitization-only.
 //  No filter = run every registered middleware.
 //
 //  Skips the dedup _processed map so re-running the same toolUse.id is
@@ -440,7 +440,7 @@ async function runOnToolResult(toolUse, toolResult, opts = {}) {
 
 //  Main pipeline entry
 // Async so middleware can do HTTP calls (e.g., KB lookups) in their handlers.
-// Synchronous handlers still work — `await` on a non-promise is a no-op.
+// Synchronous handlers still work -- `await` on a non-promise is a no-op.
 async function runPipeline(payload, scan, session) {
   _pipelineDirty = false;
   const events = _pairToolResults(payload);
@@ -470,7 +470,7 @@ async function runPipeline(payload, scan, session) {
 // Load order matters when one middleware enriches a payload that another
 // reads (e.g. lifesaver_inject must run BEFORE proxy_autocommit so a
 // failed autocommit surfaces as the lifesaver banner on the same turn).
-// The previous loader used readdirSync ordering — filesystem inode order,
+// The previous loader used readdirSync ordering -- filesystem inode order,
 // undefined across filesystems and OS upgrades. We now consult an
 // explicit `order.json` manifest and fall back to alphabetical for any
 // file not listed (so a new middleware doesn't get silently disabled).

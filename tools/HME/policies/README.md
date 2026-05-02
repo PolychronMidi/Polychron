@@ -4,7 +4,7 @@ Single registration + configuration surface for every hook-time rule
 (PreToolUse, PostToolUse, Stop, proxy middleware). Adapted from
 FailproofAI's framework, narrowed to Polychron's hook surface.
 
-**Out of scope** — these enforcement layers stay in their existing
+**Out of scope** -- these enforcement layers stay in their existing
 homes because their timing properties are load-bearing:
 ESLint rules (parse-time), boot validators (process-start),
 runtime invariants (in-flight data), HCI verifiers (audit-time),
@@ -59,8 +59,8 @@ for side effects (mirrors `stop_chain/index.js`).
 Two-scope JSON, first-defined-wins for scalars, deduplicated union for
 `enabled` / `disabled` arrays. Lookup order:
 
-1. `<project>/config/policies.local.json` — developer-local (gitignored)
-2. `<project>/config/policies.json` — project-shared (commit this)
+1. `<project>/config/policies.local.json` -- developer-local (gitignored)
+2. `<project>/config/policies.json` -- project-shared (commit this)
 
 Schema:
 
@@ -78,7 +78,7 @@ Schema:
 ## Adding a built-in policy
 
 Drop a file in `tools/HME/policies/builtin/<name>.js` matching the
-contract above. No registration call needed — the registry auto-loads
+contract above. No registration call needed -- the registry auto-loads
 every `*.js` (skipping `_*.js` helpers). Restart the proxy or CLI
 process to pick up the new module.
 
@@ -124,6 +124,6 @@ The unified registry covers hook-time only. A separate cross-layer
 meta-registry would catalog rules from all 11 enforcement layers
 (ESLint, hypermeta, HCI verifiers, audit scripts, boot, runtime,
 PreToolUse, PostToolUse, Stop, middleware, prose) under a single
-discovery surface — `i/policies list` would show every rule across
+discovery surface -- `i/policies list` would show every rule across
 every layer, with metadata-only entries delegating to each layer's
 existing implementation. Out of scope for this PR.

@@ -1,7 +1,7 @@
 'use strict';
 // Regression tests for OVERDRIVE_MODE=2 tier-aware routing in
 // synthesis_reasoning. Verifies the dispatch decisions WITHOUT actually
-// hitting any model — we mock the leaf functions and check which path
+// hitting any model -- we mock the leaf functions and check which path
 // the call() entry-point chose for each tier.
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -65,7 +65,7 @@ print(json.dumps({
   if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
   const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
   assert.strictEqual(parsed.result, 'hard-response');
-  assert.strictEqual(parsed.chain_override, null, 'hard tier uses default chain (Opus→Sonnet)');
+  assert.strictEqual(parsed.chain_override, null, 'hard tier uses default chain (Opus->Sonnet)');
   assert.strictEqual(parsed.allow_subagent, true, 'hard tier permits subagent dispatch');
   assert.strictEqual(parsed.last_source, 'overdrive/opus');
 });
@@ -118,7 +118,7 @@ print(json.dumps({
 `);
   if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
   const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-  assert.strictEqual(parsed.overdrive_called, false, 'easy tier must NOT call overdrive — cascade only');
+  assert.strictEqual(parsed.overdrive_called, false, 'easy tier must NOT call overdrive -- cascade only');
   // result is None because we stubbed the cascade with no providers; the
   // important assertion is that overdrive was skipped, not what cascade returned.
 });

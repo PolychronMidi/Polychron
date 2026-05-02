@@ -3,7 +3,7 @@
 //
 // History: a second reindex request landing while a first was still
 // in-flight used to return `{"error": "indexing mode already in
-// progress"}` — surfaced to the agent as a "FAIL" with a scary
+// progress"}` -- surfaced to the agent as a "FAIL" with a scary
 // `daemon refused indexing-mode` message and emitted a logger.warning
 // at every layer it touched. But concurrent reindex requests are the
 // design, not an aberration: the edit-watcher, scheduled refresh, and
@@ -94,7 +94,7 @@ print(json.dumps({'first': results.get('first'), 'second': results.get('second')
     'first (winning) call must NOT carry coalesced=true');
   assert.ok(!parsed.first.error,
     `first call must not have error; got ${JSON.stringify(parsed.first)}`);
-  // Second call coalesces — same result body, plus coalesced=true,
+  // Second call coalesces -- same result body, plus coalesced=true,
   // no "already in progress" error.
   assert.strictEqual(parsed.second.coalesced, true,
     `second call must carry coalesced=true; got ${JSON.stringify(parsed.second)}`);

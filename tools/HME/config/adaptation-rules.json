@@ -3,10 +3,10 @@
   "_schema": {
     "id": "stable identifier",
     "window": "how many recent events to consider",
-    "trigger": "condition expression — see _eval() for allowed forms",
+    "trigger": "condition expression -- see _eval() for allowed forms",
     "export": "shell variable to set when rule fires",
     "value_when_fired": "value exported when trigger is true",
-    "value_when_dormant": "value exported when trigger is false (optional — omits export when missing)"
+    "value_when_dormant": "value exported when trigger is false (optional -- omits export when missing)"
   },
   "rules": [
     {

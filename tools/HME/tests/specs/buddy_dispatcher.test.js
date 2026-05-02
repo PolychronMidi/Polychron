@@ -1,5 +1,5 @@
 'use strict';
-// Regression: buddy_dispatcher.py Phase 2 logic — orphan sweep, verdict
+// Regression: buddy_dispatcher.py Phase 2 logic -- orphan sweep, verdict
 // file, fast-path on clean. Tests exercise the pure-Python paths
 // (filesystem ops + JSON state) without spawning real claude buddies.
 const { test } = require('node:test');
@@ -143,9 +143,9 @@ test('dispatcher: floor-based escalation picks higher of (item, floor) per axis'
     const result = _runPython(sandbox, `
 ${_dispatcherImport()}
 import json
-# easy item + medium floor → effective = medium (floor wins)
-# hard item + easy floor → effective = hard (item wins)
-# medium item + medium floor → medium (equal)
+# easy item + medium floor -> effective = medium (floor wins)
+# hard item + easy floor -> effective = hard (item wins)
+# medium item + medium floor -> medium (equal)
 print(json.dumps({
   "easy_item_medium_floor": disp._effective_tier("easy", "medium"),
   "hard_item_easy_floor": disp._effective_tier("hard", "easy"),
@@ -189,7 +189,7 @@ print(verdict_path.read_text())
 `);
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
     const verdict = result.stdout;
-    assert.ok(verdict.includes('# Buddy fanout verdict — test-verdict-run'), 'verdict has run-id header');
+    assert.ok(verdict.includes('# Buddy fanout verdict -- test-verdict-run'), 'verdict has run-id header');
     assert.ok(verdict.includes('done: 1'), 'verdict counts done outcomes');
     assert.ok(verdict.includes('failed: 1'), 'verdict counts failed outcomes');
     assert.ok(verdict.includes('timeout: 1'), 'verdict counts timeout outcomes');
@@ -224,7 +224,7 @@ print(json.dumps({
   });
 });
 
-test('dispatch-mode: BUDDY_SYSTEM=0 + no override → mode=disabled, _list_buddies returns empty', () => {
+test('dispatch-mode: BUDDY_SYSTEM=0 + no override -> mode=disabled, _list_buddies returns empty', () => {
   _withDispatcherSandbox((sandbox) => {
     const result = _runPython(sandbox, `
 import os
@@ -247,7 +247,7 @@ print(json.dumps({
 
 test('enqueue-sentinel: posttooluse_bash skips enqueue when dispatch is disabled', () => {
   // The universal [enqueue: ...] sentinel must NOT create task files
-  // when the dispatcher is disabled — without a drainer, queued tasks
+  // when the dispatcher is disabled -- without a drainer, queued tasks
   // pile up forever. The hook should observe-and-warn but not write.
   //
   // Test isolation: sandbox PROJECT_ROOT with a custom .env that sets
@@ -487,7 +487,7 @@ print(json.dumps(out))
   });
 });
 
-test('dispatcher: render-error isolation — exception in dispatch produces failed verdict, not crash', () => {
+test('dispatcher: render-error isolation -- exception in dispatch produces failed verdict, not crash', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'fake-sid\n');
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'medium\n');
@@ -554,17 +554,17 @@ ${_dispatcherImport()}
 import json
 # Both axes resolve independently via max(item, floor)
 print(json.dumps({
-  # easy item + medium model-floor + high effort-floor → medium model, high effort
+  # easy item + medium model-floor + high effort-floor -> medium model, high effort
   "easy_item_mixed_floors": [
     disp._effective_tier("easy", "medium"),
     disp._effective_effort("easy", "high"),
   ],
-  # hard item + easy model-floor + low effort-floor → hard model, high effort (item wins both)
+  # hard item + easy model-floor + low effort-floor -> hard model, high effort (item wins both)
   "hard_item_low_floors": [
     disp._effective_tier("hard", "easy"),
     disp._effective_effort("hard", "low"),
   ],
-  # easy item + low effort-floor → low effort
+  # easy item + low effort-floor -> low effort
   "easy_item_low_effort_floor": disp._effective_effort("easy", "low"),
   # bad effort-floor falls back to medium
   "bad_effort_falls_back": disp._effective_effort("medium", "garbage"),
@@ -628,7 +628,7 @@ test('dispatcher: rate-limit detection handles TZ-aware wall-clock form', () => 
     const result = _runPython(sandbox, `
 ${_dispatcherImport()}
 import json, time
-# "resets at 7:50pm (Asia/Tokyo)" — TZ-aware form
+# "resets at 7:50pm (Asia/Tokyo)" -- TZ-aware form
 rl = disp._detect_rate_limit("rate limit hit. resets at 7:50pm (Asia/Tokyo)", "")
 # Reset epoch should be set; specific time depends on now
 print(json.dumps({
@@ -701,7 +701,7 @@ import json
 rl1 = disp._detect_rate_limit("you've hit your rate limit. resets in 2 hours.", "")
 # stderr with reset_time=epoch form
 rl2 = disp._detect_rate_limit('rate limit exceeded; "reset_time": 9999999999', "")
-# clean stderr — no rate limit
+# clean stderr -- no rate limit
 rl3 = disp._detect_rate_limit("ImportError: foo", "")
 print(json.dumps({
   "rl1_detected": rl1 is not None and rl1["detected"],
@@ -1029,7 +1029,7 @@ test('buddy_init.sh: HANDOFF=1 with primary.sid present adopts it (no fresh spaw
     if (result.status !== 0) {
       throw new Error(`buddy_init.sh failed: status=${result.status} stderr=${result.stderr}`);
     }
-    // No fresh claude spawn — legacy sid should mirror primary.
+    // No fresh claude spawn -- legacy sid should mirror primary.
     const legacySid = fs.readFileSync(path.join(tmp, 'hme-buddy.sid'), 'utf8').trim();
     assert.strictEqual(legacySid, 'inherited-sid-123',
       'HANDOFF=1 + primary.sid present: legacy sid mirrors the inherited primary, NOT a fresh spawn');
@@ -1058,7 +1058,7 @@ test('buddy_init.sh: HANDOFF=1 with no primary.sid spawns fresh + records as ina
       'inaugural primary.sid must equal the freshly-spawned legacy sid');
     // Symmetry rule: inaugural primary path MUST write the full trio
     // (sid + floor + effort_floor). Previously only sid + floor were
-    // written, leaving _promote() and inaugural-spawn divergent —
+    // written, leaving _promote() and inaugural-spawn divergent --
     // _read_primary fell back to "low" effort, so functionally OK but
     // structurally violated the writer-symmetry invariant documented
     // in BUDDY_SYSTEM.md's wisdom section.
@@ -1071,7 +1071,7 @@ test('buddy_init.sh: HANDOFF=1 with no primary.sid spawns fresh + records as ina
     const primaryEffort = fs.readFileSync(
       path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'utf8').trim();
     assert.strictEqual(primaryFloor, 'easy', 'inaugural floor matches BUDDY_MODEL_FLOORS=auto for count=1');
-    assert.strictEqual(primaryEffort, 'low', 'effort_floor follows canonical easy→low mapping');
+    assert.strictEqual(primaryEffort, 'low', 'effort_floor follows canonical easy->low mapping');
   });
 });
 
@@ -1239,9 +1239,9 @@ test('buddy_handoff.py: consult records call against senior metadata + status su
     assert.ok(Array.isArray(rec.consults), 'consults array recorded on senior file');
     assert.strictEqual(rec.consults.length, 1, 'one consult appended');
     assert.strictEqual(rec.consults[0].question_excerpt, 'is this thing on',
-      'question excerpt captured (≤60 chars)');
+      'question excerpt captured (<=60 chars)');
     assert.ok(typeof rec.consults[0].ts === 'number', 'consult ts is a numeric epoch');
-    // No primary.sid in sandbox — caller_sid should be null (not crash).
+    // No primary.sid in sandbox -- caller_sid should be null (not crash).
     assert.strictEqual(rec.consults[0].caller_sid, null,
       'caller_sid is null when no primary recorded');
     // status output must surface the consults count + recency suffix.
@@ -1268,19 +1268,19 @@ test('buddy_handoff.py: consult prints role-correct label (primary vs senior vs 
     fs.mkdirSync(stubBin, { recursive: true });
     fs.writeFileSync(path.join(stubBin, 'claude'),
       '#!/bin/bash\necho ok\nexit 0\n', { mode: 0o755 });
-    // Case 1: target IS the active primary → "consulting primary"
+    // Case 1: target IS the active primary -> "consulting primary"
     let r = _runHandoff(sandbox,
       ['consult', '--sid=the-active-primary', '--question=hi'],
       { PATH: `${stubBin}:${process.env.PATH}` });
     assert.match(r.stderr, /consulting primary sid=the-active-primary/,
       'primary role labeled correctly');
-    // Case 2: target is in seniors pool → "consulting senior"
+    // Case 2: target is in seniors pool -> "consulting senior"
     r = _runHandoff(sandbox,
       ['consult', '--sid=a-real-senior', '--question=hi'],
       { PATH: `${stubBin}:${process.env.PATH}` });
     assert.match(r.stderr, /consulting senior sid=a-real-senior/,
       'senior role labeled correctly');
-    // Case 3: unknown sid (neither primary nor in pool) → "consulting buddy"
+    // Case 3: unknown sid (neither primary nor in pool) -> "consulting buddy"
     r = _runHandoff(sandbox,
       ['consult', '--sid=who-knows', '--question=hi'],
       { PATH: `${stubBin}:${process.env.PATH}` });
@@ -1299,7 +1299,7 @@ test('buddy_handoff.py: consult captures caller_sid from active primary (cross-s
     fs.writeFileSync(path.join(seniorsDir, 'target-senior.json'), JSON.stringify({
       sid: 'target-senior', floor: 'easy', effort_floor: 'low',
     }));
-    // Active primary in the sandbox — the caller identity.
+    // Active primary in the sandbox -- the caller identity.
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'),
       'caller-primary-sid\n');
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'easy\n');
@@ -1332,7 +1332,7 @@ test('buddy_handoff.py: consult emits caller_sid=None debug warning when no prim
     fs.writeFileSync(path.join(seniorsDir, 'orphan-target.json'), JSON.stringify({
       sid: 'orphan-target', floor: 'easy', effort_floor: 'low',
     }));
-    // No primary.sid in sandbox → caller_sid will resolve to None.
+    // No primary.sid in sandbox -> caller_sid will resolve to None.
     const stubBin = path.join(sandbox, 'stub-bin');
     fs.mkdirSync(stubBin, { recursive: true });
     fs.writeFileSync(path.join(stubBin, 'claude'),
@@ -1365,7 +1365,7 @@ test('buddy_handoff.py: status shows ctx=missing for primary with purged transcr
     assert.match(r.stdout, /ctx=missing\s+\(transcript purged/,
       'no-transcript-file case shows ctx=missing with stale label');
     assert.doesNotMatch(r.stdout, /ctx=\?/,
-      'should not use the old "ctx=?" sentinel — purged is now distinct');
+      'should not use the old "ctx=?" sentinel -- purged is now distinct');
   });
 });
 
@@ -1535,7 +1535,7 @@ test('buddy_handoff.py: promote of a sid in senior pool archives the senior file
 
 test('buddy_handoff.py: ensure_primary is idempotent when primary already alive', () => {
   // Option D from BUDDY_SYSTEM.md Q1: lazy-spawn helper. The "already
-  // alive" path must short-circuit without invoking buddy_init.sh —
+  // alive" path must short-circuit without invoking buddy_init.sh --
   // calling it from the dispatcher's pre-task path means it fires on
   // every drain; unnecessary spawn-attempts there would be wasteful.
   _withDispatcherSandbox((sandbox) => {
@@ -1628,7 +1628,7 @@ test('buddy_handoff.py: status omits consults suffix for a senior with no consul
       sid: 'never-called-senior', floor: 'easy', effort_floor: 'low',
       retired_at_iso: '2026-04-30T00:00:00Z', reason: 'manual',
       context_at_retire: { tokens: 700000 },
-      // No `consults` key — matches the schema before the field existed.
+      // No `consults` key -- matches the schema before the field existed.
     }));
     const result = _runHandoff(sandbox, ['status']);
     assert.strictEqual(result.status, 0);
@@ -1684,7 +1684,7 @@ test('buddy_handoff.py: consult history is capped at 50 entries (bounded growth)
     assert.strictEqual(result.status, 0);
     const rec = JSON.parse(fs.readFileSync(path.join(seniorsDir, `${sid}.json`), 'utf8'));
     assert.strictEqual(rec.consults.length, 50, 'consults array capped at 50');
-    // Oldest entry must have rotated off — q0 is gone, q1 is now first.
+    // Oldest entry must have rotated off -- q0 is gone, q1 is now first.
     assert.strictEqual(rec.consults[0].question_excerpt, 'q1',
       'oldest consult rotated off when cap reached');
     assert.strictEqual(rec.consults[49].question_excerpt, 'will this push past the cap',
@@ -1694,14 +1694,14 @@ test('buddy_handoff.py: consult history is capped at 50 entries (bounded growth)
 
 test('buddy_init.sh: HANDOFF=1 + no primary.sid + stale legacy.sid spawns fresh anyway', () => {
   // Regression: previously, a stale tmp/hme-buddy.sid from a pre-paradigm
-  // session wedged the inaugural spawn — _spawn_buddy short-circuited on
+  // session wedged the inaugural spawn -- _spawn_buddy short-circuited on
   // the existing legacy file (line 159 guard), so no fresh buddy was
   // spawned and no primary.sid was recorded. State stayed wedged across
   // SessionStarts. The fall-through path now clears stale legacy pointers
   // before invoking _spawn_buddy when HANDOFF=1 + no primary.sid.
   _withDispatcherSandbox((sandbox) => {
     const tmp = path.join(sandbox, 'tmp');
-    // Stale legacy from before the paradigm shipped — would short-circuit
+    // Stale legacy from before the paradigm shipped -- would short-circuit
     // _spawn_buddy under the buggy code path.
     fs.writeFileSync(path.join(tmp, 'hme-buddy.sid'), 'stale-pre-paradigm-buddy\n');
     fs.writeFileSync(path.join(tmp, 'hme-buddy.floor'), 'medium\n');
@@ -1713,7 +1713,7 @@ test('buddy_init.sh: HANDOFF=1 + no primary.sid + stale legacy.sid spawns fresh 
     });
     assert.strictEqual(result.status, 0, `buddy_init.sh failed: ${result.stderr}`);
     // Wait for the disowned spawn to land its sid file. The new sid must
-    // overwrite the stale one — match `fake-sid-<pid>` from the stub.
+    // overwrite the stale one -- match `fake-sid-<pid>` from the stub.
     assert.ok(_waitForFiles(sandbox, ['hme-buddy.sid', 'hme-buddy-primary.sid'], 5000),
       'fresh inaugural spawn must record both legacy and primary sid files');
     const legacy = fs.readFileSync(path.join(tmp, 'hme-buddy.sid'), 'utf8').trim();
@@ -1736,7 +1736,7 @@ test('buddy_init.sh: BUDDY_COUNT=3 + HANDOFF=1 forces count=1 (multi-buddy mutua
     });
     assert.strictEqual(result.status, 0,
       `buddy_init.sh failed: stderr=${result.stderr}`);
-    // No primary present + handoff=1 → fall through to spawn ONE fresh,
+    // No primary present + handoff=1 -> fall through to spawn ONE fresh,
     // not three. The hme-buddy-1.sid / -2.sid / -3.sid multi-buddy paths
     // must NOT be created.
     assert.ok(_waitForFiles(sandbox, ['hme-buddy.sid'], 5000),
@@ -1837,7 +1837,7 @@ test('buddy_handoff.py: consult prepends KB-CRYSTALLIZE directive to the questio
       ['consult', '--sid=echo-target', '--question=this-is-the-real-question'],
       { PATH: `${stubBin}:${process.env.PATH}` });
     assert.strictEqual(result.status, 0);
-    assert.match(result.stdout, /FRAMEWORK DIRECTIVE — KB CRYSTALLIZATION/,
+    assert.match(result.stdout, /FRAMEWORK DIRECTIVE -- KB CRYSTALLIZATION/,
       'directive prefix present in the prompt sent to senior');
     assert.match(result.stdout, /\[\[KB-CRYSTALLIZE\]\]/,
       'directive includes the canonical block markers');
@@ -1882,7 +1882,7 @@ test('buddy_handoff.py: consult response with finding-markers triggers KB-crysta
 
 test('buddy_handoff.py: consult response without finding-markers stays silent (no nudge noise)', () => {
   // Inverse-case lock: routine consults without findings must NOT
-  // emit a nudge. Otherwise the nudge becomes Goodhart-bait — the
+  // emit a nudge. Otherwise the nudge becomes Goodhart-bait -- the
   // detector training the agent that consult-noise satisfies it.
   _withDispatcherSandbox((sandbox) => {
     const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');

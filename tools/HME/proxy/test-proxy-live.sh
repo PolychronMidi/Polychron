@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Live smoke test — sends REAL requests through the proxy to every provider.
-# Verifies actual round-trip: proxy → real API → response back through proxy.
+# Live smoke test -- sends REAL requests through the proxy to every provider.
+# Verifies actual round-trip: proxy -> real API -> response back through proxy.
 # Uses minimal prompts (short, cheap) to avoid burning quota.
 #
-# Requires: .env sourced for API keys. Proxy NOT on mainline — this script
+# Requires: .env sourced for API keys. Proxy NOT on mainline -- this script
 # starts its own isolated proxy instance on an ephemeral port.
 set -euo pipefail
 
@@ -155,7 +155,7 @@ else
     '"choices"|"message"|"content"'
 fi
 
-# Gemini (non-OpenAI format — uses query param auth, different path)
+# Gemini (non-OpenAI format -- uses query param auth, different path)
 echo " Gemini "
 if [ -z "${GEMINI_API_KEY:-}" ]; then
   echo "  SKIP: no GEMINI_API_KEY"
@@ -207,6 +207,6 @@ if $PASS; then
   echo "ALL TESTED PROVIDERS PASSED"
   exit 0
 else
-  echo "SOME PROVIDERS FAILED — check output above"
+  echo "SOME PROVIDERS FAILED -- check output above"
   exit 1
 fi

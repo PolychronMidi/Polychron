@@ -1,9 +1,9 @@
-# H3: Hook latency telemetry — each hook self-logs its wall time to
+# H3: Hook latency telemetry -- each hook self-logs its wall time to
 # log/hme-hook-latency.jsonl on exit via a trap. The HookLatencyVerifier
 # reads this log and flags hooks that exceed 500ms p95.
 # _HME_HOOK_START_NS / _HME_HOOK_NAME / _HME_HOOK_VERDICT are captured
 # by the dispatcher (_safety.sh) BEFORE this file is sourced, so
-# BASH_SOURCE[1] resolves to the hook script — not this sub-helper.
+# BASH_SOURCE[1] resolves to the hook script -- not this sub-helper.
 
 _stderr_verdict() {
   # Set the one-line exit summary. Last call wins. Any hook can use this.
@@ -12,7 +12,7 @@ _stderr_verdict() {
 
 _hme_log_hook_latency() {
   # PROJECT_ROOT must come from .env (sourced above). Never silently fall back
-  # to $(pwd) / cwd — that spawns orphan log/ dirs under whatever directory the
+  # to $(pwd) / cwd -- that spawns orphan log/ dirs under whatever directory the
   # tool happened to be running in.
   if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
     return 0
@@ -21,7 +21,7 @@ _hme_log_hook_latency() {
   # to "unknown" in _safety.sh when BASH_SOURCE[1] is unset (e.g. when
   # _safety.sh is invoked from an unusual context such as background
   # subshell or eval). universal_pulse.py groups latencies by hook name
-  # and per-bucket p95 — an "unknown" bucket aggregates entries from
+  # and per-bucket p95 -- an "unknown" bucket aggregates entries from
   # ANY caller, which both false-alarms ("unknown hook is slow!") and
   # provides no actionable signal (we don't know WHICH hook). Drop here
   # rather than emit and filter later: keeps the log honest.
@@ -32,7 +32,7 @@ _hme_log_hook_latency() {
   mkdir -p "$(dirname "$log_file")" 2>/dev/null
   printf '{"hook":"%s","duration_ms":%d,"ts":%s}\n' \
     "$_HME_HOOK_NAME" "$1" "$(date +%s)" >> "$log_file" 2>/dev/null
-  # Rotate when log exceeds 10000 lines — keeps last 5000
+  # Rotate when log exceeds 10000 lines -- keeps last 5000
   local size
   size=$(wc -l < "$log_file" 2>/dev/null || echo 0)
   if [ "$size" -gt 10000 ]; then
@@ -46,7 +46,7 @@ _hme_log_hook_latency() {
 # dispatches. Either the explicit verdict set by `_stderr_verdict` wins,
 # or a MINIMAL default fires so the agent-side forwarded notification
 # (Stop hook feedback: [cmd]: <stderr>) carries a short token instead
-# of "No stderr output" filler — but without adding character overhead
+# of "No stderr output" filler -- but without adding character overhead
 # beyond the empty placeholder. Claude Code already shows the hook
 # name in the notification header, so we omit it here; "ok" / "fail=<N>"
 # is the smallest signal set that still distinguishes clean from broken.

@@ -19,12 +19,12 @@
   ],
 
   "paginated_paths": [
-    {"prefix": "log/session-transcript.jsonl", "max_lines": 100, "reason": "28MB transcript — tail only; use offset to walk back"},
-    {"prefix": "log/hme.log",                  "max_lines": 300, "reason": "debug log — tail only unless offset is set"},
-    {"prefix": "log/hme-hook-latency.jsonl",   "max_lines": 200, "reason": "append-only telemetry — tail only"},
-    {"prefix": "metrics/hme-activity.jsonl",   "max_lines": 300, "reason": "1.6MB activity stream — tail only"},
-    {"prefix": "metrics/trace-summary.json",   "max_lines": 500, "reason": "pipeline summary — use offset to walk sections"},
-    {"prefix": "metrics/hme-ground-truth.jsonl","max_lines": 50, "reason": "append-only — tail only"}
+    {"prefix": "log/session-transcript.jsonl", "max_lines": 100, "reason": "28MB transcript -- tail only; use offset to walk back"},
+    {"prefix": "log/hme.log",                  "max_lines": 300, "reason": "debug log -- tail only unless offset is set"},
+    {"prefix": "log/hme-hook-latency.jsonl",   "max_lines": 200, "reason": "append-only telemetry -- tail only"},
+    {"prefix": "metrics/hme-activity.jsonl",   "max_lines": 300, "reason": "1.6MB activity stream -- tail only"},
+    {"prefix": "metrics/trace-summary.json",   "max_lines": 500, "reason": "pipeline summary -- use offset to walk sections"},
+    {"prefix": "metrics/hme-ground-truth.jsonl","max_lines": 50, "reason": "append-only -- tail only"}
   ],
 
   "soft_size_limit_bytes": 150000,

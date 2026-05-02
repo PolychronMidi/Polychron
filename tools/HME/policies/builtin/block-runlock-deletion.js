@@ -8,7 +8,7 @@
  *
  * Coverage: rm/unlink/shred/truncate verbs, find -delete, mv away,
  * redirect truncate (>tmp/run.lock), python/node scripted unlink.
- * Same matrix as the bash version — verified by integration test in
+ * Same matrix as the bash version -- verified by integration test in
  * the previous PR (8/9 bypass attempts blocked; the only escape is
  * runtime variable substitution which would need an actual shell to
  * resolve).

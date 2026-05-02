@@ -51,9 +51,9 @@ _hme_check_errors_inline() {
   # agent-errors nor observations -- consume silently (advancing the
   # watermark past them is enough to prove this helper ran).
   local _OBS_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
-  # Self-origin source tags — same list as lifesaver.sh _SELF_TAG_RE.
+  # Self-origin source tags -- same list as lifesaver.sh _SELF_TAG_RE.
   # Lines tagged with these writers are observation-only regardless of
-  # severity word (worker daemons, supervisors, llamacpp invariants —
+  # severity word (worker daemons, supervisors, llamacpp invariants --
   # operator/supervisor concerns, not agent code issues).
   local _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
   local _CANARY_RE='\[CANARY-'
@@ -95,7 +95,7 @@ _hme_check_errors_inline() {
   # Only emit if there are agent-errors. Self/observation errors are
   # informational; surfacing them mid-turn would create noise.
   if [ -n "$AGENT_ERRORS" ]; then
-    local BANNER="🚨 LIFESAVER - MID-TURN ERRORS DETECTED:
+    local BANNER="[ALERT] LIFESAVER - MID-TURN ERRORS DETECTED:
 ${AGENT_ERRORS}
 
 These fired during the just-completed tool call. Diagnose and fix BEFORE the next tool call accumulates further failures on top of broken state."

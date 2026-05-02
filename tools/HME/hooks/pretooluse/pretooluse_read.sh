@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# PreToolUse: Read — hard-block forbidden paths, enforce pagination on huge files.
+# PreToolUse: Read -- hard-block forbidden paths, enforce pagination on huge files.
 # Guards agent context against theory essays, binary models, autogen dumps, and
 # append-only logs being read in full.
 
@@ -28,13 +28,13 @@ fi
 
 CONFIG="${PROJECT_ROOT}/tools/HME/config/context-guards.json"
 if [ ! -f "$CONFIG" ]; then
-  # No config → behave as before
+  # No config -> behave as before
   exit 0
 fi
 
 # Hard block list: never permit any read of these paths.
 # FAIL-LOUD: was `2>/dev/null` + `try/except: sys.exit(0)` which made every
-# crash silently fail-OPEN — a malformed config or python crash defeated the
+# crash silently fail-OPEN -- a malformed config or python crash defeated the
 # blocklist. Now: stderr captured, exceptions raise; load failure surfaces
 # to errors.log so LIFESAVER catches it and the gate fails CLOSED visibly.
 _PR_GATE_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pr_gate_err_$$")
@@ -103,7 +103,7 @@ if [ -n "$PAG" ]; then
   exit 2
 fi
 
-#  Soft size limit: large unexplored file without offset/limit → warn
+#  Soft size limit: large unexplored file without offset/limit -> warn
 if [ -f "$FILE" ]; then
   SIZE=$(stat -c %s "$FILE" 2>/dev/null || echo 0)
   # FAIL-LOUD: corrupted config silently produced default-150000 soft limit.
@@ -118,7 +118,7 @@ if [ -f "$FILE" ]; then
   fi
   rm -f "$_PR_SOFT_ERR" 2>/dev/null
   if [ "$SIZE" -gt "$SOFT" ] && [ -z "$LIMIT" ] && [ -z "$OFFSET" ]; then
-    echo "NEXUS: $REL is $(( SIZE / 1024 ))KB — consider passing limit/offset to Read if you only need part of it (soft threshold $(( SOFT / 1024 ))KB)." >&2
+    echo "NEXUS: $REL is $(( SIZE / 1024 ))KB -- consider passing limit/offset to Read if you only need part of it (soft threshold $(( SOFT / 1024 ))KB)." >&2
   fi
 fi
 

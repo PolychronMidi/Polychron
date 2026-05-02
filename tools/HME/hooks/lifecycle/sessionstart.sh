@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME SessionStart: orientation — surface previous session state + current project state
+# HME SessionStart: orientation -- surface previous session state + current project state
 #
 # MUST RUN BEFORE: userpromptsubmit
 # COORDINATES WITH: postcompact
@@ -30,9 +30,9 @@ if [[ "${#BROKEN_HOOKS[@]}" -gt 0 ]]; then
   TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   mkdir -p "$(dirname "$ERROR_LOG")"
   for name in "${BROKEN_HOOKS[@]}"; do
-    echo "[$TS] [hooks] FAIL: $name not executable — run: chmod +x ${HOOKS_DIR_REL}/$name" >> "$ERROR_LOG"
+    echo "[$TS] [hooks] FAIL: $name not executable -- run: chmod +x ${HOOKS_DIR_REL}/$name" >> "$ERROR_LOG"
   done
-  echo "🚨 LIFESAVER: ${#BROKEN_HOOKS[@]} hook(s) not executable: ${BROKEN_HOOKS[*]} — logged to hme-errors.log" >&2
+  echo "[ALERT] LIFESAVER: ${#BROKEN_HOOKS[@]} hook(s) not executable: ${BROKEN_HOOKS[*]} -- logged to hme-errors.log" >&2
 fi
 
 # Capture previous session's pending items BEFORE state reset
@@ -53,13 +53,13 @@ mkdir -p "${PROJECT}/tmp"
 
 _signal_emit session_start sessionstart session '{}'
 
-# Initialize onboarding state machine — every new session re-arms the walkthrough
+# Initialize onboarding state machine -- every new session re-arms the walkthrough
 source "$HOOKS_DIR/../helpers/_onboarding.sh"
 _onb_init
 
 # HME Proxy + Supervisor (:9099)
 # Proxy owns shim + MCP as supervised children. Starting the proxy is all
-# that.s needed — the worker (9098) absorbs every former shim endpoint.
+# that.s needed -- the worker (9098) absorbs every former shim endpoint.
 # Claude Code connects via SSE: url = http://127.0.0.1:9099/mcp
 PROXY_PORT="${HME_PROXY_PORT:-9099}"
 if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
@@ -68,7 +68,7 @@ if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
     if [ -f "$PROXY_SCRIPT" ]; then
       HME_PROXY_PORT="$PROXY_PORT" nohup node "$PROXY_SCRIPT" \
         > "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 &
-      echo "HME proxy+supervisor started on :${PROXY_PORT} (pid $!) — worker will spawn as a child" >&2
+      echo "HME proxy+supervisor started on :${PROXY_PORT} (pid $!) -- worker will spawn as a child" >&2
     fi
   else
     echo "HME proxy already running on :${PROXY_PORT}" >&2
@@ -84,7 +84,7 @@ if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   echo "export HME_ACTIVE=1" >> "$CLAUDE_ENV_FILE"
 fi
 
-# Worker health — surface recent_errors
+# Worker health -- surface recent_errors
 # The worker's /health endpoint returns a `recent_errors` array (populated by
 # the meta-observer, llamacpp_supervisor, rag_proxy, etc.) that previously had
 # no surface. Agents would step over accumulating CUDA/memory/connection
@@ -93,7 +93,7 @@ fi
 WORKER_PORT="${HME_SHIM_PORT:-9098}"
 # Preemptively drop recent_errors older than 30 min so stale entries from a
 # prior session (typically watchdog fires that resolved themselves) don't
-# keep re-surfacing here → LIFESAVER → next-turn block. 30 min is longer
+# keep re-surfacing here -> LIFESAVER -> next-turn block. 30 min is longer
 # than the typical active-debug window; anything older is operationally dead.
 curl -sf --max-time 2 -X POST "http://127.0.0.1:${WORKER_PORT}/clear-errors" \
   -H 'Content-Type: application/json' \
@@ -113,7 +113,7 @@ if [ -s "$_SS_CURL_ERR" ] && ! grep -qiE 'connect|refused|timed out|timeout' "$_
 fi
 rm -f "$_SS_CURL_ERR" 2>/dev/null
 if [ -n "$HEALTH_JSON" ]; then
-  # Write JSON to a temp file and have python read it — both `<<PYEOF` and
+  # Write JSON to a temp file and have python read it -- both `<<PYEOF` and
   # piped stdin together are ambiguous (heredoc wins, stdin gets the script
   # text instead of the payload). Temp-file dance is the reliable form.
   _HEALTH_TMP=$(mktemp -t hme-health.XXXXXX)
@@ -142,11 +142,11 @@ if len(errs) > 10:
   rm -f "$_HEALTH_TMP"
   if [ -n "$RECENT_ERRORS" ]; then
     # Also write to hme-errors.log so the userpromptsubmit banner picks them
-    # up on the next turn — SessionStart stderr alone can be missed.
+    # up on the next turn -- SessionStart stderr alone can be missed.
     TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     mkdir -p "$(dirname "$ERROR_LOG")"
     echo "$RECENT_ERRORS" | sed "s|^|[$TS] [worker-health] |" >> "$ERROR_LOG"
-    echo -e "\n🚨 $RECENT_ERRORS" >&2
+    echo -e "\n[ALERT] $RECENT_ERRORS" >&2
   fi
 fi
 
@@ -177,7 +177,7 @@ LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)
 ONB_STEP="$(_onb_step_label)"
 echo -e "HyperMeta Ecstasy active. Load skill: /HME\nOnboarding: $ONB_STEP$MSG" >&2
 
-# Surface carried-over open todos from previous session — so the agent resumes
+# Surface carried-over open todos from previous session -- so the agent resumes
 # with full visibility into unfinished work. LIFESAVER criticals surface first,
 # then everything else. The TodoWrite hook will re-merge these into native view
 # on the next TodoWrite call.
@@ -213,7 +213,7 @@ rm -f "$_SS_CARRY_ERR" 2>/dev/null
 
 # Surface doc/TODO.md "In flight" section so cross-cycle handoff state
 # (per skill-set's SPEC/TODO substrate) is visible at session start
-# alongside the i/todo carry-over. Read-only sed extraction — no python
+# alongside the i/todo carry-over. Read-only sed extraction -- no python
 # needed for a single section read.
 _TODO_MD="$PROJECT/doc/TODO.md"
 if [ -f "$_TODO_MD" ]; then
@@ -227,14 +227,14 @@ fi
 
 # Lance _deletions compaction
 # If code_chunks.lance/_deletions/ has accumulated too many arrow files (>50),
-# run a background compaction so table opens stay fast. Non-blocking — runs
+# run a background compaction so table opens stay fast. Non-blocking -- runs
 # detached and won't delay session start. The invariant warns at >50; we
 # compact at the same threshold so the session usually starts clean.
 _LANCE_DEL="$PROJECT/tools/HME/KB/code_chunks.lance/_deletions"
 if [ -d "$_LANCE_DEL" ]; then
   _DEL_COUNT=$(ls -1 "$_LANCE_DEL" 2>/dev/null | wc -l)
   if [ "$_DEL_COUNT" -gt 50 ]; then
-    echo "HME: lance _deletions has $_DEL_COUNT files — compacting in background" >&2
+    echo "HME: lance _deletions has $_DEL_COUNT files -- compacting in background" >&2
     PROJECT_ROOT="$PROJECT" python3 "$PROJECT/scripts/compact-lance-tables.py" \
       > "$PROJECT/log/hme-lance-compact.log" 2>&1 &
   fi
@@ -242,7 +242,7 @@ fi
 
 # Capture a session-start holograph so the stop hook can diff against it and
 # surface drift that happened during the session. The holograph is the
-# substrate for self-coherence time-series analysis — every session adds a
+# substrate for self-coherence time-series analysis -- every session adds a
 # data point. Run in background so SessionStart stays fast.
 # Background-spawn discipline (per CLAUDE.md): stderr goes to a per-script
 # `log/hme-bg-<name>.err` file, truncated per session-start, surfaced via
@@ -291,7 +291,7 @@ if [ -f "$TRAJ_SCRIPT" ]; then
 fi
 
 # Surface the current HCI trajectory summary so agents see the health arc.
-# Wait for the refresh job (bounded by a short timeout — analyze-hci-trajectory
+# Wait for the refresh job (bounded by a short timeout -- analyze-hci-trajectory
 # typically completes in <3s; if it's stuck we'd rather show stale than hang).
 if [ -f "$TRAJ_SCRIPT" ]; then
   if [ -n "$TRAJ_PID" ]; then
@@ -318,7 +318,7 @@ fi
 
 # Antagonism bridge: streak calibrator recommendation
 # The bridge observes post-banner resolution velocity across recent turns and
-# recommends where HME_STREAK_WARN should sit. Currently observe-only — prints
+# recommends where HME_STREAK_WARN should sit. Currently observe-only -- prints
 # the recommendation and rationale so we can verify the signal tracks reality
 # before wiring auto-application. If recommended != current default, surface.
 CALIB_SCRIPT="$PROJECT/tools/HME/activity/streak_calibrator.py"
@@ -355,7 +355,7 @@ if [ -n "$PREV_PENDING" ]; then
   echo -e "\nPrevious session left unfinished:$PREV_PENDING" >&2
 fi
 
-# R23 #10: Substrate pre-turn briefing — four-arc state auto-surfaced at
+# R23 #10: Substrate pre-turn briefing -- four-arc state auto-surfaced at
 # session start so the agent enters with substrate context visible. Reads
 # pre-computed artifacts only (no heavy computation), silent if unavailable.
 SUBSTRATE_BRIEF=$(python3 -c "
@@ -379,11 +379,11 @@ print('\\n'.join(bits))
 " 2>/dev/null)
 [ -n "$SUBSTRATE_BRIEF" ] && echo -e "\n$SUBSTRATE_BRIEF" >&2
 
-# Buddy system — auto-init the persistent peer subagent for this session
+# Buddy system -- auto-init the persistent peer subagent for this session
 # when .env BUDDY_SYSTEM=1 (default). The helper backgrounds itself so
 # SessionStart returns immediately; sid file appears once init completes
 # (~10-20s). Reasoning calls before then fall through to ephemeral
-# dispatch. Idempotent — no-op if a buddy is already active.
+# dispatch. Idempotent -- no-op if a buddy is already active.
 _BUDDY_INIT="$PROJECT_ROOT/tools/HME/hooks/helpers/buddy_init.sh"
 [ -x "$_BUDDY_INIT" ] && bash "$_BUDDY_INIT" >/dev/null 2>&1 || true
 

@@ -3,7 +3,7 @@
 #
 # Creates RAM-backed buffers at /mnt/llamacpp-buffer-gpu{0,1}.
 # When llama-server restarts, it can mmap the GGUF from the RAM copy
-# (~instant) instead of re-reading from SSD (~seconds–minutes for 18 GB).
+# (~instant) instead of re-reading from SSD (~seconds-minutes for 18 GB).
 #
 # Usage:
 #   sudo bash tools/HME/scripts/setup_llamacpp_buffers.sh setup    # create mounts
@@ -26,8 +26,8 @@ GPU1_MOUNT="/mnt/llamacpp-buffer-gpu1"
 MODELS_DIR="${HME_MODELS_DIR:-$HOME/models}"
 
 # Instance topology: which GGUF(s) each buffer mirrors.
-#   arbiter on GPU0 → phi-4 + v6 LoRA
-#   coder   on GPU1 → qwen3-coder-30b
+#   arbiter on GPU0 -> phi-4 + v6 LoRA
+#   coder   on GPU1 -> qwen3-coder-30b
 ARBITER_MODEL="${HME_ARBITER_GGUF:-$MODELS_DIR/phi-4-Q4_K_M.gguf}"
 CODER_MODEL="${HME_CODER_GGUF:-$MODELS_DIR/qwen3-coder-30b-Q4_K_M.gguf}"
 
@@ -48,7 +48,7 @@ case "${1:-status}" in
 
   warm)
     echo "Warming buffers with GGUF files..."
-    # GPU0 (arbiter) → phi-4 + v6 LoRA
+    # GPU0 (arbiter) -> phi-4 + v6 LoRA
     if mountpoint -q "$GPU0_MOUNT" 2>/dev/null; then
       for src in "$ARBITER_MODEL"; do
         if [ ! -f "$src" ]; then
@@ -60,7 +60,7 @@ case "${1:-status}" in
           src_size=$(stat -c%s "$src")
           dst_size=$(stat -c%s "$dst")
           if [ "$src_size" = "$dst_size" ]; then
-            echo "  arbiter → $GPU0_MOUNT: $(basename "$src") already warm ($(numfmt --to=iec $dst_size))"
+            echo "  arbiter -> $GPU0_MOUNT: $(basename "$src") already warm ($(numfmt --to=iec $dst_size))"
             continue
           fi
         fi
@@ -71,14 +71,14 @@ case "${1:-status}" in
           echo "  NOTE: increase LLAMACPP_BUFFER_SIZE env var (currently $BUFFER_SIZE)."
           continue
         fi
-        echo "  Copying $(basename "$src") ($(numfmt --to=iec $src_size)) → $GPU0_MOUNT..."
+        echo "  Copying $(basename "$src") ($(numfmt --to=iec $src_size)) -> $GPU0_MOUNT..."
         cp "$src" "$dst"
       done
     else
       echo "  SKIP: $GPU0_MOUNT not mounted (run 'setup' first)"
     fi
 
-    # GPU1 (coder) → qwen3-coder-30b
+    # GPU1 (coder) -> qwen3-coder-30b
     if mountpoint -q "$GPU1_MOUNT" 2>/dev/null; then
       if [ -f "$CODER_MODEL" ]; then
         dst="$GPU1_MOUNT/$(basename "$CODER_MODEL")"
@@ -86,7 +86,7 @@ case "${1:-status}" in
           src_size=$(stat -c%s "$CODER_MODEL")
           dst_size=$(stat -c%s "$dst")
           if [ "$src_size" = "$dst_size" ]; then
-            echo "  coder → $GPU1_MOUNT: $(basename "$CODER_MODEL") already warm ($(numfmt --to=iec $dst_size))"
+            echo "  coder -> $GPU1_MOUNT: $(basename "$CODER_MODEL") already warm ($(numfmt --to=iec $dst_size))"
           else
             echo "  Re-copying $(basename "$CODER_MODEL") (size changed)..."
             cp "$CODER_MODEL" "$dst"
@@ -98,7 +98,7 @@ case "${1:-status}" in
             echo "  SKIP: $(basename "$CODER_MODEL") $(numfmt --to=iec $src_size) > buffer avail $(numfmt --to=iec $buf_avail)"
             echo "  NOTE: increase LLAMACPP_BUFFER_SIZE env var (currently $BUFFER_SIZE)."
           else
-            echo "  Copying $(basename "$CODER_MODEL") ($(numfmt --to=iec $src_size)) → $GPU1_MOUNT..."
+            echo "  Copying $(basename "$CODER_MODEL") ($(numfmt --to=iec $src_size)) -> $GPU1_MOUNT..."
             cp "$CODER_MODEL" "$dst"
           fi
         fi

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Memory-feature redirect — hijacks any Read/Write/Edit/Glob/Grep whose input
+ * Memory-feature redirect -- hijacks any Read/Write/Edit/Glob/Grep whose input
  * touches the Claude Code native memory directory (`.claude/projects/*\/memory/`)
  * and replaces the tool_result with:
  *
@@ -10,7 +10,7 @@
  *   3. (for Write/Edit only) the original hook-block response, so the agent
  *      can still see why the write didn't land on disk
  *
- * Rationale: the memory file feature is the wrong abstraction for Polychron —
+ * Rationale: the memory file feature is the wrong abstraction for Polychron --
  * the agent has been observed writing self-corrective "feedback memories"
  * about behavioral regressions instead of actually changing behavior. The
  * HME KB is the canonical place for project knowledge and is semantically
@@ -48,7 +48,7 @@ function _deriveQuery(input) {
 }
 
 function _kbSearch(query) {
-  // Shim's /enrich endpoint is a direct KB semantic search — no onboarding
+  // Shim's /enrich endpoint is a direct KB semantic search -- no onboarding
   // chain, no auto-narration, just RAG hits. Cleaner output than going
   // through the MCP /tool/learn path.
   return new Promise((resolve) => {
@@ -78,7 +78,7 @@ function _kbSearch(query) {
           for (const e of entries.slice(0, 5)) {
             const title = e.title || e.id || '(untitled)';
             const content = String(e.content || '').replace(/\s+/g, ' ').slice(0, 220);
-            lines.push(`• ${title}`);
+            lines.push(`* ${title}`);
             if (content) lines.push(`  ${content}`);
           }
           resolve(lines.join('\n'));

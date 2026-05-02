@@ -3,18 +3,18 @@
 > **Official alternative shipped:** `.claude/output-styles/polychron-trimmed.md`
 > mirrors this canonical content as an Anthropic-supported [Output Style](https://code.claude.com/docs/en/agent-sdk/modifying-system-prompts).
 > Activate in interactive Claude Code via `/output-style polychron-trimmed`.
-> Output Styles is the blessed mechanism for system-prompt replacement —
+> Output Styles is the blessed mechanism for system-prompt replacement --
 > won't break on Claude Code updates and works without the proxy.
 > The proxy-based `replace_system.js` remains active as a parallel path
 > (covers cases where Claude Code is invoked outside the workspace, e.g.
 > `claude -p` subprocesses with `ANTHROPIC_BASE_URL` set). The proxy's
-> unique value is `filter_tools.js` — Output Styles does NOT filter the
+> unique value is `filter_tools.js` -- Output Styles does NOT filter the
 > tools array.
 
 
 `canonical-system-prompt.md` is the project-curated system prompt that
 replaces Claude Code's default when `HME_REPLACE_SYSTEM_PROMPT=1` in
-`.env`. The replacement is wholesale — Anthropic can rephrase or
+`.env`. The replacement is wholesale -- Anthropic can rephrase or
 restructure their default at will and our content still ships verbatim,
 no regex anchors to drift.
 
@@ -24,19 +24,19 @@ proxy-routed request after save (no proxy restart needed).
 
 ## What's in the canonical (and why)
 
-15 lines / ~1.8KB — down 93% from Claude Code's ~28KB default block 2.
+15 lines / ~1.8KB -- down 93% from Claude Code's ~28KB default block 2.
 Only content that the system-prompt layer can do (because CLAUDE.md and
 HME hooks can't):
 
 1. Identity statement + pointer to CLAUDE.md and HME hooks as the
    authority for project-specific behavior
-2. Two `IMPORTANT:` security directives — refusal-policy text from
+2. Two `IMPORTANT:` security directives -- refusal-policy text from
    Anthropic that triggers refusals during reasoning, not just shaping
 3. Output channel awareness (text outside tool calls is user-facing,
    markdown rendering, no-colon-before-tool-call convention)
-4. `<system-reminder>` tag awareness — load-bearing for HME hooks to
+4. `<system-reminder>` tag awareness -- load-bearing for HME hooks to
    inject directives the agent will act on
-5. Hook-as-user-input mapping — without this the agent doesn't know how
+5. Hook-as-user-input mapping -- without this the agent doesn't know how
    to interpret hook block messages
 6. Prompt-injection awareness on tool_results from external sources
 7. Permission-mode awareness (denied calls shouldn't be retried verbatim)
@@ -52,7 +52,7 @@ detectors like `exhaust_check`, `psycho_stop`, `ignore_and_trample`,
 ## Editing
 
 Edit `canonical-system-prompt.md` directly. Every byte goes verbatim to
-the model as the system prompt — no comments, no markers, no header.
+the model as the system prompt -- no comments, no markers, no header.
 Keep additions narrow: anything CLAUDE.md or a hook can enforce belongs
 there, not here. The system prompt is reserved for things only the
 system prompt can do.
@@ -75,18 +75,18 @@ replace_system in the middleware order).
 
 ## Filtering tools (separate, bigger lever)
 
-The `tools` array on every request is ~60KB+ — bigger than the system
+The `tools` array on every request is ~60KB+ -- bigger than the system
 prompt. If you have tools you never use (`mcp__claude_ai_Google_Drive__*`,
 `EnterWorktree`/`ExitWorktree`, `Monitor`, `RemoteTrigger`, `WebFetch`,
 `WebSearch`, `CronCreate`/`Delete`/`List`, `PushNotification`, etc.),
 drop them via [`filter_tools.js`](middleware/filter_tools.js):
 
 ```
-# In .env — comma-separated, exact tool names
+# In .env -- comma-separated, exact tool names
 HME_FILTER_TOOLS_DROP=mcp__claude_ai_Google_Drive__authenticate,mcp__claude_ai_Google_Drive__complete_authentication,EnterWorktree,ExitWorktree,Monitor,RemoteTrigger,WebFetch,WebSearch,CronCreate,CronDelete,CronList,PushNotification
 ```
 
-**Removing a tool means the agent cannot call it** — verify your
+**Removing a tool means the agent cannot call it** -- verify your
 workflow doesn't need it before adding to the list. To see the current
 tool surface, run the inspection workflow above and check the
 `tools[].name` list in `tmp/claude-full-payload.json`.
@@ -97,5 +97,5 @@ captured Claude Code request):
 | | Raw default | Trimmed canonical + filter_tools |
 |---|---|---|
 | `system` block | 27,785B | 1,817B (93% smaller) |
-| `tools` array | 79,566B (26 entries) | 57,061B (14 entries — 12 dropped) |
+| `tools` array | 79,566B (26 entries) | 57,061B (14 entries -- 12 dropped) |
 | **Total payload** | **134,596B** | **~92KB (32% smaller)** |

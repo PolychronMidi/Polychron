@@ -1,12 +1,12 @@
 'use strict';
 /**
- * HME subagent bridge — result capture only.
+ * HME subagent bridge -- result capture only.
  *
  * Pairs with synthesis_reasoning.py's OVERDRIVE_VIA_SUBAGENT path. When
  * HME queues a reasoning task, it writes a self-instructing sentinel to
  * the tool_result (`[[HME_AGENT_TASK req_id=... prompt_file=... subagent_type=...]]`
  * with a one-line dispatch instruction). The agent sees the sentinel in
- * normal tool-result flow and fires `Agent(...)` on its next turn — no
+ * normal tool-result flow and fires `Agent(...)` on its next turn -- no
  * system-message injection, no request-rewrite, zero context overhead
  * on the request side.
  *
@@ -26,7 +26,7 @@ const RESULTS_DIR = path.join(PROJECT_ROOT, 'tmp', 'hme-subagent-results');
 const DONE_DIR = path.join(QUEUE_DIR, 'done');
 
 function _ensureDir(p) {
-  try { fs.mkdirSync(p, { recursive: true }); } catch (_e) { /* silent-ok: mkdir recursive — a failure here surfaces loudly on the next fs.writeFileSync in RESULTS_DIR */ }
+  try { fs.mkdirSync(p, { recursive: true }); } catch (_e) { /* silent-ok: mkdir recursive -- a failure here surfaces loudly on the next fs.writeFileSync in RESULTS_DIR */ }
 }
 
 function _textOf(toolResult) {
@@ -74,13 +74,13 @@ module.exports = {
       ctx.warn(`subagent_bridge: result write failed for ${reqId}: ${err.message}`);
       return;
     }
-    // Move the queue entry to done/ for audit trail — ALWAYS, even on
+    // Move the queue entry to done/ for audit trail -- ALWAYS, even on
     // empty-text captures. Previously an empty Agent reply early-returned
     // before this rename, stranding the queue entry forever and making
     // the caller poll indefinitely with no diagnostic.
     const queuePath = path.join(QUEUE_DIR, `${reqId}.json`);
     const donePath = path.join(DONE_DIR, `${reqId}.json`);
-    try { _ensureDir(DONE_DIR); fs.renameSync(queuePath, donePath); } catch (_e) { /* silent-ok: queue entry may legitimately be absent (already moved by a duplicate capture, or the result was synthesized without a queue entry) — the result file write at line 60 is the authoritative state */ }
+    try { _ensureDir(DONE_DIR); fs.renameSync(queuePath, donePath); } catch (_e) { /* silent-ok: queue entry may legitimately be absent (already moved by a duplicate capture, or the result was synthesized without a queue entry) -- the result file write at line 60 is the authoritative state */ }
     ctx.emit({
       event: text ? 'subagent_bridge_result_captured' : 'subagent_bridge_empty_result',
       req_id: reqId,

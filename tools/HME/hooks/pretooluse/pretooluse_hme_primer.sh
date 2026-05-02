@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
-# HME PreToolUse: first HME tool of session — inject walkthrough-shaped primer once.
+# HME PreToolUse: first HME tool of session -- inject walkthrough-shaped primer once.
 cat > /dev/null  # consume stdin
 
 PROJECT="$PROJECT_ROOT"
@@ -11,13 +11,13 @@ if [ -f "$FLAG" ]; then
   PRIMER="${PROJECT}/doc/AGENT_PRIMER.md"
   rm -f "$FLAG"
 
-  # H14: Agent fingerprint — read the model ID from env if Claude Code sets
+  # H14: Agent fingerprint -- read the model ID from env if Claude Code sets
   # it, else from the last assistant message in the transcript. Different
   # agents get different walkthrough depth:
-  #   opus*    → full walkthrough (context-rich)
-  #   sonnet*  → medium walkthrough
-  #   haiku*   → terse walkthrough (context-sensitive)
-  #   local*   → KB-heavy walkthrough with coupling hints
+  #   opus*    -> full walkthrough (context-rich)
+  #   sonnet*  -> medium walkthrough
+  #   haiku*   -> terse walkthrough (context-sensitive)
+  #   local*   -> KB-heavy walkthrough with coupling hints
   AGENT_FINGERPRINT="${CLAUDE_MODEL_ID:-unknown}"
   case "$AGENT_FINGERPRINT" in
     *opus*|claude-opus*)   AGENT_TIER="rich" ;;
@@ -36,7 +36,7 @@ if [ -f "$FLAG" ]; then
     # H6: surface coupling matrix data from prior sessions as an effectiveness
     # hint. Reads metrics/hme-coupling.json and picks the top 3 tool pairs
     # that historically led to clean sessions. This makes the dormant coupling
-    # data load-bearing — agents see "these sequences tend to work."
+    # data load-bearing -- agents see "these sequences tend to work."
     COUPLING_HINT=""
     COUPLING_FILE="${METRICS_DIR:-$PROJECT/output/metrics}/hme-coupling.json"
     if [ -f "$COUPLING_FILE" ]; then
@@ -59,7 +59,7 @@ pairs.sort(key=lambda x: -x[2])
 if pairs:
     print('Historically effective tool pairs (from session history):')
     for a, b, lift, coo in pairs[:3]:
-        print(f'  - {a} → {b}  (lift={lift:.2f}, co-occurrence={coo} sessions)')
+        print(f'  - {a} -> {b}  (lift={lift:.2f}, co-occurrence={coo} sessions)')
 PYEOF
 )
       if [ -s "$_PHM_PY_ERR" ] && [ -d "$PROJECT/log" ]; then
@@ -78,12 +78,12 @@ PYEOF
     # the full primer. For rich/medium, the primer is enough.
     case "$AGENT_TIER" in
       terse)
-        WALKTHROUGH="━━━ ONBOARDING — current step: ${CUR_STEP} ━━━
-Loop: selftest → evolve(design) → Edit → review(forget) → npm run main → STABLE → learn(). Hooks auto-advance. Out-of-order tools get a one-line redirect — follow it.
+        WALKTHROUGH="=== ONBOARDING -- current step: ${CUR_STEP} ===
+Loop: selftest -> evolve(design) -> Edit -> review(forget) -> npm run main -> STABLE -> learn(). Hooks auto-advance. Out-of-order tools get a one-line redirect -- follow it.
 [agent tier: ${AGENT_TIER}]"
         ;;
       rich|medium|*)
-        WALKTHROUGH="━━━ ONBOARDING ACTIVE — current step: ${CUR_STEP} ━━━
+        WALKTHROUGH="=== ONBOARDING ACTIVE -- current step: ${CUR_STEP} ===
 The full walkthrough is in the primer above. Hooks advance state automatically; out-of-order tools get a one-line redirect. No retry dance.
 [agent tier: ${AGENT_TIER}, fingerprint: ${AGENT_FINGERPRINT}]"
         ;;
@@ -91,9 +91,9 @@ The full walkthrough is in the primer above. Hooks advance state automatically; 
     # additionalContext reaches Claude's next-turn context (the whole
     # point of this primer); systemMessage also included so the user
     # sees the transition in the terminal. systemMessage alone does NOT
-    # reach Claude — that bug silently gutted the primer for ages.
+    # reach Claude -- that bug silently gutted the primer for ages.
     jq -n --arg content "$CONTENT" --arg walk "$WALKTHROUGH" --arg coupling "$COUPLING_HINT" \
-      '{"hookSpecificOutput":{"permissionDecision":"allow","additionalContext":("━━━ AGENT PRIMER (once per session) ━━━\n" + $content + "\n━━━ END PRIMER ━━━\n\n" + $walk + $coupling)},"systemMessage":("━━━ AGENT PRIMER (once per session) ━━━\n" + $content + "\n━━━ END PRIMER ━━━\n\n" + $walk + $coupling)}'
+      '{"hookSpecificOutput":{"permissionDecision":"allow","additionalContext":("=== AGENT PRIMER (once per session) ===\n" + $content + "\n=== END PRIMER ===\n\n" + $walk + $coupling)},"systemMessage":("=== AGENT PRIMER (once per session) ===\n" + $content + "\n=== END PRIMER ===\n\n" + $walk + $coupling)}'
     exit 0
   fi
 fi

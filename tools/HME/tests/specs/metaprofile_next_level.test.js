@@ -10,7 +10,7 @@ require('../../../../src/conductor/metaProfiles');
 const defs = global.metaProfileDefinitions;
 const mp = global.metaProfiles;
 
-// ── #1 inheritance + composition ─────────────────────────────────────
+// -- #1 inheritance + composition -------------------------------------
 test('inherits: child copies parent axes and overrides selectively', () => {
   const aw = defs.get('atmospheric_warm');
   const atm = defs.get('atmospheric');
@@ -33,7 +33,7 @@ test('compose: per-axis pulls from different parents', () => {
   assert.deepStrictEqual(mc.phase, med.phase, 'phase from meditative');
 });
 
-// ── #2 time-varying axes ─────────────────────────────────────────────
+// -- #2 time-varying axes ---------------------------------------------
 test('envelope: getAxisValue collapses to mid-progress (0.5)', () => {
   // Build a synthetic profile with an envelope.
   const all = defs.all();
@@ -42,7 +42,7 @@ test('envelope: getAxisValue collapses to mid-progress (0.5)', () => {
   mp.setActive('atmospheric', 0);
   // We can't easily inject envelope into a built-in for a test, so just
   // exercise getAxisValueAt via a direct call on a controlled envelope.
-  // (Schema validation already proves envelopes parse — this verifies
+  // (Schema validation already proves envelopes parse -- this verifies
   // the runtime accessor.)
   // Validate by calling the curve resolver indirectly via a fake env:
   const env = { from: 0.30, to: 0.70, curve: 'linear' };
@@ -66,7 +66,7 @@ test('getAxisValueAt: API exists and accepts (axis, key, fallback, progress)', (
   assert.strictEqual(v, 0.45);
 });
 
-// ── #3 reactive triggers ─────────────────────────────────────────────
+// -- #3 reactive triggers ---------------------------------------------
 test('triggers: parser accepts standard expressions', () => {
   const p = defs._parseTriggerExpr('entropy > 0.7');
   assert.deepStrictEqual(p, { signal: 'entropy', op: '>', value: 0.7 });
@@ -79,7 +79,7 @@ test('triggers: evalTriggerExpr applies op to snapshot', () => {
   assert.strictEqual(defs._evalTriggerExpr(parsed, { density: 0.5 }), true);
   assert.strictEqual(defs._evalTriggerExpr(parsed, { density: 0.4 }), false);
   assert.strictEqual(defs._evalTriggerExpr(parsed, { density: 0.6 }), true);
-  assert.strictEqual(defs._evalTriggerExpr(parsed, {}), false, 'missing signal → false');
+  assert.strictEqual(defs._evalTriggerExpr(parsed, {}), false, 'missing signal -> false');
 });
 
 test('triggers: evaluateTriggers returns highest-priority match', () => {
@@ -92,16 +92,16 @@ test('triggers: evaluateTriggers returns highest-priority match', () => {
   assert.strictEqual(fired.priority, 80);
   assert.strictEqual(fired.condition, 'couplingStrength > 0.7');
 
-  // Below threshold → no match.
+  // Below threshold -> no match.
   const quiet = mp.evaluateTriggers({ couplingStrength: 0.4 });
   assert.strictEqual(quiet, null);
 
-  // Empty snapshot → no match.
+  // Empty snapshot -> no match.
   const empty = mp.evaluateTriggers({});
   assert.strictEqual(empty, null);
 });
 
-// ── #4 empirical tuning ─────────────────────────────────────────────
+// -- #4 empirical tuning ---------------------------------------------
 test('recordAttribution: appends a JSONL entry with profile + score', () => {
   const fs = require('fs');
   const path = require('path');
@@ -124,7 +124,7 @@ test('recordAttribution: appends a JSONL entry with profile + score', () => {
   assert.ok(typeof entry.ts === 'number');
 });
 
-// ── #5 custom registries ─────────────────────────────────────────────
+// -- #5 custom registries ---------------------------------------------
 test('loadCustomProfiles: API exists and returns array', () => {
   assert.strictEqual(typeof defs.loadCustomProfiles, 'function');
   const result = defs.loadCustomProfiles();
@@ -312,7 +312,7 @@ test('distance: side-axis differences distinguish behaviorally-distinct profiles
   // tension/energy/phase). Profiles with identical numeric cores but
   // different side-axes (layerVariants, composerFamilies, conductorAffinity,
   // etc.) collapsed to distance 0.0, making nearest() mis-rank them as
-  // equivalent — breaking the smooth-transition heuristic in
+  // equivalent -- breaking the smooth-transition heuristic in
   // src/play/main.js where nearest() picks the next-section profile.
   // The fix added _sideAxisPenalty so layerVariants/composerFamilies/etc.
   // differences contribute weighted distance.
@@ -334,7 +334,7 @@ test('distance: side-axis differences distinguish behaviorally-distinct profiles
     `expected d(chaotic,volatile) > 0.04 (5+ side-axes differ); got ${dCVol}`);
 });
 
-test('distance: raw-vector callers get cosine-only (back-compat — no side-axis penalty when names absent)', () => {
+test('distance: raw-vector callers get cosine-only (back-compat -- no side-axis penalty when names absent)', () => {
   // Side-axis penalty is gated on string-name inputs because raw vectors
   // don't carry side-axis info. Calling distance(vec, vec) preserves the
   // legacy cosine-only path so any in-tree caller passing pre-extracted
@@ -342,7 +342,7 @@ test('distance: raw-vector callers get cosine-only (back-compat — no side-axis
   const va = defs.axisVector('anthemic');
   const vb = defs.axisVector('polyrhythmic_split');
   const dVec = defs.distance(va, vb);
-  // anthemic and polyrhythmic_split have identical numeric cores → cosine = 0
+  // anthemic and polyrhythmic_split have identical numeric cores -> cosine = 0
   assert.ok(dVec < 0.001,
     `raw-vector distance must stay cosine-only (no side-axis penalty); got ${dVec}`);
 });

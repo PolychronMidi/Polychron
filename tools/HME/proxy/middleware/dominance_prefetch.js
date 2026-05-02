@@ -20,7 +20,7 @@
  *
  * Does NOT duplicate OVERDRIVE_VIA_SUBAGENT. Those sentinels route
  * through the subagent bridge separately. This is for cheap HTTP
- * calls to the local HME worker (localhost:9098) — single-digit-ms
+ * calls to the local HME worker (localhost:9098) -- single-digit-ms
  * priming of KB briefs, symbol lookups, dir summaries.
  */
 
@@ -28,8 +28,8 @@ const http = require('http');
 
 const DOMINANCE_ENABLED = process.env.HME_DOMINANCE === '1';
 // `||` treats the string '0' as truthy (non-empty), so HME_MCP_PORT='0'
-// would pass through as Number('0') → 0, making http.request route to
-// "any free port" — every prefetch then silently 404s/errors and the
+// would pass through as Number('0') -> 0, making http.request route to
+// "any free port" -- every prefetch then silently 404s/errors and the
 // on('error') handler swallows it. Validate explicitly: accept only
 // 1-65535, fall back to 9098 otherwise.
 const _PORT_RAW = process.env.HME_MCP_PORT;
@@ -40,7 +40,7 @@ const WORKER_PORT = (Number.isInteger(_PORT_NUM) && _PORT_NUM >= 1 && _PORT_NUM 
 const CACHE_TTL_MS = 60_000;
 const MAX_CACHE_ENTRIES = 32;
 
-// key → { body, expiry }
+// key -> { body, expiry }
 const _cache = new Map();
 
 function _cacheGet(key) {
@@ -131,7 +131,7 @@ module.exports = {
     if (!DOMINANCE_ENABLED) return;
     const triggers = _triggersFromPayload(payload);
     if (triggers.length === 0) return;
-    // Fire and forget — don't block the request. Results land in
+    // Fire and forget -- don't block the request. Results land in
     // `_cache` for a future middleware or tool call to pick up.
     for (const t of triggers) {
       if (_cacheGet(t.key)) continue;

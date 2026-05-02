@@ -14,9 +14,9 @@
  *   - `instruct` messages accumulate; if no deny fires, they fold into a
  *     single block decision so the user still sees them under the current
  *     Claude Code Stop-hook protocol (which lacks a true `instruct` shape
- *     for Stop — block-with-reason is the only user-visible channel).
+ *     for Stop -- block-with-reason is the only user-visible channel).
  *   - `allow` continues silently.
- *   - A policy that throws is logged and treated as `allow` — never crashes
+ *   - A policy that throws is logged and treated as `allow` -- never crashes
  *     the chain.
  *
  * Process-boundary semantics: pure-JS policies cannot `exit 0` the parent
@@ -30,7 +30,7 @@ const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
 
-// Unified policy registry — used as a configuration overlay so any stop-
+// Unified policy registry -- used as a configuration overlay so any stop-
 // chain policy that ALSO has a unified-registry entry can be enabled/
 // disabled via `i/policies disable <name>`. Stop policies whose unified
 // names follow the convention <kebab-case> (e.g. nexus-edit-check) map
@@ -71,7 +71,7 @@ const POLICY_NAMES = [
 const TRACE_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-chain.trace');
 const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-detector-verdicts.env');
 
-// Consolidated telemetry surface — single record() entry that fan-outs
+// Consolidated telemetry surface -- single record() entry that fan-outs
 // to the right files based on category. Replaces the ad-hoc fs.append-
 // FileSync to log/hme-errors.log; keeps category=error so LIFESAVER's
 // text-scan picks up policy crashes the same as before.
@@ -101,14 +101,14 @@ function resetTrace() {
 function logError(policyName, message) {
   // Route through the consolidated telemetry module if available; falls
   // back to direct file append if the module isn't loadable. Replaces
-  // the prior ad-hoc fs.appendFileSync — keeps the same on-disk shape
+  // the prior ad-hoc fs.appendFileSync -- keeps the same on-disk shape
   // so LIFESAVER's text-scan still picks up policy crashes.
   const t = _getTelemetry();
   if (t) {
     t.error('stop_chain_policy_error', { policy: policyName, message, ts: nowIso() });
     return;
   }
-  // Fallback when telemetry module is missing — preserves prior behavior.
+  // Fallback when telemetry module is missing -- preserves prior behavior.
   try {
     const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
     fs.mkdirSync(path.dirname(errLog), { recursive: true });
@@ -154,7 +154,7 @@ async function runStopChain(stdinJson) {
     deny, instruct, allow,
     // Read-only view of "has any earlier policy already denied". Side-effect
     // policies that mutate per-turn state (counters, files written once per
-    // user-turn) check this to skip mutations the user will never see —
+    // user-turn) check this to skip mutations the user will never see --
     // matching the original sourced-chain behavior where `exit 0` from a
     // first-deny stage stopped subsequent stages from running at all.
     hasPriorDeny: () => firstDeny !== null,

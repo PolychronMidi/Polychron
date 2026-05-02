@@ -25,7 +25,7 @@ if [ "$_POLLING" -eq 1 ]; then
   echo "$COUNT" > "$TASK_POLL_COUNTER"
   if [ "$COUNT" -gt 2 ]; then
     jq -n --arg count "$COUNT" \
-      '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("PSYCHOPATHIC POLLING #" + $count + ": you are repeatedly checking background task status. Background processes fire a completion notification when done — WAIT for it. Working on independent parallel tasks is fine; re-checking the same file or nvidia-smi or ps is not. Do real work until the notification arrives.")},"systemMessage":("PSYCHOPATHIC POLLING #" + $count + ": repeated background-status polling. Do real work.")}'
+      '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("PSYCHOPATHIC POLLING #" + $count + ": you are repeatedly checking background task status. Background processes fire a completion notification when done -- WAIT for it. Working on independent parallel tasks is fine; re-checking the same file or nvidia-smi or ps is not. Do real work until the notification arrives.")},"systemMessage":("PSYCHOPATHIC POLLING #" + $count + ": repeated background-status polling. Do real work.")}'
     exit 0
   fi
 fi

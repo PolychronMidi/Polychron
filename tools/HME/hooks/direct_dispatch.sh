@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Direct-mode dispatcher — runs lifecycle hooks WITHOUT the proxy daemon.
+# Direct-mode dispatcher -- runs lifecycle hooks WITHOUT the proxy daemon.
 # Mirrors the routing logic in tools/HME/proxy/hook_bridge.js so every
 # lifecycle event survives a proxy outage. Invoked by _proxy_bridge.sh's
 # fallback path when the proxy POST fails.
 #
-# Architectural intent (lesson #1 — filesystem-IPC philosophy): the proxy
+# Architectural intent (lesson #1 -- filesystem-IPC philosophy): the proxy
 # is an accelerator (keeps Lance + LLM clients warm, runs middleware), not
 # a single point of failure. Every hook continues firing even when the
-# proxy is dead — degraded enrichment, full safety semantics.
+# proxy is dead -- degraded enrichment, full safety semantics.
 #
 # Usage:   $0 <EventName> < stdin-payload
 # Outputs: stdout = decision JSON or hookSpecificOutput (or empty for allow)
@@ -20,9 +20,9 @@
 #     reach Claude Code without HME enrichment / sanitization.
 #   - No `pretooluse_hme_primer.sh` injection for HME_-prefixed tools.
 #     If the next event after a proxy outage is an HME_* tool call, the
-#     primer won't fire — but the proxy-up path will reinstate it.
+#     primer won't fire -- but the proxy-up path will reinstate it.
 #   - The Stop chain runs via the JS CLI which has its own minimal
-#     dominance handling (none — block decisions go raw).
+#     dominance handling (none -- block decisions go raw).
 #
 # What's preserved:
 #   - All bash-side gates (run.lock guard, write blocks, hme_dispatch,
@@ -51,7 +51,7 @@ _run() {
 }
 
 # Run a chain of hooks. Concatenates stdout. First block decision wins
-# (subsequent scripts skipped) — mirrors hook_bridge.js runChain() shape.
+# (subsequent scripts skipped) -- mirrors hook_bridge.js runChain() shape.
 _run_chain() {
   local scripts=("$@")
   local out_all=""
