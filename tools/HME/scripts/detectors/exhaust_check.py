@@ -176,6 +176,42 @@ def _is_research_evaluation_request(user_text: str) -> bool:
 # Import phrase tables from sibling.
 from exhaust_check_phrases import DEFERRAL_PHRASES, DEFERRAL_REGEXES  # noqa: E402
 
+# Substantive-work tools (Edit/Write/MultiEdit/NotebookEdit) and the
+# Bash command shapes that mutate files. Mirrors advisor_doctrine's
+# implicit-solo logic: a turn that did real work is not punting, even
+# if its closing prose happens to match a deferral phrase.
+_WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
+_BASH_WORK_RE = re.compile(
+    r"\b(?:sed\s|awk\s|perl\s+-i|python3?\s+-c\b.*?\bopen\s*\(|"
+    r"git\s+(?:apply|commit|merge|rebase|cherry-pick)|"
+    r"\bmv\s|\bcp\s|\brm\s|\btee\s|>\s*\S|>>\s*\S)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _substantive_work_count(events: list) -> int:
+    """Count concrete code-changing tool uses in this turn. Threshold
+    used downstream is >= 3 for the implicit-solo rescue."""
+    n = 0
+    for ev in events:
+        msg = ev.get("message")
+        content = msg.get("content") if isinstance(msg, dict) else ev.get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            name = block.get("name", "")
+            if name in _WORK_TOOLS:
+                n += 1
+                continue
+            if name == "Bash":
+                cmd = (block.get("input") or {}).get("command", "") or ""
+                if _BASH_WORK_RE.search(cmd):
+                    n += 1
+    return n
+
+
 _BULLET_LINE = re.compile(r"^\s*[-**]\s+\S", re.MULTILINE)
 # Any list-ish marker after the deferral -- bullets, numbered items, OR
 # bold-header paragraphs like "**Remaining X:** ..." which are structurally
@@ -271,6 +307,20 @@ def main() -> int:
     raw_text = _last_assistant_text(events)
     if not raw_text:
         _emit_stats("ok", "no_final_text")
+        print("ok")
+        return 0
+
+    # Implicit-solo / substantive-work rescue. If this turn did >= 3
+    # concrete code-changing tool calls (Edit/Write/MultiEdit or Bash
+    # shapes that mutate files), the agent fixed things rather than
+    # punting. The deferral-phrase heuristic produces false positives
+    # on legitimate work-completion narration ("the change takes effect
+    # on next Stop event" describes immediate hot-reload, not a punt).
+    # Mirrors the rescue we landed in advisor_doctrine for the same
+    # cascade-noise failure mode.
+    n_work = _substantive_work_count(events)
+    if n_work >= 3:
+        _emit_stats("ok", f"implicit_solo_work_count={n_work}")
         print("ok")
         return 0
 

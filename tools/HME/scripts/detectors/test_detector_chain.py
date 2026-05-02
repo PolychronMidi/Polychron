@@ -211,6 +211,22 @@ _CASES = [
      ],
      "exhaust_violation"),
 
+    # exhaust_check -- substantive work rescue. A turn with >= 3
+    # Edit/Write/Bash-mutation calls is fixing things, not punting,
+    # even if closing prose contains a deferral-phrase regex match.
+    ("exhaust_check", "substantive-work-suppresses-takes-effect",
+     [
+         _user_msg("apply the project-wide tweak"),
+         _assistant_tool_use("Edit", {"file_path": "/a.py",
+                                      "old_string": "x", "new_string": "y"}),
+         _assistant_tool_use("Edit", {"file_path": "/b.py",
+                                      "old_string": "x", "new_string": "y"}),
+         _assistant_tool_use("Write", {"file_path": "/c.py",
+                                       "content": "z"}),
+         _assistant_msg("Hot-reload landed. The change takes effect on the next Stop event."),
+     ],
+     "ok"),
+
     # exhaust_check (b)-clause rescue: agent enumerates remaining items
     # but each one carries an explicit refusal-with-reason. The deny
     # message family explicitly sanctions this path; detector must NOT
