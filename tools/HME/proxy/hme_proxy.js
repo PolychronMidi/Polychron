@@ -267,7 +267,11 @@ function _alertCooldownActive(type, pathLabel) {
 // is useless against this failure mode -- shrink-or-die is the only path.
 // Skipped entirely with HME_NO_PASSTHROUGH_COMPACT=1 if the operator
 // prefers strict passthrough (and being stuck in 429-loop).
-const _PASSTHROUGH_COMPACT_BYTES = 400_000;
+// Default compact threshold: 250 KB (~71K tokens at ~3.5 bytes/token).
+// 400 KB (~113K tokens) was over the user's observed ITPM cap and 429ed
+// even after compaction. 250 KB gives comfortable headroom under any
+// typical Claude Max ITPM (~80-100K). Override with HME_PROXY_COMPACT_BYTES.
+const _PASSTHROUGH_COMPACT_BYTES = parseInt(process.env.HME_PROXY_COMPACT_BYTES || '250000', 10);
 const _PASSTHROUGH_COMPACT_KEEP_MIN = 4;
 
 // Dynamic threshold: track the most recent ITPM-remaining from Anthropic
