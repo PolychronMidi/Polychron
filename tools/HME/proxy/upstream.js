@@ -40,25 +40,6 @@ const EMERGENCY_THRESHOLD = 1;
 let _consecutiveFailures = 0;
 let _valveTripped = false;
 
-// Persist the valve-tripped state to a flag file. Watchdog respawns
-// (which kill+restart the proxy without going through polychron-shutdown.sh)
-// previously reset _valveTripped to false on every respawn, so the very next
-// upstream failure tripped again and wrote another lifesaver alert -- the
-// user saw the same emergency declaration on EVERY respawn. By reading the
-// flag on startup and writing it on trip, watchdog respawns inherit
-// passthrough state. polychron-shutdown.sh removes the flag, so a deliberate
-// `polychron-restart.sh` clears state and starts fresh.
-const _VALVE_FLAG_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-proxy-valve-tripped.flag');
-
-(function _restoreValveStateOnBoot() {
-  try {
-    if (fs.existsSync(_VALVE_FLAG_FILE)) {
-      _valveTripped = true;
-      console.error('[hme-proxy] restored valve-tripped state from previous process (passthrough mode active until polychron-restart.sh)');
-    }
-  } catch (_e) { /* best-effort -- if read fails, fall through to clean state */ }
-})();
-
 function isPassthroughMode() {
   return _valveTripped;
 }
@@ -77,14 +58,6 @@ function tripEmergencyValve(lastErr) {
   try {
     fs.appendFileSync(errLog, `[${ts}] PROXY_EMERGENCY: ${banner}\n`);
   } catch (_e) { /* best effort */ }
-
-  // Persist trip state so watchdog respawns inherit passthrough mode
-  // instead of re-tripping on every fresh process. Cleared by
-  // polychron-shutdown.sh.
-  try {
-    fs.mkdirSync(path.dirname(_VALVE_FLAG_FILE), { recursive: true });
-    fs.writeFileSync(_VALVE_FLAG_FILE, `${ts} ${lastErr}\n`);
-  } catch (_e) { /* best-effort */ }
 
   // The previous valve-trip path also wrote `HME_PROXY_ENABLED=0` to .env
   // as a "persistent visibility" signal. That bit user repeatedly: every
