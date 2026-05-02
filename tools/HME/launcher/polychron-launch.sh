@@ -383,19 +383,132 @@ if [ "${HME_NO_LAUNCH_VSCODE:-0}" != "1" ]; then
   # and electron-vscode children all match correctly.
   _vscode_running=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | head -1)
   if [ -z "$_vscode_running" ]; then
+    # Case (c): no VS Code running -- spawn fresh with env inherited.
     _code_bin=$(command -v code 2>/dev/null || echo "/usr/bin/code")
     if [ -x "$_code_bin" ]; then
-      ANTHROPIC_BASE_URL="$ANTHROPIC_BASE_URL" \
-        PROJECT_ROOT="$PROJECT_ROOT" \
-        setsid nohup "$_code_bin" "$PROJECT_ROOT" \
-          > "$PROJECT_ROOT/log/vscode-launch.out" 2>&1 < /dev/null &
-      disown
-      echo "[launch] spawned VS Code with ANTHROPIC_BASE_URL inherited" \
-           "(pid=$! -- log: $PROJECT_ROOT/log/vscode-launch.out)" >&2
+      # Preflight the GUI env. Without DISPLAY (X11) or WAYLAND_DISPLAY
+      # (Wayland) AND DBUS_SESSION_BUS_ADDRESS, electron-based VS Code
+      # exits 0 silently with no visible window -- which is exactly the
+      # "spawned but didn't appear" failure mode that prompted this log
+      # to write 0 bytes and the user to give up. Refuse to spawn under
+      # those conditions and tell the user what to fix.
+      _have_gui=1; _gui_missing=""
+      [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ] \
+        && _have_gui=0 && _gui_missing="DISPLAY/WAYLAND_DISPLAY"
+      [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] \
+        && _have_gui=0 && _gui_missing="${_gui_missing:+$_gui_missing,}DBUS_SESSION_BUS_ADDRESS"
+      if [ "$_have_gui" = "0" ]; then
+        cat >&2 <<MSG
+[launch] CANNOT SPAWN VS Code: GUI env vars missing ($_gui_missing).
+[launch] You're likely running this script from a non-GUI shell (ssh,
+[launch] tmux from a tty, systemd unit, cron). VS Code needs at least
+[launch] one of DISPLAY or WAYLAND_DISPLAY plus DBUS_SESSION_BUS_ADDRESS.
+[launch] Re-run from a GUI terminal (gnome-terminal, konsole, xterm),
+[launch] or explicitly export them first, e.g.
+[launch]   export DISPLAY=:0
+[launch]   export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/\$(id -u)/bus"
+MSG
+      else
+        # Build the env-prefix dynamically so we don't set empty WAYLAND_DISPLAY
+        # (which makes electron believe there's a wayland session at "")
+        # or empty XAUTHORITY (which breaks X11 auth lookup).
+        _env_prefix=()
+        _env_prefix+=("ANTHROPIC_BASE_URL=$ANTHROPIC_BASE_URL")
+        _env_prefix+=("PROJECT_ROOT=$PROJECT_ROOT")
+        [ -n "${DISPLAY:-}" ]              && _env_prefix+=("DISPLAY=$DISPLAY")
+        [ -n "${WAYLAND_DISPLAY:-}" ]      && _env_prefix+=("WAYLAND_DISPLAY=$WAYLAND_DISPLAY")
+        [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && _env_prefix+=("DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS")
+        [ -n "${XDG_RUNTIME_DIR:-}" ]      && _env_prefix+=("XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR")
+        [ -n "${XAUTHORITY:-}" ]           && _env_prefix+=("XAUTHORITY=$XAUTHORITY")
+        [ -n "${HOME:-}" ]                 && _env_prefix+=("HOME=$HOME")
+        [ -n "${USER:-}" ]                 && _env_prefix+=("USER=$USER")
+        [ -n "${PATH:-}" ]                 && _env_prefix+=("PATH=$PATH")
+        env "${_env_prefix[@]}" \
+          setsid nohup "$_code_bin" "$PROJECT_ROOT" \
+            > "$PROJECT_ROOT/log/vscode-launch.out" 2>&1 < /dev/null &
+        disown
+        _spawn_pid=$!
+        echo "[launch] spawning VS Code (pid=$_spawn_pid," \
+             "log=$PROJECT_ROOT/log/vscode-launch.out)..." >&2
+        # Give electron 3s to fork its main process
+        sleep 3
+        _spawn_check=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | head -1)
+        if [ -n "$_spawn_check" ]; then
+          echo "[launch] VS Code spawn confirmed (pid $_spawn_check," \
+               "ANTHROPIC_BASE_URL inherited)" >&2
+        else
+          cat >&2 <<MSG
+[launch] VS Code spawn FAILED -- no code process visible 3s after fork.
+[launch] Inspect $PROJECT_ROOT/log/vscode-launch.out for crash output.
+[launch] Common causes:
+[launch]   - dpkg/apt locked, code binary mid-upgrade
+[launch]   - wrong DISPLAY for current desktop session
+[launch]   - electron sandbox failed (missing kernel.unprivileged_userns_clone)
+[launch] Workaround: launch VS Code manually from your desktop. The
+[launch] proxy stack is still up; HME just won't be in VS Code's path.
+MSG
+        fi
+      fi
     else
       echo "[launch] note: 'code' binary not found at $_code_bin --" \
            "skipping VS Code spawn. To use the proxy, launch VS Code from" \
            "a shell with .env sourced." >&2
+    fi
+  else
+    # VS Code is already running. Determine WHY we didn't already kill +
+    # relaunch via the bypass-detection block earlier in this file, and
+    # print a loud, actionable message. Three possibilities:
+    #   (1) VS Code already has the env -- nothing to do.
+    #   (2) VS Code lacks the env, kill+relaunch was suppressed by
+    #       HME_NO_AUTOFIX_VSCODE=1 (set by polychron-restart.sh so we
+    #       don't murder the caller's active session).
+    #   (3) VS Code lacks the env AND is in this launcher's ancestor
+    #       chain -- the ancestor-skip protection prevented suicide.
+    # Sample the env state of the closest claude-code child of VS Code
+    # (the one that actually carries the proxy URL or doesn't).
+    _claude_pid=$(pgrep -f "anthropic.claude-code.*native-binary/claude" 2>/dev/null | head -1)
+    _claude_env=""
+    if [ -n "$_claude_pid" ] && [ -r "/proc/$_claude_pid/environ" ]; then
+      _claude_env=$(tr '\0' '\n' < "/proc/$_claude_pid/environ" 2>/dev/null \
+                    | grep "^ANTHROPIC_BASE_URL=" || true)
+    fi
+    if [ -n "$_claude_env" ]; then
+      echo "[launch] VS Code already running with proxy env" \
+           "($_claude_env) -- nothing to do." >&2
+    else
+      echo "[launch] WARNING: VS Code is running (pid $_vscode_running)" \
+           "but its claude-code extension lacks ANTHROPIC_BASE_URL." >&2
+      # Detect whether VS Code is in our ancestor chain (== running this
+      # launcher would commit suicide if it killed VS Code).
+      _walk=$$; _is_ancestor=0
+      while [ -n "$_walk" ] && [ "$_walk" != "0" ] && [ "$_walk" != "1" ]; do
+        _comm=$(awk '/^Name:/ {print $2}' "/proc/$_walk/status" 2>/dev/null)
+        case "$_comm" in code|Code|code-*) _is_ancestor=1; break ;; esac
+        _walk=$(awk '/^PPid:/ {print $2}' "/proc/$_walk/status" 2>/dev/null)
+      done
+      if [ "$_is_ancestor" = "1" ]; then
+        cat >&2 <<'MSG'
+[launch] VS Code is THIS launcher's ancestor (you're running me from a
+[launch] terminal/extension inside that VS Code). I will not kill my own
+[launch] grandparent. To get the proxy env into VS Code:
+[launch]   1. Close VS Code completely (this kills your active session)
+[launch]   2. From a SYSTEM terminal (Ctrl+Alt+T, NOT VS Code's integrated):
+[launch]      pkill -f 'electron.*vscode'
+[launch]      sleep 2
+[launch]      tools/HME/launcher/polychron-launch.sh
+[launch] The fresh VS Code will inherit ANTHROPIC_BASE_URL from this script.
+MSG
+      elif [ "${HME_NO_AUTOFIX_VSCODE:-0}" = "1" ]; then
+        cat >&2 <<'MSG'
+[launch] HME_NO_AUTOFIX_VSCODE=1 is set (typically by polychron-restart.sh
+[launch] to protect the caller's active session). I will not relaunch
+[launch] VS Code. To get the proxy env in: close VS Code, then re-run
+[launch] polychron-launch.sh DIRECTLY (not via polychron-restart.sh).
+MSG
+      else
+        echo "[launch] (the bypass-detection block earlier should have" \
+             "handled this -- check log for 'PROXY BYPASS DETECTED')" >&2
+      fi
     fi
   fi
 fi
