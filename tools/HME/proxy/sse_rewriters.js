@@ -169,8 +169,96 @@ function longLeadingSleepRewrite(eventName, data, ctx) {
   return data;
 }
 
+// Rewriter: strip bare-ack text blocks when the request was a stop-hook
+// cascade. Context: the agent literally cannot emit zero bytes -- every
+// turn must contain content. When the prior user message is a stop-hook
+// deny payload (AUTO-COMPLETENESS / STOP-WORK / etc.) and the agent
+// emits "ok" (the silence-equivalent), the chat client still displays
+// "ok" because the proxy passes streaming text through verbatim. The
+// user's complaint: "ok" spam in the chat. Total proxy dominance lets us
+// strip those text blocks BEFORE they reach the chat client.
+//
+// Strategy: ack_strip rewriter watches text content_blocks. For each
+// text block it buffers deltas. On content_block_stop, if the assembled
+// text matches a bare-ack pattern AND ctx.priorUserWasDeny is true,
+// drop the entire block (all events: start, deltas, stop). Other text
+// blocks pass through verbatim.
+//
+// ctx.priorUserWasDeny is populated by the proxy at request-handling
+// time -- it scans the request payload's last user message for the
+// hook-payload markers and sets the flag before passing to the
+// rewriter chain.
+const _ACK_PATTERNS = [
+  /^\s*ok[.!]?\s*$/i,
+  /^\s*done[.!]?\s*$/i,
+  /^\s*noted[.!]?\s*$/i,
+  /^\s*got\s+it[.!]?\s*$/i,
+  /^\s*ack[.!]?\s*$/i,
+  /^\s*acknowledged[.!]?\s*$/i,
+];
+
+function _isBareAck(text) {
+  if (typeof text !== 'string') return false;
+  return _ACK_PATTERNS.some((pat) => pat.test(text));
+}
+
+function ackStripRewrite(eventName, data, ctx) {
+  // Only active when the request payload indicated the prior user
+  // message was a hook-deny payload. Set by the proxy before passing
+  // events through the rewriter chain.
+  if (!ctx.get('priorUserWasDeny')) return data;
+
+  const key = 'text_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { buffered: [data] });
+    return null;  // hold the start event
+  }
+
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    state.buffered.push(['content_block_delta', data]);
+    return null;  // hold the delta event
+  }
+
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    // Reconstruct full text from held delta events.
+    let text = '';
+    for (const ev of state.buffered) {
+      if (Array.isArray(ev) && ev[0] === 'content_block_delta') {
+        const d = ev[1];
+        if (d && d.delta && typeof d.delta.text === 'string') text += d.delta.text;
+      }
+    }
+    if (_isBareAck(text)) {
+      // Drop the whole block -- the chat client never sees this "ok".
+      return null;
+    }
+    // Not a bare ack -- replay the held events as a list, then the stop.
+    const events = [];
+    // First item in state.buffered was the content_block_start data
+    // (stored bare, not as [name, data] tuple). Re-emit as start event.
+    events.push(['content_block_start', state.buffered[0]]);
+    for (let i = 1; i < state.buffered.length; i++) {
+      events.push(state.buffered[i]);
+    }
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+
+  return data;
+}
+
 module.exports = {
   runInBackgroundRewrite,
   longLeadingSleepRewrite,
+  ackStripRewrite,
+  _isBareAck,             // exported for tests
   _rewriteLongLeadingSleep, // exported for tests
 };

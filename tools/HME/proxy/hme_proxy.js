@@ -576,14 +576,42 @@ function handleRequest(clientReq, clientRes) {
           // Original streaming path (no HME interception happened) -- pipe
           // through the Transform for Bash run_in_background rewriting.
           const { SseTransform } = require('./sse_transform');
-          const { runInBackgroundRewrite, longLeadingSleepRewrite } = require('./sse_rewriters');
+          const { runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite } = require('./sse_rewriters');
           // Order matters: longLeadingSleepRewrite rewrites command
           // BEFORE runInBackgroundRewrite reads it on content_block_stop.
           // Both hold state keyed by content-block index in the same
           // ctx map so they see consistent data.
           const xform = new SseTransform({
-            rewriters: [longLeadingSleepRewrite, runInBackgroundRewrite],
+            rewriters: [longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite],
           });
+          // Populate the priorUserWasDeny flag the ack-strip rewriter
+          // gates on. Walk request payload's messages to find the latest
+          // user message and check if its content matches a hook-deny
+          // payload marker.
+          try {
+            const msgs = (payload && payload.messages) || [];
+            let lastUserText = '';
+            for (const m of msgs) {
+              if (!m || m.role !== 'user') continue;
+              const c = m.content;
+              if (typeof c === 'string') {
+                lastUserText = c;
+              } else if (Array.isArray(c)) {
+                lastUserText = c.filter((b) => b && b.type === 'text')
+                  .map((b) => b.text || '').join(' ') || lastUserText;
+              }
+            }
+            const denyMarkers = [
+              'Stop hook feedback:',
+              'Stop hook blocking error from command:',
+              'AUTO-COMPLETENESS',
+              'PreToolUse:',
+              'PostToolUse:',
+            ];
+            if (lastUserText && denyMarkers.some((m) => lastUserText.includes(m))) {
+              xform._ctx.set('priorUserWasDeny', true);
+            }
+          } catch (_e) { /* best-effort */ }
           xform.pipe(clientRes);
           xform.end(outBuf);
         } else {
