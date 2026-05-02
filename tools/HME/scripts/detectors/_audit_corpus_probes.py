@@ -100,8 +100,8 @@ CORPUS = (
      "tweak this constant",
      _PADDING + "Updated the value and the test passes.",
      {"ADVISOR_DOCTRINE_TIER": "E1"}),
-    # summary_format -- detector disabled, always returns ok.
-    ("summary_format", "e3-missing-block", "ok",
+    # summary_format -- E5 without closing block fires.
+    ("summary_format", "e5-missing-block", "summary_missing",
      "do the sweep",
      _PADDING + "All checks green. Stopping.",
      {"SUMMARY_FORMAT_TIER": "E5"}),

@@ -50,11 +50,8 @@ _DETECTOR_FOR_KEY = {
     "ADVISOR_MISSING_PRE_BUILD":  "advisor_doctrine",
     "ADVISOR_MISSING_POST_DELIVER": "advisor_doctrine",
     "ADVISOR_SILENTLY_SKIPPED":   "advisor_doctrine",
-    # SUMMARY_MISSING / SUMMARY_MALFORMED demoted to advisory -- removed
-    # from the work_checks deny chain. The verdict and deny prompt strings
-    # remain for observability and for any future re-promotion, but they
-    # don't block turns. Removed from this link test since the contract
-    # only covers detectors that produce hard denies.
+    "SUMMARY_MISSING":            "summary_format",
+    "SUMMARY_MALFORMED":          "summary_format",
     "CEREMONY_DODGE":             "ceremony_dodge",
 }
 
@@ -152,7 +149,14 @@ _PROBES = {
         ("e4-with-consult", None),
         ("e4-solo-rationale", None),
     ],
-    # SUMMARY_MISSING + SUMMARY_MALFORMED removed -- detector demoted to advisory.
+    "SUMMARY_MISSING": [
+        # Block emit, tier-reclassify -- end-to-end coverage in chain fixtures.
+        ("emit-block", None),
+        ("re-classify-tier", None),
+    ],
+    "SUMMARY_MALFORMED": [
+        ("complete-block", None),
+    ],
     "CEREMONY_DODGE": [
         # The detector requires a transcript with a prior hook-deny user
         # event and a text-only assistant follow-up; that shape can't be
