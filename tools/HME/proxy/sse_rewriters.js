@@ -195,11 +195,37 @@ const _ACK_PATTERNS = [
   /^\s*got\s+it[.!]?\s*$/i,
   /^\s*ack[.!]?\s*$/i,
   /^\s*acknowledged[.!]?\s*$/i,
+  /^\s*sure[.!]?\s*$/i,
+  /^\s*yes[.!]?\s*$/i,
+  /^\s*yep[.!]?\s*$/i,
+  /^\s*yeah[.!]?\s*$/i,
+  /^\s*will\s+do[.!]?\s*$/i,
+  /^\s*on\s+it[.!]?\s*$/i,
+  /^\s*understood[.!]?\s*$/i,
+  /^\s*roger[.!]?\s*$/i,
+  /^\s*right[.!]?\s*$/i,
+  /^\s*proceeding[.!]?\s*$/i,
+  /^\s*continuing[.!]?\s*$/i,
+  /^\s*resuming[.!]?\s*$/i,
 ];
+
+// Catch responses the keyword patterns miss: empty, bare punctuation
+// (`.`, `..`, `!?`), or single-glyph non-letter responses that the model
+// emits under stop-hook pressure to dodge the no-text-output gate
+// without saying anything substantive.
+function _isMinimalAck(text) {
+  const t = (text || '').trim();
+  if (!t) return true;
+  if (/^[\s.!?;:,\-_*~`]+$/.test(t)) return true;
+  if (t.length <= 2 && !/[a-z0-9]/i.test(t)) return true;
+  return false;
+}
 
 function _isBareAck(text) {
   if (typeof text !== 'string') return false;
-  return _ACK_PATTERNS.some((pat) => pat.test(text));
+  if (_ACK_PATTERNS.some((pat) => pat.test(text))) return true;
+  if (_isMinimalAck(text)) return true;
+  return false;
 }
 
 function ackStripRewrite(eventName, data, ctx) {
