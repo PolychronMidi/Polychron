@@ -128,7 +128,24 @@ function tryParseJson(s) {
 }
 
 function loadPolicy(name) {
-  return require(path.join(__dirname, 'policies', name));
+  // Hot-reload: policies are small + edited frequently while iterating on
+  // the doctrine. Long-running proxy daemons would otherwise serve stale
+  // policy code until restart, producing the "I edited but it didn't take
+  // effect" failure mode (caught when summary_format demotion didn't
+  // reach the running proxy). Bust the cache for the policy module + its
+  // immediate dependencies under policies/ so each Stop event picks up
+  // the current source.
+  const policyPath = require.resolve(path.join(__dirname, 'policies', name));
+  delete require.cache[policyPath];
+  // Also bust any cached siblings under policies/ that the policy may
+  // re-require. Cheap: typically <20 modules total.
+  const policiesDir = path.join(__dirname, 'policies');
+  for (const cached of Object.keys(require.cache)) {
+    if (cached.startsWith(policiesDir + path.sep)) {
+      delete require.cache[cached];
+    }
+  }
+  return require(policyPath);
 }
 
 /**
