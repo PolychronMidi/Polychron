@@ -917,13 +917,15 @@ function handleRequest(clientReq, clientRes) {
             if (outStr.trimStart().startsWith('{')) {
               const parsed = JSON.parse(outStr);
               if (parsed && Array.isArray(parsed.content)) {
-                const ackPats = [/^\s*ok[.!]?\s*$/i, /^\s*done[.!]?\s*$/i,
-                                 /^\s*noted[.!]?\s*$/i, /^\s*got\s+it[.!]?\s*$/i,
-                                 /^\s*ack[.!]?\s*$/i, /^\s*acknowledged[.!]?\s*$/i];
+                // Use the canonical ack detector from sse_rewriters so the
+                // SSE and non-SSE paths stay in sync. Keyword templates
+                // PLUS minimal/punctuation-only/empty fall under one
+                // _isBareAck function.
+                const { _isBareAck } = require('./sse_rewriters');
                 let detectedAck = false;
                 for (const b of parsed.content) {
                   if (b && b.type === 'text' && typeof b.text === 'string'
-                      && ackPats.some((p) => p.test(b.text))) {
+                      && _isBareAck(b.text)) {
                     detectedAck = true;
                     break;
                   }
