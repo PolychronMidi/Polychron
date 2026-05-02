@@ -612,9 +612,19 @@ function handleRequest(clientReq, clientRes) {
               'PreToolUse:',
               'PostToolUse:',
             ];
-            if (lastUserText && denyMarkers.some((m) => lastUserText.includes(m))) {
+            const _denyHit = lastUserText && denyMarkers.some((m) => lastUserText.includes(m));
+            if (_denyHit) {
               xform._ctx.set('priorUserWasDeny', true);
             }
+            // Diagnostic: log every SSE response we set up the strip
+            // for, so we can verify the path is being reached and
+            // priorUserWasDeny is being set correctly.
+            try {
+              fs.appendFileSync(
+                path.join(PROJECT_ROOT, 'log', 'hme-proxy-ackstrip.log'),
+                `[${new Date().toISOString()}] sse-setup priorUserWasDeny=${_denyHit} lastUserHead=${JSON.stringify(lastUserText.slice(0,80))}\n`,
+              );
+            } catch (_e) { /* best-effort */ }
           } catch (_e) { /* best-effort */ }
           xform.pipe(clientRes);
           xform.end(outBuf);
