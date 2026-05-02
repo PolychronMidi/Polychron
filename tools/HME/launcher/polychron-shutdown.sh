@@ -76,4 +76,11 @@ done
 
 [ -f "$PID_FILE" ] && rm -f "$PID_FILE" && echo "[shutdown] removed $PID_FILE" >&2
 
+# Clear emergency-valve persisted-trip flag so a fresh polychron-restart.sh
+# starts with a clean valve. Watchdog respawns DON'T go through this path
+# so the flag survives those, which is the intent: respawns inherit the
+# tripped state, deliberate restarts reset it.
+_VALVE_FLAG="$PROJECT_ROOT/tmp/hme-proxy-valve-tripped.flag"
+[ -f "$_VALVE_FLAG" ] && rm -f "$_VALVE_FLAG" && echo "[shutdown] removed $_VALVE_FLAG (valve state reset)" >&2
+
 echo "[shutdown] stack stopped" >&2
