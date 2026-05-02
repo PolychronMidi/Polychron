@@ -42,6 +42,39 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _transcript import load_turn_events, event_content  # noqa: E402
 
+
+_WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
+_BASH_WORK_RE = re.compile(
+    r"\b(?:sed\s|awk\s|perl\s+-i|python3?\s+-c\b.*?\bopen\s*\(|"
+    r"git\s+(?:apply|commit|merge|rebase|cherry-pick)|"
+    r"\bmv\s|\bcp\s|\brm\s|\btee\s|>\s*\S|>>\s*\S)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _has_substantive_work(events: list) -> bool:
+    """True iff the turn has at least one Edit/Write/MultiEdit/NotebookEdit
+    OR a Bash call with file-mutating shape. The summary_format doctrine
+    only applies to turns that DID work -- text-only E5 turns have
+    nothing to summarize, and demanding a block on them puts
+    summary_format and ceremony_dodge at war."""
+    for ev in events:
+        msg = ev.get("message")
+        content = msg.get("content") if isinstance(msg, dict) else ev.get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            name = block.get("name", "")
+            if name in _WORK_TOOLS:
+                return True
+            if name == "Bash":
+                cmd = (block.get("input") or {}).get("command", "") or ""
+                if _BASH_WORK_RE.search(cmd):
+                    return True
+    return False
+
 _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent.parent)
 _MODE_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
@@ -132,6 +165,14 @@ def main() -> int:
     events = load_turn_events(sys.argv[1])
     text = _last_assistant_text(events)
     if not text:
+        print("ok")
+        return 0
+
+    # No substantive work this turn -> nothing to summarize. The doctrine
+    # demanding a SUMMARY block on a text-only turn is the failure mode
+    # ceremony_dodge catches; we resolve the cycle by only requiring the
+    # block when there's actual work that the closing summary describes.
+    if not _has_substantive_work(events):
         print("ok")
         return 0
 

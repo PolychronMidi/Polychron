@@ -391,10 +391,12 @@ _CASES = [
      "ok",
      {"ADVISOR_DOCTRINE_TIER": "E4"}),
 
-    # summary_format -- tier == E5 with no closing block fires.
+    # summary_format -- E5 + substantive work + no closing block fires.
     ("summary_format", "missing-block-fires",
      [
          _user_msg("do the comprehensive sweep"),
+         _assistant_tool_use("Edit", {"file_path": "/x.py",
+                                      "old_string": "a", "new_string": "b"}),
          _assistant_msg(
              "Done. All audits pass; details above. Wrapping up."
          ),
@@ -402,10 +404,25 @@ _CASES = [
      "summary_missing",
      {"SUMMARY_FORMAT_TIER": "E5"}),
 
-    # summary_format -- tier >= E3 with complete block passes.
+    # summary_format -- E5 text-only turn does NOT fire. Nothing to
+    # summarize -> doctrine doesn't apply. Resolves the cascade with
+    # ceremony_dodge.
+    ("summary_format", "e5-text-only-passes",
+     [
+         _user_msg("just confirm the architecture"),
+         _assistant_msg(
+             "The architecture has three layers: detection, policy, dispatch."
+         ),
+     ],
+     "ok",
+     {"SUMMARY_FORMAT_TIER": "E5"}),
+
+    # summary_format -- E5 + substantive work + complete block passes.
     ("summary_format", "complete-block-passes",
      [
          _user_msg("do the comprehensive sweep"),
+         _assistant_tool_use("Edit", {"file_path": "/x.py",
+                                      "old_string": "a", "new_string": "b"}),
          _assistant_msg(
              "Work complete.\n\n"
              "=== SUMMARY ===\n"
@@ -422,10 +439,12 @@ _CASES = [
      "ok",
      {"SUMMARY_FORMAT_TIER": "E5"}),
 
-    # summary_format -- block present but missing fields fires malformed.
+    # summary_format -- E5 + work + malformed block fires malformed.
     ("summary_format", "malformed-fires",
      [
          _user_msg("comprehensive work"),
+         _assistant_tool_use("Edit", {"file_path": "/x.py",
+                                      "old_string": "a", "new_string": "b"}),
          _assistant_msg(
              "Done.\n\n=== SUMMARY ===\n[ITERATION]: 1\n"
              "[STORY]:\n- problem: x\n- what we did: y\n"

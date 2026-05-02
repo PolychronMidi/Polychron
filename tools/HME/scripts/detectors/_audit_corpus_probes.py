@@ -100,26 +100,15 @@ CORPUS = (
      "tweak this constant",
      _PADDING + "Updated the value and the test passes.",
      {"ADVISOR_DOCTRINE_TIER": "E1"}),
-    # summary_format -- E5 without closing block fires.
-    ("summary_format", "e5-missing-block", "summary_missing",
+    # summary_format -- detector requires substantive tool_use to fire,
+    # which the text-only corpus harness cannot construct. All probes
+    # return "ok"; firing semantics covered in test_detector_chain.py
+    # fixtures (missing-block-fires + malformed-fires + complete-block-passes
+    # all use _assistant_tool_use to inject Edit calls).
+    ("summary_format", "e5-text-only-passes", "ok",
      "do the sweep",
      _PADDING + "All checks green. Stopping.",
      {"SUMMARY_FORMAT_TIER": "E5"}),
-    # summary_format -- E3 with full block passes.
-    ("summary_format", "e3-complete-block", "ok",
-     "do the sweep",
-     "Work complete.\n\n"
-     "=== SUMMARY ===\n"
-     "[ITERATION]: 1/1\n"
-     "[CONTENT]: corpus + audit landed\n"
-     "[STORY]:\n"
-     "- problem: missing summary format detector\n"
-     "- what we did: built and wired summary_format\n"
-     "- how it went: clean pass\n"
-     "- what's next: monitor enforcement signal\n"
-     "[VOICE] Polychron: PAI summary block now mandatory at tier E3 and above.",
-     {"SUMMARY_FORMAT_TIER": "E5"}),
-    # summary_format -- below threshold passes regardless of text.
     ("summary_format", "e1-below-passes", "ok",
      "trivial fix",
      "Done.",
