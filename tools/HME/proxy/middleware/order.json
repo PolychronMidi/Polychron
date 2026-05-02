@@ -7,7 +7,6 @@
     "lifecycle": "Boundary actions like autocommit"
   },
   "order": [
-    "dump_system.js",
     "replace_system.js",
     "filter_tools.js",
     "memory_redirect.js",
@@ -28,6 +27,7 @@
     "mcp_fail_scan.js",
     "hme_log_watermark.js",
     "dominance_response_rewriter.js",
-    "proxy_autocommit.js"
+    "proxy_autocommit.js",
+    "dump_system.js"
   ]
 }

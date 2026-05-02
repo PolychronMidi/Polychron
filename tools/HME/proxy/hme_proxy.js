@@ -36,7 +36,7 @@ const {
   resolveUpstream, recordUpstreamSuccess, recordUpstreamFailure,
   DEFAULT_UPSTREAM_HOST, DEFAULT_UPSTREAM_PORT, DEFAULT_UPSTREAM_TLS,
 } = require('./upstream');
-const { shouldInject, buildStatusContext, buildJurisdictionContext, injectIntoSystem, stripSystemCacheControl } = require('./context');
+const { shouldInject, buildStatusContext, buildJurisdictionContext, injectIntoSystem, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 
 // Proxy wire-level version. Single source of truth is
@@ -347,6 +347,18 @@ function handleRequest(clientReq, clientRes) {
 
       let bodyDirtiedByStrip = false;
       if (isAnthropic) {
+        // Pre-mutation dump (HME_DUMP_SYSTEM_PROMPT=1): captures Claude
+        // Code's pristine outgoing payload before any HME mutation, so the
+        // operator can diff against the post-pipeline dump to see exactly
+        // what changed. No-op when disabled.
+        try {
+          require('./middleware/dump_system').writeDump(
+            payload, require('./shared').PROJECT_ROOT, 'pre',
+            (m) => console.warn('Acceptable warning: [middleware]', m),
+          );
+        } catch (err) {
+          console.error(`[hme-proxy] pre-dump failed: ${err.message}`);
+        }
         // Strip system cache_control ONLY when replace_system is going to
         // overwrite payload.system anyway -- otherwise we silently destroy
         // Claude Code's intentional system cache breakpoint and re-bill the
@@ -427,6 +439,17 @@ function handleRequest(clientReq, clientRes) {
               bodyDirtiedByStrip = true;
             }
           }
+        }
+        // Final-pass cache_control normalization: promote any ttl='5m' (or
+        // unspecified-ttl, which defaults to 5m) cache_control on tools or
+        // system to ttl='1h'. Eliminates the "1h after 5m" ordering 400 at
+        // the source regardless of what Claude Code or any middleware
+        // attached upstream. Runs LAST so every preceding mutation is
+        // accounted for.
+        const ccChanged = normalizeCacheControlTtls(payload);
+        if (ccChanged > 0) {
+          bodyDirtiedByStrip = true;
+          emit({ event: 'cache_control_normalized', session, count: ccChanged });
         }
         if (bodyDirtiedByStrip) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
         // inference_write_without_hme_read emission REMOVED.

@@ -50,6 +50,33 @@ function stripSystemCacheControl(payload) {
   return stripped;
 }
 
+// Promote every cache_control breakpoint in payload.tools and payload.system
+// to ttl='1h'. Anthropic's order rule is "no ttl='1h' breakpoint may come
+// after a ttl='5m' breakpoint" across processing-order tools->system->messages.
+// Claude Code stamps the user prompt's final block with ttl='1h', so any
+// 5m (or unspecified-ttl, which defaults to 5m) marker on a tool or system
+// block before it triggers a 400. Tools and system are stable across a
+// session; promoting them to 1h is safe and eliminates the ordering
+// hazard at the source. Messages are left alone -- Claude Code owns those.
+function normalizeCacheControlTtls(payload) {
+  let changed = 0;
+  const promote = (block) => {
+    if (!block || !block.cache_control) return;
+    const cc = block.cache_control;
+    if (cc.type !== 'ephemeral') return;
+    if (cc.ttl === '1h') return;
+    cc.ttl = '1h';
+    changed++;
+  };
+  if (Array.isArray(payload.tools)) {
+    for (const t of payload.tools) promote(t);
+  }
+  if (Array.isArray(payload.system)) {
+    for (const b of payload.system) promote(b);
+  }
+  return changed;
+}
+
 function injectIntoSystem(payload, block, marker = 'HME Jurisdiction Context (proxy-injected)') {
   if (!block) return false;
   if (typeof payload.system === 'string') {
@@ -82,6 +109,7 @@ module.exports = {
   buildJurisdictionContext: jurisdiction.buildJurisdictionContext,
   injectIntoSystem,
   stripSystemCacheControl,
+  normalizeCacheControlTtls,
   isJurisdictionFile: jurisdiction.isJurisdictionFile,
   openHypothesesFor: jurisdiction.openHypothesesFor,
   biasBoundsFor: jurisdiction.biasBoundsFor,
