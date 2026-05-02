@@ -142,6 +142,19 @@ def main() -> int:
         if _is_short_confirm_invitation(user_text):
             print("ok")
             return 0
+        # Exemption: minimal ack ("ok", "done", etc.) when the prior user
+        # message was itself a stop-hook deny payload. The doctrine
+        # cascade -- detector fires -> agent emits "ok" -> stop_work
+        # fires on "ok" -> repeat -- has no exit otherwise. The
+        # accumulated chain produces a violation against any output
+        # shape; the agent literally cannot emit nothing. Recognize that
+        # an ack of a deny is the structural equivalent of silence.
+        if user_text and any(m in user_text for m in (
+            "Stop hook feedback:", "Stop hook blocking error from command:",
+            "AUTO-COMPLETENESS",
+        )) and full_text in ("ok", "done", "noted", "got it", "ack"):
+            print("ok")
+            return 0
         print("TEXT_ONLY_SHORT")
         return 0
     print("ok")
