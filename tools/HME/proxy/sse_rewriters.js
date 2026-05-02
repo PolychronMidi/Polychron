@@ -227,13 +227,16 @@ function _isBareAck(text) {
   if (_isMinimalAck(text)) return true;
   // Hallucinated turn-prefix output: text consisting entirely of one or
   // more `Human:` / `Assistant:` tokens (with optional newlines/spaces
-  // between, possibly followed by trailing whitespace). The model emits
-  // these under stop-hook pressure as a gate-dodge; they look like fake
-  // conversation turns and have no value to the user. Substantive replies
-  // that merely *contain* these tokens (e.g. quoted in code) are not
-  // matched -- the test requires the WHOLE text block to be only the
-  // tokens.
+  // between, possibly followed by trailing whitespace).
   if (/^\s*(?:(?:Human|Assistant)\s*:\s*){1,}\s*$/.test(text)) return true;
+  // Hallucinated turn-prefix FOLLOWED BY content the model regurgitated
+  // from its own system context (e.g. `Human: <system-reminder>`). This
+  // is the gate-dodge variant where the model fabricates an entire fake
+  // user turn including an inner system-reminder tag. The user has called
+  // this out repeatedly; treat it as ack-class spam and strip.
+  if (/^\s*(?:Human|Assistant)\s*:\s*<\s*system-reminder/.test(text)) return true;
+  // Same shape but with stop-hook payload echo instead of system-reminder.
+  if (/^\s*(?:Human|Assistant)\s*:\s*(?:Stop hook|AUTO-COMPLETENESS|PreToolUse|PostToolUse|EXHAUST PROTOCOL|PSYCHOPATHIC-STOP|ADVISOR DOCTRINE|STOP-WORK)/.test(text)) return true;
   return false;
 }
 

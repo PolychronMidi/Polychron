@@ -284,6 +284,38 @@ function _shrinkForPassthrough(payload) {
     serialized = JSON.stringify(payload);
     if (serialized.length <= _PASSTHROUGH_COMPACT_BYTES) break;
   }
+  // Scrub orphaned tool_use / tool_result blocks: dropping oldest messages
+  // can leave a tool_result whose tool_use_id was in a dropped assistant
+  // message (Anthropic rejects with "unexpected tool_use_id"). Pass 1
+  // collects surviving tool_use IDs, pass 2 strips orphan tool_result
+  // blocks, pass 3 strips orphan tool_use blocks (whose result was
+  // dropped). Empty content arrays after stripping get a placeholder so
+  // Anthropic doesn't reject the message for empty content.
+  const surviving_use_ids = new Set();
+  const surviving_result_ids = new Set();
+  for (const m of msgs) {
+    if (!m || !Array.isArray(m.content)) continue;
+    for (const b of m.content) {
+      if (!b || typeof b !== 'object') continue;
+      if (b.type === 'tool_use' && b.id) surviving_use_ids.add(b.id);
+      if (b.type === 'tool_result' && b.tool_use_id) surviving_result_ids.add(b.tool_use_id);
+    }
+  }
+  let orphans = 0;
+  for (const m of msgs) {
+    if (!m || !Array.isArray(m.content)) continue;
+    const before = m.content.length;
+    m.content = m.content.filter((b) => {
+      if (!b || typeof b !== 'object') return true;
+      if (b.type === 'tool_result' && b.tool_use_id && !surviving_use_ids.has(b.tool_use_id)) return false;
+      if (b.type === 'tool_use' && b.id && !surviving_result_ids.has(b.id)) return false;
+      return true;
+    });
+    orphans += before - m.content.length;
+    if (m.content.length === 0) {
+      m.content = [{ type: 'text', text: '(content stripped by hme-proxy passthrough-compact)' }];
+    }
+  }
   // Insert a synthetic user marker at messages[0] so Anthropic doesn't
   // reject the conversation for starting on assistant. Also gives the
   // model a hint that history was elided.
@@ -293,7 +325,8 @@ function _shrinkForPassthrough(payload) {
       content: `[hme-proxy passthrough-compact: ${dropped} oldest message(s) dropped to fit under TPM rate limit; restart proxy to clear escape-hatch state]`,
     });
   }
-  console.error(`[hme-proxy] passthrough-compact: dropped ${dropped} oldest messages (now ${msgs.length}, body=${serialized.length}B)`);
+  serialized = JSON.stringify(payload);
+  console.error(`[hme-proxy] passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks (now ${msgs.length} msgs, body=${serialized.length}B)`);
   return dropped;
 }
 
