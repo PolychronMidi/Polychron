@@ -52,6 +52,7 @@ _DETECTOR_FOR_KEY = {
     "ADVISOR_SILENTLY_SKIPPED":   "advisor_doctrine",
     "SUMMARY_MISSING":            "summary_format",
     "SUMMARY_MALFORMED":          "summary_format",
+    "CEREMONY_DODGE":             "ceremony_dodge",
 }
 
 # Per-alternative representative sentence + which detector test must accept
@@ -182,6 +183,14 @@ _PROBES = {
          "- what's next: w\n"
          "[VOICE] Polychron: full closing block with every required field populated cleanly.",
          {"SUMMARY_FORMAT_TIER": "E3"}),
+    ],
+    "CEREMONY_DODGE": [
+        # The detector requires a transcript with a prior hook-deny user
+        # event and a text-only assistant follow-up; that shape can't be
+        # built from this single-turn probe harness. End-to-end coverage
+        # lives in test_detector_chain.py (ceremony_dodge fixtures).
+        ("do-real-work", None),
+        ("genuinely-empty", None),
     ],
 }
 

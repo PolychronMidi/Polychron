@@ -49,6 +49,8 @@ const REASONS = {
     'STOP-THE-LINE FORMAT VIOLATION: Tier >= E3 (Algorithm) work closed without the required === SUMMARY === block. PAI v6.3.0 doctrine: "Format violations outrank output length, output quality, and output detail." Append the closing block before stopping. Required fields: [ITERATION], [CONTENT], [STORY] (4 bullets: problem | what we did | how it went | what\'s next), and [VOICE] <name>: <8-16 word summary>. Either (a) emit the block now, or (b) re-classify the tier -- if no summary is needed, this work was lighter than E3 and the classifier should reflect that.',
   SUMMARY_MALFORMED:
     'STOP-THE-LINE FORMAT VIOLATION: Closing summary block is present but missing required fields. Every Algorithm-tier turn must include all 7 elements: === SUMMARY === banner, [ITERATION]:, [CONTENT]:, [STORY]: with all 4 bullets (problem, what we did, how it went, what\'s next), and [VOICE] <name>: <8-16 word closing line>. Re-emit the block with every field populated; this is a structural gate, not a soft preference.',
+  CEREMONY_DODGE:
+    'CEREMONY-DODGE VIOLATION: Your last turn was text-only and dominated by rescue-clause language ("solo was right", "Nothing missed", "Acknowledged X input", "=== SUMMARY ===" block, "(verified)" stamps, "Re-evaluating tier", etc.) following a stop-hook deny. This is the failure mode where each turn writes ceremony to satisfy the prior turn\'s detector instead of doing real work. The fix is NOT more rescue text. Either (a) actually do work this turn -- ANY tool call (Read, Edit, Bash) demonstrating substantive action defeats this gate, or (b) if there is genuinely nothing to do and the prior detector fired wrongly, the response should be silent / empty rather than a verbose dodge. Stop emitting boilerplate to satisfy regexes; do the work or stop.',
   COMPL_ROUND_1:
     "AUTO-COMPLETENESS INJECT (round 1/2): Before stopping, enumerate everything that might still be missing, unfinished, deferred, flagged, a possible gap, or worth doing relative to THIS TURN's work. Then do ALL of it -- no deferrals, no flagging, no punts. If truly nothing remains, state 'Nothing missed' explicitly. This is the auto-injected version of the user's usual 'what's missing? do all' follow-up.",
   COMPL_ROUND_2:
@@ -78,6 +80,7 @@ function readVerdicts() {
     PHANTOM_CAPABILITY: 'ok',
     ADVISOR_DOCTRINE: 'ok',
     SUMMARY_FORMAT: 'ok',
+    CEREMONY_DODGE: 'ok',
   };
   if (!fs.existsSync(VERDICTS_FILE)) return out;
   let text = '';
@@ -254,6 +257,7 @@ module.exports = {
     // deny will fire below, so the agent gets a single coherent
     // signal per Stop event instead of (deny + boilerplate).
     const willDeny =
+      v.CEREMONY_DODGE === 'ceremony_dodge' ||
       v.STOP_WORK === 'DISMISSIVE' ||
       v.STOP_WORK === 'TEXT_ONLY_SHORT' ||
       v.EXHAUST_CHECK === 'exhaust_violation' ||
@@ -270,6 +274,11 @@ module.exports = {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     }
 
+    // CEREMONY_DODGE fires FIRST. The whole point is to preempt the
+    // detectors whose rescue patterns the dodge is trying to satisfy --
+    // if it ran later, advisor_doctrine / summary_format / scope_escape
+    // would accept the rescue-shaped text and the dodge would succeed.
+    if (v.CEREMONY_DODGE === 'ceremony_dodge') return ctx.deny(REASONS.CEREMONY_DODGE);
     if (v.STOP_WORK === 'DISMISSIVE')      return ctx.deny(REASONS.STOP_WORK_DISMISSIVE);
     if (v.STOP_WORK === 'TEXT_ONLY_SHORT') return ctx.deny(REASONS.STOP_WORK_TEXT_ONLY);
     if (v.EXHAUST_CHECK === 'exhaust_violation') return ctx.deny(REASONS.EXHAUST);

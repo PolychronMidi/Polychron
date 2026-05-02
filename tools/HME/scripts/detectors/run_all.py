@@ -53,6 +53,9 @@ DETECTORS = [
     # PAI-import #9: stop-the-line mandatory output format. Gates at
     # tier >= E3 internally; lighter turns short-circuit to "ok".
     ("summary_format", "summary_format"),
+    # Anti-ceremony: blocks text-only responses to a prior stop-hook deny
+    # that are dominated by rescue-clause patterns instead of doing work.
+    ("ceremony_dodge", "ceremony_dodge"),
 ]
 
 

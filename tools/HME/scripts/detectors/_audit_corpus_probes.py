@@ -124,4 +124,17 @@ CORPUS = (
      "trivial fix",
      "Done.",
      {"SUMMARY_FORMAT_TIER": "E1"}),
+    # ceremony_dodge -- the corpus harness builds (user, assistant) where
+    # the user is the prompt. To hit the deny-payload path the user_msg
+    # itself must start with "Stop hook feedback:".
+    ("ceremony_dodge", "rescue-text-after-deny", "ceremony_dodge",
+     "Stop hook feedback:\nADVISOR DOCTRINE",
+     "Solo was right for this research turn -- no decision to "
+     "crystallize. Re-evaluating tier: this was lighter than E4.\n\n"
+     "=== SUMMARY ===\n[ITERATION]: 1/1\n[CONTENT]: rationale\n"
+     "[STORY]:\n- problem: x\n- what we did: y\n- how it went: z\n"
+     "- what's next: stop\n[VOICE] Polychron: closed cleanly."),
+    ("ceremony_dodge", "real-user-prompt-passes", "ok",
+     "explain the architecture briefly",
+     "The system has three layers."),
 )

@@ -22,6 +22,7 @@ IGNORE_AND_TRAMPLE=ok
 PHANTOM_CAPABILITY=ok
 ADVISOR_DOCTRINE=ok
 SUMMARY_FORMAT=ok
+CEREMONY_DODGE=ok
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # run_all.py prints one `name=verdict` line per detector. Parse into bash vars.
   # If run_all crashes we fall back to defaults above (equivalent to old
@@ -56,6 +57,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
       phantom_capability) PHANTOM_CAPABILITY="$_v" ;;
       advisor_doctrine) ADVISOR_DOCTRINE="$_v" ;;
       summary_format) SUMMARY_FORMAT="$_v" ;;
+      ceremony_dodge) CEREMONY_DODGE="$_v" ;;
     esac
   done <<< "$_RUN_ALL_OUT"
   # Sanity: poll_count must be numeric for the -ge test below.
@@ -83,6 +85,7 @@ mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
   echo "PHANTOM_CAPABILITY=$PHANTOM_CAPABILITY"
   echo "ADVISOR_DOCTRINE=$ADVISOR_DOCTRINE"
   echo "SUMMARY_FORMAT=$SUMMARY_FORMAT"
+  echo "CEREMONY_DODGE=$CEREMONY_DODGE"
 } > "$_DETECTOR_VERDICTS_FILE"
 
 # senior_consult_debt -- informational notice (NOT a hard block on first
