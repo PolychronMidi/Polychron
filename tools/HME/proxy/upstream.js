@@ -59,17 +59,13 @@ function tripEmergencyValve(lastErr) {
     fs.appendFileSync(errLog, `[${ts}] PROXY_EMERGENCY: ${banner}\n`);
   } catch (_e) { /* best effort */ }
 
-  const envPath = path.join(PROJECT_ROOT, '.env');
-  try {
-    let envContent = fs.readFileSync(envPath, 'utf8');
-    envContent = envContent.replace(
-      /^HME_PROXY_ENABLED=.*/m,
-      'HME_PROXY_ENABLED=0  # EMERGENCY VALVE tripped -- proxy in passthrough mode (restart to re-enable HME)',
-    );
-    fs.writeFileSync(envPath, envContent);
-  } catch (_e) {
-    console.error('[hme-proxy] WARNING: could not update .env -- manually set HME_PROXY_ENABLED=0');
-  }
+  // The previous valve-trip path also wrote `HME_PROXY_ENABLED=0` to .env
+  // as a "persistent visibility" signal. That bit user repeatedly: every
+  // restart inherited the disabled flag, locking them in passthrough until
+  // they manually fixed the env file. The in-memory _valveTripped already
+  // covers the current process's lifetime; a fresh restart should be a
+  // clean slate. Keep the lifesaver+console signals (loud enough), drop
+  // the .env mutation.
 
   emit({ event: 'proxy_emergency', reason: lastErr, source: 'emergency_valve' });
 }

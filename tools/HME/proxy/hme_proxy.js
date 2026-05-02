@@ -241,6 +241,24 @@ function _detectUpstreamFailure(status, headers, fullBody) {
   return null;
 }
 
+// Per-error-type cooldown to suppress lifesaver/snapshot SPAM when a burst
+// of in-flight requests all hit the same upstream failure. Without this, a
+// single Anthropic-side 429 storm produced dozens of identical alerts that
+// the user had to manually clear. Cooldown is 60s per (type, path_label)
+// pair. Snapshots and console logging still fire on every hit; only the
+// hme-errors.log lifesaver write and the recordUpstreamFailure call are
+// gated. The escape hatch still trips on the FIRST failure as designed.
+const _lastAlertAt = new Map(); // key = `${type}|${pathLabel}` -> ms
+const _ALERT_COOLDOWN_MS = 60_000;
+function _alertCooldownActive(type, pathLabel) {
+  const key = `${type}|${pathLabel}`;
+  const now = Date.now();
+  const last = _lastAlertAt.get(key) || 0;
+  if (now - last < _ALERT_COOLDOWN_MS) return true;
+  _lastAlertAt.set(key, now);
+  return false;
+}
+
 function _sanitizePayload(payload) {
   // Remove empty text blocks left behind by regex-based strips. Anthropic's
   // /v1/messages rejects them with 400 "text content blocks must be non-empty".
@@ -734,9 +752,10 @@ function handleRequest(clientReq, clientRes) {
             // into passthrough mode -- the very collateral damage the user
             // flagged. We still snapshot + lifesaver-log them so the
             // operator sees them, but we don't kill the interactive path.
-            if (_isInteractivePath) {
+            const _coolingDown = _alertCooldownActive(_errInfo.type || `http_${status}`, _pathLabel);
+            if (_isInteractivePath && !_coolingDown) {
               recordUpstreamFailure(_errMsg);
-            } else {
+            } else if (!_isInteractivePath) {
               console.error(`[hme-proxy] sub-pipeline failure -- NOT tripping escape hatch (interactive path unaffected)`);
             }
             try {
@@ -748,9 +767,11 @@ function handleRequest(clientReq, clientRes) {
               fs.writeFileSync(outFile, outBody);
               fs.writeFileSync(outFile.replace('.json', '.response'), fullBody);
               console.error(`[hme-proxy] payload snapshotted to ${outFile}`);
-              const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
-              fs.appendFileSync(errLog,
-                `[${_stamp}] UPSTREAM_${status}_${_pathLabel.toUpperCase()}: ${_errMsg} (request_id=${_errInfo.requestId || '?'}, snapshot=${_snapshotRel})\n`);
+              if (!_coolingDown) {
+                const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+                fs.appendFileSync(errLog,
+                  `[${_stamp}] UPSTREAM_${status}_${_pathLabel.toUpperCase()}: ${_errMsg} (request_id=${_errInfo.requestId || '?'}, snapshot=${_snapshotRel})\n`);
+              }
             } catch (err) {
               console.error(`[hme-proxy] snapshot/lifesaver write failed: ${err.message}`);
             }
