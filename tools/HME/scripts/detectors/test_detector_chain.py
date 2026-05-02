@@ -488,34 +488,43 @@ _CASES = [
      "ok",
      {"LIVE_PROBE_FORCE": "ok"}),
 
-    # phase_gate -- E3+ Edit without BUILD/EXECUTE marker fires.
-    ("phase_gate", "edit-without-build-marker-fires",
+    # phase_gate -- E5 + open-ended prompt + Edit without BUILD fires.
+    ("phase_gate", "open-ended-edit-without-marker-fires",
      [
-         _user_msg("ship the change"),
+         _user_msg("design the new subsystem and figure out the layout"),
          _assistant_tool_use("Edit", {"file_path": "/x.py",
                                       "old_string": "a", "new_string": "b"}),
      ],
      "phase_skipped",
-     {"PHASE_GATE_TIER": "E3"}),
-    # phase_gate -- BUILD marker present allows the edit.
+     {"PHASE_GATE_TIER": "E5"}),
+    # phase_gate -- BUILD marker present allows the edit at E5.
     ("phase_gate", "build-marker-allows-edit",
      [
-         _user_msg("ship the change"),
+         _user_msg("design the new subsystem"),
          _assistant_msg("=== BUILD ===\nGoing with this approach."),
          _assistant_tool_use("Edit", {"file_path": "/x.py",
                                       "old_string": "a", "new_string": "b"}),
      ],
      "ok",
-     {"PHASE_GATE_TIER": "E3"}),
-    # phase_gate -- below E3 short-circuits.
+     {"PHASE_GATE_TIER": "E5"}),
+    # phase_gate -- specific directive IS the plan; no marker needed.
+    ("phase_gate", "directive-prompt-passes",
+     [
+         _user_msg("rename foo to bar across the project"),
+         _assistant_tool_use("Edit", {"file_path": "/x.py",
+                                      "old_string": "foo", "new_string": "bar"}),
+     ],
+     "ok",
+     {"PHASE_GATE_TIER": "E5"}),
+    # phase_gate -- below E5 short-circuits.
     ("phase_gate", "below-tier-passes",
      [
-         _user_msg("trivial"),
+         _user_msg("design the new subsystem"),
          _assistant_tool_use("Edit", {"file_path": "/x.py",
                                       "old_string": "a", "new_string": "b"}),
      ],
      "ok",
-     {"PHASE_GATE_TIER": "E1"}),
+     {"PHASE_GATE_TIER": "E3"}),
 
     # summary_format MINIMAL violation: long-form response in MINIMAL mode.
     ("summary_format", "minimal-long-response-fires",

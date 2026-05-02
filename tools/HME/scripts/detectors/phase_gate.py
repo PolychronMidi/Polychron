@@ -64,7 +64,20 @@ _PHASE_RE = re.compile(
 
 _BUILD_OR_EXECUTE = {"BUILD", "EXECUTE"}
 _EDIT_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
-_TRIGGER_TIERS = {"E3", "E4", "E5"}
+# E5 only -- E3 (multi-file) and E4 (deep) are too routine to demand the
+# marker. The doctrine is for genuine PLAN-vs-BUILD articulation on
+# Comprehensive sweeps, not every edit-heavy turn.
+_TRIGGER_TIERS = {"E5"}
+
+# Open-ended prompt markers. A specific directive ("fix the broken refs",
+# "rename foo to bar") is itself the PLAN; demanding a phase marker on top
+# would be ceremony. Only fire when the user prompt is genuinely
+# exploratory / decision-required.
+_OPEN_ENDED_RES = (
+    re.compile(r"\b(do all|anything missing|what.?s missing|push further|"
+               r"keep going|next steps|design (the|a)|what should|"
+               r"how should|figure out|investigate)\b", re.IGNORECASE),
+)
 
 
 def _read_tier() -> str | None:
@@ -139,6 +152,28 @@ def _edits_before_build_phase(events: list) -> bool:
     return not (phases & _BUILD_OR_EXECUTE)
 
 
+def _user_prompt_is_open_ended(events: list) -> bool:
+    """Inspect the most recent user prompt. Specific directives don't
+    need a separate PLAN phase -- the directive IS the plan."""
+    last_text = ""
+    for ev in events:
+        if not is_user(ev):
+            continue
+        msg = ev.get("message")
+        content = msg.get("content") if isinstance(msg, dict) else ev.get("content")
+        if isinstance(content, str):
+            last_text = content
+        elif isinstance(content, list):
+            for block in content:
+                if isinstance(block, dict) and block.get("type") == "text":
+                    t = block.get("text", "")
+                    if isinstance(t, str):
+                        last_text = t
+    if not last_text:
+        return False
+    return any(pat.search(last_text) for pat in _OPEN_ENDED_RES)
+
+
 def _append_transitions(phases: list[str]) -> None:
     """Append observed phase transitions to the JSONL log. Best-effort."""
     if not phases:
@@ -169,7 +204,10 @@ def main() -> int:
     # Best-effort telemetry for cross-session phase analysis.
     _append_transitions(phases)
 
-    if _edits_before_build_phase(events):
+    # Only fire on genuinely open-ended prompts where PLAN articulation
+    # matters. Specific user directives are themselves the plan -- demanding
+    # a separate marker would be ceremony.
+    if _edits_before_build_phase(events) and _user_prompt_is_open_ended(events):
         print("phase_skipped")
         return 0
 
