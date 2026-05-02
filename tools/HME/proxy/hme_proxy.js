@@ -305,16 +305,15 @@ function _shrinkForPassthrough(payload) {
   let serialized = JSON.stringify(payload);
   if (serialized.length <= _threshold) return 0;
 
-  // TIER 1 -- microcompact: shrink large tool_result blocks in older
-  // messages by replacing their content with a short elision marker.
-  // This keeps the conversation structure intact (no dropped messages, no
-  // orphaned tool_use/tool_result pairs) and is the same approach Claude
-  // Code's own internal compaction uses for the cheapest tier. Threshold:
-  // any tool_result block over 2 KB in the oldest 70% of messages gets
-  // its content replaced; the most recent 30% are preserved verbatim so
-  // the model still has full fidelity for recent tool calls.
-  const _TOOL_RESULT_BYTE_FLOOR = 2_000;
-  const _RECENT_KEEP_FRACTION = 0.30;
+  // TIER 1 -- microcompact: shrink tool_result blocks in older messages
+  // by replacing their content with a short elision marker. Floor=500
+  // (was 2000): observed real conversations have many ~1KB tool_results
+  // that escaped the 2KB floor and left the body still over threshold.
+  // Recent-keep=10% (was 30%): preserve only the freshest 10% of context
+  // verbatim so older tool calls compact maximally. Most large requests
+  // should now stop at tier 1 with no message drops.
+  const _TOOL_RESULT_BYTE_FLOOR = 500;
+  const _RECENT_KEEP_FRACTION = 0.10;
   const _recent_start = Math.floor(msgs.length * (1 - _RECENT_KEEP_FRACTION));
   let elided = 0;
   for (let i = 0; i < _recent_start; i++) {
