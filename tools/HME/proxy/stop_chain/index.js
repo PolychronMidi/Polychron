@@ -167,9 +167,15 @@ function _isCascadeBreakConditions(stdinJson) {
   let lines;
   try { lines = fs.readFileSync(transcript, 'utf8').split('\n'); }
   catch (_e) { return false; }
+  // Walk events tracking last user text, last assistant text, and the
+  // index of each so we can detect "user-deny is the most recent event
+  // with no assistant flushed after it" (the write-race shape).
   let lastUserText = '';
+  let lastUserIdx = -1;
   let lastAssistantText = '';
+  let lastAssistantIdx = -1;
   let lastAssistantHadToolUse = false;
+  let evIdx = 0;
   for (const line of lines) {
     if (!line) continue;
     let entry;
@@ -185,7 +191,10 @@ function _isCascadeBreakConditions(stdinJson) {
           .map((b) => b.text || '')
           .join(' ');
       }
-      if (text.trim()) lastUserText = text;
+      if (text.trim()) {
+        lastUserText = text;
+        lastUserIdx = evIdx;
+      }
     } else if (role === 'assistant') {
       let text = '';
       let hasToolUse = false;
@@ -198,9 +207,16 @@ function _isCascadeBreakConditions(stdinJson) {
       } else if (typeof content === 'string') {
         text = content;
       }
-      lastAssistantText = text;
-      lastAssistantHadToolUse = hasToolUse;
+      // Only update when the assistant event has visible text content;
+      // pure-thinking events don't reset lastAssistantText since the
+      // text usually arrives in a sibling event.
+      if (text.trim() || hasToolUse) {
+        lastAssistantText = text;
+        lastAssistantHadToolUse = hasToolUse;
+        lastAssistantIdx = evIdx;
+      }
     }
+    evIdx++;
   }
   const userIsDeny = lastUserText && [
     'Stop hook feedback:',
@@ -210,9 +226,28 @@ function _isCascadeBreakConditions(stdinJson) {
     'PostToolUse:',
   ].some((m) => lastUserText.includes(m));
   if (!userIsDeny) return false;
-  if (lastAssistantHadToolUse) return false;
-  const trimmed = (lastAssistantText || '').trim().toLowerCase().replace(/[.!]+$/, '');
-  return ['ok', 'done', 'noted', 'got it', 'ack', 'acknowledged'].includes(trimmed);
+  // Case 1: agent's reply is on disk and is a bare ack -- the original
+  // cascade-break shape.
+  if (!lastAssistantHadToolUse && lastAssistantIdx > lastUserIdx) {
+    const trimmed = (lastAssistantText || '').trim().toLowerCase().replace(/[.!]+$/, '');
+    if (['ok', 'done', 'noted', 'got it', 'ack', 'acknowledged'].includes(trimmed)) {
+      return true;
+    }
+  }
+  // Case 2: write-race -- the deny is the most recent event in the
+  // transcript with no assistant event flushed after it. The Stop hook
+  // fires immediately at agent turn-end; Claude Code may not have
+  // written the assistant response to disk yet. The chain is necessarily
+  // running in response to an agent turn that just ended. Treat that
+  // shape as "agent emitted SOMETHING, presumed bare ack" -- silence-
+  // equivalent. Risk: a substantive agent reply that lands during the
+  // race window also bypasses, but the chain re-evaluates next turn so
+  // any persistent issue still surfaces. The cost of NOT short-circuiting
+  // (cascade loop the agent cannot exit) is structurally worse.
+  if (lastUserIdx > lastAssistantIdx) {
+    return true;
+  }
+  return false;
 }
 
 async function runStopChain(stdinJson) {
