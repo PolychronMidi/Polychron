@@ -802,9 +802,9 @@ function handleRequest(clientReq, clientRes) {
       const chunks = [];
       upstreamRes.on('data', (c) => chunks.push(c));
       upstreamRes.on('end', async () => {
-        const fullBody = Buffer.concat(chunks);
-        const status = upstreamRes.statusCode || 502;
-        const headers = { ...upstreamRes.headers };
+        let fullBody = Buffer.concat(chunks);
+        let status = upstreamRes.statusCode || 502;
+        let headers = { ...upstreamRes.headers };
 
         // Detect upstream failure across BOTH paths: HTTP 4xx with JSON
         // error body, AND HTTP 200 with SSE error event in the stream.
