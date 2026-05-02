@@ -100,6 +100,23 @@ def _tick(cfg, tracker):
         for pp in cfg.get("process_probes", []):
             _cpu_buf._samples.pop(pp.get("name", ""), None)
             tracker.record(f"cpu:{pp.get('name','')}", True, now)
+    # Build a map of which process names have a CURRENTLY-FAILING http
+    # probe. Real GIL hang has both signals: CPU pegged AND /health
+    # unresponsive. Legitimate ML inference workload (sentence-transformers
+    # tokenizing on CPU while GPU does the heavy lift) pegs CPU at 200%+
+    # but /health returns instantly. The old check fired on the legitimate
+    # case, producing false-positive CRITICAL alerts every 90s during
+    # any sustained inference. Real hangs still fire because /health
+    # also fails when the GIL is held; the http_probes loop above already
+    # tracked that streak.
+    _http_failing_now: set[str] = set()
+    for probe in cfg.get("http_probes", []):
+        name = probe["name"]
+        # The streak tracker stores the most recent record; if the
+        # current http probe failed (not ok), it has streak >= 1.
+        if tracker._streak.get(f"http:{name}", 0) >= 1:
+            _http_failing_now.add(name)
+
     for pp in cfg.get("process_probes", []):
         if _in_grace:
             break
@@ -111,14 +128,20 @@ def _tick(cfg, tracker):
         # Keep rolling buffer twice the window so saturated() has coverage.
         _cpu_buf.record(name, pct, now, window_s * 2)
         saturated, avg = _cpu_buf.saturated(name, thresh, window_s, now)
+        # Only alert when CPU saturation IS PAIRED WITH http-probe failure.
+        # CPU-saturated alone = legitimate inference workload.
+        # CPU-saturated AND /health failing = the GIL-starved hang this
+        # check exists to catch.
+        is_real_hang = saturated and (name in _http_failing_now)
         key = f"cpu:{name}"
-        alert = tracker.record(key, not saturated, now)
-        if saturated and alert:
+        alert = tracker.record(key, not is_real_hang, now)
+        if is_real_hang and alert:
             _log_error(
                 f"[universal_pulse] CRITICAL {name} CPU-saturated "
                 f"(avg={avg:.0f}% over {int(window_s)}s, threshold={int(thresh)}%) "
-                f"-- GIL/event-loop hang; process alive but starving handlers. "
-                f"Supervisor will SIGTERM after 60s of failed health probes."
+                f"AND /health unresponsive -- GIL/event-loop hang; "
+                f"process alive but starving handlers. Supervisor will "
+                f"SIGTERM after 60s of failed health probes."
             )
             bad_count += 1
 
