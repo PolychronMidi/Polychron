@@ -29,15 +29,14 @@ function resolveUpstream(req) {
 }
 
 //  Emergency valve
-// N consecutive upstream failures -> flip into sticky passthrough mode.
-// Was: process.exit(99) + write HME_PROXY_ENABLED=0 to .env. That left
-// Claude Code pointed at a now-dead 127.0.0.1:9099 (ECONNREFUSED on every
-// retry) -- the "escape hatch" stranded the user instead of saving them.
-// Now: stay alive, mark the valve tripped, and forward every subsequent
-// request as raw bytes without any HME mutation. Claude Code keeps
-// working; HME enrichment is the only thing lost. The .env flag still
-// flips so an operator-level restart re-validates the config.
-const EMERGENCY_THRESHOLD = 3;
+// FIRST upstream failure -> flip into sticky passthrough mode + write
+// LIFESAVER alert with the full error text + flip HME_PROXY_ENABLED=0.
+// Threshold was 3 consecutive failures; lowered to 1 because the user
+// shouldn't have to hit the same proxy-induced rejection three times
+// before the auto-bypass kicks in. The lifesaver alert is the loudest
+// signal we have -- it surfaces in the next userpromptsubmit and on
+// every subsequent /v1/messages until the operator clears it.
+const EMERGENCY_THRESHOLD = 1;
 let _consecutiveFailures = 0;
 let _valveTripped = false;
 
@@ -48,13 +47,16 @@ function isPassthroughMode() {
 function tripEmergencyValve(lastErr) {
   if (_valveTripped) return;
   _valveTripped = true;
-  const msg = `EMERGENCY VALVE: switched to PASSTHROUGH mode after ${EMERGENCY_THRESHOLD} consecutive upstream failures. All HME mutations disabled until proxy restart. Last error: ${lastErr}.`;
-  console.error(`[hme-proxy] ${msg}`);
+  const ts = new Date().toISOString();
+  const banner = `PROXY 400/4xx ESCAPE HATCH TRIPPED -- proxy now in PASSTHROUGH mode for the rest of this process lifetime. Upstream rejected a proxy-mutated request: ${lastErr}. Inspect tmp/claude-400-payload-*.json for the exact body Anthropic rejected, fix the proxy mutation, and restart with tools/HME/launcher/polychron-restart.sh.`;
+  console.error(`[hme-proxy] ${banner}`);
 
+  // LIFESAVER channel: hme-errors.log is read by lifesaver_inject every
+  // /v1/messages and userpromptsubmit; the new line surfaces in the next
+  // user-visible turn until the operator clears the watermark.
   const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
   try {
-    const ts = new Date().toISOString();
-    fs.appendFileSync(errLog, `[${ts}] PROXY_EMERGENCY: ${msg}\n`);
+    fs.appendFileSync(errLog, `[${ts}] PROXY_EMERGENCY: ${banner}\n`);
   } catch (_e) { /* best effort */ }
 
   const envPath = path.join(PROJECT_ROOT, '.env');

@@ -42,6 +42,45 @@ else
   echo "[launch] WARNING: .env not found at $_ENV_FILE -- using defaults" >&2
 fi
 
+# Persist ANTHROPIC_BASE_URL so future shells, future X sessions, and the
+# already-running systemd --user manager all see it. Without this, every
+# fresh VS Code launch from the desktop manager forks claude-code without
+# the var (the .env file is invisible to non-shell launchers like .desktop
+# files, GNOME/KDE app menus, dock pins). The three writes are:
+#   1. ~/.profile  -- inherited by login shells AND most session managers
+#                     that source it before launching the desktop
+#   2. ~/.bashrc   -- inherited by interactive non-login bash shells (e.g.
+#                     VS Code's integrated terminal under most defaults)
+#   3. systemctl --user import-environment -- pushes the var into the
+#                     CURRENTLY-running user-systemd manager so any
+#                     systemd --user unit (or app launched via
+#                     systemd-run --user) inherits it WITHOUT a logout.
+# Idempotent: skips writes when the export line is already present.
+_BASE_URL="${ANTHROPIC_BASE_URL:-}"
+if [ -n "$_BASE_URL" ]; then
+  _EXPORT_LINE="export ANTHROPIC_BASE_URL=${_BASE_URL}"
+  _EXPORT_TAG="# polychron-launch.sh -- ANTHROPIC_BASE_URL persisted; remove if you stop using the proxy"
+  for _shfile in "$HOME/.profile" "$HOME/.bashrc"; do
+    if [ -f "$_shfile" ] && ! grep -qF "$_EXPORT_LINE" "$_shfile" 2>/dev/null; then
+      printf '\n%s\n%s\n' "$_EXPORT_TAG" "$_EXPORT_LINE" >> "$_shfile"
+      echo "[launch] persisted ANTHROPIC_BASE_URL to $_shfile" >&2
+    elif [ ! -f "$_shfile" ]; then
+      printf '%s\n%s\n' "$_EXPORT_TAG" "$_EXPORT_LINE" > "$_shfile"
+      echo "[launch] created $_shfile with ANTHROPIC_BASE_URL export" >&2
+    fi
+  done
+  if command -v systemctl >/dev/null 2>&1; then
+    if systemctl --user import-environment ANTHROPIC_BASE_URL 2>/dev/null; then
+      echo "[launch] pushed ANTHROPIC_BASE_URL to systemd --user environment" >&2
+    fi
+  fi
+  if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+    dbus-update-activation-environment --systemd ANTHROPIC_BASE_URL 2>/dev/null \
+      && echo "[launch] pushed ANTHROPIC_BASE_URL to dbus activation env" >&2 \
+      || true
+  fi
+fi
+
 PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
 PROXY_PORT="${HME_PROXY_PORT:-9099}"
 PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
