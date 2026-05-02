@@ -275,9 +275,44 @@ function _shrinkForPassthrough(payload) {
   if (msgs.length <= _PASSTHROUGH_COMPACT_KEEP_MIN) return 0;
   let serialized = JSON.stringify(payload);
   if (serialized.length <= _PASSTHROUGH_COMPACT_BYTES) return 0;
+
+  // TIER 1 -- microcompact: shrink large tool_result blocks in older
+  // messages by replacing their content with a short elision marker.
+  // This keeps the conversation structure intact (no dropped messages, no
+  // orphaned tool_use/tool_result pairs) and is the same approach Claude
+  // Code's own internal compaction uses for the cheapest tier. Threshold:
+  // any tool_result block over 2 KB in the oldest 70% of messages gets
+  // its content replaced; the most recent 30% are preserved verbatim so
+  // the model still has full fidelity for recent tool calls.
+  const _TOOL_RESULT_BYTE_FLOOR = 2_000;
+  const _RECENT_KEEP_FRACTION = 0.30;
+  const _recent_start = Math.floor(msgs.length * (1 - _RECENT_KEEP_FRACTION));
+  let elided = 0;
+  for (let i = 0; i < _recent_start; i++) {
+    const m = msgs[i];
+    if (!m || !Array.isArray(m.content)) continue;
+    for (const b of m.content) {
+      if (!b || b.type !== 'tool_result') continue;
+      const cstr = typeof b.content === 'string'
+        ? b.content
+        : (Array.isArray(b.content) ? JSON.stringify(b.content) : '');
+      if (cstr.length < _TOOL_RESULT_BYTE_FLOOR) continue;
+      b.content = `(content elided by hme-proxy precompact: original was ${cstr.length}B)`;
+      elided++;
+    }
+  }
+  if (elided > 0) {
+    serialized = JSON.stringify(payload);
+    console.error(`[hme-proxy] precompact tier-1 (microcompact): elided ${elided} stale tool_result block(s), body=${serialized.length}B`);
+    if (serialized.length <= _PASSTHROUGH_COMPACT_BYTES) {
+      console.error(`[hme-proxy] precompact: tier-1 sufficient, no message drops needed`);
+      return elided; // success at tier 1, no dropping required
+    }
+  }
+
+  // TIER 2 -- message-drop fallback: tier-1 wasn't enough. Drop the
+  // OLDEST messages first. Keep at least _PASSTHROUGH_COMPACT_KEEP_MIN.
   let dropped = 0;
-  // Drop the OLDEST messages first. Keep at least the last
-  // _PASSTHROUGH_COMPACT_KEEP_MIN to preserve some context.
   while (msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN) {
     msgs.shift();
     dropped++;
