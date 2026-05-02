@@ -548,11 +548,11 @@
     },
     {
       "id": "hme-py-no-non-ascii",
-      "description": "Python equivalent of ESLint local/no-non-ascii (scripts/eslint-rules/no-non-ascii.js). HME Python source must be ASCII except for an allowlist of legitimate typography (em-dash, arrows, box-drawing, Greek, accented Latin) declared in check-py-no-non-ascii.py. Blocks the copy-paste failure mode: NBSP, curly quotes, zero-width spaces, BOM -- invisible chars that break regex matching and produce diff noise.",
+      "description": "Project-wide ASCII enforcement. Strict: no allowlist, no emoji exceptions, no math-symbol exceptions. Source must be pure ASCII (0x20-0x7e + tab + LF + CR). Use the generalized scripts/audit-no-non-ascii.py which scans .py / .js / .sh / .json / .md / .txt under src + scripts + tools/HME. Mirrors scripts/eslint-rules/no-non-ascii.js for the JS half.",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/scripts/check-py-no-non-ascii.py tools/HME/service",
+      "shell": "python3 scripts/audit-no-non-ascii.py",
       "js_equivalent": "no-non-ascii",
-      "severity": "warning"
+      "severity": "error"
     },
     {
       "id": "hme-py-no-doubled-fallback",
