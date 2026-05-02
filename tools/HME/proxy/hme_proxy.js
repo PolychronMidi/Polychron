@@ -347,10 +347,15 @@ function handleRequest(clientReq, clientRes) {
 
       let bodyDirtiedByStrip = false;
       if (isAnthropic) {
-        // Scrub any cache_control from system blocks -- old proxy versions added
-        // them, and stale markers in conversation history cause Anthropic 400
-        // TTL ordering errors. Must run before any system mutation.
-        if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
+        // Strip system cache_control ONLY when replace_system is going to
+        // overwrite payload.system anyway -- otherwise we silently destroy
+        // Claude Code's intentional system cache breakpoint and re-bill the
+        // entire system prefix every turn. With replace_system enabled the
+        // overwrite drops Claude Code's blocks (and their cache_controls)
+        // wholesale; the explicit strip is a belt-and-braces no-op there.
+        if (process.env.HME_REPLACE_SYSTEM_PROMPT === '1') {
+          if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
+        }
         const b = stripBoilerplate(payload);
         const s = stripSemanticRedundancy(payload);
         const r = _stripHmePrefixOutgoing(payload);

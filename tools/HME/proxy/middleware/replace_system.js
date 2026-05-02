@@ -82,17 +82,21 @@ module.exports = {
     if (!payload) return;
     const canonical = _loadCanonical();
     if (canonical === null) return; // file missing/empty -> no-op
-    // CRITICAL cache fix: attach an ephemeral cache_control breakpoint
-    // so Anthropic caches our canonical text. Without this, every
-    // request re-bills the full system prefix at 100% rate (Claude Code
-    // attaches its own cache_control to its system; replace_system
-    // wipes that, and previously left the new system unmarked -> no
-    // cache breakpoint -> no cache hit -> 10x billing per turn). Diagnosed
-    // empirically when the user hit rate-limit lockout in ~10 turns.
+    // Attach an ephemeral cache_control breakpoint so Anthropic caches
+    // our canonical text. Without this, every request re-bills the full
+    // system prefix at 100% rate (Claude Code attaches its own
+    // cache_control to its system; replace_system wipes that, and
+    // previously left the new system unmarked -> no cache breakpoint ->
+    // no cache hit -> 10x billing per turn).
+    //
+    // ttl MUST be '1h' (not the 5m default). Claude Code stamps a
+    // ttl='1h' breakpoint on the user prompt's final content block; the
+    // Anthropic order rule is "no 1h after 5m" across tools->system->messages.
+    // A 5m here precedes the 1h on messages and trips a 400.
     payload.system = [{
       type: 'text',
       text: canonical,
-      cache_control: { type: 'ephemeral' },
+      cache_control: { type: 'ephemeral', ttl: '1h' },
     }];
     ctx.markDirty();
   },
