@@ -460,29 +460,26 @@ function handleRequest(clientReq, clientRes) {
     upstreamHeaders.host = upstream.host;
     if (outBody.length > 0) upstreamHeaders['content-length'] = String(outBody.length);
 
-    // OAuth beta tag enforcement. When an OAuth Bearer authorization is
+    // OAuth beta tag fix-up. When an OAuth Bearer authorization is
     // being forwarded to Anthropic (which Claude Code sends from
     // ~/.claude/.credentials.json), Anthropic requires the request to
-    // ALSO carry `anthropic-beta: oauth-2025-04-20`. Claude Code sends
-    // its own beta tag (e.g. claude-code-20250908) but does NOT include
-    // the oauth-2025-04-20 tag because Claude Code talks to upstream
-    // directly and the OAuth path is handled at the SDK layer. When the
-    // proxy interposes, the missing tag causes Anthropic to return
-    // `"OAuth authentication is currently not supported."` -- the
-    // catastrophic API-error lockout the user has been hitting.
+    // carry `anthropic-beta: oauth-2025-04-20`. Two failure modes the
+    // proxy has to handle when sitting between Claude Code and Anthropic:
     //
-    // Fix: when we're forwarding a Bearer authorization upstream to
-    // Anthropic, ensure anthropic-beta includes oauth-2025-04-20.
-    // anthropic-beta is comma-separated, so append (don't replace) so
-    // Claude Code's existing beta tags survive.
+    //   1. Claude Code sends `claude-code-20250908` as anthropic-beta.
+    //      That tag is recognized on Claude Code's direct-to-Anthropic
+    //      path but PUBLIC api.anthropic.com rejects it as "Unexpected
+    //      value(s) `claude-code-20250908`".
+    //   2. Without `oauth-2025-04-20`, OAuth-Bearer auth itself is
+    //      rejected as "OAuth authentication is currently not supported."
+    //
+    // Both produce auth-error lockouts. Verified empirically with curl:
+    // the only beta value that the public endpoint accepts alongside an
+    // OAuth Bearer is `oauth-2025-04-20`. Drop everything else and
+    // substitute oauth-2025-04-20.
     if (isAnthropic && typeof upstreamHeaders['authorization'] === 'string'
         && upstreamHeaders['authorization'].startsWith('Bearer ')) {
-      const existing = (upstreamHeaders['anthropic-beta'] || '').toString();
-      if (!/\boauth-2025-04-20\b/.test(existing)) {
-        upstreamHeaders['anthropic-beta'] = existing
-          ? `${existing},oauth-2025-04-20`
-          : 'oauth-2025-04-20';
-      }
+      upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
     }
 
     // Out-of-band auth injection. Loopback callers (e.g. the MCP
