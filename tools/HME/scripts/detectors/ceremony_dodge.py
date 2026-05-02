@@ -174,17 +174,14 @@ def main() -> int:
         print("ok")
         return 0
 
-    # Two failure shapes:
-    #   (a) text contains rescue patterns (any match) -- deliberate dodge
-    #   (b) text is short and addresses the deny without doing work
+    # Text-only response to a deny + ANY rescue pattern = ceremony.
+    # The earlier 2+ threshold let single-pattern rescue clauses through
+    # ("Solo was right -- the user already directed..."), which is the
+    # exact ceremony spam shape this gate exists for. One rescue pattern
+    # in a text-only response after a deny is a deliberate dodge -- the
+    # presence of a tool_use already exempts substantive turns above.
     rescue_hits = sum(1 for pat in _RESCUE_PATTERNS if pat.search(text))
-    dominance = _rescue_dominance(text)
-
-    # Trip on either: 2+ distinct rescue patterns OR >=15% of the text
-    # is rescue-shaped boilerplate. The threshold is intentionally low
-    # because the rescue patterns are short -- a SUMMARY block alone is
-    # ~5% of typical output but is a clear ceremony signal.
-    if rescue_hits >= 2 or dominance >= 0.15:
+    if rescue_hits >= 1:
         print("ceremony_dodge")
         return 0
 
