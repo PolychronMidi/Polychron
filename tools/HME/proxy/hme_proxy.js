@@ -853,49 +853,6 @@ function handleRequest(clientReq, clientRes) {
               console.error(`[hme-proxy] snapshot/lifesaver write failed: ${err.message}`);
             }
             emit({ event: 'upstream_error', session: _sessionForTelemetry, status, type: _errInfo.type, message: _errInfo.message, path_label: _pathLabel });
-
-            // Auto-retry on interactive 429 (Anthropic TPM rate limit).
-            // The valve has just been tripped, so subsequent requests in
-            // this process are passthrough -- but the CURRENT request
-            // already failed. Without this retry, the client (Claude
-            // Code) sees the 429 directly and stops; the user has to
-            // manually retry. Compact the payload via the same logic that
-            // passthrough uses and replay the upstream request inline.
-            // If the retry also 429s, fall through and forward the
-            // failure as before.
-            if (_isInteractivePath && status === 429 && payload && Array.isArray(payload.messages)) {
-              const _droppedRetry = _shrinkForPassthrough(payload);
-              if (_droppedRetry > 0) {
-                console.error(`[hme-proxy] auto-retry on 429: compacted payload, replaying upstream request`);
-                const retryBody = Buffer.from(JSON.stringify(payload), 'utf8');
-                const retryHeaders = { ...upstreamHeaders };
-                retryHeaders['content-length'] = String(retryBody.length);
-                const retryOpts = { ...upstreamOpts, headers: retryHeaders };
-                try {
-                  const retry = await new Promise((resolve, reject) => {
-                    const req = transport.request(retryOpts, (res) => {
-                      const cs = [];
-                      res.on('data', (c) => cs.push(c));
-                      res.on('end', () => resolve({ statusCode: res.statusCode || 502, headers: { ...res.headers }, body: Buffer.concat(cs) }));
-                      res.on('error', reject);
-                    });
-                    req.on('error', reject);
-                    req.write(retryBody);
-                    req.end();
-                  });
-                  console.error(`[hme-proxy] auto-retry response: ${retry.statusCode} (${retry.body.length}B)`);
-                  status = retry.statusCode;
-                  headers = retry.headers;
-                  fullBody = retry.body;
-                  // outBody updated so downstream snapshot/strip/etc.
-                  // operate on the body that actually went upstream.
-                  outBody = retryBody;
-                  if (status >= 200 && status < 300) recordUpstreamSuccess();
-                } catch (retryErr) {
-                  console.error(`[hme-proxy] auto-retry failed: ${retryErr.message}`);
-                }
-              }
-            }
           } else {
             recordUpstreamSuccess();
           }
