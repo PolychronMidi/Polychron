@@ -971,10 +971,29 @@ function handleRequest(clientReq, clientRes) {
         }
       });
       upstreamRes.on('error', (err) => {
-        console.error('[hme-proxy] upstream read error:', err.message);
+        // Mid-response failures (connection reset while streaming, TLS
+        // mid-frame, etc). Same lifesaver discipline as the connection-
+        // time and response-complete error paths.
+        const _errCode = err.code || 'mid_response';
+        const _pathLabel = _isInteractivePath ? 'interactive' : 'sub-pipeline';
+        const _errMsg = `upstream ${_errCode} mid-response [${_pathLabel}]: ${err.message}`;
+        console.error(`[hme-proxy] upstream read error: ${_errMsg}`);
+        if (_isInteractivePath) {
+          recordUpstreamFailure(_errMsg);
+        }
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const { PROJECT_ROOT } = require('./shared');
+          const _stamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+          fs.appendFileSync(errLog,
+            `[${_stamp}] UPSTREAM_${_errCode}_${_pathLabel.toUpperCase()}_MIDRESPONSE: ${_errMsg}\n`);
+        } catch (_e) { /* lifesaver write best-effort; the console log above already surfaced it */ }
+        emit({ event: 'upstream_midresponse_error', code: _errCode, message: err.message, path_label: _pathLabel });
         if (!clientRes.headersSent) {
           clientRes.writeHead(502, { 'Content-Type': 'application/json' });
-          clientRes.end(JSON.stringify({ type: 'error', error: { message: err.message } }));
+          clientRes.end(JSON.stringify({ type: 'error', error: { type: 'hme_proxy_upstream_midresponse', code: _errCode, message: err.message } }));
         } else {
           clientRes.end();
         }
@@ -1001,11 +1020,38 @@ function handleRequest(clientReq, clientRes) {
     });
 
     upstreamReq.on('error', (err) => {
-      console.error('[hme-proxy] upstream error:', err.message);
-      recordUpstreamFailure(err.message);
+      // Connection-level failures: ECONNRESET, ECONNREFUSED, ETIMEDOUT,
+      // EAI_AGAIN, TLS handshake failures. Same lifesaver/snapshot
+      // discipline as the response-time detector so the user sees what
+      // happened in the next prompt instead of staring at a generic 502.
+      const _errCode = err.code || 'unknown';
+      const _pathLabel = _isInteractivePath ? 'interactive' : 'sub-pipeline';
+      const _errMsg = `upstream ${_errCode} [${_pathLabel}]: ${err.message}`;
+      console.error(`[hme-proxy] upstream connection error: ${_errMsg}`);
+      if (_isInteractivePath) {
+        recordUpstreamFailure(_errMsg);
+      } else {
+        console.error('[hme-proxy] sub-pipeline conn-error -- NOT tripping escape hatch');
+      }
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        const _stamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const _snapshotRel = `tmp/claude-${_errCode}-${_pathLabel}-payload-${_stamp}.json`;
+        const outFile = path.join(PROJECT_ROOT, _snapshotRel);
+        fs.mkdirSync(path.dirname(outFile), { recursive: true });
+        fs.writeFileSync(outFile, outBody);
+        const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+        fs.appendFileSync(errLog,
+          `[${_stamp}] UPSTREAM_${_errCode}_${_pathLabel.toUpperCase()}: ${_errMsg} (snapshot=${_snapshotRel})\n`);
+      } catch (snapErr) {
+        console.error(`[hme-proxy] conn-error snapshot/lifesaver write failed: ${snapErr.message}`);
+      }
+      emit({ event: 'upstream_conn_error', code: _errCode, message: err.message, path_label: _pathLabel });
       if (!clientRes.headersSent) {
         clientRes.writeHead(502, { 'Content-Type': 'application/json' });
-        clientRes.end(JSON.stringify({ type: 'error', error: { type: 'hme_proxy_upstream', message: err.message } }));
+        clientRes.end(JSON.stringify({ type: 'error', error: { type: 'hme_proxy_upstream', code: _errCode, message: err.message } }));
       } else {
         clientRes.end();
       }
