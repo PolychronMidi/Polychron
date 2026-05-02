@@ -16,10 +16,14 @@ MIN_DIR_INTERVAL  = ENV.optional_int("HME_WATCHER_DIR_INTERVAL", 300)
 BATCH_THRESHOLD   = ENV.optional_int("HME_WATCHER_BATCH_THRESHOLD", 15)
 
 
-def start_watcher(project_root: str, engine, debounce: float = 3.0):
+def start_watcher(project_root: str, engine, debounce: float = 30.0):
     """Start background file watcher. Collects changed file paths during
     debounce window, then indexes them individually (fast path) or falls
-    back to full directory reindex for bulk changes (git checkout, etc)."""
+    back to full directory reindex for bulk changes (git checkout, etc).
+
+    Debounce raised from 3s to 30s to match the hot-reload debounce so
+    bulk-edit flows (test sweeps, sed scripts, branch swaps) coalesce
+    into one reindex pass instead of one per file."""
     try:
         from watchdog.observers import Observer
         from watchdog.events import FileSystemEventHandler
