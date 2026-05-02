@@ -110,12 +110,19 @@ def _write_transcript(events: list[dict]) -> Path:
     return Path(f.name)
 
 
-def _run(detector: str, transcript: Path) -> str:
-    """Run a detector against a transcript; return the verdict token."""
+def _run(detector: str, transcript: Path, env_overrides: dict | None = None) -> str:
+    """Run a detector against a transcript; return the verdict token.
+
+    env_overrides forwards extra env vars (e.g. ADVISOR_DOCTRINE_TIER) to
+    the subprocess so tier-gated detectors can be exercised deterministically
+    without depending on the persistent mode-classifier.jsonl on disk."""
     script = _DETECTOR_DIR / f"{detector}.py"
+    sub_env = os.environ.copy()
+    if env_overrides:
+        sub_env.update(env_overrides)
     out = subprocess.run(
         [sys.executable, str(script), str(transcript)],
-        capture_output=True, text=True, timeout=10,
+        capture_output=True, text=True, timeout=10, env=sub_env,
     )
     return (out.stdout or "").strip().splitlines()[-1] if out.stdout.strip() else "(empty)"
 
@@ -287,6 +294,41 @@ _CASES = [
          ),
      ],
      "phantom_paraphrase"),
+
+    # advisor_doctrine — Rule 2 missing pre-BUILD consult at E3+. Tier is
+    # forced via ADVISOR_DOCTRINE_TIER env so the fixture is deterministic
+    # regardless of mode-classifier.jsonl state on disk.
+    ("advisor_doctrine", "missing-pre-build-fires",
+     [
+         _user_msg("build the audit"),
+         _assistant_msg(
+             "Committing to the approach below.\n━━━ 🛠️ BUILD ━━━ 4/7"
+         ),
+     ],
+     "advisor_missing_pre_build",
+     {"ADVISOR_DOCTRINE_TIER": "E3"}),
+
+    # advisor_doctrine — solo-rationale rescue suppresses
+    ("advisor_doctrine", "solo-rescue-suppresses",
+     [
+         _user_msg("rename foo to bar"),
+         _assistant_msg(
+             "Mechanical rename — solo was right. ━━━ 🛠️ BUILD ━━━"
+         ),
+     ],
+     "ok",
+     {"ADVISOR_DOCTRINE_TIER": "E3"}),
+
+    # advisor_doctrine — tier below threshold short-circuits to ok.
+    ("advisor_doctrine", "tier-below-threshold-passes",
+     [
+         _user_msg("tweak this constant"),
+         _assistant_msg(
+             "Committing to the approach below.\n━━━ 🛠️ BUILD ━━━"
+         ),
+     ],
+     "ok",
+     {"ADVISOR_DOCTRINE_TIER": "E1"}),
 
     # psycho_stop — Pattern C: survey-and-ask after being told to fix
     ("psycho_stop", "survey-and-ask",
@@ -898,10 +940,13 @@ def main() -> int:
 
     rows = []
     fails = 0
-    for detector, scenario, events, expected in _CASES:
+    for case in _CASES:
+        # 4-tuple: (det, name, events, expected). 5-tuple adds env_overrides.
+        detector, scenario, events, expected, *rest = case
+        env_overrides = rest[0] if rest else None
         path = _write_transcript(events)
         try:
-            got = _run(detector, path)
+            got = _run(detector, path, env_overrides)
         finally:
             path.unlink(missing_ok=True)
         ok = got == expected

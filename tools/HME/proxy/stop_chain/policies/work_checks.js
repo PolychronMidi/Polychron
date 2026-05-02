@@ -24,6 +24,18 @@ const REASONS = {
     'EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items (TBD/noted/remaining tools) without fixing them. Every enumerated item must be fixed in the same turn. Resume and implement the highest-leverage items now.',
   SCOPE_ESCAPE:
     'SCOPE-ESCAPE VIOLATION: Final text dismissed a problem by labeling it pre-existing / unrelated / not-introduced-here / out-of-scope-of-this-turn instead of fixing it. The rule is: if you saw it, fix it. "Pre-existing" is not a permission slip to skip work. Either (a) fix the problem in this turn, or (b) if fixing is genuinely wrong (e.g. would break an unrelated boundary), say so explicitly and explain why fixing is the wrong move — do NOT just label-and-stop. The rescue clause "and I fixed it" / "now resolved" suppresses this gate, so the path forward is always to fix.',
+  PHANTOM_CAPABILITY:
+    'PHANTOM CAPABILITY: Your closing summary declared a thinking/delegation capability that is NOT in the closed enumeration at tools/HME/scripts/detectors/_capability_enum.py. Inventing generic labels ("decomposition", "tradeoff analysis", "deep reasoning") is a CRITICAL FAILURE — it does NOT contribute to the tier floor. Either (a) replace the declaration with a verbatim name from the enumeration, (b) anchor the declaration with verification evidence (`(verified)`, code-quoted output, tool-call trace) within 240 chars after the name, or (c) drop the declaration. New capabilities are added by editing _capability_enum.py and bumping ENUMERATION_VERSION — never by ad-hoc invention at run time.',
+  PHANTOM_PARAPHRASE:
+    'PHANTOM PARAPHRASE (soft): Your text contained a paraphrase of a real capability (e.g. "first-principles decomposition" instead of "FirstPrinciples"). This is the shape of an agent reaching for an enumeration name without committing. Rewrite using the verbatim name from _capability_enum.py, OR drop the language if you did not actually invoke that capability. Soft flag — does not block, but the meta-detector tracks the rate.',
+  ADVISOR_MISSING_PRE_BUILD:
+    'ADVISOR DOCTRINE (Rule 2 — pre-BUILD): Tier ≥ E2 work just hit a BUILD/commit boundary without an advisor consult (`i/consult`). Either (a) call i/consult now with the proposed approach, (b) explicitly note "solo was right" in text with reasoning (mechanical rename, no decision to crystallize, etc.), or (c) escalate the tier — if no advisor is needed this should not be E2+. Doctrine reference: PAI v6.3.0 Verification Doctrine Rule 2.',
+  ADVISOR_MISSING_POST_DELIVER:
+    'ADVISOR DOCTRINE (Rule 2 — post-deliverable): A durable deliverable just landed and you are about to set phase: complete without a final advisor consult. Call i/consult once on the finished work asking "any gaps before declaring done?" — OR explicitly mark the rationale for skipping. Doctrine reference: PAI v6.3.0 Verification Doctrine Rule 2 step 3.',
+  ADVISOR_SILENTLY_SKIPPED:
+    'ADVISOR DOCTRINE (E4/E5 floor): Tier ≥ E4 work completed with zero `i/consult` invocations and no solo-rationale clause. At Deep/Comprehensive effort, the advisor must fire at least once OR the agent must explicitly justify why solo was right. Re-evaluate tier or add the consult.',
+  ADVISOR_CONFLICT_CAP:
+    'ADVISOR DOCTRINE (Rule 3 — conflict cap): The advisor was re-called more than 2 times on the same conflict_id (see tmp/hme-advisor-conflicts.jsonl). Hard cap exceeded. Escalate to the user instead of re-calling — keep the loop bounded.',
   COMPL_ROUND_1:
     "AUTO-COMPLETENESS INJECT (round 1/2): Before stopping, enumerate everything that might still be missing, unfinished, deferred, flagged, a possible gap, or worth doing relative to THIS TURN's work. Then do ALL of it — no deferrals, no flagging, no punts. If truly nothing remains, state 'Nothing missed' explicitly. This is the auto-injected version of the user's usual 'what's missing? do all' follow-up.",
   COMPL_ROUND_2:
@@ -46,7 +58,13 @@ const HOOK_INJECT_PREFIXES = [
 // anti-fork-end: hook-inject-prefixes
 
 function readVerdicts() {
-  const out = { STOP_WORK: 'ok', EXHAUST_CHECK: 'ok', SCOPE_ESCAPE: 'ok' };
+  const out = {
+    STOP_WORK: 'ok',
+    EXHAUST_CHECK: 'ok',
+    SCOPE_ESCAPE: 'ok',
+    PHANTOM_CAPABILITY: 'ok',
+    ADVISOR_DOCTRINE: 'ok',
+  };
   if (!fs.existsSync(VERDICTS_FILE)) return out;
   let text = '';
   try { text = fs.readFileSync(VERDICTS_FILE, 'utf8'); }
@@ -225,7 +243,13 @@ module.exports = {
       v.STOP_WORK === 'DISMISSIVE' ||
       v.STOP_WORK === 'TEXT_ONLY_SHORT' ||
       v.EXHAUST_CHECK === 'exhaust_violation' ||
-      v.SCOPE_ESCAPE === 'scope_escape_violation';
+      v.SCOPE_ESCAPE === 'scope_escape_violation' ||
+      v.PHANTOM_CAPABILITY === 'phantom_capability' ||
+      v.PHANTOM_CAPABILITY === 'phantom_paraphrase' ||
+      v.ADVISOR_DOCTRINE === 'advisor_missing_pre_build' ||
+      v.ADVISOR_DOCTRINE === 'advisor_missing_post_deliver' ||
+      v.ADVISOR_DOCTRINE === 'advisor_silently_skipped' ||
+      v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded';
     if (!willDeny) {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     }
@@ -234,6 +258,12 @@ module.exports = {
     if (v.STOP_WORK === 'TEXT_ONLY_SHORT') return ctx.deny(REASONS.STOP_WORK_TEXT_ONLY);
     if (v.EXHAUST_CHECK === 'exhaust_violation') return ctx.deny(REASONS.EXHAUST);
     if (v.SCOPE_ESCAPE === 'scope_escape_violation') return ctx.deny(REASONS.SCOPE_ESCAPE);
+    if (v.PHANTOM_CAPABILITY === 'phantom_capability') return ctx.deny(REASONS.PHANTOM_CAPABILITY);
+    if (v.PHANTOM_CAPABILITY === 'phantom_paraphrase') return ctx.deny(REASONS.PHANTOM_PARAPHRASE);
+    if (v.ADVISOR_DOCTRINE === 'advisor_missing_pre_build')   return ctx.deny(REASONS.ADVISOR_MISSING_PRE_BUILD);
+    if (v.ADVISOR_DOCTRINE === 'advisor_missing_post_deliver') return ctx.deny(REASONS.ADVISOR_MISSING_POST_DELIVER);
+    if (v.ADVISOR_DOCTRINE === 'advisor_silently_skipped')    return ctx.deny(REASONS.ADVISOR_SILENTLY_SKIPPED);
+    if (v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded') return ctx.deny(REASONS.ADVISOR_CONFLICT_CAP);
 
     // Auto-completeness inject — fires up to COMPL_MAX times per user-turn.
     // PRIOR FIX REMOVED: previously this skipped when any earlier policy

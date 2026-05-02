@@ -46,6 +46,10 @@ _DETECTOR_FOR_KEY = {
     "ACK_SKIP":      "ack_skip",
     "FABRICATION":   "fabrication_check",
     "EARLY_STOP":    "early_stop",
+    "PHANTOM_CAPABILITY":         "phantom_capability",
+    "ADVISOR_MISSING_PRE_BUILD":  "advisor_doctrine",
+    "ADVISOR_MISSING_POST_DELIVER": "advisor_doctrine",
+    "ADVISOR_SILENTLY_SKIPPED":   "advisor_doctrine",
 }
 
 # Per-alternative representative sentence + which detector test must accept
@@ -112,6 +116,35 @@ _PROBES = {
         # existing fixture coverage handles it.
         ("low-leverage-polish", None),
         ("narrow-scope-override", None),
+    ],
+    "PHANTOM_CAPABILITY": [
+        # (a) verbatim known capability name — should pass.
+        ("verbatim-known-name",
+         _PADDING + "🏹 **FirstPrinciples** — walked the constraints and "
+         "rebuilt the design from base axioms."),
+        # (b) phantom name anchored with a verification marker within 240
+        # chars — rescue should accept.
+        ("rescue-verified-anchor",
+         _PADDING + "**CustomLabel** — (verified) ran the audit and "
+         "confirmed the output: green across all 7 checks."),
+    ],
+    "ADVISOR_MISSING_PRE_BUILD": [
+        # Tier gating happens via mode-classifier.jsonl / env. The text
+        # probe path can't easily set tier from this harness, so
+        # end-to-end coverage lives in test_detector_chain.py
+        # (advisor_doctrine fixtures: missing-pre-build-fires,
+        # solo-rescue-suppresses).
+        ("solo-rescue-rationale", None),
+        ("call-i-consult", None),
+        ("escalate-tier", None),
+    ],
+    "ADVISOR_MISSING_POST_DELIVER": [
+        ("post-deliver-consult", None),
+        ("solo-rationale-skip", None),
+    ],
+    "ADVISOR_SILENTLY_SKIPPED": [
+        ("e4-with-consult", None),
+        ("e4-solo-rationale", None),
     ],
 }
 

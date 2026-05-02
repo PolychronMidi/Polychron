@@ -45,6 +45,11 @@ DETECTORS = [
     ("scope_escape", "scope_escape"),
     ("senior_consult_debt", "senior_consult_debt"),
     ("ignore_and_trample", "ignore_and_trample"),
+    # PAI-import detectors (added in PAI-integration sweep). Both gate at
+    # tier ≥ E2 internally — at MINIMAL/NATIVE/E1 they short-circuit to
+    # "ok" so they're cheap when the prompt doesn't warrant scrutiny.
+    ("phantom_capability", "phantom_capability"),
+    ("advisor_doctrine", "advisor_doctrine"),
 ]
 
 
