@@ -37,8 +37,18 @@ _shutdown = False
 
 
 
-def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
-    """One probe cycle. Returns (ok_count, bad_count)."""
+def _tick(cfg, tracker):
+    """One probe cycle. Returns (ok_count, bad_count).
+
+    Helpers (_maintenance_active / _probe_http / _StreakTracker) live
+    in universal_pulse.py. Imported here lazily because the parent
+    module also imports from this one at module load (circular).
+    """
+    from universal_pulse import (  # noqa: F401
+        _maintenance_active, _probe_http, _log_error,
+        _in_startup_grace, _cpu_buf, _ps_cpu_instant,
+    )
+
     now = time.time()
     ok_count = 0
     bad_count = 0
