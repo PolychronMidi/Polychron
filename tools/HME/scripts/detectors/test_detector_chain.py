@@ -361,6 +361,20 @@ _CASES = [
      "advisor_silently_skipped",
      {"ADVISOR_DOCTRINE_TIER": "E4"}),
 
+    # advisor_doctrine -- bash-driven file mutation counts as substantive
+    # work. Pattern: python -c with open() write, sed, mv, redirect.
+    ("advisor_doctrine", "bash-byte-edits-implicit-solo",
+     [
+         _user_msg("apply a project-wide tweak"),
+         _assistant_tool_use("Bash", {"command":
+             "python3 -c \"import pathlib\nfor p in pathlib.Path('.').rglob('*.py'):\n    raw = open(p,'rb').read()\n    open(p,'wb').write(raw.replace(b'old', b'new'))\""}),
+         _assistant_tool_use("Bash", {"command": "sed -i 's/old/new/g' file.txt"}),
+         _assistant_tool_use("Bash", {"command": "mv old.py new.py"}),
+         _assistant_msg("Applied across the repo."),
+     ],
+     "ok",
+     {"ADVISOR_DOCTRINE_TIER": "E4"}),
+
     # summary_format -- tier >= E3 with no closing block fires.
     ("summary_format", "missing-block-fires",
      [

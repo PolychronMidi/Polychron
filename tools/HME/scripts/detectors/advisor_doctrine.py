@@ -134,25 +134,39 @@ def _consult_invocations(events: list) -> int:
     return count
 
 
-# Tool calls that count as substantive work for the implicit-solo rescue.
-# Read alone is investigation, not commitment; we want Edit / Write /
-# MultiEdit / NotebookEdit -- changes to the codebase. A turn that lands
-# many concrete edits is implementing a previously-made decision, not
-# crystallizing a new one. The doctrine's purpose (consult before
-# committing) is structurally satisfied for that shape: the commitment
-# happened in the user prompt directing the work, not at code-write time.
+# Tool calls that count as direct work for the implicit-solo rescue.
+# Edit/Write/MultiEdit/NotebookEdit are unambiguous code changes.
 _WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
+
+# Bash commands that move bytes around -- python -c with open(...), sed,
+# awk, perl, mv, cp, rm, git apply, tee, redirection >, byte-level scripts.
+# A turn that ran one of these did substantive work even if no Edit tool
+# was invoked (common pattern: byte-level fixups via python -c or sed).
+_BASH_WORK_RE = re.compile(
+    r"\b(?:sed\s|awk\s|perl\s+-i|python3?\s+-c\b.*?\bopen\s*\(|"
+    r"git\s+(?:apply|commit|merge|rebase|cherry-pick)|"
+    r"\bmv\s|\bcp\s|\brm\s|\btee\s|>\s*\S|>>\s*\S)",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 def _substantive_work_count(events: list) -> int:
-    """Count concrete code-changing tool calls in this turn. Read /
-    Bash / Glob don't count -- those are investigation. The threshold
-    used downstream is >= 3 for implicit-solo rescue."""
+    """Count code-changing tool calls in this turn. Edit/Write tools count
+    directly; Bash counts when the command shape modifies files (sed,
+    python -c with file write, git mutating ops, redirections). Read /
+    plain Bash investigation / Glob don't count. Threshold downstream
+    is >= 3 for implicit-solo rescue."""
     n = 0
     for ev in events:
         for tu in iter_tool_uses(ev):
-            if tu.get("name") in _WORK_TOOLS:
+            name = tu.get("name", "")
+            if name in _WORK_TOOLS:
                 n += 1
+                continue
+            if name == "Bash":
+                cmd = tu.get("input", {}).get("command", "") or ""
+                if _BASH_WORK_RE.search(cmd):
+                    n += 1
     return n
 
 
