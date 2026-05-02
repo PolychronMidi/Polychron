@@ -357,54 +357,55 @@ fi
 
 echo "[launch] stack up -- PIDs logged to ${PID_FILE}" >&2
 
-# Always (re)launch VS Code as a child of this launcher so it inherits
-# ANTHROPIC_BASE_URL. If a VS Code is already running, kill it first --
-# UNLESS it's in this launcher's own ancestor chain, which means we're
-# being run from inside that VS Code (via its integrated terminal or a
-# Claude Code Bash tool). Killing your own grandparent is suicide; in
-# that case we leave VS Code alone and tell the user.
-# Skip entirely with HME_NO_LAUNCH_VSCODE=1.
+# Always (re)launch VS Code with ANTHROPIC_BASE_URL in its environ, even
+# when this launcher is itself running inside that VS Code. The new VS
+# Code is spawned via `systemd-run --user --scope` so its parent is
+# systemd (not the launcher), which means it survives even when the
+# launcher's own ancestor process tree is killed during the
+# kill-running-VS-Code step that immediately follows.
+# Skip with HME_NO_LAUNCH_VSCODE=1.
 if [ "${HME_NO_LAUNCH_VSCODE:-0}" != "1" ]; then
-  _walk=$$; _is_ancestor=0
-  while [ -n "$_walk" ] && [ "$_walk" != "0" ] && [ "$_walk" != "1" ]; do
-    _comm=$(awk '/^Name:/ {print $2}' "/proc/$_walk/status" 2>/dev/null)
-    case "$_comm" in code|Code|code-*) _is_ancestor=1; break ;; esac
-    _walk=$(awk '/^PPid:/ {print $2}' "/proc/$_walk/status" 2>/dev/null)
-  done
-
-  _vscode_running=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | head -1)
   _code_bin=$(command -v code 2>/dev/null || echo "/usr/bin/code")
-
-  if [ "$_is_ancestor" = "1" ] && [ -n "$_vscode_running" ]; then
-    echo "[launch] VS Code is this launcher's ancestor -- not killing it." \
-         "Close VS Code from outside (system terminal: \`pkill -f electron.*vscode\`)" \
-         "and re-run me to get a fresh VS Code with proxy env." >&2
-  elif [ ! -x "$_code_bin" ]; then
+  if [ ! -x "$_code_bin" ]; then
     echo "[launch] note: 'code' binary not found at $_code_bin -- skip VS Code spawn" >&2
+  elif ! command -v systemd-run >/dev/null 2>&1; then
+    echo "[launch] note: systemd-run not available -- cannot guarantee" \
+         "VS Code survives ancestor-kill. Skipping VS Code spawn." >&2
   else
+    _vscode_running=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | head -1)
+    # Spawn the NEW VS Code FIRST in a transient systemd-user scope so
+    # its parent is systemd. Pass DISPLAY / DBUS / XAUTHORITY explicitly
+    # since systemd-run's default env is sparse.
+    _setenv_args=(
+      "--setenv=ANTHROPIC_BASE_URL=$ANTHROPIC_BASE_URL"
+      "--setenv=PROJECT_ROOT=$PROJECT_ROOT"
+    )
+    [ -n "${DISPLAY:-}" ]                  && _setenv_args+=("--setenv=DISPLAY=$DISPLAY")
+    [ -n "${WAYLAND_DISPLAY:-}" ]          && _setenv_args+=("--setenv=WAYLAND_DISPLAY=$WAYLAND_DISPLAY")
+    [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && _setenv_args+=("--setenv=DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS")
+    [ -n "${XDG_RUNTIME_DIR:-}" ]          && _setenv_args+=("--setenv=XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR")
+    [ -n "${XAUTHORITY:-}" ]               && _setenv_args+=("--setenv=XAUTHORITY=$XAUTHORITY")
+    [ -n "${HOME:-}" ]                     && _setenv_args+=("--setenv=HOME=$HOME")
+    [ -n "${USER:-}" ]                     && _setenv_args+=("--setenv=USER=$USER")
+    [ -n "${PATH:-}" ]                     && _setenv_args+=("--setenv=PATH=$PATH")
+    _scope_unit="vscode-proxy-$(date +%s).scope"
     if [ -n "$_vscode_running" ]; then
-      echo "[launch] killing existing VS Code (pid=$_vscode_running) so" \
-           "the relaunched one inherits ANTHROPIC_BASE_URL..." >&2
-      pkill -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null || true
-      sleep 2
-      pkill -9 -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null || true
-      sleep 1
+      echo "[launch] existing VS Code (pid=$_vscode_running) will be killed" \
+           "after fresh one starts. Active sessions end now." >&2
     fi
-    _env_prefix=("ANTHROPIC_BASE_URL=$ANTHROPIC_BASE_URL" "PROJECT_ROOT=$PROJECT_ROOT")
-    [ -n "${DISPLAY:-}" ]                  && _env_prefix+=("DISPLAY=$DISPLAY")
-    [ -n "${WAYLAND_DISPLAY:-}" ]          && _env_prefix+=("WAYLAND_DISPLAY=$WAYLAND_DISPLAY")
-    [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && _env_prefix+=("DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS")
-    [ -n "${XDG_RUNTIME_DIR:-}" ]          && _env_prefix+=("XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR")
-    [ -n "${XAUTHORITY:-}" ]               && _env_prefix+=("XAUTHORITY=$XAUTHORITY")
-    [ -n "${HOME:-}" ]                     && _env_prefix+=("HOME=$HOME")
-    [ -n "${USER:-}" ]                     && _env_prefix+=("USER=$USER")
-    [ -n "${PATH:-}" ]                     && _env_prefix+=("PATH=$PATH")
-    env "${_env_prefix[@]}" \
-      setsid nohup "$_code_bin" "$PROJECT_ROOT" \
-        > "$PROJECT_ROOT/log/vscode-launch.out" 2>&1 < /dev/null &
+    echo "[launch] spawning fresh VS Code via systemd-run (unit=$_scope_unit," \
+         "log=$PROJECT_ROOT/log/vscode-launch.out)..." >&2
+    systemd-run --user --scope --collect --unit="$_scope_unit" \
+      "${_setenv_args[@]}" \
+      "$_code_bin" "$PROJECT_ROOT" \
+      > "$PROJECT_ROOT/log/vscode-launch.out" 2>&1 &
     disown
-    echo "[launch] spawned VS Code with proxy env" \
-         "(log: $PROJECT_ROOT/log/vscode-launch.out)" >&2
+    sleep 2
+    if [ -n "$_vscode_running" ]; then
+      pkill -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null || true
+      sleep 1
+      pkill -9 -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null || true
+    fi
   fi
 fi
 
