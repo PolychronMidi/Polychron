@@ -22,7 +22,23 @@ METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", 
 
 
 def capture_hci() -> dict:
-    """Run the unified coherence engine and capture its full JSON report."""
+    """Run the unified coherence engine and capture its full JSON report.
+
+    Latency gate: verify-coherence.py takes ~8s. When HOLOGRAPH_FAST=1
+    (Stop-hook path), prefer the most recent cached snapshot from
+    output/metrics/hci-verifier-snapshot.json instead of re-running.
+    The session-start capture (no env var) still does the live run.
+    """
+    if os.environ.get("HOLOGRAPH_FAST") == "1":
+        cache = os.path.join(_PROJECT, "output", "metrics",
+                             "hci-verifier-snapshot.json")
+        if os.path.isfile(cache):
+            try:
+                with open(cache) as f:
+                    return json.load(f)
+            except (OSError, json.JSONDecodeError) as e:
+                return {"_skipped": f"fast-mode cache unreadable: {e}"}
+        return {"_skipped": "fast-mode -- no cached HCI snapshot yet"}
     script = os.path.join(_SCRIPTS_DIR, "verify-coherence.py")
     if not os.path.isfile(script):
         return {"_skipped": "verifier script missing"}
@@ -282,7 +298,15 @@ def capture_audit_state() -> dict:
     pressure migrating between subsystems). The static audits answer
     'how dirty is the codebase right now'; the holograph series
     answers 'which axis is leaking'.
+
+    Latency gate: running 6 subprocess audits inline takes ~2-5s and
+    blows the Stop-hook budget (caused holograph p95=2012ms > 500ms
+    warnings). When HOLOGRAPH_FAST=1 is set (Stop-hook path), short-circuit
+    to a stub. The session-start capture (no env var) still does the
+    full audit so the diff baseline stays accurate.
     """
+    if os.environ.get("HOLOGRAPH_FAST") == "1":
+        return {"_skipped": "fast-mode -- audit-state captured at session start only"}
     scripts = os.path.join(_PROJECT, "scripts")
     detectors = os.path.join(_PROJECT, "tools", "HME", "scripts", "detectors")
     out = {}
