@@ -259,6 +259,44 @@ function _alertCooldownActive(type, pathLabel) {
   return false;
 }
 
+// Passthrough-mode emergency compaction: when the escape hatch has tripped,
+// drop oldest assistant/user message PAIRS until the serialized payload is
+// under a hard byte cap. Anthropic's 429 (TPM) is caused by the *size* of
+// the request, not its mutation, so passthrough's "no mutation" pledge
+// is useless against this failure mode -- shrink-or-die is the only path.
+// Skipped entirely with HME_NO_PASSTHROUGH_COMPACT=1 if the operator
+// prefers strict passthrough (and being stuck in 429-loop).
+const _PASSTHROUGH_COMPACT_BYTES = 400_000;
+const _PASSTHROUGH_COMPACT_KEEP_MIN = 4;
+function _shrinkForPassthrough(payload) {
+  if (process.env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
+  if (!payload || !Array.isArray(payload.messages)) return 0;
+  const msgs = payload.messages;
+  if (msgs.length <= _PASSTHROUGH_COMPACT_KEEP_MIN) return 0;
+  let serialized = JSON.stringify(payload);
+  if (serialized.length <= _PASSTHROUGH_COMPACT_BYTES) return 0;
+  let dropped = 0;
+  // Drop the OLDEST messages first. Keep at least the last
+  // _PASSTHROUGH_COMPACT_KEEP_MIN to preserve some context.
+  while (msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN) {
+    msgs.shift();
+    dropped++;
+    serialized = JSON.stringify(payload);
+    if (serialized.length <= _PASSTHROUGH_COMPACT_BYTES) break;
+  }
+  // Insert a synthetic user marker at messages[0] so Anthropic doesn't
+  // reject the conversation for starting on assistant. Also gives the
+  // model a hint that history was elided.
+  if (dropped > 0 && msgs[0] && msgs[0].role === 'assistant') {
+    msgs.unshift({
+      role: 'user',
+      content: `[hme-proxy passthrough-compact: ${dropped} oldest message(s) dropped to fit under TPM rate limit; restart proxy to clear escape-hatch state]`,
+    });
+  }
+  console.error(`[hme-proxy] passthrough-compact: dropped ${dropped} oldest messages (now ${msgs.length}, body=${serialized.length}B)`);
+  return dropped;
+}
+
 function _sanitizePayload(payload) {
   // Remove empty text blocks left behind by regex-based strips. Anthropic's
   // /v1/messages rejects them with 400 "text content blocks must be non-empty".
@@ -456,11 +494,17 @@ function handleRequest(clientReq, clientRes) {
     // supervisor shutdown -> watchdog respawn loop.
     const _sessionForTelemetry = (payload ? sessionKey(payload) : 'no-payload');
 
-    // Passthrough mode (emergency valve tripped): forward bytes verbatim
-    // with NO HME mutation. Keeps Claude Code working when our middleware
-    // would otherwise produce invalid_request errors. Restart proxy to
-    // re-enable HME enrichment after the underlying issue is fixed.
+    // Passthrough mode (emergency valve tripped): no HME mutation EXCEPT
+    // emergency compaction -- drop oldest messages to fit under TPM cap.
+    // Anthropic's 429 (rate limit) is caused by request *size* and
+    // strict passthrough doesn't fix that. See _shrinkForPassthrough.
     const _passthrough = isPassthroughMode();
+    if (_passthrough && payload && Array.isArray(payload.messages)) {
+      const _dropped = _shrinkForPassthrough(payload);
+      if (_dropped > 0) {
+        outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+      }
+    }
 
     if (payload && Array.isArray(payload.messages) && !_passthrough) {
       const session = sessionKey(payload);
