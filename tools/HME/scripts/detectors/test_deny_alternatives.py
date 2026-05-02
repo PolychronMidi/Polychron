@@ -50,8 +50,11 @@ _DETECTOR_FOR_KEY = {
     "ADVISOR_MISSING_PRE_BUILD":  "advisor_doctrine",
     "ADVISOR_MISSING_POST_DELIVER": "advisor_doctrine",
     "ADVISOR_SILENTLY_SKIPPED":   "advisor_doctrine",
-    "SUMMARY_MISSING":            "summary_format",
-    "SUMMARY_MALFORMED":          "summary_format",
+    # SUMMARY_MISSING / SUMMARY_MALFORMED demoted to advisory -- removed
+    # from the work_checks deny chain. The verdict and deny prompt strings
+    # remain for observability and for any future re-promotion, but they
+    # don't block turns. Removed from this link test since the contract
+    # only covers detectors that produce hard denies.
     "CEREMONY_DODGE":             "ceremony_dodge",
 }
 
@@ -149,41 +152,7 @@ _PROBES = {
         ("e4-with-consult", None),
         ("e4-solo-rationale", None),
     ],
-    "SUMMARY_MISSING": [
-        # (a) emit the block -- full closing summary should make the detector pass.
-        ("emit-block",
-         _PADDING +
-         "\n\n=== SUMMARY ===\n"
-         "[ITERATION]: 1/1\n"
-         "[CONTENT]: closing block content\n"
-         "[STORY]:\n"
-         "- problem: needed to validate rescue\n"
-         "- what we did: emitted the block\n"
-         "- how it went: cleanly\n"
-         "- what's next: stop\n"
-         "[VOICE] Polychron: probe demonstrates closing block format works correctly.",
-         {"SUMMARY_FORMAT_TIER": "E5"}),
-        # (b) tier below threshold -- detector short-circuits to ok regardless.
-        ("re-classify-tier",
-         _PADDING + "Done.",
-         {"SUMMARY_FORMAT_TIER": "E1"}),
-    ],
-    "SUMMARY_MALFORMED": [
-        # Same probe content as the emit-block case -- verifies a complete
-        # block doesn't trip the malformed detector either.
-        ("complete-block",
-         _PADDING +
-         "\n\n=== SUMMARY ===\n"
-         "[ITERATION]: 1/1\n"
-         "[CONTENT]: complete block\n"
-         "[STORY]:\n"
-         "- problem: x\n"
-         "- what we did: y\n"
-         "- how it went: z\n"
-         "- what's next: w\n"
-         "[VOICE] Polychron: full closing block with every required field populated cleanly.",
-         {"SUMMARY_FORMAT_TIER": "E5"}),
-    ],
+    # SUMMARY_MISSING + SUMMARY_MALFORMED removed -- detector demoted to advisory.
     "CEREMONY_DODGE": [
         # The detector requires a transcript with a prior hook-deny user
         # event and a text-only assistant follow-up; that shape can't be

@@ -267,9 +267,13 @@ module.exports = {
       v.ADVISOR_DOCTRINE === 'advisor_missing_pre_build' ||
       v.ADVISOR_DOCTRINE === 'advisor_missing_post_deliver' ||
       v.ADVISOR_DOCTRINE === 'advisor_silently_skipped' ||
-      v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded' ||
-      v.SUMMARY_FORMAT === 'summary_missing' ||
-      v.SUMMARY_FORMAT === 'summary_malformed';
+      v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded';
+    // SUMMARY_FORMAT is NOT in willDeny -- demoted to advisory after the
+    // user called out that emitting the literal block is itself ceremony
+    // spam. The verdict is still computed for observability (reflection
+    // JSONL + corpus stats) but never blocks a turn. If real "missing
+    // structured close on a comprehensive deliverable" is ever a problem,
+    // re-promote with care for the cascade-noise tradeoff.
     if (!willDeny) {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     }
@@ -289,8 +293,6 @@ module.exports = {
     if (v.ADVISOR_DOCTRINE === 'advisor_missing_post_deliver') return ctx.deny(REASONS.ADVISOR_MISSING_POST_DELIVER);
     if (v.ADVISOR_DOCTRINE === 'advisor_silently_skipped')    return ctx.deny(REASONS.ADVISOR_SILENTLY_SKIPPED);
     if (v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded') return ctx.deny(REASONS.ADVISOR_CONFLICT_CAP);
-    if (v.SUMMARY_FORMAT === 'summary_missing')   return ctx.deny(REASONS.SUMMARY_MISSING);
-    if (v.SUMMARY_FORMAT === 'summary_malformed') return ctx.deny(REASONS.SUMMARY_MALFORMED);
 
     // Auto-completeness inject -- fires up to COMPL_MAX times per user-turn.
     // PRIOR FIX REMOVED: previously this skipped when any earlier policy
