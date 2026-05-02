@@ -15,7 +15,7 @@ _ARBITER_LOG = None
 _TRACE_LOG = None
 
 # Shared bounded-log helper — single source of truth across the worker.
-from common.bounded_log import maybe_trim_append as _maybe_trim_log  # noqa: E402
+from common import maybe_trim_append as _maybe_trim_log  # noqa: E402
 
 
 def _log_dir() -> str:

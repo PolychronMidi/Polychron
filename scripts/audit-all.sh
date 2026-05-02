@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Run every project audit in one shot. Each audit is independent and
+# reports its own exit code. The wrapper aggregates findings and
+# returns non-zero if ANY audit fails (under --strict).
+#
+# Order is independence-first: cheaper / more-fundamental audits run
+# before slower / more-derived ones, so the first failure surfaces
+# without waiting on later steps.
+#
+# Usage:
+#   bash scripts/audit-all.sh             # report-only, always exit 0
+#   bash scripts/audit-all.sh --strict    # exit 1 if any audit reports findings
+set -uo pipefail
+
+cd "$(dirname "$0")/.."
+
+STRICT=0
+for arg in "$@"; do
+  case "$arg" in
+    --strict) STRICT=1 ;;
+    *) echo "audit-all: unknown arg $arg" >&2; exit 2 ;;
+  esac
+done
+
+failures=0
+
+run() {
+  local label="$1"; shift
+  echo "── $label ──"
+  if ! "$@"; then
+    failures=$((failures + 1))
+    echo "  ↳ FAILED" >&2
+  fi
+  echo
+}
+
+# Project-wide LOC limits. Honors config/loc-ignore.txt.
+run "audit-loc"                  python3 scripts/audit-loc.py $([ "$STRICT" = "1" ] && echo --strict)
+
+# Python F821-class undefined names.
+run "audit-python-undefined"     python3 scripts/audit-python-undefined-names.py $([ "$STRICT" = "1" ] && echo --strict)
+
+# Shell `set -u` undefined-var references.
+run "audit-shell-undefined"      python3 scripts/audit_shell_undefined_vars.py
+
+# Cross-subsystem import boundaries (reaches-into-internals + public surface).
+run "audit-import-boundaries"    python3 scripts/audit-import-boundaries.py $([ "$STRICT" = "1" ] && echo --strict)
+
+# Detector ↔ deny-prompt link integrity (each prompt's advertised
+# alternative paths must be honored by the paired detector).
+run "test-deny-alternatives"     python3 tools/HME/scripts/detectors/test_deny_alternatives.py
+
+# Detector chain regression suite — fixtures that lock detector
+# verdicts in place so rescue-clause changes can't silently regress.
+run "test-detector-chain"        python3 tools/HME/scripts/detectors/test_detector_chain.py
+
+if [ "$failures" -gt 0 ]; then
+  echo "audit-all: $failures audit(s) reported findings" >&2
+  [ "$STRICT" = "1" ] && exit 1
+fi
+
+exit 0

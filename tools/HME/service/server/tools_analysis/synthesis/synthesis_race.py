@@ -224,7 +224,7 @@ def _emit_race_outcome(profile: str, max_tokens: int, winner: str | None,
     import os as _os
     import time as _time
     try:
-        from common.bounded_log import maybe_trim_append
+        from common import maybe_trim_append
         from server import context as _ctx
         out_dir = _os.environ.get("METRICS_DIR") or _os.path.join(
             getattr(_ctx, "PROJECT_ROOT", "."), "output", "metrics")

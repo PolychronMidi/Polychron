@@ -26,7 +26,7 @@ _latest_narrative: str = ""
 # of truth across hme_http_store, synthesis_pipeline, synthesis_reasoning.
 _ERRORS_MAX_LINES = 20_000
 _TRANSCRIPT_MAX_LINES = 50_000
-from common.bounded_log import maybe_trim_append as _maybe_trim_append  # noqa: E402
+from common import maybe_trim_append as _maybe_trim_append  # noqa: E402
 
 
 def init_store(project_root: str) -> None:

@@ -73,7 +73,7 @@ _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from hme_env import ENV  # noqa: E402
-from common.bounded_log import maybe_trim_append as _maybe_trim_activity_log  # noqa: E402
+from common import maybe_trim_append as _maybe_trim_activity_log  # noqa: E402
 
 logger = logging.getLogger("HME.reasoning")
 
