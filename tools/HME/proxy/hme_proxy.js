@@ -527,15 +527,19 @@ function handleRequest(clientReq, clientRes) {
     // supervisor shutdown -> watchdog respawn loop.
     const _sessionForTelemetry = (payload ? sessionKey(payload) : 'no-payload');
 
-    // Passthrough mode (emergency valve tripped): no HME mutation EXCEPT
-    // emergency compaction -- drop oldest messages to fit under TPM cap.
-    // Anthropic's 429 (rate limit) is caused by request *size* and
-    // strict passthrough doesn't fix that. See _shrinkForPassthrough.
     const _passthrough = isPassthroughMode();
-    if (_passthrough && payload && Array.isArray(payload.messages)) {
+    // Proactive size compaction. Run on EVERY interactive Anthropic
+    // request whose serialized body exceeds the TPM-safe threshold,
+    // regardless of valve state. Reacting after 429 means the client
+    // already ate the failure (Claude Code surfaces the 429 to the user
+    // and stops); precompacting prevents the 429 from ever happening.
+    // Drops oldest assistant/user messages until the payload fits, then
+    // scrubs orphan tool blocks. Disable with HME_NO_PASSTHROUGH_COMPACT=1.
+    if (isAnthropic && _isInteractivePath && payload && Array.isArray(payload.messages)) {
       const _dropped = _shrinkForPassthrough(payload);
       if (_dropped > 0) {
         outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+        upstreamHeaders['content-length'] = String(outBody.length);
       }
     }
 
