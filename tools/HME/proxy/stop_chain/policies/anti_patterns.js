@@ -4,6 +4,14 @@
  * verdict file written by the detectors policy. Each verdict maps to a
  * potential `deny` with a stable user-facing reason (text mirrored from
  * the original bash version verbatim so existing user expectations hold).
+ *
+ * MUST RUN AFTER: detectors
+ * MUST RUN BEFORE: work_checks
+ * COORDINATES WITH: work_checks
+ *
+ * Reads detector verdicts (must run after detectors) and fires denies
+ * before work_checks so first-deny-wins surfaces the most actionable
+ * signal first.
  */
 
 const fs = require('fs');

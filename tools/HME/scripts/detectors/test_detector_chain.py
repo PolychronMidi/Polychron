@@ -330,6 +330,59 @@ _CASES = [
      "ok",
      {"ADVISOR_DOCTRINE_TIER": "E1"}),
 
+    # summary_format — tier ≥ E3 with no closing block fires.
+    ("summary_format", "missing-block-fires",
+     [
+         _user_msg("do the comprehensive sweep"),
+         _assistant_msg(
+             "Done. All audits pass; details above. Wrapping up."
+         ),
+     ],
+     "summary_missing",
+     {"SUMMARY_FORMAT_TIER": "E3"}),
+
+    # summary_format — tier ≥ E3 with complete block passes.
+    ("summary_format", "complete-block-passes",
+     [
+         _user_msg("do the comprehensive sweep"),
+         _assistant_msg(
+             "Work complete.\n\n"
+             "━━━ 📃 SUMMARY ━━━\n"
+             "🔄 ITERATION: turn 7/7\n"
+             "📃 CONTENT: PAI imports #6-#10 wired and verified\n"
+             "🖊️ STORY:\n"
+             "- problem: PAI patterns not yet integrated into Polychron\n"
+             "- what we did: added 5 hooks + detector + audit + tests\n"
+             "- how it went: all audits green under --strict\n"
+             "- what's next: monitor signal value over next sessions\n"
+             "🗣️ Polychron: PAI doctrine integration landed clean across hooks and detector chain."
+         ),
+     ],
+     "ok",
+     {"SUMMARY_FORMAT_TIER": "E3"}),
+
+    # summary_format — block present but missing fields fires malformed.
+    ("summary_format", "malformed-fires",
+     [
+         _user_msg("comprehensive work"),
+         _assistant_msg(
+             "Done.\n\n━━━ 📃 SUMMARY ━━━\n🔄 ITERATION: 1\n"
+             "🖊️ STORY:\n- problem: x\n- what we did: y\n"
+             "(missing CONTENT, story bullets, voice line)"
+         ),
+     ],
+     "summary_malformed",
+     {"SUMMARY_FORMAT_TIER": "E3"}),
+
+    # summary_format — tier below threshold short-circuits to ok regardless.
+    ("summary_format", "tier-below-passes",
+     [
+         _user_msg("trivial"),
+         _assistant_msg("Done."),
+     ],
+     "ok",
+     {"SUMMARY_FORMAT_TIER": "E1"}),
+
     # psycho_stop — Pattern C: survey-and-ask after being told to fix
     ("psycho_stop", "survey-and-ask",
      [

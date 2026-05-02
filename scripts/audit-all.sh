@@ -46,6 +46,10 @@ run "audit-shell-undefined"      python3 scripts/audit_shell_undefined_vars.py
 # Cross-subsystem import boundaries (reaches-into-internals + public surface).
 run "audit-import-boundaries"    python3 scripts/audit-import-boundaries.py $([ "$STRICT" = "1" ] && echo --strict)
 
+# Hook coordination — MUST RUN BEFORE/AFTER directives in policy/hook
+# docstrings vs. actual stop_chain runtime ordering. Acyclic-graph check.
+run "audit-hook-coordination"    python3 scripts/audit-hook-coordination.py $([ "$STRICT" = "1" ] && echo --strict)
+
 # Detector ↔ deny-prompt link integrity (each prompt's advertised
 # alternative paths must be honored by the paired detector).
 run "test-deny-alternatives"     python3 tools/HME/scripts/detectors/test_deny_alternatives.py

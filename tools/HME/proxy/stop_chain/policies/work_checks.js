@@ -4,6 +4,15 @@
  * the AUTO-COMPLETENESS INJECT counter. Verdicts come from the verdicts
  * file; the enforcement reminder still goes to stderr; the inject counter
  * lives in tmp/hme-completeness-injected.json (50-entry cap, FIFO eviction).
+ *
+ * MUST RUN AFTER: detectors
+ * MUST RUN BEFORE: holograph, post_hooks
+ * COORDINATES WITH: anti_patterns
+ *
+ * Relies on the verdicts file populated by `detectors`; emits the auto-
+ * completeness inject before holograph snapshots the closing state.
+ * Coordinates with anti_patterns because both consume the same verdicts
+ * file and the first-deny-wins behavior depends on order.
  */
 
 const fs = require('fs');
@@ -36,6 +45,10 @@ const REASONS = {
     'ADVISOR DOCTRINE (E4/E5 floor): Tier ≥ E4 work completed with zero `i/consult` invocations and no solo-rationale clause. At Deep/Comprehensive effort, the advisor must fire at least once OR the agent must explicitly justify why solo was right. Re-evaluate tier or add the consult.',
   ADVISOR_CONFLICT_CAP:
     'ADVISOR DOCTRINE (Rule 3 — conflict cap): The advisor was re-called more than 2 times on the same conflict_id (see tmp/hme-advisor-conflicts.jsonl). Hard cap exceeded. Escalate to the user instead of re-calling — keep the loop bounded.',
+  SUMMARY_MISSING:
+    'STOP-THE-LINE FORMAT VIOLATION: Tier ≥ E3 (Algorithm) work closed without the required ━━━ 📃 SUMMARY ━━━ block. PAI v6.3.0 doctrine: "Format violations outrank output length, output quality, and output detail." Append the closing block before stopping. Required fields: 🔄 ITERATION, 📃 CONTENT, 🖊️ STORY (4 bullets: problem | what we did | how it went | what\'s next), and 🗣️ <name>: <8-16 word summary>. Either (a) emit the block now, or (b) re-classify the tier — if no summary is needed, this work was lighter than E3 and the classifier should reflect that.',
+  SUMMARY_MALFORMED:
+    'STOP-THE-LINE FORMAT VIOLATION: Closing summary block is present but missing required fields. Every Algorithm-tier turn must include all 7 elements: ━━━ 📃 SUMMARY ━━━ banner, 🔄 ITERATION:, 📃 CONTENT:, 🖊️ STORY: with all 4 bullets (problem, what we did, how it went, what\'s next), and 🗣️ <name>: <8-16 word closing line>. Re-emit the block with every field populated; this is a structural gate, not a soft preference.',
   COMPL_ROUND_1:
     "AUTO-COMPLETENESS INJECT (round 1/2): Before stopping, enumerate everything that might still be missing, unfinished, deferred, flagged, a possible gap, or worth doing relative to THIS TURN's work. Then do ALL of it — no deferrals, no flagging, no punts. If truly nothing remains, state 'Nothing missed' explicitly. This is the auto-injected version of the user's usual 'what's missing? do all' follow-up.",
   COMPL_ROUND_2:
@@ -64,6 +77,7 @@ function readVerdicts() {
     SCOPE_ESCAPE: 'ok',
     PHANTOM_CAPABILITY: 'ok',
     ADVISOR_DOCTRINE: 'ok',
+    SUMMARY_FORMAT: 'ok',
   };
   if (!fs.existsSync(VERDICTS_FILE)) return out;
   let text = '';
@@ -249,7 +263,9 @@ module.exports = {
       v.ADVISOR_DOCTRINE === 'advisor_missing_pre_build' ||
       v.ADVISOR_DOCTRINE === 'advisor_missing_post_deliver' ||
       v.ADVISOR_DOCTRINE === 'advisor_silently_skipped' ||
-      v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded';
+      v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded' ||
+      v.SUMMARY_FORMAT === 'summary_missing' ||
+      v.SUMMARY_FORMAT === 'summary_malformed';
     if (!willDeny) {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     }
@@ -264,6 +280,8 @@ module.exports = {
     if (v.ADVISOR_DOCTRINE === 'advisor_missing_post_deliver') return ctx.deny(REASONS.ADVISOR_MISSING_POST_DELIVER);
     if (v.ADVISOR_DOCTRINE === 'advisor_silently_skipped')    return ctx.deny(REASONS.ADVISOR_SILENTLY_SKIPPED);
     if (v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded') return ctx.deny(REASONS.ADVISOR_CONFLICT_CAP);
+    if (v.SUMMARY_FORMAT === 'summary_missing')   return ctx.deny(REASONS.SUMMARY_MISSING);
+    if (v.SUMMARY_FORMAT === 'summary_malformed') return ctx.deny(REASONS.SUMMARY_MALFORMED);
 
     // Auto-completeness inject — fires up to COMPL_MAX times per user-turn.
     // PRIOR FIX REMOVED: previously this skipped when any earlier policy

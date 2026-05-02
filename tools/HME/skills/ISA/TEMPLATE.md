@@ -4,6 +4,13 @@ phase: observe | think | plan | build | execute | verify | complete
 tier: E1 | E2 | E3 | E4 | E5
 created: <YYYY-MM-DDTHH:MM:SSZ>
 updated: <YYYY-MM-DDTHH:MM:SSZ>
+checkpoint: disabled
+# Set checkpoint: enabled to opt this ISA into CheckpointPerISC auto-commits
+# (tools/HME/scripts/isa/checkpoint_hook.py). When enabled, every [ ]→[x]
+# transition fires one git commit referencing the criterion id, sidecar-state
+# tracked at .checkpoint-state.json. Default disabled — enable explicitly
+# only when criteria are atomic enough that one commit per transition is
+# meaningful, otherwise the per-turn autocommit is the right granularity.
 ---
 
 # ISA: <one-line title>
@@ -52,6 +59,15 @@ updated: <YYYY-MM-DDTHH:MM:SSZ>
      Drops become tombstones (`- [ ] ISC-N: [DROPPED — see Decisions]`).
      Anti-criteria: at least one `- [ ] ISC-N: Anti: <what must NOT happen>`.
      Antecedents: at least one when goal is experiential.
+
+     Status markers (one per criterion):
+       [ ]                          unverified
+       [x]                          verified by live probe
+       [DEFERRED-VERIFY:<task-id>]  live probe genuinely impossible at
+                                    execution time; the linked task carries
+                                    the deferred verification claim and
+                                    MUST close before the criterion can be
+                                    re-marked [x]. Cannot bypass the gate.
 -->
 
 - [ ] ISC-1: <criterion>

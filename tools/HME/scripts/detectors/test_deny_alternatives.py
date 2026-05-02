@@ -50,6 +50,8 @@ _DETECTOR_FOR_KEY = {
     "ADVISOR_MISSING_PRE_BUILD":  "advisor_doctrine",
     "ADVISOR_MISSING_POST_DELIVER": "advisor_doctrine",
     "ADVISOR_SILENTLY_SKIPPED":   "advisor_doctrine",
+    "SUMMARY_MISSING":            "summary_format",
+    "SUMMARY_MALFORMED":          "summary_format",
 }
 
 # Per-alternative representative sentence + which detector test must accept
@@ -145,6 +147,16 @@ _PROBES = {
     "ADVISOR_SILENTLY_SKIPPED": [
         ("e4-with-consult", None),
         ("e4-solo-rationale", None),
+    ],
+    "SUMMARY_MISSING": [
+        # Detector gates on tier ≥ E3 (env override SUMMARY_FORMAT_TIER); the
+        # text harness here can't easily set env per-probe. End-to-end coverage
+        # lives in test_detector_chain.py (summary_format fixtures).
+        ("emit-block", None),
+        ("re-classify-tier", None),
+    ],
+    "SUMMARY_MALFORMED": [
+        ("complete-block", None),
     ],
 }
 

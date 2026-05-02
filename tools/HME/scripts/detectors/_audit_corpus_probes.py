@@ -100,4 +100,28 @@ CORPUS = (
      "tweak this constant",
      _PADDING + "Updated the value and the test passes.",
      {"ADVISOR_DOCTRINE_TIER": "E1"}),
+    # summary_format — E3 without closing block fires.
+    ("summary_format", "e3-missing-block", "summary_missing",
+     "do the sweep",
+     _PADDING + "All checks green. Stopping.",
+     {"SUMMARY_FORMAT_TIER": "E3"}),
+    # summary_format — E3 with full block passes.
+    ("summary_format", "e3-complete-block", "ok",
+     "do the sweep",
+     "Work complete.\n\n"
+     "━━━ 📃 SUMMARY ━━━\n"
+     "🔄 ITERATION: 1/1\n"
+     "📃 CONTENT: corpus + audit landed\n"
+     "🖊️ STORY:\n"
+     "- problem: missing summary format detector\n"
+     "- what we did: built and wired summary_format\n"
+     "- how it went: clean pass\n"
+     "- what's next: monitor enforcement signal\n"
+     "🗣️ Polychron: PAI summary block now mandatory at tier E3 and above.",
+     {"SUMMARY_FORMAT_TIER": "E3"}),
+    # summary_format — below threshold passes regardless of text.
+    ("summary_format", "e1-below-passes", "ok",
+     "trivial fix",
+     "Done.",
+     {"SUMMARY_FORMAT_TIER": "E1"}),
 )

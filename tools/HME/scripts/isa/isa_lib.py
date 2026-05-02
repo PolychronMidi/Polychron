@@ -56,12 +56,19 @@ TIER_REQUIRED = {
 }
 
 _SECTION_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
+# ISC status accepts three shapes:
+#   [ ] unverified
+#   [x] verified
+#   [DEFERRED-VERIFY:<task-id>] live probe genuinely impossible at execution
+#       time; the linked task carries the deferred verification claim
+# The status-capture group is widened accordingly.
 _ISC_RE = re.compile(
-    r"^\s*-\s*\[(?P<status>[ x])\]\s*"
+    r"^\s*-\s*\[(?P<status>[ x]|DEFERRED-VERIFY:[A-Za-z0-9._\-]+)\]\s*"
     r"(?P<id>ISC-[0-9]+(?:\.[0-9]+)?)"
     r"\s*:\s*(?P<body>.+?)\s*$",
     re.MULTILINE,
 )
+_DEFERRED_RE = re.compile(r"^DEFERRED-VERIFY:(?P<task>[A-Za-z0-9._\-]+)$")
 _TOMBSTONE_RE = re.compile(r"\[DROPPED\b", re.IGNORECASE)
 _FRONTMATTER_RE = re.compile(
     r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL,
@@ -71,11 +78,13 @@ _FRONTMATTER_RE = re.compile(
 @dataclass
 class ISC:
     id: str
-    status: str          # "[ ]" or "[x]"
+    status: str          # "[ ]", "[x]", or "[DEFERRED-VERIFY:<task-id>]"
     body: str
     is_anti: bool = False
     is_antecedent: bool = False
     is_tombstone: bool = False
+    deferred_task: str = ""   # populated when status is DEFERRED-VERIFY
+    is_deferred: bool = False
 
 
 @dataclass
@@ -119,15 +128,27 @@ def parse_isa(path: str | Path) -> ParsedISA:
     crit = out.sections.get("Criteria", "")
     for m in _ISC_RE.finditer(crit):
         body_text = m.group("body").strip()
+        raw_status = m.group("status")
+        deferred_match = _DEFERRED_RE.match(raw_status)
         out.iscs.append(ISC(
             id=m.group("id"),
-            status=f"[{m.group('status')}]",
+            status=f"[{raw_status}]",
             body=body_text,
             is_anti=body_text.lower().startswith("anti:"),
             is_antecedent=body_text.lower().startswith("antecedent:"),
             is_tombstone=bool(_TOMBSTONE_RE.search(body_text)),
+            deferred_task=deferred_match.group("task") if deferred_match else "",
+            is_deferred=bool(deferred_match),
         ))
     return out
+
+
+def deferred_iscs(d: ParsedISA) -> list[ISC]:
+    """ISCs marked [DEFERRED-VERIFY:<task-id>]. PAI escape clause: the
+    criterion cannot be marked [x] until the deferred probe runs and the
+    linked task closes. The audit surfaces these so the agent can't
+    silently flip them to [x] without resolving the deferred claim."""
+    return [isc for isc in d.iscs if isc.is_deferred]
 
 
 def check_completeness(d: ParsedISA, tier: str) -> list[str]:

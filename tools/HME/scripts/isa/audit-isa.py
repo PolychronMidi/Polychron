@@ -25,13 +25,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from isa_lib import (  # noqa: E402
     parse_isa, check_completeness, section_order_violations,
-    unverified_iscs, audit_id_stability, list_isc,
+    unverified_iscs, audit_id_stability, list_isc, deferred_iscs,
 )
 
 
 def _audit_one(path: Path) -> dict:
     d = parse_isa(path)
     tier = d.frontmatter.get("tier", "")
+    deferred = deferred_iscs(d)
     findings: dict = {
         "path": str(path),
         "tier": tier,
@@ -41,9 +42,11 @@ def _audit_one(path: Path) -> dict:
         "iscs_anti": sum(1 for i in d.iscs if i.is_anti),
         "iscs_antecedent": sum(1 for i in d.iscs if i.is_antecedent),
         "iscs_tombstone": sum(1 for i in d.iscs if i.is_tombstone),
+        "iscs_deferred": len(deferred),
         "missing_sections": [],
         "order_violations": section_order_violations(d),
         "unverified": [i.id for i in unverified_iscs(d)],
+        "deferred": [(i.id, i.deferred_task) for i in deferred],
     }
     if tier:
         try:
@@ -126,6 +129,11 @@ def main(argv: list) -> int:
             if f["unverified"]:
                 print(f"  unverified [x] ISCs (no Verification entry): "
                       f"{', '.join(f['unverified'])}")
+            if f["deferred"]:
+                print(f"  [DEFERRED-VERIFY] ISCs (linked task must close before "
+                      f"phase: complete):")
+                for isc_id, task in f["deferred"]:
+                    print(f"    {isc_id} → task {task}")
     if strict and any_fail:
         return 1
     return 0

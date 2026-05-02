@@ -50,6 +50,9 @@ DETECTORS = [
     # "ok" so they're cheap when the prompt doesn't warrant scrutiny.
     ("phantom_capability", "phantom_capability"),
     ("advisor_doctrine", "advisor_doctrine"),
+    # PAI-import #9: stop-the-line mandatory output format. Gates at
+    # tier ≥ E3 internally; lighter turns short-circuit to "ok".
+    ("summary_format", "summary_format"),
 ]
 
 
