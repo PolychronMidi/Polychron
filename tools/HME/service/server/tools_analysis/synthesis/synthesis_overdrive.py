@@ -78,26 +78,11 @@ from common.bounded_log import maybe_trim_append as _maybe_trim_activity_log  # 
 
 logger = logging.getLogger("HME.reasoning")
 
-# Lazy module-attribute access avoids the circular: synthesis_reasoning
-# imports US at line 310 for re-export. A top-level back-import on our
-# side would partial-load synthesis_overdrive before its function
-# defs, breaking that re-export. Methods that need these constants
-# resolve them via the module at call time.
-def _OVERDRIVE_CHAIN_DEFAULT():
-    from . import synthesis_reasoning as _sr
-    return _sr._OVERDRIVE_CHAIN_DEFAULT
-
-def _OVERDRIVE_MAX_TOKENS_SLACK():
-    from . import synthesis_reasoning as _sr
-    return _sr._OVERDRIVE_MAX_TOKENS_SLACK
-
-def _overdrive_think_budget():
-    from . import synthesis_reasoning as _sr
-    return _sr._overdrive_think_budget()
-
-def _overdrive_timeout():
-    from . import synthesis_reasoning as _sr
-    return _sr._overdrive_timeout()
+# Constants/helpers (_OVERDRIVE_CHAIN_DEFAULT, _OVERDRIVE_MAX_TOKENS_SLACK,
+# _overdrive_think_budget, _overdrive_timeout) live on synthesis_reasoning,
+# which imports US at line 310 for re-export — top-level back-import would
+# partial-load. Use sites resolve via `_sr.<name>` at call time after a
+# local `from . import synthesis_reasoning as _sr`.
 
 _ENV_REFRESH_INTERVAL = 60  # re-read .env at most once per minute
 _env_last_refresh = 0.0
@@ -120,7 +105,8 @@ def _resolve_overdrive_chain() -> tuple[tuple[str, str], ...]:
     a tuple of (model_id, source_label) pairs."""
     from hme_env import ENV as _ENV
     raw = _ENV.optional("OVERDRIVE_CHAIN", "").strip()
-    models = [m.strip() for m in raw.split(",") if m.strip()] if raw else list(_OVERDRIVE_CHAIN_DEFAULT())
+    from . import synthesis_reasoning as _sr
+    models = [m.strip() for m in raw.split(",") if m.strip()] if raw else list(_sr._OVERDRIVE_CHAIN_DEFAULT)
     return tuple((m, _label_for_model(m)) for m in models)
 
 
@@ -226,12 +212,13 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     # Read env-tunable knobs fresh per call so .env changes take effect
     # without restarting the worker. The hme_env cache already handles
     # refresh policy; these helpers are thin wrappers.
-    budget = _overdrive_think_budget()
-    timeout_secs = _overdrive_timeout()
+    from . import synthesis_reasoning as _sr
+    budget = _sr._overdrive_think_budget()
+    timeout_secs = _sr._overdrive_timeout()
 
     # max_tokens MUST exceed thinking.budget_tokens. Raise the caller's
     # value to budget+slack when it's too low.
-    _floor = budget + _OVERDRIVE_MAX_TOKENS_SLACK()
+    _floor = budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK
     resolved_max = max(max_tokens, _floor)
 
     payload = {

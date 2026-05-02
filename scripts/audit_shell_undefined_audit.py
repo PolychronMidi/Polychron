@@ -165,9 +165,13 @@ def _dispatcher_defs(path: Path, env_vars: set[str]) -> set[str]:
     order; a sub-file inherits everything its predecessors set."""
     v = _vars()
     parent = path.parent
+    # JS-side dispatchers (e.g. proxy/stop_chain/shell_policy.js) set env
+    # vars in their bash -c preamble before sourcing each sub-file. Those
+    # vars are in scope for the sub-file but invisible to a pure shell walk.
+    js_vars = getattr(v, "_JS_DISPATCHER_VARS", {}).get(parent, set())
     dispatcher = v._DISPATCHER_FOR.get(parent)
     if not dispatcher or not dispatcher.is_file():
-        return set()
+        return set(js_vars)
     defs = v._transitive_defs(dispatcher, env_vars)
     disp_text = dispatcher.read_text(encoding="utf-8", errors="replace")
     m = re.search(r"for\s+\w+\s+in\s+([^;]+);\s*do", disp_text)
@@ -181,7 +185,7 @@ def _dispatcher_defs(path: Path, env_vars: set[str]) -> set[str]:
             sibling = parent / f"{name}.sh"
             if sibling.is_file():
                 defs |= v._transitive_defs(sibling, env_vars)
-    return defs
+    return defs | set(js_vars)
 
 
 def audit_file(path: Path, env_vars: set[str]) -> list[dict]:

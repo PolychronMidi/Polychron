@@ -314,6 +314,12 @@ def _find_refs(text: str, defs: set[str], env_vars: set[str]) -> list[tuple[int,
     """Return list of (line_no, varname, context_snippet) for undefined-var references."""
     violations: list[tuple[int, str, str]] = []
     known = defs | env_vars | _BUILTIN_VARS
+    # `jq --arg NAME value 'jq-script-using-$NAME'` declares jq-script-scope
+    # vars. The `$NAME` lives inside a single-quoted bash string, so bash
+    # doesn't expand it — but our regex flags it. Harvest declared names
+    # so they're treated as known. Same for --argjson (typed) and --slurpfile.
+    for jm in re.finditer(r"--(?:arg|argjson|slurpfile)\s+([A-Za-z_][A-Za-z0-9_]*)\b", text):
+        known = known | {jm.group(1)}
     for m in _REF_RE.finditer(text):
         name = m.group("brace") or m.group("bare")
         suffix = m.group("suffix") or ""
@@ -343,6 +349,17 @@ _DISPATCHER_FOR = {
     HOOKS_DIR / "helpers" / "safety":      _SAFETY_SH,
     HOOKS_DIR / "lifecycle" / "stop":      HOOKS_DIR / "lifecycle" / "stop.sh",
     HOOKS_DIR / "pretooluse" / "bash":     HOOKS_DIR / "pretooluse" / "pretooluse_bash.sh",
+}
+
+# Vars set by JS-side dispatcher wrappers BEFORE sourcing a sub-file.
+# proxy/stop_chain/shell_policy.js's wrapper template assigns these env
+# vars in the bash -c preamble — they're definitionally in scope for
+# every stop-stage script but invisible to a pure shell-script walk.
+_JS_DISPATCHER_VARS = {
+    HOOKS_DIR / "lifecycle" / "stop": {
+        "PROJECT", "_HME_HELPERS_DIR", "_STOP_DIR", "_DETECTORS_DIR",
+        "_HME_STAGE_NAME", "_HME_HOOK_NAME", "INPUT",
+    },
 }
 
 
