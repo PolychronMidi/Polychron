@@ -34,6 +34,7 @@ const https = require('https');
 const { sessionKey, emit } = require('./shared');
 const {
   resolveUpstream, recordUpstreamSuccess, recordUpstreamFailure, isPassthroughMode,
+  refreshOauthToken,
   DEFAULT_UPSTREAM_HOST, DEFAULT_UPSTREAM_PORT, DEFAULT_UPSTREAM_TLS,
 } = require('./upstream');
 const { shouldInject, buildStatusContext, buildJurisdictionContext, injectIntoSystem, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
@@ -827,18 +828,31 @@ function handleRequest(clientReq, clientRes) {
 
     // OAuth Bearer + Claude-Code body-shape fix-up. The public
     // api.anthropic.com OAuth endpoint requires:
-    //   1. anthropic-beta = `oauth-2025-04-20`. Claude Code's native
-    //      `claude-code-20250908` tag is rejected with 401
-    //      "OAuth authentication is currently not supported."
-    //      No beta header at all => same 401.
+    //   1. anthropic-beta MUST include `oauth-2025-04-20`. Without it,
+    //      OAuth itself is rejected with 401 "OAuth authentication is
+    //      currently not supported." Claude Code's `claude-code-*` tag
+    //      alone is also rejected.
+    //      Per horselock/claude-code-proxy and John-Rood/claude-proxy,
+    //      the beta header is ADDITIVE -- multiple comma-separated tags
+    //      are valid and unlock features (interleaved-thinking-2025-05-14,
+    //      fine-grained-tool-streaming-2025-05-14, etc.). Merge instead
+    //      of replace so we keep whatever Claude Code is asking for.
     //   2. payload MUST NOT contain `context_management` (a
     //      Claude-Code-only field). Including it => 400
     //      "context_management: Extra inputs are not permitted".
-    // Both verified live with curl against the running proxy on
-    // 2026-05-02 -- removing either override breaks subscription auth.
     if (isAnthropic && typeof upstreamHeaders['authorization'] === 'string'
         && upstreamHeaders['authorization'].startsWith('Bearer ')) {
-      upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
+      const _existingBeta = upstreamHeaders['anthropic-beta'] || '';
+      const _betaSet = new Set(_existingBeta.split(',').map((s) => s.trim()).filter(Boolean));
+      _betaSet.add('oauth-2025-04-20');
+      // Add the feature flags horselock's tested set uses, since these
+      // unlock interleaved thinking + fine-grained tool streaming when
+      // Claude Code requests them. Anthropic will silently ignore tags
+      // that don't apply, so adding extras is safe.
+      _betaSet.add('claude-code-20250219');
+      _betaSet.add('interleaved-thinking-2025-05-14');
+      _betaSet.add('fine-grained-tool-streaming-2025-05-14');
+      upstreamHeaders['anthropic-beta'] = Array.from(_betaSet).join(',');
       if (payload && typeof payload === 'object') {
         const _CC_ONLY_FIELDS = ['context_management'];
         let _stripped = false;
@@ -988,6 +1002,43 @@ function handleRequest(clientReq, clientRes) {
               console.error(`[hme-proxy] snapshot/lifesaver write failed: ${err.message}`);
             }
             emit({ event: 'upstream_error', session: _sessionForTelemetry, status, type: _errInfo.type, message: _errInfo.message, path_label: _pathLabel });
+            // Auto-refresh-and-retry on 401 (modelled on horselock).
+            // Token expired => refresh credentials.json => retry once.
+            // Single in-flight refresh promise via refreshOauthToken's
+            // own dedup, so a burst of 401s only fires one refresh.
+            // Only attempt for OAuth Bearer requests; api-key auth
+            // doesn't have a refresh path.
+            const _isBearerAuth = typeof upstreamHeaders['authorization'] === 'string'
+              && upstreamHeaders['authorization'].startsWith('Bearer ');
+            if (status === 401 && _isBearerAuth && payload && Array.isArray(payload.messages)) {
+              try {
+                console.error('[hme-proxy] got 401, attempting token refresh + retry');
+                const newToken = await refreshOauthToken();
+                const retryHeaders = { ...upstreamHeaders, 'authorization': `Bearer ${newToken}` };
+                retryHeaders['content-length'] = String(outBody.length);
+                const retryOpts = { ...upstreamOpts, headers: retryHeaders };
+                const retry = await new Promise((resolve, reject) => {
+                  const req = transport.request(retryOpts, (res) => {
+                    const cs = [];
+                    res.on('data', (c) => cs.push(c));
+                    res.on('end', () => resolve({ statusCode: res.statusCode || 502, headers: { ...res.headers }, body: Buffer.concat(cs) }));
+                    res.on('error', reject);
+                  });
+                  req.on('error', reject);
+                  req.write(outBody);
+                  req.end();
+                });
+                console.error(`[hme-proxy] 401-retry response: ${retry.statusCode}`);
+                if (retry.statusCode >= 200 && retry.statusCode < 300) {
+                  status = retry.statusCode;
+                  headers = retry.headers;
+                  fullBody = retry.body;
+                  recordUpstreamSuccess();
+                }
+              } catch (refreshErr) {
+                console.error(`[hme-proxy] 401-refresh failed: ${refreshErr.message}`);
+              }
+            }
           } else {
             recordUpstreamSuccess();
           }

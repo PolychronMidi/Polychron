@@ -81,11 +81,72 @@ function recordUpstreamFailure(err) {
   }
 }
 
+// OAuth token refresh (modelled on horselock/claude-code-proxy). Single
+// in-flight refresh promise so a burst of 401s doesn't trigger N parallel
+// refreshes against console.anthropic.com/v1/oauth/token. Returns the new
+// access token (without the "Bearer " prefix) on success, throws on
+// failure. Updates ~/.claude/.credentials.json so future reads pick up
+// the new token. The Claude Code OAuth client_id is public/well-known.
+const _CC_OAUTH_CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
+let _refreshPromise = null;
+
+async function refreshOauthToken() {
+  if (_refreshPromise) return _refreshPromise;
+  _refreshPromise = (async () => {
+    const os = require('os');
+    const https = require('https');
+    const credsPath = path.join(os.homedir(), '.claude', '.credentials.json');
+    const credsRaw = fs.readFileSync(credsPath, 'utf8');
+    const creds = JSON.parse(credsRaw);
+    const refreshToken = creds && creds.claudeAiOauth && creds.claudeAiOauth.refreshToken;
+    if (!refreshToken) throw new Error('no refresh_token in credentials.json');
+    const body = JSON.stringify({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: _CC_OAUTH_CLIENT_ID,
+    });
+    const resp = await new Promise((resolve, reject) => {
+      const req = https.request({
+        hostname: 'console.anthropic.com',
+        port: 443,
+        path: '/v1/oauth/token',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'hme-proxy/1.0.0',
+        },
+      }, (r) => {
+        const cs = [];
+        r.on('data', (c) => cs.push(c));
+        r.on('end', () => resolve({ statusCode: r.statusCode, body: Buffer.concat(cs).toString('utf8') }));
+        r.on('error', reject);
+      });
+      req.setTimeout(10_000, () => req.destroy(new Error('refresh timeout')));
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+    });
+    if (resp.statusCode !== 200) {
+      throw new Error(`refresh HTTP ${resp.statusCode}: ${resp.body.slice(0, 300)}`);
+    }
+    const parsed = JSON.parse(resp.body);
+    creds.claudeAiOauth.accessToken = parsed.access_token;
+    if (parsed.refresh_token) creds.claudeAiOauth.refreshToken = parsed.refresh_token;
+    if (parsed.expires_in) creds.claudeAiOauth.expiresAt = Date.now() + (parsed.expires_in * 1000);
+    fs.writeFileSync(credsPath, JSON.stringify(creds), { mode: 0o600 });
+    console.error('[hme-proxy] OAuth token refreshed successfully');
+    return parsed.access_token;
+  })().finally(() => { _refreshPromise = null; });
+  return _refreshPromise;
+}
+
 module.exports = {
   resolveUpstream,
   recordUpstreamSuccess,
   recordUpstreamFailure,
   isPassthroughMode,
+  refreshOauthToken,
   DEFAULT_UPSTREAM_HOST,
   DEFAULT_UPSTREAM_PORT,
   DEFAULT_UPSTREAM_TLS,
