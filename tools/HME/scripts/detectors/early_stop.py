@@ -226,25 +226,46 @@ def _is_assistant(event: dict) -> bool:
     return is_assistant(event)
 
 
+# Stop-hook deny payloads ride into the transcript as user-shaped events.
+# Their text contains "do all" / "anything missing" / "push further" --
+# the same language the open-ended-prompt check matches. Skip them when
+# locating the real user prompt for this turn.
+_HOOK_DENY_MARKERS = (
+    "Stop hook feedback:",
+    "Stop hook blocking error from command:",
+    "AUTO-COMPLETENESS INJECT",
+    "PreToolUse:",
+    "PostToolUse:",
+)
+
+
 def _last_user_text(events: list) -> str:
-    """The triggering user message text (first user event in turn-with-user)."""
+    """The triggering user message text -- first REAL user event in the
+    turn-with-user slice. Hook-injected user-shaped payloads are skipped
+    so the open-ended-prompt check operates on the actual user directive."""
     for ev in events:
         if not is_user(ev):
             continue
         content = event_content(ev)
         if not content:
-            # `content` may be a raw string on user messages (not a list).
             raw = ev.get("message", {}).get("content") if isinstance(ev.get("message"), dict) else ev.get("content")
             if isinstance(raw, str):
+                if any(m in raw for m in _HOOK_DENY_MARKERS):
+                    continue
                 return raw.lower()
-            return ""
+            continue
         parts = []
         for block in content:
             if isinstance(block, dict) and block.get("type") == "text":
                 parts.append(block.get("text", ""))
             elif isinstance(block, str):
                 parts.append(block)
-        return "\n".join(parts).lower()
+        text = "\n".join(parts)
+        if not text:
+            continue
+        if any(m in text for m in _HOOK_DENY_MARKERS):
+            continue
+        return text.lower()
     return ""
 
 

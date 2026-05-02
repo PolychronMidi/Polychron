@@ -152,23 +152,43 @@ def _edits_before_build_phase(events: list) -> bool:
     return not (phases & _BUILD_OR_EXECUTE)
 
 
+# Stop-hook deny payloads come through the transcript as user-shaped
+# messages. They contain language like "do ALL of it" / "anything missing"
+# that would false-fire the open-ended check. Skip events whose text
+# matches any of these markers when locating the real user prompt.
+_DENY_PAYLOAD_MARKERS = (
+    "Stop hook feedback:",
+    "Stop hook blocking error from command:",
+    "AUTO-COMPLETENESS INJECT",
+    "PreToolUse:",
+    "PostToolUse:",
+)
+
+
 def _user_prompt_is_open_ended(events: list) -> bool:
-    """Inspect the most recent user prompt. Specific directives don't
-    need a separate PLAN phase -- the directive IS the plan."""
+    """Inspect the most recent REAL user prompt (skipping hook-injected
+    payloads). Specific directives don't need a separate PLAN phase --
+    the directive IS the plan."""
     last_text = ""
     for ev in events:
         if not is_user(ev):
             continue
         msg = ev.get("message")
         content = msg.get("content") if isinstance(msg, dict) else ev.get("content")
+        text = ""
         if isinstance(content, str):
-            last_text = content
+            text = content
         elif isinstance(content, list):
             for block in content:
                 if isinstance(block, dict) and block.get("type") == "text":
                     t = block.get("text", "")
                     if isinstance(t, str):
-                        last_text = t
+                        text = t
+        if not text:
+            continue
+        if any(m in text for m in _DENY_PAYLOAD_MARKERS):
+            continue  # hook-injected, not a real user prompt
+        last_text = text
     if not last_text:
         return False
     return any(pat.search(last_text) for pat in _OPEN_ENDED_RES)
