@@ -75,7 +75,16 @@ def _parse_all(transcript_path: str | Path) -> list[dict]:
         return _PARSE_CACHE[key]
     try:
         data = Path(transcript_path).read_text(encoding="utf-8", errors="ignore")
-    except OSError:
+    except OSError as e:
+        # Empty fallback is correct (no transcript = no events to scan),
+        # but a permissions error on a transcript that DOES exist looks
+        # identical to "no transcript" without this log line. Surface
+        # the cause to stderr so detector debugging has a thread to pull.
+        import sys as _sys
+        _sys.stderr.write(
+            f"[_transcript._parse_all] read failed for {transcript_path!r}: "
+            f"{type(e).__name__}: {e} — proceeding with empty event list\n"
+        )
         _PARSE_CACHE[key] = []
         return []
     events: list[dict] = []
@@ -185,7 +194,12 @@ def last_assistant_event(transcript_path: str | Path) -> dict | None:
     """
     try:
         data = Path(transcript_path).read_text(encoding="utf-8", errors="ignore")
-    except OSError:
+    except OSError as e:
+        import sys as _sys
+        _sys.stderr.write(
+            f"[_transcript.last_assistant] read failed for {transcript_path!r}: "
+            f"{type(e).__name__}: {e} — proceeding without last-assistant\n"
+        )
         return None
     last_assistant: dict | None = None
     for line in data.splitlines():

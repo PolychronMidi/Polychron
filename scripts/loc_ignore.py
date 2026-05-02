@@ -39,11 +39,22 @@ def _compile_pattern(pat: str) -> re.Pattern[str]:
 def load_patterns(ignore_file: Path | None = None) -> list[tuple[re.Pattern[str], bool]]:
     """Return [(compiled_regex, negate_flag), ...]. negate_flag is True
     when the line starts with `!` (a negation that reverses any earlier
-    match). Empty list if the file is missing."""
+    match).
+
+    Loud on missing file: every consumer of loc_ignore expects exemptions
+    to be respected. A missing config used to silently produce an empty
+    pattern list, which made every previously-exempt file fail the LOC
+    audit. Refuse to silently disable the project's exemption layer —
+    the operator should know if the config is gone."""
     if ignore_file is None:
         ignore_file = _project_root() / "config" / "loc-ignore.txt"
     if not ignore_file.exists():
-        return []
+        raise FileNotFoundError(
+            f"loc_ignore: expected config at {ignore_file} — refusing "
+            f"to return an empty pattern list (would invalidate every "
+            f"exemption silently). Restore the file or pass an explicit "
+            f"ignore_file= argument to load_patterns()."
+        )
     out: list[tuple[re.Pattern[str], bool]] = []
     for raw in ignore_file.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
@@ -90,7 +101,10 @@ def load_with_rationale(
     if ignore_file is None:
         ignore_file = _project_root() / "config" / "loc-ignore.txt"
     if not ignore_file.exists():
-        return []
+        raise FileNotFoundError(
+            f"loc_ignore.load_with_rationale: expected config at "
+            f"{ignore_file}. Same fail-loud rationale as load_patterns()."
+        )
     out: list[dict] = []
     pending_rationale: dict[str, str] = {}
     for raw in ignore_file.read_text(encoding="utf-8").splitlines():

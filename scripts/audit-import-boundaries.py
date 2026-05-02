@@ -75,12 +75,24 @@ def _find_subsystems(roots):
 def _public_surface(subsystem_dir: Path) -> set:
     """Names re-exported from __init__.py via `from .submodule import X`
     or `from .submodule import X as Y`. These are the subsystem's public
-    API. Star-imports widen to "everything" — represented as a sentinel."""
+    API. Star-imports widen to "everything" — represented as a sentinel.
+
+    Loud on parse error: a corrupt __init__.py used to give an empty
+    public surface, which then made every import into the subsystem
+    look like a boundary violation. Now the audit refuses to run a
+    subsystem-wide false-positive cascade and surfaces the parse error
+    at the source."""
     init = subsystem_dir / "__init__.py"
     try:
         tree = ast.parse(init.read_text(encoding="utf-8"))
-    except (OSError, SyntaxError):
-        return set()
+    except (OSError, SyntaxError) as e:
+        raise SystemExit(
+            f"audit-import-boundaries: __init__.py at {init} failed to "
+            f"parse — refusing to use empty surface (would mass-flag "
+            f"every import as boundary-crossing). Fix the file or "
+            f"remove __init__.py to declassify {subsystem_dir.name} as "
+            f"a subsystem.\n  cause: {type(e).__name__}: {e}"
+        )
     surface = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.level == 1:
