@@ -563,7 +563,11 @@ function handleRequest(clientReq, clientRes) {
         // silently served a stale length. Peer-review iter 113.
         const _willSseTransform = !final
           && (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
-        if (_willSseTransform) {
+        // Strip stale content-length on EITHER mutation path: SSE transform
+        // changes byte count, AND the non-SSE bare-ack-strip rewrite
+        // (below) can shrink the body. Without strip, clients see length
+        // mismatch and stall or truncate. Cost: chunked encoding.
+        if (_willSseTransform || !final) {
           outHeaders = { ...outHeaders };
           delete outHeaders['content-length'];
         }
@@ -615,6 +619,55 @@ function handleRequest(clientReq, clientRes) {
           xform.pipe(clientRes);
           xform.end(outBuf);
         } else {
+          // Non-streaming path: also strip bare-ack text blocks when the
+          // prior user message was a hook-deny payload. Mirrors the SSE
+          // rewriter's gate. Without this, non-streaming "ok" responses
+          // bypass the strip and reach the chat client verbatim.
+          try {
+            const msgs = (payload && payload.messages) || [];
+            let lastUserText = '';
+            for (const m of msgs) {
+              if (!m || m.role !== 'user') continue;
+              const c = m.content;
+              if (typeof c === 'string') {
+                lastUserText = c;
+              } else if (Array.isArray(c)) {
+                lastUserText = c.filter((b) => b && b.type === 'text')
+                  .map((b) => b.text || '').join(' ') || lastUserText;
+              }
+            }
+            const denyMarkers = [
+              'Stop hook feedback:',
+              'Stop hook blocking error from command:',
+              'AUTO-COMPLETENESS',
+              'PreToolUse:',
+              'PostToolUse:',
+            ];
+            if (lastUserText && denyMarkers.some((m) => lastUserText.includes(m))) {
+              const outStr = outBuf.toString('utf8');
+              if (outStr.trimStart().startsWith('{')) {
+                const parsed = JSON.parse(outStr);
+                if (parsed && Array.isArray(parsed.content)) {
+                  const ackPats = [/^\s*ok[.!]?\s*$/i, /^\s*done[.!]?\s*$/i,
+                                   /^\s*noted[.!]?\s*$/i, /^\s*got\s+it[.!]?\s*$/i,
+                                   /^\s*ack[.!]?\s*$/i, /^\s*acknowledged[.!]?\s*$/i];
+                  parsed.content = parsed.content.filter((b) => {
+                    if (!b || b.type !== 'text' || typeof b.text !== 'string') return true;
+                    return !ackPats.some((p) => p.test(b.text));
+                  });
+                  const newBuf = Buffer.from(JSON.stringify(parsed), 'utf8');
+                  // Strip stale content-length so the client doesn't truncate.
+                  // Headers were already written; can't change them. Best
+                  // option: forward the rewritten body and let the client
+                  // handle it. If content-length was advertised, this can
+                  // race -- accept the risk; the alternative is leaving
+                  // the spam in.
+                  clientRes.end(newBuf);
+                  return;
+                }
+              }
+            }
+          } catch (_e) { /* best-effort -- fall through to verbatim */ }
           clientRes.end(outBuf);
         }
         // Lifecycle: fire stop hook (auto-commit + lifecycle checks) as
