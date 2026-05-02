@@ -764,8 +764,11 @@ function handleRequest(clientReq, clientRes) {
             }
           }
           if (scan.jurisdictionTargets.length > 0) {
+            // Jurisdiction targets vary per turn (different files touched,
+            // different open hypotheses) -- same cache-invalidation risk
+            // as status block. Route through cache-safe path.
             const block = buildJurisdictionContext(scan.jurisdictionTargets);
-            injected = injectIntoSystem(payload, block);
+            injected = injectIntoLastUserMessage(payload, block, 'HME Jurisdiction Context (proxy-injected)');
             if (injected) {
               emit({
                 event: 'jurisdiction_inject',
