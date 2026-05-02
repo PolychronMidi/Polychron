@@ -225,6 +225,15 @@ function _isBareAck(text) {
   if (typeof text !== 'string') return false;
   if (_ACK_PATTERNS.some((pat) => pat.test(text))) return true;
   if (_isMinimalAck(text)) return true;
+  // Hallucinated turn-prefix output: text consisting entirely of one or
+  // more `Human:` / `Assistant:` tokens (with optional newlines/spaces
+  // between, possibly followed by trailing whitespace). The model emits
+  // these under stop-hook pressure as a gate-dodge; they look like fake
+  // conversation turns and have no value to the user. Substantive replies
+  // that merely *contain* these tokens (e.g. quoted in code) are not
+  // matched -- the test requires the WHOLE text block to be only the
+  // tokens.
+  if (/^\s*(?:(?:Human|Assistant)\s*:\s*){1,}\s*$/.test(text)) return true;
   return false;
 }
 
