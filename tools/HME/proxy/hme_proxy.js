@@ -417,6 +417,19 @@ function handleRequest(clientReq, clientRes) {
     const upstream = resolveUpstream(clientReq);
     const isAnthropic = upstream.provider === 'anthropic';
 
+    // Discriminator: did the incoming request bring its own auth (= came
+    // from Claude Code's interactive path) or did the proxy have to inject
+    // OAuth (= came from a loopback sub-pipeline like OVERDRIVE that uses
+    // the out-of-band auth-injection path)? Only INTERACTIVE-path
+    // failures should trip the escape hatch -- OVERDRIVE's 429s are
+    // expected and self-handled by its own circuit breaker, so
+    // tripping the global valve on them breaks Claude Code's interactive
+    // use as collateral damage. Captured here at request entry so we can
+    // tag the response handler later regardless of header mutations.
+    const _isInteractivePath = isAnthropic
+      && (typeof clientReq.headers['authorization'] === 'string'
+          || typeof clientReq.headers['x-api-key'] === 'string');
+
     // Passthrough mode (emergency valve tripped): forward bytes verbatim
     // with NO HME mutation. Keeps Claude Code working when our middleware
     // would otherwise produce invalid_request errors. Restart proxy to
@@ -700,11 +713,24 @@ function handleRequest(clientReq, clientRes) {
         if (_proxyMutatedBody) {
           const _errInfo = _detectUpstreamFailure(status, headers, fullBody);
           if (_errInfo) {
-            const _errMsg = `anthropic ${status} ${_errInfo.type || 'error'}: ${_errInfo.message || '<no message>'}`;
+            const _pathLabel = _isInteractivePath ? 'interactive' : 'sub-pipeline';
+            const _errMsg = `anthropic ${status} ${_errInfo.type || 'error'} [${_pathLabel}]: ${_errInfo.message || '<no message>'}`;
             const _stamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const _snapshotRel = `tmp/claude-${status}-payload-${_stamp}.json`;
+            const _snapshotRel = `tmp/claude-${status}-${_pathLabel}-payload-${_stamp}.json`;
             console.error(`[hme-proxy] UPSTREAM FAILURE detected: ${_errMsg}`);
-            recordUpstreamFailure(_errMsg);
+            // Only the INTERACTIVE-path 4xx/5xx counts as a proxy fault that
+            // trips the escape hatch. Sub-pipeline failures (OVERDRIVE,
+            // engine_search count_tokens, etc.) are EXPECTED to occasionally
+            // 429 and have their own internal circuit breakers; tripping the
+            // global valve on them flips ALL future Claude Code requests
+            // into passthrough mode -- the very collateral damage the user
+            // flagged. We still snapshot + lifesaver-log them so the
+            // operator sees them, but we don't kill the interactive path.
+            if (_isInteractivePath) {
+              recordUpstreamFailure(_errMsg);
+            } else {
+              console.error(`[hme-proxy] sub-pipeline failure -- NOT tripping escape hatch (interactive path unaffected)`);
+            }
             try {
               const fs = require('fs');
               const path = require('path');
@@ -716,11 +742,11 @@ function handleRequest(clientReq, clientRes) {
               console.error(`[hme-proxy] payload snapshotted to ${outFile}`);
               const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
               fs.appendFileSync(errLog,
-                `[${_stamp}] UPSTREAM_${status}: ${_errMsg} (request_id=${_errInfo.requestId || '?'}, snapshot=${_snapshotRel})\n`);
+                `[${_stamp}] UPSTREAM_${status}_${_pathLabel.toUpperCase()}: ${_errMsg} (request_id=${_errInfo.requestId || '?'}, snapshot=${_snapshotRel})\n`);
             } catch (err) {
               console.error(`[hme-proxy] snapshot/lifesaver write failed: ${err.message}`);
             }
-            emit({ event: 'upstream_error', session, status, type: _errInfo.type, message: _errInfo.message });
+            emit({ event: 'upstream_error', session, status, type: _errInfo.type, message: _errInfo.message, path_label: _pathLabel });
           } else {
             recordUpstreamSuccess();
           }
