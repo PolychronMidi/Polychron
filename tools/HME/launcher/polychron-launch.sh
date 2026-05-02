@@ -375,8 +375,14 @@ echo "[launch] stack up -- PIDs logged to ${PID_FILE}" >&2
 #   (c) No VS Code running at all -> spawn one with the env. Detached so
 #       the launcher exits cleanly while VS Code keeps running.
 #
-# Skip via HME_NO_LAUNCH_VSCODE=1 if you ever want the launcher to be
-# pure-stack (e.g. headless boxes without `code`).
+# Flags:
+#   HME_NO_LAUNCH_VSCODE=1     -- don't touch VS Code (pure stack mode)
+#   HME_FORCE_VSCODE_RELAUNCH=1 -- when this launcher's ancestor IS VS Code,
+#                                  kill it anyway and respawn via
+#                                  systemd-run --user (transient unit so the
+#                                  new VS Code survives the launcher caller
+#                                  dying). Active session ENDS; fresh VS
+#                                  Code with proxy env in environ appears.
 if [ "${HME_NO_LAUNCH_VSCODE:-0}" != "1" ]; then
   # \b is PCRE-only; pgrep uses POSIX ERE. Use path anchors and field
   # boundaries instead so /usr/share/code/code, /usr/bin/code, snap paths,
@@ -487,17 +493,55 @@ MSG
         _walk=$(awk '/^PPid:/ {print $2}' "/proc/$_walk/status" 2>/dev/null)
       done
       if [ "$_is_ancestor" = "1" ]; then
-        cat >&2 <<'MSG'
-[launch] VS Code is THIS launcher's ancestor (you're running me from a
-[launch] terminal/extension inside that VS Code). I will not kill my own
-[launch] grandparent. To get the proxy env into VS Code:
-[launch]   1. Close VS Code completely (this kills your active session)
-[launch]   2. From a SYSTEM terminal (Ctrl+Alt+T, NOT VS Code's integrated):
-[launch]      pkill -f 'electron.*vscode'
-[launch]      sleep 2
-[launch]      tools/HME/launcher/polychron-launch.sh
-[launch] The fresh VS Code will inherit ANTHROPIC_BASE_URL from this script.
+        if [ "${HME_FORCE_VSCODE_RELAUNCH:-0}" = "1" ]; then
+          # User opt-in: kill ancestor VS Code and relaunch via systemd-run
+          # --user so the new VS Code lives in a transient systemd unit
+          # (parent = systemd, not this launcher), surviving the kill of
+          # the launcher's own ancestor process tree. Active sessions die.
+          if ! command -v systemd-run >/dev/null 2>&1; then
+            cat >&2 <<'MSG'
+[launch] HME_FORCE_VSCODE_RELAUNCH=1 set but systemd-run not available.
+[launch] Fall back to manual: from a system terminal,
+[launch]   pkill -f 'electron.*vscode' && sleep 2 && code <project>
 MSG
+          else
+            _code_bin=$(command -v code 2>/dev/null || echo "/usr/bin/code")
+            echo "[launch] HME_FORCE_VSCODE_RELAUNCH=1 -- spawning fresh" \
+                 "VS Code in transient systemd unit BEFORE killing the" \
+                 "current one (so new VS Code survives caller death)." >&2
+            systemd-run --user --scope --collect \
+              --setenv=ANTHROPIC_BASE_URL="$ANTHROPIC_BASE_URL" \
+              --setenv=PROJECT_ROOT="$PROJECT_ROOT" \
+              ${DISPLAY:+--setenv=DISPLAY="$DISPLAY"} \
+              ${WAYLAND_DISPLAY:+--setenv=WAYLAND_DISPLAY="$WAYLAND_DISPLAY"} \
+              ${DBUS_SESSION_BUS_ADDRESS:+--setenv=DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS"} \
+              ${XDG_RUNTIME_DIR:+--setenv=XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR"} \
+              ${XAUTHORITY:+--setenv=XAUTHORITY="$XAUTHORITY"} \
+              --unit="vscode-proxy-$(date +%s)" \
+              "$_code_bin" "$PROJECT_ROOT" >/dev/null 2>&1 &
+            disown
+            sleep 2
+            echo "[launch] killing existing VS Code (your active session" \
+                 "ends now -- fresh VS Code with proxy env should appear)" >&2
+            pkill -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null || true
+            sleep 1
+            pkill -9 -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null || true
+            echo "[launch] done -- look for new VS Code window with proxy" \
+                 "URL: $ANTHROPIC_BASE_URL" >&2
+          fi
+        else
+          cat >&2 <<'MSG'
+[launch] VS Code is THIS launcher's ancestor (you're running me from a
+[launch] terminal/extension inside that VS Code). I won't kill my own
+[launch] grandparent by default. Two paths:
+[launch]   (A) Close VS Code, then from a SYSTEM terminal (Ctrl+Alt+T):
+[launch]       pkill -f 'electron.*vscode'; sleep 2
+[launch]       tools/HME/launcher/polychron-launch.sh
+[launch]   (B) Force ancestor-kill + transient-systemd relaunch (your
+[launch]       active session DIES, fresh VS Code with proxy env appears):
+[launch]       HME_FORCE_VSCODE_RELAUNCH=1 tools/HME/launcher/polychron-launch.sh
+MSG
+        fi
       elif [ "${HME_NO_AUTOFIX_VSCODE:-0}" = "1" ]; then
         cat >&2 <<'MSG'
 [launch] HME_NO_AUTOFIX_VSCODE=1 is set (typically by polychron-restart.sh
