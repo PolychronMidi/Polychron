@@ -80,6 +80,35 @@ function normalizeCacheControlTtls(payload) {
   return changed;
 }
 
+// Cache-safe injection into the last user message. Anthropic's prompt
+// cache hashes (system + tools + messages-up-to-breakpoint) as the
+// prefix. Anything appended AFTER the cache breakpoint -- which lives on
+// the LAST user message -- is fresh-token cost only, but does NOT
+// invalidate the cached prefix. lifesaver_inject already uses this path;
+// any per-turn-varying context (status blocks, error banners) MUST go
+// through here, never through injectIntoSystem.
+function injectIntoLastUserMessage(payload, block, marker) {
+  if (!block || !Array.isArray(payload.messages)) return false;
+  const lastUser = [...payload.messages].reverse().find((m) => m && m.role === 'user');
+  if (!lastUser) return false;
+  const note = '\n\n' + (marker ? `[${marker}]\n` : '') + block + '\n';
+  if (typeof lastUser.content === 'string') {
+    if (marker && lastUser.content.includes(`[${marker}]`)) return false;
+    lastUser.content = lastUser.content + note;
+    return true;
+  }
+  if (Array.isArray(lastUser.content)) {
+    if (marker) {
+      const dup = lastUser.content.some((b) => b && b.type === 'text' && typeof b.text === 'string' && b.text.includes(`[${marker}]`));
+      if (dup) return false;
+    }
+    lastUser.content.push({ type: 'text', text: note });
+    return true;
+  }
+  lastUser.content = [{ type: 'text', text: note }];
+  return true;
+}
+
 function injectIntoSystem(payload, block, marker = 'HME Jurisdiction Context (proxy-injected)') {
   if (!block) return false;
   if (typeof payload.system === 'string') {
@@ -111,6 +140,7 @@ module.exports = {
   buildStatusContext: status.buildStatusContext,
   buildJurisdictionContext: jurisdiction.buildJurisdictionContext,
   injectIntoSystem,
+  injectIntoLastUserMessage,
   stripSystemCacheControl,
   normalizeCacheControlTtls,
   isJurisdictionFile: jurisdiction.isJurisdictionFile,
