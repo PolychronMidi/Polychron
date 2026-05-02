@@ -179,6 +179,15 @@ function getEnricherEfficacy(name) {
   return rates[name] || { fired: 0, acted: 0, rate: 0 };
 }
 
+function _textOf(toolResult) {
+  const c = toolResult && toolResult.content;
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) {
+    return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
+  }
+  return '';
+}
+
 function _scanInputForIdentifiers(toolUseInput, identifiers) {
   // Flatten input to a string and search for any identifier substring
   if (!identifiers || identifiers.length === 0) return [];
