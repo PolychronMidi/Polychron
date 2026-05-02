@@ -166,6 +166,81 @@ function _stripHmePrefixOutgoing(payload) {
   return changed;
 }
 
+// Detect an upstream failure across BOTH error-shape paths Anthropic uses:
+//   1. HTTP 4xx/5xx with a JSON error body. Status 429 = overload
+//      ("Server is temporarily limiting requests" -- NOT user usage limit).
+//      Status 400 = invalid_request_error (cache_control violations etc).
+//      Status 401 = auth failure. Status 5xx = server fault.
+//   2. HTTP 200 + SSE event stream containing an `event: error` block.
+//      Anthropic streams emit validation/runtime errors as SSE events
+//      AFTER returning a 200 status, so a status-only check misses them.
+// Returns { type, message, requestId } on failure detection, or null when
+// the response is a normal success.
+// Helper: parse JSON, return null only when input is provably non-JSON;
+// any OTHER error (bad encoding, malformed UTF-8) bubbles up unsuppressed.
+function _tryParseJson(buf, contextDesc) {
+  const text = buf.toString('utf8');
+  const trimmed = text.trim();
+  if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return null;
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    // Body LOOKS like JSON (starts with { or [) but doesn't parse. That's
+    // a real anomaly worth surfacing -- log it and continue with null so
+    // the caller can fall back to plaintext handling without losing the
+    // signal entirely. Fail-fast policy: log loudly, don't swallow.
+    console.error(`[hme-proxy] _tryParseJson(${contextDesc}): malformed JSON body: ${err.message} -- first 120 chars: ${trimmed.slice(0, 120)}`);
+    return null;
+  }
+}
+
+function _detectUpstreamFailure(status, headers, fullBody) {
+  if (status === 429) {
+    const retryAfter = headers['retry-after'] || '?';
+    const parsed = _tryParseJson(fullBody, 'upstream-429');
+    const msg = (parsed && parsed.error && parsed.error.message)
+      ? parsed.error.message
+      : `overloaded_error (retry-after=${retryAfter}s)`;
+    return {
+      type: 'overloaded_error',
+      message: msg,
+      requestId: parsed && parsed.request_id,
+      retryAfter,
+    };
+  }
+  if (status >= 400 && status < 600) {
+    const parsed = _tryParseJson(fullBody, `upstream-${status}`);
+    if (parsed && parsed.error) {
+      return {
+        type: parsed.error.type || `http_${status}`,
+        message: parsed.error.message,
+        requestId: parsed.request_id,
+      };
+    }
+    return { type: `http_${status}`, message: fullBody.toString('utf8').slice(0, 500) };
+  }
+  // SSE error event scan (status 200 + event:error)
+  const ct = (headers['content-type'] || '').toLowerCase();
+  if (ct.includes('text/event-stream') && fullBody.length > 0) {
+    const text = fullBody.toString('utf8');
+    const idx = text.indexOf('event: error');
+    if (idx >= 0) {
+      const dataMatch = text.slice(idx).match(/^data:\s*(\{.*?\})\s*$/m);
+      const parsed = dataMatch ? _tryParseJson(Buffer.from(dataMatch[1]), 'sse-error-event') : null;
+      if (parsed) {
+        const e = parsed.error || parsed;
+        return {
+          type: e.type || 'sse_error',
+          message: e.message,
+          requestId: parsed.request_id,
+        };
+      }
+      return { type: 'sse_error', message: 'sse error event with unparseable data' };
+    }
+  }
+  return null;
+}
+
 function _sanitizePayload(payload) {
   // Remove empty text blocks left behind by regex-based strips. Anthropic's
   // /v1/messages rejects them with 400 "text content blocks must be non-empty".
@@ -586,37 +661,14 @@ function handleRequest(clientReq, clientRes) {
 
     const transport = upstream.tls ? https : http;
     const upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
-      // Count Anthropic invalid_request_error (HTTP 400) as an upstream
-      // failure WHEN the proxy mutated the body. Almost certainly proxy-
-      // induced (cache_control ordering, stripped fields, etc.) -- the
-      // emergency valve flips into passthrough after EMERGENCY_THRESHOLD
-      // consecutive proxy-induced 400s, so Claude Code keeps working
-      // without HME enrichment instead of dying on every retry.
-      // Connection-level failures fire on upstreamReq.on('error') below.
-      const _status = upstreamRes.statusCode || 0;
-      const _proxyMutatedBody = isAnthropic && !_passthrough;
-      if (_proxyMutatedBody && _status === 400) {
-        recordUpstreamFailure(`anthropic 400 (proxy-mutated body, likely HME-induced)`);
-        // Snapshot the offending payload to a timestamped file so we can
-        // diagnose the exact cache_control / shape that tripped Anthropic
-        // without losing it to dump_system's overwrite race. One file per
-        // 400, no rotation -- failures are rare enough that disk pressure
-        // isn't a concern; operator cleans up after fixing.
-        try {
-          const fs = require('fs');
-          const path = require('path');
-          const { PROJECT_ROOT } = require('./shared');
-          const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const outFile = path.join(PROJECT_ROOT, 'tmp', `claude-400-payload-${stamp}.json`);
-          fs.mkdirSync(path.dirname(outFile), { recursive: true });
-          fs.writeFileSync(outFile, outBody);
-          console.error(`[hme-proxy] anthropic 400 -- offending payload snapshotted to ${outFile}`);
-        } catch (err) {
-          console.error(`[hme-proxy] 400 snapshot failed: ${err.message}`);
-        }
-      } else {
-        recordUpstreamSuccess();
-      }
+      // Initial-response success/failure determination is DEFERRED until
+      // after the full body is buffered (see upstreamRes.on('end') below
+      // and _detectUpstreamFailure). This is because Anthropic returns
+      // some validation errors as HTTP 200 + SSE error event (not as
+      // HTTP 400 with JSON body), and the prior status-code-only check
+      // missed those entirely -- so the escape hatch never tripped and
+      // the lifesaver banner never got written. The deferred detector
+      // covers both shapes.
       const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
       const isSse = isAnthropic && ct.includes('text/event-stream');
 
@@ -637,6 +689,44 @@ function handleRequest(clientReq, clientRes) {
         const fullBody = Buffer.concat(chunks);
         const status = upstreamRes.statusCode || 502;
         const headers = { ...upstreamRes.headers };
+
+        // Detect upstream failure across BOTH paths: HTTP 4xx with JSON
+        // error body, AND HTTP 200 with SSE error event in the stream.
+        // On detection: trigger escape hatch (threshold=1, so first hit
+        // trips), append a LIFESAVER alert with the upstream error text +
+        // snapshot the request body. Without the SSE path covered,
+        // streaming requests that error out bypassed the hatch entirely.
+        const _proxyMutatedBody = isAnthropic && !_passthrough;
+        if (_proxyMutatedBody) {
+          const _errInfo = _detectUpstreamFailure(status, headers, fullBody);
+          if (_errInfo) {
+            const _errMsg = `anthropic ${status} ${_errInfo.type || 'error'}: ${_errInfo.message || '<no message>'}`;
+            const _stamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const _snapshotRel = `tmp/claude-${status}-payload-${_stamp}.json`;
+            console.error(`[hme-proxy] UPSTREAM FAILURE detected: ${_errMsg}`);
+            recordUpstreamFailure(_errMsg);
+            try {
+              const fs = require('fs');
+              const path = require('path');
+              const { PROJECT_ROOT } = require('./shared');
+              const outFile = path.join(PROJECT_ROOT, _snapshotRel);
+              fs.mkdirSync(path.dirname(outFile), { recursive: true });
+              fs.writeFileSync(outFile, outBody);
+              fs.writeFileSync(outFile.replace('.json', '.response'), fullBody);
+              console.error(`[hme-proxy] payload snapshotted to ${outFile}`);
+              const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+              fs.appendFileSync(errLog,
+                `[${_stamp}] UPSTREAM_${status}: ${_errMsg} (request_id=${_errInfo.requestId || '?'}, snapshot=${_snapshotRel})\n`);
+            } catch (err) {
+              console.error(`[hme-proxy] snapshot/lifesaver write failed: ${err.message}`);
+            }
+            emit({ event: 'upstream_error', session, status, type: _errInfo.type, message: _errInfo.message });
+          } else {
+            recordUpstreamSuccess();
+          }
+        } else if (status >= 200 && status < 300) {
+          recordUpstreamSuccess();
+        }
 
         let final = null;
         if (status >= 200 && status < 300 && payload) {
