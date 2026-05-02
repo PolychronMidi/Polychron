@@ -382,10 +382,71 @@ _CASES = [
      ],
      "idle"),
 
-    # ack_skip — HME surfaced a CRITICAL this turn but no subsequent Edit/Write
-    # (requires a coherence_violation-like event in the transcript, which the
-    # detector scans for. Skipping — the detector looks at tool_result content
-    # for specific marker strings we don't want to maintain in fixtures.)
+    # ack_skip — fires when a CRITICAL/FAIL surfaces and no Edit/Write
+    # follows. Negative path: surface → no edit → ack_skip.
+    ("ack_skip", "critical-surfaced-no-edit-fires",
+     [
+         _user_msg("run the audit and follow through"),
+         _assistant_tool_use("Bash", {"command": "i/status"}),
+         {
+             "type": "user",
+             "message": {"role": "user", "content": [{
+                 "type": "tool_result",
+                 "tool_use_id": "tu_audit_run",
+                 "content": "LIFESAVER: CRITICAL FAILURES\n  FAIL: env-tamper\n",
+             }]},
+         },
+         _assistant_msg("Noted the failure."),
+     ],
+     "ack_skip"),
+
+    # ack_skip — surface fires AND the agent makes an Edit afterward.
+    # Detector must NOT fire (the canonical "fix it" path).
+    ("ack_skip", "critical-surfaced-with-edit-passes",
+     [
+         _user_msg("run the audit and follow through"),
+         _assistant_tool_use("Bash", {"command": "i/status"}),
+         {
+             "type": "user",
+             "message": {"role": "user", "content": [{
+                 "type": "tool_result",
+                 "tool_use_id": "tu_audit_run",
+                 "content": "LIFESAVER: CRITICAL FAILURES\n  FAIL: env-tamper\n",
+             }]},
+         },
+         _assistant_tool_use("Edit", {
+             "file_path": "tools/HME/.env",
+             "old_string": "STAGED=1",
+             "new_string": "STAGED=0",
+         }),
+         _assistant_msg("Fixed."),
+     ],
+     "ok"),
+
+    # ack_skip self-resolve rescue: deny prompt sanctions
+    # "if the CRITICAL is from a long-running background process that
+    # will resolve itself, say so EXPLICITLY in text before stopping".
+    # When agent does exactly that, detector must not fire.
+    ("ack_skip", "self-resolve-rescue-suppresses",
+     [
+         _user_msg("kick off the build and report"),
+         _assistant_tool_use("Bash", {"command": "i/status"}),
+         {
+             "type": "user",
+             "message": {"role": "user", "content": [{
+                 "type": "tool_result",
+                 "tool_use_id": "tu_audit_run",
+                 "content": "LIFESAVER: CRITICAL FAILURES\n  FAIL: pipeline-running\n",
+             }]},
+         },
+         _assistant_msg(
+             "The CRITICAL is from a long-running background process "
+             "that will resolve itself when the build completes. "
+             "Pipeline currently running — will clear on its own. "
+             "Not a real critical — background pipeline in-flight."
+         ),
+     ],
+     "ok"),
 
     # abandon_check — Agent spawned for KB work
     ("abandon_check", "agent-for-kb-work",
@@ -544,6 +605,27 @@ _CASES = [
          _assistant_msg("Done."),
      ],
      "consult-debt"),
+
+    # Solo-rationale rescue: deny prompt explicitly sanctions
+    # "OR explicitly note why solo was right". When the agent does that,
+    # detector must not fire — the alternative path the deny advertises
+    # has to actually exist.
+    ("senior_consult_debt", "solo-rationale-rescue-suppresses",
+     [
+         _user_msg("rename DEFAULT_RETIRE_PCT to DEFAULT_RETIRE_PERCENT"),
+         _assistant_tool_use("Edit", {
+             "file_path": "tools/HME/scripts/buddy_handoff.py",
+             "old_string": "DEFAULT_RETIRE_PCT = 90.0",
+             "new_string": "DEFAULT_RETIRE_PERCENT = 90.0",
+         }),
+         _assistant_msg(
+             "Renamed. Solo was right here — this is a mechanical "
+             "rename with no design-space implications, no semantic "
+             "change. Skipping the consult because there's no decision "
+             "to crystallize."
+         ),
+     ],
+     "ok"),
 
     ("senior_consult_debt", "edit-with-consult-passes",
      [

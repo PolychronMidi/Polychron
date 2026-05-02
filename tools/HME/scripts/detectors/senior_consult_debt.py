@@ -34,6 +34,7 @@ Verdicts:
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -41,6 +42,44 @@ sys.path.insert(0, str(Path(__file__).parent))
 from _transcript import (  # noqa: E402
     _parse_all, event_content, is_user, iter_tool_uses,
 )
+
+
+# Solo-rationale rescue: the deny prompt sanctions "explicitly note why
+# solo was right" as an alternative to invoking i/consult. When the
+# agent's text in the same turn explains why a checkpoint wasn't needed,
+# fold to ok — the alternative path the deny advertises must actually
+# exist. Patterns are sentence-shaped because the justification is
+# rarely terse.
+SOLO_RATIONALE_RES = (
+    re.compile(r"\bsolo\s+(was|is)\s+(the\s+)?right\b", re.IGNORECASE),
+    re.compile(r"\bdidn'?t\s+(need\s+to\s+)?consult\b[^.\n]{0,80}\bbecause\b", re.IGNORECASE),
+    re.compile(r"\b(no|skipped?\s+the?)\s+consult\b[^.\n]{0,80}\bbecause\b", re.IGNORECASE),
+    re.compile(r"\bskipping\s+(the\s+)?consult\b[^.\n]{0,60}\b(because|since|—)\b", re.IGNORECASE),
+    re.compile(r"\b(mechanical|trivial|deterministic|narrow|bounded)\s+(rename|edit|change|fix)\b", re.IGNORECASE),
+)
+
+
+def _last_assistant_text(events: list) -> str:
+    last = None
+    for ev in events:
+        if (ev.get("type") == "assistant"
+                or (ev.get("role") == "assistant" and ev.get("content"))):
+            last = ev
+    if last is None:
+        return ""
+    parts = []
+    for block in event_content(last):
+        if isinstance(block, dict) and block.get("type") == "text":
+            t = block.get("text", "")
+            if isinstance(t, str):
+                parts.append(t)
+    return "\n".join(parts)
+
+
+def _has_solo_rationale(text: str) -> bool:
+    if not text:
+        return False
+    return any(pat.search(text) for pat in SOLO_RATIONALE_RES)
 
 
 def _load_current_turn(transcript_path: str) -> list[dict]:
@@ -154,6 +193,15 @@ def main() -> int:
                 if _is_consult_invocation(cmd):
                     consulted = True
         crystallized_count += _crystallized_markers_in_event(event)
+    # Solo-rationale rescue: the deny prompt explicitly sanctions
+    # "explicitly note why solo was right" as an alternative path. When
+    # the agent's final text contains that justification, the consult-
+    # debt is paid via reasoning, not via the i/consult invocation.
+    final_text = _last_assistant_text(_load_current_turn(sys.argv[1]))
+    solo_rationale = _has_solo_rationale(final_text)
+    if touched_design_space and not consulted and solo_rationale:
+        print("ok")
+        return 0
     if touched_design_space and not consulted:
         print("consult-debt")
     elif touched_design_space and consulted and crystallized_count == 0:
