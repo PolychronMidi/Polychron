@@ -32,6 +32,7 @@ const ENABLED = (process.env.HME_DUMP_SYSTEM_PROMPT ?? '0') === '1';
 module.exports = {
   name: 'dump_system',
   onRequest({ payload, ctx }) {
+    if (process.env.HME_PROXY_LEAN_MODE === '1') return;
     if (!ENABLED) return;
     if (!payload || payload.system == null) return;
     const out = path.join(ctx.PROJECT_ROOT, 'tmp', 'claude-system-prompt.txt');

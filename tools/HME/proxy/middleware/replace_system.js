@@ -77,6 +77,7 @@ function _loadCanonical() {
 module.exports = {
   name: 'replace_system',
   onRequest({ payload, ctx }) {
+    if (process.env.HME_PROXY_LEAN_MODE === '1') return;
     if (!ENABLED) return;
     if (!payload) return;
     const canonical = _loadCanonical();

@@ -460,6 +460,18 @@ function handleRequest(clientReq, clientRes) {
     upstreamHeaders.host = upstream.host;
     if (outBody.length > 0) upstreamHeaders['content-length'] = String(outBody.length);
 
+    // Strip accept-encoding to force upstream to respond uncompressed.
+    // The proxy mutates SSE bodies via rewriters (ack_strip, run_in_bg
+    // rewrite, sleep rewrite) without decompressing first. When Anthropic
+    // gzips the response, the rewriter modifies compressed bytes and
+    // produces corrupt gzip -- Claude Code's decoder fails with
+    // ZlibError, retries (doubling token cost). Forcing uncompressed
+    // upstream eliminates the corruption path entirely. Cost: slightly
+    // more network bytes localhost<->Anthropic, no token cost change.
+    if (isAnthropic) {
+      delete upstreamHeaders['accept-encoding'];
+    }
+
     // OAuth Bearer + Claude-Code body-shape fix-up. When an OAuth Bearer
     // authorization is being forwarded to Anthropic (which Claude Code
     // sends from ~/.claude/.credentials.json), the public api.anthropic.com

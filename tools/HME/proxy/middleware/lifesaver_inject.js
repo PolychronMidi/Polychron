@@ -26,6 +26,11 @@ module.exports = {
   name: 'lifesaver_inject',
 
   onRequest({ payload, ctx }) {
+    // LEAN_MODE: emergency kill-switch when usage budget is being
+    // hammered. Set HME_PROXY_LEAN_MODE=1 to skip all heavy middleware
+    // injections. Per-turn savings: this skip alone prevents reading
+    // the (potentially large) errors.log into the system prompt.
+    if (process.env.HME_PROXY_LEAN_MODE === '1') return;
     // Only fire on real Anthropic message requests. Payloads without
     // messages (health probes, etc.) get skipped.
     if (!payload || !Array.isArray(payload.messages)) return;

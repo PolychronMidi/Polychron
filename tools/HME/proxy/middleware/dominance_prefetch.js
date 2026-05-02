@@ -128,6 +128,7 @@ module.exports = {
   name: 'dominance_prefetch',
 
   onRequest({ payload, ctx }) {
+    if (process.env.HME_PROXY_LEAN_MODE === '1') return;
     if (!DOMINANCE_ENABLED) return;
     const triggers = _triggersFromPayload(payload);
     if (triggers.length === 0) return;
