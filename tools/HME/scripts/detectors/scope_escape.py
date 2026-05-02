@@ -50,6 +50,44 @@ RESCUE_RES = (
     re.compile(r"\bfixed\s+(it|them|that)\s+(anyway|too|as\s+well|while\s+(I\s+was|here))\b", re.IGNORECASE),
 )
 
+# Backwards rescue: agent already wrote "Fixed X" / "Resolved Y" within
+# 80 chars BEFORE the escape phrase. Catches the past-tense form
+# ("Fixed pre-existing missing import in foo") that the forward window
+# can't see.
+RESCUE_BACKWARD_RES = (
+    re.compile(r"\b(fixed|resolved|patched|repaired|addressed|cleaned\s+up|handled)\b[^.\n]{0,80}$", re.IGNORECASE),
+)
+
+# (b)-clause rescue: the SCOPE_ESCAPE deny message itself enumerates the
+# valid alternative — "say so explicitly and explain why fixing is the
+# wrong move". If the agent did exactly that, the detector must NOT
+# fire. Recognize the explicit-justification SHAPE: the escape phrase
+# accompanied by reasoning that fixing would be wrong, duplicative, or
+# unauthorized. Window: 240 chars after the phrase (longer than the
+# fix-claim rescue because justifications are sentence-shaped).
+RESCUE_B_CLAUSE_RES = (
+    # explicit "not doing X is the right (call|move|thing|choice)" pattern
+    re.compile(r"\b(not\s+doing\s+(this|that|it|these)|skipping\s+(this|that|it))\s+is\s+(the\s+)?(right|correct|better)\s+(call|move|thing|choice|approach|decision)\b", re.IGNORECASE),
+    # "the right (call|move|thing) is to (skip|not fix|leave it)"
+    re.compile(r"\bthe\s+(right|correct)\s+(call|move|thing|choice)\s+is\s+to\s+(skip|not\s+(fix|do)|leave|punt)\b", re.IGNORECASE),
+    # "fixing (this|X) (would|will) (break|cause|require|...)"
+    re.compile(r"\bfixing\s+(this|it|that|them)\s+(would|will|might)\s+(break|cause|require|introduce|conflict|regress)\b", re.IGNORECASE),
+    # "duplicates X" / "redundant with X" — the next 1-3 words are the
+    # thing being duplicated; the regex is intentionally loose because
+    # naming the duplicate target is the legitimate (b)-clause shape.
+    re.compile(r"\b(duplicates?|redundant\s+with|already\s+provides?)\s+\w+", re.IGNORECASE),
+    # "buys nothing (the|that) X doesn't already (buy|provide|catch)"
+    re.compile(r"\bbuys?\s+(nothing|no\s+\w+)\s+(the|that)\s+\S+\s+\S*\s*(doesn'?t|does\s+not)\s+(already\s+)?(buy|provide|catch|cover)\b", re.IGNORECASE),
+    # "already (covered|caught|handled) by"
+    re.compile(r"\balready\s+(covered|caught|handled|addressed|guaranteed)\s+by\b", re.IGNORECASE),
+    # explicit (b)-clause label
+    re.compile(r"\(b\)[\s-]*clause\b", re.IGNORECASE),
+    # "would (be|require) (a |an )?(unrelated|out-of-scope|breaking)"
+    re.compile(r"\bwould\s+(be|require)\s+(an?\s+)?(unrelated|out-of-scope|breaking|destructive|risky|unsafe)\b", re.IGNORECASE),
+    # "shouldn't (do|fix|touch)" with reasoning
+    re.compile(r"\b(shouldn'?t|should\s+not|won'?t)\s+(do|fix|touch|change|modify|implement)\s+(this|that|it)\b[^.\n]{0,40}\b(because|since|as|—)", re.IGNORECASE),
+)
+
 
 def _is_assistant(event: dict) -> bool:
     if event.get("type") == "assistant":
@@ -127,6 +165,33 @@ def _rescue_within_window(text: str, start: int, window: int = 120) -> bool:
     return False
 
 
+def _rescue_backward(text: str, start: int, window: int = 80) -> bool:
+    """Rescue when fix-language appears within `window` chars BEFORE the
+    escape phrase ("Fixed pre-existing X" — past-tense report)."""
+    begin = max(0, start - window)
+    chunk = text[begin:start]
+    for pat in RESCUE_BACKWARD_RES:
+        if pat.search(chunk):
+            return True
+    return False
+
+
+def _rescue_b_clause(text: str, start: int, window: int = 320) -> bool:
+    """Rescue when the agent gave an explicit (b)-clause justification —
+    the deny message itself sanctions this path. Window scans BOTH
+    directions: justifications can land before the escape phrase ("Not
+    doing this is the right call ... pre-existing complexity") OR after
+    ("pre-existing — duplicates the existing audit"). Sentence-length
+    window because (b)-clause reasoning is rarely terse."""
+    fwd_end = min(len(text), start + window)
+    back_begin = max(0, start - window)
+    chunk = text[back_begin:fwd_end]
+    for pat in RESCUE_B_CLAUSE_RES:
+        if pat.search(chunk):
+            return True
+    return False
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
@@ -163,10 +228,29 @@ def main() -> int:
         print("ok")
         return 0
 
-    # Rescue clause: agent said they fixed it within 120 chars. Trust it
-    # (fabrication_check will catch the lie if it's a lie).
+    # Rescue clause (forward): agent said they fixed it within 120 chars.
+    # Trust it (fabrication_check will catch the lie if it's a lie).
     if _rescue_within_window(text, matched_pos):
         _emit_stats("ok", f"rescue_clause phrase={matched_phrase!r} pos={matched_pos}")
+        print("ok")
+        return 0
+
+    # Rescue (backward): "Fixed X" appeared just BEFORE the escape phrase
+    # (past-tense form: "Fixed pre-existing missing import in foo").
+    if _rescue_backward(text, matched_pos):
+        _emit_stats("ok", f"rescue_backward phrase={matched_phrase!r} pos={matched_pos}")
+        print("ok")
+        return 0
+
+    # Rescue (b)-clause: the deny message explicitly sanctions
+    # "say so explicitly and explain why fixing is the wrong move".
+    # When the agent does exactly that, the detector must NOT fire —
+    # otherwise the "valid alternative" the rule offers doesn't exist.
+    # Without this, every legitimate refusal-with-reason gets flagged
+    # the same as a lazy punt, and the agent learns to never refuse
+    # even when refusal is correct.
+    if _rescue_b_clause(text, matched_pos):
+        _emit_stats("ok", f"rescue_b_clause phrase={matched_phrase!r} pos={matched_pos}")
         print("ok")
         return 0
 

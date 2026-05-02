@@ -398,6 +398,83 @@ _CASES = [
      ],
      "ok"),
 
+    # Backward rescue: past-tense fix-language IMMEDIATELY before the
+    # escape phrase ("Fixed pre-existing X"). The forward window can't
+    # see the fix word, but the backward window does.
+    ("scope_escape", "backward-rescue-fixed-prefix",
+     [
+         _user_msg("audit and clean up"),
+         _assistant_msg(
+             "Audit done. Fixed pre-existing missing import in "
+             "coupling_antagonism.py while here. Tests green."
+         ),
+     ],
+     "ok"),
+
+    # (b)-clause rescue: the deny prompt explicitly says
+    # "if fixing is genuinely wrong, say so explicitly and explain why
+    # fixing is the wrong move". When the agent does exactly that, the
+    # detector must NOT fire — otherwise the deny offers an alternative
+    # path that doesn't actually exist.
+    ("scope_escape", "b-clause-rescue-not-doing-is-right",
+     [
+         _user_msg("review the leftover items from the suggestion list"),
+         _assistant_msg(
+             "Suggestion #5 was shellcheck. shellcheck would surface mostly "
+             "style noise; the one severe class (SC2069 redirection-order) "
+             "is already addressed and confirmed zero remaining instances. "
+             "Adding shellcheck on top would be incremental at best. "
+             "Not doing this is the right call — the underlying gap (no "
+             "static lint for shell) is filled by the existing audit; "
+             "this would be pre-existing complexity for marginal gain."
+         ),
+     ],
+     "ok"),
+
+    # (b)-clause rescue: "fixing this would break / require / regress"
+    # explicit-impact reasoning.
+    ("scope_escape", "b-clause-rescue-fixing-would-break",
+     [
+         _user_msg("address every leftover"),
+         _assistant_msg(
+             "The remaining warning is in a pre-existing test fixture. "
+             "Fixing it would require breaking the public CLI invocation "
+             "of the script, which several callers depend on by name. "
+             "The fixture is intentional — the verifier test asserts "
+             "precisely that the validator catches this case."
+         ),
+     ],
+     "ok"),
+
+    # (b)-clause rescue: "duplicates X / already covered by Y" pattern.
+    ("scope_escape", "b-clause-rescue-duplicates",
+     [
+         _user_msg("centralize the logger imports across all files"),
+         _assistant_msg(
+             "The 'logger not defined' bug class — the only failure mode "
+             "this rename would prevent — is pre-existing concern that's "
+             "now caught by audit-python-undefined-names. Centralizing "
+             "duplicates a guarantee the audit already provides. Not the "
+             "right move — pure churn for zero defensive gain."
+         ),
+     ],
+     "ok"),
+
+    # Negative control: a pre-existing label WITHOUT any rescue-clause
+    # justification still fires. Guarantees we didn't accidentally make
+    # the rescue-clause regex fire on benign nearby words.
+    ("scope_escape", "no-rescue-still-fires",
+     [
+         _user_msg("clean up the audit findings"),
+         _assistant_msg(
+             "Audit-shell reports 6 issues. Those are all pre-existing in "
+             "unrelated files (proxy / launcher / various hooks). My own "
+             "changes for this turn are clean — selftest passes, no new "
+             "warnings. The pre-existing ones predate my changes."
+         ),
+     ],
+     "scope_escape_violation"),
+
     # senior_consult_debt — fires when buddy-paradigm design-space files
     # are edited without an i/consult invocation in the same turn.
     # Detector matches path.endswith(target), so relative paths in
