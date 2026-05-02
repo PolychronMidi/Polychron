@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PostCompact: re-surface pending KB anchors, tracked note files, and session orientation
+#
+# MUST RUN AFTER: precompact
+# COORDINATES WITH: sessionstart
+#
+# Reads precompact's snapshot to reconstruct post-compaction continuity;
+# overlaps in concern with sessionstart but fires on a different lifecycle
+# event (compaction vs. fresh session).
 cat > /dev/null  # consume stdin
 
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME UserPromptSubmit: inject context on evolution-related prompts
+#
+# MUST RUN BEFORE: stop
+# COORDINATES WITH: precompact, sessionstart
+#
+# Fires at the start of each user turn — clears per-turn state files,
+# emits the turn_start signal, runs autocommit + LIFESAVER scans, and
+# scores satisfaction for the just-finished prior turn. The Stop hook
+# at turn end relies on the per-turn files this hook clears.
 INPUT=$(cat)
 PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 

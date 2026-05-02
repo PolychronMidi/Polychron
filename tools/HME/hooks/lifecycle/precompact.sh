@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PreCompact: surface pending KB anchors and tracked note files before compaction
+#
+# MUST RUN BEFORE: postcompact
+# COORDINATES WITH: userpromptsubmit
+#
+# Captures pre-compaction state; postcompact reads what this writes to
+# reconstruct a coherent post-compaction session.
 cat > /dev/null  # consume stdin
 
 PROJECT="$PROJECT_ROOT"

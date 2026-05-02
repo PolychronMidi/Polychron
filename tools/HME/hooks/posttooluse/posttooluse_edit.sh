@@ -18,6 +18,15 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
   _nexus_add EDIT "$FILE"
 fi
 
+# CheckpointPerISC (PAI v6.3.0 import #6). When an ISA.md is edited, fire
+# the checkpoint hook in the background — it's a no-op for ISAs that
+# haven't opted in via `checkpoint: enabled` and idempotent against
+# already-recorded transitions, so unconditional firing is safe.
+if [[ "$FILE" == */ISA.md ]]; then
+  python3 "$PROJECT_ROOT/tools/HME/scripts/isa/checkpoint_hook.py" "$FILE" \
+    >/dev/null 2>&1 &
+fi
+
 # Rebuild dir-intent index on README.md edits — same as posttooluse_write.sh.
 if [[ "$FILE" == */README.md ]]; then
   python3 "$PROJECT_ROOT/scripts/pipeline/hme/build-dir-intent-index.py" \

@@ -149,14 +149,39 @@ _PROBES = {
         ("e4-solo-rationale", None),
     ],
     "SUMMARY_MISSING": [
-        # Detector gates on tier ≥ E3 (env override SUMMARY_FORMAT_TIER); the
-        # text harness here can't easily set env per-probe. End-to-end coverage
-        # lives in test_detector_chain.py (summary_format fixtures).
-        ("emit-block", None),
-        ("re-classify-tier", None),
+        # (a) emit the block — full closing summary should make the detector pass.
+        ("emit-block",
+         _PADDING +
+         "\n\n━━━ 📃 SUMMARY ━━━\n"
+         "🔄 ITERATION: 1/1\n"
+         "📃 CONTENT: closing block content\n"
+         "🖊️ STORY:\n"
+         "- problem: needed to validate rescue\n"
+         "- what we did: emitted the block\n"
+         "- how it went: cleanly\n"
+         "- what's next: stop\n"
+         "🗣️ Polychron: probe demonstrates closing block format works correctly.",
+         {"SUMMARY_FORMAT_TIER": "E3"}),
+        # (b) tier below threshold — detector short-circuits to ok regardless.
+        ("re-classify-tier",
+         _PADDING + "Done.",
+         {"SUMMARY_FORMAT_TIER": "E1"}),
     ],
     "SUMMARY_MALFORMED": [
-        ("complete-block", None),
+        # Same probe content as the emit-block case — verifies a complete
+        # block doesn't trip the malformed detector either.
+        ("complete-block",
+         _PADDING +
+         "\n\n━━━ 📃 SUMMARY ━━━\n"
+         "🔄 ITERATION: 1/1\n"
+         "📃 CONTENT: complete block\n"
+         "🖊️ STORY:\n"
+         "- problem: x\n"
+         "- what we did: y\n"
+         "- how it went: z\n"
+         "- what's next: w\n"
+         "🗣️ Polychron: full closing block with every required field populated cleanly.",
+         {"SUMMARY_FORMAT_TIER": "E3"}),
     ],
 }
 
@@ -182,16 +207,21 @@ def _extract_reason(policy_src: str, key: str) -> str | None:
     return "".join(a or b for a, b in parts)
 
 
-def _probe_detector(detector_module: str, probe_text: str) -> bool:
+def _probe_detector(detector_module: str, probe_text: str,
+                    env_overrides: dict | None = None) -> bool:
     """Run the detector against a synthetic transcript and return True if
-    the verdict is 'ok' (rescue accepted) — i.e. the recognizer fired."""
+    the verdict is 'ok' (rescue accepted) — i.e. the recognizer fired.
+
+    env_overrides applies temporary env vars (restored in finally) so
+    tier-gated detectors like summary_format / advisor_doctrine can be
+    exercised deterministically from text-only probes."""
     import importlib
     import json
+    import os as _os
     import tempfile
 
     sys.path.insert(0, str(_HERE))
     mod = importlib.import_module(detector_module)
-    # Build a 2-event transcript: user prompt + assistant text.
     events = [
         {"type": "user", "message": {"role": "user",
                                      "content": "address every leftover item"}},
@@ -206,10 +236,12 @@ def _probe_detector(detector_module: str, probe_text: str) -> bool:
             f.write(json.dumps(ev) + "\n")
         path = f.name
     old_argv = sys.argv
+    saved_env: dict[str, str | None] = {}
+    if env_overrides:
+        for k, v in env_overrides.items():
+            saved_env[k] = _os.environ.get(k)
+            _os.environ[k] = v
     try:
-        # Detectors read sys.argv[1] for the transcript path. Without
-        # this assignment the early "len(sys.argv) < 2" branch fires and
-        # every probe trivially returns 'ok' regardless of the rescue.
         sys.argv = [old_argv[0] if old_argv else "test", path]
         from io import StringIO
         old_stdout = sys.stdout
@@ -223,7 +255,11 @@ def _probe_detector(detector_module: str, probe_text: str) -> bool:
         return verdict == "ok"
     finally:
         sys.argv = old_argv
-        import os as _os
+        for k, prev in saved_env.items():
+            if prev is None:
+                _os.environ.pop(k, None)
+            else:
+                _os.environ[k] = prev
         try:
             _os.unlink(path)
         except OSError:
@@ -255,10 +291,15 @@ def main() -> int:
         # Walk probes. A None probe text means "covered by an existing
         # test fixture, not a string probe" — skip the lookup but require
         # that we documented the probe's existence above.
-        for label, probe_text in _PROBES.get(key, []):
+        # Probe entries: (label, text) for plain probes, OR
+        # (label, text, env_dict) when the detector requires env-injected state.
+        for entry in _PROBES.get(key, []):
+            label = entry[0]
+            probe_text = entry[1]
+            env = entry[2] if len(entry) >= 3 else None
             if probe_text is None:
                 continue
-            ok = _probe_detector(detector_module, probe_text)
+            ok = _probe_detector(detector_module, probe_text, env)
             if not ok:
                 failures.append(
                     f"  {key} ({detector_module}.py): probe {label!r} "

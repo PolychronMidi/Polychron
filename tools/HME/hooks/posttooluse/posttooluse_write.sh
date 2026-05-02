@@ -15,6 +15,13 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
   _nexus_add EDIT "$FILE"
 fi
 
+# CheckpointPerISC (PAI v6.3.0 import #6). Fire on ISA.md writes too —
+# the hook is no-op for non-opted-in ISAs and idempotent.
+if [[ "$FILE" == */ISA.md ]]; then
+  python3 "$PROJECT_ROOT/tools/HME/scripts/isa/checkpoint_hook.py" "$FILE" \
+    >/dev/null 2>&1 &
+fi
+
 # Only track note files outside tmp/ (tmp/ is covered by precompact find)
 [[ "$FILE" =~ \.(md|txt)$ ]] || exit 0
 [[ "$FILE" == */tmp/* ]] && exit 0

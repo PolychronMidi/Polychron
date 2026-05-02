@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME SessionStart: orientation — surface previous session state + current project state
+#
+# MUST RUN BEFORE: userpromptsubmit
+# COORDINATES WITH: postcompact
+#
+# First hook of a fresh session; sets up nexus state files that
+# downstream hooks (userpromptsubmit, stop, posttooluse) depend on.
 cat > /dev/null  # consume stdin
 
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -151,6 +151,42 @@ def deferred_iscs(d: ParsedISA) -> list[ISC]:
     return [isc for isc in d.iscs if isc.is_deferred]
 
 
+def deferred_resolution_violations(d: ParsedISA, prev: "ParsedISA | None"
+                                   ) -> list[str]:
+    """Refuse silent [DEFERRED-VERIFY:<task>] → [x] flips.
+
+    PAI rule: "Cannot be marked [x] until the deferred probe runs."
+    Enforced by requiring the Verification section to mention the
+    deferred task id once an ISC transitions from DEFERRED-VERIFY to [x].
+    The previous parsed ISA (if available) tells us which IDs were
+    deferred-with-task before; if any of those flipped to [x] in the new
+    ISA without the task id appearing in Verification, that's a violation.
+
+    No previous ISA = first audit, can't detect transitions; returns [].
+    """
+    if prev is None:
+        return []
+    prev_deferred = {isc.id: isc.deferred_task for isc in prev.iscs
+                     if isc.is_deferred}
+    if not prev_deferred:
+        return []
+    verif = d.sections.get("Verification", "")
+    violations = []
+    for isc in d.iscs:
+        if isc.id not in prev_deferred:
+            continue
+        if isc.status != "[x]":
+            continue
+        task = prev_deferred[isc.id]
+        if task not in verif:
+            violations.append(
+                f"{isc.id}: previously [DEFERRED-VERIFY:{task}], now [x] "
+                f"but Verification section doesn't reference task {task!r} — "
+                f"resolved-task evidence is required to close a deferred ISC"
+            )
+    return violations
+
+
 def check_completeness(d: ParsedISA, tier: str) -> list[str]:
     """Return list of section names that the tier requires but are
     missing or empty. Empty list = ISA is complete for this tier."""

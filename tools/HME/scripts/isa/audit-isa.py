@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from isa_lib import (  # noqa: E402
     parse_isa, check_completeness, section_order_violations,
     unverified_iscs, audit_id_stability, list_isc, deferred_iscs,
+    deferred_resolution_violations,
 )
 
 
@@ -89,16 +90,26 @@ def main(argv: list) -> int:
             return 2
         old = parse_isa(paths[0])
         new = parse_isa(paths[1])
-        violations = audit_id_stability(old, new)
+        id_violations = audit_id_stability(old, new)
+        defer_violations = deferred_resolution_violations(new, old)
+        violations = id_violations + defer_violations
         if as_json:
-            print(json.dumps({"violations": violations}, indent=2))
+            print(json.dumps({
+                "id_stability_violations": id_violations,
+                "deferred_resolution_violations": defer_violations,
+            }, indent=2))
         else:
             if not violations:
                 print(f"audit-isa --diff: id-stability OK ({len(old.iscs)} → {len(new.iscs)} ISCs)")
             else:
-                print(f"audit-isa --diff: {len(violations)} id-stability violation(s)")
-                for v in violations:
-                    print(f"  {v}")
+                if id_violations:
+                    print(f"audit-isa --diff: {len(id_violations)} id-stability violation(s)")
+                    for v in id_violations:
+                        print(f"  {v}")
+                if defer_violations:
+                    print(f"audit-isa --diff: {len(defer_violations)} deferred-resolution violation(s)")
+                    for v in defer_violations:
+                        print(f"  {v}")
         if strict and violations:
             return 1
         return 0
