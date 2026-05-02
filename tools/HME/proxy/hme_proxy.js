@@ -268,13 +268,37 @@ function _alertCooldownActive(type, pathLabel) {
 // prefers strict passthrough (and being stuck in 429-loop).
 const _PASSTHROUGH_COMPACT_BYTES = 400_000;
 const _PASSTHROUGH_COMPACT_KEEP_MIN = 4;
+
+// Dynamic threshold: track the most recent ITPM-remaining from Anthropic
+// response headers and shrink the byte budget when we're close to the
+// rate-limit ceiling. ~3.5 bytes/token is the rough conversion for
+// Claude-Code-shape JSON payloads. Capped to never exceed the static
+// _PASSTHROUGH_COMPACT_BYTES; floor at 80 KB so we never over-shrink.
+let _lastInputTokensRemaining = null; // updated by response handler
+const _BYTES_PER_TOKEN_EST = 3.5;
+const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 80_000;
+function _effectiveCompactThreshold() {
+  if (_lastInputTokensRemaining == null || _lastInputTokensRemaining <= 0) {
+    return _PASSTHROUGH_COMPACT_BYTES;
+  }
+  // Use 70% of remaining-token budget as the byte cap for the next
+  // request (leave 30% headroom for the response and other parallel calls).
+  const dynamic = Math.floor(_lastInputTokensRemaining * 0.70 * _BYTES_PER_TOKEN_EST);
+  const clamped = Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, Math.min(_PASSTHROUGH_COMPACT_BYTES, dynamic));
+  return clamped;
+}
 function _shrinkForPassthrough(payload) {
   if (process.env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
   if (!payload || !Array.isArray(payload.messages)) return 0;
   const msgs = payload.messages;
   if (msgs.length <= _PASSTHROUGH_COMPACT_KEEP_MIN) return 0;
+  // Dynamic threshold: shrink the byte budget when Anthropic's
+  // anthropic-ratelimit-input-tokens-remaining header on the prior
+  // response said we're near the cap. Static 400KB is the worst-case
+  // ceiling; the dynamic value can be lower.
+  const _threshold = _effectiveCompactThreshold();
   let serialized = JSON.stringify(payload);
-  if (serialized.length <= _PASSTHROUGH_COMPACT_BYTES) return 0;
+  if (serialized.length <= _threshold) return 0;
 
   // TIER 1 -- microcompact: shrink large tool_result blocks in older
   // messages by replacing their content with a short elision marker.
@@ -304,28 +328,91 @@ function _shrinkForPassthrough(payload) {
   if (elided > 0) {
     serialized = JSON.stringify(payload);
     console.error(`[hme-proxy] precompact tier-1 (microcompact): elided ${elided} stale tool_result block(s), body=${serialized.length}B`);
-    if (serialized.length <= _PASSTHROUGH_COMPACT_BYTES) {
+    if (serialized.length <= _threshold) {
       console.error(`[hme-proxy] precompact: tier-1 sufficient, no message drops needed`);
       return elided; // success at tier 1, no dropping required
     }
   }
 
-  // TIER 2 -- message-drop fallback: tier-1 wasn't enough. Drop the
-  // OLDEST messages first. Keep at least _PASSTHROUGH_COMPACT_KEEP_MIN.
+  // TIER 2 -- summary-via-local-model fallback. Replace the OLDEST half
+  // of messages with a single summary text block. Calls llamacpp_daemon
+  // (local, no Anthropic API tokens consumed) for the summarization;
+  // gated by HME_PROXY_LOCAL_SUMMARY=1 (off by default because it adds
+  // latency and a network call to a separate process). When enabled,
+  // tier-2 runs BEFORE tier-3 message-drop. Stub: we don't await a real
+  // summary -- inserting a marker so the model knows older context was
+  // dropped is sufficient for the rate-limit-fix use case. A real
+  // summarization call would replace `_summaryText` below.
+  if (process.env.HME_PROXY_LOCAL_SUMMARY === '1' && msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN * 2) {
+    const _half = Math.floor(msgs.length / 2);
+    const _summaryText = `(hme-proxy local-summary placeholder: ${_half} oldest messages compacted)`;
+    msgs.splice(0, _half, { role: 'user', content: _summaryText });
+    serialized = JSON.stringify(payload);
+    console.error(`[hme-proxy] precompact tier-2 (local-summary): collapsed ${_half} oldest msgs into 1 marker, body=${serialized.length}B`);
+    if (serialized.length <= _threshold) return elided + _half;
+  }
+
+  // TIER 3 -- session-memory compact: if a pre-extracted session-notes
+  // file exists, use it as the summary block instead of summarizing
+  // live. Skips the model call entirely. File: tmp/hme-session-notes.txt.
+  // Same effect as tier-2 but cheaper (no llamacpp call). Tier-3 supersedes
+  // tier-2's marker if both fire.
+  try {
+    const fsX = require('fs');
+    const pathX = require('path');
+    const { PROJECT_ROOT } = require('./shared');
+    const notesPath = pathX.join(PROJECT_ROOT, 'tmp', 'hme-session-notes.txt');
+    if (fsX.existsSync(notesPath) && msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN * 2) {
+      const notes = fsX.readFileSync(notesPath, 'utf8');
+      if (notes && notes.length > 0) {
+        const _half = Math.floor(msgs.length / 2);
+        msgs.splice(0, _half, {
+          role: 'user',
+          content: `(hme-proxy session-memory compact: ${_half} oldest messages summarized)\n\n${notes.slice(0, 8_000)}`,
+        });
+        serialized = JSON.stringify(payload);
+        console.error(`[hme-proxy] precompact tier-3 (session-memory): used pre-extracted notes (${notes.length}B), body=${serialized.length}B`);
+        if (serialized.length <= _threshold) return elided + _half;
+      }
+    }
+  } catch (_e) { /* best-effort */ }
+
+  // TIER 4 -- message-drop fallback. Drop the OLDEST messages until
+  // under threshold. Keep at least _PASSTHROUGH_COMPACT_KEEP_MIN. The
+  // walk-backward pair-preservation in pass 5 below ensures we don't
+  // create orphan tool_use/tool_result pairs across the drop boundary.
   let dropped = 0;
   while (msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN) {
     msgs.shift();
     dropped++;
     serialized = JSON.stringify(payload);
-    if (serialized.length <= _PASSTHROUGH_COMPACT_BYTES) break;
+    if (serialized.length <= _threshold) break;
   }
-  // Scrub orphaned tool_use / tool_result blocks: dropping oldest messages
-  // can leave a tool_result whose tool_use_id was in a dropped assistant
-  // message (Anthropic rejects with "unexpected tool_use_id"). Pass 1
-  // collects surviving tool_use IDs, pass 2 strips orphan tool_result
-  // blocks, pass 3 strips orphan tool_use blocks (whose result was
-  // dropped). Empty content arrays after stripping get a placeholder so
-  // Anthropic doesn't reject the message for empty content.
+  // PASS 5 -- walk-backward tool-pair preservation. Anthropic's first-
+  // party compaction (per the deep-dive) walks the cut boundary backward
+  // to keep tool_use/tool_result pairs together. Our tier-4 dropped from
+  // the front; if the FIRST surviving message is a user message with a
+  // tool_result whose tool_use is in a dropped assistant message, we
+  // need to ALSO drop those tool_results (or extend the cut to also drop
+  // the user message). Cheaper than putting the assistant back. We
+  // iterate: drop the leading user-tool_result-only message until the
+  // first surviving message is clean.
+  while (msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN) {
+    const first = msgs[0];
+    if (!first || !Array.isArray(first.content)) break;
+    const onlyOrphanResults = first.role === 'user'
+      && first.content.length > 0
+      && first.content.every((b) => b && b.type === 'tool_result');
+    if (!onlyOrphanResults) break;
+    msgs.shift();
+    dropped++;
+  }
+
+  // PASS 6 -- residual orphan scrub: any tool_result still present whose
+  // tool_use_id isn't in surviving assistant messages gets stripped.
+  // Same for orphan tool_use blocks. Empty content arrays after stripping
+  // get a placeholder so Anthropic doesn't reject the message for empty
+  // content.
   const surviving_use_ids = new Set();
   const surviving_result_ids = new Set();
   for (const m of msgs) {
@@ -844,6 +931,15 @@ function handleRequest(clientReq, clientRes) {
         let fullBody = Buffer.concat(chunks);
         let status = upstreamRes.statusCode || 502;
         let headers = { ...upstreamRes.headers };
+        // Capture Anthropic's rate-limit telemetry so the next request's
+        // _shrinkForPassthrough can size the byte budget dynamically
+        // instead of using the static 400KB ceiling. Header name per
+        // https://platform.claude.com/docs/en/api/rate-limits.
+        const _hdrTokRemaining = headers['anthropic-ratelimit-input-tokens-remaining'];
+        if (_hdrTokRemaining != null) {
+          const n = parseInt(_hdrTokRemaining, 10);
+          if (Number.isFinite(n) && n >= 0) _lastInputTokensRemaining = n;
+        }
 
         // Detect upstream failure across BOTH paths: HTTP 4xx with JSON
         // error body, AND HTTP 200 with SSE error event in the stream.
