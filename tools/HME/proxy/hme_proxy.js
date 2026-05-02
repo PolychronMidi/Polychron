@@ -33,7 +33,7 @@ const https = require('https');
 
 const { sessionKey, emit } = require('./shared');
 const {
-  resolveUpstream, recordUpstreamSuccess, recordUpstreamFailure,
+  resolveUpstream, recordUpstreamSuccess, recordUpstreamFailure, isPassthroughMode,
   DEFAULT_UPSTREAM_HOST, DEFAULT_UPSTREAM_PORT, DEFAULT_UPSTREAM_TLS,
 } = require('./upstream');
 const { shouldInject, buildStatusContext, buildJurisdictionContext, injectIntoSystem, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
@@ -342,7 +342,13 @@ function handleRequest(clientReq, clientRes) {
     const upstream = resolveUpstream(clientReq);
     const isAnthropic = upstream.provider === 'anthropic';
 
-    if (payload && Array.isArray(payload.messages)) {
+    // Passthrough mode (emergency valve tripped): forward bytes verbatim
+    // with NO HME mutation. Keeps Claude Code working when our middleware
+    // would otherwise produce invalid_request errors. Restart proxy to
+    // re-enable HME enrichment after the underlying issue is fixed.
+    const _passthrough = isPassthroughMode();
+
+    if (payload && Array.isArray(payload.messages) && !_passthrough) {
       const session = sessionKey(payload);
 
       let bodyDirtiedByStrip = false;
@@ -584,7 +590,20 @@ function handleRequest(clientReq, clientRes) {
 
     const transport = upstream.tls ? https : http;
     const upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
-      recordUpstreamSuccess();
+      // Count Anthropic invalid_request_error (HTTP 400) as an upstream
+      // failure WHEN the proxy mutated the body. Almost certainly proxy-
+      // induced (cache_control ordering, stripped fields, etc.) -- the
+      // emergency valve flips into passthrough after EMERGENCY_THRESHOLD
+      // consecutive proxy-induced 400s, so Claude Code keeps working
+      // without HME enrichment instead of dying on every retry.
+      // Connection-level failures fire on upstreamReq.on('error') below.
+      const _status = upstreamRes.statusCode || 0;
+      const _proxyMutatedBody = isAnthropic && !_passthrough;
+      if (_proxyMutatedBody && _status === 400) {
+        recordUpstreamFailure(`anthropic 400 (proxy-mutated body, likely HME-induced)`);
+      } else {
+        recordUpstreamSuccess();
+      }
       const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
       const isSse = isAnthropic && ct.includes('text/event-stream');
 

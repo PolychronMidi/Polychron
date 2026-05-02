@@ -29,15 +29,26 @@ function resolveUpstream(req) {
 }
 
 //  Emergency valve
-// N consecutive upstream failures -> write CRITICAL alert, disable proxy, exit.
+// N consecutive upstream failures -> flip into sticky passthrough mode.
+// Was: process.exit(99) + write HME_PROXY_ENABLED=0 to .env. That left
+// Claude Code pointed at a now-dead 127.0.0.1:9099 (ECONNREFUSED on every
+// retry) -- the "escape hatch" stranded the user instead of saving them.
+// Now: stay alive, mark the valve tripped, and forward every subsequent
+// request as raw bytes without any HME mutation. Claude Code keeps
+// working; HME enrichment is the only thing lost. The .env flag still
+// flips so an operator-level restart re-validates the config.
 const EMERGENCY_THRESHOLD = 3;
 let _consecutiveFailures = 0;
 let _valveTripped = false;
 
+function isPassthroughMode() {
+  return _valveTripped;
+}
+
 function tripEmergencyValve(lastErr) {
   if (_valveTripped) return;
   _valveTripped = true;
-  const msg = `EMERGENCY VALVE: proxy killed after ${EMERGENCY_THRESHOLD} consecutive upstream failures. Last error: ${lastErr}. HME_PROXY_ENABLED set to 0.`;
+  const msg = `EMERGENCY VALVE: switched to PASSTHROUGH mode after ${EMERGENCY_THRESHOLD} consecutive upstream failures. All HME mutations disabled until proxy restart. Last error: ${lastErr}.`;
   console.error(`[hme-proxy] ${msg}`);
 
   const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
@@ -51,7 +62,7 @@ function tripEmergencyValve(lastErr) {
     let envContent = fs.readFileSync(envPath, 'utf8');
     envContent = envContent.replace(
       /^HME_PROXY_ENABLED=.*/m,
-      'HME_PROXY_ENABLED=0  # EMERGENCY VALVE tripped -- proxy self-disabled',
+      'HME_PROXY_ENABLED=0  # EMERGENCY VALVE tripped -- proxy in passthrough mode (restart to re-enable HME)',
     );
     fs.writeFileSync(envPath, envContent);
   } catch (_e) {
@@ -59,7 +70,6 @@ function tripEmergencyValve(lastErr) {
   }
 
   emit({ event: 'proxy_emergency', reason: lastErr, source: 'emergency_valve' });
-  setTimeout(() => process.exit(99), 500);
 }
 
 function recordUpstreamSuccess() {
@@ -77,6 +87,7 @@ module.exports = {
   resolveUpstream,
   recordUpstreamSuccess,
   recordUpstreamFailure,
+  isPassthroughMode,
   DEFAULT_UPSTREAM_HOST,
   DEFAULT_UPSTREAM_PORT,
   DEFAULT_UPSTREAM_TLS,
