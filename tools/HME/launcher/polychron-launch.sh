@@ -355,5 +355,46 @@ PYEOF
 fi
 
 echo "[launch] stack up -- PIDs logged to ${PID_FILE}" >&2
+
+# Spawn VS Code as a CHILD of this launcher so it inherits ANTHROPIC_BASE_URL.
+# The launcher's `set -a; source .env; set +a` block above only exports the
+# var into THIS process tree -- VS Code launched any other way (dock, app
+# menu, .desktop file, plain `code` from a non-launcher shell) does not see
+# it. The only way to put the var into VS Code's environ is to be the
+# parent that forks it. From there it propagates to the claude-code
+# extension and its child claude binary.
+#
+# Three cases:
+#   (a) VS Code already running WITH the env  -> nothing to do.
+#   (b) VS Code already running WITHOUT the env -> the bypass-detection
+#       block earlier in this file handled it (kill+relaunch via auto-fix)
+#       unless HME_NO_AUTOFIX_VSCODE=1, in which case we leave it alone
+#       (polychron-restart.sh sets that flag so it doesn't murder the
+#       caller's active session).
+#   (c) No VS Code running at all -> spawn one with the env. Detached so
+#       the launcher exits cleanly while VS Code keeps running.
+#
+# Skip via HME_NO_LAUNCH_VSCODE=1 if you ever want the launcher to be
+# pure-stack (e.g. headless boxes without `code`).
+if [ "${HME_NO_LAUNCH_VSCODE:-0}" != "1" ]; then
+  _vscode_running=$(pgrep -f "/code\b\|vscode\b\|electron.*vscode" 2>/dev/null | head -1)
+  if [ -z "$_vscode_running" ]; then
+    _code_bin=$(command -v code 2>/dev/null || echo "/usr/bin/code")
+    if [ -x "$_code_bin" ]; then
+      ANTHROPIC_BASE_URL="$ANTHROPIC_BASE_URL" \
+        PROJECT_ROOT="$PROJECT_ROOT" \
+        setsid nohup "$_code_bin" "$PROJECT_ROOT" \
+          > "$PROJECT_ROOT/log/vscode-launch.out" 2>&1 < /dev/null &
+      disown
+      echo "[launch] spawned VS Code with ANTHROPIC_BASE_URL inherited" \
+           "(pid=$! -- log: $PROJECT_ROOT/log/vscode-launch.out)" >&2
+    else
+      echo "[launch] note: 'code' binary not found at $_code_bin --" \
+           "skipping VS Code spawn. To use the proxy, launch VS Code from" \
+           "a shell with .env sourced." >&2
+    fi
+  fi
+fi
+
 # Mark success so the EXIT trap leaves the stack alone.
 _LAUNCH_OK=1
