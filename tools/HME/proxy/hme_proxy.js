@@ -750,7 +750,14 @@ function handleRequest(clientReq, clientRes) {
         if (shouldInject()) {
           const statusBlock = buildStatusContext();
           if (statusBlock) {
-            const injectedStatus = injectIntoSystem(payload, statusBlock, 'HME Session Status (proxy-injected)');
+            // CRITICAL: status content varies per-turn (proxy_emergency
+            // flag, last verdict, error counts), so it MUST NOT live in
+            // the system array -- doing so invalidates the entire prompt
+            // cache below the cache_control breakpoint and rebills every
+            // request at full ITPM cost, exhausting the user's quota in
+            // ~10 turns. Route through the same cache-safe last-user-
+            // message path that lifesaver_inject already uses.
+            const injectedStatus = injectIntoLastUserMessage(payload, statusBlock.trim(), 'HME Session Status (proxy-injected)');
             if (injectedStatus) {
               emit({ event: 'status_inject', session });
               bodyDirtiedByStrip = true;
