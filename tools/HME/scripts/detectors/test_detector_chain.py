@@ -330,6 +330,37 @@ _CASES = [
      "ok",
      {"ADVISOR_DOCTRINE_TIER": "E1"}),
 
+    # advisor_doctrine -- implicit-solo rescue: a turn with >= 3
+    # substantive Edit/Write tool calls is implementing a decision, not
+    # crystallizing one. No fresh consult required.
+    ("advisor_doctrine", "implicit-solo-via-many-edits",
+     [
+         _user_msg("wire up the new detector across the chain"),
+         _assistant_tool_use("Edit", {"file_path": "/a.py",
+                                      "old_string": "x", "new_string": "y"}),
+         _assistant_tool_use("Edit", {"file_path": "/b.py",
+                                      "old_string": "x", "new_string": "y"}),
+         _assistant_tool_use("Write", {"file_path": "/c.py",
+                                       "content": "z"}),
+         _assistant_msg("Wired up. All tests pass."),
+     ],
+     "ok",
+     {"ADVISOR_DOCTRINE_TIER": "E4"}),
+
+    # advisor_doctrine -- 2 edits is below the implicit-solo threshold;
+    # the gate still fires.
+    ("advisor_doctrine", "two-edits-still-fires",
+     [
+         _user_msg("expand the architecture and ship it"),
+         _assistant_tool_use("Edit", {"file_path": "/a.py",
+                                      "old_string": "x", "new_string": "y"}),
+         _assistant_tool_use("Edit", {"file_path": "/b.py",
+                                      "old_string": "x", "new_string": "y"}),
+         _assistant_msg("Done."),
+     ],
+     "advisor_silently_skipped",
+     {"ADVISOR_DOCTRINE_TIER": "E4"}),
+
     # summary_format -- tier >= E3 with no closing block fires.
     ("summary_format", "missing-block-fires",
      [

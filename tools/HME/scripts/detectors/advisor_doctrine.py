@@ -134,6 +134,28 @@ def _consult_invocations(events: list) -> int:
     return count
 
 
+# Tool calls that count as substantive work for the implicit-solo rescue.
+# Read alone is investigation, not commitment; we want Edit / Write /
+# MultiEdit / NotebookEdit -- changes to the codebase. A turn that lands
+# many concrete edits is implementing a previously-made decision, not
+# crystallizing a new one. The doctrine's purpose (consult before
+# committing) is structurally satisfied for that shape: the commitment
+# happened in the user prompt directing the work, not at code-write time.
+_WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
+
+
+def _substantive_work_count(events: list) -> int:
+    """Count concrete code-changing tool calls in this turn. Read /
+    Bash / Glob don't count -- those are investigation. The threshold
+    used downstream is >= 3 for implicit-solo rescue."""
+    n = 0
+    for ev in events:
+        for tu in iter_tool_uses(ev):
+            if tu.get("name") in _WORK_TOOLS:
+                n += 1
+    return n
+
+
 def _conflict_cap_exceeded() -> bool:
     """Read tmp/hme-advisor-conflicts.jsonl for any conflict_id with
     re-call count >= 3 (violates Rule 3's max-2 cap). Best-effort: the
@@ -188,7 +210,17 @@ def main() -> int:
     events = _load_current_turn(sys.argv[1])
     text = _last_assistant_text(events)
     n_consults = _consult_invocations(events)
+    n_work = _substantive_work_count(events)
     text_lower = text.lower()
+
+    # Implicit-solo rescue: a turn with >= 3 concrete code-changing tool
+    # calls (Edit/MultiEdit/Write/NotebookEdit) is IMPLEMENTING a decision,
+    # not crystallizing one. The user's prompt is the commitment moment;
+    # writing code to fulfill it is execution, and demanding a fresh
+    # advisor consult per execution turn is the cascading-ceremony failure
+    # mode (see ceremony_dodge.py). Below 3 substantive edits = light or
+    # zero work, so the doctrine still fires normally.
+    implicit_solo = n_work >= 3
 
     # Rule 3 cap -- historic violation across turns.
     if _conflict_cap_exceeded():
@@ -197,19 +229,20 @@ def main() -> int:
 
     # Rule 2 (1): pre-BUILD commitment requires a consult.
     if _PRE_BUILD_RE.search(text) and n_consults == 0:
-        if not _solo_rescue(text):
+        if not _solo_rescue(text) and not implicit_solo:
             print("advisor_missing_pre_build")
             return 0
 
     # Rule 2 (3): post-durable-deliverable consult before phase: complete.
     if _POST_DELIVER_RE.search(text) and n_consults == 0:
-        if not _solo_rescue(text):
+        if not _solo_rescue(text) and not implicit_solo:
             print("advisor_missing_post_deliver")
             return 0
 
     # E4/E5 floor: silently skipping advisor on Deep/Comprehensive work
     # warrants a flag even when no explicit phase markers fired.
-    if tier in ("E4", "E5") and n_consults == 0 and not _solo_rescue(text):
+    if (tier in ("E4", "E5") and n_consults == 0
+            and not _solo_rescue(text) and not implicit_solo):
         print("advisor_silently_skipped")
         return 0
 
