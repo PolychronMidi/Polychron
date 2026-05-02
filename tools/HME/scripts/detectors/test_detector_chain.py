@@ -391,15 +391,16 @@ _CASES = [
      "ok",
      {"ADVISOR_DOCTRINE_TIER": "E4"}),
 
-    # summary_format -- tier >= E3 with no closing block fires.
-    ("summary_format", "missing-block-fires",
+    # summary_format -- detector is disabled (returns "ok"
+    # unconditionally pending daemon restart for chain demotion).
+    ("summary_format", "missing-block-passes",
      [
          _user_msg("do the comprehensive sweep"),
          _assistant_msg(
              "Done. All audits pass; details above. Wrapping up."
          ),
      ],
-     "summary_missing",
+     "ok",
      {"SUMMARY_FORMAT_TIER": "E5"}),
 
     # summary_format -- tier >= E3 with complete block passes.
@@ -422,8 +423,8 @@ _CASES = [
      "ok",
      {"SUMMARY_FORMAT_TIER": "E5"}),
 
-    # summary_format -- block present but missing fields fires malformed.
-    ("summary_format", "malformed-fires",
+    # summary_format -- malformed block passes too (detector disabled).
+    ("summary_format", "malformed-passes",
      [
          _user_msg("comprehensive work"),
          _assistant_msg(
@@ -432,7 +433,7 @@ _CASES = [
              "(missing CONTENT, story bullets, voice line)"
          ),
      ],
-     "summary_malformed",
+     "ok",
      {"SUMMARY_FORMAT_TIER": "E5"}),
 
     # summary_format -- tier below threshold short-circuits to ok regardless.
