@@ -26,41 +26,41 @@ const COMPL_MAX = 2;
 
 const REASONS = {
   STOP_WORK_DISMISSIVE:
-    'STOP-WORK ANTIPATTERN: You responded with dismissive text instead of doing work. Re-read the user prompt and the conversation. There is always pending work after a user message -- find it and do it. If genuinely nothing remains, explain what was completed and why.',
+    'STOP-WORK ANTIPATTERN: You responded with dismissive text instead of doing work. Re-read the user prompt and the conversation. There is always pending work after a user message -- find it and do it. If genuinely nothing remains, explain what was completed and why. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   STOP_WORK_TEXT_ONLY:
-    'STOP-WORK ANTIPATTERN: Your last turn was a short text-only response with no tool calls. If there is remaining work, continue it now. If you genuinely completed everything, provide a substantive summary of what was done.',
+    'STOP-WORK ANTIPATTERN: Your last turn was a short text-only response with no tool calls. If there is remaining work, continue it now. If you genuinely completed everything, provide a substantive summary of what was done. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   EXHAUST:
-    'EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items (TBD/noted/remaining tools) without fixing them. Every enumerated item must be fixed in the same turn. Resume and implement the highest-leverage items now.',
+    'EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items (TBD/noted/remaining tools) without fixing them. Every enumerated item must be fixed in the same turn. Resume and implement the highest-leverage items now. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   SCOPE_ESCAPE:
-    'SCOPE-ESCAPE VIOLATION: Final text dismissed a problem by labeling it pre-existing / unrelated / not-introduced-here / out-of-scope-of-this-turn instead of fixing it. The rule is: if you saw it, fix it. "Pre-existing" is not a permission slip to skip work. Either (a) fix the problem in this turn, or (b) if fixing is genuinely wrong (e.g. would break an unrelated boundary), say so explicitly and explain why fixing is the wrong move -- do NOT just label-and-stop. The rescue clause "and I fixed it" / "now resolved" suppresses this gate, so the path forward is always to fix.',
+    'SCOPE-ESCAPE VIOLATION: Final text dismissed a problem by labeling it pre-existing / unrelated / not-introduced-here / out-of-scope-of-this-turn instead of fixing it. The rule is: if you saw it, fix it. "Pre-existing" is not a permission slip to skip work. Either (a) fix the problem in this turn, or (b) if fixing is genuinely wrong (e.g. would break an unrelated boundary), say so explicitly and explain why fixing is the wrong move -- do NOT just label-and-stop. The rescue clause "and I fixed it" / "now resolved" suppresses this gate, so the path forward is always to fix. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   PHANTOM_CAPABILITY:
-    'PHANTOM CAPABILITY: Your closing summary declared a thinking/delegation capability that is NOT in the closed enumeration at tools/HME/scripts/detectors/_capability_enum.py. Inventing generic labels ("decomposition", "tradeoff analysis", "deep reasoning") is a CRITICAL FAILURE -- it does NOT contribute to the tier floor. Either (a) replace the declaration with a verbatim name from the enumeration, (b) anchor the declaration with verification evidence (`(verified)`, code-quoted output, tool-call trace) within 240 chars after the name, or (c) drop the declaration. New capabilities are added by editing _capability_enum.py and bumping ENUMERATION_VERSION -- never by ad-hoc invention at run time.',
+    'PHANTOM CAPABILITY: Your closing summary declared a thinking/delegation capability that is NOT in the closed enumeration at tools/HME/scripts/detectors/_capability_enum.py. Inventing generic labels ("decomposition", "tradeoff analysis", "deep reasoning") is a CRITICAL FAILURE -- it does NOT contribute to the tier floor. Either (a) replace the declaration with a verbatim name from the enumeration, (b) anchor the declaration with verification evidence (`(verified)`, code-quoted output, tool-call trace) within 240 chars after the name, or (c) drop the declaration. New capabilities are added by editing _capability_enum.py and bumping ENUMERATION_VERSION -- never by ad-hoc invention at run time. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   PHANTOM_PARAPHRASE:
-    'PHANTOM PARAPHRASE (soft): Your text contained a paraphrase of a real capability (e.g. "first-principles decomposition" instead of "FirstPrinciples"). This is the shape of an agent reaching for an enumeration name without committing. Rewrite using the verbatim name from _capability_enum.py, OR drop the language if you did not actually invoke that capability. Soft flag -- does not block, but the meta-detector tracks the rate.',
+    'PHANTOM PARAPHRASE (soft): Your text contained a paraphrase of a real capability (e.g. "first-principles decomposition" instead of "FirstPrinciples"). This is the shape of an agent reaching for an enumeration name without committing. Rewrite using the verbatim name from _capability_enum.py, OR drop the language if you did not actually invoke that capability. Soft flag -- does not block, but the meta-detector tracks the rate. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   ADVISOR_MISSING_PRE_BUILD:
-    'ADVISOR DOCTRINE (Rule 2 -- pre-BUILD): Tier >= E2 work just hit a BUILD/commit boundary without an advisor consult (`i/consult`). Either (a) call i/consult now with the proposed approach, (b) explicitly note "solo was right" in text with reasoning (mechanical rename, no decision to crystallize, etc.), or (c) escalate the tier -- if no advisor is needed this should not be E2+. Doctrine reference: PAI v6.3.0 Verification Doctrine Rule 2.',
+    'ADVISOR DOCTRINE (Rule 2 -- pre-BUILD): Tier >= E2 work just hit a BUILD/commit boundary without an advisor consult (`i/consult`). Either (a) call i/consult now with the proposed approach, (b) explicitly note "solo was right" in text with reasoning (mechanical rename, no decision to crystallize, etc.), or (c) escalate the tier -- if no advisor is needed this should not be E2+. Doctrine reference: PAI v6.3.0 Verification Doctrine Rule 2. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   ADVISOR_MISSING_POST_DELIVER:
-    'ADVISOR DOCTRINE (Rule 2 -- post-deliverable): A durable deliverable just landed and you are about to set phase: complete without a final advisor consult. Call i/consult once on the finished work asking "any gaps before declaring done?" -- OR explicitly mark the rationale for skipping. Doctrine reference: PAI v6.3.0 Verification Doctrine Rule 2 step 3.',
+    'ADVISOR DOCTRINE (Rule 2 -- post-deliverable): A durable deliverable just landed and you are about to set phase: complete without a final advisor consult. Call i/consult once on the finished work asking "any gaps before declaring done?" -- OR explicitly mark the rationale for skipping. Doctrine reference: PAI v6.3.0 Verification Doctrine Rule 2 step 3. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   ADVISOR_SILENTLY_SKIPPED:
-    'ADVISOR DOCTRINE (E4/E5 floor): Tier >= E4 work completed with zero `i/consult` invocations and no solo-rationale clause. At Deep/Comprehensive effort, the advisor must fire at least once OR the agent must explicitly justify why solo was right. Re-evaluate tier or add the consult.',
+    'ADVISOR DOCTRINE (E4/E5 floor): Tier >= E4 work completed with zero `i/consult` invocations and no solo-rationale clause. At Deep/Comprehensive effort, the advisor must fire at least once OR the agent must explicitly justify why solo was right. Re-evaluate tier or add the consult. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   ADVISOR_CONFLICT_CAP:
-    'ADVISOR DOCTRINE (Rule 3 -- conflict cap): The advisor was re-called more than 2 times on the same conflict_id (see tmp/hme-advisor-conflicts.jsonl). Hard cap exceeded. Escalate to the user instead of re-calling -- keep the loop bounded.',
+    'ADVISOR DOCTRINE (Rule 3 -- conflict cap): The advisor was re-called more than 2 times on the same conflict_id (see tmp/hme-advisor-conflicts.jsonl). Hard cap exceeded. Escalate to the user instead of re-calling -- keep the loop bounded. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   SUMMARY_MISSING:
-    'STOP-THE-LINE FORMAT VIOLATION: Tier E5 (Comprehensive) work closed without the required === SUMMARY === block. Append the closing block before stopping. Required fields: [ITERATION], [CONTENT], [STORY] (4 bullets: problem | what we did | how it went | what\'s next), and [VOICE] <name>: <8-16 word summary>. Either (a) emit the block now, or (b) re-classify the tier -- if no summary is needed, this work was lighter than E5 and the classifier should reflect that.',
+    'STOP-THE-LINE FORMAT VIOLATION: Tier E5 (Comprehensive) work closed without the required === SUMMARY === block. Append the closing block before stopping. Required fields: [ITERATION], [CONTENT], [STORY] (4 bullets: problem | what we did | how it went | what\'s next), and [VOICE] <name>: <8-16 word summary>. Either (a) emit the block now, or (b) re-classify the tier -- if no summary is needed, this work was lighter than E5 and the classifier should reflect that. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   SUMMARY_MALFORMED:
-    'STOP-THE-LINE FORMAT VIOLATION: Closing summary block is present but missing required fields. Every E5 turn must include all 7 elements: === SUMMARY === banner, [ITERATION]:, [CONTENT]:, [STORY]: with all 4 bullets (problem, what we did, how it went, what\'s next), and [VOICE] <name>: <8-16 word closing line>. Re-emit the block with every field populated.',
+    'STOP-THE-LINE FORMAT VIOLATION: Closing summary block is present but missing required fields. Every E5 turn must include all 7 elements: === SUMMARY === banner, [ITERATION]:, [CONTENT]:, [STORY]: with all 4 bullets (problem, what we did, how it went, what\'s next), and [VOICE] <name>: <8-16 word closing line>. Re-emit the block with every field populated. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   LIVE_PROBE_MISSING:
-    'LIVE-PROBE VIOLATION (PAI Verification Doctrine Rule 1): An ISA you edited this turn now has [x] criteria without corresponding entries in the Verification section. Every ISC marked done MUST carry tool-probe evidence (command output, Read content, screenshot) in the same ISA\'s Verification block. Either (a) add the Verification entry now -- one row per [x] ISC with the probe evidence -- or (b) revert the [x] back to [ ] / [DEFERRED-VERIFY:<task>] until the probe runs. The audit at tools/HME/scripts/isa/audit-isa.py reports the specific unverified ISC ids.',
+    'LIVE-PROBE VIOLATION (PAI Verification Doctrine Rule 1): An ISA you edited this turn now has [x] criteria without corresponding entries in the Verification section. Every ISC marked done MUST carry tool-probe evidence (command output, Read content, screenshot) in the same ISA\'s Verification block. Either (a) add the Verification entry now -- one row per [x] ISC with the probe evidence -- or (b) revert the [x] back to [ ] / [DEFERRED-VERIFY:<task>] until the probe runs. The audit at tools/HME/scripts/isa/audit-isa.py reports the specific unverified ISC ids. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   PHASE_SKIPPED:
-    'PHASE GATE VIOLATION: Tier >= E3 (Algorithm) work made Edit/Write/MultiEdit calls this turn without declaring a BUILD or EXECUTE phase first. The 7-phase loop (OBSERVE -> THINK -> PLAN -> BUILD -> EXECUTE -> VERIFY -> LEARN) requires explicit transition markers so the design intent is articulated before code lands. Either (a) emit "=== BUILD ===" or "phase: build" in your text before the next edit, or (b) re-classify the tier -- if no PLAN ceremony is needed, this work was lighter than E3.',
+    'PHASE GATE VIOLATION: Tier >= E3 (Algorithm) work made Edit/Write/MultiEdit calls this turn without declaring a BUILD or EXECUTE phase first. The 7-phase loop (OBSERVE -> THINK -> PLAN -> BUILD -> EXECUTE -> VERIFY -> LEARN) requires explicit transition markers so the design intent is articulated before code lands. Either (a) emit "=== BUILD ===" or "phase: build" in your text before the next edit, or (b) re-classify the tier -- if no PLAN ceremony is needed, this work was lighter than E3. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   MINIMAL_FORMAT_VIOLATION:
-    'MINIMAL MODE FORMAT VIOLATION: The classifier detected a MINIMAL-mode prompt (one-line acknowledgment expected) but your response was long-form OR carried an ALGORITHM-style === SUMMARY === block. Match the mode: terse one-liner, no boilerplate. If the work was actually substantive (warranting NATIVE/ALGORITHM), ask the classifier to re-evaluate or escalate the tier explicitly.',
-  CEREMONY_DODGE:
-    'CEREMONY-DODGE VIOLATION: Your last turn was text-only and dominated by rescue-clause language ("solo was right", "Nothing missed", "Acknowledged X input", "=== SUMMARY ===" block, "(verified)" stamps, "Re-evaluating tier", etc.) following a stop-hook deny. This is the failure mode where each turn writes ceremony to satisfy the prior turn\'s detector instead of doing real work. The fix is NOT more rescue text. Either (a) actually do work this turn -- ANY tool call (Read, Edit, Bash) demonstrating substantive action defeats this gate, or (b) if there is genuinely nothing to do and the prior detector fired wrongly, the response should be silent / empty rather than a verbose dodge. Stop emitting boilerplate to satisfy regexes; do the work or stop.',
+    'MINIMAL MODE FORMAT VIOLATION: The classifier detected a MINIMAL-mode prompt (one-line acknowledgment expected) but your response was long-form OR carried an ALGORITHM-style === SUMMARY === block. Match the mode: terse one-liner, no boilerplate. If the work was actually substantive (warranting NATIVE/ALGORITHM), ask the classifier to re-evaluate or escalate the tier explicitly. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
+  PILE_ON:
+    'PILE-ON ANTIPATTERN: This turn edited 2+ detector / policy / hook files. Endless rule-stacking is itself the failure mode -- each detector firing produces another rule edit, each rule edit creates new firings, the cycle accumulates ceremony without resolving the underlying issue. STOP editing detectors. The fix for a noisy detector firing is rarely another rule; usually the right move is discretion (let the imperfect rule fire, continue the actual work). If a real detector bug exists, fix THAT specific bug and stop -- do not also tighten three neighboring detectors in the same turn. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   COMPL_ROUND_1:
-    "AUTO-COMPLETENESS INJECT (round 1/2): Before stopping, enumerate everything that might still be missing, unfinished, deferred, flagged, a possible gap, or worth doing relative to THIS TURN's work. Then do ALL of it -- no deferrals, no flagging, no punts. If truly nothing remains, state 'Nothing missed' explicitly. This is the auto-injected version of the user's usual 'what's missing? do all' follow-up.",
+    "AUTO-COMPLETENESS CHECK (round 1/2): If anything substantive is still unfinished from THIS TURN's work, finish it. If the work is actually complete, the correct response is silence -- end the turn. Do NOT write ceremony text, enumerated 'nothing missed' summaries, or rescue clauses just to satisfy this gate. Imperfect rules are OK; ceremony to dodge them is not.",
   COMPL_ROUND_2:
-    "AUTO-COMPLETENESS INJECT (round 2/2 -- safety net): Last chance to catch unfinished or skipped work before the turn ends. If you claimed 'Nothing missed' in the last response, are you SURE nothing else is worth doing? Anything you'd normally flag as 'could be followed up' or 'worth investigating separately' -- do it now. If confirmed nothing remains, say so plainly and the turn will end.",
+    "AUTO-COMPLETENESS CHECK (round 2/2 -- safety net): Last pass. If genuine substantive work remains, do it. Otherwise the correct response is silence -- end the turn. No 'Nothing missed' boilerplate required.",
 };
 
 const ENFORCEMENT_REMINDER =
@@ -86,9 +86,9 @@ function readVerdicts() {
     PHANTOM_CAPABILITY: 'ok',
     ADVISOR_DOCTRINE: 'ok',
     SUMMARY_FORMAT: 'ok',
-    CEREMONY_DODGE: 'ok',
     LIVE_PROBE: 'ok',
     PHASE_GATE: 'ok',
+    PILE_ON: 'ok',
   };
   if (!fs.existsSync(VERDICTS_FILE)) return out;
   let text = '';
@@ -265,7 +265,6 @@ module.exports = {
     // deny will fire below, so the agent gets a single coherent
     // signal per Stop event instead of (deny + boilerplate).
     const willDeny =
-      v.CEREMONY_DODGE === 'ceremony_dodge' ||
       v.STOP_WORK === 'DISMISSIVE' ||
       v.STOP_WORK === 'TEXT_ONLY_SHORT' ||
       v.EXHAUST_CHECK === 'exhaust_violation' ||
@@ -280,7 +279,8 @@ module.exports = {
       v.SUMMARY_FORMAT === 'summary_malformed' ||
       v.SUMMARY_FORMAT === 'minimal_format_violation' ||
       v.LIVE_PROBE === 'live_probe_missing' ||
-      v.PHASE_GATE === 'phase_skipped';
+      v.PHASE_GATE === 'phase_skipped' ||
+      v.PILE_ON === 'pile_on';
     if (!willDeny) {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     }
@@ -288,9 +288,7 @@ module.exports = {
     // CEREMONY_DODGE fires FIRST. The whole point is to preempt the
     // detectors whose rescue patterns the dodge is trying to satisfy --
     // if it ran later, advisor_doctrine / summary_format / scope_escape
-    // would accept the rescue-shaped text and the dodge would succeed.
-    if (v.CEREMONY_DODGE === 'ceremony_dodge') return ctx.deny(REASONS.CEREMONY_DODGE);
-    if (v.STOP_WORK === 'DISMISSIVE')      return ctx.deny(REASONS.STOP_WORK_DISMISSIVE);
+    // would accept the rescue-shaped text and the dodge would succeed.    if (v.STOP_WORK === 'DISMISSIVE')      return ctx.deny(REASONS.STOP_WORK_DISMISSIVE);
     if (v.STOP_WORK === 'TEXT_ONLY_SHORT') return ctx.deny(REASONS.STOP_WORK_TEXT_ONLY);
     if (v.EXHAUST_CHECK === 'exhaust_violation') return ctx.deny(REASONS.EXHAUST);
     if (v.SCOPE_ESCAPE === 'scope_escape_violation') return ctx.deny(REASONS.SCOPE_ESCAPE);
@@ -305,6 +303,7 @@ module.exports = {
     if (v.SUMMARY_FORMAT === 'minimal_format_violation') return ctx.deny(REASONS.MINIMAL_FORMAT_VIOLATION);
     if (v.LIVE_PROBE === 'live_probe_missing') return ctx.deny(REASONS.LIVE_PROBE_MISSING);
     if (v.PHASE_GATE === 'phase_skipped')      return ctx.deny(REASONS.PHASE_SKIPPED);
+    if (v.PILE_ON === 'pile_on')               return ctx.deny(REASONS.PILE_ON);
 
     // Auto-completeness inject -- fires up to COMPL_MAX times per user-turn.
     // PRIOR FIX REMOVED: previously this skipped when any earlier policy

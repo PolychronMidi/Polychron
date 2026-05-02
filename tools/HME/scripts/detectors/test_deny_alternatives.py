@@ -52,7 +52,6 @@ _DETECTOR_FOR_KEY = {
     "ADVISOR_SILENTLY_SKIPPED":   "advisor_doctrine",
     "SUMMARY_MISSING":            "summary_format",
     "SUMMARY_MALFORMED":          "summary_format",
-    "CEREMONY_DODGE":             "ceremony_dodge",
     "LIVE_PROBE_MISSING":         "live_probe",
     "PHASE_SKIPPED":              "phase_gate",
     "MINIMAL_FORMAT_VIOLATION":   "summary_format",
@@ -159,14 +158,6 @@ _PROBES = {
     ],
     "SUMMARY_MALFORMED": [
         ("complete-block", None),
-    ],
-    "CEREMONY_DODGE": [
-        # The detector requires a transcript with a prior hook-deny user
-        # event and a text-only assistant follow-up; that shape can't be
-        # built from this single-turn probe harness. End-to-end coverage
-        # lives in test_detector_chain.py (ceremony_dodge fixtures).
-        ("do-real-work", None),
-        ("genuinely-empty", None),
     ],
     "LIVE_PROBE_MISSING": [
         # Requires Edit tool_use on an ISA file; chain fixtures cover.

@@ -53,15 +53,18 @@ DETECTORS = [
     # PAI-import #9: stop-the-line mandatory output format. Gates at
     # tier >= E3 internally; lighter turns short-circuit to "ok".
     ("summary_format", "summary_format"),
-    # Anti-ceremony: blocks text-only responses to a prior stop-hook deny
-    # that are dominated by rescue-clause patterns instead of doing work.
-    ("ceremony_dodge", "ceremony_dodge"),
     # PAI-import #2: Live-Probe enforcement. ISA edits this turn that
     # leave [x] ISCs without Verification entries are blocked.
     ("live_probe", "live_probe"),
     # PAI-import #3: Algorithm 7-phase tracking. E3+ edits without a
     # declared BUILD/EXECUTE phase marker are blocked.
     ("phase_gate", "phase_gate"),
+    # Meta: catches the pile-on antipattern (rule-stacking on detector
+    # / policy / hook files within a single turn). Replaces the deleted
+    # ceremony_dodge -- ceremony_dodge WAS pile-on (more regex tweaking
+    # to catch text-shaped dodges); pile_on catches the meta-pattern
+    # of rule-stacking directly.
+    ("pile_on", "pile_on"),
 ]
 
 
