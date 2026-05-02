@@ -50,29 +50,43 @@ function stripSystemCacheControl(payload) {
   return stripped;
 }
 
-// Promote every cache_control breakpoint in payload.tools and payload.system
-// to ttl='1h'. Anthropic's order rule is "no ttl='1h' breakpoint may come
-// after a ttl='5m' breakpoint" across processing-order tools->system->messages.
-// Claude Code stamps the user prompt's final block with ttl='1h', so any
-// 5m (or unspecified-ttl, which defaults to 5m) marker on a tool or system
-// block before it triggers a 400. Tools and system are stable across a
-// session; promoting them to 1h is safe and eliminates the ordering
-// hazard at the source. Messages are left alone -- Claude Code owns those.
+// Enforce Anthropic's cache_control ordering rule: no ttl='1h' breakpoint
+// may come after a ttl='5m' breakpoint across processing-order
+// tools->system->messages. Walk every block in that order, find the
+// position of the LAST 1h breakpoint, and promote any 5m (or
+// unspecified-ttl, which defaults to 5m) that appears BEFORE it to 1h.
+// Promotion is the safe direction -- tools/system/early-message content
+// is stable enough to cache for an hour, and Claude Code itself stamps
+// 1h on the user prompt. Demoting 1h to 5m would shorten valid cache
+// windows; dropping a breakpoint would orphan an in-flight cache.
 function normalizeCacheControlTtls(payload) {
+  const blocks = [];
+  if (Array.isArray(payload.tools)) for (const t of payload.tools) blocks.push(t);
+  if (Array.isArray(payload.system)) for (const b of payload.system) blocks.push(b);
+  if (Array.isArray(payload.messages)) {
+    for (const m of payload.messages) {
+      if (!m) continue;
+      if (Array.isArray(m.content)) for (const b of m.content) blocks.push(b);
+    }
+  }
+  let lastOneHourIdx = -1;
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (b && b.cache_control && b.cache_control.type === 'ephemeral'
+        && b.cache_control.ttl === '1h') {
+      lastOneHourIdx = i;
+    }
+  }
+  if (lastOneHourIdx < 0) return 0;
   let changed = 0;
-  const promote = (block) => {
-    if (!block || !block.cache_control) return;
-    const cc = block.cache_control;
-    if (cc.type !== 'ephemeral') return;
-    if (cc.ttl === '1h') return;
+  for (let i = 0; i < lastOneHourIdx; i++) {
+    const b = blocks[i];
+    if (!b || !b.cache_control) continue;
+    const cc = b.cache_control;
+    if (cc.type !== 'ephemeral') continue;
+    if (cc.ttl === '1h') continue;
     cc.ttl = '1h';
     changed++;
-  };
-  if (Array.isArray(payload.tools)) {
-    for (const t of payload.tools) promote(t);
-  }
-  if (Array.isArray(payload.system)) {
-    for (const b of payload.system) promote(b);
   }
   return changed;
 }

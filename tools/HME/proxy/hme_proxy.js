@@ -601,6 +601,23 @@ function handleRequest(clientReq, clientRes) {
       const _proxyMutatedBody = isAnthropic && !_passthrough;
       if (_proxyMutatedBody && _status === 400) {
         recordUpstreamFailure(`anthropic 400 (proxy-mutated body, likely HME-induced)`);
+        // Snapshot the offending payload to a timestamped file so we can
+        // diagnose the exact cache_control / shape that tripped Anthropic
+        // without losing it to dump_system's overwrite race. One file per
+        // 400, no rotation -- failures are rare enough that disk pressure
+        // isn't a concern; operator cleans up after fixing.
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const { PROJECT_ROOT } = require('./shared');
+          const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const outFile = path.join(PROJECT_ROOT, 'tmp', `claude-400-payload-${stamp}.json`);
+          fs.mkdirSync(path.dirname(outFile), { recursive: true });
+          fs.writeFileSync(outFile, outBody);
+          console.error(`[hme-proxy] anthropic 400 -- offending payload snapshotted to ${outFile}`);
+        } catch (err) {
+          console.error(`[hme-proxy] 400 snapshot failed: ${err.message}`);
+        }
       } else {
         recordUpstreamSuccess();
       }
