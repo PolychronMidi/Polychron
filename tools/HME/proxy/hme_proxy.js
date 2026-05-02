@@ -662,7 +662,10 @@ function handleRequest(clientReq, clientRes) {
       const _dropped = _shrinkForPassthrough(payload);
       if (_dropped > 0) {
         outBody = Buffer.from(JSON.stringify(payload), 'utf8');
-        upstreamHeaders['content-length'] = String(outBody.length);
+        // upstreamHeaders is declared further down; line 815 sets
+        // content-length from outBody.length after declaration. No need
+        // to update it here -- attempting to do so would TDZ-crash since
+        // upstreamHeaders doesn't exist in this scope yet.
       }
     }
 
