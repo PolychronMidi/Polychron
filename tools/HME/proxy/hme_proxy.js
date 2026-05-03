@@ -1054,6 +1054,10 @@ function handleRequest(clientReq, clientRes) {
               fs.mkdirSync(path.dirname(outFile), { recursive: true });
               fs.writeFileSync(outFile, outBody);
               fs.writeFileSync(outFile.replace('.json', '.response'), fullBody);
+              // Headers contain the actual rate-limit telemetry that the
+              // body's "Error" message obscures. Save them next to the
+              // response body so post-mortem can read the real cap.
+              fs.writeFileSync(outFile.replace('.json', '.headers.json'), JSON.stringify(headers, null, 2));
               console.error(`[hme-proxy] payload snapshotted to ${outFile}`);
               if (!_coolingDown) {
                 const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
