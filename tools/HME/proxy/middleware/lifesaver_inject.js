@@ -101,39 +101,21 @@ module.exports = {
 
     const unreadRaw = lines.slice(lastSeen);
     if (unreadRaw.length === 0) return;
-    // Filter to agent-actionable errors only -- canaries, observation-
-    // severity entries, and self-origin tags are dropped per the same
-    // classification lifesaver.sh applies at the hook layer.
+    // Drop canaries / observation-severity / self-origin tags.
     const unread = unreadRaw.filter(_isAgentActionable);
     if (unread.length === 0) {
-      // Still advance the watermark -- the lines exist, they're just
-      // non-actionable. Without this, every subsequent request re-reads
-      // the same skipped entries hoping to find an actionable one.
+      // Advance the watermark even on all-skipped so we don't re-scan.
       try { fs.writeFileSync(wmPath, String(totalLines)); } catch (_e) { /* ignore */ }
       return;
     }
 
-    // Minimal LIFESAVER banner. Core info is the unread error list and
-    // the directive to fix them. Boilerplate ("Acknowledging is a
-    // CRITICAL VIOLATION / You MUST 1-2-3 diagnose-fix-verify") is in
-    // CLAUDE.md already -- repeating it every turn is context-tax with
-    // zero marginal value. Meta-narration about which mechanism fired
-    // (was "proxy-side injection via lifesaver_inject middleware...")
-    // removed for the same reason -- agent doesn't need delivery-channel
-    // trivia.
-    // Advance watermark BEFORE injection. Peer-review iter 119: if
-    // the watermark write throws (disk full, permission flap, tmpfs
-    // evicted), the banner injection at lines below would have
-    // completed but the watermark stayed stale -- causing every
-    // subsequent request to re-inject the exact same banner forever.
-    // Idempotent re-skip is preferable to perpetual re-spam: write
-    // first, surface failure loudly so the operator can fix the FS
-    // issue rather than silently consuming system-context tokens.
+    // Advance watermark BEFORE injecting -- a write failure here would
+    // otherwise re-inject the same banner forever.
     try {
       fs.writeFileSync(wmPath, String(totalLines));
     } catch (err) {
       console.warn(
-        `Acceptable warning: [middleware] lifesaver_inject: watermark write failed (${err.message}); skipping injection to avoid perpetual re-fire -- fix the FS issue and re-append to hme-errors.log to retrigger`
+        `Acceptable warning: [middleware] lifesaver_inject: watermark write failed (${err.message}); skipping injection to avoid perpetual re-fire`
       );
       return;
     }
@@ -142,17 +124,8 @@ module.exports = {
       'LIFESAVER -- unresolved errors in hme-errors.log, fix root-cause before proceeding:\n' +
       unread.join('\n');
 
-    // CRITICAL cache fix: append the banner to the LAST USER MESSAGE
-    // instead of payload.system. Anthropic's prompt cache hashes
-    // (system + tools) as the prefix; mutating system invalidates the
-    // entire cached prefix on every turn -- which it would, because
-    // unread error lines arrive between turns. The previous version
-    // pushed a system block here and rebilled the entire system prefix
-    // (~tens of thousands of tokens) at full rate every turn, hitting
-    // 10%-per-message and rate-limiting the user in ~10 turns.
-    //
-    // User messages do not break the system+tools cache. Cache savings
-    // are 10x or more depending on system size.
+    // Append to LAST USER MESSAGE (not payload.system) -- mutating
+    // system invalidates the prompt-cache prefix every turn.
     const lastUser = [...payload.messages].reverse().find(
       (m) => m && m.role === 'user'
     );
