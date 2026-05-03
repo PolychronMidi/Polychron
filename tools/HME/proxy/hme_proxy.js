@@ -1148,6 +1148,15 @@ function handleRequest(clientReq, clientRes) {
               fs.writeFileSync(outFile, outBody);
               fs.writeFileSync(outFile.replace('.json', '.response'), fullBody);
               fs.writeFileSync(outFile.replace('.json', '.headers.json'), JSON.stringify(headers, null, 2));
+              try {
+                const _reqHdrSnap = {
+                  method: clientReq.method,
+                  url: clientReq.url,
+                  incoming_headers: clientReq.headers,
+                  outgoing_headers: upstreamHeaders,
+                };
+                fs.writeFileSync(outFile.replace('.json', '.request-headers.json'), JSON.stringify(_reqHdrSnap, null, 2));
+              } catch (_e) { /* best-effort */ }
               console.error(`[hme-proxy] payload snapshotted to ${outFile}`);
               // Lifesaver alert is for the AGENT to act on. Skip alerts for:
               //   - sub-pipeline 404s on path=/ (probe noise, not actionable)
