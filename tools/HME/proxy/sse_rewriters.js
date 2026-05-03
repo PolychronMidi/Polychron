@@ -697,15 +697,159 @@ function hallucinatedTurnPrefixStripRewrite(eventName, data, ctx) {
   return data;
 }
 
+// Full-spectrum stop-hook ceremony detector. Catches the WHOLE class of
+// "explain why the stop-hook misfired / doesn't apply / can be dismissed"
+// responses. This is the next layer beyond _isCeremonyDodge (which only
+// catches `Solo-rationale:` and explicit "why solo was right" framings).
+//
+// User intent: when the prior user message was a stop-hook payload AND
+// the agent's response is bypass-explanation rather than substantive
+// work, REPLACE the whole text with `.` and end the turn cleanly.
+// Saves the next-turn context burn of carrying the bypass prose
+// forward in the transcript.
+//
+// Gate: only fires when ctx.priorUserWasDeny is set (i.e. the prior
+// user message contained a stop-hook payload marker). Regular user
+// prompts that happen to mention "tier" or "doctrine" mid-prose are
+// not affected.
+//
+// Conservative match window: only the FIRST 200 chars of the assembled
+// text are scanned. A long substantive response that incidentally
+// mentions one of these tokens deeper in the body is not affected.
+const _STOP_HOOK_CEREMONY_PATTERNS = [
+  // Tier reclassification dance ("Tier reclassify per the doctrine...")
+  /\btier\s+reclass\w*/i,
+  /\bre[\s-]?evaluat\w+\s+(the\s+)?tier/i,
+  /\b(?:re[\s-]?)?classify(?:ing)?\s+(?:the\s+)?(?:tier|turn|effort|work)/i,
+  // "this turn was status-report / research / read-only"
+  /\bthis\s+turn\s+(?:was|is)\s+(?:a\s+)?(?:status[\s-]?report|research|read[\s-]?only|brief|trivial|light(?:weight)?)/i,
+  // Tier name dismissals ("not E4", "not Deep", "not Comprehensive")
+  /\b(?:not\s+|isn'?t\s+)e[45]\b(?:\s+work|\s+effort|\s+tier|\s+floor)?/i,
+  /\b(?:not|isn'?t)\s+(?:deep|comprehensive)\s+(?:effort|work|tier)/i,
+  // "Per the doctrine's offered path" — bypass framing using the rule's
+  // own language as cover.
+  /\bper\s+(?:the\s+)?(?:doctrine|hook|gate|stop[\s-]?hook|advisor)['']?s?\s+(?:own\s+)?(?:offered\s+)?path/i,
+  /\b(?:the\s+)?(?:three|two)\s+offered\s+paths/i,
+  // "The hook is firing on" / "the gate misclassified"
+  /\bthe\s+(?:hook|gate|detector|doctrine|advisor|classifier|exhaust|psycho)\s+(?:is\s+)?(?:firing\s+on|misclassif|mis[\s-]?tagg|mis[\s-]?fired?|fired\s+on)/i,
+  // "doesn't apply" excuses
+  /\b(?:false[\s-]positive|floor\s+doesn'?t\s+apply|gate\s+doesn'?t\s+apply|doctrine\s+doesn'?t\s+apply|rule\s+doesn'?t\s+apply)/i,
+  /\b(?:advisor|doctrine|gate|hook|rule)\s+(?:doesn'?t|does\s+not)\s+apply/i,
+  // Solo-rationale shapes (also caught by _isCeremonyDodge but include
+  // here so this rewriter is a complete superset that can run alone).
+  /^\s*solo[\s-](?:rationale|justification)\s*[:.]/i,
+  /^\s*why\s+solo\s+(?:was|is)\s+(?:right|correct|the\s+(?:right|correct))/i,
+  /^\s*solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)/i,
+  // "The rule fired but..." / "the gate misfired"
+  /\b(?:the\s+)?(?:rule|hook|gate|detector|doctrine)\s+(?:fired|misfired)\s+but/i,
+  // "Acknowledged" as standalone ceremonial opener (not real new-info ack)
+  /^\s*acknowledg(?:e|ed|ing)[\s.,:]+(?:the\s+)?(?:hook|gate|doctrine|stop|rule|warning|flag)/i,
+];
+
+function _isStopHookCeremony(text) {
+  if (typeof text !== 'string' || !text) return false;
+  // Scan only the first 200 chars to keep this conservative -- long
+  // substantive responses that incidentally use one of these tokens
+  // deep in the body are not affected.
+  const lead = text.slice(0, 200);
+  return _STOP_HOOK_CEREMONY_PATTERNS.some((p) => p.test(lead));
+}
+
+// Always-active when ctx.priorUserWasDeny is set (i.e. prior user
+// message was a stop-hook payload). Buffers text content_blocks; on
+// stop, if the assembled text matches the ceremony shape, replaces
+// the entire block content with a single `.` delta AND sets a
+// truncated flag so all subsequent content events from upstream are
+// dropped (the upstream stream still completes via message_delta /
+// message_stop, but no further client-visible content is emitted).
+//
+// This is the user's "simulate stop button" semantic at the SSE
+// layer -- the model continues generating but the proxy stops
+// forwarding text after the first ceremony-shape block.
+function stopHookCeremonyStripRewrite(eventName, data, ctx) {
+  if (!ctx.get('priorUserWasDeny')) return data;
+
+  // Drop all subsequent content-level events once we've truncated.
+  // Pass through message-level events so the stream completes.
+  if (ctx.get('stop_hook_truncated')) {
+    if (eventName === 'content_block_start'
+        || eventName === 'content_block_delta'
+        || eventName === 'content_block_stop') {
+      return null;
+    }
+    return data;
+  }
+
+  const key = 'stop_hook_ceremony_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { startData: data, deltas: [] });
+    return null;
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    state.deltas.push(data);
+    return null;
+  }
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    let assembled = '';
+    for (const d of state.deltas) {
+      if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
+    }
+    if (_isStopHookCeremony(assembled)) {
+      ctx.set('stop_hook_truncated', true);
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-stop-hook-ceremony-strips.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            text_preview: assembled.slice(0, 300),
+            assembled_len: assembled.length,
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      const events = [
+        ['content_block_start', state.startData],
+        ['content_block_delta', {
+          type: 'content_block_delta',
+          index: data.index,
+          delta: { type: 'text_delta', text: '.' },
+        }],
+        ['content_block_stop', data],
+      ];
+      return { events };
+    }
+    // Not ceremony -- replay held events through.
+    const events = [['content_block_start', state.startData]];
+    for (const d of state.deltas) {
+      events.push(['content_block_delta', d]);
+    }
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+  return data;
+}
+
 module.exports = {
   runInBackgroundRewrite,
   longLeadingSleepRewrite,
   ackStripRewrite,
   slopStripRewrite,
   hallucinatedTurnPrefixStripRewrite,
-  _isBareAck,             // exported for tests
-  _isHallucinatedTurnPrefix, // exported for tests
-  _isCeremonyDodge,       // exported for tests
-  _rewriteLongLeadingSleep, // exported for tests
-  _stripSlop,             // exported for tests
+  stopHookCeremonyStripRewrite,
+  _isBareAck,                  // exported for tests
+  _isHallucinatedTurnPrefix,   // exported for tests
+  _isCeremonyDodge,            // exported for tests
+  _isStopHookCeremony,         // exported for tests
+  _rewriteLongLeadingSleep,    // exported for tests
+  _stripSlop,                  // exported for tests
 };
