@@ -525,12 +525,8 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             return f"Error: #{todo_id} not found."
 
         if action == "archive_now":
-            # Force-archive: bypass _detect_complete_set() trigger. Archives
-            # the current SPEC + TODO state to KB devlog regardless of phase
-            # completion. For "this leftover should be archived as-is" cases
-            # where the auto-trigger doesn't fit (no completed phases to
-            # mark, or initiative-leftover sections to clean up).
-            archive_result = _archive_set(set_name=text)
+            # Force-archive: bypass _detect_complete_set() trigger.
+            archive_result = _archive_set(set_name=text, force=True)
             if archive_result["ok"]:
                 return (f"[ARCHIVE-NOW] Set archived to KB devlog:\n  {archive_result['devlog_path']}\n"
                         f"doc/templates/SPEC.md and doc/templates/TODO.md reset to fresh slate.")
