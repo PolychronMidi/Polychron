@@ -22,6 +22,50 @@ const path = require('path');
 const ERR_LOG = 'log/hme-errors.log';
 const WATERMARK = 'tmp/hme-errors.lastread-proxy';
 
+// Mirrors lifesaver.sh classification (hooks/lifecycle/stop/lifesaver.sh):
+// CANARY lines are alert-chain self-tests, observation-severity lines are
+// observability not action items, and self-origin tags are operator/
+// supervisor concerns the agent has no causal path to fix. Without this
+// filter, every CANARY tick (every few minutes) and every WARN/INFO line
+// gets re-injected verbatim as "fix root-cause before proceeding" -- the
+// classic coherence-noise spam.
+const CANARY_RE = /\[CANARY-/;
+const OBSERVATION_RE = /\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/;
+const SELF_TAG_RE = /^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^\]]+)\]/;
+
+function _isAgentActionable(line) {
+  // Strip the leading "[2026-... ] " timestamp before classifying so the
+  // tag-anchored regex matches at line start.
+  const body = line.replace(/^\[[0-9TZ:.\-]+\]\s*/, '');
+  if (CANARY_RE.test(body)) return false;
+  if (SELF_TAG_RE.test(body)) return false;
+  if (OBSERVATION_RE.test(body)) return false;
+  return true;
+}
+
+// Mirrors helpers/safety/latency.sh rotation policy: when the log exceeds
+// MAX_LINES, keep the last KEEP_LINES. errors.log had no rotation before;
+// it grew unbounded and slowed every tail/scan call.
+const MAX_LINES = 10_000;
+const KEEP_LINES = 5_000;
+
+function _rotateIfNeeded(errLogPath, wmPath, totalLines, lines) {
+  if (totalLines <= MAX_LINES) return { lines, totalLines, lastSeenAdjust: 0 };
+  const dropped = totalLines - KEEP_LINES;
+  const kept = lines.slice(-KEEP_LINES);
+  try {
+    fs.writeFileSync(errLogPath, kept.join('\n') + '\n');
+    // Bump watermark down by the same delta so we don't re-inject the
+    // entire post-rotation file on the next request.
+    const wmAdjust = -dropped;
+    return { lines: kept, totalLines: KEEP_LINES, lastSeenAdjust: wmAdjust };
+  } catch (_e) {
+    // Rotation is best-effort; if it fails we leave the file alone and
+    // proceed with the unrotated view rather than blocking the inject.
+    return { lines, totalLines, lastSeenAdjust: 0 };
+  }
+}
+
 module.exports = {
   name: 'lifesaver_inject',
 
