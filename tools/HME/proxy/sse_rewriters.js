@@ -313,43 +313,97 @@ function ackStripRewrite(eventName, data, ctx) {
   return data;
 }
 
-// Anti-slop strip. 8 of the 29 patterns from
-// recursive-drift/templates/voice/anti-slop.md, scoped to engineering-
-// agent text (skipping content-publishing-shaped ones like empathy
-// openers, narrative pivots, parenthetical-aside relatability, etc.).
+// Anti-slop strip. 19 of the 29 patterns from
+// recursive-drift/templates/voice/anti-slop.md are implemented below.
+// The remaining 10 are out of regex scope (see _UNIMPLEMENTED_SLOP at
+// the bottom of this block for the list and reasons).
 //
 // Each entry is {re, repl, name}: `re` matches the slop phrase
 // (case-insensitive, multi-line aware), `repl` is the substitute
-// (usually empty -- delete the phrase). `name` is the pattern label
-// for the stat log.
+// (usually `$1` -- preserve the leading sentence boundary, delete the
+// rest). `name` is the pattern label for the stat log.
 //
 // Capitalize-after rule: if the regex deletes a sentence prefix and
 // leaves the next word lowercase, the post-pass _capFix promotes the
 // first letter. Without this, "Let me be clear, the value is X" -> ", the
-// value is X" -> ", The value is X" via the cap fix. (Less mangled than
-// leaving "the" mid-sentence after the leading comma.)
+// value is X" -> ", The value is X" via the cap fix.
 const _SLOP_PATTERNS = [
-  // #1 Narrator setup. "Here's the thing..." / "Here's where..."
-  // The "about <topic>" clause is intentionally NOT captured -- a topic
-  // like "caching: ..." would let `[^,.]+` swallow past the colon and
-  // eat the actual content. The slop is the lead-in phrase itself; the
-  // sentence's substantive content stays put.
+  // #1 Narrator setup.
   { name: 'narrator_setup',
     re: /(^|[\.\!\?]\s+|\n\s*)(?:Here'?s the thing[,:]?|Here'?s where it gets interesting[,:]?|Here'?s where the real [a-zA-Z]+ lives[,:]?)\s*/gi,
+    repl: '$1' },
+  // #2 Dramatic rhetorical framing.
+  { name: 'dramatic_framing',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:The part that (?:actually|really) matters\?|But here'?s the part where[^.]*\.|And that'?s when (?:it clicked|everything (?:changed|clicked))\.?|Want to (?:know|hear) the (?:crazy|wild|interesting) part\??)\s*/gi,
     repl: '$1' },
   // #7 Authority signaling.
   { name: 'authority_signal',
     re: /(^|[\.\!\?]\s+|\n\s*)(?:Let me be clear[,:]?|The uncomfortable truth is(?: that)?[,:]?|Here'?s what nobody tells you[,:]?|The hard truth is(?: that)?[,:]?|Here'?s the reality[,:]?|What most people miss is(?: that)?[,:]?)\s*/gi,
     repl: '$1' },
-  // #12 Wisdom packaging. Strip the lead-in; leave the actual point.
+  // #8 False dichotomy lead-in. "It's not about X, it's about Y" /
+  // "Stop doing X. Start doing Y." -- catch the rhetorical scaffold.
+  { name: 'false_dichotomy',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:It'?s not (?:about|that) [^,.]+,\s*it'?s (?:about|that)\s+|Stop (?:doing|thinking|trying)[^.]*\.\s*Start\s+)/gi,
+    repl: '$1' },
+  // #9 Self-branded concepts. "This is what I call the X" / "I have a
+  // framework called X" -- naming a pattern before showing it works.
+  { name: 'self_branded_concept',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:This is what I call (?:the|a)?\s*|I (?:have|use|developed) a (?:framework|model|system|method) (?:called|named)\s+)/gi,
+    repl: '$1' },
+  // #10 Artificial drama sentences. Short paired contrasts.
+  { name: 'artificial_drama',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:The shift sounds simple\.\s*It'?s not\.|Easy to say\.\s*Hard to (?:execute|do)\.|Sounds (?:obvious|simple)\.\s*It'?s not\.|Simple in theory\.\s*Hard in practice\.)\s*/gi,
+    repl: '$1' },
+  // #11 Empathy openers. Even in tool output these sometimes appear
+  // (e.g. an agent prefacing a fix with "We've all been there").
+  { name: 'empathy_opener',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:We'?ve all been there\.?|You know (?:that|the) feeling when[^.?]*[.?]|Sound familiar\??)\s*/gi,
+    repl: '$1' },
+  // #12 Wisdom packaging.
   { name: 'wisdom_packaging',
     re: /(^|[\.\!\?]\s+|\n\s*)(?:The lesson\??[:.]?|The takeaway(?:\s+here)?\s+is(?:\s+simple)?[:.]?|What this really means is(?: that)?[,:]?)\s*/gi,
     repl: '$1' },
-  // #21 Humble-brag disclaimer. "Not claiming to be an expert, but..."
+  // #13 Em-dash crutch. Replace bracketing em-dashes / `--` with
+  // commas when used as parenthetical bridges between word characters.
+  // Skips structural use (start-of-line lists, code).
+  { name: 'em_dash_crutch',
+    re: /(\w)\s+(?:—|--)\s+(\w)/g,
+    repl: '$1, $2' },
+  // #17 Colon-list trio.
+  { name: 'colon_list_trio',
+    re: /(?:^|\n)(?:\s*The (?:result|impact|lesson|takeaway|point|outcome|effect)[:.]\s*[^.\n]+\.\s*){3,}/gi,
+    repl: '\n' },
+  // #19 The perfect pivot. "But then I realized...", "That's when
+  // everything changed."
+  { name: 'perfect_pivot',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:But then I realized(?:\s+that)?[,:]?|That'?s when everything changed\.?|That'?s when it (?:hit|clicked) me\.?|And then it hit me[,:]?)\s*/gi,
+    repl: '$1' },
+  // #20 Engagement-bait endings.
+  { name: 'engagement_bait',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:So here'?s my question for you[:.]?[^.]*\.?|Curious to hear your thoughts\.?|What do you think\?|Let me know (?:what you think|your thoughts)[\.\?]?|Drop (?:a comment|your thoughts) below\.?)\s*$/gim,
+    repl: '$1' },
+  // #21 Humble-brag disclaimer.
   { name: 'humble_brag',
     re: /(^|[\.\!\?]\s+|\n\s*)(?:I don'?t have all the answers,? but|Not claiming to be (?:an? )?expert,? but|Just my (?:two cents|2c|opinion),? but)\s+/gi,
     repl: '$1' },
-  // #27 Qualifying hedge. "It's worth noting that..." / "Interestingly enough..."
+  // #23 "Most people" strawman. "Most people think X." / "Everyone
+  // focuses on X. Nobody talks about Y."
+  { name: 'most_people_strawman',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:Most people (?:think|believe|assume)[^.]*\.\s*They'?re wrong\.?|Everyone focuses on [^.]*\.\s*Nobody (?:talks about|mentions|sees)\s+|Most people (?:miss this|don'?t see this)[,:]?)\s*/gi,
+    repl: '$1' },
+  // #25 The reframe play. "X isn't [obvious]. It's [slight tweak]."
+  // Pure rhetorical flourish; the slight tweak is rarely action-changing.
+  { name: 'reframe_play',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:It'?s not (?:really )?(?:about|a question of) [^,.]+\.\s*It'?s (?:about|a question of)\s+)/gi,
+    repl: '$1' },
+  // #26 Adverb overload. Delete intensifying adverbs that add weight to
+  // sentences that should stand on their own. Word-boundary anchored
+  // and only when followed by a space (so "actuallySomething" in code
+  // identifiers stays put). Conservative -- only the worst offenders.
+  { name: 'adverb_overload',
+    re: /\b(?:Truly|truly|Actually|actually|Fundamentally|fundamentally|Essentially|essentially|Ultimately|ultimately|Literally|literally)(?=\s+[a-zA-Z])\s+/g,
+    repl: '' },
+  // #27 Qualifying hedge.
   { name: 'qualifying_hedge',
     re: /(^|[\.\!\?]\s+|\n\s*)(?:It'?s worth noting that|Interestingly(?: enough)?[,:]?|What'?s (?:fascinating|interesting) is(?: that)?[,:]?|It'?s important to note that|Notably[,:]?)\s*/gi,
     repl: '$1' },
@@ -357,20 +411,30 @@ const _SLOP_PATTERNS = [
   { name: 'smooth_transition',
     re: /(^|[\.\!\?]\s+|\n\s*)(?:Speaking of which[,:]?|This brings us to[^.]*\.|Building on (?:this|that)(?:\s+idea)?[,:]?|With that (?:in mind|said)[,:]?)\s*/gi,
     repl: '$1' },
-  // #17 Colon-listed everything (sequence of "X: Y. Z: W." short snaps).
-  // Tactical: only catch the "The result: ..., The impact: ..., The
-  // lesson: ..." trio shape. Single colon-statements are legitimate
-  // and left alone.
-  { name: 'colon_list_trio',
-    re: /(?:^|\n)(?:\s*The (?:result|impact|lesson|takeaway|point|outcome|effect)[:.]\s*[^.\n]+\.\s*){3,}/gi,
-    repl: '\n' },
-  // #13 Em-dash crutch. Replace bracketing em-dashes / `--` with commas
-  // when used as parenthetical bridges. Keeps em-dashes that look
-  // structural (start-of-line lists, code). NOTE: imperfect heuristic.
-  { name: 'em_dash_crutch',
-    re: /(\w)\s+(?:—|--)\s+(\w)/g,
-    repl: '$1, $2' },
+  // #29 Parenthetical asides for relatability. "(yes, really)",
+  // "(trust me on this)", "(I learned this the hard way)"
+  { name: 'relatability_aside',
+    re: /\s*\((?:yes,?\s*really|trust me(?:\s*on this)?|I learned this the hard way|no really|seriously|believe it or not)\)/gi,
+    repl: '' },
 ];
+
+// Patterns NOT implemented and why. Recorded inline so future passes
+// don't waste time re-deciding. None of these are reachable with a
+// single-pass regex on a single content_block:
+//   #3  Three parallel dramatic sentences -- shape-of-text, not phrase.
+//                                            Needs sentence parsing + AST-style detection.
+//   #4  Bookend summary               -- cross-section (intro vs conclusion).
+//   #5  Perfect section symmetry      -- structural; needs whole-doc layout analysis.
+//   #6  Ascending list                -- structural; needs list-shape analysis.
+//   #14 Overcomplicated tech detail   -- judgment; depends on audience model.
+//   #15 Excessive bold                -- structural count; risky to auto-strip
+//                                        (would damage legitimate emphasis).
+//   #16 Quotation marks for emphasis  -- can't distinguish from real quotes.
+//   #18 Obvious insight dressed up    -- judgment; needs world model.
+//   #22 Metaphor stacking             -- semantic; needs cross-sentence analysis.
+//   #24 Numbered wisdom lists         -- structural; would damage legitimate
+//                                        numbered lists.
+const _UNIMPLEMENTED_SLOP = ['#3', '#4', '#5', '#6', '#14', '#15', '#16', '#18', '#22', '#24'];
 
 function _capFix(s) {
   // After deletions, sentences may start with lowercase. Promote the
