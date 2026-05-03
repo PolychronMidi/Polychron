@@ -207,8 +207,27 @@ function buildStatusContext() {
   return _statusSnapshot;
 }
 
+// Emit-once dedup. The 4-min snapshot cache prevents recomputation, not
+// re-emission -- without this, a stale "last verdict" or single-event
+// proxy_emergency reinjects every turn for as long as it survives the
+// recency cutoff above. Returns the snapshot only when it differs from
+// the last value consumed for this session.
+const _lastEmittedBySession = new Map();
+const _LAST_EMITTED_CAP = 64;
+
+function consumeStatusContext(session) {
+  const snapshot = buildStatusContext();
+  if (snapshot === null) return null;
+  const key = session || '_default';
+  if (_lastEmittedBySession.get(key) === snapshot) return null;
+  if (_lastEmittedBySession.size >= _LAST_EMITTED_CAP) _lastEmittedBySession.clear();
+  _lastEmittedBySession.set(key, snapshot);
+  return snapshot;
+}
+
 module.exports = {
   buildStatusContext,
+  consumeStatusContext,
   coherenceStatusLine,
   recentLifesaverErrors,
   recentActivity,
