@@ -138,7 +138,6 @@ if _port_healthy "${PROXY_URL}/health"; then
   echo "[proxy-restart] ERROR: proxy port :${PROXY_PORT} still healthy after kill -- aborting" >&2
   exit 1
 fi
-echo "[proxy-restart] proxy bundle stopped after ${_waited}s" >&2
 
 # 4. Reset the emergency-valve trip flag. Same semantics as
 # polychron-shutdown.sh: deliberate restart resets, watchdog respawns
