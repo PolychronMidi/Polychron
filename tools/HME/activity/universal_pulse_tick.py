@@ -210,7 +210,7 @@ def _tick(cfg, tracker):
             durs_sorted = sorted(durs)
             p95_idx = min(len(durs_sorted) - 1, int(len(durs_sorted) * 0.95))
             p95_ms = durs_sorted[p95_idx]
-            max_p95 = float(thresholds.get(hook_name, default_max_p95))
+            max_p95 = _resolve_threshold(hook_name, thresholds, default_max_p95)
             key = f"hook_lat:{name}:{hook_name}"
             healthy = p95_ms <= max_p95
             alert = tracker.record(key, healthy, now)
