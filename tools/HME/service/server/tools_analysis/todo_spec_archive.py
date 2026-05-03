@@ -37,8 +37,8 @@ from server.tools_analysis.todo import (
 # doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
 
 
-_SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "SPEC.md")
-_TODOMD_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "TODO.md")
+_SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "templates", "SPEC.md")
+_TODOMD_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "templates", "TODO.md")
 # Archive lives under KB as the "devlog" arm -- searchable through the
 # same substrate as other knowledge entries, decoupled from the active
 # doc/ directory so completed work doesn't tax agents reading the spec.
