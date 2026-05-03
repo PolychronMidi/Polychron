@@ -481,7 +481,7 @@ function handleRequest(clientReq, clientRes) {
   if (clientReq.url === '/health') {
     clientRes.writeHead(200, { 'Content-Type': 'application/json' });
     clientRes.end(JSON.stringify({
-      status: 'ok', port: PORT, version: PROXY_VERSION, supervisor: supervisorStatus(),
+      status: 'ok', port: PORT, version: PROXY_VERSION, git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, supervisor: supervisorStatus(),
     }));
     return;
   }
