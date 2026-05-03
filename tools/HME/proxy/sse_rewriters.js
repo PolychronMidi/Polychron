@@ -433,16 +433,14 @@ const _SLOP_PATTERNS = [
     re: /(?:^|\n)(?:\s*\d+\.\s+[A-Z][^.\n]{5,75}\.\s*\n){3,}/gm,
     repl: '\n' },
   // #3 Three parallel dramatic sentences. 3+ consecutive short
-  // sentences (<=10 words each) that share an identical opening
-  // pronoun/verb. The catalog example: "You can't see it. You can't
-  // copy-paste it away. You have to know it exists." Heuristic
-  // collapses the run to its first sentence.
+  // sentences (<=50 chars body each) that share an identical opening
+  // pronoun. Catalog example: "You can't see it. You can't copy-paste
+  // it away. You have to know it exists." -- collapse to the first
+  // sentence. Backref `\1` captures just the opening token, NOT the
+  // whole sentence, so the match anchors on shared opener.
   { name: 'parallel_dramatic',
-    re: /(\b(?:You|I|We|It|This|That)(?:'?\w+)?\b[^.!?\n]{1,40}[.!?])(?:\s+\1[^.!?\n]{1,40}[.!?]){2,}/g,
-    // Tighter version using a backref-like opening token group:
-    // captures the opening word, requires it to repeat in the next
-    // 2+ sentences. Strip the repeats, keep the first.
-    repl: '$1' },
+    re: /(\b(?:You|I|We|It|This|That|They)\b)([^.!?\n]{1,50}[.!?])\s+\1[^.!?\n]{1,50}[.!?]\s+\1[^.!?\n]{1,50}[.!?]/g,
+    repl: '$1$2' },
   // #15 Excessive bold. When a single text block has > 1 bold token
   // per ~25 words, AI is highlighter-spamming. We can't selectively
   // demote without judgment, so we only fire when the density is
