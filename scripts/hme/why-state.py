@@ -5,7 +5,7 @@ advanced HME into it.
 Reads:
 - tmp/hme-onboarding.state (current state)
 - output/metrics/hme-activity.jsonl (events that drove transitions)
-- doc/HME_ONBOARDING_FLOW.md (state-machine reference, optional)
+- doc/AGENT_PRIMER.md (state-machine reference, optional)
 
 Output: current state, what tool calls advance it, what would graduate.
 """
