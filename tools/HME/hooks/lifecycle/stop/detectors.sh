@@ -27,6 +27,7 @@ PHASE_GATE=ok
 PILE_ON=ok
 CLAIM_WITHOUT_EVIDENCE=ok
 FIX_WITHOUT_INVESTIGATION=ok
+COMMENT_BLOAT=ok
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # run_all.py prints one `name=verdict` line per detector. Parse into bash vars.
   # If run_all crashes we fall back to defaults above (equivalent to old
