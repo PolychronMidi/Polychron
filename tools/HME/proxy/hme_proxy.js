@@ -1029,6 +1029,18 @@ function handleRequest(clientReq, clientRes) {
       headers: upstreamHeaders,
     };
 
+    // Opus gate: serialize concurrent Opus requests + enforce a minimum
+    // inter-request gap so we don't burst-exhaust the OAuth-path OTPM
+    // bucket. Held for the lifetime of the upstream request (released
+    // in upstreamRes 'end' / 'error' / upstreamReq 'error').
+    const _isOpusReq = isAnthropic && _isInteractivePath
+      && payload && typeof payload.model === 'string'
+      && /opus/i.test(payload.model);
+    let _releaseOpusSlot = () => {};
+    if (_isOpusReq) {
+      _releaseOpusSlot = await _acquireOpusSlot();
+    }
+
     const transport = upstream.tls ? https : http;
     const upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
       // Initial-response success/failure determination is DEFERRED until
