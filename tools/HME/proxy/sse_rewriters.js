@@ -221,22 +221,35 @@ function _isMinimalAck(text) {
   return false;
 }
 
+// Hallucinated turn-prefix detection. ANY assistant text block that
+// starts with `Human:` or `Assistant:` (case-sensitive on the H/A,
+// followed by colon) is the model fabricating a fresh turn boundary
+// inside its own response -- never legitimate. The previous version
+// only matched when the prefix was followed by `<system-reminder>` or
+// known stop-hook payload tokens; free-form fake user turns ("Human:
+// i am a sample user...") slipped past. Now: any prefix shape, with
+// or without trailing content, fires.
+function _isHallucinatedTurnPrefix(text) {
+  if (typeof text !== 'string') return false;
+  // Pure prefix tokens: "Human:", "Assistant:", or repeated.
+  if (/^\s*(?:(?:Human|Assistant)\s*:\s*){1,}\s*$/.test(text)) return true;
+  // Prefix followed by ANYTHING (free-form fabricated turn, system-
+  // reminder echo, stop-hook payload echo, anything else). Anchored
+  // at start so we only catch the FAKE-TURN-START shape, not mid-text
+  // mentions of "Human:" in legitimate prose.
+  if (/^\s*(?:Human|Assistant)\s*:\s+\S/.test(text)) return true;
+  return false;
+}
+
 function _isBareAck(text) {
   if (typeof text !== 'string') return false;
   if (_ACK_PATTERNS.some((pat) => pat.test(text))) return true;
   if (_isMinimalAck(text)) return true;
-  // Hallucinated turn-prefix output: text consisting entirely of one or
-  // more `Human:` / `Assistant:` tokens (with optional newlines/spaces
-  // between, possibly followed by trailing whitespace).
-  if (/^\s*(?:(?:Human|Assistant)\s*:\s*){1,}\s*$/.test(text)) return true;
-  // Hallucinated turn-prefix FOLLOWED BY content the model regurgitated
-  // from its own system context (e.g. `Human: <system-reminder>`). This
-  // is the gate-dodge variant where the model fabricates an entire fake
-  // user turn including an inner system-reminder tag. The user has called
-  // this out repeatedly; treat it as ack-class spam and strip.
-  if (/^\s*(?:Human|Assistant)\s*:\s*<\s*system-reminder/.test(text)) return true;
-  // Same shape but with stop-hook payload echo instead of system-reminder.
-  if (/^\s*(?:Human|Assistant)\s*:\s*(?:Stop hook|AUTO-COMPLETENESS|PreToolUse|PostToolUse|EXHAUST PROTOCOL|PSYCHOPATHIC-STOP|ADVISOR DOCTRINE|STOP-WORK)/.test(text)) return true;
+  // Turn-prefix hallucinations are also bare-ack class for the
+  // ackStripRewrite path. A separate always-on rewriter
+  // (hallucinatedTurnPrefixStripRewrite below) catches them
+  // regardless of priorUserWasDeny gate.
+  if (_isHallucinatedTurnPrefix(text)) return true;
   return false;
 }
 
