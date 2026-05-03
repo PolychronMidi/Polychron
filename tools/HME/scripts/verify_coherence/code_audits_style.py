@@ -313,3 +313,48 @@ class RepeatedCharSpamVerifier(Verifier):
         )
 
 
+class CommentBloatVerifier(Verifier):
+    """Comment-block length discipline. CLAUDE.md: "Inline comments
+    single-line and terse. Elaboration goes in doc/." 3+ consecutive
+    comment lines = WARN; 5+ = FAIL.
+
+    Delegates to scripts/audit-comment-bloat.py. Advisory weight (1.0):
+    backlog at audit-creation time was 800+ FAIL across the codebase;
+    monotonic improvement is the goal, not zero. Score is logarithmic:
+    every halving of FAIL count adds substantial score.
+
+    New comment blocks MUST comply. Existing backlog decays naturally as
+    files get touched and bloated comments get trimmed. Annotations
+    (`# rationale:`, `# silent-ok:`, `# noqa`, `// eslint-`) are exempt.
+    """
+    name = "comment-bloat"
+    category = "code"
+    subtag = "regression-prevention"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_PROJECT, "scripts", "audit-comment-bloat.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "audit script not found", [script])
+        rc, out, err = _run_subprocess([script, "--json"])
+        try:
+            payload = json.loads(out)
+        except Exception:
+            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+        fail_count = len(payload.get("fail", []))
+        warn_count = len(payload.get("warn", []))
+        if fail_count == 0:
+            return _result(PASS, 1.0, f"no comment-bloat FAILs ({warn_count} WARNs)")
+        # Logarithmic scaling: 800 = 0.0, 400 = 0.15, 100 = 0.55, 50 = 0.7,
+        # 10 = 0.9, 0 = 1.0. Goal is monotonic improvement, not zero.
+        import math
+        score = max(0.0, 1.0 - math.log10(max(1, fail_count)) / math.log10(800))
+        top = sorted(payload.get("fail", []), key=lambda x: -x.get("block_len", 0))[:10]
+        detail = [f"{e['block_len']:>3}L  {e['path']}:{e['line']}" for e in top]
+        return _result(
+            FAIL, score,
+            f"{fail_count} comment block(s) >=5 lines, {warn_count} >=3 lines",
+            detail,
+        )
+
+
