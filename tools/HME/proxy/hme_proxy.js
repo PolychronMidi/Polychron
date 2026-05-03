@@ -316,6 +316,48 @@ function _effectiveCompactThreshold() {
   const eff = Math.min(panicCap, limitCap, remainingCap);
   return Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, Math.min(_PASSTHROUGH_COMPACT_BYTES, eff));
 }
+// Opus serializer.
+//
+// Empirically: OAuth Bearer + claude-opus-* on this account has a small
+// OTPM (output-tokens-per-minute) bucket. Concurrent Opus requests (tool
+// fan-out, /loop, multiple subagents) instantly exhaust it -- each one
+// reserves max_tokens against the bucket at request time -- and Anthropic
+// 429s every Opus request until the rolling window refills (~60s).
+//
+// Gate: at most ONE Opus request in flight at a time, with a minimum gap
+// of OPUS_MIN_GAP_MS between the END of one Opus request and the START
+// of the next. Sized for ~12k tokens/req and a ~32k OTPM cap (default
+// 6s → 10 req/min → 120k tokens/min worst-case which leaves headroom).
+//
+// Tunable:
+//   HME_PROXY_OPUS_MIN_GAP_MS = ms (default 6000). Set 0 to disable the
+//   gap (still serializes, just no extra delay).
+//   HME_PROXY_OPUS_GATE_OFF=1 to bypass the gate entirely.
+let _opusInflight = Promise.resolve();
+let _lastOpusFinishedAt = 0;
+const OPUS_MIN_GAP_MS = parseInt(process.env.HME_PROXY_OPUS_MIN_GAP_MS || '6000', 10);
+const OPUS_GATE_OFF = process.env.HME_PROXY_OPUS_GATE_OFF === '1';
+async function _acquireOpusSlot() {
+  if (OPUS_GATE_OFF) return () => {};
+  const prev = _opusInflight;
+  let release;
+  _opusInflight = new Promise((r) => { release = r; });
+  try { await prev; } catch (_) { /* prior failure shouldn't block successor */ }
+  const sinceLast = Date.now() - _lastOpusFinishedAt;
+  if (_lastOpusFinishedAt > 0 && sinceLast < OPUS_MIN_GAP_MS) {
+    const delay = OPUS_MIN_GAP_MS - sinceLast;
+    console.error(`[hme-proxy] Opus-gate: queuing ${delay}ms (rolling-window protection)`);
+    await new Promise((r) => setTimeout(r, delay));
+  }
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    _lastOpusFinishedAt = Date.now();
+    release();
+  };
+}
+
 function _shrinkForPassthrough(payload) {
   if (process.env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
   if (!payload || !Array.isArray(payload.messages)) return 0;
