@@ -1068,6 +1068,7 @@ function handleRequest(clientReq, clientRes) {
       const chunks = [];
       upstreamRes.on('data', (c) => chunks.push(c));
       upstreamRes.on('end', async () => {
+        try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
         let fullBody = Buffer.concat(chunks);
         let status = upstreamRes.statusCode || 502;
         let headers = { ...upstreamRes.headers };
