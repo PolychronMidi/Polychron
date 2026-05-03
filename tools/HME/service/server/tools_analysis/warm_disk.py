@@ -124,6 +124,18 @@ def _load_warm_cache(model: str) -> bool:
         _warm_ctx_kb_ver[model] = cached_kb_ver
         _warm_ctx_ts[model] = cached_ts
         age_s = _time.time() - cached_ts
+        # Touch mtime on successful load so warm-context-freshness verifier
+        # sees the cache as actively-validated. The cache CONTENT is
+        # unchanged across loads (KV state is a snapshot, not rewritten),
+        # but a successful load IS evidence the cache is still valid for
+        # the current KB version. Without this, mtime stays at original
+        # save time forever and the verifier escalates from WARN to FAIL
+        # the moment 24h pass even though the cache is fine.
+        try:
+            _now = _time.time()
+            os.utime(cache_file, (_now, _now))
+        except OSError:
+            pass  # best-effort; cosmetic for the verifier's mtime check
         logger.info(f"warm cache RESTORED: {model} ({len(cached_ctx)} tokens, {age_s:.0f}s old)")
         return True
     except Exception as e:
