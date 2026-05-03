@@ -31,6 +31,11 @@
  * stays stable across turns.
  */
 
+const fs = require('fs');
+const path = require('path');
+const { PROJECT_ROOT } = require('../shared');
+const FP_GATE_ARMED_FLAG = path.join(PROJECT_ROOT, 'tmp', 'hme-fp-gate-armed.flag');
+
 const STOP_HOOK_MARKERS = [
   'Stop hook feedback:',
   'Stop hook blocking error from command:',
