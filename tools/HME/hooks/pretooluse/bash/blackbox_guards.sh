@@ -2,7 +2,12 @@
 # in tools/HME/policies/builtin/ guards itself with `_policy_enabled` so
 # `i/policies disable <name>` works uniformly across both layers (the
 # disable-doesn't-fully-disable wart documented in policies/README.md).
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../helpers/_policy_enabled.sh" 2>/dev/null || true
+# Use $PROJECT_ROOT (set by _safety.sh, which the parent pretooluse_bash.sh
+# sources before this file). The previous BASH_SOURCE-relative `../../`
+# ascent resolved into Claude Code's plugin cache when hooks were invoked
+# from there -- a silent disable. The audit-shell-hooks R1 rule catches
+# this specific cache-trap pattern.
+source "${PROJECT_ROOT}/tools/HME/hooks/helpers/_policy_enabled.sh" 2>/dev/null || true
 
 # Block mkdir of misplaced log/, metrics/, or tmp/ directories.
 # JS counterparts: block-mkdir-misplaced-log-tmp + block-mkdir-misplaced-metrics.
