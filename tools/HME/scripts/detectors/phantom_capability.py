@@ -106,9 +106,35 @@ def main() -> int:
 
     if not declared:
         # No declarations at all -- paraphrase phantoms still warrant a
-        # softer flag if the prose-shape is right.
+        # softer flag if the prose-shape is right. But skip occurrences
+        # that are clearly QUOTED EXTERNAL TEXT (verbatim quotes from
+        # source documents, headings, or shouted emphasis). Those are
+        # not the agent reaching for a capability name; they're the
+        # agent citing source material that happens to contain a
+        # paraphrase-shaped phrase. Two cheap signals:
+        #   (a) the matched span is ALL UPPERCASE in the original text
+        #       -- shouting / heading shape, not capability claim
+        #   (b) the matched span sits inside `backticks` or ```fence```
+        #       -- code/literal-quote shape, not claim
+        # Both are tight enough to avoid letting real paraphrase claims
+        # slip through (a real claim would be mixed-case prose).
         for ph in PHANTOM_PATTERNS:
-            if ph.lower() in text.lower():
+            ph_lower = ph.lower()
+            text_lower = text.lower()
+            search_from = 0
+            while True:
+                idx = text_lower.find(ph_lower, search_from)
+                if idx < 0:
+                    break
+                end = idx + len(ph)
+                span = text[idx:end]
+                if span.upper() == span and any(c.isalpha() for c in span):
+                    search_from = end
+                    continue  # all-caps shouting/heading, treat as quote
+                if _inside_backticks(text, idx):
+                    search_from = end
+                    continue  # code-quoted, treat as literal
+                # Real paraphrase phantom -- mixed-case prose use.
                 print("phantom_paraphrase")
                 return 0
         print("ok")
