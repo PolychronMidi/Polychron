@@ -95,10 +95,16 @@ def main() -> int:
     os.makedirs(os.path.join(tmp_project, "metrics"), exist_ok=True)
     os.makedirs(os.path.join(tmp_project, "tmp"), exist_ok=True)
 
-    # Copy Python source into tmp_project so relative paths resolve
+    # Copy Python source into tmp_project so relative paths resolve.
+    # onboarding_chain.py imports its dispatch sibling via `from
+    # .onboarding_chain_dispatch import ...` (line 275) -- without that
+    # sibling in the sandbox the load fails and main() exits before
+    # printing any PASS/FAIL lines, producing the "verifier produced no
+    # PASS/FAIL output" ERROR upstream.
     import shutil
     for rel in [
         "tools/HME/service/server/onboarding_chain.py",
+        "tools/HME/service/server/onboarding_chain_dispatch.py",
         "tools/HME/service/server/tools_analysis/todo.py",
         "tools/HME/service/hme_env.py",
         "CLAUDE.md",
