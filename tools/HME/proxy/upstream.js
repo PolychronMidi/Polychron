@@ -49,6 +49,56 @@ let _valveTrippedAt = 0;
 let _trippedSequence = 0;  // index into BACKOFF_SCHEDULE_MS, capped
 let _lastSuccessAt = 0;
 
+// Persistent valve state. The supervisor watchdog respawns the proxy on
+// crash WITHOUT going through polychron-shutdown.sh -- so in-memory trip
+// state is lost on respawn and the new process would start in normal
+// mode, possibly hammering an upstream that's still 429ing. Persist
+// trip state to a small JSON file; load on module init; clear when the
+// auto-recovery actually completes (valve auto-clears via timer).
+//
+// polychron-shutdown.sh removes hme-proxy-valve-tripped.flag on
+// deliberate restart -- we mirror that policy by using a different
+// filename so the legacy flag still works as a "force clean start"
+// marker for operators.
+const _VALVE_STATE_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-proxy-valve-state.json');
+
+function _loadPersistedValveState() {
+  try {
+    const raw = fs.readFileSync(_VALVE_STATE_FILE, 'utf8');
+    const s = JSON.parse(raw);
+    if (typeof s.trippedAt !== 'number' || typeof s.sequence !== 'number') return;
+    // If the persisted backoff window has already elapsed, treat as
+    // clean -- don't make a fresh process start in passthrough for a
+    // trip that should already have auto-cleared.
+    const idx = Math.min(s.sequence, BACKOFF_SCHEDULE_MS.length - 1);
+    const elapsed = Date.now() - s.trippedAt;
+    if (elapsed >= BACKOFF_SCHEDULE_MS[idx]) {
+      try { fs.unlinkSync(_VALVE_STATE_FILE); } catch (_e) { /* ignore */ }
+      return;
+    }
+    _valveTripped = true;
+    _valveTrippedAt = s.trippedAt;
+    _trippedSequence = s.sequence;
+    console.error(`[hme-proxy] inherited valve trip from prior process (sequence=${s.sequence}, ${Math.round((BACKOFF_SCHEDULE_MS[idx] - elapsed)/1000)}s remaining)`);
+  } catch (_e) { /* no persisted state -- normal first boot */ }
+}
+
+function _persistValveState() {
+  try {
+    fs.mkdirSync(path.dirname(_VALVE_STATE_FILE), { recursive: true });
+    fs.writeFileSync(_VALVE_STATE_FILE, JSON.stringify({
+      trippedAt: _valveTrippedAt,
+      sequence: _trippedSequence,
+    }));
+  } catch (_e) { /* best effort */ }
+}
+
+function _clearPersistedValveState() {
+  try { fs.unlinkSync(_VALVE_STATE_FILE); } catch (_e) { /* not present */ }
+}
+
+_loadPersistedValveState();
+
 function _currentBackoffMs() {
   const idx = Math.min(_trippedSequence, BACKOFF_SCHEDULE_MS.length - 1);
   return BACKOFF_SCHEDULE_MS[idx];
