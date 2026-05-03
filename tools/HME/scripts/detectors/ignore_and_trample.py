@@ -106,11 +106,17 @@ def _first_assistant_text(event: dict) -> str | None:
 
 
 def _proxy_request_has_marker() -> bool:
-    """Latest proxy request-body dump scan. Claude Code does NOT persist
-    `<system-reminder>` injections to the transcript file; the proxy DOES
-    capture full request bodies including system-reminders -- read those
-    instead. The legacy transcript-only path missed every real interrupt."""
+    """Latest proxy request-body dump scan, scoped to the LAST USER MESSAGE.
+
+    Claude Code does NOT persist `<system-reminder>` injections to the
+    transcript file; the proxy DOES capture full request bodies. But a
+    raw substring search across the WHOLE body is over-broad -- ANY prior
+    interrupt this session lives forever in subsequent request histories,
+    making the detector fire on every Stop hereafter. Scope to the LAST
+    user message (the one that actually triggered THIS turn) so we only
+    flag CURRENT-turn interrupts."""
     import glob
+    import json
     import os
     project_root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
     if not project_root:
@@ -123,10 +129,40 @@ def _proxy_request_has_marker() -> bool:
     for f in files[:1]:
         try:
             with open(f, "rb") as fp:
-                if _INTERRUPT_MARKER.encode() in fp.read():
-                    return True
+                body = json.loads(fp.read())
         except Exception:
-            pass
+            return False
+        msgs = body.get("messages") if isinstance(body, dict) else None
+        if not isinstance(msgs, list):
+            return False
+        last_user = None
+        for m in reversed(msgs):
+            if isinstance(m, dict) and m.get("role") == "user":
+                last_user = m
+                break
+        if last_user is None:
+            return False
+        content = last_user.get("content")
+        if isinstance(content, str):
+            return _INTERRUPT_MARKER in content
+        if isinstance(content, list):
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                t = block.get("text") or block.get("content") or ""
+                if isinstance(t, str) and _INTERRUPT_MARKER in t:
+                    return True
+                if block.get("type") == "tool_result":
+                    inner = block.get("content")
+                    if isinstance(inner, str) and _INTERRUPT_MARKER in inner:
+                        return True
+                    if isinstance(inner, list):
+                        for ib in inner:
+                            if isinstance(ib, dict):
+                                it = ib.get("text") or ""
+                                if isinstance(it, str) and _INTERRUPT_MARKER in it:
+                                    return True
+        return False
     return False
 
 
