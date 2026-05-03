@@ -326,6 +326,12 @@ class ActivityEventsDocSyncVerifier(Verifier):
         emit_re_a = re.compile(r"--event=([a-z_]+)")
         emit_re_b = re.compile(r"event:\s*['\"]([a-z_]+)['\"]")
         emit_re_c = re.compile(r"event=['\"]([a-z_]+)['\"]")
+        # Positional first-arg form used by `_emit_activity("name", ...)`,
+        # `emit_activity_event("name", ...)`, and similar wrappers in
+        # buddy_handoff.py and other Python emitters. Without this the
+        # verifier reported buddy_handoff_promote / buddy_handoff_retire
+        # as "doc-only" even though they are actively emitted.
+        emit_re_d = re.compile(r"_?emit(?:_activity(?:_event)?)?\(\s*['\"]([a-z_]+)['\"]")
         live = set()
         scan_roots = [
             os.path.join(_PROJECT, "tools", "HME"),
