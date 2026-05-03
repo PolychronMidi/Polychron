@@ -11,9 +11,9 @@ Polychron development has two interleaving modes; mode-specific rules live in co
 ## Universal Principles
 
 - **Fail fast.** Every module throws on bad input. No silent early returns. No `|| 0` / `|| []` fallbacks. No graceful degradation.
-- **Single Responsibility / Lines Of Code targets.** Files not listed as exempt in loc-ignore.txt should target max LOC of about 150-350. Organize files in subdirectories at sensible logical boundaries.
-- **Comments and docs.** Inline comments should be as terse and reserved as possible, with rare multi-line comments, and elaboration, if needed, in doc/
-- **Never delete unused code/config before checking if it should be implemented.** Only delete code that can't be reasonably adapted and whose concerns are already covered elsewhere. Otherwise, wire it up and implement. Understand design intent to preserve/adapt salvageable elements instead of wholesale deletion.
+- **Single Responsibility / LOC.** Files MUST be ≤350 LOC unless listed in loc-ignore.txt. Organize at logical boundaries.
+- **Comments and docs.** Inline comments single-line and terse. Elaboration goes in doc/.
+- **Never delete unused code/config before checking if it should be implemented.** Adapt or wire up; only delete when its concerns are already covered elsewhere.
 - **"Review" = read-only analysis.** No code changes unless explicitly asked.
 - **Never abandon a plan mid-execution. Always re-plan when execution proves the plan wrong.** Two failure modes, opposite shapes, both gated here:
   - *Premature pivot:* finish the current atomic unit before pivoting. If a solid discovery or user feedback changes direction, explicitly acknowledge the pivot, state what was left undone, and make sure items still needing completion are in todo list. Never leave code/tools in a broken intermediate state. Clarifying questions belong BEFORE starting implementation. Atomic units: a file sweep is not done until every file in scope is fixed; a merge is not done until the routing logic exists; a KB cleanup is not done until every candidate entry has been processed.
