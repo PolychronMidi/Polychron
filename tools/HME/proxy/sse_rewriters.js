@@ -457,23 +457,32 @@ const _SLOP_PATTERNS = [
     repl: null },
 ];
 
-// Patterns NOT implemented and why. Recorded inline so future passes
-// don't waste time re-deciding. None of these are reachable with a
-// single-pass regex on a single content_block:
-//   #3  Three parallel dramatic sentences -- shape-of-text, not phrase.
-//                                            Needs sentence parsing + AST-style detection.
-//   #4  Bookend summary               -- cross-section (intro vs conclusion).
-//   #5  Perfect section symmetry      -- structural; needs whole-doc layout analysis.
-//   #6  Ascending list                -- structural; needs list-shape analysis.
-//   #14 Overcomplicated tech detail   -- judgment; depends on audience model.
-//   #15 Excessive bold                -- structural count; risky to auto-strip
-//                                        (would damage legitimate emphasis).
-//   #16 Quotation marks for emphasis  -- can't distinguish from real quotes.
-//   #18 Obvious insight dressed up    -- judgment; needs world model.
-//   #22 Metaphor stacking             -- semantic; needs cross-sentence analysis.
-//   #24 Numbered wisdom lists         -- structural; would damage legitimate
-//                                        numbered lists.
-const _UNIMPLEMENTED_SLOP = ['#3', '#4', '#5', '#6', '#14', '#15', '#16', '#18', '#22', '#24'];
+// Catalog patterns NOT implemented in code, with the structural reason
+// each one cannot run inside a per-content_block regex rewriter:
+//   #4  Bookend summary       -- compares the intro of a doc to the
+//                                conclusion; the proxy only ever sees a
+//                                single content_block at a time, never
+//                                an intro/conclusion pair.
+//   #5  Perfect section symmetry -- whole-doc layout analysis (length
+//                                ratios across sections); single-block
+//                                scope cannot see siblings.
+//   #6  Ascending list        -- comparison across list items requires
+//                                whole-list context; the SSE delta
+//                                stream emits list items piecemeal.
+//   #14 Overcomplicated tech detail -- audience-relative judgment; the
+//                                proxy has no reader model to compare
+//                                detail depth against.
+//   #16 Quotation marks for emphasis -- ambiguous with code (variable
+//                                names like "tool_use", file paths,
+//                                JSON strings). Auto-strip damages
+//                                tool-shape text more than it helps.
+//   #18 Obvious insight dressed up -- requires world model to know
+//                                what's obvious. No regex can reason
+//                                about novelty.
+// Recursive-drift's reference implementation auto-fixes ~5 patterns
+// (em-dash + a few authority phrases) and uses regenerate-on-fail for
+// the rest -- that pattern doesn't fit a passthrough proxy.
+const _CATALOG_NOT_IN_CODE = ['#4', '#5', '#6', '#14', '#16', '#18'];
 
 function _capFix(s) {
   // After deletions, sentences may start with lowercase. Promote the
