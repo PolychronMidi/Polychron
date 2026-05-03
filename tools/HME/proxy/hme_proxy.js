@@ -195,18 +195,6 @@ function _tryParseJson(buf, contextDesc) {
   }
 }
 
-// The escape hatch is meant to flip into permanent passthrough only when
-// Anthropic rejects the body BECAUSE the proxy mutated it badly (malformed
-// JSON, oversize, schema violation). Transient upstream throttles
-// (rate_limit_error / overloaded_error 429s, 5xx outages) are NOT proxy-
-// induced; going passthrough doesn't fix them and forces a full stack
-// restart to recover from a momentary blip. The SDK already retries 429s
-// on its own (x-stainless-retry-count), so just snapshot+lifesaver-alert
-// and let the SDK do its job.
-function _isProxyMutationRejection(status, _errType) {
-  return status === 400 || status === 413 || status === 422;
-}
-
 function _detectUpstreamFailure(status, headers, fullBody) {
   if (status === 429) {
     const retryAfter = headers['retry-after'] || '?';
