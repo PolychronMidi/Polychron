@@ -133,8 +133,23 @@ def _find_claim(text: str) -> tuple[str, str] | None:
     return None
 
 
-def _collect_assistant_tool_uses(event: dict) -> list[dict]:
-    return list(iter_tool_uses(event))
+def _collect_assistant_tool_uses_in_turn(events: list) -> list[dict]:
+    """Walk EVERY assistant event in the current turn (since the last
+    triggering user message) and collect tool_uses from each. Required
+    because Claude Code's transcript splits a single agent turn into
+    multiple assistant events when tool_use / tool_result rounds are
+    interleaved with text -- the last assistant event (which carries
+    the final text) often has no tool_uses even though earlier
+    assistant events in the same turn ran the verification probes.
+    Looking only at the last event misses all prior tool_uses and
+    false-positive-fires the claim_without_evidence gate."""
+    out = []
+    for ev in events:
+        if not is_assistant(ev):
+            continue
+        for tu in iter_tool_uses(ev):
+            out.append(tu)
+    return out
 
 
 def _had_evidence(tool_uses: list[dict]) -> bool:
