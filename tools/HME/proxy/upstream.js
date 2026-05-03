@@ -85,9 +85,7 @@ function _currentBackoffMs() {
 
 function isPassthroughMode() {
   if (!_valveTripped) return false;
-  // Auto-clear once the backoff window elapses. The next request goes
-  // through the normal proxy path; if it fails, recordUpstreamFailure
-  // will re-trip with the next backoff level.
+  // Auto-clear after backoff; next failure re-trips at the next level.
   const elapsed = Date.now() - _valveTrippedAt;
   if (elapsed >= _currentBackoffMs()) {
     _valveTripped = false;
