@@ -105,6 +105,7 @@ def main() -> int:
     for rel in [
         "tools/HME/service/server/onboarding_chain.py",
         "tools/HME/service/server/onboarding_chain_dispatch.py",
+        "tools/HME/service/server/onboarding_chain_helpers.py",
         "tools/HME/service/server/tools_analysis/todo.py",
         "tools/HME/service/hme_env.py",
         "CLAUDE.md",
