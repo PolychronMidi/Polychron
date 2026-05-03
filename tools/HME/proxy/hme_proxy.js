@@ -1229,10 +1229,12 @@ function handleRequest(clientReq, clientRes) {
             }
             const _suspiciousBlank = _textChars < 5;
             if (_suspiciousBlank) {
-              const _dumpDir = path.join(PROJECT_ROOT, 'tmp', 'blank-debug');
-              try { fs.mkdirSync(_dumpDir, { recursive: true }); } catch (_e) { /* ignore */ }
+              const _bdPath = require('path');
+              const _bdFs = require('fs');
+              const _dumpDir = _bdPath.join(PROJECT_ROOT, 'tmp', 'blank-debug');
+              try { _bdFs.mkdirSync(_dumpDir, { recursive: true }); } catch (_e) { /* ignore */ }
               const _ts = new Date().toISOString().replace(/[:.]/g, '-');
-              const _dumpFile = path.join(_dumpDir, `hme-blank-${_ts}.json`);
+              const _dumpFile = _bdPath.join(_dumpDir, `hme-blank-${_ts}.json`);
               const _msgs = (payload && payload.messages) || [];
               const _lastUserMsg = [..._msgs].reverse().find((m) => m && m.role === 'user');
               let _lastUserText = '';
@@ -1274,7 +1276,7 @@ function handleRequest(clientReq, clientRes) {
                 raw_body_tail: _bodyStr.length > 8000 ? _bodyStr.slice(-2000) : '',
               };
               try {
-                fs.writeFileSync(_dumpFile, JSON.stringify(_dump, null, 2));
+                _bdFs.writeFileSync(_dumpFile, JSON.stringify(_dump, null, 2));
                 console.error(`[hme-proxy] BLANK-RESPONSE DETECTED -- ${_textChars} text chars, ${_textBlocks}t/${_thinkingBlocks}th/${_toolUseBlocks}tu blocks. Dumped to ${_dumpFile}`);
               } catch (_e) { console.error(`[hme-proxy] BLANK-RESPONSE dump write failed: ${_e.message}`); }
             }
