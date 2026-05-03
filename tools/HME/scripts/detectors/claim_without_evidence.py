@@ -174,12 +174,8 @@ def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
         return 0
-    # Use the full-turn loader so we see EVERY assistant event since the
-    # last user message. The previous code used load_turn_events + only
-    # checked the last assistant event, missing tool_uses in the earlier
-    # assistant messages of multi-event turns -- causing false-positive
-    # fires whenever the verification probe ran in an earlier round and
-    # the final text was a separate assistant message.
+    # Full-turn loader: tool_uses in earlier assistant events of the
+    # same turn count as evidence (multi-event turn handling).
     events = load_full_turn_with_user(sys.argv[1])
     if not events:
         print("ok")
