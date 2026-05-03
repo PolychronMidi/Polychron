@@ -865,7 +865,12 @@ function handleRequest(clientReq, clientRes) {
           console.error('[hme-proxy] middleware pipeline error:', err.message);
         }
         if (shouldInject()) {
-          const statusBlock = buildStatusContext();
+          // consumeStatusContext returns null when the snapshot is byte-
+          // identical to the last value emitted for this session. Stops
+          // re-injecting stale content (e.g. a "last verdict" line that
+          // hasn't changed in hours) on every turn -- that was pure
+          // coherence noise and masked real diagnostics.
+          const statusBlock = consumeStatusContext(session);
           if (statusBlock) {
             // CRITICAL: status content varies per-turn (proxy_emergency
             // flag, last verdict, error counts), so it MUST NOT live in
