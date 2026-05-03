@@ -124,9 +124,7 @@ function tripEmergencyValve(lastErr) {
 function recordUpstreamSuccess() {
   _consecutiveFailures = 0;
   const now = Date.now();
-  // A sustained-success window resets the backoff escalation -- the
-  // upstream is healthy again, no need to start the NEXT trip from a
-  // 10-minute backoff just because we hit a 429 hours ago.
+  // Sustained success resets the backoff escalation.
   if (_lastSuccessAt > 0 && now - _lastSuccessAt < SUCCESS_RESET_MS) {
     // Recent success -- update timestamp and check reset condition.
     if (_trippedSequence > 0 && now - _valveTrippedAt > SUCCESS_RESET_MS) {
