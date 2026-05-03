@@ -1394,16 +1394,22 @@ function handleRequest(clientReq, clientRes) {
                   }
                 }
                 if (detectedAck) {
-                  // Always-emit LIFESAVER alert -- regardless of whether
-                  // the strip succeeded. The agent must SEE the alert.
+                  // Stat-only: write to a SEPARATE log, not errors.log.
+                  // Mirrors the SSE-path policy in sse_rewriters.js. The
+                  // strip below is the cure; emitting to errors.log made
+                  // every successful strip re-surface as an unresolved
+                  // error every turn -- coherence-noise spam.
                   try {
-                    const _logTs = new Date().toISOString();
                     const _ackContext = userIsDeny ? 'cascade-after-deny' : 'cascade-no-deny';
                     fs.appendFileSync(
-                      path.join(PROJECT_ROOT, 'log', 'hme-errors.log'),
-                      `[${_logTs}] [bare-ack-spam] agent emitted bare-ack response (${_ackContext}); diagnose and fix the underlying detector cascade -- this is the spam pattern the user explicitly flagged\n`,
+                      path.join(PROJECT_ROOT, 'log', 'hme-bare-ack-strips.jsonl'),
+                      JSON.stringify({
+                        ts: new Date().toISOString(),
+                        path: 'non-sse',
+                        context: _ackContext,
+                      }) + '\n',
                     );
-                  } catch (_e2) { /* alert is best-effort */ }
+                  } catch (_e2) { /* stat is best-effort */ }
                   if (userIsDeny) {
                     parsed.content = parsed.content.filter((b) => {
                       if (!b || b.type !== 'text' || typeof b.text !== 'string') return true;
