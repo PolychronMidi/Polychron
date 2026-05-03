@@ -141,12 +141,8 @@ function recordUpstreamFailure(err) {
   }
 }
 
-// OAuth token refresh (modelled on horselock/claude-code-proxy). Single
-// in-flight refresh promise so a burst of 401s doesn't trigger N parallel
-// refreshes against console.anthropic.com/v1/oauth/token. Returns the new
-// access token (without the "Bearer " prefix) on success, throws on
-// failure. Updates ~/.claude/.credentials.json so future reads pick up
-// the new token. The Claude Code OAuth client_id is public/well-known.
+// OAuth refresh -- single in-flight promise so 401-bursts don't fan out.
+// Updates ~/.claude/.credentials.json. Client_id is public/well-known.
 const _CC_OAUTH_CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
 let _refreshPromise = null;
 
