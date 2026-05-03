@@ -360,6 +360,7 @@ class ActivityEventsDocSyncVerifier(Verifier):
                     live |= set(emit_re_a.findall(txt))
                     live |= set(emit_re_b.findall(txt))
                     live |= set(emit_re_c.findall(txt))
+                    live |= set(emit_re_d.findall(txt))
 
         doc_only = sorted(doc_events - live)
         code_only = sorted(live - doc_events)
