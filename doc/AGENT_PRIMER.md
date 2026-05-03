@@ -214,7 +214,7 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 
 - [CLAUDE.md](../CLAUDE.md) -- authoritative rule set, loaded every prompt. Read first on any new session where the walkthrough does not answer the question.
 - [doc/HME_MENTAL_MODEL.md](./HME_MENTAL_MODEL.md) -- one-page picture of HME (two coherences, four surfaces, five state machines, four enforcement layers, seven sub-tags). Read this before anything else.
-- [doc/HME_ONBOARDING_FLOW.md](./HME_ONBOARDING_FLOW.md) -- state machine spec. Read this if the chain surprises you.
+- [tools/HME/service/server/onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py) -- chain decider source + design spec (decorator wiring, gate hooks, failure modes, "adding new steps" recipe). The state machine itself is documented above in this primer.
 - [doc/HME.md](./HME.md) -- HME internals, tool surface, Phase 1-6 per-subsystem narrative.
 - [doc/ARCHITECTURE.md](./ARCHITECTURE.md) -- beat lifecycle, signal flow, L1/L2 layer isolation.
 - [doc/hme-discoveries.md](./hme-discoveries.md) -- human-curated universal principles promoted from HME's generalization drafts.
