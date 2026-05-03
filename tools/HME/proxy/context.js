@@ -138,6 +138,7 @@ const status = require('./context_status');
 module.exports = {
   shouldInject,
   buildStatusContext: status.buildStatusContext,
+  consumeStatusContext: status.consumeStatusContext,
   buildJurisdictionContext: jurisdiction.buildJurisdictionContext,
   injectIntoSystem,
   injectIntoLastUserMessage,
