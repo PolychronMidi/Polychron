@@ -111,17 +111,31 @@ function coherenceStatusLine() {
   }
 }
 
-function recentActivity(n = 4) {
+// Recency cutoffs: stale entries leak across days otherwise. Every
+// activity/ground-truth event in this codebase carries a unix-seconds
+// `ts`. If `ts` is absent or non-numeric we treat the event as stale --
+// no provenance, no injection.
+const ACTIVITY_MAX_AGE_MS = 30 * 60 * 1000;
+const GROUND_TRUTH_MAX_AGE_MS = 60 * 60 * 1000;
+
+function _isFresh(e, maxAgeMs, nowMs) {
+  if (typeof e.ts !== 'number' || !Number.isFinite(e.ts)) return false;
+  return (nowMs - e.ts * 1000) < maxAgeMs;
+}
+
+function recentActivity(n = 4, maxAgeMs = ACTIVITY_MAX_AGE_MS) {
   const lines = tailFileLines(ACTIVITY_LOG, 80);
   const ACTIONABLE = new Set([
     'coherence_violation', 'proxy_emergency',
     'hypothesis_registered', 'hypothesis_falsified',
   ]);
+  const now = Date.now();
   const events = [];
   for (const line of lines) {
     try {
       const e = JSON.parse(line);
       if (!ACTIONABLE.has(e.event)) continue;
+      if (!_isFresh(e, maxAgeMs, now)) continue;
       const parts = [e.event];
       for (const k of ['verdict', 'reason', 'tool']) {
         if (e[k] != null) parts.push(`${k}=${e[k]}`);
@@ -132,12 +146,14 @@ function recentActivity(n = 4) {
   return events.slice(-n);
 }
 
-function recentGroundTruth(n = 1) {
+function recentGroundTruth(n = 1, maxAgeMs = GROUND_TRUTH_MAX_AGE_MS) {
   const lines = tailFileLines(GROUND_TRUTH_LOG, 5);
+  const now = Date.now();
   const items = [];
   for (const line of lines) {
     try {
       const e = JSON.parse(line);
+      if (!_isFresh(e, maxAgeMs, now)) continue;
       const round = e.round_tag || e.session || '?';
       const section = String(e.section || '?').slice(0, 40);
       const sent = e.sentiment || '?';
