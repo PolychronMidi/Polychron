@@ -207,23 +207,42 @@ class WarmContextFreshnessVerifier(Verifier):
 
 
 def _trigger_warm_reprime() -> None:
-    """Fire-and-forget background call to hme_admin(action='warm').
-    Uses the HTTP shim if the MCP server isn't running in-process."""
+    """Fire-and-forget background call to i/hme-admin action=warm.
+
+    Previous design: drop a sentinel file (`tmp/hme-warm-reprime.request`)
+    on the assumption that "sessionstart/admin path will pick up". A grep
+    for that sentinel found ONLY producers (this verifier + main-pipeline.js)
+    -- no consumer ever existed, so the auto-reprime never fired and the
+    cache went stale until the verifier escalated from WARN to FAIL. Now
+    we directly invoke the i/hme-admin wrapper which actually starts the
+    background warm priming. The sentinel write stays as a side-effect
+    breadcrumb (operator can still see "reprime was attempted at <ts>")
+    but it's no longer load-bearing.
+    """
     import threading
     def _bg():
         try:
-            # Prefer the admin tool invocation via HTTP shim or subprocess.
-            # Simple approach: drop a sentinel file that a sessionstart/admin
-            # path will pick up. If hme_admin runs via Python inside the
-            # server we can't invoke it from a hook, but we CAN touch a file
-            # the server reads on next tick.
             sentinel = os.path.join(_PROJECT, "tmp", "hme-warm-reprime.request")
             os.makedirs(os.path.dirname(sentinel), exist_ok=True)
             with open(sentinel, "w") as f:
                 f.write(str(time.time()))
         except OSError:
-            # tmp/ unwritable -- the background re-prime request is a
-            # best-effort nudge. Narrow catch; unexpected errors propagate.
+            pass
+        try:
+            # Detached: start the warm and don't wait. i/hme-admin already
+            # backgrounds the actual priming work and returns immediately,
+            # so a 5s timeout is plenty for the wrapper round-trip.
+            wrapper = os.path.join(_PROJECT, "i", "hme-admin")
+            if os.path.isfile(wrapper) and os.access(wrapper, os.X_OK):
+                subprocess.run(
+                    [wrapper, "action=warm"],
+                    timeout=5,
+                    capture_output=True,
+                    check=False,
+                )
+        except (OSError, subprocess.TimeoutExpired, subprocess.SubprocessError):
+            # Best-effort; persistent failure shows up as the verifier's
+            # FAIL escalation on the next tick.
             pass
     threading.Thread(target=_bg, daemon=True).start()
 
