@@ -206,44 +206,14 @@ function _detectUpstreamFailure(status, headers, fullBody) {
     // because the appropriate response differs: rate_limit_error means
     // wait/shrink, overloaded_error means retry-with-backoff.
     const realType = (parsed && parsed.error && parsed.error.type) || 'rate_limit_error';
-    let msg = (parsed && parsed.error && parsed.error.message)
+    const msg = (parsed && parsed.error && parsed.error.message)
       ? parsed.error.message
       : `${realType} (retry-after=${retryAfter}s)`;
-    // BILLING-STATE DISAMBIGUATION. Anthropic returns 429 with body
-    // `{"error":{"type":"rate_limit_error","message":"Error"}}` -- a
-    // useless message -- in two very different scenarios:
-    //   (a) request volume burst against the rolling window (genuine
-    //       rate limit; wait + retry).
-    //   (b) account is on a paid plan with overage credits exhausted,
-    //       and Anthropic is rejecting any request that would charge
-    //       to overage (`overage-status: rejected`,
-    //       `overage-disabled-reason: out_of_credits`). NO amount of
-    //       waiting or shrinking helps -- user must add credits.
-    // Without this disambiguation, the lifesaver kept telling the user
-    // to "fix the proxy mutation" and "inspect the body Anthropic
-    // rejected" -- a wild goose chase that wastes their time and turns
-    // into hours of debugging the wrong layer. Surface the BILLING
-    // state from the response headers so the lifesaver can emit a
-    // clear, actionable banner instead.
-    const _overageReason = headers['anthropic-ratelimit-unified-overage-disabled-reason'];
-    const _overageStatus = headers['anthropic-ratelimit-unified-overage-status'];
-    const _utilization5h = headers['anthropic-ratelimit-unified-5h-utilization'];
-    const _resetEpoch = headers['anthropic-ratelimit-unified-5h-reset'];
-    if (_overageReason === 'out_of_credits' || _overageStatus === 'rejected') {
-      let resetStr = '?';
-      if (_resetEpoch && /^\d+$/.test(_resetEpoch)) {
-        try { resetStr = new Date(parseInt(_resetEpoch, 10) * 1000).toISOString(); } catch (_e) {}
-      }
-      msg = `BILLING: account out of overage credits (5h-utilization=${_utilization5h || '?'}, resets ${resetStr}). `
-          + `This is NOT a proxy bug. Anthropic is rejecting any request that would charge to overage. `
-          + `Fix: add credits at console.anthropic.com OR wait for the 5h window to reset OR use a cheaper model (haiku/sonnet).`;
-    }
     return {
       type: realType,
       message: msg,
       requestId: parsed && parsed.request_id,
       retryAfter,
-      overageDisabled: _overageReason === 'out_of_credits' || _overageStatus === 'rejected',
     };
   }
   if (status >= 400 && status < 600) {
