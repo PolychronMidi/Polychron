@@ -1142,8 +1142,12 @@ function handleRequest(clientReq, clientRes) {
           // BEFORE runInBackgroundRewrite reads it on content_block_stop.
           // Both hold state keyed by content-block index in the same
           // ctx map so they see consistent data.
+          // slopStripRewrite runs LAST in the chain so ackStripRewrite
+          // gets first crack at bare-ack drops (no point stripping slop
+          // out of a block we're about to discard whole). slopStrip is
+          // always-on; ackStrip is only-when-priorUserWasDeny.
           const xform = new SseTransform({
-            rewriters: [longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite],
+            rewriters: [longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite],
           });
           // Populate the priorUserWasDeny flag the ack-strip rewriter
           // gates on. Walk request payload's messages to find the latest
