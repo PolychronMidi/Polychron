@@ -68,6 +68,7 @@ from .code_audits import (  # noqa: F401
     HardcodedToolInvocationVerifier, StalePathRenameVerifier,
     ConjugateChannelVerifier, AgentLoopQualityVerifier,
     CommentBloatVerifier,
+    MarkdownLinkIntegrityVerifier,
 )
 from .autocommit_health import (  # noqa: F401
     AutocommitHealthVerifier, ShimHealthVerifier,
@@ -118,6 +119,7 @@ REGISTRY = [
     CorePrinciplesAuditVerifier(),
     RepeatedCharSpamVerifier(),
     CommentBloatVerifier(),
+    MarkdownLinkIntegrityVerifier(),
     AtomicStateWritesVerifier(),
     AntiForkHeuristicListVerifier(),
     TestEnvUndefinedVerifier(),

@@ -313,6 +313,35 @@ class RepeatedCharSpamVerifier(Verifier):
         )
 
 
+class MarkdownLinkIntegrityVerifier(Verifier):
+    """All inline markdown links MUST resolve to an existing file or directory.
+    Catches the cross-doc drift class that doc-rename and file-relocation
+    operations introduce silently. Score is logarithmic against current
+    backlog; goal is monotonic improvement."""
+    name = "markdown-link-integrity"
+    category = "doc"
+    subtag = "drift-detection"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_PROJECT, "scripts", "audit-markdown-links.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "audit script not found", [script])
+        rc, out, err = _run_subprocess([script, "--json"])
+        try:
+            payload = json.loads(out)
+        except Exception:
+            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+        broken = payload.get("broken", [])
+        if not broken:
+            return _result(PASS, 1.0, "all markdown links resolve")
+        # Logarithmic: 100 broken = 0, 50 = 0.15, 10 = 0.5, 1 = 1.0
+        import math
+        score = max(0.0, 1.0 - math.log10(max(1, len(broken))) / math.log10(100))
+        detail = [f"{b['source']}:{b['line']}  ({b['target']})" for b in broken[:10]]
+        return _result(FAIL, score, f"{len(broken)} broken markdown link(s)", detail)
+
+
 class CommentBloatVerifier(Verifier):
     """Comment-block length discipline. CLAUDE.md: "Inline comments
     single-line and terse. Elaboration goes in doc/." 3+ consecutive

@@ -12,6 +12,7 @@ from .code_audits_style import (  # noqa: F401
     AgentLoopQualityVerifier,
     RepeatedCharSpamVerifier,
     CommentBloatVerifier,
+    MarkdownLinkIntegrityVerifier,
 )
 from .code_audits_antifork import (  # noqa: F401
     AntiForkHeuristicListVerifier,

@@ -9,7 +9,6 @@ todo.py re-exports from this shim, so external callers
 (`from server.tools_analysis.todo import _close_with_spec_update`) continue to work.
 """
 from .todo_spec_ingest import (  # noqa: F401
-    _SPEC_FILE, _TODOMD_FILE, _DEVLOG_DIR,
     _NEXT_UP_RE, _SPEC_OPEN_RE,
     _read_section, _ingest_from_spec, _promote_to_spec,
     _normalize_for_match, _common_prefix_len,

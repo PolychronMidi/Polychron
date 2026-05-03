@@ -293,27 +293,42 @@ module.exports = {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     }
 
-    // CEREMONY_DODGE fires FIRST. The whole point is to preempt the
-    // detectors whose rescue patterns the dodge is trying to satisfy --
-    // if it ran later, advisor_doctrine / summary_format / scope_escape
-    // would accept the rescue-shaped text and the dodge would succeed.    if (v.STOP_WORK === 'DISMISSIVE')      return ctx.deny(REASONS.STOP_WORK_DISMISSIVE);
-    if (v.STOP_WORK === 'TEXT_ONLY_SHORT') return ctx.deny(REASONS.STOP_WORK_TEXT_ONLY);
-    if (v.EXHAUST_CHECK === 'exhaust_violation') return ctx.deny(REASONS.EXHAUST);
-    if (v.SCOPE_ESCAPE === 'scope_escape_violation') return ctx.deny(REASONS.SCOPE_ESCAPE);
-    if (v.PHANTOM_CAPABILITY === 'phantom_capability') return ctx.deny(REASONS.PHANTOM_CAPABILITY);
-    if (v.PHANTOM_CAPABILITY === 'phantom_paraphrase') return ctx.deny(REASONS.PHANTOM_PARAPHRASE);
-    if (v.ADVISOR_DOCTRINE === 'advisor_missing_pre_build')   return ctx.deny(REASONS.ADVISOR_MISSING_PRE_BUILD);
-    if (v.ADVISOR_DOCTRINE === 'advisor_missing_post_deliver') return ctx.deny(REASONS.ADVISOR_MISSING_POST_DELIVER);
-    if (v.ADVISOR_DOCTRINE === 'advisor_silently_skipped')    return ctx.deny(REASONS.ADVISOR_SILENTLY_SKIPPED);
-    if (v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded') return ctx.deny(REASONS.ADVISOR_CONFLICT_CAP);
-    if (v.SUMMARY_FORMAT === 'summary_missing')   return ctx.deny(REASONS.SUMMARY_MISSING);
-    if (v.SUMMARY_FORMAT === 'summary_malformed') return ctx.deny(REASONS.SUMMARY_MALFORMED);
-    if (v.SUMMARY_FORMAT === 'minimal_format_violation') return ctx.deny(REASONS.MINIMAL_FORMAT_VIOLATION);
-    if (v.LIVE_PROBE === 'live_probe_missing') return ctx.deny(REASONS.LIVE_PROBE_MISSING);
-    if (v.PHASE_GATE === 'phase_skipped')      return ctx.deny(REASONS.PHASE_SKIPPED);
-    if (v.PILE_ON === 'pile_on')               return ctx.deny(REASONS.PILE_ON);
-    if (v.CLAIM_WITHOUT_EVIDENCE === 'claim_without_evidence') return ctx.deny(REASONS.CLAIM_WITHOUT_EVIDENCE);
-    if (v.FIX_WITHOUT_INVESTIGATION === 'fix_without_investigation') return ctx.deny(REASONS.FIX_WITHOUT_INVESTIGATION);
+    // Aggregate ALL firing detectors into one composite deny -- agent
+    // sees every flag in one pass instead of N round-trips. Order in
+    // the firing list matches the historical first-deny-wins order so
+    // the most-important flag heads the report.
+    const FIRING_RULES = [
+      ['STOP_WORK',          'DISMISSIVE',                 'STOP_WORK_DISMISSIVE'],
+      ['STOP_WORK',          'TEXT_ONLY_SHORT',            'STOP_WORK_TEXT_ONLY'],
+      ['EXHAUST_CHECK',      'exhaust_violation',          'EXHAUST'],
+      ['SCOPE_ESCAPE',       'scope_escape_violation',     'SCOPE_ESCAPE'],
+      ['PHANTOM_CAPABILITY', 'phantom_capability',         'PHANTOM_CAPABILITY'],
+      ['PHANTOM_CAPABILITY', 'phantom_paraphrase',         'PHANTOM_PARAPHRASE'],
+      ['ADVISOR_DOCTRINE',   'advisor_missing_pre_build',  'ADVISOR_MISSING_PRE_BUILD'],
+      ['ADVISOR_DOCTRINE',   'advisor_missing_post_deliver','ADVISOR_MISSING_POST_DELIVER'],
+      ['ADVISOR_DOCTRINE',   'advisor_silently_skipped',   'ADVISOR_SILENTLY_SKIPPED'],
+      ['ADVISOR_DOCTRINE',   'advisor_conflict_cap_exceeded','ADVISOR_CONFLICT_CAP'],
+      ['SUMMARY_FORMAT',     'summary_missing',            'SUMMARY_MISSING'],
+      ['SUMMARY_FORMAT',     'summary_malformed',          'SUMMARY_MALFORMED'],
+      ['SUMMARY_FORMAT',     'minimal_format_violation',   'MINIMAL_FORMAT_VIOLATION'],
+      ['LIVE_PROBE',         'live_probe_missing',         'LIVE_PROBE_MISSING'],
+      ['PHASE_GATE',         'phase_skipped',              'PHASE_SKIPPED'],
+      ['PILE_ON',            'pile_on',                    'PILE_ON'],
+      ['CLAIM_WITHOUT_EVIDENCE',     'claim_without_evidence',     'CLAIM_WITHOUT_EVIDENCE'],
+      ['FIX_WITHOUT_INVESTIGATION',  'fix_without_investigation',  'FIX_WITHOUT_INVESTIGATION'],
+    ];
+    const firing = [];
+    for (const [field, value, reasonKey] of FIRING_RULES) {
+      if (v[field] === value) firing.push({ name: reasonKey, reason: REASONS[reasonKey] });
+    }
+    if (firing.length === 1) {
+      return ctx.deny(firing[0].reason);
+    }
+    if (firing.length > 1) {
+      const header = `MULTI-FLAG STOP (${firing.length} detectors firing): ${firing.map((f) => f.name).join(', ')}.\nAddress all of them in this turn.\n\n`;
+      const body = firing.map((f, i) => `--- [${i + 1}/${firing.length}] ${f.name} ---\n${f.reason}`).join('\n\n');
+      return ctx.deny(header + body);
+    }
 
     // Auto-completeness inject -- fires up to COMPL_MAX times per user-turn.
     // PRIOR FIX REMOVED: previously this skipped when any earlier policy
