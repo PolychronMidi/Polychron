@@ -416,6 +416,22 @@ const _SLOP_PATTERNS = [
   { name: 'relatability_aside',
     re: /\s*\((?:yes,?\s*really|trust me(?:\s*on this)?|I learned this the hard way|no really|seriously|believe it or not)\)/gi,
     repl: '' },
+  // #22 Metaphor stacking. 2+ "like X" / "as if Y" similes in the same
+  // sentence. The first simile lands, the second+ stacks. Strip the
+  // additional ones (collapses "X is like A, like B, like C" -> "X is
+  // like A").
+  { name: 'metaphor_stacking',
+    re: /(\blike\s+[a-z][^,.;:!?]{0,40})\s*,\s*(?:like|as if)\s+[a-z][^,.;:!?]{0,40}(?:\s*,\s*(?:like|as if)\s+[a-z][^,.;:!?]{0,40})*/gi,
+    repl: '$1' },
+  // #24 Numbered wisdom list. A run of numbered items where every item
+  // is a short, self-contained maxim (no verb-leading action, no
+  // continuation). Heuristic: 3+ consecutive lines of `\d+\.` where
+  // each line is <= 80 chars and ends with `.`. Drops the whole list
+  // -- the maxims rarely connect; if they did the agent should write
+  // a paragraph.
+  { name: 'numbered_wisdom_list',
+    re: /(?:^|\n)(?:\s*\d+\.\s+[A-Z][^.\n]{5,75}\.\s*\n){3,}/gm,
+    repl: '\n' },
 ];
 
 // Patterns NOT implemented and why. Recorded inline so future passes
