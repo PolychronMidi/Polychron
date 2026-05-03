@@ -76,6 +76,7 @@ These are the structural risk. Each row needs an explicit strategy.
 - `tools/HME/hooks/pretooluse/bash/reader_guards.sh` -- reader-guard helper failures (cat/head/tail/sed)
 - `tools/HME/hooks/pretooluse/bash/cwd_rewrite.sh` -- cwd-rewrite helper failures
 - `tools/HME/hooks/pretooluse/bash/blackbox_guards.sh` -- blackbox-guard helper failures (sudo/curl|sh)
+- `tools/HME/telemetry/index.js` -- consolidated telemetry surface; `record('error', ...)` appends `[ts] [event] reason  {tail}` lines (see file header for category schema)
 
 All entries above this line use the `_safe_*` fail-loud helper pattern: write to `hme-errors.log` only on INTERNAL helper failure (jq parse, py3 timeout, curl error). This keeps the `_safe_*` invariant -- the helper either succeeds or self-reports -- without each call site needing custom error plumbing.
 
