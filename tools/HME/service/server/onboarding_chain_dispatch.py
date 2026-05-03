@@ -1,7 +1,8 @@
 """HME onboarding chain -- per-session walkthrough state machine.
 
-The "chain decider middleman" from HME_ONBOARDING_FLOW.md. Lives INSIDE the
-MCP server so tool handlers can invoke each other directly (hooks cannot).
+Chain-decider middleman. Lives INSIDE the MCP server so tool handlers can
+invoke each other directly (hooks cannot). Full design spec in
+onboarding_chain.py module docstring.
 
 Linear state machine with silent prerequisite auto-chaining:
 
