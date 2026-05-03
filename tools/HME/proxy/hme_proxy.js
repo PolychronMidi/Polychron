@@ -287,17 +287,34 @@ const _PASSTHROUGH_COMPACT_KEEP_MIN = 4;
 // Claude-Code-shape JSON payloads. Capped to never exceed the static
 // _PASSTHROUGH_COMPACT_BYTES; floor at 80 KB so we never over-shrink.
 let _lastInputTokensRemaining = null; // updated by response handler
+let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from headers
+let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
 const _BYTES_PER_TOKEN_EST = 3.5;
-const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 80_000;
+const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 40_000;
 function _effectiveCompactThreshold() {
-  if (_lastInputTokensRemaining == null || _lastInputTokensRemaining <= 0) {
-    return _PASSTHROUGH_COMPACT_BYTES;
+  // PANIC SHRINK: each consecutive 429 halves the threshold. Resets to 0
+  // on a successful response. Without this we'd loop 429ing at the same
+  // size forever -- the dynamic-from-remaining path only activates on a
+  // 200 response that gives us the remaining-tokens header.
+  let panicCap = _PASSTHROUGH_COMPACT_BYTES;
+  if (_consecutive429s > 0) {
+    panicCap = Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, Math.floor(_PASSTHROUGH_COMPACT_BYTES / Math.pow(2, _consecutive429s)));
   }
-  // Use 70% of remaining-token budget as the byte cap for the next
-  // request (leave 30% headroom for the response and other parallel calls).
-  const dynamic = Math.floor(_lastInputTokensRemaining * 0.70 * _BYTES_PER_TOKEN_EST);
-  const clamped = Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, Math.min(_PASSTHROUGH_COMPACT_BYTES, dynamic));
-  return clamped;
+  // From the user's actual ITPM cap (learned from response headers):
+  // request body must fit in ~50% of cap to leave room for response +
+  // any parallel sub-pipeline calls. Without a learned cap, fall back
+  // to the static budget.
+  let limitCap = _PASSTHROUGH_COMPACT_BYTES;
+  if (_lastInputTokensLimit != null && _lastInputTokensLimit > 0) {
+    limitCap = Math.floor(_lastInputTokensLimit * 0.50 * _BYTES_PER_TOKEN_EST);
+  }
+  // From CURRENT remaining (what's left in this rolling minute):
+  let remainingCap = _PASSTHROUGH_COMPACT_BYTES;
+  if (_lastInputTokensRemaining != null && _lastInputTokensRemaining > 0) {
+    remainingCap = Math.floor(_lastInputTokensRemaining * 0.70 * _BYTES_PER_TOKEN_EST);
+  }
+  const eff = Math.min(panicCap, limitCap, remainingCap);
+  return Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, Math.min(_PASSTHROUGH_COMPACT_BYTES, eff));
 }
 function _shrinkForPassthrough(payload) {
   if (process.env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
