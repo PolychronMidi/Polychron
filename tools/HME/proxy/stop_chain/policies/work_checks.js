@@ -431,10 +431,10 @@ module.exports = {
           `dropped before stopping. NEVER leave speculation as a parting ` +
           `note -- it becomes permanent fog otherwise.\n\n` +
           enumerated;
-        return ctx.deny(targeted);
+        armFpGate('SPECULATION_DEBT'); return ctx.deny(targeted);
       }
-      return ctx.deny(REASONS.COMPL_ROUND_1);
+      armFpGate('COMPL_ROUND_1'); return ctx.deny(REASONS.COMPL_ROUND_1);
     }
-    return ctx.deny(REASONS.COMPL_ROUND_2);
+    armFpGate('COMPL_ROUND_2'); return ctx.deny(REASONS.COMPL_ROUND_2);
   },
 };
