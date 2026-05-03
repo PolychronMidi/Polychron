@@ -30,7 +30,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from _transcript import (  # noqa: E402
-    is_assistant, event_content, load_turn_events, iter_tool_uses,
+    is_assistant, event_content, load_turn_events,
+    load_full_turn_with_user, iter_tool_uses,
 )
 
 
