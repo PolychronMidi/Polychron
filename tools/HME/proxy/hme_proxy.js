@@ -177,47 +177,62 @@ const {
 // is useless against this failure mode -- shrink-or-die is the only path.
 // Skipped entirely with HME_NO_PASSTHROUGH_COMPACT=1 if the operator
 // prefers strict passthrough (and being stuck in 429-loop).
-// Default compact threshold: 250 KB (~71K tokens at ~3.5 bytes/token).
-// 400 KB (~113K tokens) was over the user's observed ITPM cap and 429ed
-// even after compaction. 250 KB gives comfortable headroom under any
-// typical Claude Max ITPM (~80-100K). Override with HME_PROXY_COMPACT_BYTES.
+//
+// Static fallback compact threshold: 250 KB (~71K tokens at ~3.5
+// bytes/token). Used when no anthropic-ratelimit-input-tokens-limit
+// header has been observed yet OR when HME_PROXY_COMPACT_BYTES is
+// explicitly set as an operator override. Once a response header
+// reveals the user's actual ITPM cap, the effective ceiling is derived
+// from that cap (50% rule) -- so Max 20x users with much higher caps
+// stop being throttled at 250 KB after the first response lands.
 const _PASSTHROUGH_COMPACT_BYTES = parseInt(process.env.HME_PROXY_COMPACT_BYTES || '250000', 10);
+const _COMPACT_BYTES_EXPLICIT = process.env.HME_PROXY_COMPACT_BYTES != null
+  && process.env.HME_PROXY_COMPACT_BYTES !== '';
 const _PASSTHROUGH_COMPACT_KEEP_MIN = 4;
 
 // Dynamic threshold: track the most recent ITPM-remaining from Anthropic
 // response headers and shrink the byte budget when we're close to the
 // rate-limit ceiling. ~3.5 bytes/token is the rough conversion for
-// Claude-Code-shape JSON payloads. Capped to never exceed the static
-// _PASSTHROUGH_COMPACT_BYTES; floor at 80 KB so we never over-shrink.
+// Claude-Code-shape JSON payloads. Floor at 40 KB so we never over-shrink.
 let _lastInputTokensRemaining = null; // updated by response handler
 let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from headers
 let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
 const _BYTES_PER_TOKEN_EST = 3.5;
 const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 40_000;
 function _effectiveCompactThreshold() {
-  // PANIC SHRINK: each consecutive 429 halves the threshold. Resets to 0
-  // on a successful response. Without this we'd loop 429ing at the same
-  // size forever -- the dynamic-from-remaining path only activates on a
-  // 200 response that gives us the remaining-tokens header.
-  let panicCap = _PASSTHROUGH_COMPACT_BYTES;
+  // CEILING: when an operator has explicitly set HME_PROXY_COMPACT_BYTES
+  // we honor it as a hard cap (debugging, force-shrink scenarios).
+  // Otherwise, when we've learned the user's actual ITPM cap, use 50%
+  // of it -- request body must fit in ~50% of cap to leave room for
+  // response + any parallel sub-pipeline calls. Falls back to static
+  // 250 KB until the first response header reveals the real cap.
+  let ceiling;
+  if (_COMPACT_BYTES_EXPLICIT) {
+    ceiling = _PASSTHROUGH_COMPACT_BYTES;
+  } else if (_lastInputTokensLimit != null && _lastInputTokensLimit > 0) {
+    ceiling = Math.floor(_lastInputTokensLimit * 0.50 * _BYTES_PER_TOKEN_EST);
+  } else {
+    ceiling = _PASSTHROUGH_COMPACT_BYTES;
+  }
+
+  // PANIC SHRINK: each consecutive 429 halves the ceiling. Resets to 0
+  // on a successful response. Without this we'd loop 429ing at the
+  // same size forever -- the dynamic-from-remaining path only activates
+  // on a 200 response that gives us the remaining-tokens header.
+  let panicCap = ceiling;
   if (_consecutive429s > 0) {
-    panicCap = Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, Math.floor(_PASSTHROUGH_COMPACT_BYTES / Math.pow(2, _consecutive429s)));
+    panicCap = Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, Math.floor(ceiling / Math.pow(2, _consecutive429s)));
   }
-  // From the user's actual ITPM cap (learned from response headers):
-  // request body must fit in ~50% of cap to leave room for response +
-  // any parallel sub-pipeline calls. Without a learned cap, fall back
-  // to the static budget.
-  let limitCap = _PASSTHROUGH_COMPACT_BYTES;
-  if (_lastInputTokensLimit != null && _lastInputTokensLimit > 0) {
-    limitCap = Math.floor(_lastInputTokensLimit * 0.50 * _BYTES_PER_TOKEN_EST);
-  }
-  // From CURRENT remaining (what's left in this rolling minute):
-  let remainingCap = _PASSTHROUGH_COMPACT_BYTES;
+
+  // From CURRENT remaining (what's left in this rolling minute): 70%
+  // of remaining lets us fit the request and leave headroom.
+  let remainingCap = ceiling;
   if (_lastInputTokensRemaining != null && _lastInputTokensRemaining > 0) {
     remainingCap = Math.floor(_lastInputTokensRemaining * 0.70 * _BYTES_PER_TOKEN_EST);
   }
-  const eff = Math.min(panicCap, limitCap, remainingCap);
-  return Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, Math.min(_PASSTHROUGH_COMPACT_BYTES, eff));
+
+  const eff = Math.min(panicCap, remainingCap);
+  return Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, eff);
 }
 // Opus serializer.
 //
