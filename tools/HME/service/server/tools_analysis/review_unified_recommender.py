@@ -13,7 +13,11 @@ from .synthesis_session import append_session_narrative
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
+# meta hidden=True: leading underscore says "internal helper", and the
+# function is invoked from review_unified.py:256 as a sub-section of the
+# unified `review` tool -- not as a standalone public tool. The dir
+# convention is "each unified dispatcher owns one public tool".
+@ctx.mcp.tool(meta={"hidden": True})
 @chained("review")
 
 
