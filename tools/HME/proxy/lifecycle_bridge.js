@@ -120,13 +120,42 @@ function handleLifecycleRoute(clientReq, clientRes) {
     // callers always run through inline (no POST) so this log existing =
     // Claude Code's hook system is reaching us.
     console.error(`[hme-proxy] /hme/lifecycle received event=${event} (${stdin.length}B)`);
+    let _dispatchErr = null;
+    let _result = null;
     try {
-      const result = await hookBridge.dispatchEvent(event, stdin);
-      json(200, result);
+      _result = await hookBridge.dispatchEvent(event, stdin);
+      json(200, _result);
     } catch (err) {
+      _dispatchErr = err;
       console.error(`[hme-proxy] lifecycle dispatch threw: ${err.message}`);
       json(500, { stdout: '', stderr: `dispatch error: ${err.message}`, exit_code: -1 });
     }
+    // EXHAUSTIVE LIFECYCLE DUMP: every hook stdin + result -> blank-debug/
+    // dir. Lets us correlate "no API request followed UserPromptSubmit"
+    // with the actual hook decision (block? injectAdditionalContext?
+    // crash?) instead of spelunking through proxy log.
+    try {
+      const _lcPath = require('path');
+      const _lcFs = require('fs');
+      const { PROJECT_ROOT } = require('./shared');
+      const _lcDir = _lcPath.join(PROJECT_ROOT, 'tmp', 'blank-debug');
+      try { _lcFs.mkdirSync(_lcDir, { recursive: true }); } catch (_e) { /* ignore */ }
+      const _ts = new Date().toISOString().replace(/[:.]/g, '-');
+      const _file = _lcPath.join(_lcDir, `hme-lc-${_ts}-${process.pid}-${event}.json`);
+      let _stdinParsed = null;
+      try { _stdinParsed = JSON.parse(stdin); } catch (_e) { /* keep raw */ }
+      _lcFs.writeFileSync(_file, JSON.stringify({
+        ts: new Date().toISOString(),
+        kind: 'lifecycle',
+        event,
+        stdin_bytes: stdin.length,
+        stdin_raw: stdin,
+        stdin_parsed: _stdinParsed,
+        result: _result,
+        dispatch_error: _dispatchErr ? { message: _dispatchErr.message, stack: _dispatchErr.stack } : null,
+        proxy_pid: process.pid,
+      }, null, 2));
+    } catch (_e) { console.error(`[hme-proxy] lifecycle dump failed: ${_e.message}`); }
   });
   clientReq.on('error', (err) => {
     if (!clientRes.headersSent) json(500, { error: err.message });

@@ -1190,12 +1190,11 @@ function handleRequest(clientReq, clientRes) {
           delete outHeaders['content-length'];
         }
 
-        // RESPONSE TRACE DUMPER: dump EVERY interactive Anthropic response
-        // (200 or non-200, SSE or not) so we have ground truth for any
-        // user-reported blank/anomaly. Earlier "only when text<5 chars +
-        // SSE + 200" filter missed real failures (non-SSE blanks, error
-        // responses, hook-replaced bodies, etc). Rotate to keep last 100
-        // dumps so disk doesn't explode.
+        // EXHAUSTIVE RESPONSE DUMPER: capture COMPLETE raw bodies + all
+        // headers + parsed events for EVERY transaction (anthropic + sub).
+        // No truncation. Rotate to keep last 200 dumps. Each dump is a
+        // self-contained .json with everything needed to fingerprint a
+        // failure -- no need to grep logs or correlate.
         try {
           if (!isAnthropic) throw new Error('skip-non-anthropic');
           const _bdPath = require('path');
@@ -1203,13 +1202,13 @@ function handleRequest(clientReq, clientRes) {
           const { PROJECT_ROOT: _bdRoot } = require('./shared');
           const _dumpDir = _bdPath.join(_bdRoot, 'tmp', 'blank-debug');
           try { _bdFs.mkdirSync(_dumpDir, { recursive: true }); } catch (_e) { /* ignore */ }
-          // Rotate: keep newest 99 (we're about to write #100).
+          // Rotate: keep newest 199 (about to write #200).
           try {
             const _existing = _bdFs.readdirSync(_dumpDir)
-              .filter((n) => n.startsWith('hme-resp-') && n.endsWith('.json'))
+              .filter((n) => n.startsWith('hme-resp-') && (n.endsWith('.json') || n.endsWith('.body')))
               .map((n) => ({ n, t: _bdFs.statSync(_bdPath.join(_dumpDir, n)).mtimeMs }))
               .sort((a, b) => b.t - a.t);
-            for (const { n } of _existing.slice(99)) {
+            for (const { n } of _existing.slice(199 * 2)) {
               try { _bdFs.unlinkSync(_bdPath.join(_dumpDir, n)); } catch (_e) { /* ignore */ }
             }
           } catch (_e) { /* ignore rotation errors */ }
@@ -1222,6 +1221,7 @@ function handleRequest(clientReq, clientRes) {
           let _thinkingBlocks = 0;
           let _toolUseBlocks = 0;
           let _stopReason = null;
+          let _errorEventsSeen = [];
           const _events = [];
           if (_isSse) {
             for (const evRaw of _bodyStr.split('\n\n')) {
@@ -1249,74 +1249,116 @@ function handleRequest(clientReq, clientRes) {
                 }
               } else if (evName === 'message_delta' && evData && evData.delta && evData.delta.stop_reason) {
                 _stopReason = evData.delta.stop_reason;
+              } else if (evName === 'error') {
+                _errorEventsSeen.push(evData);
               }
             }
           }
-          // Heuristic verdict: did the user see something visible?
-          // - text_chars > 0 -> visible text
-          // - tool_use_blocks > 0 -> visible tool call
-          // - everything else (thinking-only, empty, non-SSE error body) -> BLANK
+          // Verdict: visible to user? text_chars>0 OR tool_use blocks present.
           const _isBlank = _textChars === 0 && _toolUseBlocks === 0;
           const _verdict = _isBlank ? 'BLANK' : 'OK';
           const _ts = new Date().toISOString().replace(/[:.]/g, '-');
           const _path_label = _isInteractivePath ? 'interactive' : 'sub';
-          const _dumpFile = _bdPath.join(_dumpDir, `hme-resp-${_ts}-${_verdict}-${_path_label}.json`);
-          const _msgs = (payload && payload.messages) || [];
-          const _lastUserMsg = [..._msgs].reverse().find((m) => m && m.role === 'user');
-          let _lastUserText = '';
-          if (_lastUserMsg) {
-            const c = _lastUserMsg.content;
-            if (typeof c === 'string') _lastUserText = c;
-            else if (Array.isArray(c)) {
-              _lastUserText = c.filter((b) => b && b.type === 'text')
-                .map((b) => b.text || '').join('\n');
+          const _corrId = `${_ts}-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
+          const _dumpFile = _bdPath.join(_dumpDir, `hme-resp-${_corrId}-${_verdict}-${_path_label}.json`);
+          const _bodyFile = _bdPath.join(_dumpDir, `hme-resp-${_corrId}-${_verdict}-${_path_label}.body`);
+          const _reqBodyFile = _bdPath.join(_dumpDir, `hme-resp-${_corrId}-${_verdict}-${_path_label}.req-body`);
+          // Filter env to relevant vars (avoid dumping secrets like OAuth
+          // tokens or API keys, but keep behaviour-influencing config).
+          const _envSnap = {};
+          for (const [k, v] of Object.entries(process.env)) {
+            if (/^(HME_|CLAUDE_CODE_|ANTHROPIC_(BASE_URL|MODEL|VERSION|BETA))/.test(k)) {
+              _envSnap[k] = v;
             }
           }
+          // Sanitize headers: scrub auth bearer / api-key but keep header
+          // PRESENCE (key-listed) so we can tell whether Claude Code sent
+          // auth at all.
+          const _sanitize = (h) => {
+            const out = {};
+            for (const [k, v] of Object.entries(h || {})) {
+              const lk = String(k).toLowerCase();
+              if (lk === 'authorization' || lk === 'x-api-key' || lk === 'cookie') {
+                out[k] = typeof v === 'string'
+                  ? `<redacted len=${v.length} prefix=${v.slice(0, 12)}...>`
+                  : '<redacted>';
+              } else { out[k] = v; }
+            }
+            return out;
+          };
           const _dump = {
             ts: new Date().toISOString(),
+            corr_id: _corrId,
             verdict: _verdict,
             path_label: _path_label,
-            url: clientReq.url,
-            summary: {
+            request: {
+              method: clientReq.method,
+              url: clientReq.url,
+              client_headers: _sanitize(clientReq.headers),
+              upstream_outgoing_headers: _sanitize(upstreamHeaders),
+              body_bytes: bodyBuf.length,
+              outBody_bytes: outBody.length,
+              proxy_mutated_body: outBody.length !== bodyBuf.length,
+              payload_summary: payload ? {
+                model: payload.model,
+                thinking: payload.thinking,
+                output_config: payload.output_config,
+                max_tokens: payload.max_tokens,
+                stream: payload.stream,
+                temperature: payload.temperature,
+                messages_count: Array.isArray(payload.messages) ? payload.messages.length : 0,
+                system_block_count: Array.isArray(payload.system) ? payload.system.length : (payload.system ? 1 : 0),
+                system_total_chars: Array.isArray(payload.system)
+                  ? payload.system.reduce((acc, b) => acc + ((b && b.text) ? b.text.length : 0), 0)
+                  : (typeof payload.system === 'string' ? payload.system.length : 0),
+                tools_count: Array.isArray(payload.tools) ? payload.tools.length : 0,
+                betas: payload.betas,
+                tool_choice: payload.tool_choice,
+                metadata: payload.metadata,
+              } : null,
+            },
+            response: {
               status: outStatus,
+              headers: outHeaders,
+              body_bytes: outBuf.length,
               is_sse: _isSse,
+              had_continuation: !!final,
               text_chars: _textChars,
               thinking_chars: _thinkingChars,
               text_blocks: _textBlocks,
               thinking_blocks: _thinkingBlocks,
               tool_use_blocks: _toolUseBlocks,
               total_events: _events.length,
-              body_bytes: outBuf.length,
               stop_reason: _stopReason,
-              had_continuation: !!final,
+              error_events: _errorEventsSeen,
             },
-            request: {
-              model: payload && payload.model,
-              thinking: payload && payload.thinking,
-              output_config: payload && payload.output_config,
-              max_tokens: payload && payload.max_tokens,
-              messages_count: _msgs.length,
-              system_block_count: Array.isArray(payload && payload.system) ? payload.system.length : (payload && payload.system ? 1 : 0),
-              system_total_chars: Array.isArray(payload && payload.system)
-                ? payload.system.reduce((acc, b) => acc + ((b && b.text) ? b.text.length : 0), 0)
-                : (payload && typeof payload.system === 'string' ? payload.system.length : 0),
-              last_user_text_preview: _lastUserText.slice(0, 4000),
-              tools_count: Array.isArray(payload && payload.tools) ? payload.tools.length : 0,
-              betas: payload && payload.betas,
+            // Full parsed event log so we can see EXACTLY what came back,
+            // event-by-event. No truncation.
+            events: _events,
+            // Proxy state at the time of the response.
+            proxy_state: {
+              passthrough_mode: _passthrough,
+              consecutive_429s: typeof _consecutive429s !== 'undefined' ? _consecutive429s : null,
+              last_input_tokens_remaining: typeof _lastInputTokensRemaining !== 'undefined' ? _lastInputTokensRemaining : null,
+              last_input_tokens_limit: typeof _lastInputTokensLimit !== 'undefined' ? _lastInputTokensLimit : null,
+              proxy_pid: process.pid,
+              proxy_uptime_s: Math.round(process.uptime()),
             },
-            response_headers: outHeaders,
-            // Only include parsed events on blank dumps — the OK case
-            // gets a small summary to keep disk usage bounded.
-            events: _isBlank ? _events : null,
-            raw_body_preview: _bodyStr.slice(0, _isBlank ? 16000 : 4000),
-            raw_body_tail: _bodyStr.length > 16000 ? _bodyStr.slice(-4000) : '',
+            env_snapshot: _envSnap,
           };
           try {
+            // Write the structured JSON dump.
             _bdFs.writeFileSync(_dumpFile, JSON.stringify(_dump, null, 2));
-            if (_isBlank) {
-              console.error(`[hme-proxy] BLANK-RESPONSE -- status=${outStatus} sse=${_isSse} textC=${_textChars} thC=${_thinkingChars} blocks=${_textBlocks}t/${_thinkingBlocks}th/${_toolUseBlocks}tu stop=${_stopReason} -> ${_dumpFile}`);
-            }
-          } catch (_e) { console.error(`[hme-proxy] response-trace dump write failed: ${_e.message}`); }
+            // Write FULL raw response body alongside (binary-safe). This
+            // is the unmodified bytes the client receives, so any encoding
+            // weirdness is preserved exactly. No size cap.
+            _bdFs.writeFileSync(_bodyFile, outBuf);
+            // Write FULL incoming request body too (post any proxy
+            // mutation -- this is what's about to be sent upstream OR was
+            // received from Claude Code, depending on outBody === bodyBuf).
+            _bdFs.writeFileSync(_reqBodyFile, outBody);
+            console.error(`[hme-proxy] dump ${_verdict}/${_path_label} status=${outStatus} sse=${_isSse} textC=${_textChars} thC=${_thinkingChars} blocks=${_textBlocks}t/${_thinkingBlocks}th/${_toolUseBlocks}tu stop=${_stopReason} bodyB=${outBuf.length} reqB=${outBody.length} -> ${_dumpFile}`);
+          } catch (_e) { console.error(`[hme-proxy] dump write failed: ${_e.message} stack=${_e.stack}`); }
         } catch (_e) {
           if (_e && _e.message === 'skip-non-anthropic') { /* expected */ }
           else { console.error(`[hme-proxy] response-trace dumper threw: ${_e.message} stack=${_e.stack}`); }
