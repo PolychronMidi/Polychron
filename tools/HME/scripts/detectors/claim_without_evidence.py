@@ -178,7 +178,13 @@ def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
         return 0
-    events = load_turn_events(sys.argv[1])
+    # Use the full-turn loader so we see EVERY assistant event since the
+    # last user message. The previous code used load_turn_events + only
+    # checked the last assistant event, missing tool_uses in the earlier
+    # assistant messages of multi-event turns -- causing false-positive
+    # fires whenever the verification probe ran in an earlier round and
+    # the final text was a separate assistant message.
+    events = load_full_turn_with_user(sys.argv[1])
     if not events:
         print("ok")
         return 0
@@ -187,9 +193,9 @@ def main() -> int:
         print("ok")
         return 0
 
-    # The whole point: text claims completion BUT same-message tool_uses
+    # The whole point: text claims completion BUT same-TURN tool_uses
     # contain no evidence probe. If there's no claim, fine. If there IS
-    # a claim but ALSO evidence in the same message, fine. Only the
+    # a claim but ALSO evidence in the same turn, fine. Only the
     # claim-without-evidence shape fires.
     text = _last_assistant_text(events)
     claim = _find_claim(text)
@@ -197,7 +203,7 @@ def main() -> int:
         print("ok")
         return 0
 
-    tool_uses = _collect_assistant_tool_uses(last)
+    tool_uses = _collect_assistant_tool_uses_in_turn(events)
     if _had_evidence(tool_uses):
         print("ok")
         return 0
