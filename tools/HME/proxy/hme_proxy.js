@@ -1190,6 +1190,97 @@ function handleRequest(clientReq, clientRes) {
           delete outHeaders['content-length'];
         }
 
+        // BLANK-RESPONSE DIAGNOSTIC: parse outBuf SSE events, count text
+        // chars across all text content_blocks. If total < 5 chars and
+        // status was 200, this is a "suspicious blank" -- dump everything
+        // to /tmp/hme-blank-debug-<ts>.json so we can finally figure
+        // out which middleware/hook is killing legit responses.
+        try {
+          if (outStatus === 200 && isAnthropic && (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream')) {
+            const _bodyStr = outBuf.toString('utf8');
+            let _textChars = 0;
+            let _textBlocks = 0;
+            let _thinkingBlocks = 0;
+            let _toolUseBlocks = 0;
+            const _events = [];
+            // Cheap SSE event parser: events are `event: <name>\ndata: <json>\n\n`.
+            for (const evRaw of _bodyStr.split('\n\n')) {
+              if (!evRaw.trim()) continue;
+              let evName = '';
+              let evDataLines = [];
+              for (const line of evRaw.split('\n')) {
+                if (line.startsWith('event: ')) evName = line.slice(7).trim();
+                else if (line.startsWith('data: ')) evDataLines.push(line.slice(6));
+              }
+              const evDataStr = evDataLines.join('\n');
+              let evData = null;
+              try { evData = JSON.parse(evDataStr); } catch (_e) { /* skip non-JSON */ }
+              _events.push({ event: evName, data: evData });
+              if (evName === 'content_block_start' && evData && evData.content_block) {
+                const t = evData.content_block.type;
+                if (t === 'text') _textBlocks++;
+                else if (t === 'thinking') _thinkingBlocks++;
+                else if (t === 'tool_use') _toolUseBlocks++;
+              } else if (evName === 'content_block_delta' && evData && evData.delta) {
+                if (evData.delta.type === 'text_delta' && typeof evData.delta.text === 'string') {
+                  _textChars += evData.delta.text.length;
+                }
+              }
+            }
+            const _suspiciousBlank = _textChars < 5;
+            if (_suspiciousBlank) {
+              const _dumpDir = path.join(PROJECT_ROOT, 'tmp', 'blank-debug');
+              try { fs.mkdirSync(_dumpDir, { recursive: true }); } catch (_e) { /* ignore */ }
+              const _ts = new Date().toISOString().replace(/[:.]/g, '-');
+              const _dumpFile = path.join(_dumpDir, `hme-blank-${_ts}.json`);
+              const _msgs = (payload && payload.messages) || [];
+              const _lastUserMsg = [..._msgs].reverse().find((m) => m && m.role === 'user');
+              let _lastUserText = '';
+              if (_lastUserMsg) {
+                const c = _lastUserMsg.content;
+                if (typeof c === 'string') _lastUserText = c;
+                else if (Array.isArray(c)) {
+                  _lastUserText = c.filter((b) => b && b.type === 'text')
+                    .map((b) => b.text || '').join('\n');
+                }
+              }
+              const _dump = {
+                ts: new Date().toISOString(),
+                summary: {
+                  text_chars: _textChars,
+                  text_blocks: _textBlocks,
+                  thinking_blocks: _thinkingBlocks,
+                  tool_use_blocks: _toolUseBlocks,
+                  total_events: _events.length,
+                  body_bytes: outBuf.length,
+                  status: outStatus,
+                },
+                request: {
+                  model: payload && payload.model,
+                  thinking: payload && payload.thinking,
+                  output_config: payload && payload.output_config,
+                  max_tokens: payload && payload.max_tokens,
+                  messages_count: _msgs.length,
+                  system_block_count: Array.isArray(payload && payload.system) ? payload.system.length : (payload && payload.system ? 1 : 0),
+                  system_total_chars: Array.isArray(payload && payload.system)
+                    ? payload.system.reduce((acc, b) => acc + ((b && b.text) ? b.text.length : 0), 0)
+                    : (payload && typeof payload.system === 'string' ? payload.system.length : 0),
+                  last_user_text_preview: _lastUserText.slice(0, 2000),
+                  tools_count: Array.isArray(payload && payload.tools) ? payload.tools.length : 0,
+                },
+                response_headers: outHeaders,
+                events: _events,
+                raw_body_preview: _bodyStr.slice(0, 8000),
+                raw_body_tail: _bodyStr.length > 8000 ? _bodyStr.slice(-2000) : '',
+              };
+              try {
+                fs.writeFileSync(_dumpFile, JSON.stringify(_dump, null, 2));
+                console.error(`[hme-proxy] BLANK-RESPONSE DETECTED -- ${_textChars} text chars, ${_textBlocks}t/${_thinkingBlocks}th/${_toolUseBlocks}tu blocks. Dumped to ${_dumpFile}`);
+              } catch (_e) { console.error(`[hme-proxy] BLANK-RESPONSE dump write failed: ${_e.message}`); }
+            }
+          }
+        } catch (_e) { console.error(`[hme-proxy] blank-response detector threw: ${_e.message}`); }
+
         // Strip content-length on ANY SSE-mutation path. Upstream's header
         // advertised the pre-transform byte count; piping through
         // SseTransform (below) changes the body length. Without this
