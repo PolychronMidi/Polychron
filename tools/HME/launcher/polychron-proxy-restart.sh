@@ -148,6 +148,11 @@ if [ -f "$_VALVE_FLAG" ]; then
   rm -f "$_VALVE_FLAG" \
     && echo "[proxy-restart] removed $_VALVE_FLAG (valve state reset)" >&2
 fi
+_VALVE_STATE="$PROJECT_ROOT/tmp/hme-proxy-valve-state.json"
+if [ -f "$_VALVE_STATE" ]; then
+  rm -f "$_VALVE_STATE" \
+    && echo "[proxy-restart] removed $_VALVE_STATE (auto-recovery state reset)" >&2
+fi
 
 # 5. Surgically rewrite the proxy bundle's lines in the PID file --
 # preserve llama-arbiter / llama-coder entries so the full-stack
