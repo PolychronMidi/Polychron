@@ -73,6 +73,9 @@ DETECTORS = [
     # systematic-debugging Phase Gate -- bug-report user prompt
     # followed by Edit/Write without prior investigation-shape probe.
     ("fix_without_investigation", "fix_without_investigation"),
+    # CLAUDE.md: "Inline comments single-line and terse." Catches
+    # 4+ line contiguous comment runs in this turn's Edit/Write calls.
+    ("comment_bloat", "comment_bloat"),
 ]
 
 
