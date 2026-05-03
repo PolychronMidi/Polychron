@@ -275,20 +275,27 @@ function ackStripRewrite(eventName, data, ctx) {
       }
     }
     if (_isBareAck(text)) {
-      // Emit LIFESAVER alert so the next turn surfaces this as a bug
-      // to diagnose, not noise to dodge. The append is best-effort --
-      // log dir may not exist on a fresh checkout.
+      // Strip is the cure -- the chat client never sees this "ok".
+      // Write a structured stat line to a SEPARATE log (not errors.log)
+      // so frequency stays observable without lifesaver/status injectors
+      // re-surfacing it as an unresolved error every turn. The earlier
+      // "emit to errors.log so the agent diagnoses" design self-defeated:
+      // the strip already handles the user-visible spam, so the alert
+      // became its own coherence-noise spam.
       try {
         const fs = require('fs');
         const path = require('path');
         const { PROJECT_ROOT } = require('./shared');
-        const ts = new Date().toISOString();
         fs.appendFileSync(
-          path.join(PROJECT_ROOT, 'log', 'hme-errors.log'),
-          `[${ts}] [bare-ack-spam] agent emitted bare-ack via SSE stream (cascade-after-deny); diagnose and fix the underlying detector cascade -- this is the spam pattern the user explicitly flagged\n`,
+          path.join(PROJECT_ROOT, 'log', 'hme-bare-ack-strips.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            path: 'sse',
+            context: 'cascade-after-deny',
+            text_preview: text.slice(0, 40),
+          }) + '\n',
         );
-      } catch (_e) { /* alert is best-effort */ }
-      // Drop the whole block -- the chat client never sees this "ok".
+      } catch (_e) { /* stat is best-effort */ }
       return null;
     }
     // Not a bare ack -- replay the held events as a list, then the stop.
