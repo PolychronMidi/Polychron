@@ -48,9 +48,7 @@ function _loadPersistedValveState() {
     const raw = fs.readFileSync(_VALVE_STATE_FILE, 'utf8');
     const s = JSON.parse(raw);
     if (typeof s.trippedAt !== 'number' || typeof s.sequence !== 'number') return;
-    // If the persisted backoff window has already elapsed, treat as
-    // clean -- don't make a fresh process start in passthrough for a
-    // trip that should already have auto-cleared.
+    // Treat already-elapsed backoff as clean (don't start in passthrough).
     const idx = Math.min(s.sequence, BACKOFF_SCHEDULE_MS.length - 1);
     const elapsed = Date.now() - s.trippedAt;
     if (elapsed >= BACKOFF_SCHEDULE_MS[idx]) {
