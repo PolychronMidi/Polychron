@@ -1237,7 +1237,15 @@ function handleRequest(clientReq, clientRes) {
           // out of a block we're about to discard whole). slopStrip is
           // always-on; ackStrip is only-when-priorUserWasDeny.
           const xform = new SseTransform({
-            rewriters: [stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite],
+            // fpGateMarkerRewrite runs FIRST: handles the structured
+            // [FP-CHECK: yes/no] marker injected by stop_hook_fp_gate
+            // middleware. yes -> truncate to `.`; no -> strip marker
+            // line, pass rest through. Catches what the chunk-level
+            // upstream kill in hme_proxy.js may have let through (the
+            // partial buffer that arrived before destroy()).
+            // stopHookCeremonyStripRewrite is the prose-shape fallback
+            // for when the agent ignores the fp-gate entirely.
+            rewriters: [fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite],
           });
           // Populate the priorUserWasDeny flag the ack-strip rewriter
           // gates on. Walk request payload's messages to find the latest
