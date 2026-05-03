@@ -47,7 +47,7 @@ module.exports = {
     const kept = payload.tools.filter((t) => {
       const name = t && typeof t.name === 'string' ? t.name : '';
       const drop = DROP_SET.has(name);
-      if (drop && t && t.cache_control && !rescuedCC) rescuedCC = t.cache_control;
+      if (drop && t && t.cache_control) rescuedCC = t.cache_control;
       return !drop;
     });
     if (kept.length === before) return;
