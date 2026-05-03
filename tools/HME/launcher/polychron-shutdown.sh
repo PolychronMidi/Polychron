@@ -82,5 +82,9 @@ done
 # tripped state, deliberate restarts reset it.
 _VALVE_FLAG="$PROJECT_ROOT/tmp/hme-proxy-valve-tripped.flag"
 [ -f "$_VALVE_FLAG" ] && rm -f "$_VALVE_FLAG" && echo "[shutdown] removed $_VALVE_FLAG (valve state reset)" >&2
+# Clear the auto-recovery state file too -- same semantic: deliberate
+# restart starts fresh, watchdog respawns inherit.
+_VALVE_STATE="$PROJECT_ROOT/tmp/hme-proxy-valve-state.json"
+[ -f "$_VALVE_STATE" ] && rm -f "$_VALVE_STATE" && echo "[shutdown] removed $_VALVE_STATE (auto-recovery state reset)" >&2
 
 echo "[shutdown] stack stopped" >&2
