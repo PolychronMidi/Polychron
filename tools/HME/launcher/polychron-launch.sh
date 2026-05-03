@@ -381,10 +381,15 @@ if [ "${HME_NO_LAUNCH_VSCODE:-0}" != "1" ]; then
       "--setenv=PROJECT_ROOT=$PROJECT_ROOT"
     )
     [ -n "${DISPLAY:-}" ]                  && _setenv_args+=("--setenv=DISPLAY=$DISPLAY")
-    [ -n "${WAYLAND_DISPLAY:-}" ]          && _setenv_args+=("--setenv=WAYLAND_DISPLAY=$WAYLAND_DISPLAY")
-    [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && _setenv_args+=("--setenv=DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS")
-    [ -n "${XDG_RUNTIME_DIR:-}" ]          && _setenv_args+=("--setenv=XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR")
-    [ -n "${XAUTHORITY:-}" ]               && _setenv_args+=("--setenv=XAUTHORITY=$XAUTHORITY")
+    # Right-side `${VAR:-}` is semantically identical to bare `$VAR` here
+    # (the && only fires when the test confirms VAR is non-empty), but
+    # bare references trip the audit_shell_undefined_vars static checker
+    # which can't prove the flow-control safety. Using the guarded form
+    # consistently keeps the audit clean.
+    [ -n "${WAYLAND_DISPLAY:-}" ]          && _setenv_args+=("--setenv=WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}")
+    [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && _setenv_args+=("--setenv=DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-}")
+    [ -n "${XDG_RUNTIME_DIR:-}" ]          && _setenv_args+=("--setenv=XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-}")
+    [ -n "${XAUTHORITY:-}" ]               && _setenv_args+=("--setenv=XAUTHORITY=${XAUTHORITY:-}")
     [ -n "${HOME:-}" ]                     && _setenv_args+=("--setenv=HOME=$HOME")
     [ -n "${USER:-}" ]                     && _setenv_args+=("--setenv=USER=$USER")
     [ -n "${PATH:-}" ]                     && _setenv_args+=("--setenv=PATH=$PATH")
