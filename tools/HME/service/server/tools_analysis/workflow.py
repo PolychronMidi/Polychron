@@ -271,12 +271,25 @@ def _hme_self_aware_context(abs_path: str, py_stem: str) -> str | None:
     return "\n".join(parts) if parts else None
 
 
-def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30, target_hints: list = None) -> str:
+def _warm_pre_edit_cache_sync(
+    max_files: int = 2000,
+    synthesis_hot: int = 30,
+    target_hints: list = None,
+    wall_clock_budget_s: float = 90.0,
+) -> str:
     """Synchronous cache warming -- called from background thread.
 
+    Tier-1 caches (callers + KB hits) are now disk-backed via
+    _disk_cache.DiskCache; cached entries cost ~O(1) per check, so the
+    historical max_files=200 cap (a per-call latency budget for in-RAM
+    dicts that died on every restart) was raised to 2000 default. The
+    wall-clock budget bounds total work per call so a fresh project with
+    thousands of unwarmed files doesn't block the warm thread for
+    minutes -- subsequent warm calls pick up from the disk cache and
+    continue filling in coverage.
+
     target_hints: optional list of file paths or module names to prioritize at the
-    front of the warming queue (Layer 11 intent propagation). Matching files are
-    moved to the top of js_files before the max_files slice is applied.
+    front of the warming queue (Layer 11 intent propagation).
     """
     import glob as _glob
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
@@ -287,13 +300,23 @@ def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30, tar
             name = os.path.basename(fpath).replace(".js", "")
             return any(h in fpath or h in name for h in target_hints)
         js_files = sorted(js_files, key=_hint_priority, reverse=True)
+    # Cap by the (much higher) per-call budget; final coverage is
+    # cumulative across calls thanks to disk persistence.
     js_files = js_files[:max_files]
     _caller_cache = _get_caller_cache()
     _kb_cache = _get_kb_hits_cache()
     _be_cache = _get_before_editing_cache()
     kb_version = getattr(ctx, "_kb_version", 0)
     warmed = 0
+    import time as _time_warm
+    _wall_start = _time_warm.monotonic()
     for fpath in js_files:
+        if _time_warm.monotonic() - _wall_start > wall_clock_budget_s:
+            logger.info(
+                f"warm_pre_edit_cache: wall-clock budget {wall_clock_budget_s}s "
+                f"exceeded after {warmed} files; remaining will be picked up on next warm call"
+            )
+            break
         module_name = os.path.basename(fpath).replace(".js", "")
         try:
             mtime = os.path.getmtime(fpath)
