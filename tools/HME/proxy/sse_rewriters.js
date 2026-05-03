@@ -986,12 +986,7 @@ function fpGateMarkerRewrite(eventName, data, ctx) {
   return data;
 }
 
-// Surgical solo-rationale paragraph trimmer. Buffers text content_blocks,
-// at content_block_stop scans the assembled text for a trailing
-// solo-rationale paragraph (mid-block, separated from prior content by a
-// blank line), and rewrites the block with that paragraph removed -- the
-// substantive prefix is preserved. Always-on (no priorUserWasDeny gate);
-// solo-rationale is bypass-prose regardless of trigger context.
+// Surgical trim of trailing solo-rationale paragraph; preserves substantive prefix.
 function soloRationaleTrimRewrite(eventName, data, ctx) {
   const key = 'srt_hold';
   let holds = ctx.get(key);
