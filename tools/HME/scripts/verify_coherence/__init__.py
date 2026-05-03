@@ -67,6 +67,7 @@ from .code_audits import (  # noqa: F401
     TestEnvUndefinedVerifier, TestIsolationVerifier,
     HardcodedToolInvocationVerifier, StalePathRenameVerifier,
     ConjugateChannelVerifier, AgentLoopQualityVerifier,
+    CommentBloatVerifier,
 )
 from .autocommit_health import (  # noqa: F401
     AutocommitHealthVerifier, ShimHealthVerifier,
