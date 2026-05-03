@@ -96,20 +96,44 @@ def main() -> int:
     os.makedirs(os.path.join(tmp_project, "tmp"), exist_ok=True)
 
     # Copy Python source into tmp_project so relative paths resolve.
-    # onboarding_chain.py imports its dispatch sibling via `from
-    # .onboarding_chain_dispatch import ...` (line 275) -- without that
-    # sibling in the sandbox the load fails and main() exits before
-    # printing any PASS/FAIL lines, producing the "verifier produced no
-    # PASS/FAIL output" ERROR upstream.
+    # Hardcoded lists kept lagging behind real-codebase additions
+    # (onboarding_chain.py grew a `from .onboarding_chain_dispatch`
+    # sibling import; that file in turn imported `_helpers`; todo.py
+    # later added a `_lifesaver` sibling -- each addition silently
+    # broke the verifier with "verifier produced no PASS/FAIL output").
+    # Now: seed with the two entry-point modules and walk relative
+    # `from .X import` references transitively, copying every sibling
+    # .py we find in the same directory.
+    import re
     import shutil
-    for rel in [
+    static_files = ["tools/HME/service/hme_env.py", "CLAUDE.md"]
+    entry_points = [
         "tools/HME/service/server/onboarding_chain.py",
-        "tools/HME/service/server/onboarding_chain_dispatch.py",
-        "tools/HME/service/server/onboarding_chain_helpers.py",
         "tools/HME/service/server/tools_analysis/todo.py",
-        "tools/HME/service/hme_env.py",
-        "CLAUDE.md",
-    ]:
+    ]
+    visited = set()
+    queue = list(entry_points)
+    while queue:
+        rel = queue.pop()
+        if rel in visited:
+            continue
+        visited.add(rel)
+        src = os.path.join(real_project, rel)
+        if not os.path.isfile(src):
+            continue
+        dst = os.path.join(tmp_project, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy(src, dst)
+        # Walk relative-import siblings.
+        with open(src, encoding="utf-8") as _src_fp:
+            _src_text = _src_fp.read()
+        _rel_dir = os.path.dirname(rel)
+        for _m in re.finditer(r'^\s*from \.([a-zA-Z_][a-zA-Z0-9_]*) import', _src_text, re.MULTILINE):
+            _sib = _m.group(1) + ".py"
+            _sib_rel = os.path.join(_rel_dir, _sib)
+            if os.path.isfile(os.path.join(real_project, _sib_rel)):
+                queue.append(_sib_rel)
+    for rel in static_files:
         src = os.path.join(real_project, rel)
         dst = os.path.join(tmp_project, rel)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
