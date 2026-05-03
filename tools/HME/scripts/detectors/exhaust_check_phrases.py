@@ -218,11 +218,8 @@ DEFERRAL_REGEXES = (
         r"^\s*\([a-c]\)\s*\*\*[^*]+\*\*",
         re.MULTILINE,
     ),
-    # X-of-Y partial-coverage framing. "(8 of 29)" / "5 of 12 fixes" /
-    # "shipped 3 of 7 patterns". User asked for all; agent shipped some.
-    # Scoped to deferral-shape nouns so legitimate "page 2 of 5" / "v3
-    # of 4 schemas" stays clear. Catches the exact framing that motivated
-    # this addition: "8 of 29 patterns".
+    # X-of-Y partial-coverage framing. Scoped to deferral-shape nouns
+    # so legitimate "page 2 of 5" stays clear.
     re.compile(
         r"\b\d+\s+(?:of|out\s+of)\s+\d+\b[^\n]{0,40}\b("
         r"pattern|item|fix|tool|bug|finding|opportunit|implement|"
