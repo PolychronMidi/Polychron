@@ -97,6 +97,7 @@ function readVerdicts() {
     PILE_ON: 'ok',
     CLAIM_WITHOUT_EVIDENCE: 'ok',
     FIX_WITHOUT_INVESTIGATION: 'ok',
+    COMMENT_BLOAT: 'ok',
   };
   if (!fs.existsSync(VERDICTS_FILE)) return out;
   let text = '';
