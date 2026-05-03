@@ -85,32 +85,54 @@ for pat in "${_PROXY_BUNDLE_PATTERNS[@]}"; do
     && echo "[proxy-restart] SIGTERM -> pattern: $pat" >&2 || true
 done
 
-# 2. Wait for the proxy + worker ports to actually clear. Polling beats
-# a fixed sleep -- on a healthy box ports clear in <1s; on a stuck one
-# we want to know.
+# 2. Wait for the proxy bundle PROCESSES to exit -- not just ports.
+#
+# Why processes, not ports: the proxy's _gracefulShutdown calls
+# server.close() FIRST (port goes unhealthy in <100ms), then drains
+# in-flight requests for up to DRAIN_TIMEOUT_MS=3000ms, then SIGTERMs
+# children, then setTimeout(process.exit, 500). Polling on port liveness
+# breaks the wait loop instantly and SIGKILLs mid-graceful-drain --
+# defeating the whole point of having signal handlers.
+#
+# Grace window: 6s covers the 3000+500ms graceful path with headroom
+# for slow drains.
 
+_GRACE_S=6
 _waited=0
-while [ "$_waited" -lt 10 ]; do
-  _proxy_up=0; _worker_up=0
-  _port_healthy "${PROXY_URL}/health"  && _proxy_up=1
-  _port_healthy "${WORKER_URL}/health" && _worker_up=1
-  [ "$_proxy_up" = "0" ] && [ "$_worker_up" = "0" ] && break
+while [ "$_waited" -lt "$_GRACE_S" ]; do
+  _alive=0
+  for entry in "${_proxy_pids[@]:-}"; do
+    pid="${entry##*:}"
+    [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && _alive=1
+  done
+  for pat in "${_PROXY_BUNDLE_PATTERNS[@]}"; do
+    pgrep -f "$pat" >/dev/null 2>&1 && _alive=1
+  done
+  [ "$_alive" = "0" ] && break
   sleep 1
   _waited=$((_waited + 1))
 done
 
-# 3. SIGKILL anything still holding either port after the grace window.
+# 3. SIGKILL anything that survived the grace window.
+_killed_any=0
 for entry in "${_proxy_pids[@]:-}"; do
   pid="${entry##*:}"
-  if kill -0 "$pid" 2>/dev/null; then
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
     kill -KILL "$pid" 2>/dev/null \
-      && echo "[proxy-restart] SIGKILL -> stuck pid ${pid}" >&2
+      && echo "[proxy-restart] SIGKILL -> stuck pid ${pid}" >&2 \
+      && _killed_any=1
   fi
 done
 for pat in "${_PROXY_BUNDLE_PATTERNS[@]}"; do
-  pkill -KILL -f "$pat" 2>/dev/null \
-    && echo "[proxy-restart] SIGKILL -> pattern: $pat" >&2 || true
+  if pgrep -f "$pat" >/dev/null 2>&1; then
+    pkill -KILL -f "$pat" 2>/dev/null \
+      && echo "[proxy-restart] SIGKILL -> pattern: $pat" >&2 \
+      && _killed_any=1
+  fi
 done
+if [ "$_killed_any" = "0" ]; then
+  echo "[proxy-restart] proxy bundle exited cleanly via SIGTERM after ${_waited}s" >&2
+fi
 
 if _port_healthy "${PROXY_URL}/health"; then
   echo "[proxy-restart] ERROR: proxy port :${PROXY_PORT} still healthy after kill -- aborting" >&2
