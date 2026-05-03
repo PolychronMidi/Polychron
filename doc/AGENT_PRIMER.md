@@ -25,16 +25,17 @@ Every new session starts in onboarding state `boot`. The chain decider -- living
 
 ## The loop (one session, one evolution)
 
+State machine -- 7 forward-only states, advancement is automatic via tool handlers + hooks:
+
 ```
- 1. i/hme-admin selftest                    -> boot check
- 2. i/evolve focus=design                   -> pick target module
- 3. Edit                                    -> KB briefing auto-chains into the Edit hook;
-                                              constraints/callers/risks appear as a
-                                              systemMessage before the edit runs
- 4. i/review mode=forget                    -> audit changes against KB (must be clean)
- 5. Bash: npm run main                      -> run the pipeline (run_in_background=true)
- 6. STABLE | EVOLVED verdict                -> auto-commit, hooks advance state
- 7. i/learn title=... content=...               -> persist the round + HME observations
+boot --[i/hme-admin selftest passes]-->
+  selftest_ok --[i/evolve focus=design|forge|curate|stress|invariants]-->
+    targeted --[Edit on /src/ (briefing auto-chains)]-->
+      edited --[i/review mode=forget reports zero warnings]-->
+        reviewed --[Bash: npm run main]-->
+          piped --[STABLE | EVOLVED verdict]-->
+            verified --[i/learn title=... content=...]-->
+              graduated  (state file deleted)
 ```
 
 You never call `i/hme-read mode=before` explicitly -- the briefing is woven into every Edit on a `/src/` file automatically by the pretooluse hook. Each step either advances state automatically or gets blocked with a one-line redirect telling you the exact next call. If a call gets denied, the reason is the lesson.
