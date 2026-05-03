@@ -65,6 +65,14 @@ DETECTORS = [
     # to catch text-shaped dodges); pile_on catches the meta-pattern
     # of rule-stacking directly.
     ("pile_on", "pile_on"),
+    # Imported from polychron-references/superpowers-main:
+    # verification-before-completion's Iron Law -- success-vocabulary
+    # without same-turn evidence-producing tool call.
+    ("claim_without_evidence", "claim_without_evidence"),
+    # Imported from polychron-references/superpowers-main:
+    # systematic-debugging Phase Gate -- bug-report user prompt
+    # followed by Edit/Write without prior investigation-shape probe.
+    ("fix_without_investigation", "fix_without_investigation"),
 ]
 
 
