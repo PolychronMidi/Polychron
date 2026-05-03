@@ -458,87 +458,8 @@ async function _injectHmeTools(payload) {
   }
 }
 
-function _handleSpawnRoute(clientReq, clientRes) {
-  const supervisor = require('./supervisor/index');
-  const [rawPath] = (clientReq.url || '').split('?');
-  const parts = rawPath.split('/').filter(Boolean);  // ['hme', 'spawn', <id>?]
-  const spawnId = parts[2] || null;
-
-  const json = (status, body) => {
-    clientRes.writeHead(status, { 'Content-Type': 'application/json' });
-    clientRes.end(JSON.stringify(body));
-  };
-
-  if (clientReq.method === 'GET' && !spawnId) return json(200, { processes: supervisor.adhocList() });
-  if (clientReq.method === 'GET' && spawnId) {
-    const s = supervisor.adhocStatus(spawnId);
-    return s ? json(200, s) : json(404, { error: 'unknown spawn id' });
-  }
-  if (clientReq.method === 'DELETE' && spawnId) {
-    const ok = supervisor.adhocKill(spawnId, 'SIGTERM');
-    return json(ok ? 200 : 404, { id: spawnId, killed: ok });
-  }
-  if (clientReq.method === 'POST' && !spawnId) {
-    const chunks = [];
-    clientReq.on('data', (c) => chunks.push(c));
-    clientReq.on('end', () => {
-      let spec;
-      try { spec = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); }
-      catch (err) { return json(400, { error: 'bad JSON: ' + err.message }); }
-      if (!spec.cmd) return json(400, { error: 'missing required field: cmd' });
-      try {
-        const result = supervisor.adhocSpawn(spec);
-        return json(200, result);
-      } catch (err) {
-        return json(500, { error: err.message });
-      }
-    });
-    return;
-  }
-  json(405, { error: 'method not allowed' });
-}
-
-/**
- * Lifecycle bridge route. One forwarder script POSTs here with:
- *   - query ?event=<EventName>
- *   - body = the Claude Code hook stdin JSON payload
- * We dispatch to the appropriate bash hook chain and respond with JSON:
- *   {stdout: "...", stderr: "...", exit_code: <int>}
- * The forwarder script relays each field back to Claude Code's plugin
- * machinery, preserving block decisions, banners, and exit codes.
- */
-function _handleLifecycleRoute(clientReq, clientRes) {
-  const json = (status, body) => {
-    clientRes.writeHead(status, { 'Content-Type': 'application/json' });
-    clientRes.end(JSON.stringify(body));
-  };
-  if (clientReq.method !== 'POST') return json(405, { error: 'POST only' });
-  const url = new URL(clientReq.url, 'http://127.0.0.1');
-  const event = url.searchParams.get('event') || '';
-  if (!event) return json(400, { error: 'missing ?event=<EventName>' });
-  const chunks = [];
-  clientReq.on('data', (c) => chunks.push(c));
-  clientReq.on('end', async () => {
-    const stdin = Buffer.concat(chunks).toString('utf8') || '{}';
-    // Mark Claude Code's hook system as active for this event so inline
-    // fallback fires don't double-invoke it.
-    _recordLifecycleHit(event);
-    // Log receipt so we can verify the forwarder path is active. Fallback
-    // callers always run through inline (no POST) so this log existing =
-    // Claude Code's hook system is reaching us.
-    console.error(`[hme-proxy] /hme/lifecycle received event=${event} (${stdin.length}B)`);
-    try {
-      const result = await hookBridge.dispatchEvent(event, stdin);
-      json(200, result);
-    } catch (err) {
-      console.error(`[hme-proxy] lifecycle dispatch threw: ${err.message}`);
-      json(500, { stdout: '', stderr: `dispatch error: ${err.message}`, exit_code: -1 });
-    }
-  });
-  clientReq.on('error', (err) => {
-    if (!clientRes.headersSent) json(500, { error: err.message });
-  });
-}
+// _handleSpawnRoute + _handleLifecycleRoute moved to routes_admin.js +
+// lifecycle_bridge.js respectively. Bound at the top of this file.
 
 function handleRequest(clientReq, clientRes) {
   if (clientReq.url === '/health') {
