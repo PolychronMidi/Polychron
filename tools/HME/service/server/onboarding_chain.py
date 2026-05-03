@@ -1,7 +1,8 @@
 """HME onboarding chain -- per-session walkthrough state machine.
 
-The "chain decider middleman" from HME_ONBOARDING_FLOW.md. Lives INSIDE the
-MCP server so tool handlers can invoke each other directly (hooks cannot).
+Chain-decider middleman. Lives INSIDE the MCP server so tool handlers can
+invoke each other directly (hooks cannot). Agent-facing walkthrough is in
+doc/AGENT_PRIMER.md.
 
 Linear state machine with silent prerequisite auto-chaining:
 
@@ -16,16 +17,81 @@ Linear state machine with silent prerequisite auto-chaining:
     graduated       loop complete -- blocks relax, state file deleted
 
 Design rules:
-  * Agents see ONE tool call per logical step. Prerequisites run silently
-    inside the tool handler and their output is prepended to the result.
-  * Advancement is automatic -- tools and hooks write state, agent never does.
-  * Missing state file = graduated (permissive). Hooks create it on SessionStart.
-  * Chain never HARD-blocks a tool. Failures are reported, tool still runs.
-    Hard gates live in shell hooks (for Edit/Bash, which this module can't reach).
-  * Graduation is irreversible within a session. Next SessionStart re-arms boot.
+  * One tool call per logical step. Prerequisites run silently inside
+    the tool handler and their output is prepended to the result.
+  * Advancement is automatic -- tools/hooks write state, agent never does.
+  * Forward-only. Eliminates whole classes of race conditions.
+  * Permissive on missing/corrupt state -- treat as graduated; never get
+    the agent stuck.
+  * Composition is the carrier wave; HME self-monitoring rides along
+    (every walkthrough targets a composition evolution).
+  * Hooks enforce what the chain decider cannot. Hooks handle Edit/Bash/
+    Write; for HME tools the chain decider is the authority.
+  * Buddy continuity is orthogonal -- buddy_init.sh runs in parallel;
+    onboarding state and buddy state never read each other.
 
-State persists across auto-compaction (tmp/ survives). PreCompact/PostCompact
-handle edge cases.
+Auto-chaining (one rule):
+  When state == boot AND any HME tool other than hme_admin(action='selftest')
+  is called, the handler runs selftest in-process first, prepends its output
+  to the tool result, and advances to selftest_ok if zero failures. Other
+  transitions describe natural workflow order; silent auto-chaining for
+  judgment calls (which target? what content?) would hide work from the agent.
+
+Tool-handler wiring (@chained decorator):
+  Sits between @ctx.mcp.tool() and the function body. @ctx.mcp.tool() must
+  be OUTERMOST so FastMCP registers the wrapped function. functools.wraps
+  preserves __wrapped__; inspect.signature() follows transparently.
+  Decorator order:
+      @ctx.mcp.tool()
+      @chained("evolve")
+      def evolve(...): ...
+  chain_enter runs prereqs + captures output. Tool body runs. Prereq
+  output prepended to result. chain_exit advances state, appends status line.
+
+Gate hooks (external tools the chain decider can't reach from Python):
+  pretooluse_edit.sh   block Edit on /src/ when state earlier than briefed
+  pretooluse_bash.sh   block npm-run-main when state earlier than reviewed
+  posttooluse_edit.sh  advance briefed->edited on src/ Edit success
+  posttooluse_bash.sh  advance reviewed->piped on npm launch; piped->verified
+                       on STABLE/EVOLVED verdict
+
+Graduation:
+  learn(title=, content=) with non-empty args + state == verified -> chain_exit
+  sets state to graduated, deletes tmp/hme-onboarding.state and .target,
+  appends "🎓 HME ONBOARDING COMPLETE", subsequent calls bypass gates.
+  Per-session: next SessionStart re-arms boot via sessionstart.sh:_onb_init.
+
+Failure modes:
+  state file missing mid-session  -> treated as graduated (permissive)
+  Python import fails             -> shell hooks still gate via raw cat
+  agent picks bad target          -> read() errors; state stays targeted
+  agent edits outside /src/       -> no block; gates only fire for /src/
+  selftest fails at boot          -> output prepended; state stays boot
+  user interrupts mid-loop        -> state persists; nexus reminder next turn
+  compaction                      -> tmp/ survives; walkthrough resumes
+
+Adding a new state:
+  1. Append to STATES + STEP_LABELS
+  2. Add transition branch in _advance()
+  3. Add to _ONB_STATES in hooks/helpers/_onboarding.sh
+  4. Add step-label case in _onb_step_label
+  5. Update doc/AGENT_PRIMER.md state-machine block
+
+Adding a new gate for an external tool:
+  1. Source _onboarding.sh in pretooluse_*.sh
+  2. _onb_before "state_name" + emit decision: deny with instructive reason
+  3. Matching posttooluse_*.sh advances via _onb_advance_to
+
+Native TodoWrite integration:
+  set_state writes the state file AND register_onboarding_tree(steps) in
+  todo.py. pretooluse_todowrite.sh merges the HME tree into the agent's
+  native list via updatedInput, preserving sub IDs across transitions.
+  On graduation, clear_onboarding_tree() removes the parent + subs.
+
+NOT enforced:
+  * Cross-session graduation persistence (matches LLM amnesia)
+  * Order within a state (agent edits multiple files in any order)
+  * Quality of learn() content (KB quality lives in evolve(focus='curate'))
 """
 import functools
 import logging
