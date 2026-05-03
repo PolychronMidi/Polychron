@@ -1489,6 +1489,7 @@ function handleRequest(clientReq, clientRes) {
     const UPSTREAM_TIMEOUT_MS = 1_800_000;
     upstreamReq.setTimeout(UPSTREAM_TIMEOUT_MS, () => {
       console.error(`[hme-proxy] upstream timeout (${isStreaming ? 'streaming' : 'sync'})`);
+      try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
       upstreamReq.destroy(new Error('upstream timeout'));
     });
 
