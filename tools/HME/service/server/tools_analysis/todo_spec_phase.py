@@ -17,6 +17,7 @@ _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from hme_env import ENV  # noqa: E402
+from paths import spec_file as _spec_file, todo_file as _todo_md_file, kb_devlog_dir as _devlog_dir  # noqa: E402
 
 from server import context as ctx
 from server.tools_analysis import _track
@@ -40,15 +41,15 @@ from server.tools_analysis.todo_spec_ingest import (  # noqa: F401
 # doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
 
 
-_SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "templates", "SPEC.md")
-_TODOMD_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "templates", "TODO.md")
+# _spec_file() moved to paths.spec_file() -- lazy resolution for hot-reload
+# _todo_md_file() moved to paths.todo_file()
 # Archive lives under KB as the "devlog" arm -- searchable through the
 # same substrate as other knowledge entries, decoupled from the active
 # doc/ directory so completed work doesn't tax agents reading the spec.
 # Each archive event writes ONE timestamped file containing the
 # just-completed set of phases (no monthly rotation; the archive trigger
 # IS set-completion).
-_DEVLOG_DIR = os.path.join(ENV.require("PROJECT_ROOT"), "tools", "HME", "KB", "devlog")
+# _devlog_dir() moved to paths.kb_devlog_dir()
 # Matches a Next-up entry: "- [tier] description. Reason: ..."
 _NEXT_UP_RE = re.compile(
     r"^\s*-\s+\[(easy|medium|hard)\]\s+(.+?)(?:\s+Reason:\s+(.+?))?\s*$",
@@ -121,8 +122,8 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
     text_norm = _normalize_for_match(text_root)
     flipped = ""
     flipped_idx = -1
-    if os.path.exists(_SPEC_FILE) and text_norm:
-        with open(_SPEC_FILE, encoding="utf-8") as f:
+    if os.path.exists(_spec_file()) and text_norm:
+        with open(_spec_file(), encoding="utf-8") as f:
             spec_md = f.read()
         spec_lines = spec_md.splitlines()
         # Score every open SPEC item by common-prefix length.
@@ -150,14 +151,14 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
             spec_lines[i] = new_line
             flipped = spec_text
             flipped_idx = i
-            with open(_SPEC_FILE, "w", encoding="utf-8") as f:
+            with open(_spec_file(), "w", encoding="utf-8") as f:
                 f.write("\n".join(spec_lines) + ("\n" if spec_md.endswith("\n") else ""))
     # Append to TODO.md Just shipped at the FIRST entry slot (newest-first).
     # Skip past HTML comment blocks (`<!-- ... -->`) so the insertion
     # lands in real content space, not inside the template stub.
     shipped = f"- {text_root} -- by i/todo #{entry.get('id')} at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
-    if os.path.exists(_TODOMD_FILE):
-        with open(_TODOMD_FILE, encoding="utf-8") as f:
+    if os.path.exists(_todo_md_file()):
+        with open(_todo_md_file(), encoding="utf-8") as f:
             md = f.read()
         marker = "## Just shipped (last cycle)"
         if marker in md:
@@ -210,6 +211,6 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
             # newest entry always survives. Trim count is the difference
             # between count-before and the configured limit.
             trimmed_md, _trim_n = _trim_just_shipped(new_md)
-            with open(_TODOMD_FILE, "w", encoding="utf-8") as f:
+            with open(_todo_md_file(), "w", encoding="utf-8") as f:
                 f.write(trimmed_md)
     return flipped, shipped

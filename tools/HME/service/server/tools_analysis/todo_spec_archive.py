@@ -17,6 +17,7 @@ _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from hme_env import ENV  # noqa: E402
+from paths import spec_file as _spec_file, todo_file as _todo_md_file, kb_devlog_dir as _devlog_dir  # noqa: E402
 
 from server import context as ctx
 from server.tools_analysis import _track
@@ -37,15 +38,15 @@ from server.tools_analysis.todo import (
 # doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
 
 
-_SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "templates", "SPEC.md")
-_TODOMD_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "templates", "TODO.md")
+# _spec_file() moved to paths.spec_file() -- lazy resolution for hot-reload
+# _todo_md_file() moved to paths.todo_file()
 # Archive lives under KB as the "devlog" arm -- searchable through the
 # same substrate as other knowledge entries, decoupled from the active
 # doc/ directory so completed work doesn't tax agents reading the spec.
 # Each archive event writes ONE timestamped file containing the
 # just-completed set of phases (no monthly rotation; the archive trigger
 # IS set-completion).
-_DEVLOG_DIR = os.path.join(ENV.require("PROJECT_ROOT"), "tools", "HME", "KB", "devlog")
+# _devlog_dir() moved to paths.kb_devlog_dir()
 # Matches a Next-up entry: "- [tier] description. Reason: ..."
 _NEXT_UP_RE = re.compile(
     r"^\s*-\s+\[(easy|medium|hard)\]\s+(.+?)(?:\s+Reason:\s+(.+?))?\s*$",
@@ -67,7 +68,7 @@ _JUST_SHIPPED_LIMIT = int(os.environ.get("HME_JUST_SHIPPED_LIMIT", "10"))
 
 
 def _ensure_devlog_dir() -> None:
-    os.makedirs(_DEVLOG_DIR, exist_ok=True)
+    os.makedirs(_devlog_dir(), exist_ok=True)
 
 
 def _slugify(text: str, max_len: int = 40) -> str:
@@ -111,10 +112,10 @@ def _detect_complete_set() -> dict:
     only when the entire set is complete -- that's the "fresh slate"
     moment the user asked for. Half-completed sets stay in place."""
     out = {"complete": False, "phases": [], "missing": []}
-    if not os.path.exists(_SPEC_FILE):
-        out["missing"].append(f"{_SPEC_FILE} missing")
+    if not os.path.exists(_spec_file()):
+        out["missing"].append(f"{_spec_file()} missing")
         return out
-    with open(_SPEC_FILE, encoding="utf-8") as f:
+    with open(_spec_file(), encoding="utf-8") as f:
         spec_md = f.read()
     blocks = _phase_blocks(spec_md)
     if not blocks:
@@ -183,10 +184,10 @@ def _archive_set(set_name: str = "") -> dict:
         m = re.match(r"^###\s+Phase\s+\d+:\s*(.+?)\s*$", first_header)
         set_name = m.group(1) if m else "set"
     slug = _slugify(set_name)
-    devlog_path = os.path.join(_DEVLOG_DIR, f"{ts}-{slug}.md")
+    devlog_path = os.path.join(_devlog_dir(), f"{ts}-{slug}.md")
     # Snapshot SPEC.md fully + TODO.md fully into the devlog file.
-    spec_md = open(_SPEC_FILE, encoding="utf-8").read() if os.path.exists(_SPEC_FILE) else ""
-    todo_md = open(_TODOMD_FILE, encoding="utf-8").read() if os.path.exists(_TODOMD_FILE) else ""
+    spec_md = open(_spec_file(), encoding="utf-8").read() if os.path.exists(_spec_file()) else ""
+    todo_md = open(_todo_md_file(), encoding="utf-8").read() if os.path.exists(_todo_md_file()) else ""
     phase_count = len(detection["phases"])
     devlog_content = [
         f"# Devlog -- {set_name}",
@@ -237,9 +238,9 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
     Each set should declare its own Goal at the start; the placeholder
     text invites that.
     """
-    if not os.path.exists(_SPEC_FILE):
+    if not os.path.exists(_spec_file()):
         return
-    with open(_SPEC_FILE, encoding="utf-8") as f:
+    with open(_spec_file(), encoding="utf-8") as f:
         spec_md = f.read()
     lines = spec_md.split("\n")
     # Find boundary lines: end of preamble (just before "## Phases" or
@@ -302,7 +303,7 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
     # trailing block (Deferred / Glossary / NEVER lists / How-this-
     # evolves / etc.) preserved verbatim.
     trailing = lines[last_phase_end:]
-    with open(_SPEC_FILE, "w", encoding="utf-8") as f:
+    with open(_spec_file(), "w", encoding="utf-8") as f:
         f.write("\n".join(fresh_preamble + trailing))
 
 
@@ -310,7 +311,7 @@ def _reset_todo_to_fresh_slate() -> None:
     """After archiving a set, reset doc/templates/TODO.md to the empty 3-section
     template. The previous set's "Just shipped" entries are preserved
     in the devlog snapshot."""
-    if not os.path.exists(_TODOMD_FILE):
+    if not os.path.exists(_todo_md_file()):
         return
     fresh = (
         "# Polychron HME TODO (handoff doc)\n\n"
@@ -332,7 +333,7 @@ def _reset_todo_to_fresh_slate() -> None:
         "flipped to `[x]`, the dev cycle exits with `[no-work] <reason>`. See SPEC.md "
         "\"Empty-queue bail\" appendix.\n"
     )
-    with open(_TODOMD_FILE, "w", encoding="utf-8") as f:
+    with open(_todo_md_file(), "w", encoding="utf-8") as f:
         f.write(fresh)
 
 
@@ -345,7 +346,7 @@ def _archive_just_shipped_overflow(trimmed_entries: list[str]) -> str:
     if not trimmed_entries:
         return ""
     _ensure_devlog_dir()
-    overflow_path = os.path.join(_DEVLOG_DIR, "_in-flight-shipped-overflow.md")
+    overflow_path = os.path.join(_devlog_dir(), "_in-flight-shipped-overflow.md")
     header_present = os.path.exists(overflow_path)
     body = []
     if not header_present:
