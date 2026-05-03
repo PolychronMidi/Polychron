@@ -18,13 +18,45 @@
 // session-start hook chain runs at least once even if Claude Code never
 // reaches us via forwarder.
 
+const fs = require('fs');
+const path = require('path');
 const hookBridge = require('./hook_bridge');
+const { PROJECT_ROOT } = require('./shared');
 
 const _lifecycleSeen = { SessionStart: 0, UserPromptSubmit: 0, Stop: 0 };
 const _LIFECYCLE_FRESH_MS = 30_000;
 
+// Persist across restarts. Without this, every proxy restart resets the
+// dedup timestamps -- if Claude Code's forwarder fired a /hme/lifecycle
+// hit 5s before the restart, the new process thinks the forwarder has
+// been silent for >30s and inline-fires the same event, double-running
+// it. Persistence with TTL semantics avoids this. The file is small (3
+// timestamps) and best-effort -- a write failure leaves us in the
+// pre-fix behavior, not worse.
+const _LIFECYCLE_STATE_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-lifecycle-seen.json');
+
+function _loadLifecycleSeen() {
+  try {
+    const raw = fs.readFileSync(_LIFECYCLE_STATE_FILE, 'utf8');
+    const s = JSON.parse(raw);
+    for (const k of Object.keys(_lifecycleSeen)) {
+      if (typeof s[k] === 'number') _lifecycleSeen[k] = s[k];
+    }
+  } catch (_e) { /* first boot or unreadable -- normal */ }
+}
+
+function _persistLifecycleSeen() {
+  try {
+    fs.mkdirSync(path.dirname(_LIFECYCLE_STATE_FILE), { recursive: true });
+    fs.writeFileSync(_LIFECYCLE_STATE_FILE, JSON.stringify(_lifecycleSeen));
+  } catch (_e) { /* best effort */ }
+}
+
+_loadLifecycleSeen();
+
 function recordLifecycleHit(event) {
   _lifecycleSeen[event] = Date.now();
+  _persistLifecycleSeen();
 }
 
 function lifecycleInactive(event) {
