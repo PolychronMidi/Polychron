@@ -334,6 +334,10 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
     action='undo': unmark #todo_id as done (also clears parent if it was auto-
         completed).
     action='remove': remove #todo_id (main or sub).
+    action='archive_now': force-archive current SPEC + TODO state to KB devlog
+        regardless of phase completion. Use for "this leftover should be
+        archived as-is" cases that don't fit the auto-clear trigger.
+
     action='clear': remove all completed main todos. WHEN doc/templates/SPEC.md is
         FULLY COMPLETE (all `[x]` + every phase has its `_Phase N complete_`
         sentinel), clear AUTO-ARCHIVES the snapshot to KB devlog
