@@ -22,7 +22,20 @@ const { PROJECT_ROOT } = require('../../shared');
 
 const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-detector-verdicts.env');
 const COMPL_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-completeness-injected.json');
+const FP_GATE_ARMED_FLAG = path.join(PROJECT_ROOT, 'tmp', 'hme-fp-gate-armed.flag');
 const COMPL_MAX = 2;
+
+// Arm the fp-gate so stop_hook_fp_gate.js injects on the NEXT request only.
+// The gate consumes (deletes) the flag on injection, so it's one-shot.
+function armFpGate(reason) {
+  try {
+    fs.mkdirSync(path.dirname(FP_GATE_ARMED_FLAG), { recursive: true });
+    fs.writeFileSync(FP_GATE_ARMED_FLAG, JSON.stringify({
+      ts: new Date().toISOString(),
+      reason: String(reason || '').slice(0, 200),
+    }));
+  } catch (_e) { /* best-effort */ }
+}
 
 const REASONS = {
   STOP_WORK_DISMISSIVE:
