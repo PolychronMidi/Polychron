@@ -27,7 +27,9 @@ _Previous set (skill-set integration sweep) archived 2026-04-26T174052Z to tools
 
 <1-paragraph context for the new set.>
 
-- [ ] [easy] First item of the new set
+- [x] [easy] First item of the new set
+
+_Phase 0 complete_
 
 ## Deferred / out of scope
 
