@@ -64,6 +64,8 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
       live_probe) LIVE_PROBE="$_v" ;;
       phase_gate) PHASE_GATE="$_v" ;;
       pile_on) PILE_ON="$_v" ;;
+      claim_without_evidence) CLAIM_WITHOUT_EVIDENCE="$_v" ;;
+      fix_without_investigation) FIX_WITHOUT_INVESTIGATION="$_v" ;;
     esac
   done <<< "$_RUN_ALL_OUT"
   # Sanity: poll_count must be numeric for the -ge test below.
