@@ -36,13 +36,17 @@ _DEFAULT_ROOTS = [
     os.path.join(_PROJECT, "src"),
     os.path.join(_PROJECT, "scripts"),
     os.path.join(_PROJECT, "tools", "HME"),
+    os.path.join(_PROJECT, "doc"),  # markdown LOC enforcement; long-form essays + vendored READMEs handled via loc-ignore.txt
 ]
 
 _SKIP_DIRS = {
     "node_modules", ".git", "__pycache__", ".venv", "venv",
-    "output", "doc", "csv_maestro", "bin", "pgmidi", "archive",
+    "output", "csv_maestro", "bin", "pgmidi", "archive",
 }
-_EXTS = {".py", ".js", ".ts", ".sh"}
+# `.md` added to the LOC discipline -- over-long doc rots faster than code.
+# Long-form theory essays + vendored model-card READMEs are handled via
+# loc-ignore.txt, not skipped here.
+_EXTS = {".py", ".js", ".ts", ".sh", ".md"}
 
 
 def _load_thresholds():
