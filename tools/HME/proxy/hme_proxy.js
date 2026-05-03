@@ -973,9 +973,20 @@ function handleRequest(clientReq, clientRes) {
         // instead of using the static 400KB ceiling. Header name per
         // https://platform.claude.com/docs/en/api/rate-limits.
         const _hdrTokRemaining = headers['anthropic-ratelimit-input-tokens-remaining'];
+        const _hdrTokLimit = headers['anthropic-ratelimit-input-tokens-limit'];
+        const _hdrTokReset = headers['anthropic-ratelimit-input-tokens-reset'];
         if (_hdrTokRemaining != null) {
           const n = parseInt(_hdrTokRemaining, 10);
           if (Number.isFinite(n) && n >= 0) _lastInputTokensRemaining = n;
+        }
+        if (_hdrTokLimit != null) {
+          const n = parseInt(_hdrTokLimit, 10);
+          if (Number.isFinite(n) && n > 0) _lastInputTokensLimit = n;
+        }
+        // On any 4xx, dump the rate-limit telemetry so we can SEE what
+        // Anthropic told us (instead of the unhelpful "Error" body).
+        if (status >= 400 && status < 500 && (_hdrTokLimit || _hdrTokRemaining || _hdrTokReset || headers['retry-after'])) {
+          console.error(`[hme-proxy] rate-limit headers: limit=${_hdrTokLimit||'?'} remaining=${_hdrTokRemaining||'?'} reset=${_hdrTokReset||'?'} retry-after=${headers['retry-after']||'?'}`);
         }
 
         // Detect upstream failure across BOTH paths: HTTP 4xx with JSON
