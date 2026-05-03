@@ -93,6 +93,8 @@ function readVerdicts() {
     LIVE_PROBE: 'ok',
     PHASE_GATE: 'ok',
     PILE_ON: 'ok',
+    CLAIM_WITHOUT_EVIDENCE: 'ok',
+    FIX_WITHOUT_INVESTIGATION: 'ok',
   };
   if (!fs.existsSync(VERDICTS_FILE)) return out;
   let text = '';
