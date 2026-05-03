@@ -136,7 +136,11 @@ if [ -f "$ERROR_LOG" ]; then
   echo "$TOTAL" > "$TURNSTART"
 
   if [ "$TOTAL" -gt "$LAST" ]; then
-    NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" | sort -u)
+    # Filter routine-ops noise (CANARY self-tests, proxy-watchdog respawns)
+    # before showing as LIFESAVER alerts -- they're INFO, not errors.
+    NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" \
+      | grep -vE '\[CANARY-canary-[0-9]+-[0-9]+\] alert-chain self-test injection|\[proxy-watchdog\] proxy respawned' \
+      | sort -u)
     # DO NOT advance watermark here -- Stop hook is the only gate that advances it.
     # If watermark advanced here, unfixed errors vanish when Stop sees TOTAL==TURNSTART.
     # Emit to stderr (local proxy log) AND stdout as UserPromptSubmit additionalContext
