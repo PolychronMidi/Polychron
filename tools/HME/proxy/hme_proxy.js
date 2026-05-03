@@ -177,104 +177,14 @@ function _stripHmePrefixOutgoing(payload) {
 //      AFTER returning a 200 status, so a status-only check misses them.
 // Returns { type, message, requestId } on failure detection, or null when
 // the response is a normal success.
-// Helper: parse JSON, return null only when input is provably non-JSON;
-// any OTHER error (bad encoding, malformed UTF-8) bubbles up unsuppressed.
-// _tryParseJson + _detectUpstreamFailure + _alertCooldownActive moved
-// to failure_classification.js. Re-bound below as `_tryParseJson` /
-// `_detectUpstreamFailure` / `_alertCooldownActive` to keep call-site
-// names stable. 109 LOC out of this file.
-const _failureClassification = require('./failure_classification');
-const _tryParseJsonReexport = _failureClassification._tryParseJson;
-const _detectUpstreamFailure = _failureClassification.detectUpstreamFailure;
-const _alertCooldownActive = _failureClassification.alertCooldownActive;
-
-function _tryParseJsonRemoved(buf, contextDesc) {
-  const text = buf.toString('utf8');
-  const trimmed = text.trim();
-  if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return null;
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    // Body LOOKS like JSON (starts with { or [) but doesn't parse. That's
-    // a real anomaly worth surfacing -- log it and continue with null so
-    // the caller can fall back to plaintext handling without losing the
-    // signal entirely. Fail-fast policy: log loudly, don't swallow.
-    console.error(`[hme-proxy] _tryParseJson(${contextDesc}): malformed JSON body: ${err.message} -- first 120 chars: ${trimmed.slice(0, 120)}`);
-    return null;
-  }
-}
-
-function _detectUpstreamFailure(status, headers, fullBody) {
-  if (status === 429) {
-    const retryAfter = headers['retry-after'] || '?';
-    const parsed = _tryParseJson(fullBody, 'upstream-429');
-    // Anthropic returns BOTH rate_limit_error (user quota exhausted) and
-    // overloaded_error (server capacity) under HTTP 429. Use the parsed
-    // body's `error.type` to distinguish them; only fall back to a
-    // generic label when the body lacks one. Mis-labelling matters
-    // because the appropriate response differs: rate_limit_error means
-    // wait/shrink, overloaded_error means retry-with-backoff.
-    const realType = (parsed && parsed.error && parsed.error.type) || 'rate_limit_error';
-    const msg = (parsed && parsed.error && parsed.error.message)
-      ? parsed.error.message
-      : `${realType} (retry-after=${retryAfter}s)`;
-    return {
-      type: realType,
-      message: msg,
-      requestId: parsed && parsed.request_id,
-      retryAfter,
-    };
-  }
-  if (status >= 400 && status < 600) {
-    const parsed = _tryParseJson(fullBody, `upstream-${status}`);
-    if (parsed && parsed.error) {
-      return {
-        type: parsed.error.type || `http_${status}`,
-        message: parsed.error.message,
-        requestId: parsed.request_id,
-      };
-    }
-    return { type: `http_${status}`, message: fullBody.toString('utf8').slice(0, 500) };
-  }
-  // SSE error event scan (status 200 + event:error)
-  const ct = (headers['content-type'] || '').toLowerCase();
-  if (ct.includes('text/event-stream') && fullBody.length > 0) {
-    const text = fullBody.toString('utf8');
-    const idx = text.indexOf('event: error');
-    if (idx >= 0) {
-      const dataMatch = text.slice(idx).match(/^data:\s*(\{.*?\})\s*$/m);
-      const parsed = dataMatch ? _tryParseJson(Buffer.from(dataMatch[1]), 'sse-error-event') : null;
-      if (parsed) {
-        const e = parsed.error || parsed;
-        return {
-          type: e.type || 'sse_error',
-          message: e.message,
-          requestId: parsed.request_id,
-        };
-      }
-      return { type: 'sse_error', message: 'sse error event with unparseable data' };
-    }
-  }
-  return null;
-}
-
-// Per-error-type cooldown to suppress lifesaver/snapshot SPAM when a burst
-// of in-flight requests all hit the same upstream failure. Without this, a
-// single Anthropic-side 429 storm produced dozens of identical alerts that
-// the user had to manually clear. Cooldown is 60s per (type, path_label)
-// pair. Snapshots and console logging still fire on every hit; only the
-// hme-errors.log lifesaver write and the recordUpstreamFailure call are
-// gated. The escape hatch still trips on the FIRST failure as designed.
-const _lastAlertAt = new Map(); // key = `${type}|${pathLabel}` -> ms
-const _ALERT_COOLDOWN_MS = 60_000;
-function _alertCooldownActive(type, pathLabel) {
-  const key = `${type}|${pathLabel}`;
-  const now = Date.now();
-  const last = _lastAlertAt.get(key) || 0;
-  if (now - last < _ALERT_COOLDOWN_MS) return true;
-  _lastAlertAt.set(key, now);
-  return false;
-}
+// _tryParseJson + _detectUpstreamFailure + _alertCooldownActive moved to
+// failure_classification.js (~109 LOC out). Bind into local names so
+// call sites in handleRequest below stay unchanged.
+const {
+  _tryParseJson,
+  detectUpstreamFailure: _detectUpstreamFailure,
+  alertCooldownActive: _alertCooldownActive,
+} = require('./failure_classification');
 
 // Passthrough-mode emergency compaction: when the escape hatch has tripped,
 // drop oldest assistant/user message PAIRS until the serialized payload is
