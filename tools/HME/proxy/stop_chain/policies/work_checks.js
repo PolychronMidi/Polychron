@@ -270,6 +270,9 @@ module.exports = {
     // before this gate. Emit the reminder ONLY when no specific
     // deny will fire below, so the agent gets a single coherent
     // signal per Stop event instead of (deny + boilerplate).
+    // Mirrors FIRING_RULES below. ADVISOR_SILENTLY_SKIPPED and
+    // CLAIM_WITHOUT_EVIDENCE are intentionally absent here -- they no
+    // longer cause a deny, so they no longer suppress the reminder.
     const willDeny =
       v.STOP_WORK === 'DISMISSIVE' ||
       v.STOP_WORK === 'TEXT_ONLY_SHORT' ||
@@ -279,7 +282,6 @@ module.exports = {
       v.PHANTOM_CAPABILITY === 'phantom_paraphrase' ||
       v.ADVISOR_DOCTRINE === 'advisor_missing_pre_build' ||
       v.ADVISOR_DOCTRINE === 'advisor_missing_post_deliver' ||
-      v.ADVISOR_DOCTRINE === 'advisor_silently_skipped' ||
       v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded' ||
       v.SUMMARY_FORMAT === 'summary_missing' ||
       v.SUMMARY_FORMAT === 'summary_malformed' ||
@@ -287,7 +289,6 @@ module.exports = {
       v.LIVE_PROBE === 'live_probe_missing' ||
       v.PHASE_GATE === 'phase_skipped' ||
       v.PILE_ON === 'pile_on' ||
-      v.CLAIM_WITHOUT_EVIDENCE === 'claim_without_evidence' ||
       v.FIX_WITHOUT_INVESTIGATION === 'fix_without_investigation';
     if (!willDeny) {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
