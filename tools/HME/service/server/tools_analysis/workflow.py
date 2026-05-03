@@ -90,15 +90,28 @@ def _get_before_editing_cache() -> dict:
     return ctx._before_editing_synthesis_cache
 
 # Caller cache -- keyed (abs_path, mtime); file change auto-invalidates.
-def _get_caller_cache() -> dict:
+# Disk-backed via SQLite + in-RAM LRU. Replaces the in-process dict that
+# capped warm-pre-edit-cache to ~200 src/ files per session AND lost
+# everything across MCP restarts. With persistence, repeated warm calls
+# accumulate coverage of every file the project has, not just the most
+# recent 200.
+def _get_caller_cache():
     if not hasattr(ctx, "_caller_cache"):
-        ctx._caller_cache = {}
+        from . import _disk_cache
+        ctx._caller_cache = _disk_cache.get_cache(
+            "caller", ctx.PROJECT_ROOT, ram_limit=256,
+        )
     return ctx._caller_cache
 
-# KB hits cache -- keyed (module_name, kb_version); knowledge write auto-invalidates.
-def _get_kb_hits_cache() -> dict:
+# KB hits cache -- keyed (module_name, kb_version); knowledge write
+# auto-invalidates via the kb_version component changing. Same
+# disk-backed treatment.
+def _get_kb_hits_cache():
     if not hasattr(ctx, "_kb_hits_cache"):
-        ctx._kb_hits_cache = {}
+        from . import _disk_cache
+        ctx._kb_hits_cache = _disk_cache.get_cache(
+            "kb_hits", ctx.PROJECT_ROOT, ram_limit=256,
+        )
     return ctx._kb_hits_cache
 
 
