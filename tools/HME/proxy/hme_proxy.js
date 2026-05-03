@@ -918,7 +918,88 @@ function handleRequest(clientReq, clientRes) {
       // (Bash run_in_background rewrite). If HME_* present, run the
       // continuation loop until a final HME-free response, then forward it.
       const chunks = [];
-      upstreamRes.on('data', (c) => chunks.push(c));
+
+      // FP-CHECK kill: when prior user message was a stop-hook payload,
+      // the agent is required (via stop_hook_fp_gate middleware) to
+      // begin its reply with `[FP-CHECK: yes]` or `[FP-CHECK: no]`.
+      // `yes` = false positive against the prior turn -- proxy DESTROYS
+      // upstream connection on detection so the model stops generating
+      // (real context-burn savings, not just visible-output savings).
+      // `no` = legitimate flag, agent owes substantive work; pass through.
+      //
+      // Detection scans each upstream chunk + a 64-byte trailing buffer
+      // (covers marker spanning chunk boundaries). On hit, upstreamReq
+      // is destroyed; the 'end' handler still fires with whatever
+      // chunks arrived before the kill, so SSE transform processes a
+      // truncated stream and the client sees `[FP-CHECK: yes]` (which
+      // the SSE rewriter further truncates to `.`).
+      let _fpKillTriggered = false;
+      let _fpTrailingBuf = '';
+      let _fpEligible = false;
+      try {
+        const _fpMsgs = (payload && payload.messages) || [];
+        let _fpLastUserText = '';
+        for (const m of _fpMsgs) {
+          if (!m || m.role !== 'user') continue;
+          const c = m.content;
+          if (typeof c === 'string') {
+            _fpLastUserText = c;
+          } else if (Array.isArray(c)) {
+            _fpLastUserText = c.filter((b) => b && b.type === 'text')
+              .map((b) => b.text || '').join(' ') || _fpLastUserText;
+          }
+        }
+        const _fpDenyMarkers = [
+          'Stop hook feedback:',
+          'Stop hook blocking error from command:',
+          'AUTO-COMPLETENESS',
+          'EXHAUST PROTOCOL',
+          'PSYCHOPATHIC-STOP',
+          'STOP-WORK ANTIPATTERN',
+          'ADVISOR DOCTRINE',
+          'PHANTOM CAPABILITY',
+          'PHANTOM PARAPHRASE',
+          'SPECULATION-DEBT SCAN',
+          'SCOPE-ESCAPE VIOLATION',
+          'NEXUS --',
+          'VERIFICATION DOCTRINE',
+          'SYSTEMATIC-DEBUGGING PHASE GATE',
+        ];
+        _fpEligible = _fpLastUserText && _fpDenyMarkers.some((m) => _fpLastUserText.includes(m));
+      } catch (_e) { /* best-effort -- if we can't detect eligibility, no kill */ }
+
+      upstreamRes.on('data', (c) => {
+        chunks.push(c);
+        if (!_fpEligible || _fpKillTriggered) return;
+        // Cheap substring scan: combine trailing buffer + new chunk text.
+        // Only the chunk-text suffix is retained for next round (64 bytes
+        // is more than enough for the 16-char marker).
+        try {
+          const chunkStr = c.toString('utf8');
+          const scan = _fpTrailingBuf + chunkStr;
+          if (scan.includes('[FP-CHECK: yes]')) {
+            _fpKillTriggered = true;
+            try {
+              const fs2 = require('fs');
+              const path2 = require('path');
+              fs2.appendFileSync(
+                path2.join(PROJECT_ROOT, 'log', 'hme-fp-gate-kills.jsonl'),
+                JSON.stringify({
+                  ts: new Date().toISOString(),
+                  bytes_before_kill: chunks.reduce((acc, b) => acc + b.length, 0),
+                }) + '\n',
+              );
+            } catch (_e) { /* stat is best-effort */ }
+            // Destroy upstream -- model stops generating, API costs
+            // capped at what was already in flight. The 'end' handler
+            // still fires (possibly via 'aborted'), processes the
+            // partial buffer through the SSE pipeline.
+            try { upstreamReq.destroy(); } catch (_e) { /* ignore */ }
+          } else {
+            _fpTrailingBuf = scan.slice(-64);
+          }
+        } catch (_e) { /* scan is best-effort */ }
+      });
       upstreamRes.on('end', async () => {
         try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
         let fullBody = Buffer.concat(chunks);
