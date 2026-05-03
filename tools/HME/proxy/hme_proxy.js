@@ -179,7 +179,16 @@ function _stripHmePrefixOutgoing(payload) {
 // the response is a normal success.
 // Helper: parse JSON, return null only when input is provably non-JSON;
 // any OTHER error (bad encoding, malformed UTF-8) bubbles up unsuppressed.
-function _tryParseJson(buf, contextDesc) {
+// _tryParseJson + _detectUpstreamFailure + _alertCooldownActive moved
+// to failure_classification.js. Re-bound below as `_tryParseJson` /
+// `_detectUpstreamFailure` / `_alertCooldownActive` to keep call-site
+// names stable. 109 LOC out of this file.
+const _failureClassification = require('./failure_classification');
+const _tryParseJsonReexport = _failureClassification._tryParseJson;
+const _detectUpstreamFailure = _failureClassification.detectUpstreamFailure;
+const _alertCooldownActive = _failureClassification.alertCooldownActive;
+
+function _tryParseJsonRemoved(buf, contextDesc) {
   const text = buf.toString('utf8');
   const trimmed = text.trim();
   if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return null;
