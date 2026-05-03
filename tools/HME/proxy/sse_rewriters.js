@@ -256,18 +256,34 @@ function _isHallucinatedTurnPrefix(text) {
 // can legitimately ask for those.
 function _isCeremonyDodge(text) {
   if (typeof text !== 'string') return false;
-  // Anchored at line-start (^...|\n), NOT only at block-start. Earlier
-  // version used `^\s*` only -- missed the dominant case where the
-  // agent appends a closing solo-rationale paragraph to an otherwise
-  // substantive response (the "...verified.\n\nSolo-rationale for
-  // skipping advisor: ..." shape user kept seeing slip through).
-  // "Solo-rationale:" / "Solo rationale:" / "Solo justification:" at line start.
-  if (/(?:^|\n)\s*Solo[- ](?:rationale|justification)\s*[:.]/i.test(text)) return true;
-  // "Why solo was right" / "Why solo was the right call" at line start.
-  if (/(?:^|\n)\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)/i.test(text)) return true;
-  // "Solo was right/correct/the-right-call because..." opening at line start.
-  if (/(?:^|\n)\s*Solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)\b/i.test(text)) return true;
+  // Block-start anchor only. Trailing solo-rationale paragraphs in
+  // otherwise-substantive responses are handled SURGICALLY by
+  // _trimSoloRationaleParagraph (called from soloRationaleTrimRewrite)
+  // -- whole-block strip would nuke the substantive content too.
+  if (/^\s*Solo[- ](?:rationale|justification)\s*[:.]/i.test(text)) return true;
+  if (/^\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)/i.test(text)) return true;
+  if (/^\s*Solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)\b/i.test(text)) return true;
   return false;
+}
+
+// Surgical trim: if solo-rationale appears MID-text (after a blank line,
+// not at block start), remove just that paragraph through end-of-text.
+// Returns trimmed text (possibly identical if no match), and a boolean
+// indicating whether a trim occurred. The user's complaint: solo-rationale
+// paragraphs at the END of substantive responses kept slipping through
+// the start-anchored ack-strip, polluting transcripts with bypass prose.
+function _trimSoloRationaleParagraph(text) {
+  if (typeof text !== 'string' || !text) return { text, trimmed: false };
+  const patterns = [
+    /\n\s*\n\s*Solo[- ](?:rationale|justification)\s*[:.][\s\S]*$/i,
+    /\n\s*\n\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)[\s\S]*$/i,
+    /\n\s*\n\s*Solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)\b[\s\S]*$/i,
+  ];
+  for (const pat of patterns) {
+    const m = text.match(pat);
+    if (m) return { text: text.slice(0, m.index).replace(/\s+$/, ''), trimmed: true };
+  }
+  return { text, trimmed: false };
 }
 
 function _isBareAck(text) {
