@@ -50,6 +50,22 @@ const PROXY_VERSION = (() => {
   } catch (_) { return 'unknown'; }
 })();
 
+// Build identity in /health -- "is my new code live?" was unanswerable
+// from the wire previously. PROXY_VERSION is hand-bumped and stale
+// across most edits. Captured ONCE at module load so a long-running
+// proxy reports the SHA + start time it actually booted with.
+const PROXY_GIT_SHA = (() => {
+  try {
+    const { execSync } = require('child_process');
+    return execSync('git rev-parse --short HEAD', {
+      cwd: require('path').resolve(__dirname, '..', '..', '..'),
+      encoding: 'utf8',
+      timeout: 1000,
+    }).trim();
+  } catch (_) { return 'unknown'; }
+})();
+const PROXY_STARTED_AT = new Date().toISOString();
+
 const PORT = (() => {
   const raw = process.env.HME_PROXY_PORT;
   if (raw == null || raw === '') return 9099;
