@@ -641,6 +641,20 @@ function handleRequest(clientReq, clientRes) {
     handleMcpRequest(clientReq, clientRes);
     return;
   }
+  // Short-circuit useless probes BEFORE upstream forwarding. These were
+  // burning Cloudflare's per-IP rate budget on api.anthropic.com (each
+  // probe forwarded, returned 404 from Anthropic, but counted against
+  // the Cloudflare WAF rate limiter -- so when the interactive request
+  // came in seconds later, Cloudflare 429ed it). Anthropic's API has no
+  // valid response for `/` or favicon; return 404 locally instead of
+  // forwarding. We drop these silently (no lifesaver alert) since they're
+  // routine probes from monitors/health-checks/browsers.
+  const _USELESS_PATHS = ['/', '/favicon.ico', '/robots.txt'];
+  if (clientReq.url && _USELESS_PATHS.includes(clientReq.url)) {
+    clientRes.writeHead(404, { 'Content-Type': 'application/json' });
+    clientRes.end(JSON.stringify({ error: 'not_found', note: 'hme-proxy: useless-path probe short-circuited (not forwarded to Anthropic)' }));
+    return;
+  }
   const chunks = [];
   clientReq.on('data', (c) => chunks.push(c));
   clientReq.on('end', async () => {
@@ -1060,12 +1074,16 @@ function handleRequest(clientReq, clientRes) {
               fs.mkdirSync(path.dirname(outFile), { recursive: true });
               fs.writeFileSync(outFile, outBody);
               fs.writeFileSync(outFile.replace('.json', '.response'), fullBody);
-              // Headers contain the actual rate-limit telemetry that the
-              // body's "Error" message obscures. Save them next to the
-              // response body so post-mortem can read the real cap.
               fs.writeFileSync(outFile.replace('.json', '.headers.json'), JSON.stringify(headers, null, 2));
               console.error(`[hme-proxy] payload snapshotted to ${outFile}`);
-              if (!_coolingDown) {
+              // Lifesaver alert is for the AGENT to act on. Skip alerts for:
+              //   - sub-pipeline 404s on path=/ (probe noise, not actionable)
+              //   - 429 with x-should-retry=true (transient, recovered via retry above)
+              //   - cooldown-suppressed duplicates within 60s window
+              const _suppressLifesaver = _coolingDown
+                || (status === 404 && _pathLabel === 'sub-pipeline')
+                || (status === 429 && _shouldRetry);
+              if (!_suppressLifesaver) {
                 const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
                 fs.appendFileSync(errLog,
                   `[${_stamp}] UPSTREAM_${status}_${_pathLabel.toUpperCase()}: ${_errMsg} (request_id=${_errInfo.requestId || '?'}, snapshot=${_snapshotRel})\n`);
