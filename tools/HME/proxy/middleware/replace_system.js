@@ -82,18 +82,31 @@ module.exports = {
     if (!payload) return;
     const canonical = _loadCanonical();
     if (canonical === null) return; // file missing/empty -> no-op
-    // Attach an ephemeral cache_control breakpoint so Anthropic caches
-    // our canonical text. Without this, every request re-bills the full
-    // system prefix at 100% rate. We omit `ttl` because the late-pass
-    // normalizeCacheControlTtls strips it anyway -- the OAuth-public
-    // endpoint doesn't permit per-block ttl. Default-ttl (5m) is what
-    // every block ends up with after the strip; that's the same cache
-    // behavior horselock/claude-code-proxy uses successfully.
-    payload.system = [{
-      type: 'text',
-      text: canonical,
-      cache_control: { type: 'ephemeral' },
-    }];
+    // Two-block layout, matching the canonical Claude Code envelope used
+    // by horselock/claude-code-proxy and John-Rood/claude-proxy. The
+    // OAuth-public endpoint's gateway uses the FIRST system block as a
+    // client-fingerprint check: if block[0].text doesn't match the exact
+    // canonical identity sentence on its own, the request is routed to a
+    // stricter rate-limit bucket (small requests pass, large ones 429
+    // with NO anthropic-ratelimit-* headers -- the gateway-rejection
+    // signature, distinct from real ITPM exhaustion). Concatenating the
+    // identity phrase with our custom content into a single block (the
+    // pre-2026-05 layout) failed this check.
+    //
+    // Block 0: the EXACT identity sentence, alone, no cache_control.
+    // Block 1: HME's canonical custom content, with the cache_control
+    // breakpoint so the bulk of the system prefix is cached.
+    payload.system = [
+      {
+        type: 'text',
+        text: "You are Claude Code, Anthropic's official CLI for Claude.",
+      },
+      {
+        type: 'text',
+        text: canonical,
+        cache_control: { type: 'ephemeral' },
+      },
+    ];
     ctx.markDirty();
   },
 };
