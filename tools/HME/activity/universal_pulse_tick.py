@@ -35,6 +35,29 @@ MAINTENANCE_FLAG = PROJECT_ROOT / "tmp" / "hme-proxy-maintenance.flag"
 _shutdown = False
 
 
+def _resolve_threshold(hook_name, thresholds, default_ms):
+    """Per-hook latency threshold lookup with prefix fallback.
+
+    Mirrors runtime_perf.HookLatencyVerifier._budget_for so the daemon
+    and the verifier agree on which budget applies. Without prefix
+    matching, every shell_policy substage (`stop_chain:holograph`,
+    `stop_chain:autocommit`, etc.) fell to default_ms even though its
+    parent `stop` had a calibrated override -- producing false-alarm
+    spam in hme-errors.log on every tick.
+
+    Order: exact match wins; otherwise the LONGEST matching prefix from
+    `thresholds` wins. Longest-prefix avoids accidental hits like
+    `stopwatch` matching the `stop` budget when both are configured.
+    """
+    if hook_name in thresholds:
+        return float(thresholds[hook_name])
+    best_key = None
+    for key in thresholds:
+        if hook_name.startswith(key) and (best_key is None or len(key) > len(best_key)):
+            best_key = key
+    if best_key is not None:
+        return float(thresholds[best_key])
+    return float(default_ms)
 
 
 def _tick(cfg, tracker):
