@@ -134,3 +134,18 @@ src/play/playNotesEmitPick.js
 # /flickerMod()/reset(). Same pattern as the already-exempted lifecycle
 # wrappers (moduleLifecycle.js, metaProfiles.js).
 src/conductor/signal/profiling/regimeReactiveDamping.js
+
+# Markdown LOC exemptions. .md files joined the LOC discipline 2026-05-03;
+# below are docs whose length is structurally warranted (not rot).
+
+# Vendored model-card READMEs from third-party repos. Not project code;
+# upstream maintains them. Trimming would diverge from upstream.
+# rationale: intent=vendored-third-party; revisit-when=model-replaced; decided=2026-05-03
+tools/models/*/README.md
+
+# Long-form theoretical essays. Each is one coherent argument that loses
+# coherence if split across files. The essays are read end-to-end as
+# whole arguments, not as reference-lookup material -- different document
+# class than the operational reference docs the LOC discipline targets.
+# rationale: intent=long-form-essay; revisit-when=structure-changes; decided=2026-05-03
+doc/theory/
