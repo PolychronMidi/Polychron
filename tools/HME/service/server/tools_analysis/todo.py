@@ -691,7 +691,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 )
             return f"Phase {phase_n} marked complete in {_spec_file()}.{tail}\n"
 
-        return ("Unknown action. Use: list, add, done, undo, remove, clear, critical, "
+        return ("Unknown action. Use: list, add, done, undo, remove, clear, archive_now, critical, "
                 "ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.")
 
 
