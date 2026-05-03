@@ -108,7 +108,7 @@ The walkthrough targets a composition evolution (step 2 picks a musical target v
 **How the dual lens works:**
 - `evolve(focus='design')` emits composition targets AND surfaces any HME health issues it encountered while scanning
 - `read(target, mode='before')` pulls KB constraints AND reports stale/wrong/missing entries
-- Edits on the target may expose boundary violations that should be covered by new hooks
+- Edits on the target expose boundary violations; add hooks to cover them
 - `review(mode='forget')` audits changes against KB AND flags KB entries that are contradicted by the new code
 - `learn(title=, content=)` at graduation persists BOTH the composition finding AND any HME observations as a combined entry with a `## HME observations` section
 
