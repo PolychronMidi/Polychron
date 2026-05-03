@@ -29,26 +29,53 @@ function resolveUpstream(req) {
 }
 
 //  Emergency valve
-// FIRST upstream failure -> flip into sticky passthrough mode + write
-// LIFESAVER alert with the full error text + flip HME_PROXY_ENABLED=0.
-// Threshold was 3 consecutive failures; lowered to 1 because the user
-// shouldn't have to hit the same proxy-induced rejection three times
-// before the auto-bypass kicks in. The lifesaver alert is the loudest
-// signal we have -- it surfaces in the next userpromptsubmit and on
-// every subsequent /v1/messages until the operator clears it.
+// FIRST upstream failure -> flip into passthrough mode + write LIFESAVER
+// alert with the full error text. Threshold was 3 consecutive failures;
+// lowered to 1 because the user shouldn't have to hit the same proxy-
+// induced rejection three times before the auto-bypass kicks in.
+//
+// AUTO-RECOVERY: previously the valve was sticky for the entire process
+// lifetime -- a transient Anthropic 429 cost the user a full restart.
+// Now the valve clears after a backoff window (60s, 120s, 300s, 600s
+// per consecutive trip) so the next request can attempt the proxy path
+// again. If that retry fails, recordUpstreamFailure re-trips with the
+// next backoff level. A sustained-success window resets the escalation.
 const EMERGENCY_THRESHOLD = 1;
+const BACKOFF_SCHEDULE_MS = [60_000, 120_000, 300_000, 600_000];
+const SUCCESS_RESET_MS = 300_000;  // 5 min clean = back to first backoff
 let _consecutiveFailures = 0;
 let _valveTripped = false;
+let _valveTrippedAt = 0;
+let _trippedSequence = 0;  // index into BACKOFF_SCHEDULE_MS, capped
+let _lastSuccessAt = 0;
+
+function _currentBackoffMs() {
+  const idx = Math.min(_trippedSequence, BACKOFF_SCHEDULE_MS.length - 1);
+  return BACKOFF_SCHEDULE_MS[idx];
+}
 
 function isPassthroughMode() {
-  return _valveTripped;
+  if (!_valveTripped) return false;
+  // Auto-clear once the backoff window elapses. The next request goes
+  // through the normal proxy path; if it fails, recordUpstreamFailure
+  // will re-trip with the next backoff level.
+  const elapsed = Date.now() - _valveTrippedAt;
+  if (elapsed >= _currentBackoffMs()) {
+    _valveTripped = false;
+    console.error(`[hme-proxy] valve auto-cleared after ${Math.round(elapsed/1000)}s backoff -- attempting proxy path on next request`);
+    emit({ event: 'proxy_emergency_cleared', source: 'emergency_valve', backoff_ms: _currentBackoffMs() });
+    return false;
+  }
+  return true;
 }
 
 function tripEmergencyValve(lastErr) {
   if (_valveTripped) return;
   _valveTripped = true;
-  const ts = new Date().toISOString();
-  const banner = `PROXY 400/4xx ESCAPE HATCH TRIPPED -- proxy now in PASSTHROUGH mode for the rest of this process lifetime. Upstream rejected a proxy-mutated request: ${lastErr}. Inspect tmp/claude-400-payload-*.json for the exact body Anthropic rejected, fix the proxy mutation, and restart with tools/HME/launcher/polychron-restart.sh.`;
+  _valveTrippedAt = Date.now();
+  const backoffSec = Math.round(_currentBackoffMs() / 1000);
+  const ts = new Date(_valveTrippedAt).toISOString();
+  const banner = `PROXY 400/4xx ESCAPE HATCH TRIPPED -- proxy in PASSTHROUGH mode for ~${backoffSec}s (backoff sequence ${_trippedSequence + 1}/${BACKOFF_SCHEDULE_MS.length}, auto-clears after window). Upstream rejected a proxy-mutated request: ${lastErr}. If this re-trips quickly, inspect tmp/claude-400-payload-*.json and fix the proxy mutation.`;
   console.error(`[hme-proxy] ${banner}`);
 
   // LIFESAVER channel: hme-errors.log is read by lifesaver_inject every
@@ -67,11 +94,25 @@ function tripEmergencyValve(lastErr) {
   // clean slate. Keep the lifesaver+console signals (loud enough), drop
   // the .env mutation.
 
-  emit({ event: 'proxy_emergency', reason: lastErr, source: 'emergency_valve' });
+  emit({ event: 'proxy_emergency', reason: lastErr, source: 'emergency_valve', backoff_ms: _currentBackoffMs(), sequence: _trippedSequence + 1 });
+
+  // Escalate the backoff schedule for the NEXT trip. Cap at the last entry.
+  _trippedSequence = Math.min(_trippedSequence + 1, BACKOFF_SCHEDULE_MS.length - 1);
 }
 
 function recordUpstreamSuccess() {
   _consecutiveFailures = 0;
+  const now = Date.now();
+  // A sustained-success window resets the backoff escalation -- the
+  // upstream is healthy again, no need to start the NEXT trip from a
+  // 10-minute backoff just because we hit a 429 hours ago.
+  if (_lastSuccessAt > 0 && now - _lastSuccessAt < SUCCESS_RESET_MS) {
+    // Recent success -- update timestamp and check reset condition.
+    if (_trippedSequence > 0 && now - _valveTrippedAt > SUCCESS_RESET_MS) {
+      _trippedSequence = 0;
+    }
+  }
+  _lastSuccessAt = now;
 }
 
 function recordUpstreamFailure(err) {
