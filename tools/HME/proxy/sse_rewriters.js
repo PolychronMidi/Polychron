@@ -667,7 +667,9 @@ function hallucinatedTurnPrefixStripRewrite(eventName, data, ctx) {
     for (const d of state.deltas) {
       if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
     }
-    if (_isHallucinatedTurnPrefix(assembled)) {
+    const isPrefix = _isHallucinatedTurnPrefix(assembled);
+    const isDodge = _isCeremonyDodge(assembled);
+    if (isPrefix || isDodge) {
       // Best-effort stat (separate log; never errors.log).
       try {
         const fs = require('fs');
@@ -677,6 +679,7 @@ function hallucinatedTurnPrefixStripRewrite(eventName, data, ctx) {
           path.join(PROJECT_ROOT, 'log', 'hme-turn-prefix-strips.jsonl'),
           JSON.stringify({
             ts: new Date().toISOString(),
+            kind: isPrefix ? 'turn_prefix' : 'ceremony_dodge',
             text_preview: assembled.slice(0, 100),
           }) + '\n',
         );
