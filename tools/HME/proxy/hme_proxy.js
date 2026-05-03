@@ -734,14 +734,22 @@ function handleRequest(clientReq, clientRes) {
     const _sessionForTelemetry = (payload ? sessionKey(payload) : 'no-payload');
 
     const _passthrough = isPassthroughMode();
-    // Proactive size compaction. Run on EVERY interactive Anthropic
-    // request whose serialized body exceeds the TPM-safe threshold,
-    // regardless of valve state. Reacting after 429 means the client
-    // already ate the failure (Claude Code surfaces the 429 to the user
-    // and stops); precompacting prevents the 429 from ever happening.
-    // Drops oldest assistant/user messages until the payload fits, then
-    // scrubs orphan tool blocks. Disable with HME_NO_PASSTHROUGH_COMPACT=1.
-    if (isAnthropic && _isInteractivePath && payload && Array.isArray(payload.messages)) {
+    // Reactive size compaction. ONLY runs when the escape hatch has
+    // already tripped (passthrough mode). Previously this ran proactively
+    // on every large request "to prevent the FIRST 429" -- empirically
+    // that was the BUG. Dropping ~1000 oldest messages from a continuing
+    // conversation destroys Anthropic's prompt-cache prefix; every
+    // precompacted request becomes a fresh cache key billing full input
+    // tokens, which exhausts the Opus input bucket fast. Direct (no
+    // proxy) keeps the prefix intact -> cache hits -> no exhaustion.
+    // Verified 2026-05-03: 224KB snapshot that 429ed contained a synthetic
+    // "1169 oldest message(s) dropped" marker as msg[0]; replay of the
+    // mutated body 429ed identically; Haiku via same path/auth worked
+    // (separate bucket, lower price, less cache-miss pressure).
+    // Reactive shrinking when the escape hatch has tripped is still
+    // valuable: at that point caching is already broken and the body
+    // genuinely needs to fit. Disable with HME_NO_PASSTHROUGH_COMPACT=1.
+    if (_passthrough && isAnthropic && _isInteractivePath && payload && Array.isArray(payload.messages)) {
       const _dropped = _shrinkForPassthrough(payload);
       if (_dropped > 0) {
         outBody = Buffer.from(JSON.stringify(payload), 'utf8');
