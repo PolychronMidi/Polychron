@@ -357,7 +357,7 @@ module.exports = {
     if (firing.length > 1) {
       const header = `MULTI-FLAG STOP (${firing.length} detectors firing): ${firing.map((f) => f.name).join(', ')}.\nAddress all of them in this turn.\n\n`;
       const body = firing.map((f, i) => `--- [${i + 1}/${firing.length}] ${f.name} ---\n${f.reason}`).join('\n\n');
-      return ctx.deny(header + body);
+      armFpGate('MULTI_FLAG'); return ctx.deny(header + body);
     }
 
     // Auto-completeness inject -- fires up to COMPL_MAX times per user-turn.
