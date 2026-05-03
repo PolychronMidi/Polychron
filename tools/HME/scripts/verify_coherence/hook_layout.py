@@ -158,13 +158,21 @@ class HookMatcherValidityVerifier(Verifier):
 
     # Wrappers that have no posttooluse side-effect by design. Claude just
     # reads the response; there's no nexus state to update.
-    #   help / why       -- static / rationale-lookup; read-only
-    #   freeze           -- flips a flag file; posttooluse doesn't need to know
-    #   pattern          -- pattern-file reader; read-only
-    #   substrate        -- four-arc status; read-only
+    #   help / why         -- static / rationale-lookup; read-only
+    #   freeze             -- flips a flag file; posttooluse doesn't need to know
+    #   pattern            -- pattern-file reader; read-only
+    #   substrate          -- four-arc status; read-only
+    #   audit-tools        -- UX stress test of i/* itself; read-only
+    #   chain / dispatch / consult / handoff -- orchestration entry points; the
+    #                         dispatched targets emit their own posthooks
+    #   holograph / state / sensitivity / timeline / policies / prove
+    #                       -- diagnostic snapshots / static analysis; read-only
+    #   extract-spec       -- read-only spec extractor for evolution planning
     _NO_POSTHOOK_OK = {
         "status", "trace", "evolve", "hme-admin", "todo", "hme",
         "help", "why", "freeze", "pattern", "substrate",
+        "audit-tools", "chain", "consult", "extract-spec", "handoff",
+        "holograph", "policies", "prove", "sensitivity", "state", "timeline",
     }
 
     def run(self) -> VerdictResult:
