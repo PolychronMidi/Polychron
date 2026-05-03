@@ -1030,18 +1030,19 @@ function handleRequest(clientReq, clientRes) {
             // flagged. We still snapshot + lifesaver-log them so the
             // operator sees them, but we don't kill the interactive path.
             const _coolingDown = _alertCooldownActive(_errInfo.type || `http_${status}`, _pathLabel);
-            // rate_limit_error is the user's per-minute quota -- NOT a
-            // proxy mutation fault. Tripping the escape hatch on it puts
-            // us in passthrough mode, which sends the FULL un-compacted
-            // 1.5MB body and 429s even harder. Instead: bump the panic
-            // counter (so the next request is half the size) and skip
-            // the hatch trip. overloaded_error (server capacity) and
-            // other 4xx still trip the hatch as before.
+            // rate_limit_error: bump the panic-shrink counter (so the
+            // next request is half the size) AND trip the escape hatch
+            // (so the user gets a visible lifesaver alert as a recovery
+            // signal). The line-688 precompact runs regardless of valve
+            // state, so passthrough mode still gets aggressive compaction
+            // -- it does NOT send the raw 1.5MB body the way it would
+            // without precompact. The hatch trip is purely a signal.
             const _isRateLimit = _errInfo.type === 'rate_limit_error';
             if (_isRateLimit) {
               _consecutive429s = Math.min(_consecutive429s + 1, 4);
-              console.error(`[hme-proxy] rate_limit_error -- NOT tripping escape hatch; panic-shrink counter=${_consecutive429s}, next threshold=${_effectiveCompactThreshold()}B`);
-            } else if (_isInteractivePath && !_coolingDown) {
+              console.error(`[hme-proxy] rate_limit_error -- panic-shrink counter=${_consecutive429s}, next threshold=${_effectiveCompactThreshold()}B`);
+            }
+            if (_isInteractivePath && !_coolingDown) {
               recordUpstreamFailure(_errMsg);
             } else if (!_isInteractivePath) {
               console.error(`[hme-proxy] sub-pipeline failure -- NOT tripping escape hatch (interactive path unaffected)`);
