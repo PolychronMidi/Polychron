@@ -1,0 +1,116 @@
+'use strict';
+// Lifecycle bridge: extracted from hme_proxy.js. Two delivery paths exist
+// for Claude Code lifecycle hooks (SessionStart, UserPromptSubmit, Stop):
+//
+//   1. Forwarder path -- Claude Code's hook system POSTs to /hme/lifecycle
+//      with ?event=<EventName>. Handled by handleLifecycleRoute below.
+//   2. Inline fallback -- when the forwarder path isn't reaching us
+//      (plugin cache missing, forwarder uninstalled, VS Code extension
+//      mode, etc.), the proxy fires the same hook chain in-process via
+//      runInlineFallback. handleRequest invokes this for UserPromptSubmit
+//      and Stop when the corresponding /hme/lifecycle hit is stale.
+//
+// _lifecycleSeen tracks recent forwarder hits so the inline path doesn't
+// double-fire when both routes are active. _LIFECYCLE_FRESH_MS=30s is the
+// dedup window: a /hme/lifecycle hit "covers" inline fires for that long.
+//
+// SessionStart fires inline at module load -- a bare safety net so the
+// session-start hook chain runs at least once even if Claude Code never
+// reaches us via forwarder.
+
+const hookBridge = require('./hook_bridge');
+
+const _lifecycleSeen = { SessionStart: 0, UserPromptSubmit: 0, Stop: 0 };
+const _LIFECYCLE_FRESH_MS = 30_000;
+
+function recordLifecycleHit(event) {
+  _lifecycleSeen[event] = Date.now();
+}
+
+function lifecycleInactive(event) {
+  const last = _lifecycleSeen[event] || 0;
+  return (Date.now() - last) > _LIFECYCLE_FRESH_MS;
+}
+
+/**
+ * Run an inline fallback dispatch and echo any captured stderr to the
+ * proxy's own stderr so the user sees hook banners (sessionstart
+ * orientation, LIFESAVER, etc.). Without this the stderr is silently
+ * swallowed into dispatchEvent's return value and lost.
+ *
+ * Parity with /hme/lifecycle: both paths surface full stdout/stderr to
+ * the proxy's stderr so banners (LIFESAVER, NEXUS, AUTO-COMPLETENESS)
+ * land in the same place regardless of which path fired. The inline
+ * path used to truncate stdout to 200 chars -- banners that grew past
+ * that limit vanished for inline fires while remaining visible for
+ * /hme/lifecycle fires.
+ */
+async function runInlineFallback(event, stdinJson) {
+  try {
+    const r = await hookBridge.dispatchEvent(event, stdinJson);
+    if (r.stderr && r.stderr.length > 0) {
+      process.stderr.write(`[hme-proxy] inline ${event} stderr:\n${r.stderr}\n`);
+    }
+    if (r.stdout && r.stdout.length > 0) {
+      process.stderr.write(`[hme-proxy] inline ${event} stdout:\n${r.stdout}\n`);
+    }
+  } catch (err) {
+    console.error(`[hme-proxy] inline ${event} failed: ${err.message}`);
+  }
+}
+
+/**
+ * Lifecycle bridge route. The forwarder script POSTs here with:
+ *   - query ?event=<EventName>
+ *   - body = the Claude Code hook stdin JSON payload
+ * We dispatch to the appropriate bash hook chain and respond with JSON:
+ *   {stdout: "...", stderr: "...", exit_code: <int>}
+ * The forwarder script relays each field back to Claude Code's plugin
+ * machinery, preserving block decisions, banners, and exit codes.
+ */
+function handleLifecycleRoute(clientReq, clientRes) {
+  const json = (status, body) => {
+    clientRes.writeHead(status, { 'Content-Type': 'application/json' });
+    clientRes.end(JSON.stringify(body));
+  };
+  if (clientReq.method !== 'POST') return json(405, { error: 'POST only' });
+  const url = new URL(clientReq.url, 'http://127.0.0.1');
+  const event = url.searchParams.get('event') || '';
+  if (!event) return json(400, { error: 'missing ?event=<EventName>' });
+  const chunks = [];
+  clientReq.on('data', (c) => chunks.push(c));
+  clientReq.on('end', async () => {
+    const stdin = Buffer.concat(chunks).toString('utf8') || '{}';
+    // Mark Claude Code's hook system as active for this event so inline
+    // fallback fires don't double-invoke it.
+    recordLifecycleHit(event);
+    // Log receipt so we can verify the forwarder path is active. Fallback
+    // callers always run through inline (no POST) so this log existing =
+    // Claude Code's hook system is reaching us.
+    console.error(`[hme-proxy] /hme/lifecycle received event=${event} (${stdin.length}B)`);
+    try {
+      const result = await hookBridge.dispatchEvent(event, stdin);
+      json(200, result);
+    } catch (err) {
+      console.error(`[hme-proxy] lifecycle dispatch threw: ${err.message}`);
+      json(500, { stdout: '', stderr: `dispatch error: ${err.message}`, exit_code: -1 });
+    }
+  });
+  clientReq.on('error', (err) => {
+    if (!clientRes.headersSent) json(500, { error: err.message });
+  });
+}
+
+// Side effect: fire SessionStart inline at module load. If Claude Code
+// hits /hme/lifecycle with SessionStart shortly after, we'll note the
+// dup but it's harmless (sessionstart.sh is idempotent w.r.t. its
+// state writes). Module require caching guarantees this runs once per
+// process even if multiple modules require this file.
+runInlineFallback('SessionStart', '{}');
+
+module.exports = {
+  recordLifecycleHit,
+  lifecycleInactive,
+  runInlineFallback,
+  handleLifecycleRoute,
+};
