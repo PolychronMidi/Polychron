@@ -898,7 +898,10 @@ function fpGateMarkerRewrite(eventName, data, ctx) {
     }
     ctx.set('fp_gate_first_block_done', true);
 
-    // YES: truncate to `.`, drop everything else upstream.
+    // YES: drop the rest of the model's output, but emit a VISIBLE marker
+    // so the user can distinguish "intentional silence (fp-gate yes)" from
+    // "model crashed / blank response". Earlier we collapsed to `.` which
+    // Claude Code's UI renders as nothing -> indistinguishable from a bug.
     if (/\[FP-CHECK:\s*yes\]/i.test(assembled)) {
       ctx.set('fp_gate_truncated', true);
       try {
@@ -920,7 +923,7 @@ function fpGateMarkerRewrite(eventName, data, ctx) {
         ['content_block_delta', {
           type: 'content_block_delta',
           index: data.index,
-          delta: { type: 'text_delta', text: '.' },
+          delta: { type: 'text_delta', text: '`[fp-gate: yes — silent ack of false-positive flag]`' },
         }],
         ['content_block_stop', data],
       ];
