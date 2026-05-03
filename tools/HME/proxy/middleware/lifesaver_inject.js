@@ -89,8 +89,8 @@ module.exports = {
     } catch (_e) {
       return; // no error log yet, nothing to alert
     }
-    const lines = content.split('\n').filter(Boolean);
-    const totalLines = lines.length;
+    let lines = content.split('\n').filter(Boolean);
+    let totalLines = lines.length;
 
     // Read watermark (separate from hook-based tmp/hme-errors.lastread)
     let lastSeen = null;
@@ -99,6 +99,15 @@ module.exports = {
       const n = parseInt(raw, 10);
       if (Number.isFinite(n)) lastSeen = n;
     } catch (_e) { /* first run */ }
+
+    // Rotation is best done before the watermark math so a freshly-rotated
+    // log doesn't make `unread` look like the whole file.
+    const rot = _rotateIfNeeded(errLogPath, wmPath, totalLines, lines);
+    if (rot.lastSeenAdjust !== 0) {
+      lines = rot.lines;
+      totalLines = rot.totalLines;
+      if (lastSeen !== null) lastSeen = Math.max(0, lastSeen + rot.lastSeenAdjust);
+    }
 
     // First run: seed watermark at current EOF so we don't dump the entire
     // historical error log into the first request after proxy boot.
@@ -110,8 +119,19 @@ module.exports = {
 
     if (totalLines <= lastSeen) return; // no unread entries
 
-    const unread = lines.slice(lastSeen);
-    if (unread.length === 0) return;
+    const unreadRaw = lines.slice(lastSeen);
+    if (unreadRaw.length === 0) return;
+    // Filter to agent-actionable errors only -- canaries, observation-
+    // severity entries, and self-origin tags are dropped per the same
+    // classification lifesaver.sh applies at the hook layer.
+    const unread = unreadRaw.filter(_isAgentActionable);
+    if (unread.length === 0) {
+      // Still advance the watermark -- the lines exist, they're just
+      // non-actionable. Without this, every subsequent request re-reads
+      // the same skipped entries hoping to find an actionable one.
+      try { fs.writeFileSync(wmPath, String(totalLines)); } catch (_e) { /* ignore */ }
+      return;
+    }
 
     // Minimal LIFESAVER banner. Core info is the unread error list and
     // the directive to fix them. Boilerplate ("Acknowledging is a
