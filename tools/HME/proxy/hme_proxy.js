@@ -1666,27 +1666,6 @@ function handleRequest(clientReq, clientRes) {
         console.error(`[hme-proxy] conn-error snapshot/lifesaver write failed: ${snapErr.message}`);
       }
       emit({ event: 'upstream_conn_error', code: _errCode, message: err.message, path_label: _pathLabel });
-      // Single-shot retry for transient connection drops (ECONNRESET +
-      // friends). Anthropic gateway intermittently closes connections;
-      // first retry usually succeeds. Only fires pre-headers and only
-      // for interactive path; sub-pipeline failures self-heal via their
-      // own circuit breakers. Distinct from rate-limit retry (we don't
-      // retry 429 -- the per-IP throttle window persists across retries).
-      const _RETRYABLE = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE']);
-      if (_isInteractivePath && !clientRes.headersSent && !_isConnRetry && _RETRYABLE.has(_errCode)) {
-        console.error(`[hme-proxy] ${_errCode} -- attempting single retry`);
-        _isConnRetry = true;
-        try {
-          const retry = transport.request(upstreamOpts, _onUpstreamRes);
-          retry.on('error', _onUpstreamErr);
-          retry.setTimeout(UPSTREAM_TIMEOUT_MS, () => { try { retry.destroy(new Error('upstream timeout (retry)')); } catch (_e) {} });
-          if (outBody.length > 0) retry.write(outBody);
-          retry.end();
-          return;
-        } catch (retryErr) {
-          console.error(`[hme-proxy] retry-spawn failed: ${retryErr.message}`);
-        }
-      }
       if (!clientRes.headersSent) {
         clientRes.writeHead(502, { 'Content-Type': 'application/json' });
         clientRes.end(JSON.stringify({ type: 'error', error: { type: 'hme_proxy_upstream', code: _errCode, message: err.message } }));
