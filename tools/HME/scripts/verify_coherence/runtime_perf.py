@@ -39,24 +39,50 @@ class HookLatencyVerifier(Verifier):
     subtag = "performance"
     weight = 1.0
 
-    # Per-hook budget table. Keys are prefix-matched: any hook whose
-    # name starts with a key uses that budget. Calibrated against
-    # observed p50 and with headroom for legitimate variance.
-    _BUDGETS = {
-        "stop":         4000,
-        "sessionstart": 2500,
-        "precompact":   2000,
+    # Per-hook budget table. universal_pulse.json hook_thresholds is the
+    # single source of truth -- the runtime daemon and this verifier used
+    # to maintain independent _BUDGETS dicts that drifted (`stop` was
+    # 4000 here but 900 in universal_pulse.json -- same hook, two
+    # different verdicts depending on which monitor the user asked).
+    # Now we load from the same config file, falling back to a small
+    # static default set only if the config is unreadable. _DEFAULT_BUDGET
+    # stays as the catch-all for anything not in the config.
+    _FALLBACK_BUDGETS = {
+        "stop":             900,
+        "sessionstart":    2500,
+        "userpromptsubmit": 700,
+        "precompact":      2000,
     }
     _DEFAULT_BUDGET = 500
 
+    def _load_budgets(self):
+        cfg_path = os.path.join(_PROJECT, "tools", "HME", "config", "universal_pulse.json")
+        try:
+            with open(cfg_path) as f:
+                cfg = json.load(f)
+            for probe in cfg.get("hook_latency_probes", []):
+                thresholds = probe.get("hook_thresholds")
+                if isinstance(thresholds, dict) and thresholds:
+                    return {k: float(v) for k, v in thresholds.items()}
+        except (OSError, ValueError, KeyError):
+            pass
+        return dict(self._FALLBACK_BUDGETS)
+
     def _budget_for(self, hook_name):
+        budgets = getattr(self, "_cached_budgets", None)
+        if budgets is None:
+            budgets = self._load_budgets()
+            self._cached_budgets = budgets
         # Exact match first.
-        if hook_name in self._BUDGETS:
-            return self._BUDGETS[hook_name]
-        # Prefix match (some hooks embed a subcommand in the name).
-        for key, budget in self._BUDGETS.items():
-            if hook_name.startswith(key):
-                return budget
+        if hook_name in budgets:
+            return budgets[hook_name]
+        # Longest-prefix match (mirrors universal_pulse_tick._resolve_threshold).
+        best_key = None
+        for key in budgets:
+            if hook_name.startswith(key) and (best_key is None or len(key) > len(best_key)):
+                best_key = key
+        if best_key is not None:
+            return budgets[best_key]
         return self._DEFAULT_BUDGET
 
     def run(self) -> VerdictResult:
