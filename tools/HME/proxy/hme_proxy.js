@@ -199,11 +199,18 @@ function _detectUpstreamFailure(status, headers, fullBody) {
   if (status === 429) {
     const retryAfter = headers['retry-after'] || '?';
     const parsed = _tryParseJson(fullBody, 'upstream-429');
+    // Anthropic returns BOTH rate_limit_error (user quota exhausted) and
+    // overloaded_error (server capacity) under HTTP 429. Use the parsed
+    // body's `error.type` to distinguish them; only fall back to a
+    // generic label when the body lacks one. Mis-labelling matters
+    // because the appropriate response differs: rate_limit_error means
+    // wait/shrink, overloaded_error means retry-with-backoff.
+    const realType = (parsed && parsed.error && parsed.error.type) || 'rate_limit_error';
     const msg = (parsed && parsed.error && parsed.error.message)
       ? parsed.error.message
-      : `overloaded_error (retry-after=${retryAfter}s)`;
+      : `${realType} (retry-after=${retryAfter}s)`;
     return {
-      type: 'overloaded_error',
+      type: realType,
       message: msg,
       requestId: parsed && parsed.request_id,
       retryAfter,
