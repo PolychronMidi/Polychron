@@ -221,17 +221,29 @@ def main() -> int:
         print()
 
         # Test 5: marker parsing
+        # Helpers moved out of onboarding_chain.py into
+        # onboarding_chain_helpers.py during the module split. Look them
+        # up via sys.modules since the verifier loads them transitively
+        # through the relative-import walker above. Falls back to the
+        # parent module for back-compat with any future re-export.
         print("## Test 5: structured marker parsing")
-        evolve_out_with_marker = "# Evolution Intelligence\n\nSome analysis...\n\n<!-- HME_TARGET: testModule -->"
-        extracted = onb._extract_target_from_evolve(evolve_out_with_marker)
-        check(extracted == "testModule", "HTML marker extraction")
-        evolve_out_fallback = "Proposed target: anotherModule for bridge E3"
-        extracted2 = onb._extract_target_from_evolve(evolve_out_fallback)
-        check(extracted2 == "anotherModule", "regex fallback extraction")
-        review_clean = "No warnings found.\n<!-- HME_REVIEW_VERDICT: clean -->"
-        check(onb._review_clean(review_clean), "clean verdict marker")
-        review_warnings = "Some issue.\n<!-- HME_REVIEW_VERDICT: warnings -->"
-        check(not onb._review_clean(review_warnings), "warnings verdict marker")
+        _helpers = sys.modules.get("server.onboarding_chain_helpers", onb)
+        _extract = getattr(_helpers, "_extract_target_from_evolve",
+                           getattr(onb, "_extract_target_from_evolve", None))
+        _review_clean_fn = getattr(_helpers, "_review_clean",
+                                    getattr(onb, "_review_clean", None))
+        check(_extract is not None, "_extract_target_from_evolve resolved")
+        check(_review_clean_fn is not None, "_review_clean resolved")
+        if _extract is not None:
+            evolve_out_with_marker = "# Evolution Intelligence\n\nSome analysis...\n\n<!-- HME_TARGET: testModule -->"
+            check(_extract(evolve_out_with_marker) == "testModule", "HTML marker extraction")
+            evolve_out_fallback = "Proposed target: anotherModule for bridge E3"
+            check(_extract(evolve_out_fallback) == "anotherModule", "regex fallback extraction")
+        if _review_clean_fn is not None:
+            review_clean_text = "No warnings found.\n<!-- HME_REVIEW_VERDICT: clean -->"
+            check(_review_clean_fn(review_clean_text), "clean verdict marker")
+            review_warnings = "Some issue.\n<!-- HME_REVIEW_VERDICT: warnings -->"
+            check(not _review_clean_fn(review_warnings), "warnings verdict marker")
         print()
 
         # Test 6: graduation clears state
