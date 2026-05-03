@@ -89,6 +89,14 @@ class HookLatencyVerifier(Verifier):
         log_path = os.path.join(_PROJECT, "log", "hme-hook-latency.jsonl")
         if not os.path.isfile(log_path):
             return _result(SKIP, 1.0, "no hook latency log yet (first run)")
+        # Match universal_pulse's rolling-window semantics. The previous
+        # all-time-p95 computation kept old slow samples (e.g. cold-cache
+        # eras, pre-fix degradation) influencing today's verdict for as
+        # long as the log retained them -- a perf bug the operator fixed
+        # 8 hours ago still showed up in p95 because rotation at 10k
+        # lines retains hours of history. 600s mirrors universal_pulse.
+        _WINDOW_SEC = 600
+        _cutoff_ts = time.time() - _WINDOW_SEC
         try:
             by_hook = {}
             with open(log_path) as f:
@@ -99,6 +107,9 @@ class HookLatencyVerifier(Verifier):
                     try:
                         entry = json.loads(line)
                     except json.JSONDecodeError:
+                        continue
+                    ts = entry.get("ts")
+                    if isinstance(ts, (int, float)) and ts < _cutoff_ts:
                         continue
                     by_hook.setdefault(entry.get("hook", "?"), []).append(
                         float(entry.get("duration_ms", 0))
