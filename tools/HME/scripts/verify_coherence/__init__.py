@@ -117,6 +117,7 @@ REGISTRY = [
     HookCommandExistenceVerifier(),
     CorePrinciplesAuditVerifier(),
     RepeatedCharSpamVerifier(),
+    CommentBloatVerifier(),
     AtomicStateWritesVerifier(),
     AntiForkHeuristicListVerifier(),
     TestEnvUndefinedVerifier(),
