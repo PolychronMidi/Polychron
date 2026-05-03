@@ -99,6 +99,15 @@ module.exports = {
     const isStopHook = STOP_HOOK_MARKERS.some((m) => userText.includes(m));
     if (!isStopHook) return;
 
+    // Turn-specific: only inject when the prior turn ACTUALLY denied
+    // (signaled by the armed flag written by work_checks.js). Without
+    // this, any user message that quotes deny-marker text triggers
+    // injection, force-marker-prefixing the agent on clean prompts.
+    let armed = false;
+    try { armed = fs.existsSync(FP_GATE_ARMED_FLAG); } catch (_e) { /* ignore */ }
+    if (!armed) return;
+    try { fs.unlinkSync(FP_GATE_ARMED_FLAG); } catch (_e) { /* ignore */ }
+
     // Idempotent: if the instruction is already present (e.g. retry),
     // don't append again.
     if (userText.includes('[stop-hook fp-gate -- proxy-injected]')) return;
