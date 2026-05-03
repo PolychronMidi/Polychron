@@ -1190,20 +1190,38 @@ function handleRequest(clientReq, clientRes) {
           delete outHeaders['content-length'];
         }
 
-        // BLANK-RESPONSE DIAGNOSTIC: parse outBuf SSE events, count text
-        // chars across all text content_blocks. If total < 5 chars and
-        // status was 200, this is a "suspicious blank" -- dump everything
-        // to /tmp/hme-blank-debug-<ts>.json so we can finally figure
-        // out which middleware/hook is killing legit responses.
+        // RESPONSE TRACE DUMPER: dump EVERY interactive Anthropic response
+        // (200 or non-200, SSE or not) so we have ground truth for any
+        // user-reported blank/anomaly. Earlier "only when text<5 chars +
+        // SSE + 200" filter missed real failures (non-SSE blanks, error
+        // responses, hook-replaced bodies, etc). Rotate to keep last 100
+        // dumps so disk doesn't explode.
         try {
-          if (outStatus === 200 && isAnthropic && (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream')) {
-            const _bodyStr = outBuf.toString('utf8');
-            let _textChars = 0;
-            let _textBlocks = 0;
-            let _thinkingBlocks = 0;
-            let _toolUseBlocks = 0;
-            const _events = [];
-            // Cheap SSE event parser: events are `event: <name>\ndata: <json>\n\n`.
+          const _bdPath = require('path');
+          const _bdFs = require('fs');
+          const _dumpDir = _bdPath.join(PROJECT_ROOT, 'tmp', 'blank-debug');
+          try { _bdFs.mkdirSync(_dumpDir, { recursive: true }); } catch (_e) { /* ignore */ }
+          // Rotate: keep newest 99 (we're about to write #100).
+          try {
+            const _existing = _bdFs.readdirSync(_dumpDir)
+              .filter((n) => n.startsWith('hme-resp-') && n.endsWith('.json'))
+              .map((n) => ({ n, t: _bdFs.statSync(_bdPath.join(_dumpDir, n)).mtimeMs }))
+              .sort((a, b) => b.t - a.t);
+            for (const { n } of _existing.slice(99)) {
+              try { _bdFs.unlinkSync(_bdPath.join(_dumpDir, n)); } catch (_e) { /* ignore */ }
+            }
+          } catch (_e) { /* ignore rotation errors */ }
+
+          const _isSse = (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
+          const _bodyStr = outBuf.toString('utf8');
+          let _textChars = 0;
+          let _textBlocks = 0;
+          let _thinkingChars = 0;
+          let _thinkingBlocks = 0;
+          let _toolUseBlocks = 0;
+          let _stopReason = null;
+          const _events = [];
+          if (_isSse) {
             for (const evRaw of _bodyStr.split('\n\n')) {
               if (!evRaw.trim()) continue;
               let evName = '';
@@ -1224,64 +1242,80 @@ function handleRequest(clientReq, clientRes) {
               } else if (evName === 'content_block_delta' && evData && evData.delta) {
                 if (evData.delta.type === 'text_delta' && typeof evData.delta.text === 'string') {
                   _textChars += evData.delta.text.length;
+                } else if (evData.delta.type === 'thinking_delta' && typeof evData.delta.thinking === 'string') {
+                  _thinkingChars += evData.delta.thinking.length;
                 }
+              } else if (evName === 'message_delta' && evData && evData.delta && evData.delta.stop_reason) {
+                _stopReason = evData.delta.stop_reason;
               }
-            }
-            const _suspiciousBlank = _textChars < 5;
-            if (_suspiciousBlank) {
-              const _bdPath = require('path');
-              const _bdFs = require('fs');
-              const _dumpDir = _bdPath.join(PROJECT_ROOT, 'tmp', 'blank-debug');
-              try { _bdFs.mkdirSync(_dumpDir, { recursive: true }); } catch (_e) { /* ignore */ }
-              const _ts = new Date().toISOString().replace(/[:.]/g, '-');
-              const _dumpFile = _bdPath.join(_dumpDir, `hme-blank-${_ts}.json`);
-              const _msgs = (payload && payload.messages) || [];
-              const _lastUserMsg = [..._msgs].reverse().find((m) => m && m.role === 'user');
-              let _lastUserText = '';
-              if (_lastUserMsg) {
-                const c = _lastUserMsg.content;
-                if (typeof c === 'string') _lastUserText = c;
-                else if (Array.isArray(c)) {
-                  _lastUserText = c.filter((b) => b && b.type === 'text')
-                    .map((b) => b.text || '').join('\n');
-                }
-              }
-              const _dump = {
-                ts: new Date().toISOString(),
-                summary: {
-                  text_chars: _textChars,
-                  text_blocks: _textBlocks,
-                  thinking_blocks: _thinkingBlocks,
-                  tool_use_blocks: _toolUseBlocks,
-                  total_events: _events.length,
-                  body_bytes: outBuf.length,
-                  status: outStatus,
-                },
-                request: {
-                  model: payload && payload.model,
-                  thinking: payload && payload.thinking,
-                  output_config: payload && payload.output_config,
-                  max_tokens: payload && payload.max_tokens,
-                  messages_count: _msgs.length,
-                  system_block_count: Array.isArray(payload && payload.system) ? payload.system.length : (payload && payload.system ? 1 : 0),
-                  system_total_chars: Array.isArray(payload && payload.system)
-                    ? payload.system.reduce((acc, b) => acc + ((b && b.text) ? b.text.length : 0), 0)
-                    : (payload && typeof payload.system === 'string' ? payload.system.length : 0),
-                  last_user_text_preview: _lastUserText.slice(0, 2000),
-                  tools_count: Array.isArray(payload && payload.tools) ? payload.tools.length : 0,
-                },
-                response_headers: outHeaders,
-                events: _events,
-                raw_body_preview: _bodyStr.slice(0, 8000),
-                raw_body_tail: _bodyStr.length > 8000 ? _bodyStr.slice(-2000) : '',
-              };
-              try {
-                _bdFs.writeFileSync(_dumpFile, JSON.stringify(_dump, null, 2));
-                console.error(`[hme-proxy] BLANK-RESPONSE DETECTED -- ${_textChars} text chars, ${_textBlocks}t/${_thinkingBlocks}th/${_toolUseBlocks}tu blocks. Dumped to ${_dumpFile}`);
-              } catch (_e) { console.error(`[hme-proxy] BLANK-RESPONSE dump write failed: ${_e.message}`); }
             }
           }
-        } catch (_e) { console.error(`[hme-proxy] blank-response detector threw: ${_e.message}`); }
+          // Heuristic verdict: did the user see something visible?
+          // - text_chars > 0 -> visible text
+          // - tool_use_blocks > 0 -> visible tool call
+          // - everything else (thinking-only, empty, non-SSE error body) -> BLANK
+          const _isBlank = _textChars === 0 && _toolUseBlocks === 0;
+          const _verdict = _isBlank ? 'BLANK' : 'OK';
+          const _ts = new Date().toISOString().replace(/[:.]/g, '-');
+          const _path_label = _isInteractivePath ? 'interactive' : 'sub';
+          const _dumpFile = _bdPath.join(_dumpDir, `hme-resp-${_ts}-${_verdict}-${_path_label}.json`);
+          const _msgs = (payload && payload.messages) || [];
+          const _lastUserMsg = [..._msgs].reverse().find((m) => m && m.role === 'user');
+          let _lastUserText = '';
+          if (_lastUserMsg) {
+            const c = _lastUserMsg.content;
+            if (typeof c === 'string') _lastUserText = c;
+            else if (Array.isArray(c)) {
+              _lastUserText = c.filter((b) => b && b.type === 'text')
+                .map((b) => b.text || '').join('\n');
+            }
+          }
+          const _dump = {
+            ts: new Date().toISOString(),
+            verdict: _verdict,
+            path_label: _path_label,
+            url: clientReq.url,
+            summary: {
+              status: outStatus,
+              is_sse: _isSse,
+              text_chars: _textChars,
+              thinking_chars: _thinkingChars,
+              text_blocks: _textBlocks,
+              thinking_blocks: _thinkingBlocks,
+              tool_use_blocks: _toolUseBlocks,
+              total_events: _events.length,
+              body_bytes: outBuf.length,
+              stop_reason: _stopReason,
+              had_continuation: !!final,
+            },
+            request: {
+              model: payload && payload.model,
+              thinking: payload && payload.thinking,
+              output_config: payload && payload.output_config,
+              max_tokens: payload && payload.max_tokens,
+              messages_count: _msgs.length,
+              system_block_count: Array.isArray(payload && payload.system) ? payload.system.length : (payload && payload.system ? 1 : 0),
+              system_total_chars: Array.isArray(payload && payload.system)
+                ? payload.system.reduce((acc, b) => acc + ((b && b.text) ? b.text.length : 0), 0)
+                : (payload && typeof payload.system === 'string' ? payload.system.length : 0),
+              last_user_text_preview: _lastUserText.slice(0, 4000),
+              tools_count: Array.isArray(payload && payload.tools) ? payload.tools.length : 0,
+              betas: payload && payload.betas,
+            },
+            response_headers: outHeaders,
+            // Only include parsed events on blank dumps — the OK case
+            // gets a small summary to keep disk usage bounded.
+            events: _isBlank ? _events : null,
+            raw_body_preview: _bodyStr.slice(0, _isBlank ? 16000 : 4000),
+            raw_body_tail: _bodyStr.length > 16000 ? _bodyStr.slice(-4000) : '',
+          };
+          try {
+            _bdFs.writeFileSync(_dumpFile, JSON.stringify(_dump, null, 2));
+            if (_isBlank) {
+              console.error(`[hme-proxy] BLANK-RESPONSE -- status=${outStatus} sse=${_isSse} textC=${_textChars} thC=${_thinkingChars} blocks=${_textBlocks}t/${_thinkingBlocks}th/${_toolUseBlocks}tu stop=${_stopReason} -> ${_dumpFile}`);
+            }
+          } catch (_e) { console.error(`[hme-proxy] response-trace dump write failed: ${_e.message}`); }
+        } catch (_e) { console.error(`[hme-proxy] response-trace dumper threw: ${_e.message} stack=${_e.stack}`); }
 
         // Strip content-length on ANY SSE-mutation path. Upstream's header
         // advertised the pre-transform byte count; piping through
