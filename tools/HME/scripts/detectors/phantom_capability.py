@@ -64,6 +64,39 @@ _RESCUE_ANCHORS = (
 )
 
 
+def _inside_backticks(text: str, idx: int) -> bool:
+    """True if text[idx] is inside a `single` or ```triple``` backtick span.
+
+    Counts triple-backticks first (they consume their own pair of singles),
+    then single backticks. Odd count before idx = inside.
+    """
+    triples = 0
+    i = 0
+    while i < idx:
+        if text[i:i + 3] == "```":
+            triples += 1
+            i += 3
+        else:
+            i += 1
+    if triples % 2 == 1:
+        return True
+    # Strip triple-backtick regions before counting singles, otherwise
+    # the singles inside a code fence would skew the parity.
+    stripped_chars = 0
+    in_triple = False
+    j = 0
+    singles_before = 0
+    while j < idx:
+        if text[j:j + 3] == "```":
+            in_triple = not in_triple
+            j += 3
+            continue
+        if not in_triple and text[j] == "`":
+            singles_before += 1
+        j += 1
+    return singles_before % 2 == 1
+
+
 def _last_assistant_text(events: list) -> str:
     last = None
     for ev in events:
