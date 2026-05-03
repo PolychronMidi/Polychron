@@ -1030,20 +1030,25 @@ function handleRequest(clientReq, clientRes) {
             // flagged. We still snapshot + lifesaver-log them so the
             // operator sees them, but we don't kill the interactive path.
             const _coolingDown = _alertCooldownActive(_errInfo.type || `http_${status}`, _pathLabel);
-            // rate_limit_error: bump the panic-shrink counter (so the
-            // next request is half the size) AND trip the escape hatch
-            // (so the user gets a visible lifesaver alert as a recovery
-            // signal). The line-688 precompact runs regardless of valve
-            // state, so passthrough mode still gets aggressive compaction
-            // -- it does NOT send the raw 1.5MB body the way it would
-            // without precompact. The hatch trip is purely a signal.
+            // 429 with `x-should-retry: true` is Anthropic-/Cloudflare-side
+            // transient throttling -- NOT a user-quota-exhaustion or
+            // body-size issue. Compacting smaller doesn't help (verified:
+            // we 429ed at 246KB AND at 124KB with the same x-should-retry
+            // header). The fix per Anthropic's docs is retry-with-backoff.
+            // We skip the panic-shrink (irrelevant to rate-throttle) and
+            // skip the escape hatch trip (the request is recoverable;
+            // tripping makes us go passthrough which doesn't help).
+            const _shouldRetry = headers['x-should-retry'] === 'true';
             const _isRateLimit = _errInfo.type === 'rate_limit_error';
-            if (_isRateLimit) {
+            if (_isRateLimit && !_shouldRetry) {
+              // Real ITPM exhaustion (no x-should-retry hint) -- shrink.
               _consecutive429s = Math.min(_consecutive429s + 1, 4);
-              console.error(`[hme-proxy] rate_limit_error -- panic-shrink counter=${_consecutive429s}, next threshold=${_effectiveCompactThreshold()}B`);
+              console.error(`[hme-proxy] rate_limit_error (ITPM-exhaustion) -- panic-shrink counter=${_consecutive429s}, next threshold=${_effectiveCompactThreshold()}B`);
             }
-            if (_isInteractivePath && !_coolingDown) {
+            if (_isInteractivePath && !_coolingDown && !_shouldRetry) {
               recordUpstreamFailure(_errMsg);
+            } else if (_shouldRetry) {
+              console.error(`[hme-proxy] 429 with x-should-retry=true -- transient throttle, will retry; NOT tripping escape hatch`);
             } else if (!_isInteractivePath) {
               console.error(`[hme-proxy] sub-pipeline failure -- NOT tripping escape hatch (interactive path unaffected)`);
             }
@@ -1069,6 +1074,58 @@ function handleRequest(clientReq, clientRes) {
               console.error(`[hme-proxy] snapshot/lifesaver write failed: ${err.message}`);
             }
             emit({ event: 'upstream_error', session: _sessionForTelemetry, status, type: _errInfo.type, message: _errInfo.message, path_label: _pathLabel });
+            // Retry-with-backoff for 429 with x-should-retry: true (and
+            // any 5xx, which Anthropic's docs also recommend retrying).
+            // This is the actual recovery path for the Cloudflare/Anthropic
+            // request-rate throttle the user keeps hitting. Up to 3 retries
+            // with exponential backoff capped at 8s; honours retry-after
+            // header when present.
+            const _retryable = (status === 429 && _shouldRetry) || (status >= 500 && status < 600);
+            if (_retryable && _isInteractivePath && payload && Array.isArray(payload.messages)) {
+              for (let attempt = 1; attempt <= 3; attempt++) {
+                const retryAfterRaw = headers['retry-after'];
+                const retryAfterSec = retryAfterRaw && Number.isFinite(parseInt(retryAfterRaw, 10))
+                  ? parseInt(retryAfterRaw, 10) : null;
+                const delayMs = Math.min(8000, retryAfterSec != null ? retryAfterSec * 1000 : Math.pow(2, attempt - 1) * 1000);
+                console.error(`[hme-proxy] retry attempt ${attempt}/3 after ${delayMs}ms (status=${status}, retry-after=${retryAfterRaw||'?'})`);
+                await new Promise((res) => setTimeout(res, delayMs));
+                try {
+                  const retry = await new Promise((resolve, reject) => {
+                    const req = transport.request({ ...upstreamOpts, headers: { ...upstreamHeaders } }, (res) => {
+                      const cs = [];
+                      res.on('data', (c) => cs.push(c));
+                      res.on('end', () => resolve({ statusCode: res.statusCode || 502, headers: { ...res.headers }, body: Buffer.concat(cs) }));
+                      res.on('error', reject);
+                    });
+                    req.on('error', reject);
+                    req.write(outBody);
+                    req.end();
+                  });
+                  console.error(`[hme-proxy] retry ${attempt} response: ${retry.statusCode}`);
+                  if (retry.statusCode >= 200 && retry.statusCode < 300) {
+                    status = retry.statusCode;
+                    headers = retry.headers;
+                    fullBody = retry.body;
+                    recordUpstreamSuccess();
+                    if (_consecutive429s > 0) _consecutive429s = 0;
+                    break;
+                  }
+                  // If still 429 with x-should-retry, loop. Otherwise bail.
+                  if (retry.statusCode === 429 && retry.headers['x-should-retry'] === 'true') {
+                    headers = retry.headers; // for next iteration's retry-after
+                    continue;
+                  }
+                  // Non-retryable on retry -- forward whatever we got
+                  status = retry.statusCode;
+                  headers = retry.headers;
+                  fullBody = retry.body;
+                  break;
+                } catch (rErr) {
+                  console.error(`[hme-proxy] retry ${attempt} exception: ${rErr.message}`);
+                  if (attempt === 3) break;
+                }
+              }
+            }
             // Auto-refresh-and-retry on 401 (modelled on horselock).
             // Token expired => refresh credentials.json => retry once.
             // Single in-flight refresh promise via refreshOauthToken's
