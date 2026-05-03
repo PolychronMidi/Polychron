@@ -82,6 +82,7 @@ file's listed events and FAILs if they drift.
 - **`buddy_handoff_primary`** -- hand-off paradigm adopted an existing primary at SessionStart (no fresh spawn). Payload: `sid`, `floor`.
 - **`buddy_handoff_promote`** -- sid manually designated as the primary buddy via `i/handoff promote`. Payload: `sid`, `floor`, `effort_floor`.
 - **`buddy_handoff_retire`** -- primary buddy retired to the senior pool (manual via `i/handoff retire`, or auto when context >= `BUDDY_RETIRE_PCT`). Payload: `sid`, `reason`, `context_at_retire`.
+- **`buddy_consult`** -- agent invoked `i/consult` (or `claude --resume`) against a primary or senior buddy. Payload: `sid`, `question_excerpt`, `caller_sid`, `target_role` (`primary`/`senior`).
 
 ## Drift / regression signals
 
