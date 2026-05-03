@@ -30,13 +30,25 @@ import types
 
 
 def _load_onboarding_chain():
-    """Load onboarding_chain.py directly, with a fake PROJECT_ROOT set in env."""
+    """Load onboarding_chain.py directly, with a fake PROJECT_ROOT set in env.
+
+    onboarding_chain.py uses relative imports (`from .onboarding_chain_dispatch`),
+    which only resolve when the parent `server` package is registered with a
+    __path__ that points at the actual server/ directory. Without this setup
+    the load failed with "No module named 'server.onboarding_chain_dispatch'"
+    and the verifier returned ERROR with no PASS/FAIL output (so the wrapping
+    HCI verifier reported `verifier produced no PASS/FAIL output`).
+    """
+    server_dir = os.path.join(
+        os.environ["PROJECT_ROOT"], "tools", "HME", "service", "server"
+    )
+    if "server" not in sys.modules or not hasattr(sys.modules["server"], "__path__"):
+        server_pkg = types.ModuleType("server")
+        server_pkg.__path__ = [server_dir]
+        sys.modules["server"] = server_pkg
     spec = importlib.util.spec_from_file_location(
         "server.onboarding_chain",
-        os.path.join(
-            os.environ["PROJECT_ROOT"],
-            "tools", "HME", "service", "server", "onboarding_chain.py"
-        ),
+        os.path.join(server_dir, "onboarding_chain.py"),
     )
     mod = importlib.util.module_from_spec(spec)
     sys.modules["server.onboarding_chain"] = mod
