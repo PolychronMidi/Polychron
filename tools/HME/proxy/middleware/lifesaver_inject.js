@@ -1,20 +1,5 @@
 'use strict';
-// lifesaver_inject.js - hook-independent LIFESAVER alert injection.
-//
-// Replaces the hook-based LIFESAVER scan (userpromptsubmit.sh) which is
-// unreliable in VS Code Claude extension mode -- hooks fire intermittently
-// for reasons outside our control. The proxy is always running under
-// supervisor, so injecting alerts here guarantees delivery on every API
-// request instead of depending on the hook dispatcher.
-//
-// Watermark file is separate from the hook-based tmp/hme-errors.lastread
-// so both mechanisms can coexist. If hooks ever fire, both inject -- one
-// duplicate banner is cheap; one missed banner is the whole reason this
-// exists.
-//
-// First run seeds the watermark at current line count so proxy boot
-// doesn't flood with historical entries. After that, only genuinely new
-// hme-errors.log lines trigger injection.
+// Hook-independent LIFESAVER alert injection. Doc: doc/LIFESAVER.md.
 
 const fs = require('fs');
 const path = require('path');
@@ -22,13 +7,8 @@ const path = require('path');
 const ERR_LOG = 'log/hme-errors.log';
 const WATERMARK = 'tmp/hme-errors.lastread-proxy';
 
-// Mirrors lifesaver.sh classification (hooks/lifecycle/stop/lifesaver.sh):
-// CANARY lines are alert-chain self-tests, observation-severity lines are
-// observability not action items, and self-origin tags are operator/
-// supervisor concerns the agent has no causal path to fix. Without this
-// filter, every CANARY tick (every few minutes) and every WARN/INFO line
-// gets re-injected verbatim as "fix root-cause before proceeding" -- the
-// classic coherence-noise spam.
+// Mirrors lifesaver.sh classification: drop CANARY self-tests,
+// observation-severity, and self-origin tags.
 const CANARY_RE = /\[CANARY-/;
 const OBSERVATION_RE = /\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/;
 const SELF_TAG_RE = /^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^\]]+)\]/;
