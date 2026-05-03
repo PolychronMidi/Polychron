@@ -162,7 +162,16 @@ class WarmContextFreshnessVerifier(Verifier):
         cache_dir = os.path.join(_PROJECT, "tools", "HME", "warm-context-cache")
         if not os.path.isdir(cache_dir):
             return _result(SKIP, 1.0, "no warm-context-cache dir")
-        files = [f for f in os.listdir(cache_dir) if f.endswith(".json")]
+        # Exclude `*-checkpoint-*.json` -- the naming convention
+        # (`warm-kv-checkpoint-<model>.json`) marks intentionally-preserved
+        # snapshots, not actively-rotated warm caches. Without this
+        # exclusion an old snapshot kept around for diagnostic value
+        # FAILed the freshness check forever even though the active warm
+        # cache (`warm-kv-<model>.json`) was being refreshed normally.
+        files = [
+            f for f in os.listdir(cache_dir)
+            if f.endswith(".json") and "checkpoint" not in f
+        ]
         if not files:
             return _result(SKIP, 1.0, "no warm context files yet")
         oldest_age = 0.0
