@@ -1390,7 +1390,7 @@ function handleRequest(clientReq, clientRes) {
           // Original streaming path (no HME interception happened) -- pipe
           // through the Transform for Bash run_in_background rewriting.
           const { SseTransform } = require('./sse_transform');
-          const { runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite, slopStripRewrite, hallucinatedTurnPrefixStripRewrite, stopHookCeremonyStripRewrite, fpGateMarkerRewrite } = require('./sse_rewriters');
+          const { runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite, slopStripRewrite, hallucinatedTurnPrefixStripRewrite, stopHookCeremonyStripRewrite, fpGateMarkerRewrite, soloRationaleTrimRewrite } = require('./sse_rewriters');
           // Order matters: longLeadingSleepRewrite rewrites command
           // BEFORE runInBackgroundRewrite reads it on content_block_stop.
           // Both hold state keyed by content-block index in the same
