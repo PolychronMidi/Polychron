@@ -297,6 +297,17 @@ module.exports = {
     // sees every flag in one pass instead of N round-trips. Order in
     // the firing list matches the historical first-deny-wins order so
     // the most-important flag heads the report.
+    //
+    // SOFTENED 2026-05-03: ADVISOR_SILENTLY_SKIPPED and CLAIM_WITHOUT_EVIDENCE
+    // removed from FIRING_RULES. They were the load-bearing cause of the
+    // "Thought for 0s" blank-response loop -- a Stop hook decision:block on
+    // these eats the entire assistant turn from VSCode's UI render even
+    // though the text was on disk. They remain detected (metrics still
+    // accumulate via verdicts.env) but no longer trigger ctx.deny().
+    // The ENFORCEMENT_REMINDER willDeny check above is left intact -- if
+    // ONLY these two fire, willDeny is true, reminder is suppressed; agent
+    // gets no extra signal. That's intentional: the prior signal was
+    // catastrophic (turn-eating), better to silently track than to block.
     const FIRING_RULES = [
       ['STOP_WORK',          'DISMISSIVE',                 'STOP_WORK_DISMISSIVE'],
       ['STOP_WORK',          'TEXT_ONLY_SHORT',            'STOP_WORK_TEXT_ONLY'],
@@ -306,7 +317,7 @@ module.exports = {
       ['PHANTOM_CAPABILITY', 'phantom_paraphrase',         'PHANTOM_PARAPHRASE'],
       ['ADVISOR_DOCTRINE',   'advisor_missing_pre_build',  'ADVISOR_MISSING_PRE_BUILD'],
       ['ADVISOR_DOCTRINE',   'advisor_missing_post_deliver','ADVISOR_MISSING_POST_DELIVER'],
-      ['ADVISOR_DOCTRINE',   'advisor_silently_skipped',   'ADVISOR_SILENTLY_SKIPPED'],
+      // ['ADVISOR_DOCTRINE','advisor_silently_skipped',   'ADVISOR_SILENTLY_SKIPPED'],  // softened: detected, not denied
       ['ADVISOR_DOCTRINE',   'advisor_conflict_cap_exceeded','ADVISOR_CONFLICT_CAP'],
       ['SUMMARY_FORMAT',     'summary_missing',            'SUMMARY_MISSING'],
       ['SUMMARY_FORMAT',     'summary_malformed',          'SUMMARY_MALFORMED'],
@@ -314,7 +325,7 @@ module.exports = {
       ['LIVE_PROBE',         'live_probe_missing',         'LIVE_PROBE_MISSING'],
       ['PHASE_GATE',         'phase_skipped',              'PHASE_SKIPPED'],
       ['PILE_ON',            'pile_on',                    'PILE_ON'],
-      ['CLAIM_WITHOUT_EVIDENCE',     'claim_without_evidence',     'CLAIM_WITHOUT_EVIDENCE'],
+      // ['CLAIM_WITHOUT_EVIDENCE','claim_without_evidence','CLAIM_WITHOUT_EVIDENCE'],   // softened: detected, not denied
       ['FIX_WITHOUT_INVESTIGATION',  'fix_without_investigation',  'FIX_WITHOUT_INVESTIGATION'],
     ];
     const firing = [];
