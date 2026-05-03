@@ -8,7 +8,7 @@ PROJECT="$PROJECT_ROOT"
 FLAG="${PROJECT}/tmp/hme-primer-needed.flag"
 
 if [ -f "$FLAG" ]; then
-  PRIMER="${PROJECT}/doc/ONBOARDING.md"
+  PRIMER="${PROJECT}/doc/templates/ONBOARDING.md"
   rm -f "$FLAG"
 
   # H14: Agent fingerprint -- read the model ID from env if Claude Code sets

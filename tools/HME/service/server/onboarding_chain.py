@@ -2,7 +2,7 @@
 
 Chain-decider middleman. Lives INSIDE the MCP server so tool handlers can
 invoke each other directly (hooks cannot). Agent-facing walkthrough is in
-doc/ONBOARDING.md.
+doc/templates/ONBOARDING.md.
 
 Linear state machine with silent prerequisite auto-chaining:
 
@@ -75,7 +75,7 @@ Adding a new state:
   2. Add transition branch in _advance()
   3. Add to _ONB_STATES in hooks/helpers/_onboarding.sh
   4. Add step-label case in _onb_step_label
-  5. Update doc/ONBOARDING.md state-machine block
+  5. Update doc/templates/ONBOARDING.md state-machine block
 
 Adding a new gate for an external tool:
   1. Source _onboarding.sh in pretooluse_*.sh

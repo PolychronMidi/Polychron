@@ -127,7 +127,7 @@ Generated per-run in `output/metrics/`:
 - [doc/HME_MENTAL_MODEL.md](doc/HME_MENTAL_MODEL.md) — one-page mental model: read this before anything else
 - [doc/HME_HORIZONS.md](doc/HME_HORIZONS.md) — the 10 architectural horizons HME hasn't yet stretched into; read when next-round work feels like rearranging stones
 - [doc/HME.md](doc/HME.md) — local semantic RAG + HME tool reference (invoked via `i/<tool>` shell wrappers)
-- [doc/ONBOARDING.md](doc/ONBOARDING.md) — agent-facing walkthrough behavior
+- [doc/templates/ONBOARDING.md](doc/templates/ONBOARDING.md) — agent-facing walkthrough behavior
 - [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) — beat lifecycle, signal flow, layer isolation
 - [doc/TUNING_MAP.md](doc/TUNING_MAP.md) — feedback loop constants, cross-constant invariants
 - [doc/HYPERMETA.md](doc/HYPERMETA.md) — 18 self-calibrating controllers
