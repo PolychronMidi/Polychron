@@ -610,12 +610,71 @@ function slopStripRewrite(eventName, data, ctx) {
   return data;
 }
 
+// Always-on whole-block drop for hallucinated turn-prefix shapes.
+// Independent of ackStripRewrite (priorUserWasDeny gate) and
+// slopStripRewrite (inline modifications). A `Human:` / `Assistant:`
+// prefix at the start of an assistant text block is never legitimate
+// regardless of conversational context -- the model is fabricating a
+// turn boundary inside its own response. Drop the whole block; the
+// chat client never sees the fake turn.
+function hallucinatedTurnPrefixStripRewrite(eventName, data, ctx) {
+  const key = 'turn_prefix_text_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { startData: data, deltas: [] });
+    return null;
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    state.deltas.push(data);
+    return null;
+  }
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    let assembled = '';
+    for (const d of state.deltas) {
+      if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
+    }
+    if (_isHallucinatedTurnPrefix(assembled)) {
+      // Best-effort stat (separate log; never errors.log).
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-turn-prefix-strips.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            text_preview: assembled.slice(0, 100),
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      return null;  // drop the whole block
+    }
+    // Not a hallucinated prefix -- replay held events through.
+    const events = [['content_block_start', state.startData]];
+    for (const d of state.deltas) {
+      events.push(['content_block_delta', d]);
+    }
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+  return data;
+}
+
 module.exports = {
   runInBackgroundRewrite,
   longLeadingSleepRewrite,
   ackStripRewrite,
   slopStripRewrite,
+  hallucinatedTurnPrefixStripRewrite,
   _isBareAck,             // exported for tests
+  _isHallucinatedTurnPrefix, // exported for tests
   _rewriteLongLeadingSleep, // exported for tests
   _stripSlop,             // exported for tests
 };
