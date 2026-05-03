@@ -96,6 +96,8 @@ mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
   echo "LIVE_PROBE=$LIVE_PROBE"
   echo "PHASE_GATE=$PHASE_GATE"
   echo "PILE_ON=$PILE_ON"
+  echo "CLAIM_WITHOUT_EVIDENCE=$CLAIM_WITHOUT_EVIDENCE"
+  echo "FIX_WITHOUT_INVESTIGATION=$FIX_WITHOUT_INVESTIGATION"
 } > "$_DETECTOR_VERDICTS_FILE"
 
 # senior_consult_debt -- informational notice (NOT a hard block on first
