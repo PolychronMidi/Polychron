@@ -28,18 +28,9 @@ function resolveUpstream(req) {
   }
 }
 
-//  Emergency valve
-// FIRST upstream failure -> flip into passthrough mode + write LIFESAVER
-// alert with the full error text. Threshold was 3 consecutive failures;
-// lowered to 1 because the user shouldn't have to hit the same proxy-
-// induced rejection three times before the auto-bypass kicks in.
-//
-// AUTO-RECOVERY: previously the valve was sticky for the entire process
-// lifetime -- a transient Anthropic 429 cost the user a full restart.
-// Now the valve clears after a backoff window (60s, 120s, 300s, 600s
-// per consecutive trip) so the next request can attempt the proxy path
-// again. If that retry fails, recordUpstreamFailure re-trips with the
-// next backoff level. A sustained-success window resets the escalation.
+// Emergency valve. First upstream failure trips into passthrough +
+// writes LIFESAVER. Auto-clears after backoff window so a transient
+// 429 doesn't cost a full restart.
 const EMERGENCY_THRESHOLD = 1;
 const BACKOFF_SCHEDULE_MS = [60_000, 120_000, 300_000, 600_000];
 const SUCCESS_RESET_MS = 300_000;  // 5 min clean = back to first backoff
@@ -49,17 +40,7 @@ let _valveTrippedAt = 0;
 let _trippedSequence = 0;  // index into BACKOFF_SCHEDULE_MS, capped
 let _lastSuccessAt = 0;
 
-// Persistent valve state. The supervisor watchdog respawns the proxy on
-// crash WITHOUT going through polychron-shutdown.sh -- so in-memory trip
-// state is lost on respawn and the new process would start in normal
-// mode, possibly hammering an upstream that's still 429ing. Persist
-// trip state to a small JSON file; load on module init; clear when the
-// auto-recovery actually completes (valve auto-clears via timer).
-//
-// polychron-shutdown.sh removes hme-proxy-valve-tripped.flag on
-// deliberate restart -- we mirror that policy by using a different
-// filename so the legacy flag still works as a "force clean start"
-// marker for operators.
+// Persisted across watchdog respawns (which bypass polychron-shutdown.sh).
 const _VALVE_STATE_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-proxy-valve-state.json');
 
 function _loadPersistedValveState() {
