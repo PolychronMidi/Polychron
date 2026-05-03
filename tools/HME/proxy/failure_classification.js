@@ -18,15 +18,17 @@
 // dozens of identical lifesaver writes. The escape hatch still trips
 // on the FIRST failure.
 
+// Mirrors the original semantics from hme_proxy.js verbatim: requires
+// the trimmed body to start with '{' or '[' before attempting parse,
+// and logs the contextDesc + first 120 chars on parse failure.
 function _tryParseJson(buf, contextDesc) {
+  const text = buf.toString('utf8');
+  const trimmed = text.trim();
+  if (!trimmed || (trimmed[0] !== '{' && trimmed[0] !== '[')) return null;
   try {
-    const text = Buffer.isBuffer(buf) ? buf.toString('utf8') : String(buf || '');
-    if (!text) return null;
     return JSON.parse(text);
   } catch (err) {
-    if (contextDesc) {
-      console.error(`[hme-proxy] ${contextDesc} body is not JSON: ${err.message}`);
-    }
+    console.error(`[hme-proxy] _tryParseJson(${contextDesc}): malformed JSON body: ${err.message} -- first 120 chars: ${trimmed.slice(0, 120)}`);
     return null;
   }
 }
