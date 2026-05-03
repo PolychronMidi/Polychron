@@ -154,13 +154,19 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
         if not os.path.isdir(mw_dir):
             return _result(SKIP, 1.0, "middleware dir not present", [mw_dir])
         # Mirror the exclusion rules in middleware/index.js loadAll(): skip
-        # index.js itself, the manifest, and test files (test_*.js,
-        # *.test.js, *_test.js). Tests live beside the code they exercise
-        # but aren't middleware and don't need registration.
+        # index.js itself, the manifest, test files (test_*.js, *.test.js,
+        # *_test.js), AND underscore-prefixed shared utilities (mirrors
+        # the hooks/helpers/_*.sh convention). The loader explicitly skips
+        # `_*.js` because they export helper functions for other middleware
+        # to consume but aren't themselves registered. Without this rule
+        # the verifier flagged _markers.js / _persistent_map.js as
+        # "unlisted" even though the loader correctly excludes them.
         def _is_middleware(f: str) -> bool:
             if not f.endswith(".js") or f == "index.js":
                 return False
             if f.startswith("test_") or f.endswith(".test.js") or f.endswith("_test.js"):
+                return False
+            if f.startswith("_"):
                 return False
             return True
         files = sorted(f for f in os.listdir(mw_dir) if _is_middleware(f))
