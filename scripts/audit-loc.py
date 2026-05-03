@@ -79,7 +79,24 @@ def _loc(path: str) -> int:
     """Count non-blank, non-comment lines. Loud on read failures --
     silent 0 used to hide files we couldn't read (perm errors, encoding
     explosions); the audit reported "0 LOC" and the file silently
-    skipped the threshold check."""
+    skipped the threshold check.
+
+    Extension-aware comment-stripping: `#` is a comment in py/sh but a
+    HEADING in markdown. Stripping `#` lines from .md zeroed out every
+    heading and made the audit blind to long docs.
+    """
+    ext = os.path.splitext(path)[1]
+    if ext == ".md":
+        # Markdown: count every non-blank line. Headings, body, lists,
+        # code blocks all count. Long doc IS the failure mode.
+        n = 0
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    n += 1
+        return n
+    # Code: skip lines whose stripped form starts with `#` (py/sh) or
+    # `//` (js/ts).
     n = 0
     with open(path, encoding="utf-8") as f:
         for line in f:
