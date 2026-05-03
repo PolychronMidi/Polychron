@@ -88,13 +88,21 @@ function recentLifesaverErrors() {
     }
   }
 
-  // Filter classes that downstream consumers (lifesaver.sh,
-  // _check_errors_inline.sh) already treat as self-tests / non-errors.
-  // Without this, CANARY alert-chain probes (fired every few minutes by
-  // hooks/lifecycle/canary.sh) leak into the status inject as if they
-  // were unresolved errors.
-  const SELF_TEST_TOKENS = ['[CANARY-', 'alert-chain self-test injection'];
-  const filtered = fresh.filter((line) => !SELF_TEST_TOKENS.some((t) => line.includes(t)));
+  // Mirror the same classification lifesaver.sh and lifesaver_inject.js
+  // apply: drop CANARY self-tests, observation-severity (WARN/INFO/etc.),
+  // and self-origin tags (operator/supervisor concerns the agent can't
+  // act on -- _safe_curl, supervisor, universal_pulse, etc.). Three
+  // separate readers of hme-errors.log were all classifying differently;
+  // this one was the last hold-out.
+  const _CANARY_RE = /\[CANARY-/;
+  const _OBSERVATION_RE = /\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/;
+  const _SELF_TAG_RE = /\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^\]]+)\]/;
+  const filtered = fresh.filter((line) => {
+    if (_CANARY_RE.test(line)) return false;
+    if (_SELF_TAG_RE.test(line)) return false;
+    if (_OBSERVATION_RE.test(line)) return false;
+    return true;
+  });
 
   return filtered.slice(-5).map((line) => {
     const m = line.match(/^\[([^\]]+)\]/);
