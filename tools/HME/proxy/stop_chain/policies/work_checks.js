@@ -332,6 +332,7 @@ module.exports = {
       ['PILE_ON',            'pile_on',                    'PILE_ON'],
       // ['CLAIM_WITHOUT_EVIDENCE','claim_without_evidence','CLAIM_WITHOUT_EVIDENCE'],   // softened: detected, not denied
       ['FIX_WITHOUT_INVESTIGATION',  'fix_without_investigation',  'FIX_WITHOUT_INVESTIGATION'],
+      ['COMMENT_BLOAT',              'comment_bloat',              'COMMENT_BLOAT'],
     ];
     const firing = [];
     for (const [field, value, reasonKey] of FIRING_RULES) {
