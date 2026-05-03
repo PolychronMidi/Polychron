@@ -43,6 +43,7 @@ _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from hme_env import ENV  # noqa: E402
+from paths import spec_file as _spec_file  # noqa: E402
 
 from server import context as ctx
 from server.onboarding_chain import chained
@@ -297,7 +298,7 @@ from .todo_lifesaver import (  # noqa: F401, E402
 )
 from .todo_native_merge import merge_native_todowrite  # noqa: F401, E402
 from .todo_spec_bridge import (  # noqa: F401, E402
-    _SPEC_FILE, _TODOMD_FILE, _DEVLOG_DIR, _NEXT_UP_RE, _SPEC_OPEN_RE,
+    _NEXT_UP_RE, _SPEC_OPEN_RE,
     _JUST_SHIPPED_LIMIT,
     _read_section, _ingest_from_spec, _promote_to_spec,
     _normalize_for_match, _common_prefix_len,
