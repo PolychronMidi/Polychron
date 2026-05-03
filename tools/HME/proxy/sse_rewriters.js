@@ -266,17 +266,12 @@ function _isCeremonyDodge(text) {
   return false;
 }
 
-// Surgical trim: if solo-rationale appears MID-text (after a blank line,
-// not at block start), remove just that paragraph through end-of-text.
-// Returns trimmed text (possibly identical if no match), and a boolean
-// indicating whether a trim occurred. The user's complaint: solo-rationale
-// paragraphs at the END of substantive responses kept slipping through
-// the start-anchored ack-strip, polluting transcripts with bypass prose.
+// Surgical trim of trailing solo-rationale paragraph (mid-text, after blank line).
 function _trimSoloRationaleParagraph(text) {
   if (typeof text !== 'string' || !text) return { text, trimmed: false };
   const patterns = [
-    /\n\s*\n\s*Solo[- ](?:rationale|justification)\s*[:.][\s\S]*$/i,
-    /\n\s*\n\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)[\s\S]*$/i,
+    /\n\s*\n\s*Solo[- ](?:rationale|justification)\b[\s\S]*$/i,
+    /\n\s*\n\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)\b[\s\S]*$/i,
     /\n\s*\n\s*Solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)\b[\s\S]*$/i,
   ];
   for (const pat of patterns) {
