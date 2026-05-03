@@ -62,7 +62,12 @@ file's listed events and FAILs if they drift.
 - **`child_restart_limit`** -- child exceeded restart attempts; supervisor giving up.
 - **`mcp_hang_kill`** -- MCP server killed for hanging.
 - **`supervisor_spawn_error`** -- supervisor failed to spawn a child.
-- **`proxy_emergency`** -- proxy hit an emergency state requiring intervention.
+- **`proxy_emergency`** -- proxy hit an emergency state requiring intervention. Payload: `reason`, `source`, `backoff_ms`, `sequence`.
+- **`proxy_emergency_cleared`** -- emergency valve auto-cleared after backoff window elapsed; next request attempts the proxy path again. Payload: `source`, `backoff_ms`.
+- **`upstream_error`** -- proxy classified an upstream response as failed (4xx/5xx, SSE error event, etc.). Payload: `type`, `message`, `request_id`.
+- **`upstream_conn_error`** -- TCP/TLS-level failure reaching the upstream (no HTTP response). Payload: `error`, `host`.
+- **`upstream_midresponse_error`** -- upstream began streaming then errored (SSE event:error or premature close). Payload: `type`, `message`.
+- **`cache_control_normalized`** -- proxy promoted a 5m cache_control TTL to 1h to avoid the "1h after 5m" ordering 400. Payload: `count`.
 - **`inference_call`** -- local-inference subprocess invoked.
 - **`cascade_prediction_injected`** -- cascade prediction middleware injected a prediction snippet.
 
