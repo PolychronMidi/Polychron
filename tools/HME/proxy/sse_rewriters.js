@@ -313,10 +313,155 @@ function ackStripRewrite(eventName, data, ctx) {
   return data;
 }
 
+// Anti-slop strip. 8 of the 29 patterns from
+// recursive-drift/templates/voice/anti-slop.md, scoped to engineering-
+// agent text (skipping content-publishing-shaped ones like empathy
+// openers, narrative pivots, parenthetical-aside relatability, etc.).
+//
+// Each entry is {re, repl, name}: `re` matches the slop phrase
+// (case-insensitive, multi-line aware), `repl` is the substitute
+// (usually empty -- delete the phrase). `name` is the pattern label
+// for the stat log.
+//
+// Capitalize-after rule: if the regex deletes a sentence prefix and
+// leaves the next word lowercase, the post-pass _capFix promotes the
+// first letter. Without this, "Let me be clear, the value is X" -> ", the
+// value is X" -> ", The value is X" via the cap fix. (Less mangled than
+// leaving "the" mid-sentence after the leading comma.)
+const _SLOP_PATTERNS = [
+  // #1 Narrator setup. "Here's the thing..." / "Here's where..."
+  { name: 'narrator_setup',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:Here'?s the thing(?: about [^,.]+)?[,:]?|Here'?s where (?:it gets interesting|the real [^,.]+ lives)[,:]?)\s*/gi,
+    repl: '$1' },
+  // #7 Authority signaling.
+  { name: 'authority_signal',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:Let me be clear[,:]?|The uncomfortable truth is(?: that)?[,:]?|Here'?s what nobody tells you[,:]?|The hard truth is(?: that)?[,:]?|Here'?s the reality[,:]?|What most people miss is(?: that)?[,:]?)\s*/gi,
+    repl: '$1' },
+  // #12 Wisdom packaging. Strip the lead-in; leave the actual point.
+  { name: 'wisdom_packaging',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:The lesson\??[:.]?|The takeaway(?:\s+here)?\s+is(?:\s+simple)?[:.]?|What this really means is(?: that)?[,:]?)\s*/gi,
+    repl: '$1' },
+  // #21 Humble-brag disclaimer. "Not claiming to be an expert, but..."
+  { name: 'humble_brag',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:I don'?t have all the answers,? but|Not claiming to be (?:an? )?expert,? but|Just my (?:two cents|2c|opinion),? but)\s+/gi,
+    repl: '$1' },
+  // #27 Qualifying hedge. "It's worth noting that..." / "Interestingly enough..."
+  { name: 'qualifying_hedge',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:It'?s worth noting that|Interestingly(?: enough)?[,:]?|What'?s (?:fascinating|interesting) is(?: that)?[,:]?|It'?s important to note that|Notably[,:]?)\s*/gi,
+    repl: '$1' },
+  // #28 Overly smooth transitions.
+  { name: 'smooth_transition',
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:Speaking of which[,:]?|This brings us to[^.]*\.|Building on (?:this|that)(?:\s+idea)?[,:]?|With that (?:in mind|said)[,:]?)\s*/gi,
+    repl: '$1' },
+  // #17 Colon-listed everything (sequence of "X: Y. Z: W." short snaps).
+  // Tactical: only catch the "The result: ..., The impact: ..., The
+  // lesson: ..." trio shape. Single colon-statements are legitimate
+  // and left alone.
+  { name: 'colon_list_trio',
+    re: /(?:^|\n)(?:\s*The (?:result|impact|lesson|takeaway|point|outcome|effect)[:.]\s*[^.\n]+\.\s*){3,}/gi,
+    repl: '\n' },
+  // #13 Em-dash crutch. Replace bracketing em-dashes / `--` with commas
+  // when used as parenthetical bridges. Keeps em-dashes that look
+  // structural (start-of-line lists, code). NOTE: imperfect heuristic.
+  { name: 'em_dash_crutch',
+    re: /(\w)\s+(?:—|--)\s+(\w)/g,
+    repl: '$1, $2' },
+];
+
+function _capFix(s) {
+  // After deletions, sentences may start with lowercase. Promote the
+  // first alpha after sentence-end punctuation OR start-of-string.
+  return s.replace(/(^|[.!?]\s+)([a-z])/g, (_m, lead, ch) => lead + ch.toUpperCase());
+}
+
+function _stripSlop(text) {
+  if (typeof text !== 'string' || !text) return { out: text, hits: [] };
+  let out = text;
+  const hits = [];
+  for (const p of _SLOP_PATTERNS) {
+    const before = out;
+    out = out.replace(p.re, p.repl);
+    if (out !== before) hits.push(p.name);
+  }
+  if (hits.length > 0) out = _capFix(out);
+  // Collapse any double-spaces or " ," artifacts left by the deletions.
+  out = out.replace(/ {2,}/g, ' ').replace(/\s+,/g, ',').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
+  return { out, hits };
+}
+
+function _logSlopHits(hits, textPreview) {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const { PROJECT_ROOT } = require('./shared');
+    fs.appendFileSync(
+      path.join(PROJECT_ROOT, 'log', 'hme-slop-strips.jsonl'),
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        hits,
+        text_preview: textPreview.slice(0, 80),
+      }) + '\n',
+    );
+  } catch (_e) { /* stat is best-effort */ }
+}
+
+// Always-on rewriter: buffer text content blocks, run _stripSlop on
+// the assembled text at content_block_stop, replay as a single
+// corrected delta. UX cost: text blocks land at block_stop instead of
+// streaming. Acceptable per explicit operator request.
+//
+// Independent of ackStripRewrite -- runs alongside it. ackStripRewrite
+// (priorUserWasDeny only) drops the whole block on bare-ack; this
+// rewriter modifies content of every text block.
+function slopStripRewrite(eventName, data, ctx) {
+  const key = 'slop_text_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { startData: data, deltas: [] });
+    return null;  // hold the start
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;  // not a held block (e.g. ack-strip already swallowed it)
+    state.deltas.push(data);
+    return null;
+  }
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    let assembled = '';
+    for (const d of state.deltas) {
+      if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
+    }
+    const { out, hits } = _stripSlop(assembled);
+    if (hits.length > 0) _logSlopHits(hits, assembled);
+    // Re-emit: the original start, ONE replacement delta with stripped
+    // text, then the stop. Original deltas dropped (replaced by single
+    // corrected delta) regardless of whether stripping changed anything
+    // -- chunking semantics already lost by buffering.
+    const events = [['content_block_start', state.startData]];
+    if (out) {
+      events.push(['content_block_delta', {
+        type: 'content_block_delta',
+        index: data.index,
+        delta: { type: 'text_delta', text: out },
+      }]);
+    }
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+  return data;
+}
+
 module.exports = {
   runInBackgroundRewrite,
   longLeadingSleepRewrite,
   ackStripRewrite,
+  slopStripRewrite,
   _isBareAck,             // exported for tests
   _rewriteLongLeadingSleep, // exported for tests
+  _stripSlop,             // exported for tests
 };
