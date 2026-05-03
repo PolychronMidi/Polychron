@@ -330,8 +330,12 @@ function ackStripRewrite(eventName, data, ctx) {
 // leaving "the" mid-sentence after the leading comma.)
 const _SLOP_PATTERNS = [
   // #1 Narrator setup. "Here's the thing..." / "Here's where..."
+  // The "about <topic>" clause is intentionally NOT captured -- a topic
+  // like "caching: ..." would let `[^,.]+` swallow past the colon and
+  // eat the actual content. The slop is the lead-in phrase itself; the
+  // sentence's substantive content stays put.
   { name: 'narrator_setup',
-    re: /(^|[\.\!\?]\s+|\n\s*)(?:Here'?s the thing(?: about [^,.]+)?[,:]?|Here'?s where (?:it gets interesting|the real [^,.]+ lives)[,:]?)\s*/gi,
+    re: /(^|[\.\!\?]\s+|\n\s*)(?:Here'?s the thing[,:]?|Here'?s where it gets interesting[,:]?|Here'?s where the real [a-zA-Z]+ lives[,:]?)\s*/gi,
     repl: '$1' },
   // #7 Authority signaling.
   { name: 'authority_signal',
