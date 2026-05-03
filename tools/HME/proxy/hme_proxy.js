@@ -703,10 +703,39 @@ function handleRequest(clientReq, clientRes) {
       const _dropped = _shrinkForPassthrough(payload);
       if (_dropped > 0) {
         outBody = Buffer.from(JSON.stringify(payload), 'utf8');
-        // upstreamHeaders is declared further down; line 815 sets
-        // content-length from outBody.length after declaration. No need
-        // to update it here -- attempting to do so would TDZ-crash since
-        // upstreamHeaders doesn't exist in this scope yet.
+      }
+      // OTPM (output-tokens-per-minute) cap. Anthropic checks at request
+      // time using `max_tokens` to estimate output budget. The OAuth-public
+      // endpoint has a smaller OTPM bucket (~16-32K/min) than Claude Code's
+      // native path. Claude Code defaults to max_tokens=64000 with thinking,
+      // which instantly exhausts OTPM and 429s. Cap to a value that fits
+      // under typical OAuth-path OTPM AND leaves room for a couple parallel
+      // requests. API rule: max_tokens MUST be > thinking.budget_tokens, so
+      // we set thinking_cap = otpm_cap and max_tokens_cap = otpm_cap + 2048
+      // (slack for the post-thinking response generation).
+      // Tunable via HME_PROXY_MAX_OUTPUT_TOKENS.
+      const _otpmCap = parseInt(process.env.HME_PROXY_MAX_OUTPUT_TOKENS || '12000', 10);
+      const _maxTokensCap = _otpmCap + 2048;
+      let _capChanged = false;
+      // Cap thinking FIRST so we know how to size max_tokens.
+      if (payload.thinking && typeof payload.thinking === 'object') {
+        if (typeof payload.thinking.budget_tokens === 'number' && payload.thinking.budget_tokens > _otpmCap) {
+          console.error(`[hme-proxy] OTPM-cap: thinking.budget_tokens ${payload.thinking.budget_tokens} -> ${_otpmCap}`);
+          payload.thinking.budget_tokens = _otpmCap;
+          _capChanged = true;
+        } else if (payload.thinking.type === 'adaptive') {
+          console.error(`[hme-proxy] OTPM-cap: thinking adaptive -> enabled with budget=${_otpmCap}`);
+          payload.thinking = { type: 'enabled', budget_tokens: _otpmCap };
+          _capChanged = true;
+        }
+      }
+      if (typeof payload.max_tokens === 'number' && payload.max_tokens > _maxTokensCap) {
+        console.error(`[hme-proxy] OTPM-cap: max_tokens ${payload.max_tokens} -> ${_maxTokensCap}`);
+        payload.max_tokens = _maxTokensCap;
+        _capChanged = true;
+      }
+      if (_capChanged) {
+        outBody = Buffer.from(JSON.stringify(payload), 'utf8');
       }
     }
 
@@ -880,47 +909,36 @@ function handleRequest(clientReq, clientRes) {
       delete upstreamHeaders['accept-encoding'];
     }
 
-    // OAuth Bearer + Claude-Code body-shape fix-up. The public
-    // api.anthropic.com OAuth endpoint requires:
-    //   1. anthropic-beta MUST include `oauth-2025-04-20`. Without it,
-    //      OAuth itself is rejected with 401 "OAuth authentication is
-    //      currently not supported." Claude Code's `claude-code-*` tag
-    //      alone is also rejected.
-    //      Per horselock/claude-code-proxy and John-Rood/claude-proxy,
-    //      the beta header is ADDITIVE -- multiple comma-separated tags
-    //      are valid and unlock features (interleaved-thinking-2025-05-14,
-    //      fine-grained-tool-streaming-2025-05-14, etc.). Merge instead
-    //      of replace so we keep whatever Claude Code is asking for.
-    //   2. payload MUST NOT contain `context_management` (a
-    //      Claude-Code-only field). Including it => 400
-    //      "context_management: Extra inputs are not permitted".
+    // OAuth Bearer + Claude-Code body-shape fix-up.
+    //
+    // EMPIRICAL FINDING (verified live with curl on 2026-05-03):
+    //   - OAuth Bearer + anthropic-beta=oauth-2025-04-20 routes Opus
+    //     requests to a STRICTER OTPM metering bucket; first request
+    //     burns the OAuth-path cap and subsequent Opus requests 429
+    //     until the rolling window clears. Haiku via the same path
+    //     works fine (different bucket).
+    //   - Claude Code's native path (whatever beta tag IT sends with
+    //     whatever auth header IT uses) routes to the standard Claude
+    //     Code subscription bucket and works without 429s.
+    //   - User has confirmed the issue resolves the moment they turn
+    //     off ANTHROPIC_BASE_URL routing in VS Code.
+    //
+    // Therefore: pass Claude Code's incoming `anthropic-beta` THROUGH
+    // unchanged. Only inject `oauth-2025-04-20` when Claude Code didn't
+    // send any beta header (no native value to preserve). This keeps
+    // Claude Code's standard metering bucket and avoids the Opus-OTPM
+    // 429 trap.
+    //
+    // Body fix-up: strip `context_management` only if the OAuth-public
+    // path complains. With the native beta tag preserved, Anthropic
+    // tolerates Claude-Code-only fields, so leave the body alone too.
     if (isAnthropic && typeof upstreamHeaders['authorization'] === 'string'
         && upstreamHeaders['authorization'].startsWith('Bearer ')) {
-      const _existingBeta = upstreamHeaders['anthropic-beta'] || '';
-      const _betaSet = new Set(_existingBeta.split(',').map((s) => s.trim()).filter(Boolean));
-      _betaSet.add('oauth-2025-04-20');
-      // Add the feature flags horselock's tested set uses, since these
-      // unlock interleaved thinking + fine-grained tool streaming when
-      // Claude Code requests them. Anthropic will silently ignore tags
-      // that don't apply, so adding extras is safe.
-      _betaSet.add('claude-code-20250219');
-      _betaSet.add('interleaved-thinking-2025-05-14');
-      _betaSet.add('fine-grained-tool-streaming-2025-05-14');
-      upstreamHeaders['anthropic-beta'] = Array.from(_betaSet).join(',');
-      if (payload && typeof payload === 'object') {
-        const _CC_ONLY_FIELDS = ['context_management'];
-        let _stripped = false;
-        for (const k of _CC_ONLY_FIELDS) {
-          if (k in payload) {
-            delete payload[k];
-            _stripped = true;
-          }
-        }
-        if (_stripped) {
-          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
-          upstreamHeaders['content-length'] = String(outBody.length);
-        }
+      if (!upstreamHeaders['anthropic-beta']) {
+        upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
       }
+      // No payload mutation -- preserve Claude Code's native body shape
+      // (including context_management, which the native bucket accepts).
     }
 
     // Out-of-band auth injection. Loopback callers (e.g. the MCP
