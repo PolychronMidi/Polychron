@@ -1491,6 +1491,7 @@ function handleRequest(clientReq, clientRes) {
     });
 
     upstreamReq.on('error', (err) => {
+      try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
       // Connection-level failures: ECONNRESET, ECONNREFUSED, ETIMEDOUT,
       // EAI_AGAIN, TLS handshake failures. Same lifesaver/snapshot
       // discipline as the response-time detector so the user sees what
