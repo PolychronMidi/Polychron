@@ -71,7 +71,7 @@ class _MxbaiRerankerAdapter:
         from mxbai_rerank import MxbaiRerankV2
         kwargs = {"device": device}
         if dtype is not None:
-            kwargs["torch_dtype"] = dtype
+            kwargs["dtype"] = dtype
         self._inner = MxbaiRerankV2(model_name, **kwargs)
         self._device = device
 
@@ -103,5 +103,3 @@ RERANKER_NAME = ENV.require("HME_MODEL_RERANKER")
 # Initialise stores with paths before any request can arrive
 from hme_http_store import init_store
 init_store(PROJECT_ROOT)
-
-

@@ -8,6 +8,7 @@
   },
   "order": [
     "replace_system.js",
+    "thinking_rewrite.js",
     "filter_tools.js",
     "memory_redirect.js",
     "dominance_prefetch.js",

@@ -240,7 +240,7 @@ def _load_engines():
         # native -- we pay ~10% throughput for ~50% VRAM savings. Worth it
         # because fp32 loads caused active-offload to churn continuously.
         import torch as _torch_fp16
-        _fp16_kwargs = {"torch_dtype": _torch_fp16.float16}
+        _fp16_kwargs = {"dtype": _torch_fp16.float16}
 
         # Text embedder (Qwen3-Embedding-0.6B) -- knowledge_table + symbol_table.
         # 1024-dim, Apache 2.0. Prefer ONNX backend when the export is actually
@@ -580,7 +580,7 @@ def reload_on_device(target_device: str) -> dict:
             restoring = False
 
         import torch as _torch
-        _fp16_kwargs = {"torch_dtype": _torch.float16}
+        _fp16_kwargs = {"dtype": _torch.float16}
         reloaded = []
         _engines = [e for e in [_project_engine, _global_engine] + list(_lib_engines.values()) if e is not None]
 

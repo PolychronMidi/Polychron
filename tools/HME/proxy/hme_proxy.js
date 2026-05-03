@@ -919,20 +919,16 @@ function handleRequest(clientReq, clientRes) {
       // continuation loop until a final HME-free response, then forward it.
       const chunks = [];
 
-      // FP-CHECK kill: when prior user message was a stop-hook payload,
-      // the agent is required (via stop_hook_fp_gate middleware) to
-      // begin its reply with `[FP-CHECK: yes]` or `[FP-CHECK: no]`.
-      // `yes` = false positive against the prior turn -- proxy DESTROYS
-      // upstream connection on detection so the model stops generating
-      // (real context-burn savings, not just visible-output savings).
-      // `no` = legitimate flag, agent owes substantive work; pass through.
-      //
-      // Detection scans each upstream chunk + a 64-byte trailing buffer
-      // (covers marker spanning chunk boundaries). On hit, upstreamReq
-      // is destroyed; the 'end' handler still fires with whatever
-      // chunks arrived before the kill, so SSE transform processes a
-      // truncated stream and the client sees `[FP-CHECK: yes]` (which
-      // the SSE rewriter further truncates to `.`).
+      // FP-CHECK upstream-kill: detect `[FP-CHECK: yes]` in TEXT-block
+      // deltas only, not thinking-block deltas. Earlier version did
+      // bare-substring scan -> killed the stream when the marker
+      // appeared inside thinking content (which happens any time the
+      // model reasons ABOUT the marker), producing blank responses.
+      // Now: regex requires `text_delta` to appear in the same SSE
+      // event line as the marker. SSE events are `event: ... \n
+      // data: {"type":"content_block_delta","delta":{"type":
+      // "text_delta","text":"..."}}` -- so text_delta + marker in one
+      // chunk means a text delta containing the marker, not thinking.
       let _fpKillTriggered = false;
       let _fpTrailingBuf = '';
       let _fpEligible = false;
@@ -968,16 +964,19 @@ function handleRequest(clientReq, clientRes) {
         _fpEligible = _fpLastUserText && _fpDenyMarkers.some((m) => _fpLastUserText.includes(m));
       } catch (_e) { /* best-effort -- if we can't detect eligibility, no kill */ }
 
+      // text_delta event contains both the discriminator and the marker
+      // text in the same JSON line. thinking_delta uses field "thinking"
+      // not "text", so its content with the marker substring won't match
+      // this combined pattern.
+      const _FP_TEXT_DELTA_RE = /"type"\s*:\s*"text_delta"[\s\S]{0,200}\[FP-CHECK:\s*yes\]|\[FP-CHECK:\s*yes\][\s\S]{0,200}"type"\s*:\s*"text_delta"/;
+
       upstreamRes.on('data', (c) => {
         chunks.push(c);
         if (!_fpEligible || _fpKillTriggered) return;
-        // Cheap substring scan: combine trailing buffer + new chunk text.
-        // Only the chunk-text suffix is retained for next round (64 bytes
-        // is more than enough for the 16-char marker).
         try {
           const chunkStr = c.toString('utf8');
           const scan = _fpTrailingBuf + chunkStr;
-          if (scan.includes('[FP-CHECK: yes]')) {
+          if (_FP_TEXT_DELTA_RE.test(scan)) {
             _fpKillTriggered = true;
             try {
               const fs2 = require('fs');
@@ -990,13 +989,12 @@ function handleRequest(clientReq, clientRes) {
                 }) + '\n',
               );
             } catch (_e) { /* stat is best-effort */ }
-            // Destroy upstream -- model stops generating, API costs
-            // capped at what was already in flight. The 'end' handler
-            // still fires (possibly via 'aborted'), processes the
-            // partial buffer through the SSE pipeline.
             try { upstreamReq.destroy(); } catch (_e) { /* ignore */ }
           } else {
-            _fpTrailingBuf = scan.slice(-64);
+            // Trailing buffer must cover both the regex window AND the
+            // marker length. 600 bytes covers a text_delta + 200-char
+            // distance + the marker comfortably.
+            _fpTrailingBuf = scan.slice(-600);
           }
         } catch (_e) { /* scan is best-effort */ }
       });
