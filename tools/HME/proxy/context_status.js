@@ -88,7 +88,15 @@ function recentLifesaverErrors() {
     }
   }
 
-  return fresh.slice(-5).map((line) => {
+  // Filter classes that downstream consumers (lifesaver.sh,
+  // _check_errors_inline.sh) already treat as self-tests / non-errors.
+  // Without this, CANARY alert-chain probes (fired every few minutes by
+  // hooks/lifecycle/canary.sh) leak into the status inject as if they
+  // were unresolved errors.
+  const SELF_TEST_TOKENS = ['[CANARY-', 'alert-chain self-test injection'];
+  const filtered = fresh.filter((line) => !SELF_TEST_TOKENS.some((t) => line.includes(t)));
+
+  return filtered.slice(-5).map((line) => {
     const m = line.match(/^\[([^\]]+)\]/);
     return m ? line.replace(/^\[[^\]]+\]/, `[${m[1].slice(0, 10)}]`) : line;
   });
