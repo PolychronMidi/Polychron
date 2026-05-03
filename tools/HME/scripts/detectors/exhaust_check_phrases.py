@@ -122,6 +122,26 @@ DEFERRAL_PHRASES = (
     "once the user reloads",
     "when you restart",
     "when you reload",
+    # "Fit" excuse register. Added after the "8 of 29" anti-slop ship
+    # where the agent shipped a curated subset and called the rest
+    # "low fit" / "content-publishing-shaped" -- a self-rationalized
+    # subset-of-the-ask. The user explicitly asked for "all"; calling
+    # the remainder "low fit" is a punt with extra steps.
+    "low fit",
+    "low-fit",
+    "poor fit",
+    "poor-fit",
+    "weak fit",
+    "wrong fit",
+    "bad fit",
+    "low signal",
+    "low-signal",
+    "high-fit subset",
+    "small subset",
+    "narrow subset",
+    "content-publishing-shaped",
+    "content publishing shaped",
+    "content-creation-shaped",
 )
 
 
