@@ -10,6 +10,7 @@ Polychron development has two interleaving modes; mode-specific rules live in co
 
 ## Universal Principles
 
+- **Stop hooks.** Never explain declining a stop hook's directive when it doesn't fit. End the turn in silence, or just a minimal ".", immediately if the hook should not apply to the scenario.
 - **Fail fast.** Every module throws on bad input. No silent early returns. No `|| 0` / `|| []` fallbacks. No graceful degradation.
 - **Single Responsibility / LOC.** Files MUST be ≤350 LOC unless listed in loc-ignore.txt. Organize at logical boundaries.
 - **Comments and docs.** Inline comments single-line and terse. Elaboration goes in doc/.
