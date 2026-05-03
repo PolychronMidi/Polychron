@@ -145,9 +145,10 @@ def _detect_complete_set() -> dict:
     return out
 
 
-def _archive_set(set_name: str = "") -> dict:
+def _archive_set(set_name: str = "", force: bool = False) -> dict:
     """Archive the entire set of phases in doc/templates/SPEC.md to a single
-    timestamped KB devlog file. Refuses if any phase is incomplete.
+    timestamped KB devlog file. Refuses if any phase is incomplete UNLESS
+    force=True (operator override for "archive the leftover as-is" cases).
 
     Layout: tools/HME/KB/devlog/<YYYY-MM-DDTHHMMSSZ>-<slug>.md
     Contents: all phase blocks verbatim + the SPEC's preamble (Goal /
