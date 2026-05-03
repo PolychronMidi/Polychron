@@ -82,49 +82,17 @@ console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
 // 10-line bash script Claude Code is allowed to know about; all logic lives
 // here in proxy-land.
 //
-// Fallback: inline fires for SessionStart/UserPromptSubmit/Stop also run
-// when the forwarder-based path isn't reaching us (Claude Code plugin cache
-// missing, forwarder not installed, etc.). Tracked via _lifecycleSeen so
-// we don't double-fire once Claude Code's hook system is active.
-const hookBridge = require('./hook_bridge');
-const _lifecycleSeen = { SessionStart: 0, UserPromptSubmit: 0, Stop: 0 };
-const _LIFECYCLE_FRESH_MS = 30_000;
-function _recordLifecycleHit(event) { _lifecycleSeen[event] = Date.now(); }
-function _lifecycleInactive(event) {
-  const last = _lifecycleSeen[event] || 0;
-  return (Date.now() - last) > _LIFECYCLE_FRESH_MS;
-}
-
-/**
- * Run an inline fallback dispatch and echo any captured stderr to the
- * proxy's own stderr so the user sees hook banners (sessionstart orientation,
- * LIFESAVER, etc.). Without this the stderr is silently swallowed into
- * dispatchEvent's return value and lost.
- */
-async function _runInlineFallback(event, stdinJson) {
-  try {
-    const r = await hookBridge.dispatchEvent(event, stdinJson);
-    // Parity with /hme/lifecycle: both paths surface full stdout/stderr
-    // to the proxy's stderr so any banners (LIFESAVER, NEXUS,
-    // AUTO-COMPLETENESS) land in the same place regardless of which
-    // path fired. Previously the inline path truncated stdout to 200
-    // chars -- banners that grew past that limit vanished for inline
-    // fires while remaining visible for /hme/lifecycle fires.
-    if (r.stderr && r.stderr.length > 0) {
-      process.stderr.write(`[hme-proxy] inline ${event} stderr:\n${r.stderr}\n`);
-    }
-    if (r.stdout && r.stdout.length > 0) {
-      process.stderr.write(`[hme-proxy] inline ${event} stdout:\n${r.stdout}\n`);
-    }
-  } catch (err) {
-    console.error(`[hme-proxy] inline ${event} failed: ${err.message}`);
-  }
-}
-
-// Fire SessionStart inline at startup. If Claude Code hits /hme/lifecycle
-// with SessionStart shortly after, we'll note the dup but it's harmless
-// (sessionstart.sh is idempotent w.r.t. its state writes).
-_runInlineFallback('SessionStart', '{}');
+// Lifecycle bridge moved to lifecycle_bridge.js. Side-effect-on-load:
+// firing SessionStart inline still happens once at module-require time
+// inside lifecycle_bridge.js, preserving the original startup behavior.
+const {
+  recordLifecycleHit: _recordLifecycleHit,
+  lifecycleInactive: _lifecycleInactive,
+  runInlineFallback: _runInlineFallback,
+  handleLifecycleRoute: _handleLifecycleRoute,
+} = require('./lifecycle_bridge');
+// handleSpawnRoute extracted to routes_admin.js.
+const { handleSpawnRoute: _handleSpawnRoute } = require('./routes_admin');
 
 //  HME full-bypass: legacy inline-tool path (disabled by default)
 // Claude Code has no MCP connection to us for HME tools (.mcp.json was
