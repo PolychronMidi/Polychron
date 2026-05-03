@@ -36,7 +36,7 @@ const { PROJECT_ROOT } = require('../shared');
 
 const ENABLED = (process.env.HME_REPLACE_SYSTEM_PROMPT ?? '0') === '1';
 const CANONICAL_PATH = path.join(
-  PROJECT_ROOT, 'tools', 'HME', 'proxy', 'canonical-system-prompt.md',
+  PROJECT_ROOT, 'doc', 'templates', 'canonical-system-prompt.md',
 );
 
 // In-memory cache: avoid re-reading the file on every request. Invalidate

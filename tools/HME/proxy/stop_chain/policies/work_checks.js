@@ -298,16 +298,7 @@ module.exports = {
     // the firing list matches the historical first-deny-wins order so
     // the most-important flag heads the report.
     const FIRING_RULES = [
-      // STOP_WORK 'DISMISSIVE' intentionally NOT in this list: in the
-      // pre-aggregation code its dispatch line was on the same line as
-      // a `//` comment so the if-statement was dead code, never firing.
-      // Re-enabling it broke "No response requested." / "no work needed"
-      // responses (the agent saying it correctly when no work exists),
-      // causing Claude Code to re-prompt with "Continue from where you
-      // left off" -> the agent returns "No response requested." again
-      // -> infinite loop, user sees blank responses. Keep the legacy
-      // dead-code semantic until DISMISSIVE detection itself is fixed
-      // to distinguish "nothing to do" from real dismissive responses.
+      ['STOP_WORK',          'DISMISSIVE',                 'STOP_WORK_DISMISSIVE'],
       ['STOP_WORK',          'TEXT_ONLY_SHORT',            'STOP_WORK_TEXT_ONLY'],
       ['EXHAUST_CHECK',      'exhaust_violation',          'EXHAUST'],
       ['SCOPE_ESCAPE',       'scope_escape_violation',     'SCOPE_ESCAPE'],
