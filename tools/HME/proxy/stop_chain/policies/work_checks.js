@@ -312,6 +312,8 @@ module.exports = {
     if (v.LIVE_PROBE === 'live_probe_missing') return ctx.deny(REASONS.LIVE_PROBE_MISSING);
     if (v.PHASE_GATE === 'phase_skipped')      return ctx.deny(REASONS.PHASE_SKIPPED);
     if (v.PILE_ON === 'pile_on')               return ctx.deny(REASONS.PILE_ON);
+    if (v.CLAIM_WITHOUT_EVIDENCE === 'claim_without_evidence') return ctx.deny(REASONS.CLAIM_WITHOUT_EVIDENCE);
+    if (v.FIX_WITHOUT_INVESTIGATION === 'fix_without_investigation') return ctx.deny(REASONS.FIX_WITHOUT_INVESTIGATION);
 
     // Auto-completeness inject -- fires up to COMPL_MAX times per user-turn.
     // PRIOR FIX REMOVED: previously this skipped when any earlier policy
