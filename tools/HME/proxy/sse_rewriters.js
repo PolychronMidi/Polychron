@@ -241,6 +241,30 @@ function _isHallucinatedTurnPrefix(text) {
   return false;
 }
 
+// Stop-hook ceremony-dodge detection. The advisor doctrine's escape
+// hatch ("the agent must explicitly justify why solo was right")
+// invites a class of long-form prose responses that exist only to
+// satisfy the gate -- "Solo-rationale: ..." / "Why solo was right: ..."
+// /  "Solo was the right call because ...". User flagged these as
+// "completely useless spam" -- they're ceremony in service of dodging
+// a stop-hook check, not substantive work. Always-illegitimate
+// (independent of priorUserWasDeny gate) -- belongs in the always-on
+// strip path alongside hallucinated turn prefixes.
+//
+// Conservative scope: only the literal doctrine-prompted phrasings.
+// Generic "Rationale:" / "Justification:" stays clear because users
+// can legitimately ask for those.
+function _isCeremonyDodge(text) {
+  if (typeof text !== 'string') return false;
+  // "Solo-rationale:" / "Solo rationale:" / "Solo justification:" at start.
+  if (/^\s*Solo[- ](?:rationale|justification)\s*[:.]/i.test(text)) return true;
+  // "Why solo was right" / "Why solo was the right call" at start.
+  if (/^\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)/i.test(text)) return true;
+  // "Solo was right/correct/the-right-call because..." opening.
+  if (/^\s*Solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)\b/i.test(text)) return true;
+  return false;
+}
+
 function _isBareAck(text) {
   if (typeof text !== 'string') return false;
   if (_ACK_PATTERNS.some((pat) => pat.test(text))) return true;
@@ -250,6 +274,9 @@ function _isBareAck(text) {
   // (hallucinatedTurnPrefixStripRewrite below) catches them
   // regardless of priorUserWasDeny gate.
   if (_isHallucinatedTurnPrefix(text)) return true;
+  // Stop-hook ceremony-dodge: same treatment -- always spam, the
+  // always-on rewriter strips it regardless of gate.
+  if (_isCeremonyDodge(text)) return true;
   return false;
 }
 
