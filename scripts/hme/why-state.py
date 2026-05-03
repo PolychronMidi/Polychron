@@ -5,7 +5,7 @@ advanced HME into it.
 Reads:
 - tmp/hme-onboarding.state (current state)
 - output/metrics/hme-activity.jsonl (events that drove transitions)
-- doc/AGENT_PRIMER.md (state-machine reference, optional)
+- doc/ONBOARDING.md (state-machine reference, optional)
 
 Output: current state, what tool calls advance it, what would graduate.
 """
@@ -73,7 +73,7 @@ def main(argv):
             pass
 
     print("# Reference:")
-    print("  doc/AGENT_PRIMER.md                 state machine + walkthrough")
+    print("  doc/ONBOARDING.md                 state machine + walkthrough")
     print("  i/status mode=hme                   live state + recent activity")
     return 0
 

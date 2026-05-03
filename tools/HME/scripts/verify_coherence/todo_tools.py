@@ -57,7 +57,7 @@ class TodoStoreSchemaVerifier(Verifier):
 
 
 class ToolSurfaceCoverageVerifier(Verifier):
-    """Every public @ctx.mcp.tool() function appears in either AGENT_PRIMER.md
+    """Every public @ctx.mcp.tool() function appears in either ONBOARDING.md
     or HME.md. Hidden tools don't need to be documented."""
     name = "tool-surface-coverage"
     category = "coverage"
@@ -101,7 +101,7 @@ class ToolSurfaceCoverageVerifier(Verifier):
         if not public_tools:
             return _result(SKIP, 1.0, "no public tools found")
         # Check each public tool appears in primer/HME.md
-        primer = os.path.join(_PROJECT, "doc", "AGENT_PRIMER.md")
+        primer = os.path.join(_PROJECT, "doc", "ONBOARDING.md")
         hmemd = os.path.join(_PROJECT, "doc", "HME.md")
         text = ""
         for p in (primer, hmemd):

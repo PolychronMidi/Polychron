@@ -21,7 +21,7 @@ logger = logging.getLogger("HME")
 # (see evolution_admin.py:99-100). Exposing it as a separate public tool
 # duplicates the surface and breaks the "one public tool per dispatcher"
 # convention -- tool-surface-coverage flagged it as undocumented because
-# AGENT_PRIMER/HME.md correctly only document the parent.
+# ONBOARDING/HME.md correctly only document the parent.
 @ctx.mcp.tool(meta={"hidden": True})
 @chained("hme_admin")
 

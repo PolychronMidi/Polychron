@@ -137,7 +137,7 @@ This is what self-coherence means at the smallest scale. The HCI is just the sam
 ## Reference
 
 - [CLAUDE.md](../CLAUDE.md) -- rules (loaded every prompt; authoritative)
-- [doc/AGENT_PRIMER.md](AGENT_PRIMER.md) -- first-session walkthrough + onboarding state machine
+- [doc/ONBOARDING.md](ONBOARDING.md) -- first-session walkthrough + onboarding state machine
 - [doc/HME.md](HME.md) -- full HME reference (tool surface, Phase 1-6 internals)
 - [doc/HME_SELF_COHERENCE.md](HME_SELF_COHERENCE.md) -- why HME exists; the long view
 - [doc/HME_HORIZONS.md](HME_HORIZONS.md) -- the 10 architectural horizons HME hasn't yet stretched into; read when next-round work feels like rearranging stones

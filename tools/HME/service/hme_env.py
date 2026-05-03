@@ -1,6 +1,6 @@
 """Central .env loader with fail-fast semantics.
 
-Design rule (AGENT_PRIMER + project-wide): every HME configuration value
+Design rule (ONBOARDING + project-wide): every HME configuration value
 lives in the project-root `.env` file. No silent fallbacks. If a required
 key is missing the process dies at import or at the first accessor call --
 we fail fast rather than drift through a broken run with a wrong default.
