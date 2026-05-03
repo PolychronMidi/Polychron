@@ -73,7 +73,7 @@ def main(argv):
             pass
 
     print("# Reference:")
-    print("  doc/HME_ONBOARDING_FLOW.md          full state machine spec")
+    print("  doc/AGENT_PRIMER.md                 state machine + walkthrough")
     print("  i/status mode=hme                   live state + recent activity")
     return 0
 
