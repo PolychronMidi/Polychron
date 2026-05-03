@@ -131,13 +131,36 @@ def main(argv: list) -> int:
     ignore_patterns = load_patterns()
     warn_findings = []
     fail_findings = []
-    for path, rel, ext in _walk(_DEFAULT_ROOTS, ignore_patterns):
-        for f in _scan_file(path, ext):
-            entry = {"path": rel, "line": f["line"], "block_len": f["block_len"]}
-            if f["block_len"] >= FAIL_LINES:
-                fail_findings.append(entry)
-            else:
-                warn_findings.append(entry)
+    # --files <p1> <p2> ...  scope the scan to specified files only.
+    explicit = []
+    if "--files" in argv:
+        idx = argv.index("--files")
+        for tok in argv[idx + 1:]:
+            if tok.startswith("--"):
+                break
+            explicit.append(tok)
+    if explicit:
+        for path in explicit:
+            ext = os.path.splitext(path)[1]
+            if ext not in _EXTS or not os.path.isfile(path):
+                continue
+            rel = os.path.relpath(path, _PROJECT) if path.startswith(_PROJECT) else path
+            if is_exempt(rel, ignore_patterns):
+                continue
+            for f in _scan_file(path, ext):
+                entry = {"path": rel, "line": f["line"], "block_len": f["block_len"]}
+                if f["block_len"] >= FAIL_LINES:
+                    fail_findings.append(entry)
+                else:
+                    warn_findings.append(entry)
+    else:
+        for path, rel, ext in _walk(_DEFAULT_ROOTS, ignore_patterns):
+            for f in _scan_file(path, ext):
+                entry = {"path": rel, "line": f["line"], "block_len": f["block_len"]}
+                if f["block_len"] >= FAIL_LINES:
+                    fail_findings.append(entry)
+                else:
+                    warn_findings.append(entry)
     if as_json:
         print(json.dumps({
             "thresholds": {"warn": WARN_LINES, "fail": FAIL_LINES},
