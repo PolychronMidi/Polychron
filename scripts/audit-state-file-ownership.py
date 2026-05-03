@@ -134,6 +134,18 @@ def _find_writers(path_substr: str) -> list[tuple[str, int]]:
             except OSError:
                 continue
             for ln, line in enumerate(content.splitlines(), 1):
+                # Skip comment lines -- the `>` redirect-write pattern
+                # false-positive matches comments like
+                # `# Probe 4: FAIL->hme-errors.log pipeline ...` because
+                # `->hme-errors.log` contains `>hme-errors.log` which
+                # matches `r">\s*[\"']?[^\"' \n]*hme-errors.log"`.
+                # Conservative: skip leading `#` (py/sh), `//` (js), and
+                # `*` (jsdoc continuation) lines. Doesn't catch every
+                # commented form (block /* */ in JS, """ in py) but
+                # eliminates the dominant false-positive shape.
+                stripped = line.lstrip()
+                if stripped.startswith("#") or stripped.startswith("//") or stripped.startswith("*"):
+                    continue
                 if combined.search(line):
                     rel = str(p.relative_to(PROJECT_ROOT))
                     hits.append((rel, ln))
