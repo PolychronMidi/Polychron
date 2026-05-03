@@ -839,6 +839,134 @@ function stopHookCeremonyStripRewrite(eventName, data, ctx) {
   return data;
 }
 
+// FP-CHECK marker handler. The companion to the chunk-level upstream
+// kill in hme_proxy.js. By the time SSE events reach this rewriter,
+// either (a) the upstream completed normally (no `[FP-CHECK: yes]`
+// emitted) or (b) the upstream was killed mid-stream after `[FP-CHECK:
+// yes]` was seen. In both cases this rewriter normalizes the
+// client-visible output:
+//   - `yes` marker present anywhere in first text block -> emit `.`,
+//     drop everything else
+//   - `no` marker on first line -> strip the marker line (and trailing
+//     newline), pass through the rest verbatim
+//   - marker missing -> agent ignored the fp-gate, fall through to
+//     existing ceremony detection (older stopHookCeremonyStripRewrite)
+function fpGateMarkerRewrite(eventName, data, ctx) {
+  if (!ctx.get('priorUserWasDeny')) return data;
+
+  // Once truncated, drop all subsequent content events. Pass-through
+  // message-level events so the stream completes cleanly.
+  if (ctx.get('fp_gate_truncated')) {
+    if (eventName === 'content_block_start'
+        || eventName === 'content_block_delta'
+        || eventName === 'content_block_stop') {
+      return null;
+    }
+    return data;
+  }
+
+  const key = 'fp_gate_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { startData: data, deltas: [] });
+    return null;
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    state.deltas.push(data);
+    return null;
+  }
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    let assembled = '';
+    for (const d of state.deltas) {
+      if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
+    }
+    // Only act on FIRST text block (subsequent blocks shouldn't carry
+    // the marker -- they're already past the gate).
+    const alreadyHandled = ctx.get('fp_gate_first_block_done');
+    if (alreadyHandled) {
+      const events = [['content_block_start', state.startData]];
+      for (const d of state.deltas) events.push(['content_block_delta', d]);
+      events.push(['content_block_stop', data]);
+      return { events };
+    }
+    ctx.set('fp_gate_first_block_done', true);
+
+    // YES: truncate to `.`, drop everything else upstream.
+    if (/\[FP-CHECK:\s*yes\]/i.test(assembled)) {
+      ctx.set('fp_gate_truncated', true);
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-fp-gate-marker.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            verdict: 'yes',
+            assembled_len: assembled.length,
+            preview: assembled.slice(0, 200),
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      const events = [
+        ['content_block_start', state.startData],
+        ['content_block_delta', {
+          type: 'content_block_delta',
+          index: data.index,
+          delta: { type: 'text_delta', text: '.' },
+        }],
+        ['content_block_stop', data],
+      ];
+      return { events };
+    }
+
+    // NO: strip the marker line + trailing whitespace, pass rest through.
+    const noMatch = assembled.match(/^[\s]*\[FP-CHECK:\s*no\]\s*\n?/i);
+    if (noMatch) {
+      const stripped = assembled.slice(noMatch[0].length);
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-fp-gate-marker.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            verdict: 'no',
+            kept_len: stripped.length,
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      const events = [['content_block_start', state.startData]];
+      if (stripped) {
+        events.push(['content_block_delta', {
+          type: 'content_block_delta',
+          index: data.index,
+          delta: { type: 'text_delta', text: stripped },
+        }]);
+      }
+      events.push(['content_block_stop', data]);
+      return { events };
+    }
+
+    // Marker missing -- agent ignored the fp-gate. Pass through; the
+    // older stopHookCeremonyStripRewrite catches prose-shaped ceremony
+    // as a fallback.
+    const events = [['content_block_start', state.startData]];
+    for (const d of state.deltas) events.push(['content_block_delta', d]);
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+  return data;
+}
+
 module.exports = {
   runInBackgroundRewrite,
   longLeadingSleepRewrite,
@@ -846,6 +974,7 @@ module.exports = {
   slopStripRewrite,
   hallucinatedTurnPrefixStripRewrite,
   stopHookCeremonyStripRewrite,
+  fpGateMarkerRewrite,
   _isBareAck,                  // exported for tests
   _isHallucinatedTurnPrefix,   // exported for tests
   _isCeremonyDodge,            // exported for tests
