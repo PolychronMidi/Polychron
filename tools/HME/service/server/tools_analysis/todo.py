@@ -604,8 +604,8 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             # buddy / human can append the completion-ritual paragraph
             # via `i/todo phase_complete phase=N summary=\"...\"`.
             phase_complete_msg = ""
-            if spec_flipped and os.path.exists(_SPEC_FILE):
-                with open(_SPEC_FILE, encoding="utf-8") as f:
+            if spec_flipped and os.path.exists(_spec_file()):
+                with open(_spec_file(), encoding="utf-8") as f:
                     spec_md = f.read()
                 completed = _detect_phase_complete(spec_md)
                 if completed:
@@ -633,9 +633,9 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 return "Error: phase=N required for phase_complete (pass via todo_id=)."
             if not text:
                 return "Error: text= required (the completion paragraph)."
-            if not os.path.exists(_SPEC_FILE):
-                return f"Error: {_SPEC_FILE} missing."
-            with open(_SPEC_FILE, encoding="utf-8") as f:
+            if not os.path.exists(_spec_file()):
+                return f"Error: {_spec_file()} missing."
+            with open(_spec_file(), encoding="utf-8") as f:
                 spec_md = f.read()
             blocks = _phase_blocks(spec_md)
             target_block = None
@@ -645,7 +645,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                     target_block = (start, end, header)
                     break
             if target_block is None:
-                return f"Error: Phase {phase_n} not found in {_SPEC_FILE}."
+                return f"Error: Phase {phase_n} not found in {_spec_file()}."
             start, end, header = target_block
             # Verify the phase is actually complete (no remaining `[ ]`)
             lines = spec_md.split("\n")
@@ -665,7 +665,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 "",
             ]
             new_lines = lines[:end] + completion_block + lines[end:]
-            with open(_SPEC_FILE, "w", encoding="utf-8") as f:
+            with open(_spec_file(), "w", encoding="utf-8") as f:
                 f.write("\n".join(new_lines))
             # Surface whether the set is now fully complete (next clear
             # will auto-archive).
@@ -676,7 +676,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                     f"\n\n[ARCHIVE] All phases now complete -- next `i/todo clear` will archive "
                     f"the set to KB devlog and reset SPEC/TODO to fresh slate."
                 )
-            return f"Phase {phase_n} marked complete in {_SPEC_FILE}.{tail}\n"
+            return f"Phase {phase_n} marked complete in {_spec_file()}.{tail}\n"
 
         return ("Unknown action. Use: list, add, done, undo, remove, clear, critical, "
                 "ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.")
