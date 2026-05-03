@@ -432,6 +432,29 @@ const _SLOP_PATTERNS = [
   { name: 'numbered_wisdom_list',
     re: /(?:^|\n)(?:\s*\d+\.\s+[A-Z][^.\n]{5,75}\.\s*\n){3,}/gm,
     repl: '\n' },
+  // #3 Three parallel dramatic sentences. 3+ consecutive short
+  // sentences (<=10 words each) that share an identical opening
+  // pronoun/verb. The catalog example: "You can't see it. You can't
+  // copy-paste it away. You have to know it exists." Heuristic
+  // collapses the run to its first sentence.
+  { name: 'parallel_dramatic',
+    re: /(\b(?:You|I|We|It|This|That)(?:'?\w+)?\b[^.!?\n]{1,40}[.!?])(?:\s+\1[^.!?\n]{1,40}[.!?]){2,}/g,
+    // Tighter version using a backref-like opening token group:
+    // captures the opening word, requires it to repeat in the next
+    // 2+ sentences. Strip the repeats, keep the first.
+    repl: '$1' },
+  // #15 Excessive bold. When a single text block has > 1 bold token
+  // per ~25 words, AI is highlighter-spamming. We can't selectively
+  // demote without judgment, so we only fire when the density is
+  // egregious (>= 6 bold tokens in <= 150 words = ~1 per 25 words)
+  // AND most of them are short single-word/phrase emphasis. When that
+  // matches, demote ALL bolds in the block to plain text. Conservative
+  // density threshold avoids damaging legitimate emphasis in normal
+  // prose. Implemented as a function-style rewrite below; the entry
+  // here is a sentinel so the strip pass invokes the function.
+  { name: 'excessive_bold',
+    re: null,  // handled in _stripExcessiveBold below
+    repl: null },
 ];
 
 // Patterns NOT implemented and why. Recorded inline so future passes
