@@ -126,7 +126,7 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 
 ## Rules and boundaries -- authoritative source
 
-[CLAUDE.md](../CLAUDE.md) is loaded in every prompt and is the single source of truth for coding rules, load order, architectural firewalls, hypermeta-first discipline, and hard rules (binaural range, `tmp/run.lock` untouchable, plan-abandonment discipline, etc.). This primer does not restate those -- read CLAUDE.md and treat its rules as always-on constraints. The handful of onboarding-critical rules the walkthrough section above lists (LIFESAVER no-dilution, no psychopathic polling, one tool call per step) are the ones this primer surfaces because they are mostly relevant *during the first-session walkthrough itself*.
+[CLAUDE.md](../CLAUDE.md) is loaded in every prompt -- the single source of truth for coding rules, load order, architectural firewalls, hypermeta-first discipline, and hard rules. Treat its rules as always-on constraints. The walkthrough section above surfaces the three onboarding-critical rules (LIFESAVER no-dilution, no psychopathic polling, one tool call per step) -- the rest live in CLAUDE.md.
 
 ## Phase 1-6 HME infrastructure
 
