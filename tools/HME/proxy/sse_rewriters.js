@@ -481,14 +481,41 @@ function _capFix(s) {
   return s.replace(/(^|[.!?]\s+)([a-z])/g, (_m, lead, ch) => lead + ch.toUpperCase());
 }
 
+// #15 Excessive bold demoter. Counts `**X**` tokens; if density per
+// word exceeds threshold AND most bolds are short emphasis, strips
+// ALL `**` markers in the block. Non-trivial: we can't pick which
+// individual bolds are slop-emphasis vs real emphasis, so it's
+// all-or-nothing on the block, gated by density.
+function _stripExcessiveBold(text) {
+  if (!text || typeof text !== 'string') return { out: text, hit: false };
+  const boldRe = /\*\*([^*\n]{1,80})\*\*/g;
+  const matches = [...text.matchAll(boldRe)];
+  if (matches.length < 6) return { out: text, hit: false };
+  const wordCount = (text.match(/\b[\w'-]+\b/g) || []).length;
+  if (wordCount === 0) return { out: text, hit: false };
+  const density = matches.length / wordCount;  // bolds per word
+  if (density < 1 / 25) return { out: text, hit: false };
+  // Density-positive AND most bolds short = highlighter pattern.
+  const shortBolds = matches.filter((m) => m[1].length <= 30).length;
+  if (shortBolds < matches.length * 0.7) return { out: text, hit: false };
+  return { out: text.replace(boldRe, '$1'), hit: true };
+}
+
 function _stripSlop(text) {
   if (typeof text !== 'string' || !text) return { out: text, hits: [] };
   let out = text;
   const hits = [];
   for (const p of _SLOP_PATTERNS) {
+    if (p.re === null) continue;  // function-style entries (e.g. excessive_bold)
     const before = out;
     out = out.replace(p.re, p.repl);
     if (out !== before) hits.push(p.name);
+  }
+  // Function-style strips: density-gated, can't be a simple regex.
+  const boldResult = _stripExcessiveBold(out);
+  if (boldResult.hit) {
+    out = boldResult.out;
+    hits.push('excessive_bold');
   }
   if (hits.length > 0) out = _capFix(out);
   // Collapse any double-spaces or " ," artifacts left by the deletions.
