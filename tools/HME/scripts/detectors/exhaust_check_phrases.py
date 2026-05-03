@@ -88,12 +88,7 @@ DEFERRAL_PHRASES = (
     "a later pass",
     "not this turn",
     "another turn",
-    # "Banked / waiting-on-user-action" register. Added after a session where
-    # the agent closed with "Still banked (not actionable right now): supervisor
-    # fix -- takes effect on next proxy restart" and similar "needs an external
-    # action before it lands" handoffs. Those ARE handoffs, but they wore
-    # technical garb and slipped every deferral pattern above. This register
-    # catches the "I did my part, waiting on you" frame.
+    # "Banked / waiting-on-user-action" register: "I did my part, waiting on you" frame.
     "still banked",
     "banked for",
     "banked until",
