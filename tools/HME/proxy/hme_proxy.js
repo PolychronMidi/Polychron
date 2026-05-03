@@ -1197,9 +1197,11 @@ function handleRequest(clientReq, clientRes) {
         // responses, hook-replaced bodies, etc). Rotate to keep last 100
         // dumps so disk doesn't explode.
         try {
+          if (!isAnthropic) throw new Error('skip-non-anthropic');
           const _bdPath = require('path');
           const _bdFs = require('fs');
-          const _dumpDir = _bdPath.join(PROJECT_ROOT, 'tmp', 'blank-debug');
+          const { PROJECT_ROOT: _bdRoot } = require('./shared');
+          const _dumpDir = _bdPath.join(_bdRoot, 'tmp', 'blank-debug');
           try { _bdFs.mkdirSync(_dumpDir, { recursive: true }); } catch (_e) { /* ignore */ }
           // Rotate: keep newest 99 (we're about to write #100).
           try {
@@ -1315,7 +1317,10 @@ function handleRequest(clientReq, clientRes) {
               console.error(`[hme-proxy] BLANK-RESPONSE -- status=${outStatus} sse=${_isSse} textC=${_textChars} thC=${_thinkingChars} blocks=${_textBlocks}t/${_thinkingBlocks}th/${_toolUseBlocks}tu stop=${_stopReason} -> ${_dumpFile}`);
             }
           } catch (_e) { console.error(`[hme-proxy] response-trace dump write failed: ${_e.message}`); }
-        } catch (_e) { console.error(`[hme-proxy] response-trace dumper threw: ${_e.message} stack=${_e.stack}`); }
+        } catch (_e) {
+          if (_e && _e.message === 'skip-non-anthropic') { /* expected */ }
+          else { console.error(`[hme-proxy] response-trace dumper threw: ${_e.message} stack=${_e.stack}`); }
+        }
 
         // Strip content-length on ANY SSE-mutation path. Upstream's header
         // advertised the pre-transform byte count; piping through
