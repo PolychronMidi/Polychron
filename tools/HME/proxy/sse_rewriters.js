@@ -256,12 +256,17 @@ function _isHallucinatedTurnPrefix(text) {
 // can legitimately ask for those.
 function _isCeremonyDodge(text) {
   if (typeof text !== 'string') return false;
-  // "Solo-rationale:" / "Solo rationale:" / "Solo justification:" at start.
-  if (/^\s*Solo[- ](?:rationale|justification)\s*[:.]/i.test(text)) return true;
-  // "Why solo was right" / "Why solo was the right call" at start.
-  if (/^\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)/i.test(text)) return true;
-  // "Solo was right/correct/the-right-call because..." opening.
-  if (/^\s*Solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)\b/i.test(text)) return true;
+  // Anchored at line-start (^...|\n), NOT only at block-start. Earlier
+  // version used `^\s*` only -- missed the dominant case where the
+  // agent appends a closing solo-rationale paragraph to an otherwise
+  // substantive response (the "...verified.\n\nSolo-rationale for
+  // skipping advisor: ..." shape user kept seeing slip through).
+  // "Solo-rationale:" / "Solo rationale:" / "Solo justification:" at line start.
+  if (/(?:^|\n)\s*Solo[- ](?:rationale|justification)\s*[:.]/i.test(text)) return true;
+  // "Why solo was right" / "Why solo was the right call" at line start.
+  if (/(?:^|\n)\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)/i.test(text)) return true;
+  // "Solo was right/correct/the-right-call because..." opening at line start.
+  if (/(?:^|\n)\s*Solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)\b/i.test(text)) return true;
   return false;
 }
 
