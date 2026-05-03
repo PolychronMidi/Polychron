@@ -168,7 +168,7 @@ def _archive_set(set_name: str = "", force: bool = False) -> dict:
 
     Returns {ok: bool, devlog_path: str, message: str}."""
     detection = _detect_complete_set()
-    if not detection["complete"]:
+    if not detection["complete"] and not force:
         return {
             "ok": False,
             "devlog_path": "",
