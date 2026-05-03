@@ -210,13 +210,20 @@ class SubagentBackendsVerifier(Verifier):
         # 2. Python (always available since we're running)
         backends["python"] = "python3"
 
-        # 3. llama.cpp daemon (CPU port 11436 for arbiter)
+        # 3. llama-server arbiter. Port 11436 was retired (see
+        # config/invariants.json: hardcoded 11434/11435/11436 are an
+        # invariant violation); the live port is HME_ARBITER_PORT in
+        # .env (default 8080). The new endpoint is the llama-server
+        # /health, not the legacy ollama-style /api/tags. Without this
+        # update the verifier permanently reported MISSING for a backend
+        # that was actually healthy under a different port + scheme.
+        _arbiter_port = os.environ.get("HME_ARBITER_PORT", "8080")
         try:
             import urllib.request
-            req = urllib.request.Request("http://127.0.0.1:11436/api/tags")
+            req = urllib.request.Request(f"http://127.0.0.1:{_arbiter_port}/health")
             with urllib.request.urlopen(req, timeout=2) as r:
                 if r.status == 200:
-                    backends["llamacpp_arbiter"] = "11436"
+                    backends["llamacpp_arbiter"] = _arbiter_port
                 else:
                     backends["llamacpp_arbiter"] = None
         except Exception:
