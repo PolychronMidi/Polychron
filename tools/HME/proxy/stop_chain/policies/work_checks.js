@@ -286,7 +286,9 @@ module.exports = {
       v.SUMMARY_FORMAT === 'minimal_format_violation' ||
       v.LIVE_PROBE === 'live_probe_missing' ||
       v.PHASE_GATE === 'phase_skipped' ||
-      v.PILE_ON === 'pile_on';
+      v.PILE_ON === 'pile_on' ||
+      v.CLAIM_WITHOUT_EVIDENCE === 'claim_without_evidence' ||
+      v.FIX_WITHOUT_INVESTIGATION === 'fix_without_investigation';
     if (!willDeny) {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     }
