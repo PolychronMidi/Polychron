@@ -1443,6 +1443,7 @@ function handleRequest(clientReq, clientRes) {
         }
       });
       upstreamRes.on('error', (err) => {
+        try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
         // Mid-response failures (connection reset while streaming, TLS
         // mid-frame, etc). Same lifesaver discipline as the connection-
         // time and response-complete error paths.
