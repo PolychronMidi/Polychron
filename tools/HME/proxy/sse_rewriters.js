@@ -756,12 +756,11 @@ const _STOP_HOOK_CEREMONY_PATTERNS = [
   // "doesn't apply" excuses
   /\b(?:false[\s-]positive|floor\s+doesn'?t\s+apply|gate\s+doesn'?t\s+apply|doctrine\s+doesn'?t\s+apply|rule\s+doesn'?t\s+apply)/i,
   /\b(?:advisor|doctrine|gate|hook|rule)\s+(?:doesn'?t|does\s+not)\s+apply/i,
-  // Solo-rationale shapes -- match at line start (^|\n), not only block
-  // start. Earlier `^\s*` anchor missed the closing-paragraph case where
-  // the agent appends solo-rationale after a substantive response.
-  /(?:^|\n)\s*solo[\s-](?:rationale|justification)\s*[:.]/i,
-  /(?:^|\n)\s*why\s+solo\s+(?:was|is)\s+(?:right|correct|the\s+(?:right|correct))/i,
-  /(?:^|\n)\s*solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)/i,
+  // Solo-rationale shapes (block-start only; trailing-paragraph case
+  // is handled surgically by soloRationaleTrimRewrite, not here).
+  /^\s*solo[\s-](?:rationale|justification)\s*[:.]/i,
+  /^\s*why\s+solo\s+(?:was|is)\s+(?:right|correct|the\s+(?:right|correct))/i,
+  /^\s*solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)/i,
   // "The rule fired but..." / "the gate misfired"
   /\b(?:the\s+)?(?:rule|hook|gate|detector|doctrine)\s+(?:fired|misfired)\s+but/i,
   // "Acknowledged" as standalone ceremonial opener (not real new-info ack)
