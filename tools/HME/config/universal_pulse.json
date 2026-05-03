@@ -65,9 +65,10 @@
       "hook_thresholds": {
         "stop": 900,
         "sessionstart": 2500,
-        "userpromptsubmit": 700
+        "userpromptsubmit": 700,
+        "stop_chain:holograph": 2200
       },
-      "_threshold_notes": "Per-hook overrides -- `stop` legitimately runs ~600-700ms (autocommit + detectors run_all + /audit curl + lifesaver scan); 900ms allows normal variance without false alarms. sessionstart includes RAG-engine cold-start context-meter + holograph snapshot; 2.5s budget is realistic. userpromptsubmit includes LIFESAVER scan + onboarding checks; 700ms."
+      "_threshold_notes": "Per-hook overrides -- `stop` legitimately runs ~600-700ms (autocommit + detectors run_all + /audit curl + lifesaver scan); 900ms allows normal variance without false alarms. sessionstart includes RAG-engine cold-start context-meter + holograph snapshot; 2.5s budget is realistic. userpromptsubmit includes LIFESAVER scan + onboarding checks; 700ms. stop_chain:holograph spawns `timeout 2 python3 snapshot-holograph.py --diff` -- p95 legitimately approaches the 2s hard cap; 2200ms = 2s timeout + 200ms shell-wrapper headroom. Lookup in universal_pulse_tick.py is exact-match (unlike runtime_perf.py which prefix-matches), so shell_policy substages need explicit entries here when they exceed default_max_p95."
     }
   ],
   "heartbeat_file": "tmp/hme-universal-pulse.heartbeat"
