@@ -113,6 +113,17 @@ src/utils/moduleLifecycle.js
 tools/HME/proxy/hme_proxy.js
 tools/HME/proxy/middleware/index.js
 
+# sse_rewriters.js: SSE rewriter chain with five text-block strippers
+# (ackStrip / slopStrip / hallucinatedTurnPrefixStrip / stopHookCeremonyStrip /
+# fpGateMarker) plus two Bash rewriters (runInBackground / longLeadingSleep).
+# All strippers share the buffer-then-replay-on-content_block_stop pattern;
+# the _isBareAck umbrella dispatches to _isHallucinatedTurnPrefix +
+# _isCeremonyDodge, so helper composition would fragment across files. The
+# bulk is _SLOP_PATTERNS (19 regex+replacement entries with inline
+# rationale comments) -- moving to JSON config would lose the rationale.
+# rationale: intent=coupled-state; revisit-when=growth>700-or-new-stripper-class; decided=2026-05-03
+tools/HME/proxy/sse_rewriters.js
+
 # rag_engines.py: _load_engines (~340L) and reload_on_device (~190L) share
 # 8+ globals (_shared_*, _*_engine, _*_router, _lib_engines, _engine_ready,
 # _reload_lock) plus closures for VRAM-managed model factories. Module-level
