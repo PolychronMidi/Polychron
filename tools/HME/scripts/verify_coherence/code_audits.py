@@ -11,6 +11,7 @@ from .code_audits_style import (  # noqa: F401
     HardcodedToolInvocationVerifier,
     AgentLoopQualityVerifier,
     RepeatedCharSpamVerifier,
+    CommentBloatVerifier,
 )
 from .code_audits_antifork import (  # noqa: F401
     AntiForkHeuristicListVerifier,
