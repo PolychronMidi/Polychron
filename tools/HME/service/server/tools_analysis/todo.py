@@ -297,6 +297,7 @@ from .todo_lifesaver import (  # noqa: F401, E402
     _expire_stale_lifesavers,
 )
 from .todo_native_merge import merge_native_todowrite  # noqa: F401, E402
+from paths import spec_file as _spec_file  # noqa: F401, E402
 from .todo_spec_bridge import (  # noqa: F401, E402
     _NEXT_UP_RE, _SPEC_OPEN_RE,
     _JUST_SHIPPED_LIMIT,
