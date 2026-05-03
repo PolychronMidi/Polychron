@@ -705,6 +705,7 @@ module.exports = {
   hallucinatedTurnPrefixStripRewrite,
   _isBareAck,             // exported for tests
   _isHallucinatedTurnPrefix, // exported for tests
+  _isCeremonyDodge,       // exported for tests
   _rewriteLongLeadingSleep, // exported for tests
   _stripSlop,             // exported for tests
 };
