@@ -62,11 +62,7 @@ _CLAIM_PATTERNS = (
                r"lands|landed|shipped|verified|fixed)\b", re.IGNORECASE),
 )
 
-# Evidence-producing Bash command tokens. If the agent ran ANY Bash with
-# these tokens in the same turn, we credit them with verification.
-# Conservative: only commands whose primary purpose IS verification or
-# inspection. Avoids crediting "git status" alone (informational, doesn't
-# verify a claim) but credits build/test/lint/probe/syntax-check shapes.
+# Verification-shape Bash tokens. Excludes informational `git status`.
 _EVIDENCE_BASH_TOKENS = (
     "test", "tests", "pytest", "jest", "mocha", "vitest", "go test",
     "cargo test", "npm test", "yarn test", "make test",
