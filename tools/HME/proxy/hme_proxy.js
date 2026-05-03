@@ -1137,12 +1137,17 @@ function handleRequest(clientReq, clientRes) {
           // Original streaming path (no HME interception happened) -- pipe
           // through the Transform for Bash run_in_background rewriting.
           const { SseTransform } = require('./sse_transform');
-          const { runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite, slopStripRewrite, hallucinatedTurnPrefixStripRewrite } = require('./sse_rewriters');
+          const { runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite, slopStripRewrite, hallucinatedTurnPrefixStripRewrite, stopHookCeremonyStripRewrite } = require('./sse_rewriters');
           // Order matters: longLeadingSleepRewrite rewrites command
           // BEFORE runInBackgroundRewrite reads it on content_block_stop.
           // Both hold state keyed by content-block index in the same
           // ctx map so they see consistent data.
-          // hallucinatedTurnPrefixStripRewrite runs FIRST so a fake
+          // stopHookCeremonyStripRewrite runs FIRST when prior user was
+          // a stop-hook payload (gated). If the agent's first text block
+          // is bypass-explanation ceremony, replace with `.` and drop
+          // all subsequent content -- saves next-turn context burn from
+          // carrying the ceremony forward in transcript.
+          // hallucinatedTurnPrefixStripRewrite runs next so a fake
           // `Human:` / `Assistant:` block is dropped before downstream
           // rewriters waste work on it. Always-on (no gate) -- a fake
           // turn boundary is never legitimate.
@@ -1151,7 +1156,7 @@ function handleRequest(clientReq, clientRes) {
           // out of a block we're about to discard whole). slopStrip is
           // always-on; ackStrip is only-when-priorUserWasDeny.
           const xform = new SseTransform({
-            rewriters: [hallucinatedTurnPrefixStripRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite],
+            rewriters: [stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite],
           });
           // Populate the priorUserWasDeny flag the ack-strip rewriter
           // gates on. Walk request payload's messages to find the latest
