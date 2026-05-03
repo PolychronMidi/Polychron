@@ -746,38 +746,38 @@ function handleRequest(clientReq, clientRes) {
       if (_dropped > 0) {
         outBody = Buffer.from(JSON.stringify(payload), 'utf8');
       }
-      // OTPM (output-tokens-per-minute) cap. Anthropic checks at request
-      // time using `max_tokens` to estimate output budget. The OAuth-public
-      // endpoint has a smaller OTPM bucket (~16-32K/min) than Claude Code's
-      // native path. Claude Code defaults to max_tokens=64000 with thinking,
-      // which instantly exhausts OTPM and 429s. Cap to a value that fits
-      // under typical OAuth-path OTPM AND leaves room for a couple parallel
-      // requests. API rule: max_tokens MUST be > thinking.budget_tokens, so
-      // we set thinking_cap = otpm_cap and max_tokens_cap = otpm_cap + 2048
-      // (slack for the post-thinking response generation).
-      // Tunable via HME_PROXY_MAX_OUTPUT_TOKENS.
-      const _otpmCap = parseInt(process.env.HME_PROXY_MAX_OUTPUT_TOKENS || '12000', 10);
-      const _maxTokensCap = _otpmCap + 2048;
-      let _capChanged = false;
-      // Cap thinking FIRST so we know how to size max_tokens.
-      if (payload.thinking && typeof payload.thinking === 'object') {
-        if (typeof payload.thinking.budget_tokens === 'number' && payload.thinking.budget_tokens > _otpmCap) {
-          console.error(`[hme-proxy] OTPM-cap: thinking.budget_tokens ${payload.thinking.budget_tokens} -> ${_otpmCap}`);
-          payload.thinking.budget_tokens = _otpmCap;
-          _capChanged = true;
-        } else if (payload.thinking.type === 'adaptive') {
-          console.error(`[hme-proxy] OTPM-cap: thinking adaptive -> enabled with budget=${_otpmCap}`);
-          payload.thinking = { type: 'enabled', budget_tokens: _otpmCap };
+      // OTPM cap REMOVED. The previous version capped max_tokens from
+      // Claude Code's 64000 down to ~14k on the hypothesis that the
+      // OAuth-public endpoint had a small OTPM bucket. Empirically the
+      // opposite was true: this cap was the proxy-vs-direct delta that
+      // caused Opus 4.7 to 429 through the proxy while succeeding direct.
+      // When `output_config.effort=xhigh` is set (Claude Code's standard
+      // request shape on this account), the gateway appears to require
+      // max_tokens to match the effort tier; capping it produces a
+      // gateway-level rejection that surfaces as a 429 with NO
+      // anthropic-ratelimit-* headers (distinguishing it from a real
+      // quota-bucket rejection). Re-enable via HME_PROXY_MAX_OUTPUT_TOKENS
+      // ONLY for explicit debugging; the default is now passthrough.
+      const _otpmCapRaw = process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
+      if (_otpmCapRaw) {
+        const _otpmCap = parseInt(_otpmCapRaw, 10);
+        const _maxTokensCap = _otpmCap + 2048;
+        let _capChanged = false;
+        if (payload.thinking && typeof payload.thinking === 'object') {
+          if (typeof payload.thinking.budget_tokens === 'number' && payload.thinking.budget_tokens > _otpmCap) {
+            console.error(`[hme-proxy] OTPM-cap (explicit): thinking.budget_tokens ${payload.thinking.budget_tokens} -> ${_otpmCap}`);
+            payload.thinking.budget_tokens = _otpmCap;
+            _capChanged = true;
+          }
+        }
+        if (typeof payload.max_tokens === 'number' && payload.max_tokens > _maxTokensCap) {
+          console.error(`[hme-proxy] OTPM-cap (explicit): max_tokens ${payload.max_tokens} -> ${_maxTokensCap}`);
+          payload.max_tokens = _maxTokensCap;
           _capChanged = true;
         }
-      }
-      if (typeof payload.max_tokens === 'number' && payload.max_tokens > _maxTokensCap) {
-        console.error(`[hme-proxy] OTPM-cap: max_tokens ${payload.max_tokens} -> ${_maxTokensCap}`);
-        payload.max_tokens = _maxTokensCap;
-        _capChanged = true;
-      }
-      if (_capChanged) {
-        outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+        if (_capChanged) {
+          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+        }
       }
     }
 
