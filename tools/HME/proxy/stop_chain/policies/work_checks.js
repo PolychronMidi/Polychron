@@ -352,7 +352,7 @@ module.exports = {
       if (v[field] === value) firing.push({ name: reasonKey, reason: REASONS[reasonKey] });
     }
     if (firing.length === 1) {
-      return ctx.deny(firing[0].reason);
+      armFpGate(firing[0].name); return ctx.deny(firing[0].reason);
     }
     if (firing.length > 1) {
       const header = `MULTI-FLAG STOP (${firing.length} detectors firing): ${firing.map((f) => f.name).join(', ')}.\nAddress all of them in this turn.\n\n`;
