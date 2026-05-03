@@ -227,4 +227,31 @@ DEFERRAL_REGEXES = (
         r"^\s*\([a-c]\)\s*\*\*[^*]+\*\*",
         re.MULTILINE,
     ),
+    # X-of-Y partial-coverage framing. "(8 of 29)" / "5 of 12 fixes" /
+    # "shipped 3 of 7 patterns". User asked for all; agent shipped some.
+    # Scoped to deferral-shape nouns so legitimate "page 2 of 5" / "v3
+    # of 4 schemas" stays clear. Catches the exact framing that motivated
+    # this addition: "8 of 29 patterns".
+    re.compile(
+        r"\b\d+\s+(?:of|out\s+of)\s+\d+\b[^\n]{0,40}\b("
+        r"pattern|item|fix|tool|bug|finding|opportunit|implement|"
+        r"change|gap|improvement|recommendation|integration|task|"
+        r"point|verifier|hook|cache|rule|check)s?\b",
+        re.IGNORECASE,
+    ),
+    # "Subset" framing. "high-fit subset for X" / "subset that ships /
+    # covers / fits". When user asked for the full set, naming a subset
+    # is a punt.
+    re.compile(
+        r"\bsubset\b[^.\n]{0,40}\b("
+        r"implement|cover|ship|land|fix|scope|fit|focus|priorit"
+        r")\w*",
+        re.IGNORECASE,
+    ),
+    # Explicit fit-excuse classification. "X is low/poor fit for Y",
+    # "low fit for tool output", "poor fit for engineering".
+    re.compile(
+        r"\b(low|poor|weak|wrong|bad|less|low-)\s*[- ]?\s*fit\b\s+for\b",
+        re.IGNORECASE,
+    ),
 )
