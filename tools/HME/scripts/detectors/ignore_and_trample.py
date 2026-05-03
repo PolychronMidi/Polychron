@@ -105,22 +105,44 @@ def _first_assistant_text(event: dict) -> str | None:
     return None
 
 
+def _proxy_request_has_marker() -> bool:
+    """Latest proxy request-body dump scan. Claude Code does NOT persist
+    `<system-reminder>` injections to the transcript file; the proxy DOES
+    capture full request bodies including system-reminders -- read those
+    instead. The legacy transcript-only path missed every real interrupt."""
+    import glob
+    import os
+    project_root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
+    if not project_root:
+        return False
+    dump_dir = os.path.join(project_root, "tmp", "blank-debug")
+    if not os.path.isdir(dump_dir):
+        return False
+    files = sorted(glob.glob(os.path.join(dump_dir, "hme-resp-*.req-body")),
+                   key=os.path.getmtime, reverse=True)
+    for f in files[:1]:
+        try:
+            with open(f, "rb") as fp:
+                if _INTERRUPT_MARKER.encode() in fp.read():
+                    return True
+        except Exception:
+            pass
+    return False
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
         return 0
-    events = _load_current_turn(sys.argv[1])
-    # Walk the turn, looking for an interrupt marker. After each interrupt,
-    # find the NEXT assistant event with non-empty text content; if its
-    # opening prose doesn't match the acknowledgment regex, the agent
-    # ignored-and-trampled.
+    transcript_path = sys.argv[1]
+    events = _load_current_turn(transcript_path)
+    # Path A (legacy): scan transcript tool_result blocks.
     n = len(events)
     for i, ev in enumerate(events):
         if not is_user(ev):
             continue
         if not any(_INTERRUPT_MARKER in t for t in _tool_result_texts(ev)):
             continue
-        # Find next assistant event with text content.
         next_text = None
         for j in range(i + 1, n):
             t = _first_assistant_text(events[j])
@@ -128,11 +150,19 @@ def main() -> int:
                 next_text = t
                 break
         if next_text is None:
-            # Interrupt fired but no follow-up text yet -- agent may still
-            # be mid-tool-call. Don't penalize; the Stop hook fires AFTER
-            # the agent's reply lands, so by then there should be text.
             continue
         if not _ACK_REGEX.match(next_text):
+            print("ignore-and-trample")
+            return 0
+    # Path B: proxy request-body scan; catches system-reminder case.
+    if _proxy_request_has_marker():
+        last_text = None
+        for ev in reversed(events):
+            t = _first_assistant_text(ev)
+            if t is not None:
+                last_text = t
+                break
+        if last_text is not None and not _ACK_REGEX.match(last_text):
             print("ignore-and-trample")
             return 0
     print("ok")
