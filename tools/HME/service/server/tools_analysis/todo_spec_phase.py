@@ -4,7 +4,7 @@ ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
 Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
 entry is via the i/todo command surface. todo.py re-exports the public symbols.
-See doc/SPEC.md Phase 0 for the workflow this bridge implements.
+See doc/templates/SPEC.md Phase 0 for the workflow this bridge implements.
 """
 import json
 import os
@@ -37,7 +37,7 @@ from server.tools_analysis.todo_spec_ingest import (  # noqa: F401
 
 
 # SPEC/TODO bridge -- connects ephemeral i/todo state to durable
-# doc/SPEC.md + doc/TODO.md handoff docs. See doc/SPEC.md Phase 0.
+# doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
 
 
 _SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "SPEC.md")
@@ -101,7 +101,7 @@ def _detect_phase_complete(spec_md: str) -> list[dict]:
 
 def _close_with_spec_update(entry: dict) -> tuple[str, str]:
     """Atomic SPEC/TODO close: flip the BEST-MATCHING `- [ ] [tier] <text>`
-    in doc/SPEC.md to `[x]`, append a Just-shipped entry to doc/TODO.md.
+    in doc/templates/SPEC.md to `[x]`, append a Just-shipped entry to doc/templates/TODO.md.
 
     Match strategy: pick the open SPEC item whose normalized text
     shares the longest common prefix with the i/todo entry's normalized

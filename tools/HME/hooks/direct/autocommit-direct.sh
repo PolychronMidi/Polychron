@@ -88,7 +88,7 @@ _ac_do_commit "direct-${1:-unknown}" || true
 _AC_HEAD_AFTER=$(git -C "$_DIRECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")
 if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE" != "$_AC_HEAD_AFTER" ]; then
   # SPEC/TODO same-commit invariant (skill-set pattern, soft-warning form):
-  # if src/** changed in this commit AND neither doc/SPEC.md nor doc/TODO.md
+  # if src/** changed in this commit AND neither doc/templates/SPEC.md nor doc/templates/TODO.md
   # changed, surface a drift warning to hme-errors.log (LIFESAVER picks it
   # up next turn). Soft warning rather than hard block -- autocommit fires
   # frequently and intermediate commits during a multi-step landing
@@ -99,7 +99,7 @@ if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE"
   if echo "$_AC_DIFF" | /usr/bin/grep -qE '^src/' \
      && ! echo "$_AC_DIFF" | /usr/bin/grep -qE '^doc/(SPEC|TODO)\.md$'; then
     _AC_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
-    echo "[$_AC_TS] [autocommit-direct] WARN spec-drift: src/ changed but doc/SPEC.md + doc/TODO.md untouched (commit ${_AC_HEAD_AFTER:0:8})" \
+    echo "[$_AC_TS] [autocommit-direct] WARN spec-drift: src/ changed but doc/templates/SPEC.md + doc/templates/TODO.md untouched (commit ${_AC_HEAD_AFTER:0:8})" \
       >> "$_DIRECT_ROOT/log/hme-errors.log"
   fi
   # Auto-fire of `i/review mode=forget` after every commit was burning

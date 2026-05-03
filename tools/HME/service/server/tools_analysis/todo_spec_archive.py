@@ -4,7 +4,7 @@ ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
 Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
 entry is via the i/todo command surface. todo.py re-exports the public symbols.
-See doc/SPEC.md Phase 0 for the workflow this bridge implements.
+See doc/templates/SPEC.md Phase 0 for the workflow this bridge implements.
 """
 import json
 import os
@@ -34,7 +34,7 @@ from server.tools_analysis.todo import (
 
 
 # SPEC/TODO bridge -- connects ephemeral i/todo state to durable
-# doc/SPEC.md + doc/TODO.md handoff docs. See doc/SPEC.md Phase 0.
+# doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
 
 
 _SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "SPEC.md")
@@ -77,7 +77,7 @@ def _slugify(text: str, max_len: int = 40) -> str:
 
 
 def _phase_blocks(spec_md: str) -> list[tuple[int, int, str]]:
-    """Parse doc/SPEC.md for `### Phase <N>: <name>` blocks. Returns
+    """Parse doc/templates/SPEC.md for `### Phase <N>: <name>` blocks. Returns
     list of (start_line_idx, end_line_idx_exclusive, header_line)
     tuples. The end is the line where the next `### Phase` or `## `
     starts (or EOF). Used by phase-completion detection."""
@@ -103,7 +103,7 @@ def _phase_blocks(spec_md: str) -> list[tuple[int, int, str]]:
 
 
 def _detect_complete_set() -> dict:
-    """Detect whether ALL phases in doc/SPEC.md are complete (each phase
+    """Detect whether ALL phases in doc/templates/SPEC.md are complete (each phase
     has zero `[ ]` items AND a `_Phase N complete_` sentinel paragraph).
     Returns {complete: bool, phases: [(n, header, start, end)], missing: [reason...]}.
 
@@ -145,7 +145,7 @@ def _detect_complete_set() -> dict:
 
 
 def _archive_set(set_name: str = "") -> dict:
-    """Archive the entire set of phases in doc/SPEC.md to a single
+    """Archive the entire set of phases in doc/templates/SPEC.md to a single
     timestamped KB devlog file. Refuses if any phase is incomplete.
 
     Layout: tools/HME/KB/devlog/<YYYY-MM-DDTHHMMSSZ>-<slug>.md
@@ -159,8 +159,8 @@ def _archive_set(set_name: str = "") -> dict:
     since "Just shipped" entries correlate with phases) so the devlog
     captures both the plan AND the what-shipped record.
 
-    After archive: doc/SPEC.md is replaced with a fresh-slate
-    template; doc/TODO.md is replaced with empty 3-section template.
+    After archive: doc/templates/SPEC.md is replaced with a fresh-slate
+    template; doc/templates/TODO.md is replaced with empty 3-section template.
     The active docs are now ready for the NEXT set without any
     completed-work tax.
 
@@ -215,7 +215,7 @@ def _archive_set(set_name: str = "") -> dict:
     return {
         "ok": True,
         "devlog_path": devlog_path,
-        "message": f"Archived {phase_count} phase(s) to {devlog_path}; doc/SPEC.md and doc/TODO.md reset to fresh slate.",
+        "message": f"Archived {phase_count} phase(s) to {devlog_path}; doc/templates/SPEC.md and doc/templates/TODO.md reset to fresh slate.",
     }
 
 
@@ -225,7 +225,7 @@ def _archive_set(set_name: str = "") -> dict:
 
 def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: str) -> None:
     """After archiving a set, replace BOTH the preamble AND the Phase
-    blocks in doc/SPEC.md with generic-initiative placeholders pointing
+    blocks in doc/templates/SPEC.md with generic-initiative placeholders pointing
     at the devlog. Trailing sections (Glossary, NEVER lists,
     How-this-file-evolves, Difficulty labels, Empty-queue bail) are
     truly stable across sets and preserved verbatim.
@@ -269,7 +269,7 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
     fresh_preamble = [
         "# Polychron Active SPEC",
         "",
-        "> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; reset back to \"Polychron Active SPEC\" after `i/todo clear` archives the set.",
+        "> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; reset back to \"Polychron Active SPEC\" after `i/todo clear` archives the set.",
         ">",
         "> Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](HME.md), [doc/ARCHITECTURE.md](ARCHITECTURE.md), [README.md](../README.md), and [CLAUDE.md](../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.",
         ">",
@@ -287,7 +287,7 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
         "",
         "- <subsystem>: <one-line>",
         "- <data dir / queue / manifest>: <one-line>",
-        "- <handoff doc>: doc/SPEC.md (canonical phases) + doc/TODO.md (3-section: In flight / Just shipped / Next up)",
+        "- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)",
         "",
         "## Phases",
         "",
@@ -307,7 +307,7 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
 
 
 def _reset_todo_to_fresh_slate() -> None:
-    """After archiving a set, reset doc/TODO.md to the empty 3-section
+    """After archiving a set, reset doc/templates/TODO.md to the empty 3-section
     template. The previous set's "Just shipped" entries are preserved
     in the devlog snapshot."""
     if not os.path.exists(_TODOMD_FILE):
@@ -315,7 +315,7 @@ def _reset_todo_to_fresh_slate() -> None:
     fresh = (
         "# Polychron HME TODO (handoff doc)\n\n"
         "> Cross-cycle state. Every skill reads this on start and updates it on close. "
-        "Three sections, in this order. See [doc/SPEC.md](SPEC.md) for the full architectural plan.\n\n"
+        "Three sections, in this order. See [doc/templates/SPEC.md](SPEC.md) for the full architectural plan.\n\n"
         "## In flight\n\n"
         "<!-- Exactly one line per currently-running skill, format:\n"
         "  - [<skill-name> @ <utc-iso>] <one-line: what this skill is currently doing>\n"
@@ -328,7 +328,7 @@ def _reset_todo_to_fresh_slate() -> None:
         "  - [<difficulty>] <description>. Reason: <source> -->\n\n"
         "(empty -- populate from the new set's SPEC Phase 0 via `i/todo ingest_from_spec`)\n\n"
         "---\n\n"
-        "When this Next up is empty AND every `- [ ]` in [doc/SPEC.md](SPEC.md) has been "
+        "When this Next up is empty AND every `- [ ]` in [doc/templates/SPEC.md](SPEC.md) has been "
         "flipped to `[x]`, the dev cycle exits with `[no-work] <reason>`. See SPEC.md "
         "\"Empty-queue bail\" appendix.\n"
     )
@@ -351,7 +351,7 @@ def _archive_just_shipped_overflow(trimmed_entries: list[str]) -> str:
     if not header_present:
         body.append("# In-flight just-shipped overflow")
         body.append("")
-        body.append("> Trimmed from doc/TODO.md \"Just shipped\" rolling-10 window mid-set. "
+        body.append("> Trimmed from doc/templates/TODO.md \"Just shipped\" rolling-10 window mid-set. "
                     "Cleared when the current set is archived via `i/todo archive_set`.")
         body.append("")
     body.append(f"<!-- trimmed {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} -->")

@@ -4,7 +4,7 @@ ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
 Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
 entry is via the i/todo command surface. todo.py re-exports the public symbols.
-See doc/SPEC.md Phase 0 for the workflow this bridge implements.
+See doc/templates/SPEC.md Phase 0 for the workflow this bridge implements.
 """
 import json
 import os
@@ -34,7 +34,7 @@ from server.tools_analysis.todo import (
 
 
 # SPEC/TODO bridge -- connects ephemeral i/todo state to durable
-# doc/SPEC.md + doc/TODO.md handoff docs. See doc/SPEC.md Phase 0.
+# doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
 
 
 _SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "SPEC.md")
@@ -88,7 +88,7 @@ def _read_section(md_text: str, header: str) -> list[str]:
 
 
 def _ingest_from_spec(meta: dict, todos: list) -> list[dict]:
-    """Read doc/TODO.md's Next up section, materialize each entry as an
+    """Read doc/templates/TODO.md's Next up section, materialize each entry as an
     i/todo entry with source='spec' and tier=<label>. Skips entries
     whose text already matches an OPEN i/todo entry (universal dedup).
     Returns the list of newly-created entries."""
@@ -136,7 +136,7 @@ def _ingest_from_spec(meta: dict, todos: list) -> list[dict]:
 
 
 def _promote_to_spec(entry: dict) -> str:
-    """Append an i/todo entry to doc/TODO.md's Next up section. Returns
+    """Append an i/todo entry to doc/templates/TODO.md's Next up section. Returns
     the appended line for caller display."""
     tier = _normalize_tier(entry.get("tier", "medium"))
     text = entry.get("text", "").strip()

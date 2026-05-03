@@ -6,7 +6,7 @@
  * Anthropic can rephrase, restructure, or rename their sections and our
  * replacement still ships exactly what we wrote.
  *
- * Config file: tools/HME/proxy/canonical-system-prompt.md
+ * Config file: doc/templates/canonical-system-prompt.md
  *   - Plain text (markdown allowed; Anthropic doesn't parse it).
  *   - Replaces ALL of payload.system with this content as a single
  *     text block. To preserve Claude Code's identity preamble, etc.,

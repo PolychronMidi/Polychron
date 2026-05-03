@@ -3,7 +3,7 @@
 routes each task to the appropriate co-buddy based on the
 `effective = max(item_tier, buddy_floor)` rule.
 
-Architecture (from doc/SPEC.md Phase 1):
+Architecture (from doc/templates/SPEC.md Phase 1):
 - Queue dir: tmp/hme-buddy-queue/{pending,processing,done,failed}/
 - Each task is a JSON file dropped into pending/ by a producer
   (i/todo ingest_from_spec, NEXUS auto-review, OVERDRIVE cascade, etc.)
@@ -75,7 +75,7 @@ ERROR_LOG = PROJECT_ROOT / "log" / "hme-errors.log"
 # Floor-based escalation: these strings map to ordinal levels for the
 # `effective = max(item_tier, buddy_floor)` rule. Higher ordinal = more
 # capable model + more effort. Compared per axis (model and effort
-# resolved independently -- see doc/SPEC.md "Difficulty labels").
+# resolved independently -- see doc/templates/SPEC.md "Difficulty labels").
 TIER_ORDER = {"easy": 0, "medium": 1, "hard": 2}
 TIER_NAMES = ("easy", "medium", "hard")
 
