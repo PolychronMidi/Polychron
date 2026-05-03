@@ -1,6 +1,6 @@
 # Polychron HME TODO (handoff doc)
 
-> Cross-cycle state. Every skill reads this on start and updates it on close. Three sections, in this order. See [doc/SPEC.md](SPEC.md) for the full architectural plan.
+> Cross-cycle state. Every skill reads this on start and updates it on close. Three sections, in this order. See [doc/templates/SPEC.md](SPEC.md) for the full architectural plan.
 
 ## In flight
 
@@ -22,4 +22,4 @@
 
 ---
 
-When this Next up is empty AND every `- [ ]` in [doc/SPEC.md](SPEC.md) has been flipped to `[x]`, the dev cycle exits with `[no-work] <reason>`. See SPEC.md "Empty-queue bail" appendix.
+When this Next up is empty AND every `- [ ]` in [doc/templates/SPEC.md](SPEC.md) has been flipped to `[x]`, the dev cycle exits with `[no-work] <reason>`. See SPEC.md "Empty-queue bail" appendix.

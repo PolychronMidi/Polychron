@@ -1,35 +1,32 @@
 # Polychron Active SPEC
 
-> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; reset back to "Polychron Active SPEC" after `i/todo clear` archives the set.
+> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; reset back to "Polychron Active SPEC" after `i/todo clear` archives the set.
 >
 > Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](HME.md), [doc/ARCHITECTURE.md](ARCHITECTURE.md), [README.md](../README.md), and [CLAUDE.md](../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.
 >
 > Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../tools/HME/KB/devlog/) -- each `i/todo clear` (when all phases are checked + sentinel-marked) timestamps the SPEC+TODO state into a single devlog file and resets the active doc to a fresh-slate template.
 
+_Previous set (pre-templates-move) archived 2026-05-03T154245Z to tools/HME/KB/devlog/2026-05-03T154245Z-pre-templates-move.md._
+
 ## Goal
 
-<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary. Reset to a `<placeholder>` after archive; the next initiative's owner fills it in.>
+<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture (the 18 hypermeta controllers, L0 channels, etc.) is documented in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
+<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
 
 - <subsystem>: <one-line>
 - <data dir / queue / manifest>: <one-line>
-- <handoff doc>: doc/SPEC.md (canonical phases) + doc/TODO.md (3-section: In flight / Just shipped / Next up)
+- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
 
 ## Phases
 
+### Phase 0: <next initiative -- name>
 
-_Previous set (skill-set integration sweep) archived 2026-04-26T174052Z to tools/HME/KB/devlog/2026-04-26T174052Z-skill-set-integration-sweep.md._
+<1-paragraph context for the new initiative.>
 
-### Phase 0: <next set -- name>
-
-<1-paragraph context for the new set.>
-
-- [x] [easy] First item of the new set
-
-_Phase 0 complete_
+- [ ] [easy] First item of the new initiative
 
 ## Deferred / out of scope
 
