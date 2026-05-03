@@ -991,6 +991,71 @@ function fpGateMarkerRewrite(eventName, data, ctx) {
   return data;
 }
 
+// Surgical solo-rationale paragraph trimmer. Buffers text content_blocks,
+// at content_block_stop scans the assembled text for a trailing
+// solo-rationale paragraph (mid-block, separated from prior content by a
+// blank line), and rewrites the block with that paragraph removed -- the
+// substantive prefix is preserved. Always-on (no priorUserWasDeny gate);
+// solo-rationale is bypass-prose regardless of trigger context.
+function soloRationaleTrimRewrite(eventName, data, ctx) {
+  const key = 'srt_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { startData: data, deltas: [] });
+    return null;
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    state.deltas.push(data);
+    return null;
+  }
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    let assembled = '';
+    for (const d of state.deltas) {
+      if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
+    }
+    const { text: trimmed, trimmed: didTrim } = _trimSoloRationaleParagraph(assembled);
+    if (!didTrim) {
+      const events = [['content_block_start', state.startData]];
+      for (const d of state.deltas) events.push(['content_block_delta', d]);
+      events.push(['content_block_stop', data]);
+      return { events };
+    }
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const { PROJECT_ROOT } = require('./shared');
+      fs.appendFileSync(
+        path.join(PROJECT_ROOT, 'log', 'hme-solo-rationale-trim.jsonl'),
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          original_len: assembled.length,
+          trimmed_len: trimmed.length,
+          removed_len: assembled.length - trimmed.length,
+          removed_preview: assembled.slice(trimmed.length).slice(0, 200),
+        }) + '\n',
+      );
+    } catch (_e) { /* best-effort */ }
+    const events = [['content_block_start', state.startData]];
+    if (trimmed) {
+      events.push(['content_block_delta', {
+        type: 'content_block_delta',
+        index: data.index,
+        delta: { type: 'text_delta', text: trimmed },
+      }]);
+    }
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+  return data;
+}
+
 module.exports = {
   runInBackgroundRewrite,
   longLeadingSleepRewrite,
@@ -999,10 +1064,12 @@ module.exports = {
   hallucinatedTurnPrefixStripRewrite,
   stopHookCeremonyStripRewrite,
   fpGateMarkerRewrite,
+  soloRationaleTrimRewrite,
   _isBareAck,                  // exported for tests
   _isHallucinatedTurnPrefix,   // exported for tests
   _isCeremonyDodge,            // exported for tests
   _isStopHookCeremony,         // exported for tests
+  _trimSoloRationaleParagraph, // exported for tests
   _rewriteLongLeadingSleep,    // exported for tests
   _stripSlop,                  // exported for tests
 };
