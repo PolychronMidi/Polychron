@@ -39,7 +39,7 @@ Every new session starts in onboarding state `boot`. The chain decider -- living
 
 You never call `i/hme-read mode=before` explicitly -- the briefing is woven into every Edit on a `/src/` file automatically by the pretooluse hook. Each step either advances state automatically or gets blocked with a one-line redirect telling you the exact next call. If a call gets denied, the reason is the lesson.
 
-**If you lose the thread mid-session**, run `i/status mode=all` -- it reports the current onboarding state, which step is in progress, what the rolling metrics look like, and what the most recent pipeline verdict was. From that output the correct next call is almost always obvious. `i/status mode=hme` is the narrower version when you only need the onboarding state.
+**If you lose the thread mid-session**, run `i/status mode=all` -- it reports the current onboarding state, which step is in progress, the rolling metrics, and the most recent pipeline verdict. The correct next call is in that output. `i/status mode=hme` is the narrower version when you only need the onboarding state.
 
 ## Other HME tools (use when needed)
 
