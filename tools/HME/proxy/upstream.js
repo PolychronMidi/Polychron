@@ -147,6 +147,11 @@ function tripEmergencyValve(lastErr) {
 
   emit({ event: 'proxy_emergency', reason: lastErr, source: 'emergency_valve', backoff_ms: _currentBackoffMs(), sequence: _trippedSequence + 1 });
 
+  // Persist BEFORE escalating sequence -- a watchdog respawn between
+  // here and the next persist would otherwise inherit the wrong
+  // sequence index.
+  _persistValveState();
+
   // Escalate the backoff schedule for the NEXT trip. Cap at the last entry.
   _trippedSequence = Math.min(_trippedSequence + 1, BACKOFF_SCHEDULE_MS.length - 1);
 }
