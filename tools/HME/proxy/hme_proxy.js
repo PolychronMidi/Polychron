@@ -1103,9 +1103,17 @@ function handleRequest(clientReq, clientRes) {
             }
           } else {
             recordUpstreamSuccess();
+            if (_consecutive429s > 0) {
+              console.error(`[hme-proxy] success -- resetting panic-shrink counter (was ${_consecutive429s})`);
+              _consecutive429s = 0;
+            }
           }
         } else if (status >= 200 && status < 300) {
           recordUpstreamSuccess();
+          if (_consecutive429s > 0) {
+            console.error(`[hme-proxy] success -- resetting panic-shrink counter (was ${_consecutive429s})`);
+            _consecutive429s = 0;
+          }
         }
 
         let final = null;
