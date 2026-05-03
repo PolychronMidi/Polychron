@@ -106,27 +106,15 @@ function tripEmergencyValve(lastErr) {
   const banner = `PROXY 400/4xx ESCAPE HATCH TRIPPED -- proxy in PASSTHROUGH mode for ~${backoffSec}s (backoff sequence ${_trippedSequence + 1}/${BACKOFF_SCHEDULE_MS.length}, auto-clears after window). Upstream rejected a proxy-mutated request: ${lastErr}. If this re-trips quickly, inspect tmp/claude-400-payload-*.json and fix the proxy mutation.`;
   console.error(`[hme-proxy] ${banner}`);
 
-  // LIFESAVER channel: hme-errors.log is read by lifesaver_inject every
-  // /v1/messages and userpromptsubmit; the new line surfaces in the next
-  // user-visible turn until the operator clears the watermark.
+  // LIFESAVER channel: lifesaver_inject reads hme-errors.log per request.
   const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
   try {
     fs.appendFileSync(errLog, `[${ts}] PROXY_EMERGENCY: ${banner}\n`);
   } catch (_e) { /* best effort */ }
 
-  // The previous valve-trip path also wrote `HME_PROXY_ENABLED=0` to .env
-  // as a "persistent visibility" signal. That bit user repeatedly: every
-  // restart inherited the disabled flag, locking them in passthrough until
-  // they manually fixed the env file. The in-memory _valveTripped already
-  // covers the current process's lifetime; a fresh restart should be a
-  // clean slate. Keep the lifesaver+console signals (loud enough), drop
-  // the .env mutation.
-
   emit({ event: 'proxy_emergency', reason: lastErr, source: 'emergency_valve', backoff_ms: _currentBackoffMs(), sequence: _trippedSequence + 1 });
 
-  // Persist BEFORE escalating sequence -- a watchdog respawn between
-  // here and the next persist would otherwise inherit the wrong
-  // sequence index.
+  // Persist BEFORE escalating sequence (watchdog-respawn safety).
   _persistValveState();
 
   // Escalate the backoff schedule for the NEXT trip. Cap at the last entry.
