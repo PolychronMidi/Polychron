@@ -100,7 +100,7 @@ i/evolve  focus=<axis>
 i/status                              # pipeline status
 i/state                               # unified state-machine snapshot (Horizon II seed)
 i/timeline                            # chronological audit trail of silent automations
-i/why     mode=<...>                    # 14 causality modes (see ONBOARDING.md)
+i/why     mode=<...>                    # 14 causality modes (see templates/ONBOARDING.md)
 i/hme-admin action=selftest
 i/todo    action=list
 i/hme-read target=<module>

@@ -47,7 +47,7 @@ The lab (`lab/run.js` + `lab/sketches.js`) is HME's experimental substrate. Lab 
 
 ## Mandatory Workflow
 
-The per-session walkthrough that enforces this workflow is documented in [ONBOARDING.md](ONBOARDING.md) -- a linear state machine driven by a chain-decider middleman ([onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py)) living inside the MCP server. New sessions start in state `boot` and graduate only after one full loop (selftest -> evolve -> edit -> review -> pipeline -> commit -> learn). The KB briefing that used to be a separate `read(target, mode='before')` step is now auto-chained into every `Edit` via the pretooluse hook.
+The per-session walkthrough that enforces this workflow is documented in [ONBOARDING.md](templates/ONBOARDING.md) -- a linear state machine driven by a chain-decider middleman ([onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py)) living inside the MCP server. New sessions start in state `boot` and graduate only after one full loop (selftest -> evolve -> edit -> review -> pipeline -> commit -> learn). The KB briefing that used to be a separate `read(target, mode='before')` step is now auto-chained into every `Edit` via the pretooluse hook.
 
 ### Before Editing Code
 

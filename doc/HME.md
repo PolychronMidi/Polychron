@@ -27,7 +27,7 @@
 | Evolution loop integration, mandatory per-session workflow, lab governance, autonomous ralph-loop | [HME_EVOLUTION_LOOP.md](HME_EVOLUTION_LOOP.md) |
 | Testing & chaos battery (smoke tests + chaos injectors) | [HME_TESTING.md](HME_TESTING.md) |
 | Self-coherence verifier substrate, HCI engine, LIFESAVER no-dilution rule, detector calibration, session evolutions log, Phase 7 four-arc framework | [HME_SELF_COHERENCE.md](HME_SELF_COHERENCE.md) |
-| Onboarding state machine + per-session walkthrough | [ONBOARDING.md](ONBOARDING.md) |
+| Onboarding state machine + per-session walkthrough | [ONBOARDING.md](templates/ONBOARDING.md) |
 | Architectural trajectory each `i/state` / `i/why` / `i/timeline` tool advances | [HME_HORIZONS.md](HME_HORIZONS.md) |
 | Mental model for HME's role in evolution | [HME_MENTAL_MODEL.md](HME_MENTAL_MODEL.md) |
 | State ownership rules (single-writer registry, etc.) | [HME_STATE_OWNERSHIP.md](HME_STATE_OWNERSHIP.md) |
