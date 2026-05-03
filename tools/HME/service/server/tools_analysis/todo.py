@@ -217,6 +217,7 @@ def _format_todos(todos: list) -> str:
             "  i/todo action=critical                   -- list open critical only\n"
             "  i/todo action=done todo_id=N             -- mark #N done\n"
             "  i/todo action=clear                      -- drop completed (auto-archives full sets)\n"
+            "  i/todo action=archive_now [text=\"...\"]    -- force-archive current SPEC+TODO regardless of phase state\n"
             "  i/todo action=ingest_from_spec           -- pull doc/templates/TODO.md Next-up\n"
             "  i/todo action=close_with_spec_update todo_id=N\n"
             "  i/todo action=phase_complete todo_id=N text=\"...\"\n"
