@@ -112,6 +112,7 @@ function isPassthroughMode() {
   const elapsed = Date.now() - _valveTrippedAt;
   if (elapsed >= _currentBackoffMs()) {
     _valveTripped = false;
+    _clearPersistedValveState();
     console.error(`[hme-proxy] valve auto-cleared after ${Math.round(elapsed/1000)}s backoff -- attempting proxy path on next request`);
     emit({ event: 'proxy_emergency_cleared', source: 'emergency_valve', backoff_ms: _currentBackoffMs() });
     return false;
