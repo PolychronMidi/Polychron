@@ -292,7 +292,8 @@ module.exports = {
       v.LIVE_PROBE === 'live_probe_missing' ||
       v.PHASE_GATE === 'phase_skipped' ||
       v.PILE_ON === 'pile_on' ||
-      v.FIX_WITHOUT_INVESTIGATION === 'fix_without_investigation';
+      v.FIX_WITHOUT_INVESTIGATION === 'fix_without_investigation' ||
+      v.COMMENT_BLOAT === 'comment_bloat';
     if (!willDeny) {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     }
