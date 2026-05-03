@@ -1417,13 +1417,7 @@ function handleRequest(clientReq, clientRes) {
             // partial buffer that arrived before destroy()).
             // stopHookCeremonyStripRewrite is the prose-shape fallback
             // for when the agent ignores the fp-gate entirely.
-            // soloRationaleTrimRewrite runs near the end of the chain
-            // (after fpGate / ceremony-strip / ack-strip have had their
-            // shot) -- it's the SURGICAL fallback that trims a trailing
-            // solo-rationale paragraph from an otherwise-substantive
-            // response, preserving the substantive prefix. Always-on, no
-            // priorUserWasDeny gate -- solo-rationale is bypass-prose
-            // regardless of trigger context.
+            // soloRationaleTrim runs last; surgical trim of trailing rationale paragraph.
             rewriters: [fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
           });
           // Populate the priorUserWasDeny flag the ack-strip rewriter
