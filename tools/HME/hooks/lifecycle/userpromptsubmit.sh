@@ -160,14 +160,8 @@ print(json.dumps(payload))
   fi
 fi
 
-# HME critical todos -- surface unresolved critical items at turn start
-# Reads the HME store, filters critical+open items, emits them so the agent
-# cannot miss LIFESAVER alerts, high-priority work, or unresolved trigger notes.
-#
-# FAIL-LOUD: capture stderr; ImportError / module-load failures used to
-# vanish into `2>/dev/null` + bare `except: pass`, leaving the agent blind
-# to critical TODOs. Now: any python crash is bridged to hme-errors.log
-# so LIFESAVER picks it up next turn.
+# HME critical todos: surface unresolved critical+open items at turn start.
+# FAIL-LOUD: python stderr -> hme-errors.log so import failures don't go silent.
 _UPS_CRIT_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ups_crit_err_$$")
 CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>"$_UPS_CRIT_ERR"
 from server.tools_analysis.todo import list_critical
