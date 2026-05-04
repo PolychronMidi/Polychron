@@ -56,3 +56,20 @@ def kb_devlog_dir() -> str:
 
 def errors_log() -> str:
     return os.path.join(project_root(), "log", "hme-errors.log")
+
+
+def runtime_dir() -> str:
+    """Durable inter-script state. NOT tmp/ -- tmp/ is genuinely throwaway."""
+    return os.path.join(project_root(), "runtime", "hme")
+
+
+def supervisor_abandoned_sentinel() -> str:
+    return os.path.join(runtime_dir(), "supervisor-abandoned")
+
+
+def fp_gate_armed_flag() -> str:
+    return os.path.join(runtime_dir(), "fp-gate-armed.flag")
+
+
+def stop_detector_verdicts() -> str:
+    return os.path.join(runtime_dir(), "stop-detector-verdicts.env")
