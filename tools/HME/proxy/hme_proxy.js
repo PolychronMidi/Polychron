@@ -894,7 +894,16 @@ function handleRequest(clientReq, clientRes) {
     }
 
     const transport = upstream.tls ? https : http;
-    const upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
+    // Single-shot retry on transient connection drops; opt-in via env flag.
+    // Anthropic gateway intermittently closes TLS mid-frame; one retry usually
+    // succeeds. Distinct from rate-limit retry (we never retry 429).
+    const _CONNRETRY_ENABLED = process.env.HME_PROXY_CONNRESET_RETRY === '1';
+    const _CONNRETRY_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE']);
+    let _connAttempt = 0;
+    let upstreamReq;
+    function _spawnUpstream() {
+      _connAttempt++;
+    upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
       // Initial-response success/failure determination is DEFERRED until
       // after the full body is buffered (see upstreamRes.on('end') below
       // and _detectUpstreamFailure). This is because Anthropic returns
