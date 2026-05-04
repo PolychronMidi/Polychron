@@ -156,18 +156,6 @@ function _recordFire(hits) {
   } catch (_e) { /* silent-ok: telemetry only -- fire log is recoverable */ }
 }
 
-/**
- * Public read-side API for sibling middleware. Returns
- * {fired, acted, rate} for the named enricher, or {fired:0, acted:0, rate:0}
- * if no data yet. Sibling enrichers can call this to self-throttle when
- * their acted-upon rate falls below a threshold (the adaptive layer the
- * iter-145 honesty pass named as "not yet built").
- */
-function getEnricherEfficacy(name) {
-  const rates = _loadRates();
-  return rates[name] || { fired: 0, acted: 0, rate: 0 };
-}
-
 function _textOf(toolResult) {
   const c = toolResult && toolResult.content;
   if (typeof c === 'string') return c;
@@ -191,8 +179,6 @@ function _scanInputForIdentifiers(toolUseInput, identifiers) {
 
 module.exports = {
   name: 'context_budget',
-  // Exposed for sibling middleware to self-throttle.
-  getEnricherEfficacy,
 
   onToolResult({ toolUse, toolResult, ctx }) {
     _prunePending();
