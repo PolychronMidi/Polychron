@@ -1,16 +1,8 @@
-// drumKitRotator.js - per-phrase kit-preset rotation. Preserves the
-// foundational dominant drums (kick1+kick3 for L1, kick2+kick5+kick7 for
-// L2) selected for their distinct velocity ranges (kick1/2 are the
-// loudest 111-127, snare1/2 loudest 99-111). Each preset varies which
-// SUPPLEMENTARY drums flavor the phrase: alt-kick fill identity,
-// mix-fill secondary drums, tail snare, end-accent snare, and the
-// cymbal/conga that characterize the phrase's color.
-//
-// Both the preset choice AND the specific drums within each slot rotate
-// per phrase via sectionIndex*11 + phraseIndex*3 (multipliers coprime
-// with the 4-preset cycle so every new phrase advances). L1 and L2
-// pick from disjoint preset banks so the two layers never collide on
-// the same drum identity.
+// drumKitRotator: per-phrase kit-preset rotation. Foundational drums
+// (kick1+kick3 L1, kick2+kick5+kick7 L2) preserved; supplementary drums
+// (alt-kick, mix-fill, tail/end-accent snare, cymbal/conga) rotate.
+// Index = sectionIndex*11 + phraseIndex*3 (coprime with 4-preset cycle).
+// Disjoint banks per layer so L1/L2 never share drum identity.
 
 const V_kitRotator = validator.create('drumKitRotator');
 
