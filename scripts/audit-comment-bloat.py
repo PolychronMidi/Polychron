@@ -84,6 +84,16 @@ def _is_annotation(stripped: str) -> bool:
     return any(stripped.startswith(p) for p in _ANNOTATION_PREFIXES)
 
 
+def _is_top_directive(stripped: str, ext: str) -> bool:
+    # Lines that may legitimately precede the top-of-file doc block
+    # without disqualifying the TOP_EXEMPT_MAX exemption.
+    if stripped.startswith("#!"):
+        return True
+    if ext in (".js", ".ts") and stripped in ("'use strict';", '"use strict";'):
+        return True
+    return False
+
+
 def _scan_file(path: str, ext: str) -> list:
     """Yield {line, block_len} for each comment block exceeding WARN_LINES.
     The first comment block at file top (after any shebang) is exempt
@@ -112,7 +122,7 @@ def _scan_file(path: str, ext: str) -> list:
                 if not top_exempt:
                     findings.append({"line": block_start, "block_len": block_len})
                 seen_first_block = True
-            if s and not _is_comment_line(s, ext) and not s.startswith("#!"):
+            if s and not _is_comment_line(s, ext) and not _is_top_directive(s, ext):
                 seen_non_blank_non_comment = True
             block_start = None
             block_len = 0
