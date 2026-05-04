@@ -20,11 +20,8 @@ if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
   PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true
 fi
 
-# Auto-commit snapshot (fail-fast-hardened -- see _autocommit.sh).
-# The helper records failures to four independent channels and owns the
-# sticky fail flag + attempt counter that survives hook restarts. We must
-# NOT die on its return code; the LIFESAVER scan below and the
-# AutocommitHealthVerifier will surface any failure.
+# Auto-commit snapshot via _autocommit.sh (4-channel failsafe, sticky fail
+# flag, attempt counter). Don't die on return code; LIFESAVER surfaces failures.
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_autocommit.sh"
 _ac_do_commit userpromptsubmit.sh || true
 
