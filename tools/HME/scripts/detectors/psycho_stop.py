@@ -72,12 +72,8 @@ def _is_assistant_event(event: dict) -> bool:
     return is_assistant(event)
 
 
-# Ideation markers -- when the user's last message asks for ideas /
-# opinions / comparisons / explanations rather than giving a directive,
-# Pattern C ("survey-and-ask") becomes a legitimate collaborative
-# response, not deferral. Without this gate, psycho_stop fires on every
-# "what would you suggest" -> "here are options, which?" turn -- exactly
-# the wrong incentive for a brainstorming exchange.
+# Ideation markers: when user asks for ideas/opinions/explanations,
+# Pattern C survey-and-ask is legitimate brainstorming, not deferral.
 _IDEATION_MARKERS = (
     # Question stems that signal "tell me / show me, don't do"
     "what would", "what could", "what should we", "what do you think",
