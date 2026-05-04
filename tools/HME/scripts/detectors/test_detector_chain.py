@@ -89,12 +89,8 @@ def _resolve_project_root() -> str:
 
 
 def _write_transcript(events: list[dict]) -> Path:
-    # Write the fixture under $PROJECT_ROOT/tmp/ rather than the system
-    # temp dir. fabrication_check's path-safety guard restricts
-    # transcripts to ~/.claude/projects/ or $PROJECT_ROOT/tmp/ to
-    # prevent malicious paths from leaking secrets via metric writes.
-    # System /tmp is excluded -> fixture-based tests for that detector
-    # silently no-op. Caught April 2026 during the dual-purpose audit.
+    # Fixture under $PROJECT_ROOT/tmp/ (not /tmp/) so fabrication_check's
+    # path-safety guard accepts it (only ~/.claude/projects/ or PROJECT_ROOT/tmp).
     project_root = _resolve_project_root()
     if project_root:
         tmp_dir = Path(project_root) / "tmp" / "detector-test-fixtures"
