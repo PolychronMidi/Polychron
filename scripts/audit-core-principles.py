@@ -94,22 +94,7 @@ _FAILFAST_PATTERNS = [
 ]
 
 
-def _loc(path):
-    """Return non-empty, non-comment line count. Quick, not exact --
-    discounts full-line // comments and blank lines."""
-    n = 0
-    try:
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                stripped = line.strip()
-                if not stripped:
-                    continue
-                if stripped.startswith("//"):
-                    continue
-                n += 1
-    except Exception:
-        return 0
-    return n
+from loc_count import cloc as _loc  # SSoT shared with boyscout_loc.py
 
 
 def _walk_js(root):
