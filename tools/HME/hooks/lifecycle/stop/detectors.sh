@@ -71,9 +71,8 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   [[ "$POLL_COUNT" =~ ^[0-9]+$ ]] || POLL_COUNT=0
 fi
 
-# Persist verdicts for downstream consumers (anti_patterns.sh, work_checks.sh).
-# The chain runs each stage in a subshell now, so consumers can no longer
-# rely on inherited bash variables -- they source this file at the top.
+# Persist verdicts: each stage runs in its own subshell so consumers
+# (anti_patterns.sh, work_checks.sh) read this file rather than inherit env.
 _DETECTOR_VERDICTS_FILE="${PROJECT_ROOT:-/home/jah/Polychron}/tmp/hme-stop-detector-verdicts.env"
 mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
 {
