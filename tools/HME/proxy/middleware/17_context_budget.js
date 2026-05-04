@@ -12,21 +12,10 @@
  * its INPUT references any identifier injected by the prior tool's
  * enricher footers. If yes, the prior enricher was acted-upon --
  * increment its hit/acted counters in
- * tmp/hme-enricher-efficacy-rates.json. The aggregate rates are
- * available to sibling middleware via `getEnricherEfficacy(name)`
- * for self-throttling decisions.
+ * tmp/hme-enricher-efficacy-rates.json.
  *
- * What this is now (post-wiring):
- *   - WRITE side: fire-event log to hme-enricher-efficacy.jsonl
- *   - READ side: per-enricher rate file at hme-enricher-efficacy-rates.json
- *     ({"dir_context": {"fired": N, "acted": M, "rate": M/N}, ...})
- *   - PUBLIC: getEnricherEfficacy(name) -> {fired, acted, rate}
- *
- * What this is NOT yet (named honestly so the gap is visible):
- *   - Adaptive throttling: enrichers don't yet read their own rates
- *     to self-demote. Each enricher could query getEnricherEfficacy
- *     and skip when its rate falls below a threshold; that's the
- *     next layer. The MEASUREMENT side is now load-bearing.
+ * Adaptive self-throttling (enrichers reading their own rates) is the
+ * not-yet-wired next layer; measurement side is load-bearing.
  *
  * Enricher identifier extractors:
  *   - dir_context: `[HME dir:<name>]` -> name as identifier
