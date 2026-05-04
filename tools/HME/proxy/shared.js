@@ -44,11 +44,8 @@ function sessionKey(payload) {
   return 'unknown';
 }
 
-// mtime-checked file cache. Cache by path, invalidate on mtime change,
-// optional clock TTL fallback for expensive parses. Loader exceptions
-// propagate; not swallowed.
-// Usage: const cache = mtimeCache({ ttlMs: 60_000 });
-//        const value = cache.get(absPath, () => parseExpensively(absPath));
+// mtime-checked file cache; invalidate on mtime change, optional clock TTL.
+// Usage: mtimeCache({ttlMs:60_000}).get(absPath, () => parseExpensively(p))
 const fsForCache = require('fs');
 function mtimeCache({ ttlMs = 0 } = {}) {
   const _entries = new Map();
