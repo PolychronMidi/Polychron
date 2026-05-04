@@ -1,17 +1,8 @@
-// Inside a moduleLifecycle.declare({ ..., init: (deps) => { BODY } }) body,
-// references to OTHER declared modules must flow through the deps argument
-// (or be aliased from deps at the top of init). Bare global references like
-// `metaProfiles.foo()` work today via the namespace, but they bypass the
-// dependency contract -- the module's deps array doesn't reflect what it
-// actually uses, and changing the registry's resolution path won't be
-// type-safe.
-//
-// This rule warns (not errors) so existing modules can be migrated
-// incrementally. After the sweep, promote to error to lock in semantic DI.
-//
-// Allow-listed: globals that are intentionally legacy (validator,
-// controllerConfig, etc. are commonly aliased from deps via `const X = deps.X`
-// at init top -- the rule detects that alias and stops flagging).
+// ESLint: inside `moduleLifecycle.declare({ init: (deps) => {...} })`, ban
+// bare references to OTHER declared modules -- must flow through deps (or
+// be aliased `const X = deps.X` at init top). Warn (not error) for incremental
+// migration. Allow-listed globals (validator, controllerConfig, etc.) when
+// alias detected.
 
 'use strict';
 
