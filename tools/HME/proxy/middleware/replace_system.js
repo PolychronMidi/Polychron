@@ -82,20 +82,11 @@ module.exports = {
     if (!payload) return;
     const canonical = _loadCanonical();
     if (canonical === null) return; // file missing/empty -> no-op
-    // Two-block layout, matching the canonical Claude Code envelope used
-    // by horselock/claude-code-proxy and John-Rood/claude-proxy. The
-    // OAuth-public endpoint's gateway uses the FIRST system block as a
-    // client-fingerprint check: if block[0].text doesn't match the exact
-    // canonical identity sentence on its own, the request is routed to a
-    // stricter rate-limit bucket (small requests pass, large ones 429
-    // with NO anthropic-ratelimit-* headers -- the gateway-rejection
-    // signature, distinct from real ITPM exhaustion). Concatenating the
-    // identity phrase with our custom content into a single block (the
-    // pre-2026-05 layout) failed this check.
-    //
-    // Block 0: the EXACT identity sentence, alone, no cache_control.
-    // Block 1: HME's canonical custom content, with the cache_control
-    // breakpoint so the bulk of the system prefix is cached.
+    // Two-block layout (canonical Claude Code envelope). OAuth gateway
+    // fingerprints block[0]: must be the EXACT identity sentence alone,
+    // else routed to a strict bucket (large requests 429 without
+    // anthropic-ratelimit-* headers -- distinct from real ITPM exhaustion).
+    // Block 1 = HME custom content + cache_control breakpoint.
     payload.system = [
       {
         type: 'text',
