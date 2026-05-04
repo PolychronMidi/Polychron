@@ -512,11 +512,8 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: daemon thread hygiene -- probe failed: {type(_e).__name__}: {_e}")
 
-    # Probe 3: every GPU's reported memory usage must be attributable to
-    # a declared process. Unattributed VRAM means a dead process left
-    # stuck allocations or a user-space CUDA context is squatting -- both
-    # block coder/arbiter respawn with silent spawn_failed. Uses
-    # nvidia-smi sum vs per-process used to compute residual.
+    # Probe 3: GPU VRAM attribution. Unattributed VRAM = stuck allocation
+    // /squatting CUDA context -- both block respawn with silent spawn_failed.
     try:
         import subprocess as _sp_probe2
         gpu_totals = _sp_probe2.check_output(
