@@ -1,17 +1,9 @@
 #!/usr/bin/env bash
-# Integration smoke test -- fires /indexing-mode end-to-end and asserts:
-#   1. daemon + worker are reachable at boot
-#   2. coder is healthy before the cycle starts
-#   3. /indexing-mode returns a non-error result within 120s
-#   4. coder returns to /health=ok within 60s of the cycle ending
-#   5. selftest remains READY (0 FAILs) after the cycle
-#
-# This script catches every regression class from the 2026-04-22 incident:
-#   - Silent "not started" sentinel (the daemon would return error, assertion 3 fails)
-#   - Duplicate-supervisor race (would trip llama-server count probe, assertion 5 fails)
-#   - Stuck cuda:1 context blocking respawn (assertion 4 fails after 60s)
-#
-# Exit codes: 0=pass, non-zero=specific assertion failure.
+# Integration smoke test for /indexing-mode end-to-end. Asserts:
+# (1) daemon+worker reachable at boot, (2) coder healthy pre-cycle,
+# (3) /indexing-mode returns non-error <120s, (4) coder /health=ok <60s
+# post-cycle, (5) selftest READY (0 FAILs) post-cycle.
+# Exit: 0=pass, nonzero=specific assertion failed.
 set -u
 set -o pipefail
 
