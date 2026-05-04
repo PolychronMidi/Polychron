@@ -74,11 +74,8 @@ _ac_record_failure() {
   fi
 }
 
-#
-# Helper: begin an autocommit attempt. Increment counter FIRST so that if
-# we die before recording success (segfault, SIGKILL, disk full, etc.),
-# the counter stays elevated and the HCI verifier catches the wedge on the
-# next run.
+# Begin attempt: increment counter FIRST so a die-before-success leaves
+# elevated count for HCI verifier to catch.
 
 _ac_begin() {
   mkdir -p "$_AC_STATE_DIR" 2>/dev/null || true

@@ -5,7 +5,7 @@ Original 2842-line file split into tools/HME/scripts/verify_coherence/
 per package structure. This thin wrapper preserves the
 `python3 tools/HME/scripts/verify-coherence.py` invocation path that
 existing callers (main-pipeline.js, chain-snapshot.py, emit-hci-signal.py,
-build-dashboard.py, suggest-verifiers.py, verify-numeric-drift.py) use.
+build-dashboard.py, verify-numeric-drift.py) use.
 
 Python identifiers can't contain `-`, so the package itself uses the
 underscored form `verify_coherence`. This shim's hyphenated name lives
