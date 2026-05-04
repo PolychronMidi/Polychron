@@ -4,12 +4,8 @@ require('../index');
 main = async function main() { console.log('Starting main.js ...');
 
 const boot = mainBootstrap.parseControls();
-// Drain deferred manifests + run registerInitializer init functions BEFORE
-// assertBootstrapGlobals(). Declared modules with cross-subsystem deps
-// (e.g. harmonicRhythmTracker depending on eventBus) defer at declare()
-// time because their deps load later in the require chain. initializeAll's
-// topo-sort drains them and binds globals; only then can assertBootstrapGlobals
-// validate every name.
+// Drain deferred manifests + run registerInitializer init BEFORE
+// assertBootstrapGlobals -- topo-sort binds globals so the asserts can pass.
 moduleLifecycle.initializeAll();
 mainBootstrap.assertBootstrapGlobals();
 const EVENTS = eventCatalog.names;
@@ -104,12 +100,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   if (sectionIndex > 0) sectionMemory.snapshot();
   crossLayerLifecycleManager.resetSection();
   stutterVariants.resetSection();
-  // Select section type from SECTION_TYPES based on position.
-  // Substrate-level override: when the active metaprofile declares
-  // sectionArc and its length matches totalSections, the metaprofile
-  // owns the structural sequence -- this section's type is read from
-  // sectionArc[sectionIndex]. Otherwise fall through to default logic
-  // (intro / coda anchored at the ends, weighted-random in between).
+  // Select section type. Metaprofile sectionArc (when length matches) overrides
+  // the default position-based pick (intro/coda at ends, weighted in between).
   let activeSectionType = null;
   const _arcOverride = metaProfiles.getSectionArcOverride();
   if (_arcOverride && _arcOverride.length === totalSections && Array.isArray(SECTION_TYPES) && SECTION_TYPES.length > 0) {
@@ -127,25 +119,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   currentSectionDynamics = activeSectionType ? activeSectionType.dynamics : null;
   sectionBpmScale = activeSectionType && Number.isFinite(activeSectionType.bpmScale) ? activeSectionType.bpmScale : 1.0;
 
-  // R38 E3: per-section metaprofile rotation for cross-section spectral variety.
-  // perceptual_complexity_avg (EnCodec codebook-token entropy) regressed 3 rounds
-  // because sections were spectrally uniform (R38 cb0 span only 0.43 across 7
-  // sections). Rotating metaprofiles per section produces different regime
-  // targets / coupling density / tension envelope / energy envelope -> different
-  // composition character -> more differentiated EnCodec tokens per section.
-  // Respects ACTIVE_META_PROFILE pin: rotation only fires when user has NOT
-  // pinned a single profile. Candidate set is data-driven from each profile's
-  // sectionAffinity. Dwell guard skips switches before minDwellSections elapses.
+  // Per-section metaprofile rotation for spectral variety. Skipped when
+  // ACTIVE_META_PROFILE is pinned. Candidate set from each profile's
+  // sectionAffinity; dwell guard enforces minDwellSections between switches.
   if (!ACTIVE_META_PROFILE) {
     const sectionTypeKey = currentSectionType || 'exposition';
     const prevProfile = metaProfiles.getActiveName();
 
-    // Step 1: reactive triggers. Build a snapshot from systemDynamicsProfiler
-    // and let any profile whose `triggers.enter` condition matches
-    // pre-empt the affinity-based pick (subject to dwell). Profile with the
-    // highest priority wins. Snapshot fields match real top-level
-    // properties on getSnapshot() so trigger declarations like
-    // `couplingStrength > 0.7` resolve directly.
+    // Step 1: reactive triggers. Profile whose triggers.enter matches the
+    // sysDyn snapshot pre-empts the affinity pick (highest priority wins,
+    // subject to dwell). Snapshot fields mirror getSnapshot() top-level keys.
     const sysDyn = systemDynamicsProfiler.getSnapshot();
     const trigSnapshot = {
       couplingStrength: sysDyn ? sysDyn.couplingStrength : 0,
@@ -185,12 +168,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     metaProfiles.setActive(chosen, sectionIndex);
   }
 
-  // Activation progress for time-varying envelope axes: how far the
-  // currently-active profile has held relative to its minDwellSections.
-  // 0.0 = just activated, 1.0 = at-or-past dwell minimum. Controllers
-  // calling progressedScaleFactor read this to resolve envelopes.
-  // Computed AFTER setActive (above) so progress reflects this section's
-  // newly-chosen profile, not the previous one.
+  // Activation progress for envelope axes (0=just activated, 1=at-or-past
+  // dwell). Computed AFTER setActive so it reflects this section's profile.
   {
     const activeProfileObj = metaProfiles.getActive();
     const since = metaProfiles.getActiveSinceSection();
@@ -275,14 +254,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     setUnitTiming('phrase');
     sectionL1BeatCount += layerPass.runLayerPass('L1', phraseFamily, { withConductorTick: true }, { boot, composerCtx });
 
-    // R69 E5: Periodic beat-interval diagnostic snapshots. Section-boundary
-    // snapshots give 3-7 data points per run. Periodic snapshots every 20 L1
-    // beats add intra-section resolution for diagnosing mid-section dynamics
-    // (e.g. phase collapse, trust balloon) that section snapshots miss.
-    // R70 E3: Periodic snapshots promoted to full telemetry format
-    // (parity with section-boundary snapshots). R69 periodic snapshots
-    // had sparse format, missing trust/coupling detail needed to diagnose
-    // mid-section flicker-phase spikes and trust shifts.
+    // Periodic beat-interval diagnostic snapshots every 20 L1 beats add
+    // intra-section resolution that section-boundary snapshots miss.
     if (traceDrain.isEnabled() && sectionL1BeatCount > 0 && sectionL1BeatCount % 20 === 0) {
       const mainPSnap = systemDynamicsProfiler.getSnapshot();
       const mainPHome = couplingHomeostasis.getState();
