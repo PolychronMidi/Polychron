@@ -74,18 +74,10 @@ moduleLifecycle.declare({
         c.push(onEvt, offEvt);
         return;
       }
-      // E20: HyperMeta attenuator score bias. When hypermeta signals a sparse
-      // window (e20AttenuatorBias < 1.0), scores are suppressed so that voice
-      // cap cuts more aggressively -- structurally reducing note density at
-      // the survival-ranking level.
-      // Proportional correction: suppression scales with how high the score is
-      // relative to a neutral midpoint (~4.0). Low scores (quiet notes that are
-      // already near silence) are barely touched; high scores (loud/prominent
-      // notes with elevated crossMod) receive the full bias reduction. This
-      // prevents over-pruning of naturally sparse content during sparse windows.
-      // scoreFraction: 0 at score <= 4.0, 1.0 at score >= 8.0.
-      // E20 is skipped during exploring: consistent with E13/E19 -- exploring
-      // passages should not receive sparse window suppression at any layer.
+      // E20 attenuator score bias: e20AttenuatorBias<1.0 suppresses scores
+      // (voice cap cuts more) for sparse windows. Proportional via scoreFraction
+      // (0 at <=4.0, 1.0 at >=8.0) so quiet notes barely touched. Skipped
+      // during exploring (consistent with E13/E19).
       const e20Regime = (() => {
         const sn = systemDynamicsProfiler.getSnapshot();
         return sn ? sn.regime : '';
