@@ -187,17 +187,17 @@ def post_cascade_predict(handler, body: dict) -> None:
 
 def post_validate(handler, body: dict, *, executor: concurrent.futures.Executor,
                   bounded_validate) -> None:
-    """Stay under the 5s client timeout: if search takes >3s, return a deferred
-    response rather than letting the client time out. Uses a shared module-level
-    executor (threads are reused not respawned) + semaphore to cap concurrent
-    in-flight validates so timeout pile-ups can't accumulate runaway workers."""
+    """Soft-deadline /validate: if search exceeds the worker deadline (from
+    config/timeouts.json validate.worker_deferred_sec), return deferred rather
+    than letting the client time out. Shared executor + semaphore cap in-flight
+    calls so timeout pile-ups can't accumulate runaway workers."""
     query = body.get("query", "")
     if not query:
         handler._json(400, {"error": "query required"})
         return
     _fut = executor.submit(bounded_validate, query)
     try:
-        result = _fut.result(timeout=3.0)
+        result = _fut.result(timeout=_VALIDATE_WORKER_DEADLINE_SEC)
     except concurrent.futures.TimeoutError:
         result = {"warnings": [], "blocks": [], "deferred": "search timeout -- engine under load"}
     handler._json(200, result)
