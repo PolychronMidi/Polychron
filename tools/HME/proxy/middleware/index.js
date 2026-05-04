@@ -173,16 +173,10 @@ function nexusHas(type, payload) {
 // re-serialize the body before forwarding upstream.
 let _pipelineDirty = false;
 
-// Idempotency guard for footer injection. Because _processed is in-memory,
-// a proxy restart causes all historical tool_results to look "new" and get
-// re-enriched. Each middleware passes its OWN marker to the guard -- not a
-// shared HME prefix -- so multiple middleware can enrich the same result
-// without blocking each other, while still preventing self-restacking.
+// Footer-idempotency guard: each middleware passes its own marker so
+// multiple can enrich without restacking on proxy restart.
 
-// Retry-count map for middleware that need to re-enter on future turns
-// (e.g. background_dominance when a task hasn't finished within the
-// current turn's wait window). Bounded per tool_use.id so a permanently
-// stuck task doesn't retry forever.
+// Retry-count map: bounded per tool_use.id so stuck tasks don't loop forever.
 const _retryCount = new Map(); // tool_use.id -> attempts
 const _MAX_RETRIES = 3;
 
