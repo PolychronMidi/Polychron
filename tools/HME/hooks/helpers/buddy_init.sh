@@ -1,24 +1,9 @@
 #!/usr/bin/env bash
-# Buddy system init helper -- invoked by sessionstart.sh on every new HME
-# session when .env BUDDY_SYSTEM=1. Spawns BUDDY_COUNT persistent Claude
-# Code subagent sessions whose sids are recorded in tmp/hme-buddy-N.sid
-# (or tmp/hme-buddy.sid for N=1, back-compat with single-buddy era).
-#
-# Each co-buddy is a separate `claude --resume <sid>` long-lived session
-# with its own accumulated context. The dispatcher (server-side
-# dispatch_thread() in agent_direct.py) picks tasks off the queue dir
-# and routes each to a co-buddy whose tier matches via the
-# `effective = max(item_tier, buddy_floor)` rule. Specialization emerges
-# per buddy from task affinity rather than explicit assignment.
-#
-# Idempotent: existing sid files (non-empty) are preserved. Missing slots
-# are spawned. The whole system can be toggled off via .env BUDDY_SYSTEM=0.
-#
-# Designed to be FAST + non-blocking when invoked from sessionstart:
-# the actual claude subprocesses are launched with disown so SessionStart
-# returns immediately. Sid files appear once init completes
-# (~10-20s after invocation per buddy); calls before that fall through
-# to the ephemeral dispatch path.
+# Buddy init: spawn BUDDY_COUNT persistent `claude --resume <sid>` sessions,
+# sids in tmp/hme-buddy-N.sid (tmp/hme-buddy.sid for N=1). Routed by
+# agent_direct.dispatch_thread via `effective = max(item_tier, buddy_floor)`.
+# Idempotent (preserves existing non-empty sid files), gated by .env
+# BUDDY_SYSTEM=1, non-blocking spawn (disowned so SessionStart returns fast).
 set -euo pipefail
 
 _REPO_ROOT="${CLAUDE_PROJECT_DIR:-${PROJECT_ROOT:-/home/jah/Polychron}}"
