@@ -413,17 +413,9 @@ async function _injectHmeTools(payload) {
   if (!Array.isArray(payload.tools)) payload.tools = [];
   try {
     const schemas = await hmeDispatcher.getSchemasCached();
-    // CACHE FIX: do NOT strip cache_control markers Claude Code attached.
-    // Stripping them invalidates Anthropic's prompt cache on every
-    // request -- the tools prefix is part of the cache key, and removing
-    // the breakpoint tells Anthropic "no cache" for that prefix. The
-    // previous comment claimed this prevented a 400 error, but the 400
-    // only fires when WE add a ttl=5m marker AFTER a ttl=1h marker
-    // Claude Code already placed. Solution: don't add our own markers
-    // (we don't need to -- Claude Code's are sufficient), and leave the
-    // existing markers alone.
-    // [no cache_control mutation here]
-    // Skip any HME_ tool that's already present (idempotent on retries).
+    // Do NOT strip Claude Code's cache_control markers -- they're part of
+    // the cache key. Don't add our own either (our ttl=5m after CC's ttl=1h
+    // produces a 400). Skip already-present HME_ tools (retry-idempotent).
     const existing = new Set(payload.tools.map((t) => t && t.name).filter(Boolean));
     let injected = 0;
     for (const s of schemas) {
