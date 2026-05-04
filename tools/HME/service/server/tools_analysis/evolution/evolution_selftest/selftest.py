@@ -413,13 +413,8 @@ def hme_selftest(verbose: bool = False) -> str:
     # any of these three means the system's own description of its health
     # is a lie and investigation is blocked.
 
-    # Probe 1: exactly ONE llamacpp_daemon may run, and the llama-server
-    # instance count must not exceed the declared topology (arbiter + coder = 2).
-    # Tonight's duplicate-supervisor bug showed up as two supervisors
-    # racing to spawn the same models; catching "more than 2 llama-servers"
-    # or "more than 1 daemon" flags that class of bug directly.
-    # (Can't check ppid because llama-server is spawned start_new_session=True,
-    # so systemd reparents it after daemon restart -- legitimate behavior.)
+    # Probe 1: exactly ONE llamacpp_daemon, llama-server count <=2 (arbiter+coder).
+    # Catches duplicate-supervisor races. ppid check skipped (start_new_session=True).
     try:
         import subprocess as _sp_probe
         daemon_out = _sp_probe.run(
