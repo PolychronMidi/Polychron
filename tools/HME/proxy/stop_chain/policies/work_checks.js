@@ -370,13 +370,8 @@ module.exports = {
     saveComplStore(store);
 
     if (next === 1) {
-      // Round 1: targeted speculation-debt scan. If the agent's last
-      // text contains unverified-opinion phrases ("I worry", "might
-      // be", "worth investigating", etc.), name them specifically in
-      // the inject so the agent must resolve each to evidence or drop
-      // it. Without this, speculation accumulates across turns into
-      // permanent fog. Compresses the speculation->evidence distance
-      // by making the prompt actionable instead of generic.
+      // Round 1: targeted speculation-debt scan + named phrases in inject
+      // so each must resolve to evidence-or-drop (no permanent-fog accrual).
       const lastAssistant = lastAssistantText(transcriptPath);
       const specs = scanSpeculation(lastAssistant);
       if (specs.length > 0) {
