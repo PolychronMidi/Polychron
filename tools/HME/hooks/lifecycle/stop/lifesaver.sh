@@ -134,11 +134,12 @@ if [ -f "$ERROR_LOG" ]; then
     UNFIXED_SELF=$(printf '%s\n%s\n' "$UNFIXED_SELF_BY_TAG" "$UNFIXED_SELF_BY_SEV" | grep -v '^$' | sort -u || true)
     echo "$TURN_START_LINE" > "$WATERMARK"
     if [ -n "$UNFIXED_AGENT" ]; then
+      # Same softening as new-errors branch: additionalContext, not block.
       jq -n \
         --arg errors "$UNFIXED_AGENT" \
         --arg self "$UNFIXED_SELF" \
-        '{"decision":"block","reason":("[ALERT] LIFESAVER -- UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor -- informational, not your problem to fix from this turn):\n" + $self + "]" else "" end) + "\n\nThese errors were shown at turn start but NOT fixed. Fix them now.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
-      _stderr_verdict "BLOCK: lifesaver prior-turn"
+        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[ALERT] LIFESAVER -- UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin:\n" + $self + "]" else "" end) + "\n\nFix them now. Acknowledging without fixing is a CRITICAL VIOLATION.")}}'
+      _stderr_verdict "WARN: lifesaver prior-turn (additionalContext)"
       exit 0
     elif [ -n "$UNFIXED_SELF" ]; then
       # Self-origin observations only -- surface as additionalContext, don't block.
