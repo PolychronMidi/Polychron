@@ -1,16 +1,9 @@
-// harmonicJourney.js - Tonal center trajectory engine for cross-section/cross-layer coherence.
-//
-// Plans a key/mode journey across sections using music-theory relationships
-// (circle of fifths, relative major/minor, parallel modes, chromatic mediants).
-// Drives harmonicContext at section/phrase boundaries so every downstream consumer
-// (ChordComposer, MelodicDevelopmentComposer, voiceLeadingPriors, melodicPriors,
-// MotifComposer, scaleNormalization) responds automatically without modification.
-//
-// Design principles:
-//   - Every relationship is a *generative rule*, not a conformity constraint.
-//   - Each run produces a unique journey; no two compositions follow the same path.
-//   - Arc-aligned boldness: opening/resolution stay close, climax allows distant moves.
-//   - L2 gets a *complementary* relationship to L1 (same key, relative, or parallel).
+// harmonicJourney: tonal-center trajectory engine. Plans key/mode journey
+// across sections via music-theory relationships (circle of fifths, relative
+// major/minor, parallel modes, chromatic mediants). Drives harmonicContext
+// at section/phrase boundaries so ChordComposer/Melodic/Motif/scaleNorm
+// respond without modification. Generative (not conformity), arc-aligned
+// boldness, L2 complementary to L1.
 
 /**
  * @typedef {Object} JourneyStop
