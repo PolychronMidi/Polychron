@@ -245,23 +245,11 @@ def _background_load():
 threading.Thread(target=_background_load, daemon=True, name="HME-worker-startup").start()
 
 
-# Phase-B watchdog -- reliable-under-GIL-contention brute-force timeout.
-#
-# _active_tools maps tool-thread-id -> {"name", "start_ts", "hard_kill_s"}.
-# _post_tool registers each tool-thread it spawns and deregisters on
-# completion. A dedicated watchdog thread polls every 5s; if any
-# registered tool has been running longer than its hard_kill_s budget,
-# the watchdog sends SIGTERM to os.getpid() -- the entire worker process
-# exits and the supervisor respawns it. Brute, but OS-signal-driven and
-# independent of the GIL, so it fires EVEN WHEN Python's Thread.join
-# timeout mechanism is starved.
-#
-# Why this is necessary: during heavy reasoning synthesis (many threads
-# contending for GIL), the HTTP-handler thread that invoked .join(timeout)
-# may not get scheduled to check the clock, causing the graceful 504
-# path in _post_tool to sleep past deadline indefinitely. Phase-B runs
-# in its own thread that does time.sleep(5) (releases GIL and always
-# wakes) so it reliably catches stuck tools and breaks out via signal.
+# Phase-B watchdog: GIL-contention-resistant brute timeout. _active_tools
+# maps tool-thread-id -> {name, start_ts, hard_kill_s}; dedicated thread
+# polls q5s and SIGTERMs os.getpid() on overrun (supervisor respawns).
+# Necessary because Thread.join(timeout) starves under GIL contention;
+# time.sleep(5) reliably wakes and catches stuck tools.
 _active_tools: dict = {}
 _active_tools_lock = threading.Lock()
 
