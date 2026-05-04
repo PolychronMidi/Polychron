@@ -66,6 +66,25 @@ def main(argv: list[str]) -> int:
         sys.stderr.write("emit.py: missing --event=NAME\n")
         return 2
 
+    # Trace-tree linkage (lesson from langsmith RunTree). Auto-link emissions
+    # into a hierarchical trace via env-var inheritance: subprocess chains
+    # automatically share trace_id; a child sets HME_PARENT_RUN_ID before
+    # spawning grandchildren to nest deeper. CLI flags override env.
+    if "trace_id" not in fields:
+        env_trace = os.environ.get("HME_TRACE_ID")
+        fields["trace_id"] = env_trace if env_trace else str(uuid.uuid4())
+    if "parent_run_id" not in fields:
+        env_parent = os.environ.get("HME_PARENT_RUN_ID")
+        if env_parent:
+            fields["parent_run_id"] = env_parent
+    if "run_id" not in fields:
+        fields["run_id"] = str(uuid.uuid4())
+    # dotted_order: parent + "." + this_run for lexicographic tree-ordering.
+    if "dotted_order" not in fields:
+        env_dotted = os.environ.get("HME_PARENT_DOTTED_ORDER")
+        own = f"{fields['ts']}_{fields['run_id'][:8]}"
+        fields["dotted_order"] = f"{env_dotted}.{own}" if env_dotted else own
+
     if skip_append:
         return 0
 
