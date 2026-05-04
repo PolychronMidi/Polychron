@@ -520,38 +520,17 @@ function handleRequest(clientReq, clientRes) {
     const _sessionForTelemetry = (payload ? sessionKey(payload) : 'no-payload');
 
     const _passthrough = isPassthroughMode();
-    // Reactive size compaction. ONLY runs when the escape hatch has
-    // already tripped (passthrough mode). Previously this ran proactively
-    // on every large request "to prevent the FIRST 429" -- empirically
-    // that was the BUG. Dropping ~1000 oldest messages from a continuing
-    // conversation destroys Anthropic's prompt-cache prefix; every
-    // precompacted request becomes a fresh cache key billing full input
-    // tokens, which exhausts the Opus input bucket fast. Direct (no
-    // proxy) keeps the prefix intact -> cache hits -> no exhaustion.
-    // Verified 2026-05-03: 224KB snapshot that 429ed contained a synthetic
-    // "1169 oldest message(s) dropped" marker as msg[0]; replay of the
-    // mutated body 429ed identically; Haiku via same path/auth worked
-    // (separate bucket, lower price, less cache-miss pressure).
-    // Reactive shrinking when the escape hatch has tripped is still
-    // valuable: at that point caching is already broken and the body
-    // genuinely needs to fit. Disable with HME_NO_PASSTHROUGH_COMPACT=1.
+    // Reactive compaction: only after escape hatch trips (passthrough mode).
+    // Proactive shrinking destroys the prompt-cache prefix and accelerates
+    // bucket exhaustion. HME_NO_PASSTHROUGH_COMPACT=1 disables.
     if (_passthrough && isAnthropic && _isInteractivePath && payload && Array.isArray(payload.messages)) {
       const _dropped = _shrinkForPassthrough(payload);
       if (_dropped > 0) {
         outBody = Buffer.from(JSON.stringify(payload), 'utf8');
       }
-      // OTPM cap REMOVED. The previous version capped max_tokens from
-      // Claude Code's 64000 down to ~14k on the hypothesis that the
-      // OAuth-public endpoint had a small OTPM bucket. Empirically the
-      // opposite was true: this cap was the proxy-vs-direct delta that
-      // caused Opus 4.7 to 429 through the proxy while succeeding direct.
-      // When `output_config.effort=xhigh` is set (Claude Code's standard
-      // request shape on this account), the gateway appears to require
-      // max_tokens to match the effort tier; capping it produces a
-      // gateway-level rejection that surfaces as a 429 with NO
-      // anthropic-ratelimit-* headers (distinguishing it from a real
-      // quota-bucket rejection). Re-enable via HME_PROXY_MAX_OUTPUT_TOKENS
-      // ONLY for explicit debugging; the default is now passthrough.
+      // OTPM max_tokens cap REMOVED -- it was the proxy-vs-direct 429 delta
+      // (gateway requires max_tokens to match effort=xhigh tier).
+      // HME_PROXY_MAX_OUTPUT_TOKENS re-enables for debugging only.
       const _otpmCapRaw = process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
       if (_otpmCapRaw) {
         const _otpmCap = parseInt(_otpmCapRaw, 10);
