@@ -168,16 +168,9 @@ function isNothingMissedResponse(text) {
   return re.test(trimmed);
 }
 
-// Speculation-debt scanner. Surfaces phrases in the agent's last text
-// that are SHAPED like unverified opinion ("I worry that...", "this might
-// be...", "could be a problem", "worth investigating separately") so
-// round 1's inject can name them specifically and demand each resolve
-// to evidence-or-drop within the same turn.
-//
-// Strict false-positive control: matches only the leading speculation
-// phrase + ~80 chars after, and dedup by phrase-prefix so repeated
-// patterns surface once. Skip code-fenced / quoted spans (same
-// discipline stop_work / exhaust_check use).
+// Speculation-debt scanner: catches "I worry / might / probably / worth
+// investigating" shapes in last text so round 1 can name+demand evidence.
+// Match leading-phrase + ~80 chars, dedup by prefix, skip code-fenced spans.
 // anti-fork-begin: speculation-regexes min=6
 const SPECULATION_RES = [
   /\bi\s+(worry|suspect|imagine|wonder|guess|think\s+(that|maybe))\b[^.!?\n]{1,120}/gi,
