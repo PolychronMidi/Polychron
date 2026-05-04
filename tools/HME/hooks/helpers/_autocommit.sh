@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Autocommit -- fail-fast-hardened single source of truth.
-# Design rationale + 4-channel failure model -> doc/AUTOCOMMIT_DESIGN.md
-# Caller contract: `_ac_do_commit "caller-name"`; MUST NOT die on return code.
+# Autocommit helper. 4 parallel failure channels (sticky flag, hme-errors.log,
+# stderr, activity bridge) so no single break swallows errors.
+# Caller: `_ac_do_commit "caller-name"`; MUST NOT die on return code.
 
 # Derive project root via the three reliable strategies:
 #   1. $PROJECT_ROOT (set by _safety.sh before this helper is sourced)
