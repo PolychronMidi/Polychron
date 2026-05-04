@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1183,
-      "updated_ts": 1777916005.5652063
+      "max_id": 1185,
+      "updated_ts": 1777916830.9345663
     }
   },
   {
     "id": 1182,
     "text": "Verify proxy loads + state-file paths post-migration",
     "activeForm": "Verifying proxy load + paths post-migration",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -21,15 +21,15 @@
     "tier": "medium"
   },
   {
-    "id": 1183,
-    "text": "Restart proxy to pick up new runtime/hme/ paths",
+    "id": 1185,
+    "text": "Restart proxy to pick up new runtime/hme/ paths + worker_client timeout fix",
     "activeForm": "Restarting proxy",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777916005.5652037,
+    "ts": 1777916830.9345639,
     "parent_id": 0,
     "subs": [],
     "tier": "medium"
