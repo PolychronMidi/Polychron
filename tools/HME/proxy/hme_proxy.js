@@ -1320,39 +1320,17 @@ function handleRequest(clientReq, clientRes) {
           // through the Transform for Bash run_in_background rewriting.
           const { SseTransform } = require('./sse_transform');
           const { runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite, slopStripRewrite, hallucinatedTurnPrefixStripRewrite, stopHookCeremonyStripRewrite, fpGateMarkerRewrite, soloRationaleTrimRewrite } = require('./sse_rewriters');
-          // Order matters: longLeadingSleepRewrite rewrites command
-          // BEFORE runInBackgroundRewrite reads it on content_block_stop.
-          // Both hold state keyed by content-block index in the same
-          // ctx map so they see consistent data.
-          // stopHookCeremonyStripRewrite runs FIRST when prior user was
-          // a stop-hook payload (gated). If the agent's first text block
-          // is bypass-explanation ceremony, replace with `.` and drop
-          // all subsequent content -- saves next-turn context burn from
-          // carrying the ceremony forward in transcript.
-          // hallucinatedTurnPrefixStripRewrite runs next so a fake
-          // `Human:` / `Assistant:` block is dropped before downstream
-          // rewriters waste work on it. Always-on (no gate) -- a fake
-          // turn boundary is never legitimate.
-          // slopStripRewrite runs LAST in the chain so ackStripRewrite
-          // gets first crack at bare-ack drops (no point stripping slop
-          // out of a block we're about to discard whole). slopStrip is
-          // always-on; ackStrip is only-when-priorUserWasDeny.
+          // Order: longLeadingSleep rewrites BEFORE runInBackground reads
+          // (both keyed by content-block index for consistent state).
+          // Chain order is encoded in the rewriters[] array below.
           const xform = new SseTransform({
-            // fpGateMarkerRewrite runs FIRST: handles the structured
-            // [FP-CHECK: yes/no] marker injected by stop_hook_fp_gate
-            // middleware. yes -> truncate to `.`; no -> strip marker
-            // line, pass rest through. Catches what the chunk-level
-            // upstream kill in hme_proxy.js may have let through (the
-            // partial buffer that arrived before destroy()).
-            // stopHookCeremonyStripRewrite is the prose-shape fallback
-            // for when the agent ignores the fp-gate entirely.
-            // soloRationaleTrim runs last; surgical trim of trailing rationale paragraph.
+            // fpGateMarker FIRST -- handles [FP-CHECK: yes/no] marker (yes ->
+            // truncate to `.`; no -> strip marker line). soloRationaleTrim
+            // LAST -- surgical trim of trailing rationale paragraph.
             rewriters: [fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
           });
-          // Populate the priorUserWasDeny flag the ack-strip rewriter
-          // gates on. Walk request payload's messages to find the latest
-          // user message and check if its content matches a hook-deny
-          // payload marker.
+          // Populate priorUserWasDeny flag for the ack-strip rewriter:
+          // last user message matches a hook-deny payload marker.
           try {
             const msgs = (payload && payload.messages) || [];
             let lastUserText = '';
