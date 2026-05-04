@@ -1,20 +1,8 @@
-// regimeFade.js - sub-beat volume (CC7) contention writer.
-//
-// Sibling to regimePan on the fade dimension. R37 substrate data showed all
-// new contention was on pan only; fade, fx, and velocity were still mostly
-// single-writer dimensions (setBalanceAndFX/setBinaural monoliths). Adding
-// a second voice on CC7 widens the dimensional footprint of the sub-beat
-// dynamics intervention so cooperation/antagonism statistics populate across
-// more slot types, not just pan.
-//
-// Regime shape mirrors regimePan but in volume-space:
-//   coherent   -> small crescendo/decrescendo around center volume
-//   exploring  -> bolder dynamic jumps (quiet vs loud swings)
-//   evolving   -> slow arc: sin() phrases across beats
-//   initializing -> inert
-//
-// Rate-limit shared with regimePan (0.05s min between fires) to prevent
-// high-BPM sections from flooding the MIDI buffer with CC events.
+// regimeFade: sub-beat volume (CC7) contention writer; sibling to regimePan
+// on the fade dimension (widens substrate cooperation/antagonism beyond pan).
+// Regimes: coherent=small cresc/decresc / exploring=bold dynamic jumps /
+// evolving=sin() arc / initializing=inert. 0.05s rate-limit (shared discipline
+// with regimePan) to avoid flooding MIDI buffer at high BPM.
 
 moduleLifecycle.declare({
   name: 'regimeFade',
