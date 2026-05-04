@@ -1,30 +1,7 @@
-// scripts/pipeline/compute-coherence-score.js
-//
-// Phase-2.3 of openshell_features_to_mimic.md. Produces a single scalar
-// coherence score for the current round by cross-referencing the activity
-// bridge event stream with the KB staleness index and the violations log.
-//
-//   coherence_score = (read_coverage * violation_penalty * staleness_penalty)
-//                     * exploration_bonus
-//
-// Where:
-//   read_coverage      = files_written_with_prior_hme_read / total_files_written
-//   violation_penalty  = max(0, 1 - lazy_violation_count * 0.1)
-//   staleness_penalty  = 1 - (touches_on_stale_modules / total_touches)
-//   exploration_bonus  = 1 + min(0.2, productive_incoherence_count * 0.05)
-//
-// Phase 3.2 split: lazy `coherence_violation` events (FRESH coverage, agent
-// skipped the read) count against violation_penalty. `productive_incoherence`
-// events (MISSING coverage, exploratory write into uncharted territory) boost
-// the score up to +20% -- rewarding the Evolver for pushing into genuinely
-// novel ground rather than converging to a local optimum.
-//
-// Output: metrics/hme-coherence.json with the score, components, and trend
-// delta against the previous round (if metrics/snapshots/ has one).
-//
-// Runs as a POST_COMPOSITION step so the staleness index is already built.
-// Non-fatal -- produces a diagnostic, doesn't gate the pipeline (that's
-// check-hme-coherence.js's job in PRE_COMPOSITION).
+// Phase-2.3 coherence score: (read_coverage * violation_penalty *
+// staleness_penalty) * exploration_bonus. Lazy coherence_violation -> penalty;
+// productive_incoherence -> +20% bonus (rewards novel exploration).
+// Output: metrics/hme-coherence.json. POST_COMPOSITION, non-fatal diagnostic.
 
 'use strict';
 
