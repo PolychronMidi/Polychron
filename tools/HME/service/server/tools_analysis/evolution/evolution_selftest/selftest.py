@@ -875,13 +875,8 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: log size -- probe failed: {type(_e).__name__}: {_e}")
 
-    # Probe: invariant genealogy coverage.
-    # Every invariant should declare the incident/KB entry that birthed it
-    # via the optional `born_from` field. Invariants without genealogy
-    # can't be safely retired when their originating concern is resolved
-    # -- they persist as background noise forever. The first pass counts
-    # coverage; over time we raise the threshold or deprecate unclaimed
-    # invariants.
+    # Probe: invariant genealogy coverage. Every invariant should declare
+    # `born_from` (incident/KB entry) so unclaimed invariants can be retired.
     try:
         import json as _json_g
         inv_path = os.path.join(_project_root, "tools", "HME", "config", "invariants.json")
