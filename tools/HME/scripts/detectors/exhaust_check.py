@@ -398,19 +398,11 @@ def main() -> int:
     handoff_count = sum(1 for _ in _ANY_HANDOFF_MARKER.finditer(after))
 
     if handoff_count >= 1 or in_closing:
-        # Research-evaluation exemption: when the user's prompt this turn
-        # explicitly invited enumeration/evaluation as the deliverable AND
-        # the closing text contains NO survey-and-ask / I-can-do-X-later
-        # patterns, the enumeration IS the answer, not a punt. Suppress
-        # the violation so the agent can end the turn silently instead of
-        # spamming a clarification wall.
-        #
-        # Conservative guardrails: any "want me to" / "should I" / "I can
-        # build" / "noted but not fixed" / etc. in the response immediately
-        # disqualifies -- those are agent-initiated punts the user did not
-        # invite, fire regardless of research framing. Likewise a prompt
-        # that mixes "evaluate AND implement" does not qualify (handled in
-        # _is_research_evaluation_request).
+        # Research-evaluation exemption: when user invited enumeration as
+        # deliverable AND closing has no survey-and-ask / I-can-X patterns,
+        # the enumeration IS the answer. Disqualified by ALWAYS_FIRE_PHRASES
+        # (want-me-to / should-I / I-can-build / noted-but-not-fixed) or
+        # mixed evaluate+implement prompts.
         always_fire_hit = None
         for ph in ALWAYS_FIRE_PHRASES:
             if ph in text_l:
