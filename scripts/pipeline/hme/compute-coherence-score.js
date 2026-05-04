@@ -206,19 +206,9 @@ function main() {
   const productiveCount = productiveEvents.length;
   const explorationBonus = 1 + Math.min(0.2, productiveCount * 0.05);
 
-  // Component 3: staleness penalty -- ratio of writes to STALE modules.
-  // The critical distinction:
-  //   STALE    = KB entry exists but module has evolved past it (bad -- we're
-  //              editing known-drifted code without updating KB)
-  //   MISSING  = no KB entry at all (not bad -- exploratory edit into
-  //              uncharted territory; rewards via productive_incoherence)
-  //   FRESH    = KB up-to-date (good -- edits are well-grounded)
-  //   (undef)  = module not in index (e.g. config files) -- excluded
-  //
-  // The old formula conflated STALE and MISSING as both penalizing, which
-  // meant 100%-MISSING writes (shell scripts, config files, genuinely
-  // new territory) collapsed the score to 0 even though that's the
-  // "exploration rewarded" case. Now only STALE penalizes.
+  // Staleness penalty: ratio of writes to STALE modules only (KB drifted).
+  // MISSING (no KB entry) is exploration -- rewarded via productive_incoherence,
+  // not penalized. FRESH = good. undef = excluded (config etc.).
   const stalenessIdx = loadJson(STALENESS);
   let stalenessPenalty = 1;
   let touchesOnStale = 0;
