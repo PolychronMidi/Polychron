@@ -197,10 +197,8 @@ moduleLifecycle.declare({
         // uses absolute beat time at a frequency (0.00073) with no harmonic
         // relationship to section/phrase/measure periods, giving phase an
         // independent variance source. Weight: 8% taken from section/phrase.
-        // R85 E4: Dual-frequency enrichment. Single LFO at 0.00073 creates
-        // a ~72-beat period which could correlate with section length. Add a
-        // second LFO at 0.00031 (~200-beat period) and blend 60/40 to create
-        // a quasi-periodic pattern that resists alignment with any single
+        // Dual-frequency LFO: 0.00073 (~72 beats) + 0.00031 (~200 beats),
+        // blended 60/40 -- quasi-periodic, resists alignment with any single
         // structural frequency.
         const phaseLfoFast = 0.5 + 0.5 * m.sin(Number(beatStartTime) * 0.00073);
         const phaseLfoSlow = 0.5 + 0.5 * m.sin(Number(beatStartTime) * 0.00031);
