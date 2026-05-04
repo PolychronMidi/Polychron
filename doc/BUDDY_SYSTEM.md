@@ -162,7 +162,7 @@ Calls before init completes fall through to ephemeral dispatch.
 
 ### Cooldowns + caps
 
-- **Cooldown for synchronous invocations:** `dominance_response_rewriter.js`'s NEXUS auto-review fires `i/review` synchronously inside Stop hook. Cooldown gate at `tmp/hme-dominance-review-cooldown` prevents subsequent NEXUS rewrites within 60s. Marked BEFORE running so a hung review still cools down.
+- **Cooldown for synchronous invocations:** historically `dominance_response_rewriter.js`'s NEXUS auto-review fired `i/review` synchronously inside Stop hook with a 60s cooldown gate at `tmp/hme-dominance-review-cooldown`. The rewriter was deleted as a subversion attempt; if any future synchronous Stop-time invocation pattern is added, mirror the BEFORE-run cooldown discipline so a hung call still cools down.
 - **Per-process call cap:** `agent_direct.py:_DISPATCH_THREAD_CALL_CAP` (default 50, env `HME_THREAD_CALL_CAP`). Counter persisted to `tmp/hme-buddy-call-count` with 24h TTL.
 
 ### Result capture + recursion guard
