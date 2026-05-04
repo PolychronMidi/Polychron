@@ -386,24 +386,10 @@ function _pairToolResults(payload) {
   return events;
 }
 
-//  Single-event entry -- universal middleware runner. Any caller can apply
-//  the middleware pipeline to a SINGLE tool-result event without going
-//  through the request-shaped runPipeline path. Same architectural shape
-//  as stop_chain/cli.js: any process can invoke the pipeline without
-//  needing the long-running proxy daemon.
-//
-//  Usage:
-//    const middleware = require('./middleware');
-//    middleware.loadAll();  // idempotent
-//    const dirty = await middleware.runOnToolResult(toolUse, toolResult, { filter });
-//
-//  The `filter` option (Set<string>) restricts execution to a named
-//  subset -- e.g. `new Set(['secret_sanitizer'])` for sanitization-only.
-//  No filter = run every registered middleware.
-//
-//  Skips the dedup _processed map so re-running the same toolUse.id is
-//  permitted (the dedup is request-pipeline-specific; single-event
-//  callers want determinism).
+// Single-event entry: apply middleware pipeline to one tool-result without
+// the request-shaped runPipeline path. Same architectural shape as stop_chain/cli.
+// Usage: middleware.runOnToolResult(toolUse, toolResult, { filter: Set<name> }).
+// Skips _processed dedup (single-event callers want determinism).
 async function runOnToolResult(toolUse, toolResult, opts = {}) {
   _pipelineDirty = false;
   const filter = opts.filter || null;
