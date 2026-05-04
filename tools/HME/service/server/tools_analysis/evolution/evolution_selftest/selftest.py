@@ -156,12 +156,8 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as e:
         results.append(f"WARN: STATES sync -- {e}")
 
-    # Unified HME Coherence Index -- runs ALL 15 verifiers (subsumes the three
-    # individual verifiers above into a single weighted score 0-100). This is
-    # the subquantum-depth dimension that treats HME's own coherence the way
-    # Polychron treats musical coherence: as a continuous signal, not a binary
-    # pass/fail. Wired in addition to the individual verifiers so failures
-    # surface granularly AND as an aggregate.
+    # Unified HCI: runs ALL 15 verifiers, weighted score 0-100 (continuous
+    # signal vs binary pass/fail). Wired alongside individual verifiers.
     try:
         import subprocess
         verifier = os.path.join(_project_root, "tools", "HME", "scripts", "verify-coherence.py")
