@@ -353,13 +353,9 @@ def main() -> int:
         print("psycho")
         return 0
 
-    # Pattern B/C scan against the agent's OWN voice -- strip quoted/code
-    # content before phrase-matching. Without this, a response that
-    # described a test fixture or quoted user input (e.g. `"Want me to
-    # apply the fix?"` inside a list of test cases) would be flagged as
-    # if the agent itself were asking for permission. The strips below
-    # remove single-quoted, double-quoted, and backtick-quoted spans
-    # plus fenced code blocks, leaving only the agent's bare prose.
+    # Pattern B/C: scan agent's bare prose only. Strip code-fenced spans,
+    # backticks, and single/double-quoted runs so quoted user input doesn't
+    # falsely trip the permission-ask check.
     import re as _re_psy
     raw_final = _last_assistant_text(events)
     stripped = _re_psy.sub(r"```.*?```", " ", raw_final, flags=_re_psy.DOTALL)
