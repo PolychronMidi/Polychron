@@ -1013,19 +1013,10 @@ function handleRequest(clientReq, clientRes) {
               console.error(`[hme-proxy] snapshot/lifesaver write failed: ${err.message}`);
             }
             emit({ event: 'upstream_error', session: _sessionForTelemetry, status, type: _errInfo.type, message: _errInfo.message, path_label: _pathLabel });
-            // NO retry-on-429. Tested empirically: when Cloudflare's per-IP
-            // rate limiter is engaged, all retries from the same IP also
-            // 429 (because the throttle window is sustained, not just a
-            // momentary spike). Retrying just adds N more requests to the
-            // throttle window, extending it. Better to fail fast, trip the
-            // escape hatch (lifesaver alert visible), and let the user
-            // wait out the window.
-            // Auto-refresh-and-retry on 401 (modelled on horselock).
-            // Token expired => refresh credentials.json => retry once.
-            // Single in-flight refresh promise via refreshOauthToken's
-            // own dedup, so a burst of 401s only fires one refresh.
-            // Only attempt for OAuth Bearer requests; api-key auth
-            // doesn't have a refresh path.
+            // No retry on 429: Cloudflare's sustained throttle window means
+            // retries extend it. Fail fast, trip escape hatch, wait it out.
+            // Auto-refresh-and-retry on 401 (Bearer only): refresh token via
+            // refreshOauthToken (single in-flight via internal dedup).
             const _isBearerAuth = typeof upstreamHeaders['authorization'] === 'string'
               && upstreamHeaders['authorization'].startsWith('Bearer ');
             if (status === 401 && _isBearerAuth && payload && Array.isArray(payload.messages)) {
