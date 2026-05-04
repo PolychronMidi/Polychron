@@ -87,20 +87,9 @@ const middleware = require('./middleware/index');
 const _loadedMiddleware = middleware.loadAll();
 console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
 
-//  Lifecycle hook bridge
-// All Claude Code lifecycle events funnel through a SINGLE forwarder script
-// (hooks/_proxy_bridge.sh) that POSTs to this proxy's /hme/lifecycle endpoint.
-// The proxy dispatches to the appropriate bash hooks and returns {stdout,
-// stderr, exit_code} -- the forwarder relays each back to Claude Code's plugin
-// machinery, preserving block decisions, banners, and exit codes.
-//
-// This is the single minimal compromise with Claude Code -- one stateless
-// 10-line bash script Claude Code is allowed to know about; all logic lives
-// here in proxy-land.
-//
-// Lifecycle bridge moved to lifecycle_bridge.js. Side-effect-on-load:
-// firing SessionStart inline still happens once at module-require time
-// inside lifecycle_bridge.js, preserving the original startup behavior.
+// Lifecycle hook bridge: all Claude Code lifecycle events funnel through
+// hooks/_proxy_bridge.sh -> /hme/lifecycle. Implementation in
+// lifecycle_bridge.js (SessionStart fires inline at module-require time).
 const {
   recordLifecycleHit: _recordLifecycleHit,
   lifecycleInactive: _lifecycleInactive,
@@ -110,16 +99,9 @@ const {
 // handleSpawnRoute extracted to routes_admin.js.
 const { handleSpawnRoute: _handleSpawnRoute } = require('./routes_admin');
 
-//  HME full-bypass: legacy inline-tool path (disabled by default)
-// Claude Code has no MCP connection to us for HME tools (.mcp.json was
-// deleted in the MCP decoupling). Two possible Claude-facing surfaces exist:
-//   1. DEFAULT: Claude invokes HME via Bash(`npm run <tool>`) -- the npm
-//      scripts dispatch to scripts/hme-cli.js -> worker HTTP. Tool injection
-//      below is skipped.
-//   2. LEGACY (opt-in, HME_INJECT_TOOLS=1): the proxy injects HME tool
-//      schemas into payload.tools; when the response contains HME_* tool_uses,
-//      the dispatcher runs them via the worker and continues the conversation.
-// See hme_dispatcher.js for the legacy path.
+// Legacy inline-tool path (HME_INJECT_TOOLS=1, default off): proxy injects
+// HME_* tool schemas into payload.tools and dispatches HME_* tool_uses.
+// Default surface is Bash(`npm run <tool>`) -> hme-cli.js -> worker HTTP.
 const hmeDispatcher = require('./hme_dispatcher');
 
 const HME_PREFIX = /^mcp__HME__/;
@@ -151,40 +133,19 @@ function _stripHmePrefixOutgoing(payload) {
   return changed;
 }
 
-// Detect an upstream failure across BOTH error-shape paths Anthropic uses:
-//   1. HTTP 4xx/5xx with a JSON error body. Status 429 = overload
-//      ("Server is temporarily limiting requests" -- NOT user usage limit).
-//      Status 400 = invalid_request_error (cache_control violations etc).
-//      Status 401 = auth failure. Status 5xx = server fault.
-//   2. HTTP 200 + SSE event stream containing an `event: error` block.
-//      Anthropic streams emit validation/runtime errors as SSE events
-//      AFTER returning a 200 status, so a status-only check misses them.
-// Returns { type, message, requestId } on failure detection, or null when
-// the response is a normal success.
-// _tryParseJson + _detectUpstreamFailure + _alertCooldownActive moved to
-// failure_classification.js (~109 LOC out). Bind into local names so
-// call sites in handleRequest below stay unchanged.
+// Upstream failure detection across both Anthropic error shapes (HTTP 4xx/5xx
+// with JSON error, OR HTTP 200 + SSE `event: error`). Implementation in
+// failure_classification.js; binding into local names preserves call sites.
 const {
   _tryParseJson,
   detectUpstreamFailure: _detectUpstreamFailure,
   alertCooldownActive: _alertCooldownActive,
 } = require('./failure_classification');
 
-// Passthrough-mode emergency compaction: when the escape hatch has tripped,
-// drop oldest assistant/user message PAIRS until the serialized payload is
-// under a hard byte cap. Anthropic's 429 (TPM) is caused by the *size* of
-// the request, not its mutation, so passthrough's "no mutation" pledge
-// is useless against this failure mode -- shrink-or-die is the only path.
-// Skipped entirely with HME_NO_PASSTHROUGH_COMPACT=1 if the operator
-// prefers strict passthrough (and being stuck in 429-loop).
-//
-// Static fallback compact threshold: 250 KB (~71K tokens at ~3.5
-// bytes/token). Used when no anthropic-ratelimit-input-tokens-limit
-// header has been observed yet OR when HME_PROXY_COMPACT_BYTES is
-// explicitly set as an operator override. Once a response header
-// reveals the user's actual ITPM cap, the effective ceiling is derived
-// from that cap (50% rule) -- so Max 20x users with much higher caps
-// stop being throttled at 250 KB after the first response lands.
+// Passthrough emergency compaction: drop oldest message PAIRS until payload
+// is under the byte cap. Default 250KB (~71K tokens at 3.5 bytes/token);
+// derived from ITPM cap once a response header reveals it (50% rule).
+// HME_NO_PASSTHROUGH_COMPACT=1 to skip; HME_PROXY_COMPACT_BYTES to override.
 const _PASSTHROUGH_COMPACT_BYTES = parseInt(process.env.HME_PROXY_COMPACT_BYTES || '250000', 10);
 const _COMPACT_BYTES_EXPLICIT = process.env.HME_PROXY_COMPACT_BYTES != null
   && process.env.HME_PROXY_COMPACT_BYTES !== '';
