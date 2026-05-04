@@ -38,12 +38,9 @@ logger = logging.getLogger("HME")
 # user's account silently; unlike the sentinel path (naturally throttled
 # by agent turn cadence) there's no organic budget choke.
 #
-# Peer-review "anything missing?" (iter 115) flagged that a module-level
-# counter resets on proxy/worker restart -- a restart during a burst
-# silently re-opens the whole budget. The counter is now mirrored to
-# runtime/hme/thread-call-count (atomic rewrite + fsync) so a restart sees
-# the accumulated count. Stale counts auto-expire after 24h so one
-# runaway session doesn't permanently wedge the dispatcher.
+# Module-level counter would reset on proxy/worker restart, re-opening the
+# whole budget mid-burst. Mirror to tmp/hme-buddy-call-count (see _count_file)
+# with atomic rewrite + fsync; stale counts auto-expire after 24h.
 _DISPATCH_THREAD_CALL_COUNT = 0
 _DISPATCH_THREAD_CALL_CAP = int(os.environ.get("HME_THREAD_CALL_CAP", "50"))
 _DISPATCH_THREAD_COUNT_TTL_SEC = 24 * 3600
