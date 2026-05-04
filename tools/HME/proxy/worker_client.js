@@ -23,6 +23,22 @@ const path = require('path');
 // `_fsEligible` in `_worker_transport.js`.
 const { workerRequest } = require('./_worker_transport');
 
+// Timeout SSoT: config/timeouts.json keeps client_ms aligned with the
+// worker's worker_deferred_sec graceful soft-deadline. Defaults match
+// the file (3500ms) so a missing/malformed config is non-fatal.
+function _loadTimeouts() {
+  try {
+    const cfgPath = path.join(__dirname, '..', 'config', 'timeouts.json');
+    return JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  } catch (e) {
+    console.warn(`[worker_client] timeouts.json read failed (${e.message}); using defaults`);
+    return {};
+  }
+}
+const _TIMEOUTS = _loadTimeouts();
+const _VALIDATE_TIMEOUT_MS = (_TIMEOUTS.validate && _TIMEOUTS.validate.client_ms) || 3500;
+const _ENRICH_TIMEOUT_MS = (_TIMEOUTS.enrich && _TIMEOUTS.enrich.client_ms) || 3500;
+
 const CACHE_CAP = 500;
 const _cache = new Map();
 
@@ -97,10 +113,10 @@ async function _post(reqPath, body, timeoutMs) {
 }
 
 // query: string. Returns { warnings: [...], blocks: [...] } or null on failure.
-// Default 3500ms exceeds worker's 3s graceful-deferred deadline so a saturated
-// engine returns its deferred payload instead of triggering a client-side
-// timeout + worker-side BrokenPipe spam.
-async function validate(query, { timeoutMs = 3500 } = {}) {
+// Default from config/timeouts.json validate.client_ms (must exceed worker's
+// validate.worker_deferred_sec so the deferred payload lands instead of
+// timing out client-side + spamming BrokenPipe in the worker).
+async function validate(query, { timeoutMs = _VALIDATE_TIMEOUT_MS } = {}) {
   if (!query) return null;
   const key = `v:${query.slice(0, 200)}`;
   const cached = _cacheGet(key);
@@ -111,7 +127,7 @@ async function validate(query, { timeoutMs = 3500 } = {}) {
 }
 
 // query: string. topK: int. Returns { kb: [...], warm: string } or null on failure.
-async function enrich(query, topK = 3, { timeoutMs = 3500 } = {}) {
+async function enrich(query, topK = 3, { timeoutMs = _ENRICH_TIMEOUT_MS } = {}) {
   if (!query) return null;
   const key = `e:${topK}:${query.slice(0, 200)}`;
   const cached = _cacheGet(key);
