@@ -1,7 +1,6 @@
 'use strict';
-// Hermetic globals helper for test specs. Sets globals from `overrides`,
-// runs `body()`, restores prior values (or deletes if absent before).
-// Usage / pollution-incident rationale -> doc/TEST_GLOBALS_HELPER.md
+// Hermetic globals helper: applies `overrides`, runs `body()`, restores
+// prior values (or deletes if absent before). Prevents cross-spec pollution.
 
 function withGlobals(overrides, body) {
   const prior = {};
