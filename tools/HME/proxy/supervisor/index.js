@@ -222,13 +222,9 @@ async function _healthLoop() {
     if (healthy) {
       state.degradedSince = null;
     } else if (state.degradedSince) {
-      // Escalate: a process that's alive but unresponsive for HANG_KILL_MS
-      // is GIL-saturated / deadlocked. The default probe loop only marks
-      // unhealthy and waits -- which means a stuck worker stays stuck
-      // forever (observed 48 min of 99.9% CPU on a single thread with
-      // all HTTP handlers starved). Kill SIGTERM so the exit path fires
-      // and the next loop spawn gets a fresh process. Phase-B SIGKILL
-      // follows if SIGTERM doesn't take the process down.
+      // Escalate hung-but-alive (GIL-saturated / deadlocked): SIGTERM at
+      // HANG_KILL_MS so exit path fires + spawn loop gets fresh process;
+      // SIGKILL at 2x HANG_KILL_MS if SIGTERM didn't take.
       const HANG_KILL_MS = spec.hangKillMs || 60_000;
       const HANG_FORCE_MS = HANG_KILL_MS * 2;
       const degradedFor = Date.now() - state.degradedSince;
