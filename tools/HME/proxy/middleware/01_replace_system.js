@@ -82,11 +82,8 @@ module.exports = {
     if (!payload) return;
     const canonical = _loadCanonical();
     if (canonical === null) return; // file missing/empty -> no-op
-    // Two-block layout (canonical Claude Code envelope). OAuth gateway
-    // fingerprints block[0]: must be the EXACT identity sentence alone,
-    // else routed to a strict bucket (large requests 429 without
-    // anthropic-ratelimit-* headers -- distinct from real ITPM exhaustion).
-    // Block 1 = HME custom content + cache_control breakpoint.
+    // Two-block layout: block[0] = exact Claude Code identity sentence
+    // (OAuth gateway fingerprint check); block[1] = HME custom + cache_control.
     payload.system = [
       {
         type: 'text',
