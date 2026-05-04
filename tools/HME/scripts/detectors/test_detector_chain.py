@@ -616,12 +616,8 @@ _CASES = [
      ],
      "TEXT_ONLY_SHORT"),
 
-    # stop_work: dismissive phrase appearing inside backticked / quoted
-    # content (e.g. a regex example or a code summary) MUST NOT fire
-    # DISMISSIVE -- only bare-prose declarations should trigger. Mirrors
-    # the same quote-strip discipline exhaust_check uses. Padded long
-    # enough to also bypass TEXT_ONLY_SHORT so this fixture isolates
-    # the dismissive-strip behavior.
+    # stop_work: dismissive phrase inside backticks/quotes must NOT fire
+    # (mirrors exhaust_check's quote-strip; padded past TEXT_ONLY_SHORT).
     ("stop_work", "dismissive-phrase-in-quoted-context-exempt",
      [
          _user_msg("describe the matcher"),
