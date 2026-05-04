@@ -34,20 +34,11 @@ if [ "$MODE" = "forget" ]; then
     echo "NEXUS: review CLI call failed -- worker down? Cannot trust REVIEW_ISSUES state. Re-run i/review mode=forget after fixing." >&2
     exit 0
   fi
-  # Canonical verdict detection.
-  #
-  # The server's single source of truth is the structured HTML-comment marker
-  # emitted by onboarding_chain.emit_review_verdict_marker(verdict):
-  #   <!-- HME_REVIEW_VERDICT: clean -->
-  #   <!-- HME_REVIEW_VERDICT: warnings -->
-  #   <!-- HME_REVIEW_VERDICT: error -->
-  # If the marker is present, trust it exclusively and skip prose parsing.
-  # Prose-count patterns ("Found N issues total") are fallback only, kept
-  # for older review outputs that predate the marker.
-  # `|| true` on every grep is load-bearing -- under `set -euo pipefail` a
-  # grep that legitimately finds nothing returns 1 and would kill the hook
-  # before the drift-detection branch runs, letting format drift masquerade
-  # as a silent pass. Trailing `|| true` converts "no match" to empty string.
+  # Canonical verdict from emit_review_verdict_marker:
+  #   <!-- HME_REVIEW_VERDICT: clean|warnings|error -->
+  # Prose count ("Found N issues total") is legacy fallback only.
+  # `|| true` per grep required: under set -euo pipefail, no-match would
+  # kill the hook before drift detection, masking format drift as pass.
   VERDICT_MARKER=$(echo "$TOOL_RESULT" | { grep -oE '<!--[[:space:]]*HME_REVIEW_VERDICT:[[:space:]]*(clean|warnings|error)[[:space:]]*-->' || true; } | head -1 | { grep -oE '(clean|warnings|error)' || true; })
   ISSUES_COUNT=$(echo "$TOOL_RESULT" | { grep -oE 'Found [0-9]+ issues total' || true; } | { grep -oE '[0-9]+' || true; } | head -1)
   if [ -n "$VERDICT_MARKER" ]; then
