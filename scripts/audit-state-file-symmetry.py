@@ -95,18 +95,10 @@ def _extract_basenames(line: str) -> list[str]:
     return out
 
 
-def _classify(line: str, write_kws: tuple, read_kws: tuple) -> str:
-    """Return 'write', 'read', or 'unknown' based on line keywords."""
-    has_w = any(kw in line for kw in write_kws)
-    has_r = any(kw in line for kw in read_kws)
-    if has_w and not has_r:
-        return "write"
-    if has_r and not has_w:
-        return "read"
-    if has_w and has_r:
-        # Heuristic tie-break: shell `> $f` outranks `[ -f $f ]` on same line.
-        return "write"
-    return "unknown"
+def _classify(line: str, write_kws: tuple, read_kws: tuple) -> tuple[bool, bool]:
+    """Return (has_write, has_read) -- both can be True for `cat A > B` shapes."""
+    return (any(kw in line for kw in write_kws),
+            any(kw in line for kw in read_kws))
 
 
 def _scan_file(path: Path) -> tuple[set, set]:
@@ -125,10 +117,10 @@ def _scan_file(path: Path) -> tuple[set, set]:
         basenames = _extract_basenames(line)
         if not basenames:
             continue
-        kind = _classify(line, write_kws, read_kws)
-        if kind == "write":
+        has_w, has_r = _classify(line, write_kws, read_kws)
+        if has_w:
             writes.update(basenames)
-        elif kind == "read":
+        if has_r:
             reads.update(basenames)
     return writes, reads
 
