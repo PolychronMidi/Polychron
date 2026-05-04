@@ -171,16 +171,9 @@ moduleLifecycle.declare({
           }
         }
         const harmonicPart = 0.5 + 0.5 * m.sin(sampledSectionProgress * m.PI * 2);
-        // R74 E3: Rebalanced phase weights -- section 0.45->0.40,
-        // harmonic 0.15->0.20. Stronger harmonic oscillation creates
-        // more beat-to-beat phase signal motion, keeping phase coupling
-        // paths warmer and reducing stale-phase dither reliance.
-        // R80 E1: Flicker-aware phase decorrelation. Use the actual flicker
-        // modifier product from the conductor signal (snap.flickerProduct,
-        // centered on 1.0, range ~0.87-1.14). When deflected beyond 0.05
-        // from neutral, dampen the harmonic oscillation component that
-        // creates flicker-phase co-movement. Replaces R79 E5 which used
-        // compositionalVariance[2] (always ~0.25, making deflection zero).
+        // Flicker-aware phase decorrelation: when snap.flickerProduct
+        // deflects >0.05 from neutral, dampen the harmonic component that
+        // creates flicker-phase co-movement.
         const flickerDeflection = clamp((m.abs(snap.flickerProduct - 1.0) - 0.05) / 0.10, 0, 1);
         // R82 E1: Reduce dampening 0.35->0.22. R81 phase axis share dropped
         // 0.169->0.126 because 35% dampening suppressed too much harmonic
