@@ -24,19 +24,12 @@ if _policy_enabled block-mkdir-misplaced-metrics && echo "$CMD" | grep -qE '\bmk
   fi
 fi
 
-# Block run.lock deletion (hard rule). Argv-tokenized matching via shlex --
-# the previous `grep run.lock && grep rm` check missed deletion-class verbs
-# that aren't `rm`: mv, unlink, find -delete, shred, truncate, >run.lock
-# (redirect-truncate). FailproofAI's architecture doc names argv tokenization
-# as the concrete defense against shell-operator-injection bypasses; we apply
-# the same idea here. Best-effort: variable-expanded paths (e.g.
-# `BASE=run; rm tmp/$BASE.lock`) still require runtime evaluation to detect
-# and are out of scope. The guard is paired with a settings.json deny rule
-# (Bash(rm*run.lock*)) -- defense in depth.
-# Block curl|sh and wget|sh -- supply-chain attack vector. The pattern catches
-# curl/wget piped into a shell interpreter (sh, bash, zsh, ksh) regardless of
-# spacing, flag order, or which way the pipe is written. FailproofAI calls this
-# out as a primary class of LLM-agent compromise.
+# Block run.lock deletion (hard rule, defense-in-depth with settings.json
+# Bash(rm*run.lock*)). Argv-tokenized via shlex to catch non-rm verbs:
+# mv, unlink, find -delete, shred, truncate, >run.lock. Variable-expanded
+# paths out of scope (need runtime eval).
+# Block curl|sh / wget|sh: supply-chain attack vector. Catches all spacings,
+# flag orders, and shells (sh/bash/zsh/ksh/dash).
 if _policy_enabled block-curl-pipe-sh && echo "$CMD" | grep -qE '\b(curl|wget|fetch)\b[^|]*\|[[:space:]]*(\.[[:space:]]+|sudo[[:space:]]+|exec[[:space:]]+)?(sh|bash|zsh|ksh|dash)\b'; then
   _emit_block "BLOCKED: piping a remote download into a shell interpreter (curl|sh, wget|bash, etc.) is a primary supply-chain attack pattern. Download to a file, inspect it, then execute deliberately if needed."
   exit 2
