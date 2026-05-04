@@ -85,7 +85,9 @@ def _is_annotation(stripped: str) -> bool:
 
 
 def _scan_file(path: str, ext: str) -> list:
-    """Yield {line, block_len} for each comment block exceeding WARN_LINES."""
+    """Yield {line, block_len} for each comment block exceeding WARN_LINES.
+    The first comment block at file top (after any shebang) is exempt
+    up to TOP_EXEMPT_MAX lines -- file-header docs are legitimate."""
     findings = []
     try:
         with open(path, encoding="utf-8") as f:
@@ -94,6 +96,8 @@ def _scan_file(path: str, ext: str) -> list:
         return findings
     block_start = None
     block_len = 0
+    seen_first_block = False
+    seen_non_blank_non_comment = False
     for i, raw in enumerate(lines, 1):
         s = raw.strip()
         if _is_comment_line(s, ext) and not _is_annotation(s):
@@ -104,11 +108,18 @@ def _scan_file(path: str, ext: str) -> list:
                 block_len += 1
         else:
             if block_start is not None and block_len >= WARN_LINES:
-                findings.append({"line": block_start, "block_len": block_len})
+                top_exempt = (not seen_first_block) and (not seen_non_blank_non_comment) and block_len <= TOP_EXEMPT_MAX
+                if not top_exempt:
+                    findings.append({"line": block_start, "block_len": block_len})
+                seen_first_block = True
+            if s and not _is_comment_line(s, ext):
+                seen_non_blank_non_comment = True
             block_start = None
             block_len = 0
     if block_start is not None and block_len >= WARN_LINES:
-        findings.append({"line": block_start, "block_len": block_len})
+        top_exempt = (not seen_first_block) and (not seen_non_blank_non_comment) and block_len <= TOP_EXEMPT_MAX
+        if not top_exempt:
+            findings.append({"line": block_start, "block_len": block_len})
     return findings
 
 
