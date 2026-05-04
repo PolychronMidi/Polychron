@@ -10,14 +10,8 @@ WATERMARK="$PROJECT/tmp/hme-errors.lastread"
 date +%s > "$PROJECT/tmp/hme-heartbeat-lifesaver.ts" 2>/dev/null || true
 
 if [ -f "$ERROR_LOG" ]; then
-  # silent-ok: default-on-missing is load-bearing and documented. The
-  # turnstart/watermark state files may legitimately not be present on
-  # first run or after a manual state wipe; defaulting to 0 produces
-  # correct behavior (first error this turn counts as "new"). A
-  # permission-flap on a populated state file is rare and would
-  # re-surface on the next turn via the watermark-lag branch below.
-  # `wc -l` variant-whitespace stripped via tr; empty-string case
-  # handled by the ${VAR:-0} fallback after capture.
+  # silent-ok: default-on-missing (turnstart/watermark may be absent on
+  # first run / state wipe; 0 = treat first error as new).
   TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
   TOTAL=${TOTAL:-0}
   TURN_START_LINE=$(cat "$TURNSTART" 2>/dev/null | tr -d ' \t\n' || echo 0)
