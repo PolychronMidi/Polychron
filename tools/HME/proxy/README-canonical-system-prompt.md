@@ -46,8 +46,8 @@ Everything else (style, code conventions, refactor discipline, comment
 policy, end-of-turn discipline, system-reminder priority, plan
 adherence, Hyperneta workflow, etc.) is owned by `CLAUDE.md` (auto-loaded
 into context) and HME's hook layer (proxy middleware + stop-chain
-detectors like `exhaust_check`, `psycho_stop`, `ignore_and_trample`,
-`senior_consult_debt`).
+detectors like `exhaust_check`, `psycho_stop`, `senior_consult_debt`,
+plus the `trample_gate` proxy middleware for request-time interrupt-ack).
 
 ## Editing
 
