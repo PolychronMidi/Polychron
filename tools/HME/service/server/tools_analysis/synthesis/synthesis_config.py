@@ -40,64 +40,7 @@ def _build_think_system() -> str:
 
 _THINK_SYSTEM = _build_think_system()
 
-# Code-review system prompt -- calibrated against patterns that produced
-# real-bug signal vs hallucination during the 100-iteration sweep across
-# the HME codebase.
-#
-# Empirical findings on what extracts useful signal from the persistent
-# Opus thread (and likely from any sufficiently-capable reviewer LLM):
-#
-#   - PERMISSION TO CLEAR: prompts that explicitly allow "clean" / "no
-#     tier-1 issues" / "95%+ confidence only" produced calibrated honest
-#     answers. Prompts that read as "find the worst..." returned
-#     finding-shaped text regardless of whether bugs existed.
-#
-#   - QUOTE-GROUND: requiring the reviewer to QUOTE the suspicious line
-#     verbatim before reasoning about it dramatically reduces line-number
-#     hallucination. "Cite file:line" alone wasn't enough -- the reviewer
-#     would invent the line content. "Quote the line + explain why" works.
-#
-#   - PROMISE-VS-DELIVERS: the strongest single framing was "compare the
-#     file's docstring/comments to its actual behavior -- find divergence."
-#     Three real divergences in cascade_analysis.py, two in
-#     posttooluse_hme_review.sh, all confirmed.
-#
-#   - TIER-GATED: "Tier-1 (confirmed bug) only" produced honest "no tier-1
-#     issues found" responses on clean files. Without the tier gate, every
-#     prompt produced a vector regardless of code quality.
-#
-#   - LEADING PROMPTS POISON SIGNAL: "Find the worst non-obvious failure
-#     mode" or "Find code that's clever enough to obscure a subtle bug"
-#     consistently produced low-confidence inventions. The reviewer
-#     pattern-matches the framing, not the code.
-#
-# This system prompt bakes those four positive patterns in. Per-call
-# user prompts can still narrow the focus, but the framing here makes
-# "clean" a first-class answer and grounds every claim.
-# Partner-review system prompt -- complementary to _REVIEW_SYSTEM.
-#
-# Peer-review iter 144 identified that the forensic register
-# (_REVIEW_SYSTEM) cannot perform six human cognitive operations:
-# aesthetic judgment, future-maintainer empathy, sustained
-# puzzlement, suspicion of design intent, affection for elegant
-# code, asking "should this exist." Forensic review is good at what
-# it does -- quote-grounded tier-1 findings -- but it's structurally
-# cold, and the codebase's cultural and aesthetic dimensions degrade
-# silently along axes forensic review can't even attempt to police.
-#
-# This prompt is the complementary register. It does NOT compete
-# with _REVIEW_SYSTEM; it's invoked separately (e.g. `i/review
-# mode=partner` once that routing exists) so partner-review output
-# doesn't dilute or contradict forensic findings.
-#
-# Concrete misses this register would have caught (per iter 144):
-#   - psycho_stop.py's adversarial vocabulary in a permanent
-#     codebase artifact
-#   - file lengths suggesting structural issues before specific bugs
-#   - load-bearing comments / filename puns / error-message
-#     personality that should be preserved across refactors
-#   - the aesthetic gestalt of a function that's symmetric in shape
-#     vs one that's misshapen-suggesting-broken
+# Review prompts: calibration rationale -> doc/REVIEW_SYSTEM_CALIBRATION.md
 _PARTNER_SYSTEM = (
     "You are a partner-reviewer. Your relationship to the code is "
     "different from a forensic auditor: you read as if you were "

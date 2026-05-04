@@ -3,8 +3,6 @@
 Source-of-truth for the design rationale behind `_REVIEW_SYSTEM` and
 `_PARTNER_SYSTEM` in
 `tools/HME/service/server/tools_analysis/synthesis/synthesis_config.py`.
-Inline comments there were trimmed to satisfy CLAUDE.md ("Inline comments
-single-line and terse"); full rationale lives here.
 
 ## `_REVIEW_SYSTEM` — forensic auditor
 
