@@ -1476,18 +1476,9 @@ function handleRequest(clientReq, clientRes) {
     });
 
     const isStreaming = payload && payload.stream === true;
-    // 30-min unified upstream timeout. Was 120s sync / 600s streaming;
-    // 600s sync still tripped the emergency valve under load when
-    // `claude --resume` calls on multi-MB transcripts hit Anthropic's
-    // API. A 22MB transcript needs even longer than 600s for first
-    // byte under contention. The request budget IS bounded by claude's
-    // own subprocess timeout (computed dynamically in
-    // buddy_handoff.py:cmd_consult, max(1800, transcript_mb * 30 + 600)),
-    // so the proxy's role is NOT to be the tighter bound -- a truly
-    // hung call dies at the claude-subprocess level. 30 min covers
-    // Anthropic's worst-case turnaround on multi-MB resumes plus a
-    // safety margin; smaller prompts complete in seconds and aren't
-    // affected.
+    // 30-min upstream timeout: covers worst-case multi-MB `claude --resume`
+    // turnaround. claude's own subprocess timeout is the tighter bound
+    // (buddy_handoff.py cmd_consult); proxy is not the throttle.
     const UPSTREAM_TIMEOUT_MS = 1_800_000;
     upstreamReq.setTimeout(UPSTREAM_TIMEOUT_MS, () => {
       console.error(`[hme-proxy] upstream timeout (${isStreaming ? 'streaming' : 'sync'})`);
