@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const TMP = path.join(ROOT, 'tmp');
+const RUNTIME = path.join(ROOT, 'runtime', 'hme');
 
 // Expected heartbeats and their freshness windows.
 // New components: add an entry here AND wire `date +%s > $runtime/hme/heartbeat-<name>.ts`
@@ -21,7 +21,7 @@ const TMP = path.join(ROOT, 'tmp');
 const HEARTBEATS = [
   {
     name: 'autocommit',
-    file: 'hme-heartbeat-autocommit.ts',
+    file: 'heartbeat-autocommit.ts',
     maxAgeSec: 24 * 60 * 60, // 24h -- autocommits fire on every Stop, but during dev it can sit idle
     history:
       'Stale autocommit heartbeat = autocommit-direct.sh succeeded last >24h ago. ' +
@@ -29,7 +29,7 @@ const HEARTBEATS = [
   },
   {
     name: 'lifesaver',
-    file: 'hme-heartbeat-lifesaver.ts',
+    file: 'heartbeat-lifesaver.ts',
     maxAgeSec: 24 * 60 * 60,
     history:
       'Stale lifesaver heartbeat = the Stop-hook LIFESAVER scanner has not executed in >24h. ' +
@@ -37,7 +37,7 @@ const HEARTBEATS = [
   },
   {
     name: 'inline-check',
-    file: 'hme-heartbeat-inline-check.ts',
+    file: 'heartbeat-inline-check.ts',
     maxAgeSec: 24 * 60 * 60,
     history:
       'Stale inline-check heartbeat = the PostToolUse mid-turn error injector has not executed in >24h. ' +
@@ -51,7 +51,7 @@ function check() {
   const now = Math.floor(Date.now() / 1000);
 
   for (const hb of HEARTBEATS) {
-    const fp = path.join(TMP, hb.file);
+    const fp = path.join(RUNTIME, hb.file);
     if (!fs.existsSync(fp)) {
       // Missing heartbeat is treated as observation, not error -- on a
       // fresh checkout these files don't exist yet. Once they appear,
