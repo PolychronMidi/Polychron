@@ -3,6 +3,10 @@
 loc-ignore.txt"). Per-turn detector: any file Edited/Written this turn
 must be <=350 LOC OR listed in config/loc-ignore.txt.
 
+Counter + ignore-pattern matcher are SHARED with audit-core-principles.py
+via scripts/loc_count.py + scripts/loc_ignore.py so the threshold means
+the same thing in both places (no audit-PASS / detector-FAIL splits).
+
 Verdicts:
   ok          all touched files within limit
   loc_bloat   at least one touched file >350 LOC and not exempt
@@ -46,27 +50,13 @@ def _collect_edited_files(events: list[dict]) -> list[str]:
     return out
 
 
-def _load_ignore(project_root: str) -> set[str]:
-    """Tiny loader; canonical loader lives in scripts/loc_ignore.py but
-    is project-side. Inline here to avoid sys.path gymnastics."""
-    ignore_path = os.path.join(project_root, "config", "loc-ignore.txt")
-    if not os.path.isfile(ignore_path):
-        return set()
-    out = set()
-    with open(ignore_path) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#"):
-                out.add(line)
-    return out
-
-
-def _is_exempt(rel_path: str, patterns: set[str]) -> bool:
-    import fnmatch
-    for pat in patterns:
-        if fnmatch.fnmatch(rel_path, pat):
-            return True
-    return False
+def _load_canonical(project_root: str):
+    """Import canonical loc_ignore + loc_count from scripts/. The detector
+    lives under tools/HME/, so add the project's scripts/ to sys.path."""
+    sys.path.insert(0, os.path.join(project_root, "scripts"))
+    import loc_ignore  # noqa: E402
+    import loc_count  # noqa: E402
+    return loc_ignore, loc_count
 
 
 def main() -> int:
@@ -86,17 +76,14 @@ def main() -> int:
     if not files:
         print("ok")
         return 0
-    ignore = _load_ignore(project_root)
+    loc_ignore, loc_count = _load_canonical(project_root)
+    patterns = loc_ignore.load_patterns()
     for fp in files:
         full = fp if os.path.isabs(fp) else os.path.join(project_root, fp)
         rel = os.path.relpath(full, project_root) if full.startswith(project_root) else fp
-        if _is_exempt(rel, ignore):
+        if loc_ignore.is_exempt(rel, patterns):
             continue
-        try:
-            with open(full) as f:
-                n = sum(1 for _ in f)
-        except OSError:
-            continue
+        n = loc_count.cloc(full)
         if n > LIMIT:
             print("loc_bloat")
             return 0
