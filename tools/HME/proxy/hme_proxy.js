@@ -756,29 +756,10 @@ function handleRequest(clientReq, clientRes) {
       delete upstreamHeaders['accept-encoding'];
     }
 
-    // OAuth Bearer + Claude-Code body-shape fix-up.
-    //
-    // EMPIRICAL FINDING (verified live with curl on 2026-05-03):
-    //   - OAuth Bearer + anthropic-beta=oauth-2025-04-20 routes Opus
-    //     requests to a STRICTER OTPM metering bucket; first request
-    //     burns the OAuth-path cap and subsequent Opus requests 429
-    //     until the rolling window clears. Haiku via the same path
-    //     works fine (different bucket).
-    //   - Claude Code's native path (whatever beta tag IT sends with
-    //     whatever auth header IT uses) routes to the standard Claude
-    //     Code subscription bucket and works without 429s.
-    //   - User has confirmed the issue resolves the moment they turn
-    //     off ANTHROPIC_BASE_URL routing in VS Code.
-    //
-    // Therefore: pass Claude Code's incoming `anthropic-beta` THROUGH
-    // unchanged. Only inject `oauth-2025-04-20` when Claude Code didn't
-    // send any beta header (no native value to preserve). This keeps
-    // Claude Code's standard metering bucket and avoids the Opus-OTPM
-    // 429 trap.
-    //
-    // Body fix-up: strip `context_management` only if the OAuth-public
-    // path complains. With the native beta tag preserved, Anthropic
-    // tolerates Claude-Code-only fields, so leave the body alone too.
+    // OAuth Bearer + Claude-Code body-shape fix-up. Pass incoming
+    // anthropic-beta THROUGH; only inject oauth-2025-04-20 when absent.
+    // The OAuth-path beta routes Opus to a stricter OTPM bucket -- preserving
+    // Claude Code's native value keeps the standard subscription metering.
     if (isAnthropic && typeof upstreamHeaders['authorization'] === 'string'
         && upstreamHeaders['authorization'].startsWith('Bearer ')) {
       if (!upstreamHeaders['anthropic-beta']) {
