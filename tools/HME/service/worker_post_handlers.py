@@ -7,11 +7,27 @@ Extracted from worker_handler.py to reduce module size.
 from __future__ import annotations
 
 import concurrent.futures
+import json as _json
 import logging
 import os
+import sys
 import time
 
 logger = logging.getLogger("HME.worker")
+
+
+def _validate_worker_deadline_sec() -> float:
+    """Read /validate worker-side soft deadline from the shared config."""
+    cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "..", "config", "timeouts.json")
+    try:
+        with open(cfg_path) as f:
+            return float(_json.load(f).get("validate", {}).get("worker_deferred_sec", 3.0))
+    except Exception as e:
+        print(f"worker_post_handlers: timeouts.json read failed: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        return 3.0
+_VALIDATE_WORKER_DEADLINE_SEC = _validate_worker_deadline_sec()
 
 
 def post_tool(handler, name: str, args: dict, *, tool_call,
