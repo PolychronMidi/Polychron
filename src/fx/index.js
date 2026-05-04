@@ -3,6 +3,7 @@
 require('./stutter');
 require('./noise');
 require('./setBalanceAndFX');
+require('./regimeWriterFactory');
 require('./regimePan');
 require('./regimeFade');
 require('./regimeFx');
