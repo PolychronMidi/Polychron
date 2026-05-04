@@ -1,24 +1,8 @@
-// regimeFx.js - sub-beat filter-cutoff (CC74) contention writer.
-//
-// Third sibling to regimePan (CC10) and regimeFade (CC7). R38 analyzer
-// investigation: perceptual_complexity_avg measures EnCodec codebook-token
-// entropy, which responds to SPECTRAL/TIMBRAL unpredictability. Our prior
-// sub-beat interventions modulated pan and volume -- neither of which
-// changes the spectral content EnCodec sees. Filter cutoff (CC74) is the
-// most spectrally-active MIDI CC: sweeping it WILL shift codebook tokens
-// because it literally filters the audio spectrum. This module targets the
-// specific dimension the perceptual_complexity metric measures.
-//
-// Regime shape:
-//   coherent   -> small bright-ish offset around open filter (subtle sparkle)
-//   exploring  -> wide cutoff sweeps from muffled to piercing
-//   evolving   -> slow sinusoidal arc across beats (like LFO-driven filter)
-//   initializing -> inert
-//
-// Rate-limit shared in spirit with regimePan/regimeFade (0.05s min, but
-// independent timer -- so pan/fade/fx can all fire at the same boundary
-// when each timer allows it). MAX_BIAS=48 keeps cutoff in [32, 127], which
-// is the audibly useful range (below ~30 is mud, above 127 is clamped).
+// regimeFx: sub-beat filter-cutoff (CC74) contention writer; sibling to
+// regimePan(CC10)/regimeFade(CC7). Targets EnCodec spectral entropy which pan/
+// volume don't move. Regimes: coherent=subtle sparkle / exploring=wide sweeps
+// / evolving=sinusoidal arc / initializing=inert. Rate-limit 0.05s, MAX_BIAS=48
+// keeps cutoff in [32,127] (audibly useful range).
 
 moduleLifecycle.declare({
   name: 'regimeFx',
