@@ -1,15 +1,7 @@
-// pipelineNormalizer.js - Adaptive soft-envelope normalization for signal pipelines.
-//
-// Replaces static floors/ceilings (DENSITY_PRODUCT_FLOOR, TENSION_PRODUCT_CEILING)
-// with smooth exponential compression that is C1-continuous at boundaries.
-//
-// Within [softMin, softMax]: product passes through unchanged.
-// Below softMin: exponentially compressed toward hardMin (softMin - range).
-// Above softMax: exponentially compressed toward hardMax (softMax + range).
-//
-// Eliminates the need for manual per-module floor/ceiling tuning iterations.
-// Profile-independent: compresses extremes proportionally regardless of how
-// many modules contribute or which profile is active.
+// pipelineNormalizer: adaptive soft-envelope normalization. Within
+// [softMin,softMax] passes through; outside, exponentially compresses toward
+// hardMin/hardMax (softMin/Max +/- range) -- C1-continuous at boundaries.
+// Replaces static FLOOR/CEILING constants; profile-independent.
 
 moduleLifecycle.declare({
   name: 'pipelineNormalizer',
