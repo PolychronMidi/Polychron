@@ -114,9 +114,7 @@ async function _healthLoop() {
 
     const alive = state.proc && state.proc.exitCode === null;
     if (!alive) {
-      // Before giving up or spawning a new one, check if something is already
-      // serving on the health URL (e.g. a previous process that survived a proxy
-      // restart). If healthy, adopt it -- no spawn needed, reset restart counter.
+      // Before spawn/give-up, adopt if healthURL already serves.
       if (spec.healthUrl) {
         const alreadyServing = await _probe(spec.healthUrl);
         if (alreadyServing) {
