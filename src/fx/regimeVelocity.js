@@ -1,22 +1,8 @@
-// regimeVelocity.js - sub-beat velocity-space contention writer.
-//
-// Fourth sibling to regimePan (CC10), regimeFade (CC7), regimeFx (CC74).
-// R45 substrate revealed velocity as the strongest antagonism dimension
-// (-0.421) with writerCount=3, but all three writers were passive taps
-// (direct-p from note-on emissions + gateway writers from cross-layer
-// modules). No active regime voice existed on the velocity dimension --
-// every other dimension had a sub-beat cooperation architecture except
-// this one.
-//
-// regimeVelocity closes the gap: emits CC11 (expression) which is a per-
-// channel velocity-scaler on most synths, AND writes directly to the
-// substrate 'velocity' slot via write() (bypassing observeControl) so
-// the substrate sees regimeVelocity as a cooperating voice on the same
-// slots direct-p populates from note-on events.
-//
-// Architecture mirrors regimePan/Fade/Fx exactly: sub-beat cadence, 50ms
-// rate-limit, cooperation branch (aligns with trend), flutter strobe
-// (peak anti-trend flash), section-type gated flutter multiplier.
+// regimeVelocity: sub-beat velocity-space contention writer; sibling to
+// regimePan/regimeFade/regimeFx. Emits CC11 (expression) AND writes directly
+// to substrate 'velocity' slot so substrate sees regimeVelocity as cooperating
+// voice on same slots direct-p populates. Sub-beat cadence, 50ms rate-limit,
+// cooperation+flutter-strobe with section-type-gated multiplier.
 
 moduleLifecycle.declare({
   name: 'regimeVelocity',
