@@ -1,38 +1,7 @@
-// scripts/pipeline/compute-coherence-budget.js
-//
-// Phase 5.2 -- coherence budget (homeostatic governance).
-//
-// Based on the Phase 5 thesis: HME maximizing coherence may suppress the
-// productive chaos that generates musical emergence. Instead of optimizing
-// the coherence score toward 1.0, we compute an *optimal band* derived
-// from history -- the coherence range at which rounds actually produced
-// strong musical outcomes -- and report whether the current round sits in
-// the band, above it (too disciplined), or below it (too chaotic).
-//
-// Algorithm:
-//   1. Read metrics/hme-musical-correlation.json history.
-//   2. Rank rounds by a composite "musical outcome" score = 0.5*
-//      perceptual_complexity_avg + 0.3*clap_tension + 0.2*verdict_numeric.
-//   3. Take the top quartile -- those are the "good rounds".
-//   4. The optimal coherence band = [min, max] of `hme_coherence` in
-//      those good rounds.
-//   5. If history is too short (< 8 rounds), fall back to prior [0.55, 0.85].
-//
-// Output: metrics/hme-coherence-budget.json
-//   { band: [low, high], current_coherence, state, prescription, history }
-//
-// state = BELOW | OPTIMAL | ABOVE | INSUFFICIENT_DATA
-// prescription = specific guidance for the proxy (inject MORE or LESS)
-//
-// The proxy reads this file and adjusts its injection aggressiveness:
-//   - BELOW    -> inject forcefully (KB context + bias bounds + hypotheses)
-//   - OPTIMAL  -> normal injection
-//   - ABOVE    -> relaxed injection (skip non-critical warnings, flag round
-//                as "emergence-licensed", allow writes into low-coverage
-//                territory without coherence_violation emission)
-//
-// Runs as a POST_COMPOSITION step after compute-musical-correlation.js.
-// Non-fatal.
+// Phase 5.2 coherence budget. Computes optimal-band [low,high] from the top
+// quartile of musical-outcome rounds (fallback [0.55,0.85] if <8 rounds).
+// Emits state BELOW/OPTIMAL/ABOVE/INSUFFICIENT_DATA + prescription for the
+// proxy's injection aggressiveness. Output: metrics/hme-coherence-budget.json.
 
 'use strict';
 
