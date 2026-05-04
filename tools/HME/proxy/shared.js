@@ -6,6 +6,9 @@ const path = require('path');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
 const EMIT_PY = path.join(PROJECT_ROOT, 'tools/HME/activity/emit.py');
+// Durable inter-script state lives here, NOT in tmp/. tmp/ is genuinely
+// throwaway (rotating dumps, scratch). See runtime/hme/INVENTORY.md.
+const RUNTIME_DIR = path.join(PROJECT_ROOT, 'runtime', 'hme');
 
 function emit(fields) {
   try {
