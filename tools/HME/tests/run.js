@@ -6,7 +6,7 @@
  *   - stop_chain/index.js (policy evaluator)
  *   - policies/registry.js (registration, matching, chain execution)
  *   - policies/config.js (three-scope merge)
- *   - middleware/secret_sanitizer.js (regex catalog)
+ *   - middleware/06_secret_sanitizer.js (regex catalog)
  *   - proxy/worker_queue.js (drop+wait round-trip)
  *
  * Run: node tools/HME/tests/run.js

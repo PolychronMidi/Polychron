@@ -21,7 +21,7 @@ const LAST_SUCCESS_REL = path.join(STATE_DIR, 'hme-autocommit.last-success');
 // env, not from cwd. The original silent-failure bug was exactly the
 // dependency on ctx.PROJECT_ROOT being defined -- when it wasn't, the
 // `if (!root) return;` line swallowed every failure mode silently.
-// This module lives at tools/HME/proxy/middleware/proxy_autocommit.js,
+// This module lives at tools/HME/proxy/middleware/21_proxy_autocommit.js,
 // so the project root is four levels up.
 const DERIVED_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 

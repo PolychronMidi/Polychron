@@ -50,8 +50,8 @@ These are the structural risk. Each row needs an explicit strategy.
 
 **Writers:**
 - `tools/HME/activity/universal_pulse.py` -- `[universal_pulse]` prefix (self-origin)
-- `tools/HME/proxy/middleware/hme_log_watermark.js` -- escalated ERROR lines from `log/hme.log`
-- `tools/HME/proxy/middleware/mcp_fail_scan.js` -- agent FAIL strings
+- `tools/HME/proxy/middleware/20_hme_log_watermark.js` -- escalated ERROR lines from `log/hme.log`
+- `tools/HME/proxy/middleware/19_mcp_fail_scan.js` -- agent FAIL strings
 - `tools/HME/hooks/lifecycle/userpromptsubmit.sh` -- autocommit failure banners (via `_autocommit.sh`)
 - `tools/HME/hooks/helpers/_autocommit.sh` -- direct append on commit failure
 - `tools/HME/hooks/helpers/safety/curl.sh` -- `_safe_curl` failure entries

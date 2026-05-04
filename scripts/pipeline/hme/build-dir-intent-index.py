@@ -6,7 +6,7 @@ computes a drift signature per directory, and emits a single JSON index. Also
 flags directories that look like cohesion boundaries but are missing a README.
 
 Used by:
-  - tools/HME/proxy/middleware/dir_context.js (injects local rules on tool calls)
+  - tools/HME/proxy/middleware/11_dir_context.js (injects local rules on tool calls)
   - review(mode='health') surfaces drifted / missing READMEs
 
 See doc/DIR_INTENT.md for the schema and conventions.

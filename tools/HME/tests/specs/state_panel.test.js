@@ -720,7 +720,7 @@ test('subagent_bridge captures Agent result + writes to tmp/hme-subagent-results
       delete require.cache[key];
     }
   }
-  const bridge = require(path.join(PROJECT_ROOT, 'tools/HME/proxy/middleware/subagent_bridge.js'));
+  const bridge = require(path.join(PROJECT_ROOT, 'tools/HME/proxy/middleware/13_subagent_bridge.js'));
   // Generate a unique req_id so we don't collide with any real run
   const reqId = `test_${Date.now().toString(16).slice(-12)}`.replace(/[^a-f0-9]/g, 'a').slice(0, 12).padEnd(12, 'b');
   const queueDir = path.join(PROJECT_ROOT, 'tmp', 'hme-subagent-queue');

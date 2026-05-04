@@ -130,7 +130,7 @@ _SPAM_SKIP_DIRS = {
 }
 _SPAM_SKIP_FILES = {
     # Test fixtures whose purpose is to exercise sanitizer regex catalogs.
-    "tools/HME/proxy/middleware/secret_sanitizer.js",
+    "tools/HME/proxy/middleware/06_secret_sanitizer.js",
     "tools/HME/tests/specs/secret_sanitizer.test.js",
     "tools/HME/tests/specs/migrated_policies.test.js",
     "tools/HME/tests/specs/migrated_policies_round2.test.js",

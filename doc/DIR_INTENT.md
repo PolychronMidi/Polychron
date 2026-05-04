@@ -62,7 +62,7 @@ READMEs without the `<!-- HME-DIR-INTENT -->` block are ignored -- they're norma
 
 ## Proxy middleware integration
 
-`tools/HME/proxy/middleware/dir_context.js` fires on `Read` / `Edit` / `Write` / `NotebookEdit` / `Grep` / `Glob`:
+`tools/HME/proxy/middleware/11_dir_context.js` fires on `Read` / `Edit` / `Write` / `NotebookEdit` / `Grep` / `Glob`:
 
 - Walks up from the target file to the closest tracked directory
 - Appends one line: `[HME dir:<basename>] <rule1> | <rule2>` (max 2 rules, ~180 char budget)

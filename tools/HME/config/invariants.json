@@ -208,7 +208,7 @@
       "id": "proxy-fail-scan-exists",
       "description": "FAIL-scan middleware must exist in the proxy (moved from log-tool-call.sh after the MCP decoupling -- log-tool-call.sh itself is now a stub)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/proxy/middleware/mcp_fail_scan.js",
+      "path": "tools/HME/proxy/middleware/19_mcp_fail_scan.js",
       "patterns": [
         "FAIL",
         "hme-errors\\.log"
