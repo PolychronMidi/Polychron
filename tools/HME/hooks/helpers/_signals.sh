@@ -1,28 +1,8 @@
 #!/usr/bin/env bash
-# HME unified signal bus (MVP).
-#
-# An append-only event log at output/metrics/hme-signals.jsonl. Proxy
-# middleware, hook scripts, and activity emitters can all append -- readers
-# tail the file to see what fired, when, and from where. Replaces the
-# patchwork of tmp/ files + _nexus.sh string parsing as the SINGLE source
-# of truth for "what happened in this session." The _nexus_* helpers
-# still exist -- they're just no longer the ONLY answer to "is this
-# lifecycle event done?"
-#
-# Schema (one JSON object per line):
-#   {"ts": <epoch>, "event": "<name>", "source": "<origin>", "scope": "turn|session|round|pipeline", "payload": {...}, "requires_ack": false}
-#
-# Emit from bash:
-#   _signal_emit <event> <source> <scope> '<payload-json>' [requires_ack]
-#
-# Read last N lines (safe for high-throughput bus):
-#   _signal_tail <n>
-#
-# Filter last N matching an event:
-#   _signal_last <event> [n]
-#
-# SIZE CONTROL: self-rotates at 10000 lines (keeps last 5000) to prevent
-# unbounded growth. Same pattern as hme-hook-latency.jsonl.
+# HME unified signal bus -- append-only JSONL at output/metrics/hme-signals.jsonl.
+# Schema: {ts, event, source, scope:turn|session|round|pipeline, payload, requires_ack}
+# API: _signal_emit / _signal_tail <n> / _signal_last <event> [n].
+# Self-rotates at 10000 lines (keeps 5000).
 
 _SIGNAL_BUS="${PROJECT_ROOT:-}/output/metrics/hme-signals.jsonl"
 _SIGNAL_ROTATE_AT=10000
