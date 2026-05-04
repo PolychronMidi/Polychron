@@ -1,16 +1,7 @@
-// scripts/generate-feedback-graph.js
-// Auto-generates metrics/feedback_graph.json by scanning source code for
-// closedLoopController.create() and feedbackRegistry.registerLoop() calls,
-// then merging with manually curated annotations from the existing JSON.
-//
-// New source loops get scaffolded entries with TODO placeholders.
-// Conceptual loops and firewalls are preserved verbatim from the existing JSON.
-//
-// Modes:
-//   node scripts/generate-feedback-graph.js           -- generate/merge
-//   node scripts/generate-feedback-graph.js --check   -- exit 1 if JSON is stale
-//
-// Integrated into `npm run main` pipeline.
+// generate-feedback-graph: auto-generates metrics/feedback_graph.json by
+// scanning closedLoopController.create() + feedbackRegistry.registerLoop()
+// calls, merging with curated annotations. New loops scaffolded with TODOs.
+// Modes: default = generate/merge; --check = exit 1 if stale. In npm run main.
 
 'use strict';
 
