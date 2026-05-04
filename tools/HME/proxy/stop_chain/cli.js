@@ -17,12 +17,7 @@
  * messages, exit_code 0 always (a chain crash should not wedge the agent).
  *
  * What's degraded vs. proxy-mode:
- *   - The dominance_response_rewriter middleware (in proxy/middleware/)
- *     does not run, so block decisions reach Claude Code in their raw
- *     demand-register form rather than as reveal-register cards. This is
- *     acceptable: the gate still fires, the agent still gets the message;
- *     just without the dominance-layer presentation polish.
- *   - secret_sanitizer middleware also does not run. Stop hook payloads
+ *   - secret_sanitizer middleware does not run. Stop hook payloads
  *     don't typically contain secrets, but if a future policy reads e.g.
  *     transcript content into the deny reason, callers should sanitize.
  *
