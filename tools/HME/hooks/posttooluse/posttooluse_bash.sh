@@ -23,22 +23,11 @@ BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub.sh" 10 "" || true)
 [ -n "$_RESOLVED" ] && INPUT="$_RESOLVED"
 
-# Universal enqueue-sentinel scanner. Any tool output containing
-#   [enqueue: tier=<easy|medium|hard> text="<one-line>" source="<who>"]
-# automatically materializes as a task in tmp/hme-buddy-queue/pending/.
-# Lets any HME tool (or any Bash command) declare follow-up work
-# without each tool needing its own integration code -- symmetric with
-# the [no-work] and [picked-difficulty:] sentinels we already use.
-# Multiple matches per tool output are all enqueued.
-#
-# CRITICAL: only fires when an active dispatcher mode is configured.
-# Without a drainer, enqueued tasks pile up in pending/ forever (the
-# same stack-up class the universal-prune fix closed for done todos).
-# Active when EITHER:
-#   - BUDDY_SYSTEM=1 (claude-resume drainer)
-#   - HME_DISPATCH_MODE=synthesis (synthesis_reasoning drainer)
-# When neither holds, the sentinel is observed (logged to stderr for
-# transcript evidence) but no task file is written.
+# Universal enqueue-sentinel scanner: outputs containing
+#   [enqueue: tier=<easy|medium|hard> text="..." source="..."]
+# materialize as task files in tmp/hme-buddy-queue/pending/.
+# Only fires when a drainer is active (BUDDY_SYSTEM=1 or
+# HME_DISPATCH_MODE=synthesis); otherwise log-only to avoid pile-up.
 _DISP_MODE="${HME_DISPATCH_MODE:-}"
 if [ -z "$_DISP_MODE" ]; then
   [ "${BUDDY_SYSTEM:-0}" = "1" ] && _DISP_MODE="claude-resume" || _DISP_MODE="disabled"
