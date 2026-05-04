@@ -195,23 +195,9 @@ function _effectiveCompactThreshold() {
   const eff = Math.min(panicCap, remainingCap);
   return Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, eff);
 }
-// Opus serializer.
-//
-// Empirically: OAuth Bearer + claude-opus-* on this account has a small
-// OTPM (output-tokens-per-minute) bucket. Concurrent Opus requests (tool
-// fan-out, /loop, multiple subagents) instantly exhaust it -- each one
-// reserves max_tokens against the bucket at request time -- and Anthropic
-// 429s every Opus request until the rolling window refills (~60s).
-//
-// Gate: at most ONE Opus request in flight at a time, with a minimum gap
-// of OPUS_MIN_GAP_MS between the END of one Opus request and the START
-// of the next. Sized for ~12k tokens/req and a ~32k OTPM cap (default
-// 6s → 10 req/min → 120k tokens/min worst-case which leaves headroom).
-//
-// Tunable:
-//   HME_PROXY_OPUS_MIN_GAP_MS = ms (default 6000). Set 0 to disable the
-//   gap (still serializes, just no extra delay).
-//   HME_PROXY_OPUS_GATE_OFF=1 to bypass the gate entirely.
+// Opus serializer: OAuth Bearer + opus-* has a small OTPM bucket; concurrent
+// requests reserve max_tokens and 429 each other. Gate: 1 in-flight + min-gap
+// between requests. HME_PROXY_OPUS_MIN_GAP_MS (default 6000), OFF=1 disables.
 let _opusInflight = Promise.resolve();
 let _lastOpusFinishedAt = 0;
 const OPUS_MIN_GAP_MS = parseInt(process.env.HME_PROXY_OPUS_MIN_GAP_MS || '6000', 10);
