@@ -1,30 +1,9 @@
 #!/usr/bin/env bash
-# proxy-maintenance.sh -- announce a planned proxy restart window.
-#
-# Usage:
-#   proxy-maintenance.sh start [ttl_seconds]   # default TTL 180s
-#   proxy-maintenance.sh clear
-#   proxy-maintenance.sh status                # read and print current flag
-#
-# While the flag is active, _proxy_bridge.sh skips its fail-LOUD banner
-# path when the proxy is unreachable -- the gap is logged to
-# log/hme-proxy-lifecycle.log instead. Intended for scripts that
-# intentionally cycle the proxy (e.g. after editing a proxy-side module).
-#
-# TTL INVARIANT: the default of 180s is calibrated against the
-# proxy-supervisor's detection timing (30s: 10s-poll * 3-miss threshold)
-# plus the worker cold-boot budget (25s RAG load) plus safety margin.
-# A TTL shorter than ~60s is almost always wrong -- the flag will expire
-# before the supervisor respawns the proxy, triggering fail-LOUD banners
-# on every hook that fires during the gap (each tool call during the
-# window generates one entry in hme-errors.log, which the LIFESAVER scan
-# picks up on the next UserPromptSubmit). Previous default was 30s which
-# reliably under-shot the full cycle. If you raise it, confirm no real
-# proxy crash ends up silently masked; 180s is long enough for a clean
-# restart but short enough that a TRUE outage shouldn't hide behind it.
-#
-# The flag auto-expires after TTL seconds. Malformed flag -> fail-LOUD as
-# normal. Explicit `clear` removes the flag immediately.
+# proxy-maintenance.sh: announce planned proxy-restart window.
+# Usage: start [ttl_seconds]  | clear  | status   (default TTL 180s)
+# While active, _proxy_bridge.sh suppresses fail-LOUD banners (logged to
+# hme-proxy-lifecycle.log instead). TTL <60s under-shoots supervisor cycle
+# (10s poll * 3 miss + 25s worker cold-boot); 180s = safe restart window.
 
 set +e
 
