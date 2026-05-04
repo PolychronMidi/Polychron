@@ -176,11 +176,8 @@ $WARN_TITLES"
     exit 0
   fi
 fi
-# Auto-brief on Write (mirror of pretooluse_edit.sh): inject hme-read
-# brief as additionalContext when target lives under a tracked tree and
-# hasn't been BRIEFed yet. Does NOT mark BRIEF -- preserves read_coverage
-# metric semantics. Emits auto_brief_injected for separate tracking.
-# Disable: HME_AUTO_BRIEF_ON_EDIT=0
+# Auto-brief on Write (mirror of pretooluse_edit.sh). Doesn't mark BRIEF
+# (preserves read_coverage). Disable: HME_AUTO_BRIEF_ON_EDIT=0.
 _AUTO_BRIEF_JSON=""
 if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy|config))/'; then
   source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
