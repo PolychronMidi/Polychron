@@ -20,6 +20,10 @@ if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
   PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true
 fi
 
+# Stale-state sweep: per-turn cleanup of runtime/hme/ files whose owner
+# forgot the cleanup path (catches the supervisor-abandoned bug class).
+python3 "$PROJECT_ROOT/tools/HME/scripts/stale_state_sweep.py" >/dev/null 2>&1 || true
+
 # Auto-commit snapshot via _autocommit.sh (4-channel failsafe, sticky fail
 # flag, attempt counter). Don't die on return code; LIFESAVER surfaces failures.
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_autocommit.sh"
