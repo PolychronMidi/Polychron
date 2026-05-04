@@ -567,6 +567,7 @@ moduleLifecycle.declare({
     'sectionEnd',
     'polyNumerator',
     'polyDenominator',
+    'regimeWriterFactory',
     'FXFeedbackListener',
     'L0',
     'accentPatternTracker',
