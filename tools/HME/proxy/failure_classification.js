@@ -1,22 +1,10 @@
 'use strict';
-// Upstream failure classification + alert dedup. Extracted from
-// hme_proxy.js where it lived inline among ~1600 LOC of unrelated
-// concerns. These three functions are mostly pure (parse, classify,
-// dedup) and share no state with the request handler beyond the
-// _lastAlertAt Map owned here.
-//
-// _tryParseJson: defensive JSON.parse for upstream bodies that may be
-// truncated, html error pages, or otherwise non-JSON.
-//
-// detectUpstreamFailure: classify a finished upstream response into
-// {type, message, requestId, retryAfter?} -- handles HTTP 429 (rate vs
-// overloaded), generic 4xx/5xx, and SSE event:error frames embedded
-// inside an HTTP 200 stream.
-//
-// alertCooldownActive: 60s per (type, path_label) gate so a burst of
-// in-flight requests hitting the same upstream failure doesn't produce
-// dozens of identical lifesaver writes. The escape hatch still trips
-// on the FIRST failure.
+// Upstream failure classification + alert dedup (extracted from hme_proxy.js).
+//   _tryParseJson: defensive parse for truncated/html/non-JSON bodies.
+//   detectUpstreamFailure: -> {type,message,requestId,retryAfter?}; covers
+//     HTTP 429 (rate vs overloaded), generic 4xx/5xx, SSE event:error in 200.
+//   alertCooldownActive: 60s gate per (type,path_label) to dedup bursts
+//     (escape hatch still trips on FIRST failure).
 
 // Mirrors the original semantics from hme_proxy.js verbatim: requires
 // the trimmed body to start with '{' or '[' before attempting parse,
