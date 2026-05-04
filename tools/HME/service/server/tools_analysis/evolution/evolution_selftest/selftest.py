@@ -512,8 +512,8 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: daemon thread hygiene -- probe failed: {type(_e).__name__}: {_e}")
 
-    # Probe 3: GPU VRAM attribution. Unattributed VRAM = stuck allocation
-    // /squatting CUDA context -- both block respawn with silent spawn_failed.
+    # Probe 3: GPU VRAM attribution. Unattributed VRAM = stuck allocation or
+    # squatting CUDA context, both block respawn with silent spawn_failed.
     try:
         import subprocess as _sp_probe2
         gpu_totals = _sp_probe2.check_output(
