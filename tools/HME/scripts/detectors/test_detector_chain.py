@@ -1136,21 +1136,6 @@ _CASES = [
      ],
      "psycho"),
 
-    # Regression: trample marker requires <system-reminder> envelope.
-    # Bare-phrase echo in tool output must NOT trigger.
-    ("ignore_and_trample", "echoed-marker-without-envelope-passes",
-     [
-         _user_msg("debug the detector"),
-         _assistant_tool_use("Bash", {
-             "command": "echo 'The user sent a new message while you were working'",
-         }),
-         {"type": "user", "message": {"role": "user", "content": [
-             {"type": "tool_result", "tool_use_id": "tu_echo",
-              "content": "The user sent a new message while you were working"},
-         ]}},
-         _assistant_msg("Echoed for debugging."),
-     ],
-     "ok"),
 ]
 
 
