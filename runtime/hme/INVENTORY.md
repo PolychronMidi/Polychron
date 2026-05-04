@@ -17,28 +17,19 @@ on — belongs here, where it survives a `tmp/` flush.
 
 | File | Writer | Reader(s) | Lifecycle | Stale-criterion |
 |---|---|---|---|---|
-| `supervisor-abandoned` | `proxy/supervisor/index.js` (writes JSON when restart limit hit) | `hooks/lifecycle/userpromptsubmit.sh` (reads to gate BLOCK) | Cleared by supervisor when child becomes healthy; cross-checked + auto-unlinked by userpromptsubmit if child healthURL responds | If named child's healthURL returns 200 → sentinel is stale, unlink |
-| `fp-gate-armed.flag` | `proxy/stop_chain/policies/work_checks.js` (writes on `ctx.deny`) | `proxy/middleware/stop_hook_fp_gate.js` (consumes + deletes on inject) | One-shot per Stop deny | Older than next user prompt → stale |
-| `stop-detector-verdicts.env` | `hooks/lifecycle/stop/detectors.sh` | `proxy/stop_chain/policies/work_checks.js`, `anti_patterns.sh` | Overwritten each Stop chain run | Per-run; never stale |
-| `completeness-injected.json` | `proxy/stop_chain/policies/work_checks.js` | self (counter advance) | 50-entry FIFO cap, per-user-turn | Older than user-turn boundary |
-
-## TODO: still-in-tmp/ files that should migrate
-
-These are inter-script-state contracts currently parked in `tmp/`. Each
-needs the same path-constant + writer/reader update treatment as the
-migrated four above. Sequence is by stale-state risk (highest first):
-
-| File | Writer | Reader(s) | Risk |
-|---|---|---|---|
-| `tmp/hme-buddy-N.sid` / `tmp/hme-buddy.sid` | `hooks/helpers/buddy_init.sh` | `service/agent_direct.py` dispatcher | Persistent buddy session ids — losing breaks dispatch |
-| `tmp/hme-thread.sid` | `i/thread init` | `synthesis_overdrive.py` | Persistent thread id — losing reverts to ephemeral dispatch |
-| `tmp/hme-proxy-supervisor.pid` | `proxy-supervisor.sh` | `_proxy_bridge.sh` watchdog | Long-lived pid; respawn detection depends on it |
-| `tmp/hme-universal-pulse-supervisor.pid` | `universal-pulse-supervisor.sh` | self + watchdog | Same as proxy-supervisor |
-| `tmp/hme-errors.lastread` | `hooks/lifecycle/stop/lifesaver.sh` | `userpromptsubmit.sh` | LIFESAVER scan watermark — losing causes re-injection |
-| `tmp/hme-errors.turnstart` | `userpromptsubmit.sh` | `lifesaver.sh` | Per-turn marker for mid-turn-error detection |
-| `tmp/hme-canary-pending.txt` | `lifecycle/canary.sh` | `lifesaver.sh` | Alert-chain self-test state |
-| `tmp/hme-autocommit.{counter,last-success,lock}` | `hooks/helpers/_autocommit.sh` | self | Autocommit health bookkeeping |
-| `tmp/hme-heartbeat-*.ts` | various | `universal_pulse.py` | Process liveness markers |
+| `supervisor-abandoned` | `proxy/supervisor/index.js` | `userpromptsubmit.sh` (gates BLOCK) | Cleared by supervisor on healthy child; cross-checked + auto-unlinked by userpromptsubmit | Named child healthURL=200 → unlink |
+| `fp-gate-armed.flag` | `stop_chain/policies/work_checks.js` (on `ctx.deny`) | `middleware/23_stop_hook_fp_gate.js` (consumes + deletes on inject) | One-shot per Stop deny | Older than next user prompt → stale |
+| `stop-detector-verdicts.env` | `lifecycle/stop/detectors.sh` | `work_checks.js`, `anti_patterns.sh` | Overwritten each Stop chain run | Per-run; never stale |
+| `completeness-injected.json` | `work_checks.js` | self (counter advance) | 50-entry FIFO cap, per-user-turn | Older than user-turn boundary |
+| `errors-lastread` | `lifecycle/stop/lifesaver.sh` | `userpromptsubmit.sh` | LIFESAVER scan watermark | Per-watermark; never stale |
+| `errors-turnstart` | `userpromptsubmit.sh` | `lifesaver.sh` | Per-turn marker for mid-turn-error detection | Older than turn boundary → stale |
+| `proxy-supervisor.pid` | `direct/proxy-supervisor.sh` | `_proxy_bridge.sh` watchdog + self | Long-lived | PID dead → stale |
+| `universal-pulse-supervisor.pid` | `direct/universal-pulse-supervisor.sh` | self + watchdog | Long-lived | PID dead → stale |
+| `autocommit.{counter,last-success,fail,lock}` | `_autocommit.sh` + `21_proxy_autocommit.js` (shared flock) | self + `userpromptsubmit.sh` (fail-flag check) + `autocommit_health.py` | Counter increments per attempt; reset on success; lock held during git ops | Lock with no live holder → unlinked by stale-recovery |
+| `buddy.sid`, `buddy-primary.sid`, `buddy-N.sid` | `hooks/helpers/buddy_init.sh` | `service/agent_direct.py` dispatcher + `synthesis_overdrive.py` | Persistent across sessions | Sid not resumable → caller spawns fresh |
+| `thread.sid` | `i/thread init` | `synthesis_overdrive.py` | Persistent reasoning thread | Sid not resumable → revert to ephemeral dispatch |
+| `canary-pending.txt` | `lifecycle/canary.sh` | `lifesaver.sh` (consume + advance) | Per-canary | Watchdog detects via consumed-vs-pending diff |
+| `heartbeat-{autocommit,canary,inline-check,lifesaver}.ts` | matching writer | `universal_pulse.py` | Liveness markers; touched per-fire | >90s stale → universal-pulse alerts |
 
 ## Genuinely-throwaway tmp/ files (KEEP)
 
@@ -49,3 +40,7 @@ These are correct uses of `tmp/`:
 - `tmp/claude-*-payload-*.json` — per-failure forensic snapshots
 - `tmp/_det_py_err_$$` — per-process scratch from detectors.sh
 - `tmp/hme-bg-analyze-*.err` — background-task scratch
+- `tmp/hme-buddy-fanout/`, `tmp/hme-buddy-queue/`, `tmp/hme-buddy-seniors/` —
+  per-task subdirs; contents auto-pruned, no cross-script contracts
+- `tmp/hme-errors.inline-watermark` — process-local watermark, regenerable
+- `tmp/hme-canary-consumed.txt` — append-only audit log; lossy-OK
