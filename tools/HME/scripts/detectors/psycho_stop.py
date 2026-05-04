@@ -92,13 +92,8 @@ _IDEATION_MARKERS = (
     "rather than that",
 )
 
-# Directive markers -- when these appear (even alongside a question),
-# the user IS giving an action directive and survey-and-ask is defer.
-# Removed words (too broad in normal prose): "run " (false-positives on
-# "those run on", "we run a pipeline"), "apply " (false-positives on
-# "apply this rule mentally"), "remove " (false-positives on "remove
-# the noise from the prose"), "create " (false-positives on "what
-# would create the bug?"). Kept words are unambiguous imperative verbs.
+# Directive markers: action verbs that override ideation framing.
+# Skipped (too broad): run/apply/remove/create -- false-positive prone.
 _DIRECTIVE_MARKERS = (
     "fix ", "fix the", "fix this", "fix that",
     " do all", "do all ", "do it", "do that",
