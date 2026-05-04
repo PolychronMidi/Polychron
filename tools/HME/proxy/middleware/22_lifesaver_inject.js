@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ERR_LOG = 'log/hme-errors.log';
-const WATERMARK = 'runtime/hme/errors-lastread-proxy';
+const WATERMARK = 'runtime/hme/errors-lastread.proxy';
 
 // Mirrors lifesaver.sh classification: drop CANARY self-tests,
 // observation-severity, and self-origin tags.
