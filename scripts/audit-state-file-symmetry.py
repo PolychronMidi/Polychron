@@ -102,6 +102,11 @@ def _classify(line: str, write_kws: tuple, read_kws: tuple) -> tuple[bool, bool]
 
 
 def _scan_file(path: Path) -> tuple[set, set]:
+    """File-level classification: basenames mentioned in non-comment lines
+    are attributed to the file's own I/O kinds (writes anywhere in the file
+    AND/OR reads anywhere). Coarse but conservative: false-positives hide
+    asymmetries (symmetry overstated), never invent them.
+    """
     writes, reads = set(), set()
     try:
         text = path.read_text(encoding="utf-8", errors="ignore")
@@ -111,17 +116,22 @@ def _scan_file(path: Path) -> tuple[set, set]:
     write_kws, read_kws = _kws(ext)
     if not write_kws:
         return writes, reads
+    file_has_w = False
+    file_has_r = False
+    seen: set[str] = set()
     for line in text.splitlines():
         if _is_comment(line, ext):
             continue
-        basenames = _extract_basenames(line)
-        if not basenames:
-            continue
-        has_w, has_r = _classify(line, write_kws, read_kws)
-        if has_w:
-            writes.update(basenames)
-        if has_r:
-            reads.update(basenames)
+        if any(kw in line for kw in write_kws):
+            file_has_w = True
+        if any(kw in line for kw in read_kws):
+            file_has_r = True
+        for b in _extract_basenames(line):
+            seen.add(b)
+    if file_has_w:
+        writes.update(seen)
+    if file_has_r:
+        reads.update(seen)
     return writes, reads
 
 
