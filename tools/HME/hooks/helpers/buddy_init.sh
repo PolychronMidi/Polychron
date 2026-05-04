@@ -124,15 +124,9 @@ _spawn_buddy() {
   if [ -f "$sid_file" ] && [ -s "$sid_file" ]; then
     return 0
   fi
-  # Spawn delegated to tools/HME/scripts/buddy_spawn.py (the canonical
-  # spawn implementation, shared with cmd_ensure_primary in
-  # buddy_handoff.py). SessionStart wants fire-and-forget -- we
-  # background and disown so the SessionStart hook returns
-  # immediately. The synchronous-spawn caller (ensure_primary) imports
-  # buddy_spawn.spawn_buddy directly for a blocking call.
-  # Path resolved relative to THIS file (not $_REPO_ROOT) so the helper
-  # works under sandboxed tests where the repo's script tree isn't
-  # mirrored into the test PROJECT_ROOT.
+  # Delegate to buddy_spawn.py (canonical; ensure_primary imports it directly).
+  # Background + disown so SessionStart returns fast. Path relative to THIS
+  # file for sandboxed-test compatibility.
   local _self_dir _spawn_script
   _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   _spawn_script="$_self_dir/../../scripts/buddy_spawn.py"
