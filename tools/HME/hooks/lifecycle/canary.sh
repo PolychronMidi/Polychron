@@ -1,18 +1,7 @@
 #!/usr/bin/env bash
-# Alert-chain canary. Injects a uniquely-fingerprinted line into errors.log
-# at UserPromptSubmit. The expected lifecycle:
-#   1. UserPromptSubmit fires this script -> writes [CANARY-<uuid>] line
-#   2. PostToolUse inline-check or Stop lifesaver scans errors.log,
-#      observes the canary, treats it as a self-test marker (NOT an
-#      agent-error), advances watermark past it
-#   3. Watchdog later verifies the canary watermark advanced as expected
-#
-# If the canary is INJECTED but never processed (watermark never advances),
-# the alert chain has regressed -- the consumer side is broken even though
-# the producer side ran. This is the inverse of the "I'll detect the next
-# silent-fail one bug at a time" pattern.
-#
-# Canaries are passive markers, not denies. They never block the user.
+# Alert-chain canary: writes [CANARY-<uuid>] to errors.log at UserPromptSubmit
+# so PostToolUse/Stop lifesaver can verify it advances watermark. If injected
+# but never processed -> consumer side regressed. Passive marker, never blocks.
 
 PROJECT="${PROJECT_ROOT:-/home/jah/Polychron}"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
