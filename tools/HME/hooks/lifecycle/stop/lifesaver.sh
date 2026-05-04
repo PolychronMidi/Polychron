@@ -34,34 +34,10 @@ if [ -f "$ERROR_LOG" ]; then
     TURN_START_LINE="$INLINE_WATERMARK"
   fi
 
-  # Recompute TOTAL right before using it for the watermark write so an
-  # error appended between initial wc and the awk below doesn't create
-  # an off-by-N gap the next turn's "watermark not caught up" branch
-  # fails to detect (that branch compares WATERMARK_LINE < TURN_START_LINE,
-  # not against current wc -l).
-  # Block on NEW errors fired this turn (mid-turn).
-  #
-  # Severity-based classification (replaces the source-tag whitelist that
-  # kept missing real failures). The previous source-classification axis
-  # was wrong: tagging by writer (universal_pulse, supervisor, hme-proxy)
-  # suppressed CRITICAL events alongside routine WARN noise. The correct
-  # axis is severity:
-  #
-  #   - WARN / INFO / DEBUG  -> observation only (informational)
-  #   - ERROR / CRITICAL / FATAL / no-severity-tag -> agent-origin block
-  #
-  # Lines without a clear severity word default to ERROR -- the error log
-  # shouldn't contain non-error content; if a writer logs something, the
-  # agent should see it. Routine pulse warnings (p95 latency, etc.) MUST
-  # be tagged with WARN to be filtered; otherwise they fire LIFESAVER.
-  #
-  # History:
-  # - "hit restart limit" missed when [supervisor] entries were globally
-  #   suppressed -> worker stayed dead 6 hours.
-  # - "CRITICAL worker CPU-saturated" missed when [universal_pulse] entries
-  #   were globally suppressed -> hooks failed silently, repeatedly.
-  # - This rewrite: classify by severity word, not source tag. Any error
-  #   surfaces; only explicit informational severities are observation-only.
+  # Recompute TOTAL pre-watermark to avoid off-by-N if a writer appends mid-block.
+  # Severity-based scan: WARN/INFO/DEBUG/NOTICE -> observation only;
+  # ERROR/CRITICAL/FATAL/untagged -> agent-origin block. Source-tag
+  # whitelist was wrong axis (suppressed CRITICAL with WARN).
   _OBSERVATION_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
   # Self-origin source tags: writers that ONLY emit self-health alerts
   # (operator/supervisor concerns, not agent code issues). Lines with
