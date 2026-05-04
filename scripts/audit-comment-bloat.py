@@ -155,13 +155,13 @@ def main(argv: list) -> int:
                 break
             explicit.append(tok)
     if explicit:
+        # comment-bloat does NOT honor loc-ignore.txt (different concerns).
+        # File-top header exemption covers legitimate auto-gen docstrings.
         for path in explicit:
             ext = os.path.splitext(path)[1]
             if ext not in _EXTS or not os.path.isfile(path):
                 continue
             rel = os.path.relpath(path, _PROJECT) if path.startswith(_PROJECT) else path
-            if is_exempt(rel, ignore_patterns):
-                continue
             for f in _scan_file(path, ext):
                 entry = {"path": rel, "line": f["line"], "block_len": f["block_len"]}
                 if f["block_len"] >= FAIL_LINES:
