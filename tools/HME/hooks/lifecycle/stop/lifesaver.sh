@@ -81,11 +81,14 @@ if [ -f "$ERROR_LOG" ]; then
     echo "$TOTAL" > "$WATERMARK"
     echo "$TOTAL" > "$TURNSTART"
     if [ -n "$AGENT_ERRORS" ]; then
+      # Soften: emit additionalContext (visible) instead of decision:block.
+      # Stop-time block ate the rendered assistant turn; the same errors
+      # also surface via userpromptsubmit's hme-errors.log scan next turn.
       jq -n \
         --arg errors "$AGENT_ERRORS" \
         --arg self "$SELF_ERRORS" \
-        '{"decision":"block","reason":("[ALERT] LIFESAVER -- AGENT-ORIGIN ERRORS FIRED THIS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor -- informational, not your problem to fix from this turn):\n" + $self + "]" else "" end) + "\n\nYou MUST: 1) diagnose root cause  2) implement fix  3) verify fix.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
-      _stderr_verdict "BLOCK: lifesaver $((TOTAL - TURN_START_LINE))err"
+        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[ALERT] LIFESAVER -- AGENT-ORIGIN ERRORS FIRED THIS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor):\n" + $self + "]" else "" end) + "\n\nDiagnose root cause, implement fix, verify. Acknowledging without fixing is a CRITICAL VIOLATION.")}}'
+      _stderr_verdict "WARN: lifesaver $((TOTAL - TURN_START_LINE))err (additionalContext)"
       exit 0
     elif [ -n "$SELF_ERRORS" ]; then
       # Self-origin only -- surface as observation, do not block. The
