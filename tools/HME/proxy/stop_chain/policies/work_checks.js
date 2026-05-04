@@ -311,21 +311,10 @@ module.exports = {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     }
 
-    // Aggregate ALL firing detectors into one composite deny -- agent
-    // sees every flag in one pass instead of N round-trips. Order in
-    // the firing list matches the historical first-deny-wins order so
-    // the most-important flag heads the report.
-    //
-    // SOFTENED 2026-05-03: ADVISOR_SILENTLY_SKIPPED and CLAIM_WITHOUT_EVIDENCE
-    // removed from FIRING_RULES. They were the load-bearing cause of the
-    // "Thought for 0s" blank-response loop -- a Stop hook decision:block on
-    // these eats the entire assistant turn from VSCode's UI render even
-    // though the text was on disk. They remain detected (metrics still
-    // accumulate via verdicts.env) but no longer trigger ctx.deny().
-    // The ENFORCEMENT_REMINDER willDeny check above is left intact -- if
-    // ONLY these two fire, willDeny is true, reminder is suppressed; agent
-    // gets no extra signal. That's intentional: the prior signal was
-    // catastrophic (turn-eating), better to silently track than to block.
+    // Composite deny: aggregate ALL firing detectors so agent sees every flag
+    // in one pass. ADVISOR_SILENTLY_SKIPPED and CLAIM_WITHOUT_EVIDENCE are
+    // SOFTENED (commented out below) -- their decision:block ate VSCode-side
+    // assistant turn rendering. Still detected (verdicts.env), just not denied.
     const FIRING_RULES = [
       ['STOP_WORK',          'DISMISSIVE',                 'STOP_WORK_DISMISSIVE'],
       ['STOP_WORK',          'TEXT_ONLY_SHORT',            'STOP_WORK_TEXT_ONLY'],
