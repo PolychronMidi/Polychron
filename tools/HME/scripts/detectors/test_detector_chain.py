@@ -1073,12 +1073,9 @@ _CASES = [
      ],
      "consult-thin"),
 
-    # Consult that DID produce crystallized blocks lands as ok -- the
-    # quality proxy is satisfied even on a design-space edit turn.
-    # ignore_and_trample: user sent a new message mid-response (system-reminder
-    # embedded in a tool_result). Agent's NEXT text must open with
-    # "Acknowledged <one-word> input" OR "Wrapping up this quickly first.".
-    # Continuing prior work without acknowledgment = violation.
+    # Consult-with-crystallization fixture above; quality proxy satisfied.
+    # ignore_and_trample: mid-response interrupt requires ack opener;
+    # continuing prior work without ack = violation.
     ("ignore_and_trample", "no-interrupt-passes",
      [
          _user_msg("do the thing"),
