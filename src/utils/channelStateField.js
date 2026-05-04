@@ -1,17 +1,8 @@
-// channelStateField.js - living substrate tracking per-channel per-layer
-// parameter state (pan/fade/fx/velocity) with writer lineage.
-//
-// Emitters mutate in place; observers (CIM, grandFinale forensics) sample
-// the whole field on their own cadence and compute field statistics from it
-// (variance = collision density, directional correlation = cooperation /
-// antagonism). Not an event system -- collisions, cooperation, antagonism
-// are FIELD properties, not discrete events.
-//
-// Cost: O(1) per write, bounded history per slot. Slots are ~2 layers *
-// ~30 channels * ~4 params = ~240 slots; trivial storage.
-//
-// Writers identify themselves by a stable string tag; CIM uses the tag
-// distribution to derive per-module dominance and contention locality.
+// channelStateField: living substrate tracking per-channel per-layer
+// param state (pan/fade/fx/velocity) with writer-tag lineage. Field
+// (not event) model -- observers sample and derive variance/correlation.
+// O(1) per write, ~240 slots total; CIM uses writer-tag distribution
+// for dominance + contention locality.
 
 channelStateField = (() => {
   const V = validator.create('channelStateField');
