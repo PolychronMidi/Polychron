@@ -277,8 +277,21 @@ const ctx = {
 //  Registration
 const _modules = [];
 
+// Runnable-style shape validator (lesson: langchain_core Runnable).
+// Catches the silent-disable bug class: typo'd handler name / missing export.
+function _validateMiddlewareShape(mod) {
+  if (!mod || typeof mod !== 'object') throw new Error('middleware export must be an object {name, onRequest?, onToolResult?}');
+  if (typeof mod.name !== 'string' || !mod.name) throw new Error(`middleware export requires non-empty .name (got ${typeof mod.name})`);
+  const hasReq = typeof mod.onRequest === 'function';
+  const hasTR = typeof mod.onToolResult === 'function';
+  if (!hasReq && !hasTR) throw new Error(`middleware "${mod.name}" exports neither onRequest nor onToolResult -- nothing to do`);
+  const ALLOWED = new Set(['name', 'onRequest', 'onToolResult']);
+  const unknown = Object.keys(mod).filter((k) => !ALLOWED.has(k));
+  if (unknown.length > 0) console.warn(`Acceptable warning: [middleware] "${mod.name}" exports unknown keys ${JSON.stringify(unknown)} -- silently ignored. Possible typo of onRequest / onToolResult?`);
+}
+
 function register(mod) {
-  if (!mod || !mod.name) throw new Error('middleware module requires a name');
+  _validateMiddlewareShape(mod);
   _modules.push(mod);
 }
 
