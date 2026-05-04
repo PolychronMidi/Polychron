@@ -241,25 +241,12 @@ moduleLifecycle.declare({
       return 'evolving';
     }
 
-    // R80 E2: Promoted exploring->evolving crossover BEFORE the generic
-    // exploring check. Previously, the exploring check (high dim + low
-    // coupling) caught ALL non-coherent beats because effectiveDim p10=2.97
-    // always exceeded the exploring threshold (~2.2). The crossover at line
-    // ~207 was dead code -- rawEvolvingShare stayed at 0 across all runs.
-    //
-    // By evaluating the crossover first, beats coming FROM exploring that
-    // have moderate coupling and velocity get classified as evolving before
-    // the exploring catch-all fires. This is self-limiting: requires
-    // lastRegime=exploring, and evolvingRecoveryBoost naturally disengages
-    // as rawEvolvingShare approaches 0.05.
-    //
-    // R65 E5 / R68 E1 / R79 E1: Adaptive velocity ceiling history preserved.
-    // R81 E1: adaptiveVelCeiling moved earlier (before self-sustain block).
-    // R84 E3: Raise critical boost threshold 0.02->0.04. rawEvolvingShare
-    // dropped to 0.06 in R83 (from 0.0886). At threshold 0.02, the boost
-    // only fires in extreme starvation. At 0.04, the boost activates
-    // whenever evolving falls below 4%, providing a wider recovery window.
-    // Also graduated: full 0.020 boost below 0.02, linear taper to 0 at 0.04.
+    // exploring->evolving crossover evaluated FIRST so beats with moderate
+    // coupling+velocity coming from exploring promote correctly (otherwise
+    // the generic high-dim/low-coupling exploring check catches everything).
+    // Self-limiting: requires lastRegime=exploring; evolvingRecoveryBoost
+    // disengages as rawEvolvingShare approaches 0.05. Critical boost graduated:
+    // full 0.020 below rawEvolvingShare 0.02, linear taper to 0 at 0.04.
     const evolvingCriticalBoost = rawEvolvingShare < 0.04
       ? 0.020 * clamp((0.04 - rawEvolvingShare) / 0.02, 0, 1)
       : 0;
