@@ -101,8 +101,8 @@ def spawn_buddy(slot: int, floor: str, buddy_count: int,
       - sid_file.with_suffix('.floor') with the model floor
       - When mark_inaugural_primary=True (HANDOFF=1, slot=1):
         - runtime/hme/buddy-primary.sid (sid)
-        - tmp/hme-buddy-primary.floor (floor)
-        - tmp/hme-buddy-primary.effort_floor (canonical effort for floor)
+        - runtime/hme/buddy-primary.floor (floor)
+        - runtime/hme/buddy-primary.effort_floor (canonical effort for floor)
 
     The writer-symmetry invariant from BUDDY_SYSTEM.md is enforced
     here: inaugural-primary writers MUST write the full trio (sid +
@@ -125,12 +125,12 @@ def spawn_buddy(slot: int, floor: str, buddy_count: int,
     sid_file.with_suffix(".floor").write_text(floor + "\n")
     # Inaugural-primary path: write the full primary pointer trio.
     if mark_inaugural_primary:
-        tmp = project_root / "tmp"
-        tmp.mkdir(parents=True, exist_ok=True)
-        (tmp / "hme-buddy-primary.sid").write_text(sid + "\n")
-        (tmp / "hme-buddy-primary.floor").write_text(floor + "\n")
+        runtime = project_root / "runtime" / "hme"
+        runtime.mkdir(parents=True, exist_ok=True)
+        (runtime / "buddy-primary.sid").write_text(sid + "\n")
+        (runtime / "buddy-primary.floor").write_text(floor + "\n")
         effort = _FLOOR_TO_EFFORT.get(floor, "low")
-        (tmp / "hme-buddy-primary.effort_floor").write_text(effort + "\n")
+        (runtime / "buddy-primary.effort_floor").write_text(effort + "\n")
     # Best-effort activity emit (non-fatal).
     emit = project_root / "tools" / "HME" / "activity" / "emit.py"
     if emit.exists():
@@ -155,7 +155,7 @@ def main() -> int:
     parser.add_argument("--sid-file", required=True,
                         help="absolute path where the new sid is written")
     parser.add_argument("--mark-inaugural-primary", action="store_true",
-                        help="also write tmp/hme-buddy-primary.{sid,floor,effort_floor}")
+                        help="also write runtime/hme/buddy-primary.{sid,floor,effort_floor}")
     parser.add_argument("--project-root",
                         default=os.environ.get("PROJECT_ROOT") or os.getcwd(),
                         help="root for tmp/ and activity emit script")
