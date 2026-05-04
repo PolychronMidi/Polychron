@@ -36,7 +36,12 @@ from _transcript import (  # noqa: E402
 )
 
 
-_INTERRUPT_MARKER = "The user sent a new message while you were working"
+# Match Claude Code's harness wrapping, not the bare phrase. Without the
+# envelope check, ANY tool_result content that echoes the phrase as part of
+# its output (e.g. a debug script printing the marker string) trips the
+# detector forever -- the marker stays in conversation history long after
+# the actual interrupt was acknowledged.
+_INTERRUPT_MARKER = "<system-reminder>\nThe user sent a new message while you were working"
 _ACK_REGEX = re.compile(
     r"^\s*(?:acknowledged\b[^.\n]*\binput\b"
     r"|wrapping up this quickly first\.)",
