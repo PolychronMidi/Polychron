@@ -449,14 +449,9 @@ function handleRequest(clientReq, clientRes) {
     handleMcpRequest(clientReq, clientRes);
     return;
   }
-  // Short-circuit useless probes BEFORE upstream forwarding. These were
-  // burning Cloudflare's per-IP rate budget on api.anthropic.com (each
-  // probe forwarded, returned 404 from Anthropic, but counted against
-  // the Cloudflare WAF rate limiter -- so when the interactive request
-  // came in seconds later, Cloudflare 429ed it). Anthropic's API has no
-  // valid response for `/` or favicon; return 404 locally instead of
-  // forwarding. We drop these silently (no lifesaver alert) since they're
-  // routine probes from monitors/health-checks/browsers.
+  // Short-circuit useless probes BEFORE forwarding -- they burn the
+  // Cloudflare per-IP rate budget and 429 real interactive requests.
+  // Routine browser/monitor probes; drop silently.
   const _USELESS_PATHS = ['/', '/favicon.ico', '/robots.txt'];
   if (clientReq.url && _USELESS_PATHS.includes(clientReq.url)) {
     clientRes.writeHead(404, { 'Content-Type': 'application/json' });
@@ -478,15 +473,9 @@ function handleRequest(clientReq, clientRes) {
     const upstream = resolveUpstream(clientReq);
     const isAnthropic = upstream.provider === 'anthropic';
 
-    // Discriminator: did the incoming request bring its own auth (= came
-    // from Claude Code's interactive path) or did the proxy have to inject
-    // OAuth (= came from a loopback sub-pipeline like OVERDRIVE that uses
-    // the out-of-band auth-injection path)? Only INTERACTIVE-path
-    // failures should trip the escape hatch -- OVERDRIVE's 429s are
-    // expected and self-handled by its own circuit breaker, so
-    // tripping the global valve on them breaks Claude Code's interactive
-    // use as collateral damage. Captured here at request entry so we can
-    // tag the response handler later regardless of header mutations.
+    // Discriminator: only INTERACTIVE-path 429s trip the global escape
+    // hatch. OVERDRIVE/loopback callers self-handle via their own circuit
+    // breaker; tripping global on them breaks Claude Code's UI.
     const _isInteractivePath = isAnthropic
       && (typeof clientReq.headers['authorization'] === 'string'
           || typeof clientReq.headers['x-api-key'] === 'string');
@@ -680,14 +669,9 @@ function handleRequest(clientReq, clientRes) {
     upstreamHeaders.host = upstream.host;
     if (outBody.length > 0) upstreamHeaders['content-length'] = String(outBody.length);
 
-    // Strip accept-encoding to force upstream to respond uncompressed.
-    // The proxy mutates SSE bodies via rewriters (ack_strip, run_in_bg
-    // rewrite, sleep rewrite) without decompressing first. When Anthropic
-    // gzips the response, the rewriter modifies compressed bytes and
-    // produces corrupt gzip -- Claude Code's decoder fails with
-    // ZlibError, retries (doubling token cost). Forcing uncompressed
-    // upstream eliminates the corruption path entirely. Cost: slightly
-    // more network bytes localhost<->Anthropic, no token cost change.
+    // Strip accept-encoding -- SSE rewriters mutate bodies without
+    // decompression; gzip corruption produces ZlibError + retry storm.
+    // Cost: more bytes localhost<->Anthropic, no token cost.
     if (isAnthropic) {
       delete upstreamHeaders['accept-encoding'];
     }
@@ -767,13 +751,9 @@ function handleRequest(clientReq, clientRes) {
     function _spawnUpstream() {
       _connAttempt++;
     upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
-      // Initial-response success/failure determination is DEFERRED until
-      // after the full body is buffered (see upstreamRes.on('end') below
-      // and _detectUpstreamFailure). This is because Anthropic returns
-      // some validation errors as HTTP 200 + SSE error event (not as
-      // HTTP 400 with JSON body), and the prior status-code-only check
-      // missed those entirely -- so the escape hatch never tripped and
-      // the lifesaver banner never got written. The deferred detector
+      // Success/failure deferred to body-end so _detectUpstreamFailure can
+      // see SSE `event: error` blocks (HTTP 200 + error event, not HTTP 400
+      // with JSON body). Status-code-only check missed those entirely.
       // covers both shapes.
       const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
       const isSse = isAnthropic && ct.includes('text/event-stream');
