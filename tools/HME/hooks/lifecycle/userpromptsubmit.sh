@@ -114,15 +114,9 @@ if [ -f "$ERROR_LOG" ]; then
     NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" \
       | grep -vE '\[CANARY-canary-[0-9]+-[0-9]+\] alert-chain self-test injection|\[proxy-watchdog\] proxy respawned' \
       | sort -u)
-    # DO NOT advance watermark here -- Stop hook is the only gate that advances it.
-    # If watermark advanced here, unfixed errors vanish when Stop sees TOTAL==TURNSTART.
-    # Emit to stderr (local proxy log) AND stdout as UserPromptSubmit additionalContext
-    # so the proxy bridge relays it back into Claude's turn context. Stderr-only
-    # was the old path; the proxy bridge drops stderr entirely (see _proxy_bridge.sh),
-    # which meant every LIFESAVER alert since plugin mode was silently discarded.
-    # Minimal banner -- CLAUDE.md already mandates the 1-2-3 diagnose-fix-
-    # verify response to errors. Re-emitting that boilerplate every turn is
-    # context tax; the unread error list alone is the load-bearing signal.
+    # Stop hook is the ONLY gate that advances watermark (else unfixed errors
+    # vanish on TOTAL==TURNSTART). Emit to BOTH stderr + stdout-as-additionalContext
+    # because _proxy_bridge.sh drops stderr-only output.
     echo "" >&2
     echo "LIFESAVER -- unresolved errors in hme-errors.log:" >&2
     echo "$NEW_ERRORS" >&2
