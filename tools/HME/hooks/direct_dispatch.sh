@@ -1,34 +1,8 @@
 #!/usr/bin/env bash
-# Direct-mode dispatcher -- runs lifecycle hooks WITHOUT the proxy daemon.
-# Mirrors the routing logic in tools/HME/proxy/hook_bridge.js so every
-# lifecycle event survives a proxy outage. Invoked by _proxy_bridge.sh's
-# fallback path when the proxy POST fails.
-#
-# Architectural intent (lesson #1 -- filesystem-IPC philosophy): the proxy
-# is an accelerator (keeps Lance + LLM clients warm, runs middleware), not
-# a single point of failure. Every hook continues firing even when the
-# proxy is dead -- degraded enrichment, full safety semantics.
-#
-# Usage:   $0 <EventName> < stdin-payload
-# Outputs: stdout = decision JSON or hookSpecificOutput (or empty for allow)
-#          stderr = informational text
-#          exit 0 always (a chain crash should not wedge the agent)
-#
-# What's degraded vs proxy-mode:
-#   - No middleware (memory_redirect, edit_context, secret_sanitizer,
-#     dominance_response_rewriter, bash_enrichment, etc.). Tool results
-#     reach Claude Code without HME enrichment / sanitization.
-#   - No `pretooluse_hme_primer.sh` injection for HME_-prefixed tools.
-#     If the next event after a proxy outage is an HME_* tool call, the
-#     primer won't fire -- but the proxy-up path will reinstate it.
-#   - The Stop chain runs via the JS CLI which has its own minimal
-#     dominance handling (none -- block decisions go raw).
-#
-# What's preserved:
-#   - All bash-side gates (run.lock guard, write blocks, hme_dispatch,
-#     blackbox guards, polling counters, etc.)
-#   - Nexus state tracking (EDIT/BRIEF/REVIEW markers via posttooluse)
-#   - Activity event emission (already filesystem-IPC via emit.py)
+# Direct-mode lifecycle dispatcher -- runs hooks without the proxy daemon
+# (mirrors hook_bridge.js routing). Invoked by _proxy_bridge.sh fallback.
+# Usage: $0 <EventName> < stdin-payload. Always exits 0. Degrades enrichment
+# (no middleware/primer), preserves all bash-side safety gates.
 
 set +u +e
 
