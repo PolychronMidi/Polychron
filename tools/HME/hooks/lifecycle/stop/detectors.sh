@@ -100,6 +100,7 @@ mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
   echo "PILE_ON=$PILE_ON"
   echo "CLAIM_WITHOUT_EVIDENCE=$CLAIM_WITHOUT_EVIDENCE"
   echo "FIX_WITHOUT_INVESTIGATION=$FIX_WITHOUT_INVESTIGATION"
+  echo "COMMENT_BLOAT=$COMMENT_BLOAT"
 } > "$_DETECTOR_VERDICTS_FILE"
 
 # senior_consult_debt -- informational notice (NOT a hard block on first
