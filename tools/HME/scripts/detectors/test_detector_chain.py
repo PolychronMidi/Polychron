@@ -593,11 +593,8 @@ _CASES = [
      ],
      "TEXT_ONLY_SHORT"),
 
-    # stop_work exemption: when the user's prompt is the AUTO-COMPLETENESS
-    # round-2 ack-confirm directive ("say so plainly and the turn will end"),
-    # a short confirmation IS the correct response shape. Detector must NOT
-    # fire -- forcing the agent to pad against the directive's own brevity
-    # invitation is the false-positive this exemption closes.
+    # stop_work exemption: AUTO-COMPLETENESS round-2 ack-confirm directive
+    # accepts short confirmation; padding against brevity-invitation is FP.
     ("stop_work", "ack-confirm-exempt",
      [
          _user_msg(
