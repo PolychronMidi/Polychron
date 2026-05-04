@@ -44,23 +44,10 @@ case "$BUDDY_COUNT" in
     ;;
 esac
 
-# Per-buddy model floors (comma-separated, length must equal BUDDY_COUNT).
-# Floor is the MINIMUM tier the buddy will run at -- `effective =
-# max(item_tier, buddy_floor)` per task. floor=easy means "stay dynamic,
-# accept whatever tier the task carries"; floor=medium forces every easy
-# task UP to medium; floor=hard wastes Opus on every easy task.
-#
-# Special value `auto`:
-#   - When count < 3 (fewer buddies than difficulty levels), all floors
-#     default to `easy` so each buddy stays fully dynamic per task -- the
-#     dispatcher picks the model from the task's tier, not the buddy's.
-#   - When count >= 3 (at least one slot per tier), specialize the first
-#     three slots as [easy, medium, hard] and default extras to `easy`
-#     so they backfill dynamically without escalation.
-#
-# Explicit list (e.g. "easy,medium,hard" or "medium") is honored as-is
-# and padded with `easy` when shorter than BUDDY_COUNT (preserves dynamic
-# behavior for unspecified slots).
+# Per-buddy model floors (csv, length=BUDDY_COUNT). floor = min tier
+# (effective = max(item_tier, floor)). easy=fully dynamic, hard=Opus always.
+# `auto`: count<3 -> all easy; count>=3 -> [easy,medium,hard,...,easy].
+# Explicit list honored as-is, padded with easy.
 if [ -z "${BUDDY_MODEL_FLOORS:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
   # `|| true` so pipefail doesn't abort when the .env lacks BUDDY_MODEL_FLOORS=.
   _envline=$(grep -E '^BUDDY_MODEL_FLOORS=' "$_REPO_ROOT/.env" 2>/dev/null | head -1 || true)
