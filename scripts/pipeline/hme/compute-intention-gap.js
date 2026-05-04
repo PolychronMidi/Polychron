@@ -1,29 +1,7 @@
-// scripts/pipeline/compute-intention-gap.js
-//
-// Phase 4.3 -- intention vs execution gap tracking.
-//
-// The HME todo store (`tools/HME/KB/todos.json`) is the structured record
-// of the Evolver's intentions within a session: every substantive plan item
-// becomes a todo with a unique id, text, status, and timestamp. The activity
-// bridge records every actual file_written event. Crossing these streams
-// gives a mechanical "what did we say we'd do vs what did we actually do"
-// report.
-//
-// Improvement vs doc: doc suggested parsing proposed evolutions out of the
-// journal (prose). The todo store gives the same signal in clean JSON form --
-// no fuzzy text parsing, no heuristics. Every todo entry has `text`,
-// `status`, `done`, `ts`.
-//
-// Classification per todo:
-//   completed+done=true, text mentions files that were written -> fully_executed
-//   completed but no file activity in scope    -> partially_executed
-//   pending/in_progress at round_complete      -> abandoned
-//   completed with no scope mention anywhere   -> untrackable (dropped)
-//
-// Output: metrics/hme-intention-gap.json with per-round snapshot + rolling
-// gap EMA. Surfaced via status(mode='intention_gap').
-//
-// Non-fatal diagnostic.
+// Phase 4.3 intention-gap: cross todos.json (intent) with file_written events
+// (execution). Per-todo verdict: fully_executed/partially_executed/abandoned/
+// untrackable. Output: metrics/hme-intention-gap.json with rolling EMA.
+// Non-fatal diagnostic; surfaced via status(mode='intention_gap').
 
 'use strict';
 
