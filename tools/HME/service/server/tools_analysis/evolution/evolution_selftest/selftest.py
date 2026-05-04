@@ -960,12 +960,9 @@ def hme_selftest(verbose: bool = False) -> str:
     total = len(results)
     verdict = "READY" if failed == 0 else f"{failed} FAIL"
     header = f"## HME Self-Test: {passed}/{total} passed ({verdict})\n"
-    # Enumerate PASSes only when there are failures worth triaging OR the
-    # run is all-clean (full listing = reassurance signal). When failures
-    # exist, PASS lines are ~700 chars of filler; agent only needs the
-    # failing/warning items to act on. Use the `verbose` keyword arg via
-    # hme_admin(action='selftest', modules='verbose') when full output
-    # is required (mirrors invariants/stress trimming).
+    # Show PASSes only when all-clean OR no failures present; on failures,
+    # filter to non-PASS lines (~700 chars of PASS filler is noise).
+    # Force full output: hme_admin(action='selftest', modules='verbose').
     has_issues = any(
         r.startswith(("FAIL", "WARN", "ERR", "INFO", "NEW"))
         for r in results
