@@ -990,7 +990,10 @@ function fpGateMarkerRewrite(eventName, data, ctx) {
 }
 
 // Surgical trim of trailing solo-rationale paragraph; preserves substantive prefix.
+// Gated on priorUserWasDeny -- solo-rationale only emitted in response to
+// advisor-doctrine flags. Normal turns stream freely.
 function soloRationaleTrimRewrite(eventName, data, ctx) {
+  if (!ctx.get('priorUserWasDeny')) return data;
   const key = 'srt_hold';
   let holds = ctx.get(key);
   if (!holds) { holds = new Map(); ctx.set(key, holds); }
