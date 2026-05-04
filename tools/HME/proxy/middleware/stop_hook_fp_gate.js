@@ -33,8 +33,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { PROJECT_ROOT } = require('../shared');
-const FP_GATE_ARMED_FLAG = path.join(PROJECT_ROOT, 'tmp', 'hme-fp-gate-armed.flag');
+const { RUNTIME_DIR } = require('../shared');
+const FP_GATE_ARMED_FLAG = path.join(RUNTIME_DIR, 'fp-gate-armed.flag');
 
 const STOP_HOOK_MARKERS = [
   'Stop hook feedback:',
