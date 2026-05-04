@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ERR_LOG = 'log/hme-errors.log';
-const WATERMARK = 'tmp/hme-errors.lastread-proxy';
+const WATERMARK = 'runtime/hme/errors-lastread-proxy';
 
 // Mirrors lifesaver.sh classification: drop CANARY self-tests,
 // observation-severity, and self-origin tags.
@@ -72,7 +72,7 @@ module.exports = {
     let lines = content.split('\n').filter(Boolean);
     let totalLines = lines.length;
 
-    // Read watermark (separate from hook-based tmp/hme-errors.lastread)
+    // Read watermark (separate from hook-based runtime/hme/errors-lastread)
     let lastSeen = null;
     try {
       const raw = fs.readFileSync(wmPath, 'utf8').trim();

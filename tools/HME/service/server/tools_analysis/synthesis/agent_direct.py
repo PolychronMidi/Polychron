@@ -102,7 +102,7 @@ _hydrate_call_count()
 
 def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
     """Synchronously route a reasoning prompt through the buddy session
-    whose sid is recorded in tmp/hme-buddy.sid (legacy: tmp/hme-thread.sid,
+    whose sid is recorded in tmp/hme-buddy.sid (legacy: runtime/hme/thread.sid,
     one-time fallback during the rename window -- see code below).
 
     Used by synthesis_reasoning when the buddy system is active

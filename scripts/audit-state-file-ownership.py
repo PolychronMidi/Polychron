@@ -45,9 +45,9 @@ SKIP_DIRS = ("__pycache__", "node_modules", ".git", "out", "dist")
 # State paths the registry tracks. Auto-extracted from the doc; this is
 # a fallback if the parse fails.
 KNOWN_PATHS = (
-    "tmp/hme-thread.sid",
+    "runtime/hme/thread.sid",
     "tmp/hme-thread-call-count",
-    "tmp/hme-proxy-supervisor.pid",
+    "runtime/hme/proxy-supervisor.pid",
     "tmp/hme-proxy-maintenance.flag",
     "tmp/hme-universal-pulse.heartbeat",
     "tmp/hme-non-hme-streak.score",
@@ -57,8 +57,8 @@ KNOWN_PATHS = (
     "tmp/hme-log-errors.watermark",
     "tmp/hme-supervisor-abandoned",
     "tmp/hme-nexus.state",
-    "tmp/hme-errors.turnstart",
-    "tmp/hme-errors.lastread",
+    "runtime/hme/errors-turnstart",
+    "runtime/hme/errors-lastread",
     "log/hme-errors.log",
     "output/metrics/detector-stats.jsonl",
     "output/metrics/hme-predictions.jsonl",

@@ -95,8 +95,8 @@ fi
 # additionalContext. Errors must be FIXED, not acknowledged.
 PROJECT="$PROJECT_ROOT"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
-WATERMARK="$PROJECT/tmp/hme-errors.lastread"
-TURNSTART="$PROJECT/tmp/hme-errors.turnstart"
+WATERMARK="$PROJECT/runtime/hme/errors-lastread"
+TURNSTART="$PROJECT/runtime/hme/errors-turnstart"
 
 mkdir -p "$PROJECT/tmp"
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # proxy-supervisor.sh: long-running watchdog (vs proxy-watchdog.sh which fires
 # once at SessionStart). Polls /health q10s; 3 consecutive misses -> respawn.
-# PID at tmp/hme-proxy-supervisor.pid; new invocations no-op if alive.
+# PID at runtime/hme/proxy-supervisor.pid; new invocations no-op if alive.
 # Skips spawn during proxy-maintenance.sh flag windows.
-# Stop: `proxy-supervisor.sh stop` or `kill $(cat tmp/hme-proxy-supervisor.pid)`.
+# Stop: `proxy-supervisor.sh stop` or `kill $(cat runtime/hme/proxy-supervisor.pid)`.
 
 set +e
 
@@ -59,7 +59,7 @@ fi
 
 _SV_PORT="${HME_PROXY_PORT:-9099}"
 _SV_URL="http://127.0.0.1:${_SV_PORT}/health"
-_SV_PID_FILE="$_SV_ROOT/tmp/hme-proxy-supervisor.pid"
+_SV_PID_FILE="$_SV_ROOT/runtime/hme/proxy-supervisor.pid"
 _SV_MAINT_FLAG="$_SV_ROOT/tmp/hme-proxy-maintenance.flag"
 _SV_LIFECYCLE_LOG="$_SV_ROOT/log/hme-proxy-lifecycle.log"
 _SV_ERROR_LOG="$_SV_ROOT/log/hme-errors.log"

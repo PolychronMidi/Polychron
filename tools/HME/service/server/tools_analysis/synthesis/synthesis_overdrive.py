@@ -284,7 +284,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
 
 def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_type: str = "general-purpose") -> tuple[str, str] | None:
-    # PRIORITY 1: persistent thread (i/thread init -> tmp/hme-thread.sid).
+    # PRIORITY 1: persistent thread (i/thread init -> runtime/hme/thread.sid).
     # Synchronous flow through one long-lived claude session so context
     # accumulates across review/OVERDRIVE/suggest_evolution. Falls through
     # to direct/sentinel paths on dispatch failure. ImportError/AttributeError
@@ -372,7 +372,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     # the trailing call-form is a dispatch hint the agent can execute
     # directly without needing a separate system-message.
     #
-    # Routing switch: when `tmp/hme-thread.sid` exists, the user has
+    # Routing switch: when `runtime/hme/thread.sid` exists, the user has
     # initialized a persistent subagent thread via `i/thread init`. All
     # subsequent reasoning dispatches go through that thread instead of
     # spawning ephemeral Agent calls -- context accumulates across tasks.

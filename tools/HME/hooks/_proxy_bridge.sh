@@ -60,7 +60,7 @@ fi
 # watchdog at SessionStart didn't notice.
 if [ -n "$_PB_ROOT" ]; then
   _PB_SUPERVISOR_SCRIPT="$_PB_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
-  _PB_SUPERVISOR_PID_FILE="$_PB_ROOT/tmp/hme-proxy-supervisor.pid"
+  _PB_SUPERVISOR_PID_FILE="$_PB_ROOT/runtime/hme/proxy-supervisor.pid"
   _PB_SV_ALIVE=0
   if [ -f "$_PB_SUPERVISOR_PID_FILE" ]; then
     _PB_SV_PID=$(cat "$_PB_SUPERVISOR_PID_FILE" 2>/dev/null)
@@ -85,7 +85,7 @@ if [ -n "$_PB_ROOT" ]; then
   # when targets go unresponsive, so LIFESAVER surfaces the outage at
   # the NEXT turn rather than hours later.
   _PB_UP_SUPERVISOR_SCRIPT="$_PB_ROOT/tools/HME/hooks/direct/universal-pulse-supervisor.sh"
-  _PB_UP_PID_FILE="$_PB_ROOT/tmp/hme-universal-pulse-supervisor.pid"
+  _PB_UP_PID_FILE="$_PB_ROOT/runtime/hme/universal-pulse-supervisor.pid"
   _PB_UP_ALIVE=0
   if [ -f "$_PB_UP_PID_FILE" ]; then
     _PB_UP_PID=$(cat "$_PB_UP_PID_FILE" 2>/dev/null)

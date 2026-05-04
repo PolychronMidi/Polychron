@@ -4,8 +4,8 @@
 # Acknowledging without fixing is the violation this system exists to prevent.
 PROJECT="$PROJECT_ROOT"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
-TURNSTART="$PROJECT/tmp/hme-errors.turnstart"
-WATERMARK="$PROJECT/tmp/hme-errors.lastread"
+TURNSTART="$PROJECT/runtime/hme/errors-turnstart"
+WATERMARK="$PROJECT/runtime/hme/errors-lastread"
 # Heartbeat -- proves Stop-hook lifesaver actually ran.
 date +%s > "$PROJECT/tmp/hme-heartbeat-lifesaver.ts" 2>/dev/null || true
 
