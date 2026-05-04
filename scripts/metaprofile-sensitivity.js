@@ -1,19 +1,7 @@
 #!/usr/bin/env node
-// metaprofile-sensitivity.js -- Aggregate attribution log into per-profile
-// outcome statistics. Reads output/metrics/metaprofile-attribution.jsonl
-// (the JSONL written by metaProfiles.recordAttribution per section) and
-// emits a JSON summary plus a human-readable Markdown table.
-//
-// Output:
-//   output/metrics/metaprofile-sensitivity.json  -- machine-readable
-//   stdout                                       -- Markdown summary
-//
-// This is the closing piece of the empirical-tuning loop:
-// recordAttribution opened the data foothold; this aggregator turns
-// that JSONL into per-profile mean/std/quantiles + per-section-type
-// breakdowns. Later iterations can extend with axis-key sensitivity
-// (varying single keys while holding the rest constant) once we have
-// enough data points per profile to stratify.
+// metaprofile-sensitivity: aggregate metaprofile-attribution.jsonl into
+// per-profile mean/std/quantiles + per-section-type breakdowns.
+// Output: output/metrics/metaprofile-sensitivity.json + stdout Markdown.
 
 'use strict';
 
