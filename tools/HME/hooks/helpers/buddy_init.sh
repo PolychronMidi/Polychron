@@ -69,35 +69,17 @@ fi
 
 mkdir -p "$_REPO_ROOT/tmp"
 
-# Hand-off paradigm: when BUDDY_HANDOFF=1 and runtime/hme/buddy-primary.sid
-# carries a sid, that session IS the buddy -- no fresh `claude -p` spawn.
-# Bootstrap a back-compat runtime/hme/buddy.sid pointer so legacy consumers
-# see the primary. Companion .floor / .effort_floor files are preserved
-# from the primary's metadata, defaulting to easy / low when absent.
-#
-# Note: this mirror is a SAFETY NET, not the canonical actuator.
-# `_promote()` (in buddy_handoff.py) writes the legacy pointer trio
-# inline at promote time so the dispatcher sees a swap immediately
-# without waiting for SessionStart. This block catches edge cases like
-# a manual edit of primary.sid or a primary written by an older
-# code path that didn't include the inline mirror.
+# Hand-off paradigm: BUDDY_HANDOFF=1 + non-empty runtime/hme/buddy-primary.sid
+# means that session IS the buddy. Mirror to legacy buddy.sid for back-compat.
+# Safety-net only -- _promote() (buddy_handoff.py) writes the trio inline.
 if [ "$BUDDY_HANDOFF" = "1" ]; then
-  # Hand-off paradigm fundamentally has ONE primary at a time.
-  # Multi-buddy fanout (BUDDY_COUNT>1) is mutually exclusive -- force
-  # count=1 so a fall-through fresh spawn produces one inaugural
-  # primary, not N fresh buddies.
+  # ONE primary at a time -- force count=1 so fall-through spawns one inaugural.
   if [ "$BUDDY_COUNT" -gt 1 ]; then
     BUDDY_COUNT=1
     _FLOORS=("${_FLOORS[0]:-easy}")
   fi
-  # Auto-retire the previous primary if its context already crosses
-  # BUDDY_RETIRE_PCT -- fires BEFORE the HANDOFF short-circuit so a
-  # too-full primary can't be inherited; the script then falls through
-  # to a fresh spawn. Best-effort (silent on failure); manual
-  # `i/handoff auto_retire_check` is always available as the explicit
-  # path. The script path is derived relative to THIS file (not
-  # $_REPO_ROOT) so it works under sandboxed tests where the repo's
-  # script tree isn't mirrored into the test PROJECT_ROOT.
+  # Auto-retire if primary crosses BUDDY_RETIRE_PCT before HANDOFF inherits.
+  # Path resolved relative to THIS file (sandboxed-test compatible).
   _HANDOFF_SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   _HANDOFF_SCRIPT="$_HANDOFF_SELF_DIR/../../scripts/buddy_handoff.py"
   if [ -f "$_HANDOFF_SCRIPT" ]; then
