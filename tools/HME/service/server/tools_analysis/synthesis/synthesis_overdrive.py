@@ -284,20 +284,12 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
 
 def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_type: str = "general-purpose") -> tuple[str, str] | None:
-    # PRIORITY 1: persistent thread. If user has run `i/thread init`,
-    # tmp/hme-thread.sid exists; every reasoning call flows synchronously
-    # through that one long-lived claude session so context accumulates
-    # across review/OVERDRIVE/suggest_evolution dispatches. The result
-    # comes back inline as a normal reasoning response -- no sentinel,
-    # no separate dispatch step on the agent side. Falls through to
-    # direct/sentinel paths if the thread dispatch fails or no sid.
-    #
-    # ImportError / AttributeError are logged at WARNING -- they signal
-    # the thread-dispatch module is structurally unreachable (misnamed
-    # symbol, refactor breakage, etc.) which must not silently demote
-    # to debug. Runtime failures (timeouts, subprocess errors) are
-    # handled inside dispatch_thread; anything leaking out is unexpected.
-    # Accept empty string as a valid result (explicit `is not None`) so
+    # PRIORITY 1: persistent thread (i/thread init -> tmp/hme-thread.sid).
+    # Synchronous flow through one long-lived claude session so context
+    # accumulates across review/OVERDRIVE/suggest_evolution. Falls through
+    # to direct/sentinel paths on dispatch failure. ImportError/AttributeError
+    # log WARNING (structural unreachability must not silent-demote).
+    # Empty-string result accepted via explicit `is not None` so
     # a legitimate empty reply doesn't cause fallback double-dispatch.
     try:
         from .agent_direct import dispatch_thread as _thread
