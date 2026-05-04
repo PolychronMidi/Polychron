@@ -1,0 +1,41 @@
+{
+  "_doc": "Single source of truth for stop-hook detectors. Read by run_all.py (Python), work_checks.js (JS), and validated against detectors.sh (bash). Adding a detector = add an entry here, write the python module, and re-run the registry-validator. The persist-line bug that silently disabled COMMENT_BLOAT for hours was caused by the 3-place-update model this registry replaces.",
+  "_schema": {
+    "name": "snake_case detector identifier (matches python module + verdict-line key)",
+    "module": "python module name in tools/HME/scripts/detectors/",
+    "fires_when": "the verdict string the python detector prints when violation found (the bash variable equals this when firing); 'ok' otherwise",
+    "bash_var": "UPPER_SNAKE bash variable name in detectors.sh",
+    "deny": "true => work_checks.js adds to FIRING_RULES (causes ctx.deny); false => detected-only",
+    "reason_key": "key into work_checks.js REASONS object (only when deny=true)"
+  },
+  "detectors": [
+    {"name": "poll_count", "module": "poll_count", "fires_when": null, "bash_var": "POLL_COUNT", "deny": false},
+    {"name": "idle_after_bg", "module": "idle_after_bg", "fires_when": null, "bash_var": "IDLE_AFTER_BG", "deny": false},
+    {"name": "psycho_stop", "module": "psycho_stop", "fires_when": "psycho_stop", "bash_var": "PSYCHO_STOP", "deny": false},
+    {"name": "ack_skip", "module": "ack_skip", "fires_when": "ack_skip", "bash_var": "ACK_SKIP", "deny": false},
+    {"name": "abandon_check", "module": "abandon_check", "fires_when": "abandon_check", "bash_var": "ABANDON_CHECK", "deny": false},
+    {"name": "stop_work", "module": "stop_work", "fires_when": "DISMISSIVE", "bash_var": "STOP_WORK", "deny": true, "reason_key": "STOP_WORK_DISMISSIVE"},
+    {"name": "stop_work_text_only", "module": "stop_work", "fires_when": "TEXT_ONLY_SHORT", "bash_var": "STOP_WORK", "deny": true, "reason_key": "STOP_WORK_TEXT_ONLY"},
+    {"name": "fabrication_check", "module": "fabrication_check", "fires_when": "fabrication_check", "bash_var": "FABRICATION_CHECK", "deny": false},
+    {"name": "early_stop", "module": "early_stop", "fires_when": "early_stop", "bash_var": "EARLY_STOP", "deny": false},
+    {"name": "exhaust_check", "module": "exhaust_check", "fires_when": "exhaust_violation", "bash_var": "EXHAUST_CHECK", "deny": true, "reason_key": "EXHAUST"},
+    {"name": "scope_escape", "module": "scope_escape", "fires_when": "scope_escape_violation", "bash_var": "SCOPE_ESCAPE", "deny": true, "reason_key": "SCOPE_ESCAPE"},
+    {"name": "senior_consult_debt", "module": "senior_consult_debt", "fires_when": "consult-debt", "bash_var": "SENIOR_CONSULT_DEBT", "deny": false},
+    {"name": "ignore_and_trample", "module": "ignore_and_trample", "fires_when": "ignore-and-trample", "bash_var": "IGNORE_AND_TRAMPLE", "deny": false},
+    {"name": "phantom_capability", "module": "phantom_capability", "fires_when": "phantom_capability", "bash_var": "PHANTOM_CAPABILITY", "deny": true, "reason_key": "PHANTOM_CAPABILITY"},
+    {"name": "phantom_paraphrase", "module": "phantom_capability", "fires_when": "phantom_paraphrase", "bash_var": "PHANTOM_CAPABILITY", "deny": true, "reason_key": "PHANTOM_PARAPHRASE"},
+    {"name": "advisor_missing_pre_build", "module": "advisor_doctrine", "fires_when": "advisor_missing_pre_build", "bash_var": "ADVISOR_DOCTRINE", "deny": true, "reason_key": "ADVISOR_MISSING_PRE_BUILD"},
+    {"name": "advisor_missing_post_deliver", "module": "advisor_doctrine", "fires_when": "advisor_missing_post_deliver", "bash_var": "ADVISOR_DOCTRINE", "deny": true, "reason_key": "ADVISOR_MISSING_POST_DELIVER"},
+    {"name": "advisor_silently_skipped", "module": "advisor_doctrine", "fires_when": "advisor_silently_skipped", "bash_var": "ADVISOR_DOCTRINE", "deny": false, "_note": "softened 2026-05-03; detected-only because decision:block ate VSCode-rendered turns"},
+    {"name": "advisor_conflict_cap_exceeded", "module": "advisor_doctrine", "fires_when": "advisor_conflict_cap_exceeded", "bash_var": "ADVISOR_DOCTRINE", "deny": true, "reason_key": "ADVISOR_CONFLICT_CAP"},
+    {"name": "summary_missing", "module": "summary_format", "fires_when": "summary_missing", "bash_var": "SUMMARY_FORMAT", "deny": true, "reason_key": "SUMMARY_MISSING"},
+    {"name": "summary_malformed", "module": "summary_format", "fires_when": "summary_malformed", "bash_var": "SUMMARY_FORMAT", "deny": true, "reason_key": "SUMMARY_MALFORMED"},
+    {"name": "minimal_format_violation", "module": "summary_format", "fires_when": "minimal_format_violation", "bash_var": "SUMMARY_FORMAT", "deny": true, "reason_key": "MINIMAL_FORMAT_VIOLATION"},
+    {"name": "live_probe", "module": "live_probe", "fires_when": "live_probe_missing", "bash_var": "LIVE_PROBE", "deny": true, "reason_key": "LIVE_PROBE_MISSING"},
+    {"name": "phase_gate", "module": "phase_gate", "fires_when": "phase_skipped", "bash_var": "PHASE_GATE", "deny": true, "reason_key": "PHASE_SKIPPED"},
+    {"name": "pile_on", "module": "pile_on", "fires_when": "pile_on", "bash_var": "PILE_ON", "deny": true, "reason_key": "PILE_ON"},
+    {"name": "claim_without_evidence", "module": "claim_without_evidence", "fires_when": "claim_without_evidence", "bash_var": "CLAIM_WITHOUT_EVIDENCE", "deny": false, "_note": "softened 2026-05-03; same reason as advisor_silently_skipped"},
+    {"name": "fix_without_investigation", "module": "fix_without_investigation", "fires_when": "fix_without_investigation", "bash_var": "FIX_WITHOUT_INVESTIGATION", "deny": true, "reason_key": "FIX_WITHOUT_INVESTIGATION"},
+    {"name": "comment_bloat", "module": "comment_bloat", "fires_when": "comment_bloat", "bash_var": "COMMENT_BLOAT", "deny": true, "reason_key": "COMMENT_BLOAT"}
+  ]
+}
