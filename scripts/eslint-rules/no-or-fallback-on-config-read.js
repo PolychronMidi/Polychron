@@ -1,31 +1,8 @@
-// ESLint rule: no-or-fallback-on-config-read
-//
-// Bans silent fallbacks on reads from configuration-like objects. The
-// failure mode this catches: `_cc.foo || 0.5` silently rewrites a legit
-// zero to 0.5, masking bad config and producing non-deterministic behavior
-// that only surfaces when someone ships `foo: 0` and wonders why it
-// doesn't take effect. This is the class of bug that bypassed ESLint for
-// months and only surfaced during a targeted fail-fast sweep.
-//
-// Trigger: LogicalExpression where
-//   operator === '||' OR '??'
-//   left  === MemberExpression on an identifier starting with `_` (project
-//            convention for config-section variables: _cc, _atsc, _cimc,
-//            _pgcc, etc.) OR on an object literal destructured from
-//            `controllerConfig.getSection(...)`
-//   right === Literal (number, string) OR array/object expression
-//
-// Allowed replacements:
-//   V.optionalFinite(_cc.foo, 0.5)     -- numeric, catches NaN/string
-//   V.optionalType(_cc.foo, 'array', [...])   -- array
-//   V.optionalType(_cc.foo, 'object', {...})  -- object
-//   V.optionalString(_cc.foo, 'default')      -- string
-//
-// `??` is tolerated for histogram-style counter reads (Map.get(k) ?? 0)
-// via the `conductor-histogram-uses-nullish` invariant -- this rule
-// targets config-shape reads specifically, not arbitrary map lookups.
-//
-// Exempt when the file imports no `validator` module (validator unavailable).
+// ESLint: bans `_<config>.foo || <literal>` silent fallback on config reads
+// (rewrites legit 0/''/false). Trigger: `||` or `??` whose LHS is a member
+// expression on _cc/_atsc/_cimc/etc. + RHS is Literal/Array/Object.
+// Replacement: V.optionalFinite/optionalType/optionalString. Exempt when no
+// `validator` import.
 
 'use strict';
 
