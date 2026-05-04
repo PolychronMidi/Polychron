@@ -256,11 +256,8 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _rl_err:
         results.append(f"FAIL: reload mechanism -- {type(_rl_err).__name__}: {_rl_err}")
 
-    # fix_antipattern plumbing check: verify the preflight daemon probe works
-    # and the code path can reach synthesis. We deliberately DON'T call the
-    # full synthesis -- a 30-60s LLM round-trip in selftest would push total
-    # selftest time past reasonable bounds. The full smoke test runs from the
-    # dedicated selftest script: scripts/selftest-fix-antipattern.py
+    # fix_antipattern plumbing check: preflight + code path only.
+    # Full LLM round-trip lives in scripts/selftest-fix-antipattern.py.
     try:
         from ..evolution_admin import _daemon_health_snapshot
         _snap = _daemon_health_snapshot()
