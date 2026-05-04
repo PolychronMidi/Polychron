@@ -23,6 +23,7 @@ import json
 import os
 import sys
 import time
+import uuid
 
 
 def _coerce(v: str):
