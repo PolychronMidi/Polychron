@@ -1,25 +1,9 @@
 #!/usr/bin/env bash
-# universal-pulse-supervisor.sh -- keep universal_pulse.py alive.
-#
-# universal_pulse proactively probes every critical HME element (proxy,
-# worker, llamacpp_daemon, hook-latency freshness, process CPU saturation)
-# at a fixed cadence. When a target is unresponsive past the streak
-# threshold, it appends a one-line entry to log/hme-errors.log so LIFESAVER
-# fires at the next turn boundary -- NOT 48 minutes later when a user
-# happens to notice.
-#
-# Why this exists alongside proxy-supervisor.sh:
-#   proxy-supervisor only watches the proxy /health endpoint. If the proxy
-#   itself is fine but the WORKER is GIL-locked, proxy-supervisor has no
-#   opinion -- the hang goes undetected. universal_pulse fills that gap
-#   (and every similar one for llamacpp_daemon / hook bridges / etc.).
-#
-# Design mirrors proxy-supervisor.sh:
-#   - Single instance. PID stored in tmp/hme-universal-pulse-supervisor.pid.
-#     New invocations with an alive PID silently no-op.
-#   - Spawns universal_pulse.py; polls its heartbeat every 15s.
-#   - If heartbeat is >90s stale, kills the child and respawns.
-#   - Respects maintenance flag -- skips restarts during planned windows.
+# universal-pulse-supervisor.sh: keeps universal_pulse.py (proactive probe of
+# proxy/worker/daemon/hook-latency/CPU) alive. Fills the gap proxy-supervisor
+# can't see (worker GIL hangs, daemon stalls). Single instance via
+# tmp/hme-universal-pulse-supervisor.pid; heartbeat poll q15s; respawn if >90s
+# stale; respects maintenance flag.
 
 set +e
 
