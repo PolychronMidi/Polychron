@@ -269,15 +269,9 @@ function _shrinkForPassthrough(payload) {
     }
   }
 
-  // TIER 2 -- summary-via-local-model fallback. Replace the OLDEST half
-  // of messages with a single summary text block. Calls llamacpp_daemon
-  // (local, no Anthropic API tokens consumed) for the summarization;
-  // gated by HME_PROXY_LOCAL_SUMMARY=1 (off by default because it adds
-  // latency and a network call to a separate process). When enabled,
-  // tier-2 runs BEFORE tier-3 message-drop. Stub: we don't await a real
-  // summary -- inserting a marker so the model knows older context was
-  // dropped is sufficient for the rate-limit-fix use case. A real
-  // summarization call would replace `_summaryText` below.
+  // TIER 2: summary-via-local-model fallback (HME_PROXY_LOCAL_SUMMARY=1).
+  // Replaces oldest half with a marker; runs before tier-3 message-drop.
+  // Stub -- a real summarization call would replace `_summaryText`.
   if (process.env.HME_PROXY_LOCAL_SUMMARY === '1' && msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN * 2) {
     const _half = Math.floor(msgs.length / 2);
     const _summaryText = `(hme-proxy local-summary placeholder: ${_half} oldest messages compacted)`;
@@ -323,15 +317,9 @@ function _shrinkForPassthrough(payload) {
     serialized = JSON.stringify(payload);
     if (serialized.length <= _threshold) break;
   }
-  // PASS 5 -- walk-backward tool-pair preservation. Anthropic's first-
-  // party compaction (per the deep-dive) walks the cut boundary backward
-  // to keep tool_use/tool_result pairs together. Our tier-4 dropped from
-  // the front; if the FIRST surviving message is a user message with a
-  // tool_result whose tool_use is in a dropped assistant message, we
-  // need to ALSO drop those tool_results (or extend the cut to also drop
-  // the user message). Cheaper than putting the assistant back. We
-  // iterate: drop the leading user-tool_result-only message until the
-  // first surviving message is clean.
+  // PASS 5: walk-backward tool-pair preservation. Drop leading user message
+  // if it's tool_result-only with its tool_use in a dropped assistant block.
+  // Iterate until the first surviving message is clean.
   while (msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN) {
     const first = msgs[0];
     if (!first || !Array.isArray(first.content)) break;
