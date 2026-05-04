@@ -12,7 +12,7 @@ Voice history is keyed by `LM.activeLayer`. Any new state written per-beat that 
 
 <!-- HME-DIR-INTENT
 rules:
-  - Composers express note preferences via `getVoicingIntent()` weights only -- never write to `voiceHistoryByLayer` or call `voiceRegistry` directly from a composer
+  - Composers express note preferences via `getVoicingIntent()` weights only -- never write `voiceHistoryByLayer` or call `voiceRegistry` directly from a composer
   - Voice history is per-layer (keyed by `LM.activeLayer`); new persistent per-beat state needs `LM.perLayerState` save/restore treatment
   - `VoiceManager` is the single entry point for voice count and selection -- no composer bypasses it for direct note picks
 -->
