@@ -464,7 +464,6 @@ function main() {
     'build-dashboard.py',              // interactive plotly dashboard
     'chain-snapshot.py',               // pre-compact session snapshot
     'emit-hci-signal.py',              // HCI -> composition-layer signal
-    'suggest-verifiers.py',            // verifier coverage report
     'memetic-drift.py',                // CLAUDE.md rule violation scan
   ];
   var bgEnv = Object.assign({}, process.env, {

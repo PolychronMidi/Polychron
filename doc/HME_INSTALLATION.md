@@ -57,14 +57,13 @@ tools/HME/               The single source of truth
     analyze-tool-effectiveness.py         Multi-window (1h/6h/24h) session stats
     build-hme-coupling-matrix.py          Tool co-occurrence + antagonist bridges
     stress-test-subagent.py               5-case adversarial battery for agent_local
-    suggest-verifiers.py                  Verifier-that-invents-verifiers (H13)
-    memetic-drift.py                      CLAUDE.md rule violation scanner (H16)
-    promote-global-kb.py                  Cross-project KB promotion (H12)
+    memetic-drift.py                      CLAUDE.md rule violation scanner
+    promote-global-kb.py                  Cross-project KB promotion
     build-dashboard.py                    Interactive plotly.js dashboard
-    emit-hci-signal.py                    HCI -> composition-layer signal (H15 scaffold)
-    finetune-arbiter.py                   QLoRA training entry (H10)
-    learn-stopwords.py                    Self-improving stopwords (H7)
-    predict-hci.py                        Predictive HCI model (H9)
+    emit-hci-signal.py                    HCI -> composition-layer signal
+    finetune-arbiter.py                   QLoRA training entry
+    learn-stopwords.py                    Self-improving stopwords
+    predict-hci.py                        Predictive HCI model
   doc                                   -> doc/ (symlink)
 ```
 

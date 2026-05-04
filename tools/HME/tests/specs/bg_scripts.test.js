@@ -24,7 +24,6 @@ const SCRIPTS = [
   'analyze-hci-trajectory.py',
   'build-dashboard.py',
   'predict-hci.py',
-  'suggest-verifiers.py',
   'promote-global-kb.py',
   'memetic-drift.py',
   'emit-hci-signal.py',
