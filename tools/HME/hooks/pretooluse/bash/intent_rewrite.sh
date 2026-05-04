@@ -1,27 +1,8 @@
-# Bash intent translation (Level 7 of the dominance layer).
-#
-# When the agent runs raw bash that would be strictly better served by an
-# HME tool, silently rewrite the command so HME runs instead of the raw
-# grep/cat/find. The agent types its muscle-memory bash; HME executes the
-# intent through its proper channel.
-#
-# Feature-flagged via HME_DOMINANCE env var. When off, this hook is a
-# pure no-op.
-#
-# Design constraint: rewrites MUST produce equivalent or superior output.
-# Never degrade the agent's observed result -- that'd break the "tool
-# falls into hand" experience. Safe translations only:
-#
-#   `grep -rn <pat> tools/HME` -> `i/hme-read query=<pat>`  # KB-enriched
-#   `find src -name <pat>`     -> `i/hme-read mode=find query=<pat>`
-#   `cat log/hme-errors.log`   -> `i/status mode=coherence`  # indirect polling
-#
-# Skipped translations (too lossy):
-#   - raw ls (too structural)
-#   - cat on arbitrary files (the agent wants raw content, not briefs)
-#   - any grep/find on output/ metrics/ (agent may want raw data)
-#
-# Non-translated commands pass through untouched.
+# Bash intent translation: silently rewrite raw grep/find/cat into the
+# corresponding HME tool when superior. Feature-flagged via HME_DOMINANCE.
+# Translations: grep -rn .. tools/HME -> i/hme-read; find src -name X ->
+# i/hme-read mode=find; cat log/hme-errors.log -> i/status mode=coherence.
+# Skips raw ls, cat-on-arbitrary, grep/find on output|metrics. Pass-through default.
 
 [ "${HME_DOMINANCE:-}" = "1" ] || return 0
 
