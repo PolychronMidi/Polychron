@@ -14,11 +14,8 @@ fi
 
 _signal_emit turn_start userpromptsubmit turn '{}'
 
-# SatisfactionCapture (PAI v6.3.0 import #8). Score the new prompt 1-10 as
-# a satisfaction signal for the just-finished turn and append to
-# output/metrics/satisfaction.jsonl. Critical PAI fix: NEVER null --
-# neutral / unmatched prompts score 5. Best-effort: a missing python or
-# malformed prompt should not block the turn.
+# SatisfactionCapture: score the prompt 1-10 -> output/metrics/satisfaction.jsonl
+# (neutral=5, never null). Best-effort; never blocks the turn.
 if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
   PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true
 fi
