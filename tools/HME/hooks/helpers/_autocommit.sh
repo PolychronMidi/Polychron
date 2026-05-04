@@ -137,14 +137,20 @@ _ac_do_commit() {
     return 1
   fi
 
-  # Flock for concurrent-commit serialization. Rapid Stop events can race
-  # on .git/index.lock; an advisory lockfile bounds waiting to 30s.
+  # Stale-lock recovery: .git/index.lock can persist when a git process
+  # crashes / is killed mid-add. Unlink only if no live process holds it.
+  local _git_lock="$_AC_ROOT/.git/index.lock"
+  if [ -f "$_git_lock" ]; then
+    if ! fuser "$_git_lock" >/dev/null 2>&1; then
+      rm -f "$_git_lock" 2>/dev/null
+    fi
+  fi
+  # Flock for concurrent-commit serialization (advisory, 30s wait).
   local _ac_err_buf
   _ac_err_buf=$(mktemp 2>/dev/null || echo "/tmp/hme-ac-err.$$")
   # shellcheck disable=SC2094
   exec 9>"$_AC_LOCK_FILE"
   if ! flock -w 30 9 2>/dev/null; then
-    # Proceed without the lock -- a silent skip is worse than a race.
     _ac_record_failure "[$caller] flock timeout 30s on $_AC_LOCK_FILE (proceeding unlocked)"
   fi
 
