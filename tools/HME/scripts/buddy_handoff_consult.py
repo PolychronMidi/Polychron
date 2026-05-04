@@ -197,20 +197,12 @@ def cmd_consult(args: argparse.Namespace) -> int:
                     cooldown_file.write_text(f"{time.time()}\n")
                 except OSError:
                     pass
-    # Dynamic timeout = max(floor, resume_cost + response_budget):
-    #   - floor: 1800s (30 min) for small buddies and stale-senior fallback.
-    #   - resume_cost: 30s per MB of transcript (claude --resume spin-up).
-    #   - response_budget: 600s (10 min) for Opus + extended thinking on
-    #     a substantive consult question.
-    # Total formula: max(1800, transcript_mb * 30 + 600).
-    # Asymmetry argues bias-generous: a too-loose timeout makes the user
-    # wait on a rare hung process; too-tight silently wastes tokens on
-    # every long consult. timeout=None was a footgun; fixed-300s killed
-    # valid consults mid-response. Idle watchdog via Popen+select that
-    # resets on every byte received is the better primitive -- open
-    # follow-up if the formula tuning turns out to be load-bearing.
-    # If transcript_path is None (stale senior, transcript purged),
-    # transcript_mb stays 0 and consult_timeout falls back to the floor.
+    # Dynamic timeout = max(1800, transcript_mb * 30 + 600).
+    # 1800s floor; +30s/MB for resume cost; +600s response budget for
+    # Opus extended thinking. Bias-generous (asymmetric: too-loose makes
+    # user wait on hung process; too-tight wastes tokens on every long
+    # consult). Idle watchdog (Popen+select per-byte reset) is the better
+    # primitive when this formula stops scaling.
     transcript_mb = 0.0
     bd = _import_dispatcher()
     transcript_path = bd._transcript_path_for_sid(args.sid)
