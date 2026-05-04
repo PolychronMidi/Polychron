@@ -14,12 +14,8 @@ const LAST_SUCCESS_REL = path.join(STATE_DIR, 'hme-autocommit.last-success');
 // Same lock file _autocommit.sh uses; serializes JS+bash autocommit callers.
 const LOCK_REL = path.join(STATE_DIR, 'hme-autocommit.lock');
 
-// Derive project root from THIS file's own path. Not from ctx, not from
-// env, not from cwd. The original silent-failure bug was exactly the
-// dependency on ctx.PROJECT_ROOT being defined -- when it wasn't, the
-// `if (!root) return;` line swallowed every failure mode silently.
-// This module lives at tools/HME/proxy/middleware/21_proxy_autocommit.js,
-// so the project root is four levels up.
+// Project root derived from THIS file's path (not ctx/env/cwd) -- the
+// silent-failure bug was ctx.PROJECT_ROOT being unset.
 const DERIVED_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 
 function _ts() {
