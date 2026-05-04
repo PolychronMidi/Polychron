@@ -225,30 +225,11 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
         return None
 
 
-# Overdrive budget and timeout tuning.
-#
-# Defaults are "max effort" -- 64k thinking, 240s wall clock -- because
-# that's what OVERDRIVE_MODE exists for. Callers who want true
-# ceiling-level reasoning (up to 128k budget) can bump both knobs in
-# .env without code changes. The two are coupled: Opus generates
-# thinking at ~500 tok/s, so a budget/timeout combo that under-budgets
-# time produces spurious 504/timeout failures mid-thought.
-#
-# Rough timing math for capacity planning:
-#   32k budget -> ~64s   -> fits well under 180s
-#   64k budget -> ~128s  -> default; fits under 240s with headroom
-#   96k budget -> ~192s  -> needs timeout >= 240s
-#   128k budget -> ~256s -> needs timeout >= 300s (Anthropic ceiling)
-#
-# Env vars:
-#   OVERDRIVE_THINK_BUDGET  -- int, thinking budget in tokens (default 64000)
-#   OVERDRIVE_TIMEOUT       -- int, wall-clock seconds per model call (default 240)
-#
-# _OVERDRIVE_MAX_TOKENS_SLACK is a code constant (not env-tunable): Anthropic
-# requires max_tokens > thinking.budget_tokens, so the effective max_tokens
-# is always budget+slack. Slack of 4096 gives the answer itself ~4k headroom
-# beyond the thinking phase, which is plenty for the structured outputs
-# agentic workloads produce.
+# Overdrive defaults: 64k thinking budget, 240s wall clock. Tunable via
+# OVERDRIVE_THINK_BUDGET / OVERDRIVE_TIMEOUT. Opus generates thinking at
+# ~500 tok/s, so timeout >= budget/500 + headroom (32k:>=180s, 64k:>=240s,
+# 96k:>=240s, 128k:>=300s). Anthropic ceiling 128k.
+# _OVERDRIVE_MAX_TOKENS_SLACK is fixed (max_tokens > thinking.budget required).
 _OVERDRIVE_MAX_TOKENS_SLACK = 4096
 
 
