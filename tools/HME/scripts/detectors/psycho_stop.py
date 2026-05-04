@@ -40,16 +40,9 @@ BG_KEYWORDS = (
 )
 
 
-# Pattern B: "admit-and-stop" -- final assistant text enumerates pending /
-# remaining / cant-do-mid-turn work but no tool calls follow it.
-#
-# Sourced from _phrase_lists.py to align with sibling detectors
-# (exhaust_check, early_stop) -- peer-review iter 135 caught that 9
-# detectors measuring the same "deferral" signal had drift-prone
-# private phrase lists. ADMIT_PHRASES = future-tense + flag-for-later
-# + ack-no-fix + cant-do, which together cover what this detector
-# measures. PERMISSION_ASK_PHRASES below uses SURVEY_PERMISSION_ASK
-# from the same module.
+# Pattern B "admit-and-stop": final text enumerates pending/remaining work
+# without a follow-up tool call. ADMIT_PHRASES sourced from _phrase_lists
+# (shared with exhaust_check/early_stop to prevent drift).
 from _phrase_lists import (  # noqa: E402
     DEFERRAL_FUTURE_TENSE,
     DEFERRAL_FLAG_FOR_LATER,
