@@ -1,22 +1,10 @@
 'use strict';
-// Lifecycle bridge: extracted from hme_proxy.js. Two delivery paths exist
-// for Claude Code lifecycle hooks (SessionStart, UserPromptSubmit, Stop):
-//
-//   1. Forwarder path -- Claude Code's hook system POSTs to /hme/lifecycle
-//      with ?event=<EventName>. Handled by handleLifecycleRoute below.
-//   2. Inline fallback -- when the forwarder path isn't reaching us
-//      (plugin cache missing, forwarder uninstalled, VS Code extension
-//      mode, etc.), the proxy fires the same hook chain in-process via
-//      runInlineFallback. handleRequest invokes this for UserPromptSubmit
-//      and Stop when the corresponding /hme/lifecycle hit is stale.
-//
-// _lifecycleSeen tracks recent forwarder hits so the inline path doesn't
-// double-fire when both routes are active. _LIFECYCLE_FRESH_MS=30s is the
-// dedup window: a /hme/lifecycle hit "covers" inline fires for that long.
-//
-// SessionStart fires inline at module load -- a bare safety net so the
-// session-start hook chain runs at least once even if Claude Code never
-// reaches us via forwarder.
+// Lifecycle bridge: two delivery paths for Claude Code hooks
+// (SessionStart/UserPromptSubmit/Stop):
+//   1. Forwarder POST to /hme/lifecycle?event=... (handleLifecycleRoute).
+//   2. Inline fallback (runInlineFallback) when forwarder not reaching us.
+// _lifecycleSeen + _LIFECYCLE_FRESH_MS=30s dedup window prevents double-fire.
+// SessionStart fires inline at module load as a bare safety net.
 
 const fs = require('fs');
 const path = require('path');
