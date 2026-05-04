@@ -136,31 +136,21 @@ class HumanDeferredAuditVerifier(Verifier):
 
 
 class ProxyMiddlewareRegistryVerifier(Verifier):
-    """Every file in tools/HME/proxy/middleware/*.js must (a) be listed in
-    order.json OR load cleanly unlisted, AND (b) not throw at require()
-    time. Born from the dir_context.js silent failure: an undefined-ROOT
-    ReferenceError caused the middleware to silently not register for
-    who-knows-how-long, removing dir-intent enrichment from every turn.
-    Surface this class of failure immediately."""
+    """Every file in tools/HME/proxy/middleware/*.js must (a) carry the
+    NN_ numeric prefix encoding load order, AND (b) not throw at require()
+    time. Born from dir_context.js silent failure (undefined-ROOT ReferenceError
+    caused silent non-registration). Surface this class immediately."""
     name = "proxy-middleware-registry"
     category = "code"
     subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        import subprocess
+        import re as _re_mw
         mw_dir = os.path.join(_PROJECT, "tools", "HME", "proxy", "middleware")
-        order_path = os.path.join(mw_dir, "order.json")
         if not os.path.isdir(mw_dir):
             return _result(SKIP, 1.0, "middleware dir not present", [mw_dir])
-        # Mirror the exclusion rules in middleware/index.js loadAll(): skip
-        # index.js itself, the manifest, test files (test_*.js, *.test.js,
-        # *_test.js), AND underscore-prefixed shared utilities (mirrors
-        # the hooks/helpers/_*.sh convention). The loader explicitly skips
-        # `_*.js` because they export helper functions for other middleware
-        # to consume but aren't themselves registered. Without this rule
-        # the verifier flagged _markers.js / _persistent_map.js as
-        # "unlisted" even though the loader correctly excludes them.
+        # Mirror loadAll() exclusions: skip index.js, _-prefixed utilities, tests.
         def _is_middleware(f: str) -> bool:
             if not f.endswith(".js") or f == "index.js":
                 return False
@@ -169,18 +159,10 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
             if f.startswith("_"):
                 return False
             return True
+        prefix_re = _re_mw.compile(r"^\d+_")
         files = sorted(f for f in os.listdir(mw_dir) if _is_middleware(f))
-        try:
-            with open(order_path) as f:
-                order = json.load(f).get("order", [])
-        except Exception as _e:
-            return _result(ERROR, 0.0, f"could not read order.json: {_e}", [order_path])
-        unlisted = [f for f in files if f not in order]
-        missing_in_fs = [f for f in order if f not in files]
-        # Attempt to require() each middleware in a fresh Node subprocess.
-        # The proxy logs only show the LAST load attempt; this verifier
-        # independently confirms every file can be loaded. Using subprocess
-        # directly because _run_subprocess prepends python3 -- we need node.
+        unprefixed = [f for f in files if not prefix_re.match(f)]
+        # Require() each middleware in a fresh Node subprocess to confirm load.
         import subprocess as _sp_mr
         load_failures = []
         for fname in files:
@@ -199,20 +181,17 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
         issues = []
         if load_failures:
             issues.extend(f"LOAD FAIL: {x}" for x in load_failures)
-        if missing_in_fs:
-            issues.append(f"order.json references missing files: {', '.join(missing_in_fs)}")
-        if unlisted:
-            issues.append(f"files not in order.json (will load alphabetically AFTER manifest): {', '.join(unlisted)}")
+        if unprefixed:
+            issues.append(f"files lacking NN_ numeric prefix (load alphabetically AFTER prefixed): {', '.join(unprefixed)}")
         if not issues:
             return _result(PASS, 1.0,
-                           f"{len(files)} middleware loadable, {len(order)} in manifest",
+                           f"{len(files)} middleware loadable, all NN_-prefixed",
                            [])
         score = 0.0 if load_failures else 0.6
         verdict = FAIL if load_failures else WARN
         return _result(verdict, score,
                        f"{len(load_failures)} load failure(s), "
-                       f"{len(missing_in_fs)} manifest gap(s), "
-                       f"{len(unlisted)} unlisted file(s)",
+                       f"{len(unprefixed)} unprefixed file(s)",
                        issues[:10])
 
 
