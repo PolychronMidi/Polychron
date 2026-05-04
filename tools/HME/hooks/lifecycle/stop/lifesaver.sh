@@ -88,17 +88,9 @@ if [ -f "$ERROR_LOG" ]; then
     fi
   fi
 
-  # Block on UNADDRESSED errors from before this turn (watermark not caught up)
-  # This fires when userpromptsubmit showed errors but they were not fixed last turn.
-  #
-  # Apply the SAME severity + canary filtering as the new-errors branch above.
-  # Without this, an alert-chain canary written between turns (or any
-  # WARN/INFO/DEBUG/NOTICE-tagged observation entry) would surface as an
-  # "UNADDRESSED ERROR" and falsely block -- the canary IS addressed (it's
-  # consumed silently when scanned), and observation entries are not agent-
-  # actionable. This branch was missing the filtering entirely, causing the
-  # exact "CANARY-... alert-chain self-test injection" false-block the user
-  # just hit. Mirror the agent/self/canary classification used above.
+  # Surface UNADDRESSED errors from prior turn (watermark < turnstart).
+  # Same severity + canary filtering as the new-errors branch above
+  # (canaries consumed silently; WARN/INFO/DEBUG observation-only).
   if [ "$WATERMARK_LINE" -lt "$TURN_START_LINE" ]; then
     UNFIXED_RAW=$(awk "NR > $WATERMARK_LINE && NR <= $TURN_START_LINE" "$ERROR_LOG" \
       | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
