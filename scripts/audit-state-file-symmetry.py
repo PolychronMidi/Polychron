@@ -38,11 +38,17 @@ SCAN_ROOTS = [PROJECT_ROOT / "tools" / "HME", PROJECT_ROOT / "scripts"]
 SKIP_DIRS = ("__pycache__", "node_modules", ".git", "out", "dist", "tests")
 EXTS = (".py", ".js", ".sh", ".bash", ".ts")
 
-# Match the basename portion. Captured group is the basename only -- the
-# leading dir/prefix is normalized away so `runtime/hme/foo.sid` and
-# `tmp/hme-foo.sid` (the migration's two namespaces) compare equal.
+# Match the basename portion. Captured group is normalized: the leading
+# dir/prefix is stripped so `runtime/hme/foo.sid` and `tmp/hme-foo.sid`
+# (the migration's two namespaces) compare equal.
 _PATH_RE = re.compile(
     r"""(?:runtime/hme/|tmp/hme-)([A-Za-z0-9][A-Za-z0-9._\-]*)"""
+)
+# Bare `hme-FOO.ext` in a string literal -- catches the heartbeat-bug shape
+# where the path was variable-prefixed ($DIR/hme-foo.ts) and so doesn't show
+# the `tmp/` or `runtime/hme/` namespace literally.
+_BARE_HME_RE = re.compile(
+    r"""['"]hme-([A-Za-z0-9][A-Za-z0-9._\-]*\.(?:ts|json|sid|txt|env|flag|pid|lock|count|score|err|out|state|heartbeat|watermark))['"]"""
 )
 
 # Path.join / pathlib joins: `path.join(X, 'runtime', 'hme', 'foo.sid')`
@@ -92,13 +98,9 @@ def _extract_basenames(line: str) -> list[str]:
         out.append(m.group(1))
     for m in _JOIN_TMP_RE.finditer(line):
         out.append(m.group(1))
+    for m in _BARE_HME_RE.finditer(line):
+        out.append(m.group(1))
     return out
-
-
-def _classify(line: str, write_kws: tuple, read_kws: tuple) -> tuple[bool, bool]:
-    """Return (has_write, has_read) -- both can be True for `cat A > B` shapes."""
-    return (any(kw in line for kw in write_kws),
-            any(kw in line for kw in read_kws))
 
 
 def _scan_file(path: Path) -> tuple[set, set]:
