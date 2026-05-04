@@ -16,6 +16,8 @@ const STATE_DIR = 'tmp';
 const FAIL_FLAG_REL = path.join(STATE_DIR, 'hme-autocommit.fail');
 const COUNTER_REL = path.join(STATE_DIR, 'hme-autocommit.counter');
 const LAST_SUCCESS_REL = path.join(STATE_DIR, 'hme-autocommit.last-success');
+// Same lock file _autocommit.sh uses; serializes JS+bash autocommit callers.
+const LOCK_REL = path.join(STATE_DIR, 'hme-autocommit.lock');
 
 // Derive project root from THIS file's own path. Not from ctx, not from
 // env, not from cwd. The original silent-failure bug was exactly the
