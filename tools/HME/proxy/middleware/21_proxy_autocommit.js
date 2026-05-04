@@ -161,11 +161,8 @@ module.exports = {
 
   onRequest({ payload, ctx }) {
     if (!payload || !Array.isArray(payload.messages)) return;
-    // Prefer ctx.PROJECT_ROOT if present, fall back to the path-derived
-    // root. Do NOT silently skip when ctx is missing -- the old code did
-    // exactly that and it was the root cause of the recurring silent
-    // failure. If both ctx and derivation are bogus, the prereq checks
-    // inside _attemptCommit record the failure to all four channels.
+    // ctx.PROJECT_ROOT preferred; fallback to path-derived. Never silent-skip
+    // (the old `if (!root) return` was the root-cause silent-fail bug).
     const root = (ctx && ctx.PROJECT_ROOT) || DERIVED_ROOT;
     _attemptCommit(root, 'onRequest');
   },
