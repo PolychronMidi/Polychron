@@ -29,9 +29,7 @@ CLAIM_WITHOUT_EVIDENCE=ok
 FIX_WITHOUT_INVESTIGATION=ok
 COMMENT_BLOAT=ok
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  # run_all.py emits `name=verdict` per detector; parse into bash vars.
-  # FAIL-LOUD: stderr captured + bridged to hme-errors.log so a run_all
-  # crash can't silently disable all detectors (fallback defaults to ok).
+  # run_all.py emits `name=verdict`; stderr bridged to hme-errors.log so a crash can't silently disable detectors.
   _DET_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_det_py_err_$$")
   _RUN_ALL_OUT=$(timeout 3 python3 "$_DETECTORS_DIR/run_all.py" "$TRANSCRIPT_PATH" 2>"$_DET_PY_ERR" || true)
   if [ -s "$_DET_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
