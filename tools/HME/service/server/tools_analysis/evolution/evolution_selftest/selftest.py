@@ -488,12 +488,8 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: spawner-ownership -- probe failed: {type(_e).__name__}: {_e}")
 
-    # Probe 2: daemon log must be clean of silent thread traces. When a
-    # threading.Thread(target=fn) crashes, Python writes "Exception in
-    # thread ..." to stderr without raising. That pattern caused the
-    # "not started" sentinel to hide the real env-parse ValueError for
-    # days before tonight. We read daemon stderr log and fail if any
-    # uncaught thread exception appears in the last 100 lines.
+    # Probe 2: daemon log clean of silent "Exception in thread ..." traces
+    # (Thread(target=fn) crashes write to stderr without raising).
     try:
         daemon_log = os.path.join(_project_root, "log", "hme-llamacpp_daemon.out")
         if os.path.isfile(daemon_log):
