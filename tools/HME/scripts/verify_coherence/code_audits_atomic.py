@@ -106,19 +106,9 @@ class AtomicStateWritesVerifier(Verifier):
                             f"(use _atomic_write or temp+os.replace; "
                             f"per-line opt-out: append '# atomic-ok')"
                         )
-        # Shell pass: scan .sh files for `> "<state-path>"` redirects
-        # without a same-line `mv` to atomically rename. Catches the
-        # bash-level version of the same antipattern (e.g. holograph
-        # stdout-redirect bug that produced interleaved JSON in 2026-04).
-        # We run this pass even if the Python pass passed.
-        # Build a regex for known state paths. The path can appear quoted
-        # or unquoted; we match the substring.
-        # Match `cmd > <state-path>` redirects only when there's an actual
-        # command on the LHS. Three things to exclude:
-        #   - lines whose first non-whitespace char is `>` (pure truncate)
-        #   - `2>` stderr redirects (skipped by requiring a non-digit char
-        #     immediately before `>`)
-        #   - `>>` append (rare on JSON state files; accepted for now)
+        # Shell pass: scan .sh for `cmd > "<state-path>"` redirects without
+        # same-line atomic `mv`. Excludes pure truncate (`^>`), stderr (`2>`),
+        # and append (`>>`). Quoted/unquoted paths matched via substring.
         truncate_only_re = re.compile(r'^\s*>')
         path_substr_re = re.compile(
             r'[A-Za-z_"}\)]\s*>\s*"?[^"\s]*?(?:output/metrics/[^"\s]*\.json|'
