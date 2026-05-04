@@ -340,25 +340,12 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         logger.info("reasoning: HME_REASONING_OFFLINE=1 -- skipping external cascade")
         return None
 
-    # OVERDRIVE_MODE: route through Claude Code subscription for higher-
-    # quality output than the free cascade. All paths consume Max session
-    # quota (via direct API with proxy-injected OAuth token, OR via the
-    # subagent bridge), NEVER raw api.anthropic.com.
-    #
-    # Mode 1: Opus-then-Sonnet chain regardless of task tier. Original
-    #         behavior. Same chain for every call.
-    # Mode 2: tier-aware routing --
-    #           hard   -> Opus chain (Opus, fallback Sonnet on rate-limit)
-    #           medium -> Sonnet-only chain (skip Opus to preserve quota
-    #                    for hard tasks; force direct API since subagent
-    #                    can't pin a specific model independent of /model)
-    #           easy   -> skip overdrive entirely -> fall through to free
-    #                    cascade (NVIDIA/Cerebras/Groq/Gemini)
-    # Mode 0 (or unset): no-op; cascade is the only path.
-    #
-    # On any overdrive failure (rate-limit-everything, proxy down, etc.),
-    # we fall through to the free cascade so the agent never blocks on a
-    # transient API issue.
+    # OVERDRIVE_MODE routing (consumes Max-session quota via proxy OAuth
+    # injection or subagent bridge; never raw api.anthropic.com):
+    #   1 = Opus->Sonnet chain regardless of tier
+    #   2 = tier-aware: hard=Opus chain / medium=Sonnet-only / easy=free cascade
+    #   0 = no-op; free cascade only
+    # Any overdrive failure falls through to the free cascade.
     _od_mode = _ENV.optional("OVERDRIVE_MODE", "0")
     _normalized_tier = (tier or "medium").lower()
     if _normalized_tier not in ("easy", "medium", "hard"):
