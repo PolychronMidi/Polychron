@@ -141,11 +141,9 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
         logger.warning(f"dispatch_thread: read sid failed: {e}")
         return None
     if not sid:
-        # Empty sid file is a silent-fall-through footgun. The buddy
-        # system auto-inits via sessionstart.sh; if the file is here
-        # but empty, init likely failed mid-write or the user
-        # cleared it. Recovery: delete the file (next sessionstart
-        # re-inits) or set .env BUDDY_SYSTEM=0 to disable.
+        # Empty sid file = silent-fall-through footgun (mid-write fail or
+        # manual clear). Recovery: rm the file (next sessionstart re-inits)
+        # or set .env BUDDY_SYSTEM=0 to disable the buddy.
         logger.warning(f"dispatch_thread: sid file {sid_file} exists but is empty "
                        "-- rm the file (next sessionstart re-inits) or set "
                        ".env BUDDY_SYSTEM=0 to disable the buddy")
@@ -160,12 +158,8 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
 
     env = dict(os.environ)
     env["HME_THREAD_CHILD"] = "1"
-    # Count the call BEFORE the subprocess -- the cap's job is to bound
-    # "claude --resume subprocesses spawned," which is what bills the
-    # user's account. Previous placement (after success) meant the
-    # most expensive failure mode (TimeoutExpired -- full 120s consumed,
-    # subscription tokens already streamed) bypassed the counter.
-    # The cap now bounds subprocess spawns, which matches the docstring.
+    # Count BEFORE spawn so TimeoutExpired (most expensive failure mode)
+    # still increments. The cap bounds subprocess spawns, not successes.
     _DISPATCH_THREAD_CALL_COUNT += 1
     _persist_call_count()
     try:
