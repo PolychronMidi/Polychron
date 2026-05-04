@@ -65,6 +65,7 @@ function writeDump(payload, projectRoot, suffix, warn) {
 
 module.exports = {
   name: 'dump_system',
+  $publicApi: ['writeDump'],
   writeDump,
   onRequest({ payload, ctx }) {
     if (process.env.HME_PROXY_LEAN_MODE === '1') return;
