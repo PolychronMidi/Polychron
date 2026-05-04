@@ -1,23 +1,7 @@
-// scripts/pipeline/reconcile-predictions.js
-//
-// Phase 3.4 -- post-pipeline reconciler that compares cascade predictions
-// logged during the session against the actual fingerprint delta produced
-// by the pipeline run.
-//
-// Reads:
-//   metrics/hme-predictions.jsonl         (append-only prediction log from
-//                                          cascade_analysis._log_prediction)
-//   metrics/fingerprint-comparison.json   (the round's actual deltas)
-//
-// For each prediction, computes:
-//   - confirmed  = predicted modules that shifted above threshold in actuals
-//   - refuted    = predicted modules that did NOT shift
-//   - missed     = modules that shifted but were not in any prediction
-// Then updates `metrics/hme-prediction-accuracy.json` with an exponential
-// moving average of accuracy across rounds.
-//
-// Writes a per-round record to the accuracy file (capped to last 50 rounds).
-// Non-fatal -- produces a diagnostic, doesn't gate the pipeline.
+// Phase 3.4 reconciler: compares hme-predictions.jsonl against
+// fingerprint-comparison.json to compute confirmed/refuted/missed module shifts.
+// Updates hme-prediction-accuracy.json with EMA + per-round record (cap 50).
+// Non-fatal diagnostic.
 
 'use strict';
 
