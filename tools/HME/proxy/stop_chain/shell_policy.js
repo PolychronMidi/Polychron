@@ -66,24 +66,10 @@ function defaultParseDecision(stdout, ctx) {
 
 function spawnStage(stageName, stdinJson, timeoutMs) {
   return new Promise((resolve) => {
-    // PROJECT is the legacy alias for PROJECT_ROOT used by lifesaver.sh and
-    // post_hooks.sh. Under the original sourced-chain bash dispatcher,
-    // lifesaver.sh set PROJECT in its scope and post_hooks.sh inherited it.
-    // Under subprocess isolation each stage runs in its own shell, so we
-    // export the alias from the wrapper. Catches the broken cross-stage
-    // dependency the audit_shell_undefined_vars verifier surfaced.
-    // Set _HME_HOOK_NAME explicitly to the stage name BEFORE sourcing
-    // _safety.sh -- _safety.sh's name resolution does
-    // `_HME_HOOK_NAME="$(basename "${BASH_SOURCE[1]:-unknown}" .sh)"`,
-    // and BASH_SOURCE[1] is unset inside a `bash -c` body (no parent
-    // script). Without the explicit assign, every stage's EXIT-trap
-    // latency entry recorded `hook=unknown`, which universal_pulse
-    // bucketed and false-alarmed on. _safety.sh respects an existing
-    // value because `_HME_HOOK_NAME=...` only fires once at top of
-    // _safety.sh; we set it before sourcing so the assignment there
-    // overwrites it -- this ALSO fixes the BASH_SOURCE fallback path.
-    // Both work together: explicit name AND _safety.sh assignment land
-    // on the same value (stage name).
+    // PROJECT alias for PROJECT_ROOT (legacy; lifesaver.sh + post_hooks.sh
+    // depend on it; subprocess isolation breaks the inherited-from-parent path).
+    // _HME_HOOK_NAME set explicitly because `bash -c` has no BASH_SOURCE[1] so
+    // _safety.sh's basename fallback resolves to "unknown".
     const wrapper = `
 set +u +e
 PROJECT="${PROJECT_ROOT}"
