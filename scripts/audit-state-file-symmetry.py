@@ -149,19 +149,19 @@ def _walk():
 
 
 def _near_miss(name: str, candidates: set) -> list[str]:
-    """A near-miss is a basename that differs only by the `-` vs `.` axis
-    or a single-char prefix/suffix difference -- the migration shape."""
+    """A near-miss differs only by the migration's signature axes:
+    `hme-` prefix vs no-prefix (the heartbeat bug shape), or `-` vs `.`
+    suffix axis (errors-lastread vs errors-lastread.proxy)."""
     out = []
     for c in candidates:
         if c == name:
             continue
-        # Same name modulo `-` <-> `.` swap (e.g. "errors-lastread" vs "errors.lastread").
-        if c.replace("-", ".") == name.replace("-", ".") or \
-           c.replace(".", "-") == name.replace(".", "-"):
+        # `hme-` prefix swap.
+        if ("hme-" + c) == name or ("hme-" + name) == c:
             out.append(c)
             continue
-        # Truncated-prefix match (e.g. "heartbeat-foo" vs "hme-heartbeat-foo").
-        if c.endswith(name) or name.endswith(c):
+        # `-` <-> `.` swap on a same-length stem.
+        if len(c) == len(name) and c.replace("-", ".") == name.replace("-", "."):
             out.append(c)
     return out
 
