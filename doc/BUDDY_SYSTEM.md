@@ -36,8 +36,8 @@ i/consult senior=<sid> question="..."                 # explicit: target retired
 
 ```
 runtime/hme/buddy-primary.sid          <- current primary's session id
-tmp/hme-buddy-primary.floor        <- model floor (default: easy = dynamic)
-tmp/hme-buddy-primary.effort_floor <- effort floor (default: low = dynamic)
+runtime/hme/buddy-primary.floor    <- model floor (default: easy = dynamic)
+runtime/hme/buddy-primary.effort_floor <- effort floor (default: low = dynamic)
 runtime/hme/buddy.sid                  <- legacy pointer; mirrors primary.sid
 tmp/hme-buddy-seniors/<sid>.json   <- per-senior retire metadata
 tmp/hme-buddy-seniors/_index.jsonl <- append-only retirement log

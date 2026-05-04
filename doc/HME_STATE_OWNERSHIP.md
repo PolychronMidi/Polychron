@@ -25,14 +25,14 @@ The fix surface this document represents:
 |---|---|---|
 | `runtime/hme/buddy.sid` | `tools/HME/hooks/helpers/buddy_init.sh` (called by sessionstart.sh) | `agent_direct.dispatch_thread` |
 | `tmp/hme-buddy-call-count` | `agent_direct.dispatch_thread` | (none) |
-| `tmp/hme-proxy-supervisor.pid` | `proxy-supervisor.sh` | shell ops, monitoring |
+| `runtime/hme/proxy-supervisor.pid` | `proxy-supervisor.sh` | shell ops, monitoring |
 | `tmp/hme-proxy-maintenance.flag` | `proxy-maintenance.sh` | `proxy-supervisor.sh` |
 | `tmp/hme-universal-pulse.heartbeat` | `universal_pulse.py` | `validate_startup.py` |
 | `tmp/hme-non-hme-streak.score` | `_safety.sh` (`_streak_tick`) | `_safety.sh` (`_streak_check`) |
 | `tmp/hme-streak-warn.txt` | `streak_calibrator.py` | `_safety.sh` |
 | `tmp/hme-onboarding.state` | `_onboarding.sh` helpers | onboarding hook chain |
 | `tmp/hme-log-errors.watermark` | `hme_log_watermark.js` | `hme_log_watermark.js` |
-| `tmp/hme-supervisor-abandoned` | `proxy-supervisor.sh` (sentinel write) | `userpromptsubmit.sh` |
+| `runtime/hme/supervisor-abandoned` | `proxy-supervisor.sh` (sentinel write) | `userpromptsubmit.sh` |
 | `output/metrics/detector-stats.jsonl` | each detector's `_emit_stats` | `audit-detector-stats.py` |
 | `output/metrics/hme-predictions.jsonl` | `cascade_analysis._log_prediction` | reconciler (currently dead) |
 | `output/metrics/hme-enricher-efficacy.jsonl` | `context_budget.js._recordFire` | (currently dead) |

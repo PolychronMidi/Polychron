@@ -77,7 +77,7 @@ Raw tool calls accrue weighted score; HME tool calls reset it. Weights: Read=5, 
 
 **Source:** `tools/HME/hooks/lifecycle/stop/` + `tools/HME/scripts/detectors/`
 
-10+ independent blocking checks. Each detector lives at `tools/HME/scripts/detectors/<name>.py`; the shell side runs them via `run_all.py`. Verdicts persist to `tmp/hme-stop-detector-verdicts.env`; `tools/HME/proxy/stop_chain/policies/work_checks.js` dispatches denies based on the file.
+10+ independent blocking checks. Each detector lives at `tools/HME/scripts/detectors/<name>.py`; the shell side runs them via `run_all.py`. Verdicts persist to `runtime/hme/stop-detector-verdicts.env`; `tools/HME/proxy/stop_chain/policies/work_checks.js` dispatches denies based on the file.
 
 Categories:
 
