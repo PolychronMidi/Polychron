@@ -197,18 +197,32 @@ _COMPLETION_CLAIM_MARKERS = (
 
 
 def _prior_assistant_claimed_completion(events: list) -> bool:
-    """True if the LAST assistant text in this turn (i.e., the response
-    just emitted) contained any completion-claim marker. Detector callers
-    treat ideation-prompt suppression as INVALID when this is true."""
-    last = ""
-    for ev in events:
+    """True if the assistant turn BEFORE the most recent user prompt
+    contained a completion-claim marker. (Not the current turn -- the one
+    BEFORE the user's reaction.) Used to override the ideation-prompt
+    suppression: when prior turn claimed 'all done' and the current
+    response enumerates remaining work, the ideation context is misleading."""
+    last_user_idx = -1
+    for i, ev in enumerate(events):
+        if ev.get("type") == "user":
+            msg = ev.get("message")
+            if isinstance(msg, dict) and isinstance(msg.get("content"), str):
+                last_user_idx = i
+    if last_user_idx <= 0:
+        return False
+    # Walk backward from the user prompt to find the assistant text BEFORE it.
+    prior = ""
+    for ev in reversed(events[:last_user_idx]):
         if _is_assistant_event(ev):
             for b in event_content(ev):
                 if isinstance(b, dict) and b.get("type") == "text":
                     t = b.get("text", "")
-                    if isinstance(t, str):
-                        last = t
-    low = last.lower()
+                    if isinstance(t, str) and t.strip():
+                        prior = t
+                        break
+            if prior:
+                break
+    low = prior.lower()
     return any(m in low for m in _COMPLETION_CLAIM_MARKERS)
 
 
