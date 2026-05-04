@@ -133,7 +133,7 @@ async function _healthLoop() {
           state.lastHealthy = Date.now();
           // Clear the abandon sentinel now that a healthy process is serving.
           try {
-            const sentinel = path.join(PROJECT_ROOT, 'tmp', 'hme-supervisor-abandoned');
+            const sentinel = SUPERVISOR_ABANDONED_SENTINEL;
             if (fs.existsSync(sentinel)) fs.unlinkSync(sentinel);
           } catch (_e) { /* best-effort */ }
           continue;
@@ -144,7 +144,7 @@ async function _healthLoop() {
       if (state.restarts >= spec.maxRestarts) {
         if (!state.gaveUp) {
           const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
-          const sentinel = path.join(PROJECT_ROOT, 'tmp', 'hme-supervisor-abandoned');
+          const sentinel = SUPERVISOR_ABANDONED_SENTINEL;
           const msg = `[supervisor] ${spec.name} hit restart limit (${spec.maxRestarts}) -- giving up`;
           // Tail of child stderr goes in the sentinel JSON (read by i/status),
           // NOT into hme-errors.log -- one event must not flood the LIFESAVER
@@ -207,7 +207,7 @@ async function _healthLoop() {
       // UserPromptSubmit forever despite the worker being fine. Symptom:
       // user sees blank responses (Claude Code obeys the block decision).
       try {
-        const sentinel = path.join(PROJECT_ROOT, 'tmp', 'hme-supervisor-abandoned');
+        const sentinel = SUPERVISOR_ABANDONED_SENTINEL;
         if (fs.existsSync(sentinel)) {
           fs.unlinkSync(sentinel);
           console.log(`[supervisor] cleared stale abandon sentinel after ${spec.name} confirmed healthy`);
