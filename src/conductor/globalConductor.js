@@ -292,31 +292,11 @@ moduleLifecycle.declare({
     // Small smoothing factor (0.25) reduces beat-to-beat reversals.
     const tensionAttr = conductorIntelligence.collectTensionBiasWithAttribution();
     const registryTensionBias = tensionAttr.product;
-    // Tension arch enforcement. The tension arc lacks section-level
-    // shaping -- it relies entirely on upstream signal products which can
-    // flatten when exploring dominates or endRelease suppresses. This adds
-    // a macro-progress-aware floor that ensures an ascending-then-descending
-    // arch shape across the composition. The floor is gentle (max 0.10 boost)
-    // and only activates when the raw tension would otherwise collapse.
+    // Tension arch enforcement: macro-progress-aware floor producing
+    // ascending->peaked->descending shape (peak at p=0.6, descending slope
+    // 0.14 to sustain S2/S3). Activates only when raw tension would collapse;
+    // max boost 0.15. Phrase-trough arch floor drop disabled.
     const macroProgress = clamp((sectionIndex + sectionProgress) / m.max(totalSections, 1), 0, 1);
-    // Raised arch tail from (0.50 - 0.30*(p-0.5)) = 0.35 at p=1.0
-    // to (0.50 - 0.20*(p-0.5)) = 0.40 at p=1.0. Also raised max boost from
-    // 0.10 to 0.15. R67 showed S4 collapsing to 0.35 partly due to the
-    // climaxProximityPredictor's receding pullback. The stronger arch floor
-    // counteracts this by providing more headroom for late-section sustain.
-    // Raised arch floor from 0.30 to 0.35 at macroProgress=0.
-    // Shift peak from p=0.5 to p=0.6, creating a delayed climax
-    // that reinforces S3 tension.
-    // Moderated descending slope 0.35->0.25 so S2/S3 sustain
-    // tension after the p=0.6 peak. R72 showed spike-then-decline shape
-    // [0.52,0.69,0.39,0.33] -- steep descent killed S2/S3.
-    // Moderate descent further 0.25->0.18. R77 showed S2/S3 dropping
-    // Gentler descent slope 0.18->0.14. R80 tension arc was
-    // [0.52, 0.67, 0.47, 0.44] -- S2/S3 drop too steeply, reducing late-
-    // composition dramatic weight. At 0.14: same 0.64 peak at p=0.6, floor
-    // 0.584 at p=1.0 (was 0.568). This sustains tension through S2/S3 while
-    // still providing compositional resolution.
-    // E10: Phrase-trough arch floor drop (disabled -- see journal R21).
     const e10ArchDrop = /** @type {number} */ (hyperMetaManager.getRateMultiplier("e10ArchFloorDrop"));
     // E12: Section-level tension floor relaxation during resolution phase.
     // EMA-ramped to avoid coupling discontinuities. Range 0-0.15.
