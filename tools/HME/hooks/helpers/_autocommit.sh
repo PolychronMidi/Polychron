@@ -101,14 +101,8 @@ _ac_success() {
   date +%s > "$_AC_STATE_DIR/hme-heartbeat-autocommit.ts" 2>/dev/null || true
 }
 
-#
-# Core autocommit operation. Returns 0 on success, 1 on failure.
-# Callers MUST append `|| true` at the call site -- we own our bookkeeping
-# and the return is informational only. The hook must NOT exit on our
-# failure (the remaining lifecycle work still needs to run).
-#
-# Argument: caller name (e.g. "stop.sh" or "userpromptsubmit.sh"). Used
-# in every failure record so the channel output is diagnosable.
+# Core autocommit. Returns 0/1; callers MUST `|| true` (we own bookkeeping).
+# Argument: caller name (used in every failure record for diagnosis).
 
 _ac_do_commit() {
   local caller="${1:-unknown}"
