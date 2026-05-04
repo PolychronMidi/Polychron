@@ -33,26 +33,35 @@ def main() -> int:
         reg = json.load(f)
     with open(sh_path) as f:
         sh = f.read()
-    bash_vars = sorted({d["bash_var"] for d in reg["detectors"]})
-    missing = []
-    for bv in bash_vars:
-        lower = bv.lower()
-        init_re = re.compile(rf"^{re.escape(bv)}=(?:ok|0)\b", re.MULTILINE)
-        parse_re = re.compile(rf"\b{re.escape(lower)}\)\s*{re.escape(bv)}=", re.MULTILINE)
-        persist_re = re.compile(rf'echo\s+"{re.escape(bv)}=\${re.escape(bv)}"', re.MULTILINE)
-        gaps = []
-        if not init_re.search(sh): gaps.append("INIT")
-        if not parse_re.search(sh): gaps.append("PARSE")
-        if not persist_re.search(sh): gaps.append("PERSIST")
-        if gaps:
-            missing.append((bv, gaps))
-    if missing:
-        print("REGISTRY DRIFT in detectors.sh:")
-        for bv, gaps in missing:
-            print(f"  {bv}: missing {', '.join(gaps)}")
-        print(f"\nFix: add the missing line(s) to {sh_path}")
+    # detectors.sh now sources emit_detectors_sh.py via eval; verify the
+    # source line is present + the helper functions are called. The bash
+    # blocks themselves are generated, so per-bash_var line search is
+    # obsolete.
+    eval_re = re.compile(r'eval\s+"\$\(\s*python3\s+[^)]*emit_detectors_sh\.py')
+    parse_call_re = re.compile(r'_detector_parse_case\s+')
+    persist_call_re = re.compile(r'_detector_emit_persist\s*>\s*')
+    gaps = []
+    if not eval_re.search(sh): gaps.append("eval emit_detectors_sh")
+    if not parse_call_re.search(sh): gaps.append("_detector_parse_case call")
+    if not persist_call_re.search(sh): gaps.append("_detector_emit_persist call")
+    if gaps:
+        print("DETECTORS.SH WIRING DRIFT:")
+        for g in gaps: print(f"  missing: {g}")
+        print(f"\nFix: see {sh_path}")
         return 1
-    print(f"detectors.sh: all {len(bash_vars)} bash_vars correctly wired (init+parse+persist)")
+    # Also verify emit_detectors_sh.py output covers every bash_var.
+    import subprocess
+    proc = subprocess.run(
+        ["python3", os.path.join(here, "emit_detectors_sh.py")],
+        capture_output=True, text=True, env={**os.environ, "PROJECT_ROOT": project},
+    )
+    bash_vars = sorted({d["bash_var"] for d in reg["detectors"]})
+    out = proc.stdout
+    missing = [bv for bv in bash_vars if f"\n{bv}=" not in out and not out.startswith(f"{bv}=")]
+    if missing:
+        print(f"emit_detectors_sh.py output missing INIT lines for: {missing}")
+        return 1
+    print(f"detectors.sh: registry-driven wiring verified ({len(bash_vars)} bash_vars covered)")
     return 0
 
 
