@@ -271,16 +271,9 @@ function register(mod) {
   _modules.push(mod);
 }
 
-//  Tool-result deduplication
-// Each tool_use.id fires onToolResult exactly once across THE LIFETIME OF
-// THE CONVERSATION. The map persists to disk so a proxy restart mid-
-// conversation doesn't re-fire onToolResult on every historical event --
-// a real failure mode that wiped nexus EDIT tracking when middleware like
-// `nexus_tracking` re-cleared state on historical Bash i/review calls.
-//
-// Persistence layer: tmp/hme-middleware-processed.jsonl. Append-only,
-// best-effort. Loaded on first access, lazily. LRU eviction in memory;
-// the file may exceed the in-memory cap but trim-on-load handles that.
+// Tool-result dedup: each tool_use.id fires onToolResult exactly once
+// across conversation lifetime. Map persists to tmp/hme-middleware-processed.jsonl
+// so proxy restart doesn't re-fire on historical events (LRU-capped in memory).
 const _processed = new Map(); // id -> insertion timestamp
 const _PROCESSED_CAP = 50_000;
 const _PROCESSED_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-middleware-processed.jsonl');
