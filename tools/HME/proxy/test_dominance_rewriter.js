@@ -22,7 +22,7 @@ const path = require('path');
 // Test with flag explicitly ON. The pre-fix behavior would have rewritten;
 // the post-fix behavior must passthrough regardless of flag state.
 process.env.HME_DOMINANCE = '1';
-const rewriter = require('./middleware/dominance_response_rewriter');
+const rewriter = require('./middleware/_dominance_response_rewriter');
 
 function test(name, fn) {
   try {
@@ -70,13 +70,13 @@ results.push(test('EXHAUST PROTOCOL preserved unchanged (no rewrite)', () => {
 results.push(test('feature flag HME_DOMINANCE=0 also passthrough (regression: was already correct, pin)', () => {
   const oldFlag = process.env.HME_DOMINANCE;
   process.env.HME_DOMINANCE = '0';
-  delete require.cache[require.resolve('./middleware/dominance_response_rewriter')];
-  const r2 = require('./middleware/dominance_response_rewriter');
+  delete require.cache[require.resolve('./middleware/_dominance_response_rewriter')];
+  const r2 = require('./middleware/_dominance_response_rewriter');
   const raw = '{"decision":"block","reason":"NEXUS -- 1 unreviewed edit(s)."}';
   const out = r2.rewriteStopOutput(raw);
   assert.strictEqual(out, raw, 'with flag=0, output must be unchanged');
   process.env.HME_DOMINANCE = oldFlag;
-  delete require.cache[require.resolve('./middleware/dominance_response_rewriter')];
+  delete require.cache[require.resolve('./middleware/_dominance_response_rewriter')];
 }));
 
 const passed = results.filter(Boolean).length;

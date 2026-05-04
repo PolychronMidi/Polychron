@@ -27,7 +27,6 @@
     "activity_log.js",
     "mcp_fail_scan.js",
     "hme_log_watermark.js",
-    "dominance_response_rewriter.js",
     "proxy_autocommit.js",
     "lifesaver_inject.js",
     "stop_hook_fp_gate.js",
