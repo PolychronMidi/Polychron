@@ -41,7 +41,7 @@ logger = logging.getLogger("HME")
 # Peer-review "anything missing?" (iter 115) flagged that a module-level
 # counter resets on proxy/worker restart -- a restart during a burst
 # silently re-opens the whole budget. The counter is now mirrored to
-# tmp/hme-thread-call-count (atomic rewrite + fsync) so a restart sees
+# runtime/hme/thread-call-count (atomic rewrite + fsync) so a restart sees
 # the accumulated count. Stale counts auto-expire after 24h so one
 # runaway session doesn't permanently wedge the dispatcher.
 _DISPATCH_THREAD_CALL_COUNT = 0

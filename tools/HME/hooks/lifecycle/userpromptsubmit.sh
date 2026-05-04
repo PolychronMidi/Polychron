@@ -74,7 +74,7 @@ $_AC_FLAG_BODY
 The autocommit helper left this flag behind. Last attempt did not
 succeed, which means working-tree changes have NOT been committed.
 Diagnose: check git status in the project root; read log/hme-errors.log;
-inspect tmp/hme-autocommit.err if present; verify .env loaded PROJECT_ROOT.
+inspect runtime/hme/autocommit.err if present; verify .env loaded PROJECT_ROOT.
 Fix the root cause. Do not silence the alert -- the flag clears automatically
 on the next successful autocommit. Dampening the detector is a structural
 violation caught by the LifesaverIntegrityVerifier at weight 5.0."

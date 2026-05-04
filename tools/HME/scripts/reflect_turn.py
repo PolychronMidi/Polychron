@@ -57,12 +57,12 @@ from pathlib import Path
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parent.parent.parent.parent)
 _REFLECTIONS = _PROJECT / "output" / "metrics" / "reflections.jsonl"
-_DETECTOR_VERDICTS = _PROJECT / "tmp" / "hme-stop-detector-verdicts.env"
+_DETECTOR_VERDICTS = _PROJECT / "runtime" / "hme" / "stop-detector-verdicts.env"
 _MODE_CLASSIFIER_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
 
 
 def _read_detector_verdicts() -> dict:
-    """Read tmp/hme-stop-detector-verdicts.env (the file work_checks.js
+    """Read runtime/hme/stop-detector-verdicts.env (the file work_checks.js
     consumes). Returns dict of detector_name -> verdict."""
     out: dict = {}
     if not _DETECTOR_VERDICTS.is_file():
