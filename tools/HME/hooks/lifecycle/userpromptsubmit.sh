@@ -64,7 +64,7 @@ fi
 # LIFESAVER autocommit fail-flag check (unconditional, runs FIRST).
 # Sticky flag is independent of hme-errors.log so .env/log-dir/stderr-drop
 # failures still surface. Banner fires every UserPromptSubmit until cleared.
-_AC_FLAG_CHECK="${_AC_FAIL_FLAG:-${PROJECT_ROOT}/tmp/hme-autocommit.fail}"
+_AC_FLAG_CHECK="${_AC_FAIL_FLAG:-${PROJECT_ROOT}/runtime/hme/autocommit.fail}"
 if [ -f "$_AC_FLAG_CHECK" ]; then
   _AC_FLAG_BODY=$(cat "$_AC_FLAG_CHECK" 2>/dev/null)
   _AC_BANNER="[ALERT] LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE

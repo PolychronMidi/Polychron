@@ -41,7 +41,7 @@ if [ ! -f "$_HELPER" ]; then
   # FAIL-LOUD on alert-sink writes (see _proxy_bridge.sh rationale).
   echo "[$ts] [autocommit-direct] helper missing at $_HELPER" >> "$_DIRECT_ROOT/log/hme-errors.log"
   mkdir -p "$_DIRECT_ROOT/tmp" 2>/dev/null
-  echo "[$ts] helper missing at $_HELPER" > "$_DIRECT_ROOT/tmp/hme-autocommit.fail" 2>/dev/null
+  echo "[$ts] helper missing at $_HELPER" > "$_DIRECT_ROOT/runtime/hme/autocommit.fail" 2>/dev/null
   exit 0
 fi
 
