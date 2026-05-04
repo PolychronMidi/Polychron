@@ -41,23 +41,11 @@ function sessionKey(payload) {
   return 'unknown';
 }
 
-// Shared mtime-checked file cache. Multiple middleware (dir_context,
-// grep_glob_neighborhood, dominance_prefetch, edit_context, etc.) had
-// each rolled their own clock-only TTL caches that served stale data
-// indefinitely after the underlying file rotated. The thread-routed
-// architecture review surfaced this as Pattern C: "in-memory state
-// with no invalidation against external filesystem truth, recurring
-// across multiple files." This primitive centralizes the correct
-// pattern: cache by path, invalidate on mtime change, optional clock
-// TTL as fallback for expensive parses.
-//
-// Usage:
-//   const cache = mtimeCache({ ttlMs: 60_000 });
-//   const value = cache.get(absPath, () => parseExpensively(absPath));
-//
-// The loader is called only when the cached entry is missing, the file
-// mtime moved past the cached mtime, OR the optional clock TTL elapsed.
-// Loader exceptions propagate; cache.get does not swallow them.
+// mtime-checked file cache. Cache by path, invalidate on mtime change,
+// optional clock TTL fallback for expensive parses. Loader exceptions
+// propagate; not swallowed.
+// Usage: const cache = mtimeCache({ ttlMs: 60_000 });
+//        const value = cache.get(absPath, () => parseExpensively(absPath));
 const fsForCache = require('fs');
 function mtimeCache({ ttlMs = 0 } = {}) {
   const _entries = new Map();
