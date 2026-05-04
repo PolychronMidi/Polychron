@@ -13,7 +13,7 @@ Always compare against `_SEC` constants (e.g. `COHERENT_HARD_CAP_SEC`). Beat-bas
 
 <!-- HME-DIR-INTENT
 rules:
-  - Never read .couplingMatrix from getSnapshot() outside the coupling engine, meta-controllers, or diagnostics -- local/no-direct-coupling-matrix-read enforces this
+  - Never read .couplingMatrix from getSnapshot() outside coupling engine, meta-controllers, or diagnostics -- local/no-direct-coupling-matrix-read enforces
   - Use `_SEC` dwell constants for all time comparisons; beat-count legacy fields are non-authoritative and will diverge at non-standard tempos
   - `regimeReactiveDamping` and `entropyAmplificationController` constants are owned by their controller logic -- never patch from callers
 -->
