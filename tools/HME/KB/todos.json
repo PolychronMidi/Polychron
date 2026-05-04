@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1221,
-      "updated_ts": 1777918430.4527693
+      "max_id": 1227,
+      "updated_ts": 1777918737.8629735
     }
   },
   {
@@ -80,8 +80,8 @@
     "id": 1191,
     "text": "INVENTORY.md drift auto-detector",
     "activeForm": "Building INVENTORY drift detector",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
