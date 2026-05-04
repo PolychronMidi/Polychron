@@ -46,6 +46,11 @@ function _rotateIfNeeded(errLogPath, wmPath, totalLines, lines) {
   }
 }
 
+// Once-per-process boot seed: jump watermark to EOF on first request so a
+// proxy restart doesn't replay pre-restart errors (already surfaced or
+// already filtered the prior turn).
+let _startupSeeded = false;
+
 module.exports = {
   name: 'lifesaver_inject',
 
@@ -61,6 +66,18 @@ module.exports = {
 
     const errLogPath = path.join(ctx.PROJECT_ROOT, ERR_LOG);
     const wmPath = path.join(ctx.PROJECT_ROOT, WATERMARK);
+
+    // Boot seed (once per process): jump watermark to EOF so post-restart
+    // we don't re-inject pre-restart errors.
+    if (!_startupSeeded) {
+      _startupSeeded = true;
+      try {
+        const total = fs.readFileSync(errLogPath, 'utf8').split('\n').filter(Boolean).length;
+        try { fs.mkdirSync(path.dirname(wmPath), { recursive: true }); } catch (_e) { /* ignore */ }
+        fs.writeFileSync(wmPath, String(total));
+      } catch (_e) { /* errLog absent or write fail -- fall through */ }
+      return;
+    }
 
     // Read line count
     let content = '';
