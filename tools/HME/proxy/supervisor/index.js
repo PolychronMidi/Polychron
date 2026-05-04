@@ -279,9 +279,7 @@ function status() {
 // healthLoop polls every 10s after initial startup delay.
 let _started = false;
 
-// Graceful shutdown -- unified entry point for every signal/crash path.
-// Idempotent: repeated calls (e.g. SIGTERM arriving while already draining)
-// are no-ops. Drains the HTTP server if registered, kills children, exits.
+// Graceful shutdown: idempotent unified entry; drains HTTP server, kills children.
 let _shuttingDown = false;
 let _httpServer = null;
 const DRAIN_TIMEOUT_MS = 3000;
