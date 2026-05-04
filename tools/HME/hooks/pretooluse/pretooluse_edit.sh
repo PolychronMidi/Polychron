@@ -218,12 +218,8 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
         --session="$(whoami 2>/dev/null || echo shell)" \
         >/dev/null 2>&1 &
     fi
-    # Per-turn dedup: re-firing the brief on every Edit to the same
-    # module would re-issue /enrich + emit duplicate auto_brief_injected
-    # events on each successive edit. The tracker is cleared at turn
-    # start by userpromptsubmit.sh. Skip auto-brief entirely when
-    # PROJECT_ROOT is unset (avoids leaking state to /tmp/ outside
-    # any project).
+    # Per-turn dedup tracker (cleared at turn start by userpromptsubmit.sh).
+    # Skip when PROJECT_ROOT unset to avoid /tmp/ leak.
     _AUTO_BRIEF_TURN_FILE=""
     [ -n "${PROJECT_ROOT:-}" ] && _AUTO_BRIEF_TURN_FILE="${PROJECT_ROOT}/tmp/hme-turn-briefs.txt"
     if [ -n "$_AUTO_BRIEF_TURN_FILE" ] && [ -f "$_AUTO_BRIEF_TURN_FILE" ] \
