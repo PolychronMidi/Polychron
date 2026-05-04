@@ -36,13 +36,9 @@ module.exports = {
     if (DROP_SET.size === 0) return;
     if (!payload || !Array.isArray(payload.tools)) return;
     const before = payload.tools.length;
-    // Rescue cache_control from any dropped tool. Claude Code attaches
-    // the tools-schema cache breakpoint to the LAST tool by convention,
-    // which for current MCP setups is exactly one of the tools we drop.
-    // Silently stripping it turns the ~18K-token tools schema into a
-    // 100%-billed payload on every request -> Opus ITPM exhausted in a
-    // handful of turns -> 429 rate_limit_error. Re-attach to the new
-    // last tool to preserve the cache hit.
+    // Rescue cache_control from any dropped tool: Claude Code attaches the
+    // breakpoint to the LAST tool; stripping it loses cache hits and burns
+    // ITPM. Re-attach to the new last tool.
     let rescuedCC = null;
     const kept = payload.tools.filter((t) => {
       const name = t && typeof t.name === 'string' ? t.name : '';
