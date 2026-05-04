@@ -82,7 +82,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 def cmd_retire(args: argparse.Namespace) -> int:
     primary = _bh()._read_primary()
     if primary is None:
-        print("no primary to retire (tmp/hme-buddy-primary.sid empty/missing)")
+        print("no primary to retire (runtime/hme/buddy-primary.sid empty/missing)")
         return 1
     record = _bh()._retire(primary, reason=args.reason or "manual")
     print(f"retired sid={record['sid']} -> seniors/{record['sid']}.json")

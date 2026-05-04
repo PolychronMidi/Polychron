@@ -1200,7 +1200,7 @@ test('buddy_handoff.py: promote mirrors to legacy pointer trio (dispatcher visib
       ['promote', '--sid=fresh-promo', '--floor=hard', '--effort=high']);
     assert.strictEqual(result.status, 0, `promote failed: ${result.stderr}`);
     // Legacy trio must mirror the new primary, not retain the stale value.
-    // The dispatcher reads tmp/hme-buddy.sid; if mirroring is missing,
+    // The dispatcher reads runtime/hme/buddy.sid; if mirroring is missing,
     // status will continue to display 'stale-from-prior-era' until the
     // next SessionStart re-runs buddy_init.sh's mirror.
     const legacySid = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'utf8').trim();
@@ -1693,7 +1693,7 @@ test('buddy_handoff.py: consult history is capped at 50 entries (bounded growth)
 });
 
 test('buddy_init.sh: HANDOFF=1 + no primary.sid + stale legacy.sid spawns fresh anyway', () => {
-  // Regression: previously, a stale tmp/hme-buddy.sid from a pre-paradigm
+  // Regression: previously, a stale runtime/hme/buddy.sid from a pre-paradigm
   // session wedged the inaugural spawn -- _spawn_buddy short-circuited on
   // the existing legacy file (line 159 guard), so no fresh buddy was
   // spawned and no primary.sid was recorded. State stayed wedged across

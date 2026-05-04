@@ -14,7 +14,7 @@ _hme_check_errors_inline() {
   local ERROR_LOG="$PROJECT/log/hme-errors.log"
   local INLINE_WATERMARK="$PROJECT/tmp/hme-errors.inline-watermark"
   # Heartbeat -- proves this helper actually ran.
-  date +%s > "$PROJECT/tmp/hme-heartbeat-inline-check.ts" 2>/dev/null || true
+  date +%s > "$PROJECT/runtime/hme/heartbeat-inline-check.ts" 2>/dev/null || true
 
   if [ ! -f "$ERROR_LOG" ]; then
     # Genuinely no log file yet (fresh repo) is a passthrough; an

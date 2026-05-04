@@ -98,7 +98,7 @@ _lifesaver_bg() {
 # A watchdog (check-heartbeat-freshness.js) compares mtimes against
 # expected freshness windows; stale = silent-fail.
 # Usage: _hme_heartbeat <component-name>
-# Writes: $PROJECT_ROOT/tmp/hme-heartbeat-<name>.ts (epoch seconds)
+# Writes: $PROJECT_ROOT/runtime/hme/heartbeat-<name>.ts (epoch seconds)
 _hme_heartbeat() {
   local name="$1"
   [ -z "$name" ] && return 1

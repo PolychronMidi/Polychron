@@ -23,7 +23,7 @@ The fix surface this document represents:
 
 | File | Owner | Read-only consumers |
 |---|---|---|
-| `tmp/hme-buddy.sid` | `tools/HME/hooks/helpers/buddy_init.sh` (called by sessionstart.sh) | `agent_direct.dispatch_thread` |
+| `runtime/hme/buddy.sid` | `tools/HME/hooks/helpers/buddy_init.sh` (called by sessionstart.sh) | `agent_direct.dispatch_thread` |
 | `tmp/hme-buddy-call-count` | `agent_direct.dispatch_thread` | (none) |
 | `tmp/hme-proxy-supervisor.pid` | `proxy-supervisor.sh` | shell ops, monitoring |
 | `tmp/hme-proxy-maintenance.flag` | `proxy-maintenance.sh` | `proxy-supervisor.sh` |

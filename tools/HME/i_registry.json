@@ -353,7 +353,7 @@
       "usage": "i/consult sid=<sid> question=\"...\"  (or primary=<sid>, buddy=<sid>, senior=<sid> as role-named aliases)",
       "examples": [
         "i/consult sid=abc123def question=\"why does feature X behave that way under load?\"",
-        "i/consult primary=$(cat tmp/hme-buddy-primary.sid) question=\"is this approach right?\""
+        "i/consult primary=$(cat runtime/hme/buddy-primary.sid) question=\"is this approach right?\""
       ]
     },
     "audit-tools": {

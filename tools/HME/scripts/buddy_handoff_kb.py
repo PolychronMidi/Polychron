@@ -18,7 +18,7 @@ Files (under PROJECT_ROOT/tmp/):
 
 Lifecycle:
   - SessionStart: buddy_init.sh reads primary.sid and points the legacy
-    tmp/hme-buddy.sid pointer at it (no fresh `claude -p` spawn). If
+    runtime/hme/buddy.sid pointer at it (no fresh `claude -p` spawn). If
     primary.sid is empty/missing, falls through to spawn a fresh buddy
     and records its sid as the inaugural primary.
   - Retire: when the primary's context exceeds BUDDY_RETIRE_PCT (default

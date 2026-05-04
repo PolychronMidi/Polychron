@@ -8,7 +8,7 @@ Precision-control variant: track ONE active primary buddy inherited across sessi
 
 ### Lifecycle
 
-1. **Bootstrap** -- at SessionStart, `buddy_init.sh` reads `tmp/hme-buddy-primary.sid`. If present, that sid is the buddy (no fresh `claude -p` spawn); legacy `tmp/hme-buddy.sid` mirrors it. If absent, a fresh primary is spawned.
+1. **Bootstrap** -- at SessionStart, `buddy_init.sh` reads `runtime/hme/buddy-primary.sid`. If present, that sid is the buddy (no fresh `claude -p` spawn); legacy `runtime/hme/buddy.sid` mirrors it. If absent, a fresh primary is spawned.
 2. **Use** -- the primary serves all reasoning calls; transcript grows like any persistent buddy.
 3. **Auto-retire** -- when context % crosses `BUDDY_RETIRE_PCT` (default 90), `i/handoff auto_retire_check` (or manual `i/handoff retire`) moves it to `tmp/hme-buddy-seniors/<sid>.json` with retire metadata. Primary pointers cleared so next SessionStart spawns fresh.
 4. **Consult** -- seniors are NOT auto-routed. Use `i/consult senior=<sid> question="..."` to invoke a specific senior for a tough problem.
@@ -35,10 +35,10 @@ i/consult senior=<sid> question="..."                 # explicit: target retired
 ### File map
 
 ```
-tmp/hme-buddy-primary.sid          <- current primary's session id
+runtime/hme/buddy-primary.sid          <- current primary's session id
 tmp/hme-buddy-primary.floor        <- model floor (default: easy = dynamic)
 tmp/hme-buddy-primary.effort_floor <- effort floor (default: low = dynamic)
-tmp/hme-buddy.sid                  <- legacy pointer; mirrors primary.sid
+runtime/hme/buddy.sid                  <- legacy pointer; mirrors primary.sid
 tmp/hme-buddy-seniors/<sid>.json   <- per-senior retire metadata
 tmp/hme-buddy-seniors/_index.jsonl <- append-only retirement log
 tmp/hme-buddy-handoff-log.json     <- optional snapshot from `status --json`
@@ -70,7 +70,7 @@ Most original design questions are RESOLVED (see git log on `buddy_handoff.py` f
 
 ## What the buddy IS
 
-A second Claude Code session, spawned at SessionStart by `tools/HME/hooks/helpers/buddy_init.sh` when `BUDDY_SYSTEM=1`. Its sid is recorded at `tmp/hme-buddy.sid`. Server-side `agent_direct.dispatch_thread()` reads the sid and routes every reasoning call through `claude --resume <sid>`.
+A second Claude Code session, spawned at SessionStart by `tools/HME/hooks/helpers/buddy_init.sh` when `BUDDY_SYSTEM=1`. Its sid is recorded at `runtime/hme/buddy.sid`. Server-side `agent_direct.dispatch_thread()` reads the sid and routes every reasoning call through `claude --resume <sid>`.
 
 What this buys:
 

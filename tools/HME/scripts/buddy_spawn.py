@@ -97,10 +97,10 @@ def spawn_buddy(slot: int, floor: str, buddy_count: int,
     whether to retry, fall through, or surface the failure.
 
     File writes (atomic-ish -- single open+write per file):
-      - sid_file (e.g. tmp/hme-buddy.sid)
+      - sid_file (e.g. runtime/hme/buddy.sid)
       - sid_file.with_suffix('.floor') with the model floor
       - When mark_inaugural_primary=True (HANDOFF=1, slot=1):
-        - tmp/hme-buddy-primary.sid (sid)
+        - runtime/hme/buddy-primary.sid (sid)
         - tmp/hme-buddy-primary.floor (floor)
         - tmp/hme-buddy-primary.effort_floor (canonical effort for floor)
 

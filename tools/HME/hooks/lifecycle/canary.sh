@@ -5,7 +5,7 @@
 
 PROJECT="${PROJECT_ROOT:-/home/jah/Polychron}"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
-CANARY_TRACK="$PROJECT/tmp/hme-canary-pending.txt"
+CANARY_TRACK="$PROJECT/runtime/hme/canary-pending.txt"
 
 # UUID-ish fingerprint. Avoid uuidgen dependency.
 TS=$(date +%s%N 2>/dev/null || date +%s)
@@ -26,6 +26,6 @@ LINE_NUM=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' ')
 echo "${CANARY_ID}|${LINE_NUM}|$(date +%s)" >> "$CANARY_TRACK" 2>/dev/null
 
 # Heartbeat for this component too.
-date +%s > "$PROJECT/tmp/hme-heartbeat-canary.ts" 2>/dev/null
+date +%s > "$PROJECT/runtime/hme/heartbeat-canary.ts" 2>/dev/null
 
 exit 0

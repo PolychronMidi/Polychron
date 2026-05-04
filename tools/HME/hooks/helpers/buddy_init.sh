@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Buddy init: spawn BUDDY_COUNT persistent `claude --resume <sid>` sessions,
-# sids in tmp/hme-buddy-N.sid (tmp/hme-buddy.sid for N=1). Routed by
+# sids in runtime/hme/buddy-N.sid (runtime/hme/buddy.sid for N=1). Routed by
 # agent_direct.dispatch_thread via `effective = max(item_tier, buddy_floor)`.
 # Idempotent (preserves existing non-empty sid files), gated by .env
 # BUDDY_SYSTEM=1, non-blocking spawn (disowned so SessionStart returns fast).
@@ -69,9 +69,9 @@ fi
 
 mkdir -p "$_REPO_ROOT/tmp"
 
-# Hand-off paradigm: when BUDDY_HANDOFF=1 and tmp/hme-buddy-primary.sid
+# Hand-off paradigm: when BUDDY_HANDOFF=1 and runtime/hme/buddy-primary.sid
 # carries a sid, that session IS the buddy -- no fresh `claude -p` spawn.
-# Bootstrap a back-compat tmp/hme-buddy.sid pointer so legacy consumers
+# Bootstrap a back-compat runtime/hme/buddy.sid pointer so legacy consumers
 # see the primary. Companion .floor / .effort_floor files are preserved
 # from the primary's metadata, defaulting to easy / low when absent.
 #
@@ -104,11 +104,11 @@ if [ "$BUDDY_HANDOFF" = "1" ]; then
     PROJECT_ROOT="$_REPO_ROOT" python3 "$_HANDOFF_SCRIPT" auto_retire_check \
       >/dev/null 2>&1 || true
   fi
-  _PRIMARY_FILE="$_REPO_ROOT/tmp/hme-buddy-primary.sid"
+  _PRIMARY_FILE="$_REPO_ROOT/runtime/hme/buddy-primary.sid"
   if [ -f "$_PRIMARY_FILE" ] && [ -s "$_PRIMARY_FILE" ]; then
     _PRIMARY_SID=$(head -1 "$_PRIMARY_FILE" | tr -d '[:space:]')
     if [ -n "$_PRIMARY_SID" ]; then
-      printf '%s\n' "$_PRIMARY_SID" > "$_REPO_ROOT/tmp/hme-buddy.sid"
+      printf '%s\n' "$_PRIMARY_SID" > "$_REPO_ROOT/runtime/hme/buddy.sid"
       _PRIMARY_FLOOR="easy"
       _PRIMARY_EFFORT="low"
       [ -f "${_PRIMARY_FILE%.sid}.floor" ] && \
@@ -127,20 +127,20 @@ if [ "$BUDDY_HANDOFF" = "1" ]; then
   fi
   # No primary recorded yet -- fall through to legacy spawn path. The
   # _spawn_buddy helper records the spawned sid as the inaugural primary.
-  # Defensive: a legacy tmp/hme-buddy.sid from a pre-paradigm session
+  # Defensive: a legacy runtime/hme/buddy.sid from a pre-paradigm session
   # would short-circuit the inaugural spawn (`_spawn_buddy`'s "already
   # active" guard returns early when sid_file is non-empty). Under
   # HANDOFF=1, primary.sid is the authoritative "buddy alive" signal --
   # absence of primary.sid means we have no inheritance, so any existing
   # legacy file is stale and must be cleared before fall-through.
-  rm -f "$_REPO_ROOT/tmp/hme-buddy.sid" \
+  rm -f "$_REPO_ROOT/runtime/hme/buddy.sid" \
         "$_REPO_ROOT/tmp/hme-buddy.floor" \
         "$_REPO_ROOT/tmp/hme-buddy.effort_floor"
 fi
 
 # Spawn one buddy per slot. SID filename:
-#   N=1: tmp/hme-buddy.sid (back-compat with single-buddy code paths)
-#   N>1: tmp/hme-buddy-1.sid, tmp/hme-buddy-2.sid, ...
+#   N=1: runtime/hme/buddy.sid (back-compat with single-buddy code paths)
+#   N>1: runtime/hme/buddy-1.sid, runtime/hme/buddy-2.sid, ...
 _spawn_buddy() {
   local slot="$1" floor="$2" sid_file="$3"
   # Already active -- sid file present and non-empty.
@@ -179,8 +179,8 @@ _spawn_buddy() {
 }
 
 if [ "$BUDDY_COUNT" -eq 1 ]; then
-  # Single-buddy back-compat: write to legacy tmp/hme-buddy.sid path.
-  _spawn_buddy 1 "${_FLOORS[0]}" "$_REPO_ROOT/tmp/hme-buddy.sid"
+  # Single-buddy back-compat: write to legacy runtime/hme/buddy.sid path.
+  _spawn_buddy 1 "${_FLOORS[0]}" "$_REPO_ROOT/runtime/hme/buddy.sid"
 else
   # Multi-buddy fanout: per-slot sid files.
   for i in $(seq 1 "$BUDDY_COUNT"); do

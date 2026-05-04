@@ -7,7 +7,7 @@ ERROR_LOG="$PROJECT/log/hme-errors.log"
 TURNSTART="$PROJECT/runtime/hme/errors-turnstart"
 WATERMARK="$PROJECT/runtime/hme/errors-lastread"
 # Heartbeat -- proves Stop-hook lifesaver actually ran.
-date +%s > "$PROJECT/tmp/hme-heartbeat-lifesaver.ts" 2>/dev/null || true
+date +%s > "$PROJECT/runtime/hme/heartbeat-lifesaver.ts" 2>/dev/null || true
 
 if [ -f "$ERROR_LOG" ]; then
   # silent-ok: default-on-missing (turnstart/watermark may be absent on
