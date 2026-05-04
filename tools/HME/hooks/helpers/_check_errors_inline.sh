@@ -1,17 +1,9 @@
 #!/usr/bin/env bash
-# Mid-turn error-surface helper. Sourced by every PostToolUse hook (and any
-# other hook that wants to push fresh errors into the model's next-turn
-# context). Reads hme-errors.log, classifies new lines since the last
-# inline check, and emits any agent-errors as additionalContext.
-#
-# This closes the silent-fail window between when an error fires (mid-turn)
-# and when the Stop-hook lifesaver normally runs (end of turn). With this
-# helper, every tool call's PostToolUse surfaces fresh errors immediately
-# in the tool result, so the model sees them on the very next turn.
-#
-# Reuses the severity-based classifier from lifesaver.sh: lines containing
-# WARN/INFO/DEBUG/NOTICE are observation-only; everything else is
-# agent-origin and gets shoved into the model's teeth.
+# Mid-turn error-surface helper for PostToolUse: reads hme-errors.log new
+# lines since last check, classifies via lifesaver.sh severity rule
+# (WARN/INFO/DEBUG/NOTICE = observation; else agent-origin), emits as
+# additionalContext. Closes the gap between mid-turn fire and end-of-turn
+# Stop lifesaver scan.
 
 # Returns:
 #   0 + JSON with hookSpecificOutput.additionalContext if new errors found
