@@ -91,11 +91,8 @@ print(json.dumps(payload))
 " <<< "$_AC_BANNER"
 fi
 
-# LIFESAVER -- HME Error Log Monitor
-# LIFE-OR-DEATH: HME components write errors to log/hme-errors.log.
-# THIS is the ONLY mechanism that makes those errors visible to this agent.
-# Every error, everywhere, MUST be diagnosed and FIXED. Not acknowledged -- FIXED.
-# An error that is seen and not fixed is WORSE than an unseen error.
+# LIFESAVER error-log monitor: surfaces hme-errors.log new lines as
+# additionalContext. Errors must be FIXED, not acknowledged.
 PROJECT="$PROJECT_ROOT"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
 WATERMARK="$PROJECT/tmp/hme-errors.lastread"
