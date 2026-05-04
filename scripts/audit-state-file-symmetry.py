@@ -10,13 +10,16 @@ this class were caught manually during the runtime/hme/ migration:
   - `buddy_spawn.py` wrote `tmp/hme-buddy-primary.{floor,effort_floor}`
     while `buddy_init.sh` read `runtime/hme/buddy-primary.{floor,...}`.
 
-Heuristic: regex-extract `runtime/hme/` and `tmp/hme-` paths from writes
-and reads, normalize, then flag any path with writers-but-no-readers (or
-vice versa) where a near-miss path exists in the opposite set.
+Approach: scan non-comment lines for path basenames in `runtime/hme/<name>`
+and `tmp/hme-<name>` shapes (handles shell interpolation, Path/path.join
+joins, etc.). Classify each line as a write or read by surrounding I/O
+keywords (`>`, `tee`, `writeFileSync`, `write_text`, `cat`, `readFileSync`,
+`read_text`, etc.). Flag basenames that appear ONLY as writes or ONLY as
+reads when a near-miss basename exists in the opposite set.
 
 Limitations: regex-based, won't catch fully dynamic paths. False positives
-possible. The goal is monotonic improvement -- new drift surfaces, the
-operator resolves.
+possible; a `--verbose` flag dumps the full set so the operator can sanity
+check. Goal is monotonic improvement -- new drift surfaces, operator resolves.
 
 Exit codes:
   0 -- no asymmetric pairs detected
@@ -29,110 +32,138 @@ import re
 import sys
 from pathlib import Path
 
-
-# Resolve PROJECT_ROOT from env or script location (scripts/ sits at repo root).
 _env = os.environ.get("PROJECT_ROOT")
-if _env:
-    PROJECT_ROOT = Path(_env)
-else:
-    PROJECT_ROOT = Path(__file__).resolve().parent.parent
-SCAN_ROOTS = [
-    PROJECT_ROOT / "tools" / "HME",
-    PROJECT_ROOT / "scripts",
-]
+PROJECT_ROOT = Path(_env) if _env else Path(__file__).resolve().parent.parent
+SCAN_ROOTS = [PROJECT_ROOT / "tools" / "HME", PROJECT_ROOT / "scripts"]
 SKIP_DIRS = ("__pycache__", "node_modules", ".git", "out", "dist", "tests")
 EXTS = (".py", ".js", ".sh", ".bash", ".ts")
 
-# Write-shape regexes per file extension. Each captures the path token
-# immediately AFTER the write directive.
-_WRITE_PATTERNS_SHELL = [
-    re.compile(r"""(?:>>?|tee)\s+['"]?((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]?"""),
-]
-_READ_PATTERNS_SHELL = [
-    re.compile(r"""(?:cat|head|tail)\s+['"]?((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]?"""),
-    re.compile(r"""<\s*['"]?((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]?"""),
-    re.compile(r"""\[\s+-[fes]\s+['"]?((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]?"""),
-]
-_WRITE_PATTERNS_PY = [
-    re.compile(r"""open\(\s*['"]((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]\s*,\s*['"][wa]"""),
-]
-_READ_PATTERNS_PY = [
-    re.compile(r"""open\(\s*['"]((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]\s*\)"""),
-    re.compile(r"""open\(\s*['"]((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]\s*,\s*['"]r"""),
-]
-_WRITE_PATTERNS_JS = [
-    re.compile(r"""fs\.writeFileSync\(\s*[^,]*['"]((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]"""),
-    re.compile(r"""fs\.appendFileSync\(\s*[^,]*['"]((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]"""),
-]
-_READ_PATTERNS_JS = [
-    re.compile(r"""fs\.readFileSync\(\s*[^,]*['"]((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]"""),
-    re.compile(r"""fs\.existsSync\(\s*[^)]*['"]((?:runtime/hme|tmp)/[A-Za-z0-9._\-/]+)['"]"""),
-]
+# Match the basename portion. Captured group is the basename only -- the
+# leading dir/prefix is normalized away so `runtime/hme/foo.sid` and
+# `tmp/hme-foo.sid` (the migration's two namespaces) compare equal.
+_PATH_RE = re.compile(
+    r"""(?:runtime/hme/|tmp/hme-)([A-Za-z0-9][A-Za-z0-9._\-]*)"""
+)
+
+# Path.join / pathlib joins: `path.join(X, 'runtime', 'hme', 'foo.sid')`
+# or `_PROJECT / 'runtime' / 'hme' / 'foo'`. Match the trailing literal.
+_JOIN_RUNTIME_RE = re.compile(
+    r"""(?:'runtime'|"runtime")\s*[,)/]\s*(?:'hme'|"hme")\s*[,)/]\s*['"]([A-Za-z0-9][A-Za-z0-9._\-]*)['"]"""
+)
+_JOIN_TMP_RE = re.compile(
+    r"""(?:'tmp'|"tmp")\s*[,)/]\s*['"]hme-([A-Za-z0-9][A-Za-z0-9._\-]*)['"]"""
+)
+
+# I/O keyword sets per language. Order: more-specific first.
+_WRITE_KW_SHELL = (">>", ">", "tee ", "rm -f ", "rm ")
+_READ_KW_SHELL = ("cat ", "head ", "tail ", "< ", "[ -f ", "[ -e ", "[ -s ", "grep ")
+_WRITE_KW_PY = (".write_text", ".write(", ", \"w", ", 'w", ", \"a", ", 'a")
+_READ_KW_PY = (".read_text", ".read()", ", \"r", ", 'r", ".is_file()", ".exists()")
+_WRITE_KW_JS = ("writeFileSync", "appendFileSync", "createWriteStream")
+_READ_KW_JS = ("readFileSync", "existsSync", "createReadStream", "statSync")
 
 
-def _ext_patterns(ext: str):
+def _kws(ext: str) -> tuple[tuple, tuple]:
     if ext in (".sh", ".bash"):
-        return _WRITE_PATTERNS_SHELL, _READ_PATTERNS_SHELL
+        return _WRITE_KW_SHELL, _READ_KW_SHELL
     if ext == ".py":
-        return _WRITE_PATTERNS_PY, _READ_PATTERNS_PY
+        return _WRITE_KW_PY, _READ_KW_PY
     if ext in (".js", ".ts"):
-        return _WRITE_PATTERNS_JS, _READ_PATTERNS_JS
-    return [], []
+        return _WRITE_KW_JS, _READ_KW_JS
+    return (), ()
+
+
+def _is_comment(line: str, ext: str) -> bool:
+    s = line.lstrip()
+    if not s:
+        return False
+    if ext in (".py", ".sh", ".bash"):
+        return s.startswith("#") and not s.startswith("#!")
+    if ext in (".js", ".ts"):
+        return s.startswith("//") or s.startswith("*")
+    return False
+
+
+def _extract_basenames(line: str) -> list[str]:
+    out = []
+    for m in _PATH_RE.finditer(line):
+        out.append(m.group(1))
+    for m in _JOIN_RUNTIME_RE.finditer(line):
+        out.append(m.group(1))
+    for m in _JOIN_TMP_RE.finditer(line):
+        out.append(m.group(1))
+    return out
+
+
+def _classify(line: str, write_kws: tuple, read_kws: tuple) -> str:
+    """Return 'write', 'read', or 'unknown' based on line keywords."""
+    has_w = any(kw in line for kw in write_kws)
+    has_r = any(kw in line for kw in read_kws)
+    if has_w and not has_r:
+        return "write"
+    if has_r and not has_w:
+        return "read"
+    if has_w and has_r:
+        # Heuristic tie-break: shell `> $f` outranks `[ -f $f ]` on same line.
+        return "write"
+    return "unknown"
 
 
 def _scan_file(path: Path) -> tuple[set, set]:
-    """Return (writes, reads) sets of normalized path strings."""
     writes, reads = set(), set()
     try:
         text = path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return writes, reads
-    write_pats, read_pats = _ext_patterns(path.suffix)
+    ext = path.suffix
+    write_kws, read_kws = _kws(ext)
+    if not write_kws:
+        return writes, reads
     for line in text.splitlines():
-        s = line.strip()
-        # Skip comment lines to suppress false positives from prose.
-        if s.startswith("#") or s.startswith("//") or s.startswith("*"):
+        if _is_comment(line, ext):
             continue
-        for pat in write_pats:
-            for m in pat.finditer(line):
-                if m.group(1):
-                    writes.add(m.group(1))
-        for pat in read_pats:
-            for m in pat.finditer(line):
-                if m.group(1):
-                    reads.add(m.group(1))
+        basenames = _extract_basenames(line)
+        if not basenames:
+            continue
+        kind = _classify(line, write_kws, read_kws)
+        if kind == "write":
+            writes.update(basenames)
+        elif kind == "read":
+            reads.update(basenames)
     return writes, reads
 
 
 def _walk():
-    files = []
     for root in SCAN_ROOTS:
         if not root.exists():
             continue
         for dp, dirs, names in os.walk(root):
             dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]
             for n in names:
-                ext = os.path.splitext(n)[1]
-                if ext not in EXTS:
-                    continue
-                files.append(Path(dp) / n)
-    return files
+                if os.path.splitext(n)[1] in EXTS:
+                    yield Path(dp) / n
 
 
-def _basename_eq(a: str, b: str) -> bool:
-    """Same basename, different dir/prefix -- the bug shape we hunt."""
-    return os.path.basename(a) == os.path.basename(b)
-
-
-def _stem_close(a: str, b: str) -> bool:
-    """Stems differ by `hme-` prefix or `tmp/` vs `runtime/hme/` axis."""
-    sa, sb = os.path.basename(a), os.path.basename(b)
-    if sa.startswith("hme-") and sa[4:] == sb: return True
-    if sb.startswith("hme-") and sb[4:] == sa: return True
-    return False
+def _near_miss(name: str, candidates: set) -> list[str]:
+    """A near-miss is a basename that differs only by the `-` vs `.` axis
+    or a single-char prefix/suffix difference -- the migration shape."""
+    out = []
+    for c in candidates:
+        if c == name:
+            continue
+        # Same name modulo `-` <-> `.` swap (e.g. "errors-lastread" vs "errors.lastread").
+        if c.replace("-", ".") == name.replace("-", ".") or \
+           c.replace(".", "-") == name.replace(".", "-"):
+            out.append(c)
+            continue
+        # Truncated-prefix match (e.g. "heartbeat-foo" vs "hme-heartbeat-foo").
+        if c.endswith(name) or name.endswith(c):
+            out.append(c)
+    return out
 
 
 def main() -> int:
+    verbose = "--verbose" in sys.argv
     all_writes: dict[str, list[str]] = {}
     all_reads: dict[str, list[str]] = {}
     for f in _walk():
@@ -143,27 +174,31 @@ def main() -> int:
         for p in r:
             all_reads.setdefault(p, []).append(rel)
 
-    write_paths = set(all_writes.keys())
-    read_paths = set(all_reads.keys())
+    write_set = set(all_writes)
+    read_set = set(all_reads)
+
+    if verbose:
+        print(f"writes ({len(write_set)}): {sorted(write_set)}")
+        print(f"reads  ({len(read_set)}): {sorted(read_set)}")
 
     findings = []
-    for w in sorted(write_paths - read_paths):
-        candidates = [r for r in read_paths if _basename_eq(w, r) or _stem_close(w, r)]
-        if candidates:
-            findings.append(("WRITE-NO-READ", w, all_writes[w], candidates))
-    for r in sorted(read_paths - write_paths):
-        candidates = [w for w in write_paths if _basename_eq(r, w) or _stem_close(r, w)]
-        if candidates:
-            findings.append(("READ-NO-WRITE", r, all_reads[r], candidates))
+    for w in sorted(write_set - read_set):
+        nm = _near_miss(w, read_set)
+        if nm:
+            findings.append(("WRITE-NO-READ", w, all_writes[w], nm))
+    for r in sorted(read_set - write_set):
+        nm = _near_miss(r, write_set)
+        if nm:
+            findings.append(("READ-NO-WRITE", r, all_reads[r], nm))
 
     if not findings:
-        print(f"audit-state-file-symmetry: PASS ({len(write_paths)} writes, {len(read_paths)} reads, no asymmetric pairs)")
+        print(f"audit-state-file-symmetry: PASS ({len(write_set)} writes, {len(read_set)} reads, no asymmetric pairs)")
         return 0
     print(f"audit-state-file-symmetry: FAIL ({len(findings)} asymmetric pair(s))")
     for kind, p, sources, candidates in findings:
         print(f"  {kind}: {p}")
         print(f"    sources: {sources[:3]}{' ...' if len(sources) > 3 else ''}")
-        print(f"    near-miss: {candidates[:3]}")
+        print(f"    near-miss in opposite set: {candidates}")
     return 1
 
 
