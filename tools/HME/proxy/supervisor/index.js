@@ -142,9 +142,8 @@ async function _healthLoop() {
           const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
           const sentinel = SUPERVISOR_ABANDONED_SENTINEL;
           const msg = `[supervisor] ${spec.name} hit restart limit (${spec.maxRestarts}) -- giving up`;
-          // Tail of child stderr goes in the sentinel JSON (read by i/status),
-          // NOT into hme-errors.log -- one event must not flood the LIFESAVER
-          // scanner with 20+ lines. hme-errors.log stays one-line-per-event.
+          // Child stderr tail -> sentinel JSON (read by i/status); never into
+          // hme-errors.log (would flood LIFESAVER scanner with 20+ lines/event).
           let childTail = '';
           let childLogPath = '';
           try {
