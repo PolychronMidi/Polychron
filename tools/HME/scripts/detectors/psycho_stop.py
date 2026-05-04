@@ -31,15 +31,9 @@ from _transcript import (  # noqa: E402
 BG_KEYWORDS = (
     "train", "pip install", "pip3 install", "nohup", "accelerate", "axolotl",
     "unsloth", "merge_", "convert_hf_to_gguf", "finetune", "stress-test",
-    # Generic long-running python scripts -- `python3 /tmp/foo.py` or inline
-    # `python3 <<EOF ... EOF` in a background command. Catches reindex
-    # loops, download scripts, migration wrappers, and anything launched
-    # from /tmp as a batch one-shot. The presence of `&` at end OR heredoc
-    # marker also indicates the command was intended to run long.
+    # Generic long-running python (`python3 /tmp/foo.py`, heredoc).
     "python3 /tmp/", "python3 <<", "python <<",
-    # Shim / daemon restarts deferred via nohup are not the same pattern
-    # (those are quick) -- they're caught elsewhere. But if a nohup or
-    # disown appears in the command AND there's a wakeup, that's defer.
+    # Daemon restarts via nohup/disown when paired with a wakeup -> defer.
     "disown", "/reindex", "reindex",
     # HF / large model downloads
     "snapshot_download", "hf_hub_download", "huggingface_hub",
