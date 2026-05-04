@@ -1,18 +1,6 @@
-// scripts/trace-replay.js
-// Trace replay mode: replays a recorded trace.jsonl to reconstruct the
-// composition's state timeline for analysis, debugging, or visualization.
-//
-// Modes:
-//   --timeline   Print beat-by-beat state timeline to stdout (default)
-//   --section N  Filter to section N only
-//   --layer L    Filter to layer L only (L1 or L2)
-//   --json       Output structured JSON instead of formatted text
-//   --stats      Show aggregate statistics per section/phrase
-//   --search K=V Filter beats where snap.K matches V
-//
-// Usage: node scripts/trace-replay.js [--timeline] [--section N] [--layer L] [--json] [--stats]
-// Input: metrics/trace.jsonl
-// Output: stdout or metrics/trace-replay.json (with --json)
+// trace-replay: reconstruct composition state timeline from metrics/trace.jsonl.
+// Flags: --timeline (default beat-by-beat) / --section N / --layer L1|L2 /
+// --json / --stats / --search K=V. Output: stdout or metrics/trace-replay.json.
 
 'use strict';
 
