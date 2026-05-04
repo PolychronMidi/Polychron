@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1215,
-      "updated_ts": 1777918041.1066551
+      "max_id": 1221,
+      "updated_ts": 1777918430.4527693
     }
   },
   {
@@ -66,8 +66,8 @@
     "id": 1190,
     "text": "Writer/reader symmetry auditor",
     "activeForm": "Building symmetry auditor",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -80,7 +80,7 @@
     "id": 1191,
     "text": "INVENTORY.md drift auto-detector",
     "activeForm": "Building INVENTORY drift detector",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
