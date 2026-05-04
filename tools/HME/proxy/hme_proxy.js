@@ -491,12 +491,9 @@ function handleRequest(clientReq, clientRes) {
       && (typeof clientReq.headers['authorization'] === 'string'
           || typeof clientReq.headers['x-api-key'] === 'string');
 
-    // Hoisted session key for telemetry from the upstream response/error
-    // callbacks (which run OUTSIDE the `if (payload && messages && !_passthrough)`
-    // block where the original `session` was scoped). Reference to undefined
-    // `session` was crashing the proxy on every 429 with
-    // ReferenceError: session is not defined -> unhandledRejection ->
-    // supervisor shutdown -> watchdog respawn loop.
+    // Hoisted session key: upstream response/error callbacks run outside
+    // the `if (payload && messages && !_passthrough)` block. Without this,
+    // ReferenceError on every 429 -> supervisor respawn loop.
     const _sessionForTelemetry = (payload ? sessionKey(payload) : 'no-payload');
 
     const _passthrough = isPassthroughMode();
