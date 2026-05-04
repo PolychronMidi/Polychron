@@ -51,11 +51,8 @@ function mtimeCache({ ttlMs = 0 } = {}) {
   const _entries = new Map();
   return {
     get(absPath, loader) {
-      // Pre-stat: only used to detect whether the cached entry is stale,
-      // not as the mtime we STORE. Storing a pre-loader mtime created a
-      // TOCTOU hole -- if the file was rewritten between the stat and the
-      // loader's read, cache would record an old mtime against new
-      // content. Post-stat below pins to the version the loader saw.
+      // Pre-stat: stale-detection only. Storing pre-loader mtime is a TOCTOU
+      // hole; post-stat below pins to the version loader actually saw.
       let preMtime = 0;
       try { preMtime = fsForCache.statSync(absPath).mtimeMs; }
       catch (_) { /* file may not exist; loader will handle */ }
