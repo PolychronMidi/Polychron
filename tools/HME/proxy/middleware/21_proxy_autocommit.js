@@ -7,12 +7,12 @@ const path = require('path');
 const { execSync, spawn, spawnSync } = require('child_process');
 
 const ERR_LOG = 'log/hme-errors.log';
-const STATE_DIR = 'tmp';
-const FAIL_FLAG_REL = path.join(STATE_DIR, 'hme-autocommit.fail');
-const COUNTER_REL = path.join(STATE_DIR, 'hme-autocommit.counter');
-const LAST_SUCCESS_REL = path.join(STATE_DIR, 'hme-autocommit.last-success');
+const STATE_DIR = path.join('runtime', 'hme');
+const FAIL_FLAG_REL = path.join(STATE_DIR, 'autocommit.fail');
+const COUNTER_REL = path.join(STATE_DIR, 'autocommit.counter');
+const LAST_SUCCESS_REL = path.join(STATE_DIR, 'autocommit.last-success');
 // Same lock file _autocommit.sh uses; serializes JS+bash autocommit callers.
-const LOCK_REL = path.join(STATE_DIR, 'hme-autocommit.lock');
+const LOCK_REL = path.join(STATE_DIR, 'autocommit.lock');
 
 // Project root derived from THIS file's path (not ctx/env/cwd) -- the
 // silent-failure bug was ctx.PROJECT_ROOT being unset.
