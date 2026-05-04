@@ -71,7 +71,7 @@ fi
 
 # Persist verdicts: each stage runs in its own subshell so consumers
 # (anti_patterns.sh, work_checks.sh) read this file rather than inherit env.
-_DETECTOR_VERDICTS_FILE="${PROJECT_ROOT:-/home/jah/Polychron}/tmp/hme-stop-detector-verdicts.env"
+_DETECTOR_VERDICTS_FILE="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR}}/runtime/hme/stop-detector-verdicts.env"
 mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
 {
   echo "POLL_COUNT=$POLL_COUNT"
