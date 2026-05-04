@@ -638,7 +638,7 @@ function handleRequest(clientReq, clientRes) {
         // operator can diff against the post-pipeline dump to see exactly
         // what changed. No-op when disabled.
         try {
-          require('./middleware/dump_system').writeDump(
+          require('./middleware/24_dump_system').writeDump(
             payload, require('./shared').PROJECT_ROOT, 'pre',
             (m) => console.warn('Acceptable warning: [middleware]', m),
           );

@@ -36,7 +36,7 @@ const MARKERS = {
   HME_AGENT_TASK: {
     producer: 'tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py',
     consumers: [
-      'tools/HME/proxy/middleware/subagent_bridge.js',
+      'tools/HME/proxy/middleware/13_subagent_bridge.js',
       '(buddy system: server-side dispatch_thread routes to tmp/hme-buddy.sid when BUDDY_SYSTEM=1)',
     ],
     sentinel: '[[HME_AGENT_TASK req_id=<hex12+> prompt_file=tmp/hme-subagent-queue/<reqId>.json subagent_type=<type>...]]',
@@ -57,33 +57,33 @@ const MARKERS = {
   // Full repo-relative paths are required so audit-marker-registry.py
   // can grep-check the sentinel literal against each producer source.
   HME_DIR: {
-    producer: 'tools/HME/proxy/middleware/dir_context.js',
-    consumers: ['tools/HME/proxy/middleware/context_budget.js'],
+    producer: 'tools/HME/proxy/middleware/11_dir_context.js',
+    consumers: ['tools/HME/proxy/middleware/17_context_budget.js'],
     sentinel: '[HME dir:',
   },
   HME_READ: {
-    producer: 'tools/HME/proxy/middleware/read_context.js',
-    consumers: ['tools/HME/proxy/middleware/context_budget.js'],
+    producer: 'tools/HME/proxy/middleware/09_read_context.js',
+    consumers: ['tools/HME/proxy/middleware/17_context_budget.js'],
     sentinel: '[HME:read]',
   },
   HME_EDIT: {
-    producer: 'tools/HME/proxy/middleware/edit_context.js',
-    consumers: ['tools/HME/proxy/middleware/context_budget.js'],
+    producer: 'tools/HME/proxy/middleware/07_edit_context.js',
+    consumers: ['tools/HME/proxy/middleware/17_context_budget.js'],
     sentinel: '[HME:edit]',
   },
   HME_NEIGHBORHOOD: {
-    producer: 'tools/HME/proxy/middleware/grep_glob_neighborhood.js',
-    consumers: ['tools/HME/proxy/middleware/context_budget.js'],
+    producer: 'tools/HME/proxy/middleware/10_grep_glob_neighborhood.js',
+    consumers: ['tools/HME/proxy/middleware/17_context_budget.js'],
     sentinel: '[HME neighborhood',
   },
   HME_BG_DOMINANCE: {
-    producer: 'tools/HME/proxy/middleware/background_dominance.js',
+    producer: 'tools/HME/proxy/middleware/12_background_dominance.js',
     consumers: [],
     sentinel: '[hme bg-dominance]',
   },
   ERR_FOOTER: {
-    producer: 'tools/HME/proxy/middleware/bash_enrichment.js',
-    consumers: ['tools/HME/proxy/middleware/context_budget.js'],
+    producer: 'tools/HME/proxy/middleware/14_bash_enrichment.js',
+    consumers: ['tools/HME/proxy/middleware/17_context_budget.js'],
     sentinel: '[err]',
   },
 

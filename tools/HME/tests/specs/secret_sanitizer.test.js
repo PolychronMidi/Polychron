@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 
-const sanitizer = require('../../proxy/middleware/secret_sanitizer');
+const sanitizer = require('../../proxy/middleware/06_secret_sanitizer');
 
 // Test fixtures are built at runtime via concat so the source file does not
 // match the secret-detection regex of pretooluse_write.sh's content scanner.
