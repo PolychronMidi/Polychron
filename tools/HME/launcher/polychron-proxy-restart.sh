@@ -1,19 +1,7 @@
 #!/usr/bin/env bash
-# Restart ONLY the HME proxy bundle (hme_proxy.js + supervised worker.py
-# + llamacpp_daemon). Leaves llama-server instances on :8080/:8081 and
-# VSCode/claude-code untouched.
-#
-# Use when you've changed proxy code (context_status.js, hme_proxy.js,
-# middleware/, stop_chain/, etc.) and want the new code live without
-# nuking llama-server warmup or losing the VSCode session.
-#
-# What this DOES NOT do (deliberately):
-#   - touch llama-server (the llama.cpp model servers on :8080/:8081)
-#   - touch VSCode / claude-code (no env-bridge / auto-relaunch dance)
-#   - rewrite .vscode/settings.json
-#   - run the proxy-bypass auto-fix path
-#
-# If the env bridge or VSCode is broken, use polychron-restart.sh instead.
+# Restart ONLY the HME proxy bundle (hme_proxy.js + supervised worker.py +
+# llamacpp_daemon). Leaves llama-server (:8080/:8081), VSCode, and
+# .vscode/settings.json untouched. Use polychron-restart.sh for full reset.
 
 set -u
 set -o pipefail
