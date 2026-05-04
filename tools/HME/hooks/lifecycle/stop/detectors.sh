@@ -23,31 +23,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
     done < "$_DET_PY_ERR"
   fi
   rm -f "$_DET_PY_ERR" 2>/dev/null
-  while IFS='=' read -r _k _v; do
-    case "$_k" in
-      poll_count)    POLL_COUNT="$_v" ;;
-      idle_after_bg) IDLE_AFTER_BG="$_v" ;;
-      psycho_stop)   PSYCHO_STOP="$_v" ;;
-      ack_skip)      ACK_SKIP="$_v" ;;
-      abandon_check) ABANDON_CHECK="$_v" ;;
-      stop_work)     STOP_WORK="$_v" ;;
-      fabrication_check) FABRICATION_CHECK="$_v" ;;
-      early_stop)    EARLY_STOP="$_v" ;;
-      exhaust_check) EXHAUST_CHECK="$_v" ;;
-      scope_escape)  SCOPE_ESCAPE="$_v" ;;
-      senior_consult_debt) SENIOR_CONSULT_DEBT="$_v" ;;
-      ignore_and_trample) IGNORE_AND_TRAMPLE="$_v" ;;
-      phantom_capability) PHANTOM_CAPABILITY="$_v" ;;
-      advisor_doctrine) ADVISOR_DOCTRINE="$_v" ;;
-      summary_format) SUMMARY_FORMAT="$_v" ;;
-      live_probe) LIVE_PROBE="$_v" ;;
-      phase_gate) PHASE_GATE="$_v" ;;
-      pile_on) PILE_ON="$_v" ;;
-      claim_without_evidence) CLAIM_WITHOUT_EVIDENCE="$_v" ;;
-      fix_without_investigation) FIX_WITHOUT_INVESTIGATION="$_v" ;;
-      comment_bloat) COMMENT_BLOAT="$_v" ;;
-    esac
-  done <<< "$_RUN_ALL_OUT"
+  while IFS='=' read -r _k _v; do _detector_parse_case "$_k" "$_v"; done <<< "$_RUN_ALL_OUT"
   # Sanity: poll_count must be numeric for the -ge test below.
   [[ "$POLL_COUNT" =~ ^[0-9]+$ ]] || POLL_COUNT=0
 fi
