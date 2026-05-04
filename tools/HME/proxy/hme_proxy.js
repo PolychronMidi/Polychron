@@ -726,16 +726,9 @@ function handleRequest(clientReq, clientRes) {
       // (including context_management, which the native bucket accepts).
     }
 
-    // Out-of-band auth injection. Loopback callers (e.g. the MCP
-    // server's overdrive path) POST to the proxy without auth -- they
-    // can't forward Claude Code's ambient Authorization header because
-    // they aren't in the Claude-Code->proxy request chain. When the
-    // incoming request has no auth AND comes from localhost AND the
-    // upstream is Anthropic, read the Claude Code OAuth token from
-    // ~/.claude/.credentials.json and inject it. Same credential the
-    // live Claude Code session uses, same subscription charged. Any
-    // other request (non-localhost, non-Anthropic, or already carrying
-    // auth) is passed through unchanged.
+    // Out-of-band auth injection: loopback callers (MCP overdrive etc) hit
+    // the proxy without Claude Code's ambient Authorization. Inject the
+    // OAuth token from ~/.claude/.credentials.json -- same subscription.
     if (isAnthropic
         && !upstreamHeaders['authorization']
         && !upstreamHeaders['x-api-key']) {
@@ -820,15 +813,9 @@ function handleRequest(clientReq, clientRes) {
       const chunks = [];
 
       // FP-CHECK upstream-kill: detect `[FP-CHECK: yes]` in TEXT-block
-      // deltas only, not thinking-block deltas. Earlier version did
-      // bare-substring scan -> killed the stream when the marker
-      // appeared inside thinking content (which happens any time the
-      // model reasons ABOUT the marker), producing blank responses.
-      // Now: regex requires `text_delta` to appear in the same SSE
-      // event line as the marker. SSE events are `event: ... \n
-      // data: {"type":"content_block_delta","delta":{"type":
-      // "text_delta","text":"..."}}` -- so text_delta + marker in one
-      // chunk means a text delta containing the marker, not thinking.
+      // text_delta-only marker scan: bare-substring matched thinking blocks
+      // and killed streams when the model reasoned ABOUT the marker. Regex
+      // requires `text_delta` and marker in the same SSE event line.
       let _fpKillTriggered = false;
       let _fpTrailingBuf = '';
       let _fpEligible = false;
