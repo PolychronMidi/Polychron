@@ -158,11 +158,8 @@ function lastAssistantText(transcriptPath) {
   return last;
 }
 
-// Match the "nothing missed" / "confirmed nothing remains" no-op response
-// shape exactly. Conservative: only short responses that EQUAL one of these
-// declarations qualify. A long answer that happens to contain "nothing
-// missed" mid-sentence does NOT match -- those legitimately preceded real
-// work and round 2 should still fire.
+// Match exact "nothing missed"-shape no-op responses (<=80 chars, equals one
+// of the declarations). Long responses with the phrase mid-sentence don't match.
 function isNothingMissedResponse(text) {
   if (!text) return false;
   const trimmed = text.trim().replace(/\s+/g, ' ');
