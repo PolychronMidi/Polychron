@@ -40,7 +40,8 @@ def _build_think_system() -> str:
 
 _THINK_SYSTEM = _build_think_system()
 
-# Review prompts: calibration rationale -> doc/REVIEW_SYSTEM_CALIBRATION.md
+# _REVIEW_SYSTEM = forensic auditor (quote-grounded tier-1 only).
+# _PARTNER_SYSTEM = aesthetic/maintainer-empathy register (separate invocation).
 _PARTNER_SYSTEM = (
     "You are a partner-reviewer. Your relationship to the code is "
     "different from a forensic auditor: you read as if you were "
