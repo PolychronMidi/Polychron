@@ -101,20 +101,18 @@ def _parse_all(transcript_path: str | Path) -> list[dict]:
 
 
 def load_turn_events(transcript_path: str | Path) -> list[dict]:
-    """Return the list of events in the current turn, oldest first.
-
-    A "turn" starts at the most recent user message (inclusive, as the
-    boundary) and ends at the most recent assistant message. Events outside
-    that window are excluded.
-
-    Returns [] on any read/parse failure -- callers then short-circuit to
-    the safe "ok" status.
-    """
+    """Events in the current turn, oldest first. Boundary = most recent
+    REAL user prompt (string content), NOT tool_result wrappers (which
+    Claude Code records with role=user too). Mis-counting tool_result as
+    turn boundary made every consumer detector see only 1-3 events at
+    Stop time and silently miss the turn's tool calls."""
     events = _parse_all(transcript_path)
-    # Find the last user message; turn is everything after it.
     last_user_idx = -1
     for i, obj in enumerate(events):
-        if is_user(obj):
+        if not is_user(obj):
+            continue
+        msg = obj.get("message")
+        if isinstance(msg, dict) and isinstance(msg.get("content"), str):
             last_user_idx = i
     if last_user_idx == -1:
         return events
