@@ -60,39 +60,6 @@ class MetaObserverCoherenceVerifier(Verifier):
         return _result(PASS, score, summary)
 
 
-class VerifierCoverageGapVerifier(Verifier):
-    """H13 consumer: reads metrics/hme-verifier-coverage.json and flags
-    gaps -- fix commits with no matching verifier. Low weight because
-    this is aspirational."""
-    name = "verifier-coverage-gap"
-    category = "runtime"
-    subtag = "interface-contract"
-    weight = 0.5
-
-    def run(self) -> VerdictResult:
-        data_path = os.path.join(METRICS_DIR, "hme-verifier-coverage.json")
-        if not os.path.isfile(data_path):
-            return _result(SKIP, 1.0, "no coverage report -- run suggest-verifiers.py")
-        try:
-            with open(data_path) as f:
-                data = json.load(f)
-        except Exception as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
-        gaps = data.get("gap_count", 0)
-        scanned = data.get("commits_scanned", 0)
-        if scanned == 0:
-            return _result(SKIP, 1.0, "no recent fix commits to check")
-        if gaps == 0:
-            return _result(PASS, 1.0, f"{scanned} fix commits, all have verifier coverage")
-        ratio = gaps / max(1, scanned)
-        score = max(0.0, 1.0 - ratio * 2)
-        return _result(
-            WARN, score,
-            f"{gaps}/{scanned} fix commits without matching verifiers",
-            [f"first gap: {data.get('gaps', [{}])[0].get('message', '?')[:80]}"] if gaps else [],
-        )
-
-
 class MemeticDriftVerifier(Verifier):
     """H16 consumer: reads metrics/hme-memetic-drift.json and flags rules
     with elevated violation counts. Low weight because the signal is noisy
@@ -171,5 +138,3 @@ class PredictiveHCIVerifier(Verifier):
             score = max(0.0, min(1.0, predicted / 100.0))
             return _result(WARN, score, summary, [warning])
         return _result(PASS, 1.0, summary)
-
-

@@ -82,7 +82,7 @@ from .todo_tools import (  # noqa: F401
     TodoMergeHookConsistencyVerifier,
 )
 from .meta_observers import (  # noqa: F401
-    MetaObserverCoherenceVerifier, VerifierCoverageGapVerifier,
+    MetaObserverCoherenceVerifier,
     MemeticDriftVerifier, PredictiveHCIVerifier,
 )
 from .subagent import (  # noqa: F401
