@@ -10,20 +10,10 @@ const WRITE_INTENT_TOOLS = new Set([
   'NotebookEdit',
 ]);
 
-// HME_READ_TOOLS / KB_BRIEFING_RE / writeIntentCalled-without-hmeRead:
-// DELETED. This detector was measuring an obsolete contract -- "did the
-// agent explicitly invoke the MCP-era HME_read tool before editing?".
-// That tool name doesn't exist in the current shell-wrapper architecture,
-// and auto-enrichment middleware (edit_context.js, dir_context.js,
-// read_context.js) already attaches KB context to every Read and Edit
-// tool_result automatically. The check was firing `write_without_hme_read`
-// on 100% of edits, aborting the pipeline over a false positive.
-//
-// The real signal ("is the agent informed before editing?") is now
-// carried by the auto-enrichment middleware itself -- each Edit's result
-// gets `[HME:edit]` KB footer appended before the NEXT turn sees it,
-// informing all subsequent edits. First-edit-before-any-enrichment is
-// the only genuine gap and is inherently transient.
+// HME_READ_TOOLS retained as empty Set for legacy imports. Original
+// write-without-hme-read detector deleted: enforced obsolete MCP-era tool
+// contract; auto-enrichment middleware (edit_context/dir_context/read_context)
+// now attaches KB context to every Read/Edit result.
 const HME_READ_TOOLS = new Set();  // kept as empty Set for any lingering imports
 
 //  Boilerplate stub stripper
