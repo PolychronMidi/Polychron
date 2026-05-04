@@ -236,13 +236,8 @@ function _shrinkForPassthrough(payload) {
   let serialized = JSON.stringify(payload);
   if (serialized.length <= _threshold) return 0;
 
-  // TIER 1 -- microcompact: shrink tool_result blocks in older messages
-  // by replacing their content with a short elision marker. Floor=500
-  // (was 2000): observed real conversations have many ~1KB tool_results
-  // that escaped the 2KB floor and left the body still over threshold.
-  // Recent-keep=10% (was 30%): preserve only the freshest 10% of context
-  // verbatim so older tool calls compact maximally. Most large requests
-  // should now stop at tier 1 with no message drops.
+  // TIER 1: microcompact -- elide older tool_result blocks. Floor=500B,
+  // recent-keep=10%. Most large requests stop here with no message drops.
   const _TOOL_RESULT_BYTE_FLOOR = 500;
   const _RECENT_KEEP_FRACTION = 0.10;
   const _recent_start = Math.floor(msgs.length * (1 - _RECENT_KEEP_FRACTION));
@@ -595,13 +590,10 @@ function handleRequest(clientReq, clientRes) {
           // coherence noise and masked real diagnostics.
           const statusBlock = consumeStatusContext(session);
           if (statusBlock) {
-            // CRITICAL: status content varies per-turn (proxy_emergency
-            // flag, last verdict, error counts), so it MUST NOT live in
-            // the system array -- doing so invalidates the entire prompt
-            // cache below the cache_control breakpoint and rebills every
-            // request at full ITPM cost, exhausting the user's quota in
-            // ~10 turns. Route through the same cache-safe last-user-
-            // message path that lifesaver_inject already uses.
+            // Status varies per-turn so it MUST NOT live in payload.system
+            // (would bust the prompt cache and rebill ITPM each turn).
+            // Route via injectIntoLastUserMessage (cache-safe, same path
+            // lifesaver_inject uses).
             const injectedStatus = injectIntoLastUserMessage(payload, statusBlock.trim(), 'HME Session Status (proxy-injected)');
             if (injectedStatus) {
               emit({ event: 'status_inject', session });
@@ -885,14 +877,9 @@ function handleRequest(clientReq, clientRes) {
             const _stamp = new Date().toISOString().replace(/[:.]/g, '-');
             const _snapshotRel = `tmp/claude-${status}-${_pathLabel}-payload-${_stamp}.json`;
             console.error(`[hme-proxy] UPSTREAM FAILURE detected: ${_errMsg}`);
-            // Only the INTERACTIVE-path 4xx/5xx counts as a proxy fault that
-            // trips the escape hatch. Sub-pipeline failures (OVERDRIVE,
-            // engine_search count_tokens, etc.) are EXPECTED to occasionally
-            // 429 and have their own internal circuit breakers; tripping the
-            // global valve on them flips ALL future Claude Code requests
-            // into passthrough mode -- the very collateral damage the user
-            // flagged. We still snapshot + lifesaver-log them so the
-            // operator sees them, but we don't kill the interactive path.
+            // Only INTERACTIVE-path 4xx/5xx trips the global escape hatch.
+            // Sub-pipeline failures self-handle via internal circuit breakers;
+            // global trip on them puts Claude Code into passthrough.
             const _coolingDown = _alertCooldownActive(_errInfo.type || `http_${status}`, _pathLabel);
             const _shouldRetry = headers['x-should-retry'] === 'true';
             const _isRateLimit = _errInfo.type === 'rate_limit_error';
@@ -1201,13 +1188,8 @@ function handleRequest(clientReq, clientRes) {
           else { console.error(`[hme-proxy] response-trace dumper threw: ${_e.message} stack=${_e.stack}`); }
         }
 
-        // Strip content-length on ANY SSE-mutation path. Upstream's header
-        // advertised the pre-transform byte count; piping through
-        // SseTransform (below) changes the body length. Without this
-        // strip, clients see a content-length mismatch and can either
-        // stall waiting for missing bytes or truncate early. Previously
-        // only `final` (continuation) stripped; the transform path
-        // silently served a stale length. Peer-review iter 113.
+        // Strip content-length on ANY SSE-mutation path. SseTransform
+        // changes byte count; stale CL stalls or truncates the client.
         const _willSseTransform = !final
           && (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
         // Strip stale content-length on EITHER mutation path: SSE transform
@@ -1276,14 +1258,9 @@ function handleRequest(clientReq, clientRes) {
           xform.pipe(clientRes);
           xform.end(outBuf);
         } else {
-          // Non-streaming path: scan the buffered response body for
-          // bare-ack text blocks AND emit a LIFESAVER entry to
-          // hme-errors.log every time one is detected. The agent must
-          // see this alert next turn so the underlying spam-cause is
-          // diagnosed and fixed (per user directive: "make these spam
-          // messages raise a lifesaver alert telling you to fix it").
-          // The strip itself ALSO runs when conditions match -- defense
-          // in depth.
+          // Non-streaming: scan body for bare-ack text blocks; emit a
+          // LIFESAVER entry on detection so next turn sees it. Strip also
+          // runs when conditions match (defense in depth).
           try {
             const msgs = (payload && payload.messages) || [];
             let lastUserText = '';
