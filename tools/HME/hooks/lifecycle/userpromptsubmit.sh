@@ -202,11 +202,7 @@ if echo "$PROMPT" | grep -qiE 'evolve|evolution|next round|run main|pipeline|lab
   echo 'EVOLUTION CONTEXT: `i/hme-read target=<module> mode=before` before edits, `i/review mode=forget` after changes, `i/learn title="..." content="..." category=pattern` after confirmed rounds. Past round context lives in KB (query via `i/learn query=...`); the journal.md archive is historical only.' >&2
 fi
 
-# Context-aware reminders -- ONLY fire when there's a real behavior signal
-# this turn. The previous path emitted an unconditional "PLAN DISCIPLINE"
-# boilerplate + a rotating reminder-of-the-day every turn; both duplicate
-# CLAUDE.md and added ~500 chars/turn of context tax. Silent is the default;
-# signal only when nexus or prior-turn state says an override is warranted.
+# Context-aware reminders: silent default, fire only on nexus/prior-state signal.
 NEXUS_FILE="$PROJECT_ROOT/tmp/hme-nexus.state"
 OVERRIDE_REMINDER=""
 
