@@ -7,27 +7,10 @@
 # transcripts, grows sub-linearly with transcript size.
 INPUT="${INPUT:?detectors.sh requires INPUT from dispatcher (Stop payload)}"
 TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
-POLL_COUNT=0
-IDLE_AFTER_BG=ok
-PSYCHO_STOP=ok
-ACK_SKIP=ok
-ABANDON_CHECK=ok
-STOP_WORK=ok
-FABRICATION_CHECK=ok
-EARLY_STOP=ok
-EXHAUST_CHECK=ok
-SCOPE_ESCAPE=ok
-SENIOR_CONSULT_DEBT=ok
-IGNORE_AND_TRAMPLE=ok
-PHANTOM_CAPABILITY=ok
-ADVISOR_DOCTRINE=ok
-SUMMARY_FORMAT=ok
-LIVE_PROBE=ok
-PHASE_GATE=ok
-PILE_ON=ok
-CLAIM_WITHOUT_EVIDENCE=ok
-FIX_WITHOUT_INVESTIGATION=ok
-COMMENT_BLOAT=ok
+# Detector init / parse-case / persist-block all generated from registry.json
+# via emit_detectors_sh.py. Adding a detector = one entry in registry.json;
+# no manual bash sync needed (the silent-disable bug class is gone).
+eval "$(python3 "${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR}}/tools/HME/scripts/detectors/emit_detectors_sh.py" 2>/dev/null)"
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # run_all.py emits `name=verdict`; stderr bridged to hme-errors.log so a crash can't silently disable detectors.
   _DET_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_det_py_err_$$")
