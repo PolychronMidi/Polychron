@@ -107,14 +107,9 @@ if [ "$BUDDY_HANDOFF" = "1" ]; then
       exit 0
     fi
   fi
-  # No primary recorded yet -- fall through to legacy spawn path. The
-  # _spawn_buddy helper records the spawned sid as the inaugural primary.
-  # Defensive: a legacy runtime/hme/buddy.sid from a pre-paradigm session
-  # would short-circuit the inaugural spawn (`_spawn_buddy`'s "already
-  # active" guard returns early when sid_file is non-empty). Under
-  # HANDOFF=1, primary.sid is the authoritative "buddy alive" signal --
-  # absence of primary.sid means we have no inheritance, so any existing
-  # legacy file is stale and must be cleared before fall-through.
+  # No primary -- fall through to spawn path; _spawn_buddy records inaugural.
+  # Under HANDOFF=1 primary.sid is authoritative; clear stale legacy file so
+  # _spawn_buddy's "already active" guard doesn't short-circuit the inaugural.
   rm -f "$_REPO_ROOT/runtime/hme/buddy.sid" \
         "$_REPO_ROOT/tmp/hme-buddy.floor" \
         "$_REPO_ROOT/tmp/hme-buddy.effort_floor"
