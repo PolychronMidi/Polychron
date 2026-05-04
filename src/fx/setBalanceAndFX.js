@@ -217,19 +217,11 @@ return [
     ...bass.map(ch=>rfx('bass',ch,95,(c)=>c===cCH3)),
   ];  });
 
-  // R41 B: cooperation post-pass. setBalanceAndFX is the dominant voice in
-  // the channelStateField ecology (~1700 writes/run, ~6x any regime writer).
-  // Prior rounds showed regime cooperation alone can't reach multi-writer
-  // synergy because setBalanceAndFX's writes were uncorrelated random
-  // samples. This pass reads substrate trend and, for 15% of CC emissions,
-  // replaces the fresh value with a trend-aligned nudge from the last
-  // written value. Keeps 85% of writes as the existing rfx/random logic
-  // -- cooperation supplement, not replacement.
-  //
-  // R49 audit: pruned from 19 CCs to 8 -- the CCs fluidsynth + SGM-v2.01
-  // actually produce audible output for. Coordinating CCs the synth
-  // ignores was burning cycles on inaudible emissions and polluting
-  // meanCooperation with single-writer rfx-random auto-correlation.
+  // Cooperation post-pass: setBalanceAndFX is the dominant writer (~6x any
+  // regime writer) so 15% of its CC emissions get trend-aligned nudges
+  // (read substrate trend, replace the rfx-random with last-written +
+  // small bias) to enable multi-writer synergy. 8 CCs only -- the audible
+  // ones for fluidsynth+SGM-v2.01.
   const _COOP_PROB = 0.15;
   const _COOP_AMP = {
     1:  [3, 8],    // mod wheel
