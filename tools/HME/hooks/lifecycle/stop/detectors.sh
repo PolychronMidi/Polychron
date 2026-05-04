@@ -113,17 +113,9 @@ elif [ "$SENIOR_CONSULT_DEBT" = "consult-thin" ]; then
 "BUDDY_SYSTEM.md Section C -- Goodhart-bait risk)." >&2
 fi
 
-# ignore_and_trample -- hard block. The user sent a new message
-# mid-response and the agent's reply did not open with an
-# acknowledgment ("Acknowledged <one-word> input" or "Wrapping up
-# this quickly first."). Continuing prior work without acknowledging
-# is the exact "Sorry -- you sent the new message and I just kept
-# going" failure mode this detector exists to prevent.
-#
-# Block JSON goes to STDOUT (not stderr) -- the stop_chain JS evaluator
-# (tools/HME/proxy/stop_chain/shell_policy.js:defaultParseDecision)
-# parses stdout for `{"decision":"block",...}`. No exit 2 needed; the
-# chain's orchestrator handles deny propagation.
+# ignore_and_trample -- hard block. Required openers: "Acknowledged
+# <word> input" or "Wrapping up this quickly first.".
+# Block JSON -> stdout (parsed by shell_policy.js:defaultParseDecision).
 if [ "$IGNORE_AND_TRAMPLE" = "ignore-and-trample" ]; then
   cat <<'_IT_MSG'
 {"decision": "block", "reason": "IGNORE-AND-TRAMPLE VIOLATION: A user message arrived mid-response (system-reminder embedded in a tool_result) but your reply did not acknowledge it immediately. Required openers: \"Acknowledged <one-word> input\" (then either address it now, or -- only if current work doesn't conflict -- say \"Wrapping up this quickly first.\"). Resume now: acknowledge the user's message in your next text, then either address it or wrap up the current work coherently."}
