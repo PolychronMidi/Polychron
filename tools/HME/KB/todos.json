@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1203,
-      "updated_ts": 1777917890.309775
+      "max_id": 1209,
+      "updated_ts": 1777917969.3781228
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 1188,
     "text": "Proxy-restart errors-lastread-proxy watermark seed",
     "activeForm": "Adding proxy-startup watermark seed",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 1189,
     "text": "Rename errors-lastread-proxy -> errors-lastread.proxy (dotted-suffix axis pattern)",
     "activeForm": "Renaming errors-lastread-proxy",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
