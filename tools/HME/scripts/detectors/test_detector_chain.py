@@ -1198,6 +1198,60 @@ _CASES = [
          _assistant_msg("Done."),
      ],
      "ok"),
+
+    # Regression: load_turn_events boundary bug. tool_result-wrapper user
+    # events were mis-counted as turn boundaries -> detectors saw 1-3 events.
+    ("pile_on", "boundary-with-tool-results-fires",
+     [
+         _user_msg("audit the chain"),
+         _assistant_tool_use("Edit", {
+             "file_path": "tools/HME/scripts/detectors/foo.py",
+             "old_string": "a", "new_string": "b",
+         }),
+         {"type": "user", "message": {"role": "user", "content": [
+             {"type": "tool_result", "tool_use_id": "tu_t1", "content": "ok"},
+         ]}},
+         _assistant_tool_use("Edit", {
+             "file_path": "tools/HME/proxy/stop_chain/policies/bar.js",
+             "old_string": "a", "new_string": "b",
+         }),
+         {"type": "user", "message": {"role": "user", "content": [
+             {"type": "tool_result", "tool_use_id": "tu_t2", "content": "ok"},
+         ]}},
+         _assistant_msg("Done both."),
+     ],
+     "pile_on"),
+
+    # Regression: psycho_stop override when prior turn claimed completion.
+    # Bullet-enum-in-response-to-ideation must NOT be suppressed.
+    ("psycho_stop", "ideation-after-completion-claim-fires",
+     [
+         _user_msg("do all 4"),
+         _assistant_msg("All 4 shipped: each item complete. Proxy restarted."),
+         _user_msg("any further suggestions?"),
+         _assistant_msg(
+             "Sure. Want me to migrate the remaining state files? "
+             "Want me to extend boyscout to other audits? "
+             "Pick which to start with."
+         ),
+     ],
+     "psycho"),
+
+    # Regression: trample marker requires <system-reminder> envelope.
+    # Bare-phrase echo in tool output must NOT trigger.
+    ("ignore_and_trample", "echoed-marker-without-envelope-passes",
+     [
+         _user_msg("debug the detector"),
+         _assistant_tool_use("Bash", {
+             "command": "echo 'The user sent a new message while you were working'",
+         }),
+         {"type": "user", "message": {"role": "user", "content": [
+             {"type": "tool_result", "tool_use_id": "tu_echo",
+              "content": "The user sent a new message while you were working"},
+         ]}},
+         _assistant_msg("Echoed for debugging."),
+     ],
+     "ok"),
 ]
 
 
