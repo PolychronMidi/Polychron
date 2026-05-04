@@ -6,11 +6,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 INPUT=$(cat)
 PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 
-# Clear per-turn edit tracker (consumed by the coupling-antagonism warning
-# in pretooluse_edit.sh) and the per-turn auto-brief dedup tracker
-# (consumed by the brief-injection in pretooluse_edit.sh/pretooluse_write.sh).
-# Scope is a single user turn, not the whole session -- without these resets
-# the "per-turn" claim is false and the dedup persists permanently.
+# Reset per-turn trackers (turn-edits + brief dedup) consumed by pretooluse_edit/write.
 if [ -n "${PROJECT_ROOT:-}" ]; then
   rm -f "${PROJECT_ROOT}/tmp/hme-turn-edits.txt" \
         "${PROJECT_ROOT}/tmp/hme-turn-briefs.txt" 2>/dev/null || true
