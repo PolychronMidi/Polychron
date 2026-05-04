@@ -95,7 +95,7 @@ _FAILFAST_PATTERNS = [
 ]
 
 
-from loc_count import cloc as _loc  # SSoT shared with boyscout_loc.py
+_loc = cloc  # SSoT shared with boyscout_loc.py
 
 
 def _walk_js(root):
