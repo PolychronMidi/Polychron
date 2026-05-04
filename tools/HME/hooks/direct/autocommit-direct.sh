@@ -1,30 +1,8 @@
 #!/usr/bin/env bash
-# Direct autocommit -- runs from Claude Code's hook settings.json WITHOUT
-# going through the HME proxy.
-#
-# Why this exists:
-#
-# The primary hook path goes through _proxy_bridge.sh, which POSTs to the
-# HME proxy on port 9099. If the proxy is DOWN (crashed, restarting, not
-# yet started), _proxy_bridge.sh fail-opens with exit 0 -- Claude Code
-# thinks the hook succeeded and NOTHING runs. No autocommit. No LIFESAVER.
-# Silence.
-#
-# This direct script is wired as a SECOND hook alongside the proxy path.
-# It runs unconditionally, regardless of proxy state, and commits the
-# working tree through the _autocommit.sh helper. If the proxy IS up and
-# ALSO did an autocommit, the second attempt safely no-ops ("nothing to
-# commit" -> success path in the helper).
-#
-# Requirements:
-#  - Must NOT source _safety.sh. _safety.sh has `set -euo pipefail` plus
-#    .env loading that can itself fail silently. This script bypasses the
-#    fragile layer that keeps breaking.
-#  - Must emit nothing to stdout (Claude Code interprets stdout as hook
-#    decision JSON). stderr is fine but can be dropped by the harness,
-#    so _autocommit.sh's sticky fail flag is the durable signal.
-#  - Must exit 0 unconditionally. Blocking Claude Code on autocommit
-#    failure would create a worse problem than silent failure.
+# Direct autocommit: runs from settings.json without proxy dependency.
+# Pairs with _proxy_bridge.sh path; safe no-op when both run (nothing to commit).
+# Constraints: NOT _safety.sh (fragile); NO stdout (interpreted as hook JSON);
+# always exit 0 (blocking would be worse than silent failure).
 
 set +e  # explicitly NOT fail-fast -- we own our bookkeeping
 
