@@ -478,46 +478,29 @@ async function runPipeline(payload, scan, session) {
   return _pipelineDirty;
 }
 
-//  Auto-load modules
-//
-// Load order matters when one middleware enriches a payload that another
-// reads (e.g. lifesaver_inject must run BEFORE proxy_autocommit so a
-// failed autocommit surfaces as the lifesaver banner on the same turn).
-// The previous loader used readdirSync ordering -- filesystem inode order,
-// undefined across filesystems and OS upgrades. We now consult an
-// explicit `order.json` manifest and fall back to alphabetical for any
-// file not listed (so a new middleware doesn't get silently disabled).
+// Auto-load modules. Filesystem-encoded ordering: files are named NN_name.js
+// where NN is the load-order prefix (replaces the order.json manifest, which
+// was a 2-place sync risk). Files without a numeric prefix sort AFTER the
+// numbered ones, alphabetically, so new middleware can't be silently disabled.
 function loadAll() {
   const dir = __dirname;
-  let manifest = [];
-  try {
-    const manifestPath = path.join(dir, 'order.json');
-    if (fs.existsSync(manifestPath)) {
-      const raw = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-      if (Array.isArray(raw.order)) manifest = raw.order;
-    }
-  } catch (err) {
-    console.error(`[middleware] order.json read failed (using alphabetical): ${err.message}`);
-  }
   const allFiles = fs.readdirSync(dir).filter(f => (
-    f !== 'index.js' && f !== 'order.json' && f.endsWith('.js')
-    // Exclude test files: `test_*.js`, `*.test.js`, `*_test.js`. Tests live
-    // next to the code they exercise (cohesive, easy to find) but are not
-    // middleware themselves and must not be register()'d.
+    f !== 'index.js' && f.endsWith('.js')
     && !f.startsWith('test_') && !f.endsWith('.test.js') && !f.endsWith('_test.js')
-    // Underscore-prefixed files are shared utilities (mirrors the
-    // hooks/helpers/_*.sh convention). They export functions for other
-    // middleware to consume but are not themselves registered as
-    // middleware. Skip the strict-name validation that would log a
-    // spurious warning every time loadAll() runs.
     && !f.startsWith('_')
   ));
-  const inManifest = manifest.filter(name => allFiles.includes(name));
-  const unlisted = allFiles.filter(name => !manifest.includes(name)).sort();
-  if (unlisted.length > 0 && manifest.length > 0) {
-    console.warn(`[middleware] ${unlisted.length} file(s) not in order.json (loaded alphabetically AFTER manifest): ${unlisted.join(', ')}`);
+  // Sort by numeric prefix when present, else alphabetical (after numbered).
+  const ordered = allFiles.slice().sort((a, b) => {
+    const ma = /^(\d+)_/.exec(a); const mb = /^(\d+)_/.exec(b);
+    if (ma && mb) return parseInt(ma[1], 10) - parseInt(mb[1], 10);
+    if (ma && !mb) return -1;
+    if (!ma && mb) return 1;
+    return a.localeCompare(b);
+  });
+  const unprefixed = ordered.filter(f => !/^\d+_/.test(f));
+  if (unprefixed.length > 0) {
+    console.warn(`Acceptable warning: [middleware] ${unprefixed.length} file(s) without numeric prefix (loaded alphabetically AFTER prefixed): ${unprefixed.join(', ')}`);
   }
-  const ordered = [...inManifest, ...unlisted];
   for (const fname of ordered) {
     try {
       const mod = require(path.join(dir, fname));
