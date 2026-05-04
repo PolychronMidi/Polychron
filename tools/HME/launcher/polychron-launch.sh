@@ -156,22 +156,10 @@ if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ]; then
   echo "[launch]   coder llama   -> ${_cod_ok}" >&2
 fi
 
-# 4. ANTHROPIC_BASE_URL bridge
-#
-# .env's ANTHROPIC_BASE_URL is sourced by HME's own scripts but NOT by the
-# VSCode Claude Code extension (or any GUI process not launched from a
-# .env-aware shell). Without this bridge, the extension's child claude
-# binary goes directly to api.anthropic.com, bypassing the proxy and all
-# of HME's middleware (status injection, jurisdiction, lifesaver, etc.).
-#
-# Two-pronged fix:
-#   a) Merge ANTHROPIC_BASE_URL into .vscode/settings.json's
-#      terminal.integrated.env.{linux,osx,windows} -- covers integrated
-#      terminal launches of claude (e.g. `claude -p` from VSCode terminal).
-#   b) Detect already-running claude binaries that lack the var in their
-#      env and warn with a one-line fix command. Covers the case where
-#      VSCode itself was launched without sourcing .env, so the extension
-#      inherits a clean env and child binaries do too.
+# 4. ANTHROPIC_BASE_URL bridge: VSCode/GUI claude doesn't source .env, so
+# without this the extension bypasses the proxy. (a) inject into
+# .vscode/settings.json terminal.integrated.env (covers integrated terminal),
+# (b) warn on running claude pids missing the var.
 
 if [ -n "${ANTHROPIC_BASE_URL:-}" ]; then
   _vscode_dir="$PROJECT_ROOT/.vscode"
