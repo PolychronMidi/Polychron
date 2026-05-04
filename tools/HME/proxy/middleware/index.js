@@ -230,11 +230,7 @@ const ctx = {
       toolResult.content = text;
     }
   },
-  // Tell the pipeline to allow this tool_use.id to re-enter on a future
-  // turn -- used by middleware whose work is unfinished (e.g. background
-  // task still running). Bounded by _MAX_RETRIES so a stuck task
-  // doesn't retry forever. Returns the attempt count AFTER the call so
-  // callers can log or short-circuit.
+  // Allow tool_use.id re-entry on future turns; bounded by _MAX_RETRIES.
   retryNextTurn: (toolUseId) => {
     if (!toolUseId) return 0;
     const n = (_retryCount.get(toolUseId) || 0) + 1;
