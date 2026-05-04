@@ -167,26 +167,49 @@ def _is_ideation_prompt(user_text: str) -> bool:
     """
     if not user_text:
         return False
-    # Strip system-reminder envelopes -- those carry hook language, not
-    # user intent. The actual user prompt sits between/around them.
+    # Strip system-reminder envelopes -- those carry hook language, not user intent.
     import re as _re
     cleaned = _re.sub(
-        r"<system-reminder>.*?</system-reminder>",
-        " ",
-        user_text,
-        flags=_re.DOTALL,
+        r"<system-reminder>.*?</system-reminder>", " ", user_text, flags=_re.DOTALL,
     )
     low = cleaned.lower()
-    # Directive markers win -- agent must act regardless of any "what's best"
-    # framing the user appended.
+    # Directive markers win.
     for marker in _DIRECTIVE_MARKERS:
         if marker in low:
             return False
-    # No directive -- does the prompt read as ideation?
+    # No directive -- ideation only if the marker is present.
     for marker in _IDEATION_MARKERS:
         if marker in low:
             return True
     return False
+
+
+# Completion-claim markers -- when the AGENT'S prior turn made one of these
+# claims, the next user prompt is FOLLOW-UP context, not pure ideation.
+# Suppression should NOT apply: enumerative answers are likely deferring
+# the just-claimed completion's residual work.
+_COMPLETION_CLAIM_MARKERS = (
+    "all 4 shipped", "all four shipped", "all done", "all complete",
+    "all four complete", "shipped all", "completed all",
+    "all four:", "all 4:", "all of these complete", "all items complete",
+    "everything is done", "everything's done", "all set",
+)
+
+
+def _prior_assistant_claimed_completion(events: list) -> bool:
+    """True if the LAST assistant text in this turn (i.e., the response
+    just emitted) contained any completion-claim marker. Detector callers
+    treat ideation-prompt suppression as INVALID when this is true."""
+    last = ""
+    for ev in events:
+        if _is_assistant_event(ev):
+            for b in event_content(ev):
+                if isinstance(b, dict) and b.get("type") == "text":
+                    t = b.get("text", "")
+                    if isinstance(t, str):
+                        last = t
+    low = last.lower()
+    return any(m in low for m in _COMPLETION_CLAIM_MARKERS)
 
 
 def _last_assistant_text(events: list) -> str:
