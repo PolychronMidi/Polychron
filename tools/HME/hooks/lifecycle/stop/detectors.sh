@@ -99,13 +99,8 @@ mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
   echo "COMMENT_BLOAT=$COMMENT_BLOAT"
 } > "$_DETECTOR_VERDICTS_FILE"
 
-# senior_consult_debt -- informational notice (NOT a hard block on first
-# fire, per the buddy paradigm's gradual-tightening discipline). When
-# the turn touched buddy-paradigm design-space files without an
-# i/consult invocation, surface a stderr reminder so the operator and
-# the agent both see the gap. If this fires repeatedly across sessions
-# the verdict can be elevated to a hard block in stop chain hooks
-# downstream of detectors.sh.
+# senior_consult_debt: informational stderr reminder (not a hard block).
+# Elevate to hard block downstream of detectors.sh if recurring.
 if [ "$SENIOR_CONSULT_DEBT" = "consult-debt" ]; then
   echo "[senior_consult_debt] design-space changes shipped without "\
 "consulting the buddy. Checkpoint via i/consult OR explicitly note "\
