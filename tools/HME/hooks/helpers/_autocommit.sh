@@ -25,11 +25,11 @@ if [ -z "$_AC_ROOT" ]; then
   return 1 2>/dev/null || exit 1
 fi
 
-_AC_STATE_DIR="$_AC_ROOT/tmp"
-_AC_COUNTER="$_AC_STATE_DIR/hme-autocommit.counter"
-_AC_LAST_SUCCESS="$_AC_STATE_DIR/hme-autocommit.last-success"
-_AC_FAIL_FLAG="$_AC_STATE_DIR/hme-autocommit.fail"
-_AC_LOCK_FILE="$_AC_STATE_DIR/hme-autocommit.lock"
+_AC_STATE_DIR="$_AC_ROOT/runtime/hme"
+_AC_COUNTER="$_AC_STATE_DIR/autocommit.counter"
+_AC_LAST_SUCCESS="$_AC_STATE_DIR/autocommit.last-success"
+_AC_FAIL_FLAG="$_AC_STATE_DIR/autocommit.fail"
+_AC_LOCK_FILE="$_AC_STATE_DIR/autocommit.lock"
 _AC_ERROR_LOG="$_AC_ROOT/log/hme-errors.log"
 
 # Threshold: counter value at which the attempt sequence is considered
