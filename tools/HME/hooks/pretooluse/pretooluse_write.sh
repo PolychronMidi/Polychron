@@ -61,6 +61,29 @@ if _policy_enabled block-secret-content-pattern && echo "$CONTENT" | grep -qE '(
   exit 2
 fi
 
+# Block 5+ line consecutive inline-comment block at write time.
+if _policy_enabled block-comment-bloat; then
+  _BLOAT_HIT=$(FILE="$FILE" CONTENT="$CONTENT" _safe_py3 "
+import os
+fp = os.environ.get('FILE', '').lower()
+content = os.environ.get('CONTENT', '')
+prefixes = ('//',) if fp.endswith(('.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs')) else ('#',) if fp.endswith(('.py', '.sh', '.bash', '.yaml', '.yml', '.toml')) else ()
+if not prefixes: raise SystemExit
+ANNOTATIONS = ('# rationale:', '# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// rationale:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa')
+run = 0
+for ln in content.split('\n'):
+    s = ln.lstrip()
+    if any(s.startswith(p) for p in prefixes) and not s.startswith('#!') and not any(s.startswith(a) for a in ANNOTATIONS):
+        run += 1
+        if run >= 5: print(run); break
+    else: run = 0
+" "")
+  if [ -n "$_BLOAT_HIT" ]; then
+    _emit_block "BLOCKED: Write content contains a $_BLOAT_HIT-line consecutive inline-comment block. CLAUDE.md: \"Inline comments single-line and terse.\" Trim to <=2 lines OR move prose into doc/."
+    exit 2
+  fi
+fi
+
 # Block 4+ identical non-word, non-whitespace, non-paren/bracket characters
 # in a row (visual-decoration spam). JS counterpart: block-character-spam.
 if _policy_enabled block-character-spam; then
