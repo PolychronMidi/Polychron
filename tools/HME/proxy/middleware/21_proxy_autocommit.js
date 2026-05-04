@@ -125,47 +125,42 @@ function _attemptCommit(root, caller) {
     return;
   }
 
-  try {
-    // CLAUDE.md explicitly forbids `git add -A` / `git add .` -- those
-    // can accidentally include sensitive files (.env, credentials) or
-    // large binaries. Stage tracked-only updates with `-u`, then
-    // selectively add new files matching code/doc/config extensions.
-    // `.env`, `.pem`, `.key`, etc. never get auto-staged.
-    execSync('git add -u', { cwd: root, timeout: 5000 });
-    // Add NEW files matching safe extensions only. -X null to feed
-    // -z-delimited untracked names back to xargs without splitting on
-    // weird filenames; pathspec excludes binaries + sensitive patterns.
-    execSync(
-      "git ls-files -o --exclude-standard -z " +
+  // Acquire the same flock _autocommit.sh uses so JS + bash autocommit
+  // serialize on a single lock; eliminates the recurring .git/index.lock race.
+  const lockPath = path.join(root, LOCK_REL);
+  try { fs.mkdirSync(path.dirname(lockPath), { recursive: true }); } catch (_) {}
+  const tstamp = new Date().toISOString().slice(0, 19);
+  // Forbid `git add -A` / `git add .` per CLAUDE.md (sensitive-file leak risk).
+  // Stage tracked-only via -u, then add untracked files matching safe extensions.
+  const stageScript = [
+    'git add -u',
+    "git ls-files -o --exclude-standard -z " +
       "':(exclude)*.env' ':(exclude).env*' ':(exclude)*.pem' ':(exclude)*.key' " +
       "':(exclude)*.crt' ':(exclude)*credentials*' ':(exclude)*secret*' " +
       "':(exclude)*.bin' ':(exclude)*.so' ':(exclude)*.dll' ':(exclude)*.dylib' " +
       "| xargs -0 -r git add --",
-      { cwd: root, timeout: 5000, shell: '/bin/bash' });
+  ].join(' && ');
+  try {
+    execSync(`flock -w 30 ${JSON.stringify(lockPath)} bash -c ${JSON.stringify(stageScript)}`,
+      { cwd: root, timeout: 35000, shell: '/bin/bash' });
   } catch (err) {
     _recordFailure(root, caller,
-      `git add (tracked-only + filtered) failed: ${String(err.message || err).slice(0, 300)}`);
+      `git add (flocked) failed: ${String(err.message || err).slice(0, 300)}`);
     return;
   }
-
-  // Use array form so the timestamp cannot shell-inject. Previous code
-  // was `git commit -m "${ts}"` interpolated into a string passed to
-  // execSync -- not a vulnerability with ISO timestamps, but the array
-  // form is the right pattern.
-  const tstamp = new Date().toISOString().slice(0, 19);
-  let r = spawnSync('git', ['commit', '-m', tstamp, '--quiet'],
-    { cwd: root, timeout: 5000, encoding: 'utf8' });
+  let r = spawnSync('flock', ['-w', '30', lockPath,
+    'git', 'commit', '-m', tstamp, '--quiet'],
+    { cwd: root, timeout: 35000, encoding: 'utf8' });
   if (r.status === 0) { _recordSuccess(root); return; }
   let combined = (r.stderr || '') + (r.stdout || '');
   if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
-
-  // Retry once -- transient index-lock contention is the expected case.
-  r = spawnSync('git', ['commit', '-m', `${tstamp}-retry`, '--quiet'],
-    { cwd: root, timeout: 5000, encoding: 'utf8' });
+  // Retry once -- transient lock-contention is expected on rapid fires.
+  r = spawnSync('flock', ['-w', '30', lockPath,
+    'git', 'commit', '-m', `${tstamp}-retry`, '--quiet'],
+    { cwd: root, timeout: 35000, encoding: 'utf8' });
   if (r.status === 0) { _recordSuccess(root); return; }
   combined = (r.stderr || '') + (r.stdout || '');
   if (combined.includes('nothing to commit')) { _recordSuccess(root); return; }
-
   _recordFailure(root, caller,
     `git commit failed twice: ${(combined || 'unknown').slice(0, 300)}`);
 }
