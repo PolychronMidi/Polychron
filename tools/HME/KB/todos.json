@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1197,
-      "updated_ts": 1777917737.119772
+      "max_id": 1203,
+      "updated_ts": 1777917890.309775
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 1187,
     "text": "Single source of truth for proxy/worker timeouts (timeouts.json)",
     "activeForm": "Creating timeouts.json SSoT",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 1188,
     "text": "Proxy-restart errors-lastread-proxy watermark seed",
     "activeForm": "Adding proxy-startup watermark seed",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
