@@ -228,11 +228,8 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
     fi
     if [ "${HME_AUTO_BRIEF_ON_EDIT:-1}" != "0" ] && [ -z "${_AUTO_BRIEF_SKIP:-}" ] \
         && [ -n "$_AUTO_BRIEF_TURN_FILE" ]; then
-      # Fast path: /enrich (~70ms) for KB hits + head of target file for
-      # docstring/imports. Stays under the PreToolUse latency budget that
-      # i/hme-read (15s LLM synthesis) blew. Brief is compact (<2 KB).
-      # 500ms timeout (was 2s). Same rationale as /validate above:
-      # worker can be CPU-saturated, hook should not block 2s every
+      # /enrich KB hits (~70ms) + head of target file. 500ms timeout
+      # for CPU-saturated worker; brief is compact (<2 KB).
       # time. Healthy /enrich is ~70ms so the new ceiling is 7x headroom.
       _kb_hits=$(curl -sf --max-time 0.5 -X POST -H 'Content-Type: application/json' \
         --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
