@@ -1646,12 +1646,14 @@ function handleRequest(clientReq, clientRes) {
 
     upstreamReq.on('error', (err) => {
       try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
-      // Connection-level failures: ECONNRESET, ECONNREFUSED, ETIMEDOUT,
-      // EAI_AGAIN, TLS handshake failures. Same lifesaver/snapshot
-      // discipline as the response-time detector so the user sees what
-      // happened in the next prompt instead of staring at a generic 502.
       const _errCode = err.code || 'unknown';
       const _pathLabel = _isInteractivePath ? 'interactive' : 'sub-pipeline';
+      // Single-shot retry: env-gated, retryable code, pre-headers, first attempt only.
+      if (_CONNRETRY_ENABLED && _isInteractivePath && _connAttempt === 1
+          && !clientRes.headersSent && _CONNRETRY_CODES.has(_errCode)) {
+        console.error(`[hme-proxy] ${_errCode} -- single retry (HME_PROXY_CONNRESET_RETRY=1)`);
+        return _spawnUpstream();
+      }
       const _errMsg = `upstream ${_errCode} [${_pathLabel}]: ${err.message}`;
       console.error(`[hme-proxy] upstream connection error: ${_errMsg}`);
       if (_isInteractivePath) {
@@ -1685,6 +1687,8 @@ function handleRequest(clientReq, clientRes) {
 
     if (outBody.length > 0) upstreamReq.write(outBody);
     upstreamReq.end();
+    } // _spawnUpstream
+    _spawnUpstream();
   });
 
   clientReq.on('error', (err) => {
