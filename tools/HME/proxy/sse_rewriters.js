@@ -663,29 +663,58 @@ function slopStripRewrite(eventName, data, ctx) {
 // regardless of conversational context -- the model is fabricating a
 // turn boundary inside its own response. Drop the whole block; the
 // chat client never sees the fake turn.
+// Lookahead-and-flush: only buffer until ~64 chars accumulated, decide,
+// then flush + stream rest directly. Restores token-by-token streaming.
+const _TURN_PREFIX_LOOKAHEAD = 64;
+
 function hallucinatedTurnPrefixStripRewrite(eventName, data, ctx) {
   const key = 'turn_prefix_text_hold';
   let holds = ctx.get(key);
   if (!holds) { holds = new Map(); ctx.set(key, holds); }
 
   if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
-    holds.set(data.index, { startData: data, deltas: [] });
+    holds.set(data.index, { startData: data, deltas: [], decided: false, accumulated: '' });
     return null;
   }
   if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
     const state = holds.get(data.index);
     if (!state) return data;
+    if (state.decided) return data;
     state.deltas.push(data);
-    return null;
+    state.accumulated += data.delta.text || '';
+    if (state.accumulated.length < _TURN_PREFIX_LOOKAHEAD) return null;
+    const isPrefix = _isHallucinatedTurnPrefix(state.accumulated);
+    const isDodge = _isCeremonyDodge(state.accumulated);
+    if (isPrefix || isDodge) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-turn-prefix-strips.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            kind: isPrefix ? 'turn_prefix' : 'ceremony_dodge',
+            text_preview: state.accumulated.slice(0, 100),
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      state.decided = true;
+      state.dropping = true;
+      return null;
+    }
+    state.decided = true;
+    const events = [['content_block_start', state.startData]];
+    for (const d of state.deltas) events.push(['content_block_delta', d]);
+    return { events };
   }
   if (eventName === 'content_block_stop' && data) {
     const state = holds.get(data.index);
     if (!state) return data;
     holds.delete(data.index);
-    let assembled = '';
-    for (const d of state.deltas) {
-      if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
-    }
+    if (state.dropping) return null;
+    if (state.decided) return data;
+    let assembled = state.accumulated;
     const isPrefix = _isHallucinatedTurnPrefix(assembled);
     const isDodge = _isCeremonyDodge(assembled);
     if (isPrefix || isDodge) {
