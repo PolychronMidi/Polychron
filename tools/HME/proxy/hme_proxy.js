@@ -273,11 +273,8 @@ function _shrinkForPassthrough(payload) {
     if (serialized.length <= _threshold) return elided + _half;
   }
 
-  // TIER 3 -- session-memory compact: if a pre-extracted session-notes
-  // file exists, use it as the summary block instead of summarizing
-  // live. Skips the model call entirely. File: tmp/hme-session-notes.txt.
-  // Same effect as tier-2 but cheaper (no llamacpp call). Tier-3 supersedes
-  // tier-2's marker if both fire.
+  // TIER 3: session-notes compact. If tmp/hme-session-notes.txt exists,
+  // use it as the summary (skips model call; supersedes tier-2 marker).
   try {
     const fsX = require('fs');
     const pathX = require('path');
@@ -323,11 +320,9 @@ function _shrinkForPassthrough(payload) {
     dropped++;
   }
 
-  // PASS 6 -- residual orphan scrub: any tool_result still present whose
-  // tool_use_id isn't in surviving assistant messages gets stripped.
-  // Same for orphan tool_use blocks. Empty content arrays after stripping
-  // get a placeholder so Anthropic doesn't reject the message for empty
-  // content.
+  // PASS 6: residual orphan scrub -- strip tool_result whose tool_use_id
+  // isn't in surviving assistants (and vice versa). Empty content arrays
+  // get a placeholder to satisfy Anthropic's non-empty-content rule.
   const surviving_use_ids = new Set();
   const surviving_result_ids = new Set();
   for (const m of msgs) {
@@ -580,11 +575,8 @@ function handleRequest(clientReq, clientRes) {
           console.error('[hme-proxy] middleware pipeline error:', err.message);
         }
         if (shouldInject()) {
-          // consumeStatusContext returns null when the snapshot is byte-
-          // identical to the last value emitted for this session. Stops
-          // re-injecting stale content (e.g. a "last verdict" line that
-          // hasn't changed in hours) on every turn -- that was pure
-          // coherence noise and masked real diagnostics.
+          // consumeStatusContext returns null when byte-identical to the
+          // last emitted value (suppresses stale-content re-injection).
           const statusBlock = consumeStatusContext(session);
           if (statusBlock) {
             // Status varies per-turn so it MUST NOT live in payload.system
@@ -884,11 +876,8 @@ function handleRequest(clientReq, clientRes) {
             } else if (_isRateLimit && _shouldRetry) {
               console.error(`[hme-proxy] rate_limit_error (Cloudflare per-IP throttle) -- skip panic-shrink (size irrelevant)`);
             }
-            // Trip the escape hatch on EVERY interactive 4xx, including
-            // x-should-retry=true 429s. The user explicitly wants the
-            // lifesaver alert as a recovery signal regardless of cause.
-            // The line-688 precompact still runs in passthrough so we
-            // don't ship raw 1.5MB body.
+            // Trip escape hatch on every interactive 4xx (incl x-should-retry
+            // 429s -- user wants the lifesaver alert as recovery signal).
             if (_isInteractivePath && !_coolingDown) {
               recordUpstreamFailure(_errMsg);
             } else if (!_isInteractivePath) {
@@ -913,11 +902,8 @@ function handleRequest(clientReq, clientRes) {
                 fs.writeFileSync(outFile.replace('.json', '.request-headers.json'), JSON.stringify(_reqHdrSnap, null, 2));
               } catch (_e) { /* best-effort */ }
               console.error(`[hme-proxy] payload snapshotted to ${outFile}`);
-              // Lifesaver alert is for the AGENT to act on. Skip alerts for:
-              //   - sub-pipeline 404s on path=/ (probe noise, not actionable)
-              //   - cooldown-suppressed duplicates within 60s window
-              // x-should-retry 429s DO get an alert (user wants to see them
-              // even though they're transient -- it's the recovery signal).
+              // Skip lifesaver for sub-pipeline 404 probes + cooldown dupes.
+              // x-should-retry 429s DO alert (user-visible recovery signal).
               const _suppressLifesaver = _coolingDown
                 || (status === 404 && _pathLabel === 'sub-pipeline');
               if (!_suppressLifesaver) {
@@ -1005,11 +991,8 @@ function handleRequest(clientReq, clientRes) {
           delete outHeaders['content-length'];
         }
 
-        // EXHAUSTIVE RESPONSE DUMPER: capture COMPLETE raw bodies + all
-        // headers + parsed events for EVERY transaction (anthropic + sub).
-        // No truncation. Rotate to keep last 200 dumps. Each dump is a
-        // self-contained .json with everything needed to fingerprint a
-        // failure -- no need to grep logs or correlate.
+        // EXHAUSTIVE RESPONSE DUMPER: complete bodies/headers/events per
+        // transaction. Rotates last 200; each dump self-contained.
         try {
           if (!isAnthropic) throw new Error('skip-non-anthropic');
           const _bdPath = require('path');
@@ -1291,11 +1274,9 @@ function handleRequest(clientReq, clientRes) {
                   }
                 }
                 if (detectedAck) {
-                  // Stat-only: write to a SEPARATE log, not errors.log.
-                  // Mirrors the SSE-path policy in sse_rewriters.js. The
-                  // strip below is the cure; emitting to errors.log made
-                  // every successful strip re-surface as an unresolved
-                  // error every turn -- coherence-noise spam.
+                  // Stat-only -- write to a SEPARATE log (mirrors SSE-path
+                  // policy in sse_rewriters.js). Strip is the cure; logging
+                  // to errors.log re-fired the alert every turn.
                   try {
                     const _ackContext = userIsDeny ? 'cascade-after-deny' : 'cascade-no-deny';
                     fs.appendFileSync(
