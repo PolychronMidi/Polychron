@@ -145,11 +145,8 @@ _CASES = [
      ],
      "ok"),
 
-    # Research-evaluation exemption: when the user explicitly invites
-    # enumeration ("what does X have to offer worth integrating?"), the
-    # closing list of recommendations IS the deliverable, not a punt.
-    # The detector must NOT fire on this shape so the agent can end the
-    # turn silently without writing a clarification wall.
+    # Research-evaluation exemption: enumeration IS the deliverable when
+    # explicitly invited; detector must not fire on this shape.
     ("exhaust_check", "research-eval-exemption",
      [
          _user_msg("what does this project have to offer ours worth integrating?"),
