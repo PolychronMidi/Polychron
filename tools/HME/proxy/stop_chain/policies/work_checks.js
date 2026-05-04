@@ -261,56 +261,13 @@ module.exports = {
   name: 'work_checks',
   async run(ctx) {
     const v = readVerdicts();
-    // ENFORCEMENT_REMINDER fires only when no specific deny will fire
-    // (avoids "8x STOP. Re-read CLAUDE.md" stacking with substantive deny).
-    // Mirrors FIRING_RULES; softened detectors absent on purpose.
-    const willDeny =
-      v.STOP_WORK === 'DISMISSIVE' ||
-      v.STOP_WORK === 'TEXT_ONLY_SHORT' ||
-      v.EXHAUST_CHECK === 'exhaust_violation' ||
-      v.SCOPE_ESCAPE === 'scope_escape_violation' ||
-      v.PHANTOM_CAPABILITY === 'phantom_capability' ||
-      v.PHANTOM_CAPABILITY === 'phantom_paraphrase' ||
-      v.ADVISOR_DOCTRINE === 'advisor_missing_pre_build' ||
-      v.ADVISOR_DOCTRINE === 'advisor_missing_post_deliver' ||
-      v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded' ||
-      v.SUMMARY_FORMAT === 'summary_missing' ||
-      v.SUMMARY_FORMAT === 'summary_malformed' ||
-      v.SUMMARY_FORMAT === 'minimal_format_violation' ||
-      v.LIVE_PROBE === 'live_probe_missing' ||
-      v.PHASE_GATE === 'phase_skipped' ||
-      v.PILE_ON === 'pile_on' ||
-      v.FIX_WITHOUT_INVESTIGATION === 'fix_without_investigation' ||
-      v.COMMENT_BLOAT === 'comment_bloat';
-    if (!willDeny) {
-      process.stderr.write(ENFORCEMENT_REMINDER + '\n');
-    }
-
-    // Composite deny: aggregate ALL firing detectors so agent sees every flag
-    // in one pass. ADVISOR_SILENTLY_SKIPPED and CLAIM_WITHOUT_EVIDENCE are
-    // SOFTENED (commented out below) -- their decision:block ate VSCode-side
-    // assistant turn rendering. Still detected (verdicts.env), just not denied.
-    const FIRING_RULES = [
-      ['STOP_WORK',          'DISMISSIVE',                 'STOP_WORK_DISMISSIVE'],
-      ['STOP_WORK',          'TEXT_ONLY_SHORT',            'STOP_WORK_TEXT_ONLY'],
-      ['EXHAUST_CHECK',      'exhaust_violation',          'EXHAUST'],
-      ['SCOPE_ESCAPE',       'scope_escape_violation',     'SCOPE_ESCAPE'],
-      ['PHANTOM_CAPABILITY', 'phantom_capability',         'PHANTOM_CAPABILITY'],
-      ['PHANTOM_CAPABILITY', 'phantom_paraphrase',         'PHANTOM_PARAPHRASE'],
-      ['ADVISOR_DOCTRINE',   'advisor_missing_pre_build',  'ADVISOR_MISSING_PRE_BUILD'],
-      ['ADVISOR_DOCTRINE',   'advisor_missing_post_deliver','ADVISOR_MISSING_POST_DELIVER'],
-      // ['ADVISOR_DOCTRINE','advisor_silently_skipped',   'ADVISOR_SILENTLY_SKIPPED'],  // softened: detected, not denied
-      ['ADVISOR_DOCTRINE',   'advisor_conflict_cap_exceeded','ADVISOR_CONFLICT_CAP'],
-      ['SUMMARY_FORMAT',     'summary_missing',            'SUMMARY_MISSING'],
-      ['SUMMARY_FORMAT',     'summary_malformed',          'SUMMARY_MALFORMED'],
-      ['SUMMARY_FORMAT',     'minimal_format_violation',   'MINIMAL_FORMAT_VIOLATION'],
-      ['LIVE_PROBE',         'live_probe_missing',         'LIVE_PROBE_MISSING'],
-      ['PHASE_GATE',         'phase_skipped',              'PHASE_SKIPPED'],
-      ['PILE_ON',            'pile_on',                    'PILE_ON'],
-      // ['CLAIM_WITHOUT_EVIDENCE','claim_without_evidence','CLAIM_WITHOUT_EVIDENCE'],   // softened: detected, not denied
-      ['FIX_WITHOUT_INVESTIGATION',  'fix_without_investigation',  'FIX_WITHOUT_INVESTIGATION'],
-      ['COMMENT_BLOAT',              'comment_bloat',              'COMMENT_BLOAT'],
-    ];
+    // FIRING_RULES + willDeny derived from registry.json (single SoT). Adding
+    // a deny detector = one entry in registry.json with deny:true + reason_key.
+    const FIRING_RULES = DETECTOR_REGISTRY
+      .filter((d) => d.deny)
+      .map((d) => [d.bash_var, d.fires_when, d.reason_key]);
+    const willDeny = FIRING_RULES.some(([f, val]) => v[f] === val);
+    if (!willDeny) process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     const firing = [];
     for (const [field, value, reasonKey] of FIRING_RULES) {
       if (v[field] === value) firing.push({ name: reasonKey, reason: REASONS[reasonKey] });
