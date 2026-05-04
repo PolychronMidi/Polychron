@@ -261,17 +261,9 @@ function _validateMiddlewareShape(mod) {
   const hasReq = typeof mod.onRequest === 'function';
   const hasTR = typeof mod.onToolResult === 'function';
   if (!hasReq && !hasTR) throw new Error(`middleware "${mod.name}" exports neither onRequest nor onToolResult -- nothing to do`);
-  const ALLOWED = new Set(['name', 'onRequest', 'onToolResult', '$publicApi']);
-  // $publicApi: array of key names this module intentionally exposes to other
-  // modules (e.g. utilities also called directly from hme_proxy.js). Validates
-  // the keys exist; suppresses the unknown-key warning for declared ones.
-  const publicApi = Array.isArray(mod.$publicApi) ? mod.$publicApi : [];
-  for (const k of publicApi) {
-    if (!(k in mod)) throw new Error(`middleware "${mod.name}" declares $publicApi entry "${k}" but does not export it`);
-  }
-  const declared = new Set([...ALLOWED, ...publicApi]);
-  const unknown = Object.keys(mod).filter((k) => !declared.has(k));
-  if (unknown.length > 0) console.warn(`Acceptable warning: [middleware] "${mod.name}" exports unknown keys ${JSON.stringify(unknown)} -- silently ignored. Declare in $publicApi if intentional, or remove if dead.`);
+  const ALLOWED = new Set(['name', 'onRequest', 'onToolResult']);
+  const unknown = Object.keys(mod).filter((k) => !ALLOWED.has(k));
+  if (unknown.length > 0) console.warn(`Acceptable warning: [middleware] "${mod.name}" exports unknown keys ${JSON.stringify(unknown)} -- silently ignored. Mixed-concern smell; extract utilities to a sibling file (proxy/_*.js).`);
 }
 
 function register(mod) {
