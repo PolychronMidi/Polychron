@@ -190,18 +190,10 @@ if echo "$FILE" | grep -qE '/Polychron/src/' && ! _onb_is_graduated; then
   fi
 fi
 
-# Unbriefed-edit detection + auto-brief injection.
-#
-# Prior design observed unbriefed edits (edit_without_brief event) but
-# deliberately did NOT auto-fetch the brief -- auto-BRIEFing was thought
-# to defeat the read_coverage metric (which measures "did agent read
-# before edit?"). The split below preserves the metric AND auto-injects:
-#   - read_coverage / _nexus_has BRIEF: still ONLY incremented by an
-#     explicit i/hme-read or equivalent. We do NOT call _brief_add here.
-#   - auto-brief: fires when an unbriefed edit lands on a tracked path,
-#     fetches a short module brief, and injects it as additionalContext
-#     for Claude's next-turn context. Tracked separately as the
-#     auto_brief_injected event (distinct from brief_recorded).
+# Unbriefed-edit auto-brief: fetches short module brief + injects as
+# additionalContext when an unbriefed edit hits a tracked path. Does NOT
+# call _brief_add (preserves read_coverage metric: brief still requires
+# explicit i/hme-read). Tracked as auto_brief_injected event.
 # Disable: HME_AUTO_BRIEF_ON_EDIT=0
 _AUTO_BRIEF_JSON=""
 if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy|config))/'; then
