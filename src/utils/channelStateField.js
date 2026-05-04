@@ -228,29 +228,11 @@ channelStateField = (() => {
   // These extended accessors give CIM the full trajectory from deep
   // antagonism through independence to synergy.
 
-  // Bucket the cooperation scalar into the synergy spectrum.
-  //   [-1.0, -0.4)  deep_antagonism  -- writers strictly oppose
-  //   [-0.4, -0.1)  antagonism       -- mostly opposing
-  //   [-0.1, +0.1]  independence     -- no consistent directional relation
-  //   (+0.1, +0.4]  cooperation      -- mostly aligned
-  //   (+0.4, +1.0]  synergy          -- strictly aligned pushes
-  //
-  // R43: thresholds tightened from +/-0.5 to +/-0.4 because R39-R42 never
-  // populated synergy at +/-0.5.
-  //
-  // R46 forensic finding: trueSynergyCount=0 is STRUCTURAL, not a
-  // threshold artifact. Multi-writer slots topped out at +0.333 (single
-  // pan slot, 3 writers); no multi-writer slot crossed +0.4 on any
-  // dimension across 7 cooperation-amplification rounds. Root cause:
-  // writers have different value CENTERS (setBalanceAndFX rfx picks
-  // random in FX_CC_DEFAULTS range; regimeFx centers around 80; etc).
-  // Cooperation-mode aligns DIRECTIONS but can't overcome different
-  // centers. Fix would require channel-convergence forcing or center
-  // alignment -- both trade off against other goals. Accepted as the
-  // ecology's structural ceiling under current writer architecture.
-  // The synergy bucket exists for completeness but is expected to stay
-  // near-zero for multi-writer slots. Single-writer slots CAN populate
-  // it via auto-correlation, which is now split out in getRollupByParam.
+  // Synergy buckets [-1..+1]: deep_antagonism / antagonism / independence
+  // / cooperation / synergy at +/-0.4 and +/-0.1 thresholds. Multi-writer
+  // synergy bucket stays near-zero structurally (writers have different
+  // value centers; cooperation-mode aligns direction but not center).
+  // Single-writer slots populate via auto-correlation (split in getRollupByParam).
   const _bucket = (coop) => {
     if (coop <= -0.4) return 'deep_antagonism';
     if (coop <= -0.1) return 'antagonism';
