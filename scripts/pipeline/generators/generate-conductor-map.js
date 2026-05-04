@@ -1,17 +1,7 @@
-// scripts/generate-conductor-map.js
-// Auto-generates a Conductor Intelligence Map - a structural understanding
-// tool showing, for each intelligence module:
-//   (a) what signals it reads
-//   (b) what biases it contributes (density/tension/flicker)
-//   (c) what domain it belongs to
-//   (d) its reset scope
-//   (e) its interaction partners from the feedback topology
-//
-// Sources: metrics/system-manifest.json + metrics/boot-order.json + source files
-// Output: metrics/conductor-map.json + metrics/conductor-map.md
-//
-// Run: node scripts/generate-conductor-map.js
-// Integrated into `npm run main` pipeline.
+// generate-conductor-map: auto-generates Conductor Intelligence Map
+// (per-module: signals read / biases contributed / domain / reset scope /
+// feedback partners). In: system-manifest+boot-order+source. Out:
+// metrics/conductor-map.{json,md}. Wired into npm run main.
 
 'use strict';
 
