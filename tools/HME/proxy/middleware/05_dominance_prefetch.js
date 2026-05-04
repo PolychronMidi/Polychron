@@ -27,11 +27,9 @@
 const http = require('http');
 
 const DOMINANCE_ENABLED = process.env.HME_DOMINANCE === '1';
-// `||` treats the string '0' as truthy (non-empty), so HME_MCP_PORT='0'
-// would pass through as Number('0') -> 0, making http.request route to
-// "any free port" -- every prefetch then silently 404s/errors and the
-// on('error') handler swallows it. Validate explicitly: accept only
-// 1-65535, fall back to 9098 otherwise.
+// `||` treats '0' as truthy, so HME_MCP_PORT='0' would route http.request
+// to "any free port" -- every prefetch silently 404s. Accept only 1-65535,
+// fall back to 9098.
 const _PORT_RAW = process.env.HME_MCP_PORT;
 const _PORT_NUM = Number(_PORT_RAW);
 const WORKER_PORT = (Number.isInteger(_PORT_NUM) && _PORT_NUM >= 1 && _PORT_NUM <= 65535)
