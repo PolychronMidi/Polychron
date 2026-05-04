@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1151,
-      "updated_ts": 1777859859.7545404
+      "max_id": 1159,
+      "updated_ts": 1777860681.212553
     }
   },
   {
@@ -66,8 +66,8 @@
     "id": 1140,
     "text": "#4: Write runtime/hme/INVENTORY.md with full file list + ownership",
     "activeForm": "Writing runtime/hme/INVENTORY.md",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -80,7 +80,7 @@
     "id": 1141,
     "text": "#1: Detector registry JSON + refactor 3 callers",
     "activeForm": "Building detector registry",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
