@@ -1,25 +1,8 @@
 #!/usr/bin/env bash
-# Claude-Code-side hook forwarder. POSTs stdin to the proxy's /hme/lifecycle
-# endpoint with ?event=<EventName>, relays the JSON response {stdout,
-# stderr, exit_code} back to Claude Code.
-#
-# CRITICAL CHANGE (fail-LOUD, not fail-open):
-#
-# The old code exited 0 silently when the proxy was unreachable. That was
-# the single largest silent-failure mode in the HME stack -- proxy dies,
-# every hook silently succeeds, LIFESAVER never fires (LIFESAVER itself
-# lives inside the proxy), autocommits stop happening, KB briefings stop
-# injecting, and the user is none the wiser. This recurred 20+ times.
-#
-# The fix: when the proxy is unreachable, emit a LIFESAVER banner as the
-# hook's stdout JSON. Claude Code's plugin machinery surfaces this to the
-# user on the very next turn. We also route the same banner through
-# hme-errors.log (the existing LIFESAVER text-scan channel) so downstream
-# monitors and the direct-autocommit hook pick it up too.
-#
-# We still never BLOCK Claude Code on proxy downtime (exit 0 is preserved)
-# because wedging the whole agent on a proxy crash is worse than losing
-# one turn of hook logic. The difference is: loud instead of silent.
+# Hook forwarder: POSTs stdin to proxy /hme/lifecycle?event=<EventName>,
+# relays {stdout,stderr,exit_code} back to Claude Code.
+# Fail-LOUD on proxy down: emit LIFESAVER banner via stdout JSON + append
+# to hme-errors.log. Always exits 0 (never wedges the agent).
 
 EVENT="${1:-unknown}"
 PORT="${HME_PROXY_PORT:-9099}"
