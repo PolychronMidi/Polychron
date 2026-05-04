@@ -230,23 +230,11 @@ moduleLifecycle.declare({
       }
     }
 
-    // E21: Flicker amplitude suppression under exceedance. REFUTED approach
-    // was smoothing alpha reduction (R35: caused note explosion via variance
-    // floor pathway -- more damped flicker triggered FLICKER_VARIANCE_INJECT
-    // additions, elevating density continuously). New approach: suppress the
-    // flickerHotspotTrim multiplier directly via a global flicker gain cap.
-    // When exceedance is elevated, reduce the maximum flicker amplitude
-    // by scaling down the trim ceiling. Neutral (1.0) when healthy.
-    // Max suppression: 0.80x flicker amplitude at high exceedance.
-    // Proportional: quadratic onset so minor exceedance (0.30-0.50) barely
-    // affects flicker; only high sustained exceedance (> 0.70) applies meaningful cap.
-    // cap reduction = overage^2 * 2.5, max 0.20 reduction (floor 0.80).
-    // Fast EMA blend: normalized to exceedanceTrendEma scale before blending.
-    // fastExceedanceEma is energy-based (~0-0.15); threshold 0.05 = density ~0.67
-    // or tension ~0.88 (genuine spike). Mapped to [0,1] over 0.05-0.15 range,
-    // then weighted 0.35x (early warning only, not dominant signal). R49: 0.6x
-    // weight with raw fast EMA caused persistent -29% note suppression because
-    // fast EMA sat above slow thresholds (0.20/0.30) at normal energy levels.
+    // E21 flicker amplitude suppression: scales flickerHotspotTrim ceiling
+    // by exceedance via quadratic onset (overage^2 * 2.5, floor 0.80).
+    // Fast EMA blend normalized 0.05-0.15 -> [0,1] weighted 0.35x (early-warn,
+    // not dominant). Smoothing-alpha-reduction approach refuted (caused note
+    // explosion via variance floor pathway).
     {
       const e21SlowOverage = m.max(0, S.exceedanceTrendEma - 0.30);
       // Rescale fast to slow range: fastExcNormalized is 0-0.35, slow is 0-1.0
