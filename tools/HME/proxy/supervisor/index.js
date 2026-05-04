@@ -14,7 +14,8 @@ const http = require('http');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const { emit, PROJECT_ROOT } = require('../shared');
+const { emit, PROJECT_ROOT, RUNTIME_DIR } = require('../shared');
+const SUPERVISOR_ABANDONED_SENTINEL = path.join(RUNTIME_DIR, 'supervisor-abandoned');
 const { CHILDREN } = require('./children');
 
 const LOG_DIR = path.join(PROJECT_ROOT, 'log');
