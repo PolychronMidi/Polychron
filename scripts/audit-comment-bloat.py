@@ -54,6 +54,10 @@ _EXTS = {".py", ".sh", ".js", ".ts"}
 
 WARN_LINES = 3
 FAIL_LINES = 5
+# File-top header exemption: every file gets ONE comment block at the
+# top of the file (after any shebang) up to TOP_EXEMPT_MAX lines that
+# does NOT count toward warn/fail thresholds. Header docs are legitimate.
+TOP_EXEMPT_MAX = 10
 
 # Annotation-shaped comments aren't prose; don't count toward block length.
 _ANNOTATION_PREFIXES = (
