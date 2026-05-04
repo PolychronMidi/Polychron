@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1209,
-      "updated_ts": 1777917969.3781228
+      "max_id": 1215,
+      "updated_ts": 1777918041.1066551
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 1189,
     "text": "Rename errors-lastread-proxy -> errors-lastread.proxy (dotted-suffix axis pattern)",
     "activeForm": "Renaming errors-lastread-proxy",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 1190,
     "text": "Writer/reader symmetry auditor",
     "activeForm": "Building symmetry auditor",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
