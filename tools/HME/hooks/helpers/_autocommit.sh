@@ -3,11 +3,7 @@
 # stderr, activity bridge) so no single break swallows errors.
 # Caller: `_ac_do_commit "caller-name"`; MUST NOT die on return code.
 
-# Derive project root via the three reliable strategies:
-#   1. $PROJECT_ROOT (set by _safety.sh before this helper is sourced)
-#   2. $CLAUDE_PROJECT_DIR (set by Claude Code in every hook invocation)
-#   3. Walk up from $BASH_SOURCE[0] looking for .git + src/
-# No host-specific hardcoded fallback -- fail loud if all three miss.
+# Project root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up; no hardcoded fallback.
 _AC_SELF="${BASH_SOURCE[0]}"
 _AC_ROOT=""
 if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
