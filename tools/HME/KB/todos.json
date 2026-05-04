@@ -2,9 +2,37 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1163,
-      "updated_ts": 1777861066.0049748
+      "max_id": 1167,
+      "updated_ts": 1777861382.424596
     }
+  },
+  {
+    "id": 1142,
+    "text": "#2: decision: block audit + soften warn-able sites",
+    "activeForm": "Auditing decision:block sites",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777859431.8459682,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "medium"
+  },
+  {
+    "id": 1143,
+    "text": "#3: createRegimeWriter factory + 4 thin instantiations",
+    "activeForm": "Building createRegimeWriter factory",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777859431.8459756,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "medium"
   },
   {
     "id": 1160,
@@ -30,34 +58,6 @@
     "source": "native",
     "on_done": "",
     "ts": 1777861066.004951,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "medium"
-  },
-  {
-    "id": 1142,
-    "text": "#2: decision: block audit + soften warn-able sites",
-    "activeForm": "Auditing decision:block sites",
-    "status": "in_progress",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777859431.8459682,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "medium"
-  },
-  {
-    "id": 1143,
-    "text": "#3: createRegimeWriter factory + 4 thin instantiations",
-    "activeForm": "Building createRegimeWriter factory",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777859431.8459756,
     "parent_id": 0,
     "subs": [],
     "tier": "medium"
