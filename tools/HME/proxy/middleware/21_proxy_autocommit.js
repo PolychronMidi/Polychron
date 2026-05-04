@@ -1,11 +1,6 @@
 'use strict';
-// proxy_autocommit.js -- request-driven autocommit middleware.
-//
-// Fail-fast-hardened. Writes to the SAME state files as
-// tools/HME/hooks/helpers/_autocommit.sh so the AutocommitHealthVerifier
-// sees failures regardless of which code path fired. Previously this
-// module had `if (!root) return;` -- the exact structural-dampening
-// failure mode the system has been hit by repeatedly.
+// proxy_autocommit: request-driven autocommit middleware. Writes to the same
+// state files as _autocommit.sh so AutocommitHealthVerifier sees both paths.
 
 const fs = require('fs');
 const path = require('path');
