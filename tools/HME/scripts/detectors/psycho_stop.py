@@ -312,13 +312,8 @@ def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
         return 0
-    # Read the transcript once into both views so later Pattern-C ideation
-    # gate and earlier Pattern-B tool-call check see the SAME snapshot.
-    # Previously `load_turn_events` and `load_full_turn_with_user` were
-    # called separately -- if the transcript file was appended between
-    # reads (active session), the views diverged and a directive turn
-    # could ideation-pass on a stale read while the tool-call guard
-    # inspected a newer view. Caught by thread-routed self-review.
+    # Read transcript once into both views (avoids race where mid-load appends
+    # cause Pattern-C and Pattern-B to inspect divergent snapshots).
     events_with_user = load_full_turn_with_user(sys.argv[1])
     # Derive the post-last-user slice from the same snapshot.
     _user_idx = -1
