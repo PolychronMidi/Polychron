@@ -633,10 +633,8 @@ function handleRequest(clientReq, clientRes) {
 
       let bodyDirtiedByStrip = false;
       if (isAnthropic) {
-        // Pre-mutation dump (HME_DUMP_SYSTEM_PROMPT=1): captures Claude
-        // Code's pristine outgoing payload before any HME mutation, so the
-        // operator can diff against the post-pipeline dump to see exactly
-        // what changed. No-op when disabled.
+        // Pre-mutation dump (HME_DUMP_SYSTEM_PROMPT=1): pristine outgoing
+        // payload pre-pipeline; diff against post-dump to see HME's changes.
         try {
           require('./_dump').writeDump(
             payload, require('./shared').PROJECT_ROOT, 'pre',
@@ -645,12 +643,9 @@ function handleRequest(clientReq, clientRes) {
         } catch (err) {
           console.error(`[hme-proxy] pre-dump failed: ${err.message}`);
         }
-        // Strip system cache_control ONLY when replace_system is going to
-        // overwrite payload.system anyway -- otherwise we silently destroy
-        // Claude Code's intentional system cache breakpoint and re-bill the
-        // entire system prefix every turn. With replace_system enabled the
-        // overwrite drops Claude Code's blocks (and their cache_controls)
-        // wholesale; the explicit strip is a belt-and-braces no-op there.
+        // Strip system cache_control ONLY under replace_system (which drops
+        // Claude Code's blocks wholesale anyway). Without it, stripping
+        // would re-bill the entire system prefix every turn.
         if (process.env.HME_REPLACE_SYSTEM_PROMPT === '1') {
           if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
         }
