@@ -1,30 +1,7 @@
-// scripts/pipeline/compute-musical-correlation.js
-//
-// Phase 4.1 of openshell_features_to_mimic.md -- the external anchor.
-//
-// Every HME metric so far (coherence score, prediction accuracy, staleness,
-// drift, crystallization confidence) is internally circular. A perfectly
-// coherent HME that produces musically incoherent compositions has
-// optimized the wrong thing entirely. This script correlates HME's own
-// per-round self-assessment with the actual musical output the pipeline
-// produced and treats that correlation as the ground-truth validator for
-// everything HME does.
-//
-// Data sources (all already present post-pipeline):
-//   metrics/hme-coherence.json              round coherence score (Phase 2.3)
-//   metrics/hme-prediction-accuracy.json    EMA + per-round history (Phase 3.4)
-//   metrics/fingerprint-comparison.json     STABLE/EVOLVED/DRIFTED verdict
-//   metrics/perceptual-report.json          EnCodec entropy + CLAP similarity
-//
-// Output: metrics/hme-musical-correlation.json containing a per-round
-// snapshot plus rolling-window Pearson correlations between each HME
-// self-assessment signal and each musical-reality signal. If the
-// correlations drop below a threshold (default 0.2), we emit a LIFESAVER
-// warning because it means HME's self-model has structurally decoupled
-// from musical outcomes.
-//
-// Non-fatal. Runs post-composition after both compute-coherence-score.js
-// and reconcile-predictions.js have written their files.
+// Phase 4.1 musical-correlation: external anchor for HME's self-assessment.
+// Reads coherence/prediction-accuracy/fingerprint/perceptual reports;
+// emits per-round snapshots + rolling Pearson correlations. <0.2 -> LIFESAVER
+// (HME's self-model decoupled from musical reality). Non-fatal.
 
 'use strict';
 
