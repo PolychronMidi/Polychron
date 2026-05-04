@@ -665,11 +665,8 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: invariant enforcement coverage -- probe failed: {type(_e).__name__}: {_e}")
 
-    # Probe 6: version consistency across daemon + worker + config.
-    # A wire-protocol mismatch (e.g. post-upgrade daemon talking to a
-    # pre-upgrade worker) tonight would have surfaced as mystery "not
-    # started" errors with no obvious culprit. Reading all endpoints'
-    # /version and comparing to the canonical versions.json catches this.
+    # Probe 6: version consistency across daemon/worker/config via /version
+    # endpoints vs canonical versions.json. Catches post-upgrade mismatches.
     try:
         import json as _json_vc
         import urllib.request as _url
