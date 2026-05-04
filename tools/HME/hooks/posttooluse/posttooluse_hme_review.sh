@@ -10,19 +10,12 @@ MODE=$(echo "$CMD" | grep -oE '\bmode[= ][a-z_]+' | head -1 | sed -E 's/^.*mode[
 [ -z "$MODE" ] && MODE="digest"
 
 if [ "$MODE" = "forget" ]; then
-  # EDIT clear + REVIEW mark live in BOTH the proxy middleware and this hook.
-  # The middleware path covers sessions whose API requests route through the
-  # HME proxy. Direct-to-api.anthropic.com sessions (VS Code Claude Code with
-  # no HME_PROXY_URL) never trigger the middleware, so without the shell-hook
-  # path here, EDIT entries accumulated indefinitely and stop.sh blocked
-  # forever. _nexus_clear_type is idempotent -- double-clear is safe when both
-  # paths fire.
-  # Note: parent posttooluse_bash.sh already resolved any background-task
-  # stub via _resolve_bg_stub.sh before dispatching here, so .tool_response
-  # contains the real review output whenever the task finished within the
-  # parent's wait window (10s by default). Slow cases still reach the
-  # REVIEW_PARSE_FAILED branch; the proxy middleware background_dominance.js
-  # handles those on the API-stream side for the model's next turn.
+  # EDIT clear + REVIEW mark fired in BOTH proxy middleware and this hook
+  # (idempotent _nexus_clear_type) so direct-to-api sessions without
+  # HME_PROXY_URL still clear EDIT and don't block stop.sh forever.
+  # Parent posttooluse_bash.sh already resolved any bg-stub (10s wait);
+  # slow cases hit REVIEW_PARSE_FAILED and background_dominance.js handles
+  # them stream-side.
   TOOL_RESULT=$(_safe_jq "$INPUT" '.tool_response' '')
   # Fail-fast on CLI transport errors -- `hme-cli: request failed ...` means
   # the worker was down or the request timed out. Never interpret that as
