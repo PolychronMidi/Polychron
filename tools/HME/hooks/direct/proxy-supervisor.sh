@@ -1,30 +1,9 @@
 #!/usr/bin/env bash
-# proxy-supervisor.sh -- long-running watchdog that keeps the HME proxy
-# alive without needing SessionStart to fire.
-#
-# Design:
-#   - A single instance runs in the background. PID stored in
-#     tmp/hme-proxy-supervisor.pid. If that PID is alive, new invocations
-#     silently no-op (idempotent).
-#   - The loop polls /health every 10 seconds. If the probe fails for 3
-#     consecutive polls, the supervisor spawns the proxy and resumes
-#     polling. Consecutive-miss threshold avoids racing with planned
-#     restarts -- during a maintenance window, the probe may fail once or
-#     twice while a caller cycles the proxy.
-#   - Runs indefinitely (until killed). Use `proxy-supervisor.sh stop`
-#     or `kill $(cat tmp/hme-proxy-supervisor.pid)` to stop it.
-#
-# Why this exists in addition to proxy-watchdog.sh:
-#   The watchdog fires ONCE per session at SessionStart. If the proxy
-#   crashes mid-session, the watchdog doesn't help until the next
-#   session. The supervisor covers the gap -- continuous monitoring plus
-#   automatic respawn.
-#
-# Interaction with proxy-maintenance.sh:
-#   When a maintenance flag is active, the supervisor skips the spawn
-#   attempt -- the caller is intentionally cycling the proxy and will
-#   bring it back up. The supervisor resumes normal behavior after the
-#   flag expires.
+# proxy-supervisor.sh: long-running watchdog (vs proxy-watchdog.sh which fires
+# once at SessionStart). Polls /health q10s; 3 consecutive misses -> respawn.
+# PID at tmp/hme-proxy-supervisor.pid; new invocations no-op if alive.
+# Skips spawn during proxy-maintenance.sh flag windows.
+# Stop: `proxy-supervisor.sh stop` or `kill $(cat tmp/hme-proxy-supervisor.pid)`.
 
 set +e
 
