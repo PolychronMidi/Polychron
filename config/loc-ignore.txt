@@ -160,3 +160,8 @@ tools/models/*/README.md
 # class than the operational reference docs the LOC discipline targets.
 # rationale: intent=long-form-essay; revisit-when=structure-changes; decided=2026-05-03
 doc/theory/
+
+# Multi-pattern detector with shared event scan + ideation gate. Patterns
+# A/B/C share state; per-pattern split would duplicate the gate logic 3x.
+# rationale: intent=multi-pattern-detector; revisit-when=patterns-stabilize; decided=2026-05-04
+tools/HME/scripts/detectors/psycho_stop.py
