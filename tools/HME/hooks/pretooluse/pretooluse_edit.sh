@@ -200,11 +200,8 @@ if echo "$FILE" | grep -qE '/Polychron/src/' && ! _onb_is_graduated; then
   fi
 fi
 
-# Unbriefed-edit auto-brief: fetches short module brief + injects as
-# additionalContext when an unbriefed edit hits a tracked path. Does NOT
-# call _brief_add (preserves read_coverage metric: brief still requires
-# explicit i/hme-read). Tracked as auto_brief_injected event.
-# Disable: HME_AUTO_BRIEF_ON_EDIT=0
+# Unbriefed-edit auto-brief: fetch + additionalContext inject. Doesn't call
+# _brief_add (preserves read_coverage). Disable: HME_AUTO_BRIEF_ON_EDIT=0.
 _AUTO_BRIEF_JSON=""
 if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy|config))/'; then
   source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
