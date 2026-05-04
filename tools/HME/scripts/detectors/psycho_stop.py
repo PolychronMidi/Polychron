@@ -58,17 +58,9 @@ ADMIT_PHRASES = (
 )
 
 
-# Pattern C: "survey-and-ask" -- agent executes a hardening / audit / refactor
-# directive, identifies violations, then asks the user for permission to
-# fix them instead of fixing. The user's directive already granted authority;
-# stopping to ask is a covert defer. Triggers when the final assistant text
-# contains any of these permission-solicitation phrases AND no tool calls
-# follow. Distinct from ADMIT_PHRASES: those announce the agent won't do the
-# work; these pretend the agent is helpfully checking in.
-# Migrated to shared phrase lists per peer-review iter 135. Pattern C
-# = soliciting permission OR enumerating "didn't fix yet" surveys --
-# the union of SURVEY_PERMISSION_ASK + the survey-shape subset of
-# DEFERRAL_ACK_NO_FIX + DEFERRAL_FLAG_FOR_LATER captures both.
+# Pattern C "survey-and-ask": agent identifies violations then asks permission
+# instead of fixing (covert defer). Phrases: SURVEY_PERMISSION_ASK union with
+# the survey-shape subsets of DEFERRAL_ACK_NO_FIX + DEFERRAL_FLAG_FOR_LATER.
 PERMISSION_ASK_PHRASES = (
     SURVEY_PERMISSION_ASK
     + DEFERRAL_ACK_NO_FIX
