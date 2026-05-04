@@ -611,6 +611,9 @@ function _logSlopHits(hits, textPreview) {
 // (priorUserWasDeny only) drops the whole block on bare-ack; this
 // rewriter modifies content of every text block.
 function slopStripRewrite(eventName, data, ctx) {
+  // Gated on priorUserWasDeny -- slop patterns mostly appear in stop-hook
+  // follow-ups; normal turns stream freely.
+  if (!ctx.get('priorUserWasDeny')) return data;
   const key = 'slop_text_hold';
   let holds = ctx.get(key);
   if (!holds) { holds = new Map(); ctx.set(key, holds); }
