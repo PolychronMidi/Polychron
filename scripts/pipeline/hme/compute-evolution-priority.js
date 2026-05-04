@@ -1,32 +1,8 @@
-// scripts/pipeline/compute-evolution-priority.js
-//
-// The capstone pipeline step: HME answering "what should change next?"
-//
-// Aggregates signals from EVERY other HME subsystem into a ranked list of
-// evolution priorities. Each priority is backed by evidence from multiple
-// subsystems -- not a single metric but the convergence of all of them.
-//
-// Signal sources:
-//   1. Negative space discoveries -> structural gaps topology predicts
-//   2. KB staleness -> modules that need fresh understanding
-//   3. Blind spots -> subsystems systematically avoided
-//   4. Coherence budget -> is the system too disciplined or too chaotic?
-//   5. Compositional trajectory -> is musical complexity growing or stalling?
-//   6. Prediction accuracy -> where is HME's model wrong?
-//   7. Intention gap -> what keeps getting proposed but not finished?
-//   8. Semantic drift -> where has the KB diverged from reality?
-//   9. Crystallized patterns -> what emergent principles can be exploited?
-//  10. Constitutional claims -> what identity constraints shape the next move?
-//  11. Doc drift -> where does documentation lag behind reality?
-//  12. Adversarial probes -> what boundary-pushing experiments are ripe?
-//
-// Output: metrics/hme-evolution-priority.json
-//   [{ rank, target, category, evidence: [{source, signal, score}], rationale }]
-//
-// The Evolver reads this at Phase 2 diagnosis. HME stops waiting to be
-// asked and starts actively steering its own evolution.
-//
-// Non-fatal diagnostic.
+// HME evolution-priority capstone. Aggregates 12 subsystem signals (negative
+// space, KB staleness, blind spots, coherence budget, trajectory, prediction
+// accuracy, intention gap, semantic drift, patterns, constitutional, doc drift,
+// adversarial probes) -> ranked evidence-backed priorities. Output:
+// metrics/hme-evolution-priority.json. Read by Evolver Phase 2. Non-fatal.
 
 'use strict';
 
