@@ -27,25 +27,33 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-# Shared thread pool for /validate requests. Previous implementation
-# spawned a fresh ThreadPoolExecutor per request with cancel_futures=True,
-# but Python threads can't be interrupted -- on timeout, the running
-# _validate kept executing past the 3s deadline and leaked an engine-
-# bound thread. With a bounded shared pool + semaphore, concurrent
-# validates are capped, so overload cycles can't accumulate runaway
-# workers. Pool size deliberately small; the validate path is inference-
-# bound and serialization is fine.
-_VALIDATE_POOL_SIZE = 2
+# Shared thread pool for /validate. Threads can't be interrupted, so a
+# bounded pool + semaphore caps concurrent in-flight calls; overload cycles
+# can't accumulate. Sizing + acquire-timeout from config/timeouts.json
+# (single source of truth shared with proxy/worker_client.js).
+def _load_timeouts() -> dict:
+    import json as _j
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                      "..", "config", "timeouts.json")
+    try:
+        with open(_p) as _f:
+            return _j.load(_f)
+    except Exception as _to_err:
+        print(f"worker: timeouts.json read failed: {type(_to_err).__name__}: {_to_err}",
+              file=sys.stderr)
+        return {}
+_TIMEOUTS = _load_timeouts().get("validate", {})
+_VALIDATE_POOL_SIZE = int(_TIMEOUTS.get("pool_size", 2))
+_VALIDATE_SEMAPHORE_ACQUIRE_SEC = float(_TIMEOUTS.get("semaphore_acquire_sec", 2.5))
 _VALIDATE_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
     max_workers=_VALIDATE_POOL_SIZE, thread_name_prefix="hme-validate")
 _VALIDATE_SEMAPHORE = threading.BoundedSemaphore(value=_VALIDATE_POOL_SIZE)
 
 
 def _bounded_validate(query: str) -> dict:
-    """Gate _validate calls through a semaphore so concurrent timeouts
-    can't pile up more in-flight engine calls than pool slots."""
+    """Gate _validate calls through the semaphore -- caps in-flight calls."""
     from hme_http_handlers import _validate as _inner
-    if not _VALIDATE_SEMAPHORE.acquire(timeout=2.5):
+    if not _VALIDATE_SEMAPHORE.acquire(timeout=_VALIDATE_SEMAPHORE_ACQUIRE_SEC):
         return {"warnings": [], "blocks": [],
                 "deferred": "validate semaphore exhausted -- engine saturated"}
     try:
