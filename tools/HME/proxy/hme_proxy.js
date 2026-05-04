@@ -161,12 +161,9 @@ let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves t
 const _BYTES_PER_TOKEN_EST = 3.5;
 const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 40_000;
 function _effectiveCompactThreshold() {
-  // CEILING: when an operator has explicitly set HME_PROXY_COMPACT_BYTES
-  // we honor it as a hard cap (debugging, force-shrink scenarios).
-  // Otherwise, when we've learned the user's actual ITPM cap, use 50%
-  // of it -- request body must fit in ~50% of cap to leave room for
-  // response + any parallel sub-pipeline calls. Falls back to static
-  // 250 KB until the first response header reveals the real cap.
+  // CEILING: HME_PROXY_COMPACT_BYTES (explicit) honored as hard cap.
+  // Otherwise: 50% of learned ITPM cap (leaves room for response +
+  // parallel sub-calls). Falls back to 250 KB pre-first-response.
   let ceiling;
   if (_COMPACT_BYTES_EXPLICIT) {
     ceiling = _PASSTHROUGH_COMPACT_BYTES;
@@ -617,12 +614,9 @@ function handleRequest(clientReq, clientRes) {
             }
           }
         }
-        // Final-pass cache_control normalization: promote any ttl='5m' (or
-        // unspecified-ttl, which defaults to 5m) cache_control on tools or
-        // system to ttl='1h'. Eliminates the "1h after 5m" ordering 400 at
-        // the source regardless of what Claude Code or any middleware
-        // attached upstream. Runs LAST so every preceding mutation is
-        // accounted for.
+        // Final-pass cache_control normalization: promote ttl='5m' (or
+        // unspecified) on tools/system to ttl='1h'. Eliminates the
+        // "1h after 5m" ordering 400. Runs LAST.
         const ccChanged = normalizeCacheControlTtls(payload);
         if (ccChanged > 0) {
           bodyDirtiedByStrip = true;
@@ -862,12 +856,9 @@ function handleRequest(clientReq, clientRes) {
           console.error(`[hme-proxy] rate-limit headers: limit=${_hdrTokLimit||'?'} remaining=${_hdrTokRemaining||'?'} reset=${_hdrTokReset||'?'} retry-after=${headers['retry-after']||'?'}`);
         }
 
-        // Detect upstream failure across BOTH paths: HTTP 4xx with JSON
-        // error body, AND HTTP 200 with SSE error event in the stream.
-        // On detection: trigger escape hatch (threshold=1, so first hit
-        // trips), append a LIFESAVER alert with the upstream error text +
-        // snapshot the request body. Without the SSE path covered,
-        // streaming requests that error out bypassed the hatch entirely.
+        // Detect upstream failure: HTTP 4xx JSON error OR HTTP 200 + SSE
+        // error event. First-hit escape-hatch trip + LIFESAVER alert +
+        // body snapshot. Without SSE coverage, streamed errors bypassed.
         const _proxyMutatedBody = isAnthropic && !_passthrough;
         if (_proxyMutatedBody) {
           const _errInfo = _detectUpstreamFailure(status, headers, fullBody);
