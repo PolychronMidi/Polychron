@@ -414,6 +414,10 @@ def main() -> int:
     # could diverge if the file was appended between reads.
     user_text = _last_user_text(events_with_user)
     user_is_ideating = _is_ideation_prompt(user_text)
+    # Override: if the prior assistant turn claimed completion, the ideation
+    # framing is a smokescreen for residual-work enumeration. Don't suppress.
+    if user_is_ideating and _prior_assistant_claimed_completion(events_with_user):
+        user_is_ideating = False
     if final_text:
         if not user_is_ideating:
             for phrase in ADMIT_PHRASES:
