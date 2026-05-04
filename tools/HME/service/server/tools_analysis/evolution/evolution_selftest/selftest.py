@@ -603,11 +603,8 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"FAIL: single-writer registry -- probe crashed: {type(_e).__name__}: {_e}")
 
-    # Probe 5: every registered owner MUST call assert_writer in its source.
-    # A registered domain with no runtime enforcement is the exact failure
-    # mode we're defending against. This grep-based probe catches the case
-    # where a consumer's try/except ImportError quietly swallowed the
-    # import and no one noticed the invariant was off.
+    # Probe 5: every registered owner must call assert_writer in source.
+    # Registered-but-not-enforced is the exact failure mode we defend against.
     try:
         from server.lifecycle_writers import all_domains as _all_domains
         # Post-split selftest.py sits one level deeper (inside
