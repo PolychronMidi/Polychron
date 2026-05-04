@@ -1,16 +1,6 @@
-// crossLayerEmissionGateway.js - Thin gateway for cross-layer MIDI buffer writes.
-// Routes all cross-layer note/CC emissions through a single observed point,
-// enabling attribution tracking, density auditing, and forensic traceability.
-//
-// Three cross-layer modules emit directly to the MIDI buffer:
-//   emergentDownbeat    - bass reinforcement notes + stereo pan CC
-//   convergenceDetector - convergence burst notes
-//   velocityInterference - DAW visualization CC
-//
-// This gateway wraps those emissions so every cross-layer MIDI write is:
-//   1. Attributed to a source module
-//   2. Counted for density monitoring
-//   3. Emitted to explainabilityBus for forensic traceability
+// crossLayerEmissionGateway: thin wrapper for cross-layer MIDI writes
+// (emergentDownbeat / convergenceDetector / velocityInterference) so each
+// gets source attribution, density counting, and explainabilityBus emission.
 
 moduleLifecycle.declare({
   name: 'crossLayerEmissionGateway',
