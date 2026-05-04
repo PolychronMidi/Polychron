@@ -97,21 +97,15 @@ const HOOK_INJECT_PREFIXES = [
 ];
 // anti-fork-end: hook-inject-prefixes
 
+// Detector registry is the single source of truth (see registry.json doc).
+const DETECTOR_REGISTRY = JSON.parse(fs.readFileSync(
+  path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'detectors', 'registry.json'),
+  'utf8',
+)).detectors;
+
 function readVerdicts() {
-  const out = {
-    STOP_WORK: 'ok',
-    EXHAUST_CHECK: 'ok',
-    SCOPE_ESCAPE: 'ok',
-    PHANTOM_CAPABILITY: 'ok',
-    ADVISOR_DOCTRINE: 'ok',
-    SUMMARY_FORMAT: 'ok',
-    LIVE_PROBE: 'ok',
-    PHASE_GATE: 'ok',
-    PILE_ON: 'ok',
-    CLAIM_WITHOUT_EVIDENCE: 'ok',
-    FIX_WITHOUT_INVESTIGATION: 'ok',
-    COMMENT_BLOAT: 'ok',
-  };
+  const out = {};
+  for (const d of DETECTOR_REGISTRY) out[d.bash_var] = 'ok';
   if (!fs.existsSync(VERDICTS_FILE)) return out;
   let text = '';
   try { text = fs.readFileSync(VERDICTS_FILE, 'utf8'); }
