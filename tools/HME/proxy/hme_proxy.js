@@ -1425,30 +1425,13 @@ function handleRequest(clientReq, clientRes) {
           } catch (_e) { /* best-effort -- fall through to verbatim */ }
           clientRes.end(outBuf);
         }
-        // Lifecycle: fire stop hook (auto-commit + lifecycle checks) as
-        // fallback when Claude Code's hook system isn't reaching the
-        // /hme/lifecycle endpoint. Runs AFTER the response has been sent
-        // to the client so commit latency doesn't affect user-visible
-        // turn end. No-op if a recent /hme/lifecycle Stop hit was received.
-        //
-        // Turn-end heuristic: a single user turn can issue many upstream
-        // completions (tool-use continuation loops, subagent dispatches).
-        // Without this check the Stop fallback fires on EVERY completion
-        // whose response lands >=30s after the last Stop hit, re-running
-        // auto-commit + LIFESAVER + psycho_stop mid-turn. We only fire
-        // when the final assistant message contains no tool_use blocks
-        // (i.e. the model is not about to call another tool) -- that
-        // approximates "real turn end" without needing stream-end
-        // signaling from Claude Code.
+        // Stop-hook fallback (post-response, after recent /hme/lifecycle Stop
+        // miss): only fire when final assistant message has no tool_use --
+        // approximates real turn end and avoids mid-turn retrigger.
         const _hasToolUse = (() => {
           try {
-            // For non-streaming responses outBuf is a JSON message with
-            // .content (array of blocks). SSE streams collect deltas
-            // upstream into `final`; we don't need this path for those
-            // because streaming tool-use completions typically route
-            // through the continuation loop. Safe default on parse
-            // failure: treat as no-tool-use so the fallback still fires
-            // when we genuinely can't tell (rare).
+            // Non-streaming: outBuf is the JSON message with .content blocks.
+            // Parse-fail defaults to no-tool-use so the fallback still fires.
             const outStr = (outBuf && typeof outBuf.toString === 'function')
               ? outBuf.toString('utf8') : '';
             if (!outStr || !outStr.trimStart().startsWith('{')) return false;
