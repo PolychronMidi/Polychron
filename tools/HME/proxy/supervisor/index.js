@@ -58,10 +58,8 @@ async function _startChild(spec) {
   if (existing && existing.proc && existing.proc.exitCode === null) {
     return; // already running
   }
-  // Pre-flight: if something is already serving on the health URL (surviving
-  // process from a prior proxy run), adopt it rather than spawning a new one.
-  // Without this, the new spawn immediately fails with EADDRINUSE and the
-  // health loop never gets a chance to adopt -- triggering the restart loop.
+  // Pre-flight adopt: if healthURL already serves (survived prior proxy
+  // run), reuse it instead of spawning EADDRINUSE-then-restart-loop.
   if (spec.healthUrl) {
     const alreadyServing = await _probe(spec.healthUrl);
     if (alreadyServing) {
