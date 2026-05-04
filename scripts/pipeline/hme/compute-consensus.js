@@ -1,26 +1,8 @@
-// scripts/pipeline/hme/compute-consensus.js
-//
-// Arc I: Cross-Substrate Consensus.
-//
-// Seven observability substrates (HCI verifiers, invariant battery, prediction
-// cascade, fingerprint verdict, axis rebalance cost, CLAP perceptual, user
-// listening verdict) independently judge each pipeline round. They've coexisted
-// without ever computing a shared opinion. This script does.
-//
-// For every available substrate, compute a bounded scalar in [-1, +1]:
-//   +1  = substrate asserts "healthy"
-//    0  = substrate neutral / insufficient data
-//   -1  = substrate asserts "broken"
-//
-// The mean across substrates is the consensus score. The stdev is the
-// divergence signal -- high stdev means substrates DISAGREE, which is often
-// more actionable than any individual substrate's verdict (it surfaces
-// hidden tensions in the measurement stack).
-//
-// Writes metrics/hme-consensus.json per round + emits consensus_divergence
-// activity event when stdev exceeds threshold.
-//
-// Non-fatal. Runs after compute-musical-correlation + reconcile-predictions.
+// Cross-substrate consensus: 7 substrates (HCI, invariants, predictions,
+// fingerprint, axis rebalance, CLAP, listening verdict) each map to [-1,+1].
+// Mean = consensus, stdev = divergence (often more actionable than any single
+// verdict). Output: metrics/hme-consensus.json; emits consensus_divergence
+// activity event when stdev exceeds threshold. Non-fatal.
 
 'use strict';
 
