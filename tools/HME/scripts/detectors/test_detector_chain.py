@@ -827,11 +827,8 @@ _CASES = [
      ],
      "ok"),
 
-    # (b)-clause rescue: the deny prompt explicitly says
-    # "if fixing is genuinely wrong, say so explicitly and explain why
-    # fixing is the wrong move". When the agent does exactly that, the
-    # detector must NOT fire -- otherwise the deny offers an alternative
-    # path that doesn't actually exist.
+    # (b)-clause rescue: agent does what deny prompt explicitly allows
+    # ("explain why fixing is wrong"); detector must NOT fire.
     ("scope_escape", "b-clause-rescue-not-doing-is-right",
      [
          _user_msg("review the leftover items from the suggestion list"),
