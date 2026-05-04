@@ -168,12 +168,8 @@ if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
     HASH=$(printf '%s' "$NEW_STRING" | sha1sum | cut -c1-16)
     CACHE="/tmp/hme-edit-validate-$HASH.json"
     if [ ! -f "$CACHE" ]; then
-      # Tight 500ms timeout (was 2s). Worker CPU-saturation alerts show
-      # the worker can be slow; the hook used to wait the full 2s on
-      # every cache miss (-> p95=2065ms latency warnings). 500ms is
-      # plenty for a healthy worker; degraded worker just means we
-      # write {} and skip the KB-block check this turn (next edit picks
-      # it back up via cache).
+      # 500ms timeout (was 2s, blew p95). Healthy worker fits; degraded
+      # worker writes {} and skips the KB check this turn.
       curl -s -m 0.5 -X POST "http://127.0.0.1:${HME_MCP_PORT:-9098}/validate" \
         -H 'Content-Type: application/json' \
         -d "{\"query\":\"$MODULE\"}" > "$CACHE" 2>/dev/null || echo '{}' > "$CACHE"
