@@ -200,12 +200,8 @@ async function _healthLoop() {
     if (healthy) {
       state.restarts = 0;  // reset on confirmed health -- stale count cleared
       state.gaveUp = false;
-      // Clear abandon sentinel: previously only the adoption branch
-      // (line 134-137) cleared it. When the supervisor SPAWNED a fresh
-      // worker that subsequently became healthy, the stale sentinel from
-      // a prior incarnation persisted -- LIFESAVER blocked every
-      // UserPromptSubmit forever despite the worker being fine. Symptom:
-      // user sees blank responses (Claude Code obeys the block decision).
+      // Clear abandon sentinel on healthy. Adoption branch alone wasn't
+      // enough -- spawned-fresh-then-healthy left the sentinel stale.
       try {
         const sentinel = SUPERVISOR_ABANDONED_SENTINEL;
         if (fs.existsSync(sentinel)) {
