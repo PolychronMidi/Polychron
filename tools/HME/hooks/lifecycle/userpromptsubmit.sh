@@ -206,12 +206,8 @@ fi
 NEXUS_FILE="$PROJECT_ROOT/tmp/hme-nexus.state"
 OVERRIDE_REMINDER=""
 
-# Many edits but no REVIEW marker -> nudge toward i/review
-# `grep -c` always prints a number to stdout AND exits 1 on no-match.
-# The previous `|| echo 0` form added a SECOND "0" to stdout when grep
-# exited nonzero, producing multiline `_EDIT_CT="0\n0"` that broke the
-# `-gt` integer test. Handle missing-file separately so grep's stdout
-# is always single-line.
+# Many edits + no REVIEW -> nudge i/review. Handle missing-file separately so
+# grep's stdout stays single-line (|| echo 0 fallback breaks the -gt test).
 if [ -f "$NEXUS_FILE" ]; then
   _EDIT_CT=$(grep -c '^EDIT:' "$NEXUS_FILE" || true)
   _REVIEW_CT=$(grep -c '^REVIEW:' "$NEXUS_FILE" || true)
