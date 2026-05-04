@@ -270,15 +270,9 @@ module.exports = {
   name: 'work_checks',
   async run(ctx) {
     const v = readVerdicts();
-    // Substantive denies carry their own actionable message. The
-    // generic ENFORCEMENT_REMINDER on top of those is noise -- the
-    // "8x STOP. Re-read CLAUDE.md" pattern visible in test runs
-    // before this gate. Emit the reminder ONLY when no specific
-    // deny will fire below, so the agent gets a single coherent
-    // signal per Stop event instead of (deny + boilerplate).
-    // Mirrors FIRING_RULES below. ADVISOR_SILENTLY_SKIPPED and
-    // CLAIM_WITHOUT_EVIDENCE are intentionally absent here -- they no
-    // longer cause a deny, so they no longer suppress the reminder.
+    // ENFORCEMENT_REMINDER fires only when no specific deny will fire
+    // (avoids "8x STOP. Re-read CLAUDE.md" stacking with substantive deny).
+    // Mirrors FIRING_RULES; softened detectors absent on purpose.
     const willDeny =
       v.STOP_WORK === 'DISMISSIVE' ||
       v.STOP_WORK === 'TEXT_ONLY_SHORT' ||
