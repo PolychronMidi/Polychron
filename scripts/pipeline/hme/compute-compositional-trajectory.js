@@ -1,30 +1,6 @@
-// scripts/pipeline/compute-compositional-trajectory.js
-//
-// Phase 5.1 -- cross-round compositional trajectory.
-//
-// Fits a linear trend to the last 20 rounds of perceptual signals and
-// reports whether the music is GROWING, on a PLATEAU, or DECLINING.
-// Reads `metrics/hme-musical-correlation.json` (which the Phase 4.1
-// script maintains as rolling history) and produces a per-round
-// trajectory snapshot keyed by signal.
-//
-// Variance is tracked alongside slope as a "surprise" proxy -- a
-// composition with high variance is still exploring; zero variance
-// means it's locked into a single mode.
-//
-// Output: metrics/hme-trajectory.json
-//   {
-//     meta: {window, rounds_used},
-//     signals: {
-//       perceptual_complexity_avg: {slope, intercept, variance, verdict},
-//       clap_tension:              {...},
-//       encodec_entropy_avg:       {...}
-//     },
-//     verdict: GROWING | PLATEAU | DECLINING | INSUFFICIENT_DATA,
-//     history: [ per-round overall verdict ]
-//   }
-//
-// Surfaced via status(mode='trajectory').
+// Phase 5.1 trajectory: linear trend over last-20-round perceptual signals;
+// verdict GROWING/PLATEAU/DECLINING. Variance = exploration-surprise proxy.
+// Output: metrics/hme-trajectory.json. Surfaced via status(mode='trajectory').
 
 'use strict';
 
