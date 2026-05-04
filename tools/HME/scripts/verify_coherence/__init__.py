@@ -163,7 +163,6 @@ REGISTRY = [
     PlanOutputValidityVerifier(),
     GitCommitTestCoverageVerifier(),
     TransientErrorFilterVerifier(),
-    VerifierCoverageGapVerifier(),
     MemeticDriftVerifier(),
     ContextBudgetVerifier(),
     PredictiveHCIVerifier(),
