@@ -23,43 +23,19 @@ const REGRESSIONS = [
     requirePattern: /^HME_DOMINANCE\s*=\s*0\s*$/m,
     name: 'HME_DOMINANCE=1',
     history:
-      'When set, dominance_response_rewriter.js translated AUTO-COMPLETENESS, ' +
-      'LIFESAVER, and EXHAUST PROTOCOL Stop-hook deny messages into cryptic ' +
-      'placeholders ("auto-continue queued", "auto-recover queued"), stripping ' +
-      'all actionable content. The user repeatedly screamed "auto-completeness ' +
-      'still didn\'t fire" because the rewriter was eating the directive content ' +
-      'before it reached the agent. The middleware itself is now permanently ' +
-      'no-op regardless of this flag, but if anyone re-introduces a stripping ' +
-      'rewriter they MUST also leave HME_DOMINANCE=0. CI fails if this gets ' +
-      'flipped back to 1.',
+      'Historical: when HME_DOMINANCE=1, the deleted ' +
+      'dominance_response_rewriter middleware translated Stop-hook deny ' +
+      'content into "auto-X queued" placeholders, stripping actionable ' +
+      'directives. File deleted as subversion attempt; flag must stay 0 ' +
+      'so any re-introduced stripping rewriter cannot activate.',
   },
   {
-    // Defense in depth: verify rewriteStopOutput is still a passthrough.
-    // Even if HME_DOMINANCE=1 returns, this stops the rewriter from doing
-    // damage. Catches the case where someone reverts the function body
-    // without reading the comments above it.
-    file: 'tools/HME/proxy/middleware/dominance_response_rewriter.js',
-    badPattern: /rewriteStopOutput\s*\(\s*raw\s*\)\s*\{[\s\S]*?_translateDemand|rewriteStopOutput\s*\(\s*raw\s*\)\s*\{[\s\S]*?for\s*\(\s*const\s+re\s+of\s+DEMAND_MARKERS/,
-    requirePattern: /rewriteStopOutput\s*\(\s*raw\s*\)\s*\{[\s\S]{0,2000}return\s+raw\s*;/,
-    name: 'dominance_response_rewriter.rewriteStopOutput-not-noop',
-    history:
-      'rewriteStopOutput must be a permanent no-op (return raw). The prior ' +
-      'implementation translated demand-register Stop deny content into ' +
-      '"auto-X queued" placeholders, stripping every actionable directive. ' +
-      'Verifier fails if the function body re-introduces _translateDemand or ' +
-      'DEMAND_MARKERS scanning, OR if the body no longer ends with `return raw`.',
-  },
-  {
-    // Defense in depth: hook_bridge.js must not call rewriteStopOutput.
-    // Even if the rewriter function is reverted, removing the call site
-    // means the rewriter code never reaches Stop output.
     file: 'tools/HME/proxy/hook_bridge.js',
     badPattern: /rewriter\.rewriteStopOutput\s*\(/,
     name: 'hook_bridge-calls-rewriteStopOutput',
     history:
-      'hook_bridge.js used to invoke rewriter.rewriteStopOutput on Stop result, ' +
-      'enabling the dominance rewriter to mangle deny content. Call site removed; ' +
-      'verifier blocks re-introduction.',
+      'hook_bridge.js must NOT invoke any rewriteStopOutput-style mangler ' +
+      'on Stop result. Any call site here re-enables the dominance class.',
   },
 ];
 
