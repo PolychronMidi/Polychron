@@ -655,11 +655,8 @@ function handleRequest(clientReq, clientRes) {
         // HME tool injection (full bypass) -- await so tools are in payload
         // before we serialize and forward upstream.
         const n = await _injectHmeTools(payload);
-        // Safety: any strip above may have reduced a text block to an empty
-        // string. Anthropic rejects empty text content with HTTP 400
-        // ("messages: text content blocks must be non-empty"). Drop empty
-        // text blocks; if a message ends up content-less, inject a minimal
-        // placeholder so the topology survives.
+        // Drop empty text blocks left by stripping. Anthropic rejects empty
+        // text with HTTP 400; inject a placeholder if the message goes empty.
         _sanitizePayload(payload);
         if (b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
       }
