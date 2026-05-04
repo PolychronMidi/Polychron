@@ -65,10 +65,8 @@ function mtimeCache({ ttlMs = 0 } = {}) {
         return e.value;
       }
       const value = loader();
-      // Post-stat: capture mtime AFTER loader has finished reading. If
-      // the file is rewritten between loader-read and this stat, the
-      // cache will briefly under-serve (next get re-loads), which is
-      // the safe direction vs serving known-stale content.
+      // Post-stat: pins to the mtime loader saw. If file is rewritten
+      // between read+stat, cache under-serves (safe; next get re-loads).
       let postMtime = 0;
       try { postMtime = fsForCache.statSync(absPath).mtimeMs; }
       catch (_) { /* file may have been deleted; store 0 so next get re-loads */ }
