@@ -1,24 +1,8 @@
-// regimePan.js - sub-beat pan contention writer.
-//
-// Complements setBalanceAndFX by writing a second pan voice across every
-// timing granularity (beat, div, subdiv, subsubdiv), biased by active regime.
-// Existence is deliberate: channelStateField revealed setBalanceAndFX owns
-// ~74% of all pan writes on monopolistic slots (writerCount=1 almost
-// everywhere), producing a quiet emission ecology (meanContention=0.084 at
-// R36). regimePan injects a second writer at micro-timing resolution so
-// pan-slot dynamics gain real variance and CIM gets honest cooperation /
-// antagonism statistics.
-//
-// Firing cadence: probabilistic per unit. Beat always fires; finer units
-// probabilistic so micro-adjustments happen continuously without flooding
-// the MIDI buffer. Picks a random channel from source2+reflection+bass per
-// tick so no single channel saturates.
-//
-// Regime shape:
-//   coherent   -> small center-pulling offset (cooperation w/ setBalanceAndFX)
-//   exploring  -> widening stereo spread (antagonistic to setBalanceAndFX)
-//   evolving   -> oscillating asymmetry via sin(beatCount + subdivIndex)
-//   initializing -> inert (warmup -- don't poison early coherence)
+// regimePan: sub-beat pan contention writer paired with setBalanceAndFX so
+// pan slots get real variance (CIM needs cooperation/antagonism stats).
+// Beat always fires; finer units probabilistic; random source2/reflection/bass.
+// Regimes: coherent=center-pull / exploring=stereo-spread /
+// evolving=sin(beat+subdiv) / initializing=inert.
 
 moduleLifecycle.declare({
   name: 'regimePan',
