@@ -1,24 +1,6 @@
-# ANTI-STOP-ON-FAILURE: when lint/typecheck/pipeline fails, Claude must diagnose root cause and
-# continue fixing -- never pause, ask, or abandon. Stopping mid-stream is the psychopathic antipattern.
-# ANTI-IGNORE-WARNINGS: review warnings are never "pre-existing" or "unrelated" -- every warning
-# in every review output must be fixed before proceeding. Labeling warnings as ignorable is a violation.
-
-# FAIL FAST -- the core invariant of this project: NO error, anywhere, ever, may be silently
-# swallowed, suppressed, logged-and-dropped, or masked by a fallback value.
-# Every error must surface immediately with full context all the way to the top of the agent's
-# context stack. Treat every error as life-saving criticality.
-#
-# Block any command that introduces silent-failure patterns in code or scripts:
-#   1. Empty catch blocks: catch {} or catch(e) {}
-#   2. Empty .catch chains: .catch(() => {}) or .catch(function() {})
-#   3. No-op error callbacks: onError: () => {}, reject: () => {}, onFail = () => {}
-#   4. Fallback values masquerading as success (e.g. "no reason given" where "timeout" is needed)
-#   5. Build/compile stderr suppressed: tsc/npm/node 2>/dev/null hides errors that must surface
-# Use printf instead of echo -- `echo "$CMD"` mis-parses commands starting
-# with `-n`, `-e`, or `-E` as flags (classic shell footgun), which made
-# this gate silently pass on benign-looking but flag-prefixed commands.
-# Skip code-pattern checks when the command includes git commit -- message text is not
-# source code and legitimately describes patterns being removed (false-positive otherwise).
+# Fail-fast pretooluse gate: blocks empty catch{}, .catch(()=>{}), no-op error
+# callbacks, fallback-as-success, and stderr-suppressed builds. Skips git
+# commit (message text != source). Uses printf (echo mis-parses -n/-e/-E flags).
 if printf '%s\n' "$CMD" | grep -q 'git commit'; then
   exit 0
 fi
