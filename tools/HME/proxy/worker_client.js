@@ -18,11 +18,9 @@
 
 const fs = require('fs');
 const path = require('path');
-// Route through the transport selector. /validate + /enrich aren't
-// FS-eligible so they always land on HTTP regardless of mode -- but
-// going through the router keeps the single decision point in one
-// place (and lets future endpoints opt into FS by adding them to
-// `_fsEligible` in `_worker_transport.js`).
+// Route through the transport selector. /validate + /enrich aren't FS-eligible
+// (always HTTP) but the router keeps one decision point; opt-in via
+// `_fsEligible` in `_worker_transport.js`.
 const { workerRequest } = require('./_worker_transport');
 
 const CACHE_CAP = 500;
