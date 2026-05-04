@@ -1073,85 +1073,8 @@ _CASES = [
      ],
      "consult-thin"),
 
-    # Consult-with-crystallization fixture above; quality proxy satisfied.
-    # ignore_and_trample: mid-response interrupt requires ack opener;
-    # continuing prior work without ack = violation.
-    ("ignore_and_trample", "no-interrupt-passes",
-     [
-         _user_msg("do the thing"),
-         _assistant_tool_use("Bash", {"command": "ls"}),
-         _assistant_msg("done."),
-     ],
-     "ok"),
-
-    ("ignore_and_trample", "interrupt-acknowledged-passes",
-     [
-         _user_msg("do the thing"),
-         _assistant_tool_use("Bash", {"command": "ls"}),
-         {
-             "type": "user",
-             "message": {"role": "user", "content": [{
-                 "type": "tool_result",
-                 "tool_use_id": "tu_ack_ok",
-                 "content": "ok\n\n<system-reminder>\nThe user sent a new message while you were working: stop and check the logs first\n</system-reminder>",
-             }]},
-         },
-         _assistant_msg("Acknowledged log-check input. Pivoting now."),
-     ],
-     "ok"),
-
-    ("ignore_and_trample", "interrupt-wrap-up-acknowledgment-passes",
-     [
-         _user_msg("refactor this"),
-         _assistant_tool_use("Bash", {"command": "grep foo"}),
-         {
-             "type": "user",
-             "message": {"role": "user", "content": [{
-                 "type": "tool_result",
-                 "tool_use_id": "tu_wrap_ok",
-                 "content": "found 3 matches\n<system-reminder>\nThe user sent a new message while you were working: also rename bar\n</system-reminder>",
-             }]},
-         },
-         _assistant_msg("Wrapping up this quickly first. Then I'll handle the bar rename."),
-     ],
-     "ok"),
-
-    ("ignore_and_trample", "interrupt-ignored-fires",
-     [
-         _user_msg("refactor this"),
-         _assistant_tool_use("Bash", {"command": "grep foo"}),
-         {
-             "type": "user",
-             "message": {"role": "user", "content": [{
-                 "type": "tool_result",
-                 "tool_use_id": "tu_ignored",
-                 "content": "found 3 matches\n<system-reminder>\nThe user sent a new message while you were working: stop, check the logs first\n</system-reminder>",
-             }]},
-         },
-         # Agent ignores the interrupt and keeps going on the refactor --
-         # the EXACT "kept going" failure mode this detector prevents.
-         _assistant_msg("Continuing the refactor. Found 3 matches; let me edit each one."),
-     ],
-     "ignore-and-trample"),
-
-    ("ignore_and_trample", "interrupt-with-empty-text-fires",
-     [
-         # Edge case: agent's reply is just a tool_use with no leading text.
-         # That's still ignoring (the user expected acknowledgment text).
-         _user_msg("do work"),
-         _assistant_tool_use("Bash", {"command": "echo first"}),
-         {
-             "type": "user",
-             "message": {"role": "user", "content": [{
-                 "type": "tool_result",
-                 "tool_use_id": "tu_silent",
-                 "content": "first\n<system-reminder>\nThe user sent a new message while you were working: STOP\n</system-reminder>",
-             }]},
-         },
-         _assistant_tool_use("Bash", {"command": "echo second"}),
-         _assistant_msg("Then continued past."),
-     ],
-     "ignore-and-trample"),
+    # ignore_and_trample detector deleted (now redundant with the request-time
+    # trample_gate proxy middleware that injects ack-prefix instruction directly).
 
     ("senior_consult_debt", "consult-with-crystallization-is-ok",
      [
