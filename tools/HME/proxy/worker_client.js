@@ -99,7 +99,10 @@ async function _post(reqPath, body, timeoutMs) {
 }
 
 // query: string. Returns { warnings: [...], blocks: [...] } or null on failure.
-async function validate(query, { timeoutMs = 1500 } = {}) {
+// Default 3500ms exceeds worker's 3s graceful-deferred deadline so a saturated
+// engine returns its deferred payload instead of triggering a client-side
+// timeout + worker-side BrokenPipe spam.
+async function validate(query, { timeoutMs = 3500 } = {}) {
   if (!query) return null;
   const key = `v:${query.slice(0, 200)}`;
   const cached = _cacheGet(key);
@@ -110,7 +113,7 @@ async function validate(query, { timeoutMs = 1500 } = {}) {
 }
 
 // query: string. topK: int. Returns { kb: [...], warm: string } or null on failure.
-async function enrich(query, topK = 3, { timeoutMs = 1500 } = {}) {
+async function enrich(query, topK = 3, { timeoutMs = 3500 } = {}) {
   if (!query) return null;
   const key = `e:${topK}:${query.slice(0, 200)}`;
   const cached = _cacheGet(key);
