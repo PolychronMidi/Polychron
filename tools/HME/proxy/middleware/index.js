@@ -52,19 +52,8 @@ function nexusAdd(type, payload) {
   }
 }
 
-// Audit instrumentation: every nexusClearType call records its
-// before-count, the caller's module (best-effort via stack trace), and
-// whether the proxy was recently restarted (which is the signature of
-// the silent-EDIT-clear bug class). Emits to the activity stream
-// unconditionally, and to hme-errors.log when the heuristic flags a
-// suspicious clear (>0 entries removed within 60s of proxy startup).
-//
-// The observability gap that motivated this: nexus_tracking middleware
-// was re-clearing EDIT entries every proxy restart by re-firing on
-// historical Bash i/review events. The clearing was "successful" so
-// LIFESAVER never saw it; the only symptom was downstream "review hook
-// didn't fire" complaints. With this instrumentation every EDIT-state
-// change is auditable in the activity stream.
+// nexusClearType audit: emits caller module + restart-suspicion flag to
+// activity stream every clear. Catches silent-EDIT-clear bug class.
 const _PROCESS_BOOT_TS = Date.now();
 const _RESTART_SUSPICION_WINDOW_MS = 60_000;
 
