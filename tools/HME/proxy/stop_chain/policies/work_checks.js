@@ -235,11 +235,8 @@ function lastRealUserPrompt(transcriptPath) {
     text = text.trim();
     if (!text) continue;
     if (HOOK_INJECT_PREFIXES.some((p) => text.startsWith(p))) continue;
-    // Each user message is a distinct "turn" -- the COMPL counter dedups
-    // per turnIndex so identical-text repeats (user retyping the same
-    // frustrated message) each get their own fresh COMPL_MAX budget.
-    // Without this, the counter saturated at 2 on the first occurrence
-    // and every subsequent repeat silently skipped auto-completeness.
+    // Each user message = distinct turn; COMPL counter dedups per turnIndex
+    // so identical-text repeats each get fresh budget.
     turnIndex++;
     last = text;
     lastTurnIndex = turnIndex;
