@@ -57,17 +57,9 @@ with open('$_CORRECTION_FILE', 'a') as f:
   fi
 fi
 
-# LIFESAVER -- autocommit fail-flag check (runs FIRST, unconditional).
-# The general error-log scan below picks up NEW lines in hme-errors.log,
-# but the autocommit can silently die in ways that leave the log
-# unchanged -- .env unloadable, log/ dir missing, _proxy_bridge dropping
-# stderr. The sticky fail-flag from _autocommit.sh is independent of all
-# of those: it lives under tmp/ which is always writable, and its mere
-# existence means the last autocommit failed and has NOT yet been
-# resolved. Fire a banner every UserPromptSubmit until the flag clears.
-# _AC_FAIL_FLAG is defined by _autocommit.sh (sourced above during the
-# autocommit call). Fall back to its canonical path if unset for any
-# reason (the helper's path derivation cannot fail, but we guard anyway).
+# LIFESAVER autocommit fail-flag check (unconditional, runs FIRST).
+# Sticky flag is independent of hme-errors.log so .env/log-dir/stderr-drop
+# failures still surface. Banner fires every UserPromptSubmit until cleared.
 _AC_FLAG_CHECK="${_AC_FAIL_FLAG:-${PROJECT_ROOT}/tmp/hme-autocommit.fail}"
 if [ -f "$_AC_FLAG_CHECK" ]; then
   _AC_FLAG_BODY=$(cat "$_AC_FLAG_CHECK" 2>/dev/null)
