@@ -363,16 +363,9 @@ def main() -> int:
     stripped = _re_psy.sub(r'"[^"\n]*"', " ", stripped)
     stripped = _re_psy.sub(r"'[^'\n]*'", " ", stripped)
     final_text = stripped.lower()
-    # Compute ideation gate ONCE -- used by both Pattern B and Pattern C.
-    # When the user's prompt asks for ideas / opinions / comparisons /
-    # discussion (no directive verbs), the agent legitimately uses
-    # ADMIT-phrase-like language to describe options ("their approach
-    # writes to next session, yours is better"). Without this gate,
-    # comparison talk gets flagged as deferral. Directive markers in the
-    # user prompt still override -- "fix this" + admit-phrase still psycho.
-    # Use events_with_user captured at the top of main -- re-reading the
-    # transcript here would create a race where the slice and this view
-    # could diverge if the file was appended between reads.
+    # Ideation gate (computed once for both Pattern B and C). Suppresses
+    # ADMIT-phrase matches when user clearly asked for ideas/comparison;
+    # directive markers override. Reuses events_with_user to avoid race.
     user_text = _last_user_text(events_with_user)
     user_is_ideating = _is_ideation_prompt(user_text)
     # Override: if the prior assistant turn claimed completion, the ideation
