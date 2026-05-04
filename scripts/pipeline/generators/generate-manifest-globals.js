@@ -19,6 +19,9 @@ const DTS = path.join(ROOT, 'src/types/globals.d.ts');
 
 const START_MARKER = '// === AUTO-GENERATED FROM MANIFESTS (moduleLifecycle.declare) -- do not hand-edit below this line ===';
 const END_MARKER = '// === END AUTO-GENERATED ===';
+// Match any prior block (handles legacy em-dash variants `—` plus ASCII `--`)
+// so re-runs cleanly REPLACE rather than append duplicate sections.
+const BLOCK_RE = /\n*\/\/ === AUTO-GENERATED FROM MANIFESTS \(moduleLifecycle\.declare\)[^\n]*===\n[\s\S]*?\n\/\/ === END AUTO-GENERATED ===\n?/g;
 
 function walk(dir, out) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -68,16 +71,10 @@ function rewriteDts(names) {
     END_MARKER,
   ].join('\n');
 
-  const startIdx = dtsSrc.indexOf(START_MARKER);
-  const endIdx = dtsSrc.indexOf(END_MARKER);
-  let updated;
-  if (startIdx >= 0 && endIdx >= 0) {
-    // Replace existing block.
-    updated = dtsSrc.slice(0, startIdx) + block + dtsSrc.slice(endIdx + END_MARKER.length);
-  } else {
-    // Append at end with a blank line separator.
-    updated = dtsSrc.replace(/\s+$/, '') + '\n\n' + block + '\n';
-  }
+  // Strip ALL existing auto-generated blocks (legacy em-dash + ASCII variants),
+  // then append exactly one fresh block. Idempotent across reruns.
+  const stripped = dtsSrc.replace(BLOCK_RE, '\n').replace(/\n{3,}$/, '\n\n');
+  const updated = stripped.replace(/\s+$/, '') + '\n\n' + block + '\n';
   if (updated !== dtsSrc) {
     fs.writeFileSync(DTS, updated);
     return true;
