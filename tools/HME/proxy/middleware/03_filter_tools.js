@@ -10,7 +10,7 @@
  * STRUCTURAL cut, not behavioral conditioning -- verify your workflow
  * doesn't need a tool before adding it to the filter list.
  *
- * Position in order.json: AFTER dump_system (so dumps capture the raw
+ * Load order (NN_ prefix): AFTER dump_system (so dumps capture the raw
  * tool list for inspection) and BEFORE HME's injection middleware.
  *
  * Configuration via .env:

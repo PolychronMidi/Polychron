@@ -24,7 +24,7 @@
  * hits work normally. If you edit the canonical file, the next request
  * misses cache once, then re-hits.
  *
- * Position in order.json: AFTER dump_system (so dumps still capture
+ * Load order (NN_ prefix): AFTER dump_system (so dumps still capture
  * Claude Code's original prompt for inspection) and BEFORE every other
  * middleware (so HME's status/jurisdiction/lifesaver injections append
  * to OUR canonical prompt, not Claude Code's discarded one).

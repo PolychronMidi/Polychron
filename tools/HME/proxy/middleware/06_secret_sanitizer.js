@@ -16,7 +16,7 @@
  * Ordering: runs BEFORE bash_enrichment (which appends [err] footers) and
  * BEFORE every context-injection / KB-summary middleware. The sanitizer
  * sits at the head of post_tool_trace so no other middleware ever sees
- * the unredacted text. Configured in middleware/order.json.
+ * the unredacted text. Numeric NN_ prefix encodes load order.
  *
  * Trade-offs taken explicitly:
  *   - We REGEX-MATCH on output text. Real shell sessions can produce
