@@ -1,22 +1,9 @@
 #!/bin/bash
-# Setup tmpfs overflow buffers for llama.cpp GGUF fast-reload.
-#
-# Creates RAM-backed buffers at /mnt/llamacpp-buffer-gpu{0,1}.
-# When llama-server restarts, it can mmap the GGUF from the RAM copy
-# (~instant) instead of re-reading from SSD (~seconds-minutes for 18 GB).
-#
-# Usage:
-#   sudo bash tools/HME/scripts/setup_llamacpp_buffers.sh setup    # create mounts
-#   sudo bash tools/HME/scripts/setup_llamacpp_buffers.sh warm     # copy GGUFs in
-#   sudo bash tools/HME/scripts/setup_llamacpp_buffers.sh teardown # unmount + remove
-#   sudo bash tools/HME/scripts/setup_llamacpp_buffers.sh status   # check mounts
-#
-# Topology matches llamacpp_supervisor + llamacpp-arbiter/coder.service:
-#   GPU0 (Vulkan1) = arbiter = phi-4-Q4_K_M.gguf (~9 GB) + v6 LoRA (~85 MB)
-#   GPU1 (Vulkan2) = coder   = qwen3-coder-30b-Q4_K_M.gguf (~18 GB)
-#
-# BUFFER_SIZE must be >= the largest GGUF you plan to warm. Default 20 GB
-# per mount covers the 18 GB coder + headroom.
+# tmpfs overflow buffers for llama.cpp GGUF fast-reload at
+# /mnt/llamacpp-buffer-gpu{0,1}. mmap from RAM (~instant) vs SSD (~minutes/18GB).
+# Usage: sudo bash $0 {setup|warm|teardown|status}
+# Topology: GPU0=arbiter (phi-4-Q4_K_M ~9GB + LoRA ~85MB),
+#           GPU1=coder (qwen3-coder-30b-Q4_K_M ~18GB). BUFFER_SIZE default 20GB.
 
 set -euo pipefail
 
