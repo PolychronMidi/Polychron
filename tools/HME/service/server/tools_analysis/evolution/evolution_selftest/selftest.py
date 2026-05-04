@@ -810,12 +810,8 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: detector telemetry -- probe failed: {type(_e).__name__}: {_e}")
 
-    # Probe: middleware load-order manifest covers every present file.
-    # Without this, a new middleware silently runs in alphabetical fallback
-    # position -- which may break a dependency chain (lifesaver_inject must
-    # run before proxy_autocommit so a failed autocommit surfaces as a
-    # banner on the same turn). The probe is FAIL when files exist that
-    # aren't listed AND aren't accepted-as-fallback.
+    # Probe: every middleware file has NN_ numeric prefix encoding load order.
+    # Unprefixed files load alphabetically AFTER prefixed (dependency risk).
     try:
         import re as _re_mw
         mw_dir = os.path.join(_project_root, "tools", "HME", "proxy", "middleware")
