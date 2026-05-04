@@ -8,13 +8,8 @@ INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 
-# Coupling-aware antagonism warning: if this edit's module and a module
-# edited earlier this turn are registered as a strong antagonist pair
-# (r <= -0.3 in hme-coupling.json), surface it. The pair probably needs
-# SEPARATE commits -- antagonistic modules resist simultaneous change and
-# commingling them masks which edit is responsible for a downstream drift.
-# Observe-only warning (stderr); never blocks. Silent when no antagonists
-# are registered (data-driven dormancy).
+# Coupling-aware antagonism warning: stderr-only, fires when this edit's
+# module + a same-turn earlier edit are a registered antagonist pair (r<=-0.3).
 _TURN_EDIT_STATE="${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt"
 _MODULE_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')
 if [ -n "$_MODULE_BASE" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -f "${PROJECT_ROOT}/output/metrics/hme-coupling.json" ]; then
