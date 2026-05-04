@@ -229,11 +229,7 @@ def _background_load():
             f"project={PROJECT_ROOT} | libs={list(ctx.lib_engines.keys())}"
         )
         # llama-server lifecycle (arbiter + coder) is owned exclusively by
-        # tools/HME/service/llamacpp_daemon/ -- the worker MUST NOT spawn its
-        # own llama-server processes. A duplicate worker-side supervisor
-        # caused PID-collision races during /indexing-mode (worker spawned
-        # a coder onto the GPU the daemon was trying to use for embedding,
-        # OOM-ing the reindex). Only the daemon allocates llama-server VRAM.
+        # llamacpp_daemon/ -- worker MUST NOT spawn its own llama-server.
         from server.startup_validator import validate_startup
         validate_startup(ctx, PROJECT_ROOT)
         _sp.set_phase(_sp.SystemPhase.READY, "startup validation passed")
@@ -250,11 +246,9 @@ def _background_load():
 threading.Thread(target=_background_load, daemon=True, name="HME-worker-startup").start()
 
 
-# Phase-B watchdog: GIL-contention-resistant brute timeout. _active_tools
-# maps tool-thread-id -> {name, start_ts, hard_kill_s}; dedicated thread
-# polls q5s and SIGTERMs os.getpid() on overrun (supervisor respawns).
-# Necessary because Thread.join(timeout) starves under GIL contention;
-# time.sleep(5) reliably wakes and catches stuck tools.
+# Phase-B watchdog: GIL-resistant brute timeout. Dedicated thread polls
+# _active_tools q5s and SIGTERMs os.getpid() on overrun (supervisor
+# respawns). Thread.join(timeout) starves under GIL contention.
 _active_tools: dict = {}
 _active_tools_lock = threading.Lock()
 
@@ -326,10 +320,8 @@ def main():
     print(f"HME worker listening on http://{args.host}:{args.port}", flush=True)
 
     # Filesystem-IPC queue watcher -- accepts jobs via tmp/hme-worker-queue/
-    # in parallel with the HTTP path. Decouples callers from worker
-    # liveness at request time: caller drops a job file, polls for the
-    # result, gracefully degrades on timeout. Daemon thread, idempotent
-    # start, exits cleanly on process termination.
+    # in parallel with HTTP. Decouples callers from worker liveness;
+    # gracefully degrades on timeout. Daemon thread, idempotent start.
     try:
         import worker_queue
         worker_queue.start()
