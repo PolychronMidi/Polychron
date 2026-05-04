@@ -33,14 +33,10 @@ import time
 logger = logging.getLogger("HME")
 
 
-# Per-process call counter + cap for the thread dispatch path. Every
-# dispatched call spawns a `claude --resume` subprocess that bills the
-# user's account silently; unlike the sentinel path (naturally throttled
-# by agent turn cadence) there's no organic budget choke.
-#
-# Module-level counter would reset on proxy/worker restart, re-opening the
-# whole budget mid-burst. Mirror to tmp/hme-buddy-call-count (see _count_file)
-# with atomic rewrite + fsync; stale counts auto-expire after 24h.
+# Per-process call counter + cap for thread dispatch. `claude --resume`
+# subprocesses bill silently with no organic choke. Mirror to
+# tmp/hme-buddy-call-count (see _count_file) with atomic rewrite + fsync
+# so restarts don't re-open budget; stale counts auto-expire after 24h.
 _DISPATCH_THREAD_CALL_COUNT = 0
 _DISPATCH_THREAD_CALL_CAP = int(os.environ.get("HME_THREAD_CALL_CAP", "50"))
 _DISPATCH_THREAD_COUNT_TTL_SEC = 24 * 3600
