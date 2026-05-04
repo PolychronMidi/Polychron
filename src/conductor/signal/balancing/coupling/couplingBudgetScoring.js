@@ -127,23 +127,8 @@ moduleLifecycle.declare({
             clamp((p95 - 0.75) / 0.15, 0, 1) * 0.20,
             0, 1)
           : 0;
-        // R32 E1: Density-tension decorrelation pressure. DT r=-0.562
-        // trending "decreasing" (strong anti-correlation). Same budget
-        // scoring pattern, using absCorr to penalize both + and - correlation.
-        // R44 E2: Reduce DT pressure (0.35->0.25, 0.35->0.40).
-        // R46 E1: Moderate re-strengthen (coeff 0.30, threshold 0.38).
-        // R48 E1: Further re-strengthen. DT still at -0.527. Raise coeff
-        // 0.30->0.35 and lower threshold 0.38->0.35 to give budget scoring
-        // more teeth against persistent DT anti-correlation.
-        // R56 E3: Lower DT threshold 0.35->0.30. DT at -0.555 in R55
-        // with rollingAbsCorr potentially below 0.35 threshold, preventing
-        // budget engagement.
-        // R57 E2: Boost DT coeff 0.35->0.40. DT stuck at -0.55 despite
-        // threshold fix. More decorrelation force needed.
-        // R59 E3: Raise DT coeff 0.40->0.42. R58 regressed DT from the
-        // R57 near-best zone back to -0.339 while tail pressure dispersed.
-        // R60 E1: Revert 0.42->0.40. The extra boost was refuted in R59,
-        // driving DT to -0.602.
+        // Density-tension decorrelation pressure: penalizes both + and -
+        // correlation via absCorr threshold 0.30, coeff 0.40.
         const densityTensionCorrPressure = isDensityTensionPair
           ? clamp(
             clamp((absCorr - 0.30) / 0.25, 0, 1) * 0.40 +
