@@ -115,19 +115,10 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
     if not os.path.isdir(target):
         return f"Error: directory not found: {target}"
 
-    # Main-tree reindex goes through the daemon's indexing-mode -- SAME path
-    # clear_index uses. indexing-mode owns:
-    #   1. suspend coder (kill + disable auto-restart)
-    #   2. migrate embedders to cuda:1 in the vacuum
-    #   3. run _index_main on GPU1 with no contention
-    #   4. migrate embedders back to cuda:0
-    #   5. resume coder
-    # Previously index_codebase bypassed all of this and called _index_main
-    # directly against the worker's default device, which raced coder on
-    # GPU1 and produced CUDA-illegal-memory cascades every single reindex
-    # (logged as "WHY THE FUCK DO I HAVE TO GO OVER THIS EVERY TIME").
-    # Lib engines still take the thread-pool path -- they run on CPU / shared
-    # GPU0 and don't contend with coder.
+    # Main-tree reindex via daemon indexing-mode (same path as clear_index):
+    # suspend coder -> migrate embedders to cuda:1 -> _index_main with no
+    # contention -> migrate back to cuda:0 -> resume coder. Lib engines stay
+    # on the thread-pool path (CPU / shared GPU0, no coder contention).
     try:
         from indexing_mode import request_full_reindex
         main_result = request_full_reindex()
