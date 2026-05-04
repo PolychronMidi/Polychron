@@ -136,22 +136,8 @@ moduleLifecycle.declare({
             clamp((p95 - 0.70) / 0.20, 0, 1) * 0.15,
             0, 1)
           : 0;
-        // R34 E1: Density-flicker decorrelation pressure. DF r=0.367
-        // "increasing" in R33, driving flicker axis surge (0.170->0.230).
-        // Same budget scoring pattern. absCorr threshold 0.30 (lower than
-        // DT/FT since DF target is 0.12 -- tighter coupling target).
-        // R42 E1: Boost DF pressure -- DF exploded -0.136->+0.363 in R41.
-        // R48 E2: Reduce DF pressure. DF overcorrected to -0.248 in R47.
-        // Lower coefficient 0.40->0.32 to reduce overcorrection.
-        // R55 E2: Boost DF coefficient 0.38->0.44. DF flipped to +0.306 in
-        // R54 with budgetRank 2. Needs stronger decorrelation force.
-        // R56 E1: Moderate DF coefficient 0.44->0.40. R55 overcorrected DF
-        // from +0.306 to -0.309. Split the difference to center near zero.
-        // R57 E4: Fine-tune DF coeff 0.40->0.41. DF at +0.234 (R56), still
-        // slightly positive. Nudge coefficient up 0.01 to push toward zero.
-        // R58 E2: Back DF coeff off 0.41->0.39. R57 centered DF correlation
-        // (+0.081) but DF tail pressure exploded to 51 exceedance beats.
-        // The remaining problem is magnitude, not correlation direction.
+        // Density-flicker decorrelation pressure: tighter target than DT/FT
+        // (DF target 0.12); absCorr threshold 0.30, coeff 0.39.
         const densityFlickerCorrPressure = isDensityFlickerPair
           ? clamp(
             clamp((absCorr - 0.30) / 0.25, 0, 1) * 0.39 +
