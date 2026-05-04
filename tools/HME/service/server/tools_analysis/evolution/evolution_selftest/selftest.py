@@ -842,43 +842,31 @@ def hme_selftest(verbose: bool = False) -> str:
     # banner on the same turn). The probe is FAIL when files exist that
     # aren't listed AND aren't accepted-as-fallback.
     try:
-        import json as _json_mw
+        import re as _re_mw
         mw_dir = os.path.join(_project_root, "tools", "HME", "proxy", "middleware")
-        order_path = os.path.join(mw_dir, "order.json")
         if not os.path.isdir(mw_dir):
             results.append("INFO: middleware order -- proxy middleware dir absent")
-        elif not os.path.isfile(order_path):
-            results.append("WARN: middleware order -- order.json missing; loader falls back to filesystem-inode order")
         else:
-            with open(order_path, encoding="utf-8") as _of:
-                manifest = _json_mw.load(_of).get("order", [])
-            # Mirror middleware/index.js loadAll() exclusions: skip
-            # underscore-prefixed helpers (_markers.js, _persistent_map.js)
-            # and test files (test_*.js, *.test.js, *_test.js).
+            # Mirror loadAll() exclusions; check NN_ numeric prefix on the rest.
             def _is_middleware_file(f: str) -> bool:
-                if not f.endswith(".js") or f in ("index.js", "order.json"):
+                if not f.endswith(".js") or f == "index.js":
                     return False
                 if f.startswith("_") or f.startswith("test_"):
                     return False
                 if f.endswith(".test.js") or f.endswith("_test.js"):
                     return False
                 return True
+            prefix_re = _re_mw.compile(r"^\d+_")
             present = sorted(f for f in os.listdir(mw_dir) if _is_middleware_file(f))
-            unlisted = [f for f in present if f not in manifest]
-            stale_in_manifest = [f for f in manifest if f not in present]
-            if unlisted or stale_in_manifest:
-                bits = []
-                if unlisted:
-                    bits.append(f"{len(unlisted)} unlisted: {unlisted}")
-                if stale_in_manifest:
-                    bits.append(f"{len(stale_in_manifest)} stale entries: {stale_in_manifest}")
+            unprefixed = [f for f in present if not prefix_re.match(f)]
+            if unprefixed:
                 results.append(
-                    f"WARN: middleware order -- {'; '.join(bits)} "
-                    f"(unlisted run alphabetically AFTER manifest; stale entries are skipped)"
+                    f"WARN: middleware order -- {len(unprefixed)} file(s) without NN_ numeric prefix: {unprefixed} "
+                    f"(load alphabetically AFTER prefixed; rename to encode order)"
                 )
             else:
                 results.append(
-                    f"PASS: middleware order -- {len(manifest)}/{len(present)} files declared in order.json"
+                    f"PASS: middleware order -- {len(present)} files all NN_-prefixed"
                 )
     except Exception as _e:
         results.append(f"WARN: middleware order -- probe failed: {type(_e).__name__}: {_e}")
