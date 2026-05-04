@@ -377,16 +377,9 @@ def main() -> int:
             for phrase in ADMIT_PHRASES:
                 if phrase in final_text:
                     if not _has_tool_call_after_last_text(events):
-                        # (b)-clause rescue: pattern B catches "agent
-                        # enumerated work and stopped". The same deny
-                        # message family that fires SCOPE_ESCAPE allows
-                        # explicit refusal-with-reason. When the admit
-                        # phrase sits next to (b)-clause justification
-                        # ("not doing this is the right call because...",
-                        # "duplicates the existing X"), the agent took
-                        # the sanctioned alternative path, not the
-                        # punt. Suppress to keep detector behavior
-                        # consistent across the family.
+                        # (b)-clause rescue: admit-phrase + nearby explicit
+                        # refusal-with-reason ("not doing this is right
+                        # because...") = sanctioned path, not punt.
                         from _rescue_clauses import b_clause_within_window
                         anchor = final_text.find(phrase)
                         if anchor >= 0 and b_clause_within_window(final_text, anchor):
