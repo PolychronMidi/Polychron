@@ -21,7 +21,8 @@ on — belongs here, where it survives a `tmp/` flush.
 | `fp-gate-armed.flag` | `stop_chain/policies/work_checks.js` (on `ctx.deny`) | `middleware/23_stop_hook_fp_gate.js` (consumes + deletes on inject) | One-shot per Stop deny | Older than next user prompt → stale |
 | `stop-detector-verdicts.env` | `lifecycle/stop/detectors.sh` | `work_checks.js`, `anti_patterns.sh` | Overwritten each Stop chain run | Per-run; never stale |
 | `completeness-injected.json` | `work_checks.js` | self (counter advance) | 50-entry FIFO cap, per-user-turn | Older than user-turn boundary |
-| `errors-lastread` | `lifecycle/stop/lifesaver.sh` | `userpromptsubmit.sh` | LIFESAVER scan watermark | Per-watermark; never stale |
+| `errors-lastread` | `lifecycle/stop/lifesaver.sh` | `userpromptsubmit.sh` | hook-side LIFESAVER scan watermark | Per-watermark; never stale |
+| `errors-lastread.proxy` | `middleware/22_lifesaver_inject.js` | self | proxy-side scan watermark; seeded to EOF on proxy boot | Per-watermark; never stale |
 | `errors-turnstart` | `userpromptsubmit.sh` | `lifesaver.sh` | Per-turn marker for mid-turn-error detection | Older than turn boundary → stale |
 | `proxy-supervisor.pid` | `direct/proxy-supervisor.sh` | `_proxy_bridge.sh` watchdog + self | Long-lived | PID dead → stale |
 | `universal-pulse-supervisor.pid` | `direct/universal-pulse-supervisor.sh` | self + watchdog | Long-lived | PID dead → stale |
