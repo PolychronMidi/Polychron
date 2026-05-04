@@ -121,15 +121,14 @@ def load_turn_events(transcript_path: str | Path) -> list[dict]:
 
 def load_full_turn_with_user(transcript_path: str | Path) -> list[dict]:
     """Like load_turn_events but includes the triggering user message at index 0.
-
-    Needed by detectors that want to inspect tool_result blocks in the
-    same iteration order as they appear to the model (user turn -> assistant
-    tool calls -> tool results).
-    """
+    Same real-user-prompt boundary as load_turn_events (not tool_result wrappers)."""
     events = _parse_all(transcript_path)
     last_user_idx = -1
     for i, obj in enumerate(events):
-        if is_user(obj):
+        if not is_user(obj):
+            continue
+        msg = obj.get("message")
+        if isinstance(msg, dict) and isinstance(msg.get("content"), str):
             last_user_idx = i
     if last_user_idx == -1:
         return events
