@@ -32,29 +32,7 @@ fi
 # (anti_patterns.sh, work_checks.sh) read this file rather than inherit env.
 _DETECTOR_VERDICTS_FILE="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR}}/runtime/hme/stop-detector-verdicts.env"
 mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
-{
-  echo "POLL_COUNT=$POLL_COUNT"
-  echo "IDLE_AFTER_BG=$IDLE_AFTER_BG"
-  echo "PSYCHO_STOP=$PSYCHO_STOP"
-  echo "ACK_SKIP=$ACK_SKIP"
-  echo "ABANDON_CHECK=$ABANDON_CHECK"
-  echo "STOP_WORK=$STOP_WORK"
-  echo "FABRICATION_CHECK=$FABRICATION_CHECK"
-  echo "EARLY_STOP=$EARLY_STOP"
-  echo "EXHAUST_CHECK=$EXHAUST_CHECK"
-  echo "SCOPE_ESCAPE=$SCOPE_ESCAPE"
-  echo "SENIOR_CONSULT_DEBT=$SENIOR_CONSULT_DEBT"
-  echo "IGNORE_AND_TRAMPLE=$IGNORE_AND_TRAMPLE"
-  echo "PHANTOM_CAPABILITY=$PHANTOM_CAPABILITY"
-  echo "ADVISOR_DOCTRINE=$ADVISOR_DOCTRINE"
-  echo "SUMMARY_FORMAT=$SUMMARY_FORMAT"
-  echo "LIVE_PROBE=$LIVE_PROBE"
-  echo "PHASE_GATE=$PHASE_GATE"
-  echo "PILE_ON=$PILE_ON"
-  echo "CLAIM_WITHOUT_EVIDENCE=$CLAIM_WITHOUT_EVIDENCE"
-  echo "FIX_WITHOUT_INVESTIGATION=$FIX_WITHOUT_INVESTIGATION"
-  echo "COMMENT_BLOAT=$COMMENT_BLOAT"
-} > "$_DETECTOR_VERDICTS_FILE"
+_detector_emit_persist > "$_DETECTOR_VERDICTS_FILE"
 
 # senior_consult_debt: informational stderr reminder (not a hard block).
 # Elevate to hard block downstream of detectors.sh if recurring.
