@@ -163,12 +163,8 @@ _CASES = [
      ],
      "ok"),
 
-    # Thorough-sweep closeout exemption: when the user invites
-    # comprehensive coverage, the response is allowed to enumerate
-    # out-of-scope items with reasons. The legitimate-deferral list
-    # carries evidence (each reason explains why) -- gating the same
-    # shape as a silent punt forces the agent to either implement
-    # out-of-scope items or hide what wasn't done.
+    # Thorough-sweep exemption: legitimate-deferral list with reasons-each
+    # is allowed when user invited comprehensive coverage.
     ("exhaust_check", "thorough-sweep-exemption",
      [
          _user_msg("does that complete ALL of the integration-worthy recommendations from the sweep?"),
