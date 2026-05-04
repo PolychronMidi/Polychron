@@ -24,7 +24,7 @@ on — belongs here, where it survives a `tmp/` flush.
 | `errors-lastread` | `lifecycle/stop/lifesaver.sh` | `userpromptsubmit.sh` | hook-side LIFESAVER scan watermark | Per-watermark; never stale |
 | `errors-lastread.proxy` | `middleware/22_lifesaver_inject.js` | self | proxy-side scan watermark; seeded to EOF on proxy boot | Per-watermark; never stale |
 | `errors-turnstart` | `userpromptsubmit.sh` | `lifesaver.sh` | Per-turn marker for mid-turn-error detection | Older than turn boundary → stale |
-| `proxy-supervisor.pid` | `direct/proxy-supervisor.sh` | `_proxy_bridge.sh` watchdog + self | Long-lived | PID dead → stale |
+| `proxy-supervisor.pid`, `proxy-supervisor.pid.lock` | `direct/proxy-supervisor.sh` | `_proxy_bridge.sh` watchdog + self | Long-lived; `.lock` held during PID write | PID dead → stale |
 | `universal-pulse-supervisor.pid` | `direct/universal-pulse-supervisor.sh` | self + watchdog | Long-lived | PID dead → stale |
 | `autocommit.{counter,last-success,fail,lock}` | `_autocommit.sh` + `21_proxy_autocommit.js` (shared flock) | self + `userpromptsubmit.sh` (fail-flag check) + `autocommit_health.py` | Counter increments per attempt; reset on success; lock held during git ops | Lock with no live holder → unlinked by stale-recovery |
 | `buddy.sid`, `buddy-primary.sid`, `buddy-N.sid` | `hooks/helpers/buddy_init.sh` | `service/agent_direct.py` dispatcher + `synthesis_overdrive.py` | Persistent across sessions | Sid not resumable → caller spawns fresh |
