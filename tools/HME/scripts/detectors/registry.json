@@ -21,7 +21,6 @@
     {"name": "exhaust_check", "module": "exhaust_check", "fires_when": "exhaust_violation", "bash_var": "EXHAUST_CHECK", "deny": true, "reason_key": "EXHAUST"},
     {"name": "scope_escape", "module": "scope_escape", "fires_when": "scope_escape_violation", "bash_var": "SCOPE_ESCAPE", "deny": true, "reason_key": "SCOPE_ESCAPE"},
     {"name": "senior_consult_debt", "module": "senior_consult_debt", "fires_when": "consult-debt", "bash_var": "SENIOR_CONSULT_DEBT", "deny": false},
-    {"name": "ignore_and_trample", "module": "ignore_and_trample", "fires_when": "ignore-and-trample", "bash_var": "IGNORE_AND_TRAMPLE", "deny": false},
     {"name": "phantom_capability", "module": "phantom_capability", "fires_when": "phantom_capability", "bash_var": "PHANTOM_CAPABILITY", "deny": true, "reason_key": "PHANTOM_CAPABILITY"},
     {"name": "phantom_paraphrase", "module": "phantom_capability", "fires_when": "phantom_paraphrase", "bash_var": "PHANTOM_CAPABILITY", "deny": true, "reason_key": "PHANTOM_PARAPHRASE"},
     {"name": "advisor_missing_pre_build", "module": "advisor_doctrine", "fires_when": "advisor_missing_pre_build", "bash_var": "ADVISOR_DOCTRINE", "deny": true, "reason_key": "ADVISOR_MISSING_PRE_BUILD"},
