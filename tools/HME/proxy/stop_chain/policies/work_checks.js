@@ -340,11 +340,7 @@ module.exports = {
     const { text: lastUser, turnIndex } = lastRealUserPrompt(transcriptPath);
     if (!lastUser) return ctx.allow();
 
-    // Dedup key includes turnIndex so identical-text repeats (user retyping
-    // the same prompt verbatim while frustrated) each get their own budget.
-    // Pre-fix: counter saturated at 2 on first occurrence -> every repeat
-    // skipped auto-completeness silently. The user's "STILL NOT FIRING"
-    // recurring scream traces directly to this bug.
+    // Dedup key = turnIndex+text so identical retypes get separate budgets.
     const turnKey = crypto.createHash('sha256')
       .update(`${turnIndex}|${lastUser}`)
       .digest('hex').slice(0, 16);
