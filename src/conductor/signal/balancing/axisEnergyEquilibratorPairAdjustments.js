@@ -5,22 +5,9 @@ moduleLifecycle.declare({
   lazyDeps: ['pipelineCouplingManager'],
   provides: ['axisEnergyEquilibratorPairAdjustments'],
   init: () => {
-  // R19 E4: Axis-aware giniMult dampening. Compute dominant axis from
-  // energy shares so giniMult preferentially targets pairs involving the
-  // dominant axis, protecting non-dominant axes from over-tightening.
-  // When flicker is dominant (0.219), flicker pairs feel full giniMult
-  // while tension pairs (non-dominant) get dampened giniMult, preserving
-  // tension peaks. Factor: pairs with 0 dominant axes get 0.5x giniMult
-  // excess; pairs with 1 get 0.75x; pairs with 2 get full 1.0x.
-  // R19 E4: Axis-aware giniMult dampening.
-  // R20 E3: GINI_DAMPEN_0 raised 0.5->0.65. Non-dominant-axis pairs
-  // were getting only 50% of giniMult excess, allowing density-entropy
-  // correlation (r=0.51) to build unchecked. 65% provides more corrective
-  // pressure on non-dominant pairs while still prioritizing dominant axis.
-  // R46: Raised 0.65->0.72. axisGini rose to 0.136 after R45. All 27 pair
-  // assignments are unique but trust/entropy axes remain sparsely distributed.
-  // 72% applies stronger corrective pressure on non-dominant pairs while
-  // still protecting dominant axis signal headroom.
+  // Axis-aware giniMult dampening: pairs touching N dominant axes get
+  // GINI_DAMPEN_N x giniMult excess (0:0.72, 1:0.75, 2:1.0). Protects
+  // non-dominant axes from over-tightening while dominant axis tightens fully.
   const GINI_DAMPEN_0 = 0.72;
   const GINI_DAMPEN_1 = 0.75;
 
