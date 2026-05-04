@@ -76,16 +76,9 @@ if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(e
   exit 2
 fi
 
-# Hardcoded-project-root guard. Catches `/home/jah/Polychron` (or any
-# absolute path matching the host's checkout) baked into source/script
-# content. The proper resolution is `$PROJECT_ROOT` (set by .env load),
-# `$CLAUDE_PROJECT_DIR` (Claude Code env var), or walk-up-from
-# $BASH_SOURCE -- never a hardcoded host-specific string.
-#
-# The guard is only meaningful when we know the actual project root to
-# match against. In production hook invocation $PROJECT_ROOT is always
-# set. The check matches against the LIVE PROJECT_ROOT to avoid false
-# positives on someone else's checkout path.
+# Hardcoded-project-root guard: rejects host-specific path baked into
+# source. Use $PROJECT_ROOT / $CLAUDE_PROJECT_DIR / walk-up. Matches
+# against LIVE PROJECT_ROOT to avoid false-positive on other clones.
 if [ -n "${PROJECT_ROOT:-}" ] \
    && echo "$NEW_STRING" | grep -qF "$PROJECT_ROOT" \
    && echo "$FILE" | grep -qE '\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$' \
