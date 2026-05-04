@@ -268,24 +268,12 @@ def start_watcher(project_root: str, engine, debounce: float = 30.0):
             with _lock:
                 _changed_files.add(abs_path)
             _schedule_reindex()
-            # Auto hot-reload: any .py EDIT under tools/HME/service/server/
-            # schedules a hot reload after a debounce window. Removes the
-            # "edit then i/hme-admin action=reload" friction step.
-            #
-            # CRITICAL is_write GATE: the prior version fired on every
-            # filesystem event, including ACCESS/OPEN/CLOSE (which Python
-            # imports trigger). Each hot_reload itself imports modules,
-            # importing fired the watcher, the watcher scheduled another
-            # reload, and so on -- a 5-second self-perpetuating loop
-            # (every 5s = the debounce timer). Gating on is_write is the
-            # invariant the activity emit a few lines above already
-            # enforces; the hot-reload trigger needs the same gate.
-            #
-            # NOTE: this watcher is started ONCE per server boot (see
-            # rag_engines.py:738). Edits to start_watcher() itself only
-            # take effect after a full server restart, not after
-            # `i/hme-admin action=reload` (which only re-imports tool
-            # modules -- the watcher closure was already bound).
+            # Auto hot-reload on .py EDIT under tools/HME/service/server/
+            # (debounced). is_write gate REQUIRED -- ACCESS/OPEN/CLOSE fire on
+            # every Python import, and hot_reload itself imports, so without
+            # the gate we got a 5s self-perpetuating reload loop.
+            # Watcher binds once per server boot (rag_engines.py); edits here
+            # need full restart, not `i/hme-admin action=reload`.
             if (
                 is_write
                 and ext == ".py"
