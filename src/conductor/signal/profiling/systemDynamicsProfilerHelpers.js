@@ -175,11 +175,8 @@ moduleLifecycle.declare({
         // deflects >0.05 from neutral, dampen the harmonic component that
         // creates flicker-phase co-movement.
         const flickerDeflection = clamp((m.abs(snap.flickerProduct - 1.0) - 0.05) / 0.10, 0, 1);
-        // R82 E1: Reduce dampening 0.35->0.22. R81 phase axis share dropped
-        // 0.169->0.126 because 35% dampening suppressed too much harmonic
-        // oscillation (the primary source of independent phase motion).
-        // 22% dampening retains anti-correlation benefit while preserving
-        // enough harmonic contribution to keep phase axis share viable.
+        // 22% dampening: balances flicker-phase anti-correlation vs
+        // preserving harmonic contribution to phase axis share.
         const harmonicDampen = 1.0 - flickerDeflection * 0.22;
         const adjHarmonic = 0.20 * harmonicDampen;
         // R83 E1: Redistribute section weight to measure for phase independence.
