@@ -39,26 +39,10 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-// Default-on guard against test-stub global pollution.
-//
-// The 2026-05-01 incident: drum_kit_rotator and rhythm_flair both stub
-// `global.validator` inside their loaders; a missing restore left the
-// stub on globalThis, and metaprofile_next_level's pair_gain_ceiling
-// test then loaded src/index -- which called validator.create(...)
-// .optionalFinite, which the stub didn't carry. Crash. The fix at the
-// time was per-callsite save/restore; this tripwire is the structural
-// guarantee it can't recur.
-//
-// Watching only the small set of keys tests are KNOWN to stub. (Watching
-// every key on globalThis is a non-starter -- src/index legitimately
-// registers ~500 modules as globals during DI bootstrap.)
-//
-// Critically, baseline is captured AFTER loading src/utils so the REAL
-// `validator` binding lands in the snapshot. Subsequent test stubs that
-// replace `validator` and don't restore = tripwire fires. Test stubs
-// that DO restore (back to the same real validator object) = tripwire
-// stays silent. Without this pre-load, validator-real-after looks like
-// a leak vs validator-undef-before.
+// Tripwire against test-stub global pollution. Watches a known stub-prone
+// key list (full globalThis would catch ~500 src/index DI registrations).
+// Baseline captured AFTER src/utils load so real `validator` is in snapshot;
+// stubs that don't restore = fires.
 const _STUB_PRONE_KEYS = [
   'validator',
   'rf',
