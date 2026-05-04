@@ -152,19 +152,9 @@ moduleLifecycle.declare({
     try {
       const sampledSectionProgress = timeStream.normalizedProgress('section');
       if (typeof sampledSectionProgress === 'number' && Number.isFinite(sampledSectionProgress)) {
-        // R67 E1: Compound phase signal. Pure section-progress ramp (0->1)
-        // is monotonically increasing within each section -- a sawtooth with
-        // no oscillatory character. This creates intrinsically low correlation
-        // with oscillating compositional dimensions (density, tension, flicker,
-        // entropy), suppressing phase axis coupling energy to ~0.08 share.
-        //
-        // Enrich with phrase-level nesting: blend section progress (45%) with
-        // phrase progress oscillation (25%), measure progress (15%) for beat-
-        // level variation, and a sinusoidal harmonic (15%).
-        // R71 E2: Added measure-level component (15%) and rebalanced weights
-        // to increase beat-to-beat phase variance. Phase share dropped from
-        // 0.1398 to 0.1014 with the old 60/30/10 split; the measure oscillation
-        // creates faster coupling opportunities with other dimensions.
+        // Compound phase signal: blend section/phrase/measure progress + sine
+        // harmonic (rebalanced for beat-level phase variance and inter-dim
+        // coupling opportunity).
         const sectionPart = sampledSectionProgress;
         let phrasePart = 0;
         {
