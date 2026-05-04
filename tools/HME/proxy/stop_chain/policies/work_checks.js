@@ -356,13 +356,8 @@ module.exports = {
     if (count >= COMPL_MAX) return ctx.allow();
 
     const next = count + 1;
-    // Round-2 skip: if the assistant's response to round 1 was a clean
-    // "nothing missed" / "confirmed nothing remains" no-op, round 2 is
-    // pure context burn -- it provokes another no-op response and adds
-    // zero value. Advance the counter to MAX (spending the budget) and
-    // return allow without firing the deny. Round 1 still fires
-    // unconditionally as the safety check; only the redundant round 2
-    // is suppressed when round 1 was definitively answered.
+    // Round-2 skip if round-1 response was a clean "nothing missed" no-op
+    // (advance counter to MAX, return allow). Round 1 always fires.
     if (next === 2) {
       const lastAssistant = lastAssistantText(transcriptPath);
       if (isNothingMissedResponse(lastAssistant)) {
