@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Shim -- delegates to verify_coherence package (folder).
 
-Original 2842-line file split into tools/HME/scripts/verify_coherence/
+Original file split into tools/HME/scripts/verify_coherence/
 per package structure. This thin wrapper preserves the
 `python3 tools/HME/scripts/verify-coherence.py` invocation path that
 existing callers (main-pipeline.js, chain-snapshot.py, emit-hci-signal.py,
