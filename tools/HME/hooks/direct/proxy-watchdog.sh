@@ -1,24 +1,8 @@
 #!/usr/bin/env bash
-# proxy-watchdog.sh -- SessionStart hook that detects proxy-down and
-# respawns the HME proxy. Idempotent: if the proxy is already alive, no-op.
-#
-# Why this exists:
-#
-# When the HME proxy dies (crash, OOM, manual kill), nothing brings it
-# back. Every subsequent session operates with LIFESAVER / KB briefing /
-# jurisdiction injection silently offline. The fail-LOUD banner in
-# _proxy_bridge.sh tells the user when it's down, but doesn't fix it.
-#
-# This watchdog runs at SessionStart, probes the proxy's /health, and
-# spawns it via the same setsid nohup pattern polychron-launch.sh uses
-# if unreachable. It does NOT start the llama-server or other children --
-# only the proxy itself. Single responsibility.
-#
-# Safety:
-#  - MUST NOT source _safety.sh (set -euo pipefail can kill the watchdog
-#    before it reaches the spawn step)
-#  - MUST exit 0 unconditionally (SessionStart blocking wedges Claude Code)
-#  - MUST consume stdin so the hook caller doesn't block
+# proxy-watchdog.sh: SessionStart hook -- probe proxy /health, respawn via
+# setsid+nohup if unreachable. Idempotent. Single responsibility (proxy only,
+# not children). Constraints: no _safety.sh (set -euo would kill spawn step),
+# always exit 0 (SessionStart block wedges Claude Code), consume stdin.
 
 set +e
 cat >/dev/null 2>&1
