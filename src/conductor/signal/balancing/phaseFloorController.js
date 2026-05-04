@@ -53,30 +53,10 @@ moduleLifecycle.declare({
    */
   function getLowShareThreshold() {
     const fairShare = 1.0 / 6.0;
-    // R17 E1: Raised threshold 0.06->0.12 to match computeBoosts widening.
-    // Ensures the lowShareThreshold formula also responds to moderate
-    // phase deficit, not just extreme collapse.
+    // Adaptive low-share threshold; rises with persistent phase deficit.
+    // Anchored at fairShare*0.85 floor + clamped 0.02..0.16 to avoid
+    // shareEma-decay self-blinding (threshold tracks declining share down).
     const persistentLowSharePressure = clamp((0.12 - phaseFloorControllerShareEma) / 0.12, 0, 1);
-    // R5 E3: Add fair-share-relative floor to prevent adaptive threshold from
-    // decaying below moderate-suppression detection. Without this, shareEma *
-    // 0.45 tracks the declining share downward, creating a self-reinforcing
-    // blind spot: phase drops -> EMA drops -> threshold drops -> controller
-    // never fires -> phase drops further.
-    // R8 E1: Raised anchor from fairShare * 0.65 (0.108) to fairShare * 0.80
-    // (0.133) and upper clamp from 0.12 to 0.14. Phase at 0.132 was in a
-    // blind zone: above the 0.108 threshold but well below fair share (0.167).
-    // The controller never fired, allowing chronic mid-suppression. The new
-    // anchor detects shares below ~80% of fair share; the raised clamp allows
-    // the threshold to reach the necessary level.
-    // R27 E4: Raised anchor from 0.80 to 0.85 (0.1417). Phase slipped from
-    // 0.152 to 0.143 in R26. The 0.133 anchor was too low to trigger support
-    // when phase is in the 0.14-0.15 range. New 0.1417 anchor provides
-    // earlier intervention to prevent phase from drifting below 0.14.
-    // R28 E2: Raised upper clamp from 0.14 to 0.16. Phase continued to
-    // slip to 0.128 despite raised anchor. The 0.14 ceiling prevented the
-    // threshold from reaching the needed level. With clamp at 0.16, the
-    // adaptive formula can output thresholds up to 0.16, firing when
-    // phase shares drop below ~15% of fair share.
     return clamp(
       m.max(getCollapseThreshold() + 0.010, phaseFloorControllerShareEma * 0.45, 0.04 + persistentLowSharePressure * 0.030, fairShare * 0.85),
       0.02, 0.16
