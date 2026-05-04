@@ -71,7 +71,7 @@ Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py);
 | `exhaust_check` | Deferral phrase + bullet list (unconditional) |
 | `scope_escape` | Pre-existing/unrelated label-and-stop |
 | `senior_consult_debt` | Buddy-paradigm edits without `i/consult` |
-| `ignore_and_trample` | Mid-response user message ignored |
+| `trample_gate` (proxy middleware) | Mid-response user message ignored (request-time, not Stop-time) |
 | `phantom_capability` | Declared capability outside the closed enum |
 | `advisor_doctrine` | E2+ commit boundary without consult / solo rationale |
 | `summary_format` | E5 work without `=== SUMMARY ===` block |
