@@ -112,7 +112,7 @@ def _scan_file(path: str, ext: str) -> list:
                 if not top_exempt:
                     findings.append({"line": block_start, "block_len": block_len})
                 seen_first_block = True
-            if s and not _is_comment_line(s, ext):
+            if s and not _is_comment_line(s, ext) and not s.startswith("#!"):
                 seen_non_blank_non_comment = True
             block_start = None
             block_len = 0
