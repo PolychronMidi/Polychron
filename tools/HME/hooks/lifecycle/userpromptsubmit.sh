@@ -160,18 +160,18 @@ ${NEW_ERRORS}"
     # allow-with-context so the LIFESAVER is surfaced without blocking
     # what may be a harmless continuation prompt.
     export BLOCK="false"
-    if [ -f "$PROJECT/tmp/hme-supervisor-abandoned" ]; then
+    if [ -f "$PROJECT/runtime/hme/supervisor-abandoned" ]; then
       # Cross-check: if the named child is healthy NOW, sentinel is stale.
       # Unlink it and proceed without blocking.
       _sent_child=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('child',''))" \
-        "$PROJECT/tmp/hme-supervisor-abandoned" 2>/dev/null)
+        "$PROJECT/runtime/hme/supervisor-abandoned" 2>/dev/null)
       _healthy=0
       case "$_sent_child" in
         worker) curl -s -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:9098/health 2>/dev/null | grep -q '^200$' && _healthy=1 ;;
         llamacpp_daemon) curl -s -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:7735/health 2>/dev/null | grep -q '^200$' && _healthy=1 ;;
       esac
       if [ "$_healthy" = "1" ]; then
-        rm -f "$PROJECT/tmp/hme-supervisor-abandoned" 2>/dev/null
+        rm -f "$PROJECT/runtime/hme/supervisor-abandoned" 2>/dev/null
       else
         export BLOCK="true"
       fi
