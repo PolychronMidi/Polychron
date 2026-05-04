@@ -1,23 +1,8 @@
-// playMotifs.js - Motif-driven note selection and transformation
-// Handles multi-level bucket retrieval (beat/div/subdiv/subsubdiv), cycle tracking,
-// transformations, sibling voice enforcement, and voice coordination
-//
-// CANDIDATE GENERATION FLOW:
-// 1. Resolve target bucket from the appropriate unit-level motif array
-// 2. Extract note from bucket entry (pre-generated at planning time)
-// 3. Validate MIDI range and clamp if needed
-// 4. Expand pool via candidateExpansion.expandScaleAware if < 3 candidates (scale-aware neighbors)
-// 5. Filter to current composer's pitch classes (prevents stale notes from previous composer)
-// 6. Enforce sibling voice limits (constrain candidates to established sibling PCs when full)
-// 7. Optional: filter via harmonicContext.isNoteInScale (only if it preserves composer PCs)
-// 8. Delegate selection to VoiceManager.pickNotesForBeat with:
-//    - voiceCount from VOICES config
-//    - composer.getVoicingIntent() for candidate weights
-//    - VoiceLeadingScore for smooth motion
-//    - phraseContext for arc-driven biases
-// 9. Validate all picks belong to composer's pitch-class set (fail-fast if VoiceManager error)
-// 10. Register picked PCs in sibling voice tracking
-// 11. Track cycle completion and apply motifTransforms after each full cycle
+// playMotifs: motif-driven note selection across beat/div/subdiv/subsubdiv buckets.
+// Flow: resolve bucket -> extract note -> clamp MIDI -> expand pool (scale-aware
+// if <3) -> filter to composer PCs -> sibling-voice enforcement ->
+// VoiceManager.pickNotesForBeat (VOICES, voicingIntent, VoiceLeadingScore,
+// phraseContext) -> validate PCs -> register siblings -> apply transforms each cycle.
 
 const playMotifsV = validator.create('playMotifs');
 const playMotifsRuntimeVoiceOptionsCache = new WeakMap();
