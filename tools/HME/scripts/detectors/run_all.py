@@ -22,6 +22,8 @@ Exit 0 always (never crash the stop hook).
 from __future__ import annotations
 
 import io
+import json
+import os
 import sys
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -29,54 +31,29 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 
-# List of (verdict-name, module-name) pairs. The module must have a
-# main() that reads sys.argv[1] as the transcript path and prints a
-# single verdict line to stdout.
-DETECTORS = [
-    ("poll_count", "poll_count"),
-    ("idle_after_bg", "idle_after_bg"),
-    ("psycho_stop", "psycho_stop"),
-    ("ack_skip", "ack_skip"),
-    ("abandon_check", "abandon_check"),
-    ("stop_work", "stop_work"),
-    ("fabrication_check", "fabrication_check"),
-    ("early_stop", "early_stop"),
-    ("exhaust_check", "exhaust_check"),
-    ("scope_escape", "scope_escape"),
-    ("senior_consult_debt", "senior_consult_debt"),
-    ("ignore_and_trample", "ignore_and_trample"),
-    # PAI-import detectors (added in PAI-integration sweep). Both gate at
-    # tier >= E2 internally -- at MINIMAL/NATIVE/E1 they short-circuit to
-    # "ok" so they're cheap when the prompt doesn't warrant scrutiny.
-    ("phantom_capability", "phantom_capability"),
-    ("advisor_doctrine", "advisor_doctrine"),
-    # PAI-import #9: stop-the-line mandatory output format. Gates at
-    # tier >= E3 internally; lighter turns short-circuit to "ok".
-    ("summary_format", "summary_format"),
-    # PAI-import #2: Live-Probe enforcement. ISA edits this turn that
-    # leave [x] ISCs without Verification entries are blocked.
-    ("live_probe", "live_probe"),
-    # PAI-import #3: Algorithm 7-phase tracking. E3+ edits without a
-    # declared BUILD/EXECUTE phase marker are blocked.
-    ("phase_gate", "phase_gate"),
-    # Meta: catches the pile-on antipattern (rule-stacking on detector
-    # / policy / hook files within a single turn). Replaces the deleted
-    # ceremony_dodge -- ceremony_dodge WAS pile-on (more regex tweaking
-    # to catch text-shaped dodges); pile_on catches the meta-pattern
-    # of rule-stacking directly.
-    ("pile_on", "pile_on"),
-    # Imported from polychron-references/superpowers-main:
-    # verification-before-completion's Iron Law -- success-vocabulary
-    # without same-turn evidence-producing tool call.
-    ("claim_without_evidence", "claim_without_evidence"),
-    # Imported from polychron-references/superpowers-main:
-    # systematic-debugging Phase Gate -- bug-report user prompt
-    # followed by Edit/Write without prior investigation-shape probe.
-    ("fix_without_investigation", "fix_without_investigation"),
-    # CLAUDE.md: "Inline comments single-line and terse." Catches
-    # 4+ line contiguous comment runs in this turn's Edit/Write calls.
-    ("comment_bloat", "comment_bloat"),
-]
+# Load detector list from registry.json (single source of truth).
+# Dedup by bash_var: registry has multiple entries per detector module
+# (one per fires_when verdict), but run_all.py only needs to invoke each
+# python module once per turn -- the module prints whichever verdict applies.
+def _load_detectors():
+    with open(os.path.join(os.path.dirname(__file__), "registry.json")) as f:
+        reg = json.load(f)
+    seen_bash_vars = set()
+    out = []
+    for d in reg["detectors"]:
+        bv = d["bash_var"]
+        if bv in seen_bash_vars:
+            continue
+        seen_bash_vars.add(bv)
+        # Use the bash_var lowercased as the verdict-line key so detectors.sh
+        # parses with `case "$_k" in <var_lower>) BV="$_v" ;;`. For poll_count
+        # / idle_after_bg this is the same as the python module name.
+        verdict_key = bv.lower()
+        out.append((verdict_key, d["module"]))
+    return out
+
+
+DETECTORS = _load_detectors()
 
 
 def _run_detector(name: str, module_name: str, transcript: str) -> str:
