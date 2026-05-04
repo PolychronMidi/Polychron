@@ -61,14 +61,14 @@ def _parse_inventory_files() -> set[str]:
         if len(cols) < 5:
             continue
         first = cols[0]
-        # Strip ALL backticks AND brace-expand commas inside backticks.
+        # Brace-expand BEFORE comma-splitting so `foo.{a,b,c}` doesn't get
+        # broken at the inner commas.
         for tok in re.findall(r"`([^`]+)`", first):
-            for part in tok.split(","):
-                part = part.strip()
-                if not part:
-                    continue
-                for f in _expand_braces(part):
-                    files.add(f)
+            for expanded in _expand_braces(tok):
+                for part in expanded.split(","):
+                    p = part.strip()
+                    if p:
+                        files.add(p)
     return files
 
 
