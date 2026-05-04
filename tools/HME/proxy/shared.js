@@ -87,4 +87,4 @@ function mtimeCache({ ttlMs = 0 } = {}) {
   };
 }
 
-module.exports = { emit, shortHash, sessionKey, PROJECT_ROOT, EMIT_PY, mtimeCache };
+module.exports = { emit, shortHash, sessionKey, PROJECT_ROOT, EMIT_PY, RUNTIME_DIR, mtimeCache };
