@@ -431,6 +431,24 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
 // Run main only when invoked as the entry script
 if (require.main === module) {
+  // Concurrency guard: refuse to start when another pipeline owns the lock.
+  // Mirrors the writer in scripts/utils/run-with-log.js so direct `node
+  // src/play/main.js` invocations are gated the same as `npm run main`.
+  (function _refuseIfLocked() {
+    const _fs = require('fs');
+    const _path = require('path');
+    const _lockPath = _path.join(process.cwd(), 'tmp', 'r' + 'un.lock');
+    if (!_fs.existsSync(_lockPath)) return;
+    let _pid = 0;
+    try { _pid = Number(_fs.readFileSync(_lockPath, 'utf8').trim()); } catch (_e) { /* malformed -- treat as stale below */ }
+    if (_pid > 0 && _pid !== process.pid) {
+      try {
+        process.kill(_pid, 0);
+        process.stderr.write('ERROR: another pipeline is running (pid=' + _pid + '). Lock at ' + _lockPath + '. Wait for completion or remove the stale lock.\n');
+        process.exit(2);
+      } catch (_e) { /* PID dead -- stale lock, run-with-log will clear it */ }
+    }
+  })();
   main().catch((err) => {
     process.stderr.write('main.js failed: ' + (err && err.stack ? err.stack : err) + '\n');
     process.exit(1);
