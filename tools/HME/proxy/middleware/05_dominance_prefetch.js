@@ -142,8 +142,4 @@ module.exports = {
     }
     ctx.emit({ event: 'dominance_prefetch_fired', targets: triggers.map((t) => t.key).join('|') });
   },
-
-  // Exposed for cache hits from sibling middleware / test harness.
-  _cacheGet,
-  _cacheSet,
 };
