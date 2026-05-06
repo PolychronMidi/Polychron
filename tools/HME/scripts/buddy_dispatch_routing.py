@@ -109,22 +109,16 @@ def _list_buddies() -> list[dict]:
 
 
 def _effective_tier(item_tier: str, buddy_floor: str) -> str:
-    """Apply `effective = max(item_tier, buddy_floor)` rule (model axis).
-    Higher ordinal wins (more capable model)."""
-    item_n = TIER_ORDER.get(item_tier, 1)
-    floor_n = TIER_ORDER.get(buddy_floor, 1)
+    """`effective = max(item_tier, buddy_floor)` (model axis). Legacy values translate."""
+    item_n = TIER_ORDER.get(_translate_legacy_tier(item_tier), 2)
+    floor_n = TIER_ORDER.get(_translate_legacy_tier(buddy_floor), 2)
     return TIER_NAMES[max(item_n, floor_n)]
 
 
 def _effective_effort(item_tier: str, effort_floor: str) -> str:
-    """Apply `effective = max(item_effort, buddy_effort_floor)` rule
-    (effort axis, parallel to model axis). Item tier is mapped to its
-    canonical effort level (easy->low, medium->medium, hard->high) and
-    then escalated against the buddy's effort floor. Skill-set Phase
-    19 keeps these axes independent so a buddy declared with
-    `model-floor: medium` + `effort-floor: high` runs Sonnet at high
-    effort even on easy-tier items (intentional -- quality over speed)."""
-    item_effort = TIER_TO_EFFORT.get(item_tier, "medium")
+    """`effective = max(item_effort, buddy_effort_floor)` (effort axis, parallel to model).
+    Tier maps to canonical effort via TIER_TO_EFFORT; effort_floor escalates."""
+    item_effort = TIER_TO_EFFORT.get(_translate_legacy_tier(item_tier), "medium")
     item_n = EFFORT_ORDER.get(item_effort, 1)
     floor_n = EFFORT_ORDER.get(effort_floor, 1)
     return EFFORT_NAMES[max(item_n, floor_n)]
