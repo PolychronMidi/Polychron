@@ -141,9 +141,7 @@ def _pick_buddy_for_task(task: dict, buddies: list[dict], busy: set[int]) -> dic
     Strategy among real buddies: prefer floor == item_tier (no
     escalation), else lowest floor that's free (cheapest option that
     doesn't downgrade)."""
-    item_tier = task.get("tier", "medium")
-    if item_tier not in TIER_NAMES:
-        item_tier = "medium"
+    item_tier = _translate_legacy_tier(task.get("tier") or "E3")
     item_n = TIER_ORDER[item_tier]
     free = [b for b in buddies if b["slot"] not in busy]
     if not free:
