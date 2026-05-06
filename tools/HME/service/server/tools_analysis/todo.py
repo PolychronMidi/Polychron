@@ -214,7 +214,7 @@ def _format_todos(todos: list) -> str:
         return (
             "No todos.\n\n"
             "Available actions:\n"
-            "  i/todo action=add text=\"...\" [tier=easy|medium|hard] [critical=true]\n"
+            "  i/todo action=add text=\"...\" [tier=E1|E2|E3|E4|E5] [critical=true]\n"
             "  i/todo action=list                       -- list all\n"
             "  i/todo action=critical                   -- list open critical only\n"
             "  i/todo action=done todo_id=N             -- mark #N done\n"
