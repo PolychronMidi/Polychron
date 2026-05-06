@@ -97,10 +97,7 @@ def _split_meta(raw: list) -> tuple[dict, list]:
 
 def _load_todos() -> tuple[dict, list]:
     meta, todos = _split_meta(_load_raw())
-    # Backfill + normalize `tier` for legacy entries. Pure in-memory: the
-    # next save (any mutating action) persists the normalized values. Legacy
-    # easy/medium/hard translate via _normalize_tier (one-way). Default for
-    # missing field: E3 (was "medium"). Plan: tier vocabulary unification.
+    # In-memory normalize: legacy easy/medium/hard -> E1-E5 via _normalize_tier.
     for t in todos:
         if isinstance(t, dict):
             t["tier"] = _normalize_tier(t.get("tier"))
