@@ -72,22 +72,28 @@ QUEUE_FAILED = QUEUE_ROOT / "failed"
 FANOUT_ROOT = PROJECT_ROOT / "tmp" / "hme-buddy-fanout"
 ERROR_LOG = PROJECT_ROOT / "log" / "hme-errors.log"
 
-# Floor-based escalation: these strings map to ordinal levels for the
-# `effective = max(item_tier, buddy_floor)` rule. Higher ordinal = more
-# capable model + more effort. Compared per axis (model and effort
-# resolved independently -- see doc/templates/SPEC.md "Difficulty labels").
-TIER_ORDER = {"easy": 0, "medium": 1, "hard": 2}
-TIER_NAMES = ("easy", "medium", "hard")
+# Floor-based escalation -- E1..E5 ordinal scale; max-rule for dispatch.
+# See doc/BUDDY_SYSTEM.md tier section. Legacy easy/medium/hard translate.
+TIER_ORDER = {"E1": 0, "E2": 1, "E3": 2, "E4": 3, "E5": 4}
+TIER_NAMES = ("E1", "E2", "E3", "E4", "E5")
+_LEGACY_TIER_MAP = {"easy": "E2", "medium": "E3", "hard": "E4"}
 
-# Effort axis is parallel and independent (skill-set Phase 19 model+
-# effort routing). Each tier maps to an effort level that the buddy's
-# effort_floor governs. By keeping it parallel, a hard-effort task on
-# a low-effort-floor buddy still bumps the effort to hard -- same shape
-# as model-floor escalation. When `effort-floor` is not declared in
-# the buddy config, defaults to the same value as the model floor.
+
+def _translate_legacy_tier(tier: str) -> str:
+    """Coerce legacy easy/medium/hard or unknown values to E1..E5. Unknown -> E3."""
+    if not tier:
+        return "E3"
+    t = str(tier).strip()
+    if t.upper() in TIER_NAMES:
+        return t.upper()
+    return _LEGACY_TIER_MAP.get(t.lower(), "E3")
+
+
+# Effort axis stays low/medium/high (Anthropic native subagent effort levels).
 EFFORT_ORDER = {"low": 0, "medium": 1, "high": 2}
 EFFORT_NAMES = ("low", "medium", "high")
-TIER_TO_EFFORT = {"easy": "low", "medium": "medium", "hard": "high"}
+# E1-E2 -> low (cheap); E3 -> medium; E4-E5 -> high.
+TIER_TO_EFFORT = {"E1": "low", "E2": "low", "E3": "medium", "E4": "high", "E5": "high"}
 
 # Sentinel emitted by buddies when idle. The dispatcher reads stdout
 # until this line appears OR a hard timeout fires.
