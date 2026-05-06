@@ -61,12 +61,13 @@ if _policy_enabled block-secret-content-pattern && echo "$CONTENT" | grep -qE '(
   exit 2
 fi
 
-# Block 5+ line consecutive inline-comment block at write time.
+# Block at COMMENT_BLOAT_WARN+ consecutive comment lines at write time. Default 3.
 if _policy_enabled block-comment-bloat; then
-  _BLOAT_HIT=$(FILE="$FILE" CONTENT="$CONTENT" _safe_py3 "
+  _BLOAT_HIT=$(FILE="$FILE" CONTENT="$CONTENT" THRESHOLD="${COMMENT_BLOAT_WARN:-3}" _safe_py3 "
 import os
 fp = os.environ.get('FILE', '').lower()
 content = os.environ.get('CONTENT', '')
+threshold = int(os.environ.get('THRESHOLD', '3'))
 prefixes = ('//',) if fp.endswith(('.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs')) else ('#',) if fp.endswith(('.py', '.sh', '.bash', '.yaml', '.yml', '.toml')) else ()
 if not prefixes: raise SystemExit
 ANNOTATIONS = ('# rationale:', '# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// rationale:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa')
@@ -75,7 +76,7 @@ for ln in content.split('\n'):
     s = ln.lstrip()
     if any(s.startswith(p) for p in prefixes) and not s.startswith('#!') and not any(s.startswith(a) for a in ANNOTATIONS):
         run += 1
-        if run >= 5: print(run); break
+        if run >= threshold: print(run); break
     else: run = 0
 " "")
   if [ -n "$_BLOAT_HIT" ]; then
