@@ -100,10 +100,10 @@ if [ "$BUDDY_HANDOFF" = "1" ]; then
     _PRIMARY_SID=$(head -1 "$_PRIMARY_FILE" | tr -d '[:space:]')
     if [ -n "$_PRIMARY_SID" ]; then
       printf '%s\n' "$_PRIMARY_SID" > "$_REPO_ROOT/runtime/hme/buddy.sid"
-      _PRIMARY_FLOOR="easy"
+      _PRIMARY_FLOOR="E2"
       _PRIMARY_EFFORT="low"
       [ -f "${_PRIMARY_FILE%.sid}.floor" ] && \
-        _PRIMARY_FLOOR=$(head -1 "${_PRIMARY_FILE%.sid}.floor" | tr -d '[:space:]')
+        _PRIMARY_FLOOR=$(_translate_floor "$(head -1 "${_PRIMARY_FILE%.sid}.floor" | tr -d '[:space:]')")
       [ -f "${_PRIMARY_FILE%.sid}.effort_floor" ] && \
         _PRIMARY_EFFORT=$(head -1 "${_PRIMARY_FILE%.sid}.effort_floor" | tr -d '[:space:]')
       printf '%s\n' "$_PRIMARY_FLOOR" > "$_REPO_ROOT/tmp/hme-buddy.floor"
