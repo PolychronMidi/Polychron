@@ -422,13 +422,13 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
 
     chain_override: optional explicit (model_id, ...) tuple -- overrides the
     .env-resolved chain. Used by OVERDRIVE_MODE=2 (tier-aware routing) to
-    pin specific models per task tier (e.g. Sonnet-only for tier=medium).
+    pin specific models per task tier (e.g. Sonnet-only for tier=E3).
     Source labels are auto-generated via _label_for_model.
 
     allow_subagent: when False, force direct API even if OVERDRIVE_VIA_SUBAGENT=1.
     Used by OVERDRIVE_MODE=2 to pin model selection per tier -- subagent
     dispatch runs at whatever /model is set, so it can't honor a Sonnet-
-    specific chain. Hard-tier (Opus chain) keeps subagent compatibility.
+    specific chain. E4-E5 (Opus chain) keeps subagent compatibility.
 
     Returns (text, source_label) on success where source_label is e.g.
     'overdrive/opus' or 'overdrive/sonnet'. Returns None when every model in
