@@ -128,17 +128,26 @@ def _allocate_id(meta: dict) -> int:
     return meta["max_id"]
 
 
-_VALID_TIERS = ("easy", "medium", "hard")
+_VALID_TIERS = ("E1", "E2", "E3", "E4", "E5")
+# Legacy 3-level vocabulary (easy/medium/hard) translates on read. Translation
+# is one-way and permanent: the dispatch path uses E1-E5; legacy values
+# encountered in todos.json or SPEC.md auto-coerce. See plan
+# /home/jah/.claude/plans/mutable-baking-newt.md.
+_LEGACY_TIER_MAP = {"easy": "E2", "medium": "E3", "hard": "E4"}
 
 
 def _normalize_tier(tier: str) -> str:
-    """Coerce a tier value to one of {easy, medium, hard}. Defaults to
-    'medium' for unknown / empty / legacy entries -- matches SPEC.md's
-    'graceful degradation' rule for unlabeled items."""
-    t = (tier or "").strip().lower()
-    if t in _VALID_TIERS:
-        return t
-    return "medium"
+    """Coerce a tier value to one of E1..E5. Accepts legacy easy/medium/hard
+    and translates (easy->E2, medium->E3, hard->E4). Unknown / empty -> E3
+    (the canonical 'graceful degradation' default for unlabeled items)."""
+    t = (tier or "").strip()
+    upper = t.upper()
+    if upper in _VALID_TIERS:
+        return upper
+    legacy = _LEGACY_TIER_MAP.get(t.lower())
+    if legacy:
+        return legacy
+    return "E3"
 
 
 def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
