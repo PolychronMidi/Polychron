@@ -340,16 +340,14 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         logger.info("reasoning: HME_REASONING_OFFLINE=1 -- skipping external cascade")
         return None
 
-    # OVERDRIVE_MODE routing (consumes Max-session quota via proxy OAuth
-    # injection or subagent bridge; never raw api.anthropic.com):
-    #   1 = Opus->Sonnet chain regardless of tier
-    #   2 = tier-aware: hard=Opus chain / medium=Sonnet-only / easy=free cascade
-    #   0 = no-op; free cascade only
-    # Any overdrive failure falls through to the free cascade.
+    # OVERDRIVE_MODE routing -- 1=Opus chain always; 2=tier-aware (E4-E5=Opus, E3=Sonnet, E1-E2=cascade); 0=cascade only.
     _od_mode = _ENV.optional("OVERDRIVE_MODE", "0")
-    _normalized_tier = (tier or "medium").lower()
-    if _normalized_tier not in ("easy", "medium", "hard"):
-        _normalized_tier = "medium"
+    _LEGACY_TIER = {"easy": "E2", "medium": "E3", "hard": "E4"}
+    _raw_tier = (tier or "E3").strip()
+    if _raw_tier.upper() in ("E1", "E2", "E3", "E4", "E5"):
+        _normalized_tier = _raw_tier.upper()
+    else:
+        _normalized_tier = _LEGACY_TIER.get(_raw_tier.lower(), "E3")
     if _od_mode == "1":
         _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
         if _overdrive_result:
@@ -357,17 +355,16 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
             _last_source = _source
             return _text
     elif _od_mode == "2":
-        if _normalized_tier == "hard":
+        if _normalized_tier in ("E4", "E5"):
             _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
-        elif _normalized_tier == "medium":
-            # Pin Sonnet -- force direct API since subagent dispatch
-            # can't honor a model-specific chain (it runs at /model).
+        elif _normalized_tier == "E3":
+            # Pin Sonnet -- force direct API; subagent dispatch can't honor a model-specific chain.
             _overdrive_result = _call_opus_overdrive(
                 prompt, system, max_tokens,
                 chain_override=("claude-sonnet-4-6",),
                 allow_subagent=False,
             )
-        else:  # easy
+        else:  # E1, E2
             _overdrive_result = None  # skip overdrive -> cascade handles it
         if _overdrive_result:
             _text, _source = _overdrive_result
