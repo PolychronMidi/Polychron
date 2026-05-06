@@ -17,6 +17,7 @@ from buddy_dispatcher import (  # noqa: E402
     PROJECT_ROOT, QUEUE_PROCESSING,
     TIER_ORDER, TIER_NAMES, EFFORT_ORDER, EFFORT_NAMES, TIER_TO_EFFORT,
     _BUDDY_SYSTEM_FLAG, _DISPATCH_MODE, _SYNTHESIS_TIERS,
+    _translate_legacy_tier,
 )
 
 
