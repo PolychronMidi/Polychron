@@ -196,8 +196,7 @@ def _parse_tier_set(raw: str) -> set:
     return out
 
 _SYNTHESIS_TIERS = _parse_tier_set(os.environ.get("HME_DISPATCH_SYNTHESIS_TIERS", ""))
-# When HME_DISPATCH_MODE=synthesis is set explicitly, treat it as
-# "all tiers go to synthesis" -- equivalent to TIERS=easy,medium,hard.
+# HME_DISPATCH_MODE=synthesis explicit: all tiers route through synthesis (E1..E5).
 if _DISPATCH_MODE == "synthesis":
     _SYNTHESIS_TIERS = set(TIER_NAMES)
 
