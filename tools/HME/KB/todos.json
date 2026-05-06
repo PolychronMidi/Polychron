@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1263,
-      "updated_ts": 1778096147.655026
+      "max_id": 1273,
+      "updated_ts": 1778096825.1069787
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 1236,
     "text": "Step 2: Migrate buddy_dispatcher.py constants (TIER_ORDER, TIER_NAMES, TIER_TO_EFFORT) to E1-E5",
     "activeForm": "Migrating dispatcher constants",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 1237,
     "text": "Step 3: Migrate buddy_dispatch_routing/lifecycle/status to E1-E5 reads with legacy translation",
     "activeForm": "Migrating dispatch routing",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 1238,
     "text": "Step 4: Update buddy_init.sh to write E1-E5 floors and translate legacy BUDDY_MODEL_FLOORS env",
     "activeForm": "Updating buddy_init.sh",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
