@@ -53,15 +53,13 @@ def _list_buddies() -> list[dict]:
     buddies = []
     tmp = PROJECT_ROOT / "tmp"
     def _read_floor_pair(sid_file: Path):
-        """Read companion .floor and .effort_floor files. effort_floor
-        defaults to the canonical effort level for the model floor when
-        absent (e.g. model-floor=easy -> effort-floor=low). Missing/
-        invalid files default to easy/low so the buddy stays dynamic
-        rather than being silently escalated."""
+        """Read companion .floor and .effort_floor files; legacy easy/medium/hard
+        translate (easy->E2, medium->E3, hard->E4). Missing files default to
+        E2/low (dynamic buddy)."""
         floor_file = sid_file.with_suffix(".floor")
         effort_file = sid_file.with_suffix(".effort_floor")
-        m_floor = floor_file.read_text().strip() if floor_file.exists() else "easy"
-        m_floor = m_floor if m_floor in TIER_NAMES else "easy"
+        raw_floor = floor_file.read_text().strip() if floor_file.exists() else "E2"
+        m_floor = _translate_legacy_tier(raw_floor)
         if effort_file.exists():
             e_floor = effort_file.read_text().strip()
             if e_floor not in EFFORT_NAMES:
