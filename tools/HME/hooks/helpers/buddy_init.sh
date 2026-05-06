@@ -85,7 +85,7 @@ if [ "$BUDDY_HANDOFF" = "1" ]; then
   # ONE primary at a time -- force count=1 so fall-through spawns one inaugural.
   if [ "$BUDDY_COUNT" -gt 1 ]; then
     BUDDY_COUNT=1
-    _FLOORS=("${_FLOORS[0]:-easy}")
+    _FLOORS=("${_FLOORS[0]:-E2}")
   fi
   # Auto-retire if primary crosses BUDDY_RETIRE_PCT before HANDOFF inherits.
   # Path resolved relative to THIS file (sandboxed-test compatible).
