@@ -97,17 +97,16 @@ def _split_meta(raw: list) -> tuple[dict, list]:
 
 def _load_todos() -> tuple[dict, list]:
     meta, todos = _split_meta(_load_raw())
-    # Backfill `tier` for legacy entries that predate the field. Pure
-    # in-memory normalization -- does not write back to disk on its own;
-    # the next save (any mutating action) persists the backfilled values.
-    # Default tier="medium" matches SPEC.md's graceful-degradation rule.
+    # Backfill + normalize `tier` for legacy entries. Pure in-memory: the
+    # next save (any mutating action) persists the normalized values. Legacy
+    # easy/medium/hard translate via _normalize_tier (one-way). Default for
+    # missing field: E3 (was "medium"). Plan: tier vocabulary unification.
     for t in todos:
         if isinstance(t, dict):
-            if "tier" not in t:
-                t["tier"] = "medium"
+            t["tier"] = _normalize_tier(t.get("tier"))
             for s in t.get("subs", []):
-                if isinstance(s, dict) and "tier" not in s:
-                    s["tier"] = "medium"
+                if isinstance(s, dict):
+                    s["tier"] = _normalize_tier(s.get("tier"))
     return meta, todos
 
 
