@@ -52,8 +52,8 @@ _DEFAULT_ROOTS = [
 _SKIP_DIRS = {"node_modules", ".git", "__pycache__", ".venv", "venv", "output"}
 _EXTS = {".py", ".sh", ".js", ".ts"}
 
-WARN_LINES = 3
-FAIL_LINES = 5
+WARN_LINES = int(os.environ.get("COMMENT_BLOAT_WARN", "3"))
+FAIL_LINES = int(os.environ.get("COMMENT_BLOAT_FAIL", "5"))
 # File-top header exemption: every file gets ONE comment block at the
 # top of the file (after any shebang) up to TOP_EXEMPT_MAX lines that
 # does NOT count toward warn/fail thresholds. Header docs are legitimate.
