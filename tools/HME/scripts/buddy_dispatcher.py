@@ -33,7 +33,7 @@ Task file shape (JSON):
 Usage:
   buddy_dispatcher.py drain      # drain queue once, exit when empty
   buddy_dispatcher.py drain --loop  # keep running, sleep between drains
-  buddy_dispatcher.py enqueue --tier=medium --text="..." --source=manual
+  buddy_dispatcher.py enqueue --tier=E3 --text="..." --source=manual
 
 The dispatcher is invoked from posttooluse hooks / NEXUS / overdrive when
 they need work farmed out. Single-process; multiple producers can drop
