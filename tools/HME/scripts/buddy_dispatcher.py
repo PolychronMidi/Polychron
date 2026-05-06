@@ -23,7 +23,7 @@ Architecture (from doc/templates/SPEC.md Phase 1):
 Task file shape (JSON):
   {
     "id": str,                 # unique task id (caller-assigned)
-    "tier": "easy"|"medium"|"hard",
+    "tier": "E1"|"E2"|"E3"|"E4"|"E5",  # legacy easy/medium/hard accepted, translated
     "text": str,               # task description
     "source": str,             # who queued it (e.g. "i/todo", "auto_review")
     "ts": float,               # epoch seconds when queued
