@@ -317,7 +317,7 @@ from .todo_spec_bridge import (  # noqa: F401, E402
 def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
              parent_id: int = 0, critical: bool = False, on_done: str = "",
              status: str = "pending", fmt: str = "text",
-             tier: str = "medium") -> str:
+             tier: str = "E3") -> str:
     """Hierarchical todo list (HME extension to native TodoWrite).
 
     Use this when you need features the native TodoWrite lacks: sub-todos with
