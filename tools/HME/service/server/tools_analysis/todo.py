@@ -152,14 +152,15 @@ def _normalize_tier(tier: str) -> str:
 def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
                       active_form: str = "", critical: bool = False,
                       source: str = "hme_todo", on_done: str = "",
-                      parent_id: int = 0, tier: str = "medium") -> dict:
+                      parent_id: int = 0, tier: str = "E3") -> dict:
     """Canonical entry constructor -- every producer goes through this to ensure
     schema stability across LIFESAVER, native mirror, hme_todo, and onboarding.
 
-    `tier` is one of {easy, medium, hard} (SPEC.md "Difficulty labels").
-    Routes the item to the appropriate co-buddy via the
-    `effective = max(item_tier, buddy_floor)` rule. Defaults to 'medium'
-    so legacy/unlabeled items still dispatch sensibly.
+    `tier` is one of E1..E5 (canonical) or legacy easy/medium/hard (translated
+    on read via _normalize_tier: easy->E2, medium->E3, hard->E4). Routes the
+    item to the appropriate co-buddy via the `effective = max(item_tier,
+    buddy_floor)` rule. Defaults to E3 so legacy/unlabeled items still
+    dispatch sensibly.
     """
     # Single-writer invariant: only tools_analysis.todo may write the store.
     try:
