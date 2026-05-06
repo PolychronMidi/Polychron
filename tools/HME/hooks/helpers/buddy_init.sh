@@ -44,27 +44,36 @@ case "$BUDDY_COUNT" in
     ;;
 esac
 
-# Per-buddy model floors (csv, length=BUDDY_COUNT). floor = min tier
-# (effective = max(item_tier, floor)). easy=fully dynamic, hard=Opus always.
-# `auto`: count<3 -> all easy; count>=3 -> [easy,medium,hard,...,easy].
-# Explicit list honored as-is, padded with easy.
+# Per-buddy model floors (csv, length=BUDDY_COUNT). E1-E5 scale; legacy easy/medium/hard translate.
+# `auto`: count<3 -> all E2; count>=3 -> [E2,E3,E4,...,E2]. Explicit list honored, padded with E2.
 if [ -z "${BUDDY_MODEL_FLOORS:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
-  # `|| true` so pipefail doesn't abort when the .env lacks BUDDY_MODEL_FLOORS=.
   _envline=$(grep -E '^BUDDY_MODEL_FLOORS=' "$_REPO_ROOT/.env" 2>/dev/null | head -1 || true)
   [ -n "$_envline" ] && BUDDY_MODEL_FLOORS="${_envline#BUDDY_MODEL_FLOORS=}"
 fi
 BUDDY_MODEL_FLOORS="${BUDDY_MODEL_FLOORS:-auto}"
+# Translate legacy values (easy/medium/hard -> E2/E3/E4) for backward compat.
+_translate_floor() {
+  case "$1" in
+    easy) echo "E2" ;;
+    medium) echo "E3" ;;
+    hard) echo "E4" ;;
+    E1|E2|E3|E4|E5) echo "$1" ;;
+    *) echo "E2" ;;
+  esac
+}
 if [ "$BUDDY_MODEL_FLOORS" = "auto" ]; then
   if [ "$BUDDY_COUNT" -lt 3 ]; then
     _FLOORS=()
-    for i in $(seq 1 "$BUDDY_COUNT"); do _FLOORS+=("easy"); done
+    for i in $(seq 1 "$BUDDY_COUNT"); do _FLOORS+=("E2"); done
   else
-    _FLOORS=(easy medium hard)
-    while [ "${#_FLOORS[@]}" -lt "$BUDDY_COUNT" ]; do _FLOORS+=("easy"); done
+    _FLOORS=(E2 E3 E4)
+    while [ "${#_FLOORS[@]}" -lt "$BUDDY_COUNT" ]; do _FLOORS+=("E2"); done
   fi
 else
-  IFS=',' read -ra _FLOORS <<< "$BUDDY_MODEL_FLOORS"
-  while [ "${#_FLOORS[@]}" -lt "$BUDDY_COUNT" ]; do _FLOORS+=("easy"); done
+  IFS=',' read -ra _RAW_FLOORS <<< "$BUDDY_MODEL_FLOORS"
+  _FLOORS=()
+  for f in "${_RAW_FLOORS[@]}"; do _FLOORS+=("$(_translate_floor "$f")"); done
+  while [ "${#_FLOORS[@]}" -lt "$BUDDY_COUNT" ]; do _FLOORS+=("E2"); done
 fi
 
 mkdir -p "$_REPO_ROOT/tmp"
