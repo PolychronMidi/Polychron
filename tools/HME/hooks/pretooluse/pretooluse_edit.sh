@@ -88,14 +88,14 @@ if [ -n "${PROJECT_ROOT:-}" ] \
   exit 2
 fi
 
-# Block 3+ line consecutive inline-comment block in new_string (CLAUDE.md
-# "single-line and terse"). Existing 3-4 line warns at Stop stay warns; this
-# blocks new bloat at write time. Stop-level FAIL is still 5+ via comment_bloat.py.
+# Block at COMMENT_BLOAT_WARN+ consecutive comment lines in new_string. Default 3.
+# Pre-save reject; existing in-tree blocks remain Stop-level warns.
 if _policy_enabled block-comment-bloat; then
-  _BLOAT_HIT=$(FILE="$FILE" NEW_STRING="$NEW_STRING" _safe_py3 "
+  _BLOAT_HIT=$(FILE="$FILE" NEW_STRING="$NEW_STRING" THRESHOLD="${COMMENT_BLOAT_WARN:-3}" _safe_py3 "
 import os
 fp = os.environ.get('FILE', '').lower()
 content = os.environ.get('NEW_STRING', '')
+threshold = int(os.environ.get('THRESHOLD', '3'))
 prefixes = ('//',) if fp.endswith(('.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs')) else ('#',) if fp.endswith(('.py', '.sh', '.bash', '.yaml', '.yml', '.toml')) else ()
 if not prefixes: raise SystemExit
 ANNOTATIONS = ('# rationale:', '# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// rationale:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa')
@@ -104,7 +104,7 @@ for ln in content.split('\n'):
     s = ln.lstrip()
     if any(s.startswith(p) for p in prefixes) and not s.startswith('#!') and not any(s.startswith(a) for a in ANNOTATIONS):
         run += 1
-        if run >= 3:
+        if run >= threshold:
             print(run)
             break
     else: run = 0
