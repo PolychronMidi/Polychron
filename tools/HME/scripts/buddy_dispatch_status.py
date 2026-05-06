@@ -128,16 +128,16 @@ def _discover_buddy_sessions() -> list[dict]:
     of how tasks route. Status display always wants the real sessions
     so the user can monitor compactions.
     """
+    from buddy_dispatcher import _translate_legacy_tier
     sessions = []
     tmp = PROJECT_ROOT / "tmp"
-    # Missing-floor fallback is "easy" (dynamic) rather than "medium" so a
-    # buddy whose .floor companion didn't get written stays flexible per
-    # task instead of silently escalating easy tasks. Mirrors _read_floor_pair.
+    # Missing-floor fallback is E2 (dynamic). Mirrors _read_floor_pair.
     legacy = tmp / "hme-buddy.sid"
     if legacy.exists() and legacy.read_text().strip():
         floor_file = legacy.with_suffix(".floor")
         effort_file = legacy.with_suffix(".effort_floor")
-        m_floor = floor_file.read_text().strip() if floor_file.exists() else "easy"
+        raw_floor = floor_file.read_text().strip() if floor_file.exists() else "E2"
+        m_floor = _translate_legacy_tier(raw_floor)
         e_floor = effort_file.read_text().strip() if effort_file.exists() else TIER_TO_EFFORT.get(m_floor, "low")
         sessions.append({"slot": 1, "sid": legacy.read_text().strip(),
                          "floor": m_floor, "effort_floor": e_floor,
@@ -153,7 +153,8 @@ def _discover_buddy_sessions() -> list[dict]:
             continue
         floor_file = sid_file.with_suffix(".floor")
         effort_file = sid_file.with_suffix(".effort_floor")
-        m_floor = floor_file.read_text().strip() if floor_file.exists() else "easy"
+        raw_floor = floor_file.read_text().strip() if floor_file.exists() else "E2"
+        m_floor = _translate_legacy_tier(raw_floor)
         e_floor = effort_file.read_text().strip() if effort_file.exists() else TIER_TO_EFFORT.get(m_floor, "low")
         sessions.append({"slot": slot, "sid": sid,
                          "floor": m_floor, "effort_floor": e_floor,
