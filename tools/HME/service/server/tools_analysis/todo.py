@@ -329,7 +329,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
     action='add': add main todo (text=). With parent_id=N, adds as sub of #N.
         Pass critical=True to surface at turn start. Pass on_done='reindex'|
         'commit'|'learn' to trigger a lifecycle hook when marked done.
-        Pass tier=easy|medium|hard for model+effort routing (default medium).
+        Pass tier=E1|E2|E3|E4|E5 for model+effort routing (default E3). Legacy easy/medium/hard accepted (translates to E2/E3/E4).
         Identical-text duplicate adds collapse to recurrence increment.
     action='done': mark #todo_id done. Sub-todo done -> checks if parent auto-
         completes. Fires on_done trigger if set.
