@@ -86,7 +86,8 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
     a verdict dict with `outcome` (done/failed/timeout), `stdout_tail`,
     `elapsed_s`."""
     started = time.time()
-    item_tier = task.get("tier", "medium")
+    from buddy_dispatcher import _translate_legacy_tier
+    item_tier = _translate_legacy_tier(task.get("tier") or "E3")
     effective = _effective_tier(item_tier, buddy["floor"])
     effective_effort = _effective_effort(item_tier, buddy.get("effort_floor", "medium"))
     # Phase 2.5: prepend operator guidance (if any) so cross-run nudges
