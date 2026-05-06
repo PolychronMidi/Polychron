@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1273,
-      "updated_ts": 1778096825.1069787
+      "max_id": 1283,
+      "updated_ts": 1778097285.074133
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 1238,
     "text": "Step 4: Update buddy_init.sh to write E1-E5 floors and translate legacy BUDDY_MODEL_FLOORS env",
     "activeForm": "Updating buddy_init.sh",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -63,10 +63,24 @@
     "tier": "E3"
   },
   {
+    "id": 1278,
+    "text": "Step 9: Update OVERDRIVE_MODE=2 tier-aware routing in .env + synthesis_reasoning.py to E1-E5",
+    "activeForm": "Updating OVERDRIVE_MODE tier docs",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778097285.0740905,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
     "id": 1239,
     "text": "Step 5: Update todo_spec_ingest.py regexes to match both tier vocabularies; emit E1-E5 in SPEC writes",
     "activeForm": "Updating SPEC/TODO ingest path",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -114,20 +128,6 @@
     "source": "native",
     "on_done": "",
     "ts": 1778095401.7298584,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1262,
-    "text": "Step 9: Update OVERDRIVE_MODE=2 tier-aware routing in .env to E1-E5 vocabulary",
-    "activeForm": "Updating OVERDRIVE_MODE tier docs",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778096147.6550162,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
