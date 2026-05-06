@@ -40,7 +40,7 @@ def _list_buddies() -> list[dict]:
     synthesis_buddy = {
         "slot": 0,  # 0 distinguishes from real-buddy slots (1..N)
         "sid": "synthesis",  # sentinel: dispatch routes through synthesis_reasoning
-        "floor": "easy",
+        "floor": "E2",
         "effort_floor": "low",
         "sid_file": None,
         "processing_dir": QUEUE_PROCESSING / "synthesis-1",
