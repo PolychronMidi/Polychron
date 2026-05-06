@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1243,
-      "updated_ts": 1778095401.7298708
+      "max_id": 1253,
+      "updated_ts": 1778095641.6939855
     }
   },
   {
@@ -18,7 +18,7 @@
     "ts": 1778095401.7297823,
     "parent_id": 0,
     "subs": [],
-    "tier": "medium"
+    "tier": "E3"
   },
   {
     "id": 1236,
@@ -32,7 +32,7 @@
     "ts": 1778095401.7297997,
     "parent_id": 0,
     "subs": [],
-    "tier": "medium"
+    "tier": "E3"
   },
   {
     "id": 1237,
@@ -46,7 +46,7 @@
     "ts": 1778095401.7298117,
     "parent_id": 0,
     "subs": [],
-    "tier": "medium"
+    "tier": "E3"
   },
   {
     "id": 1238,
@@ -60,7 +60,7 @@
     "ts": 1778095401.729821,
     "parent_id": 0,
     "subs": [],
-    "tier": "medium"
+    "tier": "E3"
   },
   {
     "id": 1239,
@@ -74,7 +74,7 @@
     "ts": 1778095401.7298305,
     "parent_id": 0,
     "subs": [],
-    "tier": "medium"
+    "tier": "E3"
   },
   {
     "id": 1240,
@@ -88,7 +88,7 @@
     "ts": 1778095401.729842,
     "parent_id": 0,
     "subs": [],
-    "tier": "medium"
+    "tier": "E3"
   },
   {
     "id": 1241,
@@ -102,7 +102,7 @@
     "ts": 1778095401.7298505,
     "parent_id": 0,
     "subs": [],
-    "tier": "medium"
+    "tier": "E3"
   },
   {
     "id": 1242,
@@ -116,7 +116,7 @@
     "ts": 1778095401.7298584,
     "parent_id": 0,
     "subs": [],
-    "tier": "medium"
+    "tier": "E3"
   },
   {
     "id": 1243,
@@ -130,6 +130,20 @@
     "ts": 1778095401.729868,
     "parent_id": 0,
     "subs": [],
-    "tier": "medium"
+    "tier": "E3"
+  },
+  {
+    "id": 1253,
+    "text": "Add PreToolUse Edit/Write hook to block new comment-bloat additions (>=2 consecutive comment lines on new edits); keep existing in-tree blocks as soft warns at Stop",
+    "activeForm": "Adding PreToolUse comment-bloat blocker",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778095641.693984,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
   }
 ]
