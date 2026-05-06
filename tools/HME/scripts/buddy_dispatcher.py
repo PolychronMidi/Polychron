@@ -181,12 +181,8 @@ if not _DISPATCH_MODE:
 if _DISPATCH_MODE not in ("claude-resume", "synthesis", "disabled"):
     _DISPATCH_MODE = "disabled"
 
-# Per-tier routing override: tasks at tiers in this set route through
-# synthesis_reasoning (free cascade) regardless of HME_DISPATCH_MODE,
-# while remaining tiers go to whichever worker the mode selects. The
-# canonical use case is `easy` -- quotas on the buddy session are
-# precious, easy tasks don't need them. Empty (default) = no per-tier
-# override; HME_DISPATCH_MODE alone decides routing.
+# HME_DISPATCH_SYNTHESIS_TIERS: tiers (E1..E5) routed through synthesis_reasoning (free cascade) instead of buddies.
+# Canonical use: E1,E2 (cheap tasks skip the buddy quota). Empty = no override.
 def _parse_tier_set(raw: str) -> set:
     """Accepts E1..E5 or legacy easy/medium/hard (translated). Empty strings dropped."""
     out = set()
