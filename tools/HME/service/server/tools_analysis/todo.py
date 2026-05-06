@@ -128,17 +128,13 @@ def _allocate_id(meta: dict) -> int:
 
 
 _VALID_TIERS = ("E1", "E2", "E3", "E4", "E5")
-# Legacy 3-level vocabulary (easy/medium/hard) translates on read. Translation
-# is one-way and permanent: the dispatch path uses E1-E5; legacy values
-# encountered in todos.json or SPEC.md auto-coerce. See plan
-# /home/jah/.claude/plans/mutable-baking-newt.md.
+# Legacy easy/medium/hard auto-translate on read; doc/BUDDY_SYSTEM.md tier section.
 _LEGACY_TIER_MAP = {"easy": "E2", "medium": "E3", "hard": "E4"}
 
 
 def _normalize_tier(tier: str) -> str:
-    """Coerce a tier value to one of E1..E5. Accepts legacy easy/medium/hard
-    and translates (easy->E2, medium->E3, hard->E4). Unknown / empty -> E3
-    (the canonical 'graceful degradation' default for unlabeled items)."""
+    """Coerce to E1..E5. Legacy easy/medium/hard translate (easy->E2,
+    medium->E3, hard->E4). Unknown/empty -> E3 (graceful default)."""
     t = (tier or "").strip()
     upper = t.upper()
     if upper in _VALID_TIERS:
