@@ -363,7 +363,8 @@ def main() -> int:
     p_drain.add_argument("--loop-delay", type=float, default=5.0, help="seconds between loop passes")
     p_drain.set_defaults(func=cmd_drain)
     p_enq = sub.add_parser("enqueue", help="drop a task into pending/")
-    p_enq.add_argument("--tier", default="medium", choices=TIER_NAMES)
+    p_enq.add_argument("--tier", default="E3",
+                       choices=tuple(TIER_NAMES) + tuple(_LEGACY_TIER_MAP.keys()))
     p_enq.add_argument("--text", required=True)
     p_enq.add_argument("--source", default="manual")
     p_enq.add_argument("--id", default="")
