@@ -88,8 +88,9 @@ if [ -n "${PROJECT_ROOT:-}" ] \
   exit 2
 fi
 
-# Block 5+ line consecutive inline-comment block in new_string (CLAUDE.md
-# "single-line and terse"). Pre-save reject; no waiting for Stop hook.
+# Block 3+ line consecutive inline-comment block in new_string (CLAUDE.md
+# "single-line and terse"). Existing 3-4 line warns at Stop stay warns; this
+# blocks new bloat at write time. Stop-level FAIL is still 5+ via comment_bloat.py.
 if _policy_enabled block-comment-bloat; then
   _BLOAT_HIT=$(FILE="$FILE" NEW_STRING="$NEW_STRING" _safe_py3 "
 import os
@@ -103,7 +104,7 @@ for ln in content.split('\n'):
     s = ln.lstrip()
     if any(s.startswith(p) for p in prefixes) and not s.startswith('#!') and not any(s.startswith(a) for a in ANNOTATIONS):
         run += 1
-        if run >= 5:
+        if run >= 3:
             print(run)
             break
     else: run = 0
