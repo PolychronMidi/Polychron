@@ -1,8 +1,8 @@
 # Rules
 
-Keep this file focused, concise, lean - docs and auto-enforcement handle the rest.
+This file must remain focused, concise, lean - docs and auto-enforcement handle the rest.
 
-If something potentially auto-enforced would need to be mentioned here, make its enforcement better instead.
+If something potentially auto-enforced would need to be mentioned here, it must be enforced better instead.
 
 Polychron development has two interleaving modes; mode-specific rules live in companion files:
 - **Composition** (`src/`) — [doc/SRC.md](doc/SRC.md)
@@ -13,7 +13,7 @@ Polychron development has two interleaving modes; mode-specific rules live in co
 - **Stop hooks.** Never explain declining a stop hook's directive when it doesn't fit. End the turn in silence, or just a minimal ".", immediately if the hook should not apply to the scenario.
 - **Fail fast.** Everything MUST throw on bad input. No silent early returns. No `|| 0` / `|| []` fallbacks. No graceful degradation.
 - **Single Responsibility / LOC.** Files MUST be ≤350 LOC unless listed in loc-ignore.txt. Organize at logical boundaries.
-- **Comments and docs.** Inline comments single-line and terse. Elaboration goes in `doc/`, where style retains project-wide focus on concise, focused clarity.
+- **Comments and docs.** Inline comments MUST be concise, single-line, and terse. Elaboration goes in `doc/`, where style retains project-wide focus on concise, focused clarity.
 - **Never delete unused code/config before checking if it should be implemented.** Adapt or wire up; only delete when its concerns are already covered elsewhere.
 - **"Review" = read-only analysis.** No code changes unless explicitly asked.
 - **Never abandon a plan mid-execution. Always re-plan when execution proves the plan wrong.** Two failure modes, opposite shapes, both gated here:
