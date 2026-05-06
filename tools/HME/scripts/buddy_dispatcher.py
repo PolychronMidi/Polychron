@@ -313,7 +313,7 @@ def cmd_enqueue(args: argparse.Namespace) -> int:
     _ensure_dirs()
     task = {
         "id": args.id or uuid.uuid4().hex[:12],
-        "tier": args.tier if args.tier in TIER_NAMES else "medium",
+        "tier": _translate_legacy_tier(args.tier),
         "text": args.text,
         "source": args.source,
         "ts": time.time(),
