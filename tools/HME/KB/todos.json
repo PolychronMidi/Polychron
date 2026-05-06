@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1253,
-      "updated_ts": 1778095641.6939855
+      "max_id": 1263,
+      "updated_ts": 1778096147.655026
     }
   },
   {
     "id": 1235,
     "text": "Step 1: Extend _VALID_TIERS in todo.py to accept E1-E5; legacy easy/medium/hard translates on read",
     "activeForm": "Extending todo.py tier vocabulary",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 1236,
     "text": "Step 2: Migrate buddy_dispatcher.py constants (TIER_ORDER, TIER_NAMES, TIER_TO_EFFORT) to E1-E5",
     "activeForm": "Migrating dispatcher constants",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -119,6 +119,20 @@
     "tier": "E3"
   },
   {
+    "id": 1262,
+    "text": "Step 9: Update OVERDRIVE_MODE=2 tier-aware routing in .env to E1-E5 vocabulary",
+    "activeForm": "Updating OVERDRIVE_MODE tier docs",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778096147.6550162,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
     "id": 1243,
     "text": "Run npm test + manual verification per plan",
     "activeForm": "Verifying end-to-end",
@@ -128,20 +142,6 @@
     "source": "native",
     "on_done": "",
     "ts": 1778095401.729868,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1253,
-    "text": "Add PreToolUse Edit/Write hook to block new comment-bloat additions (>=2 consecutive comment lines on new edits); keep existing in-tree blocks as soft warns at Stop",
-    "activeForm": "Adding PreToolUse comment-bloat blocker",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778095641.693984,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
