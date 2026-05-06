@@ -188,11 +188,15 @@ if _DISPATCH_MODE not in ("claude-resume", "synthesis", "disabled"):
 # precious, easy tasks don't need them. Empty (default) = no per-tier
 # override; HME_DISPATCH_MODE alone decides routing.
 def _parse_tier_set(raw: str) -> set:
+    """Accepts E1..E5 or legacy easy/medium/hard (translated). Empty strings dropped."""
     out = set()
     for t in (raw or "").split(","):
-        t = t.strip().lower()
-        if t in TIER_NAMES:
-            out.add(t)
+        t = t.strip()
+        if not t:
+            continue
+        translated = _translate_legacy_tier(t)
+        if translated in TIER_NAMES:
+            out.add(translated)
     return out
 
 _SYNTHESIS_TIERS = _parse_tier_set(os.environ.get("HME_DISPATCH_SYNTHESIS_TIERS", ""))
