@@ -53,15 +53,24 @@ def _items(text: str, regex: re.Pattern) -> set[str]:
 
 
 def _newly_flipped() -> list[str]:
+    """Return items shipped this turn. Two kinds count:
+      A. Transition: line was `- [ ]` in HEAD, now `- [x]` (classic flip).
+      B. Birth-as-shipped: line is `- [x]` in current and DIDN'T EXIST in HEAD
+         (item added directly at completed state, e.g. retroactive documentation
+         or single-edit-write-and-flip pattern this session demonstrated).
+    Both deserve a Just-shipped entry; both reflect work that landed this turn."""
     if not _SPEC.is_file():
         return []
     head = _read_head_spec()
-    if not head:
-        return []
-    head_open = _items(head, _OPEN_RE)
     cur_text = _SPEC.read_text(encoding="utf-8")
     cur_flipped = _items(cur_text, _FLIPPED_RE)
-    return sorted(head_open & cur_flipped)
+    if not head:
+        return sorted(cur_flipped)
+    head_open = _items(head, _OPEN_RE)
+    head_flipped = _items(head, _FLIPPED_RE)
+    transitioned = head_open & cur_flipped
+    birth_as_shipped = cur_flipped - head_open - head_flipped
+    return sorted(transitioned | birth_as_shipped)
 
 
 def _trim_just_shipped(lines: list[str]) -> list[str]:
