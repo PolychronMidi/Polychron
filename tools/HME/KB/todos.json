@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1344,
-      "updated_ts": 1778381640.021368
+      "max_id": 1349,
+      "updated_ts": 1778381917.3925242
     }
   },
   {
@@ -21,15 +21,15 @@
     "tier": "E3"
   },
   {
-    "id": 1336,
-    "text": "Item 2: Write slop_scan.py detector + register in detectors/registry.json + add to work_checks REASONS",
+    "id": 1346,
+    "text": "Item 2: Write slop_scan.py detector + register in detectors/registry.json",
     "activeForm": "Building slop_scan detector",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778381373.456853,
+    "ts": 1778381917.392493,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -38,7 +38,7 @@
     "id": 1337,
     "text": "Item 3: Write CONSTITUTION.md at project root + add override-mechanism + additive-bias scrutiny to CLAUDE.md",
     "activeForm": "Writing CONSTITUTION.md + CLAUDE.md additions",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
