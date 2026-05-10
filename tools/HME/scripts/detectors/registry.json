@@ -37,6 +37,7 @@
     {"name": "fix_without_investigation", "module": "fix_without_investigation", "fires_when": "fix_without_investigation", "bash_var": "FIX_WITHOUT_INVESTIGATION", "deny": true, "reason_key": "FIX_WITHOUT_INVESTIGATION"},
     {"name": "comment_bloat", "module": "comment_bloat", "fires_when": "comment_bloat", "bash_var": "COMMENT_BLOAT", "deny": true, "reason_key": "COMMENT_BLOAT"},
     {"name": "boyscout_loc", "module": "boyscout_loc", "fires_when": "loc_bloat", "bash_var": "BOYSCOUT_LOC", "deny": true, "reason_key": "BOYSCOUT_LOC"},
-    {"name": "orphan_reference", "module": "orphan_reference", "fires_when": "orphan_reference", "bash_var": "ORPHAN_REFERENCE", "deny": true, "reason_key": "ORPHAN_REFERENCE"}
+    {"name": "orphan_reference", "module": "orphan_reference", "fires_when": "orphan_reference", "bash_var": "ORPHAN_REFERENCE", "deny": true, "reason_key": "ORPHAN_REFERENCE"},
+    {"name": "slop_scan", "module": "slop_scan", "fires_when": "slop_scan", "bash_var": "SLOP_SCAN", "deny": false, "_note": "soft-flagged on first land; flip deny=true after one stable cycle. CONSTITUTION rule 4 (identity leaks) eventually warrants hard-block."}
   ]
 }
