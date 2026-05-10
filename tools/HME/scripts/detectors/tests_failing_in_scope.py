@@ -77,13 +77,16 @@ def _candidate_tests(impl: Path) -> list[Path]:
     parent = impl.parent
     stem = impl.stem
     cands = []
+    spec_dir = _PROJECT / "tools" / "HME" / "tests" / "specs"
     if impl.suffix == ".py":
         for d in (parent, parent / "tests", parent.parent / "tests"):
             for name in (f"test_{stem}.py", f"{stem}_test.py"):
                 cands.append(d / name)
+        # Polychron pattern: many Python modules are tested by JS spec files
+        # in tools/HME/tests/specs/<stem>.test.js (node --test runs them).
+        cands.append(spec_dir / f"{stem}.test.js")
     else:
-        for d in (parent, parent / "tests", parent.parent / "tests",
-                  _PROJECT / "tools" / "HME" / "tests" / "specs"):
+        for d in (parent, parent / "tests", parent.parent / "tests", spec_dir):
             for name in (f"{stem}.test.js", f"{stem}.test.ts", f"test_{stem}.js"):
                 cands.append(d / name)
     return [c for c in cands if c.is_file()]
