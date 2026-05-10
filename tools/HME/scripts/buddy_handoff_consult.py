@@ -146,14 +146,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
     # calls `i/learn add` for each -- converting fragile transcript
     # wisdom into durable KB entries.
     framed_question = _KB_DIRECTIVE + args.question
-    # Decision-audit sentinel: pretooluse_edit reads this to mark architectural edits as consulted.
-    try:
-        sentinel = TMP / "hme-turn-consults.txt"
-        sentinel.parent.mkdir(parents=True, exist_ok=True)
-        with open(sentinel, "a", encoding="utf-8") as f:
-            f.write(f"{int(time.time())} sid={args.sid[:12]}\n")
-    except OSError:
-        pass
+    # Sentinel write deferred to AFTER the API call -- synthesis/overdrive routes through the HME proxy which fires UserPromptSubmit, wiping turn state mid-call.
     # Synthesis fast path: single API call (~5s) vs subprocess (~30-300s).
     if getattr(args, "engine", "claude-resume") == "synthesis":
         try:
