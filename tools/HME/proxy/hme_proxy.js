@@ -40,26 +40,11 @@ const {
 const { shouldInject, buildStatusContext, consumeStatusContext, buildJurisdictionContext, injectIntoSystem, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 
-// Self-load .env so middleware sees project knobs even when parent shell didn't source it.
+// Self-load .env via shared helper; parent shell may not have sourced it.
 (() => {
   try {
-    const p = require('path').resolve(__dirname, '..', '..', '..', '.env');
-    const fs = require('fs');
-    if (!fs.existsSync(p)) return;
-    for (const raw of fs.readFileSync(p, 'utf8').split('\n')) {
-      const line = raw.trim();
-      if (!line || line.startsWith('#')) continue;
-      const eq = line.indexOf('=');
-      if (eq < 1) continue;
-      const k = line.slice(0, eq).trim();
-      let v = line.slice(eq + 1).trim();
-      const hashAt = v.indexOf(' #');
-      if (hashAt > -1) v = v.slice(0, hashAt).trim();
-      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
-        v = v.slice(1, -1);
-      }
-      if (process.env[k] === undefined) process.env[k] = v;
-    }
+    const { loadEnv } = require('./shared/load_env');
+    loadEnv(require('path').resolve(__dirname, '..', '..', '..', '.env'));
   } catch (_e) { /* fail-soft: proxy still runs without .env knobs */ }
 })();
 
