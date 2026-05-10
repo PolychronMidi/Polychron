@@ -56,13 +56,21 @@ def _transcript_path(sid: str) -> Path | None:
 
 
 def _check_primary() -> str:
-    """Return one of: 'no_primary', 'healthy', 'transcript_missing'.
-    Silence is NOT a failure -- idle primaries with valid transcripts are healthy."""
+    """Return one of: 'no_primary', 'healthy', 'transcript_missing', 'stale_prewarm'.
+    Silence is NOT a failure -- idle primaries with valid transcripts are healthy.
+    stale_prewarm fires when SPEC.md mtime > buddy transcript birth (pre-warm context drift)."""
     sid = _read_primary_sid()
     if not sid:
         return "no_primary"
-    if _transcript_path(sid) is None:
+    tp = _transcript_path(sid)
+    if tp is None:
         return "transcript_missing"
+    try:
+        spec = _PROJECT / "doc" / "templates" / "SPEC.md"
+        if spec.is_file() and spec.stat().st_mtime > tp.stat().st_mtime + 60:
+            return "stale_prewarm"
+    except OSError:
+        pass
     return "healthy"
 
 
