@@ -98,6 +98,19 @@ if [ -n "$FILE" ] && [ -x "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate
     exit 2
   fi
 fi
+# Architectural-decision audit: log every Edit on CONSTITUTION/SPEC/CLAUDE/agents
+# files with whether a buddy consult occurred this turn. Surfaces consult-skip rate.
+case "$FILE" in
+  *CONSTITUTION.md|*CLAUDE.md|*doc/templates/SPEC.md|*.claude/agents/*.md|*tools/HME/scripts/detectors/*.py|*tools/HME/proxy/stop_chain/policies/*.js)
+    _DA_LOG="$PROJECT_ROOT/output/metrics/decision-audit.jsonl"
+    mkdir -p "$(dirname "$_DA_LOG")" 2>/dev/null
+    _DA_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    _DA_TURN="${PROJECT_ROOT}/tmp/hme-turn-consults.txt"
+    _DA_CONSULTED=$([ -f "$_DA_TURN" ] && [ -s "$_DA_TURN" ] && echo true || echo false)
+    printf '{"ts":"%s","file":"%s","consulted":%s}\n' \
+      "$_DA_TS" "$FILE" "$_DA_CONSULTED" >> "$_DA_LOG" 2>/dev/null || true
+    ;;
+esac
 
 if _policy_enabled block-comment-bloat; then
   _BLOAT_HIT=$(FILE="$FILE" NEW_STRING="$NEW_STRING" THRESHOLD="${COMMENT_BLOAT_WARN:-3}" _safe_py3 "
