@@ -41,9 +41,10 @@ _IDENTITY_LEAK_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Bare TODO/FIXME: missing parens-wrapped issue ref like (#123) or (GH-123).
+# Bare TODO/FIXME requires `:` or `(` after to distinguish deferred-work markers
+# from identifiers (`_TODO_FILE`) and prose ("TODO Next-up"). Issue-link escape via lookaheads.
 _BARE_TODO_RE = re.compile(
-    r"(^|[^A-Za-z0-9])(TODO|FIXME|XXX|HACK)(?![A-Za-z0-9])"
+    r"(^|[^A-Za-z0-9_])(TODO|FIXME|XXX|HACK)\s*[:(]"
     r"(?![^\n]*\(#?[A-Z]*-?\d+\))"
     r"(?![^\n]*github\.com/[^/\s]+/[^/\s]+/issues/\d+)",
 )
