@@ -142,9 +142,15 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
     # Phase 2.3 contract reminder: every actionable proposal cites the
     # motivating line. Drop unmotivated changes (skill-set's anti-scope-
     # creep gate). The buddy is responsible for self-policing this.
+    # Persona hint -- claude-resume buddies adopt the specialist for this task.
+    _persona_name = _infer_persona(task)
+    _persona_hint = (f"[persona: {_persona_name}] Apply the role guidance from "
+                     f".claude/agents/{_persona_name}.md to this task.\n"
+                     if _persona_name else "")
     prompt = (
         f"{guidance_block}"
         f"[picked-difficulty: {effective}] [picked-effort: {effective_effort}]\n"
+        f"{_persona_hint}"
         f"Task ID: {task.get('id', '?')}\n"
         f"Source: {task.get('source', '?')}\n"
         f"Model tier (item={item_tier}, floor={buddy['floor']}, effective={effective})\n"
