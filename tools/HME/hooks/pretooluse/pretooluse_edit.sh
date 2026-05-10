@@ -88,15 +88,16 @@ if [ -n "${PROJECT_ROOT:-}" ] \
   exit 2
 fi
 
+# Bounded-reads vow: reset counter on edit ATTEMPT (TDD-blocked attempts still
+# break the read streak; counter should reflect "agent tried to act").
+[ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && \
+  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
 # TDD test-first gate: block new impl files lacking sibling test (HME_TDD_GATE=1).
 if [ -n "$FILE" ] && [ -x "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate.py" ]; then
   if ! PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate.py" --file "$FILE"; then
     exit 2
   fi
 fi
-# Bounded-reads vow: reset counter when an Edit lands (action breaks read streak).
-[ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && \
-  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
 
 if _policy_enabled block-comment-bloat; then
   _BLOAT_HIT=$(FILE="$FILE" NEW_STRING="$NEW_STRING" THRESHOLD="${COMMENT_BLOAT_WARN:-3}" _safe_py3 "
