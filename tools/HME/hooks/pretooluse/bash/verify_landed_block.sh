@@ -9,7 +9,7 @@ _VLB_TURN_EDITS="${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt"
 [ -n "${CMD:-}" ] || { return 0 2>/dev/null || exit 0; }
 
 _VLB_HIT=$(_VLB_CMD="$CMD" _VLB_FILE="$_VLB_TURN_EDITS" python3 - <<'PYEOF' 2>/dev/null
-import os, re, shlex
+import os, shlex
 cmd = os.environ.get("_VLB_CMD", "")
 edits_file = os.environ.get("_VLB_FILE", "")
 if not cmd or not edits_file or not os.path.isfile(edits_file):
