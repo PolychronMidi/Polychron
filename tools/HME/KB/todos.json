@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1366,
-      "updated_ts": 1778383148.441618
+      "max_id": 1372,
+      "updated_ts": 1778383311.8934257
     }
   },
   {
@@ -49,29 +49,29 @@
     "tier": "E3"
   },
   {
-    "id": 1358,
-    "text": "#4: Resolve CONSTITUTION.md \u2194 CLAUDE.md overlap (mark ownership per rule)",
+    "id": 1370,
+    "text": "#4: Resolve CONSTITUTION.md \u2194 CLAUDE.md overlap",
     "activeForm": "Splitting doctrine ownership",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778382747.5295088,
+    "ts": 1778383311.893394,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1359,
-    "text": "#5: Tier-aware test-failure detector (run scoped tests on edited modules)",
+    "id": 1371,
+    "text": "#5: Tier-aware test-failure detector",
     "activeForm": "Building test-failure detector",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778382747.5295172,
+    "ts": 1778383311.8934147,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
