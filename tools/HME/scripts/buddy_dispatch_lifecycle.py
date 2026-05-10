@@ -241,6 +241,7 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
                 }
             sentinel_seen = NO_WORK_SENTINEL in response
             last_src = synthesis_reasoning.last_source() or "synthesis"
+            _append_persona_memory(_persona, task, response)
             return {
                 "outcome": "done",
                 "rc": 0, "elapsed_s": round(elapsed, 2),
