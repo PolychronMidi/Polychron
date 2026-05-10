@@ -121,6 +121,14 @@ def _extract_from_devlog(fp: Path) -> list[Pattern]:
                     last_seen=slug,
                     source_phases=[f"{slug}#P{in_phase or 0}"],
                 ))
+        for m in _DECISION_RE.finditer(line):
+            verb, chosen, _conj, rejected = m.groups()
+            out.append(Pattern(
+                category="decision",
+                description=f"{chosen[:30]} over {rejected[:30]}",
+                last_seen=slug,
+                source_phases=[f"{slug}#P{in_phase or 0}"],
+            ))
     return out
 
 
