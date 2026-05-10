@@ -196,7 +196,8 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
     # exhausted) become a "failed" verdict the caller can retry-archive
     # like any other failure.
     if buddy.get("sid") == "synthesis":
-        persona_system = _load_persona(_infer_persona(task))
+        _persona = _infer_persona(task)
+        persona_system = _load_persona(_persona)
         try:
             sys.path.insert(0, str(PROJECT_ROOT / "tools" / "HME" / "service"))
             from server.tools_analysis.synthesis import synthesis_reasoning  # noqa: E402
