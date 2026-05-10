@@ -410,4 +410,17 @@ if [ -x "$_FORK_WATCHDOG" ]; then
   esac
 fi
 
+# Learning-surface: prime new session with top-3 patterns matching the latest Phase title.
+_LE="$PROJECT_ROOT/tools/HME/scripts/learning_extract.py"
+_SPEC_FILE="$PROJECT_ROOT/doc/templates/SPEC.md"
+if [ -x "$_LE" ] && [ -f "$_SPEC_FILE" ]; then
+  _LATEST_PHASE_TITLE=$(grep -E "^### Phase [0-9]+:" "$_SPEC_FILE" | tail -1 | sed -E 's/^### Phase [0-9]+:\s*([^(]+).*/\1/' | tr -d '[:cntrl:]' | xargs)
+  if [ -n "$_LATEST_PHASE_TITLE" ]; then
+    _FIRST_KW=$(echo "$_LATEST_PHASE_TITLE" | awk '{for(i=1;i<=NF;i++) if(length($i)>=4){print $i; exit}}')
+    if [ -n "$_FIRST_KW" ]; then
+      PROJECT_ROOT="$PROJECT_ROOT" python3 "$_LE" surface --keyword "$_FIRST_KW" --top 3 2>/dev/null >&2 || true
+    fi
+  fi
+fi
+
 exit 0
