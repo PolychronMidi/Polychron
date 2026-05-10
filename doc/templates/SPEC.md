@@ -47,6 +47,18 @@ _Phase 1 complete_ (2026-05-10T20:00:00Z):
 
 All 4 built-but-orphan capabilities now load-bearing. project_detect emits the tag at every UserPromptSubmit (smoke-tested: `[project-detect] lang=javascript | test=npm test`). learning_extract fires automatically when archive_set succeeds (via subprocess invocation post-reset). claude-resume buddies now receive per-task persona hints in the prompt body (synthesis path got system-prompt swap in Phase 0; resume path gets prompt-body hint here, since spawn-time prompt is fixed). fork_watchdog smoke-tested against 116 historical agent transcripts, 0 in the recent 60s-1h window means harness is healthy now (the 3 forks from earlier this session are past the 1h threshold so correctly excluded as historical). Existing-seniors expertise backfill skipped: 0 seniors currently in pool to backfill.
 
+### Phase 2: fix-exhaust-and-psycho-stop-detector-blind-spots (worthiness P/C/S/E = 3/3/3/3)
+
+User caught that "what's missing" had to be asked before unfinished work was completed -- meaning exhaust_check and psycho_stop SHOULD have fired on the prior turn but didn't. Investigation found two structural blind spots: (1) phrase tables missed the actual closing-text vocabulary I used (built-but-not-wired / half-done / investigated-but-not-fixed / observation-only / if-picking-one), (2) exhaust_check's `n_work >= 3 implicit-solo rescue` silenced ANY post-work enumeration regardless of whether the enumeration was about already-done work or remaining-undone work.
+
+- [x] [E2] Expanded [_phrase_lists.py](../../tools/HME/scripts/detectors/_phrase_lists.py): added 12 phrases to DEFERRAL_FLAG_FOR_LATER (built-but-not-wired, ready-but-not-wired, shipped-but-not-wired, designed-but-not-implemented, ready-but-unused, lurking-observation-only, observation-only-gaps, remains-uninvestigated/unfixed/unused), 13 to DEFERRAL_ACK_NO_FIX (investigated/traced/diagnosed-but-not-fixed, half-done, half-done:, halfway/partially-done/complete, not-yet-wired, never-wired, isn't-yet-wired, remains-uninvestigated, investigated-but-never-reported, discovered/found-but-not-fixed/addressed), 7 to SURVEY_PERMISSION_ASK (if-picking-one, if-picking-just-one, picking-one-to-ship, if-you'd-like, if-you-want-me, the-smallest-item, want-me-to-ship).
+- [x] [E3] Tightened [exhaust_check.py](../../tools/HME/scripts/detectors/exhaust_check.py) implicit-solo rescue: added `_UNDONE_HEADER` regex matching bold-headers naming undone categories (`**Built but not wired:**`, `**Half-done:**`, `**Investigated but not fixed:**`, etc); when 2+ such headers appear in closing, work-count rescue is suppressed and the phrase scan proceeds. The prior unconditional `n_work >= 3 -> ok` was the structural flaw: a turn can do lots of work AND enumerate more undone work in the same closing.
+- [x] [E2] Verified live by replaying the exact failure case: simulated transcript with 8 Edit tool calls + my actual "what's missing" closing text. Both detectors now fire correctly: `exhaust_check -> exhaust_violation`, `psycho_stop -> psycho`. Pre-patch: both returned `ok` (silent).
+
+_Phase 2 complete_ (2026-05-10T20:30:00Z):
+
+Two structural blind spots in the detector chain closed. Phrase tables now cover the multi-category-undone-headers shape I demonstrated. exhaust_check's work-rescue can no longer silence enumeration-with-undone-headers. Replay test confirms both detectors fire on the exact closing text the user had to manually catch with "what's missing?".
+
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
 - HME-audit #1 (extract dispatch prompts to discoverable templates ~80 LOC) -- large; defer until #1 above proves the persona pattern works
