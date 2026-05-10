@@ -31,8 +31,7 @@ _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parents[3])
 _PRIMARY_SID = _PROJECT / "runtime" / "hme" / "buddy-primary.sid"
 _LEGACY_SID = _PROJECT / "runtime" / "hme" / "buddy.sid"
-_DEFAULT_MAX_SILENCE = int(os.environ.get("HME_BUDDY_MAX_SILENCE_S", "1800"))
-_DEFAULT_INTERVAL = int(os.environ.get("HME_BUDDY_WATCHDOG_INTERVAL_S", "120"))
+_DEFAULT_INTERVAL = int(os.environ.get("HME_BUDDY_WATCHDOG_INTERVAL_S", "300"))
 
 
 def _read_primary_sid() -> str | None:
