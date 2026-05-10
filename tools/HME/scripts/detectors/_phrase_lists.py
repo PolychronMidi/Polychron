@@ -65,6 +65,18 @@ DEFERRAL_FLAG_FOR_LATER: tuple[str, ...] = (
     "wont do",
     "skipping for now",
     "will skip",
+    "built but not wired",
+    "ready but not wired",
+    "shipped but not wired",
+    "built but not yet wired",
+    "designed but not implemented",
+    "designed for ... never edited",
+    "ready but unused",
+    "lurking observation-only",
+    "observation-only gaps",
+    "remains uninvestigated",
+    "remains unfixed",
+    "remains unused",
 )
 
 # Ack-without-fix.
