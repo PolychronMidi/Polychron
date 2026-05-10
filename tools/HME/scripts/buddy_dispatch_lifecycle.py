@@ -80,6 +80,49 @@ def _claim_task(task_path: Path, buddy: dict) -> Path | None:
         return None
 
 
+# Persona inference + body loader -- wires .claude/agents/<name>.md specialist
+# subagents into synthesis dispatch (claude-resume path uses spawn-time prompt).
+_PERSONA_KEYWORDS = {
+    "reviewer": ("review", "audit", "blast-radius", "promise-vs", "tier-1", "finding"),
+    "tester": ("test", "pytest", "spec", "coverage", "tdd", "regression", "failing"),
+    "documenter": ("doc", "spec.md", "todo.md", "readme", "constitution", "ship-line", "phase complete"),
+}
+
+
+def _infer_persona(task: dict) -> str:
+    """Return persona name (reviewer|tester|documenter) or empty string for default.
+    Inferred from task source + text by keyword overlap."""
+    text = f"{task.get('source', '')} {task.get('text', '')}".lower()
+    if not text.strip():
+        return ""
+    best = ""
+    best_hits = 0
+    for persona, kws in _PERSONA_KEYWORDS.items():
+        hits = sum(1 for kw in kws if kw in text)
+        if hits > best_hits:
+            best, best_hits = persona, hits
+    return best if best_hits >= 1 else ""
+
+
+def _load_persona(name: str) -> str | None:
+    """Read .claude/agents/<name>.md, strip YAML frontmatter, return body string.
+    Returns None if name empty / file missing / parse fails."""
+    if not name:
+        return None
+    fp = PROJECT_ROOT / ".claude" / "agents" / f"{name}.md"
+    if not fp.is_file():
+        return None
+    try:
+        text = fp.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    if text.startswith("---"):
+        end = text.find("\n---\n", 4)
+        if end > 0:
+            return text[end + 5:].strip() or None
+    return text.strip() or None
+
+
 def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str) -> dict:
     """Hand the task to the buddy via `claude --resume <sid> <prompt>`.
     Reads stdout until the [no-work] sentinel OR a hard timeout. Returns
