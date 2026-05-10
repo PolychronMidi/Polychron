@@ -61,15 +61,15 @@ if _policy_enabled block-secret-content-pattern && echo "$CONTENT" | grep -qE '(
   exit 2
 fi
 
+# Bounded-reads vow: reset counter on write ATTEMPT (TDD-blocked attempts count).
+[ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && \
+  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
 # TDD test-first gate: block new impl files lacking sibling test (HME_TDD_GATE=1).
 if [ -n "$FILE" ] && [ -x "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate.py" ]; then
   if ! PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate.py" --file "$FILE"; then
     exit 2
   fi
 fi
-# Bounded-reads vow: reset counter when a Write lands.
-[ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && \
-  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
 
 if _policy_enabled block-comment-bloat; then
   _BLOAT_HIT=$(FILE="$FILE" CONTENT="$CONTENT" THRESHOLD="${COMMENT_BLOAT_WARN:-3}" _safe_py3 "
