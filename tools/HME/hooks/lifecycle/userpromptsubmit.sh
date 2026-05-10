@@ -266,4 +266,8 @@ except Exception: pass" 2>/dev/null || echo "")
   fi
 fi
 
+# Project-stack tag: surface detected language + test runner so subagents skip per-call inference.
+_PD="$PROJECT_ROOT/tools/HME/scripts/project_detect.py"
+[ -x "$_PD" ] && PROJECT_ROOT="$PROJECT_ROOT" python3 "$_PD" --tag 2>/dev/null >&2 || true
+
 exit 0
