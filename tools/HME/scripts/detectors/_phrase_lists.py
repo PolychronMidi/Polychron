@@ -139,6 +139,13 @@ SURVEY_PERMISSION_ASK: tuple[str, ...] = (
     "want me to keep going",
     "confirm before",
     "confirm first",
+    "if picking one",
+    "if picking just one",
+    "picking one to ship",
+    "if you'd like",
+    "if you want me",
+    "the smallest item",
+    "want me to ship",
 )
 
 # Mid-turn-abort phrases (cant-do-from-within class).
