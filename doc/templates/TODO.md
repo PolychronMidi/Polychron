@@ -15,6 +15,7 @@
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
 
+- [E3] spec-kit auto-tasks-from-Phase: extend `_ingest_from_spec` to read `- [ ]` items from SPEC.md `### Phase N` block via `text="N"`/`"latest"`/`todo_id=N`; default TODO.md "Next up" path preserved (manual ship -- Phase 2 added directly at [x])
 - [E2] CLI `i/blast-radius` -- `tools/HME/scripts/blast_radius.py` runs `git diff --name-only`, extracts top-level identifiers (Python def/class, JS export), greps for those identifiers across `src/` + `tools/` + `lab/`, prints a ranked impact table (file:hits). Wire as `i/blast-radius` symlink in `i/`. (auto-shipped from SPEC checkbox flip)
 - [E2] PreToolUse `vow_bounded_reads.py` -- session-scoped Read/Grep/Glob counter with `HME_READ_BUDGET` (default 15); reset companion fires on Write/Edit/MultiEdit; opt-in via `HME_READ_BUDGET_ENFORCED=1` (default warn-only). Stores counter in `tmp/hme-read-budget-<sid>.txt` with `fcntl.flock` for parallel-Read safety. (auto-shipped from SPEC checkbox flip)
 - [E3] CONSTITUTION.md root + CLAUDE.md override-mechanism + additive-bias scrutiny (night-market-borrow item 3)
