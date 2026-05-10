@@ -13,6 +13,10 @@
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
+- [E3] CONSTITUTION.md root + CLAUDE.md override-mechanism + additive-bias scrutiny (night-market-borrow item 3)
+- [E3] slop_scan.py Stop-level detector covering identity-leak P0, bare TODO, unbacked README claims (night-market-borrow item 2)
+- [E3] tdd_test_first_gate.py PreToolUse hook (HME_TDD_GATE=1 opt-in; shadow-default warn) (night-market-borrow item 1)
+
 ## Next up (queued for next cycle)
 
 <!-- One line per queued item:
