@@ -30,6 +30,7 @@ _REGISTRY = _PROJECT / "tools" / "HME" / "scripts" / "detectors" / "registry.jso
 _DATE_RE = re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})")
 _PROMOTE_KEYWORDS = ("soften", "softened", "promote", "flip", "after one stable",
                      "after stable", "warn-only", "soft-flag", "soft warn")
+_NON_TEMPORAL_EXEMPTION = "auditor exemption: non-temporal"
 
 
 def _embedded_date(note: str) -> date | None:
