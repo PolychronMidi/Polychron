@@ -17,6 +17,7 @@
 
 
 
+- [E1] Phase 4 followups: extend slop_scan skip-list to direct invocation (tiered_audit honors it) + auto-fire buddy_watchdog at SessionStart + auto-fire audit_stale_soft_warns at SessionStart. (manual ship -- spec_autoflip raced autocommit)
 - [E1] B.3 Worthiness gate appendix in [SPEC.md template](../templates/SPEC.md) -- 4-axis (priority/criticality/simplicity/evidence) 0-3 score per Phase; total <6/12 defers to TODO.md Next-up. (auto-shipped from SPEC checkbox flip)
 - [E1] C.2 Refresh stale-soft-warn notes with concrete promotion criteria + add `Auditor exemption: non-temporal` marker for permanent soft-flags (advisor_silently_skipped, claim_without_evidence). (auto-shipped from SPEC checkbox flip)
 - [E1] C.3 Reorder vow_bounded_reads --reset to fire BEFORE TDD gate in [pretooluse_edit.sh](../../tools/HME/hooks/pretooluse/pretooluse_edit.sh)/[_write.sh](../../tools/HME/hooks/pretooluse/pretooluse_write.sh) -- TDD-blocked attempts still break the read streak. (auto-shipped from SPEC checkbox flip)
