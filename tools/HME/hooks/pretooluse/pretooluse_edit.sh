@@ -98,8 +98,7 @@ if [ -n "$FILE" ] && [ -x "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate
     exit 2
   fi
 fi
-# Architectural-decision audit: log every Edit on CONSTITUTION/SPEC/CLAUDE/agents
-# files with whether a buddy consult occurred this turn. Surfaces consult-skip rate.
+# Architectural-decision audit + optional gate (HME_CONSULT_GATE=1 to enforce).
 case "$FILE" in
   *CONSTITUTION.md|*CLAUDE.md|*doc/templates/SPEC.md|*.claude/agents/*.md|*tools/HME/scripts/detectors/*.py|*tools/HME/proxy/stop_chain/policies/*.js)
     _DA_LOG="$PROJECT_ROOT/output/metrics/decision-audit.jsonl"
@@ -107,8 +106,13 @@ case "$FILE" in
     _DA_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     _DA_TURN="${PROJECT_ROOT}/tmp/hme-turn-consults.txt"
     _DA_CONSULTED=$([ -f "$_DA_TURN" ] && [ -s "$_DA_TURN" ] && echo true || echo false)
-    printf '{"ts":"%s","file":"%s","consulted":%s}\n' \
-      "$_DA_TS" "$FILE" "$_DA_CONSULTED" >> "$_DA_LOG" 2>/dev/null || true
+    _DA_SKIP="${HME_CONSULT_SKIP_REASON:-}"
+    printf '{"ts":"%s","file":"%s","consulted":%s,"skip_reason":"%s"}\n' \
+      "$_DA_TS" "$FILE" "$_DA_CONSULTED" "$_DA_SKIP" >> "$_DA_LOG" 2>/dev/null || true
+    if [ "${HME_CONSULT_GATE:-0}" = "1" ] && [ "$_DA_CONSULTED" = "false" ] && [ -z "$_DA_SKIP" ]; then
+      _emit_block "BLOCKED: HME_CONSULT_GATE=1 -- editing $FILE without a buddy consult this turn. Run \`i/consult --engine=synthesis --question=\"...\"\` first OR set HME_CONSULT_SKIP_REASON=\"<why>\"."
+      exit 2
+    fi
     ;;
 esac
 
