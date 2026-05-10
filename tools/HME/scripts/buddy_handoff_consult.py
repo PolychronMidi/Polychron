@@ -130,12 +130,11 @@ def cmd_consult(args: argparse.Namespace) -> int:
     # -- archiving means "hidden from default status," not "removed from
     # the consultable pool." Search both the active pool and the archive
     # before deciding the target is unknown.
-    senior_file = SENIORS_DIR / f"{args.sid}.json"
-    archive_file = SENIORS_DIR / "_archive" / f"{args.sid}.json"
-    target_known = senior_file.exists() or archive_file.exists()
-    if not target_known:
-        # Allow consulting the active primary too (sometimes useful for
-        # cross-checking) but warn the user.
+    senior_file = SENIORS_DIR / f"{args.sid}.json" if args.sid else None
+    archive_file = SENIORS_DIR / "_archive" / f"{args.sid}.json" if args.sid else None
+    target_known = bool(args.sid) and (senior_file.exists() or archive_file.exists())
+    # Skip the pool-membership warning for sid-less synthesis consults (no sid to check).
+    if args.sid and not target_known:
         primary = _read_primary()
         if primary is None or primary["sid"] != args.sid:
             print(f"warning: sid {args.sid} is not in the senior pool "
