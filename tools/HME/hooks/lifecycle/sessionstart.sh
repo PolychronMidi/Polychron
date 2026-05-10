@@ -401,6 +401,11 @@ if [ -x "$_SOFT_AUDIT" ]; then
   esac
 fi
 
+# Consult-gate state: surface whether HME_CONSULT_GATE is on so missed-export silent-disable is visible.
+if [ "${HME_CONSULT_GATE:-0}" = "1" ]; then
+  echo "[consult-gate] ON -- architectural edits without consults will be blocked" >&2
+fi
+
 # Fork-watchdog: surface silently-dropped completion notifications (recent only).
 _FORK_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/fork_watchdog.py"
 if [ -x "$_FORK_WATCHDOG" ]; then
