@@ -581,12 +581,22 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             return f"Cleared {removed} completed todos.{archive_msg}\n\n{_render(todos)}"
 
         if action == "ingest_from_spec":
-            ingested = _ingest_from_spec(meta, todos)
+            # phase=0 (default): TODO.md Next up. phase=N or "latest": SPEC.md Phase block.
+            phase_arg: int | str = 0
+            if text.strip().lower() == "latest":
+                phase_arg = "latest"
+            elif text.strip().isdigit():
+                phase_arg = int(text.strip())
+            elif todo_id > 0:
+                phase_arg = todo_id  # caller can pass via todo_id= as well
+            ingested = _ingest_from_spec(meta, todos, phase=phase_arg)
             _save_todos(meta, todos)
+            src = (f"SPEC.md Phase {phase_arg}" if phase_arg != 0
+                   else "doc/templates/TODO.md Next up")
             if not ingested:
-                return "No new entries from doc/templates/TODO.md Next up (all already in i/todo).\n"
+                return f"No new entries from {src} (all already in i/todo).\n"
             lines = [f"  + #{e['id']} [{e['tier']}] {e['text'][:80]}" for e in ingested]
-            return f"Ingested {len(ingested)} entries from doc/templates/TODO.md Next up:\n" + "\n".join(lines)
+            return f"Ingested {len(ingested)} entries from {src}:\n" + "\n".join(lines)
 
         if action == "promote_to_spec":
             if not todo_id:
