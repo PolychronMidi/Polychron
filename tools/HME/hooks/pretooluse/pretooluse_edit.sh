@@ -94,6 +94,9 @@ if [ -n "$FILE" ] && [ -x "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate
     exit 2
   fi
 fi
+# Bounded-reads vow: reset counter when an Edit lands (action breaks read streak).
+[ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && \
+  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
 
 if _policy_enabled block-comment-bloat; then
   _BLOAT_HIT=$(FILE="$FILE" NEW_STRING="$NEW_STRING" THRESHOLD="${COMMENT_BLOAT_WARN:-3}" _safe_py3 "
