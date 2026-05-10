@@ -144,9 +144,10 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
             }
         try:
             # tier=effective lets synthesis_reasoning pick chain: E4-E5->Opus, E3->Sonnet, E1-E2->cascade.
+            _generic_system = "You are a Polychron co-buddy. Read the task above; respond concisely with grounded reasoning. Cite file:line for every claim. When complete AND queue is drained, end your response with the [no-work] sentinel."
             response = synthesis_reasoning.call(
                 prompt=prompt,
-                system="You are a Polychron co-buddy. Read the task above; respond concisely with grounded reasoning. Cite file:line for every claim. When complete AND queue is drained, end your response with the [no-work] sentinel.",
+                system=persona_system or _generic_system,
                 max_tokens=2048,
                 temperature=0.3,
                 profile="reasoning",
