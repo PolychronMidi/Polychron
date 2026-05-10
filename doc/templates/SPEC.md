@@ -102,6 +102,19 @@ Per skill-set's chain-driver / chain-runner / supervisor jurisdiction discipline
 - When all items in a phase are checked, append a "completed" block via `i/todo phase_complete phase=<N> text="<1-paragraph result + bulleted file citations + test-count delta>"`. The completion paragraph is meaningful content authored by the closer -- not auto-generated.
 - New work surfaced mid-cycle goes to `doc/TODO.md`'s "Next up", not directly here. The next cycle decides whether it merits a new spec phase or was actually a follow-up to the current one.
 
+### Worthiness gate (before adding a Phase)
+
+Adapted from imbue:scope-guard:worthiness-scored. Score each candidate Phase against four axes BEFORE writing it. If the total is < 6/12, the work doesn't belong in SPEC.md yet -- defer to TODO.md "Next up" or drop. Pairs with CLAUDE.md additive-bias scrutiny (default answer to "should we add?" is no).
+
+| Axis | 0 | 1 | 2 | 3 |
+|---|---|---|---|---|
+| **priority alignment** | unrelated | tangential | aligned | central to current Phase chain |
+| **criticality** | nice-to-have | could wait | needs to happen this cycle | blocks downstream work |
+| **simplicity** | complex new abstraction | adds dependencies | reuses existing surface | strict subset of installed surface |
+| **evidence** | none | one-off observation | reproducible / detector flagged | bug report + failing test |
+
+Add the score to the Phase header as `### Phase N: <title> (worthiness P/C/S/E = N/N/N/N)` so future archive readers see the gate's verdict at a glance.
+
 ### Archive on set completion (KB devlog)
 
 Diverges deliberately from skill-set's roll-forward design. Their model leaves completed phases stacked in the active SPEC.md (45KB+ over 20 phases) -- every skill that reads the spec end-to-end pays that context tax. Polychron archives whole sets to KB devlog instead.
