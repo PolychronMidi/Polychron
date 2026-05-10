@@ -66,6 +66,8 @@ def main(argv: list[str]) -> int:
             continue
         if not any(kw in note.lower() for kw in _PROMOTE_KEYWORDS):
             continue
+        if _NON_TEMPORAL_EXEMPTION in note.lower():
+            continue
         embedded = _embedded_date(note)
         age = (today - embedded).days if embedded else None
         flag = age is None or age > args.max_age_days
