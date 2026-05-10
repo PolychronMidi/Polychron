@@ -214,6 +214,16 @@ def _archive_set(set_name: str = "", force: bool = False) -> dict:
     # the Phase blocks -- those moved to the devlog.
     _reset_spec_to_fresh_slate(set_name, ts, devlog_path)
     _reset_todo_to_fresh_slate()
+    # Auto-fire learning extraction on the new devlog so KB/learnings.jsonl
+    # accumulates each cycle's patterns without a human running i/learnings.
+    try:
+        import subprocess as _sp
+        _le = os.path.join(ENV.require("PROJECT_ROOT"),
+                           "tools", "HME", "scripts", "learning_extract.py")
+        if os.path.isfile(_le):
+            _sp.run(["python3", _le, "extract"], capture_output=True, timeout=10)
+    except Exception:
+        pass
     return {
         "ok": True,
         "devlog_path": devlog_path,
