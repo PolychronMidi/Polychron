@@ -51,6 +51,11 @@ _APPROACH_PHRASES = (
     "synchronously", "fall-through", "sync-fire", "atomic", "shadow-mode",
     "opt-in", "pre-write", "post-tool", "soft-flag", "deny=false",
 )
+_DECISION_RE = re.compile(
+    r"\b(chose|picked|opted|decided|preferred)\s+([A-Za-z_][\w\-./]+)\s+"
+    r"(over|vs|instead of|rather than)\s+([A-Za-z_][\w\-./]+)",
+    re.IGNORECASE,
+)
 
 
 @dataclass
