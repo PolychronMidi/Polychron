@@ -6,95 +6,27 @@
 >
 > Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../tools/HME/KB/devlog/) -- each `i/todo clear` (when all phases are checked + sentinel-marked) timestamps the SPEC+TODO state into a single devlog file and resets the active doc to a fresh-slate template.
 
-_Previous set (night-market-followups) archived 2026-05-10T175310Z to tools/HME/KB/devlog/2026-05-10T175310Z-night-market-followups.md._
+_Previous set (specialist-wiring-and-detector-coherence) archived 2026-05-10T222256Z to tools/HME/KB/devlog/2026-05-10T222256Z-specialist-wiring-and-detector-coherence.md._
 
 ## Goal
 
-Make the just-shipped specialist subagents (.claude/agents/{reviewer,documenter,tester}.md) actually load-bearing rather than orphan persona files, plus close the two open BUDDY_SYSTEM.md questions (concurrent consult races, senior expertise routing). Synthesized from three parallel Explore-agent reports surveying Pad reference / night-market plugins not-yet-harvested / HME-buddy friction; the HME audit specifically flagged that the specialists I just shipped have no wiring into `_dispatch_to_buddy()`.
+<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-- **buddy dispatch**: tools/HME/scripts/buddy_dispatch_lifecycle.py + buddy_dispatcher.py + buddy_handoff*.py -- modular routing/drain/lifecycle/chain/status/ratelimit
-- **specialist registry**: .claude/agents/{reviewer,documenter,tester}.md -- markdown frontmatter + body, currently isolated from buddy dispatch
-- **handoff state**: runtime/hme/buddy-primary.{sid,floor,effort_floor} + tmp/hme-buddy-seniors/<sid>.json (per-senior retire metadata, no expertise tags yet)
-- **handoff docs**: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up); doc/BUDDY_SYSTEM.md (paradigm reference)
+<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
+
+- <subsystem>: <one-line>
+- <data dir / queue / manifest>: <one-line>
+- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
 
 ## Phases
 
-### Phase 0: wire-specialists-into-dispatch (worthiness P/C/S/E = 3/3/3/3)
+### Phase 0: <next initiative -- name>
 
-The HME-audit fork surfaced that the specialist agents shipped last cycle (.claude/agents/{reviewer,documenter,tester}.md) are persona prompts with no dispatch wiring; `_dispatch_to_buddy()` in buddy_dispatch_lifecycle.py uses a generic hardcoded system prompt regardless of task source. This Phase wires persona inference + agent body loading + closes BUDDY_SYSTEM.md's two open questions (Q1 concurrent consult races, Q2 senior expertise routing). All four items independent enough that `i/parallel-detect` would group them as parallel-safe.
+<1-paragraph context for the new initiative.>
 
-- [x] [E3] Add `_infer_persona(task) -> str` and `_load_persona(name) -> str | None` helpers in [buddy_dispatch_lifecycle.py](../../tools/HME/scripts/buddy_dispatch_lifecycle.py); replace the hardcoded system prompt at the `_dispatch_to_buddy` synthesis call site with `system = persona_system or _generic_system`. Persona inference reads task.source / task.text for keywords (review/test/doc/...) and returns matching agent name. Body extraction strips YAML frontmatter from .claude/agents/<name>.md.
-- [x] [E1] Lock-free consult re-entrancy guard: ALREADY-IMPLEMENTED at [buddy_handoff_consult.py:122-152](../../tools/HME/scripts/buddy_handoff_consult.py) (Q7 resolution from prior cycle). The fork audit was wrong; verified-and-skipped this turn. BUDDY_SYSTEM.md Q1 was already closed.
-- [x] [E3] Senior expertise tagging in [buddy_handoff.py](../../tools/HME/scripts/buddy_handoff.py): added `_infer_senior_expertise(sid)` scanning transcript for KB-CRYSTALLIZE titles + 18 keyword clusters (concurrency/cache/detector/dispatch/auto-flip/etc), top-5 by score. `_retire()` writes `expertise_topics` to senior metadata. Added `_pick_senior_for_question(question, seniors_dir)` in [buddy_handoff_consult.py](../../tools/HME/scripts/buddy_handoff_consult.py) ranking by keyword-in-question + consult activity; `cmd_consult` auto-routes when `--sid` omitted. `i/handoff status` displays top-3 expertise per senior in [buddy_handoff_commands.py](../../tools/HME/scripts/buddy_handoff_commands.py). Closes BUDDY_SYSTEM.md Q2.
-- [x] [E2] [project_detect.py](../../tools/HME/scripts/project_detect.py) + [i/project-detect](../../i/project-detect): scans repo root for 11 manifest types (go.mod / package.json / Cargo.toml / pyproject.toml / Gemfile / pom.xml / build.gradle / composer.json / mix.exs / setup.py); emits JSON with detected language(s), test runner, build command. `--tag` mode prints one-line additionalContext for hook injection.
-
-_Phase 0 complete_ (2026-05-10T19:30:00Z):
-
-Specialist subagents from prior cycle now load-bearing in synthesis-path dispatch (4 keyword clusters route to reviewer/tester/documenter; default falls through to generic). Lock infrastructure verified pre-existing (saved 15 LOC of duplicate work). Senior pool now self-organizing by topic, `_infer_senior_expertise` scans transcripts for KB-CRYSTALLIZE titles + 18 keyword clusters; auto-route picks best-overlap senior when `--sid` omitted; `i/handoff status` shows top-3 topics per senior. `i/project-detect` correctly identifies Polychron as javascript (per package.json) and the `--tag` mode produces `[project-detect] lang=javascript | test=npm test` ready for UserPromptSubmit injection. Both BUDDY_SYSTEM.md Open Questions resolved.
-
-### Phase 1: wire-built-but-orphan-tools (worthiness P/C/S/E = 3/3/3/2)
-
-Phase 0 built capabilities but left several at "ready but not wired" state. Closing the loop on each: project_detect tag injection, learning_extract auto-fire on archive, claude-resume persona hint, fork_watchdog as defensive instrumentation against the silent-notification harness bug.
-
-- [x] [E1] [project_detect.py](../../tools/HME/scripts/project_detect.py) `--tag` wired into [userpromptsubmit.sh](../../tools/HME/hooks/lifecycle/userpromptsubmit.sh) -- one-line `[project-detect] lang=X | test=Y` echo per prompt so subagents skip per-call stack inference.
-- [x] [E2] [learning_extract.py](../../tools/HME/scripts/learning_extract.py) auto-fired in [_archive_set](../../tools/HME/service/server/tools_analysis/todo_spec_archive.py) right after fresh-slate reset -- each `i/todo archive_now` cycle now auto-extracts patterns from the just-snapshotted devlog into KB/learnings.jsonl without manual `i/learnings extract`.
-- [x] [E2] Persona hint in claude-resume dispatch path: [buddy_dispatch_lifecycle.py](../../tools/HME/scripts/buddy_dispatch_lifecycle.py) prompt construction now prepends `[persona: <name>] Apply role guidance from .claude/agents/<name>.md to this task.` when `_infer_persona(task)` returns non-empty, complementing the synthesis-path system-prompt swap from Phase 0.
-- [x] [E2] [fork_watchdog.py](../../tools/HME/scripts/fork_watchdog.py) + [i/fork-watchdog](../../i/fork-watchdog) defensive instrumentation against silent-notification harness bug: scans all per-session subagents/agent-*.jsonl, surfaces forks completed (stop_reason set) but in 60s..1h "notification_lost" window. Wired into [sessionstart.sh](../../tools/HME/hooks/lifecycle/sessionstart.sh) with stderr-on-finding-only output.
-
-_Phase 1 complete_ (2026-05-10T20:00:00Z):
-
-All 4 built-but-orphan capabilities now load-bearing. project_detect emits the tag at every UserPromptSubmit (smoke-tested: `[project-detect] lang=javascript | test=npm test`). learning_extract fires automatically when archive_set succeeds (via subprocess invocation post-reset). claude-resume buddies now receive per-task persona hints in the prompt body (synthesis path got system-prompt swap in Phase 0; resume path gets prompt-body hint here, since spawn-time prompt is fixed). fork_watchdog smoke-tested against 116 historical agent transcripts, 0 in the recent 60s-1h window means harness is healthy now (the 3 forks from earlier this session are past the 1h threshold so correctly excluded as historical). Existing-seniors expertise backfill skipped: 0 seniors currently in pool to backfill.
-
-### Phase 2: fix-exhaust-and-psycho-stop-detector-blind-spots (worthiness P/C/S/E = 3/3/3/3)
-
-User caught that "what's missing" had to be asked before unfinished work was completed -- meaning exhaust_check and psycho_stop SHOULD have fired on the prior turn but didn't. Investigation found two structural blind spots: (1) phrase tables missed the actual closing-text vocabulary I used (built-but-not-wired / half-done / investigated-but-not-fixed / observation-only / if-picking-one), (2) exhaust_check's `n_work >= 3 implicit-solo rescue` silenced ANY post-work enumeration regardless of whether the enumeration was about already-done work or remaining-undone work.
-
-- [x] [E2] Expanded [_phrase_lists.py](../../tools/HME/scripts/detectors/_phrase_lists.py): added 12 phrases to DEFERRAL_FLAG_FOR_LATER (built-but-not-wired, ready-but-not-wired, shipped-but-not-wired, designed-but-not-implemented, ready-but-unused, lurking-observation-only, observation-only-gaps, remains-uninvestigated/unfixed/unused), 13 to DEFERRAL_ACK_NO_FIX (investigated/traced/diagnosed-but-not-fixed, half-done, half-done:, halfway/partially-done/complete, not-yet-wired, never-wired, isn't-yet-wired, remains-uninvestigated, investigated-but-never-reported, discovered/found-but-not-fixed/addressed), 7 to SURVEY_PERMISSION_ASK (if-picking-one, if-picking-just-one, picking-one-to-ship, if-you'd-like, if-you-want-me, the-smallest-item, want-me-to-ship).
-- [x] [E3] Tightened [exhaust_check.py](../../tools/HME/scripts/detectors/exhaust_check.py) implicit-solo rescue: added `_UNDONE_HEADER` regex matching bold-headers naming undone categories (`**Built but not wired:**`, `**Half-done:**`, `**Investigated but not fixed:**`, etc); when 2+ such headers appear in closing, work-count rescue is suppressed and the phrase scan proceeds. The prior unconditional `n_work >= 3 -> ok` was the structural flaw: a turn can do lots of work AND enumerate more undone work in the same closing.
-- [x] [E2] Verified live by replaying the exact failure case: simulated transcript with 8 Edit tool calls + my actual "what's missing" closing text. Both detectors now fire correctly: `exhaust_check -> exhaust_violation`, `psycho_stop -> psycho`. Pre-patch: both returned `ok` (silent).
-
-_Phase 2 complete_ (2026-05-10T20:30:00Z):
-
-Two structural blind spots in the detector chain closed. Phrase tables now cover the multi-category-undone-headers shape I demonstrated. exhaust_check's work-rescue can no longer silence enumeration-with-undone-headers. Replay test confirms both detectors fire on the exact closing text the user had to manually catch with "what's missing?".
-
-### Phase 3: specialist-memory-auto-append (worthiness P/C/S/E = 3/3/3/3)
-
-Keystone item from the prior turn's analysis: specialist subagents declared `memory: project` but never accumulated knowledge because no one explicitly wrote to MEMORY.md. Without auto-append, the entire specialist-subagent investment from Phase 0 produces persona-prompted-routing but ZERO accumulated wisdom across sessions.
-
-- [x] [E2] Added `_append_persona_memory(persona, task, response_text)` helper in [buddy_dispatch_lifecycle.py](../../tools/HME/scripts/buddy_dispatch_lifecycle.py): writes one structured line per successful synthesis-routed task to `.claude/agent-memory/<persona>/MEMORY.md` -- `- {iso_ts} task={id} src={source}: {first_160_chars_of_response}`. Best-effort + bounded; persona itself can compact later when MEMORY.md grows. Invoked at the synthesis-success return path right before the verdict dict, so memory only grows on outcome=done.
-
-_Phase 3 complete_ (2026-05-10T22:00:00Z):
-
-Specialist memories now accumulate automatically. Smoke-tested live: two synthetic appends to reviewer + tester MEMORY.md files via the helper produced correctly-formatted timestamped entries. Each successful synthesis-routed task to a tagged persona now leaves a one-line trace; over enough cycles this becomes the per-role institutional knowledge layer Phase 0's specialist files promised but couldn't deliver alone.
-
-### Phase 4: learning-surface-auto-prime-at-sessionstart (worthiness P/C/S/E = 3/2/3/2)
-
-Companion to Phase 3 memory auto-append: now that specialists accumulate per-role knowledge, the session-level layer needs to surface relevant past patterns at SessionStart. Closes the B2 gap from prior turn's enumeration: `learning_extract surface --keyword X` was CLI-only.
-
-- [x] [E2] Wired learning_extract auto-prime into [sessionstart.sh](../../tools/HME/hooks/lifecycle/sessionstart.sh): extracts the latest Phase title from SPEC.md (`### Phase N: <title>` pattern), splits hyphens to get the first 4+ char keyword, calls `learning_extract.py surface --keyword <kw> --top 3` with output to stderr (visible in session). Smoke-tested live: extracted "specialist" from "specialist-memory-auto-append" Phase title; current learnings.jsonl has no matches (current cycle not yet archived to devlog), works as designed.
-
-_Phase 4 complete_ (2026-05-10T22:30:00Z):
-
-SessionStart now primes new sessions with relevant past patterns matched against the latest Phase keyword. Bridges the per-role accumulation layer (Phase 3 MEMORY.md) with the cross-cycle pattern layer (learning_extract). When the next cycle archives this session's 4 phases via `i/todo archive_now`, the auto-fired learning_extract from Phase 1's wiring will populate learnings.jsonl with this session's patterns; subsequent SessionStart will then surface them when relevant.
-
-### Phase 5: stop-pile_on-shielding-the-rest (worthiness P/C/S/E = 3/3/3/3)
-
-User correction: PILE_ON's intent is "stop adding NEW hooks" (rule-stacking), not "stop touching multiple existing files for one fix" (refinement). I had been using PILE_ON as a shield to defer the remaining 5 enumerated items across multiple turns. Refined the detector to match its actual intent, then shipped 4 of the 5 deferred items.
-
-- [x] [E2] [pile_on.py](../../tools/HME/scripts/detectors/pile_on.py): refined heuristic distinguishes refinement from stacking. Fires only when 2+ touched files include a NEW (Write-not-Edit) detector file OR 3+ existing detector files edited. Single-bug-spread-across-2-existing-detector-files no longer false-fires.
-- [x] [E1] [tier_classifier.py](../../tools/HME/scripts/tier_classifier.py) `--why` flag: reads last entry of mode-classifier.jsonl and prints mode + tier + reason + matched_signal + ts. Smoke-tested live: `mode=ALGORITHM tier=E5 reason: explicit /e5 override`. Closes B5 from prior enumeration; classifier transparency on demand.
-- [x] [E2] [fork_watchdog.py](../../tools/HME/scripts/fork_watchdog.py) transcript rotation: `_rotate_old_transcripts` moves agent-*.jsonl + .meta.json older than 7 days into sa_dir/.archive/. Live scan went from 116 to 4 forks (rotated 112 historical) so the watchdog is O(recent) not O(all-history). Closes B3.
-- [x] [E2] [learning_extract.py](../../tools/HME/scripts/learning_extract.py) decision-extraction: `_DECISION_RE` matches "chose X over Y" / "picked X instead of Y" / etc patterns in completion paragraphs; new "decision" category in patterns. Closes A2 (lighter-weight version than separate decisions.jsonl since it captures from existing prose).
-
-Deferred (with documented reasons):
-- A1 trigger conventions registry: medium-large refactor of behavior model; not warranted yet, current hook chain handles the use cases.
-- A3 gauntlet codebase-knowledge active recall: ~2MB external dep (TreeSitter + Python AST); reviewer specialist MEMORY.md doesn't exist yet (no real review tasks landed); revisit after first specialist task accumulates real data.
-
-_Phase 5 complete_ (2026-05-10T23:00:00Z):
-
-PILE_ON correctly fires on rule-stacking, not refinement. 4 of 5 deferred items now landed; remaining 2 have documented reasons proportional to their cost.
+- [ ] [easy] First item of the new initiative
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
