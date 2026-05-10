@@ -91,9 +91,9 @@ def main(argv: list[str]) -> int:
         return 0
 
     while True:
-        status = _check_primary(args.max_silence)
+        status = _check_primary()
         ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        if status in ("transcript_missing", "silent"):
+        if status == "transcript_missing":
             sys.stderr.write(f"[{ts}] buddy_watchdog: primary status={status}; clearing pointer\n")
             _clear_primary()
         else:
