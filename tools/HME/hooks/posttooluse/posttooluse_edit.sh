@@ -33,6 +33,11 @@ if [[ "$FILE" == */README.md ]]; then
     >/dev/null 2>&1 &
 fi
 
+# Auto-ship newly-flipped SPEC.md checkboxes to TODO.md "Just shipped".
+if [[ "$FILE" == */doc/templates/SPEC.md ]]; then
+  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/spec_autoflip.py" >&2 &
+fi
+
 # Bias-registration edits trigger the jurisdiction manifest snapshot in the
 # background. `registerTrustBias` / `registerCouplingBias` / `registerJurisdictionBias`
 # write into 93 locked bias-bounds; a change to any of them must be reflected
