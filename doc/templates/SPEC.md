@@ -34,6 +34,19 @@ _Phase 0 complete_ (2026-05-10T19:30:00Z):
 
 Specialist subagents from prior cycle now load-bearing in synthesis-path dispatch (4 keyword clusters route to reviewer/tester/documenter; default falls through to generic). Lock infrastructure verified pre-existing (saved 15 LOC of duplicate work). Senior pool now self-organizing by topic, `_infer_senior_expertise` scans transcripts for KB-CRYSTALLIZE titles + 18 keyword clusters; auto-route picks best-overlap senior when `--sid` omitted; `i/handoff status` shows top-3 topics per senior. `i/project-detect` correctly identifies Polychron as javascript (per package.json) and the `--tag` mode produces `[project-detect] lang=javascript | test=npm test` ready for UserPromptSubmit injection. Both BUDDY_SYSTEM.md Open Questions resolved.
 
+### Phase 1: wire-built-but-orphan-tools (worthiness P/C/S/E = 3/3/3/2)
+
+Phase 0 built capabilities but left several at "ready but not wired" state. Closing the loop on each: project_detect tag injection, learning_extract auto-fire on archive, claude-resume persona hint, fork_watchdog as defensive instrumentation against the silent-notification harness bug.
+
+- [x] [E1] [project_detect.py](../../tools/HME/scripts/project_detect.py) `--tag` wired into [userpromptsubmit.sh](../../tools/HME/hooks/lifecycle/userpromptsubmit.sh) -- one-line `[project-detect] lang=X | test=Y` echo per prompt so subagents skip per-call stack inference.
+- [x] [E2] [learning_extract.py](../../tools/HME/scripts/learning_extract.py) auto-fired in [_archive_set](../../tools/HME/service/server/tools_analysis/todo_spec_archive.py) right after fresh-slate reset -- each `i/todo archive_now` cycle now auto-extracts patterns from the just-snapshotted devlog into KB/learnings.jsonl without manual `i/learnings extract`.
+- [x] [E2] Persona hint in claude-resume dispatch path: [buddy_dispatch_lifecycle.py](../../tools/HME/scripts/buddy_dispatch_lifecycle.py) prompt construction now prepends `[persona: <name>] Apply role guidance from .claude/agents/<name>.md to this task.` when `_infer_persona(task)` returns non-empty, complementing the synthesis-path system-prompt swap from Phase 0.
+- [x] [E2] [fork_watchdog.py](../../tools/HME/scripts/fork_watchdog.py) + [i/fork-watchdog](../../i/fork-watchdog) defensive instrumentation against silent-notification harness bug: scans all per-session subagents/agent-*.jsonl, surfaces forks completed (stop_reason set) but in 60s..1h "notification_lost" window. Wired into [sessionstart.sh](../../tools/HME/hooks/lifecycle/sessionstart.sh) with stderr-on-finding-only output.
+
+_Phase 1 complete_ (2026-05-10T20:00:00Z):
+
+All 4 built-but-orphan capabilities now load-bearing. project_detect emits the tag at every UserPromptSubmit (smoke-tested: `[project-detect] lang=javascript | test=npm test`). learning_extract fires automatically when archive_set succeeds (via subprocess invocation post-reset). claude-resume buddies now receive per-task persona hints in the prompt body (synthesis path got system-prompt swap in Phase 0; resume path gets prompt-body hint here, since spawn-time prompt is fixed). fork_watchdog smoke-tested against 116 historical agent transcripts, 0 in the recent 60s-1h window means harness is healthy now (the 3 forks from earlier this session are past the 1h threshold so correctly excluded as historical). Existing-seniors expertise backfill skipped: 0 seniors currently in pool to backfill.
+
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
 - HME-audit #1 (extract dispatch prompts to discoverable templates ~80 LOC) -- large; defer until #1 above proves the persona pattern works
