@@ -65,13 +65,27 @@ _EVIDENCE_NEAR_RE = re.compile(
 
 _WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
 # SPEC/TODO templates legitimately quote the patterns this detector matches.
-# slop_scan.py itself contains pattern strings as docstring + regex source.
 _SKIP_PATH_PARTS = {"__pycache__", "node_modules", ".git", "tools/HME/KB/devlog"}
 _SKIP_EXACT_PATHS = {
     "doc/templates/SPEC.md", "doc/templates/TODO.md",
     "tools/HME/scripts/detectors/slop_scan.py",
     "CONSTITUTION.md", "CLAUDE.md",
 }
+
+
+def is_skipped_path(fp: Path) -> bool:
+    """Public helper: True iff fp matches the detector's exclusion list.
+    Tiered-audit and other direct-invocation callers use this so they don't
+    re-flag templates and self-quoting source files. Mirrors the in-line
+    check in _collect_edited_files."""
+    s = str(fp)
+    if any(seg in s for seg in _SKIP_PATH_PARTS):
+        return True
+    try:
+        rel = str(fp.relative_to(_PROJECT))
+    except ValueError:
+        return False
+    return rel in _SKIP_EXACT_PATHS
 
 # Filename-with-TODO false-positive guard: TODO.md, FIXME.txt, etc. are filenames.
 _TODO_FILENAME_RE = re.compile(r"\.(md|txt|rst|adoc|html?|json|ya?ml)\b", re.IGNORECASE)
