@@ -297,6 +297,12 @@ ${_file_head}"
   fi
 fi
 
+# Record this edit's module for downstream gates (verify-landed antagonism, etc.). All blocking gates have passed.
+if [ -n "$_MODULE_BASE" ] && [ -n "${PROJECT_ROOT:-}" ]; then
+  mkdir -p "$(dirname "$_TURN_EDIT_STATE")" 2>/dev/null
+  echo "$_MODULE_BASE" >> "$_TURN_EDIT_STATE"
+fi
+
 _streak_tick 10
 if ! _streak_check; then exit 1; fi
 [ -n "$_AUTO_BRIEF_JSON" ] && printf '%s\n' "$_AUTO_BRIEF_JSON"
