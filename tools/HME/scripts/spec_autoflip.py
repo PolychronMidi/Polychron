@@ -30,7 +30,36 @@ _OPEN_RE = re.compile(r"^\s*-\s+\[\s\]\s+\[(E[1-5]|easy|medium|hard)\]\s+(.+?)\s
                       re.IGNORECASE)
 
 
+def _read_spec_at(ref: str) -> str:
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(_PROJECT), "show", f"{ref}:doc/templates/SPEC.md"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if proc.returncode == 0:
+            return proc.stdout
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return ""
+
+
 def _read_head_spec() -> str:
+    """Return the pre-edit SPEC.md content. If HEAD == working tree (autocommit
+    already captured this turn's edit), walk back to HEAD~1 so the diff is meaningful.
+    Solves the race where autocommit beats spec_autoflip to disk."""
+    try:
+        cur = _SPEC.read_text(encoding="utf-8")
+    except OSError:
+        return _read_spec_at("HEAD")
+    head = _read_spec_at("HEAD")
+    if head and head == cur:
+        prev = _read_spec_at("HEAD~1")
+        if prev:
+            return prev
+    return head
+
+
+def _read_head_spec_legacy() -> str:
     try:
         proc = subprocess.run(
             ["git", "-C", str(_PROJECT), "show", "HEAD:doc/templates/SPEC.md"],
