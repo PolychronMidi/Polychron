@@ -322,8 +322,13 @@ def main() -> int:
     p_auto.set_defaults(func=cmd_auto_retire_check)
 
     p_consult = sub.add_parser("consult", help="manually invoke a specific senior")
-    p_consult.add_argument("--sid", required=True)
+    p_consult.add_argument("--sid", default="",
+                           help="senior sid (omit to auto-route by expertise match)")
     p_consult.add_argument("--question", required=True)
+    p_consult.add_argument("--engine", default="claude-resume",
+                           choices=["claude-resume", "synthesis"],
+                           help="claude-resume: subprocess (~30-300s, full session resume); "
+                                "synthesis: single API call (~5s, persona-bodied, no transcript accumulation)")
     p_consult.set_defaults(func=cmd_consult)
 
     p_archive = sub.add_parser("archive",
