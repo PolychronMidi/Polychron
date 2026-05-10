@@ -82,14 +82,54 @@ def main() -> int:
         return 0
     fails = data.get("fail") or []
     edited_set = {os.path.realpath(os.path.join(project_root, f)) if not os.path.isabs(f) else os.path.realpath(f) for f in files}
-    for entry in fails:
-        p = entry.get("path") or ""
-        full = os.path.realpath(os.path.join(project_root, p)) if not os.path.isabs(p) else os.path.realpath(p)
+    # Pre-existing blocks aren't churn-worthy: pre-write hook already blocks new
+    # bloat at COMMENT_BLOAT_WARN+. Only fire if HEAD has fewer FAIL blocks than now.
+    baseline_fail_paths = _baseline_fail_paths(project_root, files, audit)
+    current_fail_paths = {
+        os.path.realpath(os.path.join(project_root, e.get("path") or ""))
+        for e in fails
+        if (e.get("path") or "")
+    }
+    new_fail_paths = current_fail_paths - baseline_fail_paths
+    for full in new_fail_paths:
         if full in edited_set:
             print("comment_bloat")
             return 0
     print("ok")
     return 0
+
+
+def _baseline_fail_paths(project_root: str, files: list[str], audit: str) -> set[str]:
+    """Return realpaths whose HEAD version already has FAIL-level blocks.
+    Lets the Stop-level detector ignore pre-existing bloat in edited files."""
+    out: set[str] = set()
+    import tempfile
+    for f in files:
+        rel = f if not os.path.isabs(f) else os.path.relpath(f, project_root)
+        try:
+            head_blob = subprocess.run(
+                ["git", "-C", project_root, "show", f"HEAD:{rel}"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if head_blob.returncode != 0:
+                continue
+            with tempfile.NamedTemporaryFile("w", suffix=os.path.splitext(rel)[1], delete=False) as tmp:
+                tmp.write(head_blob.stdout)
+                tmp_path = tmp.name
+            try:
+                proc = subprocess.run(
+                    ["python3", audit, "--json", "--files", tmp_path],
+                    capture_output=True, text=True, timeout=10,
+                )
+                data = json.loads(proc.stdout or "{}")
+                if data.get("fail"):
+                    out.add(os.path.realpath(os.path.join(project_root, rel)))
+            finally:
+                try: os.unlink(tmp_path)
+                except OSError: pass
+        except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+            continue
+    return out
 
 
 if __name__ == "__main__":
