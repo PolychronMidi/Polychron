@@ -95,6 +95,16 @@ _Phase 5 complete_ (2026-05-10T17:30:00Z):
 
 Pass-3 now reports 0 findings (was 2 false positives; legitimate "fast reconvergence" + "fail-fast" no longer flagged). Race fix verified: `_read_head_spec()` correctly returns HEAD~1 content when HEAD == working tree. Common autocommit-races-spec_autoflip pattern resolved; multi-autocommit scenarios (when HEAD~1 also has the just-edited state) still fall through to manual ship-line.
 
+### Phase 6: spec_autoflip-sync-fire (worthiness P/C/S/E = 3/2/3/3)
+
+Phase 5's "what's next" surfaced a cleaner architectural fix for the race: dropping the `&` so spec_autoflip runs synchronously in PostToolUse, blocking the hook return until TODO.md is updated. proxy_autocommit can no longer race ahead because the hook chain hasn't returned.
+
+- [x] [E1] Drop `&` from spec_autoflip invocation in [posttooluse_edit.sh](../../tools/HME/hooks/posttooluse/posttooluse_edit.sh). Run synchronously so TODO.md ship-line lands BEFORE the next autocommit fires.
+
+_Phase 6 complete_ (2026-05-10T17:50:00Z):
+
+Sync-fire latency measured at 23ms -- well below user-perceivable per-Edit overhead. Structural fix replaces Phase 5's HEAD~1 fallback (still useful as defense-in-depth, e.g., when the user-side bash hook fails / doesn't fire). The `&`-removal completes the autoflip path; subsequent SPEC.md flips no longer need manual ship-line cleanup.
+
 ## Deferred / out of scope
 
 - **Telegram bot + remote control** -- out of scope; HME use case is single-operator, no remote ops
