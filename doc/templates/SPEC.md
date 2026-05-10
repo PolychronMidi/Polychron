@@ -79,6 +79,23 @@ _Phase 4 complete_ (2026-05-10T22:30:00Z):
 
 SessionStart now primes new sessions with relevant past patterns matched against the latest Phase keyword. Bridges the per-role accumulation layer (Phase 3 MEMORY.md) with the cross-cycle pattern layer (learning_extract). When the next cycle archives this session's 4 phases via `i/todo archive_now`, the auto-fired learning_extract from Phase 1's wiring will populate learnings.jsonl with this session's patterns; subsequent SessionStart will then surface them when relevant.
 
+### Phase 5: stop-pile_on-shielding-the-rest (worthiness P/C/S/E = 3/3/3/3)
+
+User correction: PILE_ON's intent is "stop adding NEW hooks" (rule-stacking), not "stop touching multiple existing files for one fix" (refinement). I had been using PILE_ON as a shield to defer the remaining 5 enumerated items across multiple turns. Refined the detector to match its actual intent, then shipped 4 of the 5 deferred items.
+
+- [x] [E2] [pile_on.py](../../tools/HME/scripts/detectors/pile_on.py): refined heuristic distinguishes refinement from stacking. Fires only when 2+ touched files include a NEW (Write-not-Edit) detector file OR 3+ existing detector files edited. Single-bug-spread-across-2-existing-detector-files no longer false-fires.
+- [x] [E1] [tier_classifier.py](../../tools/HME/scripts/tier_classifier.py) `--why` flag: reads last entry of mode-classifier.jsonl and prints mode + tier + reason + matched_signal + ts. Smoke-tested live: `mode=ALGORITHM tier=E5 reason: explicit /e5 override`. Closes B5 from prior enumeration; classifier transparency on demand.
+- [x] [E2] [fork_watchdog.py](../../tools/HME/scripts/fork_watchdog.py) transcript rotation: `_rotate_old_transcripts` moves agent-*.jsonl + .meta.json older than 7 days into sa_dir/.archive/. Live scan went from 116 to 4 forks (rotated 112 historical) so the watchdog is O(recent) not O(all-history). Closes B3.
+- [x] [E2] [learning_extract.py](../../tools/HME/scripts/learning_extract.py) decision-extraction: `_DECISION_RE` matches "chose X over Y" / "picked X instead of Y" / etc patterns in completion paragraphs; new "decision" category in patterns. Closes A2 (lighter-weight version than separate decisions.jsonl since it captures from existing prose).
+
+Deferred (with documented reasons):
+- A1 trigger conventions registry: medium-large refactor of behavior model; not warranted yet, current hook chain handles the use cases.
+- A3 gauntlet codebase-knowledge active recall: ~2MB external dep (TreeSitter + Python AST); reviewer specialist MEMORY.md doesn't exist yet (no real review tasks landed); revisit after first specialist task accumulates real data.
+
+_Phase 5 complete_ (2026-05-10T23:00:00Z):
+
+PILE_ON correctly fires on rule-stacking, not refinement. 4 of 5 deferred items now landed; remaining 2 have documented reasons proportional to their cost.
+
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
 - HME-audit #1 (extract dispatch prompts to discoverable templates ~80 LOC) -- large; defer until #1 above proves the persona pattern works
