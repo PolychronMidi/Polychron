@@ -59,19 +59,6 @@ def _read_head_spec() -> str:
     return head
 
 
-def _read_head_spec_legacy() -> str:
-    try:
-        proc = subprocess.run(
-            ["git", "-C", str(_PROJECT), "show", "HEAD:doc/templates/SPEC.md"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if proc.returncode == 0:
-            return proc.stdout
-    except (OSError, subprocess.SubprocessError):
-        pass
-    return ""
-
-
 def _items(text: str, regex: re.Pattern) -> set[str]:
     out = set()
     for line in text.splitlines():
