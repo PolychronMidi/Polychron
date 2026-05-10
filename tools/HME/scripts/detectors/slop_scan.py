@@ -133,6 +133,11 @@ def _line_excerpt(text: str, pos: int) -> tuple[str, int]:
 def _scan_identity(text: str) -> list[str]:
     hits = []
     for m in _IDENTITY_LEAK_RE.finditer(text):
+        if _is_in_code_fence(text, m.start()):
+            continue
+        line, in_line = _line_excerpt(text, m.start())
+        if _is_in_quoted_string(line, in_line):
+            continue
         line_n = text[: m.start()].count("\n") + 1
         hits.append(f"line {line_n}: \"{m.group(0)}\"")
         if len(hits) >= 3:
@@ -143,13 +148,17 @@ def _scan_identity(text: str) -> list[str]:
 def _scan_bare_todo(text: str) -> list[str]:
     hits = []
     for m in _BARE_TODO_RE.finditer(text):
+        if _is_in_code_fence(text, m.start()):
+            continue
+        line, in_line = _line_excerpt(text, m.start())
+        if _is_in_quoted_string(line, in_line):
+            continue
+        # Filename guard: TODO.md, FIXME.txt etc. are paths, not deferred work.
+        after_match = line[in_line + len(m.group(0)):]
+        if _TODO_FILENAME_RE.match(after_match):
+            continue
         line_n = text[: m.start()].count("\n") + 1
-        # Get the line for context
-        line_start = text.rfind("\n", 0, m.start()) + 1
-        line_end = text.find("\n", m.end())
-        if line_end == -1:
-            line_end = len(text)
-        line_excerpt = text[line_start:line_end].strip()[:100]
+        line_excerpt = line.strip()[:100]
         hits.append(f"line {line_n}: {line_excerpt}")
         if len(hits) >= 3:
             break
