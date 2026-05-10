@@ -26,7 +26,7 @@ _Previous set (archive_now-test) archived 2026-05-03T162542Z to tools/HME/KB/dev
 
 <1-paragraph context for the new initiative.>
 
-- [ ] [easy] First item of the new initiative
+- [ ] [E2] First item of the new initiative
 
 ## Deferred / out of scope
 
@@ -61,7 +61,7 @@ Per skill-set's chain-driver / chain-runner / supervisor jurisdiction discipline
 ## Glossary (project-specific terms)
 
 - **co-buddy**: one of N parallel persistent `claude --resume <sid>` sessions in the buddy fanout
-- **task tier**: one of `[easy|medium|hard]`; routes to a model+effort tier per the floor-based escalation rule
+- **task tier**: one of `[E1|E2|E3|E4|E5]` (legacy easy/medium/hard accepted, translated to E2/E3/E4); routes to a model+effort tier per the floor-based escalation rule
 - **`[no-work]` sentinel**: stdout marker emitted by a co-buddy when its task is complete AND the queue is drained; positive idle declaration
 - **iter-boundary drafts sweep**: self-healing scan of prior iter's `processing/` dir at start of next iter; consumes orphans from buddies that died mid-task
 - **verdict file**: per-co-buddy-turn `buddy-<N>-verdict.md` recording task outcomes; required by the exit-contract gate
@@ -93,11 +93,13 @@ The active doc/ directory thus stays lean; deeper history lives in the devlog an
 
 ### Difficulty labels (model + effort routing)
 
-Every open `- [ ]` SPEC item AND every `## Next up` TODO entry MUST carry a difficulty label as the leading bracket immediately after the `- [ ]` checkbox (or the leading `- ` for TODO entries). Three values:
+Every open `- [ ]` SPEC item AND every `## Next up` TODO entry MUST carry a difficulty label as the leading bracket immediately after the `- [ ]` checkbox (or the leading `- ` for TODO entries). Five values (E1-E5); legacy easy/medium/hard accepted and translated:
 
-- `[easy]` -> Haiku tier + low effort. Mechanical, well-bounded.
-- `[medium]` -> Sonnet tier + medium effort. Substantial reasoning, multi-step, structured.
-- `[hard]` -> Opus tier + high effort. Novel design, cross-file reasoning, architectural decisions.
+- `[E1]` -> Haiku tier + low effort. Trivial, inline-call shape.
+- `[E2]` -> Haiku tier + low effort. Mechanical, well-bounded. (legacy `[easy]` translates here)
+- `[E3]` -> Sonnet tier + medium effort. Substantial reasoning, multi-step, structured. (legacy `[medium]`)
+- `[E4]` -> Sonnet/Opus tier + high effort. Cross-file reasoning, architectural. (legacy `[hard]`)
+- `[E5]` -> Opus tier + high effort. Comprehensive sweep, exhaustive cross-cutting refactor.
 
 Resolution rule: `effective = max(item_tier, skill_floor)` per axis (model and effort independent).
 

@@ -143,22 +143,24 @@ test('dispatcher: floor-based escalation picks higher of (item, floor) per axis'
     const result = _runPython(sandbox, `
 ${_dispatcherImport()}
 import json
-# easy item + medium floor -> effective = medium (floor wins)
-# hard item + easy floor -> effective = hard (item wins)
-# medium item + medium floor -> medium (equal)
+# E2 item + E3 floor -> E3 (floor wins). Legacy easy/medium/hard accepted.
 print(json.dumps({
-  "easy_item_medium_floor": disp._effective_tier("easy", "medium"),
-  "hard_item_easy_floor": disp._effective_tier("hard", "easy"),
-  "medium_item_medium_floor": disp._effective_tier("medium", "medium"),
-  "unknown_falls_back": disp._effective_tier("garbage", "medium"),
+  "e2_item_e3_floor": disp._effective_tier("E2", "E3"),
+  "e4_item_e2_floor": disp._effective_tier("E4", "E2"),
+  "e3_item_e3_floor": disp._effective_tier("E3", "E3"),
+  "unknown_falls_back": disp._effective_tier("garbage", "E3"),
+  "legacy_easy_medium": disp._effective_tier("easy", "medium"),
+  "legacy_hard_easy":   disp._effective_tier("hard", "easy"),
 }))
 `);
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
     const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-    assert.strictEqual(parsed.easy_item_medium_floor, 'medium', 'floor wins over lower item tier');
-    assert.strictEqual(parsed.hard_item_easy_floor, 'hard', 'item wins over lower floor');
-    assert.strictEqual(parsed.medium_item_medium_floor, 'medium', 'equal stays equal');
-    assert.strictEqual(parsed.unknown_falls_back, 'medium', 'unknown tier defaults to medium');
+    assert.strictEqual(parsed.e2_item_e3_floor, 'E3', 'floor wins over lower item tier');
+    assert.strictEqual(parsed.e4_item_e2_floor, 'E4', 'item wins over lower floor');
+    assert.strictEqual(parsed.e3_item_e3_floor, 'E3', 'equal stays equal');
+    assert.strictEqual(parsed.unknown_falls_back, 'E3', 'unknown tier defaults to E3');
+    assert.strictEqual(parsed.legacy_easy_medium, 'E3', 'legacy easy/medium translates to E2/E3 max');
+    assert.strictEqual(parsed.legacy_hard_easy, 'E4', 'legacy hard/easy translates to E4/E2 max');
   });
 });
 
@@ -311,7 +313,7 @@ test('enqueue-sentinel: posttooluse_bash skips enqueue when dispatch is disabled
   }
 });
 
-test('dispatcher: enqueue produces well-formed task file', () => {
+test('dispatcher: enqueue produces well-formed task file (legacy hard -> E4)', () => {
   _withDispatcherSandbox((sandbox) => {
     const result = _runPython(sandbox, `
 ${_dispatcherImport()}
@@ -330,7 +332,7 @@ print(json.dumps({
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
     const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
     assert.strictEqual(parsed.id, 'fixed-id-001');
-    assert.strictEqual(parsed.tier, 'hard');
+    assert.strictEqual(parsed.tier, 'E4', 'legacy "hard" should translate to E4 on enqueue');
     assert.strictEqual(parsed.text, 'test enqueue');
     assert.strictEqual(parsed.source, 'unit_test');
   });
@@ -552,29 +554,29 @@ test('dispatcher: effort-floor axis is independent of model-floor', () => {
     const result = _runPython(sandbox, `
 ${_dispatcherImport()}
 import json
-# Both axes resolve independently via max(item, floor)
+# Both axes resolve independently via max(item, floor). E1-E5 vocabulary.
 print(json.dumps({
-  # easy item + medium model-floor + high effort-floor -> medium model, high effort
-  "easy_item_mixed_floors": [
-    disp._effective_tier("easy", "medium"),
-    disp._effective_effort("easy", "high"),
+  # E2 item + E3 model-floor + high effort-floor -> E3 model, high effort
+  "e2_item_mixed_floors": [
+    disp._effective_tier("E2", "E3"),
+    disp._effective_effort("E2", "high"),
   ],
-  # hard item + easy model-floor + low effort-floor -> hard model, high effort (item wins both)
-  "hard_item_low_floors": [
-    disp._effective_tier("hard", "easy"),
-    disp._effective_effort("hard", "low"),
+  # E4 item + E2 model-floor + low effort-floor -> E4 model, high effort (item wins both)
+  "e4_item_low_floors": [
+    disp._effective_tier("E4", "E2"),
+    disp._effective_effort("E4", "low"),
   ],
-  # easy item + low effort-floor -> low effort
-  "easy_item_low_effort_floor": disp._effective_effort("easy", "low"),
+  # E2 item + low effort-floor -> low effort
+  "e2_item_low_effort_floor": disp._effective_effort("E2", "low"),
   # bad effort-floor falls back to medium
-  "bad_effort_falls_back": disp._effective_effort("medium", "garbage"),
+  "bad_effort_falls_back": disp._effective_effort("E3", "garbage"),
 }))
 `);
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
     const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-    assert.deepStrictEqual(parsed.easy_item_mixed_floors, ['medium', 'high'], 'model + effort resolved independently');
-    assert.deepStrictEqual(parsed.hard_item_low_floors, ['hard', 'high'], 'item wins both axes when above floors');
-    assert.strictEqual(parsed.easy_item_low_effort_floor, 'low', 'easy task on low-effort buddy stays low');
+    assert.deepStrictEqual(parsed.e2_item_mixed_floors, ['E3', 'high'], 'model + effort resolved independently');
+    assert.deepStrictEqual(parsed.e4_item_low_floors, ['E4', 'high'], 'item wins both axes when above floors');
+    assert.strictEqual(parsed.e2_item_low_effort_floor, 'low', 'E2 task on low-effort buddy stays low');
     assert.strictEqual(parsed.bad_effort_falls_back, 'medium', 'unknown effort defaults to medium');
   });
 });
@@ -765,7 +767,7 @@ print(repr(guidance))
   });
 });
 
-test('dispatcher: _discover_buddy_sessions finds legacy single-buddy sid', () => {
+test('dispatcher: _discover_buddy_sessions finds legacy single-buddy sid (legacy floor translates)', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'fake-sid-1\n');
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'medium\n');
@@ -779,20 +781,20 @@ print(json.dumps(disp._discover_buddy_sessions(), default=str))
     assert.strictEqual(sessions.length, 1, 'one legacy buddy expected');
     assert.strictEqual(sessions[0].slot, 1);
     assert.strictEqual(sessions[0].sid, 'fake-sid-1');
-    assert.strictEqual(sessions[0].floor, 'medium');
+    assert.strictEqual(sessions[0].floor, 'E3', 'legacy "medium" floor file translates to E3');
   });
 });
 
-test('dispatcher: _discover_buddy_sessions enumerates multi-buddy sids with per-slot floor', () => {
+test('dispatcher: _discover_buddy_sessions enumerates multi-buddy sids with E1-E5 floors (legacy translates)', () => {
   _withDispatcherSandbox((sandbox) => {
     const tmp = path.join(sandbox, 'tmp');
-    // Plant 3 buddies with the canonical easy/medium/hard distribution.
-    fs.writeFileSync(path.join(tmp, 'hme-buddy-1.sid'), 'sid-easy\n');
+    // Plant 3 buddies; mix legacy (slot 1) and new (slots 2,3) to verify backward-compat.
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-1.sid'), 'sid-cheap\n');
     fs.writeFileSync(path.join(tmp, 'hme-buddy-1.floor'), 'easy\n');
-    fs.writeFileSync(path.join(tmp, 'hme-buddy-2.sid'), 'sid-medium\n');
-    fs.writeFileSync(path.join(tmp, 'hme-buddy-2.floor'), 'medium\n');
-    fs.writeFileSync(path.join(tmp, 'hme-buddy-3.sid'), 'sid-hard\n');
-    fs.writeFileSync(path.join(tmp, 'hme-buddy-3.floor'), 'hard\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-2.sid'), 'sid-mid\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-2.floor'), 'E3\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-3.sid'), 'sid-deep\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-3.floor'), 'E4\n');
     const result = _runPython(sandbox, `
 ${_dispatcherImport()}
 import json
@@ -802,9 +804,10 @@ print(json.dumps(disp._discover_buddy_sessions(), default=str))
     const sessions = JSON.parse(result.stdout.trim());
     assert.strictEqual(sessions.length, 3, 'three multi-buddy slots');
     assert.deepStrictEqual(sessions.map((s) => s.slot), [1, 2, 3]);
-    assert.deepStrictEqual(sessions.map((s) => s.floor), ['easy', 'medium', 'hard']);
+    assert.deepStrictEqual(sessions.map((s) => s.floor), ['E2', 'E3', 'E4'],
+      'legacy easy translates to E2; E3/E4 pass through');
     assert.deepStrictEqual(sessions.map((s) => s.sid),
-      ['sid-easy', 'sid-medium', 'sid-hard']);
+      ['sid-cheap', 'sid-mid', 'sid-deep']);
   });
 });
 
@@ -912,7 +915,7 @@ function _waitForFiles(sandbox, names, timeoutMs = 5000) {
   return false;
 }
 
-test('buddy_init.sh: BUDDY_COUNT=3 + BUDDY_MODEL_FLOORS=auto distributes easy/medium/hard', () => {
+test('buddy_init.sh: BUDDY_COUNT=3 + BUDDY_MODEL_FLOORS=auto distributes E2/E3/E4', () => {
   _withDispatcherSandbox((sandbox) => {
     // Provide a minimal .env so the script's .env-fallback paths are happy.
     fs.writeFileSync(path.join(sandbox, '.env'),
@@ -928,12 +931,12 @@ test('buddy_init.sh: BUDDY_COUNT=3 + BUDDY_MODEL_FLOORS=auto distributes easy/me
       'all 3 sid files should appear within 5s');
     const floors = ['hme-buddy-1.floor', 'hme-buddy-2.floor', 'hme-buddy-3.floor']
       .map((f) => fs.readFileSync(path.join(sandbox, 'tmp', f), 'utf8').trim());
-    assert.deepStrictEqual(floors, ['easy', 'medium', 'hard'],
-      `floors must be [easy, medium, hard], got [${floors.join(', ')}]`);
+    assert.deepStrictEqual(floors, ['E2', 'E3', 'E4'],
+      `floors must be [E2, E3, E4], got [${floors.join(', ')}]`);
   });
 });
 
-test('buddy_init.sh: BUDDY_COUNT=1 with auto produces single easy-floor (fully dynamic)', () => {
+test('buddy_init.sh: BUDDY_COUNT=1 with auto produces single E2 floor (fully dynamic)', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, '.env'),
       'BUDDY_SYSTEM=1\nBUDDY_COUNT=1\nBUDDY_MODEL_FLOORS=auto\n');
@@ -947,15 +950,13 @@ test('buddy_init.sh: BUDDY_COUNT=1 with auto produces single easy-floor (fully d
     assert.ok(_waitForFiles(sandbox, ['hme-buddy.sid'], 5000),
       'legacy single-buddy sid file should appear');
     const floor = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'utf8').trim();
-    // Floor=easy lets the single buddy handle any tier dynamically per
-    // task (effective = max(item_tier, easy) = item_tier). Pinning to
-    // medium would lock easy tasks out of being run at the easy tier.
-    assert.strictEqual(floor, 'easy',
-      'count=1 + auto must default to easy (fully dynamic per task)');
+    // Floor=E2 lets the buddy handle any tier dynamically (effective = max(item_tier, E2) = item_tier when item_tier>=E2).
+    assert.strictEqual(floor, 'E2',
+      'count=1 + auto must default to E2 (fully dynamic per task)');
   });
 });
 
-test('buddy_init.sh: BUDDY_COUNT=2 with auto produces [easy, easy] (dynamic, no escalation)', () => {
+test('buddy_init.sh: BUDDY_COUNT=2 with auto produces [E2, E2] (dynamic, no escalation)', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, '.env'),
       'BUDDY_SYSTEM=1\nBUDDY_COUNT=2\nBUDDY_MODEL_FLOORS=auto\n');
@@ -968,14 +969,12 @@ test('buddy_init.sh: BUDDY_COUNT=2 with auto produces [easy, easy] (dynamic, no 
     assert.ok(_waitForFiles(sandbox, ['hme-buddy-1.sid', 'hme-buddy-2.sid'], 5000));
     const floors = ['hme-buddy-1.floor', 'hme-buddy-2.floor']
       .map((f) => fs.readFileSync(path.join(sandbox, 'tmp', f), 'utf8').trim());
-    // With fewer buddies than tiers, both stay dynamic. Pinning one to
-    // hard would waste Opus on easy tasks routed to that slot.
-    assert.deepStrictEqual(floors, ['easy', 'easy'],
-      'count<3 + auto must default both slots to easy for dynamic per-task tier');
+    assert.deepStrictEqual(floors, ['E2', 'E2'],
+      'count<3 + auto must default both slots to E2 for dynamic per-task tier');
   });
 });
 
-test('buddy_init.sh: BUDDY_COUNT=4 with auto produces [easy, medium, hard, easy] (specialized + dynamic backfill)', () => {
+test('buddy_init.sh: BUDDY_COUNT=4 with auto produces [E2, E3, E4, E2] (specialized + dynamic backfill)', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, '.env'),
       'BUDDY_SYSTEM=1\nBUDDY_COUNT=4\nBUDDY_MODEL_FLOORS=auto\n');
@@ -989,17 +988,18 @@ test('buddy_init.sh: BUDDY_COUNT=4 with auto produces [easy, medium, hard, easy]
       ['hme-buddy-1.sid', 'hme-buddy-2.sid', 'hme-buddy-3.sid', 'hme-buddy-4.sid'], 5000));
     const floors = ['hme-buddy-1.floor', 'hme-buddy-2.floor', 'hme-buddy-3.floor', 'hme-buddy-4.floor']
       .map((f) => fs.readFileSync(path.join(sandbox, 'tmp', f), 'utf8').trim());
-    assert.deepStrictEqual(floors, ['easy', 'medium', 'hard', 'easy'],
-      'count>3 + auto: first 3 slots specialized, extras dynamic (easy)');
+    assert.deepStrictEqual(floors, ['E2', 'E3', 'E4', 'E2'],
+      'count>3 + auto: first 3 slots specialized, extras dynamic (E2)');
   });
 });
 
-test('buddy_init.sh: explicit BUDDY_MODEL_FLOORS list bypasses auto and is honored', () => {
+test('buddy_init.sh: explicit BUDDY_MODEL_FLOORS list bypasses auto and translates legacy', () => {
   _withDispatcherSandbox((sandbox) => {
+    // Mix legacy and E1-E5 to verify both translate consistently.
     fs.writeFileSync(path.join(sandbox, '.env'),
-      'BUDDY_SYSTEM=1\nBUDDY_COUNT=3\nBUDDY_MODEL_FLOORS=hard,hard,easy\n');
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=3\nBUDDY_MODEL_FLOORS=hard,E4,easy\n');
     const result = _runBuddyInit(sandbox, {
-      BUDDY_SYSTEM: '1', BUDDY_COUNT: '3', BUDDY_MODEL_FLOORS: 'hard,hard,easy',
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '3', BUDDY_MODEL_FLOORS: 'hard,E4,easy',
     });
     if (result.status !== 0) {
       throw new Error(`buddy_init.sh failed: status=${result.status} stderr=${result.stderr}`);
@@ -1007,8 +1007,8 @@ test('buddy_init.sh: explicit BUDDY_MODEL_FLOORS list bypasses auto and is honor
     assert.ok(_waitForFiles(sandbox, ['hme-buddy-1.sid', 'hme-buddy-2.sid', 'hme-buddy-3.sid'], 5000));
     const floors = ['hme-buddy-1.floor', 'hme-buddy-2.floor', 'hme-buddy-3.floor']
       .map((f) => fs.readFileSync(path.join(sandbox, 'tmp', f), 'utf8').trim());
-    assert.deepStrictEqual(floors, ['hard', 'hard', 'easy'],
-      'explicit floor list must be honored as-is, no auto-distribution');
+    assert.deepStrictEqual(floors, ['E4', 'E4', 'E2'],
+      'explicit floor list honored; legacy hard->E4, easy->E2; E4 passes through');
   });
 });
 
@@ -1034,7 +1034,7 @@ test('buddy_init.sh: HANDOFF=1 with primary.sid present adopts it (no fresh spaw
     assert.strictEqual(legacySid, 'inherited-sid-123',
       'HANDOFF=1 + primary.sid present: legacy sid mirrors the inherited primary, NOT a fresh spawn');
     const legacyFloor = fs.readFileSync(path.join(tmp, 'hme-buddy.floor'), 'utf8').trim();
-    assert.strictEqual(legacyFloor, 'easy', 'floor companion mirrors primary');
+    assert.strictEqual(legacyFloor, 'E2', 'legacy "easy" primary.floor translates to E2 in mirrored hme-buddy.floor');
   });
 });
 
@@ -1070,8 +1070,8 @@ test('buddy_init.sh: HANDOFF=1 with no primary.sid spawns fresh + records as ina
       path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'utf8').trim();
     const primaryEffort = fs.readFileSync(
       path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'utf8').trim();
-    assert.strictEqual(primaryFloor, 'easy', 'inaugural floor matches BUDDY_MODEL_FLOORS=auto for count=1');
-    assert.strictEqual(primaryEffort, 'low', 'effort_floor follows canonical easy->low mapping');
+    assert.strictEqual(primaryFloor, 'E2', 'inaugural floor matches BUDDY_MODEL_FLOORS=auto for count=1');
+    assert.strictEqual(primaryEffort, 'low', 'effort_floor follows canonical E2->low mapping');
   });
 });
 

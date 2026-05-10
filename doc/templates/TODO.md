@@ -16,7 +16,8 @@
 ## Next up (queued for next cycle)
 
 <!-- One line per queued item:
-  - [<difficulty>] <description>. Reason: <source> -->
+  - [<difficulty>] <description>. Reason: <source>
+  difficulty: E1|E2|E3|E4|E5 (legacy easy/medium/hard accepted) -->
 
 (empty -- populate from the new set's SPEC Phase 0 via `i/todo ingest_from_spec`)
 

@@ -24,7 +24,7 @@ Precision-control variant: track ONE active primary buddy inherited across sessi
 ```
 i/handoff status                                      # primary + seniors + ctx %
 i/handoff retire [reason="..."]                       # promote primary -> senior
-i/handoff promote sid=<sid> [floor=easy] [effort=low] # designate primary
+i/handoff promote sid=<sid> [floor=E2] [effort=low]   # designate primary
 i/handoff auto_retire_check                           # check threshold, retire if over
 i/handoff archive sid=<X>                             # hide senior from default status
 i/consult sid=<sid> question="..."                    # consult primary or senior
@@ -36,7 +36,7 @@ i/consult senior=<sid> question="..."                 # explicit: target retired
 
 ```
 runtime/hme/buddy-primary.sid          <- current primary's session id
-runtime/hme/buddy-primary.floor    <- model floor (default: easy = dynamic)
+runtime/hme/buddy-primary.floor    <- model floor (default: E2 = dynamic; legacy easy/medium/hard accepted)
 runtime/hme/buddy-primary.effort_floor <- effort floor (default: low = dynamic)
 runtime/hme/buddy.sid                  <- legacy pointer; mirrors primary.sid
 tmp/hme-buddy-seniors/<sid>.json   <- per-senior retire metadata
@@ -50,12 +50,12 @@ tmp/hme-buddy-handoff-log.json     <- optional snapshot from `status --json`
 BUDDY_SYSTEM=1                       # base toggle
 BUDDY_HANDOFF=1                      # enable hand-off mode (forces BUDDY_COUNT=1)
 BUDDY_RETIRE_PCT=90                  # context % threshold for auto-retire
-HME_DISPATCH_SYNTHESIS_TIERS=easy    # tiers that route to free cascade instead of buddy
+HME_DISPATCH_SYNTHESIS_TIERS=E1,E2   # tiers that route to free cascade instead of buddy (legacy easy/medium/hard accepted)
 ```
 
 `BUDDY_COUNT>1` is silently coerced to 1 when `BUDDY_HANDOFF=1` (mutually exclusive). Set `BUDDY_HANDOFF=0` to revert to the legacy multi-buddy floor model.
 
-`HME_DISPATCH_SYNTHESIS_TIERS` is comma-separated; tiers in the list route through the free synthesis cascade (NVIDIA/Cerebras/Groq/Gemini), tiers NOT in the list go to the buddy. Canonical setting: `easy` (easy work doesn't need Opus/Sonnet, shouldn't burn buddy's transcript). `i/dispatch status` surfaces the active split.
+`HME_DISPATCH_SYNTHESIS_TIERS` is comma-separated E1-E5 values (legacy easy/medium/hard accepted, translated easy->E2/medium->E3/hard->E4); tiers in the list route through the free synthesis cascade (NVIDIA/Cerebras/Groq/Gemini), tiers NOT in the list go to the buddy. Canonical setting: `E1,E2` (cheap work doesn't need Opus/Sonnet, shouldn't burn buddy's transcript). `i/dispatch status` surfaces the active split.
 
 ### `BUDDY_RETIRE_PCT` floor
 
@@ -146,7 +146,7 @@ Patterns encoded in `_REVIEW_SYSTEM` and `workflow_audit.py`. Chosen empirically
 
 1. Checks `.env BUDDY_SYSTEM` (default 1).
 2. Resolves `BUDDY_COUNT` (default 1, capped at 10).
-3. Resolves per-slot floors via `BUDDY_MODEL_FLOORS`. `floor=easy` keeps the buddy fully dynamic; higher floors force escalation. Special value `auto`: count<3 → all `easy`; count≥3 → first three slots `[easy, medium, hard]`, extras `easy`.
+3. Resolves per-slot floors via `BUDDY_MODEL_FLOORS`. Values E1-E5 (legacy easy/medium/hard accepted, translated easy->E2/medium->E3/hard->E4). `floor=E2` keeps the buddy fully dynamic; higher floors force escalation. Special value `auto`: count<3 → all `E2`; count≥3 → first three slots `[E2, E3, E4]`, extras `E2`.
 4. Idempotent: no-op if `tmp/hme-buddy-<N>.sid` exists and non-empty.
 5. Spawns `claude -p --output-format json` per slot with the role prompt.
 6. Backgrounds itself (disown) so SessionStart returns immediately.
