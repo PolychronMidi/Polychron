@@ -72,6 +72,18 @@ _Phase 3 complete_ (2026-05-10T16:00:00Z):
 
 All 8 items shipped + verified end-to-end. tiered-audit pass-3 surfaced 4 findings (mix of false-positives in CONSTITUTION.md self-quoting + 2 legitimate "fast" claims in READMEs). Buddy watchdog tested: now reports `no_primary` after I cleared a stale pointer during initial-version-too-aggressive design (fixed; silence is not a failure signal). Auditor exemption verified: 4-down-to-2 stale findings after refresh. Spinner-verb fix awaits next-session validation. Birth-as-shipped logic verified by re-running spec_autoflip on this turn's HEAD diff.
 
+### Phase 4: whats-next-followups (worthiness P/C/S/E = 3/2/3/2)
+
+Three actionable items from prior cycles' "what's next" sections; remaining 3 (thinking/spinner-verb/bounded-reads-promotion) are user-side observations.
+
+- [x] [E1] Extend slop_scan skip-list to direct invocation: extracted [is_skipped_path](../../tools/HME/scripts/detectors/slop_scan.py) as a public helper; [tiered_audit.py](../../tools/HME/scripts/tiered_audit.py) calls it in pass 3 so CONSTITUTION.md / SPEC.md / TODO.md / slop_scan.py / CLAUDE.md no longer self-flag.
+- [x] [E1] Auto-fire buddy_watchdog at SessionStart: appended to [sessionstart.sh](../../tools/HME/hooks/lifecycle/sessionstart.sh) after buddy_init; one-shot, silent on healthy, only logs when transcript missing.
+- [x] [E1] Auto-fire audit_stale_soft_warns at SessionStart: appended to same hook; outputs to stderr only when "need review" findings exist (silent on clean).
+
+_Phase 4 complete_ (2026-05-10T17:00:00Z):
+
+Pass-3 false-positives went from 4 to 2 (CONSTITUTION.md self-quote no longer surfaces; remaining 2 are real unbacked-"fast" README claims). Watchdog reports `no_primary` (current state, no false action). Auditor at default 14d threshold reports 0 stale findings (refresh notes from Phase 3 set re-evaluate dates 2 weeks out). All three followups complete; the 8-item Phase 3 is now fully wired into the SessionStart loop.
+
 ## Deferred / out of scope
 
 - **Telegram bot + remote control** -- out of scope; HME use case is single-operator, no remote ops
