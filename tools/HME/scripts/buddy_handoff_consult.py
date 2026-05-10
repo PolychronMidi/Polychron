@@ -152,6 +152,31 @@ def cmd_consult(args: argparse.Namespace) -> int:
             f.write(f"{int(time.time())} sid={args.sid[:12]}\n")
     except OSError:
         pass
+    # Synthesis fast path: single API call (~5s) vs subprocess (~30-300s);
+    # transcript NOT used. Use claude-resume when transcript depth matters.
+    if getattr(args, "engine", "claude-resume") == "synthesis":
+        try:
+            import sys as _sys, os as _os
+            _sys.path.insert(0, _os.path.join(_os.environ.get("PROJECT_ROOT", "."),
+                                              "tools", "HME", "service"))
+            from server.tools_analysis.synthesis import synthesis_reasoning
+        except ImportError as e:
+            print(f"# synthesis engine unavailable: {e}", file=sys.stderr)
+            return 4
+        from buddy_dispatch_lifecycle import _load_persona
+        persona_body = _load_persona("buddy-primary") or (
+            "You are a Polychron co-buddy senior consultant. Answer concisely with "
+            "grounded reasoning. Cite file:line for every claim."
+        )
+        resp = synthesis_reasoning.call(
+            prompt=framed_question, system=persona_body,
+            max_tokens=2048, temperature=0.3, profile="reasoning", tier="E3",
+        )
+        if resp:
+            print(resp)
+            _record_consult(args.sid or "synthesis", args.question)
+            return 0
+        print("# synthesis cascade exhausted; falling back to claude-resume", file=sys.stderr)
     cmd = ["claude", "--resume", args.sid, "-p", framed_question]
     # Buddy / primary / senior detection for the print line; unknown sids -> "buddy".
     primary = _read_primary()
