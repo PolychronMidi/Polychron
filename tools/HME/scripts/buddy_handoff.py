@@ -160,6 +160,38 @@ def _list_seniors() -> list[dict]:
     return out
 
 
+def _infer_senior_expertise(sid: str) -> list[str]:
+    """Scan the senior's transcript for top keyword clusters + KB-CRYSTALLIZE
+    block topics. Returns up to 5 topic strings. Closes BUDDY_SYSTEM Q2."""
+    bd = _import_dispatcher()
+    tp = bd._transcript_path_for_sid(sid)
+    if not tp or not Path(tp).is_file():
+        return []
+    try:
+        text = Path(tp).read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return []
+    import re as _re
+    topics: dict[str, int] = {}
+    kb_blocks = _re.findall(r"\[\[KB-CRYSTALLIZE\]\][^\n]*\ntitle:\s*([^\n]+)", text, _re.IGNORECASE)
+    for kb in kb_blocks:
+        topics[kb.strip().lower()[:60]] = topics.get(kb.strip().lower()[:60], 0) + 5
+    keyword_clusters = (
+        "concurrency", "race", "lock", "mutex",
+        "cache", "ttl", "invalidation", "stale",
+        "detector", "regex", "false positive",
+        "buddy", "dispatch", "subagent", "specialist",
+        "auto-flip", "auto-commit", "spec.md", "todo.md",
+        "kb crystallize", "tier", "phase",
+    )
+    for kw in keyword_clusters:
+        n = text.lower().count(kw)
+        if n > 2:
+            topics[kw] = topics.get(kw, 0) + n
+    ranked = sorted(topics.items(), key=lambda kv: -kv[1])
+    return [t for t, _ in ranked[:5]]
+
+
 def _retire(primary: dict, reason: str = "") -> dict:
     """Move the primary's metadata to seniors/<sid>.json + append index.
     Clears primary.sid afterward so the next SessionStart spawns fresh."""
@@ -174,6 +206,7 @@ def _retire(primary: dict, reason: str = "") -> dict:
         "retired_at_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "reason": reason or "manual",
         "context_at_retire": ctx,
+        "expertise_topics": _infer_senior_expertise(primary["sid"]),
     }
     senior_file = SENIORS_DIR / f"{primary['sid']}.json"
     senior_file.write_text(json.dumps(record, indent=2, default=str))
