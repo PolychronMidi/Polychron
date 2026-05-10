@@ -31,14 +31,20 @@ _HOME = Path(os.environ.get("HOME", "/home/jah"))
 
 
 def _find_subagent_dirs() -> list[Path]:
+    """Discover per-session subagents dirs. Layout is projects/<proj>/<session>/subagents."""
     out: list[Path] = []
     projects = _HOME / ".claude" / "projects"
     if not projects.is_dir():
         return out
     for proj in projects.iterdir():
-        sa = proj / "subagents"
-        if sa.is_dir():
-            out.append(sa)
+        if not proj.is_dir():
+            continue
+        for sess in proj.iterdir():
+            if not sess.is_dir():
+                continue
+            sa = sess / "subagents"
+            if sa.is_dir():
+                out.append(sa)
     return out
 
 
