@@ -55,17 +55,14 @@ def _transcript_path(sid: str) -> Path | None:
     return None
 
 
-def _check_primary(max_silence_s: int) -> str:
-    """Return one of: 'no_primary', 'healthy', 'transcript_missing', 'silent'."""
+def _check_primary() -> str:
+    """Return one of: 'no_primary', 'healthy', 'transcript_missing'.
+    Silence is NOT a failure -- idle primaries with valid transcripts are healthy."""
     sid = _read_primary_sid()
     if not sid:
         return "no_primary"
-    tp = _transcript_path(sid)
-    if tp is None:
+    if _transcript_path(sid) is None:
         return "transcript_missing"
-    age_s = time.time() - tp.stat().st_mtime
-    if age_s > max_silence_s:
-        return "silent"
     return "healthy"
 
 
