@@ -111,7 +111,8 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
         f"(file:line). Unmotivated suggestions are scope creep -- drop them.\n"
         f"When complete AND the queue is drained, emit `{NO_WORK_SENTINEL} <reason>` on stdout."
     )
-    timeout_s = {"E1": 60, "E2": 60, "E3": 300, "E4": 600, "E5": 900}.get(effective, 300)
+    from buddy_dispatcher import TIER_TO_TIMEOUT_S
+    timeout_s = TIER_TO_TIMEOUT_S.get(effective, 300)
     pause_count = 0
     # Synthesis-routed dispatch: when buddy["sid"] is the "synthesis"
     # sentinel, route through synthesis_reasoning.call() instead of
