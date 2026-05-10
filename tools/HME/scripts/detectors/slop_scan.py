@@ -49,10 +49,11 @@ _BARE_TODO_RE = re.compile(
     r"(?![^\n]*github\.com/[^/\s]+/[^/\s]+/issues/\d+)",
 )
 
-# Quality claims that demand evidence (per CONSTITUTION rule 5).
+# Quality claims that demand evidence (per CONSTITUTION rule 5). Require an
+# intensifier for "fast" -- bare "fast" matches fail-fast / fast-reconvergence (CS terms).
 _CLAIM_RE = re.compile(
     r"\b(production[- ]?ready|battle[- ]?tested|"
-    r"(blazing[- ]?)?fast|highly scalable|enterprise[- ]?grade|"
+    r"(blazing|lightning|super)[- ]?fast|highly scalable|enterprise[- ]?grade|"
     r"world[- ]?class|state[- ]?of[- ]the[- ]?art|"
     r"industry[- ]?leading|best[- ]in[- ]?class)\b",
     re.IGNORECASE,
