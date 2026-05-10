@@ -319,10 +319,22 @@ def main() -> int:
     # Mirrors the rescue we landed in advisor_doctrine for the same
     # cascade-noise failure mode.
     n_work = _substantive_work_count(events)
-    if n_work >= 3:
-        _emit_stats("ok", f"implicit_solo_work_count={n_work}")
+    # 2+ bold-header categories of UNDONE work in closing = structural punt
+    # even with high work count (prior turn did work, then enumerated more undone).
+    raw_for_shape = _last_assistant_text(events)
+    _UNDONE_HEADER = re.compile(
+        r"\*\*[^*]*(?:not (?:wired|fixed|investigated|reported|implemented)|"
+        r"half[- ]done|pending|remaining|orphan|deferred|unfinished|missing|"
+        r"observation[- ]only|lurking)[^*]*\*\*\s*[:\-]",
+        re.IGNORECASE,
+    )
+    n_undone_headers = len(_UNDONE_HEADER.findall(raw_for_shape))
+    if n_work >= 3 and n_undone_headers < 2:
+        _emit_stats("ok", f"implicit_solo_work_count={n_work} undone_headers={n_undone_headers}")
         print("ok")
         return 0
+    if n_undone_headers >= 2:
+        _emit_stats("noted", f"work_count={n_work} but undone_headers={n_undone_headers} -- proceeding to phrase scan")
 
     # Strip quoted / code-fenced content before phrase-matching. Without
     # this, a response that quoted user prompts or test fixtures
