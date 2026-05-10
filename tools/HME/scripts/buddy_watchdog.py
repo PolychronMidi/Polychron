@@ -83,7 +83,6 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--loop", action="store_true",
                         help="continuous watchdog; sleep HME_BUDDY_WATCHDOG_INTERVAL_S")
-    parser.add_argument("--max-silence", type=int, default=_DEFAULT_MAX_SILENCE)
     parser.add_argument("--interval", type=int, default=_DEFAULT_INTERVAL)
     args = parser.parse_args(argv)
 
