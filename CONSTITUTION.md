@@ -10,6 +10,13 @@ rust-magic-linter pattern, AI Slop De-Bloat Playbook §8.2).
 Polychron-specific scope: forensic peer review, fail-fast
 discipline, KB durability, single-operator workflow.
 
+**Doctrine split with [CLAUDE.md](CLAUDE.md):** rules in this
+file have automatic-revert consequences and require an amendment
+commit to change. Operational rules (LOC limits, comment style,
+plan-execution shape, mode-specific guidance) live in CLAUDE.md
+and change via normal commit. CLAUDE.md may add operational
+nuance to a constitution rule but cannot weaken or override it.
+
 ## The rules
 
 ### 1. TDD floor (Iron Law)
