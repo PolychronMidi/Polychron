@@ -25,7 +25,7 @@
     {"name": "phantom_paraphrase", "module": "phantom_capability", "fires_when": "phantom_paraphrase", "bash_var": "PHANTOM_CAPABILITY", "deny": true, "reason_key": "PHANTOM_PARAPHRASE"},
     {"name": "advisor_missing_pre_build", "module": "advisor_doctrine", "fires_when": "advisor_missing_pre_build", "bash_var": "ADVISOR_DOCTRINE", "deny": true, "reason_key": "ADVISOR_MISSING_PRE_BUILD"},
     {"name": "advisor_missing_post_deliver", "module": "advisor_doctrine", "fires_when": "advisor_missing_post_deliver", "bash_var": "ADVISOR_DOCTRINE", "deny": true, "reason_key": "ADVISOR_MISSING_POST_DELIVER"},
-    {"name": "advisor_silently_skipped", "module": "advisor_doctrine", "fires_when": "advisor_silently_skipped", "bash_var": "ADVISOR_DOCTRINE", "deny": false, "_note": "softened 2026-05-03; detected-only because decision:block ate VSCode-rendered turns"},
+    {"name": "advisor_silently_skipped", "module": "advisor_doctrine", "fires_when": "advisor_silently_skipped", "bash_var": "ADVISOR_DOCTRINE", "deny": false, "_note": "permanent soft-flag (reviewed 2026-05-10): VSCode SSE renderer eats decision:block turns. Promotion blocked on upstream renderer fix, not time. Auditor exemption: non-temporal."},
     {"name": "advisor_conflict_cap_exceeded", "module": "advisor_doctrine", "fires_when": "advisor_conflict_cap_exceeded", "bash_var": "ADVISOR_DOCTRINE", "deny": true, "reason_key": "ADVISOR_CONFLICT_CAP"},
     {"name": "summary_missing", "module": "summary_format", "fires_when": "summary_missing", "bash_var": "SUMMARY_FORMAT", "deny": true, "reason_key": "SUMMARY_MISSING"},
     {"name": "summary_malformed", "module": "summary_format", "fires_when": "summary_malformed", "bash_var": "SUMMARY_FORMAT", "deny": true, "reason_key": "SUMMARY_MALFORMED"},
