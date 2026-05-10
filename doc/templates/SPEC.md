@@ -10,23 +10,39 @@ _Previous set (night-market-followups) archived 2026-05-10T175310Z to tools/HME/
 
 ## Goal
 
-<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
+Make the just-shipped specialist subagents (.claude/agents/{reviewer,documenter,tester}.md) actually load-bearing rather than orphan persona files, plus close the two open BUDDY_SYSTEM.md questions (concurrent consult races, senior expertise routing). Synthesized from three parallel Explore-agent reports surveying Pad reference / night-market plugins not-yet-harvested / HME-buddy friction; the HME audit specifically flagged that the specialists I just shipped have no wiring into `_dispatch_to_buddy()`.
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
-
-- <subsystem>: <one-line>
-- <data dir / queue / manifest>: <one-line>
-- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
+- **buddy dispatch**: tools/HME/scripts/buddy_dispatch_lifecycle.py + buddy_dispatcher.py + buddy_handoff*.py -- modular routing/drain/lifecycle/chain/status/ratelimit
+- **specialist registry**: .claude/agents/{reviewer,documenter,tester}.md -- markdown frontmatter + body, currently isolated from buddy dispatch
+- **handoff state**: runtime/hme/buddy-primary.{sid,floor,effort_floor} + tmp/hme-buddy-seniors/<sid>.json (per-senior retire metadata, no expertise tags yet)
+- **handoff docs**: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up); doc/BUDDY_SYSTEM.md (paradigm reference)
 
 ## Phases
 
-### Phase 0: <next initiative -- name>
+### Phase 0: wire-specialists-into-dispatch (worthiness P/C/S/E = 3/3/3/3)
 
-<1-paragraph context for the new initiative.>
+The HME-audit fork surfaced that the specialist agents shipped last cycle (.claude/agents/{reviewer,documenter,tester}.md) are persona prompts with no dispatch wiring; `_dispatch_to_buddy()` in buddy_dispatch_lifecycle.py uses a generic hardcoded system prompt regardless of task source. This Phase wires persona inference + agent body loading + closes BUDDY_SYSTEM.md's two open questions (Q1 concurrent consult races, Q2 senior expertise routing). All four items independent enough that `i/parallel-detect` would group them as parallel-safe.
 
-- [ ] [easy] First item of the new initiative
+- [ ] [E3] Add `_infer_persona(task) -> str` and `_load_persona(name) -> str | None` helpers in [buddy_dispatch_lifecycle.py](../../tools/HME/scripts/buddy_dispatch_lifecycle.py); replace the hardcoded system prompt at the `_dispatch_to_buddy` call site with `system = _load_persona(persona) or generic_fallback`. Persona inference reads task.source / task.text for keywords (review/test/doc/...) and returns matching agent name. Body extraction strips YAML frontmatter from .claude/agents/<name>.md.
+- [ ] [E2] Lock-free consult re-entrancy guard in [buddy_handoff_consult.py](../../tools/HME/scripts/buddy_handoff_consult.py): advisory lockfile `tmp/hme-consult-<sid>.lock` with mtime-based 10-minute stale-detect. Before subprocess.run, check; if exists+fresh, return error. On entry write lock; finally-block unlink. Closes BUDDY_SYSTEM.md Open Question #1.
+- [ ] [E3] Senior expertise tagging in [buddy_handoff.py](../../tools/HME/scripts/buddy_handoff.py): add `_infer_senior_expertise(sid)` scanning the senior's transcript JSONL for top-5 keyword clusters + KB-CRYSTALLIZE block topics; in `_retire()` append `expertise_topics` to senior metadata. In [buddy_handoff_consult.py](../../tools/HME/scripts/buddy_handoff_consult.py) add `_pick_senior_for_question(question, seniors)` ranking by keyword overlap + consult activity; auto-route when `--sid` omitted. Update `i/handoff status` output to display top-3 expertise per senior. Closes BUDDY_SYSTEM.md Open Question #2.
+- [ ] [E2] Project-detection helper [project_detect.py](../../tools/HME/scripts/project_detect.py): scan repo root for go.mod / package.json / Cargo.toml / pyproject.toml; emit JSON with detected language(s), test runner, build command. Adapted from Pad's `internal/cli/detect.go`. Surfaced into UserPromptSubmit additionalContext as a one-line tag so subagents (especially tester) know to use `pytest` vs `npm test` vs `cargo test` without inferring per-call.
+
+## Deferred to next cycle (ranked surfaces from this round's reviews)
+
+- HME-audit #1 (extract dispatch prompts to discoverable templates ~80 LOC) -- large; defer until #1 above proves the persona pattern works
+- HME-audit #5 (refresh BUDDY_SYSTEM.md with new patterns) -- small but blocked on #1-#3 landing first
+- Night-market: gauntlet (codebase-knowledge active recall) -- medium dep, low immediate value for single-operator forensic workflow
+- Night-market: tome (multi-source research synthesis) -- medium, web/external deps
+- Night-market: conserve:clear-context (session state across context windows) -- small; useful for long sessions but the existing handoff paradigm partly covers it
+- Night-market: scry:vhs-recording (terminal audit media) -- small but novelty; defer
+- Pad: MCP audit middleware (async non-blocking activity trail) -- medium; partially overlaps existing tools/HME/activity/ stack
+- Pad: pinned security gates in CI -- small; project doesn't have GitHub Actions yet (no immediate target)
+- Pad: trigger-driven conventions registry -- medium; large refactor of behavior model
+- Pad: versioned MCP tool surface -- medium; premature optimization
+- Notification-drop bug: 3 background Explore forks completed cleanly (`stop_reason: end_turn`, 161-188KB transcripts) but no completion notifications arrived, TaskOutput returned "no task found"; the harness silently dropped them. Worth investigating in a HME-meta cycle but not blocking project work.
 
 ## Deferred / out of scope
 
