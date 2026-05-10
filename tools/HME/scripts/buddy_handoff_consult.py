@@ -119,8 +119,11 @@ def cmd_consult(args: argparse.Namespace) -> int:
             print(f"# auto-routed to senior sid={picked} by expertise match",
                   file=sys.stderr)
             args.sid = picked
+        elif getattr(args, "engine", "claude-resume") == "synthesis":
+            args.sid = ""
         else:
-            print("--sid=<senior-sid> required (no expertise-match auto-route available)",
+            print("--sid=<senior-sid> required (no expertise-match auto-route available; "
+                  "or pass --engine=synthesis for a sid-less fast consult)",
                   file=sys.stderr)
             return 2
     # Q8a addendum: archived seniors must remain callable via i/consult
