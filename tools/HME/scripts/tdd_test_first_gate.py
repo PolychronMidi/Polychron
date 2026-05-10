@@ -109,10 +109,11 @@ def main(argv: list[str]) -> int:
     if _has_test(fp):
         return 0
 
+    expected = sorted({p.name for p in _candidate_test_paths(fp)})
     msg = (
         f"TDD GATE: new implementation file {fp.relative_to(project_root)} has no "
         f"corresponding test. Iron Law: write the failing test first, then the impl. "
-        f"Expected one of: {', '.join(p.name for p in _candidate_test_paths(fp)[:3])}. "
+        f"Expected one of: {', '.join(expected[:3])}. "
         f"Override per CLAUDE.md/CONSTITUTION.md or run with HME_TDD_GATE=0 (shadow)."
     )
     if not enabled:
