@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1339,
-      "updated_ts": 1778381373.4568837
+      "max_id": 1344,
+      "updated_ts": 1778381640.021368
     }
   },
   {
     "id": 1335,
     "text": "Item 1: Write tdd_test_first_gate.py PreToolUse hook + register in hook chain",
     "activeForm": "Building TDD gate hook",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 1336,
     "text": "Item 2: Write slop_scan.py detector + register in detectors/registry.json + add to work_checks REASONS",
     "activeForm": "Building slop_scan detector",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
