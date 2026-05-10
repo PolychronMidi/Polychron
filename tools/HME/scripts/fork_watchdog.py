@@ -73,10 +73,39 @@ def _last_message_info(jsonl: Path) -> dict:
     return {}
 
 
+_ARCHIVE_AFTER_DAYS = 7
+
+
+def _rotate_old_transcripts(sa_dir: Path) -> int:
+    """Move agent-*.jsonl + .meta.json files older than _ARCHIVE_AFTER_DAYS into
+    sa_dir/.archive/. Keeps the live scan O(recent) instead of O(all-history).
+    Returns count rotated."""
+    archive = sa_dir / ".archive"
+    cutoff = time.time() - _ARCHIVE_AFTER_DAYS * 86400
+    n = 0
+    for jsonl in sa_dir.glob("agent-*.jsonl"):
+        try:
+            if jsonl.stat().st_mtime >= cutoff:
+                continue
+        except OSError:
+            continue
+        archive.mkdir(parents=True, exist_ok=True)
+        try:
+            jsonl.rename(archive / jsonl.name)
+            n += 1
+            meta = sa_dir / (jsonl.stem + ".meta.json")
+            if meta.is_file():
+                meta.rename(archive / meta.name)
+        except OSError:
+            pass
+    return n
+
+
 def scan() -> list[dict]:
     findings: list[dict] = []
     now = time.time()
     for sa_dir in _find_subagent_dirs():
+        _rotate_old_transcripts(sa_dir)
         for jsonl in sa_dir.glob("agent-*.jsonl"):
             meta = sa_dir / (jsonl.stem + ".meta.json")
             if not meta.is_file():
