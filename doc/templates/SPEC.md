@@ -22,11 +22,13 @@ _Previous set (archive_now-test) archived 2026-05-03T162542Z to tools/HME/KB/dev
 
 ## Phases
 
-### Phase 0: <next initiative -- name>
+### Phase 0: night-market-borrow
 
-<1-paragraph context for the new initiative.>
+Three quality gates from claude-night-market that fill specific Polychron gaps. (1) Test-first enforcement (no implementation Edit/Write without a corresponding test file; analog to imbue's Iron Law). (2) Identity-leak + bare-stub + unbacked-claim scanner for KB devlog and doc/ writes (subset of scribe:slop-detector — vocabulary-density skipped, project prose is forensic not marketing). (3) CONSTITUTION.md root-level supreme-rules file with explicit override mechanism + amendment process, plus the additive-bias 4-question scrutiny added to CLAUDE.md.
 
-- [ ] [E2] First item of the new initiative
+- [ ] [E3] PreToolUse `tdd_test_first_gate.py` -- block Write/Edit on `tools/HME/scripts/**.py`, `src/**.js` lacking a sibling `test_*.py` / `*.test.js`. Opt-in via `HME_TDD_GATE=1` (shadow-mode by default; warn on stderr without blocking). Skip files in `__pycache__`, `node_modules`, vendored dirs, and the existing exempt list.
+- [ ] [E3] Detector `slop_scan.py` -- registry-wired Stop-level detector. Three sub-checks on files Edit/Written this turn: (a) identity-leak P0 ("As a (large )?language model", "as of my training cutoff", "I cannot provide"), (b) bare TODO/FIXME without `(#NNN)` issue link, (c) evidence-backed-claims for `**/README.md` (production-ready/scalable/fast/secure/battle-tested without same-repo evidence ref). Wire as `slop_scan.py` in `tools/HME/scripts/detectors/`, register in `registry.json`, add `SLOP_SCAN_*` env knobs.
+- [ ] [E3] CONSTITUTION.md at project root with 6 rules adapted to Polychron (TDD floor, no bypass of quality gates, errors propagated, no identity leaks, evidence-backed claims, additive-bias defense). CLAUDE.md "Universal Principles" gains a `## Override mechanism` block linking to CONSTITUTION.md, plus a `## Additive-bias scrutiny` block with the 4 questions (priority alignment / criticality / simpler-exists / evidence).
 
 ## Deferred / out of scope
 
