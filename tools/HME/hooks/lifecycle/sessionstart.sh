@@ -387,4 +387,18 @@ print('\\n'.join(bits))
 _BUDDY_INIT="$PROJECT_ROOT/tools/HME/hooks/helpers/buddy_init.sh"
 [ -x "$_BUDDY_INIT" ] && bash "$_BUDDY_INIT" >/dev/null 2>&1 || true
 
+# Buddy watchdog: clear primary pointer iff transcript missing (one-shot, silent on healthy).
+_BUDDY_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/buddy_watchdog.py"
+[ -x "$_BUDDY_WATCHDOG" ] && \
+  PROJECT_ROOT="$PROJECT_ROOT" python3 "$_BUDDY_WATCHDOG" >/dev/null 2>&1 || true
+
+# Stale-soft-warn auditor: surface registry entries needing promotion review (silent on clean).
+_SOFT_AUDIT="$PROJECT_ROOT/tools/HME/scripts/detectors/audit_stale_soft_warns.py"
+if [ -x "$_SOFT_AUDIT" ]; then
+  _SOFT_OUT=$(PROJECT_ROOT="$PROJECT_ROOT" python3 "$_SOFT_AUDIT" 2>/dev/null || true)
+  case "$_SOFT_OUT" in
+    *"need review"*) echo "$_SOFT_OUT" >&2 ;;
+  esac
+fi
+
 exit 0
