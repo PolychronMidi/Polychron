@@ -23,9 +23,7 @@
   - [<difficulty>] <description>. Reason: <source>
   difficulty: E1|E2|E3|E4|E5 (legacy easy/medium/hard accepted) -->
 
-- [E3] tdd_test_first_gate.py PreToolUse hook (impl-without-test floor). Reason: SPEC night-market-borrow item 1
-- [E3] slop_scan.py Stop-level detector (identity-leak P0 + bare TODO + unbacked-claim). Reason: SPEC night-market-borrow item 2
-- [E3] CONSTITUTION.md root + CLAUDE.md override-mechanism + additive-bias scrutiny. Reason: SPEC night-market-borrow item 3
+(empty -- night-market-borrow set complete; populate next cycle from new SPEC Phase via `i/todo ingest_from_spec`)
 
 ---
 
