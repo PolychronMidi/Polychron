@@ -401,4 +401,13 @@ if [ -x "$_SOFT_AUDIT" ]; then
   esac
 fi
 
+# Fork-watchdog: surface silently-dropped completion notifications (recent only).
+_FORK_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/fork_watchdog.py"
+if [ -x "$_FORK_WATCHDOG" ]; then
+  _FW_OUT=$(PROJECT_ROOT="$PROJECT_ROOT" python3 "$_FORK_WATCHDOG" 2>/dev/null || true)
+  case "$_FW_OUT" in
+    *"notification not delivered"*|*"may be stuck"*) echo "$_FW_OUT" >&2 ;;
+  esac
+fi
+
 exit 0
