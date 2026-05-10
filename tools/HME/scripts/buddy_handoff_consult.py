@@ -77,14 +77,52 @@ def _import_main():
     return _read_primary, _emit_activity, _import_dispatcher, SENIORS_DIR, PRIMARY_SID
 
 
+def _pick_senior_for_question(question: str, seniors_dir: Path) -> str | None:
+    """Auto-route by expertise overlap. Reads each senior's expertise_topics
+    and consults count, ranks by keyword-in-question + recency. Returns sid or
+    None if no senior has discoverable expertise. Closes BUDDY_SYSTEM Q2."""
+    if not seniors_dir.is_dir():
+        return None
+    q_lower = question.lower()
+    best_sid: str | None = None
+    best_score = 0
+    for fp in sorted(seniors_dir.glob("*.json")):
+        if fp.name.startswith("_"):
+            continue
+        try:
+            rec = json.loads(fp.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        topics = rec.get("expertise_topics") or []
+        score = sum(2 for t in topics if t.lower() in q_lower)
+        score += min(len(rec.get("consults") or []), 5)
+        if score > best_score:
+            best_score = score
+            best_sid = rec.get("sid")
+    return best_sid if best_score > 0 else None
+
+
 def cmd_consult(args: argparse.Namespace) -> int:
     """Manually invoke a specific senior. Spawns claude --resume <sid> -p
     with the supplied question and prints the response. Each consult call
-    grows the senior's transcript like a normal claude invocation."""
+    grows the senior's transcript like a normal claude invocation.
+
+    When --sid is omitted, auto-route to best-expertise-match senior via
+    _pick_senior_for_question (BUDDY_SYSTEM Q2)."""
     _read_primary, _emit_activity, _import_dispatcher, SENIORS_DIR, PRIMARY_SID = _import_main()
-    if not args.sid or not args.question:
-        print("--sid=<senior-sid> AND --question=\"...\" both required")
+    if not args.question:
+        print("--question=\"...\" required")
         return 2
+    if not args.sid:
+        picked = _pick_senior_for_question(args.question, SENIORS_DIR)
+        if picked:
+            print(f"# auto-routed to senior sid={picked} by expertise match",
+                  file=sys.stderr)
+            args.sid = picked
+        else:
+            print("--sid=<senior-sid> required (no expertise-match auto-route available)",
+                  file=sys.stderr)
+            return 2
     # Q8a addendum: archived seniors must remain callable via i/consult
     # -- archiving means "hidden from default status," not "removed from
     # the consultable pool." Search both the active pool and the archive
