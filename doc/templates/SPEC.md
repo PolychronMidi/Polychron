@@ -45,6 +45,16 @@ _Phase 1 complete_ (2026-05-09T22:30:00Z):
 
 Two more night-market patterns landed without piling on detectors. (1) [vow_bounded_reads.py](../../tools/HME/scripts/vow_bounded_reads.py) wired into [pretooluse_read.sh](../../tools/HME/hooks/pretooluse/pretooluse_read.sh)/[_grep](../../tools/HME/hooks/pretooluse/pretooluse_grep.sh)/[_glob](../../tools/HME/hooks/pretooluse/pretooluse_glob.sh) (increment) and [_edit](../../tools/HME/hooks/pretooluse/pretooluse_edit.sh)/[_write](../../tools/HME/hooks/pretooluse/pretooluse_write.sh) (reset on action). Smoke-tested: counter increments 1->2->3->4 (warn at over-budget), enforced mode returns exit 2, --reset zeros to 0. (2) [i/blast-radius](../../i/blast-radius) -> [tools/HME/scripts/blast_radius.py](../../tools/HME/scripts/blast_radius.py); on the current changeset, surfaced 4 cross-file references to extracted identifiers in src/tools tree. No detector additions (PILE_ON discipline observed). Both opt-in/explicit so neither alters default agent behavior until invoked.
 
+### Phase 2: spec-kit-auto-tasks-from-phase
+
+spec-kit's `speckit-tasks` pattern adapted: extend `_ingest_from_spec` to optionally read `- [ ]` items directly from a `### Phase N` block in SPEC.md, eliminating the manual TODO.md "Next up" staging step. Default behavior (TODO.md "Next up") is preserved for back-compat; the new path is opt-in via `i/todo ingest_from_spec text="N"` or `text="latest"` (or `todo_id=N`).
+
+- [x] [E3] Extend `_ingest_from_spec(meta, todos, phase=...)` in [todo_spec_ingest.py](../../tools/HME/service/server/tools_analysis/todo_spec_ingest.py): when `phase != 0`, read open `- [ ]` items from the matching `### Phase N` block via new helper `_read_phase_block`. Wire `phase` parameter through [hme_todo dispatch](../../tools/HME/service/server/tools_analysis/todo.py) (`text="N"` / `text="latest"` / `todo_id=N`). Re-export `_read_phase_block` from [todo_spec_bridge.py](../../tools/HME/service/server/tools_analysis/todo_spec_bridge.py). Update docstring per dir-intent doc-sync rule.
+
+_Phase 2 complete_ (2026-05-09T22:45:00Z):
+
+`_ingest_from_spec` now accepts `phase=N|"latest"`. Phase 0 (default) keeps the legacy TODO.md "Next up" path. Phase>0 walks the `### Phase N` block in [SPEC.md](../templates/SPEC.md), parses `- [ ] [tier] text` lines via existing `_SPEC_OPEN_RE`, dedups against open i/todo entries, materializes new ones with `(from SPEC Phase N)` provenance suffix. Smoke-tested `_read_phase_block(1)`, `_read_phase_block("latest")`, `_read_phase_block(99)` (returns []). Auto-flip hook from prior cycle handles the SPEC->TODO ship-line.
+
 ## Deferred / out of scope
 
 - **Telegram bot + remote control** -- out of scope; HME use case is single-operator, no remote ops
