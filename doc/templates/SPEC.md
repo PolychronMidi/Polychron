@@ -55,6 +55,23 @@ _Phase 2 complete_ (2026-05-09T22:45:00Z):
 
 `_ingest_from_spec` now accepts `phase=N|"latest"`. Phase 0 (default) keeps the legacy TODO.md "Next up" path. Phase>0 walks the `### Phase N` block in [SPEC.md](../templates/SPEC.md), parses `- [ ] [tier] text` lines via existing `_SPEC_OPEN_RE`, dedups against open i/todo entries, materializes new ones with `(from SPEC Phase N)` provenance suffix. Smoke-tested `_read_phase_block(1)`, `_read_phase_block("latest")`, `_read_phase_block(99)` (returns []). Auto-flip hook from prior cycle handles the SPEC->TODO ship-line.
 
+### Phase 3: night-market-followups-and-system-cleanup (worthiness P/C/S/E = 3/2/3/2)
+
+Eight items: spinner-verb fix + 3 night-market borrows (B.1 tiered-audit, B.2 buddy_watchdog, B.3 worthiness checklist) + 4 internal optimizations (C.1 shared .env loader, C.2 stale soft-warn auditor exemption, C.3 reset-before-TDD reorder, C.4 birth-as-shipped auto-flip).
+
+- [x] [E1] Spinner verbs: dropped trailing period from custom verb (sentence-form breaks "Cooked for 1m" duration template).
+- [x] [E3] B.1 [tiered_audit.py](../../tools/HME/scripts/tiered_audit.py) + [i/audit-tiered](../../i/audit-tiered) -- multi-pass orchestrator over existing detectors; adds zero new rules. 5 passes: lint floor, marker registry, identity/slop, tests, README.
+- [x] [E2] B.2 [buddy_watchdog.py](../../tools/HME/scripts/buddy_watchdog.py) -- transcript_missing -> clear primary pointer. Silence is NOT a failure signal (buddy primaries are sid pointers, not long-lived processes).
+- [x] [E1] B.3 Worthiness gate appendix in [SPEC.md template](../templates/SPEC.md) -- 4-axis (priority/criticality/simplicity/evidence) 0-3 score per Phase; total <6/12 defers to TODO.md Next-up.
+- [x] [E2] C.1 Extract shared .env loader to [tools/HME/proxy/shared/load_env.js](../../tools/HME/proxy/shared/load_env.js); [hme_proxy.js](../../tools/HME/proxy/hme_proxy.js) now requires it.
+- [x] [E1] C.2 Refresh stale-soft-warn notes with concrete promotion criteria + add `Auditor exemption: non-temporal` marker for permanent soft-flags (advisor_silently_skipped, claim_without_evidence).
+- [x] [E1] C.3 Reorder vow_bounded_reads --reset to fire BEFORE TDD gate in [pretooluse_edit.sh](../../tools/HME/hooks/pretooluse/pretooluse_edit.sh)/[_write.sh](../../tools/HME/hooks/pretooluse/pretooluse_write.sh) -- TDD-blocked attempts still break the read streak.
+- [x] [E2] C.4 [spec_autoflip.py](../../tools/HME/scripts/spec_autoflip.py) now catches "birth-as-shipped" items (line is `[x]` in current AND didn't exist in HEAD), not just `[ ]→[x]` transitions.
+
+_Phase 3 complete_ (2026-05-10T16:00:00Z):
+
+All 8 items shipped + verified end-to-end. tiered-audit pass-3 surfaced 4 findings (mix of false-positives in CONSTITUTION.md self-quoting + 2 legitimate "fast" claims in READMEs). Buddy watchdog tested: now reports `no_primary` after I cleared a stale pointer during initial-version-too-aggressive design (fixed; silence is not a failure signal). Auditor exemption verified: 4-down-to-2 stale findings after refresh. Spinner-verb fix awaits next-session validation. Birth-as-shipped logic verified by re-running spec_autoflip on this turn's HEAD diff.
+
 ## Deferred / out of scope
 
 - **Telegram bot + remote control** -- out of scope; HME use case is single-operator, no remote ops
