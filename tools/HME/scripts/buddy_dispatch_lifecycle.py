@@ -123,6 +123,29 @@ def _load_persona(name: str) -> str | None:
     return text.strip() or None
 
 
+def _append_persona_memory(persona: str, task: dict, response_text: str) -> None:
+    """Auto-append a structured one-line entry to .claude/agent-memory/<persona>/MEMORY.md
+    after each successful synthesis-routed task. Closes the gap where specialist
+    persona files declared `memory: project` but never accumulated knowledge across
+    sessions because no one explicitly wrote to MEMORY.md. Best-effort + bounded
+    (one line per call); the persona itself can compact when MEMORY.md grows."""
+    if not persona or not response_text:
+        return
+    try:
+        mem_dir = PROJECT_ROOT / ".claude" / "agent-memory" / persona
+        mem_dir.mkdir(parents=True, exist_ok=True)
+        mem_file = mem_dir / "MEMORY.md"
+        ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        task_id = (task.get("id") or "?")[:12]
+        source = (task.get("source") or "?")[:24]
+        snippet = " ".join(response_text.split())[:160]
+        line = f"- {ts} task={task_id} src={source}: {snippet}\n"
+        with open(mem_file, "a", encoding="utf-8") as f:
+            f.write(line)
+    except OSError:
+        pass
+
+
 def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str) -> dict:
     """Hand the task to the buddy via `claude --resume <sid> <prompt>`.
     Reads stdout until the [no-work] sentinel OR a hard timeout. Returns
