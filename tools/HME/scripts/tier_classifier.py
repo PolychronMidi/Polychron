@@ -189,7 +189,37 @@ def main(argv: list) -> int:
     p.add_argument("--prompt", help="prompt text (default: read stdin)")
     p.add_argument("--json", action="store_true",
                    help="emit JSON instead of additionalContext format")
+    p.add_argument("--why", action="store_true",
+                   help="show last classifier output from mode-classifier.jsonl with reason")
     args = p.parse_args(argv)
+
+    if args.why:
+        import os as _os
+        log = _os.path.join(_os.environ.get("PROJECT_ROOT") or ".",
+                            "output", "metrics", "mode-classifier.jsonl")
+        if not _os.path.isfile(log):
+            print(f"tier_classifier --why: {log} missing")
+            return 0
+        last = None
+        with open(log, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    last = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+        if not last:
+            print("tier_classifier --why: no entries in mode-classifier.jsonl")
+            return 0
+        print(f"mode={last.get('mode', '?')} tier={last.get('tier', '?')}")
+        print(f"reason: {last.get('reason', '?')}")
+        if last.get("matched_signal"):
+            print(f"matched: {last.get('matched_signal')}")
+        if last.get("ts"):
+            print(f"ts: {last.get('ts')}")
+        return 0
 
     if args.prompt is not None:
         prompt = args.prompt
