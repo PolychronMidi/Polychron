@@ -61,6 +61,9 @@ def cmd_status(args: argparse.Namespace) -> int:
         stale_str = "  [stale: transcript missing]" if s.get("transcript_missing") else ""
         print(f"  sid={sid_short}... retired={ts} ctx_at_retire={tk:,} "
               f"reason={reason}{consults_str}{stale_str}")
+        topics = s.get("expertise_topics") or []
+        if topics:
+            print(f"    expertise: {', '.join(topics[:3])}")
     if getattr(args, "json", False):
         snapshot = {
             "ts": time.time(),
