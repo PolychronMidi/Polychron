@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1375,
-      "updated_ts": 1778383902.1938193
+      "max_id": 1378,
+      "updated_ts": 1778384414.8679192
     }
   },
   {
     "id": 1373,
     "text": "Phase 1 item 1: vow_bounded_reads.py PreToolUse counter + reset companion",
     "activeForm": "Building bounded-reads counter",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -21,29 +21,29 @@
     "tier": "E3"
   },
   {
-    "id": 1374,
-    "text": "Phase 1 item 2: i/blast-radius CLI tool (git-diff + grep impact analyzer)",
+    "id": 1377,
+    "text": "Phase 1 item 2: i/blast-radius CLI tool",
     "activeForm": "Building blast-radius CLI",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778383902.1938062,
+    "ts": 1778384414.8679028,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1375,
-    "text": "Verify both end-to-end + flip SPEC items + ship to TODO Just-shipped",
-    "activeForm": "Verifying + shipping",
-    "status": "pending",
-    "done": false,
+    "id": 1378,
+    "text": "Verify + ship",
+    "activeForm": "Shipping",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778383902.1938171,
+    "ts": 1778384414.867917,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
