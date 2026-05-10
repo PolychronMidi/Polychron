@@ -46,7 +46,23 @@ try:
                 break
     except Exception:
         pass
-    print(f'ctx:{r}%' + (f' | {label}' if label else '') + tier_badge)
+    # Buddy badge: surface primary status + senior pool size so consults are visible.
+    buddy_badge = ''
+    try:
+        proj = os.environ['PROJECT_ROOT']
+        primary_sid_file = os.path.join(proj, 'runtime', 'hme', 'buddy-primary.sid')
+        seniors_dir = os.path.join(proj, 'tmp', 'hme-buddy-seniors')
+        primary_state = '-'
+        if os.path.isfile(primary_sid_file) and open(primary_sid_file).read().strip():
+            primary_state = 'ready'
+        n_seniors = 0
+        if os.path.isdir(seniors_dir):
+            n_seniors = sum(1 for n in os.listdir(seniors_dir)
+                            if n.endswith('.json') and not n.startswith('_'))
+        buddy_badge = f' | buddy:{primary_state} sen:{n_seniors}'
+    except Exception:
+        pass
+    print(f'ctx:{r}%' + (f' | {label}' if label else '') + tier_badge + buddy_badge)
 
     # H-compact optimization #1: preemption trigger.
     # When used_pct crosses 70%, fire a chain-snapshot in the background so
