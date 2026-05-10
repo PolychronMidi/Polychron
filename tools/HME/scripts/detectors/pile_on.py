@@ -60,13 +60,33 @@ def _detector_files_touched(events: list) -> set[str]:
     return out
 
 
+def _new_files_added(touched: set[str], events: list) -> set[str]:
+    """Subset of touched created via Write (not Edit). New detector/policy/hook
+    files = stacked rules; edits to existing files = refinement, not stacking."""
+    new_paths: set[str] = set()
+    for ev in events:
+        for tu in iter_tool_uses(ev):
+            if tu.get("name") != "Write":
+                continue
+            path = (tu.get("input") or {}).get("file_path", "") or ""
+            if path in touched:
+                new_paths.add(path)
+    return new_paths
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
         return 0
     events = load_turn_events(sys.argv[1])
     touched = _detector_files_touched(events)
-    if len(touched) >= 2:
+    if len(touched) < 2:
+        print("ok")
+        return 0
+    # pile-on = STACKING new rules, not spreading one fix across files. Fire on:
+    # (a) 2+ NEW (Write-not-Edit) detector files OR (b) 3+ existing files edited.
+    new_files = _new_files_added(touched, events)
+    if len(new_files) >= 2 or len(touched) >= 3:
         print("pile_on")
         return 0
     print("ok")
