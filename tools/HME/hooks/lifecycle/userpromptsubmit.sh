@@ -270,4 +270,7 @@ fi
 _PD="$PROJECT_ROOT/tools/HME/scripts/project_detect.py"
 [ -x "$_PD" ] && PROJECT_ROOT="$PROJECT_ROOT" python3 "$_PD" --tag 2>/dev/null >&2 || true
 
+# Decision-audit per-turn reset: clear consult sentinel so each new prompt starts at zero consults.
+rm -f "$PROJECT_ROOT/tmp/hme-turn-consults.txt" 2>/dev/null || true
+
 exit 0
