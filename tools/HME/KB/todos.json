@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1349,
-      "updated_ts": 1778381917.3925242
+      "max_id": 1354,
+      "updated_ts": 1778382148.2249265
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 1337,
     "text": "Item 3: Write CONSTITUTION.md at project root + add override-mechanism + additive-bias scrutiny to CLAUDE.md",
     "activeForm": "Writing CONSTITUTION.md + CLAUDE.md additions",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -49,29 +49,29 @@
     "tier": "E3"
   },
   {
-    "id": 1338,
-    "text": "Verify all 3 with end-to-end smoke (TDD gate fires/skips correctly; slop_scan catches identity leak; CONSTITUTION.md links resolve)",
+    "id": 1353,
+    "text": "Verify all 3 with end-to-end smoke",
     "activeForm": "Verifying end-to-end",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778381373.4568734,
+    "ts": 1778382148.2249131,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1339,
-    "text": "Flip SPEC.md items to [x] via close_with_spec_update equivalent + append to TODO.md Just shipped",
+    "id": 1354,
+    "text": "Flip SPEC.md items to [x] + append _Phase complete_ + move TODO Next up to Just shipped",
     "activeForm": "Closing SPEC items",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778381373.4568818,
+    "ts": 1778382148.2249236,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
