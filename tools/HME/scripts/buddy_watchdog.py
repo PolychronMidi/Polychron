@@ -104,6 +104,9 @@ def main(argv: list[str]) -> int:
         if status == "transcript_missing":
             sys.stderr.write(f"[{ts}] buddy_watchdog: primary status={status}; clearing pointer\n")
             _clear_primary()
+        elif status == "stale_prewarm":
+            sys.stderr.write(f"[{ts}] buddy_watchdog: status=stale_prewarm -- SPEC.md changed since buddy spawn; "
+                             f"consults may reason from stale Goal/Architecture. Consider retire+respawn for fresh pre-warm.\n")
         else:
             sys.stderr.write(f"[{ts}] buddy_watchdog: status={status}\n")
         if not args.loop:
