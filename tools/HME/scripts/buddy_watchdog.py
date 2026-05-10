@@ -1,24 +1,22 @@
 #!/usr/bin/env python3
-"""Buddy primary watchdog. Adapted from egregore:watchdog.
+"""Buddy primary watchdog. Adapted from egregore:watchdog (semantics differ).
 
-Periodically checks the active buddy primary's health. When the recorded sid
-no longer corresponds to a resumable Claude Code transcript, OR the transcript
-has been silent for HME_BUDDY_MAX_SILENCE_S, the watchdog clears the primary
-pointer so the next SessionStart spawns a fresh inaugural primary.
+Polychron's buddy primary is a sid POINTER, not a long-lived process; consults
+spawn `claude --resume <sid>` per call. So "process crash" doesn't apply.
+The structural failure mode is "transcript file missing" -- Claude Code purged
+the JSONL OR the sid was wrong from the start. This watchdog clears the
+pointer in only that case so the next SessionStart spawns fresh.
 
-Polychron's BUDDY_HANDOFF tracks the primary in runtime/hme/buddy-primary.sid
-but has no crash-recovery: a dead primary stays dead until a human notices.
-This watchdog closes that gap. Composes existing buddy_handoff.py + transcript
-discovery; adds no new state.
+Note: silence is NOT a failure signal. A primary with no recent consults is
+healthy-but-idle, not dead. Clearing on silence would orphan accumulated
+context unnecessarily.
 
 Usage:
-  buddy_watchdog.py                # one check + exit
-  buddy_watchdog.py --loop         # continuous; sleep HME_BUDDY_WATCHDOG_INTERVAL_S between checks
-  buddy_watchdog.py --max-silence  # transcript silence threshold seconds (default 1800)
+  buddy_watchdog.py             # one check + exit
+  buddy_watchdog.py --loop      # continuous; sleep HME_BUDDY_WATCHDOG_INTERVAL_S between checks
 
 Env knobs:
-  HME_BUDDY_MAX_SILENCE_S=1800        primary stale after this many seconds of transcript silence
-  HME_BUDDY_WATCHDOG_INTERVAL_S=120   --loop sleep between checks
+  HME_BUDDY_WATCHDOG_INTERVAL_S=300   --loop sleep between checks (default 5min)
   HME_BUDDY_WATCHDOG_DISABLED=1       no-op the watchdog
 """
 from __future__ import annotations
