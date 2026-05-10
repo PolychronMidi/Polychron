@@ -13,12 +13,15 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
 
 
 
+
+- [E1] Drop `&` from spec_autoflip invocation in [posttooluse_edit.sh](../../tools/HME/hooks/posttooluse/posttooluse_edit.sh). Run synchronously so TODO.md ship-line lands BEFORE the next autocommit fires. (auto-shipped from SPEC checkbox flip)
 - [E1] Tighten `_CLAIM_RE` in [slop_scan.py](../../tools/HME/scripts/detectors/slop_scan.py) to require an intensifier prefix for "fast" -- `(blazing|lightning|super)[- ]?fast`. Bare "fast" is too broad; matches fail-fast / fast-reconvergence (CS terms, not hype). (auto-shipped from SPEC checkbox flip)
 - [E2] Fix [spec_autoflip.py](../../tools/HME/scripts/spec_autoflip.py) race condition: when HEAD == working tree (autocommit captured this turn's edit), walk back to HEAD~1 for the pre-edit baseline. Removed orphan `_read_head_spec_legacy` helper. (auto-shipped from SPEC checkbox flip)
 - [E1] Phase 4 followups: extend slop_scan skip-list to direct invocation (tiered_audit honors it) + auto-fire buddy_watchdog at SessionStart + auto-fire audit_stale_soft_warns at SessionStart. (manual ship -- spec_autoflip raced autocommit)
@@ -28,7 +31,6 @@
 - [E1] Spinner verbs: dropped trailing period from custom verb (sentence-form breaks "Cooked for 1m" duration template). (auto-shipped from SPEC checkbox flip)
 - [E2] B.2 [buddy_watchdog.py](../../tools/HME/scripts/buddy_watchdog.py) -- transcript_missing -> clear primary pointer. Silence is NOT a failure signal (buddy primaries are sid pointers, not long-lived processes). (auto-shipped from SPEC checkbox flip)
 - [E2] C.1 Extract shared .env loader to [tools/HME/proxy/shared/load_env.js](../../tools/HME/proxy/shared/load_env.js); [hme_proxy.js](../../tools/HME/proxy/hme_proxy.js) now requires it. (auto-shipped from SPEC checkbox flip)
-- [E2] C.4 [spec_autoflip.py](../../tools/HME/scripts/spec_autoflip.py) now catches "birth-as-shipped" items (line is `[x]` in current AND didn't exist in HEAD), not just `[ ]→[x]` transitions. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
