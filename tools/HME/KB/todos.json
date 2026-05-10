@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1360,
-      "updated_ts": 1778382747.5295267
+      "max_id": 1366,
+      "updated_ts": 1778383148.441618
     }
   },
   {
     "id": 1355,
     "text": "#1: PostToolUse hook auto-fires close_with_spec_update on SPEC.md [ ]\u2192[x] flips",
     "activeForm": "Building auto-flip post-hook",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 1356,
     "text": "#2: Statusline tier badge from mode-classifier.jsonl",
     "activeForm": "Building tier badge",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -35,15 +35,15 @@
     "tier": "E3"
   },
   {
-    "id": 1357,
-    "text": "#3: TIER_TO_TIMEOUT_S in buddy_dispatcher.py (DONE last turn)",
+    "id": 1363,
+    "text": "#3: TIER_TO_TIMEOUT_S in buddy_dispatcher.py",
     "activeForm": "Centralizing tier maps",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778382747.5295007,
+    "ts": 1778383148.4415886,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -52,8 +52,8 @@
     "id": 1358,
     "text": "#4: Resolve CONSTITUTION.md \u2194 CLAUDE.md overlap (mark ownership per rule)",
     "activeForm": "Splitting doctrine ownership",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 1359,
     "text": "#5: Tier-aware test-failure detector (run scoped tests on edited modules)",
     "activeForm": "Building test-failure detector",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -77,15 +77,15 @@
     "tier": "E3"
   },
   {
-    "id": 1360,
-    "text": "#6: Stale-soft-warn auditor (surface detectors stuck in deny:false with promotion notes)",
+    "id": 1366,
+    "text": "#6: Stale-soft-warn auditor",
     "activeForm": "Building soft-warn auditor",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778382747.5295253,
+    "ts": 1778383148.4416158,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
