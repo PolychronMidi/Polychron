@@ -88,32 +88,50 @@ def _read_section(md_text: str, header: str) -> list[str]:
     return out
 
 
-def _ingest_from_spec(meta: dict, todos: list) -> list[dict]:
-    """Read doc/templates/TODO.md's Next up section, materialize each entry as an
-    i/todo entry with source='spec' and tier=<label>. Skips entries
-    whose text already matches an OPEN i/todo entry (universal dedup).
+def _ingest_from_spec(meta: dict, todos: list, phase: int | str = 0) -> list[dict]:
+    """Materialize SPEC/TODO entries as i/todo entries (source='spec', tier=<label>).
+    Skips entries whose text already matches an OPEN i/todo entry (universal dedup).
+
+    `phase=0` (default): read doc/templates/TODO.md "Next up" section (legacy path).
+    `phase=N` or `phase="latest"`: read open `- [ ]` items from doc/templates/SPEC.md
+    Phase N block (or the highest-numbered Phase if "latest"). spec-kit-style
+    auto-tasks-from-Phase eliminates the manual TODO.md staging step.
+
     Returns the list of newly-created entries."""
-    if not os.path.exists(_todo_md_file()):
-        logger.warning(f"ingest_from_spec: {_todo_md_file()} missing")
-        return []
-    with open(_todo_md_file(), encoding="utf-8") as f:
-        md = f.read()
-    next_up_lines = _read_section(md, "Next up (queued for next cycle)")
+    spec_lines: list[str] = []
+    if phase == 0:
+        if not os.path.exists(_todo_md_file()):
+            logger.warning(f"ingest_from_spec: {_todo_md_file()} missing")
+            return []
+        with open(_todo_md_file(), encoding="utf-8") as f:
+            md = f.read()
+        spec_lines = _read_section(md, "Next up (queued for next cycle)")
+    else:
+        spec_lines = _read_phase_block(phase)
+        if not spec_lines:
+            logger.warning(f"ingest_from_spec: phase={phase!r} not found in {_spec_file()}")
+            return []
     created = []
-    for line in next_up_lines:
-        # Skip HTML comments + empty lines
+    for line in spec_lines:
         s = line.strip()
         if not s or s.startswith("<!--") or s.startswith("-->"):
             continue
-        m = _NEXT_UP_RE.match(line)
-        if not m:
-            continue
-        tier_str, body, reason = m.group(1), m.group(2).strip(), (m.group(3) or "").strip()
-        # Strip trailing period from body if reason was attached
+        # Phase blocks use _SPEC_OPEN_RE shape (`- [ ] [tier] text`); TODO Next-up uses
+        # _NEXT_UP_RE shape (`- [tier] text. Reason: ...`). Try both.
+        m_phase = _SPEC_OPEN_RE.match(line)
+        if m_phase:
+            tier_str = re.search(r"\[(E[1-5]|easy|medium|hard)\]",
+                                 m_phase.group(2), re.IGNORECASE).group(1)
+            body = m_phase.group(3).strip()
+            reason = ""
+        else:
+            m = _NEXT_UP_RE.match(line)
+            if not m:
+                continue
+            tier_str, body, reason = m.group(1), m.group(2).strip(), (m.group(3) or "").strip()
         if body.endswith("."):
             body = body[:-1]
         text_norm = body
-        # Dedup: skip if an open entry with same text exists
         already = False
         for t in todos:
             if (
@@ -127,6 +145,8 @@ def _ingest_from_spec(meta: dict, todos: list) -> list[dict]:
         text_with_provenance = body
         if reason:
             text_with_provenance = f"{body} (from spec -- {reason})"
+        elif phase != 0:
+            text_with_provenance = f"{body} (from SPEC Phase {phase})"
         entry = _write_todo_entry(
             meta, text=text_with_provenance, status="pending",
             critical=False, source="spec", tier=tier_str.lower(),
@@ -134,6 +154,40 @@ def _ingest_from_spec(meta: dict, todos: list) -> list[dict]:
         todos.append(entry)
         created.append(entry)
     return created
+
+
+def _read_phase_block(phase: int | str) -> list[str]:
+    """Return the lines inside `### Phase N: <title>` (next-### or EOF terminates).
+    `phase="latest"` resolves to the highest-numbered Phase header in SPEC.md."""
+    if not os.path.exists(_spec_file()):
+        return []
+    with open(_spec_file(), encoding="utf-8") as f:
+        spec_md = f.read()
+    lines = spec_md.splitlines()
+    headers = []
+    for i, ln in enumerate(lines):
+        m = re.match(r"^###\s+Phase\s+(\d+)\s*:", ln)
+        if m:
+            headers.append((int(m.group(1)), i))
+    if not headers:
+        return []
+    if phase == "latest":
+        target_n = max(n for n, _ in headers)
+    else:
+        try:
+            target_n = int(phase)
+        except (TypeError, ValueError):
+            return []
+    target_idx = next((i for n, i in headers if n == target_n), None)
+    if target_idx is None:
+        return []
+    next_idx = next((i for n, i in headers if i > target_idx), len(lines))
+    # Also stop at any next `## ` (top-level section) before the next Phase.
+    for i in range(target_idx + 1, next_idx):
+        if lines[i].startswith("## "):
+            next_idx = i
+            break
+    return lines[target_idx + 1:next_idx]
 
 
 def _promote_to_spec(entry: dict) -> str:
