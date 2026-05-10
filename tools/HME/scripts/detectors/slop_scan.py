@@ -111,8 +111,23 @@ def _collect_edited_files(events: list) -> list[Path]:
                     p = _PROJECT / p
                 if any(seg in str(p) for seg in _SKIP_PATH_PARTS):
                     continue
+                try:
+                    rel = str(p.relative_to(_PROJECT))
+                    if rel in _SKIP_EXACT_PATHS:
+                        continue
+                except ValueError:
+                    pass
                 out.append(p)
     return out
+
+
+def _line_excerpt(text: str, pos: int) -> tuple[str, int]:
+    """Return (line_text, match_start_within_line) for the line containing pos."""
+    line_start = text.rfind("\n", 0, pos) + 1
+    line_end = text.find("\n", pos)
+    if line_end == -1:
+        line_end = len(text)
+    return text[line_start:line_end], pos - line_start
 
 
 def _scan_identity(text: str) -> list[str]:
