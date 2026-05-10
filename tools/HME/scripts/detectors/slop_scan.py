@@ -63,7 +63,32 @@ _EVIDENCE_NEAR_RE = re.compile(
 )
 
 _WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
+# SPEC/TODO templates legitimately quote the patterns this detector matches.
+# slop_scan.py itself contains pattern strings as docstring + regex source.
 _SKIP_PATH_PARTS = {"__pycache__", "node_modules", ".git", "tools/HME/KB/devlog"}
+_SKIP_EXACT_PATHS = {
+    "doc/templates/SPEC.md", "doc/templates/TODO.md",
+    "tools/HME/scripts/detectors/slop_scan.py",
+    "CONSTITUTION.md", "CLAUDE.md",
+}
+
+# Filename-with-TODO false-positive guard: TODO.md, FIXME.txt, etc. are filenames.
+_TODO_FILENAME_RE = re.compile(r"\.(md|txt|rst|adoc|html?|json|ya?ml)\b", re.IGNORECASE)
+
+
+def _is_in_code_fence(text: str, pos: int) -> bool:
+    """True if pos is inside a markdown ``` ... ``` block."""
+    fence_count = text[:pos].count("\n```")
+    return fence_count % 2 == 1
+
+
+def _is_in_quoted_string(line: str, match_start_in_line: int) -> bool:
+    """True if the match position is inside `'...'` or `"..."` on the same line."""
+    before = line[:match_start_in_line]
+    # Count unescaped quotes before the match position.
+    dq = before.count('"') - before.count('\\"')
+    sq = before.count("'") - before.count("\\'")
+    return (dq % 2 == 1) or (sq % 2 == 1)
 
 
 def _collect_edited_files(events: list) -> list[Path]:
