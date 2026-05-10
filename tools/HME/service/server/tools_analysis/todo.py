@@ -347,9 +347,12 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         to fresh-slate templates. Pass text="<set-name>" to label the
         archive filename slug. Mid-set, clear keeps original behavior.
     action='critical': list only critical open items (used by turn-start hook).
-    action='ingest_from_spec': read doc/templates/TODO.md "Next up" section, materialize
-        each entry as an i/todo entry with source='spec' and tier=<label>.
-        Skips entries whose text matches an existing open i/todo (dedup).
+    action='ingest_from_spec': materialize SPEC/TODO entries as i/todo entries
+        (source='spec', tier=<label>). Default reads doc/templates/TODO.md
+        "Next up". Pass text="N" or todo_id=N to instead read open `- [ ]`
+        items from doc/templates/SPEC.md Phase N (spec-kit-style auto-tasks
+        from Phase). Pass text="latest" to ingest the highest-numbered Phase.
+        Dedup against existing open i/todo entries.
     action='promote_to_spec': move ephemeral i/todo #todo_id into doc/templates/TODO.md
         "Next up" with a Reason: cite. Promotes one-off operational state
         into the durable cross-cycle handoff queue.
