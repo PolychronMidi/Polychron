@@ -155,8 +155,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
             f.write(f"{int(time.time())} sid={args.sid[:12]}\n")
     except OSError:
         pass
-    # Synthesis fast path: single API call (~5s) vs subprocess (~30-300s);
-    # transcript NOT used. Use claude-resume when transcript depth matters.
+    # Synthesis fast path: single API call (~5s) vs subprocess (~30-300s).
     if getattr(args, "engine", "claude-resume") == "synthesis":
         try:
             import sys as _sys, os as _os
@@ -166,8 +165,20 @@ def cmd_consult(args: argparse.Namespace) -> int:
         except ImportError as e:
             print(f"# synthesis engine unavailable: {e}", file=sys.stderr)
             return 4
-        from buddy_dispatch_lifecycle import _load_persona
-        persona_body = _load_persona("buddy-primary") or (
+        _proj = _os.environ.get("PROJECT_ROOT", "")
+        _persona_md = Path(_proj) / ".claude" / "agents" / "buddy-primary.md" if _proj else None
+        persona_body = None
+        if _persona_md and _persona_md.is_file():
+            try:
+                _text = _persona_md.read_text(encoding="utf-8")
+                if _text.startswith("---"):
+                    _end = _text.find("\n---\n", 4)
+                    persona_body = _text[_end + 5:].strip() if _end > 0 else _text.strip()
+                else:
+                    persona_body = _text.strip()
+            except OSError:
+                pass
+        persona_body = persona_body or (
             "You are a Polychron co-buddy senior consultant. Answer concisely with "
             "grounded reasoning. Cite file:line for every claim."
         )
