@@ -144,12 +144,16 @@ def cmd_consult(args: argparse.Namespace) -> int:
     # calls `i/learn add` for each -- converting fragile transcript
     # wisdom into durable KB entries.
     framed_question = _KB_DIRECTIVE + args.question
+    # Decision-audit sentinel: pretooluse_edit reads this to mark architectural edits as consulted.
+    try:
+        sentinel = TMP / "hme-turn-consults.txt"
+        sentinel.parent.mkdir(parents=True, exist_ok=True)
+        with open(sentinel, "a", encoding="utf-8") as f:
+            f.write(f"{int(time.time())} sid={args.sid[:12]}\n")
+    except OSError:
+        pass
     cmd = ["claude", "--resume", args.sid, "-p", framed_question]
-    # Identify the target's role correctly. In this paradigm a buddy
-    # might be the active primary (not yet retired) or a senior in the
-    # pool -- the print should reflect actual state, not assume "senior".
-    # Unknown sids (neither in pool nor matching primary) get "buddy" as
-    # a neutral fallback rather than misleading "primary".
+    # Buddy / primary / senior detection for the print line; unknown sids -> "buddy".
     primary = _read_primary()
     if primary is not None and primary["sid"] == args.sid:
         role = "primary"
