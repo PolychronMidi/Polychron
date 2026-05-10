@@ -32,12 +32,32 @@ from pathlib import Path
 _FLOOR_TO_EFFORT = {"easy": "low", "medium": "medium", "hard": "high"}
 
 
+def _read_spec_prime(project_root: Path | None = None) -> str:
+    """Pre-warm payload: read SPEC.md preamble (Goal + Architecture sections).
+    Bounded to first ~3KB to keep spawn prompts manageable. Returns empty string
+    if SPEC.md missing -- spawn proceeds with generic prompt only."""
+    root = project_root or Path(os.environ.get("PROJECT_ROOT") or
+                                Path(__file__).resolve().parents[3])
+    spec = root / "doc" / "templates" / "SPEC.md"
+    if not spec.is_file():
+        return ""
+    try:
+        text = spec.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    cut = text.find("\n## Phases")
+    if cut == -1:
+        cut = min(len(text), 3000)
+    return text[:cut].strip()[:3000]
+
+
 def _build_role_prompt(slot: int, floor: str, buddy_count: int) -> str:
-    """Per-buddy role prompt -- same shape as the proven single-buddy
-    init, with floor + slot annotated so the buddy knows its role from
-    the outset. The dispatcher routes by tier; the prompt frames the
-    buddy as a peer that may receive any-tier work but never below its
-    floor."""
+    """Per-buddy role prompt with SPEC.md preamble pre-warm so the first consult
+    has Goal + Architecture context instead of starting cold."""
+    spec_prime = _read_spec_prime()
+    spec_block = (f"\n\n--- current SPEC.md preamble (pre-warm) ---\n{spec_prime}\n"
+                  f"--- end pre-warm ---\n"
+                  if spec_prime else "")
     return (
         f"You are co-buddy {slot}/{buddy_count} (model floor: {floor}) -- "
         "a persistent peer subagent for the Polychron codebase across "
@@ -54,6 +74,7 @@ def _build_role_prompt(slot: int, floor: str, buddy_count: int) -> str:
         "When your task is complete AND the queue is drained, emit a "
         "single line on stdout: [no-work] <one-line reason>. The "
         "dispatcher reads this as your idle declaration."
+        f"{spec_block}"
     )
 
 
