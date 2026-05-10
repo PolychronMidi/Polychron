@@ -33,16 +33,11 @@ has_verify_verb = any(t in verify_verbs for t in tokens)
 if not has_verify_verb:
     raise SystemExit
 matched = None
+# Filename-shape match only: prior regex `\b{mod}\b` matched anywhere in any token (heredoc bodies, quoted args), producing false positives for short module names like SPEC appearing as literal words.
 for tok in tokens:
     base = os.path.basename(tok).rsplit(".", 1)[0]
     if base in edited_modules:
         matched = base
-        break
-    for mod in edited_modules:
-        if re.search(rf"\b{re.escape(mod)}\b", tok):
-            matched = mod
-            break
-    if matched:
         break
 if matched:
     print(matched)
