@@ -84,6 +84,17 @@ _Phase 4 complete_ (2026-05-10T17:00:00Z):
 
 Pass-3 false-positives went from 4 to 2 (CONSTITUTION.md self-quote no longer surfaces; remaining 2 are real unbacked-"fast" README claims). Watchdog reports `no_primary` (current state, no false action). Auditor at default 14d threshold reports 0 stale findings (refresh notes from Phase 3 set re-evaluate dates 2 weeks out). All three followups complete; the 8-item Phase 3 is now fully wired into the SessionStart loop.
 
+### Phase 5: tighten-detector-precision-and-autoflip-race (worthiness P/C/S/E = 3/2/3/3)
+
+Two items from Phase 4's "what's next": the bare-"fast" claim regex was matching legitimate CS terms (fail-fast, fast-reconvergence) as if they were marketing hype; the spec_autoflip hook was racing autocommit and finding no diff to act on.
+
+- [x] [E1] Tighten `_CLAIM_RE` in [slop_scan.py](../../tools/HME/scripts/detectors/slop_scan.py) to require an intensifier prefix for "fast" -- `(blazing|lightning|super)[- ]?fast`. Bare "fast" is too broad; matches fail-fast / fast-reconvergence (CS terms, not hype).
+- [x] [E2] Fix [spec_autoflip.py](../../tools/HME/scripts/spec_autoflip.py) race condition: when HEAD == working tree (autocommit captured this turn's edit), walk back to HEAD~1 for the pre-edit baseline. Removed orphan `_read_head_spec_legacy` helper.
+
+_Phase 5 complete_ (2026-05-10T17:30:00Z):
+
+Pass-3 now reports 0 findings (was 2 false positives; legitimate "fast reconvergence" + "fail-fast" no longer flagged). Race fix verified: `_read_head_spec()` correctly returns HEAD~1 content when HEAD == working tree. Common autocommit-races-spec_autoflip pattern resolved; multi-autocommit scenarios (when HEAD~1 also has the just-edited state) still fall through to manual ship-line.
+
 ## Deferred / out of scope
 
 - **Telegram bot + remote control** -- out of scope; HME use case is single-operator, no remote ops
