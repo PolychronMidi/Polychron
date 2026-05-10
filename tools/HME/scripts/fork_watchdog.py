@@ -94,10 +94,9 @@ def scan() -> list[dict]:
             }
             sr = info.get("stop_reason")
             if sr in ("end_turn", "stop_sequence", "max_tokens"):
-                entry["state"] = "completed"
-                if age_s > 60:
-                    entry["state"] = "notification_lost"
-            elif age_s > 600:
+                # notification_lost only for recently-completed (60s..1h window).
+                entry["state"] = "notification_lost" if 60 < age_s < 3600 else "completed"
+            elif age_s > 600 and age_s < 86400:
                 entry["state"] = "long_running"
             else:
                 entry["state"] = "active"
