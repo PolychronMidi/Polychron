@@ -40,9 +40,30 @@ const {
 const { shouldInject, buildStatusContext, consumeStatusContext, buildJurisdictionContext, injectIntoSystem, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 
-// Proxy wire-level version. Single source of truth is
-// tools/HME/config/versions.json -- bump it to version the three components
-// together. A three-way mismatch surfaces via `hme-cli --version`.
+// Self-load .env so middleware sees project knobs even when parent shell didn't source it.
+(() => {
+  try {
+    const p = require('path').resolve(__dirname, '..', '..', '..', '.env');
+    const fs = require('fs');
+    if (!fs.existsSync(p)) return;
+    for (const raw of fs.readFileSync(p, 'utf8').split('\n')) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const eq = line.indexOf('=');
+      if (eq < 1) continue;
+      const k = line.slice(0, eq).trim();
+      let v = line.slice(eq + 1).trim();
+      const hashAt = v.indexOf(' #');
+      if (hashAt > -1) v = v.slice(0, hashAt).trim();
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+        v = v.slice(1, -1);
+      }
+      if (process.env[k] === undefined) process.env[k] = v;
+    }
+  } catch (_e) { /* fail-soft: proxy still runs without .env knobs */ }
+})();
+
+// Proxy wire-level version: tools/HME/config/versions.json single source of truth.
 const PROXY_VERSION = (() => {
   try {
     const p = require('path').resolve(__dirname, '..', 'config', 'versions.json');
