@@ -10,7 +10,7 @@ todo.py re-exports from this shim, so external callers
 """
 from .todo_spec_ingest import (  # noqa: F401
     _NEXT_UP_RE, _SPEC_OPEN_RE,
-    _read_section, _ingest_from_spec, _promote_to_spec,
+    _read_section, _read_phase_block, _ingest_from_spec, _promote_to_spec,
     _normalize_for_match, _common_prefix_len,
 )
 from .todo_spec_archive import (  # noqa: F401
