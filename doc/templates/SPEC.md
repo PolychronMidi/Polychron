@@ -69,6 +69,16 @@ _Phase 3 complete_ (2026-05-10T22:00:00Z):
 
 Specialist memories now accumulate automatically. Smoke-tested live: two synthetic appends to reviewer + tester MEMORY.md files via the helper produced correctly-formatted timestamped entries. Each successful synthesis-routed task to a tagged persona now leaves a one-line trace; over enough cycles this becomes the per-role institutional knowledge layer Phase 0's specialist files promised but couldn't deliver alone.
 
+### Phase 4: learning-surface-auto-prime-at-sessionstart (worthiness P/C/S/E = 3/2/3/2)
+
+Companion to Phase 3 memory auto-append: now that specialists accumulate per-role knowledge, the session-level layer needs to surface relevant past patterns at SessionStart. Closes the B2 gap from prior turn's enumeration: `learning_extract surface --keyword X` was CLI-only.
+
+- [x] [E2] Wired learning_extract auto-prime into [sessionstart.sh](../../tools/HME/hooks/lifecycle/sessionstart.sh): extracts the latest Phase title from SPEC.md (`### Phase N: <title>` pattern), splits hyphens to get the first 4+ char keyword, calls `learning_extract.py surface --keyword <kw> --top 3` with output to stderr (visible in session). Smoke-tested live: extracted "specialist" from "specialist-memory-auto-append" Phase title; current learnings.jsonl has no matches (current cycle not yet archived to devlog), works as designed.
+
+_Phase 4 complete_ (2026-05-10T22:30:00Z):
+
+SessionStart now primes new sessions with relevant past patterns matched against the latest Phase keyword. Bridges the per-role accumulation layer (Phase 3 MEMORY.md) with the cross-cycle pattern layer (learning_extract). When the next cycle archives this session's 4 phases via `i/todo archive_now`, the auto-fired learning_extract from Phase 1's wiring will populate learnings.jsonl with this session's patterns; subsequent SessionStart will then surface them when relevant.
+
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
 - HME-audit #1 (extract dispatch prompts to discoverable templates ~80 LOC) -- large; defer until #1 above proves the persona pattern works
