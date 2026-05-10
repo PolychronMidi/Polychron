@@ -94,6 +94,8 @@ EFFORT_ORDER = {"low": 0, "medium": 1, "high": 2}
 EFFORT_NAMES = ("low", "medium", "high")
 # E1-E2 -> low (cheap); E3 -> medium; E4-E5 -> high.
 TIER_TO_EFFORT = {"E1": "low", "E2": "low", "E3": "medium", "E4": "high", "E5": "high"}
+# Per-tier dispatch timeout (seconds). Single source of truth; lifecycle reads here.
+TIER_TO_TIMEOUT_S = {"E1": 60, "E2": 60, "E3": 300, "E4": 600, "E5": 900}
 
 # Sentinel emitted by buddies when idle. The dispatcher reads stdout
 # until this line appears OR a hard timeout fires.
