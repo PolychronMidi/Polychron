@@ -88,8 +88,13 @@ if [ -n "${PROJECT_ROOT:-}" ] \
   exit 2
 fi
 
-# Block at COMMENT_BLOAT_WARN+ consecutive comment lines in new_string. Default 3.
-# Pre-save reject; existing in-tree blocks remain Stop-level warns.
+# TDD test-first gate: block new impl files lacking sibling test (HME_TDD_GATE=1).
+if [ -n "$FILE" ] && [ -x "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate.py" ]; then
+  if ! PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate.py" --file "$FILE"; then
+    exit 2
+  fi
+fi
+
 if _policy_enabled block-comment-bloat; then
   _BLOAT_HIT=$(FILE="$FILE" NEW_STRING="$NEW_STRING" THRESHOLD="${COMMENT_BLOAT_WARN:-3}" _safe_py3 "
 import os
