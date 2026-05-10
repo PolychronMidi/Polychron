@@ -23,7 +23,8 @@
   - [<difficulty>] <description>. Reason: <source>
   difficulty: E1|E2|E3|E4|E5 (legacy easy/medium/hard accepted) -->
 
-(empty -- night-market-borrow set complete; populate next cycle from new SPEC Phase via `i/todo ingest_from_spec`)
+- [E2] vow_bounded_reads.py PreToolUse counter (HME_READ_BUDGET, default 15). Reason: SPEC night-market-borrow-2 item 1
+- [E2] i/blast-radius CLI -- git-diff + grep cross-file impact analyzer. Reason: SPEC night-market-borrow-2 item 2
 
 ---
 
