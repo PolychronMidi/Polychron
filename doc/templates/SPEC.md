@@ -59,6 +59,16 @@ _Phase 2 complete_ (2026-05-10T20:30:00Z):
 
 Two structural blind spots in the detector chain closed. Phrase tables now cover the multi-category-undone-headers shape I demonstrated. exhaust_check's work-rescue can no longer silence enumeration-with-undone-headers. Replay test confirms both detectors fire on the exact closing text the user had to manually catch with "what's missing?".
 
+### Phase 3: specialist-memory-auto-append (worthiness P/C/S/E = 3/3/3/3)
+
+Keystone item from the prior turn's analysis: specialist subagents declared `memory: project` but never accumulated knowledge because no one explicitly wrote to MEMORY.md. Without auto-append, the entire specialist-subagent investment from Phase 0 produces persona-prompted-routing but ZERO accumulated wisdom across sessions.
+
+- [x] [E2] Added `_append_persona_memory(persona, task, response_text)` helper in [buddy_dispatch_lifecycle.py](../../tools/HME/scripts/buddy_dispatch_lifecycle.py): writes one structured line per successful synthesis-routed task to `.claude/agent-memory/<persona>/MEMORY.md` -- `- {iso_ts} task={id} src={source}: {first_160_chars_of_response}`. Best-effort + bounded; persona itself can compact later when MEMORY.md grows. Invoked at the synthesis-success return path right before the verdict dict, so memory only grows on outcome=done.
+
+_Phase 3 complete_ (2026-05-10T22:00:00Z):
+
+Specialist memories now accumulate automatically. Smoke-tested live: two synthetic appends to reviewer + tester MEMORY.md files via the helper produced correctly-formatted timestamped entries. Each successful synthesis-routed task to a tagged persona now leaves a one-line trace; over enough cycles this becomes the per-role institutional knowledge layer Phase 0's specialist files promised but couldn't deliver alone.
+
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
 - HME-audit #1 (extract dispatch prompts to discoverable templates ~80 LOC) -- large; defer until #1 above proves the persona pattern works
