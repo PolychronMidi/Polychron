@@ -8,12 +8,10 @@ INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 
-# Coupling-aware antagonism warning: stderr-only, fires when this edit's
-# module + a same-turn earlier edit are a registered antagonist pair (r<=-0.3).
+# Antagonism warning: fires when this edit's module + a prior same-turn edit are registered antagonists (r<=-0.3).
 _TURN_EDIT_STATE="${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt"
 _MODULE_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')
 if [ -n "$_MODULE_BASE" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -f "${PROJECT_ROOT}/output/metrics/hme-coupling.json" ]; then
-  # Check against prior edits this turn
   if [ -f "$_TURN_EDIT_STATE" ]; then
     while IFS= read -r _prior_mod; do
       [ -z "$_prior_mod" ] && continue
@@ -39,10 +37,8 @@ PYEOF
       fi
     done < "$_TURN_EDIT_STATE"
   fi
-  # Record this edit for the rest of the turn
-  mkdir -p "$(dirname "$_TURN_EDIT_STATE")" 2>/dev/null
-  echo "$_MODULE_BASE" >> "$_TURN_EDIT_STATE"
 fi
+# Recording deferred to AFTER blocking gates -- see end of file. Premature recording poisoned verify-landed when consult-gate or TDD-gate blocked the edit.
 
 # Mid-pipeline src edit block. JS counterpart: block-mid-pipeline-write.
 if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
