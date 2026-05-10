@@ -101,6 +101,21 @@ DEFERRAL_ACK_NO_FIX: tuple[str, ...] = (
     "surveyed, not modified",
     "surveyed but not modified",
     "surveyed, not fixed",
+    "investigated but not fixed",
+    "traced but not fixed",
+    "diagnosed but not fixed",
+    "half-done",
+    "half done:",
+    "halfway done",
+    "partially done",
+    "partially complete",
+    "not yet wired",
+    "never wired",
+    "isn't yet wired",
+    "remains uninvestigated",
+    "investigated but never reported",
+    "discovered but not addressed",
+    "found but not fixed",
 )
 
 # Permission-soliciting (Pattern C in psycho_stop terminology).
