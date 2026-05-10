@@ -38,7 +38,7 @@
     {"name": "comment_bloat", "module": "comment_bloat", "fires_when": "comment_bloat", "bash_var": "COMMENT_BLOAT", "deny": true, "reason_key": "COMMENT_BLOAT"},
     {"name": "boyscout_loc", "module": "boyscout_loc", "fires_when": "loc_bloat", "bash_var": "BOYSCOUT_LOC", "deny": true, "reason_key": "BOYSCOUT_LOC"},
     {"name": "orphan_reference", "module": "orphan_reference", "fires_when": "orphan_reference", "bash_var": "ORPHAN_REFERENCE", "deny": true, "reason_key": "ORPHAN_REFERENCE"},
-    {"name": "slop_scan", "module": "slop_scan", "fires_when": "slop_scan", "bash_var": "SLOP_SCAN", "deny": false, "_note": "soft-flagged on first land; flip deny=true after one stable cycle. CONSTITUTION rule 4 (identity leaks) eventually warrants hard-block."},
-    {"name": "tests_failing_in_scope", "module": "tests_failing_in_scope", "fires_when": "tests_failing_scope", "bash_var": "TESTS_FAILING_SCOPE", "deny": false, "_note": "soft-flagged on first land; runtime cost not yet characterised on full multi-edit turns. Promote to deny=true after observing latency P95 < 5s and zero false-positive runs."}
+    {"name": "slop_scan", "module": "slop_scan", "fires_when": "slop_scan", "bash_var": "SLOP_SCAN", "deny": false, "_note": "soft-flagged 2026-05-09; promotion criterion: 5 consecutive turns with zero false-positive findings. Re-evaluate 2026-05-24."},
+    {"name": "tests_failing_in_scope", "module": "tests_failing_in_scope", "fires_when": "tests_failing_scope", "bash_var": "TESTS_FAILING_SCOPE", "deny": false, "_note": "soft-flagged 2026-05-09; promotion criterion: latency P95 < 5s + zero false-positive runs. Re-evaluate 2026-05-24."}
   ]
 }
