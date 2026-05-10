@@ -81,6 +81,8 @@ def pass_identity_and_slop() -> dict:
     for fp in files:
         if not fp.is_file():
             continue
+        if slop_scan.is_skipped_path(fp):
+            continue
         try:
             text = fp.read_text(encoding="utf-8", errors="ignore")
         except OSError:
