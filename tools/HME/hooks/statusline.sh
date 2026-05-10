@@ -29,7 +29,24 @@ try:
     f = os.environ.get('HME_CTX_FILE', '/tmp/claude-context.json')
     open(f, 'w').write(json.dumps(out))
     label = m.get('display_name', '') or m.get('id', '')
-    print(f'ctx:{r}%' + (f' | {label}' if label else ''))
+    # Tier badge from mode-classifier.jsonl (last line). Surfaces the otherwise-invisible
+    # prompt classifier so users can see the active ceremony tier.
+    tier_badge = ''
+    try:
+        ml = os.path.join(os.environ['PROJECT_ROOT'], 'output', 'metrics', 'mode-classifier.jsonl')
+        if os.path.isfile(ml):
+            with open(ml, 'rb') as _f:
+                _f.seek(0, 2); end = _f.tell()
+                _f.seek(max(0, end - 4096)); tail = _f.read().decode('utf-8', errors='ignore')
+            for ln in reversed(tail.strip().split('\n')):
+                if not ln.strip(): continue
+                rec = json.loads(ln)
+                mode = rec.get('mode', '?'); tier = rec.get('tier')
+                tier_badge = f' | {mode}' + (f' {tier}' if tier else '')
+                break
+    except Exception:
+        pass
+    print(f'ctx:{r}%' + (f' | {label}' if label else '') + tier_badge)
 
     # H-compact optimization #1: preemption trigger.
     # When used_pct crosses 70%, fire a chain-snapshot in the background so
