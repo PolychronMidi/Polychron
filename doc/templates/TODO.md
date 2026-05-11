@@ -14,6 +14,7 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
@@ -21,6 +22,8 @@
 
 
 
+
+- [E4] Unified provider abstraction proposal: routed to `overdrive/zen/deepseek-pro` (1729c). DeepSeek-pro produced structured 3-5 bullet proposal: `ProviderRegistry` singleton + common `OpenAIProvider` base + `OpenCodeZenRouter` adhering to same interface. **Eval signal**: E4 tier produces architectural design with concrete naming under MODE=3. Captured for potential Phase 3 implementation; needs cross-checking against existing `synthesis_provider_base.OpenAIProvider` shape before adoption. (auto-shipped from SPEC checkbox flip)
 - [E3] Architecture review of `_call_opus_overdrive` vs `_try_overdrive_model` separation: routed to `overdrive/zen/deepseek-flash` (3001c). DeepSeek-flash produced structured analysis naming two entanglement candidates (error-taxonomy/retry stratification + ...). **Eval signal**: E3 tier produces coherent multi-step analysis under MODE=3. Full output captured in run; promote concrete proposal to a Phase 3 item if/when the entanglements are surfaced as concrete code citations. (auto-shipped from SPEC checkbox flip)
 - [E2] Audited `synthesis_provider_base.py` via cascade -- mistral-large-3 returned 1311c response describing OpenAIProvider as "abstract base class" with hallucinated method names (`chat_completion`, `stream_completion` -- not present). Useful framing of intent; concrete file:line citations were absent (cascade weakness for code-grounded analysis). Coherent enough to be useful framing, not actionable refactor. (auto-shipped from SPEC checkbox flip)
 - [E1] Enumerated modules in `synthesis/` -- **HALLUCINATION FINDING**: cascade tier (mistral-large-3 after NVIDIA deepseek-v3.2 returned HTTP 410 EOL) fabricated subdirectory names (`constraint_enricher`, `callgraph_builder`, `kb_augmenter`, etc.) that DON'T EXIST. Real dir contains only `.py` files. **Eval signal**: do not route grep/structural-fact tasks to cascade -- use E3+ when grounding to filesystem state matters. (auto-shipped from SPEC checkbox flip)

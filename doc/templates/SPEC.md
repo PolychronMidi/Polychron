@@ -61,7 +61,7 @@ MODE=3 is now active (E5=Opus, E4=deepseek-pro, E3=deepseek-flash, E1-E2=cascade
 - [ ] [E3] Identify the 5 most-coupled module pairs in `tools/HME/service/` based on import graph (use `grep -r 'from .* import'` as the cheap signal). For each pair, suggest one decoupling refactor.
 
 **E4 -- deepseek-v4-pro -- architectural design**
-- [ ] [E4] Propose a unified provider abstraction for the 4 OpenAI-compatible providers (Groq/Cerebras/NVIDIA/Mistral) + the new OpenCode Zen routing. Should they share a registry + adapter pattern? Deliverable: target file structure + migration steps + back-compat strategy.
+- [x] [E4] Unified provider abstraction proposal: routed to `overdrive/zen/deepseek-pro` (1729c). DeepSeek-pro produced structured 3-5 bullet proposal: `ProviderRegistry` singleton + common `OpenAIProvider` base + `OpenCodeZenRouter` adhering to same interface. **Eval signal**: E4 tier produces architectural design with concrete naming under MODE=3. Captured for potential Phase 3 implementation; needs cross-checking against existing `synthesis_provider_base.OpenAIProvider` shape before adoption.
 - [ ] [E4] Cross-subsystem audit: identify 3 strongest "hidden coupling" patterns in `tools/HME/` -- cases where a change in module A silently breaks module B without an import edge (shared env var keys, shared file paths, shared regex markers, shared JSON field names). Deliverable: triplet table + the verifier strategy that would catch each.
 - [ ] [E4] Audit the synthesis cascade lifecycle (request → tier route → provider call → response parse → telemetry → fallback). Propose one architectural improvement that would simplify the fallback path without adding a new abstraction layer.
 
