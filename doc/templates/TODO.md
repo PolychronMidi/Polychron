@@ -17,6 +17,12 @@
 - [2026-05-11] Selftest emits WARN (not FAIL) for partial index (chunks>0, files<100); fix hint prescribes `action=index` first. `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`
 - [2026-05-11] `i/consult` kv passthrough strips leading dashes before re-prefixing; `--engine=synthesis` now routes correctly. `i/consult`
 - [2026-05-11] `buddy_init.sh` pre-logs `spawn-init` outside the background subshell so a spawn that dies before launching still leaves a trace. `tools/HME/hooks/helpers/buddy_init.sh`
+- [2026-05-11] `.env`: bumped `HME_TOOL_HARDKILL_S` to 600s (was hitting 240s hard-kill on full reindex). `.env`
+- [2026-05-11] `watcher._do_dir_reindex` consecutive-failure backoff (2x..8x cooldown multiplier). `tools/HME/service/watcher.py`
+- [2026-05-11] Regression test for `_onb_init` (5 tests, all pass). `tools/HME/tests/specs/onboarding_init.test.js`
+- [2026-05-11] Narrowed glob for `hooks-executable`, `hooks-registered` invariants to exec'd dirs only. `tools/HME/config/invariants.json`
+- [2026-05-11] Excluded `*.test.js` from `eslint-rules-registered`. `tools/HME/config/invariants.json`
+- [2026-05-11] `_resolve_glob` helper: invariant globs accept string or list. `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/{_base,checks}.py`
 
 ## Next up (queued for next cycle)
 
