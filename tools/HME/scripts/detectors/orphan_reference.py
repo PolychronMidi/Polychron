@@ -35,6 +35,13 @@ def _last_user_idx(events: list[dict]) -> int:
 
 
 def _collect_deleted_files(events: list[dict], project_root: str) -> list[str]:
+    # Skip throwaway dirs (per runtime/hme/INVENTORY.md): /tmp/, /var/tmp/, project tmp/, runtime/, output/metrics/. Short-stem substring matches from these produce false positives (e.g. _snap.md grep-matches 'snapshot'). Stem-length gate in _refs_remaining is the complementary cure.
+    skip_prefixes = (
+        "/tmp/", "/var/tmp/",
+        os.path.join(project_root, "tmp") + os.sep,
+        os.path.join(project_root, "runtime") + os.sep,
+        os.path.join(project_root, "output", "metrics") + os.sep,
+    )
     out = []
     for ev in events:
         if not is_assistant(ev):
@@ -51,6 +58,8 @@ def _collect_deleted_files(events: list[dict], project_root: str) -> list[str]:
                         continue
                     if tok.endswith(_REF_EXTENSIONS):
                         full = tok if os.path.isabs(tok) else os.path.join(project_root, tok)
+                        if any(full.startswith(p) for p in skip_prefixes):
+                            continue
                         if not os.path.exists(full):
                             out.append(full)
     return out
