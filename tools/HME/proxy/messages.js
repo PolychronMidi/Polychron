@@ -80,16 +80,16 @@ function stripBoilerplate(payload) {
       if (hit.match) {
         strippedCount++;
         stripped_samples[hit.pattern.name] = (stripped_samples[hit.pattern.name] || 0) + 1;
-        // For tool_result blocks, dropping would orphan the paired tool_use
-        // and trip Anthropic's "tool use concurrency" validation. Keep the
-        // block but minimize its content to a non-empty placeholder.
+        // For tool_result blocks, dropping would orphan the paired tool_use.
+        // Replace with outcome-honest marker that reflects is_error.
         if (block.type === 'tool_result') {
+          const _marker = block.is_error === true ? '[FAIL]' : '[SUCCESS]';
           if (typeof block.content === 'string') {
-            block.content = '[SUCCESS]';
+            block.content = _marker;
           } else if (Array.isArray(block.content)) {
-            block.content = [{ type: 'text', text: '[SUCCESS]' }];
+            block.content = [{ type: 'text', text: _marker }];
           } else {
-            block.content = '[SUCCESS]';
+            block.content = _marker;
           }
           keepBlocks.push(block);
           continue;
