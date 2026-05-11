@@ -477,50 +477,49 @@ function handleRequest(clientReq, clientRes) {
 
     // OVERDRIVE_MODE=4 main-agent swap with full Anthropic<->OpenAI translation.
 // hme_proxy.js ~ Line 478
-if (config.OVERDRIVE_MODE === 4) {
-    const translatedBody = translateToOpenCode(req.body); // Your existing translation
+// Around Line 478 in hme_proxy.js
+// Use whatever variable you actually have defined (e.g., process.env.OVERDRIVE_MODE)
+const currentMode = process.env.OVERDRIVE_MODE || overdriveMode;
 
-    // 1. STRIP HEADERS: Do not use { ...req.headers }
-    const opencodeHeaders = {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-        'Authorization': `Bearer ${config.OPENCODE_API_KEY}` // Use the specific OpenCode key
-    };
+if (currentMode == 4) {
+    // 1. Keep your existing translation logic here
+    const translatedBody = translateToOpenCode(req.body);
 
-    const response = await fetch(config.OPENCODE_ENDPOINT, {
-        method: 'POST',
-        headers: opencodeHeaders,
-        body: JSON.stringify(translatedBody)
-    });
+    // 2. USE A CLEAN FETCH TO PREVENT ECONNRESET
+    // Do NOT pass the original 'req.headers'—this is what causes the 401 and ECONNRESET
+    try {
+        const opencodeResponse = await fetch('http://127.0.0.1:4096/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream'
+                // Add ONLY the auth your direct server needs, no Anthropic headers!
+            },
+            body: JSON.stringify(translatedBody)
+        });
 
-    // 2. PREVENT LOGOUT: If OpenCode rejects us, we catch it here.
-    if (response.status === 401 || response.status === 403) {
-        console.error("[Polychron] OpenCode Auth Failure. IDE Session Protected.");
-        // We return a 200 so VS Code stays logged in, but send the error as text.
-        return res.status(200).write(formatErrorAsAnthropicStream("OpenCode Auth Failed - check your local server key."));
+        // 3. CATCH 401 TO PREVENT ANTHROPIC LOGOUT
+        if (opencodeResponse.status === 401 || opencodeResponse.status === 403) {
+            console.error("[Polychron] OpenCode Direct Server returned 401. Check your server auth.");
+            // Send a 200 to VS Code so it doesn't log you out
+            res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+            return res.end('data: {"type": "message_stop", "stop_reason": "end_turn"}\n\n');
+        }
+
+        // 4. STREAMING TRANSLATION (Fixes the 5-minute hang)
+        opencodeResponse.body.on('data', (chunk) => {
+            const translatedChunk = translateOpenCodeToAnthropic(chunk.toString());
+            res.write(translatedChunk);
+        });
+
+        opencodeResponse.body.on('end', () => res.end());
+
+    } catch (err) {
+        // This catches the ECONNRESET and prevents the supervisor from crashing
+        console.error("[Polychron] Connection to OpenCode failed:", err.message);
+        res.writeHead(200);
+        return res.end("Proxy Error: Connection to OpenCode was reset.");
     }
-
-    // 3. STREAM THE TRANSLATION (Fixes the 5-minute hang)
-    // Don't 'await' the body. Process the stream in real-time.
-    res.setHeader('Content-Type', 'text/event-stream');
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-
-        // Use your existing Anthropic <-> OpenCode translation logic on the chunk
-        const translatedChunk = translateOpenCodeToAnthropic(chunk);
-
-        res.write(translatedChunk);
-        if (res.flush) res.flush(); // Force the IDE to see the text immediately
-    }
-
-    return res.end();
 }
 
     const upstream = resolveUpstream(clientReq);
