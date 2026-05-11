@@ -32,10 +32,6 @@
 <!-- One line per queued item:
   - [<difficulty>] <description>. Reason: <source> -->
 
-- [E3] `eslint-concordance-complete` invariant fails consistently (streak 9). Reason: type=eslint_concordance_complete custom check, needs runner inspection.
-- [E4] HCI display unification across i/state, i/status, i/holograph, selftest. Reason: 4 different numbers (86.1/88/91/88) for same metric is coherence-of-self-coherence problem.
-- [E3] 3 overdue p1 blindspot subsystems (conductor/time/composers) untouched 10 rounds. Reason: i/evolve flagged systemic avoidance.
-- See SPEC.md Phase 3 for 9 SSOT-consolidation opportunities (STATES list, watcher IGNORE_DIRS, tier-label translation, glob.glob callers, PROJECT_ROOT fallback, buddy SID dispersion, pipeline-verdict sinks, comment-bloat rules, i/* descriptions).
 
 ---
 
