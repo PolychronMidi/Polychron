@@ -25,6 +25,7 @@ Carry-over from just-archived set: 90-char comment-line rule (user-mandated mid-
 
 - [x] [medium] (a) 90-char comment-line rule landed in audit + pretooluse gate. 751 existing violations queued for separate sweep.
 - [x] [easy] (b) `_SELF_REFERENCE_FILES` broadened to include `pretooluse_edit.sh`, `verify_landed_block.sh`, `pretooluse_read.sh`, `audit-comment-bloat.py`. Gate-maintenance turns editing these files no longer trip self-fire. All 10 evasion_intent tests still pass. Landed 2026-05-11.
+- [x] [easy] (c) `tests_failing_in_scope.py` accepts pytest exit code 5 (no tests collected) as ok. Detector's purpose is to surface FAILED tests; "no tests collected" means no failures exist. Closes the false-positive that was logging `no tests ran in 0.01s` to `hme-errors.log` every stop chain. Landed 2026-05-11.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
