@@ -15,6 +15,7 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
@@ -22,15 +23,17 @@
 
 
 
-- [medium] (c.4-deep) `tier_classifier.py --prompt "$PROMPT" --json` invoked from `userpromptsubmit.sh` after SatisfactionCapture; writes a fresh `mode-classifier.jsonl` line per turn. The age-gate becomes a backstop instead of the only line of defense. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
-- [easy] (b) `buddy_init.sh:_spawn_buddy()` now appends both stdout/stderr to `log/hme-buddy-spawn.log` (file-descriptor `>>` capture, not subprocess.PIPE). Prefix line records `[ts] spawn slot=N floor=X sid_file=Y flag=Z`, suffix line records exit code. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
-- [easy] (a) `BuddyPrimaryHealthVerifier` added to `tools/HME/scripts/verify_coherence/runtime_behavior.py` and registered in REGISTRY. Asserts existence + non-empty content + mtime within `BUDDY_SESSION_MAX_AGE_SECS` (default 86400) under `BUDDY_HANDOFF=1 + BUDDY_SYSTEM=1`. Verified live: returns FAIL on this session because `runtime/hme/buddy-primary.sid` is absent. Liveness via kill -0 deferred to a follow-up tightening (existence-only is the false-green concern; mtime guard covers most of it). Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
-- [easy] (c.1) Inspection found a confounding factor: my initial "empty features dict" reading was a `.get('features', {})` default in my diagnostic script -- the classifier output schema has no `features` field. Actual telemetry lines carry populated `reason` strings (e.g. "comprehensive/exhaustive scope signal"). The real diagnostic is timestamp-aged: all entries in `output/metrics/mode-classifier.jsonl` are 9 days old corpus-test fixtures. (auto-shipped from SPEC checkbox flip)
-- [easy] (c.4-immediate) Age-gate added to all three downstream tier readers: `summary_format._read_tier_and_mode`, `phase_gate._read_tier`, `advisor_doctrine._read_tier`. Each now rejects entries older than `<DETECTOR>_TIER_MAX_AGE_SECS` (default 3600s), returning None so the gate skips rather than false-positiving. Env-overridable for tests. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
-- [medium] (c.2) Repro: any current-session prompt triggers the false-positive because `tier_classifier.py` is never invoked outside test runs. Every detector reading `mode-classifier.jsonl` sees the same stale "E5 / explicit /e5 override" fixture as "latest classification." (auto-shipped from SPEC checkbox flip)
-- [medium] (c.3) RCA: `tier_classifier.py` exists with a complete `classify_heuristic()` + `emit_telemetry()` pipeline, but no hook calls it. `userpromptsubmit.sh` does NOT invoke the classifier. Downstream detectors (`summary_format.py`, `phase_gate.py`, `advisor_doctrine.py`) all read "latest line of mode-classifier.jsonl" with no age check, so the 9-day-old test fixture entry drives tier-gating for every live turn. The wiring gap masquerades as classifier malfunction. (auto-shipped from SPEC checkbox flip)
-- [easy] (pre) Fix consult-sentinel wipe: `_write_consult_sentinel` helper extracted; called AFTER `synthesis_reasoning.call()` returns (the proxy at 9099 fires UserPromptSubmit during the synthesis HTTP path, which wipes mid-call sentinel writes). Landed 2026-05-10 in `buddy_handoff_consult.py`. (auto-shipped from SPEC checkbox flip)
-- [easy] (pre) Fix verify-landed checker: filename-shape regex only (overbroad `\b{mod}\b` match removed); turn-edit recording deferred to AFTER blocking gates. Landed 2026-05-10 in `verify_landed_block.sh` + `pretooluse_edit.sh`. (auto-shipped from SPEC checkbox flip)
+
+- [easy] (d) Custom buddy persona at `.claude/agents/buddy-primary.md` -- replaces synthesis-engine generic fallback. Encodes tier-gated findings, quote-grounding, promise-vs-delivers framing, anti-pray-and-spray refusal, KB-crystallize mandate. Closes BUDDY_SYSTEM.md forward-evolution item 1. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
+- [easy] (e) `scope_vs_shipped` detector promoted to `deny: true` for both verdicts. Added `SCOPE_STACKED` + `SCOPE_NOT_TRACKED` reasons to `work_checks.js`. Gate enforces tick-or-revert. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
+- [easy] (f) SessionStart banner surfaces missing `runtime/hme/buddy-primary.sid` under `BUDDY_HANDOFF=1 + BUDDY_SYSTEM=1`. Points operator at `log/hme-buddy-spawn.log`. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
+- [easy] (g) `exhaust_check` structural enumeration signal: 3+ line-start list items in closing 60% of final text with no tool_use after fires `exhaust_violation` unconditionally. Phrase-game unwinnable, structure air-tight. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
+- [easy] (h) `verify_landed_block.sh` regex tightened to filename-shape only. Parallel verify-landed branch added to `pretooluse_read.sh` so Read calls do not bypass. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
+- [easy] (i) `buddy_handoff_consult.py` consult sentinel write deferred to AFTER `synthesis_reasoning.call()` returns. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
+- [easy] (j) `pretooluse_edit.sh` turn-edit recording deferred to AFTER blocking gates -- no longer poisons `verify_landed_block.sh` on blocked edits. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
+- [easy] (k) `strip_agent_artifacts` sanitizer added to `synthesis_config.py` and wired into every cascade provider. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
+- [easy] (l) `26_empty_result_marker.js` middleware: empty body + `is_error=false` -> `[SUCCESS]`; empty + `is_error=true` -> `[FAIL]`. 12/12 tests pass. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
+- [easy] (m) `lifecycle_bridge.js` blank-debug rotation cap at 500 newest; bulk-cleanup of pre-existing 3.4GB. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
