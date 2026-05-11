@@ -10,23 +10,23 @@ _Previous set (reindex-async) archived 2026-05-11T124552Z to tools/HME/KB/devlog
 
 ## Goal
 
-<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
+Repo-wide design-pattern audit surfaces concrete code-duplication / boilerplate / coupling patterns the prior surface audits missed because they passed lint/syntax checks but represent compounding maintenance cost. Per consult-anchored decision: mechanical grep-diff each duplication site BEFORE extraction (variants may carry silent divergences like the psycho_stop flock-trim that the other 6 lacked). Each item ticks only when refactor lands AND verification passes.
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
-
-- <subsystem>: <one-line>
-- <data dir / queue / manifest>: <one-line>
-- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
+- `tools/HME/scripts/detectors/_detector_stats.py` (new) -- shared emit_stats helper.
+- 7 detector scripts (fabrication_check, evasion_intent, exhaust_check, psycho_stop, scope_escape, scope_vs_shipped, early_stop) -- replace local `_emit_stats` with import + thin wrapper.
+- `tools/HME/scripts/verify_coherence/_base.py` -- absorb `_env_truthy`/`_read_env_var` from `runtime_behavior.py`.
+- `i/` (34 wrappers; 21 trivial-dispatch) -- shared arg-translation helper.
+- `<handoff doc>`: doc/templates/SPEC.md + doc/templates/TODO.md.
 
 ## Phases
 
-### Phase 0: <next initiative -- name>
+### Phase 0: design-pattern-consolidation
 
-<1-paragraph context for the new initiative.>
-
-- [ ] [easy] First item of the new initiative
+- [x] [medium] (a) Shared `_detector_stats.py` shipped with `emit_stats(detector, verdict, detail)` (fcntl-locked append + 5000-line LRU trim + project-root walk). Replaced local `_emit_stats` in all 7 detectors with 3-line shim. 7/7 import cleanly + emit verification lines to `detector-stats.jsonl`. Consolidates ~30 LOC * 7 files. The robust flock+trim pattern (previously only in psycho_stop) now protects all 7 from concurrent-write loss. Landed 2026-05-11.
+- [ ] [easy] (b) Pull `_env_truthy` and `_read_env_var` from `runtime_behavior.py` up to `_base.py`. Update `runtime_behavior.py` to import. Verify `BuddyPrimaryHealthVerifier` (which uses both) still runs.
+- [ ] [medium] (c) `i/` wrapper consolidation: 21 trivial-dispatch wrappers share identical 8-12 line arg-translation. Extract to `i/_dispatch.sh` shared helper sourced by each wrapper. Verify 3 wrappers (`i/state`, `i/holograph`, `i/help`) produce unchanged output.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
