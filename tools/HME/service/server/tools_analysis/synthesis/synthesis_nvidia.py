@@ -15,7 +15,7 @@ _provider = OpenAIProvider(
     env_key="NVIDIA_API_KEY",
     base_url="https://integrate.api.nvidia.com/v1/chat/completions",
     tiers=[
-        ("T1", ENV.optional("NVIDIA_MODEL_T1", "deepseek-ai/deepseek-v3.2")),
+        ("T1", ENV.optional("NVIDIA_MODEL_T1", "deepseek-ai/deepseek-v4-pro")),
         ("T2", ENV.optional("NVIDIA_MODEL_T2", "mistralai/mistral-large-3-675b-instruct-2512")),
         ("T3", ENV.optional("NVIDIA_MODEL_T3", "qwen/qwen3-coder-480b-a35b-instruct")),
         ("T4", ENV.optional("NVIDIA_MODEL_T4", "z-ai/glm5")),
