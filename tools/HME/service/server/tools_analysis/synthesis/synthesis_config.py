@@ -143,6 +143,13 @@ _CHATML_ASST_RE = re.compile(
 _CHATML_TAG_RE = re.compile(r'<\|im_start\|>[\s\S]*?<\|im_end\|>')
 _NON_ASCII_RE = re.compile(r'[^\x00-\x7F]+')
 
+# Free-cascade providers (especially agent-fine-tuned models) sometimes hallucinate Claude-shaped tool-invocation markup in plain text responses. Synthesis consults are reasoning-only -- any tool-call shape in the output is fabrication that, if surfaced to the parent agent verbatim, looks like another agent acted (prompt-injection vector).
+_AGENT_ARTIFACT_RES = (
+    re.compile(r'<function_calls>[\s\S]*?</function_calls>', re.IGNORECASE),
+    re.compile(r'<invoke\b[\s\S]*?</invoke>', re.IGNORECASE),
+    re.compile(r'<parameter\b[\s\S]*?</parameter>', re.IGNORECASE),
+    re.compile(r'<function_calls>[\s\S]*?
+
 
 def strip_thinking_tags(text: str) -> str:
     """Remove all thinking/reasoning markup from model output.
