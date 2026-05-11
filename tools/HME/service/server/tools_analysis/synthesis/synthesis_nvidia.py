@@ -1,9 +1,9 @@
 """NVIDIA NIM synthesis tier -- free-tier cascade via integrate.api.nvidia.com.
 
 190+ open-weight models. 8-tier cascade best-first.
-    T1: deepseek-v3.2  T2: mistral-large-3-675b  T3: qwen3-coder-480b
-    T4: glm5           T5: nemotron-ultra-253b    T6: devstral-2-123b
-    T7: qwen3.5-397b   T8: llama-3.3-70b
+    T1: deepseek-v4-pro  T2: mistral-large-3-675b  T3: qwen3-coder-480b
+    T4: glm5             T5: nemotron-ultra-253b    T6: devstral-2-123b
+    T7: qwen3.5-397b     T8: llama-3.3-70b
 
 Config: NVIDIA_API_KEY, NVIDIA_DAILY_LIMIT_*, NVIDIA_RPM_LIMIT_*
 """
