@@ -3,21 +3,7 @@
     "id": 0,
     "_meta": {
       "max_id": 1429,
-      "updated_ts": 1778524259.1515703
+      "updated_ts": 1778524278.546085
     }
-  },
-  {
-    "id": 1421,
-    "text": "Flip SPEC items + ship to TODO",
-    "activeForm": "Closing SPEC items",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778438657.9051692,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
   }
 ]

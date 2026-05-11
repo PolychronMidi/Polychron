@@ -6,70 +6,27 @@
 >
 > Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles -- run `i/todo clear` (auto-archives if complete) or `i/todo archive_now text="<slug>"` (force). The tools own the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.
 
-_Previous set (fp-fix) archived 2026-05-11T160931Z to tools/HME/KB/devlog/2026-05-11T160931Z-fp-fix.md._
+_Previous set (SSOT) archived 2026-05-11T183118Z to tools/HME/KB/devlog/2026-05-11T183118Z-ssot.md._
 
 ## Goal
 
-Onboarding coherence fixes surfaced during first-agent onboarding session. Two structural bugs: `_onb_init` treated a file containing "graduated" as permanently graduated, trapping new sessions in no-walkthrough mode; selftest emitted FAIL + `clear_index` prescription for partial-index states (chunks > 0, files < 100), baiting destructive clears when a plain reindex suffices.
+<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-- `tools/HME/hooks/helpers/_onboarding.sh`: session-start state init (`_onb_init`)
-- `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`: selftest label + fix hint map
-- `tmp/hme-onboarding.state`: onboarding state file (single-line, deleted on graduation)
-- `i/consult`: wrapper for buddy_handoff.py consult subcommand (kv passthrough)
-- `tools/HME/hooks/helpers/buddy_init.sh`: SessionStart buddy spawn (writes log/hme-buddy-spawn.log)
+<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
+
+- <subsystem>: <one-line>
+- <data dir / queue / manifest>: <one-line>
+- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
 
 ## Phases
 
-### Phase 1: Onboarding coherence fixes (worthiness P/C/S/E = 3/3/3/3)
+### Phase 0: <next initiative -- name>
 
-- [x] Fix `_onb_init`: accept all valid states (boot..graduated) as preservable; only init to boot when file is missing or contains garbage. Graduated stays graduated -- prevents the onboarding chain from re-spawning composition-pipeline scaffolding todos on every session.
-- [x] Reset stale `tmp/hme-onboarding.state` (was "graduated" since 2026-04-23)
-- [x] Selftest: emit WARN (not FAIL) when chunks > 0 but files < 100; fix hint prescribes `action=index` first, not `clear_index`
-- [x] Fix `i/consult` kv passthrough: strip leading dashes before re-prefixing `--`; `--engine=synthesis` now routes correctly (was `----engine=synthesis`)
-- [x] `buddy_init.sh`: pre-log `spawn-init` line OUTSIDE the background subshell so a spawn that dies before launching still leaves a trace (LIFESAVER no-dilution)
+<1-paragraph context for the new initiative.>
 
-_Phase 1 complete_. Five fixes shipped: `_onb_init` preserves all valid states (boot..graduated) -- graduated stays graduated; selftest partial-index path no longer baits destructive clear; `i/consult --engine=synthesis` works; buddy spawn attempts always logged. Files: `tools/HME/hooks/helpers/_onboarding.sh`, `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`, `i/consult`, `tools/HME/hooks/helpers/buddy_init.sh`.
-
-### Phase 2: Indexer + invariant + test follow-ups (worthiness P/C/S/E = 3/3/3/3)
-
-- [x] Bump `HME_TOOL_HARDKILL_S` default-override to 600s in `.env` (was hitting 240s hard-kill on ~500-file index_directory)
-- [x] Add consecutive-failure backoff to `watcher._do_dir_reindex` (doubles effective cooldown per failure, capped 8x)
-- [x] Add regression test for `_onb_init` (5 tests: missing, "graduated", in-progress preservation, unknown). All pass.
-- [x] Fix `hooks-executable` invariant: narrow glob to exec'd hook dirs (excludes sourced subscripts in helpers/safety/, lifecycle/stop/, pretooluse/bash/)
-- [x] Fix `hooks-registered` invariant: same glob narrowing
-- [x] Fix `eslint-rules-registered` invariant: exclude `*.test.js` (test files aren't registered rules)
-- [x] Extend `_check_files_executable` + `_check_files_referenced` to accept either string or list of globs (new helper `_resolve_glob`)
-- [x] Add `config/loc-ignore.txt` entries for `tools/HME/service/watcher.py` (lifecycle-cohesion) and `tools/HME/config/invariants.json` (declarative-config) -- both already exceeded 350 LOC pre-turn; my edits added <20 lines each
-- [x] Fix `eslint-concordance-complete` invariant: exclude `*.test.js` from on-disk rule scan; add concordance entries for `no-bare-declared-global-in-init` and `no-or-fallback-on-map-get` (both `status=js_only`)
-- [x] HCI display unification: `substrate-view.py` (i/status brief) now reads canonical `hci-verifier-snapshot.json` first (was preferring stale `pipeline-summary.json`). All four tools (i/state, i/status, i/holograph, selftest) now read same source.
-
-_Phase 2 complete_. 10/10 in-scope items; composition-domain blindspot moved to "Deferred / out of scope". Files: `.env`, `tools/HME/service/watcher.py`, `tools/HME/tests/specs/onboarding_init.test.js`, `tools/HME/config/invariants.json`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/{_base,checks,checks_code}.py`, `config/loc-ignore.txt`, `scripts/hme/substrate-view.py`.
-
-### Phase 3: Single-source-of-truth opportunities (worthiness P/C/S/E = 3/2/3/3)
-
-Mirror of the HCI unification pattern from Phase 2: identify values/lists/configs the codebase reads from multiple disjoint locations, and consolidate to one authoritative source with the others becoming derivers. Each item carries the duplication evidence.
-
-- [x] **Onboarding STATES list duplication.** Created `tools/HME/config/onboarding_states.json` as canonical. `_onboarding.sh` sources the list via `python3 -c "json.load(...)"` with hardcoded fallback for offline use. `onboarding_chain.py:STATES = _load_states()` reads from the same JSON.
-
-- [x] **Watcher IGNORE_DIRS triple-source.** Removed the divergent fallback set in `watcher.py`; `file_walker.DEFAULT_IGNORE_DIRS` is now the single source (env -> builtin -> +gitignore). Watcher fails-fast on `file_walker` ImportError rather than maintaining a duplicate list.
-
-- [x] **Difficulty-label translation.** Canonical translator already exists at `todo.py:_normalize_tier` (E1-E5 + legacy easy/medium/hard map). Fixed `todo_spec_phase.py:_NEXT_UP_RE/_SPEC_OPEN_RE` to accept E1-E5 (was matching legacy only -- silent miss on new-format entries). Other sites already import `_normalize_tier` or are descriptive (i_registry.json data, TEMPLATE.md doc).
-
-- [x] **Invariant glob.glob() callers migrated to `_resolve_glob`.** `_check_glob_count_gte` and `_check_symbols_used` (checks.py:77, :131) both now use the helper. All glob-based invariants uniformly accept list-form globs.
-
-- [x] **PROJECT_ROOT fallback chain.** Created `tools/HME/service/repo_root.py` with `resolve()` helper (3-tier: PROJECT_ROOT env -> CLAUDE_PROJECT_DIR env -> walk-up from `__file__`; raises if all fail). Migrated 9+ sites; host-specific path fallback removed everywhere. Sibling test `test_repo_root.py` (3 tests).
-
-- [x] **Buddy SID location aggregator.** Created `tools/HME/scripts/buddy_registry.py` -- reads all 5+ dispersed SID stores (primary, legacy alias, multi-buddy slots, senior pool) and produces a unified `runtime/hme/buddy-registry.json` view. Existing writers stay authoritative (back-compat); readers can prefer the registry. Sibling test `test_buddy_registry.py` (3 tests).
-
-- [x] **Pipeline verdict canonical.** `_nexus_get PIPELINE` (helpers/_nexus.sh) now reads from `output/metrics/pipeline-summary.json` directly (the true canonical source), with nexus cache as fallback. Verdict consumers no longer drift on stale cache.
-
-- [x] **Comment-bloat thresholds in `.env`.** Added `COMMENT_BLOAT_WARN=3`, `COMMENT_BLOAT_FAIL=5`, `COMMENT_BLOAT_LONG_LINE=90` to `.env` -- both `pretooluse_edit.sh` and `scripts/audit-comment-bloat.py` already honored these env vars; centralizing the defaults in `.env` makes the SSOT explicit.
-
-- [x] **i/* description drift warning.** `i/help` now extracts header comment for every script (registry-listed or not) and emits a `[drift] i/<name>: registry vs header disagree` stderr warning when both exist with materially different content. Registry remains canonical.
-
-_Phase 3 complete_. 9/9 items shipped. Files: `tools/HME/config/onboarding_states.json` (new), `tools/HME/hooks/helpers/_onboarding.sh`, `tools/HME/service/server/onboarding_chain.py`, `tools/HME/service/watcher.py`, `tools/HME/service/server/tools_analysis/todo_spec_phase.py`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/checks.py`, `tools/HME/service/repo_root.py` (new), 9+ hardcoded-path migration sites, `tools/HME/scripts/buddy_registry.py` (new), `tools/HME/hooks/helpers/_nexus.sh`, `.env`, `i/help`, sibling tests `test_repo_root.py` + `test_buddy_registry.py`.
+- [ ] [easy] First item of the new initiative
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
@@ -77,6 +34,7 @@ _Phase 3 complete_. 9/9 items shipped. Files: `tools/HME/config/onboarding_state
 
 ## Deferred / out of scope
 
+<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
 
 ## Three-loop role separation (NEVER lists)
 
