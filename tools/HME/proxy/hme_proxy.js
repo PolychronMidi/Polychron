@@ -463,6 +463,32 @@ function handleRequest(clientReq, clientRes) {
     let outBody = bodyBuf;
     let injected = false;
 
+    // OVERDRIVE_MODE=4 main-agent swap (claude-* -> opencode.ai/zen/go deepseek-v4-pro).
+    if (process.env.OVERDRIVE_MODE === '4'
+        && payload && typeof payload.model === 'string'
+        && payload.model.startsWith('claude-')
+        && !clientReq.headers['x-hme-upstream']) {
+      const _zenKey = process.env.OPENCODE_API_KEY || '';
+      if (_zenKey) {
+        clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
+        clientReq.headers['x-api-key'] = _zenKey;
+        delete clientReq.headers['authorization'];
+        payload.model = 'deepseek-v4-pro';
+        if (Array.isArray(payload.messages)) {
+          for (const m of payload.messages) {
+            if (m && typeof m.content === 'string') {
+              m.content = [{ type: 'text', text: m.content }];
+            }
+          }
+        }
+        outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+        injected = true;
+        console.error('[hme-proxy] MODE=4 swap: claude-* -> deepseek-v4-pro via opencode.ai/zen/go');
+      } else {
+        console.error('[hme-proxy] MODE=4 active but OPENCODE_API_KEY missing -- swap skipped');
+      }
+    }
+
     const upstream = resolveUpstream(clientReq);
     const isAnthropic = upstream.provider === 'anthropic';
 
