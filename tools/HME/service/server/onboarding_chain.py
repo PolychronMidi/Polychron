@@ -58,7 +58,7 @@ Gate hooks (external tools the chain decider can't reach from Python):
 Graduation:
   learn(title=, content=) with non-empty args + state == verified -> chain_exit
   sets state to graduated, deletes tmp/hme-onboarding.state and .target,
-  appends "🎓 HME ONBOARDING COMPLETE", subsequent calls bypass gates.
+  appends "[grad] HME ONBOARDING COMPLETE", subsequent calls bypass gates.
   Per-session: next SessionStart re-arms boot via sessionstart.sh:_onb_init.
 
 Failure modes:

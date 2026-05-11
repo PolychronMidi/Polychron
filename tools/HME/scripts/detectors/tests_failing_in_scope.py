@@ -116,7 +116,7 @@ def _run_node_test(test_paths: list[Path]) -> tuple[bool, str]:
         )
         ok = proc.returncode == 0
         all_out = (proc.stdout + proc.stderr).splitlines()
-        fails = [ln for ln in all_out if ln.startswith("✖") or ln.startswith("not ok")]
+        fails = [ln for ln in all_out if ln.startswith("X") or ln.startswith("not ok")]
         return ok, "\n".join(fails[:5]) if fails else "\n".join(all_out[-5:])
     except (OSError, subprocess.SubprocessError) as e:
         return True, f"node --test skipped: {type(e).__name__}: {e}"

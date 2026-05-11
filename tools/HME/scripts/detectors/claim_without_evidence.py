@@ -44,16 +44,16 @@ _CLAIM_PATTERNS = (
                r"audit|the\s+(?:code|change|edit|fix|patch|update))\s+"
                r"(passe?s?|works|succeeds?|lands?|fires?|landed|shipped|"
                r"clean|verified|complete|done)\b", re.IGNORECASE),
-    # "X out of Y pass/fire" — the all-pass roll-up shape.
+    # "X out of Y pass/fire" -- the all-pass roll-up shape.
     re.compile(r"\b\d+\s*/\s*\d+\b[^.\n]{0,30}\b(passe?s?|fires?|works|"
                r"clean|land|landed|verified)\b", re.IGNORECASE),
     re.compile(r"\ball\s+\d+\b[^.\n]{0,20}\b(passe?s?|fires?|land|landed|"
                r"works|verified|clean)\b", re.IGNORECASE),
-    # "Live at git_sha X" / "Live in proxy <pid>" / "Now live" — the
+    # "Live at git_sha X" / "Live in proxy <pid>" / "Now live" -- the
     # restart-confirms-deploy shape. Even more dangerous because the
     # health probe IS evidence; the claim should cite it.
     re.compile(r"\bLive\s+(at|in|on)\s+\S+", re.IGNORECASE),
-    # "now (works|fires|lands|live|fixed|verified)" — present-tense
+    # "now (works|fires|lands|live|fixed|verified)" -- present-tense
     # state-change claim.
     re.compile(r"\bnow\s+(works|passes|fires|live|fixed|verified|clean|"
                r"resolves?|recovers?)\b", re.IGNORECASE),
