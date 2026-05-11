@@ -42,7 +42,8 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = os.environ.get("PROJECT_ROOT", "/home/jah/Polychron")
+from repo_root import resolve as _resolve_root
+PROJECT_ROOT = _resolve_root()
 QUEUE_DIR = Path(PROJECT_ROOT) / "tmp" / "hme-worker-queue"
 RESULTS_DIR = Path(PROJECT_ROOT) / "tmp" / "hme-worker-results"
 POLL_INTERVAL_S = 0.1
