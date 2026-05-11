@@ -35,6 +35,9 @@ def start_watcher(project_root: str, engine, debounce: float = 30.0):
     _last_reindex: list[float] = [0.0]
     _changed_files: set = set()
     _lock = threading.Lock()
+    # Consecutive-failure backoff: doubles effective cooldown per failure (capped at 8x).
+    _consecutive_failures: list[int] = [0]
+    _MAX_BACKOFF_MULTIPLIER = 8
 
     # Stay in sync with file_walker.DEFAULT_IGNORE_DIRS -- the watcher must
     # not feed paths to engine.index_file() that walk_code_files() would
