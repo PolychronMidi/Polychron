@@ -228,6 +228,11 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     # value to budget+slack when it's too low.
     _floor = budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK
     resolved_max = max(max_tokens, _floor)
+    # Per-model output cap. Haiku tops at 64K; opus/sonnet at 128K.
+    _MODEL_MAX_OUT = {"claude-haiku-4-5": 64000, "claude-haiku-4-5-20251001": 64000}
+    _cap = next((v for k, v in _MODEL_MAX_OUT.items() if k in model_id), 128000)
+    if resolved_max > _cap:
+        resolved_max = _cap
 
     # Zen requires content-blocks form; Anthropic accepts both. Use blocks uniformly.
     _is_deepseek = model_id.startswith("deepseek-")
