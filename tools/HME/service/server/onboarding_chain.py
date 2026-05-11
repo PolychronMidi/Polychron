@@ -124,16 +124,18 @@ except Exception:
 
 logger = logging.getLogger("HME.onboarding")
 
-STATES = [
-    "boot",
-    "selftest_ok",
-    "targeted",
-    "edited",
-    "reviewed",
-    "piped",
-    "verified",
-    "graduated",
-]
+def _load_states() -> list[str]:
+    """Load canonical state list from tools/HME/config/onboarding_states.json."""
+    import json as _json
+    here = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(here, "..", "..", "..", "config", "onboarding_states.json")
+    try:
+        with open(json_path, encoding="utf-8") as f:
+            return _json.load(f)["states"]
+    except (OSError, KeyError, _json.JSONDecodeError):
+        return ["boot", "selftest_ok", "targeted", "edited", "reviewed", "piped", "verified", "graduated"]
+
+STATES = _load_states()
 
 STEP_LABELS = {
     "boot":        f"1/7 boot check (run {_action_form('selftest')})",
