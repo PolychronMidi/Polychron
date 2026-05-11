@@ -37,6 +37,7 @@
 - [2026-05-11] `OVERDRIVE_MODE=3` routing: E5 to Opus, E4 to deepseek-v4-pro, E3 to deepseek-v4-flash, E1-E2 to cascade. Routes through HME proxy via `X-HME-Upstream: https://opencode.ai/zen/go` + `x-api-key`; Zen's `/v1/messages` is Anthropic-shape native (no translator). Live smoke verified both DeepSeek models. `tools/HME/service/server/tools_analysis/synthesis/{synthesis_reasoning,synthesis_overdrive}.py`, `tools/HME/tests/specs/synthesis_overdrive_mode3.test.js` (6 tests), `.env`, `tools/HME/scripts/buddy_dispatch_status.py`
 - [2026-05-11] `_try_overdrive_model` hardening: per-model `max_tokens` cap (haiku=64K) + auto-drop `thinking` when budget exceeds cap. Surfaced by LIFESAVER during smoke testing. `tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py`
 - [2026-05-11] `verify_landed_block.sh` bypass for `git` + `/tmp/` paths (snapshot/scratch reads aren't source-file verification). `tools/HME/hooks/pretooluse/bash/verify_landed_block.sh`
+- [2026-05-11] **CRITICAL FIX**: `messages.js:86-92` boilerplate-stripper was replacing ALL stripped tool_result content with literal `'[SUCCESS]'` regardless of `is_error`. Effect: failed Edit/Bash tools were returned to the agent as `[SUCCESS]` -- agent operated on false-positive success signals across whole conversations. Now honors `block.is_error`: true -> `[FAIL]`, false -> `[SUCCESS]`. `tools/HME/proxy/messages.js`
 
 ## Next up (queued for next cycle)
 
