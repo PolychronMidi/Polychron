@@ -463,8 +463,21 @@ function handleRequest(clientReq, clientRes) {
     let outBody = bodyBuf;
     let injected = false;
 
+    // Detect [HME-SENIOR-CONSULT] marker -- senior traffic must reach Anthropic.
+    let _isSeniorConsult = false;
+    if (payload && Array.isArray(payload.messages)) {
+      for (const m of payload.messages) {
+        const c = m && m.content;
+        const txt = typeof c === 'string' ? c
+          : Array.isArray(c) ? c.map((b) => (b && b.type === 'text' ? (b.text || '') : '')).join('')
+          : '';
+        if (txt.includes('[HME-SENIOR-CONSULT]')) { _isSeniorConsult = true; break; }
+      }
+    }
+
     // OVERDRIVE_MODE=4 main-agent swap (claude-* -> opencode.ai/zen/go deepseek-v4-pro).
     if (process.env.OVERDRIVE_MODE === '4'
+        && !_isSeniorConsult
         && payload && typeof payload.model === 'string'
         && payload.model.startsWith('claude-')
         && !clientReq.headers['x-hme-upstream']) {
