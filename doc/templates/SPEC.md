@@ -10,23 +10,38 @@ _Previous set (SSOT) archived 2026-05-11T183118Z to tools/HME/KB/devlog/2026-05-
 
 ## Goal
 
-<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
+Add `OVERDRIVE_MODE=3` tier-aware routing that inserts OpenCode Go DeepSeek models between the free cascade and Opus. E1/E2 stay on the free cascade (NVIDIA/Cerebras/Groq/Gemini); E3 routes to `deepseek-v4-flash`; E4 routes to `deepseek-v4-pro`; E5 stays on Opus. All synthesis-tier reasoning calls (`synthesis_reasoning.call`) get a middle-tier upgrade between cascade-quality and Opus-quality with negligible cost (OpenCode Go = $10/mo flat). The Claude Code VS Code extension's interactive path is unaffected -- it continues to use anthropic.com upstream through the proxy as before.
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
-
-- <subsystem>: <one-line>
-- <data dir / queue / manifest>: <one-line>
-- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
+- `tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py`: tier-aware dispatcher with `_od_mode` switch (current: `1`=Opus chain, `2`=tier-aware Opus/Sonnet/cascade, new: `3`=tier-aware Opus/DeepSeek-Pro/DeepSeek-Flash/cascade)
+- `tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py`: `_call_opus_overdrive` + `_try_overdrive_model` build Anthropic-shape `/v1/messages` payload, POST to `ANTHROPIC_BASE_URL` (the local HME proxy)
+- `tools/HME/proxy/upstream.js`: `resolveUpstream(req)` already honors `X-HME-Upstream` header for per-request upstream override; `provider !== 'anthropic'` short-circuits OAuth injection so caller-supplied `x-api-key` passes through
+- OpenCode Go API: `https://opencode.ai/zen/go/v1/messages` -- accepts Anthropic-shape requests + returns Anthropic-shape responses natively (no translator needed); auth via `x-api-key` header; models `deepseek-v4-pro` + `deepseek-v4-flash` confirmed in `GET /zen/go/v1/models`
 
 ## Phases
 
-### Phase 0: <next initiative -- name>
+### Phase 1: OVERDRIVE_MODE=3 routing (worthiness P/C/S/E = 3/2/3/3)
 
-<1-paragraph context for the new initiative.>
+OpenCode Go's `/v1/messages` endpoint already speaks Anthropic shape natively -- confirmed via probe: `POST https://opencode.ai/zen/go/v1/messages` with `x-api-key` auth + Anthropic-shape body returns `{type:"message", content:[{type:"text",...}], stop_reason:...}` cleanly. No payload translator middleware needed. The change is purely a routing decision: when `chain_override=("deepseek-v4-pro",)` or `("deepseek-v4-flash",)`, `_try_overdrive_model` sets two headers and the proxy's existing per-request upstream override handles the rest.
 
-- [ ] [easy] First item of the new initiative
+- [ ] [E2] Add `OVERDRIVE_MODE=3` documentation block to `.env` (parallel to existing MODE=2 doc at line 271-283); leave active setting at `OVERDRIVE_MODE=2` for now, document `=3` as opt-in
+- [ ] [E3] In `synthesis_reasoning.py`, add `elif _od_mode == "3":` branch after MODE=2: E5 to opus chain, E4 to `_call_opus_overdrive(chain_override=("deepseek-v4-pro",), allow_subagent=False)`, E3 same with deepseek-v4-flash, E1/E2 to None (cascade fallthrough)
+- [ ] [E3] In `synthesis_overdrive.py:_try_overdrive_model`, detect deepseek model IDs and inject Zen routing headers: `X-HME-Upstream: https://opencode.ai/zen/go` + `x-api-key: ${OPENCODE_API_KEY}`. Drop `anthropic-beta` header (not honored by Zen).
+- [ ] [E2] Extend `_label_for_model` to emit `overdrive/zen/deepseek-pro` and `overdrive/zen/deepseek-flash` source labels for `_last_source` telemetry
+- [ ] [E3] Add `tools/HME/tests/specs/synthesis_overdrive_mode3.test.js` mirroring `synthesis_overdrive_mode2.test.js`: verify E5 to opus chain, E4 to deepseek-pro chain, E3 to deepseek-flash chain, E1/E2 to None
+- [ ] [E2] Live integration smoke: probe `_call_opus_overdrive(chain_override=("deepseek-v4-flash",))` end-to-end through the running proxy; confirm response parses as Anthropic content blocks
+- [ ] [E2] Update `i/dispatch status` (or wherever the tier-to-provider routing is displayed) so MODE=3 surfaces the Zen tier mapping
+
+## Deferred to next cycle (ranked surfaces from this round's reviews)
+
+<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
+
+## Deferred / out of scope
+
+- VS Code extension routing to DeepSeek: out of scope. The extension's interactive coding path uses Anthropic OAuth via Claude Code session quota; routing it to DeepSeek would require a separate model-alias header convention or per-request escape that does not apply to the OVERDRIVE synthesis path. Re-open if/when DeepSeek-via-extension becomes a need.
+- Streaming SSE event translation: Zen's `/v1/messages` returns Anthropic-shape SSE natively; no translation needed. If a future caller adds `stream:true` to `_try_overdrive_model`, the existing Anthropic SSE parser works unchanged.
+- Tool use round-trips through DeepSeek: `_call_opus_overdrive` only sends a single user message (no tool_use blocks). If/when a caller needs tool-use through DeepSeek, verify Zen passes through `tool_use`/`tool_result` blocks natively.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
