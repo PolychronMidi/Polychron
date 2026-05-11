@@ -40,24 +40,31 @@ if [ -f "$_ENV_FILE" ]; then
   set +a
 fi
 
-# Accept role-named aliases for the target sid. All resolve to --sid=
-# under the hood; the alias just makes the call site read correctly
-# whether you're talking to the active primary or a retired senior.
+# Accept role-named aliases for the target sid.
 _ARGS=()
+_IS_SENIOR=0
 for arg in "$@"; do
   case "$arg" in
     sid=*)     _ARGS+=("--sid=${arg#sid=}") ;;
     primary=*) _ARGS+=("--sid=${arg#primary=}") ;;
     buddy=*)   _ARGS+=("--sid=${arg#buddy=}") ;;
-    senior=*)  _ARGS+=("--sid=${arg#senior=}") ;;
+    senior=*)  _ARGS+=("--sid=${arg#senior=}"); _IS_SENIOR=1 ;;
     question=*) _ARGS+=("--question=${arg#question=}") ;;
     *=*)
       _key="${arg%%=*}"
       _val="${arg#*=}"
-      _key="${_key#--}"; _key="${_key#-}"  # strip up to two leading dashes
+      _key="${_key#--}"; _key="${_key#-}"
       _ARGS+=("--${_key//_/-}=${_val}")
       ;;
     *) _ARGS+=("$arg") ;;
   esac
 done
+# Senior consult under MODE=4: bypass the local proxy so the call reaches
+# Anthropic (the senior IS a Claude OAuth session). Without this override
+# the proxy's MODE=4 swap routes claude-* to opencode.ai and the senior
+# is never reached.
+if [ "$_IS_SENIOR" = "1" ] && [ "${OVERDRIVE_MODE:-}" = "4" ]; then
+  export ANTHROPIC_BASE_URL=https://api.anthropic.com
+  echo "[i/consult] senior under MODE=4 -- bypassing local proxy, routing directly to api.anthropic.com" >&2
+fi
 exec python3 "$_SCRIPT" consult "${_ARGS[@]}"
