@@ -69,6 +69,30 @@ MODE=3 is now active (E5=Opus, E4=deepseek-pro, E3=deepseek-flash, E1-E2=cascade
 - [x] [E2] Captured per-tier `last_source` from live E1-E4 dispatch run: E1/E2 -> `nvidia/mistralai/mistral-large-3-675b-instruct-2512` (after `deepseek-v3.2` HTTP 410 EOL); E3 -> `overdrive/zen/deepseek-flash`; E4 -> `overdrive/zen/deepseek-pro`. **Harvested fix shipped same turn**: replaced EOL `deepseek-v3.2` with `deepseek-v4-pro` across `synthesis_nvidia.py:18` + `synthesis_reasoning.py:98,125`; added `deepseek-v4-flash` as new second-tier reasoning entry. NVIDIA `/v1/models` confirmed both v4 variants are served. Stale doc comment in `synthesis_nvidia.py:27` updated too.
 - [ ] [E2] Track failure modes per tier: hallucinated file paths, fabricated function names, refactor proposals contradicting `invariants.json`, over-aggressive refactors that would break cascade fallthrough. Add findings to `TODO.md` Next-up.
 
+### Phase 3: OVERDRIVE_MODE=4 -- swap main driving agent + E5 to OpenCode Go (worthiness P/C/S/E = 3/2/2/3)
+
+Radical reshape of the upstream surface. MODE=4 replaces the **main driving agent** (the VS Code extension's interactive path -- the one that currently terminates at `api.anthropic.com` via OAuth) with OpenCode Go `deepseek-v4-pro`; and replaces the synthesis E5 escalation tier (currently Opus) with OpenCode Go `glm-5.1`. Both confirmed Anthropic-shape compatible via probe (`glm-5.1` returned `{type:"message", content:[{type:"text",...}]}` cleanly through `/zen/go/v1/messages`).
+
+**Tier map under MODE=4:**
+- main agent (Claude Code VS Code ext path) -> `opencode-go/deepseek-v4-pro`
+- E5 (synthesis escalation) -> `opencode-go/glm-5.1`
+- E4 -> `opencode-go/deepseek-v4-pro` (same as main; redundant but preserves tier dispatch for routing telemetry)
+- E3 -> `opencode-go/deepseek-v4-flash`
+- E1-E2 -> free cascade (unchanged)
+
+Architecturally distinct from MODE=3: MODE=3 only touched the synthesis-side OVERDRIVE path. MODE=4 ALSO rewrites the proxy's main `/v1/messages` upstream for interactive traffic. Requires proxy middleware (new), not just synthesis dispatcher branch.
+
+- [ ] [E2] Probe `glm-5.1` via Zen Go with a real reasoning prompt to characterize quality vs Opus baseline. Initial probe confirmed routing works.
+- [ ] [E3] Add `OVERDRIVE_MODE=4` documentation block to `.env` parallel to MODE=3. Document tier mapping + "main agent swap" semantic.
+- [ ] [E3] In `synthesis_reasoning.py`, add `elif _od_mode == "4":` branch: E5 -> `glm-5.1`, E4 -> `deepseek-v4-pro`, E3 -> `deepseek-v4-flash`, E1-E2 -> None.
+- [ ] [E3] Extend `_try_overdrive_model` model detector: `glm-*` model IDs route through the same Zen Go headers currently gated on `deepseek-*`. Refactor the prefix-match to a Zen-served-prefix list.
+- [ ] [E4] Proxy middleware `tools/HME/proxy/middleware/NN_main_agent_rewrite.js`: when `OVERDRIVE_MODE=4` AND `payload.model` starts with `claude-` AND interactive path -> set `X-HME-Upstream: https://opencode.ai/zen/go`, inject `x-api-key`, rewrite `payload.model` to `deepseek-v4-pro`, wrap content as blocks. OAuth injection in `hme_proxy.js:679-704` must skip when this middleware fires.
+- [ ] [E3] Add `tools/HME/tests/specs/synthesis_overdrive_mode4.test.js`: E5 -> glm-5.1, E4 -> deepseek-pro, E3 -> deepseek-flash, E1-E2 -> None. Mirror of mode3 tests.
+- [ ] [E3] Live smoke: `OVERDRIVE_MODE=4` + `synthesis_reasoning.call(tier='E5')` -> confirm `_last_source = overdrive/zen/glm-5.1`. Then proxy `/v1/messages` with `model: claude-opus-4-7` -> confirm response `model` field is `glm-5.1` (proves rewrite).
+- [ ] [E2] Extend `_label_for_model` for glm-* labels: `glm-5.1` -> `overdrive/zen/glm-5.1`.
+- [ ] [E2] Update `i/dispatch status` MODE descriptions to include `4=main=ds-pro / E5=glm-5.1 / E4=ds-pro / E3=ds-flash / E1-E2=cascade`.
+- [ ] [E4] Operating-mode hazard audit: under MODE=4 every Claude Code session burns OpenCode Go quota (\$10/mo flat = \$12/5h cap, \$60/mo cap) instead of Claude quota. Document cap-budget visibility + failover when Go quota exhausts. Could trip the proxy emergency valve if not handled.
+
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
 <!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
