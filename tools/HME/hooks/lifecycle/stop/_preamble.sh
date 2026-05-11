@@ -12,7 +12,7 @@ INPUT="${INPUT:?_preamble.sh requires INPUT from dispatcher (Claude Code Stop pa
 
 # Resolve detectors via $PROJECT_ROOT (set by .env/_safety.sh) so the
 # running copy always tracks git HEAD, regardless of $BASH_SOURCE.
-_DETECTORS_DIR="${PROJECT_ROOT:-/home/jah/Polychron}/tools/HME/scripts/detectors"
+_DETECTORS_DIR="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}/tools/HME/scripts/detectors"
 
 # Context meter: merge token counts into existing statusLine data
 # StatusLine writes authoritative used_pct/remaining_pct/size from the API.
