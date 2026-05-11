@@ -124,6 +124,10 @@ EVASION_INTENT_PHRASES = (
     "to avoid stop_work",
     "to avoid scope_vs_shipped",
     "to avoid the verify-landed",
+)
+
+# Empty-result fabrication: the agent narrates tool results as "empty" / "no body" / "not sure if it landed" when the result actually carried content. The middleware (26_empty_result_marker.js) tags genuine empty bodies with [SUCCESS] or [FAIL] -- any agent claim of "empty" without those markers is a fabrication that prior turns confirmed dozens of times. Listed SEPARATELY from EVASION_INTENT_PHRASES so the self-reference rescue (which exempts detector-maintenance turns) does NOT exempt these.
+FABRICATION_PHRASES = (
     "came back empty",
     "came back as empty",
     "returned empty",
