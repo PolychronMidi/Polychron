@@ -66,7 +66,7 @@ MODE=3 is now active (E5=Opus, E4=deepseek-pro, E3=deepseek-flash, E1-E2=cascade
 - [ ] [E4] Audit the synthesis cascade lifecycle (request → tier route → provider call → response parse → telemetry → fallback). Propose one architectural improvement that would simplify the fallback path without adding a new abstraction layer.
 
 **Evaluation harness (operator-side, not per-task):**
-- [ ] [E2] Capture per-tier `last_source` distribution after this phase ingests + dispatches: `tmp/hme-buddy-call-count` + `tmp/hme-subagent-results/*.json` should show per-tier model attribution. Surface via `i/dispatch status` or one-off awk over the results dir.
+- [x] [E2] Captured per-tier `last_source` from live E1-E4 dispatch run: E1/E2 -> `nvidia/mistralai/mistral-large-3-675b-instruct-2512` (after `deepseek-v3.2` HTTP 410 EOL); E3 -> `overdrive/zen/deepseek-flash`; E4 -> `overdrive/zen/deepseek-pro`. **Harvested fix shipped same turn**: replaced EOL `deepseek-v3.2` with `deepseek-v4-pro` across `synthesis_nvidia.py:18` + `synthesis_reasoning.py:98,125`; added `deepseek-v4-flash` as new second-tier reasoning entry. NVIDIA `/v1/models` confirmed both v4 variants are served. Stale doc comment in `synthesis_nvidia.py:27` updated too.
 - [ ] [E2] Track failure modes per tier: hallucinated file paths, fabricated function names, refactor proposals contradicting `invariants.json`, over-aggressive refactors that would break cascade fallthrough. Add findings to `TODO.md` Next-up.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
