@@ -26,7 +26,17 @@ import urllib.request
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT") or "/home/jah/Polychron")
+def _resolve_root() -> Path:
+    val = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
+    if val and (Path(val) / ".env").is_file():
+        return Path(val)
+    cur = Path(__file__).resolve().parent
+    while cur != cur.parent:
+        if (cur / ".env").is_file() and (cur / ".git").is_dir():
+            return cur
+        cur = cur.parent
+    raise RuntimeError("universal_pulse_tick: cannot resolve repo root")
+PROJECT_ROOT = _resolve_root()
 CONFIG_PATH = PROJECT_ROOT / "tools" / "HME" / "config" / "universal_pulse.json"
 ERROR_LOG = PROJECT_ROOT / "log" / "hme-errors.log"
 DEFAULT_HEARTBEAT = PROJECT_ROOT / "tmp" / "hme-universal-pulse.heartbeat"
