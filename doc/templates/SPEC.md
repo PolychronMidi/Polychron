@@ -40,8 +40,17 @@ Convert four silent failures (three diagnosed, one already fixed inline) into su
 - [x] [medium] (c.3) RCA: `tier_classifier.py` exists with a complete `classify_heuristic()` + `emit_telemetry()` pipeline, but no hook calls it. `userpromptsubmit.sh` does NOT invoke the classifier. Downstream detectors (`summary_format.py`, `phase_gate.py`, `advisor_doctrine.py`) all read "latest line of mode-classifier.jsonl" with no age check, so the 9-day-old test fixture entry drives tier-gating for every live turn. The wiring gap masquerades as classifier malfunction.
 - [x] [easy] (c.4-immediate) Age-gate added to all three downstream tier readers: `summary_format._read_tier_and_mode`, `phase_gate._read_tier`, `advisor_doctrine._read_tier`. Each now rejects entries older than `<DETECTOR>_TIER_MAX_AGE_SECS` (default 3600s), returning None so the gate skips rather than false-positiving. Env-overridable for tests. Landed 2026-05-10.
 - [x] [medium] (c.4-deep) `tier_classifier.py --prompt "$PROMPT" --json` invoked from `userpromptsubmit.sh` after SatisfactionCapture; writes a fresh `mode-classifier.jsonl` line per turn. The age-gate becomes a backstop instead of the only line of defense. Landed 2026-05-10.
-
-## Deferred to next cycle (ranked surfaces from this round's reviews)
+- [x] [easy] (d) Custom buddy persona at `.claude/agents/buddy-primary.md` -- replaces synthesis-engine generic fallback. Encodes tier-gated findings, quote-grounding, promise-vs-delivers framing, anti-pray-and-spray refusal, KB-crystallize mandate. Closes BUDDY_SYSTEM.md forward-evolution item 1. Landed 2026-05-10.
+- [x] [easy] (e) `scope_vs_shipped` detector promoted to `deny: true` for both verdicts. Added `SCOPE_STACKED` + `SCOPE_NOT_TRACKED` reasons to `work_checks.js`. Gate enforces tick-or-revert. Landed 2026-05-10.
+- [x] [easy] (f) SessionStart banner surfaces missing `runtime/hme/buddy-primary.sid` under `BUDDY_HANDOFF=1 + BUDDY_SYSTEM=1`. Points operator at `log/hme-buddy-spawn.log`. Landed 2026-05-10.
+- [x] [easy] (g) `exhaust_check` structural enumeration signal: 3+ line-start list items in closing 60% of final text with no tool_use after fires `exhaust_violation` unconditionally. Phrase-game unwinnable, structure air-tight. Landed 2026-05-10.
+- [x] [easy] (h) `verify_landed_block.sh` regex tightened to filename-shape only. Parallel verify-landed branch added to `pretooluse_read.sh` so Read calls do not bypass. Landed 2026-05-10.
+- [x] [easy] (i) `buddy_handoff_consult.py` consult sentinel write deferred to AFTER `synthesis_reasoning.call()` returns. Landed 2026-05-10.
+- [x] [easy] (j) `pretooluse_edit.sh` turn-edit recording deferred to AFTER blocking gates -- no longer poisons `verify_landed_block.sh` on blocked edits. Landed 2026-05-10.
+- [x] [easy] (k) `strip_agent_artifacts` sanitizer added to `synthesis_config.py` and wired into every cascade provider. Landed 2026-05-10.
+- [x] [easy] (l) `26_empty_result_marker.js` middleware: empty body + `is_error=false` -> `[SUCCESS]`; empty + `is_error=true` -> `[FAIL]`. 12/12 tests pass. Landed 2026-05-10.
+- [x] [easy] (m) `lifecycle_bridge.js` blank-debug rotation cap at 500 newest; bulk-cleanup of pre-existing 3.4GB. Landed 2026-05-10.
+- [x] [easy] (n) Forward-action punt phrases (28 entries) added to `_phrase_lists.py` and wired into `psycho_stop`. `exhaust_check_phrases.DEFERRAL_REGEXES` "worth ..." broadened. Landed 2026-05-10.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
