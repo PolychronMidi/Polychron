@@ -63,8 +63,8 @@ DEFAULT_RETIRE_PCT = 90.0 # don't lower this, there is already a 10% margin betw
 
 
 
-import sys as _sys
-_sys.path.insert(0, '/home/jah/Polychron/tools/HME/scripts')
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 
 from buddy_handoff_kb import (  # noqa: E402
     _extract_and_crystallize, _findings_nudge, _record_consult,
