@@ -92,6 +92,10 @@ def _candidate_tests(impl: Path) -> list[Path]:
     return [c for c in cands if c.is_file()]
 
 
+# pytest exit 5 = no tests collected; treat as ok (no tests = no failures).
+_PYTEST_NO_TESTS_COLLECTED = 5
+
+
 def _run_pytest(test_paths: list[Path]) -> tuple[bool, str]:
     try:
         proc = subprocess.run(
@@ -100,7 +104,7 @@ def _run_pytest(test_paths: list[Path]) -> tuple[bool, str]:
             cwd=str(_PROJECT), capture_output=True, text=True,
             timeout=_DEFAULT_TIMEOUT_S,
         )
-        ok = proc.returncode == 0
+        ok = proc.returncode in (0, _PYTEST_NO_TESTS_COLLECTED)
         tail = (proc.stdout + proc.stderr).splitlines()[-5:]
         return ok, "\n".join(tail)
     except (OSError, subprocess.SubprocessError) as e:
