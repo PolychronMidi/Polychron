@@ -7,7 +7,7 @@
 set +u +e
 
 EVENT="${1:-unknown}"
-PROJECT_ROOT="${PROJECT_ROOT:-/home/jah/Polychron}"
+PROJECT_ROOT="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
 HOOKS_DIR="$PROJECT_ROOT/tools/HME/hooks"
 PRETOOLUSE_DIR="$HOOKS_DIR/pretooluse"
 POSTTOOLUSE_DIR="$HOOKS_DIR/posttooluse"
