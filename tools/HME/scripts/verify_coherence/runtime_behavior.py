@@ -289,27 +289,7 @@ class PlanOutputValidityVerifier(Verifier):
         return _result(WARN, score, f"{len(bad)} suspicious path claim(s) in plans", bad[:5])
 
 
-def _env_truthy(value: str | None) -> bool:
-    return (value or "").strip().lower() in ("1", "true", "yes", "on")
-
-
-def _read_env_var(name: str) -> str | None:
-    """Read NAME from process env, falling back to project .env file."""
-    val = os.environ.get(name)
-    if val is not None:
-        return val
-    env_path = os.path.join(_PROJECT, ".env")
-    if not os.path.isfile(env_path):
-        return None
-    try:
-        with open(env_path, encoding="utf-8") as fh:
-            for line in fh:
-                stripped = line.strip()
-                if stripped.startswith(f"{name}="):
-                    return stripped[len(name) + 1:].split("#", 1)[0].strip()
-    except OSError:
-        return None
-    return None
+from ._base import env_truthy as _env_truthy, read_env_var as _read_env_var  # noqa: E402
 
 
 class BuddyPrimaryHealthVerifier(Verifier):
