@@ -1112,19 +1112,19 @@ _CASES = [
 
     # Regression: load_turn_events boundary bug. tool_result-wrapper user
     # events were mis-counted as turn boundaries -> detectors saw 1-3 events.
-    ("pile_on", "boundary-with-tool-results-fires",
+    ("pile_on", "boundary-with-tool-results-new-writes-fire",
      [
-         _user_msg("audit the chain"),
-         _assistant_tool_use("Edit", {
+         _user_msg("add the chain"),
+         _assistant_tool_use("Write", {
              "file_path": "tools/HME/scripts/detectors/foo.py",
-             "old_string": "a", "new_string": "b",
+             "content": "a",
          }),
          {"type": "user", "message": {"role": "user", "content": [
              {"type": "tool_result", "tool_use_id": "tu_t1", "content": "ok"},
          ]}},
-         _assistant_tool_use("Edit", {
+         _assistant_tool_use("Write", {
              "file_path": "tools/HME/proxy/stop_chain/policies/bar.js",
-             "old_string": "a", "new_string": "b",
+             "content": "a",
          }),
          {"type": "user", "message": {"role": "user", "content": [
              {"type": "tool_result", "tool_use_id": "tu_t2", "content": "ok"},
