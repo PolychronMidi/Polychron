@@ -98,11 +98,29 @@ def _emit_stats(verdict: str, detail: str) -> None:
 
 
 
+def _turn_invoked_archive_now(events: list) -> bool:
+    """True if this turn invoked `i/todo action=archive_now` or `action=clear`. The devlog write IS proof-of-shipped; counting it as scope-not-tracked is a false positive."""
+    import re as _re
+    archive_pat = _re.compile(r"\b(action=archive_now|action=clear)\b")
+    for ev in events:
+        for tu in iter_tool_uses(ev):
+            if tu.get("name") != "Bash":
+                continue
+            cmd = (tu.get("input") or {}).get("command", "") or ""
+            if archive_pat.search(cmd):
+                return True
+    return False
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
         return 0
     events = load_turn_events(sys.argv[1])
+    if _turn_invoked_archive_now(events):
+        _emit_stats("ok", "archive_now invoked -- sanctioned completion event")
+        print("ok")
+        return 0
     diff = _spec_diff()
     new_unchecked = _count_new_unchecked(diff)
     ticked = _count_ticked_transitions(diff)
