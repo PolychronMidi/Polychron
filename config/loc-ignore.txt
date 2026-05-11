@@ -174,3 +174,7 @@ tools/HME/scripts/detectors/exhaust_check.py
 # rationale: intent=already-balanced; revisit-when=verifier-count>=7; decided=2026-05-10
 tools/HME/scripts/verify_coherence/runtime_behavior.py
 
+# supervisor/index.js: top-level process supervisor for all HME child processes (proxy, MCP, shim, daemon, etc.). Single-fate model: lifecycle, health-check loop, abandonment sentinel, restart throttle all share state via the same `_children` Map. Splitting would smear that Map across modules or duplicate state in N managers. Children.js already extracts the spec catalog. The 430 LOC reflect coherent lifecycle ownership, not bloat.
+# rationale: intent=lifecycle-cohesion; revisit-when=children-managed>=20; decided=2026-05-11
+tools/HME/proxy/supervisor/index.js
+
