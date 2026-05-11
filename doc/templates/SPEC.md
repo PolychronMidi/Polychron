@@ -84,13 +84,13 @@ Architecturally distinct from MODE=3: MODE=3 only touched the synthesis-side OVE
 
 - [ ] [E2] Probe `glm-5.1` via Zen Go with a real reasoning prompt to characterize quality vs Opus baseline. Initial probe confirmed routing works.
 - [x] [E3] Added `OVERDRIVE_MODE=4` documentation block to `.env` parallel to MODE=3, documenting the main-agent-swap semantic and per-tier mapping (main+E4=deepseek-pro, E5=glm-5.1, E3=deepseek-flash, E1-E2=cascade).
-- [ ] [E3] In `synthesis_reasoning.py`, add `elif _od_mode == "4":` branch: E5 -> `glm-5.1`, E4 -> `deepseek-v4-pro`, E3 -> `deepseek-v4-flash`, E1-E2 -> None.
-- [ ] [E3] Extend `_try_overdrive_model` model detector: `glm-*` model IDs route through the same Zen Go headers currently gated on `deepseek-*`. Refactor the prefix-match to a Zen-served-prefix list.
+- [x] [E3] `synthesis_reasoning.py`: shipped `elif _od_mode == "4":` branch -- E5 to glm-5.1 chain, E4 to deepseek-pro, E3 to deepseek-flash, E1-E2 to None.
+- [x] [E3] `_try_overdrive_model`: detector refactored to `_is_zen = startswith("deepseek-") or startswith("glm-")`. glm-* routes through the same Zen Go headers as deepseek-*.
 - [ ] [E4] Proxy middleware `tools/HME/proxy/middleware/NN_main_agent_rewrite.js`: when `OVERDRIVE_MODE=4` AND `payload.model` starts with `claude-` AND interactive path -> set `X-HME-Upstream: https://opencode.ai/zen/go`, inject `x-api-key`, rewrite `payload.model` to `deepseek-v4-pro`, wrap content as blocks. OAuth injection in `hme_proxy.js:679-704` must skip when this middleware fires.
-- [ ] [E3] Add `tools/HME/tests/specs/synthesis_overdrive_mode4.test.js`: E5 -> glm-5.1, E4 -> deepseek-pro, E3 -> deepseek-flash, E1-E2 -> None. Mirror of mode3 tests.
-- [ ] [E3] Live smoke: `OVERDRIVE_MODE=4` + `synthesis_reasoning.call(tier='E5')` -> confirm `_last_source = overdrive/zen/glm-5.1`. Then proxy `/v1/messages` with `model: claude-opus-4-7` -> confirm response `model` field is `glm-5.1` (proves rewrite).
-- [ ] [E2] Extend `_label_for_model` for glm-* labels: `glm-5.1` -> `overdrive/zen/glm-5.1`.
-- [ ] [E2] Update `i/dispatch status` MODE descriptions to include `4=main=ds-pro / E5=glm-5.1 / E4=ds-pro / E3=ds-flash / E1-E2=cascade`.
+- [x] [E3] `tools/HME/tests/specs/synthesis_overdrive_mode4.test.js` shipped: 4 tests (E5 to glm-5.1, E4 to deepseek-pro, E3 to deepseek-flash, E1/E2 to cascade). All pass.
+- [x] [E3] Live smoke verified: `_try_overdrive_model('glm-5.1', 'reply PONG', ...)` returned `'PONG'`; label resolved to `overdrive/zen/glm-5.1`. Synthesis-side MODE=4 path proven end-to-end through the proxy.
+- [x] [E2] `_label_for_model` shipped: `glm-5.1` -> `overdrive/zen/glm-5.1`.
+- [x] [E2] `i/dispatch status` MODE descriptions updated: `4=main+E4=deepseek-pro / E5=glm-5.1 / E3=deepseek-flash / E1-E2=cascade`.
 - [ ] [E4] Operating-mode hazard audit: under MODE=4 every Claude Code session burns OpenCode Go quota (\$10/mo flat = \$12/5h cap, \$60/mo cap) instead of Claude quota. Document cap-budget visibility + failover when Go quota exhausts. Could trip the proxy emergency valve if not handled.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)

@@ -17,6 +17,7 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
@@ -27,17 +28,17 @@
 
 
 
+
+- [E2] `_label_for_model` shipped: `glm-5.1` -> `overdrive/zen/glm-5.1`. (auto-shipped from SPEC checkbox flip)
+- [E2] `i/dispatch status` MODE descriptions updated: `4=main+E4=deepseek-pro / E5=glm-5.1 / E3=deepseek-flash / E1-E2=cascade`. (auto-shipped from SPEC checkbox flip)
+- [E3] Live smoke verified: `_try_overdrive_model('glm-5.1', 'reply PONG', ...)` returned `'PONG'`; label resolved to `overdrive/zen/glm-5.1`. Synthesis-side MODE=4 path proven end-to-end through the proxy. (auto-shipped from SPEC checkbox flip)
+- [E3] `_try_overdrive_model`: detector refactored to `_is_zen = startswith("deepseek-") or startswith("glm-")`. glm-* routes through the same Zen Go headers as deepseek-*. (auto-shipped from SPEC checkbox flip)
+- [E3] `synthesis_reasoning.py`: shipped `elif _od_mode == "4":` branch -- E5 to glm-5.1 chain, E4 to deepseek-pro, E3 to deepseek-flash, E1-E2 to None. (auto-shipped from SPEC checkbox flip)
+- [E3] `tools/HME/tests/specs/synthesis_overdrive_mode4.test.js` shipped: 4 tests (E5 to glm-5.1, E4 to deepseek-pro, E3 to deepseek-flash, E1/E2 to cascade). All pass. (auto-shipped from SPEC checkbox flip)
 - [E3] Added `OVERDRIVE_MODE=4` documentation block to `.env` parallel to MODE=3, documenting the main-agent-swap semantic and per-tier mapping (main+E4=deepseek-pro, E5=glm-5.1, E3=deepseek-flash, E1-E2=cascade). (auto-shipped from SPEC checkbox flip)
 - [E2] Captured per-tier `last_source` from live E1-E4 dispatch run: E1/E2 -> `nvidia/mistralai/mistral-large-3-675b-instruct-2512` (after `deepseek-v3.2` HTTP 410 EOL); E3 -> `overdrive/zen/deepseek-flash`; E4 -> `overdrive/zen/deepseek-pro`. **Harvested fix shipped same turn**: replaced EOL `deepseek-v3.2` with `deepseek-v4-pro` across `synthesis_nvidia.py:18` + `synthesis_reasoning.py:98,125`; added `deepseek-v4-flash` as new second-tier reasoning entry. NVIDIA `/v1/models` confirmed both v4 variants are served. Stale doc comment in `synthesis_nvidia.py:27` updated too. (auto-shipped from SPEC checkbox flip)
 - [E4] Unified provider abstraction proposal: routed to `overdrive/zen/deepseek-pro` (1729c). DeepSeek-pro produced structured 3-5 bullet proposal: `ProviderRegistry` singleton + common `OpenAIProvider` base + `OpenCodeZenRouter` adhering to same interface. **Eval signal**: E4 tier produces architectural design with concrete naming under MODE=3. Captured for potential Phase 3 implementation; needs cross-checking against existing `synthesis_provider_base.OpenAIProvider` shape before adoption. (auto-shipped from SPEC checkbox flip)
 - [E3] Architecture review of `_call_opus_overdrive` vs `_try_overdrive_model` separation: routed to `overdrive/zen/deepseek-flash` (3001c). DeepSeek-flash produced structured analysis naming two entanglement candidates (error-taxonomy/retry stratification + ...). **Eval signal**: E3 tier produces coherent multi-step analysis under MODE=3. Full output captured in run; promote concrete proposal to a Phase 3 item if/when the entanglements are surfaced as concrete code citations. (auto-shipped from SPEC checkbox flip)
-- [E2] Audited `synthesis_provider_base.py` via cascade -- mistral-large-3 returned 1311c response describing OpenAIProvider as "abstract base class" with hallucinated method names (`chat_completion`, `stream_completion` -- not present). Useful framing of intent; concrete file:line citations were absent (cascade weakness for code-grounded analysis). Coherent enough to be useful framing, not actionable refactor. (auto-shipped from SPEC checkbox flip)
-- [E1] Enumerated modules in `synthesis/` -- **HALLUCINATION FINDING**: cascade tier (mistral-large-3 after NVIDIA deepseek-v3.2 returned HTTP 410 EOL) fabricated subdirectory names (`constraint_enricher`, `callgraph_builder`, `kb_augmenter`, etc.) that DON'T EXIST. Real dir contains only `.py` files. **Eval signal**: do not route grep/structural-fact tasks to cascade -- use E3+ when grounding to filesystem state matters. (auto-shipped from SPEC checkbox flip)
-- [E1] Listed every reference to `OVERDRIVE_MODE` across the codebase. **Categorized inventory:** consumers (`synthesis_reasoning.py:344`, `buddy_dispatch_status.py:227`); docs (`.env:265-294`, `SPEC.md`, `TODO.md`, `loc-ignore.txt:193`); tests (`synthesis_overdrive_mode2.test.js` x5, `synthesis_overdrive_mode3.test.js` x6); legacy docstring/comment refs (`synthesis_reasoning.py:262,323,343`, `synthesis_overdrive.py:253,438,440,452,457`, `verify_coherence/env_settings.py:98`). **Finding harvested**: `synthesis_reasoning.py:343` comment was stale (only mentioned MODE=0/1/2, missing MODE=3) -- fixed in this turn. (auto-shipped from SPEC checkbox flip)
-- [2026-05-11] `OVERDRIVE_MODE=3` routing: E5 to Opus, E4 to deepseek-v4-pro, E3 to deepseek-v4-flash, E1-E2 to cascade. Routes through HME proxy via `X-HME-Upstream: https://opencode.ai/zen/go` + `x-api-key`; Zen's `/v1/messages` is Anthropic-shape native (no translator). Live smoke verified both DeepSeek models. `tools/HME/service/server/tools_analysis/synthesis/{synthesis_reasoning,synthesis_overdrive}.py`, `tools/HME/tests/specs/synthesis_overdrive_mode3.test.js` (6 tests), `.env`, `tools/HME/scripts/buddy_dispatch_status.py`
-- [2026-05-11] `_try_overdrive_model` hardening: per-model `max_tokens` cap (haiku=64K) + auto-drop `thinking` when budget exceeds cap. Surfaced by LIFESAVER during smoke testing. `tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py`
-- [2026-05-11] `verify_landed_block.sh` bypass for `git` + `/tmp/` paths (snapshot/scratch reads aren't source-file verification). `tools/HME/hooks/pretooluse/bash/verify_landed_block.sh`
-- [2026-05-11] **CRITICAL FIX**: `messages.js:86-92` boilerplate-stripper was replacing ALL stripped tool_result content with literal `'[SUCCESS]'` regardless of `is_error`. Effect: failed Edit/Bash tools were returned to the agent as `[SUCCESS]` -- agent operated on false-positive success signals across whole conversations. Now honors `block.is_error`: true -> `[FAIL]`, false -> `[SUCCESS]`. `tools/HME/proxy/messages.js`
 
 ## Next up (queued for next cycle)
 
