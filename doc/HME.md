@@ -4,7 +4,7 @@
 
 ## What HME is
 
-12 agent-callable tools (evolve / review / read / learn / trace / status / hme_admin / hme_todo / agent / grep / glob_search / edit), a self-coherence verifier substrate that scores HCI on 0-100, lifecycle hooks that automate the evolution loop, and a local-LLM subagent pipeline (Explore + Plan modes with a domain-fine-tuned QLoRA arbiter). No layer is optional.
+13 agent-callable tools (evolve / review / read / learn / trace / status / hme_admin / hme_todo / agent / grep / glob_search / edit / holograph), a self-coherence verifier substrate that scores HCI on 0-100, lifecycle hooks that automate the evolution loop, and a local-LLM subagent pipeline (Explore + Plan modes with a domain-fine-tuned QLoRA arbiter). No layer is optional.
 
 ## The Five Layers
 
