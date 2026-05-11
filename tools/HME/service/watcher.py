@@ -39,25 +39,12 @@ def start_watcher(project_root: str, engine, debounce: float = 30.0):
     _consecutive_failures: list[int] = [0]
     _MAX_BACKOFF_MULTIPLIER = 8
 
-    # Stay in sync with file_walker.DEFAULT_IGNORE_DIRS -- the watcher must
-    # not feed paths to engine.index_file() that walk_code_files() would
-    # have rejected. Otherwise the watcher becomes a back door that
-    # bypasses every ignore rule (e.g. indexing binary model weights
-    # dropped into metrics/).
-    try:
-        from file_walker import DEFAULT_IGNORE_DIRS as _FW_IGNORE_DIRS
-        IGNORE_DIRS = set(_FW_IGNORE_DIRS) | {
-            # LanceDB internals churn constantly (transactions, versions,
-            # manifests, tmp writes). These must never reach the reindexer
-            # OR the file_written emission -- they're not code.
-            "_transactions", "_versions", "_deletions", "_indices", "data",
-        }
-    except ImportError:
-        IGNORE_DIRS = {
-            ".git", ".claude", "node_modules", "__pycache__", "venv", ".venv",
-            "dist", "build", "output", "tmp", "lab", "metrics",
-            "_transactions", "_versions", "_deletions", "_indices",
-        }
+    # Canonical: file_walker.DEFAULT_IGNORE_DIRS (env -> builtin -> +gitignore).
+    # Fail-fast on import error rather than maintain a divergent fallback list.
+    from file_walker import DEFAULT_IGNORE_DIRS as _FW_IGNORE_DIRS
+    IGNORE_DIRS = set(_FW_IGNORE_DIRS) | {
+        "_transactions", "_versions", "_deletions", "_indices", "data",
+    }
     _BUILTIN_IGNORE_EXTS = {
         ".log", ".lock", ".json", ".jsonl", ".md", ".wav", ".mid",
         ".csv", ".png", ".jpg", ".gif", ".mp3", ".ogg",
