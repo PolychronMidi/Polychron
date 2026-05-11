@@ -230,6 +230,7 @@ def cmd_status(args: argparse.Namespace) -> int:
         "1": "Opus chain for all tiers",
         "2": "E4-E5=Opus / E3=Sonnet / E1-E2=cascade",
         "3": "E5=Opus / E4=deepseek-pro / E3=deepseek-flash / E1-E2=cascade",
+        "4": "main+E4=deepseek-pro / E5=glm-5.1 / E3=deepseek-flash / E1-E2=cascade",
     }
     print(f"overdrive_mode: {_od_mode} ({_od_descriptions.get(_od_mode, 'unknown')})")
     snapshot["overdrive_mode"] = _od_mode
