@@ -24,7 +24,7 @@ Onboarding coherence fixes surfaced during first-agent onboarding session. Two s
 
 ### Phase 1: Onboarding coherence fixes (worthiness P/C/S/E = 3/3/3/3)
 
-- [x] Fix `_onb_init`: reset to boot every session; treat "graduated" file content as stale/absent
+- [x] Fix `_onb_init`: accept all valid states (boot..graduated) as preservable; only init to boot when file is missing or contains garbage. Graduated stays graduated -- prevents the onboarding chain from re-spawning composition-pipeline scaffolding todos on every session.
 - [x] Reset stale `tmp/hme-onboarding.state` (was "graduated" since 2026-04-23)
 - [x] Selftest: emit WARN (not FAIL) when chunks > 0 but files < 100; fix hint prescribes `action=index` first, not `clear_index`
 - [x] Fix `i/consult` kv passthrough: strip leading dashes before re-prefixing `--`; `--engine=synthesis` now routes correctly (was `----engine=synthesis`)
