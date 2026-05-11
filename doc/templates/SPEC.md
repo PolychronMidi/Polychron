@@ -44,7 +44,7 @@ _Phase 1 complete._ Five fixes shipped: `_onb_init` only preserves in-progress s
 - [x] Add `config/loc-ignore.txt` entries for `tools/HME/service/watcher.py` (lifecycle-cohesion) and `tools/HME/config/invariants.json` (declarative-config) -- both already exceeded 350 LOC pre-turn; my edits added <20 lines each
 - [x] Fix `eslint-concordance-complete` invariant: exclude `*.test.js` from on-disk rule scan; add concordance entries for `no-bare-declared-global-in-init` and `no-or-fallback-on-map-get` (both `status=js_only`)
 - [x] HCI display unification: `substrate-view.py` (i/status brief) now reads canonical `hci-verifier-snapshot.json` first (was preferring stale `pipeline-summary.json`). All four tools (i/state, i/status, i/holograph, selftest) now read same source.
-- [ ] [E3] 3 overdue p1 blindspots (conductor/time/composers subsystems untouched 10 rounds); composition-side investigation -- deferred (composition-domain work, not infra)
+- (moved to "Deferred / out of scope" -- off-theme for this infra-coherence SPEC)
 
 _Phase 2 status: 10/11 done; 1 deferred (composition-domain blindspot work)._ Files: `.env`, `tools/HME/service/watcher.py`, `tools/HME/tests/specs/onboarding_init.test.js`, `tools/HME/config/invariants.json`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/{_base,checks,checks_code}.py`, `config/loc-ignore.txt`, `scripts/hme/substrate-view.py`.
 
