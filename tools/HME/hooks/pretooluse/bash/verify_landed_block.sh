@@ -26,15 +26,21 @@ try:
     tokens = shlex.split(cmd, posix=True)
 except ValueError:
     tokens = cmd.split()
-# Execution-verb bypass: if the command STARTS with a code-execution interpreter (python/node/bash etc.) running the edited file as its target, that is executing the file (e.g. pytest), not inspecting it. Verify-landed is for inspection patterns only.
+# Execution-verb bypass: interpreter running the file is execution, not verify.
 exec_verbs = {"python", "python3", "node", "bash", "sh", "zsh", "fish", "pytest", "ruby", "perl", "go", "rustc", "ts-node", "deno"}
 for tok in tokens:
     base = os.path.basename(tok)
     if base in exec_verbs or tok in exec_verbs:
         raise SystemExit
+# git reads snapshots/deltas, not current state.
+if any(t == "git" or os.path.basename(t) == "git" for t in tokens):
+    raise SystemExit
+# /tmp/ paths are scratch, not source-file reads.
+if any(t.startswith("/tmp/") for t in tokens):
+    raise SystemExit
 verify_verbs = {"grep", "egrep", "fgrep", "rg", "ag", "ack",
                 "cat", "head", "tail", "less", "more", "bat", "batcat",
-                "wc", "awk", "sed", "git"}
+                "wc", "awk", "sed"}
 has_verify_verb = any(t in verify_verbs for t in tokens)
 if not has_verify_verb:
     raise SystemExit
