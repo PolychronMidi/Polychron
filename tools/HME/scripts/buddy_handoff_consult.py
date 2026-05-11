@@ -311,11 +311,9 @@ def cmd_consult(args: argparse.Namespace) -> int:
         if result.stderr:
             sys.stderr.write(result.stderr)
         if result.returncode == 0:
-            # Track only successful senior consults -- failed invocations
-            # and consults to the active primary (no metadata file) are
-            # skipped. Surfaces heavy-consultation patterns in
-            # `i/handoff status`.
+            # Track only successful senior consults; failed invocations + consults to active primary skipped. Surfaces heavy-consultation in `i/handoff status`.
             _record_consult(args.sid, args.question)
+            _write_consult_sentinel(args.sid)
             # KB crystallization (heavy): extract [[KB-CRYSTALLIZE]]
             # blocks from the response and auto-call `i/learn add` for
             # each. Converts fragile transcript wisdom into durable KB
