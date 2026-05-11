@@ -476,30 +476,52 @@ function handleRequest(clientReq, clientRes) {
     }
 
     // OVERDRIVE_MODE=4 main-agent swap with full Anthropic<->OpenAI translation.
-    let _isMode4Swap = false;
-    let _mode4WasStreaming = false;
-    if (process.env.OVERDRIVE_MODE === '4'
-        && !_isSeniorConsult
-        && payload && typeof payload.model === 'string'
-        && payload.model.startsWith('claude-')
-        && !clientReq.headers['x-hme-upstream']) {
-      const _zenKey = process.env.OPENCODE_API_KEY || '';
-      if (_zenKey) {
-        const { translateRequestToOpenAI } = require('./zen_translator');
-        _mode4WasStreaming = payload.stream === true;
-        const oaPayload = translateRequestToOpenAI(payload, 'deepseek-v4-pro');
-        clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
-        clientReq.headers['x-api-key'] = _zenKey;
-        delete clientReq.headers['authorization'];
-        clientReq.url = '/v1/chat/completions';
-        outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
-        _isMode4Swap = true;
-        injected = true;
-        console.error(`[hme-proxy] MODE=4 swap: claude-* -> deepseek-v4-pro via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
-      } else {
-        console.error('[hme-proxy] MODE=4 active but OPENCODE_API_KEY missing -- swap skipped');
-      }
+// hme_proxy.js ~ Line 478
+if (config.OVERDRIVE_MODE === 4) {
+    const translatedBody = translateToOpenCode(req.body); // Your existing translation
+
+    // 1. STRIP HEADERS: Do not use { ...req.headers }
+    const opencodeHeaders = {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        'Authorization': `Bearer ${config.OPENCODE_API_KEY}` // Use the specific OpenCode key
+    };
+
+    const response = await fetch(config.OPENCODE_ENDPOINT, {
+        method: 'POST',
+        headers: opencodeHeaders,
+        body: JSON.stringify(translatedBody)
+    });
+
+    // 2. PREVENT LOGOUT: If OpenCode rejects us, we catch it here.
+    if (response.status === 401 || response.status === 403) {
+        console.error("[Polychron] OpenCode Auth Failure. IDE Session Protected.");
+        // We return a 200 so VS Code stays logged in, but send the error as text.
+        return res.status(200).write(formatErrorAsAnthropicStream("OpenCode Auth Failed - check your local server key."));
     }
+
+    // 3. STREAM THE TRANSLATION (Fixes the 5-minute hang)
+    // Don't 'await' the body. Process the stream in real-time.
+    res.setHeader('Content-Type', 'text/event-stream');
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+
+        // Use your existing Anthropic <-> OpenCode translation logic on the chunk
+        const translatedChunk = translateOpenCodeToAnthropic(chunk);
+
+        res.write(translatedChunk);
+        if (res.flush) res.flush(); // Force the IDE to see the text immediately
+    }
+
+    return res.end();
+}
 
     const upstream = resolveUpstream(clientReq);
     const isAnthropic = upstream.provider === 'anthropic';
