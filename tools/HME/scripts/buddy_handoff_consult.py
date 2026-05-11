@@ -77,6 +77,18 @@ def _import_main():
     return _read_primary, _emit_activity, _import_dispatcher, SENIORS_DIR, PRIMARY_SID
 
 
+def _write_consult_sentinel(sid: str | None) -> None:
+    """Decision-audit sentinel: pretooluse_edit reads this to mark architectural edits as consulted. Best-effort, called AFTER the API response returns so proxy-fired UserPromptSubmit hooks can't wipe it mid-call."""
+    try:
+        sentinel = TMP / "hme-turn-consults.txt"
+        sentinel.parent.mkdir(parents=True, exist_ok=True)
+        sid_str = (sid or "")[:12]
+        with open(sentinel, "a", encoding="utf-8") as f:
+            f.write(f"{int(time.time())} sid={sid_str}\n")
+    except OSError:
+        pass
+
+
 def _pick_senior_for_question(question: str, seniors_dir: Path) -> str | None:
     """Auto-route by expertise overlap. Reads each senior's expertise_topics
     and consults count, ranks by keyword-in-question + recency. Returns sid or
