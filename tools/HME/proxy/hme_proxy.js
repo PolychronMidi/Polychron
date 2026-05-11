@@ -743,34 +743,35 @@ if (_isMode4Swap) {
 
 if (_mode4WasStreaming) {
             const translator = new ZenSseTranslator({ model: 'deepseek-v4-pro' });
+            let _sentStop = false; // Flag to prevent double-stop 400 errors
 
             clientRes.writeHead(upstreamRes.statusCode || 200, {
               'content-type': 'text/event-stream',
               'cache-control': 'no-cache',
               'connection': 'keep-alive',
+              'transfer-encoding': 'chunked'
             });
 
             upstreamRes.on('data', (c) => {
               const translated = translator.feed(c);
-              // Only write if there is actual content to avoid empty-line 400s
-              if (translated && translated.trim()) {
+              if (translated) {
+                // Check if this chunk already contains the stop event
+                if (translated.includes('message_stop')) _sentStop = true;
                 clientRes.write(translated);
               }
             });
 
             upstreamRes.on('end', () => {
-              // CHANGE: Check if the translator already sent a stop event
-              // through the 'feed' loop before calling finalize.
-              const tail = translator.finalize();
-              if (tail && tail.trim()) {
-                // If the tail contains another 'message_stop' but we already sent one,
-                // the IDE will 400. We wrap this in a try/catch.
-                try {
-                  clientRes.write(tail);
-                } catch (e) {
-                  console.error('[hme-proxy] Failed to write stream tail:', e.message);
-                }
+              if (!_sentStop) {
+                // Manually inject a clean Anthropic termination if the translator missed it
+                const finalBlock =
+                  'event: message_delta\n' +
+                  'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n' +
+                  'event: message_stop\n' +
+                  'data: {"type":"message_stop"}\n\n';
+                clientRes.write(finalBlock);
               }
+
               clientRes.end();
               _releaseOpusSlot();
             });
