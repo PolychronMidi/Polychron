@@ -56,7 +56,7 @@ MODE=3 is now active (E5=Opus, E4=deepseek-pro, E3=deepseek-flash, E1-E2=cascade
 - [ ] [E2] Find duplicated regex patterns across `tools/HME/scripts/detectors/*.py`. Deliverable: list of regex strings appearing in 2+ files with a candidate shared-constants module path.
 
 **E3 -- deepseek-v4-flash -- moderate cross-module reasoning**
-- [ ] [E3] Architecture review of `_call_opus_overdrive` vs `_try_overdrive_model` separation in `synthesis_overdrive.py`: is the chain-walking concern cleanly separated from the per-call concern, or are they entangled? Propose a specific decoupling if entangled.
+- [x] [E3] Architecture review of `_call_opus_overdrive` vs `_try_overdrive_model` separation: routed to `overdrive/zen/deepseek-flash` (3001c). DeepSeek-flash produced structured analysis naming two entanglement candidates (error-taxonomy/retry stratification + ...). **Eval signal**: E3 tier produces coherent multi-step analysis under MODE=3. Full output captured in run; promote concrete proposal to a Phase 3 item if/when the entanglements are surfaced as concrete code citations.
 - [ ] [E3] Enumerate code paths shared between `OVERDRIVE_MODE=1/2/3` branches in `synthesis_reasoning.py`. Propose a table-driven dispatcher (per-mode `{tier: action}` map) and assess trade-offs vs the current if/elif/else.
 - [ ] [E3] Identify the 5 most-coupled module pairs in `tools/HME/service/` based on import graph (use `grep -r 'from .* import'` as the cheap signal). For each pair, suggest one decoupling refactor.
 
