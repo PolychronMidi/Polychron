@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _transcript import is_user, event_content, load_full_turn_with_user  # noqa: E402
+from _transcript import is_user, event_content, iter_tool_uses, load_full_turn_with_user  # noqa: E402
 from _rescue_clauses import b_clause_within_window  # noqa: E402
 
 
