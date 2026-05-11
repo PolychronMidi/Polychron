@@ -197,6 +197,8 @@ def main(argv: list) -> int:
                     fail_findings.append(entry)
                 else:
                     warn_findings.append(entry)
+            for f in _scan_long_comment_lines(path, ext):
+                long_line_findings.append({"path": rel, "line": f["line"], "line_len": f["line_len"]})
     else:
         for path, rel, ext in _walk(_DEFAULT_ROOTS, ignore_patterns):
             for f in _scan_file(path, ext):
@@ -205,6 +207,8 @@ def main(argv: list) -> int:
                     fail_findings.append(entry)
                 else:
                     warn_findings.append(entry)
+            for f in _scan_long_comment_lines(path, ext):
+                long_line_findings.append({"path": rel, "line": f["line"], "line_len": f["line_len"]})
     if as_json:
         print(json.dumps({
             "thresholds": {"warn": WARN_LINES, "fail": FAIL_LINES},
