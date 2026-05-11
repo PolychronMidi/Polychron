@@ -82,23 +82,27 @@ groups = {}  # category → [(name, description), ...]
 hidden = 0
 for script in scripts:
     entry = commands.get(script)
+    # Extract header description (line 2-5 first non-shebang comment) for drift check.
+    header_desc = ""
+    try:
+        with open(os.path.join(i_dir, script)) as f:
+            for i, line in enumerate(f):
+                if i >= 5: break
+                s = line.strip()
+                if s.startswith("#") and not s.startswith("#!"):
+                    header_desc = s.lstrip("#").strip()
+                    break
+    except OSError:
+        pass
     if entry:
         cat = entry.get("category", "uncategorized")
         desc = entry.get("description", "")
+        # Drift warning: registry + header both present with materially different content.
+        if header_desc and desc and header_desc != desc and not header_desc.lower().startswith(desc.lower()[:30]) and not desc.lower().startswith(header_desc.lower()[:30]):
+            print(f"  [drift] i/{script}: registry vs header disagree", file=sys.stderr)
     else:
         cat = "unregistered"
-        # Fallback: extract first non-shebang comment from the script.
-        desc = ""
-        try:
-            with open(os.path.join(i_dir, script)) as f:
-                for i, line in enumerate(f):
-                    if i >= 5: break
-                    s = line.strip()
-                    if s.startswith("#") and not s.startswith("#!"):
-                        desc = s.lstrip("#").strip()
-                        break
-        except OSError:
-            pass
+        desc = header_desc
     if desc.startswith("DEPRECATED") and not show_all:
         hidden += 1
         continue
