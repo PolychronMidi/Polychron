@@ -36,10 +36,10 @@ test('_onb_init: missing file writes boot', () => {
   assert.strictEqual(r.stdout, 'boot');
 });
 
-test('_onb_init: file with "graduated" resets to boot (stale-write recovery)', () => {
+test('_onb_init: "graduated" file preserved (once graduated, stays graduated)', () => {
   const r = _runInit('graduated');
   assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
-  assert.strictEqual(r.stdout, 'boot');
+  assert.strictEqual(r.stdout, 'graduated');
 });
 
 test('_onb_init: in-progress state "targeted" preserved', () => {
