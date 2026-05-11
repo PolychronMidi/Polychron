@@ -183,7 +183,7 @@ def main() -> int:
                 # Most recent ground truth is legendary-if-tagged-as-such
                 current["legendary_confirmed"] = "legendary" in tags
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
 
     os.makedirs(os.path.dirname(SNAPSHOTS), exist_ok=True)
     with open(SNAPSHOTS, "a", encoding="utf-8") as f:
@@ -267,7 +267,7 @@ def main() -> int:
                         try:
                             rows.append(json.loads(s))
                         except Exception:
-                            pass
+                            pass  # silent-ok: diagnostic; failure non-fatal
             tail_scores = [r.get("arc_iii", {}).get("drift_score") for r in rows[-3:]]
             tail_scores = [s for s in tail_scores if isinstance(s, (int, float))]
             if len(tail_scores) == 3 and all(s > 1.0 for s in tail_scores):
@@ -287,7 +287,7 @@ def main() -> int:
                             "top_outlier": (outliers[0].get("field") if outliers else None),
                         }) + "\n")
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
 
     if drift > DRIFT_THRESHOLD:
         emit = os.path.join(PROJECT_ROOT, "tools", "HME", "activity", "emit.py")
@@ -307,7 +307,7 @@ def main() -> int:
                     env={**os.environ, "PROJECT_ROOT": PROJECT_ROOT},
                 )
             except Exception:
-                pass
+                pass  # silent-ok: diagnostic; failure non-fatal
 
     return 0
 

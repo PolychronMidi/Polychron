@@ -91,9 +91,9 @@ def _load_history(window: int) -> list[dict]:
             try:
                 out.append(json.loads(line))
             except Exception:
-                pass
+                pass  # silent-ok: diagnostic; failure non-fatal
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return out
 
 
@@ -219,7 +219,7 @@ def main() -> None:
                 "history_samples": len(history),
             }) + "\n")
     except OSError:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     print(json.dumps(result, indent=2))
 

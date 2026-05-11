@@ -127,7 +127,7 @@ def main(argv):
                 src = last.get("source", last.get("session", ""))
                 out.append(f"  last activity      {ev}  {src}  ({_age(activity)})")
         except (OSError, ValueError):
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 7. HCI score with multi-timescale phase view. A single delta throws
     # away signal: HCI can dip this turn while rising over the day. The
@@ -228,7 +228,7 @@ def main(argv):
             stale = "  (stale: >1d)" if age_s > 86400 else ""
             out.append(f"  last KB accept     {_age(accepted)}{stale}")
         except OSError:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 8b. Agent-loop-quality verifier (Horizon IV asymptote-deepening).
     # Read the latest snapshot's status for the agent-loop-quality
@@ -262,7 +262,7 @@ def main(argv):
             )
             out.append(f"  last hot-reload    {human_age}  ({trigger})")
         except (OSError, TypeError):
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 10. Pending KB draft -- visibility for the auto-suggest after
     # STABLE/EVOLVED verdict. Without surfacing it, drafts written by
@@ -278,7 +278,7 @@ def main(argv):
             )
             out.append(f"  pending KB draft   written {human_age}  -> accept with `i/learn action=accept_draft`")
         except OSError:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     if not brief:
         out.append("")

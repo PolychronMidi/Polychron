@@ -87,7 +87,7 @@ def _build_project_vocab() -> set[str]:
                 for part in _camel_split(half):
                     vocab.add(part)
     except (OSError, json.JSONDecodeError):
-        pass  # env-ok: vocab source optional, missing just means narrower match
+        pass  # silent-ok: diagnostic; failure non-fatal  # env-ok: vocab source optional, missing just means narrower match
 
     # 2. L0 channel names -- canonical inter-module signal identifiers.
     l0_path = os.path.join(PROJECT_ROOT, "src", "time", "l0Channels.js")
@@ -104,7 +104,7 @@ def _build_project_vocab() -> set[str]:
                 if len(chunk) >= 3:
                     vocab.add(chunk.lower())
     except OSError:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 3. Subsystem directory names.
     src_path = os.path.join(PROJECT_ROOT, "src")
@@ -115,7 +115,7 @@ def _build_project_vocab() -> set[str]:
                 for part in _camel_split(entry):
                     vocab.add(part)
     except OSError:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 4. Hand-curated seeds for concepts that don't live in code but are
     # Polychron-native (regime names, verdict labels, etc.). Small

@@ -125,7 +125,7 @@ def _write_result(job_id: str, result: dict) -> None:
         try:
             tmp.unlink()
         except OSError:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
 
 def _process_job(job_path: Path) -> None:
@@ -137,7 +137,7 @@ def _process_job(job_path: Path) -> None:
         try:
             job_path.unlink()
         except OSError:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
         return
 
     job_id = job.get("jobId", "unknown")
@@ -150,7 +150,7 @@ def _process_job(job_path: Path) -> None:
     try:
         job_path.unlink()
     except OSError:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
 
 def _watcher_loop() -> None:

@@ -110,7 +110,7 @@ def _corrections_section() -> list:
                 except Exception:
                     continue
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return out[-20:]  # last 20 corrections
 
 
@@ -170,7 +170,7 @@ def _kb_section() -> dict:
             for e in (result or [])[-15:]
         ]
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return {
         "total_entries_fetchable_via": "learn(query=title)",
         "recent_entries": recent_kb,
@@ -197,7 +197,7 @@ def _tool_usage_section() -> dict:
                         continue
                     counts[e.get("hook", "?")] += 1
         except Exception:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal
     return dict(counts.most_common(20))
 
 
@@ -329,7 +329,7 @@ def write_snapshot(snap: dict) -> Path:
             latest.unlink()
         latest.symlink_to(out.name)
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return out
 
 

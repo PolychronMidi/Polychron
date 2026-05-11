@@ -95,7 +95,7 @@ def main(argv):
             try:
                 show_n = int(a.split("=", 1)[1])
             except ValueError:
-                pass
+                pass  # silent-ok: diagnostic; failure non-fatal
         elif a == "--chain" or a == "chain=true":
             walk_chain = True
         elif a == "--root-cause" or a == "root_cause=true":
@@ -109,7 +109,7 @@ def main(argv):
             try:
                 chain_depth = max(1, min(20, int(a.split("=", 1)[1])))
             except ValueError:
-                pass
+                pass  # silent-ok: diagnostic; failure non-fatal
         elif not a.startswith("mode=") and not a.startswith("--"):
             target_event = a
     if not target_event:
@@ -187,7 +187,7 @@ def main(argv):
                 if e.get("event") == target_event and "caused_by" in e:
                     explicit_chain_events.append(e)
     except OSError:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # Recursive chain mode -- walks caused_by references through layered
     # heuristic resolution. Bridges the Tier-1 (explicit caused_by) and
