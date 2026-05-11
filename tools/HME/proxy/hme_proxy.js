@@ -475,7 +475,9 @@ function handleRequest(clientReq, clientRes) {
       }
     }
 
-    // OVERDRIVE_MODE=4 main-agent swap (claude-* -> opencode.ai/zen/go deepseek-v4-pro).
+    // OVERDRIVE_MODE=4 main-agent swap with full Anthropic<->OpenAI translation.
+    let _isMode4Swap = false;
+    let _mode4WasStreaming = false;
     if (process.env.OVERDRIVE_MODE === '4'
         && !_isSeniorConsult
         && payload && typeof payload.model === 'string'
@@ -483,43 +485,17 @@ function handleRequest(clientReq, clientRes) {
         && !clientReq.headers['x-hme-upstream']) {
       const _zenKey = process.env.OPENCODE_API_KEY || '';
       if (_zenKey) {
+        const { translateRequestToOpenAI } = require('./zen_translator');
+        _mode4WasStreaming = payload.stream === true;
+        const oaPayload = translateRequestToOpenAI(payload, 'deepseek-v4-pro');
         clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
         clientReq.headers['x-api-key'] = _zenKey;
         delete clientReq.headers['authorization'];
-        payload.model = 'deepseek-v4-pro';
-        if (Array.isArray(payload.messages)) {
-          for (const m of payload.messages) {
-            if (m && typeof m.content === 'string') {
-              m.content = [{ type: 'text', text: m.content }];
-            }
-          }
-        }
-        // Translate Anthropic tools shape -> OpenAI tools shape for DeepSeek.
-        if (Array.isArray(payload.tools)) {
-          payload.tools = payload.tools.map((t) => {
-            if (!t || typeof t !== 'object') return t;
-            if (t.type === 'function' && t.function) return t;
-            return {
-              type: 'function',
-              function: {
-                name: t.name,
-                description: t.description || '',
-                parameters: t.input_schema || t.parameters || { type: 'object', properties: {} },
-              },
-            };
-          });
-        }
-        // Translate tool_choice if present.
-        if (payload.tool_choice && typeof payload.tool_choice === 'object') {
-          if (payload.tool_choice.type === 'auto') payload.tool_choice = 'auto';
-          else if (payload.tool_choice.type === 'any') payload.tool_choice = 'required';
-          else if (payload.tool_choice.type === 'tool' && payload.tool_choice.name) {
-            payload.tool_choice = { type: 'function', function: { name: payload.tool_choice.name } };
-          }
-        }
-        outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+        clientReq.url = '/v1/chat/completions';
+        outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
+        _isMode4Swap = true;
         injected = true;
-        console.error(`[hme-proxy] MODE=4 swap: claude-* -> deepseek-v4-pro via opencode.ai/zen/go (tools=${Array.isArray(payload.tools) ? payload.tools.length : 0})`);
+        console.error(`[hme-proxy] MODE=4 swap: claude-* -> deepseek-v4-pro via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
       } else {
         console.error('[hme-proxy] MODE=4 active but OPENCODE_API_KEY missing -- swap skipped');
       }
