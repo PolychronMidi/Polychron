@@ -93,3 +93,27 @@ def _run_subprocess(script, timeout: int = 30) -> tuple:
         env={**os.environ, "PROJECT_ROOT": _PROJECT},
     )
     return rc.returncode, rc.stdout, rc.stderr
+
+
+def env_truthy(value: str | None) -> bool:
+    """Truthy-string check for env values: 1/true/yes/on (case-insensitive)."""
+    return (value or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def read_env_var(name: str) -> str | None:
+    """Read NAME from os.environ, falling back to project .env file lookup."""
+    val = os.environ.get(name)
+    if val is not None:
+        return val
+    env_path = os.path.join(_PROJECT, ".env")
+    if not os.path.isfile(env_path):
+        return None
+    try:
+        with open(env_path, encoding="utf-8") as fh:
+            for line in fh:
+                stripped = line.strip()
+                if stripped.startswith(f"{name}="):
+                    return stripped[len(name) + 1:].split("#", 1)[0].strip()
+    except OSError:
+        return None  # silent-ok: best-effort fs op
+    return None
