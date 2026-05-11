@@ -10,8 +10,11 @@
 
 ## Just shipped (last cycle)
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
+
+- [easy] (a) `scope_vs_shipped._turn_invoked_archive_now()` exemption added: scans Bash tool_uses for `action=archive_now`/`action=clear`; short-circuits to ok when matched. Closes the false-positive where archive_now's devlog write registered as scope-not-tracked against the fresh-slate template's 0 ticks. Verified: synthetic archive turn -> recognized; plain edit turn -> not recognized. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
