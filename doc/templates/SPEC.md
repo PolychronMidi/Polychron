@@ -34,11 +34,7 @@ Fixes the scope_vs_shipped detector firing false-positive scope-not-tracked on a
 
 ## Deferred / out of scope
 
-- **Telegram bot + remote control** -- out of scope; HME use case is single-operator, no remote ops
-- **A2A protocol** -- wrong problem class (cross-org/cross-framework opacity); HME's review-everything stance directly conflicts
-- **Skills-as-bundles refactor** -- interesting but invasive; `i/*` registry is fit-for-purpose for now
-- **JSON schema validation for chain YAML** -- Polychron has manifest validation; non-manifest configs (lab sketch metadata, hook chain ordering) could benefit but it's deferred until Phase 2 lands
-- **Auto-promote tiers + sanitize gate** -- KB-to-shared-discoveries promotion is a separate workflow; revisit after Phase 2 stable
+<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
 
 ## Three-loop role separation (NEVER lists)
 
