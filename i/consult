@@ -54,7 +54,7 @@ for arg in "$@"; do
     *=*)
       _key="${arg%%=*}"
       _val="${arg#*=}"
-      _key="${_key##-}"  # strip any leading dashes before adding --
+      _key="${_key#--}"; _key="${_key#-}"  # strip up to two leading dashes
       _ARGS+=("--${_key//_/-}=${_val}")
       ;;
     *) _ARGS+=("$arg") ;;
