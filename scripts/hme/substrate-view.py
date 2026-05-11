@@ -36,10 +36,12 @@ def brief():
     stdev = con.get("stdev", "?")
     drift = dr.get("drift_score", "?")
     outliers_n = dr.get("outliers_count", 0)
-    hci = ps.get("hci")
+    # Canonical HCI source: hci-verifier-snapshot.json (updated per-verifier-run).
+    # pipeline-summary.json fallback only when snapshot missing.
+    snap = _load("output/metrics/hci-verifier-snapshot.json") or {}
+    hci = snap.get("hci")
     if hci is None:
-        snap = _load("output/metrics/hci-verifier-snapshot.json") or {}
-        hci = snap.get("hci", "?")
+        hci = ps.get("hci", "?")
     classes = eff.get("class_counts", {})
     lb = classes.get("load-bearing", 0)
     historical = classes.get("load-bearing-historical", 0)
