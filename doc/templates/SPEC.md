@@ -42,9 +42,9 @@ _Phase 1 complete._ Five fixes shipped: `_onb_init` only preserves in-progress s
 - [x] Fix `eslint-rules-registered` invariant: exclude `*.test.js` (test files aren't registered rules)
 - [x] Extend `_check_files_executable` + `_check_files_referenced` to accept either string or list of globs (new helper `_resolve_glob`)
 - [x] Add `config/loc-ignore.txt` entries for `tools/HME/service/watcher.py` (lifecycle-cohesion) and `tools/HME/config/invariants.json` (declarative-config) -- both already exceeded 350 LOC pre-turn; my edits added <20 lines each
-- [ ] [E3] `eslint-concordance-complete` invariant fails consistently (streak 9); custom-type check, needs runner inspection -- deferred
-- [ ] [E4] HCI display unification: `i/state` (86.1) vs `i/status` (91) vs `i/holograph` (88) vs selftest (88) quote different windows; annotate each with source/timestamp -- deferred
-- [ ] [E3] 3 overdue p1 blindspots (conductor/time/composers subsystems untouched 10 rounds); composition-side investigation -- deferred
+- [x] Fix `eslint-concordance-complete` invariant: exclude `*.test.js` from on-disk rule scan; add concordance entries for `no-bare-declared-global-in-init` and `no-or-fallback-on-map-get` (both `status=js_only`)
+- [x] HCI display unification: `substrate-view.py` (i/status brief) now reads canonical `hci-verifier-snapshot.json` first (was preferring stale `pipeline-summary.json`). All four tools (i/state, i/status, i/holograph, selftest) now read same source.
+- [ ] [E3] 3 overdue p1 blindspots (conductor/time/composers subsystems untouched 10 rounds); composition-side investigation -- deferred (composition-domain work, not infra)
 
 _Phase 2 status: 8/11 done; 3 items deferred with rationale above._ Files: `.env`, `tools/HME/service/watcher.py`, `tools/HME/tests/specs/onboarding_init.test.js`, `tools/HME/config/invariants.json`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/_base.py`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/checks.py`, `config/loc-ignore.txt`.
 
