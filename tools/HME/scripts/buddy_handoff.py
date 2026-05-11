@@ -329,6 +329,8 @@ def main() -> int:
                            choices=["claude-resume", "synthesis"],
                            help="claude-resume: subprocess (~30-300s, full session resume); "
                                 "synthesis: single API call (~5s, persona-bodied, no transcript accumulation)")
+    p_consult.add_argument("--senior-consult", action="store_true",
+                           help="prefix prompt with [HME-SENIOR-CONSULT] so the proxy skips MODE=4 swap")
     p_consult.set_defaults(func=cmd_consult)
 
     p_archive = sub.add_parser("archive",
