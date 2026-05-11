@@ -157,7 +157,9 @@ def cmd_consult(args: argparse.Namespace) -> int:
     # preserving. The parent extracts those blocks post-response and
     # calls `i/learn add` for each -- converting fragile transcript
     # wisdom into durable KB entries.
-    framed_question = _KB_DIRECTIVE + args.question
+    # [HME-SENIOR-CONSULT] marker tells the HME proxy to skip MODE=4 swap.
+    _senior_marker = "[HME-SENIOR-CONSULT]\n\n" if getattr(args, "senior_consult", False) else ""
+    framed_question = _senior_marker + _KB_DIRECTIVE + args.question
     # Sentinel write deferred to AFTER the API call -- synthesis/overdrive routes through the HME proxy which fires UserPromptSubmit, wiping turn state mid-call.
     # Synthesis fast path: single API call (~5s) vs subprocess (~30-300s).
     if getattr(args, "engine", "claude-resume") == "synthesis":
