@@ -270,6 +270,10 @@ class ZenSseTranslator {
 
   _emitClose() {
     let out = '';
+    if (this._thinkingBlockOpen !== null) {
+      out += _sseEvent('content_block_stop', { type: 'content_block_stop', index: this._thinkingBlockOpen });
+      this._thinkingBlockOpen = null;
+    }
     if (this._textBlockOpen !== null) {
       out += _sseEvent('content_block_stop', { type: 'content_block_stop', index: this._textBlockOpen });
       this._textBlockOpen = null;
