@@ -70,7 +70,7 @@ matched5 = [p for p in ei.EVASION_INTENT_PHRASES if p in ei._extract_thinking_te
 assert_eq(len(matched5) >= 1, True, "to avoid exhaust_check matches")
 
 # Case 6: 'bypass the detector' + 'use prose form to avoid' both fire (composite evasion intent).
-ev6 = make_event(thinking_text="Let me bypass the detector by using prose form to avoid the list gate.")
+ev6 = make_event(thinking_text="Let me bypass the detector. I will use prose form to avoid the list gate.")
 matched6 = [p for p in ei.EVASION_INTENT_PHRASES if p in ei._extract_thinking_text([ev6])[0].lower()]
 assert_eq(len(matched6) >= 2, True, "bypass the detector + use prose form to avoid both match")
 
