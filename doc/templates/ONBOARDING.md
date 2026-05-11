@@ -40,8 +40,6 @@ boot --[i/hme-admin selftest passes]-->
 
 You never call `i/hme-read mode=before` explicitly -- the briefing is woven into every Edit on a `/src/` file automatically by the pretooluse hook. Each step either advances state automatically or gets blocked with a one-line redirect telling you the exact next call. If a call gets denied, the reason is the lesson.
 
-**Starting already `graduated`** (most sessions after the first): the walkthrough is dormant. Jump directly to `i/evolve` for focus options, `i/status` for pipeline state, or `i/review mode=full` for composition health. Queued actions surface automatically in tool output via the substrate briefing.
-
 **If you lose the thread mid-session**, run `i/status mode=all` -- it reports the current onboarding state, which step is in progress, the rolling metrics, and the most recent pipeline verdict. The correct next call is in that output. `i/status mode=hme` is the narrower version when you only need the onboarding state.
 
 ## Other HME tools (use when needed)
