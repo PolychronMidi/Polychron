@@ -6,7 +6,18 @@
 # BUDDY_SYSTEM=1, non-blocking spawn (disowned so SessionStart returns fast).
 set -euo pipefail
 
-_REPO_ROOT="${CLAUDE_PROJECT_DIR:-${PROJECT_ROOT:-/home/jah/Polychron}}"
+# Walk up from this script to find .env-bearing repo root if env vars are absent.
+_REPO_ROOT="${CLAUDE_PROJECT_DIR:-${PROJECT_ROOT:-}}"
+if [ -z "$_REPO_ROOT" ]; then
+  _try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  while [ -n "$_try" ] && [ "$_try" != "/" ]; do
+    if [ -f "$_try/.env" ] && [ -d "$_try/.git" ]; then
+      _REPO_ROOT="$_try"; break
+    fi
+    _try="$(dirname "$_try")"
+  done
+fi
+[ -n "$_REPO_ROOT" ] || { echo "buddy_init.sh: cannot resolve repo root" >&2; exit 1; }
 
 # Honor the .env toggle. BUDDY_SYSTEM defaults to 1; explicit 0 disables.
 if [ -z "${BUDDY_SYSTEM:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
