@@ -46,7 +46,7 @@ _Phase 1 complete._ Five fixes shipped: `_onb_init` only preserves in-progress s
 - [x] HCI display unification: `substrate-view.py` (i/status brief) now reads canonical `hci-verifier-snapshot.json` first (was preferring stale `pipeline-summary.json`). All four tools (i/state, i/status, i/holograph, selftest) now read same source.
 - [ ] [E3] 3 overdue p1 blindspots (conductor/time/composers subsystems untouched 10 rounds); composition-side investigation -- deferred (composition-domain work, not infra)
 
-_Phase 2 status: 8/11 done; 3 items deferred with rationale above._ Files: `.env`, `tools/HME/service/watcher.py`, `tools/HME/tests/specs/onboarding_init.test.js`, `tools/HME/config/invariants.json`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/_base.py`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/checks.py`, `config/loc-ignore.txt`.
+_Phase 2 status: 10/11 done; 1 deferred (composition-domain blindspot work)._ Files: `.env`, `tools/HME/service/watcher.py`, `tools/HME/tests/specs/onboarding_init.test.js`, `tools/HME/config/invariants.json`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/{_base,checks,checks_code}.py`, `config/loc-ignore.txt`, `scripts/hme/substrate-view.py`.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
