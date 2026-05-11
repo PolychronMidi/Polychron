@@ -1,10 +1,5 @@
-# Resolve project root, three-tier fallback:
-#   1. $CLAUDE_PROJECT_DIR -- standard Claude Code env var pointing at the
-#      working-tree root. Available inside all hook invocations.
-#   2. Walk up from $BASH_SOURCE[0] looking for a .git/.env-bearing root
-#      (works from any in-repo invocation).
-#   3. Hardcoded fallback to /home/jah/Polychron. Last resort -- same
-#      pattern _proxy_bridge.sh uses for its own _PB_ROOT.
+# Resolve project root: $CLAUDE_PROJECT_DIR, then walk up for .env+.git.
+# No host-specific hardcoded fallback (removed for portability).
 _HME_PROJECT_ROOT=""
 if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -f "$CLAUDE_PROJECT_DIR/.env" ]; then
   _HME_PROJECT_ROOT="$CLAUDE_PROJECT_DIR"
