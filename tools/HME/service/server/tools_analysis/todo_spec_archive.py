@@ -317,18 +317,19 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
 
 
 def _strip_per_cycle_scratch(trailing: list[str]) -> list[str]:
-    """Clear 'Deferred to next cycle' content on archive.
+    """Clear BOTH deferred sections on archive.
 
-    Per-cycle scratch reset to empty placeholder each archive.
-    Durable sections (out-of-scope, Glossary, NEVER) preserved.
+    Per-cycle scratch + out-of-scope reset each archive cycle.
+    Glossary, NEVER lists, How-evolves, Worthiness gate preserved.
     """
     out: list[str] = []
     skipping = False
+    placeholder_msg = "<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->"
     for line in trailing:
-        if line.startswith("## Deferred to next cycle"):
+        if line.startswith("## Deferred to next cycle") or line.startswith("## Deferred / out of scope"):
             out.append(line)
             out.append("")
-            out.append("<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->")
+            out.append(placeholder_msg)
             out.append("")
             skipping = True
             continue
