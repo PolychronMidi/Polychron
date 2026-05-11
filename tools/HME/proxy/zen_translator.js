@@ -114,6 +114,7 @@ class ZenSseTranslator {
     this._emittedStart = false;
     this._textBlockOpen = null;
     this._toolBlockOpen = null;
+    this._thinkingBlockOpen = null;
     this._nextBlockIndex = 0;
     this._inputTokens = 0;
     this._outputTokens = 0;
