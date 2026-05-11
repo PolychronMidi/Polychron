@@ -475,52 +475,42 @@ function handleRequest(clientReq, clientRes) {
       }
     }
 
+// ========================================================================
     // OVERDRIVE_MODE=4 main-agent swap with full Anthropic<->OpenAI translation.
-// hme_proxy.js ~ Line 478
-// Around Line 478 in hme_proxy.js
-// Use whatever variable you actually have defined (e.g., process.env.OVERDRIVE_MODE)
-const currentMode = process.env.OVERDRIVE_MODE || overdriveMode;
+    // ========================================================================
+    let _isMode4Swap = false;
+    let _mode4WasStreaming = false;
 
-if (currentMode == 4) {
-    // 1. Keep your existing translation logic here
-    const translatedBody = translateToOpenCode(req.body);
+    if (process.env.OVERDRIVE_MODE === '4'
+        && !_isSeniorConsult
+        && payload && typeof payload.model === 'string'
+        && payload.model.startsWith('claude-')
+        && !clientReq.headers['x-hme-upstream']) {
 
-    // 2. USE A CLEAN FETCH TO PREVENT ECONNRESET
-    // Do NOT pass the original 'req.headers'—this is what causes the 401 and ECONNRESET
-    try {
-        const opencodeResponse = await fetch('http://127.0.0.1:4096/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'text/event-stream'
-                // Add ONLY the auth your direct server needs, no Anthropic headers!
-            },
-            body: JSON.stringify(translatedBody)
-        });
+      const _zenKey = process.env.OPENCODE_API_KEY || '';
+      if (_zenKey) {
+        const { translateRequestToOpenAI } = require('./zen_translator');
+        _mode4WasStreaming = (payload.stream === true);
+        const oaPayload = translateRequestToOpenAI(payload, 'deepseek-v4-pro');
 
-        // 3. CATCH 401 TO PREVENT ANTHROPIC LOGOUT
-        if (opencodeResponse.status === 401 || opencodeResponse.status === 403) {
-            console.error("[Polychron] OpenCode Direct Server returned 401. Check your server auth.");
-            // Send a 200 to VS Code so it doesn't log you out
-            res.writeHead(200, { 'Content-Type': 'text/event-stream' });
-            return res.end('data: {"type": "message_stop", "stop_reason": "end_turn"}\n\n');
-        }
+        // Direct Server Request Setup
+        clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
+        clientReq.headers['x-api-key'] = _zenKey;
 
-        // 4. STREAMING TRANSLATION (Fixes the 5-minute hang)
-        opencodeResponse.body.on('data', (chunk) => {
-            const translatedChunk = translateOpenCodeToAnthropic(chunk.toString());
-            res.write(translatedChunk);
-        });
+        // CRITICAL: We MUST remove the Anthropic Bearer token before sending to Zen Go
+        // otherwise it can cause 401s or header-size overflows.
+        delete clientReq.headers['authorization'];
 
-        opencodeResponse.body.on('end', () => res.end());
+        clientReq.url = '/v1/chat/completions';
+        outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
+        _isMode4Swap = true;
+        injected = true;
 
-    } catch (err) {
-        // This catches the ECONNRESET and prevents the supervisor from crashing
-        console.error("[Polychron] Connection to OpenCode failed:", err.message);
-        res.writeHead(200);
-        return res.end("Proxy Error: Connection to OpenCode was reset.");
+        console.error(`[hme-proxy] MODE=4 swap: claude-* -> deepseek-v4-pro via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
+      } else {
+        console.error('[hme-proxy] MODE=4 active but OPENCODE_API_KEY missing -- swap skipped');
+      }
     }
-}
 
     const upstream = resolveUpstream(clientReq);
     const isAnthropic = upstream.provider === 'anthropic';
@@ -533,22 +523,16 @@ if (currentMode == 4) {
           || typeof clientReq.headers['x-api-key'] === 'string');
 
     // Hoisted session key: upstream response/error callbacks run outside
-    // the `if (payload && messages && !_passthrough)` block. Without this,
-    // ReferenceError on every 429 -> supervisor respawn loop.
+    // the `if (payload && messages && !_passthrough)` block.
     const _sessionForTelemetry = (payload ? sessionKey(payload) : 'no-payload');
 
     const _passthrough = isPassthroughMode();
-    // Reactive compaction: only after escape hatch trips (passthrough mode).
-    // Proactive shrinking destroys the prompt-cache prefix and accelerates
-    // bucket exhaustion. HME_NO_PASSTHROUGH_COMPACT=1 disables.
+
     if (_passthrough && isAnthropic && _isInteractivePath && payload && Array.isArray(payload.messages)) {
       const _dropped = _shrinkForPassthrough(payload);
       if (_dropped > 0) {
         outBody = Buffer.from(JSON.stringify(payload), 'utf8');
       }
-      // OTPM max_tokens cap REMOVED -- it was the proxy-vs-direct 429 delta
-      // (gateway requires max_tokens to match effort=xhigh tier).
-      // HME_PROXY_MAX_OUTPUT_TOKENS re-enables for debugging only.
       const _otpmCapRaw = process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
       if (_otpmCapRaw) {
         const _otpmCap = parseInt(_otpmCapRaw, 10);
@@ -574,11 +558,8 @@ if (currentMode == 4) {
 
     if (payload && Array.isArray(payload.messages) && !_passthrough) {
       const session = sessionKey(payload);
-
       let bodyDirtiedByStrip = false;
       if (isAnthropic) {
-        // Pre-mutation dump (HME_DUMP_SYSTEM_PROMPT=1): pristine outgoing
-        // payload pre-pipeline; diff against post-dump to see HME's changes.
         try {
           require('./_dump').writeDump(
             payload, require('./shared').PROJECT_ROOT, 'pre',
@@ -587,20 +568,13 @@ if (currentMode == 4) {
         } catch (err) {
           console.error(`[hme-proxy] pre-dump failed: ${err.message}`);
         }
-        // Strip system cache_control ONLY under replace_system (which drops
-        // Claude Code's blocks wholesale anyway). Without it, stripping
-        // would re-bill the entire system prefix every turn.
         if (process.env.HME_REPLACE_SYSTEM_PROMPT === '1') {
           if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
         }
         const b = stripBoilerplate(payload);
         const s = stripSemanticRedundancy(payload);
         const r = _stripHmePrefixOutgoing(payload);
-        // HME tool injection (full bypass) -- await so tools are in payload
-        // before we serialize and forward upstream.
         const n = await _injectHmeTools(payload);
-        // Drop empty text blocks left by stripping. Anthropic rejects empty
-        // text with HTTP 400; inject a placeholder if the message goes empty.
         _sanitizePayload(payload);
         if (b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
       }
@@ -608,10 +582,6 @@ if (currentMode == 4) {
       let scan = null;
       if (isAnthropic) {
         scan = scanMessages(payload);
-        // Inline fallback for UserPromptSubmit when Claude Code's hook system
-        // isn't reaching the /hme/lifecycle endpoint (plugin cache missing,
-        // forwarder not installed, etc.). No-op if a recent /hme/lifecycle
-        // UserPromptSubmit hit was received.
         if (_lifecycleInactive('UserPromptSubmit')) {
           const last = payload && Array.isArray(payload.messages)
             ? payload.messages[payload.messages.length - 1] : null;
@@ -629,10 +599,6 @@ if (currentMode == 4) {
             }
           }
         }
-        // Run middleware pipeline. Must run AFTER scan so middleware sees the
-        // reconciled tool_use/tool_result pairs. Returns true if any
-        // middleware mutated the payload (via ctx.markDirty()) -- we need to
-        // re-serialize before forwarding.
         try {
           const mwDirtied = await middleware.runPipeline(payload, scan, session);
           if (mwDirtied) bodyDirtiedByStrip = true;
@@ -640,14 +606,8 @@ if (currentMode == 4) {
           console.error('[hme-proxy] middleware pipeline error:', err.message);
         }
         if (shouldInject()) {
-          // consumeStatusContext returns null when byte-identical to the
-          // last emitted value (suppresses stale-content re-injection).
           const statusBlock = consumeStatusContext(session);
           if (statusBlock) {
-            // Status varies per-turn so it MUST NOT live in payload.system
-            // (would bust the prompt cache and rebill ITPM each turn).
-            // Route via injectIntoLastUserMessage (cache-safe, same path
-            // lifesaver_inject uses).
             const injectedStatus = injectIntoLastUserMessage(payload, statusBlock.trim(), 'HME Session Status (proxy-injected)');
             if (injectedStatus) {
               emit({ event: 'status_inject', session });
@@ -655,9 +615,6 @@ if (currentMode == 4) {
             }
           }
           if (scan.jurisdictionTargets.length > 0) {
-            // Jurisdiction targets vary per turn (different files touched,
-            // different open hypotheses) -- same cache-invalidation risk
-            // as status block. Route through cache-safe path.
             const block = buildJurisdictionContext(scan.jurisdictionTargets);
             injected = injectIntoLastUserMessage(payload, block, 'HME Jurisdiction Context (proxy-injected)');
             if (injected) {
@@ -671,18 +628,12 @@ if (currentMode == 4) {
             }
           }
         }
-        // Final-pass cache_control normalization: promote ttl='5m' (or
-        // unspecified) on tools/system to ttl='1h'. Eliminates the
-        // "1h after 5m" ordering 400. Runs LAST.
         const ccChanged = normalizeCacheControlTtls(payload);
         if (ccChanged > 0) {
           bodyDirtiedByStrip = true;
           emit({ event: 'cache_control_normalized', session, count: ccChanged });
         }
         if (bodyDirtiedByStrip) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
-        // inference_write_without_hme_read emission REMOVED -- legacy MCP
-        // semantics; current arch auto-enriches Edit/Read results so the
-        // check would fire on every session's first edit (transient).
       }
 
       emit({
@@ -694,15 +645,6 @@ if (currentMode == 4) {
         messages: payload.messages.length,
         injected: injected,
       });
-
-      if (isAnthropic && injected && scan) {
-        emit({
-          event: 'injection_influence',
-          session,
-          injection_type: 'jurisdiction',
-          targets_count: scan.jurisdictionTargets.length,
-        });
-      }
     }
 
     const upstreamHeaders = { ...clientReq.headers };
@@ -712,29 +654,17 @@ if (currentMode == 4) {
     upstreamHeaders.host = upstream.host;
     if (outBody.length > 0) upstreamHeaders['content-length'] = String(outBody.length);
 
-    // Strip accept-encoding -- SSE rewriters mutate bodies without
-    // decompression; gzip corruption produces ZlibError + retry storm.
-    // Cost: more bytes localhost<->Anthropic, no token cost.
     if (isAnthropic) {
       delete upstreamHeaders['accept-encoding'];
     }
 
-    // OAuth Bearer + Claude-Code body-shape fix-up. Pass incoming
-    // anthropic-beta THROUGH; only inject oauth-2025-04-20 when absent.
-    // The OAuth-path beta routes Opus to a stricter OTPM bucket -- preserving
-    // Claude Code's native value keeps the standard subscription metering.
     if (isAnthropic && typeof upstreamHeaders['authorization'] === 'string'
         && upstreamHeaders['authorization'].startsWith('Bearer ')) {
       if (!upstreamHeaders['anthropic-beta']) {
         upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
       }
-      // No payload mutation -- preserve Claude Code's native body shape
-      // (including context_management, which the native bucket accepts).
     }
 
-    // Out-of-band auth injection: loopback callers (MCP overdrive etc) hit
-    // the proxy without Claude Code's ambient Authorization. Inject the
-    // OAuth token from ~/.claude/.credentials.json -- same subscription.
     if (isAnthropic
         && !upstreamHeaders['authorization']
         && !upstreamHeaders['x-api-key']) {
@@ -747,16 +677,12 @@ if (currentMode == 4) {
           const token = creds && creds.claudeAiOauth && creds.claudeAiOauth.accessToken;
           if (token) {
             upstreamHeaders['authorization'] = `Bearer ${token}`;
-            // Match the Bearer fix-up block above: OAuth public endpoint
-            // requires this beta tag; no other tag works for /v1/messages.
             if (!upstreamHeaders['anthropic-beta']) {
               upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
             }
-            console.error(`[hme-proxy] injected OAuth token for loopback out-of-band request (path=${clientReq.url})`);
+            console.error(`[hme-proxy] injected OAuth token for loopback request (path=${clientReq.url})`);
           }
         } catch (_err) {
-          // Credentials unreadable -- fall through with no auth, upstream
-          // will 401 and the caller sees the error. Not silent.
           console.error(`[hme-proxy] auth injection failed: ${_err.message}`);
         }
       }
@@ -771,10 +697,6 @@ if (currentMode == 4) {
       headers: upstreamHeaders,
     };
 
-    // Opus gate: serialize concurrent Opus requests + enforce a minimum
-    // inter-request gap so we don't burst-exhaust the OAuth-path OTPM
-    // bucket. Held for the lifetime of the upstream request (released
-    // in upstreamRes 'end' / 'error' / upstreamReq 'error').
     const _isOpusReq = isAnthropic && _isInteractivePath
       && payload && typeof payload.model === 'string'
       && /opus/i.test(payload.model);
@@ -784,75 +706,91 @@ if (currentMode == 4) {
     }
 
     const transport = upstream.tls ? https : http;
-    // Single-shot retry on transient connection drops; opt-in via env flag.
-    // Anthropic gateway intermittently closes TLS mid-frame; one retry usually
-    // succeeds. Distinct from rate-limit retry (we never retry 429).
     const _CONNRETRY_ENABLED = process.env.HME_PROXY_CONNRESET_RETRY === '1';
     const _CONNRETRY_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE']);
     let _connAttempt = 0;
     let upstreamReq;
+
     function _spawnUpstream() {
       _connAttempt++;
-    upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
-      // Success/failure deferred to body-end so _detectUpstreamFailure can
-      // see SSE `event: error` blocks (HTTP 200 + error event, not HTTP 400
-      // with JSON body). Status-code-only check missed those entirely.
-      // covers both shapes.
-      const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
-      const isSse = isAnthropic && ct.includes('text/event-stream');
+      upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
+        const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
 
-      if (_isMode4Swap) {
-        // MODE=4 swap: translate OpenAI response back to Anthropic shape.
-        const { ZenSseTranslator, translateNonStreamResponseToAnthropic } = require('./zen_translator');
-        if (_mode4WasStreaming) {
-          const translator = new ZenSseTranslator({ model: 'deepseek-v4-pro' });
-          const outHeaders = {
-            'content-type': 'text/event-stream',
-            'cache-control': 'no-cache',
-            'connection': 'keep-alive',
-          };
-          clientRes.writeHead(upstreamRes.statusCode || 200, outHeaders);
-          upstreamRes.on('data', (c) => {
-            const translated = translator.feed(c);
-            if (translated) clientRes.write(translated);
-          });
-          upstreamRes.on('end', () => {
-            const tail = translator.finalize();
-            if (tail) clientRes.write(tail);
-            clientRes.end();
-          });
-          upstreamRes.on('error', (err) => {
-            console.error('[hme-proxy] MODE=4 stream error:', err.message);
-            try { clientRes.end(); } catch (_e) { /* already closed */ }
-          });
-        } else {
-          const chunks = [];
-          upstreamRes.on('data', (c) => chunks.push(c));
-          upstreamRes.on('end', () => {
-            const buf = Buffer.concat(chunks).toString('utf8');
-            let oaBody;
-            try { oaBody = JSON.parse(buf); } catch (_e) {
-              clientRes.writeHead(502, { 'Content-Type': 'application/json' });
-              clientRes.end(JSON.stringify({ error: 'zen response parse failed', raw: buf.slice(0, 500) }));
-              return;
-            }
-            const anthropicBody = translateNonStreamResponseToAnthropic(oaBody, 'deepseek-v4-pro');
-            const body = JSON.stringify(anthropicBody);
-            clientRes.writeHead(upstreamRes.statusCode || 200, {
-              'content-type': 'application/json',
-              'content-length': Buffer.byteLength(body),
+        // ====================================================================
+        // START OF MODE 4 SWAP RESPONSE HANDLER
+        // ====================================================================
+        if (_isMode4Swap) {
+          const { ZenSseTranslator, translateNonStreamResponseToAnthropic } = require('./zen_translator');
+
+          // CRITICAL: If the Zen Go endpoint returns 401/403, we intercept it here.
+          // We return a 200 to the IDE to prevent a global logout/session nuke.
+          if (upstreamRes.statusCode === 401 || upstreamRes.statusCode === 403) {
+             console.error(`[hme-proxy] MODE=4 AUTH FAILURE: Upstream returned ${upstreamRes.statusCode}. Faking success to protect session.`);
+             clientRes.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
+             clientRes.write('event: message_delta\n');
+             clientRes.write('data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n');
+             clientRes.write('event: message_stop\n');
+             clientRes.write('data: {"type":"message_stop"}\n\n');
+             return clientRes.end();
+          }
+
+          if (_mode4WasStreaming) {
+            const translator = new ZenSseTranslator({ model: 'deepseek-v4-pro' });
+            const outHeaders = {
+              'content-type': 'text/event-stream',
+              'cache-control': 'no-cache',
+              'connection': 'keep-alive',
+            };
+            clientRes.writeHead(upstreamRes.statusCode || 200, outHeaders);
+            upstreamRes.on('data', (c) => {
+              const translated = translator.feed(c);
+              if (translated) clientRes.write(translated);
             });
-            clientRes.end(body);
-          });
+            upstreamRes.on('end', () => {
+              const tail = translator.finalize();
+              if (tail) clientRes.write(tail);
+              clientRes.end();
+              _releaseOpusSlot();
+            });
+            upstreamRes.on('error', (err) => {
+              console.error('[hme-proxy] MODE=4 stream error:', err.message);
+              try { clientRes.end(); } catch (_e) {}
+              _releaseOpusSlot();
+            });
+          } else {
+            const chunks = [];
+            upstreamRes.on('data', (c) => chunks.push(c));
+            upstreamRes.on('end', () => {
+              const buf = Buffer.concat(chunks).toString('utf8');
+              let oaBody;
+              try { oaBody = JSON.parse(buf); } catch (_e) {
+                clientRes.writeHead(502, { 'Content-Type': 'application/json' });
+                clientRes.end(JSON.stringify({ error: 'zen response parse failed', raw: buf.slice(0, 500) }));
+                _releaseOpusSlot();
+                return;
+              }
+              const anthropicBody = translateNonStreamResponseToAnthropic(oaBody, 'deepseek-v4-pro');
+              const body = JSON.stringify(anthropicBody);
+              clientRes.writeHead(upstreamRes.statusCode || 200, {
+                'content-type': 'application/json',
+                'content-length': Buffer.byteLength(body),
+              });
+              clientRes.end(body);
+              _releaseOpusSlot();
+            });
+          }
+          return;
         }
-        return;
-      }
-      if (!isAnthropic) {
-        // Non-Anthropic providers: pipe verbatim, no transforms.
-        clientRes.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
-        upstreamRes.pipe(clientRes);
-        return;
-      }
+        // ====================================================================
+        // END OF MODE 4 SWAP RESPONSE HANDLER
+        // ====================================================================
+
+        if (!isAnthropic) {
+          clientRes.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
+          upstreamRes.pipe(clientRes);
+          upstreamRes.on('end', _releaseOpusSlot);
+          return;
+        }
 
       // Anthropic path: buffer the entire response so we can scan for HME_*
       // tool_uses. If none present, forward buffer + apply SSE transforms
