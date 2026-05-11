@@ -73,7 +73,7 @@ def log_variant_usage(formatter_name: str, variant: str,
                 "session": session_id or os.environ.get("HME_SESSION_ID", ""),
             }) + "\n")
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
 
 
 if __name__ == "__main__":

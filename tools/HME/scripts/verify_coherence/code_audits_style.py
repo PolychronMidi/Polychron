@@ -296,7 +296,7 @@ class RepeatedCharSpamVerifier(Verifier):
                                 if len(violations) >= 200:
                                     break
                 except (UnicodeDecodeError, OSError):
-                    pass
+                    pass  # silent-ok: best-effort fs op
                 if len(violations) >= 200:
                     break
             if len(violations) >= 200:

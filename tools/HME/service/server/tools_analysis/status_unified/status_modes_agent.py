@@ -115,7 +115,7 @@ def _mode_tool_latency():
                         if isinstance(ts, (int, float)) and (last_tool_call_ts is None or ts > last_tool_call_ts):
                             last_tool_call_ts = ts
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
         if last_tool_call_ts:
             from datetime import datetime as _dt
             age_s = _time.time() - last_tool_call_ts

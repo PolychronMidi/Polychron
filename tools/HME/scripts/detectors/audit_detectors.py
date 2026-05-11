@@ -200,7 +200,7 @@ def _run_corpus_probe(detector: str, user_msg: str, assistant_text: str,
         try:
             mod.main()
         except SystemExit:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal
         verdict = sys.stdout.getvalue().strip()
         sys.stdout = old_stdout
         return verdict
@@ -214,7 +214,7 @@ def _run_corpus_probe(detector: str, user_msg: str, assistant_text: str,
         try:
             os.unlink(path)
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
 
 
 def _run_corpus() -> dict:

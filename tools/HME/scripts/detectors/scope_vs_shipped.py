@@ -51,7 +51,7 @@ def _spec_diff() -> str:
             )
             return rc.stdout or ""
         except (OSError, subprocess.SubprocessError):
-            pass
+            pass  # silent-ok: best-effort fs op
     try:
         rc = subprocess.run(
             ["git", "diff", "HEAD", "--", _SPEC_PATH],

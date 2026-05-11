@@ -151,7 +151,7 @@ def _run(cmd: list[str], timeout: float = 5.0) -> dict:
                 check=False, capture_output=True, text=True, timeout=3,
             )
         except (subprocess.TimeoutExpired, OSError):
-            pass
+            pass  # silent-ok: best-effort fs op
         try:
             stdout, stderr = proc.communicate(timeout=2.0)
         except subprocess.TimeoutExpired:

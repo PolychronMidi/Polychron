@@ -96,7 +96,7 @@ def main() -> int:
                 print("idle" if calls_after_bg < 5 else "ok")
                 return 0
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
 
     print("idle" if calls_after_bg < 20 else "ok")
     return 0

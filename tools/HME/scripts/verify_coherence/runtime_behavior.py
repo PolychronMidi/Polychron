@@ -227,7 +227,7 @@ def _trigger_warm_reprime() -> None:
             with open(sentinel, "w") as f:
                 f.write(str(time.time()))
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
         try:
             # Detached: start the warm and don't wait. i/hme-admin already
             # backgrounds the actual priming work and returns immediately,
@@ -341,7 +341,7 @@ class BuddyPrimaryHealthVerifier(Verifier):
         try:
             max_age_s = int(_read_env_var("BUDDY_SESSION_MAX_AGE_SECS") or "86400")
         except ValueError:
-            pass
+            pass  # silent-ok: best-effort parse
         age_s = time.time() - os.path.getmtime(sid_path)
         if age_s > max_age_s:
             return _result(WARN, 0.5, f"buddy-primary.sid stale (age {int(age_s)}s > {max_age_s}s)",

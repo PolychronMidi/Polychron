@@ -290,7 +290,7 @@ def _persist_snapshot(rows: list[tuple]) -> None:
         with open(history_path, "a") as f:
             f.write(json.dumps(snap, separators=(",", ":")) + "\n")
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
 
 
 def _render_trajectory(n: int = 5) -> int:

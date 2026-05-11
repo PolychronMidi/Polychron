@@ -209,7 +209,7 @@ class PipelineBgScriptHealthVerifier(Verifier):
                 with open(path) as f:
                     snippet = f.read(400).strip().replace("\n", " | ")
             except OSError:
-                pass
+                pass  # silent-ok: best-effort fs op
             script = name[len("hme-bg-"):-len(".err")]
             failing.append((script, size, snippet))
         total = len(err_files)

@@ -164,7 +164,7 @@ def spawn_buddy(slot: int, floor: str, buddy_count: int,
                 env={**os.environ, "PROJECT_ROOT": str(project_root)},
             )
         except (OSError, subprocess.TimeoutExpired):
-            pass
+            pass  # silent-ok: best-effort fs op
     return sid
 
 

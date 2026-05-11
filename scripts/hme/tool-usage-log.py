@@ -28,7 +28,7 @@ def main(argv):
         with open(LOG, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec) + "\n")
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return 0
 
 

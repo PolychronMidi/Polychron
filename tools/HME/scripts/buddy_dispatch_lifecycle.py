@@ -143,7 +143,7 @@ def _append_persona_memory(persona: str, task: dict, response_text: str) -> None
         with open(mem_file, "a", encoding="utf-8") as f:
             f.write(line)
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
 
 
 def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str) -> dict:
@@ -366,7 +366,7 @@ def _archive_task(claimed_path: Path, verdict: dict) -> Path:
                 try:
                     target.rename(rotated)
                 except OSError:
-                    pass
+                    pass  # silent-ok: best-effort fs op
                 break
             n += 1
             if n > 100:  # safety bound -- something's wrong if we hit this
@@ -381,7 +381,7 @@ def _archive_task(claimed_path: Path, verdict: dict) -> Path:
     try:
         os.unlink(claimed_path)
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
     return target
 
 

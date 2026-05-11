@@ -212,7 +212,7 @@ def _record_consult(sid: str, question: str) -> None:
         try:
             caller_sid = PRIMARY_SID.read_text().strip() or None
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
     if caller_sid is None:
         # Visible-by-default debug: caller resolved to None means consult
         # was invoked outside an active session (cron, manual shell), or
@@ -235,6 +235,6 @@ def _record_consult(sid: str, question: str) -> None:
         rec["consults"] = consults[-_CONSULT_HISTORY_CAP:]
         senior_file.write_text(json.dumps(rec, indent=2, default=str))
     except (OSError, ValueError):
-        pass
+        pass  # silent-ok: best-effort fs op
 
 

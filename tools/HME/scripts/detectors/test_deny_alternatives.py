@@ -240,7 +240,7 @@ def _probe_detector(detector_module: str, probe_text: str,
         try:
             mod.main()
         except SystemExit:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal
         verdict = sys.stdout.getvalue().strip()
         sys.stdout = old_stdout
         return verdict == "ok"
@@ -254,7 +254,7 @@ def _probe_detector(detector_module: str, probe_text: str,
         try:
             _os.unlink(path)
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
 
 
 def main() -> int:

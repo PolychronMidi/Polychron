@@ -175,9 +175,9 @@ def _mode_band_tuning():
                     score = float(info.get("score", 0.0))
                     per_axis.setdefault(subtag, []).append(score)
             except Exception:
-                pass
+                pass  # silent-ok: diagnostic; failure non-fatal
         except (OSError, ValueError):
-            pass
+            pass  # silent-ok: best-effort fs op
 
     proposal = {
         "ts": __import__("time").time(),
@@ -213,7 +213,7 @@ def _mode_band_tuning():
         out.append(f"# Persisted proposal:")
         out.append(f"  tmp/hme-band-proposal.json   (downstream consumers may read)")
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
 
     out.append("")
     out.append("# Note:")

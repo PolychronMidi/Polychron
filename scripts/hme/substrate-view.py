@@ -59,7 +59,7 @@ def brief():
                 else:
                     hci_trend = f" ->"
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     lines = [
         f"HCI={hci}{hci_trend}  consensus={stdev} ({div})  drift={drift} ({outliers_n} outliers)  "
         f"invariants: lb={lb} hist={historical} flappy={flappy}",

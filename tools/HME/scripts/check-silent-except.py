@@ -4,7 +4,7 @@
 Matches both forms:
     except Exception: pass           (same-line)
     except Exception:
-        pass                         (next-line)
+        pass  # silent-ok: diagnostic; failure non-fatal                         (next-line)
 
 Prints one offense per line in `path:line: context` format; empty output means
 no offenses. Accepts optional path arguments; defaults to tools/HME/service.

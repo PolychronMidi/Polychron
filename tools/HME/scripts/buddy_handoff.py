@@ -70,7 +70,7 @@ def _retire_threshold() -> float:
         try:
             return float(raw)
         except (TypeError, ValueError):
-            pass
+            pass  # silent-ok: best-effort parse
     # .env fallback so the script behaves consistently outside hook env.
     env_file = PROJECT_ROOT / ".env"
     if env_file.exists():
@@ -79,7 +79,7 @@ def _retire_threshold() -> float:
                 if line.startswith("BUDDY_RETIRE_PCT="):
                     return float(line.split("=", 1)[1].strip())
         except (OSError, ValueError):
-            pass
+            pass  # silent-ok: best-effort fs op
     return DEFAULT_RETIRE_PCT
 
 
@@ -247,7 +247,7 @@ def _emit_activity(event: str, payload: dict) -> None:
                 capture_output=True, timeout=5,
                 env={**os.environ, "PROJECT_ROOT": str(PROJECT_ROOT)})
     except (OSError, _sp.TimeoutExpired):
-        pass
+        pass  # silent-ok: best-effort fs op
 
 
 def _promote(sid: str, floor: str = "easy", effort: str = "low") -> None:

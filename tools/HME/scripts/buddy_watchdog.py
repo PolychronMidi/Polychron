@@ -70,7 +70,7 @@ def _check_primary() -> str:
         if spec.is_file() and spec.stat().st_mtime > tp.stat().st_mtime + 60:
             return "stale_prewarm"
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
     return "healthy"
 
 
@@ -84,7 +84,7 @@ def _clear_primary() -> None:
         try:
             p.unlink()
         except (OSError, FileNotFoundError):
-            pass
+            pass  # silent-ok: best-effort fs op
 
 
 def main(argv: list[str]) -> int:

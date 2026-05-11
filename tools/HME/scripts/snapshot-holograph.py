@@ -96,7 +96,7 @@ def _run_diff(prior_path: str) -> int:
             try:
                 os.remove(tmp)
             except OSError:
-                pass
+                pass  # silent-ok: best-effort fs op
     current = build_holograph()
     diffs = _diff(prior, current)
     if not diffs:

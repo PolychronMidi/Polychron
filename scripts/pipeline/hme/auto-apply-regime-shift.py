@@ -111,7 +111,7 @@ def main() -> int:
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 env={**os.environ, "PROJECT_ROOT": PROJECT_ROOT})
         except Exception:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal
 
     print(f"auto-apply-regime-shift: epoch {next_epoch} logged for sha={current_sha} "
           f"(hci={hci}, outliers={len(outliers)})")

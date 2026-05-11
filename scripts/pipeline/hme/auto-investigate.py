@@ -114,7 +114,7 @@ def _investigate_consensus(pattern: dict) -> dict:
                 findings["proposed_action_class"] = "correct_outlier_via_controller"
                 findings["proposed_reason"] = "consensus trending down AND HCI below 96 threshold"
         except Exception:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal
     return findings
 
 

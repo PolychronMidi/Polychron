@@ -75,4 +75,4 @@ def maybe_trim_append(path: str | Path, max_lines: int = DEFAULT_MAX_LINES,
         try:
             os.unlink(tmp_path)
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op

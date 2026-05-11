@@ -77,7 +77,7 @@ def main(argv):
             try:
                 n_runs = int(a.split("=", 1)[1])
             except ValueError:
-                pass
+                pass  # silent-ok: best-effort parse
 
     ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
                            "hme-coherence-timeseries.jsonl")

@@ -117,7 +117,7 @@ def _dir_signature(dir_abs: str) -> dict:
                     manager_hash = hashlib.sha1(f.read()).hexdigest()[:12]
                 break
             except OSError:
-                pass
+                pass  # silent-ok: best-effort fs op
     return {
         "file_count": source_count,
         "file_list_hash": list_hash,

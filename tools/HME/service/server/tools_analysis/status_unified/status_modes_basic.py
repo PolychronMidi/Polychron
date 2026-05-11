@@ -64,7 +64,7 @@ def _mode_hme():
             with open(onb_file) as _f:
                 onb_state = _f.read().strip() or "graduated"
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
     out.append(f"  onboarding: {onb_state}")
 
     # Pipeline verdict
@@ -75,7 +75,7 @@ def _mode_hme():
                 _v = _json.load(_f)
             out.append(f"  last pipeline verdict: {_v.get('verdict', '?')}")
         except (OSError, ValueError):
-            pass
+            pass  # silent-ok: best-effort fs op
 
     # Recent activity (last 15 events, run-length-collapsed)
     activity_file = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
@@ -106,7 +106,7 @@ def _mode_hme():
                     _count = 1
             _flush()
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
 
     return "\n".join(out)
 

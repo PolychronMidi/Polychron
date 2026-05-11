@@ -223,7 +223,7 @@ def _archive_set(set_name: str = "", force: bool = False) -> dict:
         if os.path.isfile(_le):
             _sp.run(["python3", _le, "extract"], capture_output=True, timeout=10)
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return {
         "ok": True,
         "devlog_path": devlog_path,

@@ -281,7 +281,7 @@ def cmd_clean(args: argparse.Namespace) -> int:
                     f.unlink()
                     cleaned[key] += 1
                 except OSError:
-                    pass
+                    pass  # silent-ok: best-effort fs op
     if FANOUT_ROOT.exists():
         for run_dir in FANOUT_ROOT.iterdir():
             if not run_dir.is_dir():

@@ -147,7 +147,7 @@ def _bounded_score_excerpt(score, max_measures: int):
         if excerpt is not None:
             return excerpt
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return score
 
 
@@ -166,7 +166,7 @@ def _collect_roman_stream(score, analyzed_key, window_size: int, max_chords_per_
             if len(romans) >= max_chords_per_score:
                 return romans
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
 
     if len(romans) >= window_size:
         return romans

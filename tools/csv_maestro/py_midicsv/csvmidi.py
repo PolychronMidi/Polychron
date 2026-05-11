@@ -243,7 +243,7 @@ def parse(file, strict=True):
                         try:
                             t_obj.remove(appended_ev)
                         except ValueError:
-                            pass
+                            pass  # silent-ok: best-effort parse
 
                 # Ensure the emitted time_signature uses a MIDI-friendly denom
                 if len(event_fields) < 2:

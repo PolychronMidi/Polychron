@@ -277,7 +277,7 @@ def _discover_env_keys_in_file(path: str) -> set:
                 if k:
                     keys.add(k)
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
     return keys
 
 

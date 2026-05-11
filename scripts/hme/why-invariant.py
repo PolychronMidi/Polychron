@@ -93,7 +93,7 @@ def main(argv):
             for line in log.split("\n")[:5]:
                 print(f"    {line}")
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     # Retirement candidate?
     if inv_id in (eff.get("retirement_candidates") or []):
         print("  STATUS: retirement candidate (Arc IV)")

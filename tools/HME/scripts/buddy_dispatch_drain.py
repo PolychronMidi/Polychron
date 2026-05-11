@@ -137,7 +137,7 @@ def cmd_drain(args: argparse.Namespace) -> int:
                         env={**os.environ, "PROJECT_ROOT": str(PROJECT_ROOT)},
                     )
                 except (OSError, subprocess.TimeoutExpired):
-                    pass
+                    pass  # silent-ok: best-effort fs op
     buddies = _list_buddies()
     if not buddies:
         _log_error("drain: no buddies registered (no tmp/hme-buddy*.sid found)")
@@ -192,7 +192,7 @@ def cmd_drain(args: argparse.Namespace) -> int:
                         env={**os.environ, "PROJECT_ROOT": str(PROJECT_ROOT)},
                     )
                 except (OSError, subprocess.TimeoutExpired):
-                    pass
+                    pass  # silent-ok: best-effort fs op
             buddies = _list_buddies()
         if not buddies:
             _log_error("drain: buddies list empty mid-drain after lazy "
@@ -210,7 +210,7 @@ def cmd_drain(args: argparse.Namespace) -> int:
                 try:
                     os.rename(str(task_path), str(target))
                 except OSError:
-                    pass
+                    pass  # silent-ok: best-effort fs op
                 continue
             buddy = _pick_buddy_for_task(task, buddies, busy)
             if buddy is None:

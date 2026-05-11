@@ -132,7 +132,7 @@ def _collect_edited_files(events: list) -> list[Path]:
                     if rel in _SKIP_EXACT_PATHS:
                         continue
                 except ValueError:
-                    pass
+                    pass  # silent-ok: best-effort parse
                 out.append(p)
     return out
 

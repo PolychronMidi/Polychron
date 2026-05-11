@@ -47,7 +47,7 @@ def main(argv):
         for v in REGISTRY:
             name_to_subtag[v.name] = getattr(v, "subtag", "(none)")
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
 
     try:
         with open(ts_path) as f:
@@ -226,7 +226,7 @@ def main(argv):
                     print(f"  {name:36}  {count} mention(s) in fix/bugfix entries")
                 print()
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
 
     print("# Next:")
     print("  i/why mode=verifier <name>     drill into one verifier (status + history + source)")

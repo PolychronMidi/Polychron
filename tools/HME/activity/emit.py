@@ -34,14 +34,14 @@ def _coerce(v: str):
     try:
         return int(v)
     except ValueError:
-        pass
+        pass  # silent-ok: best-effort parse
     try:
         f = float(v)
         if f.is_integer():
             return int(f)
         return f
     except ValueError:
-        pass
+        pass  # silent-ok: best-effort parse
     return v
 
 

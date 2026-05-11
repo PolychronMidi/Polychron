@@ -88,7 +88,7 @@ def _gather_marker_events(now: float, window_s: float) -> list[dict]:
                 elif "title" in payload:
                     detail = f"title={payload.get('title', '?')[:60]}"
             except (OSError, ValueError):
-                pass
+                pass  # silent-ok: best-effort fs op
         out.append({"ts": mt, "event": ev_label, "source": "marker", "detail": detail})
     return out
 

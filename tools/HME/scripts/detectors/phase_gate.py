@@ -212,7 +212,7 @@ def _append_transitions(phases: list[str]) -> None:
             for phase in phases:
                 f.write(json.dumps({"ts": ts, "phase": phase}) + "\n")
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
 
 
 def main() -> int:

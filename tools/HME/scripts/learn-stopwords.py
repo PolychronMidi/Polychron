@@ -52,7 +52,7 @@ def _extract_prompts_from_log() -> list:
                 if m:
                     prompts.append(m.group(1).strip())
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return prompts
 
 

@@ -148,7 +148,7 @@ def main(argv: list) -> int:
             try:
                 timeout_mult = float(argv[i + 1])
             except ValueError:
-                pass
+                pass  # silent-ok: best-effort parse
 
     results = []
     for case in TESTS:

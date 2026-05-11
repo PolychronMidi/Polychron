@@ -221,9 +221,9 @@ def main() -> int:
                 ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                     env={**os.environ, "PROJECT_ROOT": PROJECT_ROOT})
             except Exception:
-                pass
+                pass  # silent-ok: diagnostic; failure non-fatal
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
 
     # Build a terse one-line summary for console output.
     bucket_counts = {"arc_ii_pattern": 0, "arc_iii_drift": 0,

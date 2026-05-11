@@ -100,7 +100,7 @@ def _mode_multi_axis_band():
                 if isinstance(_band, list) and len(_band) == 2:
                     per_axis_bands[subtag] = _band
         except (OSError, ValueError):
-            pass
+            pass  # silent-ok: best-effort fs op
 
     out = [f"# Multi-axis chaordic bands  (per-subtag HCI; default band [{LO}, {HI}])"]
     if proposed_aggregate:

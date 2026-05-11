@@ -63,7 +63,7 @@ def _read_modify_write(delta: int = 0, reset: bool = False) -> int:
             try:
                 fcntl.flock(f.fileno(), fcntl.LOCK_EX)
             except OSError:
-                pass
+                pass  # silent-ok: best-effort fs op
         cur_raw = f.read().strip()
         try:
             cur = int(cur_raw) if cur_raw else 0

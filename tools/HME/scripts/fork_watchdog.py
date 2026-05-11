@@ -97,7 +97,7 @@ def _rotate_old_transcripts(sa_dir: Path) -> int:
             if meta.is_file():
                 meta.rename(archive / meta.name)
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
     return n
 
 

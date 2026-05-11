@@ -65,7 +65,7 @@ class HookLatencyVerifier(Verifier):
                 if isinstance(thresholds, dict) and thresholds:
                     return {k: float(v) for k, v in thresholds.items()}
         except (OSError, ValueError, KeyError):
-            pass
+            pass  # silent-ok: best-effort fs op
         return dict(self._FALLBACK_BUDGETS)
 
     def _budget_for(self, hook_name):

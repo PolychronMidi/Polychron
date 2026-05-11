@@ -80,7 +80,7 @@ def _safe_jsonl(path: str) -> list:
                 except Exception:
                     continue
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return out
 
 
@@ -202,7 +202,7 @@ def main(argv: list) -> int:
         try:
             subprocess.Popen(["xdg-open", _OUTPUT], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal
     return 0
 
 

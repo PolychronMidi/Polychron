@@ -131,7 +131,7 @@ def _cpu_temp() -> float | None:
                         with open(pkg_path) as f:
                             return int(f.read().strip()) / 1000.0
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     try:
         for zone in sorted(os.listdir("/sys/class/thermal/")):
             if zone.startswith("thermal_zone"):
@@ -144,7 +144,7 @@ def _cpu_temp() -> float | None:
                         with open(vpath) as f:
                             return int(f.read().strip()) / 1000.0
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return None
 
 

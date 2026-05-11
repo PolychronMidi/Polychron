@@ -98,7 +98,7 @@ def load_registry() -> dict:
         try:
             return json.load(open(REGISTRY_PATH))
         except Exception:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal
     return {"candidates": [], "confirmed": [], "refuted": []}
 
 

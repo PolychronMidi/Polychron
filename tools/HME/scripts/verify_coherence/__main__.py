@@ -135,7 +135,7 @@ def main(argv: list) -> int:
             try:
                 threshold = float(arg.split("=", 1)[1])
             except ValueError:
-                pass
+                pass  # silent-ok: best-effort parse
 
     try:
         report = run_engine()

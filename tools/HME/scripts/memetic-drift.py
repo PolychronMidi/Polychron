@@ -66,7 +66,7 @@ def _extract_rules() -> list:
                     stem = clean.split('.')[0][:100]
                     rules.append({"line": i, "text": stem, "full": clean[:200]})
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return rules
 
 
@@ -83,7 +83,7 @@ def _violation_count() -> dict:
                 for pat in patterns:
                     counts[rule] += len(re.findall(pat, text, re.IGNORECASE))
         except Exception:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal
     # Git log (commit messages)
     try:
         rc = subprocess.run(
@@ -95,7 +95,7 @@ def _violation_count() -> dict:
             for pat in patterns:
                 counts[rule] += len(re.findall(pat, git_text, re.IGNORECASE))
     except Exception:
-        pass
+        pass  # silent-ok: diagnostic; failure non-fatal
     return counts
 
 

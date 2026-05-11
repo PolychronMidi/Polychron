@@ -146,7 +146,7 @@ class DiskCache:
                 )
                 conn.commit()
         except sqlite3.Error:
-            pass  # best-effort; LRU on disk is advisory
+            pass  # silent-ok: diagnostic; failure non-fatal  # best-effort; LRU on disk is advisory
         with self._lock:
             self._ram[skey] = value
             self._ram.move_to_end(skey)

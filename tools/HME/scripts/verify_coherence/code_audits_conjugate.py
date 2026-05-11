@@ -148,7 +148,7 @@ class ConjugateChannelVerifier(Verifier):
                     json.dump(tightening, _tf, indent=2)
                 os.replace(tightening_tmp, tightening_path)
             except OSError:
-                pass
+                pass  # silent-ok: best-effort fs op
             return _result(FAIL, 0.0,
                            f"latest round in 'lost' quadrant "
                            f"(HCI={cur_h:.2f} < {h_thr:.2f} AND "
@@ -164,7 +164,7 @@ class ConjugateChannelVerifier(Verifier):
             if os.path.isfile(tightening_path):
                 os.remove(tightening_path)
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
         # Otherwise: PASS, with quadrant label in summary.
         # Plus check for the symmetric "license to explore" condition:
         # when most subtags are ABOVE band (system over-coherent), write

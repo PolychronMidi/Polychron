@@ -37,7 +37,7 @@ def main(argv):
             with open(state_file) as f:
                 state = f.read().strip() or "graduated"
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
 
     print(f"# i/why mode=state -- onboarding state")
     print()
@@ -70,7 +70,7 @@ def main(argv):
                     print(f"  {ts}  {ev}  {extra}{arrow}")
                 print()
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
 
     print("# Reference:")
     print("  doc/templates/ONBOARDING.md                 state machine + walkthrough")

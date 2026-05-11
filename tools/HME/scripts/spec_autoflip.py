@@ -39,7 +39,7 @@ def _read_spec_at(ref: str) -> str:
         if proc.returncode == 0:
             return proc.stdout
     except (OSError, subprocess.SubprocessError):
-        pass
+        pass  # silent-ok: best-effort fs op
     return ""
 
 

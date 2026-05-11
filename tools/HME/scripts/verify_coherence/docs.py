@@ -32,7 +32,7 @@ class DocDriftVerifier(Verifier):
                 try:
                     hits = int(ln.split(":", 1)[1].strip())
                 except ValueError:
-                    pass
+                    pass  # silent-ok: best-effort parse
                 break
         if hits is None:
             return _result(ERROR, 0.0, "could not parse verifier output", [err[:500]])

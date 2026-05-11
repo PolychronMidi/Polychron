@@ -141,7 +141,7 @@ def current_signature(module: str) -> dict:
         with open(os.path.join(PROJECT_ROOT, file_path), "rb") as fb:
             content_hash = hashlib.blake2b(fb.read(), digest_size=8).hexdigest()
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
 
     return {
         "module": module,

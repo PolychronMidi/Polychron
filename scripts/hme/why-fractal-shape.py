@@ -255,7 +255,7 @@ def _append_history(scales: list[dict]) -> None:
         with open(history_path, "a") as f:
             f.write(json.dumps(row) + "\n")
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
 
 
 def _render_history() -> str:

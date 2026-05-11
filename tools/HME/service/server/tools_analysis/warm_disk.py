@@ -135,7 +135,7 @@ def _load_warm_cache(model: str) -> bool:
             _now = _time.time()
             os.utime(cache_file, (_now, _now))
         except OSError:
-            pass  # best-effort; cosmetic for the verifier's mtime check
+            pass  # silent-ok: best-effort fs op  # best-effort; cosmetic for the verifier's mtime check
         logger.info(f"warm cache RESTORED: {model} ({len(cached_ctx)} tokens, {age_s:.0f}s old)")
         return True
     except Exception as e:

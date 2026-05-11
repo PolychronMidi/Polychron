@@ -52,7 +52,7 @@ def _warm_ctx_fresh_p(model: str) -> bool:
                 if mt > kb_max_mtime:
                     kb_max_mtime = mt
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
     if kb_max_mtime == 0.0:
         # Fallback: legacy attr check when KB files unavailable
         return _warm_ctx_kb_ver.get(model) == getattr(ctx, "_kb_version", 0)

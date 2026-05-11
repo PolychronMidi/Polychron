@@ -62,7 +62,7 @@ def main() -> int:
         try:
             Path(ctx_out).write_text(json.dumps(existing), encoding="utf-8")
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
         break
     return 0
 

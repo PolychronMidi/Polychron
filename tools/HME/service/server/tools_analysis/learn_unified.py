@@ -251,7 +251,7 @@ def learn(query: str = "", title: str = "", content: str = "",
         try:
             _os.replace(_draft_path, _draft_path + ".accepted")
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
         return f"draft accepted -> {_ret}"
 
     # Add action (title + content provided)

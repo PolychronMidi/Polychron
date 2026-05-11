@@ -267,7 +267,7 @@ def main() -> int:
         try:
             _sh.rmtree(tmp_project)
         except Exception:
-            pass
+            pass  # silent-ok: diagnostic; failure non-fatal
 
     print()
     if failures:
