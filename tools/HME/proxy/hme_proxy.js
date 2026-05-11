@@ -780,6 +780,52 @@ function handleRequest(clientReq, clientRes) {
       const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
       const isSse = isAnthropic && ct.includes('text/event-stream');
 
+      if (_isMode4Swap) {
+        // MODE=4 swap: translate OpenAI response back to Anthropic shape.
+        const { ZenSseTranslator, translateNonStreamResponseToAnthropic } = require('./zen_translator');
+        if (_mode4WasStreaming) {
+          const translator = new ZenSseTranslator({ model: 'deepseek-v4-pro' });
+          const outHeaders = {
+            'content-type': 'text/event-stream',
+            'cache-control': 'no-cache',
+            'connection': 'keep-alive',
+          };
+          clientRes.writeHead(upstreamRes.statusCode || 200, outHeaders);
+          upstreamRes.on('data', (c) => {
+            const translated = translator.feed(c);
+            if (translated) clientRes.write(translated);
+          });
+          upstreamRes.on('end', () => {
+            const tail = translator.finalize();
+            if (tail) clientRes.write(tail);
+            clientRes.end();
+          });
+          upstreamRes.on('error', (err) => {
+            console.error('[hme-proxy] MODE=4 stream error:', err.message);
+            try { clientRes.end(); } catch (_e) { /* already closed */ }
+          });
+        } else {
+          const chunks = [];
+          upstreamRes.on('data', (c) => chunks.push(c));
+          upstreamRes.on('end', () => {
+            const buf = Buffer.concat(chunks).toString('utf8');
+            let oaBody;
+            try { oaBody = JSON.parse(buf); } catch (_e) {
+              clientRes.writeHead(502, { 'Content-Type': 'application/json' });
+              clientRes.end(JSON.stringify({ error: 'zen response parse failed', raw: buf.slice(0, 500) }));
+              return;
+            }
+            const anthropicBody = translateNonStreamResponseToAnthropic(oaBody, 'deepseek-v4-pro');
+            const body = JSON.stringify(anthropicBody);
+            clientRes.writeHead(upstreamRes.statusCode || 200, {
+              'content-type': 'application/json',
+              'content-length': Buffer.byteLength(body),
+            });
+            clientRes.end(body);
+          });
+        }
+        return;
+      }
       if (!isAnthropic) {
         // Non-Anthropic providers: pipe verbatim, no transforms.
         clientRes.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
