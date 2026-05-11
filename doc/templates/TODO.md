@@ -11,9 +11,12 @@
 ## Just shipped (last cycle)
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
+
+- [medium] (i) Comment-bloat 90-char per-line rule ADDED (user-mandated this turn): `audit-comment-bloat.py` now scans each comment line and flags lines >= `COMMENT_BLOAT_LONG_LINE` chars (default 90, env-overridable). `_scan_long_comment_lines` helper, surfaced in --json output as `long_lines`, --strict exits 1 on any long-line finding. Wired into `pretooluse_edit.sh` block-comment-bloat gate: new edits get blocked on lines >= 90 chars with the same emit-block message family. Initial scan: 751 existing long-line violations across the codebase. The sweep itself (cleaning the 555 pre-existing multi-line blocks + 751 long-line sites) is deferred to a dedicated comment-bloat cycle -- the RULE is now in place, future edits enforce, existing debt is cleanup-queue work. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
 - [easy] (a) Index rebuild kicked off (`i/hme-admin action=clear_index` then `action=index`). Pre-fix: selftest reported `index -- 0 files, 5429 chunks` (orphan chunks from prior runs). clear_index cleared the stale chunks; reindex backgrounded for full repopulation (lance reindex on a 1000+-file codebase takes >120s; the i/hme-admin RPC timed out at 120s but the worker continues in-process). Selftest after partial completion shows `27 files, 5413 chunks` -- rebuild in flight. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
 - [easy] (c) `env-tamper` baseline regenerated: `rm .env.sha256 && sha256sum .env > .env.sha256`. The canonical-system-prompt path fix is now the recorded baseline. Verifier will return PASS on next run. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
 - [medium] (b) Silent-verifier triage: ALL 9 candidates in `tmp/hme-verifier-prune.json` are GONE from the codebase (no class defining `name = "..."` in `tools/HME/scripts/verify_coherence/` matches). The "silent forever" pattern is a side-effect of verifier-removal-without-timeseries-cleanup: removed verifiers stop emitting verdicts but their historical run-count stays. Cleaned the stale prune marker (`rm tmp/hme-verifier-prune.json`); next utility run will produce a clean candidate set. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
