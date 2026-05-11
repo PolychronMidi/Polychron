@@ -141,6 +141,10 @@ def _read_tier_and_mode() -> tuple[str | None, str | None]:
                     continue
         if not last:
             return None, None
+        ts = last.get("ts")
+        max_age = float(os.environ.get("SUMMARY_FORMAT_TIER_MAX_AGE_SECS", "3600"))
+        if isinstance(ts, (int, float)) and (time.time() - ts) > max_age:
+            return None, None
         return last.get("tier"), last.get("mode")
     except OSError:
         return None, None
