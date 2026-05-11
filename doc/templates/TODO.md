@@ -37,7 +37,7 @@
 <!-- One line per queued item:
   - [<difficulty>] <description>. Reason: <source> -->
 
-- [E2] Drop `deepseek-ai/deepseek-v3.2` from NVIDIA cascade ranking -- HTTP 410 EOL since 2026-05-04. Reason: live E1-E4 dispatch test on 2026-05-11 showed it as the cascade's first attempt, always failing; mistral fallback works. Need to find the ranking config and remove.
+<!-- DONE 2026-05-11: deepseek-v3.2 replaced with deepseek-v4-pro across synthesis_nvidia.py:18 + synthesis_reasoning.py:98,125; deepseek-v4-flash added as new second-tier reasoning entry. NVIDIA endpoint confirmed serves both v4 variants. -->
 - [E3] Cascade hallucinates structural facts when given grep/structural queries. Reason: live E1 test produced fabricated subdirectory names. Mitigation: docstring on `synthesis_reasoning.call` warning callers that E1/E2 are not safe for repo-structure questions; route those via direct grep tool calls.
 - [E3] Promote deepseek-flash's E3 architecture-review finding (`_call_opus_overdrive` vs `_try_overdrive_model` entanglements) to a Phase 3 item once the entanglements are surfaced as concrete code citations. Reason: live E3 dispatch produced structured proposal but needs grounding pass.
 - [E3] Cross-check deepseek-pro's E4 ProviderRegistry proposal against actual `synthesis_provider_base.OpenAIProvider` shape before adoption. Reason: live E4 dispatch produced 3-5 bullet design proposal that needs validation against existing code.
