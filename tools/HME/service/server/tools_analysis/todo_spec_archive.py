@@ -310,12 +310,35 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
         "- [ ] [easy] First item of the new initiative",
         "",
     ]
-    # Build new file: fresh preamble + everything from the post-phases
-    # trailing block (Deferred / Glossary / NEVER lists / How-this-
-    # evolves / etc.) preserved verbatim.
-    trailing = lines[last_phase_end:]
+    # Strip per-cycle scratch from trailing block before write.
+    trailing = _strip_per_cycle_scratch(lines[last_phase_end:])
     with open(_spec_file(), "w", encoding="utf-8") as f:
         f.write("\n".join(fresh_preamble + trailing))
+
+
+def _strip_per_cycle_scratch(trailing: list[str]) -> list[str]:
+    """Clear 'Deferred to next cycle' content on archive.
+
+    Per-cycle scratch reset to empty placeholder each archive.
+    Durable sections (out-of-scope, Glossary, NEVER) preserved.
+    """
+    out: list[str] = []
+    skipping = False
+    for line in trailing:
+        if line.startswith("## Deferred to next cycle"):
+            out.append(line)
+            out.append("")
+            out.append("<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->")
+            out.append("")
+            skipping = True
+            continue
+        if skipping:
+            if line.startswith("## ") or line.startswith("---"):
+                skipping = False
+                out.append(line)
+            continue
+        out.append(line)
+    return out
 
 
 def _reset_todo_to_fresh_slate() -> None:
