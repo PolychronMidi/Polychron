@@ -231,6 +231,8 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     # Per-model output cap. Haiku tops at 64K; opus/sonnet at 128K.
     _MODEL_MAX_OUT = {"claude-haiku-4-5": 64000, "claude-haiku-4-5-20251001": 64000}
     _cap = next((v for k, v in _MODEL_MAX_OUT.items() if k in model_id), 128000)
+    # If thinking budget would exceed the model's cap minus slack, disable thinking.
+    _drop_thinking = (budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK) > _cap
     if resolved_max > _cap:
         resolved_max = _cap
 
