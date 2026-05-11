@@ -166,3 +166,11 @@ doc/theory/
 # rationale: intent=multi-pattern-detector; revisit-when=patterns-stabilize; decided=2026-05-04
 tools/HME/scripts/detectors/psycho_stop.py
 
+# exhaust_check.py: structural-enumeration + rescue-gate + phrase-scan + research-exemption + b-clause + UNDONE_HEADER + WHATS_NEXT_MULTI all share the raw_text + events scan. Per-stage split would re-walk the transcript 5x and duplicate the implicit-solo-work rescue logic across files. Air-tight enumeration check landed 2026-05-10 inside main(); structural cohesion is the design.
+# rationale: intent=multi-stage-detector; revisit-when=stages>=8; decided=2026-05-10
+tools/HME/scripts/detectors/exhaust_check.py
+
+# runtime_behavior.py: 4 coherent runtime-state verifiers (TransientErrorFilter, ContextBudget, WarmContextFreshness, PlanOutputValidity, BuddyPrimaryHealth) sharing the _base import block and env-read helpers. Splitting per-verifier would duplicate the _env_truthy + _read_env_var helpers and fragment the runtime-state category.
+# rationale: intent=already-balanced; revisit-when=verifier-count>=7; decided=2026-05-10
+tools/HME/scripts/verify_coherence/runtime_behavior.py
+
