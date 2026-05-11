@@ -39,6 +39,36 @@ OpenCode Go's `/v1/messages` endpoint already speaks Anthropic shape natively --
 
 _Phase 1 complete_. 11/11 items shipped (7 planned + 2 hardening + 2 close-out). Files: `.env`, `config/loc-ignore.txt`, `tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py`, `tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py`, `tools/HME/tests/specs/synthesis_overdrive_mode3.test.js` (new), `tools/HME/scripts/buddy_dispatch_status.py`, `tools/HME/hooks/pretooluse/bash/verify_landed_block.sh`.
 
+### Phase 2: Tier-spanning codebase audits (dual-purpose: eval MODE=3 + harvest refactors) (worthiness P/C/S/E = 3/2/2/3)
+
+MODE=3 is now active (E5=Opus, E4=deepseek-pro, E3=deepseek-flash, E1-E2=cascade). This phase dispatches design-pattern + cohesion + coupling audits at each tier, simultaneously (a) exercising every tier's routing path under real load and (b) producing harvestable refactor proposals for the codebase. Every task carries a deliverable shape -- the eval and the harvest share the same artifact.
+
+**Dispatch:** ingest these into `i/todo` via `i/todo ingest_from_spec phase=2` so the dispatcher routes each by its `[Ex]` tier prefix. Compare model outputs across tiers on the parallel tasks (E1-vs-E3 on the same audit family) to surface tier-step quality jumps.
+
+**E1 -- free cascade -- single-grep lookups**
+- [ ] [E1] Catalogue every `# silent-ok:` annotation in `tools/HME/service/server/tools_analysis/synthesis/` with file:line + the reason text. Deliverable: 1-screen table.
+- [ ] [E1] List every reference to `OVERDRIVE_MODE` across the codebase (consumers, docs, tests) -- confirms the new MODE=3 surface is reachable from every documented place.
+- [ ] [E1] Enumerate all modules in `tools/HME/service/server/tools_analysis/synthesis/` with a 1-line summary each (no analysis, just labels).
+
+**E2 -- free cascade -- single-file analysis**
+- [ ] [E2] Audit `synthesis_provider_base.py`: identify state or methods that could be factored to a separate concern (HTTP transport vs tier rate-limit accounting vs request shaping). Deliverable: 3-5 specific candidates with file:line citations.
+- [ ] [E2] Compare error-handling style across `synthesis_groq.py`, `synthesis_cerebras.py`, `synthesis_nvidia.py`, `synthesis_mistral.py`. Flag inconsistencies (exception classes caught, log levels, retry semantics).
+- [ ] [E2] Find duplicated regex patterns across `tools/HME/scripts/detectors/*.py`. Deliverable: list of regex strings appearing in 2+ files with a candidate shared-constants module path.
+
+**E3 -- deepseek-v4-flash -- moderate cross-module reasoning**
+- [ ] [E3] Architecture review of `_call_opus_overdrive` vs `_try_overdrive_model` separation in `synthesis_overdrive.py`: is the chain-walking concern cleanly separated from the per-call concern, or are they entangled? Propose a specific decoupling if entangled.
+- [ ] [E3] Enumerate code paths shared between `OVERDRIVE_MODE=1/2/3` branches in `synthesis_reasoning.py`. Propose a table-driven dispatcher (per-mode `{tier: action}` map) and assess trade-offs vs the current if/elif/else.
+- [ ] [E3] Identify the 5 most-coupled module pairs in `tools/HME/service/` based on import graph (use `grep -r 'from .* import'` as the cheap signal). For each pair, suggest one decoupling refactor.
+
+**E4 -- deepseek-v4-pro -- architectural design**
+- [ ] [E4] Propose a unified provider abstraction for the 4 OpenAI-compatible providers (Groq/Cerebras/NVIDIA/Mistral) + the new OpenCode Zen routing. Should they share a registry + adapter pattern? Deliverable: target file structure + migration steps + back-compat strategy.
+- [ ] [E4] Cross-subsystem audit: identify 3 strongest "hidden coupling" patterns in `tools/HME/` -- cases where a change in module A silently breaks module B without an import edge (shared env var keys, shared file paths, shared regex markers, shared JSON field names). Deliverable: triplet table + the verifier strategy that would catch each.
+- [ ] [E4] Audit the synthesis cascade lifecycle (request → tier route → provider call → response parse → telemetry → fallback). Propose one architectural improvement that would simplify the fallback path without adding a new abstraction layer.
+
+**Evaluation harness (operator-side, not per-task):**
+- [ ] [E2] Capture per-tier `last_source` distribution after this phase ingests + dispatches: `tmp/hme-buddy-call-count` + `tmp/hme-subagent-results/*.json` should show per-tier model attribution. Surface via `i/dispatch status` or one-off awk over the results dir.
+- [ ] [E2] Track failure modes per tier: hallucinated file paths, fabricated function names, refactor proposals contradicting `invariants.json`, over-aggressive refactors that would break cascade fallthrough. Add findings to `TODO.md` Next-up.
+
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
 <!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
