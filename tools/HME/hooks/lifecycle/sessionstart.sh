@@ -406,6 +406,14 @@ if [ "${HME_CONSULT_GATE:-0}" = "1" ]; then
   echo "[consult-gate] ON -- architectural edits without consults will be blocked" >&2
 fi
 
+# Buddy primary visibility: surface absence of buddy-primary.sid under BUDDY_HANDOFF=1 so the operator sees the gap without running i/handoff status manually. The fresh spawn from buddy_init.sh is async (~10-20s) -- this banner just confirms whether the inaugural is needed.
+if [ "${BUDDY_HANDOFF:-0}" = "1" ] && [ "${BUDDY_SYSTEM:-1}" = "1" ]; then
+  _BP_SID="$PROJECT_ROOT/runtime/hme/buddy-primary.sid"
+  if [ ! -s "$_BP_SID" ]; then
+    echo "[buddy-primary] missing -- inaugural spawn in flight; failures land in log/hme-buddy-spawn.log" >&2
+  fi
+fi
+
 # Fork-watchdog: surface silently-dropped completion notifications (recent only).
 _FORK_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/fork_watchdog.py"
 if [ -x "$_FORK_WATCHDOG" ]; then
