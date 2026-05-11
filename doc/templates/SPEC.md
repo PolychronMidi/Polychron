@@ -24,7 +24,7 @@ Carry-over from just-archived set: 90-char comment-line rule (user-mandated mid-
 ### Phase 0: gate-infra-followup
 
 - [x] [medium] (a) 90-char comment-line rule landed in audit + pretooluse gate. 751 existing violations queued for separate sweep.
-- [ ] [easy] (b) `_SELF_REFERENCE_FILES` broadening: add `pretooluse_edit.sh` + `audit-comment-bloat.py`.
+- [x] [easy] (b) `_SELF_REFERENCE_FILES` broadened to include `pretooluse_edit.sh`, `verify_landed_block.sh`, `pretooluse_read.sh`, `audit-comment-bloat.py`. Gate-maintenance turns editing these files no longer trip self-fire. All 10 evasion_intent tests still pass. Landed 2026-05-11.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
