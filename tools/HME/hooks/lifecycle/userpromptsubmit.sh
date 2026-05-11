@@ -12,6 +12,12 @@ if [ -n "${PROJECT_ROOT:-}" ]; then
         "${PROJECT_ROOT}/tmp/hme-turn-briefs.txt" 2>/dev/null || true
 fi
 
+# Snapshot SPEC.md at turn start so scope_vs_shipped can diff against pre-autocommit state. Without this snapshot, autocommit syncs HEAD <-> working tree during the turn and the detector sees empty diff -> falsely fires scope-not-tracked.
+if [ -n "${PROJECT_ROOT:-}" ] && [ -f "${PROJECT_ROOT}/doc/templates/SPEC.md" ]; then
+  mkdir -p "${PROJECT_ROOT}/tmp" 2>/dev/null
+  cp "${PROJECT_ROOT}/doc/templates/SPEC.md" "${PROJECT_ROOT}/tmp/spec-turn-start.md" 2>/dev/null || true
+fi
+
 _signal_emit turn_start userpromptsubmit turn '{}'
 
 # SatisfactionCapture: score the prompt 1-10 -> output/metrics/satisfaction.jsonl
