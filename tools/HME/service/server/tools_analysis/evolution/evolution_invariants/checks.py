@@ -124,10 +124,9 @@ def _check_symbols_used(inv: dict) -> tuple[bool, str]:
         return False, "no symbols found in definition file"
 
     usage_tmpl = inv.get("usage_pattern", "{symbol}")
-    usage_glob = os.path.join(ctx.PROJECT_ROOT, inv["usage_glob"])
     min_usages = inv.get("min_usages", 1)
 
-    usage_files = globmod.glob(usage_glob, recursive=True)
+    usage_files = _resolve_glob(inv["usage_glob"])
     file_contents: dict[str, str] = {}
     for uf in usage_files:
         if uf == def_path:
