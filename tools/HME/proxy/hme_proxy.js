@@ -494,9 +494,32 @@ function handleRequest(clientReq, clientRes) {
             }
           }
         }
+        // Translate Anthropic tools shape -> OpenAI tools shape for DeepSeek.
+        if (Array.isArray(payload.tools)) {
+          payload.tools = payload.tools.map((t) => {
+            if (!t || typeof t !== 'object') return t;
+            if (t.type === 'function' && t.function) return t;
+            return {
+              type: 'function',
+              function: {
+                name: t.name,
+                description: t.description || '',
+                parameters: t.input_schema || t.parameters || { type: 'object', properties: {} },
+              },
+            };
+          });
+        }
+        // Translate tool_choice if present.
+        if (payload.tool_choice && typeof payload.tool_choice === 'object') {
+          if (payload.tool_choice.type === 'auto') payload.tool_choice = 'auto';
+          else if (payload.tool_choice.type === 'any') payload.tool_choice = 'required';
+          else if (payload.tool_choice.type === 'tool' && payload.tool_choice.name) {
+            payload.tool_choice = { type: 'function', function: { name: payload.tool_choice.name } };
+          }
+        }
         outBody = Buffer.from(JSON.stringify(payload), 'utf8');
         injected = true;
-        console.error('[hme-proxy] MODE=4 swap: claude-* -> deepseek-v4-pro via opencode.ai/zen/go');
+        console.error(`[hme-proxy] MODE=4 swap: claude-* -> deepseek-v4-pro via opencode.ai/zen/go (tools=${Array.isArray(payload.tools) ? payload.tools.length : 0})`);
       } else {
         console.error('[hme-proxy] MODE=4 active but OPENCODE_API_KEY missing -- swap skipped');
       }
