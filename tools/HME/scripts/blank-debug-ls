@@ -54,7 +54,16 @@ def _summarize_lc(d):
 
 
 def main():
-    project = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or "/home/jah/Polychron"
+    project = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
+    if not project:
+        cur = os.path.dirname(os.path.abspath(__file__))
+        while cur != "/":
+            if os.path.isfile(os.path.join(cur, ".env")) and os.path.isdir(os.path.join(cur, ".git")):
+                project = cur; break
+            cur = os.path.dirname(cur)
+    if not project:
+        print("blank-debug-ls: cannot resolve repo root", file=sys.stderr)
+        return 1
     dump_dir = os.path.join(project, "tmp", "blank-debug")
     if not os.path.isdir(dump_dir):
         print(f"no dump dir at {dump_dir}", file=sys.stderr)
