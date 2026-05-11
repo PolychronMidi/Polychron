@@ -341,13 +341,16 @@ def main() -> int:
         print("ok")
         return 0
 
-    # Structural enumeration check -- UNCONDITIONAL, runs before any rescue. The phrase-game is unwinnable; structure isn't. If closing 60% of final text has >=3 line-start list items AND no tool_use follows the last text block (the agent enumerated and stopped), fire regardless of phrase coverage, work count, or user-prompt shape. Threshold 3 protects SUMMARY's single what's-next bullet. Catches the 'anything missing?' enumeration pattern the user explicitly flagged as catastrophic.
+    # Structural enumeration check -- runs before phrase-based rescues. Fires when closing 60% of final text has >=3 line-start list items AND no tool_use follows the last text block. Threshold 3 protects SUMMARY's single what's-next bullet. Exempts research-eval prompts where enumeration IS the deliverable (mirrors the same exemption the phrase-based path applies later in this function).
     _cutoff = int(len(raw_text) * 0.40)
     _closing_items = len(_LIST_ITEM_RE.findall(raw_text[_cutoff:]))
     if _closing_items >= _STRUCTURAL_ENUMERATION_THRESHOLD and not _has_tool_call_after_last_text(events):
-        _emit_stats("exhaust_violation", f"structural_enumeration items={_closing_items} threshold={_STRUCTURAL_ENUMERATION_THRESHOLD}")
-        print("exhaust_violation")
-        return 0
+        _user_text_struct = _last_user_text(events)
+        if not _is_research_evaluation_request(_user_text_struct):
+            _emit_stats("exhaust_violation", f"structural_enumeration items={_closing_items} threshold={_STRUCTURAL_ENUMERATION_THRESHOLD}")
+            print("exhaust_violation")
+            return 0
+        _emit_stats("ok", f"structural_enumeration items={_closing_items} but research-eval exemption applies")
 
     # Implicit-solo / substantive-work rescue. If this turn did >= 3
     # concrete code-changing tool calls (Edit/Write/MultiEdit or Bash
