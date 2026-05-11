@@ -316,7 +316,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     legitimately take 30-90s), so 300s gives 2-3 fair attempts. Raising
     the default from the legacy 45s after the user reported cascade
     exhaustion with Anthropic rate-limited: 45s wasn't enough for even
-    one NVIDIA deepseek-v3.2 call to finish.
+    one NVIDIA deepseek-v4-pro call to finish.
 
     HME_REASONING_OFFLINE=1 skips the external cascade entirely and returns
     None immediately -- caller falls straight to local fallback. Useful when
