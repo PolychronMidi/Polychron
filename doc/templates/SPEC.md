@@ -47,7 +47,7 @@ MODE=3 is now active (E5=Opus, E4=deepseek-pro, E3=deepseek-flash, E1-E2=cascade
 
 **E1 -- free cascade -- single-grep lookups**
 - [ ] [E1] Catalogue every `# silent-ok:` annotation in `tools/HME/service/server/tools_analysis/synthesis/` with file:line + the reason text. Deliverable: 1-screen table.
-- [ ] [E1] List every reference to `OVERDRIVE_MODE` across the codebase (consumers, docs, tests) -- confirms the new MODE=3 surface is reachable from every documented place.
+- [x] [E1] Listed every reference to `OVERDRIVE_MODE` across the codebase. **Categorized inventory:** consumers (`synthesis_reasoning.py:344`, `buddy_dispatch_status.py:227`); docs (`.env:265-294`, `SPEC.md`, `TODO.md`, `loc-ignore.txt:193`); tests (`synthesis_overdrive_mode2.test.js` x5, `synthesis_overdrive_mode3.test.js` x6); legacy docstring/comment refs (`synthesis_reasoning.py:262,323,343`, `synthesis_overdrive.py:253,438,440,452,457`, `verify_coherence/env_settings.py:98`). **Finding harvested**: `synthesis_reasoning.py:343` comment was stale (only mentioned MODE=0/1/2, missing MODE=3) -- fixed in this turn.
 - [ ] [E1] Enumerate all modules in `tools/HME/service/server/tools_analysis/synthesis/` with a 1-line summary each (no analysis, just labels).
 
 **E2 -- free cascade -- single-file analysis**
