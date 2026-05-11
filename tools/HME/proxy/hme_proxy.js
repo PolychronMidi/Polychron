@@ -487,8 +487,6 @@ function handleRequest(clientReq, clientRes) {
         clientReq.headers['x-api-key'] = _zenKey;
         delete clientReq.headers['authorization'];
         payload.model = 'deepseek-v4-pro';
-        // Zen streaming emits empty {} heartbeats; force non-streaming.
-        if (payload.stream === true) payload.stream = false;
         if (Array.isArray(payload.messages)) {
           for (const m of payload.messages) {
             if (m && typeof m.content === 'string') {
