@@ -515,10 +515,22 @@ _CASES = [
      "ok",
      {"PHASE_GATE_TIER": "E3"}),
 
-    # pile_on -- 2+ detector / policy / hook files edited in one turn fires.
-    ("pile_on", "two-detector-edits-fire",
+    # pile_on -- 2+ NEW detector files (Write, not Edit) in one turn fires. Fixing existing detectors is consolidation, the OPPOSITE of pile-on, regardless of how many existing files the coherent fix touches.
+    ("pile_on", "two-new-detector-writes-fire",
      [
-         _user_msg("tighten the gates"),
+         _user_msg("add some new gates"),
+         _assistant_tool_use("Write", {
+             "file_path": "tools/HME/scripts/detectors/new_one.py",
+             "content": "x"}),
+         _assistant_tool_use("Write", {
+             "file_path": "tools/HME/scripts/detectors/new_two.py",
+             "content": "y"}),
+     ],
+     "pile_on"),
+    # pile_on -- 2+ EDITS to existing detectors do NOT fire (consolidation, not stacking).
+    ("pile_on", "two-detector-edits-pass",
+     [
+         _user_msg("fix existing gates"),
          _assistant_tool_use("Edit", {
              "file_path": "tools/HME/scripts/detectors/scope_escape.py",
              "old_string": "x", "new_string": "y"}),
@@ -526,7 +538,7 @@ _CASES = [
              "file_path": "tools/HME/scripts/detectors/exhaust_check.py",
              "old_string": "x", "new_string": "y"}),
      ],
-     "pile_on"),
+     "ok"),
     # pile_on -- 1 detector edit alone is fine.
     ("pile_on", "single-detector-edit-passes",
      [
