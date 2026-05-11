@@ -289,3 +289,64 @@ class PlanOutputValidityVerifier(Verifier):
         return _result(WARN, score, f"{len(bad)} suspicious path claim(s) in plans", bad[:5])
 
 
+def _env_truthy(value: str | None) -> bool:
+    return (value or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _read_env_var(name: str) -> str | None:
+    """Read NAME from process env, falling back to project .env file."""
+    val = os.environ.get(name)
+    if val is not None:
+        return val
+    env_path = os.path.join(_PROJECT, ".env")
+    if not os.path.isfile(env_path):
+        return None
+    try:
+        with open(env_path, encoding="utf-8") as fh:
+            for line in fh:
+                stripped = line.strip()
+                if stripped.startswith(f"{name}="):
+                    return stripped[len(name) + 1:].split("#", 1)[0].strip()
+    except OSError:
+        return None
+    return None
+
+
+class BuddyPrimaryHealthVerifier(Verifier):
+    """When BUDDY_HANDOFF=1 and BUDDY_SYSTEM=1, the inaugural-primary spawn at SessionStart must produce runtime/hme/buddy-primary.sid. Existence-only is insufficient (stale sid from a crashed prior session is a false-green); also assert mtime within BUDDY_SESSION_MAX_AGE_SECS so a forgotten sid from a long-ago session doesn't silently mask a fresh spawn failure."""
+    name = "buddy-primary-health"
+    category = "runtime"
+    subtag = "structural-integrity"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        handoff = _read_env_var("BUDDY_HANDOFF")
+        system = _read_env_var("BUDDY_SYSTEM")
+        if not (_env_truthy(handoff) and _env_truthy(system)):
+            return _result(SKIP, 1.0, "BUDDY_HANDOFF or BUDDY_SYSTEM not enabled")
+        sid_path = os.path.join(_PROJECT, "runtime", "hme", "buddy-primary.sid")
+        if not os.path.isfile(sid_path):
+            return _result(FAIL, 0.0, "buddy-primary.sid missing -- inaugural spawn likely failed silently",
+                           [f"path: {sid_path}",
+                            "fix: check log/hme-buddy-spawn.log (after b-fix) or buddy_init.sh stderr",
+                            "fallback: i/handoff status to confirm; manual i/handoff promote if needed"])
+        try:
+            content = open(sid_path).read().strip()
+        except OSError as e:
+            return _result(ERROR, 0.0, f"could not read sid file: {e}")
+        if not content:
+            return _result(FAIL, 0.0, "buddy-primary.sid present but empty",
+                           [f"path: {sid_path}"])
+        max_age_s = 86400
+        try:
+            max_age_s = int(_read_env_var("BUDDY_SESSION_MAX_AGE_SECS") or "86400")
+        except ValueError:
+            pass
+        age_s = time.time() - os.path.getmtime(sid_path)
+        if age_s > max_age_s:
+            return _result(WARN, 0.5, f"buddy-primary.sid stale (age {int(age_s)}s > {max_age_s}s)",
+                           [f"sid: {content[:12]}",
+                            "fix: i/handoff retire then SessionStart for fresh spawn"])
+        return _result(PASS, 1.0, f"buddy-primary.sid present (age {int(age_s)}s, sid={content[:12]})")
+
+
