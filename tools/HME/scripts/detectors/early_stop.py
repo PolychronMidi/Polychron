@@ -29,7 +29,6 @@ Output: "early_stop" or "ok"
 """
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 
@@ -38,19 +37,6 @@ from _transcript import (  # noqa: E402
     iter_tool_uses, load_full_turn_with_user,
     is_assistant, is_user, event_content,
 )
-
-
-# Structural enumeration: 3+ list items in closing 60% of text. Catches the enumerate-and-stop antipattern regardless of phrase coverage -- phrase whack-a-mole is unwinnable, structure is air-tight. Line-anchored regex to avoid matching inline numbered refs ("Figure 1.", "Step 1.").
-_LIST_ITEM_RE = re.compile(r"^\s*(?:\d+[.)]\s+\S|[-*]\s+\S)", re.MULTILINE)
-_STRUCTURAL_THRESHOLD = 3
-
-
-def _count_closing_list_items(text: str) -> int:
-    """Count line-start list items in the closing 60% of text. Threshold 3 protects SUMMARY's single what's-next bullet from false-firing."""
-    if not text:
-        return 0
-    cutoff = int(len(text) * 0.40)
-    return len(_LIST_ITEM_RE.findall(text[cutoff:]))
 
 
 # --- Signal 1: user prompt signals open-ended continuation ---
