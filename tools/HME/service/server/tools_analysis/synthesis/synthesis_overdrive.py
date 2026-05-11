@@ -248,6 +248,8 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
             return (None, False)
         headers["X-HME-Upstream"] = "https://opencode.ai/zen/go"
         headers["x-api-key"] = _zen_key
+        # Cloudflare in front of opencode.ai blocks default Python-urllib UA.
+        headers["User-Agent"] = "curl/8.0.1"
 
     try:
         request = _req.Request(
