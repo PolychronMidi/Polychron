@@ -38,6 +38,10 @@ _SELF_REFERENCE_FILES = frozenset((
     "tools/HME/scripts/detectors/exhaust_check.py",
     "tools/HME/scripts/detectors/psycho_stop.py",
     "tools/HME/proxy/stop_chain/policies/work_checks.js",
+    "tools/HME/hooks/pretooluse/pretooluse_edit.sh",
+    "tools/HME/hooks/pretooluse/bash/verify_landed_block.sh",
+    "tools/HME/hooks/pretooluse/pretooluse_read.sh",
+    "scripts/audit-comment-bloat.py",
 ))
 
 
