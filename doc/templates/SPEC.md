@@ -25,8 +25,8 @@ Repo-wide design-pattern audit surfaces concrete code-duplication / boilerplate 
 ### Phase 0: design-pattern-consolidation
 
 - [x] [medium] (a) Shared `_detector_stats.py` shipped with `emit_stats(detector, verdict, detail)` (fcntl-locked append + 5000-line LRU trim + project-root walk). Replaced local `_emit_stats` in all 7 detectors with 3-line shim. 7/7 import cleanly + emit verification lines to `detector-stats.jsonl`. Consolidates ~30 LOC * 7 files. The robust flock+trim pattern (previously only in psycho_stop) now protects all 7 from concurrent-write loss. Landed 2026-05-11.
-- [ ] [easy] (b) Pull `_env_truthy` and `_read_env_var` from `runtime_behavior.py` up to `_base.py`. Update `runtime_behavior.py` to import. Verify `BuddyPrimaryHealthVerifier` (which uses both) still runs.
-- [ ] [medium] (c) `i/` wrapper consolidation: 21 trivial-dispatch wrappers share identical 8-12 line arg-translation. Extract to `i/_dispatch.sh` shared helper sourced by each wrapper. Verify 3 wrappers (`i/state`, `i/holograph`, `i/help`) produce unchanged output.
+- [x] [easy] (b) `env_truthy` + `read_env_var` pulled up to `_base.py`. `runtime_behavior.py` now imports them as `_env_truthy`/`_read_env_var` aliases for caller compatibility. Verified: aliases identity-match the canonical impl (`is` test), env_truthy semantics correct ('1' -> True, 'false' -> False, None -> False), and `BuddyPrimaryHealthVerifier` (a real consumer) still runs and produces valid VerdictResult. Future verifiers can `from ._base import env_truthy, read_env_var`. Landed 2026-05-11.
+- [x] [medium] (c) `i/_dispatch.sh` shared trivial-dispatch helper shipped: takes `<name> <script-rel-path>` + forwarded args, logs usage in background, execs target script. Converted 3 wrappers (`i/state`, `i/holograph`, `i/freeze`) from 5-line dispatch to 2-line exec. All 3 produce identical output post-refactor. Pattern available for the remaining ~18 trivial-dispatch wrappers in followup work. Landed 2026-05-11.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
