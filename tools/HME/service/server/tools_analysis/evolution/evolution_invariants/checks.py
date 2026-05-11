@@ -75,9 +75,8 @@ def _check_json_valid(inv: dict) -> tuple[bool, str]:
 
 
 def _check_glob_count_gte(inv: dict) -> tuple[bool, str]:
-    pattern = os.path.join(ctx.PROJECT_ROOT, inv["glob"])
     exclude = inv.get("exclude", [])
-    files = globmod.glob(pattern, recursive=True)
+    files = _resolve_glob(inv["glob"])
     counted = [f for f in files if not _excluded(os.path.basename(f), exclude)]
     min_count = inv["min_count"]
     if len(counted) >= min_count:
