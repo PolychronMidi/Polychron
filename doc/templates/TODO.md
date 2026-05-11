@@ -13,6 +13,10 @@
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
+- [2026-05-11] `_onb_init` resets to boot every session; only in-progress states preserved. `tools/HME/hooks/helpers/_onboarding.sh`
+- [2026-05-11] Selftest emits WARN (not FAIL) for partial index (chunks>0, files<100); fix hint prescribes `action=index` first. `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`
+- [2026-05-11] `i/consult` kv passthrough strips leading dashes before re-prefixing; `--engine=synthesis` now routes correctly. `i/consult`
+
 ## Next up (queued for next cycle)
 
 <!-- One line per queued item:
