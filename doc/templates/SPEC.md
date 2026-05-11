@@ -50,8 +50,6 @@ Fix the runtime defects introduced by the just-archived set BEFORE updating corp
 ### Phase 3: bulletproof fabrication enforcement (added 2026-05-11 mid-cycle)
 
 - [x] [medium] (j) `evasion_intent.py`: split `EVASION_INTENT_PHRASES` (scaffolding -- exempt under self-reference rescue) from new `FABRICATION_PHRASES` (empty-result narration -- 25+ phrases like "came back empty", "returned empty", "not sure if it landed", "(empty) result", etc.). Fabrication matches scan BOTH thinking AND output (via new `_extract_output_text`). Self-reference rescue NO LONGER applies to fabrication -- editing the detector cannot exempt fabrication-style narration about empty results. Tests added; existing 10 tests still pass. Catches the catastrophic-failure recurrence pattern the user explicitly flagged this turn. Landed 2026-05-11.
-- [ ] [easy] (h) `tools/HME/proxy/supervisor/index.js` at 355 LOC: either extract a focused helper to bring back under 350 OR add to `config/loc-ignore.txt` with rationale (per CLAUDE.md, judgment call).
-- [ ] [easy] (i) Replace em-dashes (U+2014) with `--` ASCII in `tools/HME/proxy/sse_rewriters.js` (3 sites) + `scripts/pipeline/generators/generate-manifest-globals.js` (1 site). `tools/HME/service/before-editing-cache.json` is generated/cache -- decide whether to add to ASCII-ignore or regenerate clean.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
