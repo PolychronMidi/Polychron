@@ -85,11 +85,11 @@ function stripBoilerplate(payload) {
         // block but minimize its content to a non-empty placeholder.
         if (block.type === 'tool_result') {
           if (typeof block.content === 'string') {
-            block.content = '(empty)';
+            block.content = '[SUCCESS]';
           } else if (Array.isArray(block.content)) {
-            block.content = [{ type: 'text', text: '(empty)' }];
+            block.content = [{ type: 'text', text: '[SUCCESS]' }];
           } else {
-            block.content = '(empty)';
+            block.content = '[SUCCESS]';
           }
           keepBlocks.push(block);
           continue;

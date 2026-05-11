@@ -17,7 +17,7 @@ if [ "${HME_VERIFY_LANDED_OK:-0}" != "1" ]; then
   if [ -s "$_VLR_TURN_EDITS" ]; then
     _VLR_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')
     if [ -n "$_VLR_BASE" ] && grep -qFx "$_VLR_BASE" "$_VLR_TURN_EDITS" 2>/dev/null; then
-      _emit_block "BLOCKED: verify-landed antipattern -- Read of $_VLR_BASE which was Edit/Written this turn. The Edit tool already returned 'updated successfully' as explicit confirmation; re-reading is context-burn. Trust the success affordance. Override: HME_VERIFY_LANDED_OK=1."
+      _emit_block "BLOCKED: verify-landed antipattern -- Read of $_VLR_BASE which was Edit/Written this turn. The Edit tool already returned [SUCCESS] as explicit confirmation; re-reading is context-burn."
       exit 2
     fi
   fi

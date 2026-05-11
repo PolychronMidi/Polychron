@@ -1,4 +1,4 @@
-# Polychron SPEC -- scope-vs-shipped-archive-exemption
+# Polychron Active SPEC
 
 > Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; the title resets to "Polychron Active SPEC" automatically when `i/todo clear` (auto on full-set complete) or `i/todo archive_now text="<slug>"` (force) archives the set.
 >
@@ -6,7 +6,7 @@
 >
 > Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles -- run `i/todo clear` (auto-archives if complete) or `i/todo archive_now text="<slug>"` (force). The tools own the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.
 
-_Previous set (design-pattern-consolidation) archived 2026-05-11T130435Z to tools/HME/KB/devlog/2026-05-11T130435Z-design-pattern-consolidation.md._
+_Previous set (fp-fix) archived 2026-05-11T160931Z to tools/HME/KB/devlog/2026-05-11T160931Z-fp-fix.md._
 
 ## Goal
 
@@ -22,13 +22,11 @@ _Previous set (design-pattern-consolidation) archived 2026-05-11T130435Z to tool
 
 ## Phases
 
-### Phase 0: archive_now-false-positive-fix
+### Phase 0: <next initiative -- name>
 
-Fixes the scope_vs_shipped detector firing false-positive scope-not-tracked on archive_now turns, when the devlog write registers as non-SPEC edit while the fresh-slate template has 0 ticks.
+<1-paragraph context for the new initiative.>
 
-- [x] [easy] (a) `scope_vs_shipped._turn_invoked_archive_now()` exemption added: scans Bash tool_uses for `action=archive_now`/`action=clear`; short-circuits to ok when matched. Closes the false-positive where archive_now's devlog write registered as scope-not-tracked against the fresh-slate template's 0 ticks. Verified: synthetic archive turn -> recognized; plain edit turn -> not recognized. Landed 2026-05-11.
-- [x] [easy] (b) `_strip_per_cycle_scratch` extended to wipe BOTH `## Deferred to next cycle` AND `## Deferred / out of scope` on archive (was only wiping the first). The "out of scope" section had accumulated 5 stale items across many cycles (Telegram bot, A2A protocol, Skills-as-bundles, JSON schema, Auto-promote tiers) -- removed from live SPEC and the future archive flow auto-clears both per-cycle scratch sections. Landed 2026-05-11.
-- [x] [medium] (c) i/ trivial-dispatch sweep round 2, buddy-consult-driven: applied classify-then-eyeball methodology per buddy's design. Classifier bucketed 34 wrappers into TRIVIAL_SAFE=2, ALREADY_CONVERTED=3, REVIEW_NEEDED=7, SKIP=22. Pre-check: confirmed `i/help` reads `i_registry.json` first + falls back to comment header (so wrapper file + comment must persist; only dispatch body can change). Eyeballed both TRIVIAL_SAFE (`i/pattern`, `i/timeline`); converted both with smoke test. Both still produce correct output AND `i/help <name>` still shows correct registry metadata. Real lesson from the consult: only 2 of the 31 remaining wrappers are actually safe for auto-conversion -- the buddy's "false negatives are silent failures" warning was load-bearing. Landed 2026-05-11.
+- [ ] [easy] First item of the new initiative
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
