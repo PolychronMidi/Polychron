@@ -30,7 +30,7 @@ Onboarding coherence fixes surfaced during first-agent onboarding session. Two s
 - [x] Fix `i/consult` kv passthrough: strip leading dashes before re-prefixing `--`; `--engine=synthesis` now routes correctly (was `----engine=synthesis`)
 - [x] `buddy_init.sh`: pre-log `spawn-init` line OUTSIDE the background subshell so a spawn that dies before launching still leaves a trace (LIFESAVER no-dilution)
 
-_Phase 1 complete._ Five fixes shipped: `_onb_init` only preserves in-progress states (boot..verified); selftest partial-index path no longer baits destructive clear; `i/consult --engine=synthesis` works; buddy spawn attempts always logged. Files: `tools/HME/hooks/helpers/_onboarding.sh`, `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`, `i/consult`, `tools/HME/hooks/helpers/buddy_init.sh`.
+_Phase 1 complete._ Five fixes shipped: `_onb_init` preserves all valid states (boot..graduated) -- graduated stays graduated; selftest partial-index path no longer baits destructive clear; `i/consult --engine=synthesis` works; buddy spawn attempts always logged. Files: `tools/HME/hooks/helpers/_onboarding.sh`, `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`, `i/consult`, `tools/HME/hooks/helpers/buddy_init.sh`.
 
 ### Phase 2: Indexer + invariant + test follow-ups (worthiness P/C/S/E = 3/3/3/3)
 
