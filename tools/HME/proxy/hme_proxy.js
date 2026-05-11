@@ -717,12 +717,10 @@ if (_zenKey) {
         // ====================================================================
         // START OF MODE 4 SWAP RESPONSE HANDLER
         // ====================================================================
-        if (_isMode4Swap) {
+if (_isMode4Swap) {
           const { ZenSseTranslator, translateNonStreamResponseToAnthropic } = require('./zen_translator');
 
-          // CRITICAL: If the Zen Go endpoint returns 401/403, we intercept it here.
-          // We return a 200 to the IDE to prevent a global logout/session nuke.
-if (upstreamRes.statusCode === 401 || upstreamRes.statusCode === 403) {
+          if (upstreamRes.statusCode === 401 || upstreamRes.statusCode === 403) {
              console.error(`[hme-proxy] MODE=4 AUTH FAILURE: Upstream returned ${upstreamRes.statusCode}. Faking success to protect session.`);
              clientRes.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
 
@@ -743,28 +741,44 @@ if (upstreamRes.statusCode === 401 || upstreamRes.statusCode === 403) {
              return clientRes.end();
           }
 
-          if (_mode4WasStreaming) {
+if (_mode4WasStreaming) {
             const translator = new ZenSseTranslator({ model: 'deepseek-v4-pro' });
-            const outHeaders = {
+
+            clientRes.writeHead(upstreamRes.statusCode || 200, {
               'content-type': 'text/event-stream',
               'cache-control': 'no-cache',
               'connection': 'keep-alive',
-            };
-            clientRes.writeHead(upstreamRes.statusCode || 200, outHeaders);
+            });
+
             upstreamRes.on('data', (c) => {
               const translated = translator.feed(c);
-              if (translated) clientRes.write(translated);
+              // Only write if there is actual content to avoid empty-line 400s
+              if (translated && translated.trim()) {
+                clientRes.write(translated);
+              }
             });
+
             upstreamRes.on('end', () => {
+              // CHANGE: Check if the translator already sent a stop event
+              // through the 'feed' loop before calling finalize.
               const tail = translator.finalize();
-              if (tail) clientRes.write(tail);
+              if (tail && tail.trim()) {
+                // If the tail contains another 'message_stop' but we already sent one,
+                // the IDE will 400. We wrap this in a try/catch.
+                try {
+                  clientRes.write(tail);
+                } catch (e) {
+                  console.error('[hme-proxy] Failed to write stream tail:', e.message);
+                }
+              }
               clientRes.end();
               _releaseOpusSlot();
             });
+
             upstreamRes.on('error', (err) => {
               console.error('[hme-proxy] MODE=4 stream error:', err.message);
-              try { clientRes.end(); } catch (_e) {}
               _releaseOpusSlot();
+              try { clientRes.end(); } catch (_e) {}
             });
           } else {
             const chunks = [];
