@@ -30,7 +30,6 @@ _EXHAUST_LOCAL_PHRASES = (
     "punt to next",
     "skipped (not blocking)",
     "left for later",
-    "for a future turn",
     "in a follow-up",
     "follow-up turn",
     "next turn could",
@@ -67,7 +66,6 @@ _EXHAUST_LOCAL_PHRASES = (
     "parking this",
     "parked for later",
     "skip for now",
-    "skipping for now",
     "defer for now",
     "deferring for now",
     "won't fix this round",
@@ -95,7 +93,6 @@ _EXHAUST_LOCAL_PHRASES = (
     "will take effect",
     "on next proxy restart",
     "on next extension",
-    "on next session",
     "on next reload",
     "next extension reload",
     "next extension-host reload",
@@ -132,6 +129,8 @@ _EXHAUST_LOCAL_PHRASES = (
     "content publishing shaped",
     "content-creation-shaped",
 )
+
+DEFERRAL_PHRASES = _SHARED_DEFERRAL + _EXHAUST_LOCAL_PHRASES
 
 
 DEFERRAL_REGEXES = (
