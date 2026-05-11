@@ -1,55 +1,32 @@
-# Polychron SPEC -- audit-driven-cleanup
+# Polychron Active SPEC
 
 > Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; the title resets to "Polychron Active SPEC" automatically when `i/todo clear` (auto on full-set complete) or `i/todo archive_now text="<slug>"` (force) archives the set.
 >
-> Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](../HME.md), [doc/ARCHITECTURE.md](../ARCHITECTURE.md), [README.md](../../README.md), and [CLAUDE.md](../../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.
+> Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](HME.md), [doc/ARCHITECTURE.md](ARCHITECTURE.md), [README.md](../README.md), and [CLAUDE.md](../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.
 >
-> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles -- run `i/todo clear` (auto-archives if complete) or `i/todo archive_now text="<slug>"` (force). The tools own the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.
+> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles -- run `i/todo clear` (auto-archives if complete) or `i/todo archive_now text="<slug>"` (force). The tools own the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.
 
-_Previous set (hme-buddy-observability) archived 2026-05-11T102328Z to tools/HME/KB/devlog/2026-05-11T102328Z-hme-buddy-observability.md._
+_Previous set (detector regressions from prior session work (root-cause first)) archived 2026-05-11T111209Z to tools/HME/KB/devlog/2026-05-11T111209Z-detector-regressions-from-prior-session.md._
 
 ## Goal
 
-`bash scripts/audit-all.sh --strict` against the freshly-archived `hme-buddy-observability` set surfaced eight distinct findings ranging from active runtime defects (undefined symbol in `exhaust_check.py:327`, hook-coordination cycle) through pre-existing FAILs blocking HCI (HME.md tool-count drift, detector-chain corpus regressions) down to ASCII / LOC / doc-path hygiene. This initiative resolves them in severity order: P0 attacks runtime defects + their downstream regressions (import defect is likely root cause for ~half the corpus failures, fix that first then re-assess), P1 attacks the hook cycle + pre-existing HCI doc-sync FAILs, P2 attacks hygiene (LOC, em-dashes, doc-paths). Active execution-path defects outrank doc drift at any given severity tier.
+<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-- `tools/HME/scripts/detectors/exhaust_check.py` -- has unresolved `iter_tool_uses` ref at line 327 (added during hme-buddy-observability turn for `_has_tool_call_after_last_text`, the import was missed); also contains the structural-enumeration check that conflicts with the research-eval-exemption corpus fixture.
-- `tools/HME/scripts/detectors/pile_on.py` -- corpus fixtures `two-detector-edits-fire` and `boundary-with-tool-results-fires` encode the OLD overreach behavior (any 2+ edits fires); current code is the user-mandated narrower form (>=2 NEW Writes only).
-- `tools/HME/scripts/detectors/test_detector_chain.py` -- corpus that lives under `audit-all.sh --strict`; needs new fixtures matching the post-cleanup detector contracts.
-- `tools/HME/hooks/lifecycle/sessionstart.sh` + `tools/HME/hooks/lifecycle/userpromptsubmit.sh` -- annotated coordination graph forms a cycle per `audit-hook-coordination`; either docstring is wrong or actual ordering needs decoupling.
-- `tools/HME/hooks/lifecycle/stop/detectors.sh` -- references `$SENIOR_CONSULT_DEBT` at lines 39 + 44, variable never set (per `audit-shell-undefined`).
-- `doc/HME.md` -- claims "12 tools, server has 13"; references nine detector names (advisor_doctrine, ceremony_dodge, live_probe, phantom_capability, phase_gate, scope_escape, senior_consult_debt, summary_format, trample_gate) under a tool surface that no longer exposes them as tools.
-- `doc/templates/SPEC.md` (this file) -- relative-link references in its template body resolve to `HME.md` instead of `../HME.md` (5 broken refs per `audit-doc-integrity`).
-- `tools/HME/proxy/supervisor/index.js` -- 355 LOC > 350 limit per `audit-loc`.
-- `tools/HME/proxy/sse_rewriters.js` + `tools/HME/service/before-editing-cache.json` + `scripts/pipeline/generators/generate-manifest-globals.js` -- em-dash (U+2014) violations per `audit-no-non-ascii`.
-- `<handoff doc>`: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
+<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
+
+- <subsystem>: <one-line>
+- <data dir / queue / manifest>: <one-line>
+- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
 
 ## Phases
 
-### Phase 0: detector regressions from prior session work (root-cause first)
+### Phase 0: <next initiative -- name>
 
-Fix the runtime defects introduced by the just-archived set BEFORE updating corpus fixtures. The import defect at `exhaust_check.py:327` may be the proximate cause of multiple corpus failures (the detector crashes mid-run, the test framework records the failed verdict). Updating fixtures before fixing the import would encode broken behavior as the new baseline.
+<1-paragraph context for the new initiative.>
 
-- [x] [easy] (a) Added `iter_tool_uses` to `exhaust_check.py` import. The detector no longer crashes on the structural-enumeration path. Verified: `_has_tool_call_after_last_text([])` returns False without NameError. Landed 2026-05-11.
-- [x] [easy] (b) Re-ran audit after (a): detector-chain corpus failures dropped from 3 to 3 (the import was not the root cause of fixture failures; they are genuine behavior-change regressions). Audit total dropped from 7 to 6 findings. Documented inline. Landed 2026-05-11.
-- [x] [medium] (c) Fixture updates: `pile_on/two-detector-edits-fire` -> `two-new-detector-writes-fire` (uses Write), added complement `two-detector-edits-pass` (Edits no longer fire); `pile_on/boundary-with-tool-results-fires` -> `boundary-with-tool-results-new-writes-fire` (uses Write). exhaust_check structural-enumeration check now respects `_is_research_evaluation_request` exemption so the corpus `research-eval-exemption` fixture passes. All 3 fixtures now PASS. Landed 2026-05-11.
-
-### Phase 1: active hook defects + pre-existing HCI FAILs
-
-- [x] [medium] (d) Hook coordination cycle resolved: `userpromptsubmit.sh` had `MUST RUN BEFORE: stop. COORDINATES WITH: precompact, sessionstart.` on one line; the audit regex's non-greedy `(.+?)$` consumed the whole tail as the BEFORE list, parsing "sessionstart" as a BEFORE target and forming a cycle with sessionstart->userpromptsubmit. Restructured to put COORDINATES on the prose line and `MUST RUN BEFORE: stop` on its own line; audit now reports `hook:userpromptsubmit: before stop` cleanly, no cycle. Landed 2026-05-11.
-- [x] [easy] (e) `$SENIOR_CONSULT_DEBT` shell-undefined fixed via `${SENIOR_CONSULT_DEBT:-ok}` default-expansion at the two reference sites. The var IS set by the eval'd output of `emit_detectors_sh.py` at line 13, but static analysis can't see eval-generated assignments. Default-expansion satisfies set -u and the audit. Landed 2026-05-11.
-- [x] [medium] (f) `doc/HME.md` doc-sync: updated "12 agent-callable tools" -> "13 agent-callable tools (... / holograph)" at line 7 + "12 tools above" -> "13 tools above" at line 13 (the latter was the first regex match). Added the 9 detector names (advisor_doctrine, ceremony_dodge, live_probe, phantom_capability, phase_gate, scope_escape, senior_consult_debt, summary_format, trample_gate) plus evasion_intent + scope_vs_shipped to `project-rules.json:known_non_tool_identifiers` so the doc-sync verifier stops misclassifying detector references as missing tools. Landed 2026-05-11.
-
-### Phase 2: hygiene
-
-- [x] [easy] (g) Fixed 5 broken file refs in SPEC template: `HME.md` -> `../HME.md`, `ARCHITECTURE.md` -> `../ARCHITECTURE.md`, `../README.md` -> `../../README.md`, `../CLAUDE.md` -> `../../CLAUDE.md`, `../tools/HME/KB/devlog/` -> `../../tools/HME/KB/devlog/`. doc-integrity audit now clean (103 markdown files scanned). Landed 2026-05-11.
-- [x] [easy] (h) `tools/HME/proxy/supervisor/index.js` (430 LOC) added to `config/loc-ignore.txt` with rationale. Lifecycle cohesion: spawn/health/restart/abandonment-sentinel all share state via the `_children` Map; splitting would smear state across modules. Revisit when children-managed >= 20. Landed 2026-05-11.
-- [x] [easy] (i) Stripped non-ASCII from 5 files: em-dashes (U+2014) in `tdd_test_first_gate.py`, `claim_without_evidence.py`, `sse_rewriters.js` (3 sites, regex literal preserved via `—` escape), `generate-manifest-globals.js`, devlog markdown; box-drawing (U+2500) in `llamacpp_daemon/__main__.py`; ✖ in `tests_failing_in_scope.py`; 🎓 in `onboarding_chain.py`; arrows in devlog markdown. Truncated `before-editing-cache.json` to `{}` (cache regenerates on demand). audit-no-non-ascii now clean. Landed 2026-05-11.
-
-### Phase 3: bulletproof fabrication enforcement (added 2026-05-11 mid-cycle)
-
-- [x] [medium] (j) `evasion_intent.py`: split `EVASION_INTENT_PHRASES` (scaffolding -- exempt under self-reference rescue) from new `FABRICATION_PHRASES` (empty-result narration -- 25+ phrases like "came back empty", "returned empty", "not sure if it landed", "(empty) result", etc.). Fabrication matches scan BOTH thinking AND output (via new `_extract_output_text`). Self-reference rescue NO LONGER applies to fabrication -- editing the detector cannot exempt fabrication-style narration about empty results. Tests added; existing 10 tests still pass. Catches the catastrophic-failure recurrence pattern the user explicitly flagged this turn. Landed 2026-05-11.
+- [ ] [easy] First item of the new initiative
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
