@@ -173,7 +173,37 @@ class ZenSseTranslator {
       this._emittedStart = true;
     }
 
+    // DeepSeek R1 reasoning_content -> Anthropic thinking_delta.
+    if (typeof delta.reasoning_content === 'string' && delta.reasoning_content.length > 0) {
+      if (this._textBlockOpen !== null) {
+        out += _sseEvent('content_block_stop', { type: 'content_block_stop', index: this._textBlockOpen });
+        this._textBlockOpen = null;
+      }
+      if (this._toolBlockOpen) {
+        out += _sseEvent('content_block_stop', { type: 'content_block_stop', index: this._toolBlockOpen.index });
+        this._toolBlockOpen = null;
+      }
+      if (this._thinkingBlockOpen === null) {
+        out += _sseEvent('content_block_start', {
+          type: 'content_block_start',
+          index: this._nextBlockIndex,
+          content_block: { type: 'thinking', thinking: '' },
+        });
+        this._thinkingBlockOpen = this._nextBlockIndex;
+        this._nextBlockIndex++;
+      }
+      out += _sseEvent('content_block_delta', {
+        type: 'content_block_delta',
+        index: this._thinkingBlockOpen,
+        delta: { type: 'thinking_delta', thinking: delta.reasoning_content },
+      });
+    }
+
     if (typeof delta.content === 'string' && delta.content.length > 0) {
+      if (this._thinkingBlockOpen !== null) {
+        out += _sseEvent('content_block_stop', { type: 'content_block_stop', index: this._thinkingBlockOpen });
+        this._thinkingBlockOpen = null;
+      }
       if (this._toolBlockOpen) {
         out += _sseEvent('content_block_stop', { type: 'content_block_stop', index: this._toolBlockOpen.index });
         this._toolBlockOpen = null;
