@@ -212,11 +212,44 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _post_reindex(self, body: dict):
         from hme_http_handlers import _reindex_files
+        import time as _t
         files = body.get("files", [])
         if not isinstance(files, list) or not files:
             self._json(400, {"error": "files must be a non-empty list"})
             return
-        self._json(200, _reindex_files(files))
+        with _REINDEX_LOCK:
+            if _REINDEX_STATE["running"]:
+                self._json(202, {"status": "already_running",
+                                 "files_count": _REINDEX_STATE["files_count"],
+                                 "started_at": _REINDEX_STATE["started_at"]})
+                return
+            _REINDEX_STATE["running"] = True
+            _REINDEX_STATE["started_at"] = _t.time()
+            _REINDEX_STATE["files_count"] = len(files)
+            _REINDEX_STATE["last_result"] = None
+            _REINDEX_STATE["last_error"] = None
+
+        def _run():
+            try:
+                result = _reindex_files(files)
+                with _REINDEX_LOCK:
+                    _REINDEX_STATE["last_result"] = result
+            except Exception as exc:
+                logger.error(f"/reindex bg failed: {type(exc).__name__}: {exc}")
+                with _REINDEX_LOCK:
+                    _REINDEX_STATE["last_error"] = f"{type(exc).__name__}: {exc}"
+            finally:
+                with _REINDEX_LOCK:
+                    _REINDEX_STATE["running"] = False
+        _REINDEX_EXECUTOR.submit(_run)
+        self._json(202, {"status": "accepted",
+                         "files_count": len(files),
+                         "started_at": _REINDEX_STATE["started_at"]})
+
+    def _get_reindex_status(self):
+        with _REINDEX_LOCK:
+            snapshot = dict(_REINDEX_STATE)
+        self._json(200, snapshot)
 
     def _post_reload_engines(self, body: dict):
         import rag_engines
