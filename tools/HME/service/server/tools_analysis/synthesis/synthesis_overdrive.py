@@ -254,7 +254,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
     # OVERDRIVE_MODE=3: deepseek-* models route via OpenCode Go (Anthropic-shape).
     headers = {"Content-Type": "application/json", "anthropic-version": "2023-06-01"}
-    if _is_deepseek:
+    if _is_zen:
         _zen_key = _os.environ.get("OPENCODE_API_KEY", "")
         if not _zen_key:
             logger.warning(f"OVERDRIVE {model_id}: OPENCODE_API_KEY missing -- aborting")
