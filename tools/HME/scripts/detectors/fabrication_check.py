@@ -116,34 +116,9 @@ def _last_assistant_text(events: list) -> str:
 
 
 def _emit_stats(verdict: str, detail: str) -> None:
-    try:
-        import json
-        import time
-        root = os.environ.get("PROJECT_ROOT")
-        if not root:
-            here = Path(__file__).resolve()
-            for parent in [here.parent, *here.parents]:
-                if (parent / "CLAUDE.md").exists() and (parent / ".env").exists():
-                    root = str(parent)
-                    break
-        if not root:
-            return
-        out_path = os.path.join(root, "output", "metrics", "detector-stats.jsonl")
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        with open(out_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "ts": time.time(),
-                "detector": "fabrication_check",
-                "verdict": verdict,
-                "detail": detail,
-            }) + "\n")
-    except (OSError, TypeError, ValueError) as _emit_err:
-        # Telemetry only -- can't bubble (detector writes to stdout),
-        # but narrow the type so real bugs (import errors, schema drift)
-        # still propagate instead of being swallowed.
-        import sys as _sys
-        print(f"[fabrication_check] stats emit failed: "
-              f"{type(_emit_err).__name__}: {_emit_err}", file=_sys.stderr)
+    from _detector_stats import emit_stats
+    emit_stats("fabrication_check", verdict, detail)
+
 
 
 def main() -> int:

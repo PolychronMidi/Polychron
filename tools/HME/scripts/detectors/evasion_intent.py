@@ -199,27 +199,9 @@ def _extract_output_text(events: list) -> str:
 
 
 def _emit_stats(verdict: str, detail: str) -> None:
-    try:
-        root = os.environ.get("PROJECT_ROOT")
-        if not root:
-            here = Path(__file__).resolve()
-            for parent in [here.parent, *here.parents]:
-                if (parent / "CLAUDE.md").exists() and (parent / ".env").exists():
-                    root = str(parent)
-                    break
-        if not root:
-            return
-        out_path = Path(root) / "output" / "metrics" / "detector-stats.jsonl"
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "ts": time.time(),
-                "detector": "evasion_intent",
-                "verdict": verdict,
-                "detail": detail,
-            }) + "\n")
-    except OSError as e:
-        print(f"[evasion_intent] stats emit failed: {type(e).__name__}: {e}", file=sys.stderr)
+    from _detector_stats import emit_stats
+    emit_stats("evasion_intent", verdict, detail)
+
 
 
 def main() -> int:

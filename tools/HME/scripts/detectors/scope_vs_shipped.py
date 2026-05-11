@@ -93,18 +93,9 @@ def _turn_edited_non_spec(events: list) -> int:
 
 
 def _emit_stats(verdict: str, detail: str) -> None:
-    try:
-        out_path = _PROJECT / "output" / "metrics" / "detector-stats.jsonl"
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "ts": time.time(),
-                "detector": "scope_vs_shipped",
-                "verdict": verdict,
-                "detail": detail,
-            }) + "\n")
-    except OSError as e:
-        print(f"[scope_vs_shipped] stats emit failed: {type(e).__name__}: {e}", file=sys.stderr)
+    from _detector_stats import emit_stats
+    emit_stats("scope_vs_shipped", verdict, detail)
+
 
 
 def main() -> int:

@@ -103,32 +103,9 @@ _ANY_HANDOFF_MARKER = re.compile(
 
 
 def _emit_stats(verdict: str, detail: str) -> None:
-    import json as _json
-    import os as _os
-    import time as _time
-    try:
-        root = _os.environ.get("PROJECT_ROOT")
-        if not root:
-            here = Path(__file__).resolve()
-            for parent in [here.parent, *here.parents]:
-                if (parent / "CLAUDE.md").exists() and (parent / ".env").exists():
-                    root = str(parent)
-                    break
-        if not root:
-            return
-        out = _os.path.join(root, "output", "metrics", "detector-stats.jsonl")
-        _os.makedirs(_os.path.dirname(out), exist_ok=True)
-        with open(out, "a", encoding="utf-8") as f:
-            f.write(_json.dumps({
-                "ts": _time.time(),
-                "detector": "scope_escape",
-                "verdict": verdict,
-                "detail": detail,
-            }) + "\n")
-    except (OSError, TypeError, ValueError) as _emit_err:
-        import sys as _sys
-        print(f"[scope_escape] stats emit failed: "
-              f"{type(_emit_err).__name__}: {_emit_err}", file=_sys.stderr)
+    from _detector_stats import emit_stats
+    emit_stats("scope_escape", verdict, detail)
+
 
 
 def _rescue_within_window(text: str, start: int, window: int = 120) -> bool:

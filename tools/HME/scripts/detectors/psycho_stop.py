@@ -256,58 +256,9 @@ def _has_tool_call_after_last_text(events: list) -> bool:
 
 
 def _emit_stats(pattern: str, detail: str) -> None:
-    """Append a detector-run line to metrics/detector-stats.jsonl so dead
-    phrase lists + dead patterns become quantitatively visible over time.
-    Silent on write failures -- this is observability, not correctness."""
-    try:
-        import json
-        import time
-        import os
-        root = os.environ.get("PROJECT_ROOT")
-        if not root:
-            # Walk up from this script.
-            from pathlib import Path
-            here = Path(__file__).resolve()
-            for parent in [here.parent, *here.parents]:
-                if (parent / "CLAUDE.md").exists() and (parent / ".env").exists():
-                    root = str(parent)
-                    break
-        if not root:
-            return
-        out_path = os.path.join(root, "output", "metrics", "detector-stats.jsonl")
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        # Append + trim under fcntl.flock so concurrent detector runs
-        # don't lose lines. Previously two concurrent invocations could
-        # both decide len(lines) > 5000 and both truncate-write, dropping
-        # the second's appended line. flock serializes.
-        import fcntl as _fcntl
-        with open(out_path, "a", encoding="utf-8") as f:
-            _fcntl.flock(f.fileno(), _fcntl.LOCK_EX)
-            try:
-                f.write(json.dumps({
-                    "ts": time.time(),
-                    "detector": "psycho_stop",
-                    "verdict": pattern,
-                    "detail": detail,
-                }) + "\n")
-                f.flush()
-                # Trim to last 5000 lines while still holding the lock.
-                try:
-                    with open(out_path, "r", encoding="utf-8") as rf:
-                        lines = rf.readlines()
-                    if len(lines) > 5000:
-                        with open(out_path, "w", encoding="utf-8") as wf:
-                            wf.writelines(lines[-5000:])
-                except OSError as _trim_err:
-                    import sys as _sys
-                    print(f"[psycho_stop] stats trim failed: "
-                          f"{type(_trim_err).__name__}: {_trim_err}", file=_sys.stderr)
-            finally:
-                _fcntl.flock(f.fileno(), _fcntl.LOCK_UN)
-    except (OSError, TypeError, ValueError) as _emit_err:
-        import sys as _sys
-        print(f"[psycho_stop] stats emit failed: "
-              f"{type(_emit_err).__name__}: {_emit_err}", file=_sys.stderr)
+    from _detector_stats import emit_stats
+    emit_stats("psycho_stop", pattern, detail)
+
 
 
 def main() -> int:
