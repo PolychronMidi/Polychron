@@ -68,7 +68,9 @@ def _collect_deleted_files(events: list[dict], project_root: str) -> list[str]:
 def _refs_remaining(project_root: str, deleted_path: str) -> list[str]:
     base = os.path.basename(deleted_path)
     stem = os.path.splitext(base)[0]
-    if not stem or len(stem) < 4:
+    # Strip leading underscores before measuring length; "_eit" / "_snap" etc. are scratch-file naming conventions, the underscores carry no semantic weight for reference-tracking purposes. Require >=6 chars of substantive stem to avoid substring matches against common identifiers.
+    bare = stem.lstrip("_")
+    if not bare or len(bare) < 6:
         return []
     proc = subprocess.run(
         ["grep", "-rln", "--include=*.js", "--include=*.ts", "--include=*.py",
