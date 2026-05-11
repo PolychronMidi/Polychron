@@ -134,6 +134,23 @@ def _scan_file(path: str, ext: str) -> list:
     return findings
 
 
+def _scan_long_comment_lines(path: str, ext: str) -> list:
+    """Yield {line, line_len} for each comment line whose raw length is >= LONG_LINE_CHARS. Independent of block-counting rule; annotation-prefixed lines are NOT exempt (long rationale lines belong in doc/ regardless of annotation tag)."""
+    findings = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            lines = f.readlines()
+    except OSError:
+        return findings
+    for i, raw in enumerate(lines, 1):
+        line_no_nl = raw.rstrip("\n")
+        if not _is_comment_line(line_no_nl.strip(), ext):
+            continue
+        if len(line_no_nl) >= LONG_LINE_CHARS:
+            findings.append({"line": i, "line_len": len(line_no_nl)})
+    return findings
+
+
 def _walk(roots, ignore_patterns):
     for root in roots:
         if not os.path.isdir(root):
