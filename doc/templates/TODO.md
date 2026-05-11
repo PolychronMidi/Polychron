@@ -23,6 +23,7 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
@@ -39,6 +40,8 @@
 
 
 
+
+- [E3] Top-5 most-coupled pairs in `tools/HME/service/` (by counted import edges): (1) `__init__ <-> synthesis` (18) -- expected: synthesis is the dispatcher's main upstream; aggregate-by-design, decoupling would just renumber the edges. (2) `learn_unified <-> tools_knowledge` (10) -- learn_unified does both KB-write and KB-query orchestration; **decoupling refactor**: split read-side into `tools_knowledge_query.py` so learn_unified only depends on write APIs. (3) `server <-> worker` (9) -- HTTP route handlers calling worker subsystems; expected boundary, low priority. (4) `__init__ <-> evolution` (9) -- evolution is the top-level i/evolve aggregator; same shape as (1). (5) `hme_http_store <-> worker_handler` (8) -- **decoupling refactor**: introduce a small `store_protocol.py` interface so worker_handler depends on the abstraction not the concrete store. Two real refactor candidates (2 + 5); three are aggregate-by-design. (auto-shipped from SPEC checkbox flip)
 - [E2] Found 4 regex patterns duplicated across 2+ detector files: `` r"`[^`\n]*`" `` (5 files), `r"```.*?```"` (4 files), `r"={3,}\s*SUMMARY\s*={3,}"` (2 files), `r"\bsolo\s+(was\|is)\s+(the\s+)?right\b"` (2 files). Candidate shared-constants module: `tools/HME/scripts/detectors/_shared_patterns.py` -- export named constants (e.g. `INLINE_CODE_RE`, `FENCED_CODE_RE`, `SUMMARY_BANNER_RE`, `SOLO_DOCTRINE_RE`) and migrate callers in a follow-up phase. (auto-shipped from SPEC checkbox flip)
 - [E1] Catalogued `# silent-ok:` annotations under `synthesis/`. Result: **1 hit total** -- `synthesis_warm.py:55  pass  # silent-ok: best-effort fs op`. Single-entry catalogue means the convention is well-contained inside synthesis (exclusively for best-effort fs ops in the warm-cache module). Useful drift-detection baseline: any deviation from count=1 signals a failed abstraction boundary. (auto-shipped from SPEC checkbox flip)
 - [E4] Operating-mode hazard audit. **Findings**: (1) Zen does not expose a public per-key quota endpoint -- user has no in-band visibility into remaining \$12/5h / \$30/wk / \$60/mo caps. (2) When quota exhausts, Zen returns a rate-limit shape that the proxy's existing `_isInteractivePath` 429 detector will treat as an Anthropic rate-limit and trip the emergency valve into passthrough mode -- which is WRONG because passthrough still routes through the proxy's anthropic.com upstream, NOT a fallback to Anthropic from MODE=4. (3) **Mitigations queued in TODO Next-up**: (a) `i/zen quota` helper that polls Zen and surfaces remaining caps; (b) Zen-aware error detector that emits a distinct LIFESAVER banner ("OpenCode Go quota near cap") + auto-un-MODE-4 to fall back to anthropic.com when quota tips; (c) docstring on `OVERDRIVE_MODE=4` block in `.env` warning about the quota silence + failover edge. (4) **Acceptance condition**: MODE=4 is safe to activate ONLY when the operator is willing to absorb the 1-2 turn loss when quota tips before the manual fallback to MODE=0 happens. Document this risk profile in `.env` MODE=4 block. (auto-shipped from SPEC checkbox flip)
@@ -48,7 +51,6 @@
 - [E2] `i/dispatch status` MODE descriptions updated: `4=main+E4=deepseek-pro / E5=glm-5.1 / E3=deepseek-flash / E1-E2=cascade`. (auto-shipped from SPEC checkbox flip)
 - [E3] Live smoke verified: `_try_overdrive_model('glm-5.1', 'reply PONG', ...)` returned `'PONG'`; label resolved to `overdrive/zen/glm-5.1`. Synthesis-side MODE=4 path proven end-to-end through the proxy. (auto-shipped from SPEC checkbox flip)
 - [E3] `_try_overdrive_model`: detector refactored to `_is_zen = startswith("deepseek-") or startswith("glm-")`. glm-* routes through the same Zen Go headers as deepseek-*. (auto-shipped from SPEC checkbox flip)
-- [E3] `synthesis_reasoning.py`: shipped `elif _od_mode == "4":` branch -- E5 to glm-5.1 chain, E4 to deepseek-pro, E3 to deepseek-flash, E1-E2 to None. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
