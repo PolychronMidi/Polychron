@@ -13,12 +13,14 @@ _ONB_STATE_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.state"
 _ONB_TARGET_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.target"
 _ONB_PY="${_ONB_PROJECT}/tools/HME/service/server/onboarding_chain.py"
 
-# Ordered state list -- must match STATES in onboarding_chain.py
-# Source of truth is the Python module; this array mirrors it. C1: a codegen
-# check could pull STATES from onboarding_chain.py on every source. For now
-# the arrays are kept in sync manually -- if they drift, _onb_is_graduated
-# becomes unreliable.
-_ONB_STATES=(boot selftest_ok targeted edited reviewed piped verified graduated)
+# Canonical states sourced from tools/HME/config/onboarding_states.json.
+_ONB_STATES_JSON="${_ONB_PROJECT}/tools/HME/config/onboarding_states.json"
+if [ -f "$_ONB_STATES_JSON" ] && command -v python3 >/dev/null 2>&1; then
+  _ONB_STATES=($(python3 -c "import json; print(' '.join(json.load(open('$_ONB_STATES_JSON'))['states']))" 2>/dev/null))
+fi
+if [ "${#_ONB_STATES[@]}" -eq 0 ]; then
+  _ONB_STATES=(boot selftest_ok targeted edited reviewed piped verified graduated)
+fi
 
 _onb_state() {
   # Fast path: read file directly (no Python spawn)
