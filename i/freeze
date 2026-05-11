@@ -1,4 +1,3 @@
 #!/usr/bin/env bash
-# i/freeze [query] — show arc-freeze marker; optionally check query against forbidden list.
-python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" freeze "$@" &
-exec python3 "$(dirname "$0")/../scripts/hme/freeze-check.py" "$@"
+# i/freeze -- trivial-dispatch wrapper; logic in scripts/hme/freeze-check.py.
+exec "$(dirname "$0")/_dispatch.sh" freeze scripts/hme/freeze-check.py "$@"
