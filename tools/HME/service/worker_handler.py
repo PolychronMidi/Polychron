@@ -53,6 +53,11 @@ _VALIDATE_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
     max_workers=_VALIDATE_POOL_SIZE, thread_name_prefix="hme-validate")
 _VALIDATE_SEMAPHORE = threading.BoundedSemaphore(value=_VALIDATE_POOL_SIZE)
 
+_REINDEX_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
+    max_workers=1, thread_name_prefix="hme-reindex")
+_REINDEX_LOCK = threading.Lock()
+_REINDEX_STATE = {"running": False, "started_at": 0.0, "files_count": 0, "last_result": None, "last_error": None}
+
 
 
 
