@@ -29,17 +29,7 @@ Carry-over from just-archived set: 90-char comment-line rule (user-mandated mid-
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
-- HME-audit #1 (extract dispatch prompts to discoverable templates ~80 LOC) -- large; defer until #1 above proves the persona pattern works
-- HME-audit #5 (refresh BUDDY_SYSTEM.md with new patterns) -- small but blocked on #1-#3 landing first
-- Night-market: gauntlet (codebase-knowledge active recall) -- medium dep, low immediate value for single-operator forensic workflow
-- Night-market: tome (multi-source research synthesis) -- medium, web/external deps
-- Night-market: conserve:clear-context (session state across context windows) -- small; useful for long sessions but the existing handoff paradigm partly covers it
-- Night-market: scry:vhs-recording (terminal audit media) -- small but novelty; defer
-- Pad: MCP audit middleware (async non-blocking activity trail) -- medium; partially overlaps existing tools/HME/activity/ stack
-- Pad: pinned security gates in CI -- small; project doesn't have GitHub Actions yet (no immediate target)
-- Pad: trigger-driven conventions registry -- medium; large refactor of behavior model
-- Pad: versioned MCP tool surface -- medium; premature optimization
-- Notification-drop bug: 3 background Explore forks completed cleanly (`stop_reason: end_turn`, 161-188KB transcripts) but no completion notifications arrived, TaskOutput returned "no task found"; the harness silently dropped them. Worth investigating in a HME-meta cycle but not blocking project work.
+<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
 
 ## Deferred / out of scope
 
