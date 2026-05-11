@@ -10,7 +10,7 @@
 #   0 with no output if no new errors (passthrough)
 #   Note: never blocks/fails the tool call; only ADDS context.
 _hme_check_errors_inline() {
-  local PROJECT="${PROJECT_ROOT:-/home/jah/Polychron}"
+  local PROJECT="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
   local ERROR_LOG="$PROJECT/log/hme-errors.log"
   local INLINE_WATERMARK="$PROJECT/tmp/hme-errors.inline-watermark"
   # Heartbeat -- proves this helper actually ran.
