@@ -10,23 +10,42 @@ _Previous set (hme-buddy-observability) archived 2026-05-11T102328Z to tools/HME
 
 ## Goal
 
-<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
+`bash scripts/audit-all.sh --strict` against the freshly-archived `hme-buddy-observability` set surfaced eight distinct findings ranging from active runtime defects (undefined symbol in `exhaust_check.py:327`, hook-coordination cycle) through pre-existing FAILs blocking HCI (HME.md tool-count drift, detector-chain corpus regressions) down to ASCII / LOC / doc-path hygiene. This initiative resolves them in severity order: P0 attacks runtime defects + their downstream regressions (import defect is likely root cause for ~half the corpus failures, fix that first then re-assess), P1 attacks the hook cycle + pre-existing HCI doc-sync FAILs, P2 attacks hygiene (LOC, em-dashes, doc-paths). Active execution-path defects outrank doc drift at any given severity tier.
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
-
-- <subsystem>: <one-line>
-- <data dir / queue / manifest>: <one-line>
-- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
+- `tools/HME/scripts/detectors/exhaust_check.py` -- has unresolved `iter_tool_uses` ref at line 327 (added during hme-buddy-observability turn for `_has_tool_call_after_last_text`, the import was missed); also contains the structural-enumeration check that conflicts with the research-eval-exemption corpus fixture.
+- `tools/HME/scripts/detectors/pile_on.py` -- corpus fixtures `two-detector-edits-fire` and `boundary-with-tool-results-fires` encode the OLD overreach behavior (any 2+ edits fires); current code is the user-mandated narrower form (>=2 NEW Writes only).
+- `tools/HME/scripts/detectors/test_detector_chain.py` -- corpus that lives under `audit-all.sh --strict`; needs new fixtures matching the post-cleanup detector contracts.
+- `tools/HME/hooks/lifecycle/sessionstart.sh` + `tools/HME/hooks/lifecycle/userpromptsubmit.sh` -- annotated coordination graph forms a cycle per `audit-hook-coordination`; either docstring is wrong or actual ordering needs decoupling.
+- `tools/HME/hooks/lifecycle/stop/detectors.sh` -- references `$SENIOR_CONSULT_DEBT` at lines 39 + 44, variable never set (per `audit-shell-undefined`).
+- `doc/HME.md` -- claims "12 tools, server has 13"; references nine detector names (advisor_doctrine, ceremony_dodge, live_probe, phantom_capability, phase_gate, scope_escape, senior_consult_debt, summary_format, trample_gate) under a tool surface that no longer exposes them as tools.
+- `doc/templates/SPEC.md` (this file) -- relative-link references in its template body resolve to `HME.md` instead of `../HME.md` (5 broken refs per `audit-doc-integrity`).
+- `tools/HME/proxy/supervisor/index.js` -- 355 LOC > 350 limit per `audit-loc`.
+- `tools/HME/proxy/sse_rewriters.js` + `tools/HME/service/before-editing-cache.json` + `scripts/pipeline/generators/generate-manifest-globals.js` -- em-dash (U+2014) violations per `audit-no-non-ascii`.
+- `<handoff doc>`: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
 
 ## Phases
 
-### Phase 0: <next initiative -- name>
+### Phase 0: detector regressions from prior session work (root-cause first)
 
-<1-paragraph context for the new initiative.>
+Fix the runtime defects introduced by the just-archived set BEFORE updating corpus fixtures. The import defect at `exhaust_check.py:327` may be the proximate cause of multiple corpus failures (the detector crashes mid-run, the test framework records the failed verdict). Updating fixtures before fixing the import would encode broken behavior as the new baseline.
 
-- [ ] [easy] First item of the new initiative
+- [ ] [easy] (a) Add `iter_tool_uses` to `exhaust_check.py` line-34 import. This was a missing-import bug introduced when `_has_tool_call_after_last_text` was added in the prior turn -- detector currently crashes on the structural-enumeration path that uses it.
+- [ ] [easy] (b) Re-run `bash scripts/audit-all.sh --strict` after (a). Reassess which of the 3 detector-chain corpus failures (`exhaust_check/research-eval-exemption`, `pile_on/two-detector-edits-fire`, `pile_on/boundary-with-tool-results-fires`) still fail. Document residual count inline here.
+- [ ] [medium] (c) Update fixtures for genuine behavior changes (pile_on now requires 2+ NEW Writes, not 2+ Edits; exhaust_check now fires structural enumeration >=3 line-start list items in closing 60% unconditionally). Only touch fixtures that still fail after (a).
+
+### Phase 1: active hook defects + pre-existing HCI FAILs
+
+- [ ] [medium] (d) Resolve `sessionstart -> userpromptsubmit -> sessionstart` cycle reported by `audit-hook-coordination`. Either the MUST-RUN-BEFORE / COORDINATES-WITH docstring annotations are wrong (one of them shouldn't claim to coordinate with the other in a cycle-producing direction) or the actual runtime ordering needs decoupling. Read both docstrings + the chain-runner, decide which side resolves cleanly.
+- [ ] [easy] (e) `$SENIOR_CONSULT_DEBT` shell-undefined in `tools/HME/hooks/lifecycle/stop/detectors.sh:39+44`. Either the var is set elsewhere in the chain (and detectors.sh should `source` the setter first) or the references are stale post-rename. Trace via `grep -rn "SENIOR_CONSULT_DEBT" tools/HME/hooks/`.
+- [ ] [medium] (f) `doc/HME.md` doc-sync: align tool count (12 claimed vs 13 server-exposed) and remove the nine detector names misclassified as tools. Detectors are NOT tools -- they're stop-hook verdicts. Fix the documentation distinction.
+
+### Phase 2: hygiene
+
+- [ ] [easy] (g) Fix the 5 broken file refs in `doc/templates/SPEC.md` template body. From `doc/templates/`, references to `doc/HME.md` etc. need `../HME.md` prefix.
+- [ ] [easy] (h) `tools/HME/proxy/supervisor/index.js` at 355 LOC: either extract a focused helper to bring back under 350 OR add to `config/loc-ignore.txt` with rationale (per CLAUDE.md, judgment call).
+- [ ] [easy] (i) Replace em-dashes (U+2014) with `--` ASCII in `tools/HME/proxy/sse_rewriters.js` (3 sites) + `scripts/pipeline/generators/generate-manifest-globals.js` (1 site). `tools/HME/service/before-editing-cache.json` is generated/cache -- decide whether to add to ASCII-ignore or regenerate clean.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
