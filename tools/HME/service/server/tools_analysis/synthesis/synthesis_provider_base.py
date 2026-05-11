@@ -187,7 +187,7 @@ class OpenAIProvider:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 data = json.loads(resp.read())
             text = self._parse_response(data)
-            return _strip_think(text) if text else None
+            return _strip_agent(_strip_think(text)) if text else None
         except urllib.error.HTTPError as e:
             err = e.read().decode(errors="ignore")[:200]
             logger.warning(f"{self.name} {model} HTTP {e.code}: {err}")
