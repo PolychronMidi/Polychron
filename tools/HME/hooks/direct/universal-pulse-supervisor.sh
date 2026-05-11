@@ -11,7 +11,13 @@ _SV_ROOT=""
 if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _SV_ROOT="$CLAUDE_PROJECT_DIR"
 fi
-[ -z "$_SV_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _SV_ROOT="/home/jah/Polychron"
+if [ -z "$_SV_ROOT" ]; then
+  _try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  while [ -n "$_try" ] && [ "$_try" != "/" ]; do
+    [ -f "$_try/.env" ] && [ -d "$_try/.git" ] && { _SV_ROOT="$_try"; break; }
+    _try="$(dirname "$_try")"
+  done
+fi
 
 _UP_PID_FILE="$_SV_ROOT/runtime/hme/universal-pulse-supervisor.pid"
 _UP_CHILD_PID_FILE="$_SV_ROOT/tmp/hme-universal-pulse.pid"
