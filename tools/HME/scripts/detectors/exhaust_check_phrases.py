@@ -1,22 +1,20 @@
-"""Deferral phrase + regex tables -- extracted from exhaust_check.py."""
+"""Deferral phrase + regex tables. Imports shared categories from `_phrase_lists.py` (the consolidation point per its docstring) so the 7-entry overlap that existed between this module and `_phrase_lists.ALL_DEFERRAL` is eliminated. exhaust_check.py imports DEFERRAL_PHRASES + DEFERRAL_REGEXES from here unchanged."""
 from __future__ import annotations
 import re
 
-DEFERRAL_PHRASES = (
-    "noted not fixed",
-    "noted, not fixed",
+from _phrase_lists import ALL_DEFERRAL as _SHARED_DEFERRAL  # noqa: E402
+
+# Exhaust-specific phrases: the broader catalogue of deferral language not yet sorted into _phrase_lists.py's 4 narrow categories. Pure additions on top of _SHARED_DEFERRAL; no duplicate keys.
+_EXHAUST_LOCAL_PHRASES = (
     "noted not yet fixed",
     "noted, not yet fixed",
     "noted as remaining",
     "remaining tools",
     "remaining items",
-    "remaining work",
     "remaining issues",
     "remaining gaps",
     "remaining non-ecstatic",
-    "still not fixed",
     "not fixed yet",
-    "not yet fixed",
     "not yet implemented",
     "not yet addressed",
     "not yet handled",
