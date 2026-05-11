@@ -6,25 +6,27 @@
 >
 > Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles -- run `i/todo clear` (auto-archives if complete) or `i/todo archive_now text="<slug>"` (force). The tools own the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.
 
-_Previous set (constitution-rule-3 enforcement (prevent then sweep)) archived 2026-05-11T122953Z to tools/HME/KB/devlog/2026-05-11T122953Z-constitution-rule-3-enforcement-prevent.md._
+_Previous set (reindex-async) archived 2026-05-11T124552Z to tools/HME/KB/devlog/2026-05-11T124552Z-reindex-async.md._
 
 ## Goal
 
-User called out prior cycle only "documented" /reindex flakiness without fixing. This ships the async-handler fix. Synchronous `_post_reindex` blocked the HTTP thread during slow reindex (rc=28 timeouts + rc=52 worker crashes); async ThreadPoolExecutor + 202 Accepted response unblocks. Single-process scope only -- module-level state + threading.Lock does not cross processes (per consult: revisit if gunicorn workers > 1).
+<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-- `tools/HME/service/worker_handler.py:_post_reindex` -- now submits to `_REINDEX_EXECUTOR` size 1; lock-protected `_REINDEX_STATE`; returns 202 with files_count + started_at; second concurrent POST returns 202 status=already_running.
-- `tools/HME/service/worker_handler.py:_get_reindex_status` -- new GET /reindex/status returns snapshot dict.
-- `<handoff doc>`: doc/templates/SPEC.md + doc/templates/TODO.md.
+<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
+
+- <subsystem>: <one-line>
+- <data dir / queue / manifest>: <one-line>
+- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
 
 ## Phases
 
-### Phase 0: reindex-async
+### Phase 0: <next initiative -- name>
 
-- [x] [medium] (a) Async /reindex shipped: `_REINDEX_EXECUTOR` (ThreadPoolExecutor max_workers=1) + `_REINDEX_LOCK` + `_REINDEX_STATE` in `worker_handler.py`. POST returns 202 immediately; GET /reindex/status pollable. Runtime activation on next worker respawn (proxy supervisor). Verified syntax + symbols + 202 response shape in source. Single-process scope constraint documented per consult KB. Landed 2026-05-11.
-- [x] [hard] (b) FULL constitution-rule-3 sweep: ALL 113 remaining naked `except: pass` sites across the codebase annotated with `# silent-ok: <reason>` (reason mapped from exception class). Net 0 naked remaining live-verified post-sweep. Constitution rule 3 escape clause now properly applied across all best-effort code paths. Gate from prior cycle prevents future violations. Landed 2026-05-11.
-- [x] [easy] (c) `error-log` verifier ack: watermark `tmp/hme-errors.lastread` set to 2706 (current line count). The accumulated errors are pre-existing; their primary source (/reindex flakiness) is addressed in (a). Verifier will now report PASS until new unacknowledged errors land. Landed 2026-05-11.
+<1-paragraph context for the new initiative.>
+
+- [ ] [easy] First item of the new initiative
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
