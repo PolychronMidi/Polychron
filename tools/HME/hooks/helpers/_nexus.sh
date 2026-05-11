@@ -56,6 +56,13 @@ _nexus_count() {
 
 _nexus_get() {
   local type="$1"
+  # Canonical pipeline verdict lives in pipeline-summary.json (not nexus cache).
+  if [ "$type" = "PIPELINE" ]; then
+    local ps="$PROJECT_ROOT/output/metrics/pipeline-summary.json"
+    if [ -f "$ps" ]; then
+      python3 -c "import json,sys; d=json.load(open('$ps')); print(d.get('verdict',''))" 2>/dev/null && return
+    fi
+  fi
   _nexus_ensure
   grep "^${type}:" "$_NEXUS_FILE" 2>/dev/null | tail -1 | cut -d: -f3-
 }
