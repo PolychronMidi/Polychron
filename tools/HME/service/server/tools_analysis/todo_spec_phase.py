@@ -50,14 +50,14 @@ from server.tools_analysis.todo_spec_ingest import (  # noqa: F401
 # just-completed set of phases (no monthly rotation; the archive trigger
 # IS set-completion).
 # _devlog_dir() moved to paths.kb_devlog_dir()
-# Matches a Next-up entry: "- [tier] description. Reason: ..."
+# Matches a Next-up entry. Accepts E1-E5 or legacy easy/medium/hard.
 _NEXT_UP_RE = re.compile(
-    r"^\s*-\s+\[(easy|medium|hard)\]\s+(.+?)(?:\s+Reason:\s+(.+?))?\s*$",
+    r"^\s*-\s+\[(E[1-5]|easy|medium|hard)\]\s+(.+?)(?:\s+Reason:\s+(.+?))?\s*$",
     re.IGNORECASE,
 )
-# Matches an open spec checkbox: "- [ ] [tier] text"
+# Matches an open spec checkbox: "- [ ] [tier] text".
 _SPEC_OPEN_RE = re.compile(
-    r"^(\s*-\s+\[)\s(\]\s+\[(?:easy|medium|hard)\]\s+)(.+?)$",
+    r"^(\s*-\s+\[)\s(\]\s+\[(?:E[1-5]|easy|medium|hard)\]\s+)(.+?)$",
     re.IGNORECASE,
 )
 
