@@ -355,15 +355,19 @@ def start_watcher(project_root: str, engine, debounce: float = 30.0):
             return
 
         if len(files) > BATCH_THRESHOLD:
-            # Many files changed at once (git checkout, branch switch)
-            if elapsed < MIN_DIR_INTERVAL:
+            # Backoff cooldown on consecutive failures (capped).
+            with _lock:
+                backoff_mult = min(_MAX_BACKOFF_MULTIPLIER, 2 ** _consecutive_failures[0])
+            effective_interval = MIN_DIR_INTERVAL * backoff_mult
+            if elapsed < effective_interval:
                 logger.debug(
                     f"Batch reindex deferred -- {len(files)} files, "
-                    f"cooldown {MIN_DIR_INTERVAL - elapsed:.0f}s remaining"
+                    f"cooldown {effective_interval - elapsed:.0f}s remaining "
+                    f"(backoff x{backoff_mult})"
                 )
                 with _lock:
                     _changed_files.update(files)
-                    t = threading.Timer(MIN_DIR_INTERVAL - elapsed + 1, _maybe_reindex)
+                    t = threading.Timer(effective_interval - elapsed + 1, _maybe_reindex)
                     t.daemon = True
                     _timer[0] = t
                     t.start()
