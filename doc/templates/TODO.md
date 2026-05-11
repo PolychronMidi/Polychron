@@ -16,6 +16,7 @@
 - [2026-05-11] `_onb_init` resets to boot every session; only in-progress states preserved. `tools/HME/hooks/helpers/_onboarding.sh`
 - [2026-05-11] Selftest emits WARN (not FAIL) for partial index (chunks>0, files<100); fix hint prescribes `action=index` first. `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`
 - [2026-05-11] `i/consult` kv passthrough strips leading dashes before re-prefixing; `--engine=synthesis` now routes correctly. `i/consult`
+- [2026-05-11] `buddy_init.sh` pre-logs `spawn-init` outside the background subshell so a spawn that dies before launching still leaves a trace. `tools/HME/hooks/helpers/buddy_init.sh`
 
 ## Next up (queued for next cycle)
 
