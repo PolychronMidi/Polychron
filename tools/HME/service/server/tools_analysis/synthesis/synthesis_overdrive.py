@@ -92,10 +92,18 @@ _env_last_refresh = 0.0
 
 def _label_for_model(model_id: str) -> str:
     """Turn 'claude-opus-4-7' -> 'overdrive/opus', 'claude-sonnet-4-6' ->
-    'overdrive/sonnet', 'claude-haiku-4-5-20251001' -> 'overdrive/haiku'.
-    Falls back to the full model id when the slug isn't recognizable."""
+    'overdrive/sonnet', 'claude-haiku-4-5-20251001' -> 'overdrive/haiku',
+    'deepseek-v4-pro' -> 'overdrive/zen/deepseek-pro', 'deepseek-v4-flash'
+    -> 'overdrive/zen/deepseek-flash'. Falls back to the full model id."""
+    lower = model_id.lower()
+    if lower.startswith("deepseek-"):
+        if "pro" in lower:
+            return "overdrive/zen/deepseek-pro"
+        if "flash" in lower:
+            return "overdrive/zen/deepseek-flash"
+        return f"overdrive/zen/{model_id}"
     for slug in ("opus", "sonnet", "haiku"):
-        if slug in model_id.lower():
+        if slug in lower:
             return f"overdrive/{slug}"
     return f"overdrive/{model_id}"
 
