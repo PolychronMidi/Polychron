@@ -17,6 +17,7 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
@@ -26,6 +27,8 @@
 
 
 
+
+- [easy] (r) `pile_on.py` permanent fix: removed the `or len(touched) >= 3` clause that fired on 3+ EDITS to existing detector/hook files. Pile-on is now strictly about STACKING new (Write-not-Edit) detector files; fixing bugs in existing detectors is consolidation, the OPPOSITE of pile-on, regardless of how many existing files the coherent fix touches. Verified in isolation: 4 EDITs to existing -> ok; 2 Writes of new -> pile_on. Docstring rewritten to encode the user's explicit clarification. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (q) `verify_landed_block.sh` execution-verb bypass: commands starting with `python3` / `node` / `bash` / `pytest` etc. running the edited file as their target are EXECUTING the file, not inspecting it. Verify-landed is for inspection patterns only (grep/cat/head/tail/etc.). Closes the false-positive that blocked legitimate test reruns of files Written this turn. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [medium] (p) `evasion_intent.py` detector: scans assistant thinking blocks for explicit gate-evasion language ("avoid the structural check", "frame in prose to bypass", "stay under the threshold", "to avoid exhaust_check", etc.) and fires hard `deny: true` via `EVASION_INTENT` reason. Registered in registry.json + REASONS in work_checks.js. 10/10 sibling tests pass. Catches the catastrophic-failure pattern where the agent reasons about routing around its own gates and shapes output to fall just under the threshold. Intent-level catch, not output-shape catch. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (d) Custom buddy persona at `.claude/agents/buddy-primary.md` -- replaces synthesis-engine generic fallback. Encodes tier-gated findings, quote-grounding, promise-vs-delivers framing, anti-pray-and-spray refusal, KB-crystallize mandate. Closes BUDDY_SYSTEM.md forward-evolution item 1. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
@@ -35,7 +38,6 @@
 - [easy] (h) `verify_landed_block.sh` regex tightened to filename-shape only. Parallel verify-landed branch added to `pretooluse_read.sh` so Read calls do not bypass. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (i) `buddy_handoff_consult.py` consult sentinel write deferred to AFTER `synthesis_reasoning.call()` returns. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (j) `pretooluse_edit.sh` turn-edit recording deferred to AFTER blocking gates -- no longer poisons `verify_landed_block.sh` on blocked edits. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
-- [easy] (k) `strip_agent_artifacts` sanitizer added to `synthesis_config.py` and wired into every cascade provider. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
