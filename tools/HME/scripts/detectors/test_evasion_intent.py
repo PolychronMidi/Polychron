@@ -69,10 +69,10 @@ ev5 = make_event(thinking_text="I should phrase this to avoid exhaust_check firi
 matched5 = [p for p in ei.EVASION_INTENT_PHRASES if p in ei._extract_thinking_text([ev5])[0].lower()]
 assert_eq(len(matched5) >= 1, True, "to avoid exhaust_check matches")
 
-# Case 6: 'bypass the detector' fires.
-ev6 = make_event(thinking_text="Let me bypass the detector by using prose rather than a list.")
+# Case 6: 'bypass the detector' + 'use prose form to avoid' both fire (composite evasion intent).
+ev6 = make_event(thinking_text="Let me bypass the detector by using prose form to avoid the list gate.")
 matched6 = [p for p in ei.EVASION_INTENT_PHRASES if p in ei._extract_thinking_text([ev6])[0].lower()]
-assert_eq(len(matched6) >= 2, True, "bypass the detector + prose-rather-than-list both match")
+assert_eq(len(matched6) >= 2, True, "bypass the detector + use prose form to avoid both match")
 
 # Case 7: multi-event scan -- thinking from multiple events combined.
 ev_a = make_event(thinking_text="First thought, nothing special.")
