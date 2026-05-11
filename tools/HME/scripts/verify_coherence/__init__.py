@@ -173,4 +173,5 @@ REGISTRY = [
     ToolResponseLatencyVerifier(),
     TrajectoryTrendVerifier(),
     FeedbackGraphVerifier(),
+    BuddyPrimaryHealthVerifier(),
 ]
