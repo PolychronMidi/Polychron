@@ -17,6 +17,8 @@ Onboarding coherence fixes surfaced during first-agent onboarding session. Two s
 - `tools/HME/hooks/helpers/_onboarding.sh`: session-start state init (`_onb_init`)
 - `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`: selftest label + fix hint map
 - `tmp/hme-onboarding.state`: onboarding state file (single-line, deleted on graduation)
+- `i/consult`: wrapper for buddy_handoff.py consult subcommand (kv passthrough)
+- `tools/HME/hooks/helpers/buddy_init.sh`: SessionStart buddy spawn (writes log/hme-buddy-spawn.log)
 
 ## Phases
 
@@ -25,8 +27,10 @@ Onboarding coherence fixes surfaced during first-agent onboarding session. Two s
 - [x] Fix `_onb_init`: reset to boot every session; treat "graduated" file content as stale/absent
 - [x] Reset stale `tmp/hme-onboarding.state` (was "graduated" since 2026-04-23)
 - [x] Selftest: emit WARN (not FAIL) when chunks > 0 but files < 100; fix hint prescribes `action=index` first, not `clear_index`
+- [x] Fix `i/consult` kv passthrough: strip leading dashes before re-prefixing `--`; `--engine=synthesis` now routes correctly (was `----engine=synthesis`)
+- [x] `buddy_init.sh`: pre-log `spawn-init` line OUTSIDE the background subshell so a spawn that dies before launching still leaves a trace (LIFESAVER no-dilution)
 
-_Phase 1 complete._ `_onb_init` now only preserves in-progress states (boot..verified); any other content resets to boot. Selftest partial-index path no longer baits destructive clear. Files changed: `tools/HME/hooks/helpers/_onboarding.sh`, `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`.
+_Phase 1 complete._ Five fixes shipped: `_onb_init` only preserves in-progress states (boot..verified); selftest partial-index path no longer baits destructive clear; `i/consult --engine=synthesis` works; buddy spawn attempts always logged. Files: `tools/HME/hooks/helpers/_onboarding.sh`, `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`, `i/consult`, `tools/HME/hooks/helpers/buddy_init.sh`.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
