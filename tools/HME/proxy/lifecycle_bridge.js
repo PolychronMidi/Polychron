@@ -128,6 +128,16 @@ function handleLifecycleRoute(clientReq, clientRes) {
       const { PROJECT_ROOT } = require('./shared');
       const _lcDir = _lcPath.join(PROJECT_ROOT, 'tmp', 'blank-debug');
       try { _lcFs.mkdirSync(_lcDir, { recursive: true }); } catch (_e) { /* ignore */ }
+      // Cap blank-debug to 500 newest files per writer prefix. Without rotation the dir grew to 3.4GB (8617 files) before the cleanup. Keep enough history for forensics, prune the rest.
+      try {
+        const _existing = _lcFs.readdirSync(_lcDir).filter((f) => f.startsWith('hme-lc-'));
+        if (_existing.length > 500) {
+          const _sorted = _existing.map((f) => ({ f, m: _lcFs.statSync(_lcPath.join(_lcDir, f)).mtimeMs })).sort((a, b) => a.m - b.m);
+          for (let _i = 0; _i < _sorted.length - 500; _i++) {
+            try { _lcFs.unlinkSync(_lcPath.join(_lcDir, _sorted[_i].f)); } catch (_e2) { /* ignore */ }
+          }
+        }
+      } catch (_e) { /* best-effort rotation; never block dispatch */ }
       const _ts = new Date().toISOString().replace(/[:.]/g, '-');
       const _file = _lcPath.join(_lcDir, `hme-lc-${_ts}-${process.pid}-${event}.json`);
       let _stdinParsed = null;
