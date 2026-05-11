@@ -102,6 +102,8 @@ def _label_for_model(model_id: str) -> str:
         if "flash" in lower:
             return "overdrive/zen/deepseek-flash"
         return f"overdrive/zen/{model_id}"
+    if lower.startswith("glm-"):
+        return f"overdrive/zen/{model_id}"
     for slug in ("opus", "sonnet", "haiku"):
         if slug in lower:
             return f"overdrive/{slug}"
