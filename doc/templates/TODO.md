@@ -23,6 +23,9 @@
 - [2026-05-11] Narrowed glob for `hooks-executable`, `hooks-registered` invariants to exec'd dirs only. `tools/HME/config/invariants.json`
 - [2026-05-11] Excluded `*.test.js` from `eslint-rules-registered`. `tools/HME/config/invariants.json`
 - [2026-05-11] `_resolve_glob` helper: invariant globs accept string or list. `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/{_base,checks}.py`
+- [2026-05-11] LOC-ignore entries for already-oversized edited files (watcher.py, invariants.json). `config/loc-ignore.txt`
+- [2026-05-11] `eslint-concordance-complete` fix: exclude `*.test.js` from rule scan; added concordance entries for `no-bare-declared-global-in-init` + `no-or-fallback-on-map-get`. `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/checks_code.py`, `tools/HME/config/invariants.json`
+- [2026-05-11] HCI display unification: `i/status` (substrate-view) now reads canonical `hci-verifier-snapshot.json` first (was preferring stale `pipeline-summary.json`). All HCI tools now agree. `scripts/hme/substrate-view.py`
 
 ## Next up (queued for next cycle)
 
