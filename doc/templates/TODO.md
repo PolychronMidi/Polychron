@@ -29,7 +29,9 @@
 <!-- One line per queued item:
   - [<difficulty>] <description>. Reason: <source> -->
 
-(empty -- populate from the new set's SPEC Phase 0 via `i/todo ingest_from_spec`)
+- [E3] `eslint-concordance-complete` invariant fails consistently (streak 9). Reason: type=eslint_concordance_complete custom check, needs runner inspection.
+- [E4] HCI display unification across i/state, i/status, i/holograph, selftest. Reason: 4 different numbers (86.1/88/91/88) for same metric is coherence-of-self-coherence problem.
+- [E3] 3 overdue p1 blindspot subsystems (conductor/time/composers) untouched 10 rounds. Reason: i/evolve flagged systemic avoidance.
 
 ---
 
