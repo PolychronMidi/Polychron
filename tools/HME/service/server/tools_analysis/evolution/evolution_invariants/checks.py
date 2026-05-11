@@ -19,9 +19,8 @@ logger = logging.getLogger("HME")
 
 
 def _check_files_executable(inv: dict) -> tuple[bool, str]:
-    pattern = os.path.join(ctx.PROJECT_ROOT, inv["glob"])
     exclude = inv.get("exclude", [])
-    files = globmod.glob(pattern, recursive=True)
+    files = _resolve_glob(inv["glob"])
     checked = [(f, os.path.basename(f)) for f in files
                if not _excluded(os.path.basename(f), exclude)]
     failures = [name for path, name in checked if not os.access(path, os.X_OK)]
