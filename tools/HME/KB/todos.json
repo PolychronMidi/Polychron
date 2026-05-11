@@ -2,8 +2,106 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1429,
-      "updated_ts": 1778524278.546085
+      "max_id": 1436,
+      "updated_ts": 1778543516.3788185
     }
+  },
+  {
+    "id": 1430,
+    "text": "Survey project structure and top-level layout",
+    "activeForm": "Surveying project structure and top-level layout",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778543516.3787577,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1431,
+    "text": "Read key doctrine docs (CONSTITUTION, CLAUDE, SRC, HME)",
+    "activeForm": "Reading key doctrine docs",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778543516.3787727,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1432,
+    "text": "Explore src/ composition mode",
+    "activeForm": "Exploring src/ composition mode",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778543516.3787837,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1433,
+    "text": "Explore tools/HME/ mode",
+    "activeForm": "Exploring tools/HME/ mode",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778543516.378794,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1434,
+    "text": "Test HME tool end-to-end and benchmark performance",
+    "activeForm": "Testing HME tool end-to-end and benchmarking performance",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778543516.378802,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1435,
+    "text": "Evaluate buddy system and intuitive flow",
+    "activeForm": "Evaluating buddy system and intuitive flow",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778543516.3788104,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1436,
+    "text": "Tweak onboarding process for coherence",
+    "activeForm": "Tweaking onboarding process for coherence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778543516.3788178,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
   }
 ]

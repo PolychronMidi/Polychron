@@ -742,28 +742,39 @@ if (_isMode4Swap) {
           }
 
 if (_mode4WasStreaming) {
+            const { ZenSseTranslator } = require('./zen_translator');
             const translator = new ZenSseTranslator({ model: 'deepseek-v4-pro' });
-            let _sentStop = false; // Flag to prevent double-stop 400 errors
+            let _sentStop = false;
 
-            clientRes.writeHead(upstreamRes.statusCode || 200, {
-              'content-type': 'text/event-stream',
-              'cache-control': 'no-cache',
-              'connection': 'keep-alive',
-              'transfer-encoding': 'chunked'
+            // 1. Force the most compatible headers possible
+            clientRes.writeHead(200, {
+              'Content-Type': 'text/event-stream; charset=utf-8',
+              'Cache-Control': 'no-cache, no-transform',
+              'Connection': 'keep-alive',
+              'X-Accel-Buffering': 'no' // Disables proxy buffering
             });
+
+            // 2. IMMEDIATELY send a valid message_start.
+            // If the translator waits for the first chunk to send this, the IDE often 400s.
+            const startEvent = `event: message_start\ndata: {"type":"message_start","message":{"id":"msg_proxy_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n`;
+            clientRes.write(startEvent);
 
             upstreamRes.on('data', (c) => {
               const translated = translator.feed(c);
               if (translated) {
-                // Check if this chunk already contains the stop event
-                if (translated.includes('message_stop')) _sentStop = true;
-                clientRes.write(translated);
+                // If the translator tries to send its own message_start, we strip it
+                // to avoid the "Double Start" error.
+                let cleanData = translated.replace(/event: message_start[\s\S]*?\n\n/, '');
+
+                if (cleanData.includes('message_stop')) _sentStop = true;
+                if (cleanData.trim()) {
+                  clientRes.write(cleanData);
+                }
               }
             });
 
             upstreamRes.on('end', () => {
               if (!_sentStop) {
-                // Manually inject a clean Anthropic termination if the translator missed it
                 const finalBlock =
                   'event: message_delta\n' +
                   'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n' +
@@ -771,7 +782,6 @@ if (_mode4WasStreaming) {
                   'data: {"type":"message_stop"}\n\n';
                 clientRes.write(finalBlock);
               }
-
               clientRes.end();
               _releaseOpusSlot();
             });
