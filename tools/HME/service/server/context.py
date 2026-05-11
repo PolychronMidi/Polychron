@@ -79,7 +79,7 @@ def register_critical_failure(
     # already dedups by (source, error, severity).
     if is_new:
         try:
-            project_root = os.environ.get("PROJECT_ROOT", "/home/jah/Polychron")
+            project_root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or ""
             err_log = os.path.join(project_root, "log", "hme-errors.log")
             ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             line = f"[{ts}] [worker:{source}] [{severity}] {error}\n"
