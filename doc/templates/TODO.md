@@ -10,8 +10,11 @@
 
 ## Just shipped (last cycle)
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
+
+- [medium] (a) Async /reindex shipped: `_REINDEX_EXECUTOR` (ThreadPoolExecutor max_workers=1) + `_REINDEX_LOCK` + `_REINDEX_STATE` in `worker_handler.py`. POST returns 202 immediately; GET /reindex/status pollable. Runtime activation on next worker respawn (proxy supervisor). Verified syntax + symbols + 202 response shape in source. Single-process scope constraint documented per consult KB. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
