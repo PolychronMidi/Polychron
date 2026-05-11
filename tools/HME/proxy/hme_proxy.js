@@ -488,18 +488,16 @@ function handleRequest(clientReq, clientRes) {
         && !clientReq.headers['x-hme-upstream']) {
 
       const _zenKey = process.env.OPENCODE_API_KEY || '';
-      if (_zenKey) {
+if (_zenKey) {
         const { translateRequestToOpenAI } = require('./zen_translator');
         _mode4WasStreaming = (payload.stream === true);
         const oaPayload = translateRequestToOpenAI(payload, 'deepseek-v4-pro');
 
-        // Direct Server Request Setup
         clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
-        clientReq.headers['x-api-key'] = _zenKey;
 
-        // CRITICAL: We MUST remove the Anthropic Bearer token before sending to Zen Go
-        // otherwise it can cause 401s or header-size overflows.
-        delete clientReq.headers['authorization'];
+        // CHANGE THIS: Many Zen Go instances prefer Bearer over x-api-key
+        clientReq.headers['authorization'] = `Bearer ${_zenKey}`;
+        clientReq.headers['x-api-key'] = _zenKey; // Keep both to be safe
 
         clientReq.url = '/v1/chat/completions';
         outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
@@ -724,13 +722,24 @@ function handleRequest(clientReq, clientRes) {
 
           // CRITICAL: If the Zen Go endpoint returns 401/403, we intercept it here.
           // We return a 200 to the IDE to prevent a global logout/session nuke.
-          if (upstreamRes.statusCode === 401 || upstreamRes.statusCode === 403) {
+if (upstreamRes.statusCode === 401 || upstreamRes.statusCode === 403) {
              console.error(`[hme-proxy] MODE=4 AUTH FAILURE: Upstream returned ${upstreamRes.statusCode}. Faking success to protect session.`);
              clientRes.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
+
+             // 1. Send message_start (This fixes the "current message" error)
+             clientRes.write('event: message_start\n');
+             clientRes.write(`data: {"type":"message_start","message":{"id":"proxy_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n`);
+
+             // 2. Send a dummy content block so the UI shows something
+             clientRes.write('event: content_block_start\n');
+             clientRes.write('data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n');
+
+             // 3. Close it out
              clientRes.write('event: message_delta\n');
              clientRes.write('data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n');
              clientRes.write('event: message_stop\n');
              clientRes.write('data: {"type":"message_stop"}\n\n');
+
              return clientRes.end();
           }
 
