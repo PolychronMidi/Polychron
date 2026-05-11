@@ -40,7 +40,18 @@ _WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
 
 
 def _spec_diff() -> str:
-    """git diff HEAD -- doc/templates/SPEC.md as a single string. Empty when SPEC unchanged or git unavailable."""
+    """Diff this turn's SPEC.md vs the turn-start snapshot taken by userpromptsubmit.sh. Falls back to `git diff HEAD` only when the snapshot is missing (first-run install). Snapshot is load-bearing because autocommit syncs HEAD <-> working tree mid-turn -- `git diff HEAD` returns empty even after legitimate SPEC ticks landed and got autocommitted."""
+    snapshot = _PROJECT / "tmp" / "spec-turn-start.md"
+    spec = _PROJECT / _SPEC_PATH
+    if snapshot.is_file() and spec.is_file():
+        try:
+            rc = subprocess.run(
+                ["diff", "-u", str(snapshot), str(spec)],
+                capture_output=True, text=True, timeout=5,
+            )
+            return rc.stdout or ""
+        except (OSError, subprocess.SubprocessError):
+            pass
     try:
         rc = subprocess.run(
             ["git", "diff", "HEAD", "--", _SPEC_PATH],
