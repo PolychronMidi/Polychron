@@ -30,12 +30,11 @@ def _check_files_executable(inv: dict) -> tuple[bool, str]:
 
 
 def _check_files_referenced(inv: dict) -> tuple[bool, str]:
-    pattern = os.path.join(ctx.PROJECT_ROOT, inv["glob"])
     exclude = inv.get("exclude", [])
     ref_path = _resolve(inv["reference_file"])
     with open(ref_path, encoding="utf-8") as f:
         ref_content = f.read()
-    files = globmod.glob(pattern, recursive=True)
+    files = _resolve_glob(inv["glob"])
     checked = [os.path.basename(f) for f in files
                if not _excluded(os.path.basename(f), exclude)]
     match_mode = inv.get("match_mode", "basename")
