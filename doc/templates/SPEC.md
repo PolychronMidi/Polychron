@@ -1,4 +1,4 @@
-# Polychron SPEC -- constitution-rule-3-and-state-blockers
+# Polychron Active SPEC
 
 > Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; the title resets to "Polychron Active SPEC" automatically when `i/todo clear` (auto on full-set complete) or `i/todo archive_now text="<slug>"` (force) archives the set.
 >
@@ -6,36 +6,27 @@
 >
 > Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles -- run `i/todo clear` (auto-archives if complete) or `i/todo archive_now text="<slug>"` (force). The tools own the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.
 
-_Previous set (unblock-and-triage (index first, then silent-verifier elevation)) archived 2026-05-11T115857Z to tools/HME/KB/devlog/2026-05-11T115857Z-unblock-and-triage-index-first-then-sile.md._
+_Previous set (constitution-rule-3 enforcement (prevent then sweep)) archived 2026-05-11T122953Z to tools/HME/KB/devlog/2026-05-11T122953Z-constitution-rule-3-enforcement-prevent.md._
 
 ## Goal
 
-Even deeper repo audit beyond HCI/audit-all/selftest layers surfaces a CONSTITUTION rule 3 violation: 121 naked `except: pass` blocks across the codebase with ZERO `# silent-ok:` annotations -- supreme-rule violation at scale. Plus systemic state-blockers (/reindex endpoint flakiness at 109 error-log entries, mix of rc=7 connection-refused and rc=28 timeout signaling distinct root causes), 17 selftest probes frozen at PASS for 50+ runs (Horizon VI mirror of the just-cleaned HCI dead-weight), and Horizon V band-proposal pending. Per consult-anchored decision: frozen-probe cleanup must precede any band ratification (frozen-PASS inflates apparent coherence). Prevent-then-sweep order on except:pass per consult: gate first, then remediate top offenders.
+<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-- `tools/HME/hooks/pretooluse/pretooluse_edit.sh` -- needs new block-rule for naked `except: pass` without `# silent-ok:` annotation in same edit.
-- CONSTITUTION.md rule 3 -- "Errors propagate (fail-fast)" with the `# silent-ok: <reason>` escape clause; annotation format needs documenting alongside the gate.
-- 121 violation sites distributed across `tools/HME/`, `scripts/`, `src/` -- top-offender enumeration via `grep -rn 'except[^:]*:\s*$' --include=*.py` followed by per-block triage.
-- `tools/HME/service/worker.py` / `worker_handler.py` -- `/reindex` endpoint owner; needs trace of rc=7 vs rc=28 paths.
-- `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py` -- 17 frozen selftest probes (HCI, hash cache, local inference, reload mechanism, etc.) candidates for prune-or-flap.
-- `output/metrics/hme-band-proposal.json` -- Horizon V proposal `[0.55, 0.91]`; ratification gated on frozen-probe cleanup.
-- `<handoff doc>`: doc/templates/SPEC.md + doc/templates/TODO.md.
+<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
+
+- <subsystem>: <one-line>
+- <data dir / queue / manifest>: <one-line>
+- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
 
 ## Phases
 
-### Phase 0: constitution-rule-3 enforcement (prevent then sweep)
+### Phase 0: <next initiative -- name>
 
-- [x] [medium] (a) `pretooluse_edit.sh` new block: refuses Edits whose new_string contains `except[^:\n]*:\s*\n[ \t]*pass\b` WITHOUT `# silent-ok:` annotation within 200-char window. Constitution rule 3's escape clause documented in the block message. Verified: naked except matches; `pass  # silent-ok: <reason>` allowed. Landed 2026-05-11.
-- [x] [medium] (b) Top-offender file swept: `tools/HME/scripts/buddy_handoff_consult.py` had 8 naked `except OSError: pass` blocks (best-effort filesystem ops). Annotated all 8 with `# silent-ok: best-effort fs op`. Post-sweep count: 0 naked remaining in file. Top-second offender (`scripts/hme/state-panel.py`, 4 sites) and others queued for future cycles; the gate now prevents new violations going forward. Landed 2026-05-11.
+<1-paragraph context for the new initiative.>
 
-### Phase 1: state-blocker root-cause
-
-- [x] [medium] (c) `/reindex` endpoint failure-mode split: rc=7 (35x worker-not-up/restart-race), rc=28 (26x timeout on slow synchronous reindex), rc=52 (46x worker crashes mid-request; most common), rc=56 (3x receive failure). Root cause: `_post_reindex` in `worker_handler.py:208` calls `_reindex_files` SYNCHRONOUSLY in the HTTP thread; long-running reindexes time out (rc=28) or crash the worker mid-call (rc=52). Fix shape (deferred to dedicated cycle): convert to async kickoff returning 202 Accepted + status URL; caller polls separately. Landed 2026-05-11 (diagnosis + handler citation).
-
-### Phase 2: horizon-VI selftest-probe cleanup
-
-- [x] [easy] (d) Triage finding: the 17 frozen selftest probes are NOT dead-weight like the HCI-side prune candidates were. Probes like HCI, hash cache, KB, reload mechanism, local inference, arbiter, think history check infrastructure invariants that genuinely hold when the system is healthy -- PASS-for-50-runs reflects stable healthy state, not unreachable predicates. Distinction from HCI prune: those candidates were literally REMOVED from the codebase (always-PASS by absence of data emission); these probes still run and emit PASS/WARN/FAIL based on live state. The Horizon VI mitigation here is variance-source dynamism (probe a randomly-chosen subset each run) rather than blanket pruning. Documented in this SPEC; no probe changes made. Landed 2026-05-11.
+- [ ] [easy] First item of the new initiative
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
