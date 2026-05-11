@@ -43,7 +43,9 @@ Fix the runtime defects introduced by the just-archived set BEFORE updating corp
 
 ### Phase 2: hygiene
 
-- [ ] [easy] (g) Fix the 5 broken file refs in `doc/templates/SPEC.md` template body. From `doc/templates/`, references to `doc/HME.md` etc. need `../HME.md` prefix.
+- [x] [easy] (g) Fixed 5 broken file refs in SPEC template: `HME.md` -> `../HME.md`, `ARCHITECTURE.md` -> `../ARCHITECTURE.md`, `../README.md` -> `../../README.md`, `../CLAUDE.md` -> `../../CLAUDE.md`, `../tools/HME/KB/devlog/` -> `../../tools/HME/KB/devlog/`. doc-integrity audit now clean (103 markdown files scanned). Landed 2026-05-11.
+- [x] [easy] (h) `tools/HME/proxy/supervisor/index.js` (430 LOC) added to `config/loc-ignore.txt` with rationale. Lifecycle cohesion: spawn/health/restart/abandonment-sentinel all share state via the `_children` Map; splitting would smear state across modules. Revisit when children-managed >= 20. Landed 2026-05-11.
+- [x] [easy] (i) Stripped non-ASCII from 5 files: em-dashes (U+2014) in `tdd_test_first_gate.py`, `claim_without_evidence.py`, `sse_rewriters.js` (3 sites, regex literal preserved via `—` escape), `generate-manifest-globals.js`, devlog markdown; box-drawing (U+2500) in `llamacpp_daemon/__main__.py`; ✖ in `tests_failing_in_scope.py`; 🎓 in `onboarding_chain.py`; arrows in devlog markdown. Truncated `before-editing-cache.json` to `{}` (cache regenerates on demand). audit-no-non-ascii now clean. Landed 2026-05-11.
 
 ### Phase 3: bulletproof fabrication enforcement (added 2026-05-11 mid-cycle)
 
