@@ -35,7 +35,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", "/home/jah/Polychron"))
+from repo_root import resolve as _resolve_root
+PROJECT_ROOT = Path(_resolve_root())
 KB_DIR = PROJECT_ROOT / "tools" / "HME" / "KB"
 KNOWLEDGE_LANCE = KB_DIR / "knowledge.lance"
 
