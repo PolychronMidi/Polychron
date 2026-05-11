@@ -10,8 +10,11 @@
 
 ## Just shipped (last cycle)
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
+
+- [medium] (a) 90-char comment-line rule landed in audit + pretooluse gate. 751 existing violations queued for separate sweep. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 

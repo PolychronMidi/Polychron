@@ -10,23 +10,21 @@ _Previous set (unblock-and-triage (index first, then silent-verifier elevation))
 
 ## Goal
 
-<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
+Carry-over from just-archived set: 90-char comment-line rule (user-mandated mid-cycle) + self-reference-rescue broadening for gate-infra files. Scope-tracks work that fell outside the archive window.
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
-
-- <subsystem>: <one-line>
-- <data dir / queue / manifest>: <one-line>
-- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
+- `scripts/audit-comment-bloat.py` -- `LONG_LINE_CHARS` rule (default 90).
+- `tools/HME/hooks/pretooluse/pretooluse_edit.sh` -- block-comment-bloat extended with `LONG:<chars>` verdict.
+- `tools/HME/scripts/detectors/evasion_intent.py` -- `_SELF_REFERENCE_FILES` to broaden.
+- `<handoff doc>`: doc/templates/SPEC.md + doc/templates/TODO.md.
 
 ## Phases
 
-### Phase 0: <next initiative -- name>
+### Phase 0: gate-infra-followup
 
-<1-paragraph context for the new initiative.>
-
-- [ ] [easy] First item of the new initiative
+- [x] [medium] (a) 90-char comment-line rule landed in audit + pretooluse gate. 751 existing violations queued for separate sweep.
+- [ ] [easy] (b) `_SELF_REFERENCE_FILES` broadening: add `pretooluse_edit.sh` + `audit-comment-bloat.py`.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
