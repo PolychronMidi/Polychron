@@ -26,6 +26,12 @@ try:
     tokens = shlex.split(cmd, posix=True)
 except ValueError:
     tokens = cmd.split()
+# Execution-verb bypass: if the command STARTS with a code-execution interpreter (python/node/bash etc.) running the edited file as its target, that is executing the file (e.g. pytest), not inspecting it. Verify-landed is for inspection patterns only.
+exec_verbs = {"python", "python3", "node", "bash", "sh", "zsh", "fish", "pytest", "ruby", "perl", "go", "rustc", "ts-node", "deno"}
+first_tok = tokens[0] if tokens else ""
+first_base = os.path.basename(first_tok)
+if first_base in exec_verbs or first_tok in exec_verbs:
+    raise SystemExit
 verify_verbs = {"grep", "egrep", "fgrep", "rg", "ag", "ack",
                 "cat", "head", "tail", "less", "more", "bat", "batcat",
                 "wc", "awk", "sed", "git"}
@@ -33,7 +39,6 @@ has_verify_verb = any(t in verify_verbs for t in tokens)
 if not has_verify_verb:
     raise SystemExit
 matched = None
-# Filename-shape match only: prior regex `\b{mod}\b` matched anywhere in any token (heredoc bodies, quoted args), producing false positives for short module names like SPEC appearing as literal words.
 for tok in tokens:
     base = os.path.basename(tok).rsplit(".", 1)[0]
     if base in edited_modules:
