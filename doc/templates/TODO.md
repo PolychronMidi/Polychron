@@ -13,11 +13,14 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
 
 
+
+- [easy] (b) `buddy_init.sh:_spawn_buddy()` now appends both stdout/stderr to `log/hme-buddy-spawn.log` (file-descriptor `>>` capture, not subprocess.PIPE). Prefix line records `[ts] spawn slot=N floor=X sid_file=Y flag=Z`, suffix line records exit code. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (a) `BuddyPrimaryHealthVerifier` added to `tools/HME/scripts/verify_coherence/runtime_behavior.py` and registered in REGISTRY. Asserts existence + non-empty content + mtime within `BUDDY_SESSION_MAX_AGE_SECS` (default 86400) under `BUDDY_HANDOFF=1 + BUDDY_SYSTEM=1`. Verified live: returns FAIL on this session because `runtime/hme/buddy-primary.sid` is absent. Liveness via kill -0 deferred to a follow-up tightening (existence-only is the false-green concern; mtime guard covers most of it). Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (c.1) Inspection found a confounding factor: my initial "empty features dict" reading was a `.get('features', {})` default in my diagnostic script -- the classifier output schema has no `features` field. Actual telemetry lines carry populated `reason` strings (e.g. "comprehensive/exhaustive scope signal"). The real diagnostic is timestamp-aged: all entries in `output/metrics/mode-classifier.jsonl` are 9 days old corpus-test fixtures. (auto-shipped from SPEC checkbox flip)
 - [easy] (c.4-immediate) Age-gate added to all three downstream tier readers: `summary_format._read_tier_and_mode`, `phase_gate._read_tier`, `advisor_doctrine._read_tier`. Each now rejects entries older than `<DETECTOR>_TIER_MAX_AGE_SECS` (default 3600s), returning None so the gate skips rather than false-positiving. Env-overridable for tests. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
