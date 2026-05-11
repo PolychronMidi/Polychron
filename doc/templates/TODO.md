@@ -25,6 +25,7 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
@@ -43,6 +44,8 @@
 
 
 
+
+- [E3] OVERDRIVE branch analysis. **Shared code per branch**: every branch ends with the same 4-line exit (`if _overdrive_result: _text, _source = _overdrive_result; _last_source = _source; return _text`). **Per-tier action is the only varying piece** -- either default `_call_opus_overdrive(prompt, system, max_tokens)` or pinned `chain_override=(MODEL,), allow_subagent=False`. **Table-driven proposal**: replace ~70 LOC with `MODE_TIER_MAP = {"1": {...}, "2": {"E4":(None,True), "E5":(None,True), "E3":(("claude-sonnet-4-6",),False), ...}, "3": {...}, "4": {...}}` where each value is `(chain_override, allow_subagent)` (None = default chain, missing tier = skip overdrive). **Trade-offs**: (+) MODE=5+ becomes a one-line dict entry; (+) tiers inspectable as data not control flow. (-) loses per-branch inline docstrings; (-) `None` sentinel for "skip" needs separate handling. **Verdict**: worth doing once MODE=5 lands; current 4-branch if/elif is still comfortable. (auto-shipped from SPEC checkbox flip)
 - [E2] Error-handling comparison across 4 provider files: **uniformly thin wrappers** (Groq=34 LOC, Cerebras=27, NVIDIA=36, Mistral=32) that ONLY declare per-provider `OpenAIProvider(...)` config + re-export `cascade`/`available`/`get_quota_status`. **Zero exception handling, log calls, or retry logic in any of the 4** -- all that lives in the shared `synthesis_provider_base.OpenAIProvider`. Conclusion: no inconsistencies to flag because there's no per-provider error-handling code to be inconsistent about. The shared-base design already enforces uniformity. The only per-provider differences are `timeout` (60s for Groq/Cerebras/Mistral, 120s for NVIDIA because deepseek-v4-pro thinking takes 30-90s) and quota-limit defaults -- both legitimate per-provider knobs. (auto-shipped from SPEC checkbox flip)
 - [E3] Top-5 most-coupled pairs in `tools/HME/service/` (by counted import edges): (1) `__init__ <-> synthesis` (18) -- expected: synthesis is the dispatcher's main upstream; aggregate-by-design, decoupling would just renumber the edges. (2) `learn_unified <-> tools_knowledge` (10) -- learn_unified does both KB-write and KB-query orchestration; **decoupling refactor**: split read-side into `tools_knowledge_query.py` so learn_unified only depends on write APIs. (3) `server <-> worker` (9) -- HTTP route handlers calling worker subsystems; expected boundary, low priority. (4) `__init__ <-> evolution` (9) -- evolution is the top-level i/evolve aggregator; same shape as (1). (5) `hme_http_store <-> worker_handler` (8) -- **decoupling refactor**: introduce a small `store_protocol.py` interface so worker_handler depends on the abstraction not the concrete store. Two real refactor candidates (2 + 5); three are aggregate-by-design. (auto-shipped from SPEC checkbox flip)
 - [E2] Found 4 regex patterns duplicated across 2+ detector files: `` r"`[^`\n]*`" `` (5 files), `r"```.*?```"` (4 files), `r"={3,}\s*SUMMARY\s*={3,}"` (2 files), `r"\bsolo\s+(was\|is)\s+(the\s+)?right\b"` (2 files). Candidate shared-constants module: `tools/HME/scripts/detectors/_shared_patterns.py` -- export named constants (e.g. `INLINE_CODE_RE`, `FENCED_CODE_RE`, `SUMMARY_BANNER_RE`, `SOLO_DOCTRINE_RE`) and migrate callers in a follow-up phase. (auto-shipped from SPEC checkbox flip)
@@ -52,7 +55,6 @@
 - [E4] Proxy main-agent rewrite shipped inline in `hme_proxy.js` at the pre-`resolveUpstream` injection point (cleaner than a separate middleware file -- the mutation must happen on `clientReq.headers` before `resolveUpstream` reads them, and middlewares only see `payload`). When `OVERDRIVE_MODE=4` AND `payload.model` starts with `claude-` AND no `x-hme-upstream` header is already set: sets `x-hme-upstream: https://opencode.ai/zen/go`, injects `x-api-key: ${OPENCODE_API_KEY}`, drops the OAuth `authorization` header, rewrites `payload.model` to `deepseek-v4-pro`, wraps any string `message.content` as `[{type:"text",text:...}]` blocks. OAuth injection at `hme_proxy.js:679-704` naturally skips because `x-api-key` is set. Activation requires `OVERDRIVE_MODE=4` in `.env` + proxy restart. (auto-shipped from SPEC checkbox flip)
 - [E2] `_label_for_model` shipped: `glm-5.1` -> `overdrive/zen/glm-5.1`. (auto-shipped from SPEC checkbox flip)
 - [E2] `i/dispatch status` MODE descriptions updated: `4=main+E4=deepseek-pro / E5=glm-5.1 / E3=deepseek-flash / E1-E2=cascade`. (auto-shipped from SPEC checkbox flip)
-- [E3] Live smoke verified: `_try_overdrive_model('glm-5.1', 'reply PONG', ...)` returned `'PONG'`; label resolved to `overdrive/zen/glm-5.1`. Synthesis-side MODE=4 path proven end-to-end through the proxy. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
