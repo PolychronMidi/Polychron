@@ -186,7 +186,7 @@ tools/HME/config/invariants.json
 # rationale: intent=lifecycle-cohesion; revisit-when=structural-refactor; decided=2026-05-11
 tools/HME/service/watcher.py
 
-# synthesis_overdrive.py: Anthropic OVERDRIVE path + per-model HTTP request build + chain walker + circuit breaker + subagent dispatcher share `_circuit` state and `_OVERDRIVE_*` constants. DeepSeek-via-Zen routing branch (OVERDRIVE_MODE=3) adds ~25 LOC for header injection + content-blocks wrapping + per-model max_tokens cap to the existing single payload-build path.
+# synthesis_overdrive.py: Anthropic OVERDRIVE path + per-model HTTP request build + chain walker + circuit breaker + subagent dispatcher share `_circuit` state.
 # rationale: intent=lifecycle-cohesion; revisit-when=structural-refactor; decided=2026-05-11
 tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py
 
