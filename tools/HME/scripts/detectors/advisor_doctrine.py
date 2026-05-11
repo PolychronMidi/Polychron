@@ -98,8 +98,7 @@ def _last_assistant_text(events: list) -> str:
 
 
 def _read_tier() -> str | None:
-    """Most-recent tier from mode-classifier.jsonl. Returns None if no
-    classifier output exists."""
+    """Most-recent tier from mode-classifier.jsonl. Returns None when no fresh entry exists -- stale fixtures from prior corpus runs must not drive live gating."""
     if os.environ.get("ADVISOR_DOCTRINE_TIER"):
         return os.environ["ADVISOR_DOCTRINE_TIER"]
     if not _MODE_LOG.is_file():
@@ -112,7 +111,13 @@ def _read_tier() -> str | None:
                     last = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-        return last.get("tier") if last else None
+        if not last:
+            return None
+        ts = last.get("ts")
+        max_age = float(os.environ.get("ADVISOR_DOCTRINE_TIER_MAX_AGE_SECS", "3600"))
+        if isinstance(ts, (int, float)) and (time.time() - ts) > max_age:
+            return None
+        return last.get("tier")
     except OSError:
         return None
 
