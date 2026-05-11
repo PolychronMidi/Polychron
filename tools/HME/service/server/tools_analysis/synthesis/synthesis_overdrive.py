@@ -229,26 +229,29 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     _floor = budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK
     resolved_max = max(max_tokens, _floor)
 
+    # Zen requires content-blocks form; Anthropic accepts both. Use blocks uniformly.
+    _is_deepseek = model_id.startswith("deepseek-")
+    _user_content = [{"type": "text", "text": prompt}] if _is_deepseek else prompt
     payload = {
         "model": model_id,
         "max_tokens": resolved_max,
         "temperature": 1.0,  # Anthropic requires temperature=1.0 with thinking
         "thinking": {"type": "enabled", "budget_tokens": budget},
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": _user_content}],
     }
     if system:
         payload["system"] = system
 
     # OVERDRIVE_MODE=3: deepseek-* models route via OpenCode Go (Anthropic-shape).
     headers = {"Content-Type": "application/json", "anthropic-version": "2023-06-01"}
-    if model_id.startswith("deepseek-"):
+    if _is_deepseek:
         _zen_key = _os.environ.get("OPENCODE_API_KEY", "")
         if not _zen_key:
             logger.warning(f"OVERDRIVE {model_id}: OPENCODE_API_KEY missing -- aborting")
             return (None, False)
         headers["X-HME-Upstream"] = "https://opencode.ai/zen/go"
         headers["x-api-key"] = _zen_key
-        # Cloudflare in front of opencode.ai blocks default Python-urllib UA.
+        # Cloudflare blocks default Python-urllib UA.
         headers["User-Agent"] = "curl/8.0.1"
 
     try:
