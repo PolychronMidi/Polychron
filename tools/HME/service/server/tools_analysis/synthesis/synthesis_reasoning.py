@@ -35,7 +35,7 @@ profile="reasoning" -- general analysis, architecture, deep think:
 profile="coder" -- structural code extraction, verified facts, file-aware work:
      1. nvidia     qwen/qwen3-coder-480b-a35b-instruct    480B Qwen3 coder flagship
      2. nvidia     mistralai/devstral-2-123b-instruct     123B agentic coder
-     3. nvidia     deepseek-ai/deepseek-v3.2              strong all-round coder
+     3. nvidia     deepseek-ai/deepseek-v4-pro            strong all-round coder
      4. groq       openai/gpt-oss-120b                    strong code + fast
      5. nvidia     mistralai/mistral-large-3-675b-...     675B Mistral Large 3
      6. cerebras   qwen-3-235b-a22b-instruct-2507         235B, great on code
