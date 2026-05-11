@@ -10,23 +10,32 @@ _Previous set (unblock-and-triage (index first, then silent-verifier elevation))
 
 ## Goal
 
-Carry-over from just-archived set: 90-char comment-line rule (user-mandated mid-cycle) + self-reference-rescue broadening for gate-infra files. Scope-tracks work that fell outside the archive window.
+Even deeper repo audit beyond HCI/audit-all/selftest layers surfaces a CONSTITUTION rule 3 violation: 121 naked `except: pass` blocks across the codebase with ZERO `# silent-ok:` annotations -- supreme-rule violation at scale. Plus systemic state-blockers (/reindex endpoint flakiness at 109 error-log entries, mix of rc=7 connection-refused and rc=28 timeout signaling distinct root causes), 17 selftest probes frozen at PASS for 50+ runs (Horizon VI mirror of the just-cleaned HCI dead-weight), and Horizon V band-proposal pending. Per consult-anchored decision: frozen-probe cleanup must precede any band ratification (frozen-PASS inflates apparent coherence). Prevent-then-sweep order on except:pass per consult: gate first, then remediate top offenders.
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-- `scripts/audit-comment-bloat.py` -- `LONG_LINE_CHARS` rule (default 90).
-- `tools/HME/hooks/pretooluse/pretooluse_edit.sh` -- block-comment-bloat extended with `LONG:<chars>` verdict.
-- `tools/HME/scripts/detectors/evasion_intent.py` -- `_SELF_REFERENCE_FILES` to broaden.
+- `tools/HME/hooks/pretooluse/pretooluse_edit.sh` -- needs new block-rule for naked `except: pass` without `# silent-ok:` annotation in same edit.
+- CONSTITUTION.md rule 3 -- "Errors propagate (fail-fast)" with the `# silent-ok: <reason>` escape clause; annotation format needs documenting alongside the gate.
+- 121 violation sites distributed across `tools/HME/`, `scripts/`, `src/` -- top-offender enumeration via `grep -rn 'except[^:]*:\s*$' --include=*.py` followed by per-block triage.
+- `tools/HME/service/worker.py` / `worker_handler.py` -- `/reindex` endpoint owner; needs trace of rc=7 vs rc=28 paths.
+- `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py` -- 17 frozen selftest probes (HCI, hash cache, local inference, reload mechanism, etc.) candidates for prune-or-flap.
+- `output/metrics/hme-band-proposal.json` -- Horizon V proposal `[0.55, 0.91]`; ratification gated on frozen-probe cleanup.
 - `<handoff doc>`: doc/templates/SPEC.md + doc/templates/TODO.md.
 
 ## Phases
 
-### Phase 0: gate-infra-followup
+### Phase 0: constitution-rule-3 enforcement (prevent then sweep)
 
-- [x] [medium] (a) 90-char comment-line rule landed in audit + pretooluse gate. 751 existing violations queued for separate sweep.
-- [x] [easy] (b) `_SELF_REFERENCE_FILES` broadened to include `pretooluse_edit.sh`, `verify_landed_block.sh`, `pretooluse_read.sh`, `audit-comment-bloat.py`. Gate-maintenance turns editing these files no longer trip self-fire. All 10 evasion_intent tests still pass. Landed 2026-05-11.
-- [x] [easy] (c) `tests_failing_in_scope.py` accepts pytest exit code 5 (no tests collected) as ok. Detector's purpose is to surface FAILED tests; "no tests collected" means no failures exist. Closes the false-positive that was logging `no tests ran in 0.01s` to `hme-errors.log` every stop chain. Landed 2026-05-11.
-- [x] [medium] (d) `todo_spec_archive._strip_per_cycle_scratch` added: on archive, `## Deferred to next cycle` section content is replaced with an empty-placeholder comment. Per-cycle scratch was accumulating verbatim across cycles. Durable sections (out-of-scope, Glossary, NEVER lists, How-evolves, Worthiness gate) still preserved. One-time purge applied to the live SPEC. Landed 2026-05-11.
+- [ ] [medium] (a) Add a new block to `pretooluse_edit.sh`: refuse Edits whose new_string contains `except[^:]*:\s*\n\s*pass` (or single-line `except: pass`) WITHOUT a `# silent-ok:` annotation within the same try-except block. The supreme rule 3 escape clause is `# silent-ok: <reason>`; the gate refuses unannotated naked pass.
+- [ ] [medium] (b) Sweep the top-offender file (likely under `tools/HME/service/`): enumerate its naked `except: pass` cases, replace with either (i) proper logging via `logger.debug/warning`, (ii) `# silent-ok: <reason>` annotation when discard is legitimate, or (iii) re-raise with `from None`. Goal: clear 10+ violations in highest-density file.
+
+### Phase 1: state-blocker root-cause
+
+- [ ] [medium] (c) `/reindex` endpoint flakiness: split rc=7 (connection-refused; process-not-up or restart-race) from rc=28 (timeout; process hangs under load). `grep -c "rc=7" log/hme-errors.log` vs `rc=28`. Investigate by failure mode separately; the two signals point to distinct root causes per consult-anchored KB.
+
+### Phase 2: horizon-VI selftest-probe cleanup
+
+- [ ] [easy] (d) `evolution_selftest/selftest.py`: 17 probes frozen at PASS for 50+ runs (HCI, hash cache, local inference, reload mechanism, arbiter, think history, session narrative, KB, +9 more). Per the HCI-side prune precedent (just-archived set), confirm each probe's predicate is reachable; downweight or remove unreachable ones. Required pre-step for band-ratification per consult-anchored decision.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
