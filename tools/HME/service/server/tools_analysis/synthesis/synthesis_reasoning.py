@@ -123,7 +123,7 @@ _RANKING_REASONING: list[tuple[str, str]] = [
 _RANKING_CODER: list[tuple[str, str]] = [
     ("nvidia",     "qwen/qwen3-coder-480b-a35b-instruct"),
     ("nvidia",     "mistralai/devstral-2-123b-instruct-2512"),
-    ("nvidia",     "deepseek-ai/deepseek-v3.2"),
+    ("nvidia",     "deepseek-ai/deepseek-v4-pro"),
     ("groq",       "openai/gpt-oss-120b"),
     ("nvidia",     "mistralai/mistral-large-3-675b-instruct-2512"),
     ("cerebras",   "qwen-3-235b-a22b-instruct-2507"),
