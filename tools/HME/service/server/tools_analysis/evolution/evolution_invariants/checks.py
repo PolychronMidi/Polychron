@@ -10,7 +10,7 @@ import re
 
 from server import context as ctx
 
-from ._base import METRICS_DIR, _CONFIG_REL, _resolve, _excluded, _is_regex
+from ._base import METRICS_DIR, _CONFIG_REL, _resolve, _excluded, _is_regex, _resolve_glob
 import time
 import datetime
 
