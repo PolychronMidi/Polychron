@@ -144,7 +144,7 @@ def _check_eslint_concordance_complete(inv: dict) -> tuple[bool, str]:
         on_disk = {
             os.path.splitext(f_)[0]
             for f_ in os.listdir(rules_dir)
-            if f_.endswith(".js") and f_ != "index.js"
+            if f_.endswith(".js") and f_ != "index.js" and not f_.endswith(".test.js")
         }
     except OSError as e:
         return False, f"cannot list eslint-rules dir: {e}"
