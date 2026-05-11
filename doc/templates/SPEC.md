@@ -78,7 +78,7 @@ _Phase 3 status: 0/9 -- scoping phase, items not yet started._ Reviewer should p
 
 ## Deferred / out of scope
 
-<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
+- 3 overdue p1 blindspots (conductor/time/composers subsystems untouched 10 rounds, per `i/evolve` harvester). Composition-domain work -- off-theme for this infra-coherence SPEC. Tracked in TODO.md Next-up for a future composition-focused cycle.
 
 ## Three-loop role separation (NEVER lists)
 
