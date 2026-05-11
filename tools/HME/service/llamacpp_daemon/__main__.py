@@ -47,7 +47,7 @@ def main():
     supervisor = Supervisor()
     supervisor.configure()
 
-    # ── Initialize file_walker for indexing-mode (R??) ───────────────────────
+    # -- Initialize file_walker for indexing-mode (R??) -----------------------
     # Daemon runs in its own process, so it has its own copy of
     # file_walker._config. Without this call, walk_code_files() bails out
     # with "project_root not initialized -- call init_config() before walking"
@@ -65,7 +65,7 @@ def main():
             logger.error("PROJECT_ROOT not set in daemon env -- indexing-mode will fail")
     except Exception as _walker_err:
         logger.error(f"file_walker init failed: {_walker_err}")
-    # ─────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------------------
 
     logger.info(f"llamacpp daemon starting on port {args.port} (pid={os.getpid()})")
 

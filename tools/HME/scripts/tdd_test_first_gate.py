@@ -37,7 +37,7 @@ _TEST_PATTERNS = {
 # Skip these path segments entirely. Mirrors the project's loc-ignore + linter exempts.
 _SKIP_DIRS = {"__pycache__", "node_modules", ".git", ".venv", "venv", "dist", "build"}
 
-# Files that ARE tests / fixtures / config — not impl, no gate.
+# Files that ARE tests / fixtures / config -- not impl, no gate.
 _NOT_IMPL_BASENAMES = {
     "conftest.py", "__init__.py", "setup.py",
     "vitest.config.js", "jest.config.js", "rollup.config.js",
