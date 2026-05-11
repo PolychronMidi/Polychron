@@ -26,7 +26,35 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _transcript import is_assistant, load_full_turn_with_user, event_content  # noqa: E402
+from _transcript import is_assistant, iter_tool_uses, load_full_turn_with_user, event_content  # noqa: E402
+
+
+_SELF_REFERENCE_FILES = frozenset((
+    "tools/HME/scripts/detectors/evasion_intent.py",
+    "tools/HME/scripts/detectors/test_evasion_intent.py",
+    "tools/HME/scripts/detectors/_phrase_lists.py",
+    "tools/HME/scripts/detectors/exhaust_check_phrases.py",
+    "tools/HME/scripts/detectors/early_stop.py",
+    "tools/HME/scripts/detectors/exhaust_check.py",
+    "tools/HME/scripts/detectors/psycho_stop.py",
+    "tools/HME/proxy/stop_chain/policies/work_checks.js",
+))
+
+
+def _is_self_reference_turn(events: list) -> bool:
+    """Skip-fire when the turn includes Edit/Write/MultiEdit to the detector's own source or its sibling phrase tables. Writing evasion phrases into phrase tables IS building the enforcement; without this rescue the detector fires on its own maintenance turn. Path-identity check is absolute-path-tolerant: match by canonical equality OR by suffix on '/<canonical>'."""
+    work_tools = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
+    for ev in events:
+        for tu in iter_tool_uses(ev):
+            if tu.get("name") not in work_tools:
+                continue
+            fp = (tu.get("input") or {}).get("file_path", "") or ""
+            if not fp:
+                continue
+            for canonical in _SELF_REFERENCE_FILES:
+                if fp == canonical or fp.endswith("/" + canonical):
+                    return True
+    return False
 
 
 EVASION_INTENT_PHRASES = (
