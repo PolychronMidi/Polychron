@@ -69,7 +69,7 @@ Mirror of the HCI unification pattern from Phase 2: identify values/lists/config
 
 - [x] **i/* description drift warning.** `i/help` now extracts header comment for every script (registry-listed or not) and emits a `[drift] i/<name>: registry vs header disagree` stderr warning when both exist with materially different content. Registry remains canonical.
 
-_Phase 3 complete: 9/9._ Files: `tools/HME/config/onboarding_states.json` (new), `tools/HME/hooks/helpers/_onboarding.sh`, `tools/HME/service/server/onboarding_chain.py`, `tools/HME/service/watcher.py`, `tools/HME/service/server/tools_analysis/todo_spec_phase.py`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/checks.py`, `tools/HME/service/repo_root.py` (new), 9+ hardcoded-path migration sites, `tools/HME/scripts/buddy_registry.py` (new), `tools/HME/hooks/helpers/_nexus.sh`, `.env`, `i/help`, sibling tests `test_repo_root.py` + `test_buddy_registry.py`.
+_Phase 3 complete_. 9/9 items shipped. Files: `tools/HME/config/onboarding_states.json` (new), `tools/HME/hooks/helpers/_onboarding.sh`, `tools/HME/service/server/onboarding_chain.py`, `tools/HME/service/watcher.py`, `tools/HME/service/server/tools_analysis/todo_spec_phase.py`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/checks.py`, `tools/HME/service/repo_root.py` (new), 9+ hardcoded-path migration sites, `tools/HME/scripts/buddy_registry.py` (new), `tools/HME/hooks/helpers/_nexus.sh`, `.env`, `i/help`, sibling tests `test_repo_root.py` + `test_buddy_registry.py`.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
