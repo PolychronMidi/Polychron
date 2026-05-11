@@ -19,6 +19,7 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
@@ -30,6 +31,8 @@
 
 
 
+
+- [easy] (u) `orphan_reference.py` false-positive fix: `/tmp/`, `/var/tmp/`, project `tmp/`, `runtime/`, `output/metrics/` directories now skipped at deletion collection (per `runtime/hme/INVENTORY.md` these are genuinely throwaway -- references to short stems substring-match unrelated source identifiers). Stem-length gate raised from `<4 chars` to `<6 chars after stripping leading underscores` (scratch-file naming uses `_eit`, `_snap`, etc. -- underscores are noise, not semantic). Verified: prior catastrophic `_snap.md` -> `snapshot` false-positive no longer fires. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (s) `scope_vs_shipped.py` autocommit race fix: `userpromptsubmit.sh` now snapshots `doc/templates/SPEC.md` to `tmp/spec-turn-start.md` at turn start; the detector diffs working-tree SPEC against that snapshot instead of `git diff HEAD`, which was returning empty after autocommit synced HEAD <-> working tree mid-turn. Fallback to `git diff HEAD` only when snapshot is missing (first-run install). Verified: 1 [ ] -> [x] transition in fixture diff correctly detected as ticked=1. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (t) `verify_landed_block.sh` exec-verb bypass widened to match exec verbs anywhere in the command, not just position 0. Previous version only bypassed when `python3` was the first token, missing legitimate `cp src dst && python3 -c "..."` chains. Now ANY token in `exec_verbs = {python, python3, node, bash, sh, pytest, ...}` bypasses the gate regardless of position. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (r) `pile_on.py` permanent fix: removed the `or len(touched) >= 3` clause that fired on 3+ EDITS to existing detector/hook files. Pile-on is now strictly about STACKING new (Write-not-Edit) detector files; fixing bugs in existing detectors is consolidation, the OPPOSITE of pile-on, regardless of how many existing files the coherent fix touches. Verified in isolation: 4 EDITs to existing -> ok; 2 Writes of new -> pile_on. Docstring rewritten to encode the user's explicit clarification. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
@@ -39,7 +42,6 @@
 - [easy] (e) `scope_vs_shipped` detector promoted to `deny: true` for both verdicts. Added `SCOPE_STACKED` + `SCOPE_NOT_TRACKED` reasons to `work_checks.js`. Gate enforces tick-or-revert. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (f) SessionStart banner surfaces missing `runtime/hme/buddy-primary.sid` under `BUDDY_HANDOFF=1 + BUDDY_SYSTEM=1`. Points operator at `log/hme-buddy-spawn.log`. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (g) `exhaust_check` structural enumeration signal: 3+ line-start list items in closing 60% of final text with no tool_use after fires `exhaust_violation` unconditionally. Phrase-game unwinnable, structure air-tight. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
-- [easy] (h) `verify_landed_block.sh` regex tightened to filename-shape only. Parallel verify-landed branch added to `pretooluse_read.sh` so Read calls do not bypass. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
