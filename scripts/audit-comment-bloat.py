@@ -211,12 +211,13 @@ def main(argv: list) -> int:
                 long_line_findings.append({"path": rel, "line": f["line"], "line_len": f["line_len"]})
     if as_json:
         print(json.dumps({
-            "thresholds": {"warn": WARN_LINES, "fail": FAIL_LINES},
+            "thresholds": {"warn": WARN_LINES, "fail": FAIL_LINES, "long_line_chars": LONG_LINE_CHARS},
             "warn": warn_findings,
             "fail": fail_findings,
+            "long_lines": long_line_findings,
         }, indent=2))
     else:
-        print(f"audit-comment-bloat: WARN >= {WARN_LINES} lines, FAIL >= {FAIL_LINES} lines")
+        print(f"audit-comment-bloat: WARN >= {WARN_LINES} lines, FAIL >= {FAIL_LINES} lines, LONG_LINE >= {LONG_LINE_CHARS} chars")
         print(f"  FAIL: {len(fail_findings)}")
         for e in sorted(fail_findings, key=lambda x: -x["block_len"])[:20]:
             print(f"    {e['block_len']:>3}L  {e['path']}:{e['line']}")
@@ -224,7 +225,10 @@ def main(argv: list) -> int:
         if len(warn_findings) <= 10:
             for e in sorted(warn_findings, key=lambda x: -x["block_len"]):
                 print(f"    {e['block_len']:>3}L  {e['path']}:{e['line']}")
-    if strict and fail_findings:
+        print(f"  LONG_LINE ERRORS (>= {LONG_LINE_CHARS} chars): {len(long_line_findings)}")
+        for e in sorted(long_line_findings, key=lambda x: -x["line_len"])[:20]:
+            print(f"    {e['line_len']:>3}c  {e['path']}:{e['line']}")
+    if strict and (fail_findings or long_line_findings):
         return 1
     return 0
 
