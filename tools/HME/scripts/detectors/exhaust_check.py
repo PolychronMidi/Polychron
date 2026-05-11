@@ -299,6 +299,37 @@ def _emit_stats(verdict: str, detail: str) -> None:
               f"{type(_emit_err).__name__}: {_emit_err}", file=_sys.stderr)
 
 
+_LIST_ITEM_RE = re.compile(r"^\s*(?:\d+[.)]\s+\S|[-*]\s+\S)", re.MULTILINE)
+_STRUCTURAL_ENUMERATION_THRESHOLD = 3
+
+
+def _has_tool_call_after_last_text(events: list) -> bool:
+    """Mirror of psycho_stop._has_tool_call_after_last_text. True if any tool_use appears after the last text block in the turn -- legitimate work-then-summarize sequences must escape via this path."""
+    last_text_event_idx = -1
+    last_text_block_idx = -1
+    for i, ev in enumerate(events):
+        if ev.get("type") != "assistant":
+            continue
+        content = event_content(ev)
+        for bi, block in enumerate(content):
+            if isinstance(block, dict) and block.get("type") == "text":
+                last_text_event_idx = i
+                last_text_block_idx = bi
+    if last_text_event_idx < 0:
+        return False
+    last_ev = events[last_text_event_idx]
+    content = event_content(last_ev)
+    for bi in range(last_text_block_idx + 1, len(content)):
+        block = content[bi]
+        if isinstance(block, dict) and block.get("type") == "tool_use" and block.get("name"):
+            return True
+    for ev in events[last_text_event_idx + 1:]:
+        for tu in iter_tool_uses(ev):
+            if tu.get("name"):
+                return True
+    return False
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
@@ -308,6 +339,14 @@ def main() -> int:
     if not raw_text:
         _emit_stats("ok", "no_final_text")
         print("ok")
+        return 0
+
+    # Structural enumeration check -- UNCONDITIONAL, runs before any rescue. The phrase-game is unwinnable; structure isn't. If closing 60% of final text has >=3 line-start list items AND no tool_use follows the last text block (the agent enumerated and stopped), fire regardless of phrase coverage, work count, or user-prompt shape. Threshold 3 protects SUMMARY's single what's-next bullet. Catches the 'anything missing?' enumeration pattern the user explicitly flagged as catastrophic.
+    _cutoff = int(len(raw_text) * 0.40)
+    _closing_items = len(_LIST_ITEM_RE.findall(raw_text[_cutoff:]))
+    if _closing_items >= _STRUCTURAL_ENUMERATION_THRESHOLD and not _has_tool_call_after_last_text(events):
+        _emit_stats("exhaust_violation", f"structural_enumeration items={_closing_items} threshold={_STRUCTURAL_ENUMERATION_THRESHOLD}")
+        print("exhaust_violation")
         return 0
 
     # Implicit-solo / substantive-work rescue. If this turn did >= 3
