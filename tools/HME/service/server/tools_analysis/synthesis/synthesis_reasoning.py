@@ -95,7 +95,8 @@ def _refresh_env() -> None:
 # (provider_key, model_id) in absolute quality order.
 # provider_key must match a key in _PROVIDERS below.
 _RANKING_REASONING: list[tuple[str, str]] = [
-    ("nvidia",     "deepseek-ai/deepseek-v3.2"),
+    ("nvidia",     "deepseek-ai/deepseek-v4-pro"),
+    ("nvidia",     "deepseek-ai/deepseek-v4-flash"),
     ("nvidia",     "mistralai/mistral-large-3-675b-instruct-2512"),
     ("openrouter", "deepseek/deepseek-r1:free"),
     ("nvidia",     "nvidia/llama-3.1-nemotron-ultra-253b-v1"),
