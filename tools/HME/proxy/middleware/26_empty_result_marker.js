@@ -1,8 +1,6 @@
 'use strict';
 /**
- * Empty-tool-result marker. Every tool execution should return at least a minimal success/fail message; empty bodies train the agent to treat absent signal as positive signal (the same antipattern this project flags in `>/dev/null 2>&1` redirects). When a tool_result lands with no body, this middleware appends a marker so the agent knows to verify (Read for file edits, rerun for diagnostics) rather than silently trusting the void.
- *
- * Idempotent via hasHmeFooter. Skipped for known-stub patterns (background task placeholders are resolved by 12_background_dominance.js) and for tool errors (which carry is_error=true and an explicit error message already).
+ * Every tool execution returns either SUCCESS or FAIL. When the tool body is empty the harness silently dropped the status line; this middleware writes it explicitly so the agent never has to infer outcome from absent signal. is_error=true -> [FAIL], is_error=false -> [SUCCESS]. Pass-through when the body already contains content (the tool already said something).
  */
 
 function _textOf(toolResult) {
@@ -14,22 +12,19 @@ function _textOf(toolResult) {
   return '';
 }
 
-function _isError(toolResult) {
-  return toolResult.is_error === true;
-}
-
-const _MARKER = '[empty-result-from-tool] no body returned -- verify via Read/rerun before treating as success';
+const _SUCCESS = '[SUCCESS] tool completed with no output body';
+const _FAIL = '[FAIL] tool errored with no error message body';
 
 module.exports = {
   name: 'empty_result_marker',
 
   onToolResult({ toolUse, toolResult, ctx }) {
-    if (_isError(toolResult)) return;
     const text = _textOf(toolResult);
     if (text && text.trim().length > 0) return;
-    if (ctx.hasHmeFooter(toolResult, '[empty-result-from-tool]')) return;
-    ctx.appendToResult(toolResult, _MARKER);
+    if (ctx.hasHmeFooter(toolResult, '[SUCCESS]') || ctx.hasHmeFooter(toolResult, '[FAIL]')) return;
+    const marker = toolResult.is_error === true ? _FAIL : _SUCCESS;
+    ctx.appendToResult(toolResult, marker);
     ctx.markDirty();
-    ctx.emit({ event: 'empty_tool_result_marked', tool: toolUse.name });
+    ctx.emit({ event: 'empty_tool_result_marked', tool: toolUse.name, status: toolResult.is_error ? 'FAIL' : 'SUCCESS' });
   },
 };
