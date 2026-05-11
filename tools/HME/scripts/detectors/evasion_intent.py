@@ -190,6 +190,11 @@ def main() -> int:
             matched.append(phrase)
 
     if matched:
+        if _is_self_reference_turn(events):
+            detail = "self_reference_rescue matched=" + ",".join(repr(p) for p in matched[:3])
+            _emit_stats("ok", detail)
+            print("ok")
+            return 0
         detail = "matched=" + ",".join(repr(p) for p in matched[:5])
         if len(matched) > 5:
             detail += f" (+{len(matched) - 5} more)"
