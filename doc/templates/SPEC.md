@@ -1,4 +1,4 @@
-# Polychron SPEC -- design-pattern-consolidation
+# Polychron Active SPEC
 
 > Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; the title resets to "Polychron Active SPEC" automatically when `i/todo clear` (auto on full-set complete) or `i/todo archive_now text="<slug>"` (force) archives the set.
 >
@@ -6,27 +6,27 @@
 >
 > Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles -- run `i/todo clear` (auto-archives if complete) or `i/todo archive_now text="<slug>"` (force). The tools own the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.
 
-_Previous set (reindex-async) archived 2026-05-11T124552Z to tools/HME/KB/devlog/2026-05-11T124552Z-reindex-async.md._
+_Previous set (design-pattern-consolidation) archived 2026-05-11T130435Z to tools/HME/KB/devlog/2026-05-11T130435Z-design-pattern-consolidation.md._
 
 ## Goal
 
-Repo-wide design-pattern audit surfaces concrete code-duplication / boilerplate / coupling patterns the prior surface audits missed because they passed lint/syntax checks but represent compounding maintenance cost. Per consult-anchored decision: mechanical grep-diff each duplication site BEFORE extraction (variants may carry silent divergences like the psycho_stop flock-trim that the other 6 lacked). Each item ticks only when refactor lands AND verification passes.
+<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-- `tools/HME/scripts/detectors/_detector_stats.py` (new) -- shared emit_stats helper.
-- 7 detector scripts (fabrication_check, evasion_intent, exhaust_check, psycho_stop, scope_escape, scope_vs_shipped, early_stop) -- replace local `_emit_stats` with import + thin wrapper.
-- `tools/HME/scripts/verify_coherence/_base.py` -- absorb `_env_truthy`/`_read_env_var` from `runtime_behavior.py`.
-- `i/` (34 wrappers; 21 trivial-dispatch) -- shared arg-translation helper.
-- `<handoff doc>`: doc/templates/SPEC.md + doc/templates/TODO.md.
+<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
+
+- <subsystem>: <one-line>
+- <data dir / queue / manifest>: <one-line>
+- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
 
 ## Phases
 
-### Phase 0: design-pattern-consolidation
+### Phase 0: <next initiative -- name>
 
-- [x] [medium] (a) Shared `_detector_stats.py` shipped with `emit_stats(detector, verdict, detail)` (fcntl-locked append + 5000-line LRU trim + project-root walk). Replaced local `_emit_stats` in all 7 detectors with 3-line shim. 7/7 import cleanly + emit verification lines to `detector-stats.jsonl`. Consolidates ~30 LOC * 7 files. The robust flock+trim pattern (previously only in psycho_stop) now protects all 7 from concurrent-write loss. Landed 2026-05-11.
-- [x] [easy] (b) `env_truthy` + `read_env_var` pulled up to `_base.py`. `runtime_behavior.py` now imports them as `_env_truthy`/`_read_env_var` aliases for caller compatibility. Verified: aliases identity-match the canonical impl (`is` test), env_truthy semantics correct ('1' -> True, 'false' -> False, None -> False), and `BuddyPrimaryHealthVerifier` (a real consumer) still runs and produces valid VerdictResult. Future verifiers can `from ._base import env_truthy, read_env_var`. Landed 2026-05-11.
-- [x] [medium] (c) `i/_dispatch.sh` shared trivial-dispatch helper shipped: takes `<name> <script-rel-path>` + forwarded args, logs usage in background, execs target script. Converted 3 wrappers (`i/state`, `i/holograph`, `i/freeze`) from 5-line dispatch to 2-line exec. All 3 produce identical output post-refactor. Pattern available for the remaining ~18 trivial-dispatch wrappers in followup work. Landed 2026-05-11.
+<1-paragraph context for the new initiative.>
+
+- [ ] [easy] First item of the new initiative
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
