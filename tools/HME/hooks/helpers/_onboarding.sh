@@ -110,9 +110,10 @@ _onb_init() {
   local _cur
   _cur="$(cat "$_ONB_STATE_FILE" 2>/dev/null | tr -d '[:space:]')"
   case "$_cur" in
-    boot|selftest_ok|targeted|edited|reviewed|piped|verified)
-      return 0 ;;  # in-progress -- preserve
+    boot|selftest_ok|targeted|edited|reviewed|piped|verified|graduated)
+      return 0 ;;
     *)
+      # Only init to boot when file is missing or contains garbage.
       echo "boot" > "$_ONB_STATE_FILE"
       rm -f "$_ONB_TARGET_FILE" ;;
   esac
