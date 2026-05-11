@@ -208,15 +208,32 @@ def main() -> int:
         return 0
     events = load_full_turn_with_user(sys.argv[1])
     thinking_blocks = _extract_thinking_text(events)
+    output_text = _extract_output_text(events)
+    thinking_combined = "\n\n".join(thinking_blocks).lower()
+    output_lower = output_text.lower()
+
+    # FABRICATION first: scans BOTH thinking AND output. No self-reference rescue. Repeated user-confirmed pattern across this session: agent narrates tool results as empty when content was present. Editing this detector cannot exempt fabrication-style narration about empty results, because that exemption IS the bug.
+    fab_matched: list[str] = []
+    fab_haystack = thinking_combined + "\n\n" + output_lower
+    for phrase in FABRICATION_PHRASES:
+        if phrase in fab_haystack:
+            fab_matched.append(phrase)
+    if fab_matched:
+        detail = "fabrication matched=" + ",".join(repr(p) for p in fab_matched[:5])
+        if len(fab_matched) > 5:
+            detail += f" (+{len(fab_matched) - 5} more)"
+        _emit_stats("evasion_intent", detail)
+        print("evasion_intent")
+        return 0
+
     if not thinking_blocks:
-        _emit_stats("ok", "no_thinking_blocks")
+        _emit_stats("ok", "no_thinking_blocks_and_no_fabrication_in_output")
         print("ok")
         return 0
 
-    combined = "\n\n".join(thinking_blocks).lower()
     matched: list[str] = []
     for phrase in EVASION_INTENT_PHRASES:
-        if phrase in combined:
+        if phrase in thinking_combined:
             matched.append(phrase)
 
     if matched:
