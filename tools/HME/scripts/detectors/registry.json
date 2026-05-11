@@ -39,6 +39,9 @@
     {"name": "boyscout_loc", "module": "boyscout_loc", "fires_when": "loc_bloat", "bash_var": "BOYSCOUT_LOC", "deny": true, "reason_key": "BOYSCOUT_LOC"},
     {"name": "orphan_reference", "module": "orphan_reference", "fires_when": "orphan_reference", "bash_var": "ORPHAN_REFERENCE", "deny": true, "reason_key": "ORPHAN_REFERENCE"},
     {"name": "slop_scan", "module": "slop_scan", "fires_when": "slop_scan", "bash_var": "SLOP_SCAN", "deny": false, "_note": "soft-flagged 2026-05-09; promotion criterion: 5 consecutive turns with zero false-positive findings. Re-evaluate 2026-05-24."},
-    {"name": "tests_failing_in_scope", "module": "tests_failing_in_scope", "fires_when": "tests_failing_scope", "bash_var": "TESTS_FAILING_SCOPE", "deny": false, "_note": "soft-flagged 2026-05-09; promotion criterion: latency P95 < 5s + zero false-positive runs. Re-evaluate 2026-05-24."}
+    {"name": "tests_failing_in_scope", "module": "tests_failing_in_scope", "fires_when": "tests_failing_scope", "bash_var": "TESTS_FAILING_SCOPE", "deny": false, "_note": "soft-flagged 2026-05-09; promotion criterion: latency P95 < 5s + zero false-positive runs. Re-evaluate 2026-05-24."},
+    {"name": "scope_stacked", "module": "scope_vs_shipped", "fires_when": "scope-stacked", "bash_var": "SCOPE_VS_SHIPPED", "deny": false, "_note": "shipped 2026-05-10; advisory while signal calibrates. Catches new SPEC items added without any ticked -- the SUMMARY-block what's-next enumeration the existing phrase detectors miss because they only match closing-text phrases."},
+    {"name": "scope_not_tracked", "module": "scope_vs_shipped", "fires_when": "scope-not-tracked", "bash_var": "SCOPE_VS_SHIPPED", "deny": false, "_note": "shipped 2026-05-10; advisory. Fires when turn shipped substantive Edit/Write but zero SPEC items ticked -- work happened off declared scope or SPEC is stale."},
+    {"name": "scope_stacked_and_not_tracked", "module": "scope_vs_shipped", "fires_when": "scope-stacked+not-tracked", "bash_var": "SCOPE_VS_SHIPPED", "deny": false, "_note": "combined verdict when both signals fire."}
   ]
 }
