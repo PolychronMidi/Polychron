@@ -20,6 +20,7 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
@@ -33,6 +34,8 @@
 
 
 
+
+- [E4] Operating-mode hazard audit. **Findings**: (1) Zen does not expose a public per-key quota endpoint -- user has no in-band visibility into remaining \$12/5h / \$30/wk / \$60/mo caps. (2) When quota exhausts, Zen returns a rate-limit shape that the proxy's existing `_isInteractivePath` 429 detector will treat as an Anthropic rate-limit and trip the emergency valve into passthrough mode -- which is WRONG because passthrough still routes through the proxy's anthropic.com upstream, NOT a fallback to Anthropic from MODE=4. (3) **Mitigations queued in TODO Next-up**: (a) `i/zen quota` helper that polls Zen and surfaces remaining caps; (b) Zen-aware error detector that emits a distinct LIFESAVER banner ("OpenCode Go quota near cap") + auto-un-MODE-4 to fall back to anthropic.com when quota tips; (c) docstring on `OVERDRIVE_MODE=4` block in `.env` warning about the quota silence + failover edge. (4) **Acceptance condition**: MODE=4 is safe to activate ONLY when the operator is willing to absorb the 1-2 turn loss when quota tips before the manual fallback to MODE=0 happens. Document this risk profile in `.env` MODE=4 block. (auto-shipped from SPEC checkbox flip)
 - [E2] glm-5.1 quality probe: shipped a real refactor-proposal prompt (200-word, concrete code) and captured a coherent 6-bullet response. **Quality signal**: glm-5.1 named a specific data structure (`MODEL_ROUTING` dict), gave concrete code lines, addressed extensibility, and predicted impact of adding new providers. Zero hallucinated APIs in the output. **Adoption**: the refactor proposal itself is a candidate Phase 4 item (consolidate `_is_zen` startswith chain into a routing table for future kimi-*/qwen-*/minimax-* additions). (auto-shipped from SPEC checkbox flip)
 - [E4] Proxy main-agent rewrite shipped inline in `hme_proxy.js` at the pre-`resolveUpstream` injection point (cleaner than a separate middleware file -- the mutation must happen on `clientReq.headers` before `resolveUpstream` reads them, and middlewares only see `payload`). When `OVERDRIVE_MODE=4` AND `payload.model` starts with `claude-` AND no `x-hme-upstream` header is already set: sets `x-hme-upstream: https://opencode.ai/zen/go`, injects `x-api-key: ${OPENCODE_API_KEY}`, drops the OAuth `authorization` header, rewrites `payload.model` to `deepseek-v4-pro`, wraps any string `message.content` as `[{type:"text",text:...}]` blocks. OAuth injection at `hme_proxy.js:679-704` naturally skips because `x-api-key` is set. Activation requires `OVERDRIVE_MODE=4` in `.env` + proxy restart. (auto-shipped from SPEC checkbox flip)
 - [E2] `_label_for_model` shipped: `glm-5.1` -> `overdrive/zen/glm-5.1`. (auto-shipped from SPEC checkbox flip)
@@ -42,7 +45,6 @@
 - [E3] `synthesis_reasoning.py`: shipped `elif _od_mode == "4":` branch -- E5 to glm-5.1 chain, E4 to deepseek-pro, E3 to deepseek-flash, E1-E2 to None. (auto-shipped from SPEC checkbox flip)
 - [E3] `tools/HME/tests/specs/synthesis_overdrive_mode4.test.js` shipped: 4 tests (E5 to glm-5.1, E4 to deepseek-pro, E3 to deepseek-flash, E1/E2 to cascade). All pass. (auto-shipped from SPEC checkbox flip)
 - [E3] Added `OVERDRIVE_MODE=4` documentation block to `.env` parallel to MODE=3, documenting the main-agent-swap semantic and per-tier mapping (main+E4=deepseek-pro, E5=glm-5.1, E3=deepseek-flash, E1-E2=cascade). (auto-shipped from SPEC checkbox flip)
-- [E2] Captured per-tier `last_source` from live E1-E4 dispatch run: E1/E2 -> `nvidia/mistralai/mistral-large-3-675b-instruct-2512` (after `deepseek-v3.2` HTTP 410 EOL); E3 -> `overdrive/zen/deepseek-flash`; E4 -> `overdrive/zen/deepseek-pro`. **Harvested fix shipped same turn**: replaced EOL `deepseek-v3.2` with `deepseek-v4-pro` across `synthesis_nvidia.py:18` + `synthesis_reasoning.py:98,125`; added `deepseek-v4-flash` as new second-tier reasoning entry. NVIDIA `/v1/models` confirmed both v4 variants are served. Stale doc comment in `synthesis_nvidia.py:27` updated too. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
