@@ -340,7 +340,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         logger.info("reasoning: HME_REASONING_OFFLINE=1 -- skipping external cascade")
         return None
 
-    # OVERDRIVE_MODE routing -- 1=Opus chain always; 2=tier-aware (E4-E5=Opus, E3=Sonnet, E1-E2=cascade); 0=cascade only.
+    # OVERDRIVE_MODE: 0=cascade; 1=Opus-all; 2=Opus/Sonnet/cascade; 3=Opus/DSeek/cascade.
     _od_mode = _ENV.optional("OVERDRIVE_MODE", "0")
     _LEGACY_TIER = {"easy": "E2", "medium": "E3", "hard": "E4"}
     _raw_tier = (tier or "E3").strip()
