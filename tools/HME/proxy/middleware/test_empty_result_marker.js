@@ -47,22 +47,24 @@ function makeCtx() {
   };
 }
 
-// Case 1: empty string content -> marker appended.
+// Case 1: empty string content (no error) -> [SUCCESS] appended.
 let r = { content: '' };
 let ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
 assert(ctx._appends.length === 1, 'empty string content triggers append');
-assert(ctx._appends[0].startsWith('[empty-result-from-tool]'), 'append contains marker');
-assert(ctx._emits.length === 1 && ctx._emits[0].event === 'empty_tool_result_marked',
-       'emits empty_tool_result_marked event');
+assert(ctx._appends[0].startsWith('[SUCCESS]'), 'append carries [SUCCESS] for non-error empty body');
+assert(ctx._emits.length === 1 && ctx._emits[0].event === 'empty_tool_result_marked'
+       && ctx._emits[0].status === 'SUCCESS',
+       'emits status=SUCCESS event');
 
-// Case 2: whitespace-only content -> marker appended.
+// Case 2: whitespace-only content -> [SUCCESS] appended.
 r = { content: '   \n  ' };
 ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
 assert(ctx._appends.length === 1, 'whitespace-only content triggers append');
+assert(ctx._appends[0].startsWith('[SUCCESS]'), 'whitespace-only -> [SUCCESS]');
 
-// Case 3: empty array content -> marker appended.
+// Case 3: empty array content -> [SUCCESS] appended.
 r = { content: [] };
 ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
@@ -74,17 +76,25 @@ ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
 assert(ctx._appends.length === 0, 'non-empty content passes through');
 
-// Case 5: is_error=true with empty content -> no append (errors carry own message channel).
+// Case 5: is_error=true with empty content -> [FAIL] appended.
 r = { content: '', is_error: true };
 ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
-assert(ctx._appends.length === 0, 'is_error pass-through even when empty');
+assert(ctx._appends.length === 1, 'is_error empty body gets marker');
+assert(ctx._appends[0].startsWith('[FAIL]'), 'is_error empty body -> [FAIL]');
+assert(ctx._emits[0].status === 'FAIL', 'emits status=FAIL for is_error');
 
-// Case 6: idempotency -- second pass on already-marked result is a no-op.
-r = { content: '[empty-result-from-tool] no body returned -- verify via Read/rerun before treating as success' };
+// Case 6: idempotency -- already-marked SUCCESS result is a no-op.
+r = { content: '[SUCCESS] tool completed with no output body' };
 ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
-assert(ctx._appends.length === 0, 'second pass is idempotent (hasHmeFooter guard)');
+assert(ctx._appends.length === 0, '[SUCCESS]-marked result is idempotent');
+
+// Case 7: idempotency -- already-marked FAIL result is a no-op.
+r = { content: '[FAIL] tool errored with no error message body' };
+ctx = makeCtx();
+mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
+assert(ctx._appends.length === 0, '[FAIL]-marked result is idempotent');
 
 if (failures.length > 0) {
   console.error(`\n${failures.length} test(s) failed`);
