@@ -160,8 +160,8 @@ DEFERRAL_REGEXES = (
         re.IGNORECASE,
     ),
     re.compile(
-        r"\bworth\s+(a|an|another|more)\b[^\n]{0,40}?"
-        r"\b(pass|review|look|investigation|run|follow-?up|round|session)\b",
+        r"\bworth\s+(a|an|another|more|its\s+own|the|a\s+separate)\b[^\n]{0,40}?"
+        r"\b(pass|review|look|investigation|run|follow-?up|round|session|diagnostic|sweep)\b",
         re.IGNORECASE,
     ),
     # "Takes effect on next ..." / "requires a restart" handoffs -- the "I did
