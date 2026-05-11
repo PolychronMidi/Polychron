@@ -56,9 +56,15 @@
   "invariants": [
     {
       "id": "hooks-executable",
-      "description": "Every hook script must be executable",
+      "description": "Every directly-invoked hook script must be executable. Sourced subscripts (helpers/safety/*, lifecycle/stop/*, pretooluse/bash/*) are excluded from the glob since `source` does not require +x.",
       "type": "files_executable",
-      "glob": "tools/HME/hooks/**/*.sh",
+      "glob": [
+        "tools/HME/hooks/*.sh",
+        "tools/HME/hooks/lifecycle/*.sh",
+        "tools/HME/hooks/pretooluse/*.sh",
+        "tools/HME/hooks/posttooluse/*.sh",
+        "tools/HME/hooks/direct/*.sh"
+      ],
       "exclude": [
         "_*.sh"
       ],
@@ -68,7 +74,13 @@
       "id": "hooks-registered",
       "description": "Every TOP-LEVEL hook script (the ones the proxy dispatcher calls directly) must be referenced in tools/HME/proxy/hook_bridge.js. Sub-dispatched scripts (posttooluse_addknowledge.sh, posttooluse_hme_*.sh, posttooluse_write.sh, posttooluse_agent.sh, pretooluse_check_pipeline.sh) are invoked from within other hooks based on CMD contents, not dispatched directly -- they're excluded from this check and verified separately by the scripts that call them.",
       "type": "files_referenced",
-      "glob": "tools/HME/hooks/**/*.sh",
+      "glob": [
+        "tools/HME/hooks/*.sh",
+        "tools/HME/hooks/lifecycle/*.sh",
+        "tools/HME/hooks/pretooluse/*.sh",
+        "tools/HME/hooks/posttooluse/*.sh",
+        "tools/HME/hooks/direct/*.sh"
+      ],
       "exclude": [
         "_*.sh",
         "statusline.sh",
