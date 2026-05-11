@@ -146,6 +146,10 @@ _spawn_buddy() {
   # Log capture instead of >/dev/null 2>&1: silent-fail trains the operator to treat absent signal as positive (same antipattern this project flags everywhere). Append-mode file descriptor avoids subprocess.PIPE deadlock risk per consult-anchored KB entry.
   local _spawn_log="$_REPO_ROOT/log/hme-buddy-spawn.log"
   mkdir -p "$(dirname "$_spawn_log")" 2>/dev/null
+  # Pre-log the attempt OUTSIDE the background block so a subshell that dies
+  # before launching still leaves a trace -- LIFESAVER no-dilution.
+  printf '[%s] spawn-init slot=%s floor=%s sid_file=%s flag=%s\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$slot" "$floor" "$sid_file" "${_flag:-(none)}" >> "$_spawn_log" 2>/dev/null
   {
     printf '[%s] spawn slot=%s floor=%s sid_file=%s flag=%s\n' \
       "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$slot" "$floor" "$sid_file" "${_flag:-(none)}" >> "$_spawn_log"
