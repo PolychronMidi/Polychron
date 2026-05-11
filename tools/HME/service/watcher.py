@@ -407,10 +407,7 @@ def start_watcher(project_root: str, engine, debounce: float = 30.0):
             logger.error(f"Auto-reindex (per-file) failed: {e}")
 
     def _do_dir_reindex():
-        # Route bulk dir reindex through the daemon's GPU-orchestrated
-        # indexing-mode so embedding doesn't compete with the arbiter on
-        # cuda:0 -- calling engine.index_directory() directly here OOM'd
-        # repeatedly when the embedder shared a GPU with another model.
+        # Route via daemon indexing-mode (direct call OOMs on cuda:0).
         try:
             logger.info(f"Auto-reindex (full) triggered for {project_root}")
             from indexing_mode import request_full_reindex
@@ -418,15 +415,23 @@ def start_watcher(project_root: str, engine, debounce: float = 30.0):
             with _lock:
                 _last_reindex[0] = time.time()
             if result.get("error"):
-                logger.error(f"Auto-reindex (full) via daemon failed: {result['error']}")
+                with _lock:
+                    _consecutive_failures[0] += 1
+                    streak = _consecutive_failures[0]
+                logger.error(f"Auto-reindex daemon failed (streak={streak}): {result['error']}")
                 return
+            with _lock:
+                _consecutive_failures[0] = 0
             if result.get("indexed", 0) > 0:
                 logger.info(
                     f"Auto-reindex complete: {result['indexed']} files, "
                     f"{result.get('chunks_created', 0)} chunks"
                 )
         except Exception as e:
-            logger.error(f"Auto-reindex (full) failed: {e}")
+            with _lock:
+                _consecutive_failures[0] += 1
+                streak = _consecutive_failures[0]
+            logger.error(f"Auto-reindex (full) failed (streak={streak}): {e}")
 
     observer = Observer()
     observer.schedule(Handler(), project_root, recursive=True)
