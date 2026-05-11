@@ -174,6 +174,7 @@ def main(argv: list) -> int:
     ignore_patterns = load_patterns()
     warn_findings = []
     fail_findings = []
+    long_line_findings = []
     # --files <p1> <p2> ...  scope the scan to specified files only.
     explicit = []
     if "--files" in argv:
