@@ -50,7 +50,9 @@
       {"name": "no-unstamped-validator", "status": "js_only", "python_invariant": null, "reason": "The validator stamp chain is a JS-side invariant; Python has no equivalent validator factory."},
       {"name": "prefer-validator", "status": "js_only", "python_invariant": null, "reason": "validator.create pattern is JS-only."},
       {"name": "validator-name-matches-filename", "status": "js_only", "python_invariant": null, "reason": "JS-only naming discipline tied to validator.create('ModuleName')."},
-      {"name": "no-useless-expose-dependencies-comments", "status": "js_only", "python_invariant": null, "reason": "`// expose dependencies` comments are a JS/CommonJS boot-chain artifact; no Python analog."}
+      {"name": "no-useless-expose-dependencies-comments", "status": "js_only", "python_invariant": null, "reason": "`// expose dependencies` comments are a JS/CommonJS boot-chain artifact; no Python analog."},
+      {"name": "no-bare-declared-global-in-init", "status": "js_only", "python_invariant": null, "reason": "moduleLifecycle.declare init-closure deps discipline is a JS/CommonJS pattern; no Python analog."},
+      {"name": "no-or-fallback-on-map-get", "status": "js_only", "python_invariant": null, "reason": "JS `Map.get(...) || literal` collapsing-zero pattern; Python `dict.get` defaults are explicit, no equivalent hazard."}
     ]
   },
   "invariants": [
