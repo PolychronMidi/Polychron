@@ -18,6 +18,7 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
@@ -29,6 +30,8 @@
 
 
 
+
+- [E4] Proxy main-agent rewrite shipped inline in `hme_proxy.js` at the pre-`resolveUpstream` injection point (cleaner than a separate middleware file -- the mutation must happen on `clientReq.headers` before `resolveUpstream` reads them, and middlewares only see `payload`). When `OVERDRIVE_MODE=4` AND `payload.model` starts with `claude-` AND no `x-hme-upstream` header is already set: sets `x-hme-upstream: https://opencode.ai/zen/go`, injects `x-api-key: ${OPENCODE_API_KEY}`, drops the OAuth `authorization` header, rewrites `payload.model` to `deepseek-v4-pro`, wraps any string `message.content` as `[{type:"text",text:...}]` blocks. OAuth injection at `hme_proxy.js:679-704` naturally skips because `x-api-key` is set. Activation requires `OVERDRIVE_MODE=4` in `.env` + proxy restart. (auto-shipped from SPEC checkbox flip)
 - [E2] `_label_for_model` shipped: `glm-5.1` -> `overdrive/zen/glm-5.1`. (auto-shipped from SPEC checkbox flip)
 - [E2] `i/dispatch status` MODE descriptions updated: `4=main+E4=deepseek-pro / E5=glm-5.1 / E3=deepseek-flash / E1-E2=cascade`. (auto-shipped from SPEC checkbox flip)
 - [E3] Live smoke verified: `_try_overdrive_model('glm-5.1', 'reply PONG', ...)` returned `'PONG'`; label resolved to `overdrive/zen/glm-5.1`. Synthesis-side MODE=4 path proven end-to-end through the proxy. (auto-shipped from SPEC checkbox flip)
@@ -38,7 +41,6 @@
 - [E3] Added `OVERDRIVE_MODE=4` documentation block to `.env` parallel to MODE=3, documenting the main-agent-swap semantic and per-tier mapping (main+E4=deepseek-pro, E5=glm-5.1, E3=deepseek-flash, E1-E2=cascade). (auto-shipped from SPEC checkbox flip)
 - [E2] Captured per-tier `last_source` from live E1-E4 dispatch run: E1/E2 -> `nvidia/mistralai/mistral-large-3-675b-instruct-2512` (after `deepseek-v3.2` HTTP 410 EOL); E3 -> `overdrive/zen/deepseek-flash`; E4 -> `overdrive/zen/deepseek-pro`. **Harvested fix shipped same turn**: replaced EOL `deepseek-v3.2` with `deepseek-v4-pro` across `synthesis_nvidia.py:18` + `synthesis_reasoning.py:98,125`; added `deepseek-v4-flash` as new second-tier reasoning entry. NVIDIA `/v1/models` confirmed both v4 variants are served. Stale doc comment in `synthesis_nvidia.py:27` updated too. (auto-shipped from SPEC checkbox flip)
 - [E4] Unified provider abstraction proposal: routed to `overdrive/zen/deepseek-pro` (1729c). DeepSeek-pro produced structured 3-5 bullet proposal: `ProviderRegistry` singleton + common `OpenAIProvider` base + `OpenCodeZenRouter` adhering to same interface. **Eval signal**: E4 tier produces architectural design with concrete naming under MODE=3. Captured for potential Phase 3 implementation; needs cross-checking against existing `synthesis_provider_base.OpenAIProvider` shape before adoption. (auto-shipped from SPEC checkbox flip)
-- [E3] Architecture review of `_call_opus_overdrive` vs `_try_overdrive_model` separation: routed to `overdrive/zen/deepseek-flash` (3001c). DeepSeek-flash produced structured analysis naming two entanglement candidates (error-taxonomy/retry stratification + ...). **Eval signal**: E3 tier produces coherent multi-step analysis under MODE=3. Full output captured in run; promote concrete proposal to a Phase 3 item if/when the entanglements are surfaced as concrete code citations. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
