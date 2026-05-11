@@ -319,8 +319,7 @@ def main() -> int:
     # Mirrors the rescue we landed in advisor_doctrine for the same
     # cascade-noise failure mode.
     n_work = _substantive_work_count(events)
-    # 2+ bold-header categories of UNDONE work in closing = structural punt
-    # even with high work count (prior turn did work, then enumerated more undone).
+    # 2+ bold-header categories of UNDONE work in closing = structural punt even with high work count.
     raw_for_shape = _last_assistant_text(events)
     _UNDONE_HEADER = re.compile(
         r"\*\*[^*]*(?:not (?:wired|fixed|investigated|reported|implemented)|"
@@ -329,11 +328,21 @@ def main() -> int:
         re.IGNORECASE,
     )
     n_undone_headers = len(_UNDONE_HEADER.findall(raw_for_shape))
-    if n_work >= 3 and n_undone_headers < 2:
-        _emit_stats("ok", f"implicit_solo_work_count={n_work} undone_headers={n_undone_headers}")
+    # SUMMARY-block "what's next:" bullets with semicolon-separated multi-item lists are punts in disguise. Scope to the SUMMARY block region (post-banner) so prose containing the phrase elsewhere isn't a false positive.
+    whats_next_punt = False
+    _SUMMARY_BANNER = re.compile(r"={3,}\s*SUMMARY\s*={3,}", re.IGNORECASE)
+    banner_m = _SUMMARY_BANNER.search(raw_for_shape)
+    if banner_m:
+        summary_region = raw_for_shape[banner_m.end():]
+        _WHATS_NEXT_MULTI = re.compile(r"what.{0,2}s\s+next\s*:\s*[^\n]*?;\s*\w", re.IGNORECASE)
+        whats_next_punt = bool(_WHATS_NEXT_MULTI.search(summary_region))
+    if n_work >= 3 and n_undone_headers < 2 and not whats_next_punt:
+        _emit_stats("ok", f"implicit_solo_work_count={n_work} undone_headers={n_undone_headers} whats_next_punt=False")
         print("ok")
         return 0
-    if n_undone_headers >= 2:
+    if whats_next_punt:
+        _emit_stats("noted", f"work_count={n_work} but SUMMARY what's-next is multi-item enumeration -- proceeding to phrase scan")
+    elif n_undone_headers >= 2:
         _emit_stats("noted", f"work_count={n_work} but undone_headers={n_undone_headers} -- proceeding to phrase scan")
 
     # Strip quoted / code-fenced content before phrase-matching. Without
