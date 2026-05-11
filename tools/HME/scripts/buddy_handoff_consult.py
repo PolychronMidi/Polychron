@@ -193,6 +193,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
         if resp:
             print(resp)
             _record_consult(args.sid or "synthesis", args.question)
+            _write_consult_sentinel(args.sid or "synthesis")
             return 0
         print("# synthesis cascade exhausted; falling back to claude-resume", file=sys.stderr)
     cmd = ["claude", "--resume", args.sid, "-p", framed_question]
