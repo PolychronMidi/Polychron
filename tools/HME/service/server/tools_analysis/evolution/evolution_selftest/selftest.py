@@ -945,7 +945,7 @@ def hme_selftest(verbose: bool = False) -> str:
         "onboarding flow":       "python3 tools/HME/scripts/verify-onboarding-flow.py for diff.",
         "STATES sync":           "python3 tools/HME/scripts/verify-states-sync.py for diff.",
         "HCI":                   "python3 tools/HME/scripts/verify-coherence.py for per-verifier breakdown.",
-        "index":                 f"{_action_form('clear_index')} then {_action_form('index')}.",
+        "index":                 f"{_action_form('index')} to fill gaps; {_action_form('clear_index')} only if index is corrupt/empty.",
         "hash cache":            f"{_action_form('index')} to rebuild.",
         "middleware order":      "edit tools/HME/proxy/middleware/order.json or remove stale entries.",
         "temporal drift":        f"{_i_form('status', value='trajectory')} for trend; investigate the regressed verifier.",
