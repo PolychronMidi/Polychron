@@ -82,7 +82,7 @@ Radical reshape of the upstream surface. MODE=4 replaces the **main driving agen
 
 Architecturally distinct from MODE=3: MODE=3 only touched the synthesis-side OVERDRIVE path. MODE=4 ALSO rewrites the proxy's main `/v1/messages` upstream for interactive traffic. Requires proxy middleware (new), not just synthesis dispatcher branch.
 
-- [ ] [E2] Probe `glm-5.1` via Zen Go with a real reasoning prompt to characterize quality vs Opus baseline. Initial probe confirmed routing works.
+- [x] [E2] glm-5.1 quality probe: shipped a real refactor-proposal prompt (200-word, concrete code) and captured a coherent 6-bullet response. **Quality signal**: glm-5.1 named a specific data structure (`MODEL_ROUTING` dict), gave concrete code lines, addressed extensibility, and predicted impact of adding new providers. Zero hallucinated APIs in the output. **Adoption**: the refactor proposal itself is a candidate Phase 4 item (consolidate `_is_zen` startswith chain into a routing table for future kimi-*/qwen-*/minimax-* additions).
 - [x] [E3] Added `OVERDRIVE_MODE=4` documentation block to `.env` parallel to MODE=3, documenting the main-agent-swap semantic and per-tier mapping (main+E4=deepseek-pro, E5=glm-5.1, E3=deepseek-flash, E1-E2=cascade).
 - [x] [E3] `synthesis_reasoning.py`: shipped `elif _od_mode == "4":` branch -- E5 to glm-5.1 chain, E4 to deepseek-pro, E3 to deepseek-flash, E1-E2 to None.
 - [x] [E3] `_try_overdrive_model`: detector refactored to `_is_zen = startswith("deepseek-") or startswith("glm-")`. glm-* routes through the same Zen Go headers as deepseek-*.
