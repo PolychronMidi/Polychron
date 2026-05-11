@@ -46,7 +46,7 @@ _Phase 1 complete._ Five fixes shipped: `_onb_init` only preserves in-progress s
 - [x] HCI display unification: `substrate-view.py` (i/status brief) now reads canonical `hci-verifier-snapshot.json` first (was preferring stale `pipeline-summary.json`). All four tools (i/state, i/status, i/holograph, selftest) now read same source.
 - (moved to "Deferred / out of scope" -- off-theme for this infra-coherence SPEC)
 
-_Phase 2 status: 10/11 done; 1 deferred (composition-domain blindspot work)._ Files: `.env`, `tools/HME/service/watcher.py`, `tools/HME/tests/specs/onboarding_init.test.js`, `tools/HME/config/invariants.json`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/{_base,checks,checks_code}.py`, `config/loc-ignore.txt`, `scripts/hme/substrate-view.py`.
+_Phase 2 complete (10/10 in-scope items; composition-domain blindspot item moved to "Deferred / out of scope")._ Files: `.env`, `tools/HME/service/watcher.py`, `tools/HME/tests/specs/onboarding_init.test.js`, `tools/HME/config/invariants.json`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/{_base,checks,checks_code}.py`, `config/loc-ignore.txt`, `scripts/hme/substrate-view.py`.
 
 ### Phase 3: Single-source-of-truth opportunities (worthiness P/C/S/E = 3/2/3/3)
 
