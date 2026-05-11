@@ -40,15 +40,17 @@ if [ -f "$_ENV_FILE" ]; then
   set +a
 fi
 
-# Accept role-named aliases for the target sid.
+# Accept role-named aliases for the target sid. senior= sets a sentinel
+# env var the proxy reads (via the [HME-SENIOR-CONSULT] prompt-prefix
+# marker that buddy_handoff.py injects) to skip the MODE=4 swap while
+# keeping all HME observability intact.
 _ARGS=()
-_IS_SENIOR=0
 for arg in "$@"; do
   case "$arg" in
     sid=*)     _ARGS+=("--sid=${arg#sid=}") ;;
     primary=*) _ARGS+=("--sid=${arg#primary=}") ;;
     buddy=*)   _ARGS+=("--sid=${arg#buddy=}") ;;
-    senior=*)  _ARGS+=("--sid=${arg#senior=}"); _IS_SENIOR=1 ;;
+    senior=*)  _ARGS+=("--sid=${arg#senior=}") ; _ARGS+=("--senior-consult") ;;
     question=*) _ARGS+=("--question=${arg#question=}") ;;
     *=*)
       _key="${arg%%=*}"
@@ -59,12 +61,4 @@ for arg in "$@"; do
     *) _ARGS+=("$arg") ;;
   esac
 done
-# Senior consult under MODE=4: bypass the local proxy so the call reaches
-# Anthropic (the senior IS a Claude OAuth session). Without this override
-# the proxy's MODE=4 swap routes claude-* to opencode.ai and the senior
-# is never reached.
-if [ "$_IS_SENIOR" = "1" ] && [ "${OVERDRIVE_MODE:-}" = "4" ]; then
-  export ANTHROPIC_BASE_URL=https://api.anthropic.com
-  echo "[i/consult] senior under MODE=4 -- bypassing local proxy, routing directly to api.anthropic.com" >&2
-fi
 exec python3 "$_SCRIPT" consult "${_ARGS[@]}"
