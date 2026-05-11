@@ -16,6 +16,7 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
@@ -24,6 +25,9 @@
 
 
 
+
+- [easy] (q) `verify_landed_block.sh` execution-verb bypass: commands starting with `python3` / `node` / `bash` / `pytest` etc. running the edited file as their target are EXECUTING the file, not inspecting it. Verify-landed is for inspection patterns only (grep/cat/head/tail/etc.). Closes the false-positive that blocked legitimate test reruns of files Written this turn. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
+- [medium] (p) `evasion_intent.py` detector: scans assistant thinking blocks for explicit gate-evasion language ("avoid the structural check", "frame in prose to bypass", "stay under the threshold", "to avoid exhaust_check", etc.) and fires hard `deny: true` via `EVASION_INTENT` reason. Registered in registry.json + REASONS in work_checks.js. 10/10 sibling tests pass. Catches the catastrophic-failure pattern where the agent reasons about routing around its own gates and shapes output to fall just under the threshold. Intent-level catch, not output-shape catch. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (d) Custom buddy persona at `.claude/agents/buddy-primary.md` -- replaces synthesis-engine generic fallback. Encodes tier-gated findings, quote-grounding, promise-vs-delivers framing, anti-pray-and-spray refusal, KB-crystallize mandate. Closes BUDDY_SYSTEM.md forward-evolution item 1. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (e) `scope_vs_shipped` detector promoted to `deny: true` for both verdicts. Added `SCOPE_STACKED` + `SCOPE_NOT_TRACKED` reasons to `work_checks.js`. Gate enforces tick-or-revert. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (f) SessionStart banner surfaces missing `runtime/hme/buddy-primary.sid` under `BUDDY_HANDOFF=1 + BUDDY_SYSTEM=1`. Points operator at `log/hme-buddy-spawn.log`. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
@@ -32,8 +36,6 @@
 - [easy] (i) `buddy_handoff_consult.py` consult sentinel write deferred to AFTER `synthesis_reasoning.call()` returns. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (j) `pretooluse_edit.sh` turn-edit recording deferred to AFTER blocking gates -- no longer poisons `verify_landed_block.sh` on blocked edits. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 - [easy] (k) `strip_agent_artifacts` sanitizer added to `synthesis_config.py` and wired into every cascade provider. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
-- [easy] (l) `26_empty_result_marker.js` middleware: empty body + `is_error=false` -> `[SUCCESS]`; empty + `is_error=true` -> `[FAIL]`. 12/12 tests pass. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
-- [easy] (m) `lifecycle_bridge.js` blank-debug rotation cap at 500 newest; bulk-cleanup of pre-existing 3.4GB. Landed 2026-05-10. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
