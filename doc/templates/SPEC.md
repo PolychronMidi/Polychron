@@ -48,6 +48,30 @@ _Phase 1 complete._ Five fixes shipped: `_onb_init` only preserves in-progress s
 
 _Phase 2 status: 10/11 done; 1 deferred (composition-domain blindspot work)._ Files: `.env`, `tools/HME/service/watcher.py`, `tools/HME/tests/specs/onboarding_init.test.js`, `tools/HME/config/invariants.json`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/{_base,checks,checks_code}.py`, `config/loc-ignore.txt`, `scripts/hme/substrate-view.py`.
 
+### Phase 3: Single-source-of-truth opportunities (worthiness P/C/S/E = 3/2/3/3)
+
+Mirror of the HCI unification pattern from Phase 2: identify values/lists/configs the codebase reads from multiple disjoint locations, and consolidate to one authoritative source with the others becoming derivers. Each item carries the duplication evidence.
+
+- [ ] [E3] **Onboarding STATES list duplication.** `tools/HME/hooks/helpers/_onboarding.sh:21` declares `_ONB_STATES=(boot ... graduated)`; `tools/HME/service/server/onboarding_chain.py:127` declares `STATES = [...]`. The shell comment at line 17 already flags this: *"C1: a codegen check could pull STATES from onboarding_chain.py on every source."* Drift = `_onb_is_graduated` unreliable. Fix: shell sources the list at boot via `python3 -c "import onboarding_chain; print(' '.join(onboarding_chain.STATES))"`, or both read a `tools/HME/config/onboarding_states.json`.
+
+- [ ] [E3] **Watcher IGNORE_DIRS triple-source.** `tools/HME/service/watcher.py:48-56` reads either `file_walker.DEFAULT_IGNORE_DIRS` OR a hardcoded fallback set; `.env:17` declares `HME_IGNORE_DIRS=...`; `file_walker` has its own constant. Three independent sources for "directories the watcher must ignore." Fix: single canonical list in `tools/HME/config/ignore-spec.json` (or extend `rag.json`); `file_walker` and watcher both read it; `.env` override becomes additive only.
+
+- [ ] [E3] **Difficulty-label translation duplicated 8x.** `easy/medium/hard <-> E2/E3/E4` translation logic appears in: `buddy_init.sh` (_translate_floor), `posttooluse_bash.sh`, `todo_spec_archive.py`, `todo_spec_ingest.py`, `todo_spec_phase.py`, `todo.py`, `i_registry.json` (label catalog), `skills/ISA/TEMPLATE.md` (doc). Each implementation can drift independently. Fix: single canonical translator in `tools/HME/service/server/tools_analysis/_tier_labels.py` (Python) with a shell wrapper for buddy_init.sh; remaining sites import.
+
+- [ ] [E3] **Invariant glob.glob() callers not using `_resolve_glob`.** Phase 2 introduced `_resolve_glob` (accepts string or list) but only migrated `_check_files_executable` and `_check_files_referenced`. `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/checks.py:80` (`globmod.glob(pattern, recursive=True)`) and `:131` still bypass the helper. Fix: migrate both call sites to `_resolve_glob` so all glob-based invariants accept list-form globs uniformly.
+
+- [ ] [E2] **PROJECT_ROOT fallback chain copy-pasted.** Pattern `"${CLAUDE_PROJECT_DIR:-${PROJECT_ROOT:-<HARDCODED_HOST_PATH>}}"` repeats across `tools/HME/hooks/helpers/buddy_init.sh`, `canary.sh`, `lifecycle/stop/detectors.sh`, `direct/proxy-watchdog.sh`, `direct_dispatch.sh`, `direct/proxy-maintenance.sh` (and more). Hardcoded user path is the third leg of the fallback chain -- portability hazard for anyone cloning this repo. Fix: single `_resolve_project_root` function in `tools/HME/hooks/helpers/_safety.sh`; remove host-specific hardcoded fallback everywhere.
+
+- [ ] [E3] **Buddy SID location dispersion.** Active session pointers live at `runtime/hme/buddy.sid` (legacy single), `runtime/hme/buddy-primary.sid` (handoff primary), `runtime/hme/buddy-primary.{floor,effort_floor}` (companions), `tmp/hme-buddy-N.sid` (multi-buddy slots), `tmp/hme-buddy-seniors/<sid>.json` (retired pool). 5+ paths, each tool checks its own subset. Fix: a single `runtime/hme/buddy-registry.json` enumerating active+retired sessions with their metadata; existing files become derivers for back-compat.
+
+- [ ] [E3] **Pipeline verdict written to multiple sinks.** `pipeline-summary.json.verdict`, `tmp/hme-nexus.state`, and (in some hooks) plain-text verdict files. SessionStart reads from `pipeline-summary.json` (sessionstart.sh:VERDICT); some detectors read from `hme-nexus.state`. Fix: `pipeline-summary.json` is canonical; nexus state cached derivative with explicit `derived_from` field.
+
+- [ ] [E2] **Comment-bloat hook + audit-comment-bloat.py duplicate the same rules.** Pretooluse `pretooluse_edit.sh` enforces inline-comment limits (90-char, 3-line block) at edit-time; `scripts/audit-comment-bloat.py` enforces them at audit-time. The regex/threshold values are independently defined. Fix: single `tools/HME/config/comment-rules.json` (or extend `project-rules.json`); both hook and audit read from it.
+
+- [ ] [E2] **i/* tool descriptions: registry vs header comment.** `tools/HME/i_registry.json` carries description+category metadata; `i/help` falls back to line-2 header comment when not in the registry. Both can describe the same tool with drifting wording. Fix: the line-2 fallback in `i/help` should warn (or fail-soft) when both exist; canonical source is `i_registry.json`.
+
+_Phase 3 status: 0/9 -- scoping phase, items not yet started._ Reviewer should pick top 2-3 by leverage; full sweep over multiple cycles.
+
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
 <!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
