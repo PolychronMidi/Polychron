@@ -51,16 +51,21 @@ def _spec_diff() -> str:
         return ""
 
 
+def _line_body(ln: str, marker: str) -> str:
+    """Strip exactly one leading diff marker (+/-) then leading whitespace, leaving the original file-line content for substring tests. lstrip(marker) would over-strip when the underlying bullet itself starts with the same character."""
+    return ln[1:].lstrip() if ln.startswith(marker) else ln
+
+
 def _count_new_unchecked(diff: str) -> int:
-    """Lines added (+) starting with '- [ ]' minus lines removed (-) starting with '- [ ]'. Captures NET new unchecked items, so [ ] -> [x] transitions don't false-add."""
-    plus = sum(1 for ln in diff.splitlines() if ln.startswith("+") and not ln.startswith("+++") and ln.lstrip("+").lstrip().startswith("- [ ]"))
-    minus = sum(1 for ln in diff.splitlines() if ln.startswith("-") and not ln.startswith("---") and ln.lstrip("-").lstrip().startswith("- [ ]"))
+    """Net new unchecked items: added '- [ ]' lines minus removed '- [ ]' lines. [ ] -> [x] transitions remove an old [ ] and add a new [x], so they net to 0 here (correct -- a transition is not a new item)."""
+    plus = sum(1 for ln in diff.splitlines() if ln.startswith("+") and not ln.startswith("+++") and _line_body(ln, "+").startswith("- [ ]"))
+    minus = sum(1 for ln in diff.splitlines() if ln.startswith("-") and not ln.startswith("---") and _line_body(ln, "-").startswith("- [ ]"))
     return plus - minus
 
 
 def _count_ticked_transitions(diff: str) -> int:
-    """Lines added with '- [x]' that have a matching removed '- [ ]' on the same item. Approximation: count added [x] lines minus pre-existing [x] count delta. Simpler: count added [x] lines (each represents either a transition or a new ticked item -- both are 'shipped' signal)."""
-    return sum(1 for ln in diff.splitlines() if ln.startswith("+") and not ln.startswith("+++") and ln.lstrip("+").lstrip().startswith("- [x]"))
+    """Count of added '- [x]' lines. Each represents either a [ ] -> [x] transition or a freshly-added already-ticked item; both indicate shipped work."""
+    return sum(1 for ln in diff.splitlines() if ln.startswith("+") and not ln.startswith("+++") and _line_body(ln, "+").startswith("- [x]"))
 
 
 def _turn_edited_non_spec(events: list) -> int:
