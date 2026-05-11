@@ -8,8 +8,9 @@ Both rankings share the same provider modules and quota pools -- splitting the
 order only changes which slot fires first, not which free tiers are consumed.
 
 profile="reasoning" -- general analysis, architecture, deep think:
-     1. nvidia     deepseek-ai/deepseek-v3.2              full DeepSeek V3.2
-     2. nvidia     mistralai/mistral-large-3-675b-...     675B Mistral Large 3
+     1. nvidia     deepseek-ai/deepseek-v4-pro            full DeepSeek V4 Pro
+     2. nvidia     deepseek-ai/deepseek-v4-flash          DeepSeek V4 Flash
+     3. nvidia     mistralai/mistral-large-3-675b-...     675B Mistral Large 3
      3. openrouter deepseek/deepseek-r1:free              R1 reasoning
      4. nvidia     nvidia/llama-3.1-nemotron-ultra-253b   253B Nemotron Ultra
      5. nvidia     qwen/qwen3.5-397b-a17b                 397B Qwen 3.5
