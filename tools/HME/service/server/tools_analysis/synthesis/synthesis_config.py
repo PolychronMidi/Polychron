@@ -148,7 +148,16 @@ _AGENT_ARTIFACT_RES = (
     re.compile(r'<function_calls>[\s\S]*?</function_calls>', re.IGNORECASE),
     re.compile(r'<invoke\b[\s\S]*?</invoke>', re.IGNORECASE),
     re.compile(r'<parameter\b[\s\S]*?</parameter>', re.IGNORECASE),
-    re.compile(r'<function_calls>[\s\S]*?
+)
+
+
+def strip_agent_artifacts(text: str) -> str:
+    """Strip Claude-shaped tool-invocation markup hallucinated by cascade providers. Replaces each match with a single-line marker so the operator sees the LLM emitted fabricated tool calls without the fabrication itself entering downstream context."""
+    if not text:
+        return ""
+    for pat in _AGENT_ARTIFACT_RES:
+        text = pat.sub("[synthesis-sanitizer: fabricated tool-call markup removed]", text)
+    return text
 
 
 def strip_thinking_tags(text: str) -> str:
