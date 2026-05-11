@@ -20,6 +20,11 @@ if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
   PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true
 fi
 
+# Tier classification per turn -- writes a fresh mode-classifier.jsonl line so summary_format / phase_gate / advisor_doctrine's age-gate doesn't return None on every turn. Without this, classification was driven by 9-day-old test fixtures (the gap that necessitated the age-gate band-aid).
+if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
+  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/tier_classifier.py" --prompt "$PROMPT" --json >/dev/null 2>&1 || true
+fi
+
 # Stale-state sweep: per-turn cleanup of runtime/hme/ files whose owner
 # forgot the cleanup path (catches the supervisor-abandoned bug class).
 python3 "$PROJECT_ROOT/tools/HME/scripts/stale_state_sweep.py" >/dev/null 2>&1 || true
