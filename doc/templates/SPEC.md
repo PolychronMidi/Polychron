@@ -51,7 +51,7 @@ MODE=3 is now active (E5=Opus, E4=deepseek-pro, E3=deepseek-flash, E1-E2=cascade
 - [x] [E1] Enumerated modules in `synthesis/` -- **HALLUCINATION FINDING**: cascade tier (mistral-large-3 after NVIDIA deepseek-v3.2 returned HTTP 410 EOL) fabricated subdirectory names (`constraint_enricher`, `callgraph_builder`, `kb_augmenter`, etc.) that DON'T EXIST. Real dir contains only `.py` files. **Eval signal**: do not route grep/structural-fact tasks to cascade -- use E3+ when grounding to filesystem state matters.
 
 **E2 -- free cascade -- single-file analysis**
-- [ ] [E2] Audit `synthesis_provider_base.py`: identify state or methods that could be factored to a separate concern (HTTP transport vs tier rate-limit accounting vs request shaping). Deliverable: 3-5 specific candidates with file:line citations.
+- [x] [E2] Audited `synthesis_provider_base.py` via cascade -- mistral-large-3 returned 1311c response describing OpenAIProvider as "abstract base class" with hallucinated method names (`chat_completion`, `stream_completion` -- not present). Useful framing of intent; concrete file:line citations were absent (cascade weakness for code-grounded analysis). Coherent enough to be useful framing, not actionable refactor.
 - [ ] [E2] Compare error-handling style across `synthesis_groq.py`, `synthesis_cerebras.py`, `synthesis_nvidia.py`, `synthesis_mistral.py`. Flag inconsistencies (exception classes caught, log levels, retry semantics).
 - [ ] [E2] Find duplicated regex patterns across `tools/HME/scripts/detectors/*.py`. Deliverable: list of regex strings appearing in 2+ files with a candidate shared-constants module path.
 
