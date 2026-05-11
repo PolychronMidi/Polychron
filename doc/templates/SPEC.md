@@ -10,23 +10,23 @@ _Previous set (fp-fix) archived 2026-05-11T160931Z to tools/HME/KB/devlog/2026-0
 
 ## Goal
 
-<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
+Onboarding coherence fixes surfaced during first-agent onboarding session. Two structural bugs: `_onb_init` treated a file containing "graduated" as permanently graduated, trapping new sessions in no-walkthrough mode; selftest emitted FAIL + `clear_index` prescription for partial-index states (chunks > 0, files < 100), baiting destructive clears when a plain reindex suffices.
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
-
-- <subsystem>: <one-line>
-- <data dir / queue / manifest>: <one-line>
-- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
+- `tools/HME/hooks/helpers/_onboarding.sh`: session-start state init (`_onb_init`)
+- `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`: selftest label + fix hint map
+- `tmp/hme-onboarding.state`: onboarding state file (single-line, deleted on graduation)
 
 ## Phases
 
-### Phase 0: <next initiative -- name>
+### Phase 1: Onboarding coherence fixes (worthiness P/C/S/E = 3/3/3/3)
 
-<1-paragraph context for the new initiative.>
+- [x] Fix `_onb_init`: reset to boot every session; treat "graduated" file content as stale/absent
+- [x] Reset stale `tmp/hme-onboarding.state` (was "graduated" since 2026-04-23)
+- [x] Selftest: emit WARN (not FAIL) when chunks > 0 but files < 100; fix hint prescribes `action=index` first, not `clear_index`
 
-- [ ] [easy] First item of the new initiative
+_Phase 1 complete._ `_onb_init` now only preserves in-progress states (boot..verified); any other content resets to boot. Selftest partial-index path no longer baits destructive clear. Files changed: `tools/HME/hooks/helpers/_onboarding.sh`, `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
