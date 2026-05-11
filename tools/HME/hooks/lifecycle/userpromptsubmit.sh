@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME UserPromptSubmit: clears per-turn state, emits turn_start, autocommit + LIFESAVER + satisfaction. MUST RUN BEFORE: stop
-# COORDINATES WITH: precompact, sessionstart
+# HME UserPromptSubmit: clears per-turn state, emits turn_start, autocommit + LIFESAVER + satisfaction. COORDINATES WITH: precompact, sessionstart.
+# MUST RUN BEFORE: stop
 INPUT=$(cat)
 PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 
