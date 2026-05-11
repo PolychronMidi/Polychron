@@ -12,10 +12,15 @@
 
 
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
 
 
+
+- [easy] (g) Fixed 5 broken file refs in SPEC template: `HME.md` -> `../HME.md`, `ARCHITECTURE.md` -> `../ARCHITECTURE.md`, `../README.md` -> `../../README.md`, `../CLAUDE.md` -> `../../CLAUDE.md`, `../tools/HME/KB/devlog/` -> `../../tools/HME/KB/devlog/`. doc-integrity audit now clean (103 markdown files scanned). Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
+- [easy] (h) `tools/HME/proxy/supervisor/index.js` (430 LOC) added to `config/loc-ignore.txt` with rationale. Lifecycle cohesion: spawn/health/restart/abandonment-sentinel all share state via the `_children` Map; splitting would smear state across modules. Revisit when children-managed >= 20. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
+- [easy] (i) Stripped non-ASCII from 5 files: em-dashes (U+2014) in `tdd_test_first_gate.py`, `claim_without_evidence.py`, `sse_rewriters.js` (3 sites, regex literal preserved via `—` escape), `generate-manifest-globals.js`, devlog markdown; box-drawing (U+2500) in `llamacpp_daemon/__main__.py`; ✖ in `tests_failing_in_scope.py`; 🎓 in `onboarding_chain.py`; arrows in devlog markdown. Truncated `before-editing-cache.json` to `{}` (cache regenerates on demand). audit-no-non-ascii now clean. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
 - [medium] (j) `evasion_intent.py`: split `EVASION_INTENT_PHRASES` (scaffolding -- exempt under self-reference rescue) from new `FABRICATION_PHRASES` (empty-result narration -- 25+ phrases like "came back empty", "returned empty", "not sure if it landed", "(empty) result", etc.). Fabrication matches scan BOTH thinking AND output (via new `_extract_output_text`). Self-reference rescue NO LONGER applies to fabrication -- editing the detector cannot exempt fabrication-style narration about empty results. Tests added; existing 10 tests still pass. Catches the catastrophic-failure recurrence pattern the user explicitly flagged this turn. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
 - [easy] (a) Added `iter_tool_uses` to `exhaust_check.py` import. The detector no longer crashes on the structural-enumeration path. Verified: `_has_tool_call_after_last_text([])` returns False without NameError. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
 - [easy] (b) Re-ran audit after (a): detector-chain corpus failures dropped from 3 to 3 (the import was not the root cause of fixture failures; they are genuine behavior-change regressions). Audit total dropped from 7 to 6 findings. Documented inline. Landed 2026-05-11. (auto-shipped from SPEC checkbox flip)
