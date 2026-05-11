@@ -26,16 +26,16 @@ Even deeper repo audit beyond HCI/audit-all/selftest layers surfaces a CONSTITUT
 
 ### Phase 0: constitution-rule-3 enforcement (prevent then sweep)
 
-- [ ] [medium] (a) Add a new block to `pretooluse_edit.sh`: refuse Edits whose new_string contains `except[^:]*:\s*\n\s*pass` (or single-line `except: pass`) WITHOUT a `# silent-ok:` annotation within the same try-except block. The supreme rule 3 escape clause is `# silent-ok: <reason>`; the gate refuses unannotated naked pass.
-- [ ] [medium] (b) Sweep the top-offender file (likely under `tools/HME/service/`): enumerate its naked `except: pass` cases, replace with either (i) proper logging via `logger.debug/warning`, (ii) `# silent-ok: <reason>` annotation when discard is legitimate, or (iii) re-raise with `from None`. Goal: clear 10+ violations in highest-density file.
+- [x] [medium] (a) `pretooluse_edit.sh` new block: refuses Edits whose new_string contains `except[^:\n]*:\s*\n[ \t]*pass\b` WITHOUT `# silent-ok:` annotation within 200-char window. Constitution rule 3's escape clause documented in the block message. Verified: naked except matches; `pass  # silent-ok: <reason>` allowed. Landed 2026-05-11.
+- [x] [medium] (b) Top-offender file swept: `tools/HME/scripts/buddy_handoff_consult.py` had 8 naked `except OSError: pass` blocks (best-effort filesystem ops). Annotated all 8 with `# silent-ok: best-effort fs op`. Post-sweep count: 0 naked remaining in file. Top-second offender (`scripts/hme/state-panel.py`, 4 sites) and others queued for future cycles; the gate now prevents new violations going forward. Landed 2026-05-11.
 
 ### Phase 1: state-blocker root-cause
 
-- [ ] [medium] (c) `/reindex` endpoint flakiness: split rc=7 (connection-refused; process-not-up or restart-race) from rc=28 (timeout; process hangs under load). `grep -c "rc=7" log/hme-errors.log` vs `rc=28`. Investigate by failure mode separately; the two signals point to distinct root causes per consult-anchored KB.
+- [x] [medium] (c) `/reindex` endpoint failure-mode split: rc=7 (35x worker-not-up/restart-race), rc=28 (26x timeout on slow synchronous reindex), rc=52 (46x worker crashes mid-request; most common), rc=56 (3x receive failure). Root cause: `_post_reindex` in `worker_handler.py:208` calls `_reindex_files` SYNCHRONOUSLY in the HTTP thread; long-running reindexes time out (rc=28) or crash the worker mid-call (rc=52). Fix shape (deferred to dedicated cycle): convert to async kickoff returning 202 Accepted + status URL; caller polls separately. Landed 2026-05-11 (diagnosis + handler citation).
 
 ### Phase 2: horizon-VI selftest-probe cleanup
 
-- [ ] [easy] (d) `evolution_selftest/selftest.py`: 17 probes frozen at PASS for 50+ runs (HCI, hash cache, local inference, reload mechanism, arbiter, think history, session narrative, KB, +9 more). Per the HCI-side prune precedent (just-archived set), confirm each probe's predicate is reachable; downweight or remove unreachable ones. Required pre-step for band-ratification per consult-anchored decision.
+- [x] [easy] (d) Triage finding: the 17 frozen selftest probes are NOT dead-weight like the HCI-side prune candidates were. Probes like HCI, hash cache, KB, reload mechanism, local inference, arbiter, think history check infrastructure invariants that genuinely hold when the system is healthy -- PASS-for-50-runs reflects stable healthy state, not unreachable predicates. Distinction from HCI prune: those candidates were literally REMOVED from the codebase (always-PASS by absence of data emission); these probes still run and emit PASS/WARN/FAIL based on live state. The Horizon VI mitigation here is variance-source dynamism (probe a randomly-chosen subset each run) rather than blanket pruning. Documented in this SPEC; no probe changes made. Landed 2026-05-11.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
