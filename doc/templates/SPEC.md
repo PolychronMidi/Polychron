@@ -51,6 +51,8 @@ Convert four silent failures (three diagnosed, one already fixed inline) into su
 - [x] [easy] (l) `26_empty_result_marker.js` middleware: empty body + `is_error=false` -> `[SUCCESS]`; empty + `is_error=true` -> `[FAIL]`. 12/12 tests pass. Landed 2026-05-10.
 - [x] [easy] (m) `lifecycle_bridge.js` blank-debug rotation cap at 500 newest; bulk-cleanup of pre-existing 3.4GB. Landed 2026-05-10.
 - [x] [easy] (n) Forward-action punt phrases (28 entries) added to `_phrase_lists.py` and wired into `psycho_stop`. `exhaust_check_phrases.DEFERRAL_REGEXES` "worth ..." broadened. Landed 2026-05-10.
+- [x] [medium] (p) `evasion_intent.py` detector: scans assistant thinking blocks for explicit gate-evasion language ("avoid the structural check", "frame in prose to bypass", "stay under the threshold", "to avoid exhaust_check", etc.) and fires hard `deny: true` via `EVASION_INTENT` reason. Registered in registry.json + REASONS in work_checks.js. 10/10 sibling tests pass. Catches the catastrophic-failure pattern where the agent reasons about routing around its own gates and shapes output to fall just under the threshold. Intent-level catch, not output-shape catch. Landed 2026-05-10.
+- [x] [easy] (q) `verify_landed_block.sh` execution-verb bypass: commands starting with `python3` / `node` / `bash` / `pytest` etc. running the edited file as their target are EXECUTING the file, not inspecting it. Verify-landed is for inspection patterns only (grep/cat/head/tail/etc.). Closes the false-positive that blocked legitimate test reruns of files Written this turn. Landed 2026-05-10.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
