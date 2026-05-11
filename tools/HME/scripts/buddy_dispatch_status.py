@@ -223,6 +223,17 @@ def cmd_status(args: argparse.Namespace) -> int:
     elif _BUDDY_SYSTEM_FLAG == "1":
         print("buddy sessions: none yet (sid files not written; init may still be in progress)")
 
+    # OVERDRIVE_MODE display: surface the per-tier upstream routing decisions.
+    _od_mode = os.environ.get("OVERDRIVE_MODE", "0")
+    _od_descriptions = {
+        "0": "cascade-only (no overdrive)",
+        "1": "Opus chain for all tiers",
+        "2": "E4-E5=Opus / E3=Sonnet / E1-E2=cascade",
+        "3": "E5=Opus / E4=deepseek-pro / E3=deepseek-flash / E1-E2=cascade",
+    }
+    print(f"overdrive_mode: {_od_mode} ({_od_descriptions.get(_od_mode, 'unknown')})")
+    snapshot["overdrive_mode"] = _od_mode
+
     # Hand-off paradigm: if BUDDY_HANDOFF=1, surface the senior pool so
     # the user has a single place to see retired buddies + their ctx_at_retire.
     # Detailed metadata (reason, retired_at, threshold) lives in
