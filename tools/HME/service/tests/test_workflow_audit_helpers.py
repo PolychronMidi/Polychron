@@ -18,8 +18,9 @@ import unittest
 from pathlib import Path
 
 
-PROJECT_ROOT = os.environ.get("PROJECT_ROOT", "/home/jah/Polychron")
-sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools/HME/service"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from repo_root import resolve as _resolve_root
+PROJECT_ROOT = _resolve_root()
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools/HME/service/server"))
 
 
