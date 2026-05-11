@@ -10,23 +10,41 @@ _Previous set (detector regressions from prior session work (root-cause first)) 
 
 ## Goal
 
-<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
+`audit-all.sh --strict` passes clean, but the deeper HCI layer reports 86/100 with 4 selftest FAILs and 9 silent verifiers (Horizon VI signal: verifiers that never flip mask degradation behind apparent health, the canonical coherence-attack pattern). This initiative recovers the HCI floor and resolves the organization debts the prior cleanup couldn't reach: index empty (invalidates every search-derived finding -- rebuild FIRST), silent-verifier triage, phrase-list duplication (DEFERRAL_PHRASES 126 entries in `exhaust_check_phrases.py` overlaps `_phrase_lists.py`'s 75 entries -- two parallel deferral systems), template-source bugs (markdown-link-integrity surfaces 5 broken refs in `SPEC.md` after every `archive_now` because the template source has them baked in), env-tamper baseline mismatch, autocommit 161h since last success, hook-matcher-validity wrapper-dispatch mismatches, 14 modules missing from hot-reload registry. Priority order encodes the consult-anchored insight: index first (unblocks all other findings), silent verifiers above failing tests (Horizon VI), template-source fixes above symptom chases.
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
-
-- <subsystem>: <one-line>
-- <data dir / queue / manifest>: <one-line>
-- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
+- `tools/HME/KB/code_chunks.lance` (or wherever index lives) -- currently reports 0 files / 5429 chunks; needs rebuild to validate every search-derived audit finding.
+- `tools/HME/scripts/verify_coherence/` -- 9 silent verifiers per `i/why mode=verifier-utility` (522 runs never flipped). Candidates for pruning per `tmp/hme-verifier-prune.json`.
+- `tools/HME/scripts/detectors/exhaust_check_phrases.py` (126 phrases) + `tools/HME/scripts/detectors/_phrase_lists.py` (75 in `ALL_DEFERRAL`) -- duplicated deferral systems; 7-entry overlap. Should consolidate to `_phrase_lists.py` (per its docstring: "consolidation point for phrases that belong to a SHARED signal").
+- `tools/HME/service/server/tools_analysis/todo_spec_archive.py` -- the archive script that writes the fresh-slate SPEC template; the broken markdown refs live in its output template, not the active SPEC body.
+- `.env` + `.env.sha256` -- baseline mismatch since the canonical-system-prompt comment fix earlier this session.
+- `runtime/hme/autocommit.*` + `tools/HME/hooks/helpers/_autocommit.sh` -- 161h since last successful autocommit per `autocommit-health` verifier.
+- `tools/HME/service/server/onboarding_chain.py` (or wherever hot-reload registry lives) -- 14 modules missing per selftest `hot-reload coverage`: `digest_pipeline_status`, `perceptual_inference`, `reasoning_blast`, `review_unified_recommender`, `symbols_hierarchy`, `todo_lifesaver`, `todo_native_merge`, `todo_spec_archive`, `todo_spec_bridge`, `todo_spec_ingest`, `todo_spec_phase`, `workflow_audit_bugs`, `workflow_audit_diagnose`, `workflow_before_editing`.
+- `i/` wrappers -- 7 mismatches per `hook-matcher-validity`: `i/learnings`, `i/project-detect`, `i/audit-tiered`, `i/fork-watchdog`, etc. lack posthook dispatch and aren't in `_NO_POSTHOOK_OK`.
+- `<handoff doc>`: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up).
 
 ## Phases
 
-### Phase 0: <next initiative -- name>
+### Phase 0: unblock-and-triage (index first, then silent-verifier elevation)
 
-<1-paragraph context for the new initiative.>
+Index rebuild must run BEFORE any other repair work -- search-derived findings (hot-reload coverage, phrase-duplication scope, registry completeness) are unverified while index=0. Silent verifiers outrank failing tests per Horizon VI: a verifier that never flips masks degradation, hiding the signal needed to triage all other problems.
 
-- [ ] [easy] First item of the new initiative
+- [ ] [easy] (a) Rebuild lance index via `i/hme-admin action=index`. Selftest currently reports `index -- 0 files, 5429 chunks` (FAIL). All downstream "missing module" / "broken ref" findings are scoped against the live tree; index drives the search layer that other verifiers depend on.
+- [ ] [medium] (b) Triage the 9 silent verifiers reported by `i/why mode=verifier-utility` (522 runs, never flipped: `GPU attribution`, `version consistency`, `meta-invariant coverage`, `log size`, `local inference (llamacpp)`, `15 tools registered`, +3 more). For each: (i) confirm via source whether the verifier's predicate is logically reachable in the current code-state, (ii) if reachable but always-PASS, downweight via `weight_multiplier: 0.5` in `tmp/hme-verifier-prune.json`, (iii) if unreachable (gate-condition false everywhere), either repair the gate or remove the verifier.
+
+### Phase 1: HCI structural fixes (raise HCI 86 -> >=90)
+
+- [ ] [easy] (c) `env-tamper` re-baseline: `rm tools/HME/.env.sha256` (or wherever the baseline lives) and re-run the verifier so the canonical-system-prompt path fix from earlier this session becomes the new baseline. The `.env` edit was intentional; the verifier correctly fires on changes against stored hash.
+- [ ] [medium] (d) `todo_spec_archive.py` fresh-slate template fix: the SPEC template the archive writes contains 5 broken markdown refs (`HME.md`, `ARCHITECTURE.md`, `../README.md`, `../CLAUDE.md`, `../tools/HME/KB/devlog/`) that re-appear after every `archive_now` because they're baked into the template source. Each path from `doc/templates/` needs `../` (one level up to `doc/`) or `../../` (to project root) prefix. Fix-once-stays-fixed.
+- [ ] [medium] (e) `autocommit-health` 161h since last success: trace `runtime/hme/autocommit.fail` + `log/hme-errors.log` for the underlying failure (cause of broken autocommit chain). Fix or document why disabled.
+- [ ] [medium] (f) `hook-matcher-validity` 7 wrappers without posthook dispatch (`i/learnings`, `i/project-detect`, `i/audit-tiered`, `i/fork-watchdog`, +3 more). For each: either add posthook dispatch entry or add wrapper to `_NO_POSTHOOK_OK` exempt list with rationale.
+
+### Phase 2: organization debt
+
+- [ ] [medium] (g) Hot-reload registry: register the 14 missing modules. Each module needs its source path added to the hot-reload registry so file-watcher reloads work after edits. Reduces dev-loop friction.
+- [ ] [medium] (h) Phrase-list consolidation: migrate `DEFERRAL_PHRASES` (126) from `exhaust_check_phrases.py` into the structured categories in `_phrase_lists.py`. Eliminate the 7-entry overlap, deprecate `exhaust_check_phrases.py`, update `exhaust_check.py` import. The `_phrase_lists.py` docstring explicitly names itself the consolidation point.
+- [ ] [easy] (i) Comment-bloat sweep: `audit-comment-bloat.py` reports FAIL with score 0.05 per the HCI verifier. Run `python3 scripts/audit-comment-bloat.py` to list violation sites; address the worst offenders (sorted by block length).
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
