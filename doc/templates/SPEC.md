@@ -1,4 +1,4 @@
-# Polychron Active SPEC
+# Polychron SPEC -- hme-buddy-observability
 
 > Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; reset back to "Polychron Active SPEC" after `i/todo clear` archives the set.
 >
@@ -10,23 +10,37 @@ _Previous set (specialist-wiring-and-detector-coherence) archived 2026-05-10T222
 
 ## Goal
 
-<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
+Several silent failure modes in HME's buddy paradigm and tier-gating produce false-green or false-red signals that mislead the operator. The inaugural-primary buddy spawn at SessionStart redirects all subprocess output to `/dev/null` with `|| true`, so a failed spawn leaves the operator blind to a missing `runtime/hme/buddy-primary.sid`. The consult-tracking sentinel (`tmp/hme-turn-consults.txt`) was being wiped mid-API-call by proxy-fired UserPromptSubmit hooks (fixed inline this turn). The `tmp/hme-turn-edits.txt` tracker recorded edit attempts before blocking gates ran, so blocked edits poisoned the verify-landed checker (fixed inline this turn). The mode classifier emits empty `{}` feature dicts on session-time prompts while test fixtures carry populated features. This initiative converts those silent failures into surfaced signals: a buddy-primary-health verifier with liveness check, log-captured spawn output, classifier feature-extraction instrumentation, and any other turn-state coherence gaps that surface during the work.
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
-
-- <subsystem>: <one-line>
-- <data dir / queue / manifest>: <one-line>
-- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
+- `tools/HME/hooks/helpers/buddy_init.sh` -- SessionStart-time inaugural-primary spawn; the `_spawn_buddy` background block uses `>/dev/null 2>&1 || true`.
+- `tools/HME/scripts/buddy_spawn.py` -- canonical primary spawn invoked by `buddy_init.sh`; receives `--mark-inaugural-primary` under BUDDY_HANDOFF=1.
+- `runtime/hme/buddy-primary.sid` -- file written by `buddy_spawn` on success; absence after SessionStart settle window indicates failure.
+- `tools/HME/scripts/verify-coherence.py` -- HCI verifier registry; gain one new verifier (`buddy-primary-health`).
+- `tools/HME/scripts/buddy_handoff_consult.py` -- consult sentinel write now deferred to AFTER API response (fixed this turn); the proxy at port 9099 fires UserPromptSubmit on inbound requests, which wipes turn-state files.
+- `tools/HME/hooks/pretooluse/pretooluse_edit.sh` -- turn-edit tracker now records AFTER blocking gates pass (fixed this turn); previously poisoned verify-landed when consult-gate blocked the edit.
+- `tools/HME/hooks/pretooluse/bash/verify_landed_block.sh` -- filename-shape match only (fixed this turn); previously matched module name anywhere in any bash token producing false positives for short names.
+- mode classifier (path TBD via c.1 instrumentation) writing `output/metrics/mode-classifier.jsonl` -- session-time entries carry `features: {}`, test entries carry populated features.
+- `log/hme-buddy-spawn.log` -- new file for buddy_spawn stdout/stderr capture.
+- `<handoff doc>`: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up).
 
 ## Phases
 
-### Phase 0: <next initiative -- name>
+### Phase 0: hme-buddy-observability
 
-<1-paragraph context for the new initiative.>
+Convert four silent failures (three diagnosed, one already fixed inline) into surfaced signals: buddy-primary-health verifier, log-captured spawn output, classifier instrumentation. Items (a) and (b) are finite plumbing with clear done-states; item (c) is decomposed into c.1 instrumentation + c.2 repro + c.3 RCA + c.4 fix per synthesis-engine consult ("RCA as deliverable without exit criteria is a black box").
 
-- [ ] [easy] First item of the new initiative
+- [x] [easy] (pre) Fix verify-landed checker: filename-shape regex only (overbroad `\b{mod}\b` match removed); turn-edit recording deferred to AFTER blocking gates. Landed 2026-05-10 in `verify_landed_block.sh` + `pretooluse_edit.sh`.
+- [x] [easy] (pre) Fix consult-sentinel wipe: `_write_consult_sentinel` helper extracted; called AFTER `synthesis_reasoning.call()` returns (the proxy at 9099 fires UserPromptSubmit during the synthesis HTTP path, which wipes mid-call sentinel writes). Landed 2026-05-10 in `buddy_handoff_consult.py`.
+- [ ] [easy] (a) `buddy-primary-health` HCI verifier in `tools/HME/scripts/verify_coherence/`. When `BUDDY_HANDOFF=1` AND `BUDDY_SYSTEM=1`: assert `runtime/hme/buddy-primary.sid` exists AND parses as non-empty string AND the embedded sid is a live claude-resume process (kill -0 the parsed PID; ESRCH = DEAD/stale, EPERM = ALIVE-cross-user). Existence-only check is a false-green trap per consult-anchored KB entry.
+- [ ] [easy] (b) Replace `>/dev/null 2>&1` in `buddy_init.sh:_spawn_buddy()` with file-descriptor capture: open `log/hme-buddy-spawn.log` (append mode) and pass as stdout/stderr. MUST NOT use `subprocess.PIPE` without a concurrent reader -- deadlock risk on buffer-full (per consult-anchored KB entry).
+- [ ] [easy] (c.1) Instrument the mode classifier: log feature-dict contents + call-site at DEBUG level on every classification. Reveals whether session-time prompts hit a feature-emptying code path or a different entry point than test fixtures.
+- [ ] [medium] (c.2) Repro harness: a session-prompt fixture (text shape + tool-call context) that reliably triggers the empty-features path. Land as `tests/test_mode_classifier_session_features.py`.
+- [ ] [medium] (c.3) RCA doc anchored to (c.1)+(c.2) evidence. Confirmed root cause inline below in this phase; not hypothesis.
+- [ ] [medium] (c.4) Fix/mitigation. May spawn a follow-on phase if root cause spans more surface than the classifier itself.
+
+## Deferred to next cycle (ranked surfaces from this round's reviews)
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 

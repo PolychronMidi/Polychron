@@ -10,8 +10,12 @@
 
 ## Just shipped (last cycle)
 
+
 <!-- Append-on-close, newest first. Trim to last 10; older history lives in
   the previous set's devlog at tools/HME/KB/devlog/. -->
+
+- [easy] (pre) Fix consult-sentinel wipe: `_write_consult_sentinel` helper extracted; called AFTER `synthesis_reasoning.call()` returns (the proxy at 9099 fires UserPromptSubmit during the synthesis HTTP path, which wipes mid-call sentinel writes). Landed 2026-05-10 in `buddy_handoff_consult.py`. (auto-shipped from SPEC checkbox flip)
+- [easy] (pre) Fix verify-landed checker: filename-shape regex only (overbroad `\b{mod}\b` match removed); turn-edit recording deferred to AFTER blocking gates. Landed 2026-05-10 in `verify_landed_block.sh` + `pretooluse_edit.sh`. (auto-shipped from SPEC checkbox flip)
 
 ## Next up (queued for next cycle)
 
