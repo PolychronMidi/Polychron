@@ -153,6 +153,25 @@ for ln in content.split('\n'):
   fi
 fi
 
+# CONSTITUTION rule 3: naked except:pass without silent-ok annotation.
+if echo "$FILE" | grep -qE '\.py$'; then
+  _SILENT_OK_HIT=$(NEW_STRING="$NEW_STRING" _safe_py3 "
+import os, re
+content = os.environ.get('NEW_STRING', '')
+pat = re.compile(r'except[^:\n]*:\s*\n[ \t]*pass\b', re.MULTILINE)
+for m in pat.finditer(content):
+    window = content[max(0, m.start()-200):m.end()+200]
+    if 'silent-ok' in window:
+        continue
+    print('1')
+    break
+" "")
+  if [ -n "$_SILENT_OK_HIT" ]; then
+    _emit_block "BLOCKED: Edit new_string contains naked 'except: pass' without '# silent-ok: <reason>' annotation. CONSTITUTION rule 3 (Errors propagate / fail-fast): errors that are genuinely safe to discard get an inline '# silent-ok: <reason>' comment naming WHY. Either annotate or propagate."
+    exit 2
+  fi
+fi
+
 # Block 4+ identical non-word, non-whitespace, non-paren/bracket characters
 # in a row (visual-decoration spam). JS counterpart: block-character-spam.
 if _policy_enabled block-character-spam; then
