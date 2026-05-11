@@ -63,13 +63,9 @@ def main() -> int:
         return 0
     events = load_turn_events(sys.argv[1])
     touched = _detector_files_touched(events)
-    if len(touched) < 2:
-        print("ok")
-        return 0
-    # pile-on = STACKING new rules, not spreading one fix across files. Fire on:
-    # (a) 2+ NEW (Write-not-Edit) detector files OR (b) 3+ existing files edited.
+    # pile-on = STACKING new rules only. Fixing existing detectors (no matter how many) is consolidation, the opposite of pile-on. Only NEW (Write-not-Edit) file count gates the fire.
     new_files = _new_files_added(touched, events)
-    if len(new_files) >= 2 or len(touched) >= 3:
+    if len(new_files) >= 2:
         print("pile_on")
         return 0
     print("ok")
