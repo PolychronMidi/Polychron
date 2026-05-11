@@ -10,7 +10,7 @@
 
 | Layer | Location | Role |
 |---|---|---|
-| MCP / tools surface | `tools/HME/` | The 12 tools above (called via `i/<tool>` shell wrappers) |
+| MCP / tools surface | `tools/HME/` | The 13 tools above (called via `i/<tool>` shell wrappers) |
 | CLAUDE.md | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | Hooks | `tools/HME/hooks/` + `~/.claude/settings.json` | Automated workflow + evolution-loop driver |
 | Lab | `lab/` | Experimental harness for isolated prototyping |
