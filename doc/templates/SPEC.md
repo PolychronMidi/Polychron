@@ -27,6 +27,7 @@ _Previous set (design-pattern-consolidation) archived 2026-05-11T130435Z to tool
 Fixes the scope_vs_shipped detector firing false-positive scope-not-tracked on archive_now turns, when the devlog write registers as non-SPEC edit while the fresh-slate template has 0 ticks.
 
 - [x] [easy] (a) `scope_vs_shipped._turn_invoked_archive_now()` exemption added: scans Bash tool_uses for `action=archive_now`/`action=clear`; short-circuits to ok when matched. Closes the false-positive where archive_now's devlog write registered as scope-not-tracked against the fresh-slate template's 0 ticks. Verified: synthetic archive turn -> recognized; plain edit turn -> not recognized. Landed 2026-05-11.
+- [x] [easy] (b) `_strip_per_cycle_scratch` extended to wipe BOTH `## Deferred to next cycle` AND `## Deferred / out of scope` on archive (was only wiping the first). The "out of scope" section had accumulated 5 stale items across many cycles (Telegram bot, A2A protocol, Skills-as-bundles, JSON schema, Auto-promote tiers) -- removed from live SPEC and the future archive flow auto-clears both per-cycle scratch sections. Landed 2026-05-11.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
