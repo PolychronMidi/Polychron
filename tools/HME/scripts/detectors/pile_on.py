@@ -1,32 +1,15 @@
 #!/usr/bin/env python3
 """Pile-on antipattern detector.
 
-The failure mode this catches: an agent endlessly tweaks rules instead of
-exercising discretion. Each detector firing produces another rule edit;
-each rule edit creates new firings; the cycle accumulates ceremony
-without resolving the underlying issue. The user's diagnosis: "treating
-yourself like a retarded petulant toddler" -- demanding infinite
-enforcement instead of having an ounce of judgment.
+The failure mode this catches: an agent stacks NEW detector / policy / hook files on top of an already-saturated rule layer. Each new rule creates new firings; each firing motivates more rules; the cycle accumulates ceremony without resolving the underlying issue.
 
-Detection heuristic: a single turn that Edits/Writes >=2 distinct files
-under the detector / policy / hook directories is shaped like pile-on.
-Routine code changes touch one detector at a time; rapid cross-detector
-edits in the same turn are the cascade-tweaking pattern.
+What pile-on is NOT: editing existing detectors to fix bugs in them. Fixing a broken rule is not stacking another rule on top of it. The user clarified this multiple times: "PILE_ON IS ONLY ABOUT SPAMMING NEW DETECTORS, NOT ABOUT FIXING EXISTING ONES." A coherent multi-file fix touching N existing detectors is consolidation, the opposite of pile-on.
 
-This detector replaces ceremony_dodge (deleted -- it WAS pile-on).
-Where ceremony_dodge tried to catch text-shaped dodges via more regex,
-pile_on catches the meta-pattern (rule-stacking) directly.
+Detection heuristic: 2+ NEW (Write-not-Edit) files added under the detector / policy / hook directories in a single turn. Edits to existing files don't count regardless of count -- a single bug class can legitimately span multiple existing detectors.
 
 Verdicts:
-  ok               <2 detector/policy/hook edits this turn
-  pile_on          >=2 distinct detector/policy/hook files edited in
-                   the current turn -- the agent is rule-stacking instead
-                   of exercising discretion
-
-Rescue: there is no rescue. The fix is to STOP editing detectors and
-let the existing rules be imperfect. Detectors are best-effort signal,
-not absolute ground truth. When in doubt, the agent should exercise
-discretion rather than engineer another guardrail.
+  ok               <2 NEW detector/policy/hook files written this turn
+  pile_on          >=2 NEW (Write-not-Edit) detector/policy/hook files -- the agent is stacking new rules instead of fixing existing ones
 
 Usage: pile_on.py <transcript_path>
 """
