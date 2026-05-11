@@ -158,6 +158,38 @@ DEFERRAL_CANT_DO: tuple[str, ...] = (
     "session level",
 )
 
+# Forward-action punts: bare imperative verbs in closing context promising future work without doing it now. Born from the "wire X; investigate Y; surface Z" SUMMARY-block what's-next dodge. Distinct from DEFERRAL_ACK_NO_FIX (past-tense "I didn't do X") -- these are future-tense commitments.
+FORWARD_ACTION_PUNT_PHRASES: tuple[str, ...] = (
+    "still to wire",
+    "still to investigate",
+    "still to implement",
+    "still to surface",
+    "still to address",
+    "remains to wire",
+    "remains to be wired",
+    "remains to investigate",
+    "remains to be investigated",
+    "remains to be addressed",
+    "remains to surface",
+    "left to wire",
+    "left to investigate",
+    "left to surface",
+    "left to implement",
+    "pending investigation",
+    "pending wiring",
+    "pending implementation",
+    "needs to be wired",
+    "needs to be investigated",
+    "needs to be surfaced",
+    "needs to be addressed",
+    "needs investigation",
+    "needs wiring",
+    "to be investigated",
+    "to be wired",
+    "to be surfaced",
+    "to be addressed",
+)
+
 # Convenience union for detectors that want the broadest sweep.
 ALL_DEFERRAL: tuple[str, ...] = (
     DEFERRAL_FUTURE_TENSE
