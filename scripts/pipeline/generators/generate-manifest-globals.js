@@ -19,7 +19,7 @@ const DTS = path.join(ROOT, 'src/types/globals.d.ts');
 
 const START_MARKER = '// === AUTO-GENERATED FROM MANIFESTS (moduleLifecycle.declare) -- do not hand-edit below this line ===';
 const END_MARKER = '// === END AUTO-GENERATED ===';
-// Match any prior block (handles legacy em-dash variants `—` plus ASCII `--`)
+// Match any prior block (handles legacy em-dash variants (U+2014) plus ASCII `--`)
 // so re-runs cleanly REPLACE rather than append duplicate sections.
 const BLOCK_RE = /\n*\/\/ === AUTO-GENERATED FROM MANIFESTS \(moduleLifecycle\.declare\)[^\n]*===\n[\s\S]*?\n\/\/ === END AUTO-GENERATED ===\n?/g;
 
