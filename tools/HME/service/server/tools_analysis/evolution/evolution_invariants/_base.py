@@ -32,6 +32,19 @@ def _excluded(basename: str, exclude: list[str]) -> bool:
     return any(fnmatch.fnmatch(basename, pat) for pat in exclude)
 
 
+def _resolve_glob(inv_glob) -> list[str]:
+    """Accept either a string or a list of glob patterns; return matched files."""
+    patterns = inv_glob if isinstance(inv_glob, list) else [inv_glob]
+    seen = set()
+    out = []
+    for p in patterns:
+        for f in globmod.glob(os.path.join(ctx.PROJECT_ROOT, p), recursive=True):
+            if f not in seen:
+                seen.add(f)
+                out.append(f)
+    return out
+
+
 # Check type implementations
 
 def _is_regex(s: str) -> bool:
