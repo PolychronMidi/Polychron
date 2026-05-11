@@ -55,6 +55,10 @@
 - [E3] Cascade hallucinates structural facts when given grep/structural queries. Reason: live E1 test produced fabricated subdirectory names. Mitigation: docstring on `synthesis_reasoning.call` warning callers that E1/E2 are not safe for repo-structure questions; route those via direct grep tool calls.
 - [E3] Promote deepseek-flash's E3 architecture-review finding (`_call_opus_overdrive` vs `_try_overdrive_model` entanglements) to a Phase 3 item once the entanglements are surfaced as concrete code citations. Reason: live E3 dispatch produced structured proposal but needs grounding pass.
 - [E3] Cross-check deepseek-pro's E4 ProviderRegistry proposal against actual `synthesis_provider_base.OpenAIProvider` shape before adoption. Reason: live E4 dispatch produced 3-5 bullet design proposal that needs validation against existing code.
+- [E3] Consolidate `_is_zen` startswith chain into a `MODEL_ROUTING` table (dict of prefix -> {upstream, headers, payload_format}) in `synthesis_overdrive.py`. Reason: glm-5.1 quality probe surfaced this as the cleanest extensibility refactor; chain is brittle as more Zen-served prefixes (kimi-*, qwen-*, minimax-*) get added.
+- [E3] Build `i/zen quota` helper that polls OpenCode Zen and surfaces remaining $12/5h, $30/wk, $60/mo caps. Reason: MODE=4 hazard audit -- user has no in-band visibility into Go quota; first sign of exhaustion is the proxy emergency valve tripping.
+- [E4] Build Zen-aware rate-limit detector that emits a distinct LIFESAVER banner ("OpenCode Go quota near cap") and auto-un-MODE-4 (falls back to anthropic.com upstream) when Zen 429s under MODE=4. Reason: MODE=4 hazard audit -- current emergency-valve treats Zen 429 as Anthropic 429 and trips passthrough, which still routes through proxy and doesn't fall back to Anthropic upstream.
+- [E2] Add docstring to `.env` MODE=4 block warning about quota silence + the 1-2 turn loss before manual fallback to MODE=0. Reason: MODE=4 hazard audit conclusion.
 
 ---
 
