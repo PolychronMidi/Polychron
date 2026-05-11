@@ -55,6 +55,11 @@ RELOADABLE = [
     "semantic_drift_report", "crystallizer", "self_audit", "probe",
     "epistemic_reports", "negative_space", "cognitive_load", "ground_truth",
     "phase6_reports", "multi_agent", "discovery_promote",
+    "digest_pipeline_status", "perceptual_inference", "reasoning_blast",
+    "review_unified_recommender", "symbols_hierarchy",
+    "todo_lifesaver", "todo_native_merge", "todo_spec_archive",
+    "todo_spec_bridge", "todo_spec_ingest", "todo_spec_phase",
+    "workflow_audit_bugs", "workflow_audit_diagnose", "workflow_before_editing",
 ]
 TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge",
                         "meta_layers", "meta_observer"]
