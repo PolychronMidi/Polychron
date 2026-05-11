@@ -3,5 +3,4 @@
 #   i/timeline                  last 30m of events (default)
 #   i/timeline window=5m        narrow to last 5 minutes
 #   i/timeline window=1h        widen to last hour
-python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" timeline "$@" &
-exec python3 "$(dirname "$0")/../scripts/hme/timeline-panel.py" "$@"
+exec "$(dirname "$0")/_dispatch.sh" timeline scripts/hme/timeline-panel.py "$@"
