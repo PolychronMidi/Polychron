@@ -319,7 +319,7 @@ esac
 # errors.log so it gets picked up by the next inline check (or Stop scan)
 # as a self-referential alert.
 if [ "$EVENT" = "PostToolUse" ]; then
-  _PB_ROOT_FOR_INLINE="${PROJECT_ROOT:-/home/jah/Polychron}"
+  _PB_ROOT_FOR_INLINE="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
   _PB_INLINE_HELPER="${CLAUDE_PLUGIN_ROOT:-${_PB_ROOT_FOR_INLINE}/tools/HME}/hooks/helpers/_check_errors_inline.sh"
   if [ -f "$_PB_INLINE_HELPER" ]; then
     _PB_INLINE_ERR=$(mktemp 2>/dev/null || echo "/tmp/inline_err_$$.log")
