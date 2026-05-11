@@ -83,7 +83,7 @@ Radical reshape of the upstream surface. MODE=4 replaces the **main driving agen
 Architecturally distinct from MODE=3: MODE=3 only touched the synthesis-side OVERDRIVE path. MODE=4 ALSO rewrites the proxy's main `/v1/messages` upstream for interactive traffic. Requires proxy middleware (new), not just synthesis dispatcher branch.
 
 - [ ] [E2] Probe `glm-5.1` via Zen Go with a real reasoning prompt to characterize quality vs Opus baseline. Initial probe confirmed routing works.
-- [ ] [E3] Add `OVERDRIVE_MODE=4` documentation block to `.env` parallel to MODE=3. Document tier mapping + "main agent swap" semantic.
+- [x] [E3] Added `OVERDRIVE_MODE=4` documentation block to `.env` parallel to MODE=3, documenting the main-agent-swap semantic and per-tier mapping (main+E4=deepseek-pro, E5=glm-5.1, E3=deepseek-flash, E1-E2=cascade).
 - [ ] [E3] In `synthesis_reasoning.py`, add `elif _od_mode == "4":` branch: E5 -> `glm-5.1`, E4 -> `deepseek-v4-pro`, E3 -> `deepseek-v4-flash`, E1-E2 -> None.
 - [ ] [E3] Extend `_try_overdrive_model` model detector: `glm-*` model IDs route through the same Zen Go headers currently gated on `deepseek-*`. Refactor the prefix-match to a Zen-served-prefix list.
 - [ ] [E4] Proxy middleware `tools/HME/proxy/middleware/NN_main_agent_rewrite.js`: when `OVERDRIVE_MODE=4` AND `payload.model` starts with `claude-` AND interactive path -> set `X-HME-Upstream: https://opencode.ai/zen/go`, inject `x-api-key`, rewrite `payload.model` to `deepseek-v4-pro`, wrap content as blocks. OAuth injection in `hme_proxy.js:679-704` must skip when this middleware fires.
