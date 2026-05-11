@@ -100,7 +100,8 @@
       "type": "files_referenced",
       "glob": "scripts/eslint-rules/*.js",
       "exclude": [
-        "index.js"
+        "index.js",
+        "*.test.js"
       ],
       "reference_file": "eslint.config.mjs",
       "match_mode": "stem",
