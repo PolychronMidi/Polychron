@@ -169,7 +169,7 @@ class OpenAIProvider:
 
     def _call_model(self, model: str, prompt: str, system: str,
                     max_tokens: int, temperature: float) -> str | None:
-        from .synthesis_config import strip_thinking_tags as _strip_think
+        from .synthesis_config import strip_thinking_tags as _strip_think, strip_agent_artifacts as _strip_agent
         from .synthesis_proxy_route import proxy_route as _proxy_route
 
         body = self._build_request_body(model, prompt, system, max_tokens, temperature)
