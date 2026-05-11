@@ -423,7 +423,7 @@ const _SLOP_PATTERNS = [
   // commas when used as parenthetical bridges between word characters.
   // Skips structural use (start-of-line lists, code).
   { name: 'em_dash_crutch',
-    re: /(\w)\s+(?:—|--)\s+(\w)/g,
+    re: /(\w)\s+(?:\u2014|--)\s+(\w)/g,
     repl: '$1, $2' },
   // #17 Colon-list trio.
   { name: 'colon_list_trio',
@@ -774,7 +774,7 @@ const _STOP_HOOK_CEREMONY_PATTERNS = [
   // Tier name dismissals ("not E4", "not Deep", "not Comprehensive")
   /\b(?:not\s+|isn'?t\s+)e[45]\b(?:\s+work|\s+effort|\s+tier|\s+floor)?/i,
   /\b(?:not|isn'?t)\s+(?:deep|comprehensive)\s+(?:effort|work|tier)/i,
-  // "Per the doctrine's offered path" — bypass framing using the rule's
+  // "Per the doctrine's offered path" -- bypass framing using the rule's
   // own language as cover.
   /\bper\s+(?:the\s+)?(?:doctrine|hook|gate|stop[\s-]?hook|advisor)['']?s?\s+(?:own\s+)?(?:offered\s+)?path/i,
   /\b(?:the\s+)?(?:three|two)\s+offered\s+paths/i,
@@ -971,7 +971,7 @@ function fpGateMarkerRewrite(eventName, data, ctx) {
         ['content_block_delta', {
           type: 'content_block_delta',
           index: data.index,
-          delta: { type: 'text_delta', text: '`[fp-gate: yes — silent ack of false-positive flag]`' },
+          delta: { type: 'text_delta', text: '`[fp-gate: yes -- silent ack of false-positive flag]`' },
         }],
         ['content_block_stop', data],
       ];
