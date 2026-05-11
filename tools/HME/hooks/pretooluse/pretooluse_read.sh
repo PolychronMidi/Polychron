@@ -11,6 +11,18 @@ LIMIT=$(_safe_jq "$INPUT" '.tool_input.limit' '')
 
 [ -z "$FILE" ] && exit 0
 
+# Verify-landed antipattern: blocking Read on a file this turn already edited. Mirror logic of pretooluse/bash/verify_landed_block.sh -- Edit/Write returns explicit success affordance ("file state is current in your context"); re-reading is context-burn. Filename-shape match against tmp/hme-turn-edits.txt; override HME_VERIFY_LANDED_OK=1.
+if [ "${HME_VERIFY_LANDED_OK:-0}" != "1" ]; then
+  _VLR_TURN_EDITS="${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt"
+  if [ -s "$_VLR_TURN_EDITS" ]; then
+    _VLR_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')
+    if [ -n "$_VLR_BASE" ] && grep -qFx "$_VLR_BASE" "$_VLR_TURN_EDITS" 2>/dev/null; then
+      _emit_block "BLOCKED: verify-landed antipattern -- Read of $_VLR_BASE which was Edit/Written this turn. The Edit tool already returned 'updated successfully' as explicit confirmation; re-reading is context-burn. Trust the success affordance. Override: HME_VERIFY_LANDED_OK=1."
+      exit 2
+    fi
+  fi
+fi
+
 # Block reads of the deprecated memory directory. Reading (even just to
 # "see what's there") legitimizes the abstraction; if the agent needs
 # historical context it queries HME KB via i/learn.
