@@ -190,7 +190,14 @@ def hme_selftest(verbose: bool = False) -> str:
         status = ctx.project_engine.get_status()
         files = status.get("total_files", 0)
         chunks = status.get("total_chunks", 0)
-        results.append(f"{'PASS' if files > 100 else 'FAIL'}: index -- {files} files, {chunks} chunks")
+        # WARN (partial) vs FAIL (empty) -- clear_index only needed when empty.
+        if files > 100:
+            _idx_label = "PASS"
+        elif chunks > 0:
+            _idx_label = "WARN"
+        else:
+            _idx_label = "FAIL"
+        results.append(f"{_idx_label}: index -- {files} files, {chunks} chunks")
     except Exception as e:
         results.append(f"FAIL: index -- {e}")
 
