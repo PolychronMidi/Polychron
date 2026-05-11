@@ -143,7 +143,12 @@ _spawn_buddy() {
   if [ "${BUDDY_HANDOFF:-0}" = "1" ] && [ "$slot" = "1" ]; then
     _flag="--mark-inaugural-primary"
   fi
+  # Log capture instead of >/dev/null 2>&1: silent-fail trains the operator to treat absent signal as positive (same antipattern this project flags everywhere). Append-mode file descriptor avoids subprocess.PIPE deadlock risk per consult-anchored KB entry.
+  local _spawn_log="$_REPO_ROOT/log/hme-buddy-spawn.log"
+  mkdir -p "$(dirname "$_spawn_log")" 2>/dev/null
   {
+    printf '[%s] spawn slot=%s floor=%s sid_file=%s flag=%s\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$slot" "$floor" "$sid_file" "${_flag:-(none)}" >> "$_spawn_log"
     PROJECT_ROOT="$_REPO_ROOT" python3 \
       "$_spawn_script" \
       --slot="$slot" --floor="$floor" \
@@ -151,9 +156,9 @@ _spawn_buddy() {
       --sid-file="$sid_file" \
       $_flag \
       --project-root="$_REPO_ROOT" \
-      >/dev/null 2>&1
-    # silent-ok on init failure: server-side dispatch falls through to
-    # ephemeral path; a future SessionStart will retry the missing slot.
+      >> "$_spawn_log" 2>&1
+    printf '[%s] spawn-exit slot=%s rc=%s\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$slot" "$?" >> "$_spawn_log"
   } &
   disown 2>/dev/null || true
 }
