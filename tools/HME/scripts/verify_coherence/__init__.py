@@ -89,7 +89,8 @@ from .subagent import (  # noqa: F401
     SubagentModeVerifier, SubagentPassthroughVerifier,
     SubagentGuardVerifier, SubagentBackendsVerifier,
 )
-from .runtime_behavior import (  # noqa: F401
+from .runtime_behavior import (  # noqa: F401, includes BuddyPrimaryHealthVerifier
+    BuddyPrimaryHealthVerifier,
     TransientErrorFilterVerifier, ContextBudgetVerifier,
     WarmContextFreshnessVerifier, PlanOutputValidityVerifier,
 )
