@@ -178,6 +178,22 @@ def _extract_thinking_text(events: list) -> list[str]:
     return out
 
 
+def _extract_output_text(events: list) -> str:
+    """Concatenate all plain-text output blocks from assistant events in the turn. Fabrication phrases appear in OUTPUT, not just thinking -- this is the channel the user sees."""
+    parts: list[str] = []
+    for ev in events:
+        if not is_assistant(ev):
+            continue
+        for block in event_content(ev):
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "text":
+                t = block.get("text", "")
+                if isinstance(t, str) and t.strip():
+                    parts.append(t)
+    return "\n\n".join(parts)
+
+
 def _emit_stats(verdict: str, detail: str) -> None:
     try:
         root = os.environ.get("PROJECT_ROOT")
