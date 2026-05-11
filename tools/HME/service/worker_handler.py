@@ -145,6 +145,7 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/rag/lib-list":      return self._get_rag_lib_list()
         if self.path == "/narrative":         return self._get_narrative()
         if self.path.startswith("/transcript"): return self._get_transcript()
+        if self.path == "/reindex/status":     return self._get_reindex_status()
         self._json(404, {"error": f"no GET route: {self.path}"})
 
     # POST dispatch
