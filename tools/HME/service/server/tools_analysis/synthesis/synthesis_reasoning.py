@@ -394,6 +394,32 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
             _text, _source = _overdrive_result
             _last_source = _source
             return _text
+    elif _od_mode == "4":
+        # MODE=4: main agent swap to deepseek-v4-pro; E5 escalates to glm-5.1.
+        if _normalized_tier == "E5":
+            _overdrive_result = _call_opus_overdrive(
+                prompt, system, max_tokens,
+                chain_override=("glm-5.1",),
+                allow_subagent=False,
+            )
+        elif _normalized_tier == "E4":
+            _overdrive_result = _call_opus_overdrive(
+                prompt, system, max_tokens,
+                chain_override=("deepseek-v4-pro",),
+                allow_subagent=False,
+            )
+        elif _normalized_tier == "E3":
+            _overdrive_result = _call_opus_overdrive(
+                prompt, system, max_tokens,
+                chain_override=("deepseek-v4-flash",),
+                allow_subagent=False,
+            )
+        else:  # E1, E2
+            _overdrive_result = None
+        if _overdrive_result:
+            _text, _source = _overdrive_result
+            _last_source = _source
+            return _text
 
     try:
         providers = _load_providers()
