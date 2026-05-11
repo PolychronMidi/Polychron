@@ -242,10 +242,11 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     payload = {
         "model": model_id,
         "max_tokens": resolved_max,
-        "temperature": 1.0,  # Anthropic requires temperature=1.0 with thinking
-        "thinking": {"type": "enabled", "budget_tokens": budget},
         "messages": [{"role": "user", "content": _user_content}],
     }
+    if not _drop_thinking:
+        payload["thinking"] = {"type": "enabled", "budget_tokens": budget}
+        payload["temperature"] = 1.0  # Anthropic requires temperature=1.0 with thinking
     if system:
         payload["system"] = system
 
