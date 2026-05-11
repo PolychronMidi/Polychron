@@ -32,6 +32,21 @@ Onboarding coherence fixes surfaced during first-agent onboarding session. Two s
 
 _Phase 1 complete._ Five fixes shipped: `_onb_init` only preserves in-progress states (boot..verified); selftest partial-index path no longer baits destructive clear; `i/consult --engine=synthesis` works; buddy spawn attempts always logged. Files: `tools/HME/hooks/helpers/_onboarding.sh`, `tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py`, `i/consult`, `tools/HME/hooks/helpers/buddy_init.sh`.
 
+### Phase 2: Indexer + invariant + test follow-ups (worthiness P/C/S/E = 3/3/3/3)
+
+- [x] Bump `HME_TOOL_HARDKILL_S` default-override to 600s in `.env` (was hitting 240s hard-kill on ~500-file index_directory)
+- [x] Add consecutive-failure backoff to `watcher._do_dir_reindex` (doubles effective cooldown per failure, capped 8x)
+- [x] Add regression test for `_onb_init` (5 tests: missing, "graduated", in-progress preservation, unknown). All pass.
+- [x] Fix `hooks-executable` invariant: narrow glob to exec'd hook dirs (excludes sourced subscripts in helpers/safety/, lifecycle/stop/, pretooluse/bash/)
+- [x] Fix `hooks-registered` invariant: same glob narrowing
+- [x] Fix `eslint-rules-registered` invariant: exclude `*.test.js` (test files aren't registered rules)
+- [x] Extend `_check_files_executable` + `_check_files_referenced` to accept either string or list of globs (new helper `_resolve_glob`)
+- [ ] [E3] `eslint-concordance-complete` invariant fails consistently (streak 9); custom-type check, needs runner inspection -- deferred
+- [ ] [E4] HCI display unification: `i/state` (86.1) vs `i/status` (91) vs `i/holograph` (88) vs selftest (88) quote different windows; annotate each with source/timestamp -- deferred
+- [ ] [E3] 3 overdue p1 blindspots (conductor/time/composers subsystems untouched 10 rounds); composition-side investigation -- deferred
+
+_Phase 2 status: 7/10 done; 3 items deferred with rationale above._ Files: `.env`, `tools/HME/service/watcher.py`, `tools/HME/tests/specs/onboarding_init.test.js`, `tools/HME/config/invariants.json`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/_base.py`, `tools/HME/service/server/tools_analysis/evolution/evolution_invariants/checks.py`.
+
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
 <!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
