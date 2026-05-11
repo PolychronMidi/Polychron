@@ -86,7 +86,7 @@ def _write_consult_sentinel(sid: str | None) -> None:
         with open(sentinel, "a", encoding="utf-8") as f:
             f.write(f"{int(time.time())} sid={sid_str}\n")
     except OSError:
-        pass
+        pass  # silent-ok: best-effort fs op
 
 
 def _pick_senior_for_question(question: str, seniors_dir: Path) -> str | None:
@@ -181,7 +181,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
                 else:
                     persona_body = _text.strip()
             except OSError:
-                pass
+                pass  # silent-ok: best-effort fs op
         persona_body = persona_body or (
             "You are a Polychron co-buddy senior consultant. Answer concisely with "
             "grounded reasoning. Cite file:line for every claim."
@@ -231,11 +231,11 @@ def cmd_consult(args: argparse.Namespace) -> int:
         try:
             lock_file.unlink()
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
     try:
         lock_file.write_text(f"{os.getpid()}\n{time.time()}\n")
     except OSError:
-        pass  # best-effort lock; proceed without if filesystem refuses
+        pass  # silent-ok: best-effort fs op  # best-effort lock; proceed without if filesystem refuses
     print(f"# consulting {role} sid={args.sid}", file=sys.stderr)
     # Q9 resolution: when consulting a senior whose ctx has grown past
     # the pre-compaction floor, warn-and-proceed (NOT refuse -- refuse
@@ -268,7 +268,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
                     age = time.time() - cooldown_file.stat().st_mtime
                     recently_warned = age < cooldown_window_s
                 except OSError:
-                    pass
+                    pass  # silent-ok: best-effort fs op
             warn_msg = (f"senior {args.sid} ctx={ctx_data['used_pct']:.1f}% "
                         f"is past the pre-compaction floor "
                         f"({pre_compaction_floor:.0f}%). Each consult adds "
@@ -282,7 +282,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
                 try:
                     cooldown_file.write_text(f"{time.time()}\n")
                 except OSError:
-                    pass
+                    pass  # silent-ok: best-effort fs op
     # Dynamic timeout = max(1800, transcript_mb * 30 + 600).
     # 1800s floor; +30s/MB for resume cost; +600s response budget for
     # Opus extended thinking. Bias-generous (asymmetric: too-loose makes
@@ -296,7 +296,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
         try:
             transcript_mb = Path(transcript_path).stat().st_size / (1024 * 1024)
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
     consult_timeout = max(1800, int(transcript_mb * 30 + 600))
     # try/finally so the lockfile is released even on subprocess.run
     # timeout (TimeoutExpired raised) or unexpected error. Without this,
@@ -344,6 +344,6 @@ def cmd_consult(args: argparse.Namespace) -> int:
             if lock_file.exists():
                 lock_file.unlink()
         except OSError:
-            pass
+            pass  # silent-ok: best-effort fs op
 
 
