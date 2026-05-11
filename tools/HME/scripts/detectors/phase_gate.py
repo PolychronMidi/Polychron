@@ -94,7 +94,13 @@ def _read_tier() -> str | None:
                     last = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-        return last.get("tier") if last else None
+        if not last:
+            return None
+        ts = last.get("ts")
+        max_age = float(os.environ.get("PHASE_GATE_TIER_MAX_AGE_SECS", "3600"))
+        if isinstance(ts, (int, float)) and (time.time() - ts) > max_age:
+            return None
+        return last.get("tier")
     except OSError:
         return None
 
