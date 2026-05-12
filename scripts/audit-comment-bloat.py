@@ -14,7 +14,7 @@ Excluded from the scan:
   - shebang line (`#!/...`)
   - section-header comment patterns (single line of `===` / `---` / etc.
     surrounded by content; the pattern itself isn't a real comment block)
-  - `# silent-ok: ...`, `# FIXME: ...`, `# noqa:` --
+  - `# silent-ok: ...`, `# noqa:` --
     annotation conventions, not prose
   - lines inside raw strings / heredocs / docstrings (we'd need a real
     parser to handle these robustly; for now we accept some FP risk on
