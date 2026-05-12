@@ -258,6 +258,33 @@ def _overdrive_timeout() -> int:
 _last_source: str | None = None
 
 
+def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
+    """Resolve model chain for OVERDRIVE_MODE=5 from config/models.json.
+    Returns a tuple of model IDs ordered by ranking rules: free first
+    (by tier_score descending), then subscription, then usage-based.
+    Returns None if the tier has no models or the config is missing."""
+    import json as _json
+    import os as _os
+    _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
+    try:
+        with open(_cfg_path) as _f:
+            _cfg = _json.load(_f)
+    except Exception:
+        return None
+    _models = (_cfg.get("tiers", {}).get(tier, {}).get("models", []) or [])
+    if not _models:
+        return None
+    _free = [m for m in _models if m.get("cost") == "free"]
+    _sub = [m for m in _models if m.get("cost") == "subscription"]
+    _usage = [m for m in _models if m.get("cost") == "usage"]
+    _free.sort(key=lambda m: -m.get("tier_score", 0))
+    _sub.sort(key=lambda m: -m.get("tier_score", 0))
+    _usage.sort(key=lambda m: -m.get("tier_score", 0))
+    _ordered = _free + _sub + _usage
+    _ids = tuple(m["id"] for m in _ordered if m.get("id"))
+    return _ids if _ids else None
+
+
 def last_source() -> str | None:
     """Return a short string identifying which path produced the most
     recent non-None result from synthesis_reasoning.call(). Values:
