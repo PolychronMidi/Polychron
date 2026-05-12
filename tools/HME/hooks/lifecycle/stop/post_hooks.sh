@@ -3,13 +3,7 @@
 # this turn" for quick replay / status / debugging.
 _signal_emit turn_complete stop.sh turn '{}'
 
-# HME activity bridge: emit turn_complete
-# Snapshots the CHAT TURN boundary for metrics/hme-activity.jsonl. This is
-# NOT round_complete -- that fires on pipeline finish (posttooluse_bash.sh
-# after `npm run main`). Chat turns happen every few seconds in active use;
-# evolution rounds happen on pipeline cadence. Conflating them collapsed
-# the coherence-score window to stale data. Separate events keep the
-# semantic clean.
+# activity bridge: turn_complete (chat turn) vs round_complete (pipeline), kept separate
 INPUT="${INPUT:?post_hooks.sh requires INPUT from dispatcher (Stop payload)}"
 _SESSION_ID_FOR_ACTIVITY=$(_safe_jq "$INPUT" '.session_id' 'unknown')
 _emit_activity turn_complete --session="$_SESSION_ID_FOR_ACTIVITY"
