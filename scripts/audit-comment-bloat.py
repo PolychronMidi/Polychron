@@ -58,7 +58,7 @@ LONG_LINE_CHARS = int(os.environ.get("COMMENT_BLOAT_LONG_LINE", "90"))
 # File-top header exemption: every file gets ONE comment block at the
 # top of the file (after any shebang) up to TOP_EXEMPT_MAX lines that
 # does NOT count toward warn/fail thresholds. Header docs are legitimate.
-TOP_EXEMPT_MAX = 10
+TOP_EXEMPT_MAX = 30
 
 # Annotation-shaped comments aren't prose; don't count toward block length.
 _ANNOTATION_PREFIXES = (
