@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1615,
-      "updated_ts": 1778599209.9766016
+      "max_id": 1618,
+      "updated_ts": 1778600844.415009
     }
   },
   {
-    "id": 1613,
-    "text": "Fix all 19 character-spam runs",
-    "activeForm": "Finding and fixing character-spam runs",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778599209.9765751,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1614,
-    "text": "Fix 50 longest comment-bloat blocks",
-    "activeForm": "Fixing 50 longest comment-bloat blocks",
+    "id": 1616,
+    "text": "Wire boyscout_clean.py to use Claude Code native transcript (not HME session transcript)",
+    "activeForm": "Wiring boyscout_clean to use Claude Code native transcript",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778599209.976589,
+    "ts": 1778600844.414982,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1615,
-    "text": "Verify boyscout clean policy works for ALL rules, not just LOC",
-    "activeForm": "Verifying boyscout clean policy for all rules",
+    "id": 1617,
+    "text": "Fix ~3% of remaining 524 comment-bloat blocks (~16 blocks)",
+    "activeForm": "Fixing ~16 comment-bloat blocks",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778599209.9765997,
+    "ts": 1778600844.4149961,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1618,
+    "text": "Fix ~3% of 720 silent-failure-class sites (~22 catch blocks)",
+    "activeForm": "Annotating ~22 silent-failure sites",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778600844.4150069,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
