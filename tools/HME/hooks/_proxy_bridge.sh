@@ -290,35 +290,32 @@ unset _PB_RECOVERY_TS 2>/dev/null
 # PATCH: Handle overdrive_mode=4 non-JSON "pending" status
 # Parse response and relay.
 # 1. Check if the proxy output is valid JSON
+# Final response assembly using jq to ensure valid JSON structure
 if echo "$RESP" | jq -e . >/dev/null 2>&1; then
+  # Proxy returned valid JSON
   STDOUT=$(echo "$RESP" | jq -r '.stdout // ""')
   STDERR=$(echo "$RESP" | jq -r '.stderr // ""')
   EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0')
 
-  # 2. If STDOUT is empty, the agent will crash with "Stream ended without events".
-  # We MUST inject a minimal valid Anthropic JSON object if it's blank.
+  # Inject fallback if proxy output is blank to prevent "Stream ended" crash
   if [ -z "$STDOUT" ]; then
     STDOUT='{"type":"message","role":"assistant","content":[{"type":"text","text":"..."}],"model":"claude-3-5-sonnet-latest","stop_reason":"end_turn"}'
   fi
 
-  # Output exactly what cli.js expects
-  printf '{"stdout":%s,"stderr":%s,"exit_code":%s}\n' \
-    "$(echo "$STDOUT" | jq -R .)" \
-    "$(echo "$STDERR" | jq -R .)" \
-    "$EXIT_CODE"
+  # Safely construct the final envelope
+  jq -n \
+    --arg out "$STDOUT" \
+    --arg err "$STDERR" \
+    --argjson code "$EXIT_CODE" \
+    '{stdout: $out, stderr: $err, exit_code: $code}'
 else
-  # 3. If Proxy returned "pending", "Internal Error", or nothing:
-  # Return a "Null Message" so cli.js has something to parse.
+  # Proxy returned raw text (pending/error/etc)
   NULL_MSG='{"type":"message","role":"assistant","content":[{"type":"text","text":"Continuing..."}],"model":"claude-3-5-sonnet-latest","stop_reason":"end_turn"}'
 
-  printf '{"stdout":%s,"stderr":"","exit_code":0}\n' \
-    "$(echo "$NULL_MSG" | jq -R .)"
-
-  # Log it so you know the proxy skipped the turn
-  if [ -n "$_PB_ROOT" ]; then
-     echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [_proxy_bridge] Injected Null Message due to non-JSON/Empty response" \
-       >> "$_PB_ROOT/log/hme-proxy-lifecycle.log"
-  fi
+  jq -n \
+    --arg out "$NULL_MSG" \
+    --arg err "Proxy response was not valid JSON. Injected null message." \
+    '{stdout: $out, stderr: $err, exit_code: 0}'
 fi
 
 # Validate exit_code is numeric -- otherwise default to 0 with a log entry.
