@@ -232,12 +232,8 @@ if [ -z "$RESP" ]; then
   # local proxy log catches it.
   echo "$_PB_MSG" >&2
 
-  # Channel D: stdout as a Claude-Code-visible JSON banner on UserPromptSubmit
-  # and SessionStart. These events accept additionalContext in their
-  # hookSpecificOutput and relay it to the agent's next turn. For Stop /
-  # PreToolUse / PostToolUse / PreCompact / PostCompact, emitting a JSON
-  # block here would wedge the turn, so we keep them silent on stdout --
-  # the other three channels carry the signal.
+  # rationale: only UserPromptSubmit/SessionStart surface stdout banners;
+  # other events would wedge the turn, so those channels stay silent
   case "$EVENT" in
     UserPromptSubmit|SessionStart)
       _PB_BANNER="[ALERT] LIFESAVER - HME PROXY OFFLINE - ALL HOOK LOGIC SILENTLY DISABLED
