@@ -345,7 +345,7 @@ fi
 # exit 2 or unified-policy hookSpecificOutput at exit 0. Always convert to
 # exit 2 for blocking. Write reason to tmp/ for middleware surface.
 _PB_DENY_REASON=""
-if [ "$EVENT" = "PreToolUse" ]; then
+if [ "$EVENT" = "PreToolUse" ] || [ "$EVENT" = "Stop" ]; then
   if [ "${EXIT_CODE:-0}" != "0" ]; then
     _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
   elif [ -n "$STDOUT" ]; then
