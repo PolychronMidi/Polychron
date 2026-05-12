@@ -214,6 +214,16 @@
           "notes": "Cascade free tier. Solid all-rounder for multi-file refactors."
         },
         {
+          "id": "claude-haiku-4.5",
+          "name": "Claude Haiku 4.5",
+          "maker": "Anthropic",
+          "provider": "cascade",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Cascade free tier. Fast, cheap, good for straightforward tasks."
+        },
+        {
           "id": "minimax-m2.5",
           "name": "MiniMax M2.5",
           "maker": "MiniMax",
