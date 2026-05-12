@@ -260,8 +260,8 @@ _last_source: str | None = None
 
 def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
     """Resolve model chain for OVERDRIVE_MODE=5 from config/models.json.
-    Returns a tuple of model IDs ordered by ranking rules: free first
-    (by tier_score descending), then subscription, then usage-based.
+    Returns model IDs ordered by ranking rules: cost groups from cost_order
+    (each sorted by tier_score desc), with manually_toprank IDs first.
     Returns None if the tier has no models or the config is missing."""
     import json as _json
     import os as _os
@@ -274,15 +274,17 @@ def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
     _models = (_cfg.get("tiers", {}).get(tier, {}).get("models", []) or [])
     if not _models:
         return None
-    _free = [m for m in _models if m.get("cost") == "free"]
-    _sub = [m for m in _models if m.get("cost") == "subscription"]
-    _usage = [m for m in _models if m.get("cost") == "usage"]
-    _free.sort(key=lambda m: -m.get("tier_score", 0))
-    _sub.sort(key=lambda m: -m.get("tier_score", 0))
-    _usage.sort(key=lambda m: -m.get("tier_score", 0))
-    _ordered = _free + _sub + _usage
-    _ids = tuple(m["id"] for m in _ordered if m.get("id"))
-    return _ids if _ids else None
+    _cost_order = _cfg.get("ranking_rules", {}).get("cost_order", ["free", "subscription", "usage"])
+    _ids = []
+    for _cost in _cost_order:
+        _group = sorted(
+            [m for m in _models if m.get("cost") == _cost],
+            key=lambda m: -m.get("tier_score", 0),
+        )
+        _ids.extend(m["id"] for m in _group if m.get("id"))
+    _top = _cfg.get("manually_toprank", {}).get(tier, []) or []
+    _ids = [mid for mid in _top if mid in _ids] + [mid for mid in _ids if mid not in _top]
+    return tuple(_ids) if _ids else None
 
 
 def last_source() -> str | None:
