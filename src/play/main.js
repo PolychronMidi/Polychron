@@ -419,7 +419,7 @@ if (require.main === module) {
         process.kill(_pid, 0);
         process.stderr.write('ERROR: another pipeline is running (pid=' + _pid + '). Lock at ' + _lockPath + '. Wait for completion or remove the stale lock.\n');
         process.exit(2);
-      } catch (_e) { /* PID dead -- stale lock, run-with-log will clear it; silent-ok: dead PID is a valid stale-lock signal */ }
+      } catch (_e) { /* PID dead -- stale lock, run-with-log will clear it; silent-ok: dead PID is a valid stale-lock signal */ void _e; }
     }
   })();
   main().catch((err) => {
