@@ -198,12 +198,7 @@ def main() -> None:
     with open(OUTPUT, "w") as f:
         json.dump(result, f, indent=2)
 
-    # Close the observation->action loop: write the recommended threshold
-    # to tmp/hme-streak-warn.txt. _safety.sh reads HME_STREAK_WARN from .env
-    # at hook-fire time; having the calibrator write a tmp/ file and
-    # having _safety.sh prefer that file over the env value turns the
-    # calibrator from observation-only into an active feedback loop.
-    # Records the decision to output/metrics/hme-calibration-decisions.jsonl for audit.
+    # rationale: write calibrated threshold to tmp/ for _safety.sh active feedback loop
     decisions_log = PROJECT_ROOT / "output" / "metrics" / "hme-calibration-decisions.jsonl"
     streak_file = PROJECT_ROOT / "tmp" / "hme-streak-warn.txt"
     try:
