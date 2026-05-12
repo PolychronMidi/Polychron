@@ -316,13 +316,12 @@ def _resolve_mode5_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     return (chain, allow_sub)
 
 
-# Map OVERDRIVE_MODE -> resolver: (tier) -> (chain, allow_subagent) | None
-# None result = no overdrive for this tier; fall through to cascade.
+# MODE 1..4 -> legacy_chains registry; MODE=5 -> tiers. None = cascade.
 _MODE_CHAIN_RESOLVERS = {
-    "1": lambda tier: (None, True),  # default chain, subagent OK
-    "2": lambda tier: _resolve_mode_legacy_chain("2", tier),
-    "3": lambda tier: _resolve_mode_legacy_chain("3", tier),
-    "4": lambda tier: _resolve_mode_legacy_chain("4", tier),
+    "1": lambda tier: _resolve_mode_legacy_chain_from_registry("1", tier),
+    "2": lambda tier: _resolve_mode_legacy_chain_from_registry("2", tier),
+    "3": lambda tier: _resolve_mode_legacy_chain_from_registry("3", tier),
+    "4": lambda tier: _resolve_mode_legacy_chain_from_registry("4", tier),
     "5": _resolve_mode5_entry,
 }
 
