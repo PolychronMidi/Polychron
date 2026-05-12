@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1685,
-      "updated_ts": 1778626404.2891014
+      "max_id": 1691,
+      "updated_ts": 1778626525.3992238
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 1683,
     "text": "Implement E3a: Create _resolve_mode_legacy_chain + _MODE_CHAIN_RESOLVERS dispatcher",
     "activeForm": "Implementing dispatcher refactor",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 1684,
     "text": "Implement E3b: Resolve manually_toprank vs tier_score in models.json",
     "activeForm": "Resolving models.json top-rank question",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
