@@ -23,7 +23,8 @@ try:
                 t = b.get("text", "")
                 if btype == "text" and isinstance(t, str):
                     assistant_texts.append(("text", t)); last_text = t
-                elif btype == "thinking" and isinstance(t, str):
+                elif btype == "thinking" and isinstance(b.get("thinking", ""), str):
+                    t = b["thinking"]
                     assistant_texts.append(("thinking", t))
 except Exception:  # silent-ok: transcript may not exist
     sys.exit(0)
