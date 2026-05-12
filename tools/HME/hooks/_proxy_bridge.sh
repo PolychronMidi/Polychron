@@ -99,6 +99,15 @@ if [ -n "$_PB_ROOT" ]; then
   fi
 fi
 
+# inject transcript_path for Stop events so work_checks auto-completeness
+# can read the session transcript. Claude Code's Stop payload lacks this.
+if [ "$EVENT" = "Stop" ] && [ -n "$_PB_ROOT" ]; then
+  _PB_TSCRIPT="$_PB_ROOT/log/session-transcript.jsonl"
+  if [ -f "$_PB_TSCRIPT" ]; then
+    BODY=$(printf '%s' "$BODY" | jq -c --arg tp "$_PB_TSCRIPT" '. + {transcript_path: $tp}')
+  fi
+fi
+
 # POST to proxy. --max-time 60s accommodates stop.sh's longer chain
 # (auto-commit + lifecycle checks).
 RESP=$(curl -sf --max-time 60 -X POST \
