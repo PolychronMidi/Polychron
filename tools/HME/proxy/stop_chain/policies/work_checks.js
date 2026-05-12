@@ -270,7 +270,17 @@ function saveComplStore(store) {
 module.exports = {
   name: 'work_checks',
   async run(ctx) {
-    try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-payload-keys.txt'), JSON.stringify({tp:ctx.payload&&ctx.payload.transcript_path?String(ctx.payload.transcript_path).slice(0,100):'FALSY', keys:Object.keys(ctx.payload||{})})); } catch(_) {}
+    // read transcript_path from bridge's own injected-payload file to
+    // bypass any proxy-chain mangling of ctx.payload
+    let _tp = ctx.payload && ctx.payload.transcript_path;
+    if (!_tp) {
+      try {
+        const injected = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'tmp', 'hme-stop-payload-injected.json'), 'utf8'));
+        _tp = injected.transcript_path;
+      } catch(_) {}
+    }
+    try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-payload-keys.txt'), JSON.stringify({tp:String(_tp||'').slice(0,100), keys:Object.keys(ctx.payload||{})})); } catch(_) {}
+    const transcriptPath = _tp;
     const v = readVerdicts();
     // FIRING_RULES + willDeny derived from registry.json (single SoT). Adding
     // a deny detector = one entry in registry.json with deny:true + reason_key.
