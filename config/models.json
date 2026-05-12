@@ -305,11 +305,11 @@
           "id": "mimo-v2-omni",
           "name": "MiMo V2-Omni",
           "maker": "MiMo",
-          "provider": "opencode_zen_usage",
+          "provider": "opencode_go",
           "max_context": 524288,
-          "cost": "usage",
-          "cost_amt": 0.40,
-          "notes": "Multi-modal optimized; 512K context."
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "OpenCode Go subscription. Multi-modal optimized; 512K context."
         }
       ]
     },
