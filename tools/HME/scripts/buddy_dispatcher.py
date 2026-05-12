@@ -175,13 +175,23 @@ _MAX_PAUSES_PER_TASK = int(os.environ.get("HME_BUDDY_MAX_PAUSES_PER_TASK", "3"))
 #                  Equivalent to pre-integration behavior.
 #
 # Resolution: HME_DISPATCH_MODE env wins; otherwise BUDDY_SYSTEM=1 ->
-# claude-resume, BUDDY_SYSTEM=0 -> disabled.
+# claude-resume, BUDDY_SYSTEM=0 -> disabled. OVERDRIVE_MODE=5 overrides:
+# all dispatch MUST be Anthropic-free (synthesis-only or disabled).
 _BUDDY_SYSTEM_FLAG = os.environ.get("BUDDY_SYSTEM", "0").strip()
 _DISPATCH_MODE = os.environ.get("HME_DISPATCH_MODE", "").strip().lower()
+_OD_MODE = os.environ.get("OVERDRIVE_MODE", "0").strip()
 if not _DISPATCH_MODE:
-    _DISPATCH_MODE = "claude-resume" if _BUDDY_SYSTEM_FLAG == "1" else "disabled"
+    if _OD_MODE == "5":
+        _DISPATCH_MODE = "synthesis"
+    elif _BUDDY_SYSTEM_FLAG == "1":
+        _DISPATCH_MODE = "claude-resume"
+    else:
+        _DISPATCH_MODE = "disabled"
 if _DISPATCH_MODE not in ("claude-resume", "synthesis", "disabled"):
     _DISPATCH_MODE = "disabled"
+# OVERDRIVE_MODE=5 hard-lock: claude-resume is NEVER allowed (Anthropic quota).
+if _OD_MODE == "5" and _DISPATCH_MODE == "claude-resume":
+    _DISPATCH_MODE = "synthesis"
 
 # HME_DISPATCH_SYNTHESIS_TIERS: tiers (E1..E5) routed through synthesis_reasoning (free cascade) instead of buddies.
 # Canonical use: E1,E2 (cheap tasks skip the buddy quota). Empty = no override.

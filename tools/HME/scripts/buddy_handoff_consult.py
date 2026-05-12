@@ -197,6 +197,10 @@ def cmd_consult(args: argparse.Namespace) -> int:
             _record_consult(args.sid or "synthesis", args.question)
             _write_consult_sentinel(args.sid or "synthesis")
             return 0
+        _od_mode = os.environ.get("OVERDRIVE_MODE", "0").strip()
+        if _od_mode == "5":
+            print("# synthesis cascade exhausted; OVERDRIVE_MODE=5 blocks claude-resume fallback", file=sys.stderr)
+            return 1
         print("# synthesis cascade exhausted; falling back to claude-resume", file=sys.stderr)
     cmd = ["claude", "--resume", args.sid, "-p", framed_question]
     # Buddy / primary / senior detection for the print line; unknown sids -> "buddy".

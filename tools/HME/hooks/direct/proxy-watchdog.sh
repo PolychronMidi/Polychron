@@ -31,13 +31,14 @@ fi
 _WD_PORT="${HME_PROXY_PORT:-9099}"
 _WD_URL="http://127.0.0.1:${_WD_PORT}/health"
 
-# ── OmniRoute health-check + respawn (MODE=4 main-agent translator) ──
+# ── OmniRoute health-check + respawn (MODE=4/5 main-agent translator) ──
 # Session resume doesn't go through polychron-launch.sh, so the watchdog
 # must ensure OmniRoute is running before attempting proxy spawn.
 _OR_PORT="${HME_OMNIROUTE_PORT:-20128}"
 _OR_URL="http://127.0.0.1:${_OR_PORT}/v1/models"
 _OR_DIR="$_WD_ROOT/tools/omniroute"
-if [ "${OVERDRIVE_MODE:-0}" = "4" ] && [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
+if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ]; then
+  if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
   if ! curl -sf --max-time 2 "$_OR_URL" >/dev/null 2>&1; then
     ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
     echo "[$ts] [proxy-watchdog] OmniRoute down, starting on :${_OR_PORT}..." >&2
@@ -64,6 +65,7 @@ if [ "${OVERDRIVE_MODE:-0}" = "4" ] && [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; the
       echo "[$ts] [proxy-watchdog] OmniRoute launcher missing at $_OR_DIR/start.sh" \
         >> "$_WD_ROOT/log/hme-errors.log"
     fi
+  fi
   fi
 fi
 

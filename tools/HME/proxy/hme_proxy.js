@@ -482,8 +482,9 @@ function handleRequest(clientReq, clientRes) {
 
     const _OMNIROUTE_PORT = process.env.HME_OMNIROUTE_PORT || '20128';
     const _OMNIROUTE_OFF = process.env.HME_OMNIROUTE_OFF === '1';
+    const _odMode = process.env.OVERDRIVE_MODE || '0';
 
-    if (process.env.OVERDRIVE_MODE === '4'
+    if ((_odMode === '4' || _odMode === '5')
         && !_isSeniorConsult
         && payload && typeof payload.model === 'string'
         && payload.model.startsWith('claude-')
@@ -503,7 +504,7 @@ function handleRequest(clientReq, clientRes) {
           delete clientReq.headers['x-api-key'];
           _isMode4OmniRoute = true;
 
-          console.error(`MODE=4 OmniRoute: claude-* -> opencode-go/deepseek-v4-pro via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming})`);
+          console.error(`[hme-proxy] MODE=${_odMode} OmniRoute: claude-* -> opencode-go/deepseek-v4-pro via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming})`);
         } else {
           // Legacy zen_translator path (HME_OMNIROUTE_OFF=1)
           const { translateRequestToOpenAI } = require('./zen_translator');
@@ -515,10 +516,10 @@ function handleRequest(clientReq, clientRes) {
           outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
           _isMode4Swap = true;
 
-          console.error(`MODE=4 legacy: claude-* -> deepseek-v4-pro via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
+          console.error(`[hme-proxy] MODE=${_odMode} legacy: claude-* -> deepseek-v4-pro via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
         }
       } else {
-        console.error('MODE=4 active but OPENCODE_API_KEY missing -- swap skipped');
+        console.error(`[hme-proxy] MODE=${_odMode} active but OPENCODE_API_KEY missing -- swap skipped`);
       }
     }
 

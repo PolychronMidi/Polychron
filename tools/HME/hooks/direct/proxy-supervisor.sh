@@ -122,31 +122,33 @@ _sv_spawn_and_verify() {
   # Wrapper: ensure OmniRoute (if MODE=4), spawn the proxy, wait up
   # to _SV_SPAWN_HEALTH_TIMEOUT seconds for /health to respond.
 
-  # ── OmniRoute pre-flight (MODE=4 main-agent translator) ──
+  # ── OmniRoute pre-flight (MODE=4/5 main-agent translator) ──
   local _or_port="${HME_OMNIROUTE_PORT:-20128}"
   local _or_url="http://127.0.0.1:${_or_port}/v1/models"
   local _or_dir="$_SV_ROOT/tools/omniroute"
-  if [ "${OVERDRIVE_MODE:-0}" = "4" ] && [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
-    if ! curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1; then
-      _sv_log "OmniRoute down, starting on :${_or_port}..."
-      if [ -x "$_or_dir/start.sh" ]; then
-        HME_OMNIROUTE_PORT="$_or_port" \
-          bash "$_or_dir/start.sh" > "$_SV_ROOT/log/omniroute.out" 2>&1 &
-        local _or_pid=$!
-        disown 2>/dev/null || true
-        local _or_waited=0
-        while [ "$_or_waited" -lt 20 ]; do
-          curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1 && break
-          sleep 1
-          _or_waited=$((_or_waited + 1))
-        done
-        if curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1; then
-          _sv_log "OmniRoute ready after ${_or_waited}s (pid=$_or_pid)"
+  if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ]; then
+    if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
+      if ! curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1; then
+        _sv_log "OmniRoute down, starting on :${_or_port}..."
+        if [ -x "$_or_dir/start.sh" ]; then
+          HME_OMNIROUTE_PORT="$_or_port" \
+            bash "$_or_dir/start.sh" > "$_SV_ROOT/log/omniroute.out" 2>&1 &
+          local _or_pid=$!
+          disown 2>/dev/null || true
+          local _or_waited=0
+          while [ "$_or_waited" -lt 20 ]; do
+            curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1 && break
+            sleep 1
+            _or_waited=$((_or_waited + 1))
+          done
+          if curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1; then
+            _sv_log "OmniRoute ready after ${_or_waited}s (pid=$_or_pid)"
+          else
+            _sv_log "OmniRoute startup timed out after ${_or_waited}s"
+          fi
         else
-          _sv_log "OmniRoute startup timed out after ${_or_waited}s"
+          _sv_log "OmniRoute launcher missing at $_or_dir/start.sh"
         fi
-      else
-        _sv_log "OmniRoute launcher missing at $_or_dir/start.sh"
       fi
     fi
   fi

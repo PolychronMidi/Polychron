@@ -222,21 +222,23 @@ class RAGEngineSearchMixin:
                 except Exception as _e:
                     logger.debug(f"count_tokens: cannot read {key_path} ({type(_e).__name__})")
         if api_key and len(text) > 50:
-            try:
-                import httpx
-                resp = httpx.post(
-                    "https://api.anthropic.com/v1/messages/count_tokens",
-                    headers={"x-api-key": api_key, "content-type": "application/json", "anthropic-version": "2023-06-01"},
-                    json={"model": "sonnet", "messages": [{"role": "user", "content": text}]},
-                    timeout=3.0
-                )
-                if resp.status_code == 200:
-                    _body = resp.json()
-                    count = _body["input_tokens"] if "input_tokens" in _body else (len(text) // 4)
-                    self._token_cache[cache_key] = count
-                    return count
-            except Exception as _e:
-                logger.debug(f"count_tokens: Anthropic API call failed ({type(_e).__name__})")
+            # OVERDRIVE_MODE=5: skip all Anthropic API calls.
+            if ENV.optional("OVERDRIVE_MODE", "0") != "5":
+                try:
+                    import httpx
+                    resp = httpx.post(
+                        "https://api.anthropic.com/v1/messages/count_tokens",
+                        headers={"x-api-key": api_key, "content-type": "application/json", "anthropic-version": "2023-06-01"},
+                        json={"model": "sonnet", "messages": [{"role": "user", "content": text}]},
+                        timeout=3.0
+                    )
+                    if resp.status_code == 200:
+                        _body = resp.json()
+                        count = _body["input_tokens"] if "input_tokens" in _body else (len(text) // 4)
+                        self._token_cache[cache_key] = count
+                        return count
+                except Exception as _e:
+                    logger.debug(f"count_tokens: Anthropic API call failed ({type(_e).__name__})")
 
         # BERT tokenizer: same model already loaded, much more accurate than len//4
         try:

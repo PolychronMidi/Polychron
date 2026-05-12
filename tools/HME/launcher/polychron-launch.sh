@@ -69,10 +69,12 @@ _port_healthy() {
   curl -sf --max-time 1 "$1" > /dev/null 2>&1
 }
 
-# 0. OmniRoute (MODE=4 main-agent translator)
+# 0. OmniRoute (MODE=4/5 main-agent translator)
 _OMNIROUTE_PORT="${HME_OMNIROUTE_PORT:-20128}"
 _OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
-if [ "${OVERDRIVE_MODE:-0}" = "4" ] && [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
+_OD_START="${OVERDRIVE_MODE:-0}"
+if [ "$_OD_START" = "4" ] || [ "$_OD_START" = "5" ]; then
+  if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
   _OR_DIR="$PROJECT_ROOT/tools/omniroute"
   if [ -x "$_OR_DIR/start.sh" ]; then
     if _port_healthy "${_OMNIROUTE_URL}/v1/models"; then
@@ -98,6 +100,7 @@ if [ "${OVERDRIVE_MODE:-0}" = "4" ] && [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; the
     fi
   else
     echo "[launch] WARNING: OmniRoute launcher not found at $_OR_DIR/start.sh -- MODE=4 will fail" >&2
+  fi
   fi
 fi
 

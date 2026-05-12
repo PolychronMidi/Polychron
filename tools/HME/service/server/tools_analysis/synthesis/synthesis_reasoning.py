@@ -404,6 +404,12 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     else:
         # MODE=2..5: registry-routed per-tier dispatch. Resolver returns
         # (chain, allow_subagent) or None to fall through to the cascade.
+        _MODE_DISPATCHERS = {
+            "2": _resolve_mode2_chain,
+            "3": _resolve_mode3_chain,
+            "4": _resolve_mode4_chain,
+            "5": _resolve_mode5_chain,
+        }
         _resolver = _MODE_DISPATCHERS.get(_od_mode)
         if _resolver:
             _resolved = _resolver(_normalized_tier)
