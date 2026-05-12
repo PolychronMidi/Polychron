@@ -324,7 +324,7 @@ $STDOUT}"
 fi
 
 # Final response assembly: CLEAN JSON ONLY.
-# silent-ok: empty stderr on success — Claude Code misreads as hook error; guard with ' '
+# guard: Claude Code displays empty stderr as confusing hook-error message
 if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
   STDERR=" "
 fi
