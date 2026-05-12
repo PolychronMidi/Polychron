@@ -82,7 +82,7 @@ def _detect_phase_complete(spec_md: str) -> list[dict]:
     """
     open_re = re.compile(r"^\s*-\s+\[\s\]")
     closed_re = re.compile(r"^\s*-\s+\[x\]")
-    sentinel_re = re.compile(r"_phase\s+complete_|\*\*phase\s+complete\*\*", re.IGNORECASE)
+    sentinel_re = re.compile(r"_phase\s+\d+\s+complete_|_phase\s+complete_|\*\*phase\s+complete\*\*", re.IGNORECASE)
     lines = spec_md.split("\n")
     out = []
     for start, end, header in _phase_blocks(spec_md):
