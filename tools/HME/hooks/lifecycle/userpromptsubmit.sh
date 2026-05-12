@@ -283,4 +283,12 @@ _PD="$PROJECT_ROOT/tools/HME/scripts/project_detect.py"
 # Decision-audit per-turn reset: clear consult sentinel so each new prompt starts at zero consults.
 rm -f "$PROJECT_ROOT/tmp/hme-turn-consults.txt" 2>/dev/null || true
 
+# inject auto-todo reminders from last turn's ingest
+_AUTO_TODO_REMINDER="$PROJECT_ROOT/tmp/hme-auto-todos.reminder"
+if [ -f "$_AUTO_TODO_REMINDER" ] && [ -s "$_AUTO_TODO_REMINDER" ]; then
+  _BANNER=$(cat "$_AUTO_TODO_REMINDER")
+  jq -n --arg banner "$_BANNER" '{hookSpecificOutput:{additionalContext:$banner}}'
+  rm -f "$_AUTO_TODO_REMINDER"
+fi
+
 exit 0
