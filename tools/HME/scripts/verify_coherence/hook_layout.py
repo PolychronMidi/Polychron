@@ -206,14 +206,7 @@ class HookMatcherValidityVerifier(Verifier):
         except OSError as e:
             return _result(FAIL, 0.0, f"posttooluse_bash.sh unreadable: {e}")
 
-        # Pattern: `i/<tool>` followed by a word boundary inside regexes
-        # within the dispatcher block. Previous version had a doubled
-        # backslash inside the raw string -- `r'\\b'` is two literal
-        # characters (`\` then `b`), NOT a word-boundary metachar. That
-        # caused most dispatches to be silently invisible to the
-        # verifier, producing false "uncovered" reports for any wrapper
-        # whose dispatch site didn't happen to be followed by a literal
-        # `\b` in source.
+        # dispatch `i/<tool>` word-boundary pattern; r'\\b' bug fixed
         dispatched = set(re.findall(r'i/([a-z-]+)\b', posthook_src))
 
         # A wrapper with a posthook dispatch is "covered". A wrapper on the
