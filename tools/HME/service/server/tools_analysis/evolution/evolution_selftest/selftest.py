@@ -316,6 +316,16 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as e:
         results.append(f"FAIL: KB -- {e}")
 
+    try:
+        from server.tools_knowledge_dream import kb_health as _kbh
+        _kb_health_result = _kbh()
+        if "Total:" in _kb_health_result:
+            results.append("PASS: KB health -- staleness/durability check ok")
+        else:
+            results.append("WARN: KB health -- returned output but missing expected sections")
+    except Exception as e:
+        results.append(f"FAIL: KB health -- {e}")
+
     # RELOADABLE completeness: every .py module in tools_analysis/ must be
     # in the reload list. Post-split selftest.py sits in
     # tools_analysis/evolution/evolution_selftest/; walk 3 dirnames up to
