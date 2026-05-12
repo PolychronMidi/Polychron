@@ -296,7 +296,13 @@ module.exports = {
     // hides this deny). Removing the prior-deny short-circuit fixed cases
     // where PSYCHOPATHIC-STOP silently suppressed auto-completeness.
 
-    const transcriptPath = ctx.payload && ctx.payload.transcript_path;
+    let transcriptPath = ctx.payload && ctx.payload.transcript_path;
+    if (!transcriptPath) {
+      try {
+        const inj = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'tmp', 'hme-stop-payload-injected.json'), 'utf8'));
+        transcriptPath = inj.transcript_path;
+      } catch(_) {}
+    }
     if (!transcriptPath) return ctx.allow();
     const { text: lastUser, turnIndex } = lastRealUserPrompt(transcriptPath);
     if (!lastUser) return ctx.allow();
