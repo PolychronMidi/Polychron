@@ -418,17 +418,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     except Exception as e:
         logger.warning(f"OVERDRIVE_VIA_SUBAGENT: queue write failed: {e}")
         return None
-    # Compact self-instructing sentinel -- single line. The tag contains
-    # all fields the proxy middleware needs to route the result back;
-    # the trailing call-form is a dispatch hint the agent can execute
-    # directly without needing a separate system-message.
-    #
-    # Routing switch: when `runtime/hme/thread.sid` exists, the user has
-    # initialized a persistent subagent thread via `i/thread init`. All
-    # subsequent reasoning dispatches go through that thread instead of
-    # spawning ephemeral Agent calls -- context accumulates across tasks.
-    # When the sid file is absent, behavior is identical to pre-thread
-    # (ephemeral Agent dispatch with middleware-side result capture).
+    # Self-instructing sentinel; thread.sid routes to persistent subagent if present
     project_root = _os.environ.get("PROJECT_ROOT", "")
     thread_sid_file = _os.path.join(project_root, "tmp", "hme-thread.sid") \
         if project_root else ""
