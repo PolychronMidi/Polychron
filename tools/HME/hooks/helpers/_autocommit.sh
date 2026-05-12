@@ -176,7 +176,10 @@ _ac_do_commit() {
     exec 9>&-
     return 0
   fi
-  # clean tree after commit failure = transient lock race, not data loss
+  # test line one to trigger
+  # test line two unified policy
+  # test line three comment bloat
+  # test line four guard now
   if git -C "$_AC_ROOT" diff --quiet 2>/dev/null; then
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
