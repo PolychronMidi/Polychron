@@ -114,13 +114,7 @@ def learn(query: str = "", title: str = "", content: str = "",
         return _ld()
 
     if action == "suggest_predecessors":
-        # Horizon III asymptote -- KB edge densification via semantic
-        # similarity. Given a candidate title+content, computes the
-        # embedding and reports top-k existing entries above a similarity
-        # threshold. Agent consumes the suggestions to populate
-        # `tags=derived_from:<id>` / `tags=supersedes:<id>` on add,
-        # weaving new knowledge into the existing graph instead of
-        # leaving each addition as an orphan.
+        # semantic similarity suggestions for KB edge densification tags
         if not (title or content):
             return ("Provide title= and/or content= to score against existing entries.\n"
                     "Returns top-k semantic matches with similarity scores; copy the\n"
