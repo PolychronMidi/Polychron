@@ -105,7 +105,9 @@ if [ "$EVENT" = "Stop" ] && [ -n "$_PB_ROOT" ]; then
   _PB_TSCRIPT=$(ls -t "$_PB_CC_DIR"/*.jsonl 2>/dev/null | head -1)
   [ -z "$_PB_TSCRIPT" ] || [ ! -f "$_PB_TSCRIPT" ] && _PB_TSCRIPT="$_PB_ROOT/log/session-transcript.jsonl"
   if [ -f "$_PB_TSCRIPT" ]; then
+    printf '%s\n' "$BODY" > "$_PB_ROOT/tmp/hme-stop-payload-original.json" 2>/dev/null
     BODY=$(printf '%s' "$BODY" | jq -c --arg tp "$_PB_TSCRIPT" '. + {transcript_path: $tp}')
+    printf '%s\n' "$BODY" > "$_PB_ROOT/tmp/hme-stop-payload-injected.json" 2>/dev/null
     printf '%s %s\n' "$(date +%s)" "$_PB_TSCRIPT" >> "$_PB_ROOT/tmp/hme-bridge-transcript.log" 2>/dev/null
   fi
 fi
