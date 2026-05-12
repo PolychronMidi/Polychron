@@ -2,34 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1578,
-      "updated_ts": 1778568353.1675072
+      "max_id": 1583,
+      "updated_ts": 1778568676.5070853
     }
   },
   {
-    "id": 1573,
-    "text": "Eliminate the 'No stderr output' display artifact from hook responses",
-    "activeForm": "Eliminating the No stderr output display artifact",
-    "status": "in_progress",
-    "done": false,
+    "id": 1579,
+    "text": "Eliminate No stderr output: _proxy_bridge.sh safety net + hook_bridge.js empty-stderr guards",
+    "activeForm": "Eliminating No stderr output from hook responses",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778568353.1674538,
+    "ts": 1778568676.5070286,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1574,
-    "text": "Fix onboarding-state-integrity (graduated not in STATES) and onboarding-flow sandbox",
-    "activeForm": "Fixing onboarding-state-integrity + onboarding-flow",
-    "status": "pending",
+    "id": 1580,
+    "text": "Fix onboarding-state-integrity (graduated not in STATES)",
+    "activeForm": "Fixing onboarding-state-integrity",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778568353.1674678,
+    "ts": 1778568676.5070465,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -49,29 +49,15 @@
     "tier": "E3"
   },
   {
-    "id": 1576,
-    "text": "Find and fix root cause of todos.json modification during autocommit window",
-    "activeForm": "Finding and fixing todos.json modifier",
+    "id": 1582,
+    "text": "Find and fix root cause of todos.json modification during autocommit",
+    "activeForm": "Finding todos.json modifier root cause",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778568353.167487,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1577,
-    "text": "Reduce worst comment-bloat offenders in HME tools",
-    "activeForm": "Reducing comment-bloat worst offenders",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778568353.1674955,
+    "ts": 1778568676.5070703,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
