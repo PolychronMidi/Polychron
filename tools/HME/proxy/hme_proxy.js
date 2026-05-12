@@ -762,14 +762,20 @@ if (_mode4WasStreaming) {
             upstreamRes.on('data', (c) => {
               const translated = translator.feed(c);
               if (translated) {
-                // If the translator tries to send its own message_start, we strip it
-                // to avoid the "Double Start" error.
-                let cleanData = translated.replace(/event: message_start[\s\S]*?\n\n/, '');
+                // IMPROVED: Only strip 'message_start' events,
+                // leave everything else (text, content_blocks) alone.
+                let cleanData = translated
+                  .split('\n\n')
+                  .filter(block => !block.includes('message_start'))
+                  .join('\n\n');
 
-                if (cleanData.includes('message_stop')) _sentStop = true;
                 if (cleanData.trim()) {
-                  clientRes.write(cleanData);
+                  // Re-add the double newline that join might have missed at the end
+                  const chunk = cleanData.endsWith('\n\n') ? cleanData : cleanData + '\n\n';
+                  clientRes.write(chunk);
                 }
+
+                if (translated.includes('message_stop')) _sentStop = true;
               }
             });
 
