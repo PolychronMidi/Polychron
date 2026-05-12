@@ -141,13 +141,9 @@ _ac_do_commit() {
     _ac_record_failure "[$caller] flock timeout 30s on $_AC_LOCK_FILE (proceeding unlocked)"
   fi
 
-  # git add -- failures previously went silently to 2>/dev/null; now captured.
-  if ! git -C "$_AC_ROOT" add -A >"$_ac_err_buf" 2>&1; then
-    _ac_record_failure "[$caller] git add -A failed: $(head -c 400 "$_ac_err_buf" 2>/dev/null | tr '\n' ' ')"
-    rm -f "$_ac_err_buf" 2>/dev/null
-    exec 9>&-
-    return 1
-  fi
+  # git add -A runs best-effort (picks up new untracked files).  Failure
+  # is non-fatal -- `commit -a` handles tracked-file modifications below.
+  git -C "$_AC_ROOT" add -A >"$_ac_err_buf" 2>&1 || true
 
   # git commit with single retry for transient lock contention.
   local commit_msg
