@@ -1,17 +1,5 @@
 # Canonical System Prompt
 
-> **Official alternative shipped:** `.claude/output-styles/polychron-trimmed.md`
-> mirrors this canonical content as an Anthropic-supported [Output Style](https://code.claude.com/docs/en/agent-sdk/modifying-system-prompts).
-> Activate in interactive Claude Code via `/output-style polychron-trimmed`.
-> Output Styles is the blessed mechanism for system-prompt replacement --
-> won't break on Claude Code updates and works without the proxy.
-> The proxy-based `replace_system.js` remains active as a parallel path
-> (covers cases where Claude Code is invoked outside the workspace, e.g.
-> `claude -p` subprocesses with `ANTHROPIC_BASE_URL` set). The proxy's
-> unique value is `filter_tools.js` -- Output Styles does NOT filter the
-> tools array.
-
-
 `canonical-system-prompt.md` is the project-curated system prompt that
 replaces Claude Code's default when `HME_REPLACE_SYSTEM_PROMPT=1` in
 `.env`. The replacement is wholesale -- Anthropic can rephrase or

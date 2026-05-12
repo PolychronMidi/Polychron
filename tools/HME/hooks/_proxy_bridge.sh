@@ -284,6 +284,10 @@ unset _PB_RECOVERY_TS 2>/dev/null
 # closing. Now: if jq fails, we surface the parse error to errors.log so
 # the next inline-check or Stop scan picks it up.
 # PATCH: Handle overdrive_mode=4 non-JSON "pending" status
+# Parse response and relay. jq is available in every Claude Code environment;
+# this is the simplest way to pull structured fields from the JSON.
+
+# PATCH: Handle overdrive_mode=4 non-JSON "pending" status
 if [[ "$RESP" == "pending" ]]; then
   STDOUT=""
   STDERR=""
@@ -303,6 +307,7 @@ else
   fi
   rm -f "$_PB_JQ_ERR" 2>/dev/null
 fi
+
 # Validate exit_code is numeric -- otherwise default to 0 with a log entry.
 case "$EXIT_CODE" in
   ''|*[!0-9-]*)
