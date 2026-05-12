@@ -125,7 +125,7 @@ if [ -z "$RESP" ]; then
     exit "${_PB_DIRECT_RC:-0}"
   fi
 
-  # rationale: maintenance-flag check; suppress LIFESAVER during planned restarts
+  # maintenance-flag check; suppress LIFESAVER during planned restarts
   _PB_MAINT_FLAG="$_PB_ROOT/tmp/hme-proxy-maintenance.flag"
   _PB_MAINT_ACTIVE=0
   if [ -n "$_PB_ROOT" ] && [ -f "$_PB_MAINT_FLAG" ]; then
@@ -156,7 +156,7 @@ if [ -z "$RESP" ]; then
 
   _PB_MSG="[$_PB_TS] [proxy-bridge] HME proxy unreachable on 127.0.0.1:${PORT} (event=${EVENT}). No LIFESAVER, no KB briefing, no hook logic for this turn."
 
-  # rationale: errors.log write failure must surface; other 3 channels still carry signal
+  # errors.log write failure must surface; other 3 channels still carry signal
   if [ -n "$_PB_ROOT" ]; then
     mkdir -p "$_PB_ROOT/log" 2>/dev/null
     echo "$_PB_MSG" >> "$_PB_ROOT/log/hme-errors.log"
@@ -169,7 +169,7 @@ if [ -z "$RESP" ]; then
   # local proxy log catches it.
   echo "$_PB_MSG" >&2
 
-  # rationale: only UserPromptSubmit/SessionStart surface stdout banners;
+  # only UserPromptSubmit/SessionStart surface stdout banners;
   # other events would wedge the turn, so those channels stay silent
   case "$EVENT" in
     UserPromptSubmit|SessionStart)
@@ -197,8 +197,6 @@ fi
 
 # Proxy responded -- clear the sticky down-flag, and emit a one-shot
 # recovery banner if the flag was set (meaning the proxy WAS down before
-# this call). The recovery banner parallels the fail-LOUD banner so the
-# user knows normal service resumed.
 if [ -n "$_PB_ROOT" ] && [ -f "$_PB_ROOT/tmp/hme-proxy-down.flag" ]; then
   _PB_RECOVERY_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
   rm -f "$_PB_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
@@ -273,8 +271,7 @@ if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
   STDERR=" "
 fi
 # extract deny reason from either shell-hook {decision:block,reason:...} at
-# exit 2 or unified-policy hookSpecificOutput at exit 0. Always convert to
-# exit 2 for blocking. Write reason to tmp/ for middleware surface.
+# exit 2 or unified-policy hookSpecificOutput at exit 0.
 _PB_DENY_REASON=""
 if [ "$EVENT" = "PreToolUse" ] || [ "$EVENT" = "Stop" ]; then
   if [ "${EXIT_CODE:-0}" != "0" ]; then
