@@ -753,23 +753,28 @@ if (_mode4WasStreaming) {
               'X-Accel-Buffering': 'no'
             });
 
-            // 1. MUST HAVE: message_start AND content_block_start
-            // If the content block isn't open, the IDE throws "Content block not found"
-            const startEvents =
-              `event: message_start\ndata: {"type":"message_start","message":{"id":"msg_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n` +
-              `event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n`;
+            // 1. THE "THINKING" HANDSHAKE
+            // We open a thinking block (index 0), send a tiny delta,
+            // then stop it and start the text block (index 1).
+            const startSequence =
+              `event: message_start\ndata: {"type":"message_start","message":{"id":"msg_proxy_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n` +
+              `event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}\n\n` +
+              `event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"..."}}\n\n` +
+              `event: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n` +
+              `event: content_block_start\ndata: {"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}}\n\n`;
 
-            clientRes.write(startEvents);
+            clientRes.write(startSequence);
 
             upstreamRes.on('data', (c) => {
               const translated = translator.feed(c);
               if (!translated) return;
 
-              // Filter out anything that tries to open/close blocks prematurely
-              // We want to control the lifecycle to prevent 400s
+              // 2. Strip redundant starts and force all text into index 1
               let cleanData = translated
-                .replace(/^event: message_start[\s\S]*?\n\n/gm, '')
-                .replace(/^event: content_block_start[\s\S]*?\n\n/gm, '');
+                .replace(/^event: message_start\ndata: \{.*?\}\n\n/gm, '')
+                .replace(/^event: content_block_start\ndata: \{.*?\}\n\n/gm, '')
+                // We force the index to 1 because 0 was our dummy thinking block
+                .replace(/"index":0/g, '"index":1');
 
               if (cleanData.trim()) {
                 if (cleanData.includes('message_stop')) _sentStop = true;
@@ -779,15 +784,24 @@ if (_mode4WasStreaming) {
 
             upstreamRes.on('end', () => {
               if (!_sentStop) {
-                const finalEvents =
+                // 3. Finalize index 1 (Text)
+                const finalSummary =
+                  'event: content_block_stop\n' +
+                  'data: {"type":"content_block_stop","index":1}\n\n' +
                   'event: message_delta\n' +
                   'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n' +
                   'event: message_stop\n' +
                   'data: {"type":"message_stop"}\n\n';
-                clientRes.write(finalEvents);
+                clientRes.write(finalSummary);
               }
+
               clientRes.end();
               _releaseOpusSlot();
+            });
+
+            upstreamRes.on('error', (err) => {
+              _releaseOpusSlot();
+              try { clientRes.end(); } catch (_e) {}
             });
           } else {
             const chunks = [];
