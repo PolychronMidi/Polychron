@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1500,
-      "updated_ts": 1778563155.2468252
+      "max_id": 1508,
+      "updated_ts": 1778563554.4970582
     }
   },
   {
@@ -51,9 +51,9 @@
   {
     "id": 1477,
     "text": "Run composition engine and check output",
-    "activeForm": "Running composition engine (backgrounded, 13m elapsed)",
-    "status": "in_progress",
-    "done": false,
+    "activeForm": "Running composition engine (1466 beats, 50K notes)",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -65,7 +65,7 @@
   {
     "id": 1497,
     "text": "Diagnose and fix hook protocol errors",
-    "activeForm": "Diagnosing hook streak mechanism (root cause found: aggressive thresholds)",
+    "activeForm": "Diagnosing hook streak mechanism",
     "status": "completed",
     "done": true,
     "critical": false,
@@ -79,9 +79,9 @@
   {
     "id": 1498,
     "text": "Fix i/learn action=health ImportError",
-    "activeForm": "Investigating kb_health ImportError",
-    "status": "in_progress",
-    "done": false,
+    "activeForm": "Fixing kb_health ImportError",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -93,9 +93,9 @@
   {
     "id": 1491,
     "text": "Run full audit suite (audit-all.sh)",
-    "activeForm": "Running full audit suite",
-    "status": "pending",
-    "done": false,
+    "activeForm": "Running full audit suite (2 pre-existing findings)",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -105,15 +105,15 @@
     "tier": "E3"
   },
   {
-    "id": 1471,
-    "text": "Map onboarding friction points and tweak process",
-    "activeForm": "Mapping onboarding friction points and fixing what we can",
-    "status": "pending",
+    "id": 1508,
+    "text": "Synthesize onboarding findings and friction points",
+    "activeForm": "Synthesizing onboarding findings",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778561388.424441,
+    "ts": 1778563554.497056,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
