@@ -471,7 +471,9 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
 def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
                           chain_override: tuple[str, ...] | None = None,
                           allow_subagent: bool = True) -> tuple[str, str] | None:
-    """OVERDRIVE_MODE path -- Opus-then-Sonnet chain with max extended thinking.
+    """OVERDRIVE_MODE=1 path -- Opus-then-Sonnet chain with max extended thinking.
+    MODE>=2 paths supply `chain_override` and reuse this function for the actual
+    per-model dispatch (the chain walk + rate-limit cascade + source labeling).
 
     Triggered when OVERDRIVE_MODE=1 in .env. Bypasses the free-tier cascade
     and spends Claude Code subscription credits for highest-quality output.
