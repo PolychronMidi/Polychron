@@ -174,7 +174,7 @@ class HookMatcherValidityVerifier(Verifier):
         "audit-tools", "chain", "consult", "extract-spec", "handoff",
         "holograph", "policies", "prove", "sensitivity", "state", "timeline",
         "audit-tiered", "project-detect", "decision-audit", "blast-radius",
-        "learnings", "fork-watchdog",
+        "learnings", "fork-watchdog", "parallel-detect",
     }
 
     def run(self) -> VerdictResult:
