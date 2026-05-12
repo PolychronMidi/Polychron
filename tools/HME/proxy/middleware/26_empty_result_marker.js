@@ -20,27 +20,32 @@ module.exports = {
 
   onToolResult({ toolUse, toolResult, ctx }) {
     const text = _textOf(toolResult);
-    if (text && text.trim().length > 0) return;
-    if (ctx.hasHmeFooter(toolResult, '[SUCCESS]') || ctx.hasHmeFooter(toolResult, '[FAIL]')) return;
-    // rationale: PreToolUse hook denial produces empty result with is_error=false.
-    // Without this guard, [SUCCESS] is stamped on blocked edits. Instead of
-    // silently returning, surface the deny reason from the bridge's temp file.
+    // surface hook deny reason from bridge temp file, replacing the generic
+    // "No stderr output" / "hook error" that Claude Code shows for denied tools
     const wasDenied = (toolResult && toolResult.permissionDecision === 'deny') ||
-                      (toolUse && toolUse.permissionDecision === 'deny');
+                      (toolUse && toolUse.permissionDecision === 'deny') ||
+                      (text && /\bNo stderr output\b|hook error/i.test(text));
     if (wasDenied) {
       const fs = require('fs');
       const path = require('path');
-      const reasonFile = path.join(ctx.projectRoot || process.env.PROJECT_ROOT || '.', 'tmp', 'hme-last-deny-reason.txt');
+      const rf = path.join(ctx.projectRoot || process.env.PROJECT_ROOT || '.', 'tmp', 'hme-last-deny-reason.txt');
       try {
-        if (fs.existsSync(reasonFile)) {
-          const reason = fs.readFileSync(reasonFile, 'utf8').trim();
+        if (fs.existsSync(rf)) {
+          const reason = fs.readFileSync(rf, 'utf8').trim();
           if (reason) {
             ctx.replaceResult(toolResult, '[BLOCKED] ' + reason);
+            ctx.markDirty();
+            return;
           }
         }
-      } catch (_) { /* silent-ok: best-effort deny reason surfacing */ }
+      } catch (_) { /* silent-ok: best-effort */ }
+      // no reason file: still show denial happened
+      ctx.replaceResult(toolResult, '[BLOCKED] this tool call was denied by an HME hook');
+      ctx.markDirty();
       return;
     }
+    if (text && text.trim().length > 0) return;
+    if (ctx.hasHmeFooter(toolResult, '[SUCCESS]') || ctx.hasHmeFooter(toolResult, '[FAIL]')) return;
     const marker = toolResult.is_error === true ? _FAIL : _SUCCESS;
     ctx.appendToResult(toolResult, marker);
     ctx.markDirty();
