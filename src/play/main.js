@@ -408,6 +408,8 @@ if (require.main === module) {
   // Mirrors the writer in scripts/utils/run-with-log.js so direct `node
   // src/play/main.js` invocations are gated the same as `npm run main`.
   (function _refuseIfLocked() {
+    // When spawned by run-with-log.js, the parent already holds the lock.
+    if (process.env.RUN_WITH_LOG_OWNER) return;
     const _fs = require('fs');
     const _path = require('path');
     const _lockPath = _path.join(process.cwd(), 'tmp', 'r' + 'un.lock');
