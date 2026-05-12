@@ -272,7 +272,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
         headers["x-api-key"] = _zen_key
         headers["User-Agent"] = "curl/8.0.1"
     elif _provider == "cascade":
-        headers["X-HME-Upstream"] = "https://api.anthropic.com"
+        pass  # no Zen header; proxy routes to cascade provider by model name
 
     try:
         request = _req.Request(
