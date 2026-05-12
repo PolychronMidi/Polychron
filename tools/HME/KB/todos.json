@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1587,
-      "updated_ts": 1778570433.7454154
+      "max_id": 1589,
+      "updated_ts": 1778570518.518955
     }
   },
   {
     "id": 1584,
     "text": "Fix onboarding-flow verifier sandbox (paths module import)",
     "activeForm": "Fixing onboarding-flow verifier sandbox",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 1578,
     "text": "Add KB calibration anchors for session learnings",
     "activeForm": "Adding KB calibration anchors",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
