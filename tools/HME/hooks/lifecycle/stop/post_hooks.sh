@@ -9,11 +9,6 @@ _SESSION_ID_FOR_ACTIVITY=$(_safe_jq "$INPUT" '.session_id' 'unknown')
 _emit_activity turn_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 
 # antagonism bridge: record turn for streak calibrator signal-trust tracking
-# we snapshot (turnstart_lines, watermark, total_lines) into the calibrator
-# history. Resolution-velocity is computed across the rolling window and used
-# (observe-only for now) to recommend the next turn's HME_STREAK_WARN.
-# See tools/HME/activity/streak_calibrator.py. Silent-fail to keep stop.sh
-# non-fragile -- this is telemetry, not a gate.
 PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/streak_calibrator.py" --record \
   > /dev/null 2>&1 &
 
