@@ -21,9 +21,11 @@ function _commentPrefix(fp) {
   return null;
 }
 
-function _startsWithAnnotation(line) {
+function _startsWithAnnotation(line, prefix) {
   const s = line.trimStart();
-  return ANNOTATIONS.some((a) => s.startsWith(a));
+  if (!s.startsWith(prefix)) return false;
+  const rest = s.slice(prefix.length);
+  return _ANNOTATION_TAGS.some((t) => rest.startsWith(t) || rest.startsWith(' ' + t));
 }
 
 function _scan(fp, content) {
