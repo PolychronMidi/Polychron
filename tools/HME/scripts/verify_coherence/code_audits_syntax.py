@@ -127,6 +127,7 @@ _SPAM_ALLOW = "spam-ok"
 _SPAM_SKIP_DIRS = {
     ".git", "node_modules", "output", "tmp", "log", "dist", "build",
     "__pycache__", ".venv", "venv", "lab", "plugin-cache", "models",
+    "KB", ".pytest_cache", ".claude", "runtime",
 }
 _SPAM_SKIP_FILES = {
     # Test fixtures whose purpose is to exercise sanitizer regex catalogs.
