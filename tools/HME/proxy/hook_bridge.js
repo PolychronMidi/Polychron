@@ -198,12 +198,14 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
           hookSpecificOutput: { additionalContext: firstDeny.reason },
         });
       }
+      if (!combinedStderr) combinedStderr = ' ';
       return { stdout, stderr: combinedStderr, exit_code: 0 };
     }
     if (instructs.length) {
       const stdout = JSON.stringify({
         hookSpecificOutput: { additionalContext: instructs.map((i) => i.message).join('\n\n') },
       });
+      if (!combinedStderr) combinedStderr = ' ';
       return { stdout, stderr: combinedStderr, exit_code: 0 };
     }
     return null;
