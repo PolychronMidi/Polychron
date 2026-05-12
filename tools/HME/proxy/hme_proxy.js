@@ -404,7 +404,7 @@ async function _injectHmeTools(payload) {
     }
     return injected;
   } catch (err) {
-    console.error(`[hme-proxy] HME tool injection failed: ${err.message}`);
+    console.error(`[FAIL]: ${err.message}`);
     return 0;
   }
 }
