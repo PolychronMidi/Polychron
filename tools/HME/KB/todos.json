@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1634,
-      "updated_ts": 1778622281.1828833
+      "max_id": 1644,
+      "updated_ts": 1778622295.6071024
     }
   },
   {
     "id": 1625,
     "text": "E1: stale mode-enum comment at synthesis_reasoning.py:354",
-    "activeForm": "Fixing stale mode-enum comment at synthesis_reasoning.py:354",
-    "status": "in_progress",
-    "done": false,
+    "activeForm": "Fixed stale mode-enum comment",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -23,9 +23,9 @@
   {
     "id": 1626,
     "text": "E1: stale Opus-then-Sonnet docstring at synthesis_overdrive.py:474",
-    "activeForm": "Fixing stale docstring at synthesis_overdrive.py:474",
-    "status": "pending",
-    "done": false,
+    "activeForm": "Fixed stale docstring",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 1627,
     "text": "E2: sweep active docs for stale mode enumerations",
     "activeForm": "Sweeping active docs for stale mode enumerations",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -51,8 +51,8 @@
   {
     "id": 1628,
     "text": "E2: rewrite legacy Opus-then-Sonnet drift in synthesis_overdrive.py",
-    "activeForm": "Rewriting legacy Opus-then-Sonnet drift in synthesis_overdrive.py",
-    "status": "pending",
+    "activeForm": "Rewriting legacy drift",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -66,7 +66,7 @@
     "id": 1629,
     "text": "E4: cross-file MODE=N gate audit",
     "activeForm": "Auditing cross-file MODE=N gates",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -79,8 +79,8 @@
   {
     "id": 1630,
     "text": "E4: collapsibility audit for MODE=2/3/4 into MODE=5",
-    "activeForm": "Auditing MODE=2/3/4 collapsibility",
-    "status": "pending",
+    "activeForm": "Auditing collapsibility",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -93,7 +93,7 @@
   {
     "id": 1631,
     "text": "E3: refactor elif ladder into dispatcher dict",
-    "activeForm": "Refactoring elif ladder into dispatcher dict",
+    "activeForm": "Refactoring elif ladder",
     "status": "pending",
     "done": false,
     "critical": false,
