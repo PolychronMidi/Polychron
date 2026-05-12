@@ -1,0 +1,1 @@
+import{cache as t}from"react";import r from"./getConfig.js";import o from"./getServerFormatter.js";const e=t((async function(t){const e=await r(t);return o(e)}));async function n(t){return e(t?.locale)}export{n as default};

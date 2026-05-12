@@ -1,0 +1,1 @@
+import t from"./ExtractionCompiler.js";import o from"./extractor/MessageExtractor.js";import{getDefaultProjectRoot as r}from"./utils.js";async function e(e){const a=new t(e,{extractor:new o({isDevelopment:!1,projectRoot:r()})});await a.extractAll()}export{e as default};

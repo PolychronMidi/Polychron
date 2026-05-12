@@ -1,0 +1,1 @@
+import e from"../server/react-server/getDefaultNow.js";import o from"./useConfig.js";function t(t){null!=t?.updateInterval&&console.error("`useNow` doesn't support the `updateInterval` option in Server Components, the value will be ignored. If you need the value to update, you can convert the component to a Client Component.");return o("useNow").now??e()}export{t as default};

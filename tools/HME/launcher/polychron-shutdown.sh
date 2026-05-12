@@ -56,6 +56,7 @@ _PATTERNS=(
   "llamacpp_daemon"
   "llama-server.*8080"
   "llama-server.*8081"
+  "omniroute.*server-ws"
 )
 for pat in "${_PATTERNS[@]}"; do
   pkill -TERM -f "$pat" 2>/dev/null && echo "[shutdown] SIGTERM -> $pat" >&2 || true

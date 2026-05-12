@@ -1,0 +1,1 @@
+import{cache as r}from"react";import o from"./getServerTranslator.js";var t=r((function(r,t){const n=o(r,t);function i(...[r,o,t]){return n(void 0,o,t,void 0)}return i.rich=function(...[r,o,t]){return n.rich(void 0,o,t,void 0)},i.markup=function(...[r,o,t]){return n.markup(void 0,o,t,void 0)},i.has=function(...[r]){return!0},i}));export{t as default};

@@ -1,0 +1,1 @@
+import{cache as t}from"react";import r from"./getConfig.js";import o from"./getServerExtractor.js";const e=t((async function(t){let e,a;"string"==typeof t?e=t:t&&(a=t.locale,e=t.namespace);const n=await r(a);return o(n,e)}));export{e as default};

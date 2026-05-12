@@ -1,0 +1,172 @@
+import { NextResponse } from 'next/server';
+import { receiveRoutingConfig } from '../routing/config.js';
+import { HEADER_LOCALE_NAME } from '../shared/constants.js';
+import { matchesPathname, normalizeTrailingSlash, getLocalePrefix, getLocalizedTemplate } from '../shared/utils.js';
+import getAlternateLinksHeaderValue from './getAlternateLinksHeaderValue.js';
+import resolveLocale from './resolveLocale.js';
+import syncCookie from './syncCookie.js';
+import { sanitizePathname, isLocaleSupportedOnDomain, getNormalizedPathname, getPathnameMatch, getInternalTemplate, formatTemplatePathname, formatPathname, getBestMatchingDomain, applyBasePath, getLocaleAsPrefix } from './utils.js';
+
+function createMiddleware(routing) {
+  const resolvedRouting = receiveRoutingConfig(routing);
+  return function middleware(request) {
+    let unsafeExternalPathname;
+    try {
+      // Resolve potential foreign symbols (e.g. /ja/%E7%B4%84 → /ja/約))
+      unsafeExternalPathname = decodeURI(request.nextUrl.pathname);
+    } catch {
+      // In case an invalid pathname is encountered, forward
+      // it to Next.js which in turn responds with a 400
+      return NextResponse.next();
+    }
+
+    // Sanitize malicious URIs to prevent open redirect attacks due to
+    // decodeURI doesn't escape encoded backslashes ('%5C' & '%5c')
+    const externalPathname = sanitizePathname(unsafeExternalPathname);
+    const {
+      domain,
+      locale
+    } = resolveLocale(resolvedRouting, request.headers, request.cookies, externalPathname);
+    const hasMatchedDefaultLocale = domain ? domain.defaultLocale === locale : locale === resolvedRouting.defaultLocale;
+    const domainsConfig = resolvedRouting.domains?.filter(curDomain => isLocaleSupportedOnDomain(locale, curDomain)) || [];
+    const hasUnknownHost = resolvedRouting.domains != null && !domain;
+    function next(url) {
+      const urlObj = new URL(url, request.url);
+      if (request.nextUrl.basePath) {
+        urlObj.pathname = applyBasePath(urlObj.pathname, request.nextUrl.basePath);
+      }
+      const headers = new Headers(request.headers);
+      headers.set(HEADER_LOCALE_NAME, locale);
+      const isRewriteNecessary = normalizeTrailingSlash(request.nextUrl.pathname) !== normalizeTrailingSlash(urlObj.pathname);
+      if (isRewriteNecessary) {
+        return NextResponse.rewrite(urlObj, {
+          request: {
+            headers
+          }
+        });
+      } else {
+        return NextResponse.next({
+          request: {
+            headers
+          }
+        });
+      }
+    }
+    function redirect(url, redirectDomain) {
+      const urlObj = new URL(url, request.url);
+      urlObj.pathname = normalizeTrailingSlash(urlObj.pathname);
+      if (domainsConfig.length > 0 && !redirectDomain && domain) {
+        const bestMatchingDomain = getBestMatchingDomain(domain, locale, domainsConfig);
+        if (bestMatchingDomain) {
+          redirectDomain = bestMatchingDomain.domain;
+          const redirectDomainMode = bestMatchingDomain.localePrefix || resolvedRouting.localePrefix.mode;
+          if (bestMatchingDomain.defaultLocale === locale && redirectDomainMode === 'as-needed') {
+            urlObj.pathname = getNormalizedPathname(urlObj.pathname, resolvedRouting.locales, resolvedRouting.localePrefix);
+          }
+        }
+      }
+      if (redirectDomain) {
+        urlObj.host = redirectDomain;
+        if (request.headers.get('x-forwarded-host')) {
+          urlObj.protocol = request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol;
+          const redirectDomainPort = redirectDomain.split(':')[1];
+          urlObj.port = redirectDomainPort ?? request.headers.get('x-forwarded-port') ?? '';
+        }
+      }
+      if (request.nextUrl.basePath) {
+        urlObj.pathname = applyBasePath(urlObj.pathname, request.nextUrl.basePath);
+      }
+      hasRedirected = true;
+      return NextResponse.redirect(urlObj.toString());
+    }
+    const unprefixedExternalPathname = getNormalizedPathname(externalPathname, resolvedRouting.locales, resolvedRouting.localePrefix);
+    const pathnameMatch = getPathnameMatch(externalPathname, resolvedRouting.locales, resolvedRouting.localePrefix, domain);
+    const hasLocalePrefix = pathnameMatch != null;
+
+    // Use domain-specific localePrefix mode if available, otherwise use global mode
+    const effectiveLocalePrefixMode = domain?.localePrefix || resolvedRouting.localePrefix.mode;
+    const isUnprefixedRouting = effectiveLocalePrefixMode === 'never' || hasMatchedDefaultLocale && effectiveLocalePrefixMode === 'as-needed';
+    let response;
+    let internalTemplateName;
+    let hasRedirected;
+    let unprefixedInternalPathname = unprefixedExternalPathname;
+    const pathnames = resolvedRouting.pathnames;
+    if (pathnames) {
+      let resolvedTemplateLocale;
+      [resolvedTemplateLocale, internalTemplateName] = getInternalTemplate(pathnames, unprefixedExternalPathname, locale);
+      if (internalTemplateName) {
+        const pathnameConfig = pathnames[internalTemplateName];
+        const localeTemplate = getLocalizedTemplate(pathnameConfig, locale, internalTemplateName);
+        if (matchesPathname(localeTemplate, unprefixedExternalPathname)) {
+          unprefixedInternalPathname = formatTemplatePathname(unprefixedExternalPathname, localeTemplate, internalTemplateName);
+        } else {
+          let sourceTemplate;
+          if (resolvedTemplateLocale) {
+            // A localized pathname from another locale has matched
+            sourceTemplate = getLocalizedTemplate(pathnameConfig, resolvedTemplateLocale, internalTemplateName);
+          } else {
+            // An internal pathname has matched that
+            // doesn't have a localized pathname
+            sourceTemplate = internalTemplateName;
+          }
+          const localePrefix = isUnprefixedRouting ? undefined : getLocalePrefix(locale, resolvedRouting.localePrefix);
+          const template = formatTemplatePathname(unprefixedExternalPathname, sourceTemplate, localeTemplate);
+          response = redirect(formatPathname(template, localePrefix, request.nextUrl.search));
+        }
+      }
+    }
+    if (!response) {
+      if (unprefixedInternalPathname === '/' && !hasLocalePrefix) {
+        if (isUnprefixedRouting) {
+          response = next(formatPathname(unprefixedInternalPathname, getLocaleAsPrefix(locale), request.nextUrl.search));
+        } else {
+          response = redirect(formatPathname(unprefixedExternalPathname, getLocalePrefix(locale, resolvedRouting.localePrefix), request.nextUrl.search));
+        }
+      } else {
+        const internalHref = formatPathname(unprefixedInternalPathname, getLocaleAsPrefix(locale), request.nextUrl.search);
+        if (hasLocalePrefix) {
+          const externalHref = formatPathname(unprefixedExternalPathname, pathnameMatch.prefix, request.nextUrl.search);
+          if (effectiveLocalePrefixMode === 'never') {
+            response = redirect(formatPathname(unprefixedExternalPathname, undefined, request.nextUrl.search));
+          } else if (pathnameMatch.exact) {
+            if (hasMatchedDefaultLocale && isUnprefixedRouting) {
+              response = redirect(formatPathname(unprefixedExternalPathname, undefined, request.nextUrl.search));
+            } else {
+              if (resolvedRouting.domains) {
+                const pathDomain = getBestMatchingDomain(domain, pathnameMatch.locale, domainsConfig);
+                if (domain?.domain !== pathDomain?.domain && !hasUnknownHost) {
+                  response = redirect(externalHref, pathDomain?.domain);
+                } else {
+                  response = next(internalHref);
+                }
+              } else {
+                response = next(internalHref);
+              }
+            }
+          } else {
+            response = redirect(externalHref);
+          }
+        } else {
+          if (isUnprefixedRouting) {
+            response = next(internalHref);
+          } else {
+            response = redirect(formatPathname(unprefixedExternalPathname, getLocalePrefix(locale, resolvedRouting.localePrefix), request.nextUrl.search));
+          }
+        }
+      }
+    }
+    syncCookie(request, response, locale, resolvedRouting, domain);
+    if (!hasRedirected && effectiveLocalePrefixMode !== 'never' && resolvedRouting.alternateLinks && resolvedRouting.locales.length > 1) {
+      response.headers.set('Link', getAlternateLinksHeaderValue({
+        routing: resolvedRouting,
+        internalTemplateName,
+        localizedPathnames: internalTemplateName != null && pathnames ? pathnames[internalTemplateName] : undefined,
+        request,
+        resolvedLocale: locale
+      }));
+    }
+    return response;
+  };
+}
+
+export { createMiddleware as default };

@@ -476,10 +476,17 @@ function handleRequest(clientReq, clientRes) {
     }
 
 // ========================================================================
-    // OVERDRIVE_MODE=4 main-agent swap with full Anthropic<->OpenAI translation.
+    // OVERDRIVE_MODE=4 main-agent swap: route through OmniRoute.
+    // OmniRoute translates Anthropic<->OpenAI bidirectionally so the proxy
+    // stays in native Anthropic format end-to-end. The old zen_translator
+    // path is preserved behind HME_OMNIROUTE_OFF=1.
     // ========================================================================
     let _isMode4Swap = false;
     let _mode4WasStreaming = false;
+    let _isMode4OmniRoute = false;
+
+    const _OMNIROUTE_PORT = process.env.HME_OMNIROUTE_PORT || '20128';
+    const _OMNIROUTE_OFF = process.env.HME_OMNIROUTE_OFF === '1';
 
     if (process.env.OVERDRIVE_MODE === '4'
         && !_isSeniorConsult
@@ -488,37 +495,48 @@ function handleRequest(clientReq, clientRes) {
         && !clientReq.headers['x-hme-upstream']) {
 
       const _zenKey = process.env.OPENCODE_API_KEY || '';
-if (_zenKey) {
-        const { translateRequestToOpenAI } = require('./zen_translator');
+      if (_zenKey) {
         _mode4WasStreaming = (payload.stream === true);
-        const oaPayload = translateRequestToOpenAI(payload, 'deepseek-v4-pro');
-
-        clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
-
-        // CHANGE THIS: Many Zen Go instances prefer Bearer over x-api-key
-        clientReq.headers['authorization'] = `Bearer ${_zenKey}`;
-        clientReq.headers['x-api-key'] = _zenKey; // Keep both to be safe
-
-        clientReq.url = '/v1/chat/completions';
-        outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
-        _isMode4Swap = true;
         injected = true;
 
-        console.error(`[hme-proxy] MODE=4 swap: claude-* -> deepseek-v4-pro via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
+        if (!_OMNIROUTE_OFF) {
+          // --- OmniRoute path (default) ---
+          // Keep request in Anthropic format; OmniRoute handles translation.
+          payload.model = 'opencode-go/deepseek-v4-pro';
+          clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${_OMNIROUTE_PORT}`;
+          delete clientReq.headers['authorization'];
+          delete clientReq.headers['x-api-key'];
+          _isMode4OmniRoute = true;
+
+          console.error(`[hme-proxy] MODE=4 OmniRoute: claude-* -> opencode-go/deepseek-v4-pro via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming})`);
+        } else {
+          // --- Legacy zen_translator path (HME_OMNIROUTE_OFF=1) ---
+          const { translateRequestToOpenAI } = require('./zen_translator');
+          const oaPayload = translateRequestToOpenAI(payload, 'deepseek-v4-pro');
+          clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
+          clientReq.headers['authorization'] = `Bearer ${_zenKey}`;
+          clientReq.headers['x-api-key'] = _zenKey;
+          clientReq.url = '/v1/chat/completions';
+          outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
+          _isMode4Swap = true;
+
+          console.error(`[hme-proxy] MODE=4 legacy: claude-* -> deepseek-v4-pro via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
+        }
       } else {
         console.error('[hme-proxy] MODE=4 active but OPENCODE_API_KEY missing -- swap skipped');
       }
     }
 
     const upstream = resolveUpstream(clientReq);
-    const isAnthropic = upstream.provider === 'anthropic';
+    const isAnthropic = upstream.provider === 'anthropic' || _isMode4OmniRoute;
 
     // Discriminator: only INTERACTIVE-path 429s trip the global escape
     // hatch. OVERDRIVE/loopback callers self-handle via their own circuit
     // breaker; tripping global on them breaks Claude Code's UI.
-    const _isInteractivePath = isAnthropic
+    const _isInteractivePath = (upstream.provider === 'anthropic' || _isMode4OmniRoute)
       && (typeof clientReq.headers['authorization'] === 'string'
-          || typeof clientReq.headers['x-api-key'] === 'string');
+          || typeof clientReq.headers['x-api-key'] === 'string'
+          || _isMode4OmniRoute);
 
     // Hoisted session key: upstream response/error callbacks run outside
     // the `if (payload && messages && !_passthrough)` block.
@@ -664,6 +682,7 @@ if (_zenKey) {
     }
 
     if (isAnthropic
+        && !_isMode4OmniRoute
         && !upstreamHeaders['authorization']
         && !upstreamHeaders['x-api-key']) {
       const remoteAddr = (clientReq.socket && clientReq.socket.remoteAddress) || '';

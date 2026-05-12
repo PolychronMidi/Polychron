@@ -69,6 +69,38 @@ _port_healthy() {
   curl -sf --max-time 1 "$1" > /dev/null 2>&1
 }
 
+# 0. OmniRoute (MODE=4 main-agent translator)
+_OMNIROUTE_PORT="${HME_OMNIROUTE_PORT:-20128}"
+_OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
+if [ "${OVERDRIVE_MODE:-0}" = "4" ] && [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
+  _OR_DIR="$PROJECT_ROOT/tools/omniroute"
+  if [ -x "$_OR_DIR/start.sh" ]; then
+    if _port_healthy "${_OMNIROUTE_URL}/v1/models"; then
+      echo "[launch] OmniRoute already up on :${_OMNIROUTE_PORT}" >&2
+    else
+      echo "[launch] starting OmniRoute on :${_OMNIROUTE_PORT} (MODE=4 translator)..." >&2
+      HME_OMNIROUTE_PORT="$_OMNIROUTE_PORT" \
+        bash "$_OR_DIR/start.sh" --configure > "$PROJECT_ROOT/log/omniroute.out" 2>&1 &
+      _ORPID=$!
+      disown 2>/dev/null || true
+      _record_pid omniroute "$_ORPID"
+      _owaited=0
+      while [ "$_owaited" -lt 30 ]; do
+        _port_healthy "${_OMNIROUTE_URL}/v1/models" && break
+        sleep 1
+        _owaited=$((_owaited + 1))
+      done
+      if _port_healthy "${_OMNIROUTE_URL}/v1/models"; then
+        echo "[launch] OmniRoute ready after ${_owaited}s" >&2
+      else
+        echo "[launch] WARNING: OmniRoute startup timed out -- proxy may fall back to HME_OMNIROUTE_OFF=1" >&2
+      fi
+    fi
+  else
+    echo "[launch] WARNING: OmniRoute launcher not found at $_OR_DIR/start.sh -- MODE=4 will fail" >&2
+  fi
+fi
+
 # 1. HME proxy
 
 if _port_healthy "${PROXY_URL}/health"; then

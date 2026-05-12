@@ -1,0 +1,30 @@
+Third-Party Notices for tls-client-node
+
+This project is distributed under Apache License 2.0 with Commons Clause.
+
+Public license summary:
+
+- You can use, modify, and redistribute the software under the Apache 2.0 base
+	terms and the Commons Clause condition.
+- You cannot sell the software itself under the public license where the value
+	derives entirely or substantially from tls-client-node itself.
+
+This package interoperates with and downloads runtime components from the
+following upstream projects at install time or first use:
+
+- bogdanfinn/tls-client
+- bogdanfinn/tls-client-api
+
+Those upstream runtime components are distributed separately under their own
+licenses. If you redistribute those downloaded runtime components, you are
+responsible for complying with the upstream license terms that apply to them.
+
+Required acknowledgement for materials mentioning features or use of the
+upstream runtime components:
+
+This product includes software developed by Bogdan Finn and contributors.
+
+Upstream project references:
+
+- https://github.com/bogdanfinn/tls-client
+- https://github.com/bogdanfinn/tls-client-api

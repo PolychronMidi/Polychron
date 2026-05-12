@@ -1,0 +1,1 @@
+import{getBasePath as t}from"./utils.js";function e(e,o,n,a){if(!e||!(a!==n&&null!=a)||!o)return;const f=t(o),r=""!==f?f:"/",{name:c,...i}=e;i.path||(i.path=r);let l=`${c}=${a};`;for(const[t,e]of Object.entries(i)){l+=`${"maxAge"===t?"max-age":t}`,"boolean"!=typeof e&&(l+="="+e),l+=";"}document.cookie=l}export{e as default};

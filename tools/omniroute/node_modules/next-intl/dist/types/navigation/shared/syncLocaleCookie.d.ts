@@ -1,0 +1,8 @@
+import type { Locale } from 'use-intl';
+import type { InitializedLocaleCookieConfig } from '../../routing/config.js';
+/**
+ * We have to keep the cookie value in sync as Next.js might
+ * skip a request to the server due to its router cache.
+ * See https://github.com/amannn/next-intl/issues/786.
+ */
+export default function syncLocaleCookie(localeCookie: InitializedLocaleCookieConfig, pathname: string | null, locale: Locale, nextLocale?: Locale): void;
