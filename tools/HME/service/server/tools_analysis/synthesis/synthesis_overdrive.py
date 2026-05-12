@@ -181,6 +181,41 @@ def _emit_overdrive_activity(source_label: str, model_id: str,
 # (bounded_log import moved to module top alongside other imports)
 
 
+def _try_cascade_model(model_id: str, prompt: str, system: str,
+                       max_tokens: int) -> tuple[str | None, bool]:
+    """Call a cascade model through its provider module (OpenAI-compatible API)."""
+    _PROVIDER_MAP = {
+        "mistral-large-3": "mistral",
+        "gemini-3-pro": "gemini",
+        "gemini-3-flash-lite": "gemini",
+        "gpt-5.2-turbo": "openrouter",
+        "gpt-5.2-mini": "openrouter",
+    }
+    _MODEL_MAP = {
+        "mistral-large-3": "mistral-large-latest",
+        "gemini-3-pro": "gemini-2.5-pro-exp-03-25",
+        "gemini-3-flash-lite": "gemini-2.5-flash-lite",
+        "gpt-5.2-turbo": "gpt-5.2-turbo",
+        "gpt-5.2-mini": "gpt-5.2-mini",
+    }
+    _provider_key = _PROVIDER_MAP.get(model_id)
+    if not _provider_key:
+        return (None, False)
+    _api_model = _MODEL_MAP.get(model_id, model_id)
+    try:
+        from . import synthesis_reasoning as _sr
+        _providers = _sr._load_providers()
+        _mod = _providers.get(_provider_key)
+        if not _mod:
+            return (None, False)
+        _text = _mod.cascade(prompt, system=system, max_tokens=max_tokens)
+        if _text:
+            return (_text, f"cascade/{_provider_key}")
+        return (None, True)  # rate-limited, try next model
+    except Exception:
+        return (None, False)
+
+
 def _resolve_model_provider(model_id: str) -> str | None:
     """Look up a model's provider from config/models.json. Returns None if not found."""
     import json as _json
