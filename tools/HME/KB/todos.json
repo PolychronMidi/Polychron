@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1661,
-      "updated_ts": 1778625998.5527363
+      "max_id": 1667,
+      "updated_ts": 1778626033.039393
     }
   },
   {
     "id": 1656,
     "text": "Read synthesis_reasoning.py in full to understand current structure",
     "activeForm": "Reading synthesis_reasoning.py",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 1657,
     "text": "Read config/models.json to understand model registry",
     "activeForm": "Reading models.json",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 1658,
     "text": "Read synthesis_overdrive.py to verify _call_opus_overdrive signature",
     "activeForm": "Verifying _call_opus_overdrive signature",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 1659,
     "text": "Implement E3a: Create _resolve_mode_legacy_chain + _MODE_CHAIN_RESOLVERS dispatcher",
     "activeForm": "Implementing dispatcher refactor",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
