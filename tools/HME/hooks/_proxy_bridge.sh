@@ -283,18 +283,26 @@ unset _PB_RECOVERY_TS 2>/dev/null
 # action. That's the canonical silent-fail pattern this audit pass is
 # closing. Now: if jq fails, we surface the parse error to errors.log so
 # the next inline-check or Stop scan picks it up.
-_PB_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/jq_err_$$.log")
-STDOUT=$(echo "$RESP" | jq -r '.stdout // ""' 2>"$_PB_JQ_ERR")
-STDERR=$(echo "$RESP" | jq -r '.stderr // ""' 2>>"$_PB_JQ_ERR")
-EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0' 2>>"$_PB_JQ_ERR")
-if [ -s "$_PB_JQ_ERR" ] && [ -n "$_PB_ROOT" ] && [ -d "$_PB_ROOT/log" ]; then
-  _PB_JQ_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
-  while IFS= read -r line; do
-    [ -n "$line" ] && echo "[$_PB_JQ_TS] [_proxy_bridge] jq parse failed on proxy response (event=$EVENT): $line" \
-      >> "$_PB_ROOT/log/hme-errors.log"
-  done < "$_PB_JQ_ERR"
+# PATCH: Handle overdrive_mode=4 non-JSON "pending" status
+if [[ "$RESP" == "pending" ]]; then
+  STDOUT=""
+  STDERR=""
+  EXIT_CODE=0
+else
+  _PB_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/jq_err_$$.log")
+  STDOUT=$(echo "$RESP" | jq -r '.stdout // ""' 2>"$_PB_JQ_ERR")
+  STDERR=$(echo "$RESP" | jq -r '.stderr // ""' 2>>"$_PB_JQ_ERR")
+  EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0' 2>>"$_PB_JQ_ERR")
+
+  if [ -s "$_PB_JQ_ERR" ] && [ -n "$_PB_ROOT" ] && [ -d "$_PB_ROOT/log" ]; then
+    _PB_JQ_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r line; do
+      [ -n "$line" ] && echo "[$_PB_JQ_TS] [_proxy_bridge] jq parse failed on proxy response (event=$EVENT): $line" \
+        >> "$_PB_ROOT/log/hme-errors.log"
+    done < "$_PB_JQ_ERR"
+  fi
+  rm -f "$_PB_JQ_ERR" 2>/dev/null
 fi
-rm -f "$_PB_JQ_ERR" 2>/dev/null
 # Validate exit_code is numeric -- otherwise default to 0 with a log entry.
 case "$EXIT_CODE" in
   ''|*[!0-9-]*)
