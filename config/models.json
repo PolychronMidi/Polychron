@@ -353,8 +353,8 @@
   },
 
   "overdrive_routing": {
-    "E5": { "primary": "deepseek-v4-pro", "fallback": "claude-opus-4.7" },
-    "E4": { "primary": "minimax-m2.7", "fallback": "claude-sonnet-4.5" },
+    "E5": { "primary": "deepseek-v4-pro", "fallback": "gpt-5.2" },
+    "E4": { "primary": "minimax-m2.7", "fallback": "mistral-large-3" },
     "E3": { "primary": "deepseek-v4-flash", "fallback": "gemini-3-flash" },
     "E2": { "primary": "nemotron-3-super", "fallback": "qwen3.5-plus" },
     "E1": { "primary": "big-pickle", "fallback": "gpt-5.4-nano" }
