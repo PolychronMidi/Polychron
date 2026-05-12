@@ -8,8 +8,7 @@ INPUT="${INPUT:?post_hooks.sh requires INPUT from dispatcher (Stop payload)}"
 _SESSION_ID_FOR_ACTIVITY=$(_safe_jq "$INPUT" '.session_id' 'unknown')
 _emit_activity turn_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 
-# Antagonism bridge: record turn for streak calibrator
-# Feeds the LIFESAVER streak-sensitivity <-> signal-trust bridge. At turn end
+# antagonism bridge: record turn for streak calibrator signal-trust tracking
 # we snapshot (turnstart_lines, watermark, total_lines) into the calibrator
 # history. Resolution-velocity is computed across the rolling window and used
 # (observe-only for now) to recommend the next turn's HME_STREAK_WARN.
