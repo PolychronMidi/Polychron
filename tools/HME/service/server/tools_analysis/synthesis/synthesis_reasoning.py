@@ -420,6 +420,18 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
             _text, _source = _overdrive_result
             _last_source = _source
             return _text
+    elif _od_mode == "5":
+        _chain = _resolve_mode5_chain(_normalized_tier)
+        if _chain:
+            _overdrive_result = _call_opus_overdrive(
+                prompt, system, max_tokens,
+                chain_override=_chain,
+                allow_subagent=False,
+            )
+            if _overdrive_result:
+                _text, _source = _overdrive_result
+                _last_source = _source
+                return _text
 
     try:
         providers = _load_providers()
