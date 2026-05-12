@@ -972,9 +972,6 @@ if (_mode4WasStreaming) {
             const _shouldRetry = headers['x-should-retry'] === 'true';
             const _isRateLimit = _errInfo.type === 'rate_limit_error';
             // ITPM-exhaustion bumps panic-shrink so next request is smaller.
-            // Cloudflare-rate-throttle (x-should-retry=true) doesn't benefit
-            // from shrinking because the limiter is per-IP-per-second of
-            // requests, not bytes -- skip the panic counter for those.
             if (_isRateLimit && !_shouldRetry) {
               _consecutive429s = Math.min(_consecutive429s + 1, 4);
               console.error(`rate_limit_error (ITPM-exhaustion) -- panic-shrink counter=${_consecutive429s}, next threshold=${_effectiveCompactThreshold()}B`);
@@ -1021,9 +1018,7 @@ if (_mode4WasStreaming) {
             }
             emit({ event: 'upstream_error', session: _sessionForTelemetry, status, type: _errInfo.type, message: _errInfo.message, path_label: _pathLabel });
             // No retry on 429: Cloudflare's sustained throttle window means
-            // retries extend it. Fail fast, trip escape hatch, wait it out.
-            // Auto-refresh-and-retry on 401 (Bearer only): refresh token via
-            // refreshOauthToken (single in-flight via internal dedup).
+            // retries extend it.
             const _isBearerAuth = typeof upstreamHeaders['authorization'] === 'string'
               && upstreamHeaders['authorization'].startsWith('Bearer ');
             if (status === 401 && _isBearerAuth && payload && Array.isArray(payload.messages)) {
