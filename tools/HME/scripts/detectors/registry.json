@@ -206,11 +206,11 @@
     {
       "name": "boyscout_clean",
       "module": "boyscout_clean",
-      "fires_when": "comment_bloat",
+      "fires_when": "violation",
       "bash_var": "BOYSCOUT_CLEAN",
       "deny": true,
       "reason_key": "BOYSCOUT_CLEAN",
-      "_note": "shipped 2026-05-12 as deny. Per-file clean-room: any file Edited/Written must pass comment-bloat and char-spam audit. Fires if touched file has violations."
+      "_note": "shipped 2026-05-12. Checks LOC + comment-bloat + char-spam on edited files. Fires on any violation."
     }
   ]
 }
