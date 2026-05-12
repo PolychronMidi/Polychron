@@ -83,11 +83,7 @@ _lifesaver_bg() {
   ) >/dev/null 2>&1 &
 }
 
-# Heartbeat: write a timestamp file proving a hook component executed.
-# A watchdog (check-heartbeat-freshness.js) compares mtimes against
-# expected freshness windows; stale = silent-fail.
-# Usage: _hme_heartbeat <component-name>
-# Writes: $PROJECT_ROOT/runtime/hme/heartbeat-<name>.ts (epoch seconds)
+# rationale: timestamp heartbeat for watchdog freshness checks; stale = silent-fail
 _hme_heartbeat() {
   local name="$1"
   [ -z "$name" ] && return 1
