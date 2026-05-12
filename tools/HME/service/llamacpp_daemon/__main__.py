@@ -65,7 +65,7 @@ def main():
             logger.error("PROJECT_ROOT not set in daemon env -- indexing-mode will fail")
     except Exception as _walker_err:
         logger.error(f"file_walker init failed: {_walker_err}")
-    # -------------------------------------------------------------------------
+    # ---
 
     logger.info(f"llamacpp daemon starting on port {args.port} (pid={os.getpid()})")
 
