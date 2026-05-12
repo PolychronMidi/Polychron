@@ -1,15 +1,4 @@
-# Safe jq: extracts a field from JSON string, returns fallback on failure.
-# Usage: count=$(_safe_jq "$json" '.kbCount' '0')
-#
-# FAIL-LOUD on REAL jq errors (parse failures, syntax errors). The previous
-# implementation `2>/dev/null || result="$fallback"` silently swallowed
-# jq parse errors -- a malformed JSON input produced "$fallback" with no
-# trace. Now: jq stderr is captured; if jq exited non-zero AND wrote
-# stderr, the error is bridged to hme-errors.log so the next LIFESAVER
-# scan picks it up. Empty result / null result still silently use
-# fallback (those are legitimate "field absent" semantics, not parse
-# errors). Catches a structural class of silent-fails surfaced by the
-# audit-silent-fails.py audit pass.
+# safe jq extraction: returns fallback on absent field, FAIL-LOUD on parse errors
 _safe_jq() {
   local json="$1" query="$2" fallback="${3:-}"
   if [ -z "$json" ]; then echo "$fallback"; return; fi
