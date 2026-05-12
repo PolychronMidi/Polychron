@@ -284,13 +284,13 @@ def _resolve_mode_legacy_chain(mode: str, tier: str) -> tuple[tuple[str, ...], b
     when tier should fall through to the free cascade."""
     if mode == "2":
         if tier in ("E4", "E5"):
-            return (_OVERDRIVE_CHAIN_DEFAULT, True)
+            return (None, True)  # None chain = use default Opus->Sonnet
         if tier == "E3":
             return (("claude-sonnet-4-6",), False)
         return None  # E1/E2
     if mode == "3":
         if tier == "E5":
-            return (_OVERDRIVE_CHAIN_DEFAULT, True)
+            return (None, True)  # None chain = use default Opus->Sonnet
         if tier == "E4":
             return (("deepseek-v4-pro",), False)
         if tier == "E3":
