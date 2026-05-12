@@ -56,4 +56,7 @@ fi
 
 # ingest "what's next" from SUMMARY blocks into HME todo system
 _INGESTOR="$PROJECT/tools/HME/scripts/ingest_summary_todos.py"
-[ -f "$_INGESTOR" ] && PROJECT_ROOT="$PROJECT" python3 "$_INGESTOR" >/dev/null 2>&1 || true
+if [ -f "$_INGESTOR" ]; then
+  _TSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')
+  [ -n "$_TSCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$_INGESTOR" "$_TSCRIPT" >/dev/null 2>&1 || true
+fi
