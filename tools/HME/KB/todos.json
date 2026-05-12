@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1508,
-      "updated_ts": 1778563554.4970582
+      "max_id": 1516,
+      "updated_ts": 1778563628.0530617
     }
   },
   {
@@ -108,8 +108,8 @@
     "id": 1508,
     "text": "Synthesize onboarding findings and friction points",
     "activeForm": "Synthesizing onboarding findings",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
