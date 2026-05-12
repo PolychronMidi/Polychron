@@ -62,11 +62,6 @@ const REASON =
   'Trim to <=2 lines OR move the prose into doc/. Annotation prefixes ' +
   '(# rationale:, # silent-ok:, // rationale:, etc.) reset the counter.';
 
-const REASON_META =
-  'BLOCKED: inline comment contains a metadata tag ({TAG}). ' +
-  'Metadata like Usage:, Verdicts:, Returns:, Examples: belongs in doc/ or docstrings, ' +
-  'not inline comments. Move it or drop the tag.';
-
 const REASON_LONG =
   'BLOCKED: Edit new_string contains a comment line of {LEN} chars (>= {LIMIT} char limit). ' +
   'CLAUDE.md: "Inline comments single-line and terse. Elaboration goes in doc/." ' +
