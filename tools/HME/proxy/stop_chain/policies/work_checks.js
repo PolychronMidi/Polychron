@@ -299,8 +299,7 @@ module.exports = {
     let transcriptPath = ctx.payload && ctx.payload.transcript_path;
     if (!transcriptPath) {
       try {
-        const inj = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'tmp', 'hme-stop-payload-injected.json'), 'utf8'));
-        transcriptPath = inj.transcript_path;
+        transcriptPath = fs.readFileSync(path.join(PROJECT_ROOT, 'tmp', 'hme-transcript-path.txt'), 'utf8').trim();
       } catch(_) {}
     }
     if (!transcriptPath) return ctx.allow();
