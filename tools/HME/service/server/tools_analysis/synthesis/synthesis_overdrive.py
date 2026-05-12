@@ -192,6 +192,23 @@ def _emit_overdrive_activity(source_label: str, model_id: str,
 # (bounded_log import moved to module top alongside other imports)
 
 
+def _resolve_model_provider(model_id: str) -> str | None:
+    """Look up a model's provider from config/models.json. Returns None if not found."""
+    import json as _json
+    import os as _os
+    try:
+        _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
+        with open(_cfg_path) as _f:
+            _cfg = _json.load(_f)
+        for _tier in _cfg.get("tiers", {}).values():
+            for _m in _tier.get("models", []):
+                if _m.get("id") == model_id:
+                    return _m.get("provider")
+    except Exception:  # silent-ok: config read best-effort, fall through to prefix
+        pass
+    return None
+
+
 def _try_overdrive_model(model_id: str, prompt: str, system: str,
                          max_tokens: int) -> tuple[str | None, bool]:
     """POST a single-model overdrive call through the proxy.
