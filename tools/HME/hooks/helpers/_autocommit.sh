@@ -177,7 +177,7 @@ _ac_do_commit() {
     return 0
   fi
   # Two consecutive git-commit failures. This is the catastrophic case.
-  _ac_record_failure "[$caller] git commit failed twice: $(head -c 400 "$_ac_err_buf" 2>/dev/null | tr '\n' ' ')"
+  _ac_record_failure "[$caller] git commit -a failed twice: $(head -c 400 "$_ac_err_buf" 2>/dev/null | tr '\n' ' ')"
   # Also mark nexus for the agent-visible reminder, if available.
   if [ -f "$_AC_ROOT/tools/HME/hooks/helpers/_nexus.sh" ]; then
     # shellcheck source=/dev/null
