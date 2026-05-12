@@ -6,9 +6,9 @@ const THRESHOLD = parseInt(process.env.COMMENT_BLOAT_WARN || '3', 10);
 const LONG_LINE = parseInt(process.env.COMMENT_BLOAT_LONG_LINE || '90', 10);
 
 const ANNOTATIONS = [
-  '# rationale:', '# silent-ok:', '# FIXME:',
+  '# silent-ok:', '# FIXME:',
   '# noqa', '# pylint:', '# pyright:', '# type:',
-  '// rationale:', '// silent-ok:', '// FIXME:',
+  '// silent-ok:', '// FIXME:',
   '// eslint-', '// noqa',
 ];
 
