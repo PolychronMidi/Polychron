@@ -32,6 +32,7 @@ module.exports = {
       try {
         if (fs.existsSync(rf)) {
           const reason = fs.readFileSync(rf, 'utf8').trim();
+          fs.unlinkSync(rf);  // consume so stale reason doesn't bleed into next calls
           if (reason) {
             ctx.replaceResult(toolResult, '[BLOCKED] ' + reason);
             ctx.markDirty();
@@ -39,11 +40,16 @@ module.exports = {
           }
         }
       } catch (_) { /* silent-ok: best-effort */ }
-      // no reason file: still show denial happened
       ctx.replaceResult(toolResult, '[BLOCKED] this tool call was denied by an HME hook');
       ctx.markDirty();
       return;
     }
+    // clean up stale temp file from prior deny that wasn't consumed
+    try {
+      const fs = require('fs');
+      const rf = require('path').join(ctx.projectRoot || process.env.PROJECT_ROOT || '.', 'tmp', 'hme-last-deny-reason.txt');
+      if (fs.existsSync(rf)) fs.unlinkSync(rf);
+    } catch (_) { /* silent-ok */ }
     if (text && text.trim().length > 0) return;
     if (ctx.hasHmeFooter(toolResult, '[SUCCESS]') || ctx.hasHmeFooter(toolResult, '[FAIL]')) return;
     const marker = toolResult.is_error === true ? _FAIL : _SUCCESS;
