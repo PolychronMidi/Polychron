@@ -244,17 +244,7 @@ async function dispatchEvent(eventName, stdinJson) {
       // stop_chain evaluator: first-deny-wins, shell stages wrapped via shell_policy
       const stopChain = require('./stop_chain');
       const result = await stopChain.runStopChain(empty);
-      // Dominance rewriter call REMOVED. Was: rewriteStopOutput(result.stdout)
-      // which translated AUTO-COMPLETENESS / LIFESAVER / EXHAUST PROTOCOL
-      // deny messages into cryptic "auto-X queued" placeholders, stripping
-      // ALL actionable directives. The user repeatedly screamed "auto-
-      // completeness still didn't fire" -- it WAS firing, but this call
-      // site was eating the message. Removed entirely to make the silent-
-      // fail vector structurally impossible. Even if dominance_response_
-      // rewriter.js is reverted to the stripping behavior, no caller will
-      // invoke it for Stop output. To re-introduce dominance behavior it
-      // must ENHANCE not strip (e.g. annotate alongside the original
-      // directive, never replace it).
+      // dominance rewriter removed — was eating deny messages; re-add via enhance only
       return result;
     }
     case 'PreCompact':
