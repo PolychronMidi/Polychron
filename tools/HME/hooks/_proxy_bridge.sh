@@ -99,13 +99,12 @@ if [ -n "$_PB_ROOT" ]; then
   fi
 fi
 
-# inject transcript_path for Stop events so work_checks auto-completeness
-# can read the session transcript. Claude Code's Stop payload lacks this.
+# inject Claude Code native transcript for Stop so work_checks reads user messages
 if [ "$EVENT" = "Stop" ] && [ -n "$_PB_ROOT" ]; then
-  _PB_TSCRIPT="$_PB_ROOT/log/session-transcript.jsonl"
-  if [ -f "$_PB_TSCRIPT" ]; then
-    BODY=$(printf '%s' "$BODY" | jq -c --arg tp "$_PB_TSCRIPT" '. + {transcript_path: $tp}')
-  fi
+  _PB_CC_DIR="$(dirname "$_PB_ROOT")/.claude/projects/-home-jah-Polychron"
+  _PB_TSCRIPT=$(ls -t "$_PB_CC_DIR"/*.jsonl 2>/dev/null | head -1)
+  [ -z "$_PB_TSCRIPT" ] || [ ! -f "$_PB_TSCRIPT" ] && _PB_TSCRIPT="$_PB_ROOT/log/session-transcript.jsonl"
+  [ -f "$_PB_TSCRIPT" ] && BODY=$(printf '%s' "$BODY" | jq -c --arg tp "$_PB_TSCRIPT" '. + {transcript_path: $tp}')
 fi
 
 # POST to proxy. --max-time 60s accommodates stop.sh's longer chain
