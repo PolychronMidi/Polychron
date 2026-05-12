@@ -136,7 +136,7 @@ async function runChain(scripts, stdinJson, timeoutMs = 30_000) {
     // Early-exit on block decision (stop/pretooluse hooks may emit JSON block).
     if (/\"decision\"\s*:\s*\"block\"/.test(r.stdout)) break;
   }
-  // silent-ok: empty stderr misread as hook error by Claude Code harness
+  // prevent Claude Code from displaying empty stderr as a hook error
   if (!combinedStderr && firstNonZeroCode === 0) combinedStderr = ' ';
   return { stdout: combinedStdout, stderr: combinedStderr, exit_code: firstNonZeroCode };
 }
