@@ -253,7 +253,9 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     if system:
         payload["system"] = system
 
-    # OVERDRIVE_MODE=3: deepseek-* models route via OpenCode Go (Anthropic-shape).
+    # Resolve provider from models.json for routing. Zen models go to OpenCode;
+    # cascade models go via OmniRoute translator (Anthropic-shape proxy).
+    _provider = _resolve_model_provider(model_id)
     headers = {"Content-Type": "application/json", "anthropic-version": "2023-06-01"}
     if _is_zen:
         _zen_key = _os.environ.get("OPENCODE_API_KEY", "")
@@ -262,8 +264,9 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
             return (None, False)
         headers["X-HME-Upstream"] = "https://opencode.ai/zen/go"
         headers["x-api-key"] = _zen_key
-        # Cloudflare blocks default Python-urllib UA.
         headers["User-Agent"] = "curl/8.0.1"
+    elif _provider == "cascade":
+        headers["X-HME-Upstream"] = "https://api.anthropic.com"
 
     try:
         request = _req.Request(
