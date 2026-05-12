@@ -117,6 +117,16 @@
           "notes": "Cascade free tier. Strong coding with good speed/cost ratio."
         },
         {
+          "id": "mistral-large-3",
+          "name": "Mistral Large 3",
+          "maker": "Mistral",
+          "provider": "cascade",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Cascade free tier. Strong reasoning at frontier level."
+        },
+        {
           "id": "qwen3.6-plus",
           "name": "Qwen3.6 Plus",
           "maker": "Qwen",
