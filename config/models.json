@@ -97,16 +97,6 @@
           "notes": "Cascade free tier. Strong multi-modal; solid coding and planning."
         },
         {
-          "id": "claude-sonnet-4.5",
-          "name": "Claude Sonnet 4.5",
-          "maker": "Anthropic",
-          "provider": "cascade",
-          "max_context": 1048576,
-          "cost": "free",
-          "cost_amt": 0,
-          "notes": "Cascade free tier. Strong coding with good speed/cost ratio."
-        },
-        {
           "id": "mistral-large-3",
           "name": "Mistral Large 3",
           "maker": "Mistral",
