@@ -2,62 +2,20 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1583,
-      "updated_ts": 1778568676.5070853
+      "max_id": 1585,
+      "updated_ts": 1778569594.915162
     }
   },
   {
-    "id": 1579,
-    "text": "Eliminate No stderr output: _proxy_bridge.sh safety net + hook_bridge.js empty-stderr guards",
-    "activeForm": "Eliminating No stderr output from hook responses",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778568676.5070286,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1580,
-    "text": "Fix onboarding-state-integrity (graduated not in STATES)",
-    "activeForm": "Fixing onboarding-state-integrity",
+    "id": 1584,
+    "text": "Fix onboarding-flow verifier sandbox (paths module import)",
+    "activeForm": "Fixing onboarding-flow sandbox paths import",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778568676.5070465,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1575,
-    "text": "Fix sigBufTracked missing setter flagged by review",
-    "activeForm": "Fixing sigBufTracked missing setter",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778568353.1674786,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1582,
-    "text": "Find and fix root cause of todos.json modification during autocommit",
-    "activeForm": "Finding todos.json modifier root cause",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778568676.5070703,
+    "ts": 1778569594.915144,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
