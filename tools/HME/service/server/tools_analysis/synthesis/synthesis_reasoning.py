@@ -250,10 +250,11 @@ def _overdrive_timeout() -> int:
 _last_source: str | None = None
 
 
-def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
+def _resolve_mode5_chain(tier: str) -> tuple[tuple[str, ...], bool] | None:
     """Resolve model chain for OVERDRIVE_MODE=5 from config/models.json.
-    Returns model IDs ordered by ranking rules: free first (including cascade),
-    then subscription, then usage. Each group sorted by tier_score descending."""
+    Returns (chain, allow_subagent) -- chain ordered free first (including
+    cascade), then subscription, then usage; each group by tier_score desc.
+    MODE=5 always uses direct API (allow_subagent=False)."""
     import json as _json
     import os as _os
     _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
@@ -275,7 +276,41 @@ def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
         _ids.extend(m["id"] for m in _group if m.get("id"))
     _top = _cfg.get("manually_toprank", {}).get(tier, []) or []
     _ids = [mid for mid in _top if mid in _ids] + [mid for mid in _ids if mid not in _top]
-    return tuple(_ids) if _ids else None
+    return (tuple(_ids), False) if _ids else None
+
+
+def _resolve_mode2_chain(tier: str) -> tuple[tuple[str, ...], bool] | None:
+    """MODE=2: E4/E5 -> default Opus->Sonnet chain (subagent OK); E3 pins Sonnet
+    direct; E1/E2 fall through to cascade."""
+    if tier in ("E4", "E5"):
+        return (_OVERDRIVE_CHAIN_DEFAULT, True)
+    if tier == "E3":
+        return (("claude-sonnet-4-6",), False)
+    return None
+
+
+def _resolve_mode3_chain(tier: str) -> tuple[tuple[str, ...], bool] | None:
+    """MODE=3: E5 -> Opus chain; E4 -> deepseek-v4-pro; E3 -> deepseek-v4-flash;
+    E1/E2 -> cascade."""
+    if tier == "E5":
+        return (_OVERDRIVE_CHAIN_DEFAULT, True)
+    if tier == "E4":
+        return (("deepseek-v4-pro",), False)
+    if tier == "E3":
+        return (("deepseek-v4-flash",), False)
+    return None
+
+
+def _resolve_mode4_chain(tier: str) -> tuple[tuple[str, ...], bool] | None:
+    """MODE=4: main-agent swap variant. E5 -> glm-5.1; E4 -> deepseek-v4-pro;
+    E3 -> deepseek-v4-flash; E1/E2 -> cascade."""
+    if tier == "E5":
+        return (("glm-5.1",), False)
+    if tier == "E4":
+        return (("deepseek-v4-pro",), False)
+    if tier == "E3":
+        return (("deepseek-v4-flash",), False)
+    return None
 
 
 def last_source() -> str | None:
