@@ -328,7 +328,10 @@ fi
 if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
   STDERR=" "
 fi
-# FIXME: convert shell-hook exit-2 denies to exit-0 hookSpecificOutput format
+# surface deny reasons: unified-policy exit-0 denials pass through unchanged.
+# Shell-hook exit-2 denials: extract reason, convert to exit 0 + hookSpecificOutput.
+# Also write to tmp/ so proxy middleware can replace "No stderr output".
+_PB_DENY_REASON=""
 if [ "${EXIT_CODE:-0}" != "0" ] && [ "$EVENT" = "PreToolUse" ]; then
   _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
   if [ -n "$_PB_DENY_REASON" ]; then
@@ -336,6 +339,12 @@ if [ "${EXIT_CODE:-0}" != "0" ] && [ "$EVENT" = "PreToolUse" ]; then
       '{hookSpecificOutput:{permissionDecision:"deny",permissionDecisionReason:$r}}')
     EXIT_CODE=0
   fi
+elif [ "${EXIT_CODE:-0}" = "0" ] && [ -n "$STDOUT" ] && [ "$EVENT" = "PreToolUse" ]; then
+  _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+fi
+if [ -n "$_PB_DENY_REASON" ] && [ -n "$_PB_ROOT" ]; then
+  mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
+  printf '%s' "$_PB_DENY_REASON" > "$_PB_ROOT/tmp/hme-last-deny-reason.txt" 2>/dev/null
 fi
 jq -n \
   --arg out "$STDOUT" \
