@@ -176,9 +176,7 @@ _ac_do_commit() {
     exec 9>&-
     return 0
   fi
-  # rationale: transient lock races (index.lock) or file modifications during
-  # the commit window can cause spurious failures. If the tree is clean
-  # afterward, the failure was a race — not data loss. Skip LIFESAVER alert.
+  # silent-ok: transient lock race — clean tree after failure means no data loss
   if git -C "$_AC_ROOT" diff --quiet 2>/dev/null; then
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
