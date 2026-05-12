@@ -306,10 +306,10 @@ class BuddyPrimaryHealthVerifier(Verifier):
             return _result(SKIP, 1.0, "BUDDY_HANDOFF or BUDDY_SYSTEM not enabled")
         sid_path = os.path.join(_PROJECT, "runtime", "hme", "buddy-primary.sid")
         if not os.path.isfile(sid_path):
-            return _result(FAIL, 0.0, "buddy-primary.sid missing -- inaugural spawn likely failed silently",
+            return _result(WARN, 0.5, "buddy-primary.sid missing -- buddy spawn may not have triggered yet (fresh session)",
                            [f"path: {sid_path}",
-                            "fix: check log/hme-buddy-spawn.log (after b-fix) or buddy_init.sh stderr",
-                            "fallback: i/handoff status to confirm; manual i/handoff promote if needed"])
+                            "fix: buddy spawns at SessionStart; check log/hme-buddy-spawn.log",
+                            "fallback: i/handoff promote <sid> to designate a primary manually"])
         try:
             content = open(sid_path).read().strip()
         except OSError as e:
