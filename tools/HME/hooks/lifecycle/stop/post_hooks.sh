@@ -53,3 +53,7 @@ if [ "${BUDDY_HANDOFF:-0}" = "1" ]; then
        >/dev/null 2>&1) || true
   fi
 fi
+
+# ingest "what's next" from SUMMARY blocks into HME todo system
+_INGESTOR="$PROJECT/tools/HME/scripts/ingest_summary_todos.py"
+[ -f "$_INGESTOR" ] && PROJECT_ROOT="$PROJECT" python3 "$_INGESTOR" >/dev/null 2>&1 || true
