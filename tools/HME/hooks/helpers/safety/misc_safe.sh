@@ -21,13 +21,7 @@ _safe_jq() {
   echo "$result"
 }
 
-# Safe python3: runs a python snippet, returns fallback on failure.
-# Usage: result=$(_safe_py3 "print('ok')" 'fallback')
-#
-# FAIL-LOUD on python crashes. Was silently `2>/dev/null || echo $fallback`,
-# letting ImportError / NameError / SyntaxError / RuntimeError vanish into
-# the fallback string. Now stderr is captured; non-zero exit gets logged
-# to hme-errors.log so LIFESAVER scans surface it.
+# safe python3: returns fallback on failure, FAIL-LOUD on crashes
 _safe_py3() {
   local script="$1" fallback="${2:-}"
   local result py_err py_rc
