@@ -14,16 +14,17 @@
       }
     }
   },
-    "ranking_rules": {
-"For each tier, rank each of the three cost types (free, subscription, usage) independently in descending order of tier_score. This way all best free cost models are priortized, then all best subscription based cost models, then all best usage based cost models. (Tiers E5 and E4 tier_score capped by design (at 5 and 7) currently due to focus on value and exclusion of premium cost models.) manually_toprank can optionally have one or more model ids to override to the front of the tier's line."
+  "ranking_rules": {
+    "description": "Per-tier: rank each cost type independently by tier_score descending (free > subscription > usage). Tiers E5/E4 tier_score capped at 5/7 due to value focus and exclusion of premium models.",
+    "cost_order": ["free", "subscription", "usage"]
   },
   "manually_toprank": {
-    "E5": "mimo-v2.5-pro-go",
-    "E4": "",
-    "E3": "",
-    "E2": "",
-    "E1": "",
-  }
+    "E5": ["mimo-v2.5-pro-go"],
+    "E4": [],
+    "E3": [],
+    "E2": [],
+    "E1": []
+  },
   "tiers": {
     "E5": {
       "label": "Elite Frontier Reasoning",
