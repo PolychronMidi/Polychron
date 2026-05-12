@@ -1,1 +1,0 @@
-class e{constructor(e){this.maxSize=e,this.cache=new Map}set(e,t){if(!this.cache.has(e)&&this.cache.size>=this.maxSize){const e=this.cache.keys().next().value;void 0!==e&&this.cache.delete(e)}this.cache.set(e,{key:e,value:t})}get(e){const t=this.cache.get(e);if(t)return this.cache.delete(e),this.cache.set(e,t),t.value}}export{e as default};

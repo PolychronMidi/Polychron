@@ -1,4 +1,0 @@
-export { useFormatter, useTranslations } from './react-client/index.js';
-export { default as NextIntlClientProvider } from './shared/NextIntlClientProvider.js';
-export { IntlProvider, _useExtracted as useExtracted, useLocale, useMessages, useNow, useTimeZone } from 'use-intl/react';
-export * from 'use-intl/core';

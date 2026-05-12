@@ -1,1 +1,0 @@
-function n(n){return`\n[next-intl] ${n}\n`}function o(o){throw new Error(n(o))}function r(o){console.warn(n(o))}function t(n){return function(o){"1"!==process.env[n]&&(process.env[n]="1",o())}}export{t as once,o as throwError,r as warn};

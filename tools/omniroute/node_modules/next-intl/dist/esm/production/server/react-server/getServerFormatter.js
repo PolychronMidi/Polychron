@@ -1,1 +1,0 @@
-import{cache as t}from"react";import{createFormatter as o}from"use-intl/core";import r from"./getDefaultNow.js";const e=t((function(t){return o({...t,get now(){return t.now??r()}})}));export{e as default};

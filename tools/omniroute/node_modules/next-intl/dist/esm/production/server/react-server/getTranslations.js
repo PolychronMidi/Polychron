@@ -1,1 +1,0 @@
-import{cache as r}from"react";import t from"./getConfig.js";import e from"./getServerTranslator.js";var o=r((async function(r){let o,a;"string"==typeof r?o=r:r&&(a=r.locale,o=r.namespace);const n=await t(a);return e(n,o)}));export{o as default};

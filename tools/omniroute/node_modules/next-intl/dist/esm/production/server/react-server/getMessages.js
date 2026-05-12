@@ -1,1 +1,0 @@
-import{cache as e}from"react";import t from"./getConfig.js";function o(e){if(!e.messages)throw new Error("No messages found. Have you configured them correctly? See https://next-intl.dev/docs/configuration#messages");return e.messages}const n=e((async function(e){return o(await t(e))}));async function r(e){return n(e?.locale)}export{r as default,o as getMessagesFromConfig};

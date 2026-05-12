@@ -1,2 +1,0 @@
-"use client";
-import o from"next/link";import{usePathname as r}from"next/navigation";import{forwardRef as e}from"react";import{useLocale as t}from"use-intl";import i from"./syncLocaleCookie.js";import{jsx as n}from"react/jsx-runtime";function f({href:e,locale:f,localeCookie:c,onClick:m,prefetch:l,...a},p){const s=t(),u=null!=f&&f!==s,h=r();u&&(l=!1);return n(o,{ref:p,href:e,hrefLang:u?f:void 0,onClick:function(o){i(c,h,s,f),m&&m(o)},prefetch:l,...a})}var c=e(f);export{c as default};

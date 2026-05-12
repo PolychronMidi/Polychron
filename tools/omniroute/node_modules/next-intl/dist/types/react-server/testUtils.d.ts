@@ -1,2 +1,0 @@
-import { type ReactNode } from 'react';
-export declare function renderToStream(children: ReactNode): Promise<string>;

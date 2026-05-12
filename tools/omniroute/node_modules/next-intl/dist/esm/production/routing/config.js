@@ -1,1 +1,0 @@
-function e(e){return{...e,localePrefix:(a=e.localePrefix,"object"==typeof a?a:{mode:a||"always"}),localeCookie:(o=e.localeCookie,!!(o??1)&&{name:"NEXT_LOCALE",sameSite:"lax",..."object"==typeof o&&o}),localeDetection:e.localeDetection??!0,alternateLinks:e.alternateLinks??!0};var o,a}export{e as receiveRoutingConfig};

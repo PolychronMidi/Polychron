@@ -1,1 +1,0 @@
-const L="X-NEXT-INTL-LOCALE";export{L as HEADER_LOCALE_NAME};
