@@ -1,0 +1,24 @@
+{
+  "threshold": 3,
+  "long_line": 90,
+  "top_exempt_max": 30,
+  "annotations": [
+    "# rationale:", "# silent-ok:", "# FIXME:",
+    "# noqa", "# pylint:", "# pyright:", "# type:",
+    "// rationale:", "// silent-ok:", "// FIXME:",
+    "// eslint-", "// noqa"
+  ],
+  "comment_prefixes": {
+    "js": ["//"],
+    "py": ["#"],
+    "sh": ["#"],
+    "bash": ["#"],
+    "yaml": ["#"],
+    "yml": ["#"],
+    "toml": ["#"]
+  },
+  "file_extensions": {
+    "js": [".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs"],
+    "py": [".py", ".sh", ".bash", ".yaml", ".yml", ".toml"]
+  }
+}
