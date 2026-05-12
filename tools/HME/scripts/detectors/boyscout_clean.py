@@ -105,6 +105,9 @@ def main():
     files = _edited_files(events, start)
     if not files:
         print("ok"); return 0
+    sys.path.insert(0, os.path.join(proot, "scripts"))
+    import loc_ignore, loc_count
+    patterns = loc_ignore.load_patterns()
     for fp in files:
         full = fp if os.path.isabs(fp) else os.path.join(proot, fp)
         if not os.path.isfile(full): continue
@@ -112,6 +115,10 @@ def main():
             print("comment_bloat"); return 0
         if _check_spam(full, proot):
             print("char_spam"); return 0
+        rel = os.path.relpath(full, proot) if full.startswith(proot) else fp
+        if not loc_ignore.is_exempt(rel, patterns):
+            if loc_count.cloc(full) > LOC_LIMIT:
+                print("loc_bloat"); return 0
     print("ok"); return 0
 
 
