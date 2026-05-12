@@ -92,7 +92,7 @@ def _multi_axis_summary() -> str:
     sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "scripts"))
     try:
         from verify_coherence import REGISTRY  # type: ignore
-    except Exception:
+    except Exception:  # silent-ok: optional panel, degraded gracefully on import fail
         return "registry import failed"
     name_to_subtag = {v.name: getattr(v, "subtag", "(none)") for v in REGISTRY}
     by_subtag = defaultdict(list)
