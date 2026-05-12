@@ -41,10 +41,7 @@ fi
 # proxy-supervisor is still alive. If the supervisor's pid file is
 # missing OR the pid is not alive, respawn it detached. This resurrects
 # the supervisor itself when it dies (OOM, SIGKILL, bash bug), using
-# the existing per-event hook traffic as the heartbeat. The cost is one
-# kill -0 + one stat per hook fire; the benefit is that the supervisor
-# can no longer stay dead for a whole session just because the first
-# watchdog at SessionStart didn't notice.
+# rationale: per-event hook heartbeat verifies supervisor alive each fire
 if [ -n "$_PB_ROOT" ]; then
   _PB_SUPERVISOR_SCRIPT="$_PB_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
   _PB_SUPERVISOR_PID_FILE="$_PB_ROOT/runtime/hme/proxy-supervisor.pid"
