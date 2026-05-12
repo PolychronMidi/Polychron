@@ -270,7 +270,13 @@ function saveComplStore(store) {
 module.exports = {
   name: 'work_checks',
   async run(ctx) {
-    const transcriptPath = ctx.payload && ctx.payload.transcript_path;
+    let transcriptPath = ctx.payload && ctx.payload.transcript_path;
+    if (!transcriptPath) {
+      try {
+        const inj = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'tmp', 'hme-stop-payload-injected.json'), 'utf8'));
+        transcriptPath = inj.transcript_path;
+      } catch(_) {}
+    }
     const v = readVerdicts();
     // FIRING_RULES + willDeny derived from registry.json (single SoT). Adding
     // a deny detector = one entry in registry.json with deny:true + reason_key.
@@ -297,7 +303,13 @@ module.exports = {
     // hides this deny). Removing the prior-deny short-circuit fixed cases
     // where PSYCHOPATHIC-STOP silently suppressed auto-completeness.
 
-    const transcriptPath = ctx.payload && ctx.payload.transcript_path;
+    let transcriptPath = ctx.payload && ctx.payload.transcript_path;
+    if (!transcriptPath) {
+      try {
+        const inj = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'tmp', 'hme-stop-payload-injected.json'), 'utf8'));
+        transcriptPath = inj.transcript_path;
+      } catch(_) {}
+    }
     try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-debug.txt'), JSON.stringify({tp:!!transcriptPath, tpv:String(ctx.payload.transcript_path).slice(0,100)})); } catch(_) {}
     if (!transcriptPath) return ctx.allow();
     const { text: lastUser, turnIndex } = lastRealUserPrompt(transcriptPath);
