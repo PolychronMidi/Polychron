@@ -241,11 +241,12 @@ class ZenSseTranslator {
             index: this._nextBlockIndex,
             openaiIdx: tcIdx,
             id: tc.id || ('toolu_' + Math.random().toString(36).slice(2, 14)),
+            name: fn.name || '',
           };
           out += _sseEvent('content_block_start', {
             type: 'content_block_start',
             index: this._toolBlockOpen.index,
-            content_block: { type: 'tool_use', id: this._toolBlockOpen.id, name: fn.name || '', input: {} },
+            content_block: { type: 'tool_use', id: this._toolBlockOpen.id, name: this._toolBlockOpen.name, input: {} },
           });
           this._nextBlockIndex++;
         }
@@ -267,6 +268,7 @@ class ZenSseTranslator {
 
     return out;
   }
+
 
   _emitClose() {
     let out = '';
