@@ -78,11 +78,7 @@ from common import maybe_trim_append as _maybe_trim_activity_log  # noqa: E402
 
 logger = logging.getLogger("HME.reasoning")
 
-# Constants/helpers (_OVERDRIVE_CHAIN_DEFAULT, _OVERDRIVE_MAX_TOKENS_SLACK,
-# _overdrive_think_budget, _overdrive_timeout) live on synthesis_reasoning,
-# which imports US at line 310 for re-export -- top-level back-import would
-# partial-load. Use sites resolve via `_sr.<name>` at call time after a
-# local `from . import synthesis_reasoning as _sr`.
+# Constants live on synthesis_reasoning; resolve via `_sr.<name>` at call time
 
 _ENV_REFRESH_INTERVAL = 60  # re-read .env at most once per minute
 _env_last_refresh = 0.0
