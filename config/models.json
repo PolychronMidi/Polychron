@@ -10,7 +10,6 @@
     }
   },
   "_pending": {
-    "opencode_go_models": "OpenCode Go subscription model names not yet added — need provider model list",
     "rate_limits": "Per-model RPM/TPM quotas not yet populated",
     "overdrive_validation": "Primary/fallback selections need review against real-world benchmark data"
   },
