@@ -1077,7 +1077,7 @@ if (_mode4WasStreaming) {
               fullBody, headers, status, payload,
               { host: upstream.host, port: upstream.port, tls: upstream.tls,
                 path: upstreamPath, method: 'POST', headers: upstreamHeaders },
-              isSse,
+              (headers['content-type'] || '').toLowerCase().includes('text/event-stream'),
             );
           } catch (err) {
             console.error('[hme-proxy] HME continuation failed:', err.message);
