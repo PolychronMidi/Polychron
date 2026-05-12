@@ -328,12 +328,15 @@ fi
 if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
   STDERR=" "
 fi
-# surface deny reasons from proxy stdout into hookSpecificOutput for Claude Code
+# surface deny reasons: shell hooks exit 2 but Claude Code reads deny reasons
+# from permissionDecision in stdout at exit 0. Convert to unified-policy format.
 if [ "${EXIT_CODE:-0}" != "0" ] && [ "$EVENT" = "PreToolUse" ]; then
   _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
   if [ -n "$_PB_DENY_REASON" ]; then
     STDOUT=$(jq -nc --arg reason "$_PB_DENY_REASON" \
       '{hookSpecificOutput:{permissionDecision:"deny",permissionDecisionReason:$reason}}')
+    STDERR="$_PB_DENY_REASON"
+    EXIT_CODE=0
   fi
 fi
 jq -n \
