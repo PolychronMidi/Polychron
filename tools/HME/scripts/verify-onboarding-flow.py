@@ -106,7 +106,7 @@ def main() -> int:
     # .py we find in the same directory.
     import re
     import shutil
-    static_files = ["tools/HME/service/hme_env.py", "CLAUDE.md"]
+    static_files = ["tools/HME/service/hme_env.py", "tools/HME/service/paths.py", "CLAUDE.md"]
     entry_points = [
         "tools/HME/service/server/onboarding_chain.py",
         "tools/HME/service/server/tools_analysis/todo.py",
