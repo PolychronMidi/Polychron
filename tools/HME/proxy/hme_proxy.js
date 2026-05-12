@@ -745,6 +745,7 @@ if (_mode4WasStreaming) {
             const { ZenSseTranslator } = require('./zen_translator');
             const translator = new ZenSseTranslator({ model: 'deepseek-v4-pro' });
             let _sentStop = false;
+            let _hasInjectedThinking = false;
 
             clientRes.writeHead(200, {
               'Content-Type': 'text/event-stream; charset=utf-8',
@@ -752,36 +753,35 @@ if (_mode4WasStreaming) {
               'Connection': 'keep-alive'
             });
 
-            // 1. Open ONLY a thinking block. Do not close it.
-            const startSequence =
-              `event: message_start\ndata: {"type":"message_start","message":{"id":"msg_proxy_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n` +
-              `event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}\n\n`;
-
-            clientRes.write(startSequence);
-
             upstreamRes.on('data', (c) => {
               const translated = translator.feed(c);
               if (!translated) return;
 
-              // 2. TRANSFORM: Convert all text_deltas into thinking_deltas
-              // This makes the IDE think the model is "thinking" its entire answer.
-              let thinkingData = translated
-                .replace(/^event: message_start\ndata: \{.*?\}\n\n/gm, '')
-                .replace(/^event: content_block_start\ndata: \{.*?\}\n\n/gm, '')
-                .replace(/"type":"text_delta"/g, '"type":"thinking_delta"')
-                .replace(/"text":/g, '"thinking":');
+              let output = translated;
 
-              if (thinkingData.trim()) {
-                if (thinkingData.includes('message_stop')) _sentStop = true;
-                clientRes.write(thinkingData.endsWith('\n\n') ? thinkingData : thinkingData + '\n\n');
+              // 1. Opus 4.7 Handshake: Inject thinking block after message_start
+              if (!_hasInjectedThinking && output.includes('message_start')) {
+                _hasInjectedThinking = true;
+                output = output.replace(
+                  /("type":"message_start".*?\n\n)/,
+                  `$1event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}\n\nevent: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"DeepSeek reasoning..."}}\n\nevent: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n`
+                );
+              }
+
+              // 2. Shift all subsequent Opus 4.7 blocks (text/tools) to index 1+
+              output = output.replace(/"index":(\d+)/g, (match, p1) => {
+                return `"index":${parseInt(p1) + 1}`;
+              });
+
+              if (output.trim()) {
+                if (output.includes('message_stop')) _sentStop = true;
+                clientRes.write(output.endsWith('\n\n') ? output : output + '\n\n');
               }
             });
 
             upstreamRes.on('end', () => {
               if (!_sentStop) {
                 const finalSequence =
-                  'event: content_block_stop\n' +
-                  'data: {"type":"content_block_stop","index":0}\n\n' +
                   'event: message_delta\n' +
                   'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n' +
                   'event: message_stop\n' +
