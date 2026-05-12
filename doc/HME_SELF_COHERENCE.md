@@ -1,6 +1,6 @@
 # HME Self-Coherence
 
-HME's substrate for self-observation. The **HME Coherence Index** (HCI) scores 65+ verifiers; the **holograph** snapshots full state for diff. Read this when you want to understand what HME measures about itself; read [HME.md](HME.md) for what HME currently does.
+HME's substrate for self-observation. The **HME Coherence Index** (HCI) scores 67+ verifiers; the **holograph** snapshots full state for diff. Read this when you want to understand what HME measures about itself; read [HME.md](HME.md) for what HME currently does.
 
 ## The HCI
 
