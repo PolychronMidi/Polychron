@@ -248,8 +248,12 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     _ZEN_PREFIXES = ("deepseek", "glm", "minimax", "qwen", "kimi", "mimo", "nemotron", "big-pickle", "ring", "gpt")
     _is_zen = model_id.startswith(_ZEN_PREFIXES)
     _user_content = [{"type": "text", "text": prompt}] if _is_zen else prompt
+    # Go models share API names with Zen; strip the -go suffix for the actual API call
+    _api_model = model_id
+    if _api_model.endswith("-go"):
+        _api_model = _api_model[:-3]
     payload = {
-        "model": model_id,
+        "model": _api_model,
         "max_tokens": resolved_max,
         "messages": [{"role": "user", "content": _user_content}],
     }
