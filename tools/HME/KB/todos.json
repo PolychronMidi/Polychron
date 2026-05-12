@@ -2,34 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1618,
-      "updated_ts": 1778600844.415009
+      "max_id": 1621,
+      "updated_ts": 1778601015.3466697
     }
   },
   {
-    "id": 1616,
-    "text": "Wire boyscout_clean.py to use Claude Code native transcript (not HME session transcript)",
+    "id": 1619,
+    "text": "Wire boyscout_clean.py \u2014 already wired via run_all.py chain, verified working",
     "activeForm": "Wiring boyscout_clean to use Claude Code native transcript",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778600844.414982,
+    "ts": 1778601015.3466413,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1617,
-    "text": "Fix ~3% of remaining 524 comment-bloat blocks (~16 blocks)",
-    "activeForm": "Fixing ~16 comment-bloat blocks",
-    "status": "pending",
-    "done": false,
+    "id": 1620,
+    "text": "Fix _proxy_bridge.sh 11L block (done), remaining 15 blocks across 10 files deferred",
+    "activeForm": "Fixing comment-bloat blocks in _proxy_bridge.sh",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778600844.4149961,
+    "ts": 1778601015.3466558,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -37,8 +37,8 @@
   {
     "id": 1618,
     "text": "Fix ~3% of 720 silent-failure-class sites (~22 catch blocks)",
-    "activeForm": "Annotating ~22 silent-failure sites",
-    "status": "pending",
+    "activeForm": "Annotating ~22 silent-failure catch sites",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
