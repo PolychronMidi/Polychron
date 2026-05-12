@@ -753,23 +753,23 @@ if (_mode4WasStreaming) {
               'X-Accel-Buffering': 'no'
             });
 
-            // 1. Send MESSAGE_START + CONTENT_BLOCK_START immediately
-            // This prepares the IDE to receive text (index 0) immediately.
-            const startSequence =
-              `event: message_start\ndata: {"type":"message_start","message":{"id":"msg_proxy_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n` +
+            // 1. MUST HAVE: message_start AND content_block_start
+            // If the content block isn't open, the IDE throws "Content block not found"
+            const startEvents =
+              `event: message_start\ndata: {"type":"message_start","message":{"id":"msg_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n` +
               `event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n`;
 
-            clientRes.write(startSequence);
+            clientRes.write(startEvents);
 
             upstreamRes.on('data', (c) => {
               const translated = translator.feed(c);
               if (!translated) return;
 
-              // 2. Strip ANY 'message_start' OR 'content_block_start' events from the translator
-              // to prevent "double start" errors.
+              // Filter out anything that tries to open/close blocks prematurely
+              // We want to control the lifecycle to prevent 400s
               let cleanData = translated
-                .replace(/^event: message_start\ndata: \{.*?\}\n\n/gm, '')
-                .replace(/^event: content_block_start\ndata: \{.*?\}\n\n/gm, '');
+                .replace(/^event: message_start[\s\S]*?\n\n/gm, '')
+                .replace(/^event: content_block_start[\s\S]*?\n\n/gm, '');
 
               if (cleanData.trim()) {
                 if (cleanData.includes('message_stop')) _sentStop = true;
@@ -779,24 +779,15 @@ if (_mode4WasStreaming) {
 
             upstreamRes.on('end', () => {
               if (!_sentStop) {
-                // 3. Close the content block before closing the message
-                const finalSummary =
-                  'event: content_block_stop\n' +
-                  'data: {"type":"content_block_stop","index":0}\n\n' +
+                const finalEvents =
                   'event: message_delta\n' +
                   'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n' +
                   'event: message_stop\n' +
                   'data: {"type":"message_stop"}\n\n';
-                clientRes.write(finalSummary);
+                clientRes.write(finalEvents);
               }
-
               clientRes.end();
               _releaseOpusSlot();
-            });
-
-            upstreamRes.on('error', (err) => {
-              _releaseOpusSlot();
-              try { clientRes.end(); } catch (_e) {}
             });
           } else {
             const chunks = [];
