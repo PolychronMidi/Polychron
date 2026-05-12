@@ -93,8 +93,6 @@ _STORY_BULLETS = (
     re.compile(r"^\s*[-*]\s*problem\s*:", re.IGNORECASE | re.MULTILINE),
     re.compile(r"^\s*[-*]\s*what\s+we\s+did\s*:", re.IGNORECASE | re.MULTILINE),
     re.compile(r"^\s*[-*]\s*how\s+it\s+went\s*:", re.IGNORECASE | re.MULTILINE),
-    re.compile(r"^\s*[-*]\s*what(?:'|\u2019)?s?\s+next\s*:",
-               re.IGNORECASE | re.MULTILINE),
 )
 
 
