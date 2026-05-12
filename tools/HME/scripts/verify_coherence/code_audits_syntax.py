@@ -113,11 +113,7 @@ class ShellSyntaxVerifier(Verifier):
         return _result(FAIL, score, f"{len(broken)}/{total} shell hooks broken", broken)
 
 
-# Banned: 4+ identical non-word, non-whitespace, non-paren/bracket characters
-# in a row. Targets visual-decoration spam -- runs of equals, dashes, hashes,
-# pipes, tildes, slashes, or unicode box-drawing -- without false-positiving
-# on legitimate code structure (stacked closing parens, identifiers with
-# repeated underscores, hex constants like 0xFFFFFFFF).
+# rationale: ban 4+ repeated decoration chars without false-positiving on code
 _SPAM_RE = re.compile(r"([^\w\s()\[\]{}])\1{3,}")
 # Per-line opt-out: line containing this token is exempt. Keep narrow so
 # allowlisting requires conscious intent.
