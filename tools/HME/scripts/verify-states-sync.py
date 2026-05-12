@@ -28,7 +28,7 @@ _SH_FILE = os.path.join(_PROJECT, "tools", "HME", "hooks", "helpers", "_onboardi
 def _parse_python_states() -> list:
     """Extract STATES from canonical JSON config or onboarding_chain.py."""
     import json as _json
-    _cfg = os.path.join(os.path.dirname(_PY_FILE), "..", "..", "..",
+    _cfg = os.path.join(os.path.dirname(_PY_FILE), "..", "..",
                         "config", "onboarding_states.json")
     _cfg = os.path.normpath(_cfg)
     try:
