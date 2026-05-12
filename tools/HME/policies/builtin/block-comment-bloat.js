@@ -36,12 +36,15 @@ function _scan(fp, content) {
   if (!prefix || !content) return null;
   const lines = content.split('\n');
   let run = 0;
+  let isFirstContent = true;  // file headers at content start are exempt
   for (const ln of lines) {
     const s = ln.trimStart();
     if (!s.startsWith(prefix) || s.startsWith('#!')) {
+      if (s) isFirstContent = false;
       run = 0;
       continue;
     }
+    if (isFirstContent) continue;  // file header comment
     if (ln.length >= LONG_LINE) return { type: 'LONG', len: ln.length };
     if (_startsWithAnnotation(s)) {
       run = 0;
