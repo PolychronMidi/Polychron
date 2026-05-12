@@ -270,11 +270,7 @@ async function dispatchEvent(eventName, stdinJson) {
       return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty);
     case 'PreToolUse': {
       const tool = _toolName(empty);
-      // Unified registry: run any JS-implemented PreToolUse policies that
-      // match this tool BEFORE shelling to bash gates. First deny short-
-      // circuits the bash chain too -- saves a subprocess spawn when the
-      // JS layer already blocks. Disabled policies are skipped via the
-      // three-scope config (i/policies disable <name>).
+      // rationale: unified JS policies run before shell gates; first deny short-circuits
       const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;
       const scripts = PRETOOL_SCRIPTS[tool] || [];
