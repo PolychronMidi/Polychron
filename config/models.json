@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": "1.0.0-draft",
-    "description": "OVERDRIVE_MODE=5 model registry. Models ranked into 5 effort tiers (E5\u2192E1). Within each tier: free models first (OpenCode Zen free + cascade free), then OpenCode Go (subscription), then OpenCode Zen non-free (usage-based).",
+    "description": "OVERDRIVE_MODE=5 model registry. Models ranked into 5 effort tiers (E5-E1). Within each tier: free models first (OpenCode Zen free + cascade free from various direct APIs), then subscription (OpenCode Go), then usage-based (OpenCode Zen non-free).",
     "providers": {
       "opencode": {
         "note": "Zen (free tier and usage-based)"
@@ -14,10 +14,16 @@
       }
     }
   },
-  "_pending": {
-    "rate_limits": "Per-model RPM/TPM quotas not yet populated",
-    "overdrive_validation": "Primary/fallback selections need review against real-world benchmark data"
+    "ranking_rules": {
+"For each tier, rank each of the three cost types (free, subscription, usage) independently in descending order of tier_score. This way all best free cost models are priortized, then all best subscription based cost models, then all best usage based cost models. (Tiers E5 and E4 tier_score capped by design (at 5 and 7) currently due to focus on value and exclusion of premium cost models.) manually_toprank can optionally have one or more model ids to override to the front of the tier's line."
   },
+  "manually_toprank": {
+    "E5": "mimo-v2.5-pro-go",
+    "E4": "",
+    "E3": "",
+    "E2": "",
+    "E1": "",
+  }
   "tiers": {
     "E5": {
       "label": "Elite Frontier Reasoning",
@@ -378,28 +384,6 @@
           "tier_score": 7
         }
       ]
-    }
-  },
-  "overdrive_routing": {
-    "E5": {
-      "primary": "deepseek-v4-pro",
-      "fallback": "gpt-5.2"
-    },
-    "E4": {
-      "primary": "minimax-m2.7",
-      "fallback": "mistral-large-3"
-    },
-    "E3": {
-      "primary": "deepseek-v4-flash",
-      "fallback": "gemini-3-flash"
-    },
-    "E2": {
-      "primary": "nemotron-3-super",
-      "fallback": "qwen3.5-plus"
-    },
-    "E1": {
-      "primary": "big-pickle",
-      "fallback": "gpt-5.4-nano"
     }
   }
 }
