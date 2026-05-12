@@ -184,13 +184,7 @@ def learn(query: str = "", title: str = "", content: str = "",
         return "\n".join(out)
 
     if action == "ground_truth":
-        # Phase 5.5 -- human ground-truth feedback. We reuse the learn()
-        # parameter surface: title=section, tags[0]=moment_type,
-        # tags[1]=sentiment, query=round_tag, content=comment,
-        # listening_notes=also-comment (either works).
-        # Horizon IX * II asymptote: tags[2] (if present) carries an
-        # HCI subtag (e.g. "structural-integrity"). Per-axis verdicts
-        # let band-tuning compute per-axis bands.
+        # human ground-truth feedback; per-axis band tuning via tags[2] subtag
         from .ground_truth import record_ground_truth as _gt
         _moment = tags[0] if tags and len(tags) > 0 else ""
         _sent = tags[1] if tags and len(tags) > 1 else ""
