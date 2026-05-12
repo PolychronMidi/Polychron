@@ -204,11 +204,7 @@ def learn(query: str = "", title: str = "", content: str = "",
         from server.tools_knowledge import remove_knowledge as _rk
         return _rk(remove, scope=scope)
 
-    # Accept-draft action: consume tmp/hme-learn-draft.json (written by
-    # posttooluse_bash on STABLE/EVOLVED verdict) and add it to KB.
-    # Triggered by `i/learn action=add accept_draft=true` or
-    # `i/learn action=accept_draft`. Lets the agent commit a round's
-    # learning with one tool call instead of inventing wording.
+    # consume tmp/hme-learn-draft.json and add to KB
     if action in ("accept_draft",) or (action == "add" and not (title and content)):
         import json as _json
         import os as _os
