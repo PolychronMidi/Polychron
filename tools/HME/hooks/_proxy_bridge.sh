@@ -324,6 +324,12 @@ $STDOUT}"
 fi
 
 # Final response assembly: CLEAN JSON ONLY.
+# rationale: Claude Code displays a confusing "No stderr output" pseudo-error
+# when stderr is empty on a successful hook. A single space is the Unix
+# convention for "intentionally empty, nothing to report."
+if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
+  STDERR=" "
+fi
 jq -n \
   --arg out "$STDOUT" \
   --arg err "$STDERR" \
