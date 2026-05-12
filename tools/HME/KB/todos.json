@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1697,
-      "updated_ts": 1778626579.7614172
+      "max_id": 1703,
+      "updated_ts": 1778626708.618283
     }
   },
   {
@@ -80,8 +80,8 @@
     "id": 1685,
     "text": "Verify tests pass and line count shrinks",
     "activeForm": "Verifying tests and line count",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
