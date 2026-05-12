@@ -3,10 +3,9 @@
     "version": "1.0.0-draft",
     "description": "OVERDRIVE_MODE=5 model registry. Models ranked into 5 effort tiers (E5→E1). Within each tier: free models first (OpenCode Zen free + cascade free), then OpenCode Go (subscription), then OpenCode Zen non-free (usage-based).",
     "providers": {
-      "opencode": { "cost_model": "free" },
-      "opencode_go": { "cost_model": "subscription", "note": "$99/yr unlimited" },
-      "opencode": { "cost_model": "usage", "note": "per-token billed" },
-      "cascade": { "cost_model": "free", "note": "API cascade free tier" }
+      "opencode": { "note": "Zen (free tier and usage-based)" },
+      "opencode_go": { "note": "Go subscription, $99/yr unlimited" },
+      "cascade": { "note": "API cascade, free tier" }
     }
   },
   "_pending": {
