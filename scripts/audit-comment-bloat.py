@@ -72,10 +72,10 @@ _ANNOTATION_PREFIXES = (
 def _is_comment_line(stripped: str, ext: str) -> bool:
     if not stripped:
         return False
-    if ext in (".py", ".sh"):
+    if ext in (".py", ".sh", ".bash", ".yaml", ".yml", ".toml"):
         if stripped.startswith("#") and not stripped.startswith("#!"):
             return True
-    if ext in (".js", ".ts"):
+    if ext in (".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs"):
         if stripped.startswith("//"):
             return True
     return False
