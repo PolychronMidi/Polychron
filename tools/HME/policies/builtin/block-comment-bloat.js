@@ -56,9 +56,6 @@ function _scan(fp, content) {
   return null;
 }
 
-// Inline metadata tags that belong in docstrings or doc files, not comments
-const _META_TAG_RE = /\b(Usage|Verdicts|Returns|Example|Examples|Params|Arguments|Author|Since|Deprecated|See|Note|FIXME|TODO|HACK|XXX):/i;
-
 const REASON =
   'BLOCKED: Edit new_string contains a {COUNT}-line consecutive inline-comment block. ' +
   'CLAUDE.md: "Inline comments single-line and terse. Elaboration goes in doc/." ' +
