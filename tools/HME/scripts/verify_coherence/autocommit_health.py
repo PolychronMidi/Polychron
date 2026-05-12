@@ -39,10 +39,10 @@ class AutocommitHealthVerifier(Verifier):
 
     def run(self) -> VerdictResult:
         import datetime
-        state_dir = os.path.join(_PROJECT, "tmp")
-        fail_flag = os.path.join(state_dir, "hme-autocommit.fail")
-        counter_file = os.path.join(state_dir, "hme-autocommit.counter")
-        last_ok_file = os.path.join(state_dir, "hme-autocommit.last-success")
+        state_dir = os.path.join(_PROJECT, "runtime", "hme")
+        fail_flag = os.path.join(state_dir, "autocommit.fail")
+        counter_file = os.path.join(state_dir, "autocommit.counter")
+        last_ok_file = os.path.join(state_dir, "autocommit.last-success")
 
         issues = []
 
