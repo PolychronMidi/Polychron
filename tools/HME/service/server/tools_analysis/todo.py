@@ -647,15 +647,8 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             return f"Closed #{todo_id}{note}\nShipped: {shipped_line}{phase_complete_msg}\n"
 
         if action == "phase_complete":
-            # Append the phase-completion sentinel paragraph to a
-            # fully-checked Phase block in doc/templates/SPEC.md. Caller passes
-            # phase=N (via todo_id arg) and summary (via text arg --
-            # the 1-paragraph result; bulleted file citations and
-            # test-count delta should be embedded by the caller).
-            #
-            # When all phases in the SPEC have completion paragraphs
-            # AND zero open `[ ]` items, the next `clear` action will
-            # auto-archive the set to KB devlog and reset to fresh slate.
+            # Append phase-completion sentinel to SPEC.md (caller: phase=N via
+            # todo_id, summary via text=). Auto-archive on next clear.
             phase_n = todo_id  # repurpose todo_id arg as phase number
             _empty = phase_n is None or (isinstance(phase_n, str) and not phase_n.strip())
             if _empty:
