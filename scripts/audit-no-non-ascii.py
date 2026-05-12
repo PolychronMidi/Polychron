@@ -24,7 +24,8 @@ import sys
 ALLOWED = {0x09, 0x0a, 0x0d}  # tab, LF, CR
 EXTS = {'.py', '.js', '.sh', '.json', '.md', '.txt'}
 EXCLUDE_DIRS = {'node_modules', '.git', 'output', 'tmp',
-                '__pycache__', 'venv', '.venv', 'log', 'logs'}
+                '__pycache__', 'venv', '.venv', 'log', 'logs',
+                'KB', '.pytest_cache', '.claude'}
 
 
 def _scan_file(f: pathlib.Path) -> list[str]:
