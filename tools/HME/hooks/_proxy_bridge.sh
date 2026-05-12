@@ -328,17 +328,15 @@ fi
 if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
   STDERR=" "
 fi
-# unify denial paths: exit-2 shell hooks and exit-0 unified policies both
-# need exit_code 2 for Claude Code to actually block. Unified policy stdout
-# carries the reason as hookSpecificOutput.permissionDecisionReason.
-_PB_DENY_REASON=""
-if [ "${EXIT_CODE:-0}" != "0" ]; then
+# FIXME: convert shell-hook exit-2 denies to exit-0 hookSpecificOutput format
+if [ "${EXIT_CODE:-0}" != "0" ] && [ "$EVENT" = "PreToolUse" ]; then
   _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
-elif [ -n "$STDOUT" ]; then
-  _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
-  [ -n "$_PB_DENY_REASON" ] && EXIT_CODE=2
+  if [ -n "$_PB_DENY_REASON" ]; then
+    STDOUT=$(jq -nc --arg r "$_PB_DENY_REASON" \
+      '{hookSpecificOutput:{permissionDecision:"deny",permissionDecisionReason:$r}}')
+    EXIT_CODE=0
+  fi
 fi
-[ -n "$_PB_DENY_REASON" ] && STDERR="$_PB_DENY_REASON"
 jq -n \
   --arg out "$STDOUT" \
   --arg err "$STDERR" \
