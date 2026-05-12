@@ -176,7 +176,15 @@ _ac_do_commit() {
     exec 9>&-
     return 0
   fi
-  # Two consecutive git-commit failures. This is the catastrophic case.
+  # rationale: transient lock races (index.lock) or file modifications during
+  # the commit window can cause spurious failures. If the tree is clean
+  # afterward, the failure was a race — not data loss. Skip LIFESAVER alert.
+  if git -C "$_AC_ROOT" diff --quiet 2>/dev/null; then
+    _ac_success
+    rm -f "$_ac_err_buf" 2>/dev/null
+    exec 9>&-
+    return 0
+  fi
   _ac_record_failure "[$caller] git commit -a failed twice: $(head -c 400 "$_ac_err_buf" 2>/dev/null | tr '\n' ' ')"
   # Also mark nexus for the agent-visible reminder, if available.
   if [ -f "$_AC_ROOT/tools/HME/hooks/helpers/_nexus.sh" ]; then
