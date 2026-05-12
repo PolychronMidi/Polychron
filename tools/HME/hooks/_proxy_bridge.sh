@@ -37,11 +37,7 @@ else
   done
 fi
 
-# Meta-watchdog: every hook invocation cheaply verifies the
-# proxy-supervisor is still alive. If the supervisor's pid file is
-# missing OR the pid is not alive, respawn it detached. This resurrects
-# the supervisor itself when it dies (OOM, SIGKILL, bash bug), using
-# rationale: per-event hook heartbeat verifies supervisor alive each fire
+# Meta-watchdog: verify supervisor alive each hook fire, respawn if dead
 if [ -n "$_PB_ROOT" ]; then
   _PB_SUPERVISOR_SCRIPT="$_PB_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
   _PB_SUPERVISOR_PID_FILE="$_PB_ROOT/runtime/hme/proxy-supervisor.pid"
