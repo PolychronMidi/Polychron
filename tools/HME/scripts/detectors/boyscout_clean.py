@@ -12,22 +12,14 @@ from _transcript import _parse_all, event_content, is_assistant
 LOC_LIMIT = 350
 SPAM_RE = re.compile(r'([^\w\s()\[\]{}])\1{3,}')
 SPAM_ALLOW = 'spam-ok'
-# rationale: same skip list as HCI verifier code_audits_syntax.py _SPAM_SKIP_FILES
-_SPAM_SKIP = {
-    "tools/HME/proxy/middleware/06_secret_sanitizer.js",
-    "tools/HME/tests/specs/secret_sanitizer.test.js",
-    "tools/HME/tests/specs/migrated_policies.test.js",
-    "tools/HME/tests/specs/migrated_policies_round2.test.js",
-    "tools/HME/tests/specs/metaprofile_next_level.test.js",
-    "tools/HME/tests/specs/buddy_dispatcher.test.js",
-    "tools/HME/tests/specs/rhythm_flair.test.js",
-    "tools/csv_maestro/py_midicsv/midi_converters.py",
-    "tools/HME/skills/ISA/TEMPLATE.md",
-    "tools/HME/hooks/README.md",
-    "tools/HME/service/server/tools_analysis/perceptual_inference.py",
-    "tools/HME/service/server/tools_analysis/trust_analysis.py",
-    "tools/HME/service/server/tools_analysis/status_unified/resource_reports.py",
-}
+import json as _json
+_SPAM_SKIP = set()
+try:
+    _skip_cfg = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'config', 'verifier-skip.json')
+    with open(_skip_cfg) as _sf:
+        _SPAM_SKIP = set(_json.load(_sf).get('skip_files', []))
+except Exception:  # silent-ok: config optional, hardcoded defaults in verifier
+    pass
 _ANNOTATIONS = ('# rationale:', '# silent-ok:', '# FIXME:',
                  '# noqa', '# pylint:', '# pyright:', '# type:',
                  '// rationale:', '// silent-ok:', '// FIXME:',
