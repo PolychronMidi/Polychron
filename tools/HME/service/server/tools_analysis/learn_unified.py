@@ -65,7 +65,7 @@ def learn(query: str = "", title: str = "", content: str = "",
         return _md()
 
     if action == "health":
-        from server.tools_knowledge import kb_health as _kbh
+        from server.tools_knowledge_dream import kb_health as _kbh
         return _kbh()
 
     # Hypothesis lifecycle -- Phase 3.1 of openshell_features_to_mimic.md
