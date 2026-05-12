@@ -205,11 +205,7 @@ def main() -> int:
     # ALGORITHM at E5 -- structured SUMMARY block required when the
     # turn did substantive work.
     if tier in _TRIGGER_TIERS:
-        # No substantive work this turn -> nothing to summarize.
-        # The doctrine demanding a SUMMARY block on a text-only turn is
-        # the failure mode ceremony_dodge catches; we resolve the cycle
-        # by only requiring the block when there's actual work the
-        # closing summary describes.
+        # skip SUMMARY requirement on text-only turns; ceremony_dodge handles that
         if not _has_substantive_work(events):
             print("ok")
             return 0
