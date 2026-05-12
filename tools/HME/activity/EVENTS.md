@@ -37,7 +37,7 @@ file's listed events and FAILs if they drift.
 - **`hme_continuation_complete`** -- multi-step continuation finished.
 - **`enricher_acted_upon`** -- `context_budget.js` middleware detected a downstream tool call that referenced an identifier injected by a prior enricher. Used for enricher effectiveness tracking.
 - **`enricher_fired`** -- any enricher middleware appended content to a tool result.
-- **`injection_influence`** -- proxy detected influence of an injected hint on the next tool call.
+- **`empty_tool_result_marked`** -- proxy tagged an empty tool result body as SUCCESS or FAIL.
 - **`status_inject`** -- `i/status` output was auto-injected as a system reminder.
 - **`jurisdiction_inject`** -- hypermeta jurisdiction warning injected into agent context.
 - **`neighborhood_enrichment`** -- `grep_glob_neighborhood.js` middleware appended sibling-file context.
