@@ -109,11 +109,7 @@ if [ -z "$RESP" ]; then
 
   _PB_DIRECT_DISPATCH="$_PB_ROOT/tools/HME/hooks/direct_dispatch.sh"
   if [ -n "$_PB_ROOT" ] && [ -x "$_PB_DIRECT_DISPATCH" ]; then
-    # General direct-mode dispatch -- runs the appropriate hook chain for
-    # the current event without the proxy. Mirrors hook_bridge.js routing.
-    # Stop has a JS policy evaluator (with explicit decision contract);
-    # other events use bash hooks. Either way, the architectural property
-    # holds: the proxy is an accelerator, not a SPOC.
+    # rationale: direct-mode dispatch mirrors hook_bridge; proxy is accelerator, not SPOC
     _PB_DIRECT_ERR=$(mktemp 2>/dev/null || echo "/tmp/direct_${EVENT}_$$.err")
     _PB_DIRECT_STDOUT=$(printf '%s' "$BODY" | bash "$_PB_DIRECT_DISPATCH" "$EVENT" 2>"$_PB_DIRECT_ERR")
     _PB_DIRECT_RC=$?
