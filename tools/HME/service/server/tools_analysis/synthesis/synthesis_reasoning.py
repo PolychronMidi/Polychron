@@ -260,9 +260,8 @@ _last_source: str | None = None
 
 def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
     """Resolve model chain for OVERDRIVE_MODE=5 from config/models.json.
-    Returns model IDs ordered by ranking rules: cost groups from cost_order
-    (each sorted by tier_score desc), with manually_toprank IDs first.
-    Returns None if the tier has no models or the config is missing."""
+    Returns OpenCode model IDs ordered by ranking rules. Cascade models are
+    excluded — they're handled by the free cascade fallback after the chain."""
     import json as _json
     import os as _os
     _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
@@ -278,7 +277,7 @@ def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
     _ids = []
     for _cost in _cost_order:
         _group = sorted(
-            [m for m in _models if m.get("cost") == _cost],
+            [m for m in _models if m.get("cost") == _cost and m.get("provider") in ("opencode", "opencode_go")],
             key=lambda m: -m.get("tier_score", 0),
         )
         _ids.extend(m["id"] for m in _group if m.get("id"))
