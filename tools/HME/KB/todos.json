@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1761,
-      "updated_ts": 1778629429.0397017
+      "max_id": 1764,
+      "updated_ts": 1778629441.3928976
     }
   },
   {
-    "id": 1759,
-    "text": "Extend hme_proxy.js MODE=4/5 gate to resolve MODE=5 lead model from config/models.json",
-    "activeForm": "Extending hme_proxy.js MODE=4/5 gate with MODE=5 model resolution",
+    "id": 1762,
+    "text": "Compute expected per-tier chains from models.json cost_order + tier_score + manually_toprank rules",
+    "activeForm": "Computing expected per-tier chains",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778629429.0396733,
+    "ts": 1778629441.3928707,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1760,
-    "text": "Verify shell scripts already have MODE=5 gate extensions",
-    "activeForm": "Verifying shell scripts already have MODE=5 gate extensions",
+    "id": 1763,
+    "text": "Write mode5 test file following mode2/3/4 conventions",
+    "activeForm": "Writing mode5 test file",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778629429.0396876,
+    "ts": 1778629441.392885,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1761,
-    "text": "Test health check endpoint after changes",
-    "activeForm": "Testing health check endpoint",
+    "id": 1764,
+    "text": "Run node --test and verify all pass",
+    "activeForm": "Running node --test and verifying",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778629429.0396996,
+    "ts": 1778629441.3928955,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
