@@ -328,11 +328,15 @@ fi
 if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
   STDERR=" "
 fi
-# silent-ok: shell hooks put deny reasons in stderr; Claude Code only reads
-# permissionDecisionReason from hookSpecificOutput on stdout. Surface it.
-if [ "${EXIT_CODE:-0}" != "0" ] && [ -n "$STDERR" ] && [ "$EVENT" = "PreToolUse" ]; then
-  STDOUT=$(jq -n --arg reason "$STDERR" \
-    '{hookSpecificOutput:{permissionDecision:"deny",permissionDecisionReason:$reason}}')
+# silent-ok: proxy returns deny reasons in stdout as {"decision":"block",...};
+# Claude Code only reads permissionDecisionReason from hookSpecificOutput.
+# Extract the reason from stdout and surface it in the expected format.
+if [ "${EXIT_CODE:-0}" != "0" ] && [ "$EVENT" = "PreToolUse" ]; then
+  _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
+  if [ -n "$_PB_DENY_REASON" ]; then
+    STDOUT=$(jq -nc --arg reason "$_PB_DENY_REASON" \
+      '{hookSpecificOutput:{permissionDecision:"deny",permissionDecisionReason:$reason}}')
+  fi
 fi
 jq -n \
   --arg out "$STDOUT" \
