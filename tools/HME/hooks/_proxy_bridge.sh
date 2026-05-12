@@ -342,20 +342,10 @@ if [ "$EVENT" = "PreToolUse" ]; then
     STDERR="$_PB_DENY_REASON"
   fi
 fi
-# when denying, surface hookSpecificOutput at top level so Claude Code displays it
-if [ "${EXIT_CODE:-0}" != "0" ] && [ -n "$STDERR" ] && [ "$EVENT" = "PreToolUse" ]; then
-  jq -n \
-    --arg out "$STDOUT" \
-    --arg err "$STDERR" \
-    --argjson code "$EXIT_CODE" \
-    --arg reason "$STDERR" \
-    '{stdout: $out, stderr: $err, exit_code: $code, hookSpecificOutput: {permissionDecision: "deny", permissionDecisionReason: $reason}}'
-else
-  jq -n \
-    --arg out "$STDOUT" \
-    --arg err "$STDERR" \
-    --argjson code "$EXIT_CODE" \
-    '{stdout: $out, stderr: $err, exit_code: $code}'
-fi
+jq -n \
+  --arg out "$STDOUT" \
+  --arg err "$STDERR" \
+  --argjson code "$EXIT_CODE" \
+  '{stdout: $out, stderr: $err, exit_code: $code}'
 
 exit "${EXIT_CODE:-0}"
