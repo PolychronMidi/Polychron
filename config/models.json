@@ -156,6 +156,26 @@
           "cost": "usage",
           "cost_amt": 0.70,
           "notes": "Top agentic model; reliable for routine coding."
+        },
+        {
+          "id": "glm-5.1-go",
+          "name": "GLM 5.1",
+          "maker": "GLM",
+          "provider": "opencode_go",
+          "max_context": 1048576,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "OpenCode Go subscription. Near-frontier reasoning at flat rate."
+        },
+        {
+          "id": "mimo-v2-pro-go",
+          "name": "MiMo V2-Pro",
+          "maker": "MiMo",
+          "provider": "opencode_go",
+          "max_context": 1048576,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "OpenCode Go subscription. Agentic coding at flat rate."
         }
       ]
     },
