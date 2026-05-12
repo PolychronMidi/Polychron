@@ -23,10 +23,24 @@ module.exports = {
     if (text && text.trim().length > 0) return;
     if (ctx.hasHmeFooter(toolResult, '[SUCCESS]') || ctx.hasHmeFooter(toolResult, '[FAIL]')) return;
     // rationale: PreToolUse hook denial produces empty result with is_error=false.
-    // Without this guard, [SUCCESS] is stamped on blocked edits, tricking the agent.
+    // Without this guard, [SUCCESS] is stamped on blocked edits. Instead of
+    // silently returning, surface the deny reason from the bridge's temp file.
     const wasDenied = (toolResult && toolResult.permissionDecision === 'deny') ||
                       (toolUse && toolUse.permissionDecision === 'deny');
-    if (wasDenied) return;
+    if (wasDenied) {
+      const fs = require('fs');
+      const path = require('path');
+      const reasonFile = path.join(ctx.projectRoot || process.env.PROJECT_ROOT || '.', 'tmp', 'hme-last-deny-reason.txt');
+      try {
+        if (fs.existsSync(reasonFile)) {
+          const reason = fs.readFileSync(reasonFile, 'utf8').trim();
+          if (reason) {
+            ctx.replaceResult(toolResult, '[BLOCKED] ' + reason);
+          }
+        }
+      } catch (_) { /* silent-ok: best-effort deny reason surfacing */ }
+      return;
+    }
     const marker = toolResult.is_error === true ? _FAIL : _SUCCESS;
     ctx.appendToResult(toolResult, marker);
     ctx.markDirty();
