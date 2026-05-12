@@ -60,14 +60,7 @@ if [ -n "$_PB_ROOT" ]; then
     disown 2>/dev/null || true
   fi
 
-  # Same pattern for universal-pulse-supervisor: every hook invocation
-  # cheaply verifies the active-probe daemon is alive. This is the
-  # LIFESAVER gap-filler -- without it, a GIL-saturated worker can stay
-  # unresponsive for 48+ minutes before anyone notices (confirmed
-  # incident, Apr 24 2026). The pulse runs its own health probes against
-  # proxy/worker/llamacpp/CPU-saturation and writes to hme-errors.log
-  # when targets go unresponsive, so LIFESAVER surfaces the outage at
-  # the NEXT turn rather than hours later.
+  # rationale: universal-pulse watchdog prevents silent multi-hour outages
   _PB_UP_SUPERVISOR_SCRIPT="$_PB_ROOT/tools/HME/hooks/direct/universal-pulse-supervisor.sh"
   _PB_UP_PID_FILE="$_PB_ROOT/runtime/hme/universal-pulse-supervisor.pid"
   _PB_UP_ALIVE=0
