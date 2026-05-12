@@ -239,7 +239,8 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
         resolved_max = _cap
 
     # Zen requires content-blocks form; Anthropic accepts both. Use blocks uniformly.
-    _is_zen = model_id.startswith("deepseek-") or model_id.startswith("glm-")
+    _ZEN_PREFIXES = ("deepseek-", "glm-", "minimax-", "qwen-", "kimi-", "mimo-", "nemotron-", "big-pickle", "ring-", "gpt-")
+    _is_zen = model_id.startswith(_ZEN_PREFIXES)
     _user_content = [{"type": "text", "text": prompt}] if _is_zen else prompt
     payload = {
         "model": model_id,
