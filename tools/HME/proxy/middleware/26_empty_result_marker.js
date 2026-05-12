@@ -22,6 +22,11 @@ module.exports = {
     const text = _textOf(toolResult);
     if (text && text.trim().length > 0) return;
     if (ctx.hasHmeFooter(toolResult, '[SUCCESS]') || ctx.hasHmeFooter(toolResult, '[FAIL]')) return;
+    // rationale: PreToolUse hook denial produces empty result with is_error=false.
+    // Without this guard, [SUCCESS] is stamped on blocked edits, tricking the agent.
+    const wasDenied = (toolResult && toolResult.permissionDecision === 'deny') ||
+                      (toolUse && toolUse.permissionDecision === 'deny');
+    if (wasDenied) return;
     const marker = toolResult.is_error === true ? _FAIL : _SUCCESS;
     ctx.appendToResult(toolResult, marker);
     ctx.markDirty();
