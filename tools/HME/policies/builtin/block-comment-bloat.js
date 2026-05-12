@@ -93,6 +93,7 @@ module.exports = {
     }
     const hit = _scan(fp, content);
     if (!hit) return ctx.allow();
+    if (hit.type === 'META') return ctx.deny(REASON_META.replace('{TAG}', hit.tag));
     if (hit.type === 'LONG') {
       return ctx.deny(REASON_LONG.replace('{LEN}', hit.len).replace('{LIMIT}', LONG_LINE));
     }
