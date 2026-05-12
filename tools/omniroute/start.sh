@@ -24,9 +24,11 @@ done
 cd "$SCRIPT_DIR"
 
 # Source project .env for credentials
-PROJECT_ENV="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}/.env"
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
+PROJECT_ENV="${PROJECT_ROOT}/.env"
 if [ -f "$PROJECT_ENV" ]; then
   set -a
+  # shellcheck disable=SC1090
   source "$PROJECT_ENV"
   set +a
 fi
