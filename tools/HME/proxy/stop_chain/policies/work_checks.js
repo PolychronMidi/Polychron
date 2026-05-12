@@ -270,6 +270,7 @@ function saveComplStore(store) {
 module.exports = {
   name: 'work_checks',
   async run(ctx) {
+    try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-payload-keys.txt'), JSON.stringify({tp:ctx.payload&&ctx.payload.transcript_path?String(ctx.payload.transcript_path).slice(0,100):'FALSY', keys:Object.keys(ctx.payload||{})})); } catch(_) {}
     const v = readVerdicts();
     // FIRING_RULES + willDeny derived from registry.json (single SoT). Adding
     // a deny detector = one entry in registry.json with deny:true + reason_key.
