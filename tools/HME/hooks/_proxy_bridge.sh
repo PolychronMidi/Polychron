@@ -328,23 +328,17 @@ fi
 if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
   STDERR=" "
 fi
-# surface deny reasons from both shell-hook exit-2 and unified-policy exit-0
-# paths. Claude Code only reliably denies on exit_code != 0; permissionDecision
-# in stdout at exit_code 0 is silently ignored. Extract the reason, put it in
-# stderr where Claude Code reads deny messages, and ensure exit_code is 2.
+# TODO: surface deny reasons from stdout into stderr so Claude Code displays them
 if [ "$EVENT" = "PreToolUse" ]; then
   _PB_DENY_REASON=""
   if [ "${EXIT_CODE:-0}" != "0" ]; then
-    # shell-hook denial: reason in stdout as {"decision":"block","reason":"..."}
     _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
-  else
-    # unified-policy denial: reason in stdout as hookSpecificOutput.permissionDecisionReason
+  elif [ -n "$STDOUT" ]; then
     _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
-    if [ -n "$_PB_DENY_REASON" ]; then
-      EXIT_CODE=2
-    fi
+    [ -n "$_PB_DENY_REASON" ] && EXIT_CODE=2
   fi
   if [ -n "$_PB_DENY_REASON" ]; then
+    STDOUT="$_PB_DENY_REASON"
     STDERR="$_PB_DENY_REASON"
   fi
 fi
