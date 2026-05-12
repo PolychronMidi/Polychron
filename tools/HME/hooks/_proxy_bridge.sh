@@ -328,11 +328,17 @@ fi
 if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
   STDERR=" "
 fi
-# shell-hook exit-2 denials: extract reason from stdout, surface in stderr
-if [ "$EVENT" = "PreToolUse" ] && [ "${EXIT_CODE:-0}" != "0" ]; then
+# unify denial paths: exit-2 shell hooks and exit-0 unified policies both
+# need exit_code 2 for Claude Code to actually block. Unified policy stdout
+# carries the reason as hookSpecificOutput.permissionDecisionReason.
+_PB_DENY_REASON=""
+if [ "${EXIT_CODE:-0}" != "0" ]; then
   _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
-  [ -n "$_PB_DENY_REASON" ] && STDERR="$_PB_DENY_REASON"
+elif [ -n "$STDOUT" ]; then
+  _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+  [ -n "$_PB_DENY_REASON" ] && EXIT_CODE=2
 fi
+[ -n "$_PB_DENY_REASON" ] && STDERR="$_PB_DENY_REASON"
 jq -n \
   --arg out "$STDOUT" \
   --arg err "$STDERR" \
