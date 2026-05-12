@@ -12,6 +12,9 @@
       "cascade": {
         "note": "API cascade, free tier"
       }
+    },
+    "toprank_rationale": {
+      "E5": "TODO: verify — MiMo V2.5-Pro (tier_score=4) leads DeepSeek V4 Pro (tier_score=5). MiMo notes claim top agentic benchmarks; DeepSeek-Pro excels at deep logic/system architecture. Pending benchmark validation for synthesis-call relevance."
     }
   },
   "ranking_rules": {
