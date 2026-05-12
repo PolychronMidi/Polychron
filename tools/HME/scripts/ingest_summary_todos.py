@@ -31,12 +31,12 @@ except Exception:  # silent-ok: transcript may not exist
 
 # Commitment language indicating enumerable work items
 _COMMIT = re.compile(
-    r"(?:still\s+need\s+to|must\s+fix|haven'?t\s+yet|should\s+(?:also\s+)?"
-    r"(?:fix|add|implement|wire|update|remove|clean|centralize|consolidate|"
-    r"align|extend|build|create|write|register|test|verify|check|run))",
+    r"(?:still\s+need\s+to|must\s+(?:fix|address|do)|haven'?t\s+(?:yet|done)|"
+    r"should\s+(?:also\s+)?(?:fix|add|implement|wire|update|remove|clean|"
+    r"centralize|consolidate|align|extend|build|create|write|register|test|"
+    r"verify|check|run|address|do|make|handle|resolve|finish|complete))",
     re.IGNORECASE
 )
-_BULLET = re.compile(r"^\s*(?:\d+[.)]\s*|[-*]\s+)(.{10,200})$", re.MULTILINE)
 
 all_items = []
 
