@@ -2,13 +2,15 @@
 // Block content with 3+ consecutive non-annotation comment lines. Annotation
 // prefixes (rationale, silent-ok, fixme, noqa) reset the counter.
 
-const path = require('path');
-const cfgPath = path.join(process.env.PROJECT_ROOT || '.', 'tools', 'HME', 'config', 'comment-bloat.json');
-let _cfg = { threshold: 3, long_line: 90, annotations: [] };
-try { _cfg = JSON.parse(require('fs').readFileSync(cfgPath, 'utf8')); } catch (_) { /* use defaults */ }
-const THRESHOLD = _cfg.threshold || 3;
-const LONG_LINE = _cfg.long_line || 90;
-const ANNOTATIONS = _cfg.annotations || [];
+const THRESHOLD = parseInt(process.env.COMMENT_BLOAT_WARN || '3', 10);
+const LONG_LINE = parseInt(process.env.COMMENT_BLOAT_LONG_LINE || '90', 10);
+
+const ANNOTATIONS = [
+  '# rationale:', '# silent-ok:', '# FIXME:',
+  '# noqa', '# pylint:', '# pyright:', '# type:',
+  '// rationale:', '// silent-ok:', '// FIXME:',
+  '// eslint-', '// noqa',
+];
 
 function _commentPrefix(fp) {
   if (!fp) return null;
