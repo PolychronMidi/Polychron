@@ -7,14 +7,7 @@
 EVENT="${1:-unknown}"
 PORT="${HME_PROXY_PORT:-9099}"
 
-# Recursion guard for thread children -- narrow to events that would
-# cause an auto-loop or pointless work. Original cut bypassed every
-# event, which silently disabled PreToolUse safety (run.lock guard,
-# secret detection, etc.) in the child session. Per CLAUDE.md the
-# run.lock guard is "Enforced by PreToolUse hook + deny rule" -- losing
-# that half is real risk if the persistent subagent ever gains tool
-# access. Keep PreToolUse / PostToolUse running; bypass only the
-# loop-shaped lifecycle events.
+# rationale: recursion guard: bypass only loop-shaped events for thread children
 case "$EVENT" in
   Stop|UserPromptSubmit|SessionStart|PreCompact|PostCompact)
     if [ "${HME_THREAD_CHILD:-}" = "1" ]; then
