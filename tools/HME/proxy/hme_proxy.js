@@ -839,9 +839,7 @@ if (_mode4WasStreaming) {
           }
           return;
         }
-        // ====================================================================
-        // END OF MODE 4 SWAP RESPONSE HANDLER
-        // ====================================================================
+        // END MODE 4 SWAP RESPONSE HANDLER
 
         if (!isAnthropic) {
           clientRes.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
