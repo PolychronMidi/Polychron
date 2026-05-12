@@ -19,15 +19,6 @@ module.exports = {
   name: 'empty_result_marker',
 
   onToolResult({ toolUse, toolResult, ctx }) {
-    // surface deny reason from bridge temp file; consumed on read
-    const rf = require('path').join(ctx.projectRoot || process.env.PROJECT_ROOT || '.', 'tmp', 'hme-last-deny-reason.txt');
-    try {
-      if (fs.existsSync(rf)) {
-        const reason = fs.readFileSync(rf, 'utf8').trim();
-        fs.unlinkSync(rf);
-        if (reason) { ctx.replaceResult(toolResult, '[BLOCKED] ' + reason); ctx.markDirty(); return; }
-      }
-    } catch (_) { /* silent-ok */ }
     const text = _textOf(toolResult);
     if (text && text.trim().length > 0) return;
     if (ctx.hasHmeFooter(toolResult, '[SUCCESS]') || ctx.hasHmeFooter(toolResult, '[FAIL]')) return;
