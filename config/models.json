@@ -208,6 +208,16 @@
           "notes": "Strong instruction following; less creative on debugging."
         },
         {
+          "id": "gpt-5.2-mini",
+          "name": "GPT 5.2 Mini",
+          "maker": "OpenAI",
+          "provider": "cascade_free",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Cascade free tier. Fast, cheap; good for simple scripts and tests."
+        },
+        {
           "id": "qwen3.5-plus",
           "name": "Qwen3.5 Plus",
           "maker": "Qwen",
