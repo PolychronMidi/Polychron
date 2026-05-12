@@ -2,14 +2,14 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1585,
-      "updated_ts": 1778569594.915162
+      "max_id": 1587,
+      "updated_ts": 1778570433.7454154
     }
   },
   {
     "id": 1584,
     "text": "Fix onboarding-flow verifier sandbox (paths module import)",
-    "activeForm": "Fixing onboarding-flow sandbox paths import",
+    "activeForm": "Fixing onboarding-flow verifier sandbox",
     "status": "in_progress",
     "done": false,
     "critical": false,
