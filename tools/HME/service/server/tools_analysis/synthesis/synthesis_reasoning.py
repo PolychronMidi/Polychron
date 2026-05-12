@@ -401,82 +401,22 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
             _text, _source = _overdrive_result
             _last_source = _source
             return _text
-    elif _od_mode == "2":
-        if _normalized_tier in ("E4", "E5"):
-            _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
-        elif _normalized_tier == "E3":
-            # Pin Sonnet -- force direct API; subagent dispatch can't honor a model-specific chain.
-            _overdrive_result = _call_opus_overdrive(
-                prompt, system, max_tokens,
-                chain_override=("claude-sonnet-4-6",),
-                allow_subagent=False,
-            )
-        else:  # E1, E2
-            _overdrive_result = None  # skip overdrive -> cascade handles it
-        if _overdrive_result:
-            _text, _source = _overdrive_result
-            _last_source = _source
-            return _text
-    elif _od_mode == "3":
-        # MODE=3: OpenCode Go DeepSeek between cascade and Opus.
-        if _normalized_tier == "E5":
-            _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
-        elif _normalized_tier == "E4":
-            _overdrive_result = _call_opus_overdrive(
-                prompt, system, max_tokens,
-                chain_override=("deepseek-v4-pro",),
-                allow_subagent=False,
-            )
-        elif _normalized_tier == "E3":
-            _overdrive_result = _call_opus_overdrive(
-                prompt, system, max_tokens,
-                chain_override=("deepseek-v4-flash",),
-                allow_subagent=False,
-            )
-        else:  # E1, E2
-            _overdrive_result = None
-        if _overdrive_result:
-            _text, _source = _overdrive_result
-            _last_source = _source
-            return _text
-    elif _od_mode == "4":
-        # MODE=4: main agent swap to deepseek-v4-pro; E5 escalates to glm-5.1.
-        if _normalized_tier == "E5":
-            _overdrive_result = _call_opus_overdrive(
-                prompt, system, max_tokens,
-                chain_override=("glm-5.1",),
-                allow_subagent=False,
-            )
-        elif _normalized_tier == "E4":
-            _overdrive_result = _call_opus_overdrive(
-                prompt, system, max_tokens,
-                chain_override=("deepseek-v4-pro",),
-                allow_subagent=False,
-            )
-        elif _normalized_tier == "E3":
-            _overdrive_result = _call_opus_overdrive(
-                prompt, system, max_tokens,
-                chain_override=("deepseek-v4-flash",),
-                allow_subagent=False,
-            )
-        else:  # E1, E2
-            _overdrive_result = None
-        if _overdrive_result:
-            _text, _source = _overdrive_result
-            _last_source = _source
-            return _text
-    elif _od_mode == "5":
-        _chain = _resolve_mode5_chain(_normalized_tier)
-        if _chain:
-            _overdrive_result = _call_opus_overdrive(
-                prompt, system, max_tokens,
-                chain_override=_chain,
-                allow_subagent=False,
-            )
-            if _overdrive_result:
-                _text, _source = _overdrive_result
-                _last_source = _source
-                return _text
+    else:
+        # MODE=2..5: registry-routed per-tier dispatch. Resolver returns
+        # (chain, allow_subagent) or None to fall through to the cascade.
+        _resolver = _MODE_DISPATCHERS.get(_od_mode)
+        if _resolver:
+            _resolved = _resolver(_normalized_tier)
+            if _resolved:
+                _chain, _allow_sub = _resolved
+                _overdrive_result = _call_opus_overdrive(
+                    prompt, system, max_tokens,
+                    chain_override=_chain, allow_subagent=_allow_sub,
+                )
+                if _overdrive_result:
+                    _text, _source = _overdrive_result
+                    _last_source = _source
+                    return _text
 
     try:
         providers = _load_providers()
