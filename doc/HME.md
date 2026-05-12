@@ -20,7 +20,7 @@
 
 | Topic | File |
 |---|---|
-| Installation topology (directory tree, lance tables), Worker HTTP endpoints, Operator commands (`hme_admin(action=...)`: selftest/health/reload/index/clear_index, indexing-mode R97), maintenance | [HME_INSTALLATION.md](HME_INSTALLATION.md) |
+| Setup, prerequisites, directory tree, lance tables, Worker HTTP endpoints, Operator commands (`hme_admin(action=...)`: selftest/health/reload/index/clear_index, indexing-mode R97), maintenance | [README.md](../README.md) (Setup) + [HME_TOOLS.md](HME_TOOLS.md) (operator commands) |
 | Public tool surface — full mode tables for evolve / review / read / learn / trace / hme_admin, "when to use what" lookup, Knowledge KB categories | [HME_TOOLS.md](HME_TOOLS.md) |
 | Hooks integration & Phase 1-6 subsystems (activity bridge, inference proxy, pipeline policy gate, KB staleness, coherence score, blind-spots, cascade, jurisdiction injection, hypotheses, drift, prediction accuracy, crystallization, music truth, trust-weighted KB, intention gap, self-audit, adversarial probes, trajectory, coherence budget, negative space, cognitive load, reflexivity, constitutional identity, doc drift, generalizations, multi-agent scaffold, human ground truth, hook scripts) | [HME_SUBSYSTEMS.md](HME_SUBSYSTEMS.md) |
 | Polychron-specific RAG/synthesis stack (IIFE chunking, embedding model, symbol indexing, two-local arbiter fleet, warm KV contexts, five-stage synthesis pipeline, think-session memory, unified narrative, context-budget awareness, temporal decay, knowledge relationships) | [HME_RAG_STACK.md](HME_RAG_STACK.md) |
