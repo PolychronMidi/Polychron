@@ -148,7 +148,7 @@ _ac_do_commit() {
   # git commit with single retry for transient lock contention.
   local commit_msg
   commit_msg="$(date +%Y-%m-%dT%H:%M:%S 2>/dev/null || echo autocommit)"
-  if git -C "$_AC_ROOT" commit -m "$commit_msg" --quiet >"$_ac_err_buf" 2>&1; then
+  if git -C "$_AC_ROOT" commit -a -m "$commit_msg" --quiet >"$_ac_err_buf" 2>&1; then
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
     exec 9>&-
