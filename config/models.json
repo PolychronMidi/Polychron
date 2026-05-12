@@ -338,6 +338,16 @@
       "description": "High-speed, low-cost: log summarization, single-line edits, data extraction.",
       "models": [
         {
+          "id": "gemini-3-flash-lite",
+          "name": "Gemini 3 Flash Lite",
+          "maker": "Google",
+          "provider": "cascade",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Cascade free tier. Ultra-fast; log summarization and single-line edits."
+        },
+        {
           "id": "big-pickle",
           "name": "Big Pickle",
           "maker": "Pickle",
