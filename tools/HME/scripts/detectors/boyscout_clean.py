@@ -20,9 +20,9 @@ try:
         _SPAM_SKIP = set(_json.load(_sf).get('skip_files', []))
 except Exception:  # silent-ok: config optional, hardcoded defaults in verifier
     pass
-_ANNOTATIONS = ('# rationale:', '# silent-ok:', '# FIXME:',
+_ANNOTATIONS = ('# silent-ok:', '# FIXME:',
                  '# noqa', '# pylint:', '# pyright:', '# type:',
-                 '// rationale:', '// silent-ok:', '// FIXME:',
+                 '// silent-ok:', '// FIXME:',
                  '// eslint-', '// noqa')
 _CWARN = int(os.environ.get('COMMENT_BLOAT_WARN', '3'))
 
