@@ -349,7 +349,7 @@ if [ "$EVENT" = "PreToolUse" ] || [ "$EVENT" = "Stop" ]; then
   if [ "${EXIT_CODE:-0}" != "0" ]; then
     _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
   elif [ -n "$STDOUT" ]; then
-    _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+    _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
     [ -n "$_PB_DENY_REASON" ] && EXIT_CODE=2
   fi
 fi
