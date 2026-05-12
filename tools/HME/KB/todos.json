@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1478,
-      "updated_ts": 1778561460.5231287
+      "max_id": 1484,
+      "updated_ts": 1778562082.5870805
     }
   },
   {
@@ -35,29 +35,29 @@
     "tier": "E3"
   },
   {
-    "id": 1474,
-    "text": "Test HME infrastructure and key tools live",
-    "activeForm": "Testing HME infrastructure and key tools live",
-    "status": "in_progress",
-    "done": false,
+    "id": 1481,
+    "text": "Fix lint errors to unblock pipeline",
+    "activeForm": "Fixing lint errors to unblock pipeline",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778561460.5230918,
+    "ts": 1778562082.5870495,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1468,
-    "text": "Explore KB system, learning, and evolution loop",
-    "activeForm": "Exploring KB system, learning, and evolution loop",
-    "status": "pending",
+    "id": 1477,
+    "text": "Run composition engine and check output",
+    "activeForm": "Running composition engine and checking output",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778561388.424416,
+    "ts": 1778561460.5231175,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -72,20 +72,6 @@
     "source": "native",
     "on_done": "",
     "ts": 1778561388.4244244,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1477,
-    "text": "Run composition engine and check output",
-    "activeForm": "Running composition engine and checking output",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778561460.5231175,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
