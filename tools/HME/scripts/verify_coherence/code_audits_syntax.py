@@ -125,25 +125,28 @@ _SPAM_SKIP_DIRS = {
     "__pycache__", ".venv", "venv", "lab", "plugin-cache", "models",
     "KB", ".pytest_cache", ".claude", "runtime",
 }
-_SPAM_SKIP_FILES = {
-    # Test fixtures whose purpose is to exercise sanitizer regex catalogs.
-    "tools/HME/proxy/middleware/06_secret_sanitizer.js",
-    "tools/HME/tests/specs/secret_sanitizer.test.js",
-    "tools/HME/tests/specs/migrated_policies.test.js",
-    "tools/HME/tests/specs/migrated_policies_round2.test.js",
-    "tools/HME/tests/specs/metaprofile_next_level.test.js",
-    "tools/HME/tests/specs/buddy_dispatcher.test.js",
-    "tools/HME/tests/specs/rhythm_flair.test.js",
-    # Vendored: external library, not under our editorial control.
-    "tools/csv_maestro/py_midicsv/midi_converters.py",
-    # Templates and docs with intentional horizontal rules / headings.
-    "tools/HME/skills/ISA/TEMPLATE.md",
-    "tools/HME/hooks/README.md",
-    # Sparkline string literals legitimately use repeated chars for ASCII art.
-    "tools/HME/service/server/tools_analysis/perceptual_inference.py",
-    "tools/HME/service/server/tools_analysis/trust_analysis.py",
-    "tools/HME/service/server/tools_analysis/status_unified/resource_reports.py",
-}
+_SPAM_SKIP_FILES = set()
+try:
+    import json as _json
+    _sf_cfg = os.path.join(_PROJECT, "tools", "HME", "config", "verifier-skip.json")
+    with open(_sf_cfg) as _sf:
+        _SPAM_SKIP_FILES = set(_json.load(_sf).get("skip_files", []))
+except Exception:  # silent-ok: config optional, hardcoded fallback below
+    _SPAM_SKIP_FILES = {
+        "tools/HME/proxy/middleware/06_secret_sanitizer.js",
+        "tools/HME/tests/specs/secret_sanitizer.test.js",
+        "tools/HME/tests/specs/migrated_policies.test.js",
+        "tools/HME/tests/specs/migrated_policies_round2.test.js",
+        "tools/HME/tests/specs/metaprofile_next_level.test.js",
+        "tools/HME/tests/specs/buddy_dispatcher.test.js",
+        "tools/HME/tests/specs/rhythm_flair.test.js",
+        "tools/csv_maestro/py_midicsv/midi_converters.py",
+        "tools/HME/skills/ISA/TEMPLATE.md",
+        "tools/HME/hooks/README.md",
+        "tools/HME/service/server/tools_analysis/perceptual_inference.py",
+        "tools/HME/service/server/tools_analysis/trust_analysis.py",
+        "tools/HME/service/server/tools_analysis/status_unified/resource_reports.py",
+    }
 _SPAM_EXTS = (
     ".md", ".py", ".js", ".mjs", ".cjs", ".sh", ".bash", ".json",
     ".yaml", ".yml", ".ts", ".tsx", ".css", ".html", ".txt",
