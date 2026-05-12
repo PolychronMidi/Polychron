@@ -276,7 +276,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
         headers["x-api-key"] = _zen_key
         headers["User-Agent"] = "curl/8.0.1"
     elif _provider == "cascade":
-        return (None, False)  # cascade models route via provider modules in fallback
+        return (None, True)  # cascade models use provider fallback; advance chain
 
     try:
         request = _req.Request(
