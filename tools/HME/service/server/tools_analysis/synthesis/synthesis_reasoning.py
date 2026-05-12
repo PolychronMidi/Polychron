@@ -276,7 +276,7 @@ def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
         _ids.extend(m["id"] for m in _group if m.get("id"))
     _top = _cfg.get("manually_toprank", {}).get(tier, []) or []
     _ids = [mid for mid in _top if mid in _ids] + [mid for mid in _ids if mid not in _top]
-    return (tuple(_ids), False) if _ids else None
+    return tuple(_ids) if _ids else None
 
 
 def _resolve_mode2_chain(tier: str) -> tuple[tuple[str, ...], bool] | None:
