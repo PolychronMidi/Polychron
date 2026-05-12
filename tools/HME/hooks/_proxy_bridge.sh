@@ -352,6 +352,7 @@ if [ "$EVENT" = "PreToolUse" ] || [ "$EVENT" = "Stop" ]; then
     _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
     [ -n "$_PB_DENY_REASON" ] && EXIT_CODE=2
   fi
+  [ -n "$_PB_DENY_REASON" ] && STDERR="$_PB_DENY_REASON"
 fi
 if [ -n "$_PB_DENY_REASON" ] && [ -n "$_PB_ROOT" ]; then
   mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
