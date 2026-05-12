@@ -48,12 +48,23 @@ def _parse_python_states() -> list:
 
 
 def _parse_shell_states() -> list:
-    """Extract the _ONB_STATES array from _onboarding.sh."""
+    """Extract STATES from the same canonical JSON config as Python side."""
+    import json as _json
+    _cfg = os.path.join(os.path.dirname(_PY_FILE), "..", "..",
+                        "config", "onboarding_states.json")
+    _cfg = os.path.normpath(_cfg)
+    try:
+        with open(_cfg, encoding="utf-8") as _f:
+            states = _json.load(_f).get("states", [])
+            if states:
+                return states
+    except Exception:
+        pass
     with open(_SH_FILE, encoding="utf-8") as f:
         src = f.read()
     match = re.search(r'_ONB_STATES=\(([^)]+)\)', src)
     if not match:
-        raise RuntimeError(f"Could not find _ONB_STATES=(...) in {_SH_FILE}")
+        raise RuntimeError(f"Could not find _ONB_STATES definition in {_SH_FILE} or {_cfg}")
     return match.group(1).split()
 
 
