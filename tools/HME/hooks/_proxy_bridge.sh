@@ -353,6 +353,7 @@ if [ "$EVENT" = "PreToolUse" ] || [ "$EVENT" = "Stop" ]; then
     [ -n "$_PB_DENY_REASON" ] && EXIT_CODE=2
   fi
   [ -n "$_PB_DENY_REASON" ] && STDERR="$_PB_DENY_REASON"
+  [ -n "$_PB_DENY_REASON" ] && printf '%s\n' "$_PB_DENY_REASON" >&2
 fi
 if [ -n "$_PB_DENY_REASON" ] && [ -n "$_PB_ROOT" ]; then
   mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
