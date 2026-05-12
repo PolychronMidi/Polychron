@@ -164,7 +164,7 @@ _ac_do_commit() {
   # Retry once. Transient index-lock contention between concurrent hooks
   # is the main intended retry case.
   sleep 1
-  if git -C "$_AC_ROOT" commit -m "${commit_msg}-retry" --quiet >"$_ac_err_buf" 2>&1; then
+  if git -C "$_AC_ROOT" commit -a -m "${commit_msg}-retry" --quiet >"$_ac_err_buf" 2>&1; then
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
     exec 9>&-
