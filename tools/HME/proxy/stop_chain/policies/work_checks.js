@@ -270,7 +270,6 @@ function saveComplStore(store) {
 module.exports = {
   name: 'work_checks',
   async run(ctx) {
-    const transcriptPath = ctx.payload && ctx.payload.transcript_path;
     const v = readVerdicts();
     // FIRING_RULES + willDeny derived from registry.json (single SoT). Adding
     // a deny detector = one entry in registry.json with deny:true + reason_key.
@@ -298,10 +297,8 @@ module.exports = {
     // where PSYCHOPATHIC-STOP silently suppressed auto-completeness.
 
     const transcriptPath = ctx.payload && ctx.payload.transcript_path;
-    try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-debug.txt'), JSON.stringify({tp:!!transcriptPath, tpv:String(ctx.payload.transcript_path).slice(0,100)})); } catch(_) {}
     if (!transcriptPath) return ctx.allow();
     const { text: lastUser, turnIndex } = lastRealUserPrompt(transcriptPath);
-    try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-debug.txt'), JSON.stringify({tp:true,lu:String(lastUser||'').slice(0,80),ti:turnIndex})); } catch(_) {}
     if (!lastUser) return ctx.allow();
 
     // Dedup key = turnIndex+text so identical retypes get separate budgets.
