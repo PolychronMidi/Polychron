@@ -129,17 +129,7 @@ if [ -z "$RESP" ]; then
     exit "${_PB_DIRECT_RC:-0}"
   fi
 
-  # Maintenance-flag check: if tmp/hme-proxy-maintenance.flag exists and
-  # is younger than its declared TTL, a caller has announced a planned
-  # restart. Suppress the fail-LOUD banner for this single invocation;
-  # still emit a short stderr trace so the gap is audit-trailable, but
-  # do NOT write to hme-errors.log (would trigger LIFESAVER) and do NOT
-  # set the sticky fail flag.
-  #
-  # Flag format: two lines.
-  #   line 1: ISO8601 timestamp the maintenance window started
-  #   line 2: integer TTL seconds
-  # Malformed or expired flag is ignored -- we fail-LOUD as normal.
+  # rationale: maintenance-flag check; suppress LIFESAVER during planned restarts
   _PB_MAINT_FLAG="$_PB_ROOT/tmp/hme-proxy-maintenance.flag"
   _PB_MAINT_ACTIVE=0
   if [ -n "$_PB_ROOT" ] && [ -f "$_PB_MAINT_FLAG" ]; then
