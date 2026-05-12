@@ -745,6 +745,7 @@ if (_mode4WasStreaming) {
             const { ZenSseTranslator } = require('./zen_translator');
             const translator = new ZenSseTranslator({ model: 'deepseek-v4-pro' });
             let _sentStop = false;
+            let _sentStart = false;
             let _hasInjectedThinking = false;
 
             clientRes.writeHead(200, {
@@ -774,12 +775,18 @@ if (_mode4WasStreaming) {
               });
 
               if (output.trim()) {
+                if (output.includes('message_start')) _sentStart = true;
                 if (output.includes('message_stop')) _sentStop = true;
                 clientRes.write(output.endsWith('\n\n') ? output : output + '\n\n');
               }
             });
 
             upstreamRes.on('end', () => {
+              if (!_sentStart) {
+                // Force a message_start if we never got one from the stream
+                clientRes.write('event: message_start\n');
+                clientRes.write(`data: {"type":"message_start","message":{"id":"proxy_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n`);
+              }
               if (!_sentStop) {
                 const finalSequence =
                   'event: message_delta\n' +
@@ -854,7 +861,7 @@ if (_mode4WasStreaming) {
             _fpLastUserText = c;
           } else if (Array.isArray(c)) {
             _fpLastUserText = c.filter((b) => b && b.type === 'text')
-              .map((b) => b.text || '').join(' ') || _fpLastUserText;
+              .map((b) => b.text || '').join(' ') || lastUserText;
           }
         }
         const _fpDenyMarkers = [
@@ -1148,7 +1155,7 @@ if (_mode4WasStreaming) {
           const _corrId = `${_ts}-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
           const _dumpFile = _bdPath.join(_dumpDir, `hme-resp-${_corrId}-${_verdict}-${_path_label}.json`);
           const _bodyFile = _bdPath.join(_dumpDir, `hme-resp-${_corrId}-${_verdict}-${_path_label}.body`);
-          const _reqBodyFile = _bdPath.join(_dumpDir, `hme-resp-${_corrId}-${_verdict}-${_path_label}.req-body`);
+          const _reqBodyFile = _bdPath.join(_dumpDir, `hme-resp-${_corrId}-${_verdict}-${_path_label}.reqBody`);
           // Filter env to relevant vars (avoid dumping secrets like OAuth
           // tokens or API keys, but keep behaviour-influencing config).
           const _envSnap = {};
@@ -1311,6 +1318,8 @@ if (_mode4WasStreaming) {
             // for, so we can verify the path is being reached and
             // priorUserWasDeny is being set correctly.
             try {
+              const fs = require('fs');
+              const path = require('path');
               fs.appendFileSync(
                 path.join(PROJECT_ROOT, 'log', 'hme-proxy-ackstrip.log'),
                 `[${new Date().toISOString()}] sse-setup priorUserWasDeny=${_denyHit} lastUserHead=${JSON.stringify(lastUserText.slice(0,80))}\n`,
@@ -1366,6 +1375,8 @@ if (_mode4WasStreaming) {
                   // policy in sse_rewriters.js). Strip is the cure; logging
                   // to errors.log re-fired the alert every turn.
                   try {
+                    const fs = require('fs');
+                    const path = require('path');
                     const _ackContext = userIsDeny ? 'cascade-after-deny' : 'cascade-no-deny';
                     fs.appendFileSync(
                       path.join(PROJECT_ROOT, 'log', 'hme-bare-ack-strips.jsonl'),

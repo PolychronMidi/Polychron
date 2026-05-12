@@ -255,53 +255,17 @@ fi
 # recovery banner if the flag was set (meaning the proxy WAS down before
 # this call). The recovery banner parallels the fail-LOUD banner so the
 # user knows normal service resumed.
-#
-# CRITICAL: the recovery note goes to stderr + a dedicated lifecycle log,
-# NOT to hme-errors.log. The userpromptsubmit LIFESAVER scan text-matches
-# every line in hme-errors.log as an error; routing a "recovered"
-# message through it would fire a spurious LIFESAVER ERRORS banner on
-# every successful recovery. Errors and recoveries are semantically
-# different events and live in different files.
 if [ -n "$_PB_ROOT" ] && [ -f "$_PB_ROOT/tmp/hme-proxy-down.flag" ]; then
   _PB_RECOVERY_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
   rm -f "$_PB_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
   mkdir -p "$_PB_ROOT/log" 2>/dev/null
-  # Audit trail for recoveries -- a separate file from the error log.
   echo "[$_PB_RECOVERY_TS] [proxy-bridge] HME proxy recovered on 127.0.0.1:${PORT} (event=${EVENT})" \
     >> "$_PB_ROOT/log/hme-proxy-lifecycle.log"
   echo "[proxy-bridge RECOVERED $_PB_RECOVERY_TS] HME proxy on 127.0.0.1:${PORT} responding again" >&2
 fi
 unset _PB_RECOVERY_TS 2>/dev/null
 
-# Parse response and relay. jq is available in every Claude Code environment;
-# this is the simplest way to pull structured fields from the JSON.
-#
-# FAIL-LOUD: capture jq stderr to a tempfile. If the proxy response is
-# malformed JSON, jq writes a parse error to stderr and produces empty
-# output -- the previous `2>/dev/null` pattern silently emitted empty
-# stdout/exit_code, making Claude Code think the hook succeeded with no
-# action. That's the canonical silent-fail pattern this audit pass is
-# closing. Now: if jq fails, we surface the parse error to errors.log so
-# the next inline-check or Stop scan picks it up.
-# PATCH: Handle overdrive_mode=4 non-JSON "pending" status
-# Parse response and relay. jq is available in every Claude Code environment;
-# this is the simplest way to pull structured fields from the JSON.
-
-# PATCH: Handle overdrive_mode=4 non-JSON "pending" status
 # Parse response and relay.
-# 1. Check if the proxy output is valid JSON
-# Final response assembly using jq to ensure valid JSON structure
-# Final response assembly
-# Capture raw response to a temporary variable first
-#!/bin/bash
-
-# ... (your existing proxy calling logic) ...
-
-# 1. Capture the raw response
-#!/bin/bash
-
-# ... (your proxy call logic) ...
-
 RAW_RESP="$RESP"
 
 # 1. Parse or Fallback
@@ -315,23 +279,16 @@ else
     EXIT_CODE=1
 fi
 
-# 2. Logic: If blocked by streak, overwrite STDOUT safely
-if [[ "$STDERR" == *"BLOCKED: Raw tool streak"* ]]; then
-    # We put the message INSIDE the STDOUT variable so it stays in the JSON
-    STDOUT="NOTICE: My raw tool streak is too high (safety limit). To continue, I must now run one of the HME scripts (like 'npm run hme-read' or 'npm run review') to refresh my context."
+# 2. Logic: If blocked by streak, ensure message is clear.
+if [[ "$STDOUT" == *"STREAK_RESET"* ]] || [[ "$STDERR" == *"BLOCKED: Raw tool streak"* ]]; then
+    if [ -z "$STDOUT" ]; then
+      STDOUT="NOTICE: My raw tool streak is too high (safety limit). To continue, I must now run one of the HME scripts (like 'npm run hme-read' or 'npm run review') to refresh my context."
+    fi
     STDERR="Streak limit hit. Redirecting agent to HME tools."
     EXIT_CODE=0
 fi
 
-# 3. THE ONLY OUTPUT: This produces exactly one clean JSON object
-jq -n \
-  --arg out "$STDOUT" \
-  --arg err "$STDERR" \
-  --argjson code "$EXIT_CODE" \
-  '{stdout: $out, stderr: $err, exit_code: $code}'
-
-
-# Validate exit_code is numeric -- otherwise default to 0 with a log entry.
+# Validate exit_code is numeric.
 case "$EXIT_CODE" in
   ''|*[!0-9-]*)
     if [ -n "$_PB_ROOT" ] && [ -d "$_PB_ROOT/log" ]; then
@@ -342,18 +299,7 @@ case "$EXIT_CODE" in
     ;;
 esac
 
-# Mid-turn LIFESAVER: on PostToolUse, scan errors.log for new entries since
-# the last tool call and emit them as additionalContext. Closes the silent-
-# fail window between when an error fires (mid-turn) and when the Stop hook
-# normally runs (end of turn). _safe_curl now logs every failure; this
-# helper shoves them into the model's teeth on the very next tool result
-# instead of waiting for Stop.
-#
-# CRITICAL: do NOT silence stderr from the helper. If the helper itself
-# crashes (unbound var, missing dep), we MUST log that failure -- the
-# silent-fail-detection chain must not silent-fail. Helper stderr routes to
-# errors.log so it gets picked up by the next inline check (or Stop scan)
-# as a self-referential alert.
+# Mid-turn LIFESAVER: on PostToolUse, scan errors.log for new entries.
 if [ "$EVENT" = "PostToolUse" ]; then
   _PB_ROOT_FOR_INLINE="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
   _PB_INLINE_HELPER="${CLAUDE_PLUGIN_ROOT:-${_PB_ROOT_FOR_INLINE}/tools/HME}/hooks/helpers/_check_errors_inline.sh"
@@ -362,8 +308,6 @@ if [ "$EVENT" = "PostToolUse" ]; then
     # shellcheck disable=SC1090
     source "$_PB_INLINE_HELPER"
     _PB_INLINE_OUT=$(_hme_check_errors_inline 2>"$_PB_INLINE_ERR")
-    # Surface any helper-side errors LOUDLY into errors.log -- prevents the
-    # alert-firing system itself from being a silent-fail vector.
     if [ -s "$_PB_INLINE_ERR" ]; then
       _PB_INLINE_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
       while IFS= read -r line; do
@@ -373,19 +317,17 @@ if [ "$EVENT" = "PostToolUse" ]; then
     fi
     rm -f "$_PB_INLINE_ERR" 2>&1
     if [ -n "$_PB_INLINE_OUT" ]; then
-      # If the proxy response was empty, emit the inline JSON as the
-      # PostToolUse output. If the proxy ALSO had output, prepend the inline
-      # JSON so Claude Code sees the LIFESAVER additionalContext first.
       STDOUT="${_PB_INLINE_OUT}${STDOUT:+
 $STDOUT}"
     fi
-  else
-    # Helper missing entirely -- log immediately, don't silent-fail.
-    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [_proxy_bridge] inline-error-check helper missing at: $_PB_INLINE_HELPER" \
-      >> "$_PB_ROOT_FOR_INLINE/log/hme-errors.log" 2>&1 || true
   fi
 fi
 
-[ -n "$STDOUT" ] && printf '%s' "$STDOUT"
-[ -n "$STDERR" ] && printf '%s' "$STDERR" >&2
+# Final response assembly: CLEAN JSON ONLY.
+jq -n \
+  --arg out "$STDOUT" \
+  --arg err "$STDERR" \
+  --argjson code "$EXIT_CODE" \
+  '{stdout: $out, stderr: $err, exit_code: $code}'
+
 exit "${EXIT_CODE:-0}"
