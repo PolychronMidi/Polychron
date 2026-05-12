@@ -6,9 +6,9 @@ const THRESHOLD = 3;
 const LONG_LINE = 90;
 
 const ANNOTATIONS = [
-  '# rationale:', '# silent-ok:', '#'+'TODO:', '# FIXME:',
+  '# rationale:', '# silent-ok:', '# FIXME:',
   '# noqa', '# pylint:', '# pyright:', '# type:',
-  '// rationale:', '// silent-ok:', '/'+'/TODO:', '// FIXME:',
+  '// rationale:', '// silent-ok:', '// FIXME:',
   '// eslint-', '// noqa',
 ];
 
