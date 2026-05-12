@@ -21,6 +21,13 @@
     "description": "Per-tier: rank each cost type independently by tier_score descending (free > subscription > usage). Tiers E5/E4 tier_score capped at 5/7 due to value focus and exclusion of premium models.",
     "cost_order": ["free", "subscription", "usage"]
   },
+  "legacy_chains": {
+    "_description": "MODE=1..4 static chains as registry entries. MODE=5 reads tiers directly. Empty arrays = cascade fallthrough. allow_subagent derived: True iff any model starts with claude-.",
+    "mode1": {"E5": ["claude-opus-4-7","claude-sonnet-4-6"], "E4": ["claude-opus-4-7","claude-sonnet-4-6"], "E3": ["claude-opus-4-7","claude-sonnet-4-6"], "E2": ["claude-opus-4-7","claude-sonnet-4-6"], "E1": ["claude-opus-4-7","claude-sonnet-4-6"]},
+    "mode2": {"E5": ["claude-opus-4-7","claude-sonnet-4-6"], "E4": ["claude-opus-4-7","claude-sonnet-4-6"], "E3": ["claude-sonnet-4-6"], "E2": [], "E1": []},
+    "mode3": {"E5": ["claude-opus-4-7","claude-sonnet-4-6"], "E4": ["deepseek-v4-pro"], "E3": ["deepseek-v4-flash"], "E2": [], "E1": []},
+    "mode4": {"E5": ["glm-5.1"], "E4": ["deepseek-v4-pro"], "E3": ["deepseek-v4-flash"], "E2": [], "E1": []}
+  },
   "manually_toprank": {
     "E5": ["mimo-v2.5-pro-go"],
     "E4": [],
