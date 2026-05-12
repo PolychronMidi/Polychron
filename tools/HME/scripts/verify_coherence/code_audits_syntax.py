@@ -135,8 +135,13 @@ _SPAM_SKIP_FILES = {
     "tools/HME/tests/specs/migrated_policies.test.js",
     "tools/HME/tests/specs/migrated_policies_round2.test.js",
     "tools/HME/tests/specs/metaprofile_next_level.test.js",
+    "tools/HME/tests/specs/buddy_dispatcher.test.js",
+    "tools/HME/tests/specs/rhythm_flair.test.js",
     # Vendored: external library, not under our editorial control.
     "tools/csv_maestro/py_midicsv/midi_converters.py",
+    # Templates and docs with intentional horizontal rules / headings.
+    "tools/HME/skills/ISA/TEMPLATE.md",
+    "tools/HME/hooks/README.md",
 }
 _SPAM_EXTS = (
     ".md", ".py", ".js", ".mjs", ".cjs", ".sh", ".bash", ".json",
