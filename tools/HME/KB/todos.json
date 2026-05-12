@@ -2,20 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1622,
-      "updated_ts": 1778602811.7805157
+      "max_id": 1624,
+      "updated_ts": 1778603541.0918677
     }
   },
   {
-    "id": 1622,
-    "text": "Explore codebase for architectural improvements: single source of truth, deduplication, cleanup",
-    "activeForm": "Exploring codebase for architectural improvements",
+    "id": 1623,
+    "text": "Extend boyscout_clean.py to also check LOC (subsume boyscout_loc fully)",
+    "activeForm": "Extending boyscout_clean.py with LOC check",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778602811.780512,
+    "ts": 1778603541.0918496,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1624,
+    "text": "Centralize _SPAM_SKIP_FILES to a single config, eliminate duplication across verifiers",
+    "activeForm": "Centralizing _SPAM_SKIP_FILES",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778603541.091864,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
