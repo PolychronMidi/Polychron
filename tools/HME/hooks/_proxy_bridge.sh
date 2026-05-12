@@ -298,31 +298,32 @@ unset _PB_RECOVERY_TS 2>/dev/null
 # ... (your existing proxy calling logic) ...
 
 # 1. Capture the raw response
+#!/bin/bash
+
+# ... (your proxy call logic) ...
+
 RAW_RESP="$RESP"
 
-# 2. Logic to determine if we have valid JSON
+# 1. Parse or Fallback
 if [[ "$RAW_RESP" =~ ^[[:space:]]*\{.*\}[[:space:]]*$ ]]; then
-    # Extract values safely
     STDOUT=$(echo "$RAW_RESP" | jq -r '.stdout // ""' 2>/dev/null)
     STDERR=$(echo "$RAW_RESP" | jq -r '.stderr // ""' 2>/dev/null)
     EXIT_CODE=$(echo "$RAW_RESP" | jq -r '.exit_code // 0' 2>/dev/null)
 else
-    # Fallback for errors or non-JSON
     STDOUT=""
-    STDERR="Proxy returned non-JSON: $RAW_RESP"
+    STDERR="Non-JSON Proxy Response: $RAW_RESP"
     EXIT_CODE=1
 fi
 
-# 3. CRITICAL: Reset the Streak if it's blocking
-# If the stderr contains the BLOCKED message, we force a "success"
-# message to the LLM so it stops retrying the same tool.
+# 2. Logic: If blocked by streak, overwrite STDOUT safely
 if [[ "$STDERR" == *"BLOCKED: Raw tool streak"* ]]; then
-    STDOUT="STREAK_RESET: The raw tool limit was hit. I must now run 'npm run hme-read' or a similar HME script to refresh context before I can use bash/read again."
-    STDERR="Safety block triggered. LLM has been notified to switch to HME tools."
+    # We put the message INSIDE the STDOUT variable so it stays in the JSON
+    STDOUT="NOTICE: My raw tool streak is too high (safety limit). To continue, I must now run one of the HME scripts (like 'npm run hme-read' or 'npm run review') to refresh my context."
+    STDERR="Streak limit hit. Redirecting agent to HME tools."
     EXIT_CODE=0
 fi
 
-# 4. The ONLY output allowed (Single JSON object)
+# 3. THE ONLY OUTPUT: This produces exactly one clean JSON object
 jq -n \
   --arg out "$STDOUT" \
   --arg err "$STDERR" \
