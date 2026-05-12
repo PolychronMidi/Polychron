@@ -66,7 +66,7 @@ DEFAULT_THRESHOLD = 5  # matches .env HME_STREAK_WARN fallback
 def _read_int(p: Path, default: int = 0) -> int:
     try:
         return int(p.read_text().strip())
-    except Exception:
+    except Exception:  # silent-ok: best-effort counter file read, default on any error
         return default
 
 
