@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1691,
-      "updated_ts": 1778626525.3992238
+      "max_id": 1697,
+      "updated_ts": 1778626579.7614172
     }
   },
   {
@@ -66,8 +66,8 @@
     "id": 1684,
     "text": "Implement E3b: Resolve manually_toprank vs tier_score in models.json",
     "activeForm": "Resolving models.json top-rank question",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -80,7 +80,7 @@
     "id": 1685,
     "text": "Verify tests pass and line count shrinks",
     "activeForm": "Verifying tests and line count",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
