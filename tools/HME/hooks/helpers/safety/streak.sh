@@ -22,10 +22,19 @@ _streak_check() {
   local score
   score=$(_safe_int "$(cat "$_STREAK_FILE" 2>/dev/null)")
   if [ "$score" -ge "$_STREAK_BLOCK" ]; then
-    echo "BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK}. Use an HME npm script (\`i/hme-read\`, \`i/review\`, \`i/trace\`, etc.) before continuing. They add KB context that raw tools miss." >&2
+    # Calculate how many of each tool type remain before block.
+    # Weights: Bash=15, Grep=20, Edit/Write=10, Read=5.
+    local _sc_bash_rem=$(( (_STREAK_BLOCK - score + 14) / 15 ))
+    local _sc_edit_rem=$(( (_STREAK_BLOCK - score + 9) / 10 ))
+    local _sc_read_rem=$(( (_STREAK_BLOCK - score + 4) / 5 ))
+    echo "BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: Bash=15, Edit=10, Read=5, Grep=20)." >&2
+    echo "  After reset you get ~${_sc_bash_rem} Bash or ~${_sc_edit_rem} Edit or ~${_sc_read_rem} Read calls before blocking again." >&2
+    echo "  Reset now: run \`i/review mode=forget\` or \`i/hme-read <file>\` (any HME tool clears the counter)." >&2
+    echo "  HME tools add KB context that raw tools miss — this is the designed workflow cadence." >&2
     return 1
   elif [ "$score" -ge "$_STREAK_WARN" ]; then
-    echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK}. Use HME tools (read, find, review) for KB-enriched results." >&2
+    local _sc_rem=$(( (_STREAK_BLOCK - score + 9) / 10 ))
+    echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK} (~${_sc_rem} Edit calls until block). Prefer HME tools (i/review, i/hme-read) for KB-enriched results." >&2
   fi
   return 0
 }
