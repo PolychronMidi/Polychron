@@ -227,11 +227,7 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
         return None
 
 
-# Overdrive defaults: 64k thinking budget, 240s wall clock. Tunable via
-# OVERDRIVE_THINK_BUDGET / OVERDRIVE_TIMEOUT. Opus generates thinking at
-# ~500 tok/s, so timeout >= budget/500 + headroom (32k:>=180s, 64k:>=240s,
-# 96k:>=240s, 128k:>=300s). Anthropic ceiling 128k.
-# _OVERDRIVE_MAX_TOKENS_SLACK is fixed (max_tokens > thinking.budget required).
+# Overdrive: 64k think budget, 240s timeout. Tunable via OVERDRIVE_THINK_BUDGET/TIMEOUT.
 _OVERDRIVE_MAX_TOKENS_SLACK = 4096
 
 
