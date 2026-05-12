@@ -11,7 +11,7 @@ HME is a self-coherence substrate that watches both Polychron's musical evolutio
 Two parallel scores, both 0-100ish, both moving over rounds:
 
 - **Musical coherence.** How well does the composition cohere? Measured by `output/metrics/fingerprint-comparison.json` -> `STABLE` / `EVOLVED` / `DRIFTED`.
-- **Self-coherence (HCI).** How well does HME's own observation surface cohere? Measured by `tools/HME/scripts/verify-coherence.py` -> 0-100, aggregated from 65 weighted verifiers.
+- **Self-coherence (HCI).** How well does HME's own observation surface cohere? Measured by `tools/HME/scripts/verify-coherence.py` -> 0-100, aggregated from 67 weighted verifiers.
 
 Polychron is the *thing being made*. HME is *the awareness of how it's being made*. Both have a coherence number. Both numbers move together over rounds. Improving one improves the other. The agent's job is to nudge both upward.
 
