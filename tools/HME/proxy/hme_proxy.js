@@ -343,6 +343,13 @@ function _shrinkForPassthrough(payload) {
   for (const m of msgs) {
     if (!m || !Array.isArray(m.content)) continue;
     const before = m.content.length;
+    // Snapshot text from original blocks so output_file paths survive
+    // orphan scrub when tool_use_id references a dropped prefix msg.
+    const _origTexts = [];
+    for (const b of m.content) {
+      if (b && typeof b === 'object' && typeof b.text === 'string') _origTexts.push(b.text);
+      if (b && typeof b === 'object' && b.type === 'tool_result' && typeof b.content === 'string') _origTexts.push(b.content);
+    }
     m.content = m.content.filter((b) => {
       if (!b || typeof b !== 'object') return true;
       if (b.type === 'tool_result' && b.tool_use_id && !surviving_use_ids.has(b.tool_use_id)) return false;
@@ -351,7 +358,12 @@ function _shrinkForPassthrough(payload) {
     });
     orphans += before - m.content.length;
     if (m.content.length === 0) {
-      m.content = [{ type: 'text', text: '(content stripped by hme-proxy passthrough-compact)' }];
+      const _ofMatch = _origTexts.join(' ').match(/output_file:\s*(\S+)/);
+      if (_ofMatch) {
+        m.content = [{ type: 'text', text: `(hme-proxy compact: agent output at ${_ofMatch[1]})` }];
+      } else {
+        m.content = [{ type: 'text', text: '(content stripped by hme-proxy passthrough-compact)' }];
+      }
     }
   }
   // Insert a synthetic user marker at messages[0] so Anthropic doesn't
