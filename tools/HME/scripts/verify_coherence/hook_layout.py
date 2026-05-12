@@ -185,10 +185,13 @@ class HookMatcherValidityVerifier(Verifier):
         if not os.path.isdir(i_dir):
             return _result(FAIL, 0.0, "i/ directory missing -- HME tool wrappers not installed")
 
-        # Enumerate wrappers (executable shell scripts in i/).
+        # Enumerate wrappers (executable shell scripts in i/). Skip _
+        # prefixed helpers like _dispatch.sh that aren't public tools.
         wrappers = set()
         try:
             for name in os.listdir(i_dir):
+                if name.startswith("_"):
+                    continue
                 p = os.path.join(i_dir, name)
                 if os.path.isfile(p) and os.access(p, os.X_OK):
                     wrappers.add(name)
