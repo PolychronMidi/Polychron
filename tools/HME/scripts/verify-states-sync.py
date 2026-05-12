@@ -26,18 +26,24 @@ _SH_FILE = os.path.join(_PROJECT, "tools", "HME", "hooks", "helpers", "_onboardi
 
 
 def _parse_python_states() -> list:
-    """Extract the STATES list from onboarding_chain.py."""
+    """Extract STATES from canonical JSON config or onboarding_chain.py."""
+    import json as _json
+    _cfg = os.path.join(os.path.dirname(_PY_FILE), "..", "..", "..",
+                        "config", "onboarding_states.json")
+    _cfg = os.path.normpath(_cfg)
+    try:
+        with open(_cfg, encoding="utf-8") as _f:
+            states = _json.load(_f).get("states", [])
+            if states:
+                return states
+    except Exception:
+        pass
     with open(_PY_FILE, encoding="utf-8") as f:
         src = f.read()
-    match = re.search(
-        r'^STATES\s*=\s*\[(.*?)\]',
-        src,
-        flags=re.DOTALL | re.MULTILINE,
-    )
+    match = re.search(r'^STATES\s*=\s*\[(.*?)\]', src, re.DOTALL | re.MULTILINE)
     if not match:
-        raise RuntimeError(f"Could not find STATES = [...] in {_PY_FILE}")
-    body = match.group(1)
-    items = re.findall(r'"([^"]+)"|\'([^\']+)\'', body)
+        raise RuntimeError(f"Could not find STATES definition in {_PY_FILE} or {_cfg}")
+    items = re.findall(r'"([^"]+)"|\'([^\']+)\'', match.group(1))
     return [a or b for a, b in items]
 
 
