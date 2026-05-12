@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1492,
-      "updated_ts": 1778562786.3594334
+      "max_id": 1500,
+      "updated_ts": 1778563155.2468252
     }
   },
   {
@@ -51,7 +51,7 @@
   {
     "id": 1477,
     "text": "Run composition engine and check output",
-    "activeForm": "Running composition engine (backgrounded)",
+    "activeForm": "Running composition engine (backgrounded, 13m elapsed)",
     "status": "in_progress",
     "done": false,
     "critical": false,
@@ -63,29 +63,29 @@
     "tier": "E3"
   },
   {
-    "id": 1489,
-    "text": "Diagnose and fix hook protocol errors (PreToolUse/Bash/Read showing 'No stderr output')",
-    "activeForm": "Diagnosing and fixing hook protocol errors",
-    "status": "in_progress",
-    "done": false,
+    "id": 1497,
+    "text": "Diagnose and fix hook protocol errors",
+    "activeForm": "Diagnosing hook streak mechanism (root cause found: aggressive thresholds)",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778562786.3593988,
+    "ts": 1778563155.2467725,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1490,
-    "text": "Explore KB system, learning, and evolution loop",
-    "activeForm": "Exploring KB system, learning, and evolution loop",
-    "status": "pending",
+    "id": 1498,
+    "text": "Fix i/learn action=health ImportError",
+    "activeForm": "Investigating kb_health ImportError",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778562786.3594098,
+    "ts": 1778563155.246805,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -107,7 +107,7 @@
   {
     "id": 1471,
     "text": "Map onboarding friction points and tweak process",
-    "activeForm": "Mapping onboarding friction points and tweaking process",
+    "activeForm": "Mapping onboarding friction points and fixing what we can",
     "status": "pending",
     "done": false,
     "critical": false,
