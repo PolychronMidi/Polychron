@@ -728,9 +728,7 @@ function handleRequest(clientReq, clientRes) {
       upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
         const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
 
-        // ====================================================================
-        // START OF MODE 4 SWAP RESPONSE HANDLER
-        // ====================================================================
+        // MODE 4 SWAP RESPONSE HANDLER
 if (_isMode4Swap) {
           const { ZenSseTranslator, translateNonStreamResponseToAnthropic } = require('./zen_translator');
 
