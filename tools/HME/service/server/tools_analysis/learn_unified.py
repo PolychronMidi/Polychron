@@ -101,13 +101,7 @@ def learn(query: str = "", title: str = "", content: str = "",
         return _cc()
 
     if action == "promote_discovery":
-        # Phase 6.4 (R97) -- promote a synthesized discovery draft from
-        # metrics/hme-discoveries-draft.jsonl into the human-curated
-        # doc/hme-discoveries.md. Requires:
-        #   - `remove` = draft id (12-char hex)
-        #   - draft must have promotable=true (stable across >=3 runs)
-        # Optional:
-        #   - `listening_notes` = human annotation appended to the entry
+        # promote discovery draft from metrics/ to doc/hme-discoveries.md
         from .discovery_promote import promote_discovery as _pd
         return _pd(
             draft_id=remove,
