@@ -120,11 +120,18 @@ _SPAM_RE = re.compile(r"([^\w\s()\[\]{}])\1{3,}")
 _SPAM_ALLOW = "spam-ok"
 # Files/dirs exempt entirely (vendored libs, fixtures that DEFINE the
 # patterns the sanitizer detects, model assets).
-_SPAM_SKIP_DIRS = {
-    ".git", "node_modules", "output", "tmp", "log", "dist", "build",
-    "__pycache__", ".venv", "venv", "lab", "plugin-cache", "models",
-    "KB", ".pytest_cache", ".claude", "runtime",
-}
+_SPAM_SKIP_DIRS = set()
+try:
+    import json as _json2
+    _sf_cfg2 = os.path.join(_PROJECT, "tools", "HME", "config", "verifier-skip.json")
+    with open(_sf_cfg2) as _sf2:
+        _SPAM_SKIP_DIRS = set(_json2.load(_sf2).get("skip_dirs", []))
+except Exception:  # silent-ok: config optional, hardcoded fallback
+    _SPAM_SKIP_DIRS = {
+        ".git", "node_modules", "output", "tmp", "log", "dist", "build",
+        "__pycache__", ".venv", "venv", "lab", "plugin-cache", "models",
+        "KB", ".pytest_cache", ".claude", "runtime",
+    }
 _SPAM_SKIP_FILES = set()
 try:
     import json as _json
