@@ -475,12 +475,7 @@ function handleRequest(clientReq, clientRes) {
       }
     }
 
-// ========================================================================
-    // OVERDRIVE_MODE=4 main-agent swap: route through OmniRoute.
-    // OmniRoute translates Anthropic<->OpenAI bidirectionally so the proxy
-    // stays in native Anthropic format end-to-end. The old zen_translator
-    // path is preserved behind HME_OMNIROUTE_OFF=1.
-    // ========================================================================
+// OVERDRIVE_MODE=4 OmniRoute swap; zen_translator path behind HME_OMNIROUTE_OFF=1
     let _isMode4Swap = false;
     let _mode4WasStreaming = false;
     let _isMode4OmniRoute = false;
