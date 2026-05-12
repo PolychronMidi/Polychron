@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1751,
-      "updated_ts": 1778629095.0139055
+      "max_id": 1754,
+      "updated_ts": 1778629164.4073184
     }
   },
   {
-    "id": 1749,
-    "text": "Compute expected per-tier chains from models.json cost_order + tier_score + manually_toprank rules",
-    "activeForm": "Computing expected per-tier chains",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778629095.013876,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1750,
-    "text": "Write mode5 test file following mode2/3/4 conventions",
-    "activeForm": "Writing mode5 test file",
+    "id": 1752,
+    "text": "Extend hme_proxy.js MODE=4/5 gate to resolve MODE=5 lead model from config/models.json",
+    "activeForm": "Extending hme_proxy.js MODE=4/5 gate with MODE=5 model resolution",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778629095.013891,
+    "ts": 1778629164.4072914,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1751,
-    "text": "Run node --test and verify all pass",
-    "activeForm": "Running node --test and verifying",
+    "id": 1753,
+    "text": "Verify shell scripts already have MODE=5 gate extensions",
+    "activeForm": "Verifying shell scripts already have MODE=5 gate extensions",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778629164.407306,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1754,
+    "text": "Test health check endpoint after changes",
+    "activeForm": "Testing health check endpoint",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778629095.013904,
+    "ts": 1778629164.4073162,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
