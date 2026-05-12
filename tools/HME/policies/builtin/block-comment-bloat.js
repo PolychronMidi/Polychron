@@ -46,8 +46,6 @@ function _scan(fp, content) {
     }
     if (isFirstContent) continue;  // file header comment
     if (ln.length >= LONG_LINE) return { type: 'LONG', len: ln.length };
-    const tag = s.match(_META_TAG_RE);
-    if (tag) return { type: 'META', tag: tag[0] };
     if (_startsWithAnnotation(s)) {
       run = 0;
     } else {
