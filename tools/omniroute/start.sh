@@ -33,6 +33,16 @@ if [ -f "$PROJECT_ENV" ]; then
   set +a
 fi
 
+# Ensure the correct node binary is on PATH (nvm may not be loaded in
+# watchdog/supervisor sub-shells). Prefer the nvm v24 install if present;
+# fall back to whatever `which node` resolves.
+_NODE_BIN="$(command -v node 2>/dev/null || echo node)"
+if [ -d "$HOME/.nvm/versions/node" ]; then
+  _NVM_NODE=$(ls -d "$HOME/.nvm/versions/node/v24"*/bin/node 2>/dev/null | sort -V | tail -1)
+  [ -n "$_NVM_NODE" ] && [ -x "$_NVM_NODE" ] && _NODE_BIN="$_NVM_NODE"
+fi
+export PATH="$PATH:$(dirname "$_NODE_BIN")"
+
 # Check if already running
 if curl -sf --max-time 1 "http://127.0.0.1:${PORT}/v1/models" > /dev/null 2>&1; then
   echo "[omniroute] already running on :${PORT}"
