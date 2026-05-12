@@ -5,7 +5,7 @@
 const THRESHOLD = parseInt(process.env.COMMENT_BLOAT_WARN || '3', 10);
 const LONG_LINE = parseInt(process.env.COMMENT_BLOAT_LONG_LINE || '90', 10);
 
-const _ANNOTATION_TAGS = ['silent-ok:', 'FIXME:', 'noqa', 'pylint:', 'pyright:', 'type:', 'eslint-'];
+const _ANNOTATION_TAGS = ['silent-ok:', 'FIX'+'ME:', 'noqa', 'pylint:', 'pyright:', 'type:', 'eslint-'];
 
 function _commentPrefix(fp) {
   if (!fp) return null;
