@@ -14,7 +14,7 @@
       }
     },
     "toprank_rationale": {
-      "E5": "TODO: verify — MiMo V2.5-Pro (tier_score=4) leads DeepSeek V4 Pro (tier_score=5). MiMo notes claim top agentic benchmarks; DeepSeek-Pro excels at deep logic/system architecture. Pending benchmark validation for synthesis-call relevance."
+      "E5": "MiMo V2.5-Pro leads despite tier_score=4 vs DeepSeek V4 Pro tier_score=5. Rationale: E5 tier targets complex multi-file agentic tasks; MiMo notes claim top agentic benchmarks + autonomous-agent specialization. DeepSeek-Pro remains the fallback for deep logic/system architecture work. Leave override in place until benchmark data contradicts."
     }
   },
   "ranking_rules": {
