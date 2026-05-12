@@ -4,7 +4,7 @@ HME's substrate for self-observation. The **HME Coherence Index** (HCI) scores 6
 
 ## The HCI
 
-Source: [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py). 65 weighted verifiers across 7 subtags:
+Source: [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py). 67 weighted verifiers across 7 subtags:
 
 | Subtag | What it covers |
 |---|---|
