@@ -47,14 +47,7 @@ def main():
     supervisor = Supervisor()
     supervisor.configure()
 
-    # -- Initialize file_walker for indexing-mode (R??)
-    # Daemon runs in its own process, so it has its own copy of
-    # file_walker._config. Without this call, walk_code_files() bails out
-    # with "project_root not initialized -- call init_config() before walking"
-    # every time the worker's watcher fires /indexing-mode here. The worker
-    # initializes its own copy at startup (worker.py); this is the daemon's
-    # equivalent. Must run before any indexing thread or HTTP handler can
-    # invoke the walker.
+    # rationale: daemon needs its own file_walker init before indexing or walking
     try:
         from file_walker import init_config as _walker_init_config
         _project_root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
