@@ -413,7 +413,7 @@ if (require.main === module) {
     const _lockPath = _path.join(process.cwd(), 'tmp', 'r' + 'un.lock');
     if (!_fs.existsSync(_lockPath)) return;
     let _pid = 0;
-    try { _pid = Number(_fs.readFileSync(_lockPath, 'utf8').trim()); } catch (_e) { _pid = 0; /* malformed lock file -- treat as stale; silent-ok: stale-lock path */ }
+    try { _pid = Number(_fs.readFileSync(_lockPath, 'utf8').trim()); } catch (_e) { _pid = 0; void _e; /* malformed lock file -- treat as stale; silent-ok: stale-lock path */ }
     if (_pid > 0 && _pid !== process.pid) {
       try {
         process.kill(_pid, 0);
