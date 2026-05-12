@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1589,
-      "updated_ts": 1778570518.518955
+      "max_id": 1591,
+      "updated_ts": 1778570583.060027
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 1578,
     "text": "Add KB calibration anchors for session learnings",
     "activeForm": "Adding KB calibration anchors",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
