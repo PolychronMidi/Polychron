@@ -246,11 +246,7 @@ def _overdrive_timeout() -> int:
     except Exception:
         return 240
 
-# Source-of-last-answer tracking. synthesis_reasoning.call() writes this
-# on every non-None return. Callers that care (e.g. agent_local.py's
-# _call_synthesizer, which reports a per-call source tag upstream) can
-# read last_source() after the call. Not thread-safe -- one-shot per
-# caller context.
+# Source-of-last-answer tracking. Callers read last_source() after call().
 _last_source: str | None = None
 
 
