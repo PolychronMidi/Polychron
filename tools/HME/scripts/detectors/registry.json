@@ -206,7 +206,7 @@
     {
       "name": "boyscout_clean",
       "module": "boyscout_clean",
-      "fires_when": "violation",
+      "fires_when": "comment_bloat",
       "bash_var": "BOYSCOUT_CLEAN",
       "deny": true,
       "reason_key": "BOYSCOUT_CLEAN",
