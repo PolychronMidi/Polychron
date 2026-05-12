@@ -59,6 +59,26 @@
           "cost": "usage",
           "cost_amt": 1.10,
           "notes": "General-purpose frontier reasoning."
+        },
+        {
+          "id": "deepseek-v4-pro-go",
+          "name": "DeepSeek V4 Pro",
+          "maker": "DeepSeek",
+          "provider": "opencode_go",
+          "max_context": 1048576,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "OpenCode Go subscription. Repository-scale coding at flat rate."
+        },
+        {
+          "id": "mimo-v2.5-pro-go",
+          "name": "MiMo V2.5-Pro",
+          "maker": "MiMo",
+          "provider": "opencode_go",
+          "max_context": 1048576,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "OpenCode Go subscription. Autonomous agent model at flat rate."
         }
       ]
     },
