@@ -73,15 +73,25 @@ class OnboardingStateIntegrityVerifier(Verifier):
                 cur = f.read().strip()
         except Exception as e:
             return _result(ERROR, 0.0, f"could not read state file: {e}")
-        # Parse STATES from onboarding_chain.py
-        chain_py = os.path.join(_SERVER_DIR, "onboarding_chain.py")
+        # rationale: STATES now loads from tools/HME/config/onboarding_states.json
+        # via _load_states(). Check the JSON config first; fall back to inline parse.
+        _cfg = os.path.join(_PROJECT, "tools", "HME", "config", "onboarding_states.json")
         try:
-            with open(chain_py) as f:
-                src = f.read()
-            m = re.search(r'^STATES\s*=\s*\[(.*?)\]', src, re.DOTALL | re.MULTILINE)
-            valid = re.findall(r'"([^"]+)"', m.group(1)) if m else []
-        except Exception as e:
-            return _result(ERROR, 0.0, f"could not parse STATES: {e}")
+            if os.path.isfile(_cfg):
+                with open(_cfg) as f:
+                    _d = json.load(f)
+                valid = _d.get("states", [])
+            else:
+                raise FileNotFoundError(_cfg)
+        except Exception:
+            chain_py = os.path.join(_SERVER_DIR, "onboarding_chain.py")
+            try:
+                with open(chain_py) as f:
+                    src = f.read()
+                m = re.search(r'^STATES\s*=\s*\[(.*?)\]', src, re.DOTALL | re.MULTILINE)
+                valid = re.findall(r'"([^"]+)"', m.group(1)) if m else []
+            except Exception as e:
+                return _result(ERROR, 0.0, f"could not parse STATES: {e}")
         if cur in valid:
             return _result(PASS, 1.0, f"state '{cur}' is valid")
         return _result(FAIL, 0.0, f"state '{cur}' is NOT in STATES",
