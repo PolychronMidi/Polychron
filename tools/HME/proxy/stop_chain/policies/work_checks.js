@@ -297,7 +297,7 @@ module.exports = {
     // where PSYCHOPATHIC-STOP silently suppressed auto-completeness.
 
     const transcriptPath = ctx.payload && ctx.payload.transcript_path;
-    try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-debug.txt'), JSON.stringify({tp:!!transcriptPath, keys:Object.keys(ctx.payload||{}), raw:!!ctx.stdinJson})); } catch(_) {}
+    try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-debug.txt'), JSON.stringify({tp:!!transcriptPath, tpv:String(ctx.payload.transcript_path).slice(0,100)})); } catch(_) {}
     if (!transcriptPath) return ctx.allow();
     const { text: lastUser, turnIndex } = lastRealUserPrompt(transcriptPath);
     try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-debug.txt'), JSON.stringify({tp:true,lu:String(lastUser||'').slice(0,80),ti:turnIndex})); } catch(_) {}
