@@ -1,8 +1,6 @@
 'use strict';
-// Block Edit/Write content with 3+ consecutive non-annotation comment lines.
-// Annotation prefixes (# rationale:, # silent-ok:, # TODO:, etc.) reset the
-// counter. Enforces CLAUDE.md: "Inline comments single-line and terse.
-// Elaboration goes in doc/."
+// Block content with 3+ consecutive non-annotation comment lines. Annotation
+// prefixes (rationale, silent-ok, fixme, noqa) reset the counter.
 
 const THRESHOLD = 3;
 const LONG_LINE = 90;
