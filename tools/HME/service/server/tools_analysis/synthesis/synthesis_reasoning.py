@@ -410,34 +410,18 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         _normalized_tier = _raw_tier.upper()
     else:
         _normalized_tier = _LEGACY_TIER.get(_raw_tier.lower(), "E3")
-    if _od_mode == "1":
-        _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
-        if _overdrive_result:
-            _text, _source = _overdrive_result
-            _last_source = _source
-            return _text
-    else:
-        # MODE=2..5: registry-routed per-tier dispatch. Resolver returns
-        # (chain, allow_subagent) or None to fall through to the cascade.
-        _MODE_DISPATCHERS = {
-            "2": _resolve_mode2_chain,
-            "3": _resolve_mode3_chain,
-            "4": _resolve_mode4_chain,
-            "5": _resolve_mode5_chain,
-        }
-        _resolver = _MODE_DISPATCHERS.get(_od_mode)
-        if _resolver:
-            _resolved = _resolver(_normalized_tier)
-            if _resolved:
-                _chain, _allow_sub = _resolved
-                _overdrive_result = _call_opus_overdrive(
-                    prompt, system, max_tokens,
-                    chain_override=_chain, allow_subagent=_allow_sub,
-                )
-                if _overdrive_result:
-                    _text, _source = _overdrive_result
-                    _last_source = _source
-                    return _text
+    if _od_mode in _MODE_CHAIN_RESOLVERS:
+        _resolved = _MODE_CHAIN_RESOLVERS[_od_mode](_normalized_tier)
+        if _resolved is not None:
+            _chain, _allow_sub = _resolved
+            _overdrive_result = _call_opus_overdrive(
+                prompt, system, max_tokens,
+                chain_override=_chain, allow_subagent=_allow_sub,
+            )
+            if _overdrive_result:
+                _text, _source = _overdrive_result
+                _last_source = _source
+                return _text
 
     try:
         providers = _load_providers()
