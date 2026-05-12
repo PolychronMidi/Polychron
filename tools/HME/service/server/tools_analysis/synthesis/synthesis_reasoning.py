@@ -298,18 +298,7 @@ def last_source() -> str | None:
     return _last_source
 
 
-# Overdrive model chain -- env-tunable via OVERDRIVE_CHAIN.
-#
-# Default chain: Opus first (max quality on user's subscription), Sonnet on
-# Opus rate-limit (still Anthropic, still extended thinking). Only when every
-# Anthropic model in the chain rate-limits does the caller fall through to
-# the free cascade. claude-opus-4-7 and claude-sonnet-4-6 are the current-
-# generation dated aliases; bare "opus"/"sonnet" return 404 from the API.
-#
-# Override via .env:
-#   OVERDRIVE_CHAIN=claude-opus-4-7,claude-sonnet-4-6,claude-haiku-4-5-20251001
-# One comma-separated list of model IDs. Source labels are auto-generated
-# from the model name so last_source() reports meaningfully.
+# Overdrive chain: Opus→Sonnet rate-limit cascade. Override: OVERDRIVE_CHAIN env var.
 _OVERDRIVE_CHAIN_DEFAULT = (
     "claude-opus-4-7",
     "claude-sonnet-4-6",
