@@ -297,8 +297,10 @@ module.exports = {
     // where PSYCHOPATHIC-STOP silently suppressed auto-completeness.
 
     const transcriptPath = ctx.payload && ctx.payload.transcript_path;
+    try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-debug.txt'), JSON.stringify({tp:!!transcriptPath,lu:'?',ti:0})); } catch(_) {}
     if (!transcriptPath) return ctx.allow();
     const { text: lastUser, turnIndex } = lastRealUserPrompt(transcriptPath);
+    try { fs.writeFileSync(path.join(RUNTIME_DIR, 'wc-debug.txt'), JSON.stringify({tp:true,lu:String(lastUser||'').slice(0,80),ti:turnIndex})); } catch(_) {}
     if (!lastUser) return ctx.allow();
 
     // Dedup key = turnIndex+text so identical retypes get separate budgets.
