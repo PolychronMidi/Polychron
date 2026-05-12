@@ -328,9 +328,7 @@ fi
 if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
   STDERR=" "
 fi
-# silent-ok: proxy returns deny reasons in stdout as {"decision":"block",...};
-# Claude Code only reads permissionDecisionReason from hookSpecificOutput.
-# Extract the reason from stdout and surface it in the expected format.
+# surface deny reasons from proxy stdout into hookSpecificOutput for Claude Code
 if [ "${EXIT_CODE:-0}" != "0" ] && [ "$EVENT" = "PreToolUse" ]; then
   _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
   if [ -n "$_PB_DENY_REASON" ]; then
