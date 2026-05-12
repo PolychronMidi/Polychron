@@ -279,32 +279,31 @@ def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
     return tuple(_ids) if _ids else None
 
 
-def _resolve_mode_legacy_chain(mode: str, tier: str) -> tuple[tuple[str, ...], bool] | None:
-    """Resolve (chain, allow_subagent) for MODEs 2-4 per-tier. Returns None
-    when tier should fall through to the free cascade."""
-    if mode == "2":
-        if tier in ("E4", "E5"):
-            return (None, True)  # None chain = use default Opus->Sonnet
-        if tier == "E3":
-            return (("claude-sonnet-4-6",), False)
-        return None  # E1/E2
-    if mode == "3":
-        if tier == "E5":
-            return (None, True)  # None chain = use default Opus->Sonnet
-        if tier == "E4":
-            return (("deepseek-v4-pro",), False)
-        if tier == "E3":
-            return (("deepseek-v4-flash",), False)
-        return None  # E1/E2
-    if mode == "4":
-        if tier == "E5":
-            return (("glm-5.1",), False)
-        if tier == "E4":
-            return (("deepseek-v4-pro",), False)
-        if tier == "E3":
-            return (("deepseek-v4-flash",), False)
-        return None  # E1/E2
-    return None
+def _resolve_mode_legacy_chain_from_registry(mode: str, tier: str) -> tuple[tuple[str, ...], bool] | None:
+    """Resolve MODE=1..4 (chain, allow_subagent) from config/models.json
+    legacy_chains block. Empty arrays = cascade fallthrough (None).
+    allow_subagent: True iff any model in chain starts with 'claude-'."""
+    import json as _json
+    import os as _os
+    _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
+    try:
+        with open(_cfg_path) as _f:
+            _cfg = _json.load(_f)
+    except Exception:
+        return None
+    _legacy = _cfg.get("legacy_chains", {})
+    _mode_chains = _legacy.get(f"mode{mode}", {})
+    _raw = _mode_chains.get(tier)
+    if _raw is None:
+        return None
+    if not _raw:  # empty list -> cascade
+        return None
+    _chain = tuple(_raw)
+    _allow_sub = any(m.startswith("claude-") for m in _chain)
+    # Default chain -> don't override (respects OVERDRIVE_CHAIN env var)
+    if _chain == ("claude-opus-4-7", "claude-sonnet-4-6"):
+        return (None, _allow_sub)
+    return (_chain, _allow_sub)
 
 
 def _resolve_mode5_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
