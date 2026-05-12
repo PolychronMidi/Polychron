@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1612,
-      "updated_ts": 1778598478.3892748
+      "max_id": 1615,
+      "updated_ts": 1778599209.9766016
     }
   },
   {
-    "id": 1610,
-    "text": "Find and fix all 19 character-spam runs",
+    "id": 1613,
+    "text": "Fix all 19 character-spam runs",
     "activeForm": "Finding and fixing character-spam runs",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778599209.9765751,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1614,
+    "text": "Fix 50 longest comment-bloat blocks",
+    "activeForm": "Fixing 50 longest comment-bloat blocks",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778598478.3892477,
+    "ts": 1778599209.976589,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1611,
-    "text": "Find and fix 50 longest comment-bloat blocks",
-    "activeForm": "Fixing comment-bloat blocks",
+    "id": 1615,
+    "text": "Verify boyscout clean policy works for ALL rules, not just LOC",
+    "activeForm": "Verifying boyscout clean policy for all rules",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778598478.3892624,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1612,
-    "text": "Verify boyscout_loc clean policy is working",
-    "activeForm": "Verifying boyscout_loc clean policy",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778598478.389273,
+    "ts": 1778599209.9765997,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
