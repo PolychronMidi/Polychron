@@ -296,10 +296,21 @@ def _resolve_mode_legacy_chain_from_registry(mode: str, tier: str) -> tuple[tupl
     _raw = _mode_chains.get(tier)
     if _raw is None:
         return None
-    if not _raw:  # empty list -> cascade
-        return None
-    _chain = tuple(_raw)
-    _allow_sub = any(m.startswith("claude-") for m in _chain)
+    # Array form [model,...]: auto-derive allow_subagent. Object form
+    # {chain:[], allow_subagent:bool}: explicit override.
+    if isinstance(_raw, list):
+        if not _raw:  # empty list -> cascade
+            return None
+        _chain = tuple(_raw)
+        _allow_sub = any(m.startswith("claude-") for m in _chain)
+    else:
+        _chain_list = _raw.get("chain", [])
+        if not _chain_list:
+            return None
+        _chain = tuple(_chain_list)
+        _allow_sub = _raw.get("allow_subagent")
+        if _allow_sub is None:  # not specified -> derive
+            _allow_sub = any(m.startswith("claude-") for m in _chain)
     # Default chain -> don't override (respects OVERDRIVE_CHAIN env var)
     if _chain == ("claude-opus-4-7", "claude-sonnet-4-6"):
         return (None, _allow_sub)
