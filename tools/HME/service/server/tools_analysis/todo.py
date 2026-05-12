@@ -657,7 +657,8 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             # AND zero open `[ ]` items, the next `clear` action will
             # auto-archive the set to KB devlog and reset to fresh slate.
             phase_n = todo_id  # repurpose todo_id arg as phase number
-            if phase_n is None or (isinstance(phase_n, str) and phase_n.strip() == ""):
+            _empty = phase_n is None or (isinstance(phase_n, str) and not phase_n.strip())
+            if _empty:
                 return "Error: phase=N required for phase_complete (pass via todo_id=N)."
             if not text:
                 return "Error: text= required (the completion paragraph)."
