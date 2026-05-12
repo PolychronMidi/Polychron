@@ -139,11 +139,7 @@ def _write_heartbeat(path: Path, targets_ok: int, targets_bad: int) -> None:
         "bad": targets_bad,
     }
     tmp = path.with_suffix(path.suffix + ".tmp")
-    # Write + fsync the tmp file before atomic rename. Without fsync a
-    # power-cut between write and rename can leave a 0-byte heartbeat
-    # that downstream _get_health reads as fresh-but-empty, masking
-    # real liveness state. The fsync forces the payload to durable
-    # storage before the rename commits.
+    # rationale: fsync before atomic rename prevents 0-byte heartbeat on power-cut
     with open(tmp, "w") as f:
         f.write(json.dumps(payload))
         f.flush()
