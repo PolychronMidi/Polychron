@@ -91,7 +91,7 @@ const { handleMcpRequest } = require('./mcp_server/index');
 //  Middleware (replaces shell hooks on Claude-native tools)
 const middleware = require('./middleware/index');
 const _loadedMiddleware = middleware.loadAll();
-console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
+console.log(`loaded middleware: ${_loadedMiddleware.join(', ')}`);
 
 // Lifecycle hook bridge: all Claude Code lifecycle events funnel through
 // hooks/_proxy_bridge.sh -> /hme/lifecycle. Implementation in
@@ -214,7 +214,7 @@ async function _acquireOpusSlot() {
   const sinceLast = Date.now() - _lastOpusFinishedAt;
   if (_lastOpusFinishedAt > 0 && sinceLast < OPUS_MIN_GAP_MS) {
     const delay = OPUS_MIN_GAP_MS - sinceLast;
-    console.error(`[hme-proxy] Opus-gate: queuing ${delay}ms (rolling-window protection)`);
+    console.error(`Opus-gate: queuing ${delay}ms (rolling-window protection)`);
     await new Promise((r) => setTimeout(r, delay));
   }
   let released = false;
@@ -260,9 +260,9 @@ function _shrinkForPassthrough(payload) {
   }
   if (elided > 0) {
     serialized = JSON.stringify(payload);
-    console.error(`[hme-proxy] precompact tier-1 (microcompact): elided ${elided} stale tool_result block(s), body=${serialized.length}B`);
+    console.error(`precompact tier-1 (microcompact): elided ${elided} stale tool_result block(s), body=${serialized.length}B`);
     if (serialized.length <= _threshold) {
-      console.error(`[hme-proxy] precompact: tier-1 sufficient, no message drops needed`);
+      console.error(`precompact: tier-1 sufficient, no message drops needed`);
       return elided; // success at tier 1, no dropping required
     }
   }
@@ -275,7 +275,7 @@ function _shrinkForPassthrough(payload) {
     const _summaryText = `(hme-proxy local-summary placeholder: ${_half} oldest messages compacted)`;
     msgs.splice(0, _half, { role: 'user', content: _summaryText });
     serialized = JSON.stringify(payload);
-    console.error(`[hme-proxy] precompact tier-2 (local-summary): collapsed ${_half} oldest msgs into 1 marker, body=${serialized.length}B`);
+    console.error(`precompact tier-2 (local-summary): collapsed ${_half} oldest msgs into 1 marker, body=${serialized.length}B`);
     if (serialized.length <= _threshold) return elided + _half;
   }
 
@@ -295,7 +295,7 @@ function _shrinkForPassthrough(payload) {
           content: `(hme-proxy session-memory compact: ${_half} oldest messages summarized)\n\n${notes.slice(0, 8_000)}`,
         });
         serialized = JSON.stringify(payload);
-        console.error(`[hme-proxy] precompact tier-3 (session-memory): used pre-extracted notes (${notes.length}B), body=${serialized.length}B`);
+        console.error(`precompact tier-3 (session-memory): used pre-extracted notes (${notes.length}B), body=${serialized.length}B`);
         if (serialized.length <= _threshold) return elided + _half;
       }
     }
@@ -364,7 +364,7 @@ function _shrinkForPassthrough(payload) {
     });
   }
   serialized = JSON.stringify(payload);
-  console.error(`[hme-proxy] passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks (now ${msgs.length} msgs, body=${serialized.length}B)`);
+  console.error(`passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks (now ${msgs.length} msgs, body=${serialized.length}B)`);
   return dropped;
 }
 
@@ -495,7 +495,7 @@ function handleRequest(clientReq, clientRes) {
         injected = true;
 
         if (!_OMNIROUTE_OFF) {
-          // --- OmniRoute path (default) ---
+          // OmniRoute path (default)
           // Keep request in Anthropic format; OmniRoute handles translation.
           payload.model = 'opencode-go/deepseek-v4-pro';
           clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${_OMNIROUTE_PORT}`;
@@ -503,9 +503,9 @@ function handleRequest(clientReq, clientRes) {
           delete clientReq.headers['x-api-key'];
           _isMode4OmniRoute = true;
 
-          console.error(`[hme-proxy] MODE=4 OmniRoute: claude-* -> opencode-go/deepseek-v4-pro via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming})`);
+          console.error(`MODE=4 OmniRoute: claude-* -> opencode-go/deepseek-v4-pro via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming})`);
         } else {
-          // --- Legacy zen_translator path (HME_OMNIROUTE_OFF=1) ---
+          // Legacy zen_translator path (HME_OMNIROUTE_OFF=1)
           const { translateRequestToOpenAI } = require('./zen_translator');
           const oaPayload = translateRequestToOpenAI(payload, 'deepseek-v4-pro');
           clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
@@ -515,10 +515,10 @@ function handleRequest(clientReq, clientRes) {
           outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
           _isMode4Swap = true;
 
-          console.error(`[hme-proxy] MODE=4 legacy: claude-* -> deepseek-v4-pro via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
+          console.error(`MODE=4 legacy: claude-* -> deepseek-v4-pro via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
         }
       } else {
-        console.error('[hme-proxy] MODE=4 active but OPENCODE_API_KEY missing -- swap skipped');
+        console.error('MODE=4 active but OPENCODE_API_KEY missing -- swap skipped');
       }
     }
 
@@ -551,13 +551,13 @@ function handleRequest(clientReq, clientRes) {
         let _capChanged = false;
         if (payload.thinking && typeof payload.thinking === 'object') {
           if (typeof payload.thinking.budget_tokens === 'number' && payload.thinking.budget_tokens > _otpmCap) {
-            console.error(`[hme-proxy] OTPM-cap (explicit): thinking.budget_tokens ${payload.thinking.budget_tokens} -> ${_otpmCap}`);
+            console.error(`OTPM-cap (explicit): thinking.budget_tokens ${payload.thinking.budget_tokens} -> ${_otpmCap}`);
             payload.thinking.budget_tokens = _otpmCap;
             _capChanged = true;
           }
         }
         if (typeof payload.max_tokens === 'number' && payload.max_tokens > _maxTokensCap) {
-          console.error(`[hme-proxy] OTPM-cap (explicit): max_tokens ${payload.max_tokens} -> ${_maxTokensCap}`);
+          console.error(`OTPM-cap (explicit): max_tokens ${payload.max_tokens} -> ${_maxTokensCap}`);
           payload.max_tokens = _maxTokensCap;
           _capChanged = true;
         }
@@ -577,7 +577,7 @@ function handleRequest(clientReq, clientRes) {
             (m) => console.warn('Acceptable warning: [middleware]', m),
           );
         } catch (err) {
-          console.error(`[hme-proxy] pre-dump failed: ${err.message}`);
+          console.error(`pre-dump failed: ${err.message}`);
         }
         if (process.env.HME_REPLACE_SYSTEM_PROMPT === '1') {
           if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
@@ -614,7 +614,7 @@ function handleRequest(clientReq, clientRes) {
           const mwDirtied = await middleware.runPipeline(payload, scan, session);
           if (mwDirtied) bodyDirtiedByStrip = true;
         } catch (err) {
-          console.error('[hme-proxy] middleware pipeline error:', err.message);
+          console.error('middleware pipeline error:', err.message);
         }
         if (shouldInject()) {
           const statusBlock = consumeStatusContext(session);
@@ -692,10 +692,10 @@ function handleRequest(clientReq, clientRes) {
             if (!upstreamHeaders['anthropic-beta']) {
               upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
             }
-            console.error(`[hme-proxy] injected OAuth token for loopback request (path=${clientReq.url})`);
+            console.error(`injected OAuth token for loopback request (path=${clientReq.url})`);
           }
         } catch (_err) {
-          console.error(`[hme-proxy] auth injection failed: ${_err.message}`);
+          console.error(`auth injection failed: ${_err.message}`);
         }
       }
     }
@@ -733,7 +733,7 @@ if (_isMode4Swap) {
           const { ZenSseTranslator, translateNonStreamResponseToAnthropic } = require('./zen_translator');
 
           if (upstreamRes.statusCode === 401 || upstreamRes.statusCode === 403) {
-             console.error(`[hme-proxy] MODE=4 AUTH FAILURE: Upstream returned ${upstreamRes.statusCode}. Faking success to protect session.`);
+             console.error(`MODE=4 AUTH FAILURE: Upstream returned ${upstreamRes.statusCode}. Faking success to protect session.`);
              clientRes.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
 
              // 1. Send message_start (This fixes the "current message" error)
@@ -950,7 +950,7 @@ if (_mode4WasStreaming) {
         // On any 4xx, dump the rate-limit telemetry so we can SEE what
         // Anthropic told us (instead of the unhelpful "Error" body).
         if (status >= 400 && status < 500 && (_hdrTokLimit || _hdrTokRemaining || _hdrTokReset || headers['retry-after'])) {
-          console.error(`[hme-proxy] rate-limit headers: limit=${_hdrTokLimit||'?'} remaining=${_hdrTokRemaining||'?'} reset=${_hdrTokReset||'?'} retry-after=${headers['retry-after']||'?'}`);
+          console.error(`rate-limit headers: limit=${_hdrTokLimit||'?'} remaining=${_hdrTokRemaining||'?'} reset=${_hdrTokReset||'?'} retry-after=${headers['retry-after']||'?'}`);
         }
 
         // Detect upstream failure: HTTP 4xx JSON error OR HTTP 200 + SSE
@@ -964,7 +964,7 @@ if (_mode4WasStreaming) {
             const _errMsg = `anthropic ${status} ${_errInfo.type || 'error'} [${_pathLabel}]: ${_errInfo.message || '<no message>'}`;
             const _stamp = new Date().toISOString().replace(/[:.]/g, '-');
             const _snapshotRel = `tmp/claude-${status}-${_pathLabel}-payload-${_stamp}.json`;
-            console.error(`[hme-proxy] UPSTREAM FAILURE detected: ${_errMsg}`);
+            console.error(`UPSTREAM FAILURE detected: ${_errMsg}`);
             // Only INTERACTIVE-path 4xx/5xx trips the global escape hatch.
             // Sub-pipeline failures self-handle via internal circuit breakers;
             // global trip on them puts Claude Code into passthrough.
@@ -977,16 +977,16 @@ if (_mode4WasStreaming) {
             // requests, not bytes -- skip the panic counter for those.
             if (_isRateLimit && !_shouldRetry) {
               _consecutive429s = Math.min(_consecutive429s + 1, 4);
-              console.error(`[hme-proxy] rate_limit_error (ITPM-exhaustion) -- panic-shrink counter=${_consecutive429s}, next threshold=${_effectiveCompactThreshold()}B`);
+              console.error(`rate_limit_error (ITPM-exhaustion) -- panic-shrink counter=${_consecutive429s}, next threshold=${_effectiveCompactThreshold()}B`);
             } else if (_isRateLimit && _shouldRetry) {
-              console.error(`[hme-proxy] rate_limit_error (Cloudflare per-IP throttle) -- skip panic-shrink (size irrelevant)`);
+              console.error(`rate_limit_error (Cloudflare per-IP throttle) -- skip panic-shrink (size irrelevant)`);
             }
             // Trip escape hatch on every interactive 4xx (incl x-should-retry
             // 429s -- user wants the lifesaver alert as recovery signal).
             if (_isInteractivePath && !_coolingDown) {
               recordUpstreamFailure(_errMsg);
             } else if (!_isInteractivePath) {
-              console.error(`[hme-proxy] sub-pipeline failure -- NOT tripping escape hatch (interactive path unaffected)`);
+              console.error(`sub-pipeline failure -- NOT tripping escape hatch (interactive path unaffected)`);
             }
             try {
               const fs = require('fs');
@@ -1006,7 +1006,7 @@ if (_mode4WasStreaming) {
                 };
                 fs.writeFileSync(outFile.replace('.json', '.request-headers.json'), JSON.stringify(_reqHdrSnap, null, 2));
               } catch (_e) { /* best-effort */ }
-              console.error(`[hme-proxy] payload snapshotted to ${outFile}`);
+              console.error(`payload snapshotted to ${outFile}`);
               // Skip lifesaver for sub-pipeline 404 probes + cooldown dupes.
               // x-should-retry 429s DO alert (user-visible recovery signal).
               const _suppressLifesaver = _coolingDown
@@ -1017,7 +1017,7 @@ if (_mode4WasStreaming) {
                   `[${_stamp}] UPSTREAM_${status}_${_pathLabel.toUpperCase()}: ${_errMsg} (request_id=${_errInfo.requestId || '?'}, snapshot=${_snapshotRel})\n`);
               }
             } catch (err) {
-              console.error(`[hme-proxy] snapshot/lifesaver write failed: ${err.message}`);
+              console.error(`snapshot/lifesaver write failed: ${err.message}`);
             }
             emit({ event: 'upstream_error', session: _sessionForTelemetry, status, type: _errInfo.type, message: _errInfo.message, path_label: _pathLabel });
             // No retry on 429: Cloudflare's sustained throttle window means
@@ -1028,7 +1028,7 @@ if (_mode4WasStreaming) {
               && upstreamHeaders['authorization'].startsWith('Bearer ');
             if (status === 401 && _isBearerAuth && payload && Array.isArray(payload.messages)) {
               try {
-                console.error('[hme-proxy] got 401, attempting token refresh + retry');
+                console.error('got 401, attempting token refresh + retry');
                 const newToken = await refreshOauthToken();
                 const retryHeaders = { ...upstreamHeaders, 'authorization': `Bearer ${newToken}` };
                 retryHeaders['content-length'] = String(outBody.length);
@@ -1044,7 +1044,7 @@ if (_mode4WasStreaming) {
                   req.write(outBody);
                   req.end();
                 });
-                console.error(`[hme-proxy] 401-retry response: ${retry.statusCode}`);
+                console.error(`401-retry response: ${retry.statusCode}`);
                 if (retry.statusCode >= 200 && retry.statusCode < 300) {
                   status = retry.statusCode;
                   headers = retry.headers;
@@ -1052,20 +1052,20 @@ if (_mode4WasStreaming) {
                   recordUpstreamSuccess();
                 }
               } catch (refreshErr) {
-                console.error(`[hme-proxy] 401-refresh failed: ${refreshErr.message}`);
+                console.error(`401-refresh failed: ${refreshErr.message}`);
               }
             }
           } else {
             recordUpstreamSuccess();
             if (_consecutive429s > 0) {
-              console.error(`[hme-proxy] success -- resetting panic-shrink counter (was ${_consecutive429s})`);
+              console.error(`success -- resetting panic-shrink counter (was ${_consecutive429s})`);
               _consecutive429s = 0;
             }
           }
         } else if (status >= 200 && status < 300) {
           recordUpstreamSuccess();
           if (_consecutive429s > 0) {
-            console.error(`[hme-proxy] success -- resetting panic-shrink counter (was ${_consecutive429s})`);
+            console.error(`success -- resetting panic-shrink counter (was ${_consecutive429s})`);
             _consecutive429s = 0;
           }
         }
@@ -1080,7 +1080,7 @@ if (_mode4WasStreaming) {
               (headers['content-type'] || '').toLowerCase().includes('text/event-stream'),
             );
           } catch (err) {
-            console.error('[hme-proxy] HME continuation failed:', err.message);
+            console.error('HME continuation failed:', err.message);
           }
         }
 
@@ -1260,11 +1260,11 @@ if (_mode4WasStreaming) {
             // mutation -- this is what's about to be sent upstream OR was
             // received from Claude Code, depending on outBody === bodyBuf).
             _bdFs.writeFileSync(_reqBodyFile, outBody);
-            console.error(`[hme-proxy] dump ${_verdict}/${_path_label} status=${outStatus} sse=${_isSse} textC=${_textChars} thC=${_thinkingChars} blocks=${_textBlocks}t/${_thinkingBlocks}th/${_toolUseBlocks}tu stop=${_stopReason} bodyB=${outBuf.length} reqB=${outBody.length} -> ${_dumpFile}`);
-          } catch (_e) { console.error(`[hme-proxy] dump write failed: ${_e.message} stack=${_e.stack}`); }
+            console.error(`dump ${_verdict}/${_path_label} status=${outStatus} sse=${_isSse} textC=${_textChars} thC=${_thinkingChars} blocks=${_textBlocks}t/${_thinkingBlocks}th/${_toolUseBlocks}tu stop=${_stopReason} bodyB=${outBuf.length} reqB=${outBody.length} -> ${_dumpFile}`);
+          } catch (_e) { console.error(`dump write failed: ${_e.message} stack=${_e.stack}`); }
         } catch (_e) {
           if (_e && _e.message === 'skip-non-anthropic') { /* expected */ }
-          else { console.error(`[hme-proxy] response-trace dumper threw: ${_e.message} stack=${_e.stack}`); }
+          else { console.error(`response-trace dumper threw: ${_e.message} stack=${_e.stack}`); }
         }
 
         // Strip content-length on ANY SSE-mutation path. SseTransform
@@ -1436,7 +1436,7 @@ if (_mode4WasStreaming) {
             const stdin = JSON.stringify({ session_id: stopSession, transcript_path: '' });
             _runInlineFallback('Stop', stdin);
           } catch (e) {
-            console.error('[hme-proxy] inline Stop threw:', e.message);
+            console.error('inline Stop threw:', e.message);
           }
         }
       });
@@ -1448,7 +1448,7 @@ if (_mode4WasStreaming) {
         const _errCode = err.code || 'mid_response';
         const _pathLabel = _isInteractivePath ? 'interactive' : 'sub-pipeline';
         const _errMsg = `upstream ${_errCode} mid-response [${_pathLabel}]: ${err.message}`;
-        console.error(`[hme-proxy] upstream read error: ${_errMsg}`);
+        console.error(`upstream read error: ${_errMsg}`);
         if (_isInteractivePath) {
           recordUpstreamFailure(_errMsg);
         }
@@ -1477,7 +1477,7 @@ if (_mode4WasStreaming) {
     // (buddy_handoff.py cmd_consult); proxy is not the throttle.
     const UPSTREAM_TIMEOUT_MS = 1_800_000;
     upstreamReq.setTimeout(UPSTREAM_TIMEOUT_MS, () => {
-      console.error(`[hme-proxy] upstream timeout (${isStreaming ? 'streaming' : 'sync'})`);
+      console.error(`upstream timeout (${isStreaming ? 'streaming' : 'sync'})`);
       try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
       upstreamReq.destroy(new Error('upstream timeout'));
     });
@@ -1489,15 +1489,15 @@ if (_mode4WasStreaming) {
       // Single-shot retry: env-gated, retryable code, pre-headers, first attempt only.
       if (_CONNRETRY_ENABLED && _isInteractivePath && _connAttempt === 1
           && !clientRes.headersSent && _CONNRETRY_CODES.has(_errCode)) {
-        console.error(`[hme-proxy] ${_errCode} -- single retry (HME_PROXY_CONNRESET_RETRY=1)`);
+        console.error(`${_errCode} -- single retry (HME_PROXY_CONNRESET_RETRY=1)`);
         return _spawnUpstream();
       }
       const _errMsg = `upstream ${_errCode} [${_pathLabel}]: ${err.message}`;
-      console.error(`[hme-proxy] upstream connection error: ${_errMsg}`);
+      console.error(`upstream connection error: ${_errMsg}`);
       if (_isInteractivePath) {
         recordUpstreamFailure(_errMsg);
       } else {
-        console.error('[hme-proxy] sub-pipeline conn-error -- NOT tripping escape hatch');
+        console.error('sub-pipeline conn-error -- NOT tripping escape hatch');
       }
       try {
         const fs = require('fs');
@@ -1512,7 +1512,7 @@ if (_mode4WasStreaming) {
         fs.appendFileSync(errLog,
           `[${_stamp}] UPSTREAM_${_errCode}_${_pathLabel.toUpperCase()}: ${_errMsg} (snapshot=${_snapshotRel})\n`);
       } catch (snapErr) {
-        console.error(`[hme-proxy] conn-error snapshot/lifesaver write failed: ${snapErr.message}`);
+        console.error(`conn-error snapshot/lifesaver write failed: ${snapErr.message}`);
       }
       emit({ event: 'upstream_conn_error', code: _errCode, message: err.message, path_label: _pathLabel });
       if (!clientRes.headersSent) {
@@ -1530,7 +1530,7 @@ if (_mode4WasStreaming) {
   });
 
   clientReq.on('error', (err) => {
-    console.error('[hme-proxy] client error:', err.message);
+    console.error('client error:', err.message);
     try { clientRes.end(); } catch (_e) { /* ignore */ }
   });
 }
@@ -1590,7 +1590,7 @@ if (process.argv.includes('--test')) {
     if (!SUPERVISE) console.log('  supervision: disabled (HME_PROXY_SUPERVISE=0)');
   });
   server.on('error', (err) => {
-    console.error('[hme-proxy] listen error:', err.message);
+    console.error('listen error:', err.message);
     process.exit(1);
   });
 }
