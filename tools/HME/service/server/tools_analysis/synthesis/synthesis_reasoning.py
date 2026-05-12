@@ -250,11 +250,11 @@ def _overdrive_timeout() -> int:
 _last_source: str | None = None
 
 
-def _resolve_mode5_chain(tier: str) -> tuple[tuple[str, ...], bool] | None:
+def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
     """Resolve model chain for OVERDRIVE_MODE=5 from config/models.json.
-    Returns (chain, allow_subagent) -- chain ordered free first (including
-    cascade), then subscription, then usage; each group by tier_score desc.
-    MODE=5 always uses direct API (allow_subagent=False)."""
+    Chain ordered free first (including cascade), then subscription, then
+    usage; each group by tier_score desc. Returns None if config unreadable
+    or tier empty. Caller determines allow_subagent from chain contents."""
     import json as _json
     import os as _os
     _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
