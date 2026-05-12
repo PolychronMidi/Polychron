@@ -507,20 +507,38 @@ function handleRequest(clientReq, clientRes) {
         _mode4WasStreaming = (payload.stream === true);
         injected = true;
 
+        // MODE=5: read E5 lead model from config/models.json; MODE=4 → deepseek-v4-pro
+        let _swapModel = 'deepseek-v4-pro';
+        if (_odMode === '5') {
+          try {
+            const _cfgPath = require('path').resolve(__dirname, '..', '..', '..', 'config', 'models.json');
+            const _cfg = JSON.parse(require('fs').readFileSync(_cfgPath, 'utf8'));
+            _swapModel = (_cfg.manually_toprank && _cfg.manually_toprank.E5 && _cfg.manually_toprank.E5[0]) || '';
+            if (!_swapModel) { // fallback: top E5 model by cost_order→tier_score desc
+              const _tm = (_cfg.tiers && _cfg.tiers.E5 && _cfg.tiers.E5.models) || [];
+              const _co = (_cfg.ranking_rules && _cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
+              for (const _c of _co) {
+                const _b = _tm.filter(m => m.cost === _c).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0));
+                if (_b.length && _b[0].id) { _swapModel = _b[0].id; break; }
+              }
+            }
+          } catch (_) { /* keep deepseek-v4-pro fallback */ }
+        }
+
         if (!_OMNIROUTE_OFF) {
           // OmniRoute path (default)
           // Keep request in Anthropic format; OmniRoute handles translation.
-          payload.model = 'opencode-go/deepseek-v4-pro';
+          payload.model = `opencode-go/${_swapModel}`;
           clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${_OMNIROUTE_PORT}`;
           delete clientReq.headers['authorization'];
           delete clientReq.headers['x-api-key'];
           _isMode4OmniRoute = true;
 
-          console.error(`[hme-proxy] MODE=${_odMode} OmniRoute: claude-* -> opencode-go/deepseek-v4-pro via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming})`);
+          console.error(`[hme-proxy] MODE=${_odMode} OmniRoute: claude-* -> opencode-go/${_swapModel} via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming})`);
         } else {
           // Legacy zen_translator path (HME_OMNIROUTE_OFF=1)
           const { translateRequestToOpenAI } = require('./zen_translator');
-          const oaPayload = translateRequestToOpenAI(payload, 'deepseek-v4-pro');
+          const oaPayload = translateRequestToOpenAI(payload, _swapModel);
           clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
           clientReq.headers['authorization'] = `Bearer ${_zenKey}`;
           clientReq.headers['x-api-key'] = _zenKey;
@@ -528,7 +546,7 @@ function handleRequest(clientReq, clientRes) {
           outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
           _isMode4Swap = true;
 
-          console.error(`[hme-proxy] MODE=${_odMode} legacy: claude-* -> deepseek-v4-pro via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
+          console.error(`[hme-proxy] MODE=${_odMode} legacy: claude-* -> ${_swapModel} via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
         }
       } else {
         console.error(`[hme-proxy] MODE=${_odMode} active but OPENCODE_API_KEY missing -- swap skipped`);
