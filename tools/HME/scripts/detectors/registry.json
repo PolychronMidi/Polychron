@@ -9,40 +9,299 @@
     "reason_key": "key into work_checks.js REASONS object (only when deny=true)"
   },
   "detectors": [
-    {"name": "poll_count", "module": "poll_count", "fires_when": null, "bash_var": "POLL_COUNT", "deny": false},
-    {"name": "idle_after_bg", "module": "idle_after_bg", "fires_when": null, "bash_var": "IDLE_AFTER_BG", "deny": false},
-    {"name": "psycho_stop", "module": "psycho_stop", "fires_when": "psycho_stop", "bash_var": "PSYCHO_STOP", "deny": false},
-    {"name": "ack_skip", "module": "ack_skip", "fires_when": "ack_skip", "bash_var": "ACK_SKIP", "deny": false},
-    {"name": "abandon_check", "module": "abandon_check", "fires_when": "abandon_check", "bash_var": "ABANDON_CHECK", "deny": false},
-    {"name": "stop_work", "module": "stop_work", "fires_when": "DISMISSIVE", "bash_var": "STOP_WORK", "deny": true, "reason_key": "STOP_WORK_DISMISSIVE"},
-    {"name": "stop_work_text_only", "module": "stop_work", "fires_when": "TEXT_ONLY_SHORT", "bash_var": "STOP_WORK", "deny": true, "reason_key": "STOP_WORK_TEXT_ONLY"},
-    {"name": "fabrication_check", "module": "fabrication_check", "fires_when": "fabrication_check", "bash_var": "FABRICATION_CHECK", "deny": false},
-    {"name": "early_stop", "module": "early_stop", "fires_when": "early_stop", "bash_var": "EARLY_STOP", "deny": false},
-    {"name": "exhaust_check", "module": "exhaust_check", "fires_when": "exhaust_violation", "bash_var": "EXHAUST_CHECK", "deny": true, "reason_key": "EXHAUST"},
-    {"name": "scope_escape", "module": "scope_escape", "fires_when": "scope_escape_violation", "bash_var": "SCOPE_ESCAPE", "deny": true, "reason_key": "SCOPE_ESCAPE"},
-    {"name": "senior_consult_debt", "module": "senior_consult_debt", "fires_when": "consult-debt", "bash_var": "SENIOR_CONSULT_DEBT", "deny": false},
-    {"name": "phantom_capability", "module": "phantom_capability", "fires_when": "phantom_capability", "bash_var": "PHANTOM_CAPABILITY", "deny": true, "reason_key": "PHANTOM_CAPABILITY"},
-    {"name": "phantom_paraphrase", "module": "phantom_capability", "fires_when": "phantom_paraphrase", "bash_var": "PHANTOM_CAPABILITY", "deny": true, "reason_key": "PHANTOM_PARAPHRASE"},
-    {"name": "advisor_missing_pre_build", "module": "advisor_doctrine", "fires_when": "advisor_missing_pre_build", "bash_var": "ADVISOR_DOCTRINE", "deny": true, "reason_key": "ADVISOR_MISSING_PRE_BUILD"},
-    {"name": "advisor_missing_post_deliver", "module": "advisor_doctrine", "fires_when": "advisor_missing_post_deliver", "bash_var": "ADVISOR_DOCTRINE", "deny": true, "reason_key": "ADVISOR_MISSING_POST_DELIVER"},
-    {"name": "advisor_silently_skipped", "module": "advisor_doctrine", "fires_when": "advisor_silently_skipped", "bash_var": "ADVISOR_DOCTRINE", "deny": false, "_note": "permanent soft-flag (reviewed 2026-05-10): VSCode SSE renderer eats decision:block turns. Promotion blocked on upstream renderer fix, not time. Auditor exemption: non-temporal."},
-    {"name": "advisor_conflict_cap_exceeded", "module": "advisor_doctrine", "fires_when": "advisor_conflict_cap_exceeded", "bash_var": "ADVISOR_DOCTRINE", "deny": true, "reason_key": "ADVISOR_CONFLICT_CAP"},
-    {"name": "summary_missing", "module": "summary_format", "fires_when": "summary_missing", "bash_var": "SUMMARY_FORMAT", "deny": true, "reason_key": "SUMMARY_MISSING"},
-    {"name": "summary_malformed", "module": "summary_format", "fires_when": "summary_malformed", "bash_var": "SUMMARY_FORMAT", "deny": true, "reason_key": "SUMMARY_MALFORMED"},
-    {"name": "minimal_format_violation", "module": "summary_format", "fires_when": "minimal_format_violation", "bash_var": "SUMMARY_FORMAT", "deny": true, "reason_key": "MINIMAL_FORMAT_VIOLATION"},
-    {"name": "live_probe", "module": "live_probe", "fires_when": "live_probe_missing", "bash_var": "LIVE_PROBE", "deny": true, "reason_key": "LIVE_PROBE_MISSING"},
-    {"name": "phase_gate", "module": "phase_gate", "fires_when": "phase_skipped", "bash_var": "PHASE_GATE", "deny": true, "reason_key": "PHASE_SKIPPED"},
-    {"name": "pile_on", "module": "pile_on", "fires_when": "pile_on", "bash_var": "PILE_ON", "deny": true, "reason_key": "PILE_ON"},
-    {"name": "claim_without_evidence", "module": "claim_without_evidence", "fires_when": "claim_without_evidence", "bash_var": "CLAIM_WITHOUT_EVIDENCE", "deny": false, "_note": "permanent soft-flag (reviewed 2026-05-10): same VSCode renderer reason as advisor_silently_skipped. Auditor exemption: non-temporal."},
-    {"name": "fix_without_investigation", "module": "fix_without_investigation", "fires_when": "fix_without_investigation", "bash_var": "FIX_WITHOUT_INVESTIGATION", "deny": true, "reason_key": "FIX_WITHOUT_INVESTIGATION"},
-    {"name": "comment_bloat", "module": "comment_bloat", "fires_when": "comment_bloat", "bash_var": "COMMENT_BLOAT", "deny": true, "reason_key": "COMMENT_BLOAT"},
-    {"name": "boyscout_loc", "module": "boyscout_loc", "fires_when": "loc_bloat", "bash_var": "BOYSCOUT_LOC", "deny": true, "reason_key": "BOYSCOUT_LOC"},
-    {"name": "orphan_reference", "module": "orphan_reference", "fires_when": "orphan_reference", "bash_var": "ORPHAN_REFERENCE", "deny": true, "reason_key": "ORPHAN_REFERENCE"},
-    {"name": "slop_scan", "module": "slop_scan", "fires_when": "slop_scan", "bash_var": "SLOP_SCAN", "deny": false, "_note": "soft-flagged 2026-05-09; promotion criterion: 5 consecutive turns with zero false-positive findings. Re-evaluate 2026-05-24."},
-    {"name": "tests_failing_in_scope", "module": "tests_failing_in_scope", "fires_when": "tests_failing_scope", "bash_var": "TESTS_FAILING_SCOPE", "deny": false, "_note": "soft-flagged 2026-05-09; promotion criterion: latency P95 < 5s + zero false-positive runs. Re-evaluate 2026-05-24."},
-    {"name": "scope_stacked", "module": "scope_vs_shipped", "fires_when": "scope-stacked", "bash_var": "SCOPE_VS_SHIPPED", "deny": true, "reason_key": "SCOPE_STACKED", "_note": "shipped 2026-05-10 advisory, promoted to deny same day after firing correctly on the very turn that named the problem. Catches enumerate-without-tick the existing phrase detectors miss."},
-    {"name": "scope_not_tracked", "module": "scope_vs_shipped", "fires_when": "scope-not-tracked", "bash_var": "SCOPE_VS_SHIPPED", "deny": true, "reason_key": "SCOPE_NOT_TRACKED", "_note": "shipped 2026-05-10 advisory, promoted to deny same day. Fires when turn shipped substantive Edit/Write but zero SPEC items ticked -- work happened off declared scope or SPEC is stale."},
-    {"name": "scope_stacked_and_not_tracked", "module": "scope_vs_shipped", "fires_when": "scope-stacked+not-tracked", "bash_var": "SCOPE_VS_SHIPPED", "deny": true, "reason_key": "SCOPE_STACKED", "_note": "combined verdict when both signals fire."},
-    {"name": "evasion_intent", "module": "evasion_intent", "fires_when": "evasion_intent", "bash_var": "EVASION_INTENT", "deny": true, "reason_key": "EVASION_INTENT", "_note": "shipped 2026-05-10 as deny. Scans assistant thinking blocks for explicit gate-evasion language (avoid the structural check, frame in prose to bypass, stay under the threshold, to avoid exhaust_check, etc.). The structural answer to the catastrophic failure where the agent thinks about routing around its own gates and shapes the output to fall just under the threshold."}
+    {
+      "name": "poll_count",
+      "module": "poll_count",
+      "fires_when": null,
+      "bash_var": "POLL_COUNT",
+      "deny": false
+    },
+    {
+      "name": "idle_after_bg",
+      "module": "idle_after_bg",
+      "fires_when": null,
+      "bash_var": "IDLE_AFTER_BG",
+      "deny": false
+    },
+    {
+      "name": "psycho_stop",
+      "module": "psycho_stop",
+      "fires_when": "psycho_stop",
+      "bash_var": "PSYCHO_STOP",
+      "deny": false
+    },
+    {
+      "name": "ack_skip",
+      "module": "ack_skip",
+      "fires_when": "ack_skip",
+      "bash_var": "ACK_SKIP",
+      "deny": false
+    },
+    {
+      "name": "abandon_check",
+      "module": "abandon_check",
+      "fires_when": "abandon_check",
+      "bash_var": "ABANDON_CHECK",
+      "deny": false
+    },
+    {
+      "name": "stop_work",
+      "module": "stop_work",
+      "fires_when": "DISMISSIVE",
+      "bash_var": "STOP_WORK",
+      "deny": true,
+      "reason_key": "STOP_WORK_DISMISSIVE"
+    },
+    {
+      "name": "stop_work_text_only",
+      "module": "stop_work",
+      "fires_when": "TEXT_ONLY_SHORT",
+      "bash_var": "STOP_WORK",
+      "deny": true,
+      "reason_key": "STOP_WORK_TEXT_ONLY"
+    },
+    {
+      "name": "fabrication_check",
+      "module": "fabrication_check",
+      "fires_when": "fabrication_check",
+      "bash_var": "FABRICATION_CHECK",
+      "deny": false
+    },
+    {
+      "name": "early_stop",
+      "module": "early_stop",
+      "fires_when": "early_stop",
+      "bash_var": "EARLY_STOP",
+      "deny": false
+    },
+    {
+      "name": "exhaust_check",
+      "module": "exhaust_check",
+      "fires_when": "exhaust_violation",
+      "bash_var": "EXHAUST_CHECK",
+      "deny": true,
+      "reason_key": "EXHAUST"
+    },
+    {
+      "name": "scope_escape",
+      "module": "scope_escape",
+      "fires_when": "scope_escape_violation",
+      "bash_var": "SCOPE_ESCAPE",
+      "deny": true,
+      "reason_key": "SCOPE_ESCAPE"
+    },
+    {
+      "name": "senior_consult_debt",
+      "module": "senior_consult_debt",
+      "fires_when": "consult-debt",
+      "bash_var": "SENIOR_CONSULT_DEBT",
+      "deny": false
+    },
+    {
+      "name": "phantom_capability",
+      "module": "phantom_capability",
+      "fires_when": "phantom_capability",
+      "bash_var": "PHANTOM_CAPABILITY",
+      "deny": true,
+      "reason_key": "PHANTOM_CAPABILITY"
+    },
+    {
+      "name": "phantom_paraphrase",
+      "module": "phantom_capability",
+      "fires_when": "phantom_paraphrase",
+      "bash_var": "PHANTOM_CAPABILITY",
+      "deny": true,
+      "reason_key": "PHANTOM_PARAPHRASE"
+    },
+    {
+      "name": "advisor_missing_pre_build",
+      "module": "advisor_doctrine",
+      "fires_when": "advisor_missing_pre_build",
+      "bash_var": "ADVISOR_DOCTRINE",
+      "deny": true,
+      "reason_key": "ADVISOR_MISSING_PRE_BUILD"
+    },
+    {
+      "name": "advisor_missing_post_deliver",
+      "module": "advisor_doctrine",
+      "fires_when": "advisor_missing_post_deliver",
+      "bash_var": "ADVISOR_DOCTRINE",
+      "deny": true,
+      "reason_key": "ADVISOR_MISSING_POST_DELIVER"
+    },
+    {
+      "name": "advisor_silently_skipped",
+      "module": "advisor_doctrine",
+      "fires_when": "advisor_silently_skipped",
+      "bash_var": "ADVISOR_DOCTRINE",
+      "deny": false,
+      "_note": "permanent soft-flag (reviewed 2026-05-10): VSCode SSE renderer eats decision:block turns. Promotion blocked on upstream renderer fix, not time. Auditor exemption: non-temporal."
+    },
+    {
+      "name": "advisor_conflict_cap_exceeded",
+      "module": "advisor_doctrine",
+      "fires_when": "advisor_conflict_cap_exceeded",
+      "bash_var": "ADVISOR_DOCTRINE",
+      "deny": true,
+      "reason_key": "ADVISOR_CONFLICT_CAP"
+    },
+    {
+      "name": "summary_missing",
+      "module": "summary_format",
+      "fires_when": "summary_missing",
+      "bash_var": "SUMMARY_FORMAT",
+      "deny": true,
+      "reason_key": "SUMMARY_MISSING"
+    },
+    {
+      "name": "summary_malformed",
+      "module": "summary_format",
+      "fires_when": "summary_malformed",
+      "bash_var": "SUMMARY_FORMAT",
+      "deny": true,
+      "reason_key": "SUMMARY_MALFORMED"
+    },
+    {
+      "name": "minimal_format_violation",
+      "module": "summary_format",
+      "fires_when": "minimal_format_violation",
+      "bash_var": "SUMMARY_FORMAT",
+      "deny": true,
+      "reason_key": "MINIMAL_FORMAT_VIOLATION"
+    },
+    {
+      "name": "live_probe",
+      "module": "live_probe",
+      "fires_when": "live_probe_missing",
+      "bash_var": "LIVE_PROBE",
+      "deny": true,
+      "reason_key": "LIVE_PROBE_MISSING"
+    },
+    {
+      "name": "phase_gate",
+      "module": "phase_gate",
+      "fires_when": "phase_skipped",
+      "bash_var": "PHASE_GATE",
+      "deny": true,
+      "reason_key": "PHASE_SKIPPED"
+    },
+    {
+      "name": "pile_on",
+      "module": "pile_on",
+      "fires_when": "pile_on",
+      "bash_var": "PILE_ON",
+      "deny": true,
+      "reason_key": "PILE_ON"
+    },
+    {
+      "name": "claim_without_evidence",
+      "module": "claim_without_evidence",
+      "fires_when": "claim_without_evidence",
+      "bash_var": "CLAIM_WITHOUT_EVIDENCE",
+      "deny": false,
+      "_note": "permanent soft-flag (reviewed 2026-05-10): same VSCode renderer reason as advisor_silently_skipped. Auditor exemption: non-temporal."
+    },
+    {
+      "name": "fix_without_investigation",
+      "module": "fix_without_investigation",
+      "fires_when": "fix_without_investigation",
+      "bash_var": "FIX_WITHOUT_INVESTIGATION",
+      "deny": true,
+      "reason_key": "FIX_WITHOUT_INVESTIGATION"
+    },
+    {
+      "name": "comment_bloat",
+      "module": "comment_bloat",
+      "fires_when": "comment_bloat",
+      "bash_var": "COMMENT_BLOAT",
+      "deny": true,
+      "reason_key": "COMMENT_BLOAT"
+    },
+    {
+      "name": "boyscout_loc",
+      "module": "boyscout_loc",
+      "fires_when": "loc_bloat",
+      "bash_var": "BOYSCOUT_LOC",
+      "deny": true,
+      "reason_key": "BOYSCOUT_LOC"
+    },
+    {
+      "name": "orphan_reference",
+      "module": "orphan_reference",
+      "fires_when": "orphan_reference",
+      "bash_var": "ORPHAN_REFERENCE",
+      "deny": true,
+      "reason_key": "ORPHAN_REFERENCE"
+    },
+    {
+      "name": "slop_scan",
+      "module": "slop_scan",
+      "fires_when": "slop_scan",
+      "bash_var": "SLOP_SCAN",
+      "deny": false,
+      "_note": "soft-flagged 2026-05-09; promotion criterion: 5 consecutive turns with zero false-positive findings. Re-evaluate 2026-05-24."
+    },
+    {
+      "name": "tests_failing_in_scope",
+      "module": "tests_failing_in_scope",
+      "fires_when": "tests_failing_scope",
+      "bash_var": "TESTS_FAILING_SCOPE",
+      "deny": false,
+      "_note": "soft-flagged 2026-05-09; promotion criterion: latency P95 < 5s + zero false-positive runs. Re-evaluate 2026-05-24."
+    },
+    {
+      "name": "scope_stacked",
+      "module": "scope_vs_shipped",
+      "fires_when": "scope-stacked",
+      "bash_var": "SCOPE_VS_SHIPPED",
+      "deny": true,
+      "reason_key": "SCOPE_STACKED",
+      "_note": "shipped 2026-05-10 advisory, promoted to deny same day after firing correctly on the very turn that named the problem. Catches enumerate-without-tick the existing phrase detectors miss."
+    },
+    {
+      "name": "scope_not_tracked",
+      "module": "scope_vs_shipped",
+      "fires_when": "scope-not-tracked",
+      "bash_var": "SCOPE_VS_SHIPPED",
+      "deny": true,
+      "reason_key": "SCOPE_NOT_TRACKED",
+      "_note": "shipped 2026-05-10 advisory, promoted to deny same day. Fires when turn shipped substantive Edit/Write but zero SPEC items ticked -- work happened off declared scope or SPEC is stale."
+    },
+    {
+      "name": "scope_stacked_and_not_tracked",
+      "module": "scope_vs_shipped",
+      "fires_when": "scope-stacked+not-tracked",
+      "bash_var": "SCOPE_VS_SHIPPED",
+      "deny": true,
+      "reason_key": "SCOPE_STACKED",
+      "_note": "combined verdict when both signals fire."
+    },
+    {
+      "name": "evasion_intent",
+      "module": "evasion_intent",
+      "fires_when": "evasion_intent",
+      "bash_var": "EVASION_INTENT",
+      "deny": true,
+      "reason_key": "EVASION_INTENT",
+      "_note": "shipped 2026-05-10 as deny. Scans assistant thinking blocks for explicit gate-evasion language (avoid the structural check, frame in prose to bypass, stay under the threshold, to avoid exhaust_check, etc.). The structural answer to the catastrophic failure where the agent thinks about routing around its own gates and shapes the output to fall just under the threshold."
+    },
+    {
+      "name": "boyscout_clean",
+      "module": "boyscout_clean",
+      "fires_when": "comment_bloat",
+      "bash_var": "BOYSCOUT_CLEAN",
+      "deny": true,
+      "reason_key": "BOYSCOUT_CLEAN",
+      "_note": "shipped 2026-05-12 as deny. Per-file clean-room: any file Edited/Written must pass comment-bloat and char-spam audit. Fires if touched file has violations."
+    },
+    {
+      "name": "boyscout_clean",
+      "module": "boyscout_clean",
+      "fires_when": "char_spam",
+      "bash_var": "BOYSCOUT_CLEAN",
+      "deny": true,
+      "reason_key": "BOYSCOUT_CLEAN",
+      "_note": "char_spam verdict variant"
+    }
   ]
 }
