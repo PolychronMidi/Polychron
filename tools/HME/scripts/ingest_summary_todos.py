@@ -7,7 +7,7 @@ PROJECT = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
 if not PROJECT:
     sys.exit(0)
 
-transcript_path = os.path.join(PROJECT, "log", "session-transcript.jsonl")
+transcript_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(PROJECT, "log", "session-transcript.jsonl")
 last_text = ""
 try:
     with open(transcript_path) as f:
