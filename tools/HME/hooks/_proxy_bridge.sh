@@ -133,17 +133,7 @@ if [ -z "$RESP" ]; then
 fi
 
 if [ -z "$RESP" ]; then
-  # Proxy unreachable. Direct-mode fallback -- implements the filesystem-IPC
-  # architectural lesson: the proxy is an accelerator, not a single point
-  # of failure. For events that have a daemon-less Node CLI (currently:
-  # Stop), shell out to the CLI directly so the chain still fires.
-  # Other events fall through to the existing fail-LOUD banner path below.
-  #
-  # When direct-mode succeeds we DO NOT fire the LIFESAVER banner (which
-  # would mislead the next turn into thinking hooks were skipped) but we
-  # DO record the fallback in the lifecycle log so an outage is audit-
-  # trailable. The sticky proxy-down flag IS still set so the recovery
-  # banner fires when the proxy comes back.
+  # rationale: direct-mode fallback; logged to lifecycle, not LIFESAVER
   _PB_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
 
   _PB_DIRECT_DISPATCH="$_PB_ROOT/tools/HME/hooks/direct_dispatch.sh"
