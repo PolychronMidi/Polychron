@@ -324,13 +324,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
 
 def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_type: str = "general-purpose") -> tuple[str, str] | None:
-    # PRIORITY 1: persistent thread (i/thread init -> runtime/hme/thread.sid).
-    # Synchronous flow through one long-lived claude session so context
-    # accumulates across review/OVERDRIVE/suggest_evolution. Falls through
-    # to direct/sentinel paths on dispatch failure. ImportError/AttributeError
-    # log WARNING (structural unreachability must not silent-demote).
-    # Empty-string result accepted via explicit `is not None` so
-    # a legitimate empty reply doesn't cause fallback double-dispatch.
+    # Priority 1: persistent thread via thread.sid; falls through to direct/sentinel
     try:
         from .agent_direct import dispatch_thread as _thread
         thread_result = _thread(prompt)
