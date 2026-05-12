@@ -132,6 +132,10 @@ except Exception:  # silent-ok: config optional, hardcoded fallback
         "__pycache__", ".venv", "venv", "lab", "plugin-cache", "models",
         "KB", ".pytest_cache", ".claude", "runtime",
     }
+# merge HME_IGNORE_DIRS from .env (same mechanism as file_walker.py)
+_env_raw = os.environ.get("HME_IGNORE_DIRS", "")
+_env_dirs = {d.strip() for d in _env_raw.split(",") if d.strip()}
+_SPAM_SKIP_DIRS |= _env_dirs
 _SPAM_SKIP_FILES = set()
 try:
     import json as _json
