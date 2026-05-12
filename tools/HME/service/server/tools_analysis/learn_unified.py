@@ -265,14 +265,8 @@ def learn(query: str = "", title: str = "", content: str = "",
     search_term = query or title
     if search_term:
         from server.tools_knowledge import search_knowledge as _sk
-        # Only filter by category if explicitly set (not the default 'general')
         search_cat = category if category and category != "general" else ""
-        # Tool-layer BRIEF emission: a KB search IS a read-prior signal if
-        # the query mentions a module name. Emit for any camelCase token >=6
-        # chars that looks like a module identifier. Narrow try around
-        # each token -- the previous single outer try meant one bad emit
-        # aborted the whole loop so later tokens in the same query were
-        # never recorded.
+        # emit BRIEF read-prior signal per camelCase token in query
         try:
             from .read_unified import _emit_brief_recorded
             import re as _re
