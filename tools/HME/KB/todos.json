@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1471,
-      "updated_ts": 1778561388.4244428
+      "max_id": 1478,
+      "updated_ts": 1778561460.5231287
     }
   },
   {
     "id": 1466,
     "text": "Explore core HME tool surface (i/ tools, proxy, worker)",
     "activeForm": "Exploring core HME tool surface",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,12 +24,26 @@
     "id": 1467,
     "text": "Understand buddy system and consult flow",
     "activeForm": "Understanding buddy system and consult flow",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
     "ts": 1778561388.4244056,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1474,
+    "text": "Test HME infrastructure and key tools live",
+    "activeForm": "Testing HME infrastructure and key tools live",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778561460.5230918,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -63,15 +77,15 @@
     "tier": "E3"
   },
   {
-    "id": 1470,
-    "text": "Test key HME tools end-to-end",
-    "activeForm": "Testing key HME tools end-to-end",
+    "id": 1477,
+    "text": "Run composition engine and check output",
+    "activeForm": "Running composition engine and checking output",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778561388.4244332,
+    "ts": 1778561460.5231175,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
