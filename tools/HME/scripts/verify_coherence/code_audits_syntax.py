@@ -142,6 +142,10 @@ _SPAM_SKIP_FILES = {
     # Templates and docs with intentional horizontal rules / headings.
     "tools/HME/skills/ISA/TEMPLATE.md",
     "tools/HME/hooks/README.md",
+    # Sparkline string literals legitimately use repeated chars for ASCII art.
+    "tools/HME/service/server/tools_analysis/perceptual_inference.py",
+    "tools/HME/service/server/tools_analysis/trust_analysis.py",
+    "tools/HME/service/server/tools_analysis/status_unified/resource_reports.py",
 }
 _SPAM_EXTS = (
     ".md", ".py", ".js", ".mjs", ".cjs", ".sh", ".bash", ".json",
