@@ -46,3 +46,4 @@ log/
 
 # KB lance tables — ephemeral generated state, never hand-authored.
 /tools/HME/KB/*.lance/
+/tools/HME/service/before-editing-cache.json
