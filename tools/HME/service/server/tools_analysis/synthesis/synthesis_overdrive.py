@@ -120,14 +120,7 @@ def _resolve_overdrive_chain() -> tuple[tuple[str, str], ...]:
     return tuple((m, _label_for_model(m)) for m in models)
 
 
-# Circuit-breaker state. When a model rate-limits, record the wall-clock
-# monotonic time at which it should be retried. Subsequent overdrive calls
-# short-circuit that model's slot until the window passes -- avoids the
-# N*2 retry tax during sustained rate-limit windows.
-#
-# Cooldown tunable via OVERDRIVE_RATE_LIMIT_COOLDOWN (seconds, default 60).
-# Not thread-safe (module-global dict) -- acceptable because the MCP server
-# is single-process and the overdrive path is called serially per request.
+# Circuit-breaker: model cooldown on rate-limit. Tunable: OVERDRIVE_RATE_LIMIT_COOLDOWN.
 _model_cooldown_until: dict[str, float] = {}
 
 
