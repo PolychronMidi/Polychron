@@ -19,13 +19,7 @@ esac
 # Capture stdin (the Claude Code hook payload).
 BODY=$(cat)
 
-# Derive project root. Resolution order:
-#   1. $PROJECT_ROOT (set by .env load if _safety.sh sourced upstream)
-#   2. $CLAUDE_PROJECT_DIR (set by Claude Code in every hook invocation)
-#   3. Walk up from $BASH_SOURCE looking for .git + src/ pair
-# No hardcoded host-path fallback -- if the above three fail, the
-# invocation environment is fundamentally broken and the hook should
-# fail loud rather than guess.
+# rationale: resolve project root from PROJECT_ROOT > CLAUDE_PROJECT_DIR > walk-up
 _PB_SELF="${BASH_SOURCE[0]}"
 _PB_ROOT=""
 if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
