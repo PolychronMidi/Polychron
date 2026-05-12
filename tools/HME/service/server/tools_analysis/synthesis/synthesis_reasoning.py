@@ -279,38 +279,53 @@ def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
     return tuple(_ids) if _ids else None
 
 
-def _resolve_mode2_chain(tier: str) -> tuple[tuple[str, ...], bool] | None:
-    """MODE=2: E4/E5 -> default Opus->Sonnet chain (subagent OK); E3 pins Sonnet
-    direct; E1/E2 fall through to cascade."""
-    if tier in ("E4", "E5"):
-        return (_OVERDRIVE_CHAIN_DEFAULT, True)
-    if tier == "E3":
-        return (("claude-sonnet-4-6",), False)
+def _resolve_mode_legacy_chain(mode: str, tier: str) -> tuple[tuple[str, ...], bool] | None:
+    """Resolve (chain, allow_subagent) for MODEs 2-4 per-tier. Returns None
+    when tier should fall through to the free cascade."""
+    if mode == "2":
+        if tier in ("E4", "E5"):
+            return (_OVERDRIVE_CHAIN_DEFAULT, True)
+        if tier == "E3":
+            return (("claude-sonnet-4-6",), False)
+        return None  # E1/E2
+    if mode == "3":
+        if tier == "E5":
+            return (_OVERDRIVE_CHAIN_DEFAULT, True)
+        if tier == "E4":
+            return (("deepseek-v4-pro",), False)
+        if tier == "E3":
+            return (("deepseek-v4-flash",), False)
+        return None  # E1/E2
+    if mode == "4":
+        if tier == "E5":
+            return (("glm-5.1",), False)
+        if tier == "E4":
+            return (("deepseek-v4-pro",), False)
+        if tier == "E3":
+            return (("deepseek-v4-flash",), False)
+        return None  # E1/E2
     return None
 
 
-def _resolve_mode3_chain(tier: str) -> tuple[tuple[str, ...], bool] | None:
-    """MODE=3: E5 -> Opus chain; E4 -> deepseek-v4-pro; E3 -> deepseek-v4-flash;
-    E1/E2 -> cascade."""
-    if tier == "E5":
-        return (_OVERDRIVE_CHAIN_DEFAULT, True)
-    if tier == "E4":
-        return (("deepseek-v4-pro",), False)
-    if tier == "E3":
-        return (("deepseek-v4-flash",), False)
-    return None
+def _resolve_mode5_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
+    """MODE=5: read chain from models.json; allow subagent only when chain
+    includes a claude- model (none currently do)."""
+    chain = _resolve_mode5_chain(tier)
+    if chain is None:
+        return None
+    allow_sub = any(m.startswith("claude-") for m in chain)
+    return (chain, allow_sub)
 
 
-def _resolve_mode4_chain(tier: str) -> tuple[tuple[str, ...], bool] | None:
-    """MODE=4: main-agent swap variant. E5 -> glm-5.1; E4 -> deepseek-v4-pro;
-    E3 -> deepseek-v4-flash; E1/E2 -> cascade."""
-    if tier == "E5":
-        return (("glm-5.1",), False)
-    if tier == "E4":
-        return (("deepseek-v4-pro",), False)
-    if tier == "E3":
-        return (("deepseek-v4-flash",), False)
-    return None
+# Map OVERDRIVE_MODE -> resolver: (tier) -> (chain, allow_subagent) | None
+# None result = no overdrive for this tier; fall through to cascade.
+_MODE_CHAIN_RESOLVERS = {
+    "1": lambda tier: (None, True),  # default chain, subagent OK
+    "2": lambda tier: _resolve_mode_legacy_chain("2", tier),
+    "3": lambda tier: _resolve_mode_legacy_chain("3", tier),
+    "4": lambda tier: _resolve_mode_legacy_chain("4", tier),
+    "5": _resolve_mode5_entry,
+}
 
 
 def last_source() -> str | None:
