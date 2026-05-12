@@ -50,15 +50,7 @@ _safe_py3() {
   echo "$result"
 }
 
-# R32: LIFESAVER-aware background hook runner.
-# Launches a command in background with a generous timeout. On non-zero exit,
-# timeout, OR empty output, writes an entry to hme-errors.log so LIFESAVER
-# surfaces the failure at the next turn.
-#
-# Use this for any hook that invokes local-LLM reasoning or long-running
-# subprocesses. The R30-R31 pattern of `timeout 30 ... || true` silently
-# swallowed failures and left LIFESAVER blind -- this helper makes that
-# class of failure impossible by construction.
+# LIFESAVER-aware bg runner: timeout, log failures to hme-errors.log
 #
 # Usage: _lifesaver_bg <label> <timeout-seconds> <output-file> <command...>
 # Example: _lifesaver_bg "review_auto_fire" 600 /tmp/out.txt ./i/review mode=forget
