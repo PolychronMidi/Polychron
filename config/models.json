@@ -32,7 +32,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Repository-scale coding at flat rate.",
-          "tier_score": 9.2
+          "tier_score": 10
         },
         {
           "id": "mimo-v2.5-pro-go",
@@ -43,7 +43,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Autonomous agent model at flat rate.",
-          "tier_score": 9.0
+          "tier_score": 9
         },
         {
           "id": "deepseek-v4-pro",
@@ -54,7 +54,7 @@
           "cost": "usage",
           "cost_amt": 0.95,
           "notes": "Repository-scale coding; deep logic and system architecture.",
-          "tier_score": 9.2
+          "tier_score": 9
         },
         {
           "id": "mimo-v2.5-pro",
@@ -65,7 +65,7 @@
           "cost": "usage",
           "cost_amt": 0.85,
           "notes": "Built for autonomous agents; 1M context, top agentic benchmarks.",
-          "tier_score": 9.0
+          "tier_score": 8
         },
         {
           "id": "gpt-5.2",
@@ -76,7 +76,7 @@
           "cost": "usage",
           "cost_amt": 1.1,
           "notes": "General-purpose frontier reasoning.",
-          "tier_score": 8.8
+          "tier_score": 7
         }
       ]
     },
@@ -93,7 +93,7 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Cascade free tier. Strong reasoning at frontier level.",
-          "tier_score": 8.5
+          "tier_score": 10
         },
         {
           "id": "gemini-3-pro",
@@ -104,7 +104,7 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Cascade free tier. Strong multi-modal; solid coding and planning.",
-          "tier_score": 8.2
+          "tier_score": 7
         },
         {
           "id": "glm-5.1-go",
@@ -115,7 +115,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Near-frontier reasoning at flat rate.",
-          "tier_score": 8.5
+          "tier_score": 10
         },
         {
           "id": "mimo-v2-pro-go",
@@ -126,7 +126,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Agentic coding at flat rate.",
-          "tier_score": 7.5
+          "tier_score": 5
         },
         {
           "id": "glm-5.1",
@@ -137,7 +137,7 @@
           "cost": "usage",
           "cost_amt": 1.4,
           "notes": "Nearly on par with frontier models for reasoning-heavy tasks.",
-          "tier_score": 8.5
+          "tier_score": 9
         },
         {
           "id": "kimi-k2.6",
@@ -148,7 +148,7 @@
           "cost": "usage",
           "cost_amt": 0.95,
           "notes": "Superior needle-in-haystack at 1M tokens; rarely forgets context.",
-          "tier_score": 8.3
+          "tier_score": 8
         },
         {
           "id": "minimax-m2.7",
@@ -159,7 +159,7 @@
           "cost": "usage",
           "cost_amt": 0.3,
           "notes": "Smartest-for-price on Zen; rivals high-end reasoning at low cost.",
-          "tier_score": 8.0
+          "tier_score": 6
         },
         {
           "id": "qwen3.6-plus",
@@ -170,7 +170,7 @@
           "cost": "usage",
           "cost_amt": 0.5,
           "notes": "Highly consistent for coding; excellent at complex system prompts.",
-          "tier_score": 7.8
+          "tier_score": 5
         },
         {
           "id": "mimo-v2-pro",
@@ -181,7 +181,7 @@
           "cost": "usage",
           "cost_amt": 0.7,
           "notes": "Top agentic model; reliable for routine coding.",
-          "tier_score": 7.5
+          "tier_score": 4
         }
       ]
     },
@@ -198,7 +198,7 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Cascade free tier. Solid all-rounder for multi-file refactors.",
-          "tier_score": 7.2
+          "tier_score": 10
         },
         {
           "id": "deepseek-v4-flash",
@@ -209,7 +209,7 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Gold standard for free models; punches above its weight in coding.",
-          "tier_score": 7.0
+          "tier_score": 9
         },
         {
           "id": "glm-5-go",
@@ -220,7 +220,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Stable repo maintenance at flat rate.",
-          "tier_score": 7.0
+          "tier_score": 9
         },
         {
           "id": "mimo-v2.5-go",
@@ -231,7 +231,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. General coding at flat rate.",
-          "tier_score": 6.8
+          "tier_score": 8
         },
         {
           "id": "glm-5",
@@ -242,7 +242,7 @@
           "cost": "usage",
           "cost_amt": 1.0,
           "notes": "Stable for everyday repo maintenance and structured coding.",
-          "tier_score": 7.0
+          "tier_score": 8
         },
         {
           "id": "mimo-v2.5",
@@ -253,7 +253,7 @@
           "cost": "usage",
           "cost_amt": 0.5,
           "notes": "Great for general coding tasks.",
-          "tier_score": 6.8
+          "tier_score": 7
         },
         {
           "id": "minimax-m2.5",
@@ -264,7 +264,7 @@
           "cost": "usage",
           "cost_amt": 0.3,
           "notes": "Slightly less clever than M2.7; identical context handling.",
-          "tier_score": 6.5
+          "tier_score": 6
         },
         {
           "id": "gemini-3-flash",
@@ -275,7 +275,7 @@
           "cost": "usage",
           "cost_amt": 0.5,
           "notes": "Exceptional speed and context; struggles with complex agentic loops.",
-          "tier_score": 6.5
+          "tier_score": 5
         }
       ]
     },
@@ -292,7 +292,7 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Cascade free tier. Fast, cheap; good for simple scripts and tests.",
-          "tier_score": 5.8
+          "tier_score": 9
         },
         {
           "id": "nemotron-3-super",
@@ -303,7 +303,7 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Strong instruction following; less creative on debugging.",
-          "tier_score": 5.5
+          "tier_score": 8
         },
         {
           "id": "mimo-v2-omni",
@@ -314,7 +314,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Multi-modal optimized; 512K context.",
-          "tier_score": 6.0
+          "tier_score": 10
         },
         {
           "id": "qwen3.5-plus",
@@ -325,7 +325,7 @@
           "cost": "usage",
           "cost_amt": 0.2,
           "notes": "Very cheap; notably less agentic than 3.6.",
-          "tier_score": 4.5
+          "tier_score": 7
         }
       ]
     },
@@ -342,7 +342,7 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Cascade free tier. Ultra-fast; log summarization and single-line edits.",
-          "tier_score": 4.0
+          "tier_score": 10
         },
         {
           "id": "big-pickle",
@@ -353,7 +353,7 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Large free context; reasoning inconsistent for complex codebases.",
-          "tier_score": 2.5
+          "tier_score": 5
         },
         {
           "id": "ring-2.6-1t",
@@ -364,7 +364,7 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Basic script translation and data extraction only.",
-          "tier_score": 2.0
+          "tier_score": 3
         },
         {
           "id": "gpt-5.4-nano",
@@ -375,7 +375,7 @@
           "cost": "usage",
           "cost_amt": 0.2,
           "notes": "Extremely fast; single-file edits and log summarization only.",
-          "tier_score": 3.5
+          "tier_score": 8
         }
       ]
     }
