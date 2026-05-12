@@ -136,6 +136,9 @@ async function runChain(scripts, stdinJson, timeoutMs = 30_000) {
     // Early-exit on block decision (stop/pretooluse hooks may emit JSON block).
     if (/\"decision\"\s*:\s*\"block\"/.test(r.stdout)) break;
   }
+  // rationale: empty stderr on allow causes Claude Code to display a
+  // confusing "No stderr output" pseudo-error. A single space prevents it.
+  if (!combinedStderr && firstNonZeroCode === 0) combinedStderr = ' ';
   return { stdout: combinedStdout, stderr: combinedStderr, exit_code: firstNonZeroCode };
 }
 
