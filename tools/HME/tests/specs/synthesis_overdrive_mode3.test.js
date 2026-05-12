@@ -14,7 +14,9 @@ function _runPython(envOverrides, body) {
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od3-test-'));
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'config'), { recursive: true });
   fs.writeFileSync(path.join(sandbox, 'CLAUDE.md'), '# sandbox\n');
+  fs.copyFileSync(path.join(REPO, 'config', 'models.json'), path.join(sandbox, 'config', 'models.json'));
   let env = fs.readFileSync(path.join(REPO, '.env'), 'utf8');
   env = env.replace(/^PROJECT_ROOT=.*$/m, `PROJECT_ROOT=${sandbox}`);
   env = env.replace(/^([A-Z_]+_(TOKEN|KEY|SECRET|PASSWORD|AUTH|CREDENTIAL))=.*$/gm, '$1=REDACTED');
