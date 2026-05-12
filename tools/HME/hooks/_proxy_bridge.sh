@@ -328,19 +328,17 @@ fi
 if [ "${EXIT_CODE:-0}" = "0" ] && [ -z "$STDERR" ]; then
   STDERR=" "
 fi
-# surface deny reasons: unified-policy exit-0 denials pass through unchanged.
-# Shell-hook exit-2 denials: extract reason, convert to exit 0 + hookSpecificOutput.
-# Also write to tmp/ so proxy middleware can replace "No stderr output".
+# extract deny reason from either shell-hook {decision:block,reason:...} at
+# exit 2 or unified-policy hookSpecificOutput at exit 0. Always convert to
+# exit 2 for blocking. Write reason to tmp/ for middleware surface.
 _PB_DENY_REASON=""
-if [ "${EXIT_CODE:-0}" != "0" ] && [ "$EVENT" = "PreToolUse" ]; then
-  _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
-  if [ -n "$_PB_DENY_REASON" ]; then
-    STDOUT=$(jq -nc --arg r "$_PB_DENY_REASON" \
-      '{hookSpecificOutput:{permissionDecision:"deny",permissionDecisionReason:$r}}')
-    EXIT_CODE=0
+if [ "$EVENT" = "PreToolUse" ]; then
+  if [ "${EXIT_CODE:-0}" != "0" ]; then
+    _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.reason // .message // empty' 2>/dev/null)
+  elif [ -n "$STDOUT" ]; then
+    _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+    [ -n "$_PB_DENY_REASON" ] && EXIT_CODE=2
   fi
-elif [ "${EXIT_CODE:-0}" = "0" ] && [ -n "$STDOUT" ] && [ "$EVENT" = "PreToolUse" ]; then
-  _PB_DENY_REASON=$(echo "$STDOUT" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
 fi
 if [ -n "$_PB_DENY_REASON" ] && [ -n "$_PB_ROOT" ]; then
   mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
