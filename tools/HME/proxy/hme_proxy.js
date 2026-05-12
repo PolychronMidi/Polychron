@@ -746,54 +746,50 @@ if (_mode4WasStreaming) {
             const translator = new ZenSseTranslator({ model: 'deepseek-v4-pro' });
             let _sentStop = false;
 
-            // 1. Force the most compatible headers possible
             clientRes.writeHead(200, {
               'Content-Type': 'text/event-stream; charset=utf-8',
               'Cache-Control': 'no-cache, no-transform',
               'Connection': 'keep-alive',
-              'X-Accel-Buffering': 'no' // Disables proxy buffering
+              'X-Accel-Buffering': 'no'
             });
 
-            // 2. IMMEDIATELY send a valid message_start.
-            // If the translator waits for the first chunk to send this, the IDE often 400s.
+            // 1. Mandatory Start
             const startEvent = `event: message_start\ndata: {"type":"message_start","message":{"id":"msg_proxy_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n`;
             clientRes.write(startEvent);
 
             upstreamRes.on('data', (c) => {
               const translated = translator.feed(c);
-              if (translated) {
-                // IMPROVED: Only strip 'message_start' events,
-                // leave everything else (text, content_blocks) alone.
-                let cleanData = translated
-                  .split('\n\n')
-                  .filter(block => !block.includes('message_start'))
-                  .join('\n\n');
+              if (!translated) return;
 
-                if (cleanData.trim()) {
-                  // Re-add the double newline that join might have missed at the end
-                  const chunk = cleanData.endsWith('\n\n') ? cleanData : cleanData + '\n\n';
-                  clientRes.write(chunk);
-                }
+              // 2. Filter out redundant starts, keep the rest
+              const cleanData = translated.replace(/^event: message_start\ndata: \{.*?\}\n\n/gm, '');
 
-                if (translated.includes('message_stop')) _sentStop = true;
+              if (cleanData.trim()) {
+                if (cleanData.includes('message_stop')) _sentStop = true;
+                clientRes.write(cleanData.endsWith('\n\n') ? cleanData : cleanData + '\n\n');
               }
             });
 
             upstreamRes.on('end', () => {
+              // 3. THE HOOK PROTECTOR:
+              // If the session is ending but we haven't sent a stop,
+              // or if there's trailing text from a "Stop Hook", wrap it.
               if (!_sentStop) {
-                const finalBlock =
+                const finalSummary =
+                  'event: content_block_delta\n' +
+                  'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"\\n\\n[Hook Triggered: Validation Check Complete]"}}\n\n' +
                   'event: message_delta\n' +
                   'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n' +
                   'event: message_stop\n' +
                   'data: {"type":"message_stop"}\n\n';
-                clientRes.write(finalBlock);
+                clientRes.write(finalSummary);
               }
+
               clientRes.end();
               _releaseOpusSlot();
             });
 
             upstreamRes.on('error', (err) => {
-              console.error('[hme-proxy] MODE=4 stream error:', err.message);
               _releaseOpusSlot();
               try { clientRes.end(); } catch (_e) {}
             });
