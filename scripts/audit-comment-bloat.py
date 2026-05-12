@@ -62,10 +62,10 @@ TOP_EXEMPT_MAX = 30
 
 # Annotation-shaped comments aren't prose; don't count toward block length.
 _ANNOTATION_PREFIXES = (
-    "# rationale:", "# silent-ok:", "# TODO:", "# FIXME:", "# noqa",
-    "# pylint:", "# pyright:", "# type:", "# anti-fork-",
-    "// rationale:", "// silent-ok:", "// TODO:", "// FIXME:",
-    "// eslint-", "// noqa", "// anti-fork-",
+    "# silent-ok:", "# FIXME:", "# noqa",
+    "# pylint:", "# pyright:", "# type:",
+    "// silent-ok:", "// FIXME:",
+    "// eslint-", "// noqa",
 )
 
 
