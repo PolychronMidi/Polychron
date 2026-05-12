@@ -40,16 +40,6 @@
           "notes": "Built for autonomous agents; 1M context, top agentic benchmarks."
         },
         {
-          "id": "claude-opus-4.7",
-          "name": "Claude Opus 4.7",
-          "maker": "Anthropic",
-          "provider": "cascade",
-          "max_context": 1048576,
-          "cost": "free",
-          "cost_amt": 0,
-          "notes": "Cascade free tier. Strongest reasoning; best for architecture and planning."
-        },
-        {
           "id": "gpt-5.2",
           "name": "GPT 5.2",
           "maker": "OpenAI",
