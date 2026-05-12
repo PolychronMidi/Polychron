@@ -69,13 +69,13 @@ async function runInlineFallback(event, stdinJson) {
   try {
     const r = await hookBridge.dispatchEvent(event, stdinJson);
     if (r.stderr && r.stderr.length > 0) {
-      process.stderr.write(`[hme-proxy] inline ${event} stderr:\n${r.stderr}\n`);
+      process.stderr.write(`inline ${event} stderr:\n${r.stderr}\n`);
     }
     if (r.stdout && r.stdout.length > 0) {
-      process.stderr.write(`[hme-proxy] inline ${event} stdout:\n${r.stdout}\n`);
+      process.stderr.write(`inline ${event} stdout:\n${r.stdout}\n`);
     }
   } catch (err) {
-    console.error(`[hme-proxy] inline ${event} failed: ${err.message}`);
+    console.error(`inline ${event} failed: ${err.message}`);
   }
 }
 
@@ -107,7 +107,7 @@ function handleLifecycleRoute(clientReq, clientRes) {
     // Log receipt so we can verify the forwarder path is active. Fallback
     // callers always run through inline (no POST) so this log existing =
     // Claude Code's hook system is reaching us.
-    console.error(`[hme-proxy] /hme/lifecycle received event=${event} (${stdin.length}B)`);
+    console.error(`/hme/lifecycle received event=${event} (${stdin.length}B)`);
     let _dispatchErr = null;
     let _result = null;
     try {
@@ -115,7 +115,7 @@ function handleLifecycleRoute(clientReq, clientRes) {
       json(200, _result);
     } catch (err) {
       _dispatchErr = err;
-      console.error(`[hme-proxy] lifecycle dispatch threw: ${err.message}`);
+      console.error(`lifecycle dispatch threw: ${err.message}`);
       json(500, { stdout: '', stderr: `dispatch error: ${err.message}`, exit_code: -1 });
     }
     // EXHAUSTIVE LIFECYCLE DUMP: every hook stdin + result -> blank-debug/
@@ -153,7 +153,7 @@ function handleLifecycleRoute(clientReq, clientRes) {
         dispatch_error: _dispatchErr ? { message: _dispatchErr.message, stack: _dispatchErr.stack } : null,
         proxy_pid: process.pid,
       }, null, 2));
-    } catch (_e) { console.error(`[hme-proxy] lifecycle dump failed: ${_e.message}`); }
+    } catch (_e) { console.error(`lifecycle dump failed: ${_e.message}`); }
   });
   clientReq.on('error', (err) => {
     if (!clientRes.headersSent) json(500, { error: err.message });

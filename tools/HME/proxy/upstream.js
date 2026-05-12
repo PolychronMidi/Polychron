@@ -58,7 +58,7 @@ function _loadPersistedValveState() {
     _valveTripped = true;
     _valveTrippedAt = s.trippedAt;
     _trippedSequence = s.sequence;
-    console.error(`[hme-proxy] inherited valve trip from prior process (sequence=${s.sequence}, ${Math.round((BACKOFF_SCHEDULE_MS[idx] - elapsed)/1000)}s remaining)`);
+    console.error(`inherited valve trip from prior process (sequence=${s.sequence}, ${Math.round((BACKOFF_SCHEDULE_MS[idx] - elapsed)/1000)}s remaining)`);
   } catch (_e) { /* no persisted state -- normal first boot */ }
 }
 
@@ -90,7 +90,7 @@ function isPassthroughMode() {
   if (elapsed >= _currentBackoffMs()) {
     _valveTripped = false;
     _clearPersistedValveState();
-    console.error(`[hme-proxy] valve auto-cleared after ${Math.round(elapsed/1000)}s backoff -- attempting proxy path on next request`);
+    console.error(`valve auto-cleared after ${Math.round(elapsed/1000)}s backoff -- attempting proxy path on next request`);
     emit({ event: 'proxy_emergency_cleared', source: 'emergency_valve', backoff_ms: _currentBackoffMs() });
     return false;
   }
@@ -104,7 +104,7 @@ function tripEmergencyValve(lastErr) {
   const backoffSec = Math.round(_currentBackoffMs() / 1000);
   const ts = new Date(_valveTrippedAt).toISOString();
   const banner = `PROXY 400/4xx ESCAPE HATCH TRIPPED -- proxy in PASSTHROUGH mode for ~${backoffSec}s (backoff sequence ${_trippedSequence + 1}/${BACKOFF_SCHEDULE_MS.length}, auto-clears after window). Upstream rejected a proxy-mutated request: ${lastErr}. If this re-trips quickly, inspect tmp/claude-400-payload-*.json and fix the proxy mutation.`;
-  console.error(`[hme-proxy] ${banner}`);
+  console.error(`${banner}`);
 
   // LIFESAVER channel: lifesaver_inject reads hme-errors.log per request.
   const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
@@ -191,7 +191,7 @@ async function refreshOauthToken() {
     if (parsed.refresh_token) creds.claudeAiOauth.refreshToken = parsed.refresh_token;
     if (parsed.expires_in) creds.claudeAiOauth.expiresAt = Date.now() + (parsed.expires_in * 1000);
     fs.writeFileSync(credsPath, JSON.stringify(creds), { mode: 0o600 });
-    console.error('[hme-proxy] OAuth token refreshed successfully');
+    console.error('OAuth token refreshed successfully');
     return parsed.access_token;
   })().finally(() => { _refreshPromise = null; });
   return _refreshPromise;

@@ -16,7 +16,7 @@ function _tryParseJson(buf, contextDesc) {
   try {
     return JSON.parse(text);
   } catch (err) {
-    console.error(`[hme-proxy] _tryParseJson(${contextDesc}): malformed JSON body: ${err.message} -- first 120 chars: ${trimmed.slice(0, 120)}`);
+    console.error(`_tryParseJson(${contextDesc}): malformed JSON body: ${err.message} -- first 120 chars: ${trimmed.slice(0, 120)}`);
     return null;
   }
 }
