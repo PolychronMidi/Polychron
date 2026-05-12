@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1528,
-      "updated_ts": 1778564280.9003975
+      "max_id": 1534,
+      "updated_ts": 1778565222.5396364
     }
   },
   {
     "id": 1523,
     "text": "Fix push blocked by 124MB node_modules file in git history",
-    "activeForm": "Fixing push blocked by 124MB file in git history",
-    "status": "in_progress",
-    "done": false,
+    "activeForm": "Fixing push blocked by 124MB node_modules file",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -21,15 +21,15 @@
     "tier": "E3"
   },
   {
-    "id": 1524,
-    "text": "Fix todos.json autocommit race (commit -a already applied, verify)",
-    "activeForm": "Fixing todos.json autocommit with commit -a",
-    "status": "in_progress",
-    "done": false,
+    "id": 1530,
+    "text": "Fix todos.json autocommit race (commit -a applied, verified working)",
+    "activeForm": "Fixing todos.json autocommit race condition",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778564280.9003522,
+    "ts": 1778565222.5395896,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -37,27 +37,13 @@
   {
     "id": 1519,
     "text": "Improve streak block error message to show count and reset instructions",
-    "activeForm": "Improving streak block error message clarity",
-    "status": "pending",
+    "activeForm": "Improving streak block error message",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
     "ts": 1778563934.4889789,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1520,
-    "text": "Fix Read tool content suppression after streak reset",
-    "activeForm": "Fixing Read tool content suppression after streak reset",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778563934.4889874,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -86,6 +72,20 @@
     "source": "native",
     "on_done": "",
     "ts": 1778563934.4890058,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1520,
+    "text": "Fix Read tool content suppression after streak reset",
+    "activeForm": "Fixing Read tool content suppression after streak reset",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778563934.4889874,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
