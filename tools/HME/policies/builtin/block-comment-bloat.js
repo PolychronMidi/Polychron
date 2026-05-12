@@ -43,7 +43,7 @@ function _scan(fp, content) {
     }
     if (isFirstContent) continue;  // file header comment
     if (ln.length >= LONG_LINE) return { type: 'LONG', len: ln.length };
-    if (_startsWithAnnotation(s)) {
+    if (_startsWithAnnotation(s, prefix)) {
       run = 0;
     } else {
       run += 1;
