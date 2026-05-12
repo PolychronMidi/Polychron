@@ -291,4 +291,7 @@ if [ -f "$_AUTO_TODO_REMINDER" ] && [ -s "$_AUTO_TODO_REMINDER" ]; then
   rm -f "$_AUTO_TODO_REMINDER"
 fi
 
+# clear stale deny reason temp file so it doesn't bleed into next turn's tool results
+rm -f "$PROJECT_ROOT/tmp/hme-last-deny-reason.txt" 2>/dev/null || true
+
 exit 0
