@@ -291,30 +291,32 @@ unset _PB_RECOVERY_TS 2>/dev/null
 # Parse response and relay.
 # 1. Check if the proxy output is valid JSON
 # Final response assembly using jq to ensure valid JSON structure
+# Final response assembly
 if echo "$RESP" | jq -e . >/dev/null 2>&1; then
-  # Proxy returned valid JSON
+  # Scenario A: Proxy returned valid JSON
   STDOUT=$(echo "$RESP" | jq -r '.stdout // ""')
   STDERR=$(echo "$RESP" | jq -r '.stderr // ""')
   EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0')
 
-  # Inject fallback if proxy output is blank to prevent "Stream ended" crash
-  if [ -z "$STDOUT" ]; then
+  # If STDOUT is literally empty or just whitespace, we MUST inject
+  # a valid Anthropic message object to prevent the "Stream ended" crash.
+  if [[ -z "${STDOUT// }" ]]; then
     STDOUT='{"type":"message","role":"assistant","content":[{"type":"text","text":"..."}],"model":"claude-3-5-sonnet-latest","stop_reason":"end_turn"}'
   fi
 
-  # Safely construct the final envelope
   jq -n \
     --arg out "$STDOUT" \
     --arg err "$STDERR" \
     --argjson code "$EXIT_CODE" \
     '{stdout: $out, stderr: $err, exit_code: $code}'
 else
-  # Proxy returned raw text (pending/error/etc)
-  NULL_MSG='{"type":"message","role":"assistant","content":[{"type":"text","text":"Continuing..."}],"model":"claude-3-5-sonnet-latest","stop_reason":"end_turn"}'
+  # Scenario B: Proxy returned raw text (like "pending" or "Internal Error")
+  # We wrap this in a valid assistant message so the agent doesn't crash.
+  PENDING_MSG='{"type":"message","role":"assistant","content":[{"type":"text","text":"[Proxy: Action Pending...]"}],"model":"claude-3-5-sonnet-latest","stop_reason":"end_turn"}'
 
   jq -n \
-    --arg out "$NULL_MSG" \
-    --arg err "Proxy response was not valid JSON. Injected null message." \
+    --arg out "$PENDING_MSG" \
+    --arg err "Proxy returned non-JSON: $RESP" \
     '{stdout: $out, stderr: $err, exit_code: 0}'
 fi
 
