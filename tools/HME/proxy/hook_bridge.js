@@ -241,14 +241,7 @@ async function dispatchEvent(eventName, stdinJson) {
     case 'UserPromptSubmit':
       return runChain([path.join(LIFECYCLE, 'userpromptsubmit.sh')], empty);
     case 'Stop': {
-      // Stop chain runs via the proxy-native policy evaluator (stop_chain/).
-      // Each stage is a JS module returning {decision, reason}; the
-      // evaluator aggregates with first-deny-wins + instruct-accumulate
-      // semantics. Bash stages are wrapped via shell_policy so an `exit 0`
-      // from a child process cannot bypass the chain (the failure mode that
-      // killed the previous chain mid-flight). Pure JS for the gates that
-      // emit blocks; transitional shell wrappers for the side-effect-heavy
-      // stages until they get ported.
+      // stop_chain evaluator: first-deny-wins, shell stages wrapped via shell_policy
       const stopChain = require('./stop_chain');
       const result = await stopChain.runStopChain(empty);
       // Dominance rewriter call REMOVED. Was: rewriteStopOutput(result.stdout)
