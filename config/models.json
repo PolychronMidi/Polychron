@@ -1,0 +1,279 @@
+{
+  "_meta": {
+    "version": "1.0.0-draft",
+    "description": "OVERDRIVE_MODE=5 model registry. Models ranked into 5 effort tiers (E5→E1). Within each tier: free models first (OpenCode Zen free + cascade free), then OpenCode Go (subscription), then OpenCode Zen non-free (usage-based).",
+    "providers": {
+      "opencode_zen_free": { "cost_model": "free" },
+      "opencode_go": { "cost_model": "subscription", "note": "$99/yr unlimited" },
+      "opencode_zen_usage": { "cost_model": "usage", "note": "per-token billed" },
+      "cascade_free": { "cost_model": "free", "note": "API cascade free tier" }
+    }
+  },
+
+  "tiers": {
+
+    "E5": {
+      "label": "Elite Frontier Reasoning",
+      "description": "Complex multi-file agentic tasks, architectural design, deep reasoning.",
+      "models": [
+        {
+          "id": "deepseek-v4-pro",
+          "name": "DeepSeek V4 Pro",
+          "maker": "DeepSeek",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 0.95,
+          "notes": "Repository-scale coding; deep logic and system architecture."
+        },
+        {
+          "id": "mimo-v2.5-pro",
+          "name": "MiMo V2.5-Pro",
+          "maker": "MiMo",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 0.85,
+          "notes": "Built for autonomous agents; 1M context, top agentic benchmarks."
+        },
+        {
+          "id": "claude-opus-4.7",
+          "name": "Claude Opus 4.7",
+          "maker": "Anthropic",
+          "provider": "cascade_free",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Cascade free tier. Strongest reasoning; best for architecture and planning."
+        },
+        {
+          "id": "gpt-5.2",
+          "name": "GPT 5.2",
+          "maker": "OpenAI",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 1.10,
+          "notes": "General-purpose frontier reasoning."
+        }
+      ]
+    },
+
+    "E4": {
+      "label": "Advanced Reasoning and Planning",
+      "description": "Complex tool-calling, multi-file edits, planning-heavy refactors.",
+      "models": [
+        {
+          "id": "minimax-m2.7",
+          "name": "MiniMax M2.7",
+          "maker": "MiniMax",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 0.30,
+          "notes": "Smartest-for-price on Zen; rivals high-end reasoning at low cost."
+        },
+        {
+          "id": "gemini-3-pro",
+          "name": "Gemini 3 Pro",
+          "maker": "Google",
+          "provider": "cascade_free",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Cascade free tier. Strong multi-modal; solid coding and planning."
+        },
+        {
+          "id": "claude-sonnet-4.5",
+          "name": "Claude Sonnet 4.5",
+          "maker": "Anthropic",
+          "provider": "cascade_free",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Cascade free tier. Strong coding with good speed/cost ratio."
+        },
+        {
+          "id": "qwen3.6-plus",
+          "name": "Qwen3.6 Plus",
+          "maker": "Qwen",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 0.50,
+          "notes": "Highly consistent for coding; excellent at complex system prompts."
+        },
+        {
+          "id": "kimi-k2.6",
+          "name": "Kimi K2.6",
+          "maker": "Kimi",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 0.95,
+          "notes": "Superior needle-in-haystack at 1M tokens; rarely forgets context."
+        },
+        {
+          "id": "glm-5.1",
+          "name": "GLM 5.1",
+          "maker": "GLM",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 1.40,
+          "notes": "Nearly on par with frontier models for reasoning-heavy tasks."
+        },
+        {
+          "id": "mimo-v2-pro",
+          "name": "MiMo V2-Pro",
+          "maker": "MiMo",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 0.70,
+          "notes": "Top agentic model; reliable for routine coding."
+        }
+      ]
+    },
+
+    "E3": {
+      "label": "Reliable Development Workhorses",
+      "description": "Standard feature development, refactoring, multi-file updates.",
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash",
+          "maker": "DeepSeek",
+          "provider": "opencode_zen_free",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Gold standard for free models; punches above its weight in coding."
+        },
+        {
+          "id": "minimax-m2.5",
+          "name": "MiniMax M2.5",
+          "maker": "MiniMax",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 0.30,
+          "notes": "Slightly less clever than M2.7; identical context handling."
+        },
+        {
+          "id": "glm-5",
+          "name": "GLM 5",
+          "maker": "GLM",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 1.00,
+          "notes": "Stable for everyday repo maintenance and structured coding."
+        },
+        {
+          "id": "mimo-v2.5",
+          "name": "MiMo V2.5",
+          "maker": "MiMo",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 0.50,
+          "notes": "Great for general coding tasks."
+        },
+        {
+          "id": "gemini-3-flash",
+          "name": "Gemini 3 Flash",
+          "maker": "Google",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 0.50,
+          "notes": "Exceptional speed and context; struggles with complex agentic loops."
+        }
+      ]
+    },
+
+    "E2": {
+      "label": "Fast Executors",
+      "description": "Unit tests, documentation, simple scripts, single-file edits.",
+      "models": [
+        {
+          "id": "nemotron-3-super",
+          "name": "Nemotron 3 Super",
+          "maker": "NVIDIA",
+          "provider": "opencode_zen_free",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Strong instruction following; less creative on debugging."
+        },
+        {
+          "id": "qwen3.5-plus",
+          "name": "Qwen3.5 Plus",
+          "maker": "Qwen",
+          "provider": "opencode_zen_usage",
+          "max_context": 1048576,
+          "cost": "usage",
+          "cost_amt": 0.20,
+          "notes": "Very cheap; notably less agentic than 3.6."
+        },
+        {
+          "id": "mimo-v2-omni",
+          "name": "MiMo V2-Omni",
+          "maker": "MiMo",
+          "provider": "opencode_zen_usage",
+          "max_context": 524288,
+          "cost": "usage",
+          "cost_amt": 0.40,
+          "notes": "Multi-modal optimized; 512K context."
+        }
+      ]
+    },
+
+    "E1": {
+      "label": "Haiku-Class Utilities",
+      "description": "High-speed, low-cost: log summarization, single-line edits, data extraction.",
+      "models": [
+        {
+          "id": "big-pickle",
+          "name": "Big Pickle",
+          "maker": "Pickle",
+          "provider": "opencode_zen_free",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Large free context; reasoning inconsistent for complex codebases."
+        },
+        {
+          "id": "ring-2.6-1t",
+          "name": "Ring 2.6 1T",
+          "maker": "Ring",
+          "provider": "opencode_zen_free",
+          "max_context": 1048576,
+          "cost": "free",
+          "cost_amt": 0,
+          "notes": "Basic script translation and data extraction only."
+        },
+        {
+          "id": "gpt-5.4-nano",
+          "name": "GPT 5.4 Nano",
+          "maker": "OpenAI",
+          "provider": "opencode_zen_usage",
+          "max_context": 524288,
+          "cost": "usage",
+          "cost_amt": 0.20,
+          "notes": "Extremely fast; single-file edits and log summarization only."
+        }
+      ]
+    }
+
+  },
+
+  "overdrive_routing": {
+    "E5": { "primary": "deepseek-v4-pro", "fallback": "claude-opus-4.7" },
+    "E4": { "primary": "minimax-m2.7", "fallback": "claude-sonnet-4.5" },
+    "E3": { "primary": "deepseek-v4-flash", "fallback": "gemini-3-flash" },
+    "E2": { "primary": "nemotron-3-super", "fallback": "qwen3.5-plus" },
+    "E1": { "primary": "big-pickle", "fallback": "gpt-5.4-nano" }
+  }
+}
