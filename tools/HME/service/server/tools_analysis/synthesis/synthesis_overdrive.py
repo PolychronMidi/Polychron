@@ -474,12 +474,12 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
     """OVERDRIVE_MODE dispatch -- MODE=1 default Opus->Sonnet; MODE>=2 callers pass
     chain_override to reuse this for per-model dispatch with max extended thinking.
 
-    Triggered when OVERDRIVE_MODE=1 in .env. Bypasses the free-tier cascade
+    Triggered when OVERDRIVE_MODE>=1 in .env. Bypasses the free-tier cascade
     and spends Claude Code subscription credits for highest-quality output.
-    Walks the model chain (Opus, Sonnet) in order: on rate-limit for the
-    current model, advances to the next; on any other failure (proxy down,
-    timeout, empty content, malformed response), returns None so the caller
-    falls through to the free cascade.
+    Walks the resolved chain in order: on rate-limit for the current model,
+    advances to the next; on any other failure (proxy down, timeout, empty
+    content, malformed response), returns None so the caller falls through
+    to the free cascade.
 
     OVERDRIVE_VIA_SUBAGENT=1 short-circuits direct API calls and routes
     through Claude Code's Agent tool instead (different rate-limit bucket --
