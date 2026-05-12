@@ -292,33 +292,36 @@ unset _PB_RECOVERY_TS 2>/dev/null
 # 1. Check if the proxy output is valid JSON
 # Final response assembly using jq to ensure valid JSON structure
 # Final response assembly
-if echo "$RESP" | jq -e . >/dev/null 2>&1; then
-  # Scenario A: Proxy returned valid JSON
-  STDOUT=$(echo "$RESP" | jq -r '.stdout // ""')
-  STDERR=$(echo "$RESP" | jq -r '.stderr // ""')
-  EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0')
+# Capture raw response to a temporary variable first
+RAW_RESP="$RESP"
 
-  # If STDOUT is literally empty or just whitespace, we MUST inject
-  # a valid Anthropic message object to prevent the "Stream ended" crash.
+# 1. TRAP: Check if RAW_RESP is actually JSON (starts with { and ends with })
+# This prevents the "Unexpected identifier 'I'" error caused by "Internal Server Error"
+if [[ "$RAW_RESP" =~ ^[[:space:]]*\{.*\}[[:space:]]*$ ]]; then
+  # It looks like JSON, let jq try to extract fields
+  STDOUT=$(echo "$RAW_RESP" | jq -r '.stdout // ""' 2>/dev/null)
+  STDERR=$(echo "$RAW_RESP" | jq -r '.stderr // ""' 2>/dev/null)
+  EXIT_CODE=$(echo "$RAW_RESP" | jq -r '.exit_code // 0' 2>/dev/null)
+
+  # If STDOUT is blank, provide the turn-ender to stop the "Stream ended" crash
   if [[ -z "${STDOUT// }" ]]; then
     STDOUT='{"type":"message","role":"assistant","content":[{"type":"text","text":"..."}],"model":"claude-3-5-sonnet-latest","stop_reason":"end_turn"}'
   fi
-
-  jq -n \
-    --arg out "$STDOUT" \
-    --arg err "$STDERR" \
-    --argjson code "$EXIT_CODE" \
-    '{stdout: $out, stderr: $err, exit_code: $code}'
 else
-  # Scenario B: Proxy returned raw text (like "pending" or "Internal Error")
-  # We wrap this in a valid assistant message so the agent doesn't crash.
-  PENDING_MSG='{"type":"message","role":"assistant","content":[{"type":"text","text":"[Proxy: Action Pending...]"}],"model":"claude-3-5-sonnet-latest","stop_reason":"end_turn"}'
-
-  jq -n \
-    --arg out "$PENDING_MSG" \
-    --arg err "Proxy returned non-JSON: $RESP" \
-    '{stdout: $out, stderr: $err, exit_code: 0}'
+  # 2. FALLBACK: It's raw text (Internal Server Error, pending, etc.)
+  STDOUT='{"type":"message","role":"assistant","content":[{"type":"text","text":"[Bridge: Proxy processing...]"}],"model":"claude-3-5-sonnet-latest","stop_reason":"end_turn"}'
+  STDERR="Bridge Warning: Received non-JSON response: $RAW_RESP"
+  EXIT_CODE=0
 fi
+
+# 3. Final Assembly: Build the envelope cli.js expects
+# We use jq --arg to ensure the $STDOUT string is correctly escaped for the agent
+jq -n \
+  --arg out "$STDOUT" \
+  --arg err "$STDERR" \
+  --argjson code "$EXIT_CODE" \
+  '{stdout: $out, stderr: $err, exit_code: $code}'
+
 
 # Validate exit_code is numeric -- otherwise default to 0 with a log entry.
 case "$EXIT_CODE" in
