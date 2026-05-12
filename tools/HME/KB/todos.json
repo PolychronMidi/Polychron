@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1727,
-      "updated_ts": 1778627035.2017064
+      "max_id": 1732,
+      "updated_ts": 1778627469.4933922
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 1721,
     "text": "E5a: Run mode2/3/4 tests to confirm no regression",
     "activeForm": "Running mode2/3/4 tests",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 1722,
     "text": "E5b: Compile verdict table and fix any drifted sites",
     "activeForm": "Compiling E5b verdict table and fixing drift",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
