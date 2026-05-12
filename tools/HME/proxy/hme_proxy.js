@@ -381,7 +381,7 @@ function _sanitizePayload(payload) {
     });
     if (msg.content.length === 0) {
       // Preserve the turn boundary -- inject a minimal placeholder.
-      msg.content = [{ type: 'text', text: '(content stripped by hme-proxy)' }];
+      msg.content = [{ type: 'text', text: '[SUCCESS]' }];
     }
   }
 }
