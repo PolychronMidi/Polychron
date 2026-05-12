@@ -2,34 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1522,
-      "updated_ts": 1778563934.4890077
+      "max_id": 1528,
+      "updated_ts": 1778564280.9003975
     }
   },
   {
-    "id": 1517,
-    "text": "Diagnose and fix GitLens push timeout (47 commits ahead, 177s timeout)",
-    "activeForm": "Diagnosing GitLens push timeout",
+    "id": 1523,
+    "text": "Fix push blocked by 124MB node_modules file in git history",
+    "activeForm": "Fixing push blocked by 124MB file in git history",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778563934.4889536,
+    "ts": 1778564280.9003358,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1518,
-    "text": "Fix persistent todos.json 'modified not staged' autocommit failure",
-    "activeForm": "Fixing persistent todos.json autocommit failure",
-    "status": "pending",
+    "id": 1524,
+    "text": "Fix todos.json autocommit race (commit -a already applied, verify)",
+    "activeForm": "Fixing todos.json autocommit with commit -a",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778563934.4889684,
+    "ts": 1778564280.9003522,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
