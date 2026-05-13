@@ -246,6 +246,7 @@ function _toolName(stdinJson) {
  */
 async function dispatchEvent(eventName, stdinJson) {
   const empty = stdinJson || '{}';
+  _recordLifecycleState(eventName, empty);
   switch (eventName) {
     case 'SessionStart':
       return runChain([path.join(LIFECYCLE, 'sessionstart.sh')], empty);
