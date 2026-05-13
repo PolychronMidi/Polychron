@@ -33,9 +33,7 @@ if [ -f "$PROJECT_ENV" ]; then
   set +a
 fi
 
-# Ensure the correct node binary is on PATH (nvm may not be loaded in
-# watchdog/supervisor sub-shells). Prefer the nvm v24 install if present;
-# fall back to whatever `which node` resolves.
+# Prefer nvm v24 node for watchdog/supervisor shells.
 _NODE_BIN="$(command -v node 2>/dev/null || echo node)"
 if [ -d "$HOME/.nvm/versions/node" ]; then
   _NVM_NODE=$(ls -d "$HOME/.nvm/versions/node/v24"*/bin/node 2>/dev/null | sort -V | tail -1)
