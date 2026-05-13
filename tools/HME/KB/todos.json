@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2034,
-      "updated_ts": 1778656524.4252245
+      "max_id": 2038,
+      "updated_ts": 1778656744.3613267
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2021,
     "text": "Add synthetic hook routing tests for requested hook classes",
     "activeForm": "Adding synthetic hook routing tests for requested hook classes",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 2022,
     "text": "Run focused hook tests and clean-room audits",
     "activeForm": "Running focused hook tests and clean-room audits",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
