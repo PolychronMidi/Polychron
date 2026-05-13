@@ -6,6 +6,19 @@ const STOP_HOOK_RE = /^Stop hook feedback:\n\[bash [^\]]+_proxy_bridge\.sh Stop\
 const STOP_HOOK_KEEP_RE = /MULTI-FLAG STOP|ADVISOR|SUMMARY_|LIVE-PROBE|VERIFICATION|PHASE GATE|CLAIM_WITHOUT_EVIDENCE/;
 const STOP_HOOK_COMPACT = 'Stop hook feedback: repeated auto-completeness/exhaust gate compacted by hme-proxy.';
 
+const RECENT_STOP_HOOKS = [];
+
+function _compactRepeatedStopHook(text) {
+  if (!STOP_HOOK_RE.test(text)) return null;
+  const fp = text.replace(/\d{4}-\d{2}-\d{2}T\S+/g, '<ts>').slice(0, 240);
+  const seen = RECENT_STOP_HOOKS.includes(fp);
+  RECENT_STOP_HOOKS.push(fp);
+  if (RECENT_STOP_HOOKS.length > 12) RECENT_STOP_HOOKS.shift();
+  if (seen) return STOP_HOOK_COMPACT;
+  if (!STOP_HOOK_KEEP_RE.test(text)) return STOP_HOOK_COMPACT;
+  return null;
+}
+
 function _stripFromContent(content) {
   if (!Array.isArray(content)) return 0;
   let stripped = 0;
@@ -17,8 +30,9 @@ function _stripFromContent(content) {
       stripped++;
       continue;
     }
-    if (STOP_HOOK_RE.test(block.text) && !STOP_HOOK_KEEP_RE.test(block.text)) {
-      block.text = STOP_HOOK_COMPACT;
+    const compactedStopHook = _compactRepeatedStopHook(block.text);
+    if (compactedStopHook) {
+      block.text = compactedStopHook;
       stripped++;
       continue;
     }
