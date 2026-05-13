@@ -453,6 +453,10 @@ function handleRequest(clientReq, clientRes) {
     _handlePreWriteCheckRoute(clientReq, clientRes);
     return;
   }
+  if (clientReq.url && clientReq.url.startsWith('/hme/session/')) {
+    _handleSessionStateRoute(clientReq, clientRes);
+    return;
+  }
   // Route MCP requests to the proxy-native MCP server.
   if (clientReq.url && clientReq.url.startsWith('/mcp')) {
     handleMcpRequest(clientReq, clientRes);
