@@ -105,6 +105,36 @@ function runInBackgroundRewrite(eventName, data, ctx) {
   return data;
 }
 
+function _normalizeReadInput(input) {
+  if (!input || typeof input !== 'object') return input;
+  const next = { ...input };
+  if (Object.prototype.hasOwnProperty.call(next, 'pages') && !String(next.pages || '').trim()) delete next.pages;
+  if (Number(next.limit) > 500) next.limit = 200;
+  return next;
+}
+
+function readInputNormalizeRewrite(eventName, data, ctx) {
+  const holds = _holdToolInput(ctx, 'read_hold', eventName, data, new Set(['Read']));
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') return data;
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'input_json_delta') {
+    const state = holds.get(data.index);
+    if (state) { state.partial += (data.delta.partial_json || ''); return null; }
+    return data;
+  }
+  if (eventName !== 'content_block_stop' || !data) return data;
+  const state = holds.get(data.index);
+  if (!state) return data;
+  holds.delete(data.index);
+  let input = null;
+  try { input = JSON.parse(state.partial); } catch (_e) { input = null; }
+  const finalInput = _normalizeReadInput(input);
+  const events = [];
+  if (finalInput) events.push(['content_block_delta', { type: 'content_block_delta', index: data.index, delta: { type: 'input_json_delta', partial_json: JSON.stringify(finalInput) } }]);
+  else if (state.partial) events.push(['content_block_delta', { type: 'content_block_delta', index: data.index, delta: { type: 'input_json_delta', partial_json: state.partial } }]);
+  events.push(['content_block_stop', data]);
+  return { events };
+}
+
 //  Rewriter: long-leading-sleep -> no-op-prefix rewrite
 //
 // Claude Code's built-in Bash safety filter rejects commands that start
