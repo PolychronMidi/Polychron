@@ -101,7 +101,7 @@ function _normalizeReadInput(input) {
 }
 
 function readInputNormalizeRewrite(eventName, data, ctx) {
-  const holds = _holdToolInput(ctx, 'read_hold', eventName, data, new Set(['Read']));
+  const holds = _holdToolInput(ctx, 'read_hold', eventName, data, READ_TOOL_NAMES);
   if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') return data;
   if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'input_json_delta') {
     const state = holds.get(data.index);
@@ -112,12 +112,7 @@ function readInputNormalizeRewrite(eventName, data, ctx) {
   const state = holds.get(data.index);
   if (!state) return data;
   holds.delete(data.index);
-  let input = null;
-  try { input = JSON.parse(state.partial); } catch (_e) { input = null; }
-  const finalInput = _normalizeReadInput(input);
-  const events = [];
-  if (finalInput) events.push(['content_block_delta', { type: 'content_block_delta', index: data.index, delta: { type: 'input_json_delta', partial_json: JSON.stringify(finalInput) } }]);
-  else if (state.partial) events.push(['content_block_delta', { type: 'content_block_delta', index: data.index, delta: { type: 'input_json_delta', partial_json: state.partial } }]);
+  const events = _emitHeldInput(state, data.index, _normalizeReadInput(_parseToolInput(state)));
   events.push(['content_block_stop', data]);
   return { events };
 }
