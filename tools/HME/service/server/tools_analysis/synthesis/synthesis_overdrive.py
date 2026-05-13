@@ -1,6 +1,6 @@
-"""Synthesis model dispatcher — everything routes through OmniRoute (port 20128).
+"""Synthesis model dispatcher -- everything routes through OmniRoute (port 20128).
 
-OmniRoute handles all provider-specific auth, compression, and Anthropic↔OpenAI
+OmniRoute handles all provider-specific auth, compression, and Anthropic<->OpenAI
 translation. Models are resolved per-tier from config/models.json.
 """
 import logging
@@ -200,7 +200,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     if system:
         payload["system"] = system
 
-    # Everything goes through OmniRoute — uniform compression, translation, auth.
+    # Everything goes through OmniRoute -- uniform compression, translation, auth.
     headers = {"Content-Type": "application/json", "anthropic-version": "2023-06-01"}
     headers["X-HME-Upstream"] = f"http://127.0.0.1:{_os.environ.get('HME_OMNIROUTE_PORT', '20128')}"
 

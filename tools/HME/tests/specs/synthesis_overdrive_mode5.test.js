@@ -209,7 +209,7 @@ print(json.dumps({
   const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
   assert.strictEqual(parsed.chain_is_none, true, 'empty models list => None chain');
   assert.strictEqual(parsed.overdrive_called, false,
-    'empty tier must skip overdrive — cascade fallthrough');
+    'empty tier must skip overdrive -- cascade fallthrough');
 });
 
 // Cascade fallback for empty chains covered by the "empty tier" test above.

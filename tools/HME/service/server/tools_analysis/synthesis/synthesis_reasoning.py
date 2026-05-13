@@ -341,7 +341,7 @@ def last_source() -> str | None:
     return _last_source
 
 
-# Overdrive chain: Opus→Sonnet rate-limit cascade. Override: OVERDRIVE_CHAIN env var.
+# Overdrive chain: Opus->Sonnet rate-limit cascade. Override: OVERDRIVE_CHAIN env var.
 _OVERDRIVE_CHAIN_DEFAULT = (
     "claude-opus-4-7",
     "claude-sonnet-4-6",
