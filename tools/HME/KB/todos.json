@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2521,
-      "updated_ts": 1778716398.135727
+      "max_id": 2527,
+      "updated_ts": 1778716538.31715
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2512,
     "text": "Fix unbound ANTHROPIC_KEY in live proxy smoke test",
     "activeForm": "Fixing unbound ANTHROPIC_KEY in live proxy smoke test",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,8 +52,8 @@
     "id": 2519,
     "text": "Remove tracked non-ASCII surfaced by ASCII audit",
     "activeForm": "Removing tracked non-ASCII surfaced by ASCII audit",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 2514,
     "text": "Investigate detector-chain 3 failures",
     "activeForm": "Investigating detector-chain 3 failures",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
