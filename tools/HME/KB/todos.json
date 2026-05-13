@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2202,
-      "updated_ts": 1778699535.6662014
+      "max_id": 2207,
+      "updated_ts": 1778699551.8577487
     }
   },
   {
     "id": 2198,
     "text": "Remove rogue subagent worktree metrics directory blocking autocommit",
     "activeForm": "Removing rogue subagent worktree metrics directory blocking autocommit",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2199,
     "text": "Implement hook execution ledger and report tool",
     "activeForm": "Implementing hook execution ledger and report tool",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
