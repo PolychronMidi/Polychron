@@ -323,7 +323,7 @@ async function dispatchEvent(eventName, stdinJson) {
       const unifiedRes = await _runUnifiedPolicies('PostToolUse', tool, empty);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;
       const scripts = [...UNIVERSAL_POSTTOOL, ...(POSTTOOL_SCRIPTS[tool] || [])];
-      return runChain(scripts, empty);
+      return runChain(scripts, empty, 30_000, 'PostToolUse');
     }
     default:
       return {
