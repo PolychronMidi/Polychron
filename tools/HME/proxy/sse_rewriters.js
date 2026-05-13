@@ -34,15 +34,28 @@ function _holdToolInput(ctx, key, eventName, data, names) {
   let holds = ctx.get(key);
   if (!holds) { holds = new Map(); ctx.set(key, holds); }
   if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') {
-    if (names.has(data.content_block.name)) {
-      holds.set(data.index, { id: data.content_block.id, name: data.content_block.name, partial: '', firstDeltaShape: null });
-    }
+    if (names.has(data.content_block.name)) holds.set(data.index, { id: data.content_block.id, name: data.content_block.name, partial: '' });
   }
   return holds;
 }
 
+function _inputDeltaEvent(index, partialJson) {
+  return ['content_block_delta', { type: 'content_block_delta', index, delta: { type: 'input_json_delta', partial_json: partialJson } }];
+}
+
+function _parseToolInput(state) {
+  try { return JSON.parse(state.partial); } catch (_e) { return null; }
+}
+
+function _emitHeldInput(state, index, input) {
+  const events = [];
+  if (input !== null) events.push(_inputDeltaEvent(index, JSON.stringify(input)));
+  else if (state.partial) events.push(_inputDeltaEvent(index, state.partial));
+  return events;
+}
+
 function runInBackgroundRewrite(eventName, data, ctx) {
-  const holds = _holdToolInput(ctx, 'bash_hold', eventName, data, new Set(['Bash']));
+  const holds = _holdToolInput(ctx, 'bash_hold', eventName, data, BASH_TOOL_NAMES);
 
   // Track Bash tool_use blocks -- start holding their deltas.
   if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') return data;
