@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1932,
-      "updated_ts": 1778641374.0980222
+      "max_id": 1935,
+      "updated_ts": 1778641379.6071227
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 1926,
     "text": "Synthesize top five Polychron/HME integration takeaways",
     "activeForm": "Synthesizing top five Polychron/HME integration takeaways",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
