@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import importlib
 import os
 import subprocess
 import sys
@@ -39,6 +40,32 @@ from pathlib import Path
 
 _DETECTOR_DIR = Path(__file__).parent
 
+
+
+def _registry_verdicts() -> dict[str, set[str]]:
+    with open(_DETECTOR_DIR / "registry.json", encoding="utf-8") as f:
+        reg = json.load(f)["detectors"]
+    out: dict[str, set[str]] = {}
+    for d in reg:
+        if d.get("deny"):
+            out.setdefault(d["module"], set()).add(d["fires_when"])
+    return out
+
+
+def _soft_verdicts() -> dict[str, set[str]]:
+    with open(_DETECTOR_DIR / "registry.json", encoding="utf-8") as f:
+        reg = json.load(f)["detectors"]
+    out: dict[str, set[str]] = {}
+    for d in reg:
+        if not d.get("deny"):
+            out.setdefault(d["module"], set()).add(d["fires_when"])
+    return out
+
+
+def _module_declared_verdicts(module_name: str) -> set[str]:
+    mod = importlib.import_module(module_name)
+    declared = getattr(mod, "DECLARED_VERDICTS", None)
+    return set(declared or {"ok"})
 
 def _assistant_msg(text: str) -> dict:
     """Real Claude Code transcript shape: type='assistant', message.content=[...]."""
@@ -1172,6 +1199,9 @@ def main() -> int:
 
     rows = []
     fails = 0
+    registry_verdicts = _registry_verdicts()
+    soft_verdicts = _soft_verdicts()
+    checked_verdicts: dict[str, set[str]] = {}
     for case in _CASES:
         # 4-tuple: (det, name, events, expected). 5-tuple adds env_overrides.
         detector, scenario, events, expected, *rest = case
@@ -1185,6 +1215,23 @@ def main() -> int:
         rows.append((ok, detector, scenario, expected, got))
         if not ok:
             fails += 1
+        if expected != "ok":
+            checked_verdicts.setdefault(detector, set()).add(expected)
+
+    declared_failures = []
+    for module_name, verdicts in registry_verdicts.items():
+        missing = verdicts - checked_verdicts.get(module_name, set())
+        if missing:
+            declared_failures.append(f"{module_name}: untested deny verdicts {sorted(missing)}")
+    declared_or_soft = {m: set(v) for m, v in registry_verdicts.items()}
+    for module_name, verdicts in soft_verdicts.items():
+        declared_or_soft.setdefault(module_name, set()).update(verdicts)
+    for module_name in {d for d, *_ in _CASES}:
+        emitted = _module_declared_verdicts(module_name) - {"ok"}
+        undeclared = emitted - declared_or_soft.get(module_name, set())
+        if undeclared:
+            declared_failures.append(f"{module_name}: undeclared verdicts {sorted(undeclared)}")
+    fails += len(declared_failures)
 
     # Print table
     print(f"{'status':<6} {'detector':<22} {'scenario':<28} {'expected':<22} got")
@@ -1193,7 +1240,12 @@ def main() -> int:
         mark = "PASS" if ok else "FAIL"
         print(f"{mark:<6} {det:<22} {scen:<28} {exp:<22} {got}")
     print("-" * 110)
-    print(f"{len(rows) - fails}/{len(rows)} PASS" if fails == 0 else f"{fails}/{len(rows)} FAIL")
+    for msg in declared_failures:
+        print(f"FAIL   registry               verdict-coverage             expected-declared     {msg}")
+    row_fails = sum(1 for ok, *_ in rows if not ok)
+    total_checks = len(rows) + len(declared_failures)
+    passed = len(rows) - row_fails
+    print(f"{passed}/{total_checks} PASS" if fails == 0 else f"{fails}/{total_checks} FAIL")
 
     if args.verbose and fails:
         print("\nFailures:")
