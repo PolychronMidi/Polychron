@@ -20,6 +20,8 @@ source "${_HME_HELPERS_DIR}/_signals.sh"
 # to the hook script that sourced _safety.sh (not a sub-helper).
 _HME_HOOK_START_NS="$(date +%s%N)"
 _HME_HOOK_NAME="$(basename "${BASH_SOURCE[1]:-unknown}" .sh)"
+_HME_HOOK_EVENT="${HME_HOOK_EVENT:-hook}"
+_HME_HOOK_EXIT_CODE=0
 _HME_HOOK_VERDICT=""
 
 # 4) Tunable constants -- set before any sub-file references them.
