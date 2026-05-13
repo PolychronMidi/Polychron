@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1872,
-      "updated_ts": 1778639705.4218807
+      "max_id": 1876,
+      "updated_ts": 1778639749.872575
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 1867,
     "text": "Update SPEC for detector metadata split",
     "activeForm": "Updating SPEC for detector metadata split",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,8 +52,8 @@
     "id": 1868,
     "text": "Run verification and clean-room checks",
     "activeForm": "Running verification and clean-room checks",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
