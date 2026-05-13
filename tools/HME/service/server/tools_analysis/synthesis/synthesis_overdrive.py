@@ -268,7 +268,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     # -- spawns a fresh claude subprocess per call. No context accumulation.
     try:
         from .agent_direct import dispatch_direct as _direct
-        direct_result = _direct(prompt, system, max_tokens, subagent_type=subagent_type)
+        direct_result = _direct(prompt, system, max_tokens, subagent_type=subagent_type, tier=tier)
         if direct_result:
             return (direct_result, "overdrive/direct-agent")
     except Exception as _dir_err:
