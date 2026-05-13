@@ -123,3 +123,19 @@ test('compl-round2-skip: long response containing "nothing missed" mid-sentence 
     const result = await policy.run(ctx2);
     assert.strictEqual(result.decision, 'deny', 'long response -> round 2 still fires (length gate prevents false skip)');
   }));
+
+
+test('work_checks: advisor_silently_skipped verdict denies with advisor reason',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'runtime', 'hme'), { recursive: true });
+    const verdicts = path.join(sandbox, 'runtime', 'hme', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'ADVISOR_DOCTRINE=advisor_silently_skipped\n');
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix the detector registry' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.ok(result.reason.includes('ADVISOR DOCTRINE (E4/E5 floor)'));
+  }));
