@@ -255,7 +255,11 @@ async function dispatchEvent(eventName, stdinJson) {
       return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty);
     case 'PreToolUse': {
       const tool = _toolName(empty);
-      // rationale: unified JS policies run before shell gates; first deny short-circuits
+      if (['Write', 'Edit', 'MultiEdit'].includes(tool)) {
+        const decision = await preWriteCheck(empty);
+        const stdout = toHookResponse(decision);
+        if (decision.permissionDecision !== 'allow') return { stdout, stderr: ' ', exit_code: 0 };
+      }
       const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;
       const scripts = PRETOOL_SCRIPTS[tool] || [];
