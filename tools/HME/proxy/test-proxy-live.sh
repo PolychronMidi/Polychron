@@ -86,11 +86,11 @@ test_provider() {
 echo " Anthropic (default upstream) "
 if [ "${OVERDRIVE_MODE:-0}" = "5" ]; then
   echo "  SKIP: OVERDRIVE_MODE=5 (Anthropic-free -- live Anthropic test suppressed)"
-elif [ -z "$ANTHROPIC_KEY" ]; then
+elif [ -z "${ANTHROPIC_KEY:-}" ]; then
   echo "  SKIP: no ANTHROPIC_API_KEY in env (Claude Code manages its own key)"
 else
   test_provider "anthropic" "" \
-    "x-api-key: $ANTHROPIC_KEY" \
+    "x-api-key: ${ANTHROPIC_KEY}" \
     "/v1/messages" \
     '{"model":"claude-haiku-4-5-20251001","max_tokens":10,"messages":[{"role":"user","content":"Say OK"}]}' \
     '"type":"message"|"text"'
