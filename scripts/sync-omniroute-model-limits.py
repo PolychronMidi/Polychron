@@ -52,9 +52,14 @@ def _candidates(model: dict) -> list[str]:
     mid = model.get("id", "")
     provider = model.get("provider", "")
     raw = mid[:-3] if mid.endswith("-go") else mid
-    vals = [mid, raw]
-    if provider:
-        vals.append(f"{provider}/{raw}")
+    raws = [raw] + MODEL_ALIASES.get(raw, [])
+    providers = [provider] + PROVIDER_ALIASES.get(provider, [])
+    vals = [mid]
+    for item in raws:
+        vals.append(item)
+        for prov in providers:
+            if prov:
+                vals.append(f"{prov}/{item}")
     return vals
 
 
