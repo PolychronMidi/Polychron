@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Read tool result truncation — prevents context bloat from gargantuan
+ * Read tool result truncation -- prevents context bloat from gargantuan
  * multi-thousand-line file reads. Limits enforced:
  *   - 200 lines per Read call (HME_READ_LIMIT_PER_CALL)
  *   - 600 lines per file cumulative (HME_READ_LIMIT_PER_FILE)
