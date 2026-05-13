@@ -14,15 +14,7 @@
 // sees HME tool_uses (the proxy handles dispatch internally and strips them
 // from the response before forwarding). No restoration needed.
 
-//  Rewriter: Bash run_in_background -> /hme/spawn
-// Holds all `content_block_delta` events for a Bash tool_use until the
-// corresponding `content_block_stop`, parses the accumulated input, and if
-// run_in_background=true, replaces the command with a synchronous curl to
-// /hme/spawn (proxy's TTL-bounded spawn endpoint). Emits one synthetic
-// delta carrying the rewritten input, then the original stop event.
-//
-// Claude Code runs the curl as a normal (non-background) Bash call, gets
-// the spawn id as the tool_result, and never fires a task-notification.
+// Bash run_in_background -> /hme/spawn; avoids task-notification spam.
 
 const SPAWN_URL = 'http://127.0.0.1:9099/hme/spawn';
 
@@ -135,28 +127,7 @@ function readInputNormalizeRewrite(eventName, data, ctx) {
   return { events };
 }
 
-//  Rewriter: long-leading-sleep -> no-op-prefix rewrite
-//
-// Claude Code's built-in Bash safety filter rejects commands that start
-// with `sleep N` (where N is large) to prevent the agent from burning
-// wall-clock on a blind wait. The rejection looks like:
-//   "Blocked: sleep 60 followed by: ... To wait for a condition, use
-//    Monitor with an until-loop ... Do not chain shorter sleeps"
-// That tool_use_error interrupts the agent with a full round-trip of
-// context overhead (the agent has to read the error, understand the
-// suggestion, and re-issue). Instead, rewrite the command silently at
-// the SSE layer so Claude Code never trips the block.
-//
-// Strategy: prefix leading `sleep N` with a no-op command so the leading
-// token is `:` (true), not sleep. The pattern `sleep N; CMD` or
-// `sleep N && CMD` becomes `: ; sleep N; CMD` -- semantically identical,
-// no command deleted or reordered, leading token is `:`.
-//
-// Trigger: command starts with `sleep <integer>` followed by `;`, `&&`,
-// `||`, or `|`. Also handles compound statements inside `bash -c`/`sh -c`.
-// Agent-initiated short sleeps (sleep 2 / sleep 5) are not rewritten --
-// Claude Code's filter targets long waits only, and rewriting every
-// small sleep would be noisy. Threshold: leading sleep >= 10s -> rewrite.
+// Long leading sleep -> no-op prefix; preserves semantics while avoiding CLI block.
 const LEADING_SLEEP_RE = /^\s*sleep\s+(\d+)\s*([;&|])/;
 const LEADING_SLEEP_MIN_REWRITE = 10;  // seconds
 
@@ -174,12 +145,7 @@ function _rewriteLongLeadingSleep(command) {
 }
 
 function longLeadingSleepRewrite(eventName, data, ctx) {
-  // Uses the same per-index hold pattern as runInBackgroundRewrite so
-  // both rewriters see the fully-assembled tool_use input on the stop
-  // event. They share the `bash_hold` ctx key, but both read-not-mutate
-  // the .partial string until content_block_stop -- safe to co-exist as
-  // long as we don't duplicate the emit logic. This rewriter ONLY runs
-  // on the stop event and only emits if it actually needs to rewrite.
+  // Mutates held Bash input before runInBackgroundRewrite emits it.
   if (eventName !== 'content_block_stop' || !data) return data;
   const holds = ctx.get('bash_hold');
   if (!holds) return data;
@@ -199,25 +165,7 @@ function longLeadingSleepRewrite(eventName, data, ctx) {
   return data;
 }
 
-// Rewriter: strip bare-ack text blocks when the request was a stop-hook
-// cascade. Context: the agent literally cannot emit zero bytes -- every
-// turn must contain content. When the prior user message is a stop-hook
-// deny payload (AUTO-COMPLETENESS / STOP-WORK / etc.) and the agent
-// emits "ok" (the silence-equivalent), the chat client still displays
-// "ok" because the proxy passes streaming text through verbatim. The
-// user's complaint: "ok" spam in the chat. Total proxy dominance lets us
-// strip those text blocks BEFORE they reach the chat client.
-//
-// Strategy: ack_strip rewriter watches text content_blocks. For each
-// text block it buffers deltas. On content_block_stop, if the assembled
-// text matches a bare-ack pattern AND ctx.priorUserWasDeny is true,
-// drop the entire block (all events: start, deltas, stop). Other text
-// blocks pass through verbatim.
-//
-// ctx.priorUserWasDeny is populated by the proxy at request-handling
-// time -- it scans the request payload's last user message for the
-// hook-payload markers and sets the flag before passing to the
-// rewriter chain.
+// Strip bare-ack text after stop-hook denies; silence-equivalent spam.
 const _ACK_PATTERNS = [
   /^\s*ok[.!]?\s*$/i,
   /^\s*done[.!]?\s*$/i,
@@ -251,14 +199,7 @@ function _isMinimalAck(text) {
   return false;
 }
 
-// Hallucinated turn-prefix detection. ANY assistant text block that
-// starts with `Human:` or `Assistant:` (case-sensitive on the H/A,
-// followed by colon) is the model fabricating a fresh turn boundary
-// inside its own response -- never legitimate. The previous version
-// only matched when the prefix was followed by `<system-reminder>` or
-// known stop-hook payload tokens; free-form fake user turns ("Human:
-// i am a sample user...") slipped past. Now: any prefix shape, with
-// or without trailing content, fires.
+// Drop assistant text that fabricates a `Human:` / `Assistant:` turn prefix.
 function _isHallucinatedTurnPrefix(text) {
   if (typeof text !== 'string') return false;
   // Pure prefix tokens: "Human:", "Assistant:", or repeated.
@@ -271,19 +212,7 @@ function _isHallucinatedTurnPrefix(text) {
   return false;
 }
 
-// Stop-hook ceremony-dodge detection. The advisor doctrine's escape
-// hatch ("the agent must explicitly justify why solo was right")
-// invites a class of long-form prose responses that exist only to
-// satisfy the gate -- "Solo-rationale: ..." / "Why solo was right: ..."
-// /  "Solo was the right call because ...". User flagged these as
-// "completely useless spam" -- they're ceremony in service of dodging
-// a stop-hook check, not substantive work. Always-illegitimate
-// (independent of priorUserWasDeny gate) -- belongs in the always-on
-// strip path alongside hallucinated turn prefixes.
-//
-// Conservative scope: only the literal doctrine-prompted phrasings.
-// Generic "Rationale:" / "Justification:" stays clear because users
-// can legitimately ask for those.
+// Drop literal solo-rationale ceremony; keep generic rationale requests intact.
 function _isCeremonyDodge(text) {
   if (typeof text !== 'string') return false;
   // Block-start anchor only. Trailing solo-rationale paragraphs in
@@ -361,13 +290,7 @@ function ackStripRewrite(eventName, data, ctx) {
       }
     }
     if (_isBareAck(text)) {
-      // Strip is the cure -- the chat client never sees this "ok".
-      // Write a structured stat line to a SEPARATE log (not errors.log)
-      // so frequency stays observable without lifesaver/status injectors
-      // re-surfacing it as an unresolved error every turn. The earlier
-      // "emit to errors.log so the agent diagnoses" design self-defeated:
-      // the strip already handles the user-visible spam, so the alert
-      // became its own coherence-noise spam.
+      // Log stats outside errors.log so stripped spam does not re-surface.
       try {
         const fs = require('fs');
         const path = require('path');
@@ -399,20 +322,7 @@ function ackStripRewrite(eventName, data, ctx) {
   return data;
 }
 
-// Anti-slop strip. 19 of the 29 patterns from
-// recursive-drift/templates/voice/anti-slop.md are implemented below.
-// The remaining 10 are out of regex scope (see _UNIMPLEMENTED_SLOP at
-// the bottom of this block for the list and reasons).
-//
-// Each entry is {re, repl, name}: `re` matches the slop phrase
-// (case-insensitive, multi-line aware), `repl` is the substitute
-// (usually `$1` -- preserve the leading sentence boundary, delete the
-// rest). `name` is the pattern label for the stat log.
-//
-// Capitalize-after rule: if the regex deletes a sentence prefix and
-// leaves the next word lowercase, the post-pass _capFix promotes the
-// first letter. Without this, "Let me be clear, the value is X" -> ", the
-// value is X" -> ", The value is X" via the cap fix.
+// Anti-slop strip; entries define regex, replacement, and stat label.
 const _SLOP_PATTERNS = [
   // #1 Narrator setup.
   { name: 'narrator_setup',
@@ -509,12 +419,7 @@ const _SLOP_PATTERNS = [
   { name: 'metaphor_stacking',
     re: /(\blike\s+[a-z][^,.;:!?]{0,40})\s*,\s*(?:like|as if)\s+[a-z][^,.;:!?]{0,40}(?:\s*,\s*(?:like|as if)\s+[a-z][^,.;:!?]{0,40})*/gi,
     repl: '$1' },
-  // #24 Numbered wisdom list. A run of numbered items where every item
-  // is a short, self-contained maxim (no verb-leading action, no
-  // continuation). Heuristic: 3+ consecutive lines of `\d+\.` where
-  // each line is <= 80 chars and ends with `.`. Drops the whole list
-  // -- the maxims rarely connect; if they did the agent should write
-  // a paragraph.
+  // #24 Numbered wisdom list: drop 3+ short standalone maxim items.
   { name: 'numbered_wisdom_list',
     re: /(?:^|\n)(?:\s*\d+\.\s+[A-Z][^.\n]{5,75}\.\s*\n){3,}/gm,
     repl: '\n' },
@@ -527,45 +432,13 @@ const _SLOP_PATTERNS = [
   { name: 'parallel_dramatic',
     re: /(\b(?:You|I|We|It|This|That|They)\b)([^.!?\n]{1,50}[.!?])\s+\1[^.!?\n]{1,50}[.!?]\s+\1[^.!?\n]{1,50}[.!?]/g,
     repl: '$1$2' },
-  // #15 Excessive bold. When a single text block has > 1 bold token
-  // per ~25 words, AI is highlighter-spamming. We can't selectively
-  // demote without judgment, so we only fire when the density is
-  // egregious (>= 6 bold tokens in <= 150 words = ~1 per 25 words)
-  // AND most of them are short single-word/phrase emphasis. When that
-  // matches, demote ALL bolds in the block to plain text. Conservative
-  // density threshold avoids damaging legitimate emphasis in normal
-  // prose. Implemented as a function-style rewrite below; the entry
-  // here is a sentinel so the strip pass invokes the function.
+  // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',
     re: null,  // handled in _stripExcessiveBold below
     repl: null },
 ];
 
-// Catalog patterns NOT implemented in code, with the structural reason
-// each one cannot run inside a per-content_block regex rewriter:
-//   #4  Bookend summary       -- compares the intro of a doc to the
-//                                conclusion; the proxy only ever sees a
-//                                single content_block at a time, never
-//                                an intro/conclusion pair.
-//   #5  Perfect section symmetry -- whole-doc layout analysis (length
-//                                ratios across sections); single-block
-//                                scope cannot see siblings.
-//   #6  Ascending list        -- comparison across list items requires
-//                                whole-list context; the SSE delta
-//                                stream emits list items piecemeal.
-//   #14 Overcomplicated tech detail -- audience-relative judgment; the
-//                                proxy has no reader model to compare
-//                                detail depth against.
-//   #16 Quotation marks for emphasis -- ambiguous with code (variable
-//                                names like "tool_use", file paths,
-//                                JSON strings). Auto-strip damages
-//                                tool-shape text more than it helps.
-//   #18 Obvious insight dressed up -- requires world model to know
-//                                what's obvious. No regex can reason
-//                                about novelty.
-// Recursive-drift's reference implementation auto-fixes ~5 patterns
-// (em-dash + a few authority phrases) and uses regenerate-on-fail for
-// the rest -- that pattern doesn't fit a passthrough proxy.
+// Catalog gaps: omitted patterns require whole-doc context or reader judgment.
 const _CATALOG_NOT_IN_CODE = ['#4', '#5', '#6', '#14', '#16', '#18'];
 
 function _capFix(s) {
@@ -574,11 +447,7 @@ function _capFix(s) {
   return s.replace(/(^|[.!?]\s+)([a-z])/g, (_m, lead, ch) => lead + ch.toUpperCase());
 }
 
-// #15 Excessive bold demoter. Counts `**X**` tokens; if density per
-// word exceeds threshold AND most bolds are short emphasis, strips
-// ALL `**` markers in the block. Non-trivial: we can't pick which
-// individual bolds are slop-emphasis vs real emphasis, so it's
-// all-or-nothing on the block, gated by density.
+// #15 Excessive bold demoter; all-or-nothing when density is egregious.
 function _stripExcessiveBold(text) {
   if (!text || typeof text !== 'string') return { out: text, hit: false };
   const boldRe = /\*\*([^*\n]{1,80})\*\*/g;
@@ -632,14 +501,7 @@ function _logSlopHits(hits, textPreview) {
   } catch (_e) { /* stat is best-effort */ }
 }
 
-// Always-on rewriter: buffer text content blocks, run _stripSlop on
-// the assembled text at content_block_stop, replay as a single
-// corrected delta. UX cost: text blocks land at block_stop instead of
-// streaming. Acceptable per explicit operator request.
-//
-// Independent of ackStripRewrite -- runs alongside it. ackStripRewrite
-// (priorUserWasDeny only) drops the whole block on bare-ack; this
-// rewriter modifies content of every text block.
+// Always-on text-block slop rewriter; replay corrected block at stop.
 function slopStripRewrite(eventName, data, ctx) {
   // Gated on priorUserWasDeny -- slop patterns mostly appear in stop-hook
   // follow-ups; normal turns stream freely.
@@ -686,15 +548,7 @@ function slopStripRewrite(eventName, data, ctx) {
   return data;
 }
 
-// Always-on whole-block drop for hallucinated turn-prefix shapes.
-// Independent of ackStripRewrite (priorUserWasDeny gate) and
-// slopStripRewrite (inline modifications). A `Human:` / `Assistant:`
-// prefix at the start of an assistant text block is never legitimate
-// regardless of conversational context -- the model is fabricating a
-// turn boundary inside its own response. Drop the whole block; the
-// chat client never sees the fake turn.
-// Lookahead-and-flush: only buffer until ~64 chars accumulated, decide,
-// then flush + stream rest directly. Restores token-by-token streaming.
+// Drop fake turn prefixes; decide after a short lookahead, then stream.
 const _TURN_PREFIX_LOOKAHEAD = 64;
 
 function hallucinatedTurnPrefixStripRewrite(eventName, data, ctx) {
@@ -775,25 +629,7 @@ function hallucinatedTurnPrefixStripRewrite(eventName, data, ctx) {
   return data;
 }
 
-// Full-spectrum stop-hook ceremony detector. Catches the WHOLE class of
-// "explain why the stop-hook misfired / doesn't apply / can be dismissed"
-// responses. This is the next layer beyond _isCeremonyDodge (which only
-// catches `Solo-rationale:` and explicit "why solo was right" framings).
-//
-// User intent: when the prior user message was a stop-hook payload AND
-// the agent's response is bypass-explanation rather than substantive
-// work, REPLACE the whole text with `.` and end the turn cleanly.
-// Saves the next-turn context burn of carrying the bypass prose
-// forward in the transcript.
-//
-// Gate: only fires when ctx.priorUserWasDeny is set (i.e. the prior
-// user message contained a stop-hook payload marker). Regular user
-// prompts that happen to mention "tier" or "doctrine" mid-prose are
-// not affected.
-//
-// Conservative match window: only the FIRST 200 chars of the assembled
-// text are scanned. A long substantive response that incidentally
-// mentions one of these tokens deeper in the body is not affected.
+// Stop-hook ceremony detector: replace bypass explanations with `.`.
 const _STOP_HOOK_CEREMONY_PATTERNS = [
   // Tier reclassification dance ("Tier reclassify per the doctrine...")
   /\btier\s+reclass\w*/i,
@@ -833,17 +669,7 @@ function _isStopHookCeremony(text) {
   return _STOP_HOOK_CEREMONY_PATTERNS.some((p) => p.test(lead));
 }
 
-// Always-active when ctx.priorUserWasDeny is set (i.e. prior user
-// message was a stop-hook payload). Buffers text content_blocks; on
-// stop, if the assembled text matches the ceremony shape, replaces
-// the entire block content with a single `.` delta AND sets a
-// truncated flag so all subsequent content events from upstream are
-// dropped (the upstream stream still completes via message_delta /
-// message_stop, but no further client-visible content is emitted).
-//
-// This is the user's "simulate stop button" semantic at the SSE
-// layer -- the model continues generating but the proxy stops
-// forwarding text after the first ceremony-shape block.
+// Stop-hook ceremony strip: emit `.`, then suppress later content events.
 function stopHookCeremonyStripRewrite(eventName, data, ctx) {
   if (!ctx.get('priorUserWasDeny')) return data;
 
@@ -917,18 +743,7 @@ function stopHookCeremonyStripRewrite(eventName, data, ctx) {
   return data;
 }
 
-// FP-CHECK marker handler. The companion to the chunk-level upstream
-// kill in hme_proxy.js. By the time SSE events reach this rewriter,
-// either (a) the upstream completed normally (no `[FP-CHECK: yes]`
-// emitted) or (b) the upstream was killed mid-stream after `[FP-CHECK:
-// yes]` was seen. In both cases this rewriter normalizes the
-// client-visible output:
-//   - `yes` marker present anywhere in first text block -> emit `.`,
-//     drop everything else
-//   - `no` marker on first line -> strip the marker line (and trailing
-//     newline), pass through the rest verbatim
-//   - marker missing -> agent ignored the fp-gate, fall through to
-//     existing ceremony detection (older stopHookCeremonyStripRewrite)
+// FP-CHECK marker handler: normalize yes/no markers before client display.
 function fpGateMarkerRewrite(eventName, data, ctx) {
   if (!ctx.get('priorUserWasDeny')) return data;
 
