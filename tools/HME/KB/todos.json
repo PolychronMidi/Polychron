@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1970,
-      "updated_ts": 1778642505.0163302
+      "max_id": 1973,
+      "updated_ts": 1778642509.0682492
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 1970,
     "text": "Summarize anchors and insertion points",
     "activeForm": "Summarizing anchors and insertion points",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
