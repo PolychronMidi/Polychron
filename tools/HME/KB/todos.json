@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2246,
-      "updated_ts": 1778701696.6094599
+      "max_id": 2249,
+      "updated_ts": 1778701746.1150498
     }
   },
   {
     "id": 2244,
     "text": "Add concise Bash tool description rewrite",
     "activeForm": "Adding concise Bash tool description rewrite",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2245,
     "text": "Extend middleware tests for Bash rewrite",
     "activeForm": "Extending middleware tests for Bash rewrite",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2246,
     "text": "Run scoped validation and clean-room checks",
     "activeForm": "Running scoped validation and clean-room checks",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
