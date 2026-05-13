@@ -54,10 +54,7 @@ def _claude_model_for_tier(tier: str) -> str:
     return _CLAUDE_MODEL_BY_TIER[_normalize_tier(tier)]
 
 
-# Per-process call counter + cap for thread dispatch. `claude --resume`
-# subprocesses bill silently with no organic choke. Mirror to
-# tmp/hme-buddy-call-count (see _count_file) with atomic rewrite + fsync
-# so restarts don't re-open budget; stale counts auto-expire after 24h.
+# Per-process cap for `claude --resume`; persisted count prevents restart-bypass.
 _DISPATCH_THREAD_CALL_COUNT = 0
 _DISPATCH_THREAD_CALL_CAP = int(os.environ.get("HME_THREAD_CALL_CAP", "50"))
 _DISPATCH_THREAD_COUNT_TTL_SEC = 24 * 3600
