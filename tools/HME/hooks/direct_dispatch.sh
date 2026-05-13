@@ -15,6 +15,13 @@ POSTTOOLUSE_DIR="$HOOKS_DIR/posttooluse"
 LIFECYCLE_DIR="$HOOKS_DIR/lifecycle"
 
 BODY=$(cat)
+if [ -f "$HOOKS_DIR/helpers/cwd_guard.sh" ]; then
+  # shellcheck disable=SC1090
+  source "$HOOKS_DIR/helpers/cwd_guard.sh"
+  if _hme_should_skip_for_nested_hooks "$EVENT" "$BODY"; then
+    exit 0
+  fi
+fi
 
 # Run a single bash hook with $BODY on stdin. Captures stdout, passes
 # stderr through. Returns the script's exit code.
