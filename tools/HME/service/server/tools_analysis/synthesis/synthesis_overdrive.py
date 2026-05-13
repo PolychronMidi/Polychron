@@ -168,7 +168,6 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
     base_url = _os.environ.get("ANTHROPIC_BASE_URL", "http://127.0.0.1:9099").rstrip("/")
 
-    # Read env-tunable knobs fresh per call; hme_env handles refresh policy.
     from . import synthesis_reasoning as _sr
     timeout_secs = _sr._overdrive_timeout()
     _provider = _resolve_model_provider(model_id)
