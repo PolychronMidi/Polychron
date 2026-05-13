@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2318,
-      "updated_ts": 1778708309.5676968
+      "max_id": 2320,
+      "updated_ts": 1778708416.8451617
     }
   },
   {
     "id": 2317,
     "text": "Populate models.json with synced limit fields",
     "activeForm": "Populating models.json with synced limit fields",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2318,
     "text": "Verify models.json contains new fields",
     "activeForm": "Verifying models.json contains new fields",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
