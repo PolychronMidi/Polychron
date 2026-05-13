@@ -170,18 +170,17 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
     # Read env-tunable knobs fresh per call; hme_env handles refresh policy.
     from . import synthesis_reasoning as _sr
-    budget = _sr._overdrive_think_budget()
     timeout_secs = _sr._overdrive_timeout()
     _provider = _resolve_model_provider(model_id)
     _limit, _output_limit = _context_limits_for(model_id)
     _reserve = 4096
     _max_output = _output_limit or max(256, _limit - _reserve)
-    _floor = min(budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK, _max_output)
-    resolved_max = min(max(max_tokens, _floor), _max_output)
+    resolved_max = min(max_tokens, _max_output)
+    budget = max(0, resolved_max - _sr._OVERDRIVE_MAX_TOKENS_SLACK)
     if resolved_max < max_tokens:
         logger.info(f"OVERDRIVE {model_id} max_tokens clamped {max_tokens}->{resolved_max} for cap {_limit}")
 
-    _drop_thinking = (budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK) > resolved_max
+    _drop_thinking = budget < 1024
 
     # Zen requires content-blocks form; Anthropic accepts both. Use blocks uniformly.
     _user_content = [{"type": "text", "text": prompt}]
