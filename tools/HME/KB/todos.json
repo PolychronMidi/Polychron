@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1879,
-      "updated_ts": 1778639910.957793
+      "max_id": 1882,
+      "updated_ts": 1778639963.8143303
     }
   },
   {
     "id": 1877,
     "text": "Implement highest-leverage SPEC item to avoid scope stacking",
     "activeForm": "Implementing highest-leverage SPEC item to avoid scope stacking",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 1878,
     "text": "Tick completed SPEC item with evidence-backed wording",
     "activeForm": "Ticking completed SPEC item with evidence-backed wording",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 1879,
     "text": "Verify registry/spec and answer next-suggestions question",
     "activeForm": "Verifying registry/spec and answering next-suggestions question",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
