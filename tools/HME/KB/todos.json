@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1774,
-      "updated_ts": 1778636570.831829
+      "max_id": 1778,
+      "updated_ts": 1778636609.2972565
     }
   },
   {
@@ -24,12 +24,26 @@
     "id": 1770,
     "text": "Trace why hook output is absent and errors are suppressed",
     "activeForm": "Tracing why hook output is absent and errors are suppressed",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778636423.5182981,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1777,
+    "text": "Update onboarding init behavior and regression tests",
+    "activeForm": "Updating onboarding init behavior and regression tests",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778636423.5182981,
+    "ts": 1778636609.2972453,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
