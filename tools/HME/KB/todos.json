@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2428,
-      "updated_ts": 1778711525.3386948
+      "max_id": 2431,
+      "updated_ts": 1778712322.7095861
     }
   },
   {
-    "id": 2426,
-    "text": "Run broad design-pattern/code-smell scan on recent HME additions",
-    "activeForm": "Running broad design-pattern/code-smell scan on recent HME additions",
+    "id": 2429,
+    "text": "Reconstruct current repo state and recent changes",
+    "activeForm": "Inspecting current repo state and recent changes",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778711525.338667,
+    "ts": 1778712322.7095559,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2427,
-    "text": "Apply targeted refactors for duplicated or brittle logic",
-    "activeForm": "Applying targeted refactors for duplicated or brittle logic",
+    "id": 2430,
+    "text": "Identify remaining integration gaps from prior request",
+    "activeForm": "Identifying remaining integration gaps from prior request",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778711525.3386815,
+    "ts": 1778712322.7095728,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2428,
-    "text": "Verify syntax, smoke tests, and audits",
-    "activeForm": "Verifying syntax, smoke tests, and audits",
+    "id": 2431,
+    "text": "Apply focused fixes and verify with tests/doctor",
+    "activeForm": "Applying focused fixes and verifying with tests/doctor",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778711525.3386922,
+    "ts": 1778712322.7095838,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
