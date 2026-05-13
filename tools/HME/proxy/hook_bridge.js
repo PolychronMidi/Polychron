@@ -125,7 +125,7 @@ function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') 
         env: { ...process.env, PROJECT_ROOT },
       });
     } catch (err) {
-      resolve({ stdout: '', stderr: `[hook_bridge] spawn failed for ${scriptPath}: ${err.message}`, exit_code: -1 });
+      resolve(_finishHook(eventName, scriptPath, startedAt, { stdout: '', stderr: `[hook_bridge] spawn failed for ${scriptPath}: ${err.message}`, exit_code: -1 }));
       return;
     }
     let stdout = '';
