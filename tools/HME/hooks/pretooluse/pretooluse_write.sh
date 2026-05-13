@@ -3,6 +3,11 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true
 # HME PreToolUse: Write -- enforce lab rules, block memory saves, detect secrets
 INPUT=$(cat)
+_DECISION=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const {preWriteCheck,toHookResponse}=require('${PROJECT_ROOT}/tools/HME/proxy/pre_write_check'); (async()=>{const d=await preWriteCheck(fs.readFileSync(0,'utf8')); process.stdout.write(toHookResponse(d));})().catch(e=>{process.stderr.write(e.stack||String(e)); process.exit(1);});" 2>/dev/null)
+if [ -n "$_DECISION" ]; then
+  printf '%s\n' "$_DECISION"
+  case "$_DECISION" in *'"permissionDecision":"deny"'*|*'"permissionDecision":"ask"'*) exit 0;; esac
+fi
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 CONTENT=$(_safe_jq "$INPUT" '.tool_input.content' '')
 
