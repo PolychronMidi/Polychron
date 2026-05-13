@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2111,
-      "updated_ts": 1778658448.069452
+      "max_id": 2116,
+      "updated_ts": 1778658552.3063931
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2089,
     "text": "Expand synthetic hook manifest and routing contract tests",
     "activeForm": "Expanding synthetic hook manifest and routing contract tests",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 2090,
     "text": "Add hook stdin normalization library and use it in pre-write path",
     "activeForm": "Adding hook stdin normalization library and using it in pre-write path",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
