@@ -1,5 +1,5 @@
 'use strict';
-// Regression: _onb_init resets to boot; preserves only in-progress states.
+// Regression: _onb_init re-arms each session; preserves only in-progress states.
 
 const { test } = require('node:test');
 const assert = require('node:assert');
