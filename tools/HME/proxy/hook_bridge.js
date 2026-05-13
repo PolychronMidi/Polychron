@@ -305,9 +305,6 @@ async function dispatchEvent(eventName, stdinJson) {
     case 'PostToolUse': {
       _recordPostToolEvidence(empty);
       const tool = _toolName(empty);
-      // Run unified registry's PostToolUse policies first (currently a
-      // small set; will grow as bash trackers migrate). Block decisions
-      // short-circuit the bash chain.
       const unifiedRes = await _runUnifiedPolicies('PostToolUse', tool, empty);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;
       const scripts = [...UNIVERSAL_POSTTOOL, ...(POSTTOOL_SCRIPTS[tool] || [])];
