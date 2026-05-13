@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2154,
-      "updated_ts": 1778698292.7198164
+      "max_id": 2157,
+      "updated_ts": 1778698314.1816087
     }
   },
   {
     "id": 2146,
     "text": "Resolve the reported rogue metrics directory blocking commits",
     "activeForm": "Resolving the reported rogue metrics directory blocking commits",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2147,
     "text": "Study AIPass-main for integration-worthy concepts",
     "activeForm": "Studying AIPass-main for integration-worthy concepts",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
