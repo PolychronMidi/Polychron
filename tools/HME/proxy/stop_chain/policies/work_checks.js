@@ -19,6 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('../../shared');
+const sessionState = require('../../session_state');
 
 const VERDICTS_FILE = path.join(RUNTIME_DIR, 'stop-detector-verdicts.env');
 const COMPL_FILE = path.join(RUNTIME_DIR, 'completeness-injected.json');
