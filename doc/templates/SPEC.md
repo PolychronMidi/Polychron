@@ -33,7 +33,7 @@ Classify every stop-side detector by contract type and add enough metadata that 
 - [ ] [E2] Define waiver semantics: `fixture_waiver` requires `review_date` and a one-line reason.
 - [ ] [E2] Define `owning_invariant` as a stable reference string to existing doctrine, invariant config, or devlog evidence.
 - [ ] [E2] Define `fixture_path` as project-root-relative; lists are allowed for multi-fixture detectors.
-- [ ] [E2] Document category meanings and promotion rules in the registry `_schema` block.
+- [x] Document category meanings and promotion rules in the registry `_schema` block. Evidence: added `category`, `scope`, `owning_invariant`, `fixture_path`, `fixture_waiver`, `why`, and `outage_link` schema entries to `tools/HME/scripts/detectors/registry.json`.
 - [ ] [E2] Preserve behavior: modules, verdicts, bash vars, deny flags, and reason keys remain unchanged.
 - [ ] [E2] Run detector-chain, registry-consistency, pre-commit, and clean-room audits as closure evidence.
 
