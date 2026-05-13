@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1778,
-      "updated_ts": 1778636609.2972565
+      "max_id": 1782,
+      "updated_ts": 1778636732.5984294
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 1777,
     "text": "Update onboarding init behavior and regression tests",
     "activeForm": "Updating onboarding init behavior and regression tests",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 1771,
     "text": "Report root cause with evidence and next fix options",
     "activeForm": "Reporting root cause with evidence and next fix options",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
