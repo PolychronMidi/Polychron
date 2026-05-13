@@ -200,9 +200,7 @@ _CASES = [
      ],
      "exhaust_violation"),
 
-    # exhaust_check -- substantive work rescue. A turn with >= 3
-    # Edit/Write/Bash-mutation calls is fixing things, not punting,
-    # even if closing prose contains a deferral-phrase regex match.
+    # Hot-reload narration after >=3 work calls is okay; remaining-work handoffs are not.
     ("exhaust_check", "substantive-work-suppresses-takes-effect",
      [
          _user_msg("apply the project-wide tweak"),
@@ -215,6 +213,22 @@ _CASES = [
          _assistant_msg("Hot-reload landed. The change takes effect on the next Stop event."),
      ],
      "ok"),
+
+    ("exhaust_check", "substantive-work-does-not-hide-remaining-hook-bug",
+     [
+         _user_msg("fix the onboarding hook"),
+         _assistant_tool_use("Edit", {"file_path": "/a.py",
+                                      "old_string": "x", "new_string": "y"}),
+         _assistant_tool_use("Edit", {"file_path": "/b.py",
+                                      "old_string": "x", "new_string": "y"}),
+         _assistant_tool_use("Write", {"file_path": "/c.py",
+                                       "content": "z"}),
+         _assistant_msg(
+             "Fixed onboarding init. One remaining issue:\n"
+             "- SessionStart still exits fail=1 and needs a separate fix."
+         ),
+     ],
+     "exhaust_violation"),
 
     # exhaust_check (b)-clause rescue: agent enumerates remaining items
     # but each one carries an explicit refusal-with-reason. The deny
