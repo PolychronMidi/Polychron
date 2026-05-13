@@ -166,7 +166,6 @@ const _PASSTHROUGH_COMPACT_KEEP_MIN = 4;
 let _lastInputTokensRemaining = null; // updated by response handler
 let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from headers
 let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
-let _lastPayloadBytes = 0;            // last OmniRoute payload size for context monitoring
 const _BYTES_PER_TOKEN_EST = 3.5;
 const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 40_000;
 function _effectiveCompactThreshold() {
@@ -229,50 +228,6 @@ async function _acquireOpusSlot() {
   };
 }
 
-// Context monitoring: injects anthropic-ratelimit-input-tokens-remaining header
-// to trigger Claude Code's native /compact when context approaches model limits.
-// OmniRoute translates Anthropic format bidirectionally, so /compact works on
-// any model. We just need to tell Claude Code when to trigger it.
-const _MODEL_CTX = {
-  'deepseek-v4-pro': 1048576, 'deepseek-v4-flash': 1048576,
-  'mimo-v2.5-pro': 1048576, 'mimo-v2-pro': 1048576,
-  'glm-5.1': 1048576, 'glm-5': 1048576,
-  'kimi-k2.6': 1048576, 'kimi-k2.5': 1048576,
-  'minimax-m2.7': 1048576, 'minimax-m2.5': 1048576,
-  'qwen3.6-plus': 1048576, 'qwen3.5-plus': 1048576,
-  'mistral-large-latest': 131072, 'gemini-2.5-flash': 1048576,
-  'llama-4-maverick': 1048576, 'llama-3.3-70b': 131072,
-};
-const _GPT55_CTX = 1050000;
-const _GPT53_CTX = 400000;
-const _DEFAULT_CTX = 200000;
-
-// Track last known context usage per session (updated from OmniRoute SSE comments).
-const _sessionCtxUsage = new Map(); // sid -> { tokensIn, modelCtx, ts }
-
-function _resolveModelCtx(modelId) {
-  if (modelId.includes('gpt-5.5')) return _GPT55_CTX;
-  if (modelId.includes('gpt-5.4') || modelId.includes('gpt-5.3') || modelId.includes('gpt-5.2')) return _GPT53_CTX;
-  for (const [k, v] of Object.entries(_MODEL_CTX)) {
-    if (modelId.includes(k)) return v;
-  }
-  return _DEFAULT_CTX;
-}
-
-function _injectContextHeader(headers, swapModel) {
-  const ctx = _resolveModelCtx(swapModel);
-  const estUsed = Math.ceil(_lastPayloadBytes / 3.5);
-  const remaining = Math.max(0, ctx - estUsed);
-  if (remaining < ctx * 0.25) {
-    headers['anthropic-ratelimit-input-tokens-remaining'] = String(remaining);
-    console.error(`[hme-proxy] context signal: ~${estUsed}/${ctx} tokens (${remaining} remaining) -> triggering /compact`);
-  }
-}
-
-// Strip the Claude Code identity sentence from the system prompt array
-// when routing to non-Anthropic models. This sentence ("You are Claude Code,
-// Anthropic's official CLI for Claude") is required by Claude Code for OAuth
-// but confuses GPT, DeepSeek, and other models that aren't actually Claude.
 function _stripClaudeIdentity(payload) {
   if (!payload || !Array.isArray(payload.system)) return;
   payload.system = payload.system.filter(block => {
@@ -618,20 +573,8 @@ function handleRequest(clientReq, clientRes) {
         if (process.env.HME_OMNIROUTE_PROVIDER) _omniProvider = process.env.HME_OMNIROUTE_PROVIDER;
 
         if (!_OMNIROUTE_OFF) {
-          // OmniRoute path (default) — keep Anthropic format.
-          // Stacked compression: RTK first (tool output truncation — shell, git, build,
-          // test, file reads), then Caveman (context condensation, dedup). Saves 78-95%
-          // of eligible tokens. Controlled by HME_OMNI_COMPRESSION env var.
-          const _compStrategy = process.env.HME_OMNI_COMPRESSION || 'stacked';
-          payload.compression = payload.compression || {};
-          payload.compression.enabled = true;
-          payload.compression.strategy = _compStrategy;
-          // Track payload size for context monitoring
-          _lastPayloadBytes = JSON.stringify(payload).length;
-          // Strip Claude Code identity block from system prompt before
-          // sending to non-Anthropic models ("You are Claude Code..." confuses
-          // GPT/DeepSeek). Claude Code requires it for OAuth fingerprinting
-          // but OmniRoute translates to the target format anyway.
+          // OmniRoute path (default). No per-request compression overrides —
+          // let the dashboard combo's compression settings do their job.
           _stripClaudeIdentity(payload);
           payload.model = `${_omniProvider}/${_swapModel}`;
           clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${_OMNIROUTE_PORT}`;
@@ -1065,9 +1008,6 @@ if (_mode4WasStreaming) {
         let fullBody = Buffer.concat(chunks);
         let status = upstreamRes.statusCode || 502;
         let headers = { ...upstreamRes.headers };
-        // Context monitoring: inject synthetic token-remaining header so
-        // Claude Code's native /compact fires before hitting model context limits.
-        if (_isMode4OmniRoute) _injectContextHeader(headers, _swapModel);
         // Capture Anthropic's rate-limit telemetry so the next request's
         // _shrinkForPassthrough can size the byte budget dynamically
         // instead of using the static 400KB ceiling. Header name per
