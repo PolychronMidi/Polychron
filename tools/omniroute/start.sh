@@ -76,9 +76,6 @@ else
 fi
 
 _REASONING_CONFIG="$PROJECT_ROOT/scripts/configure-omniroute-max-reasoning.py"
-if [ -x "$ _REASONING_CONFIG" ]; then
-  :
-fi
 if [ -x "$_REASONING_CONFIG" ]; then
   "$_REASONING_CONFIG" --port "$PORT" >/dev/null 2>&1 \
     && echo "[omniroute] max reasoning configured" \
