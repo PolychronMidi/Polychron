@@ -115,7 +115,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Repository-scale coding at flat rate.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "mimo-v2.5-pro-go",
@@ -126,7 +128,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Autonomous agent model at flat rate.",
-          "tier_score": 4
+          "tier_score": 4,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "deepseek-v4-pro",
@@ -137,7 +141,9 @@
           "cost": "usage",
           "cost_amt": 0.95,
           "notes": "Repository-scale coding; deep logic and system architecture.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "mimo-v2.5-pro",
@@ -148,7 +154,9 @@
           "cost": "usage",
           "cost_amt": 0.85,
           "notes": "Built for autonomous agents; 1M context, top agentic benchmarks.",
-          "tier_score": 4
+          "tier_score": 4,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "gpt-5.2",
@@ -159,7 +167,9 @@
           "cost": "usage",
           "cost_amt": 1.1,
           "notes": "General-purpose frontier reasoning.",
-          "tier_score": 4
+          "tier_score": 4,
+          "context_length": 400000,
+          "max_output_tokens": 8192
         },
         {
           "id": "gpt-5.5-xhigh",
@@ -170,7 +180,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Max reasoning effort, best for architecture/planning.",
-          "tier_score": 8
+          "tier_score": 8,
+          "context_length": 1050000,
+          "max_output_tokens": 128000
         },
         {
           "id": "gpt-5.5-high",
@@ -181,7 +193,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. High reasoning effort.",
-          "tier_score": 7
+          "tier_score": 7,
+          "context_length": 1050000,
+          "max_output_tokens": 128000
         }
       ]
     },
@@ -198,7 +212,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Balanced reasoning effort.",
-          "tier_score": 8
+          "tier_score": 8,
+          "context_length": 1050000,
+          "max_output_tokens": 128000
         },
         {
           "id": "gpt-5.5-low",
@@ -209,7 +225,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Fast frontier for simpler tasks. 1M context.",
-          "tier_score": 7
+          "tier_score": 7,
+          "context_length": 1050000,
+          "max_output_tokens": 128000
         },
         {
           "id": "gpt-5.4",
@@ -220,7 +238,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Strong general-purpose coding.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 400000,
+          "max_output_tokens": 8192
         },
         {
           "id": "gemini-2.5-pro",
@@ -242,7 +262,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Mistral free tier via OmniRoute. Strong reasoning at frontier level.",
-          "tier_score": 7
+          "tier_score": 7,
+          "max_output_tokens": 8192
         },
         {
           "id": "gemini-2.5-pro",
@@ -275,7 +296,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Near-frontier reasoning at flat rate.",
-          "tier_score": 7
+          "tier_score": 7,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "mimo-v2-pro-go",
@@ -297,7 +320,9 @@
           "cost": "usage",
           "cost_amt": 1.4,
           "notes": "Nearly on par with frontier models for reasoning-heavy tasks.",
-          "tier_score": 7
+          "tier_score": 7,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "kimi-k2.6",
@@ -308,7 +333,9 @@
           "cost": "usage",
           "cost_amt": 0.95,
           "notes": "Superior needle-in-haystack at 1M tokens; rarely forgets context.",
-          "tier_score": 7
+          "tier_score": 7,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "minimax-m2.7",
@@ -319,7 +346,9 @@
           "cost": "usage",
           "cost_amt": 0.3,
           "notes": "Smartest-for-price on Zen; rivals high-end reasoning at low cost.",
-          "tier_score": 6
+          "tier_score": 6,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "qwen3.6-plus",
@@ -330,7 +359,9 @@
           "cost": "usage",
           "cost_amt": 0.5,
           "notes": "Highly consistent for coding; excellent at complex system prompts.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "mimo-v2-pro",
@@ -352,7 +383,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Groq free tier. Strong general-purpose reasoning.",
-          "tier_score": 4
+          "tier_score": 4,
+          "max_output_tokens": 8192
         },
         {
           "id": "llama-4-scout-17b-16e-instruct",
@@ -402,7 +434,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Solid coding/review model.",
-          "tier_score": 8
+          "tier_score": 8,
+          "context_length": 400000,
+          "max_output_tokens": 8192
         },
         {
           "id": "gpt-5.3-codex-spark",
@@ -413,7 +447,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Fast spark variant for quick iterations.",
-          "tier_score": 8
+          "tier_score": 8,
+          "context_length": 400000,
+          "max_output_tokens": 8192
         },
         {
           "id": "gpt-5.4-mini",
@@ -424,7 +460,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Fast, lightweight.",
-          "tier_score": 7
+          "tier_score": 7,
+          "context_length": 400000,
+          "max_output_tokens": 8192
         },
         {
           "id": "gpt-4o-mini",
@@ -446,7 +484,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Gold standard for free models; punches above its weight in coding.",
-          "tier_score": 8
+          "tier_score": 8,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "codestral-latest",
@@ -457,7 +497,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Mistral free tier. Coding-specialized model.",
-          "tier_score": 5
+          "tier_score": 5,
+          "max_output_tokens": 8192
         },
         {
           "id": "mistral-medium-latest",
@@ -468,7 +509,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Mistral free tier. Balanced performance model.",
-          "tier_score": 6
+          "tier_score": 6,
+          "max_output_tokens": 8192
         },
         {
           "id": "gemini-2.5-flash",
@@ -512,7 +554,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Stable repo maintenance at flat rate.",
-          "tier_score": 9
+          "tier_score": 9,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "mimo-v2.5-go",
@@ -523,7 +567,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. General coding at flat rate.",
-          "tier_score": 7
+          "tier_score": 7,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "glm-5",
@@ -534,7 +580,9 @@
           "cost": "usage",
           "cost_amt": 1.0,
           "notes": "Stable for everyday repo maintenance and structured coding.",
-          "tier_score": 7
+          "tier_score": 7,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "mimo-v2.5",
@@ -545,7 +593,9 @@
           "cost": "usage",
           "cost_amt": 0.5,
           "notes": "Great for general coding tasks.",
-          "tier_score": 6
+          "tier_score": 6,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "minimax-m2.5",
@@ -556,7 +606,9 @@
           "cost": "usage",
           "cost_amt": 0.3,
           "notes": "Slightly less clever than M2.7; identical context handling.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "gemini-3-flash",
@@ -661,7 +713,9 @@
           "cost": "usage",
           "cost_amt": 0.2,
           "notes": "Very cheap; notably less agentic than 3.6.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "llama3.1-8b",
