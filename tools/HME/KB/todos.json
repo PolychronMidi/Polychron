@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1868,
-      "updated_ts": 1778639309.6475894
+      "max_id": 1872,
+      "updated_ts": 1778639705.4218807
     }
   },
   {
     "id": 1865,
     "text": "Trace autocommit rogue metrics policy mismatch",
     "activeForm": "Tracing autocommit rogue metrics policy mismatch",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 1866,
     "text": "Fix guard to allow canonical output metrics",
     "activeForm": "Fixing guard to allow canonical output metrics",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 1867,
     "text": "Update SPEC for detector metadata split",
     "activeForm": "Updating SPEC for detector metadata split",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
