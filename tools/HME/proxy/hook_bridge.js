@@ -298,7 +298,7 @@ async function dispatchEvent(eventName, stdinJson) {
     case 'PreCompact':
       return runChain([path.join(LIFECYCLE, 'precompact.sh')], empty, 30_000, 'PreCompact');
     case 'PostCompact':
-      return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty);
+      return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty, 30_000, 'PostCompact');
     case 'PreToolUse': {
       const tool = _toolName(empty);
       if (['Write', 'Edit', 'MultiEdit'].includes(tool)) {
