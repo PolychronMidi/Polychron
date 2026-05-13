@@ -119,15 +119,10 @@ def _last_user_text(events: list) -> str:
 
 
 def _is_research_evaluation_request(user_text: str) -> bool:
-    """True if the user's prompt this turn is unambiguously inviting
-    enumeration/evaluation as the deliverable. Scoped narrowly to avoid
-    false-suppression: a prompt that mixes "evaluate AND fix" does not
-    qualify -- the user wants the fix done, not just analyzed."""
+    """True when the user asked for enumeration/evaluation as the answer."""
     if not user_text:
         return False
-    # Disqualify if the prompt also explicitly asks for implementation. A
-    # request like "evaluate this AND build the top picks" is implementation
-    # work, not research; the deferral suppression must not apply.
+    # Implementation requests are not research/evaluation turns.
     impl_signal = re.search(
         r"\b(implement|build\s+(?!that\b)|integrate(?!\s+(would|might|could))|"
         r"add\s+(it|them|these)|wire\s+up|merge\s+in|land\s+(it|them|these)|"
