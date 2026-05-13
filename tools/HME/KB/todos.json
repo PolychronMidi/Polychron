@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2275,
-      "updated_ts": 1778702867.170211
+      "max_id": 2279,
+      "updated_ts": 1778703086.3622642
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 2271,
     "text": "Run scoped tests and clean-room checks",
     "activeForm": "Running scoped tests and clean-room checks",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
