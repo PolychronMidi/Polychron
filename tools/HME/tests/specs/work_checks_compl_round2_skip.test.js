@@ -75,7 +75,7 @@ test('compl-round2-skip: round 2 is suppressed when round-1 response was "Nothin
     const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
     // Pre-seed the COMPL counter to 1 (round 1 already fired) so this run
     // is the round-2 decision point.
-    const compl = path.join(sandbox, 'tmp', 'hme-completeness-injected.json');
+    const compl = path.join(sandbox, 'runtime', 'hme', 'completeness-injected.json');
     // The dedup key includes a hash of (turnIndex, prompt-text). Easier to
     // first invoke the policy once to advance the counter to 1, then a
     // second invocation simulates the round-2 firing.
