@@ -573,7 +573,7 @@ function handleRequest(clientReq, clientRes) {
         if (process.env.HME_OMNIROUTE_PROVIDER) _omniProvider = process.env.HME_OMNIROUTE_PROVIDER;
 
         if (!_OMNIROUTE_OFF) {
-          // OmniRoute path (default). No per-request compression overrides —
+          // OmniRoute path (default). No per-request compression overrides --
           // let the dashboard combo's compression settings do their job.
           _stripClaudeIdentity(payload);
           payload.model = `${_omniProvider}/${_swapModel}`;
