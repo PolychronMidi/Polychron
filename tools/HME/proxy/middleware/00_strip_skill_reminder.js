@@ -17,6 +17,11 @@ function _stripFromContent(content) {
       stripped++;
       continue;
     }
+    if (STOP_HOOK_RE.test(block.text) && !STOP_HOOK_KEEP_RE.test(block.text)) {
+      block.text = STOP_HOOK_COMPACT;
+      stripped++;
+      continue;
+    }
     const cleaned = block.text.replace(CONTEXT_TAIL_RE, '\n');
     if (cleaned !== block.text) {
       block.text = cleaned;
