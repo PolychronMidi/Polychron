@@ -32,6 +32,9 @@ _hme_log_hook_latency() {
   mkdir -p "$(dirname "$log_file")" 2>/dev/null
   printf '{"hook":"%s","duration_ms":%d,"ts":%s}\n' \
     "$_HME_HOOK_NAME" "$1" "$(date +%s)" >> "$log_file" 2>/dev/null
+  if type _hme_hook_ledger_append >/dev/null 2>&1; then
+    _hme_hook_ledger_append "${_HME_HOOK_EVENT:-hook}" "$_HME_HOOK_NAME" "${_HME_HOOK_EXIT_CODE:-0}" "$1" 0 0
+  fi
   # Rotate when log exceeds 10000 lines -- keeps last 5000
   local size
   size=$(wc -l < "$log_file" 2>/dev/null || echo 0)
