@@ -177,7 +177,7 @@ async function runChain(scripts, stdinJson, timeoutMs = 30_000) {
   let combinedStderr = '';
   let firstNonZeroCode = 0;
   for (const script of scripts) {
-    const r = await runHook(script, stdinJson, timeoutMs);
+    const r = await runHook(script, stdinJson, timeoutMs, eventName);
     combinedStdout += r.stdout;
     combinedStderr += r.stderr;
     if (r.exit_code !== 0 && firstNonZeroCode === 0) firstNonZeroCode = r.exit_code;
