@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1798,
-      "updated_ts": 1778637174.677028
+      "max_id": 1802,
+      "updated_ts": 1778637197.0396225
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 1789,
     "text": "Fix highest-leverage hook/check defects",
     "activeForm": "Fixing highest-leverage hook/check defects",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 1790,
     "text": "Run targeted hook tests and report evidence",
     "activeForm": "Running targeted hook tests and reporting evidence",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
