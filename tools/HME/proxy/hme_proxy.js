@@ -566,7 +566,7 @@ function handleRequest(clientReq, clientRes) {
         } catch (_) { /* keep defaults */ }
 
         // Strip -go suffix: models.json uses it as a local cost-tier marker;
-        // the actual OpenCode API rejects these (e.g. mimo-v2.5-pro-go → 400).
+        // the actual OpenCode API rejects these (e.g. mimo-v2.5-pro-go -> 400).
         if (_swapModel.endsWith('-go')) _swapModel = _swapModel.slice(0, -3);
 
         // Env override wins over auto-detection
