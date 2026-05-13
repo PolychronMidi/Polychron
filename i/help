@@ -99,7 +99,7 @@ for script in scripts:
         cat = entry.get("category", "uncategorized")
         desc = entry.get("description", "")
         # Drift warning: registry + header both present with materially different content.
-        if header_desc and desc and header_desc != desc and not header_desc.lower().startswith(desc.lower()[:30]) and not desc.lower().startswith(header_desc.lower()[:30]):
+        if check_drift and header_desc and desc and header_desc != desc and not header_desc.lower().startswith(desc.lower()[:30]) and not desc.lower().startswith(header_desc.lower()[:30]):
             print(f"  [drift] i/{script}: registry vs header disagree", file=sys.stderr)
     else:
         cat = "unregistered"
