@@ -1244,32 +1244,59 @@ if (_mode4WasStreaming) {
           // Verdict: visible to user? text_chars>0 OR tool_use blocks present.
           const _isBlank = _textChars === 0 && _toolUseBlocks === 0;
           const _verdict = _isBlank ? 'BLANK' : 'OK';
-          console.error(`[hme-proxy] dump verdict: ${_verdict} text=${_textChars} thinking=${_thinkingChars} tools=${_toolUseBlocks} stop=${_stopReason} sse=${_isSse} omni=${_isMode4OmniRoute} chain=${typeof _swapChain !== 'undefined' ? _swapChain.length : 'UNDEFINED'}`);
 
-          // MODE=4/5 OmniRoute: blank response -> advance model, emit retry error.
+          // MODE=4/5 OmniRoute: blank -> retry next model transparently.
           if (_isBlank && _isMode4OmniRoute && _swapChain.length > 1) {
             const _fs3 = require('fs');
             const _pth3 = require('path');
             const _stFile3 = _pth3.join(PROJECT_ROOT, 'tmp', 'hme-omni-swap-state.json');
-            let _st3 = { idx: 0, ts: 0, fail: 0 };
+            let _st3 = { idx: 0 };
             try { _st3 = JSON.parse(_fs3.readFileSync(_stFile3, 'utf8')); } catch (_) {}
-            _st3.idx = (_st3.idx + 1) % _swapChain.length;
-            _st3.ts = Date.now();
-            _st3.fail = (_st3.fail || 0) + 1;
-            _fs3.writeFileSync(_stFile3, JSON.stringify(_st3));
-            const _next3 = _swapChain[_st3.idx];
-            const _np3 = _next3.provider === 'codex' ? 'cx' : _next3.provider === 'opencode_go' ? 'opencode-go' : 'opencode';
-            let _nid3 = _next3.id;
-            if (_nid3.endsWith('-go')) _nid3 = _nid3.slice(0, -3);
-            console.error(`[hme-proxy] BLANK from ${_omniProvider}/${_swapModel} -> advanced to ${_np3}/${_nid3} (chain pos ${_st3.idx}/${_swapChain.length})`);
-            // Return a 503 so Claude Code retries; next request uses advanced model
-            outStatus = 503;
-            outBuf = Buffer.from(JSON.stringify({
-              type: 'error',
-              error: { type: 'overloaded_error', message: `Model ${_omniProvider}/${_swapModel} rate-limited. Retrying with next model in chain.` }
-            }));
-            delete outHeaders['content-type'];
-            outHeaders['content-type'] = 'application/json';
+
+            // Walk remaining chain models (sync, non-streaming)
+            for (let _ri = 1; _ri < _swapChain.length; _ri++) {
+              const _try = _swapChain[(_st3.idx + _ri) % _swapChain.length];
+              const _tp = _try.provider === 'codex' ? 'cx' : _try.provider === 'opencode_go' ? 'opencode-go' : 'opencode';
+              let _tid = _try.id;
+              if (_tid.endsWith('-go')) _tid = _tid.slice(0, -3);
+              const _rp = JSON.parse(JSON.stringify(payload));
+              _rp.model = `${_tp}/${_tid}`;
+              _rp.stream = false;
+              console.error(`[hme-proxy] BLANK retry ${_ri}: ${_omniProvider}/${_swapModel} -> ${_tp}/${_tid}`);
+              try {
+                const _rRes = await new Promise((resolve, reject) => {
+                  const _rr = transport.request({ ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(Buffer.byteLength(JSON.stringify(_rp))) } }, (res) => {
+                    const _cs = []; res.on('data', c => _cs.push(c));
+                    res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(_cs).toString('utf8') }));
+                    res.on('error', reject);
+                  });
+                  _rr.on('error', reject);
+                  _rr.write(JSON.stringify(_rp));
+                  _rr.end();
+                });
+                if (_rRes.status >= 200 && _rRes.status < 300) {
+                  try {
+                    const _rj = JSON.parse(_rRes.body);
+                    if (_rj.content && _rj.content.length > 0) {
+                      const _rt = _rj.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+                      if (_rt) {
+                        _st3.idx = (_st3.idx + _ri) % _swapChain.length;
+                        _st3.ts = Date.now();
+                        _st3.fail = 0;
+                        _fs3.writeFileSync(_stFile3, JSON.stringify(_st3));
+                        outStatus = _rRes.status;
+                        outBuf = Buffer.from(_rRes.body);
+                        outHeaders['content-type'] = 'application/json';
+                        delete outHeaders['transfer-encoding'];
+                        console.error(`[hme-proxy] BLANK retry OK: ${_tp}/${_tid} -> "${_rt.slice(0, 60)}"`);
+                        break;
+                      }
+                    }
+                  } catch (_) {}
+                }
+                console.error(`[hme-proxy] BLANK retry ${_tp}/${_tid}: still no content`);
+              } catch (_re) { console.error(`[hme-proxy] BLANK retry error: ${_re.message}`); }
+            }
           }
 
           const _ts = new Date().toISOString().replace(/[:.]/g, '-');
