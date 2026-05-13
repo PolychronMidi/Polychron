@@ -1,6 +1,7 @@
 'use strict';
 
 const SKILL_REMINDER_RE = /^<system-reminder>\nThe following skills are available for use with the Skill tool:[\s\S]*?\n<\/system-reminder>\n?$/;
+const CONTEXT_TAIL_RE = /\n# userEmail\nThe user's email address is [^\n]*\.\n# currentDate\nToday's date is \d{4}-\d{2}-\d{2}\.\n\n\s*IMPORTANT: this context may or may not be relevant to your tasks\. You should not respond to this context unless it is highly relevant to your task\.\n(?=<\/system-reminder>\n?$)/;
 
 function _stripFromContent(content) {
   if (!Array.isArray(content)) return 0;
@@ -8,9 +9,16 @@ function _stripFromContent(content) {
   for (let i = content.length - 1; i >= 0; i--) {
     const block = content[i];
     if (!block || block.type !== 'text' || typeof block.text !== 'string') continue;
-    if (!SKILL_REMINDER_RE.test(block.text)) continue;
-    content.splice(i, 1);
-    stripped++;
+    if (SKILL_REMINDER_RE.test(block.text)) {
+      content.splice(i, 1);
+      stripped++;
+      continue;
+    }
+    const cleaned = block.text.replace(CONTEXT_TAIL_RE, '\n');
+    if (cleaned !== block.text) {
+      block.text = cleaned;
+      stripped++;
+    }
   }
   return stripped;
 }
