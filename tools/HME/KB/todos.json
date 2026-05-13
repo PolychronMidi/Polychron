@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2217,
-      "updated_ts": 1778699903.2920995
+      "max_id": 2222,
+      "updated_ts": 1778699972.4014983
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 2201,
     "text": "Add CWD-aware hook guard support",
     "activeForm": "Adding CWD-aware hook guard support",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 2202,
     "text": "Run scoped validation and report evidence",
     "activeForm": "Running scoped validation and reporting evidence",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
