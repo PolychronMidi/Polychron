@@ -529,6 +529,7 @@ function handleRequest(clientReq, clientRes) {
             const _m = _tm.find(m => m.id === _id);
             if (_m) _swapChain.unshift(_m);
           }
+          console.error(`[hme-proxy] MODE=${_odMode} E5 chain built: ${_swapChain.map(m => m.id).join(' -> ')} (${_swapChain.length} models)`);
           // Pick from chain: first model, unless a recent failure advanced us.
           if (_swapChain.length > 0) {
             let _stIdx = 0;
@@ -1033,6 +1034,7 @@ if (_mode4WasStreaming) {
             const _isRateLimit = _errInfo.type === 'rate_limit_error';
 
             // MODE=4/5 OmniRoute fallback: advance to next model in E5 chain on failure.
+            console.error(`[hme-proxy] fallback probe: _isMode4OmniRoute=${_isMode4OmniRoute} chainLen=${_swapChain.length} _isRateLimit=${_isRateLimit} status=${status}`);
             if (_isMode4OmniRoute && _swapChain.length > 1) {
               const _fs = require('fs');
               const _pth = require('path');
