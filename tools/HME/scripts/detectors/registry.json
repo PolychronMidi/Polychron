@@ -106,6 +106,22 @@
       "reason_key": "ADVISOR_MISSING_PRE_BUILD"
     },
     {
+      "name": "advisor_missing_post_deliver",
+      "module": "advisor_doctrine",
+      "fires_when": "advisor_missing_post_deliver",
+      "bash_var": "ADVISOR_DOCTRINE",
+      "deny": true,
+      "reason_key": "ADVISOR_MISSING_POST_DELIVER"
+    },
+    {
+      "name": "advisor_silently_skipped",
+      "module": "advisor_doctrine",
+      "fires_when": "advisor_silently_skipped",
+      "bash_var": "ADVISOR_DOCTRINE",
+      "deny": true,
+      "reason_key": "ADVISOR_SILENTLY_SKIPPED"
+    },
+    {
       "name": "summary_missing",
       "module": "summary_format",
       "fires_when": "summary_missing",
