@@ -185,22 +185,23 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     from . import synthesis_reasoning as _sr
     budget = _sr._overdrive_think_budget()
     timeout_secs = _sr._overdrive_timeout()
+    _provider = _resolve_model_provider(model_id)
+    _limit = _context_limit_for(model_id, _provider)
+    _input_est = _estimate_tokens(prompt, system)
+    _safe_room = max(1, _limit - _input_est - 512)
 
-    # max_tokens MUST exceed thinking.budget_tokens. Raise the caller's
-    # value to budget+slack when it's too low.
-    _floor = budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK
-    resolved_max = max(max_tokens, _floor)
-    # Per-model output cap. Default 128K; no Claude-specific caps needed for MODE=5.
-    _cap = 128000
-    # If thinking budget would exceed the model's cap minus slack, disable thinking.
-    _drop_thinking = (budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK) > _cap
-    if resolved_max > _cap:
-        resolved_max = _cap
+    _floor = min(budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK, _safe_room)
+    resolved_max = min(max(max_tokens, _floor), _safe_room)
+    if resolved_max < 256:
+        logger.warning(f"OVERDRIVE {model_id} prompt too large for context cap {_limit} (input~{_input_est}t)")
+        return (None, False)
+    if resolved_max < max_tokens:
+        logger.info(f"OVERDRIVE {model_id} max_tokens clamped {max_tokens}->{resolved_max} for cap {_limit}")
+
+    _drop_thinking = (budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK) > resolved_max
 
     # Zen requires content-blocks form; Anthropic accepts both. Use blocks uniformly.
     _user_content = [{"type": "text", "text": prompt}]
-    # Resolve provider from models.json for OmniRoute routing
-    _provider = _resolve_model_provider(model_id)
     _api_model = model_id
     if _api_model.endswith("-go"):
         _api_model = _api_model[:-3]
