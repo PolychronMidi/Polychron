@@ -529,7 +529,7 @@ _CASES = [
      "ok",
      {"PHASE_GATE_TIER": "E3"}),
 
-    # pile_on -- 2+ NEW detector files (Write, not Edit) in one turn fires. Fixing existing detectors is consolidation, the OPPOSITE of pile-on, regardless of how many existing files the coherent fix touches.
+    # pile_on -- 2+ NEW detector writes fire; existing-detector edits are consolidation.
     ("pile_on", "two-new-detector-writes-fire",
      [
          _user_msg("add some new gates"),
@@ -541,7 +541,7 @@ _CASES = [
              "content": "y"}),
      ],
      "pile_on"),
-    # pile_on -- 2+ EDITS to existing detectors do NOT fire (consolidation, not stacking).
+    # pile_on -- 2+ existing-detector edits do NOT fire.
     ("pile_on", "two-detector-edits-pass",
      [
          _user_msg("fix existing gates"),
