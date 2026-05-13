@@ -48,7 +48,6 @@ function _stripFromContent(content) {
 module.exports = {
   name: 'strip_skill_reminder',
   onRequest({ payload, ctx }) {
-    if (process.env.HME_PROXY_LEAN_MODE === '1') return;
     if (!payload || !Array.isArray(payload.messages)) return;
     let stripped = 0;
     for (const msg of payload.messages) stripped += _stripFromContent(msg && msg.content);
