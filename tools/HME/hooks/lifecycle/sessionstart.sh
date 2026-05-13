@@ -158,7 +158,7 @@ LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)
 [ -n "$LAST_COMMIT" ] && MSG="$MSG\nLast commit: $LAST_COMMIT"
 
 ONB_STEP="$(_onb_step_label)"
-echo -e "HyperMeta Ecstasy active. Load skill: /HME\nOnboarding: $ONB_STEP$MSG" >&2
+echo -e "Onboarding: $ONB_STEP$MSG" >&2
 
 # Surface carried-over todos; log carry-over loader failures loudly.
 _SS_CARRY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_carry_err_$$")
