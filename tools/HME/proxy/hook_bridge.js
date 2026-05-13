@@ -30,6 +30,8 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
+const { preWriteCheck, toHookResponse } = require('./pre_write_check');
+const sessionState = require('./session_state');
 
 const HOOKS_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'hooks');
 const LIFECYCLE = path.join(HOOKS_DIR, 'lifecycle');
