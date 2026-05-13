@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2228,
-      "updated_ts": 1778700364.352898
+      "max_id": 2231,
+      "updated_ts": 1778701031.6032524
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2224,
     "text": "Resolve HME test failure surfaced during validation",
     "activeForm": "Resolving HME test failure surfaced during validation",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2225,
     "text": "Re-run validation and report evidence",
     "activeForm": "Re-running validation and reporting evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
