@@ -1244,6 +1244,76 @@ if (_mode4WasStreaming) {
           // Verdict: visible to user? text_chars>0 OR tool_use blocks present.
           const _isBlank = _textChars === 0 && _toolUseBlocks === 0;
           const _verdict = _isBlank ? 'BLANK' : 'OK';
+
+          // MODE=4/5 OmniRoute: blank response -> auto-retry with next model.
+          if (_isBlank && _isMode4OmniRoute && _swapChain.length > 1) {
+            const _fs3 = require('fs');
+            const _pth3 = require('path');
+            const _stFile3 = _pth3.join(PROJECT_ROOT, 'tmp', 'hme-omni-swap-state.json');
+            let _st3 = { idx: 0, ts: 0, fail: 0 };
+            try { _st3 = JSON.parse(_fs3.readFileSync(_stFile3, 'utf8')); } catch (_) {}
+            const _startIdx = _st3.idx || 0;
+            let _retryIdx = (_startIdx + 1) % _swapChain.length;
+            // Try each remaining model in the chain, up to chain length
+            for (let _attempt = 0; _attempt < _swapChain.length - 1; _attempt++) {
+              const _nextM = _swapChain[_retryIdx];
+              const _np2 = _nextM.provider === 'codex' ? 'cx' : _nextM.provider === 'opencode_go' ? 'opencode-go' : 'opencode';
+              let _nextModelId = _nextM.id;
+              if (_nextModelId.endsWith('-go')) _nextModelId = _nextModelId.slice(0, -3);
+              const _retryPayload = JSON.parse(JSON.stringify(payload));
+              _retryPayload.model = `${_np2}/${_nextModelId}`;
+              _retryPayload.stream = false; // non-streaming for retries
+              console.error(`[hme-proxy] BLANK retry ${_attempt + 1}/${_swapChain.length - 1}: ${_omniProvider}/${_swapModel} -> ${_np2}/${_nextModelId}`);
+              try {
+                const _retryReq = transport.request({ ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(Buffer.byteLength(JSON.stringify(_retryPayload))) } }, (_retryRes) => {
+                  const _rcs = [];
+                  _retryRes.on('data', (c) => _rcs.push(c));
+                  _retryRes.on('end', () => {
+                    const _rbody = Buffer.concat(_rcs).toString('utf8');
+                    try {
+                      const _rjson = JSON.parse(_rbody);
+                      const _rcontent = _rjson.content || [];
+                      const _rtext = _rcontent.filter(b => b.type === 'text').map(b => b.text).join('');
+                      if (_rtext.trim()) {
+                        // Success: use this response, update state
+                        _st3.idx = _retryIdx;
+                        _st3.ts = Date.now();
+                        _st3.fail = 0;
+                        _fs3.writeFileSync(_stFile3, JSON.stringify(_st3));
+                        clientRes.writeHead(200, { 'Content-Type': 'application/json' });
+                        clientRes.end(_rbody);
+                        console.error(`[hme-proxy] BLANK retry success: ${_np2}/${_nextModelId} answered (${_rtext.length}c)`);
+                        return;
+                      }
+                    } catch (_) {}
+                    // Still blank - advance
+                    _retryIdx = (_retryIdx + 1) % _swapChain.length;
+                    if (_attempt === _swapChain.length - 2) {
+                      // All exhausted - send original blank response
+                      _st3.idx = _retryIdx;
+                      _st3.ts = Date.now();
+                      _st3.fail = (_st3.fail || 0) + 1;
+                      _fs3.writeFileSync(_stFile3, JSON.stringify(_st3));
+                      clientRes.writeHead(outStatus, outHeaders);
+                      clientRes.end(outBuf);
+                      console.error('[hme-proxy] BLANK retry exhausted all models');
+                    }
+                  });
+                  _retryRes.on('error', () => { _retryIdx = (_retryIdx + 1) % _swapChain.length; });
+                });
+                _retryReq.on('error', () => { _retryIdx = (_retryIdx + 1) % _swapChain.length; });
+                _retryReq.write(JSON.stringify(_retryPayload));
+                _retryReq.end();
+                return; // async retry in progress - exit the sync blank-detection path
+              } catch (_re) { _retryIdx = (_retryIdx + 1) % _swapChain.length; }
+            }
+            // All retries failed - fall through to original blank response
+            _st3.idx = _retryIdx;
+            _st3.ts = Date.now();
+            _st3.fail = (_st3.fail || 0) + 1;
+            _fs3.writeFileSync(_stFile3, JSON.stringify(_st3));
+          }
+
           const _ts = new Date().toISOString().replace(/[:.]/g, '-');
           const _path_label = _isInteractivePath ? 'interactive' : 'sub';
           const _corrId = `${_ts}-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
