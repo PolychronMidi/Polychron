@@ -1,0 +1,25 @@
+{
+  "default": [
+    {
+      "models": [
+        { "name": "cx/*" },
+        { "name": "codex/*" },
+        { "name": "openai/*" }
+      ],
+      "params": { "reasoning_effort": "xhigh" }
+    },
+    {
+      "models": [
+        { "name": "claude*" },
+        { "name": "anthropic/*" },
+        { "name": "gemini*" },
+        { "name": "google/*" },
+        { "name": "*-thinking" }
+      ],
+      "params": { "thinkingLevel": "xhigh" }
+    }
+  ],
+  "override": [],
+  "filter": [],
+  "defaultRaw": []
+}
