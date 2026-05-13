@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2184,
-      "updated_ts": 1778698527.5917835
+      "max_id": 2188,
+      "updated_ts": 1778698544.413853
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 2160,
     "text": "Rank integration-worthy ideas for Polychron with evidence",
     "activeForm": "Ranking integration-worthy ideas for Polychron with evidence",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
