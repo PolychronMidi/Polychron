@@ -287,7 +287,7 @@ async function dispatchEvent(eventName, stdinJson) {
     case 'SessionStart':
       return runChain([path.join(LIFECYCLE, 'sessionstart.sh')], empty, 30_000, 'SessionStart');
     case 'UserPromptSubmit':
-      return runChain([path.join(LIFECYCLE, 'userpromptsubmit.sh')], empty);
+      return runChain([path.join(LIFECYCLE, 'userpromptsubmit.sh')], empty, 30_000, 'UserPromptSubmit');
     case 'Stop': {
       // stop_chain evaluator: first-deny-wins, shell stages wrapped via shell_policy
       const stopChain = require('./stop_chain');
