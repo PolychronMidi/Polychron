@@ -13,7 +13,8 @@
     "fixture_path": "project-root-relative fixture path or list of paths",
     "fixture_waiver": "optional waiver object; requires review_date and reason",
     "why": "one-line reason this detector exists",
-    "outage_link": "optional devlog, KB, issue, or incident path"
+    "outage_link": "optional devlog, KB, issue, or incident path",
+    "review_date": "required ISO date when fixture_waiver is present"
   },
   "detectors": [
     {
@@ -21,35 +22,68 @@
       "module": "poll_count",
       "fires_when": null,
       "bash_var": "POLL_COUNT",
-      "deny": false
+      "deny": false,
+      "category": "universal",
+      "scope": "stop-hook",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects stop-hook against poll count failures.",
+      "outage_link": null
     },
     {
       "name": "idle_after_bg",
       "module": "idle_after_bg",
       "fires_when": null,
       "bash_var": "IDLE_AFTER_BG",
-      "deny": false
+      "deny": false,
+      "category": "universal",
+      "scope": "stop-hook",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects stop-hook against idle after bg failures.",
+      "outage_link": null
     },
     {
       "name": "psycho_stop",
       "module": "psycho_stop",
       "fires_when": "psycho_stop",
       "bash_var": "PSYCHO_STOP",
-      "deny": false
+      "deny": false,
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against psycho stop failures.",
+      "outage_link": null
     },
     {
       "name": "ack_skip",
       "module": "ack_skip",
       "fires_when": "ack_skip",
       "bash_var": "ACK_SKIP",
-      "deny": false
+      "deny": false,
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against ack skip failures.",
+      "outage_link": null
     },
     {
       "name": "abandon_check",
       "module": "abandon_check",
       "fires_when": "abandon_check",
       "bash_var": "ABANDON_CHECK",
-      "deny": false
+      "deny": false,
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against abandon check failures.",
+      "outage_link": null
     },
     {
       "name": "stop_work",
@@ -57,21 +91,39 @@
       "fires_when": "DISMISSIVE",
       "bash_var": "STOP_WORK",
       "deny": true,
-      "reason_key": "STOP_WORK_DISMISSIVE"
+      "reason_key": "STOP_WORK_DISMISSIVE",
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against stop work failures.",
+      "outage_link": null
     },
     {
       "name": "fabrication_check",
       "module": "fabrication_check",
       "fires_when": "fabrication_check",
       "bash_var": "FABRICATION_CHECK",
-      "deny": false
+      "deny": false,
+      "category": "security",
+      "scope": "transcript",
+      "owning_invariant": "CONSTITUTION.md security and evidence-backed claims",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against fabrication check failures.",
+      "outage_link": null
     },
     {
       "name": "early_stop",
       "module": "early_stop",
       "fires_when": "early_stop",
       "bash_var": "EARLY_STOP",
-      "deny": false
+      "deny": false,
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against early stop failures.",
+      "outage_link": null
     },
     {
       "name": "exhaust_check",
@@ -79,7 +131,13 @@
       "fires_when": "exhaust_violation",
       "bash_var": "EXHAUST_CHECK",
       "deny": true,
-      "reason_key": "EXHAUST"
+      "reason_key": "EXHAUST",
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against exhaust check failures.",
+      "outage_link": null
     },
     {
       "name": "scope_escape",
@@ -87,14 +145,26 @@
       "fires_when": "scope_escape_violation",
       "bash_var": "SCOPE_ESCAPE",
       "deny": true,
-      "reason_key": "SCOPE_ESCAPE"
+      "reason_key": "SCOPE_ESCAPE",
+      "category": "project_contract",
+      "scope": "transcript",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against scope escape failures.",
+      "outage_link": null
     },
     {
       "name": "senior_consult_debt",
       "module": "senior_consult_debt",
       "fires_when": "consult-debt",
       "bash_var": "SENIOR_CONSULT_DEBT",
-      "deny": false
+      "deny": false,
+      "category": "project_contract",
+      "scope": "transcript",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against senior consult debt failures.",
+      "outage_link": null
     },
     {
       "name": "phantom_capability",
@@ -102,7 +172,16 @@
       "fires_when": "phantom_capability",
       "bash_var": "PHANTOM_CAPABILITY",
       "deny": true,
-      "reason_key": "PHANTOM_CAPABILITY"
+      "reason_key": "PHANTOM_CAPABILITY",
+      "category": "security",
+      "scope": "transcript",
+      "owning_invariant": "CONSTITUTION.md security and evidence-backed claims",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects transcript against phantom capability failures.",
+      "outage_link": null
     },
     {
       "name": "advisor_missing_pre_build",
@@ -110,7 +189,13 @@
       "fires_when": "advisor_missing_pre_build",
       "bash_var": "ADVISOR_DOCTRINE",
       "deny": true,
-      "reason_key": "ADVISOR_MISSING_PRE_BUILD"
+      "reason_key": "ADVISOR_MISSING_PRE_BUILD",
+      "category": "project_contract",
+      "scope": "transcript",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against advisor missing pre build failures.",
+      "outage_link": null
     },
     {
       "name": "advisor_missing_post_deliver",
@@ -118,7 +203,13 @@
       "fires_when": "advisor_missing_post_deliver",
       "bash_var": "ADVISOR_DOCTRINE",
       "deny": true,
-      "reason_key": "ADVISOR_MISSING_POST_DELIVER"
+      "reason_key": "ADVISOR_MISSING_POST_DELIVER",
+      "category": "project_contract",
+      "scope": "transcript",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against advisor missing post deliver failures.",
+      "outage_link": null
     },
     {
       "name": "advisor_silently_skipped",
@@ -126,7 +217,13 @@
       "fires_when": "advisor_silently_skipped",
       "bash_var": "ADVISOR_DOCTRINE",
       "deny": true,
-      "reason_key": "ADVISOR_SILENTLY_SKIPPED"
+      "reason_key": "ADVISOR_SILENTLY_SKIPPED",
+      "category": "project_contract",
+      "scope": "transcript",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against advisor silently skipped failures.",
+      "outage_link": null
     },
     {
       "name": "summary_missing",
@@ -134,7 +231,13 @@
       "fires_when": "summary_missing",
       "bash_var": "SUMMARY_FORMAT",
       "deny": true,
-      "reason_key": "SUMMARY_MISSING"
+      "reason_key": "SUMMARY_MISSING",
+      "category": "project_contract",
+      "scope": "transcript",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against summary missing failures.",
+      "outage_link": null
     },
     {
       "name": "live_probe",
@@ -142,7 +245,13 @@
       "fires_when": "live_probe_missing",
       "bash_var": "LIVE_PROBE",
       "deny": true,
-      "reason_key": "LIVE_PROBE_MISSING"
+      "reason_key": "LIVE_PROBE_MISSING",
+      "category": "security",
+      "scope": "transcript",
+      "owning_invariant": "CONSTITUTION.md security and evidence-backed claims",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against live probe failures.",
+      "outage_link": null
     },
     {
       "name": "phase_gate",
@@ -150,7 +259,13 @@
       "fires_when": "phase_skipped",
       "bash_var": "PHASE_GATE",
       "deny": true,
-      "reason_key": "PHASE_SKIPPED"
+      "reason_key": "PHASE_SKIPPED",
+      "category": "project_contract",
+      "scope": "transcript",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against phase gate failures.",
+      "outage_link": null
     },
     {
       "name": "pile_on",
@@ -158,7 +273,13 @@
       "fires_when": "pile_on",
       "bash_var": "PILE_ON",
       "deny": true,
-      "reason_key": "PILE_ON"
+      "reason_key": "PILE_ON",
+      "category": "project_contract",
+      "scope": "transcript",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against pile on failures.",
+      "outage_link": null
     },
     {
       "name": "claim_without_evidence",
@@ -166,7 +287,16 @@
       "fires_when": "claim_without_evidence",
       "bash_var": "CLAIM_WITHOUT_EVIDENCE",
       "deny": false,
-      "_note": "permanent soft-flag (reviewed 2026-05-10): same VSCode renderer reason as advisor_silently_skipped. Auditor exemption: non-temporal."
+      "_note": "permanent soft-flag (reviewed 2026-05-10): same VSCode renderer reason as advisor_silently_skipped. Auditor exemption: non-temporal.",
+      "category": "security",
+      "scope": "transcript",
+      "owning_invariant": "CONSTITUTION.md security and evidence-backed claims",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects transcript against claim without evidence failures.",
+      "outage_link": null
     },
     {
       "name": "fix_without_investigation",
@@ -174,7 +304,16 @@
       "fires_when": "fix_without_investigation",
       "bash_var": "FIX_WITHOUT_INVESTIGATION",
       "deny": true,
-      "reason_key": "FIX_WITHOUT_INVESTIGATION"
+      "reason_key": "FIX_WITHOUT_INVESTIGATION",
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects transcript against fix without investigation failures.",
+      "outage_link": null
     },
     {
       "name": "comment_bloat",
@@ -182,7 +321,16 @@
       "fires_when": "comment_bloat",
       "bash_var": "COMMENT_BLOAT",
       "deny": true,
-      "reason_key": "COMMENT_BLOAT"
+      "reason_key": "COMMENT_BLOAT",
+      "category": "universal",
+      "scope": "changed-files",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects changed-files against comment bloat failures.",
+      "outage_link": null
     },
     {
       "name": "orphan_reference",
@@ -190,7 +338,16 @@
       "fires_when": "orphan_reference",
       "bash_var": "ORPHAN_REFERENCE",
       "deny": true,
-      "reason_key": "ORPHAN_REFERENCE"
+      "reason_key": "ORPHAN_REFERENCE",
+      "category": "universal",
+      "scope": "changed-files",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects changed-files against orphan reference failures.",
+      "outage_link": null
     },
     {
       "name": "slop_scan",
@@ -198,7 +355,16 @@
       "fires_when": "slop_scan",
       "bash_var": "SLOP_SCAN",
       "deny": false,
-      "_note": "soft-flagged 2026-05-09; promotion criterion: 5 consecutive turns with zero false-positive findings. Re-evaluate 2026-05-24."
+      "_note": "soft-flagged 2026-05-09; promotion criterion: 5 consecutive turns with zero false-positive findings. Re-evaluate 2026-05-24.",
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects transcript against slop scan failures.",
+      "outage_link": null
     },
     {
       "name": "tests_failing_in_scope",
@@ -206,7 +372,16 @@
       "fires_when": "tests_failing_scope",
       "bash_var": "TESTS_FAILING_SCOPE",
       "deny": false,
-      "_note": "soft-flagged 2026-05-09; promotion criterion: latency P95 < 5s + zero false-positive runs. Re-evaluate 2026-05-24."
+      "_note": "soft-flagged 2026-05-09; promotion criterion: latency P95 < 5s + zero false-positive runs. Re-evaluate 2026-05-24.",
+      "category": "project_contract",
+      "scope": "changed-files",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects changed-files against tests failing in scope failures.",
+      "outage_link": null
     },
     {
       "name": "scope_stacked",
@@ -215,7 +390,16 @@
       "bash_var": "SCOPE_VS_SHIPPED",
       "deny": true,
       "reason_key": "SCOPE_STACKED",
-      "_note": "shipped 2026-05-10 advisory, promoted to deny same day after firing correctly on the very turn that named the problem. Catches enumerate-without-tick the existing phrase detectors miss."
+      "_note": "shipped 2026-05-10 advisory, promoted to deny same day after firing correctly on the very turn that named the problem. Catches enumerate-without-tick the existing phrase detectors miss.",
+      "category": "project_contract",
+      "scope": "changed-files",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects changed-files against scope stacked failures.",
+      "outage_link": null
     },
     {
       "name": "evasion_intent",
@@ -224,7 +408,16 @@
       "bash_var": "EVASION_INTENT",
       "deny": true,
       "reason_key": "EVASION_INTENT",
-      "_note": "shipped 2026-05-10 as deny. Scans assistant thinking blocks for explicit gate-evasion language (avoid the structural check, frame in prose to bypass, stay under the threshold, to avoid exhaust_check, etc.). The structural answer to the catastrophic failure where the agent thinks about routing around its own gates and shapes the output to fall just under the threshold."
+      "_note": "shipped 2026-05-10 as deny. Scans assistant thinking blocks for explicit gate-evasion language (avoid the structural check, frame in prose to bypass, stay under the threshold, to avoid exhaust_check, etc.). The structural answer to the catastrophic failure where the agent thinks about routing around its own gates and shapes the output to fall just under the threshold.",
+      "category": "security",
+      "scope": "thinking-blocks",
+      "owning_invariant": "CONSTITUTION.md security and evidence-backed claims",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects thinking-blocks against evasion intent failures.",
+      "outage_link": null
     },
     {
       "name": "boyscout_clean",
@@ -233,7 +426,16 @@
       "bash_var": "BOYSCOUT_CLEAN",
       "deny": true,
       "reason_key": "BOYSCOUT_CLEAN",
-      "_note": "shipped 2026-05-12. Checks LOC + comment-bloat + char-spam on edited files. Fires on any violation."
+      "_note": "shipped 2026-05-12. Checks LOC + comment-bloat + char-spam on edited files. Fires on any violation.",
+      "category": "project_contract",
+      "scope": "changed-files",
+      "owning_invariant": "CLAUDE.md / HME workflow contract",
+      "fixture_waiver": {
+        "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
+        "review_date": "2026-06-15"
+      },
+      "why": "Protects changed-files against boyscout clean failures.",
+      "outage_link": null
     }
   ]
 }
