@@ -351,9 +351,18 @@ def main() -> int:
         _WHATS_NEXT_MULTI = re.compile(r"what.{0,2}s\s+next\s*:\s*[^\n]*?;\s*\w", re.IGNORECASE)
         whats_next_punt = bool(_WHATS_NEXT_MULTI.search(summary_region))
     if n_work >= 3 and n_undone_headers < 2 and not whats_next_punt:
-        _emit_stats("ok", f"implicit_solo_work_count={n_work} undone_headers={n_undone_headers} whats_next_punt=False")
-        print("ok")
-        return 0
+        safe_work_narration = re.compile(
+            r"\b(takes|will take)\s+effect\s+(on|when|after)\b|"
+            r"\b(requires|needs|waiting\s+on|pending)\s+(a\s+|an\s+)?"
+            r"(restart|reload|user\s+action|session\s+restart|extension\s+(host\s+)?reload)\b|"
+            r"\bonce\s+(you\s+|the\s+)?(restart|reload|proxy|session|user)\b",
+            re.IGNORECASE,
+        )
+        if safe_work_narration.search(raw_for_shape):
+            _emit_stats("ok", f"implicit_solo_work_count={n_work} undone_headers={n_undone_headers} whats_next_punt=False")
+            print("ok")
+            return 0
+        _emit_stats("noted", f"work_count={n_work} but deferral scan still required")
     if whats_next_punt:
         _emit_stats("noted", f"work_count={n_work} but SUMMARY what's-next is multi-item enumeration -- proceeding to phrase scan")
     elif n_undone_headers >= 2:
