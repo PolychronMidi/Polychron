@@ -1448,7 +1448,7 @@ if (_mode4WasStreaming) {
           // Original streaming path (no HME interception happened) -- pipe
           // through the Transform for Bash run_in_background rewriting.
           const { SseTransform } = require('./sse_transform');
-          const { runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite, slopStripRewrite, hallucinatedTurnPrefixStripRewrite, stopHookCeremonyStripRewrite, fpGateMarkerRewrite, soloRationaleTrimRewrite } = require('./sse_rewriters');
+          const { readInputNormalizeRewrite, runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite, slopStripRewrite, hallucinatedTurnPrefixStripRewrite, stopHookCeremonyStripRewrite, fpGateMarkerRewrite, soloRationaleTrimRewrite } = require('./sse_rewriters');
           // Order: longLeadingSleep rewrites BEFORE runInBackground reads
           // (both keyed by content-block index for consistent state).
           // Chain order is encoded in the rewriters[] array below.
