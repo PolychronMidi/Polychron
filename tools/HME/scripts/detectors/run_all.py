@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import io
 import json
+import importlib
 import os
 import sys
 from contextlib import redirect_stdout
@@ -83,14 +84,47 @@ def _run_detector(name: str, module_name: str, transcript: str) -> str:
     return "ok"
 
 
+
+def _declared_maps():
+    with open(os.path.join(os.path.dirname(__file__), "registry.json")) as f:
+        reg = json.load(f)["detectors"]
+    registry = {}
+    for d in reg:
+        registry.setdefault(d["module"], set()).add(d["fires_when"])
+    declared = {}
+    for _, module_name in DETECTORS:
+        try:
+            mod = importlib.import_module(module_name)
+        except Exception:
+            continue
+        vals = getattr(mod, "DECLARED_VERDICTS", None)
+        if vals:
+            declared[module_name] = set(vals)
+    return declared, registry
+
+
+def _check_declared_verdicts() -> int:
+    declared, registry = _declared_maps()
+    failures = []
+    for module_name, verdicts in declared.items():
+        missing = (verdicts - {"ok"}) - registry.get(module_name, set())
+        if missing:
+            failures.append(f"{module_name}: undeclared verdicts {sorted(missing)}")
+    for msg in failures:
+        print(f"DECLARED_VERDICT_DRIFT={msg}")
+    return 1 if failures else 0
+
 def main() -> int:
-    if len(sys.argv) < 2:
+    args = sys.argv[1:]
+    if "--check-declared" in args:
+        return _check_declared_verdicts()
+    if len(args) < 1:
         # No transcript -- print default verdicts so the hook can keep going.
         for name, _ in DETECTORS:
             print(f"{name}=ok" if name != "poll_count" else f"{name}=0")
         return 0
 
-    transcript = sys.argv[1]
+    transcript = args[0]
     for name, module_name in DETECTORS:
         verdict = _run_detector(name, module_name, transcript)
         # flush per-detector: detectors.sh has 3s timeout; without flush a
