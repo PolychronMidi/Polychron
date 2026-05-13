@@ -150,9 +150,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     import urllib.error as _urllib_error
     import urllib.request as _req
 
-    # Circuit breaker: if this model rate-limited recently, short-circuit
-    # without hitting the network. Returns "rate_limited=True" so the
-    # chain advances to the next model immediately.
+    # Circuit-open models skip network and advance the chain immediately.
     if _circuit_open(model_id):
         logger.info(f"OVERDRIVE {model_id} in cooldown -- skipping")
         return (None, True)
