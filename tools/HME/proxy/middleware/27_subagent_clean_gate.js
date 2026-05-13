@@ -46,6 +46,9 @@ module.exports = {
       fs.writeFileSync(path.join(OUT_DIR, `${toolUse.id || Date.now()}.json`), JSON.stringify({ files, results, bad }, null, 2));
     } catch (_e) { /* silent-ok: audit file is advisory; ctx.emit still records status */ }
     ctx.emit({ event: bad.length ? 'subagent_clean_gate_failed' : 'subagent_clean_gate_ok', files: files.length, failures: bad.length });
-    if (bad.length) ctx.appendToResult(toolResult, `\n\n[HME subagent clean-gate: ${bad.length} audit failure(s); inspect tmp/hme-subagent-audits]`);
+    if (bad.length) {
+      ctx.nexusAdd('SUBAGENT_CLEAN', `failures=${bad.length}`);
+      ctx.appendToResult(toolResult, `\n\n[HME subagent clean-gate: ${bad.length} audit failure(s); inspect tmp/hme-subagent-audits]`);
+    }
   },
 };
