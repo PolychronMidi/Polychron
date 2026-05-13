@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2403,
-      "updated_ts": 1778710905.3818214
+      "max_id": 2407,
+      "updated_ts": 1778710928.558828
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 2395,
     "text": "Verify audits and behavior",
     "activeForm": "Verifying audits and behavior",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
