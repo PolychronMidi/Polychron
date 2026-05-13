@@ -1255,7 +1255,6 @@ if (_mode4WasStreaming) {
           const _verdict = _isBlank ? 'BLANK' : 'OK';
           console.error(`[hme-proxy] verdict=${_verdict} omni=${_isMode4OmniRoute} chain=${_swapChain.length} blank=${_isBlank} text=${_textChars} tools=${_toolUseBlocks}`);
 
-          // MODE=4/5 OmniRoute: blank response -> try next chain model (one attempt each).
           if (_isBlank && _isMode4OmniRoute && _swapChain.length > 1) {
             const _fs3 = require('fs');
             const _stFile3 = _bdPath.join(_bdRoot, 'tmp', 'hme-omni-swap-state.json');
