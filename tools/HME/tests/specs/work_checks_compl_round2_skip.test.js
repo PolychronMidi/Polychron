@@ -18,6 +18,12 @@ function _withSandbox(fn) {
     const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-compl-test-'));
     fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
+    const registryDir = path.join(sandbox, 'tools', 'HME', 'scripts', 'detectors');
+    fs.mkdirSync(registryDir, { recursive: true });
+    fs.copyFileSync(
+      path.join(REPO, 'tools', 'HME', 'scripts', 'detectors', 'registry.json'),
+      path.join(registryDir, 'registry.json'),
+    );
     const prev = process.env.PROJECT_ROOT;
     process.env.PROJECT_ROOT = sandbox;
     // Bust caches under proxy/ so PROJECT_ROOT-bound modules reload

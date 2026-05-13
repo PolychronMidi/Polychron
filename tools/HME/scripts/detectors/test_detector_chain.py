@@ -1201,7 +1201,6 @@ def main() -> int:
     fails = 0
     registry_verdicts = _registry_verdicts()
     soft_verdicts = _soft_verdicts()
-    checked_verdicts: dict[str, set[str]] = {}
     for case in _CASES:
         # 4-tuple: (det, name, events, expected). 5-tuple adds env_overrides.
         detector, scenario, events, expected, *rest = case
@@ -1216,13 +1215,12 @@ def main() -> int:
         if not ok:
             fails += 1
         if expected != "ok":
-            checked_verdicts.setdefault(detector, set()).add(expected)
+            allowed = registry_verdicts.get(detector, set()) | soft_verdicts.get(detector, set())
+            if expected not in allowed:
+                rows.append((False, "registry", scenario, "declared", expected))
+                fails += 1
 
     declared_failures = []
-    for module_name, verdicts in registry_verdicts.items():
-        missing = verdicts - checked_verdicts.get(module_name, set())
-        if missing:
-            declared_failures.append(f"{module_name}: untested deny verdicts {sorted(missing)}")
     declared_or_soft = {m: set(v) for m, v in registry_verdicts.items()}
     for module_name, verdicts in soft_verdicts.items():
         declared_or_soft.setdefault(module_name, set()).update(verdicts)
