@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2068,
-      "updated_ts": 1778657323.6581082
+      "max_id": 2072,
+      "updated_ts": 1778657336.7896953
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 2064,
     "text": "Produce ranked candidate integration list with anchors",
     "activeForm": "Producing ranked candidate integration list with anchors",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
