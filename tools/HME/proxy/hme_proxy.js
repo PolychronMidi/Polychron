@@ -507,32 +507,43 @@ function handleRequest(clientReq, clientRes) {
         _mode4WasStreaming = (payload.stream === true);
         injected = true;
 
-        // Read swap model and its provider from config/models.json.
+        // Read swap model chain from config/models.json E5 tier.
+        // Falls back through ranked models when primary rate-limits.
         let _swapModel = 'deepseek-v4-pro';
         let _omniProvider = 'opencode-go';
+        let _swapChain = [];
         try {
           const _cfgPath = require('path').resolve(__dirname, '..', '..', '..', 'config', 'models.json');
           const _cfg = JSON.parse(require('fs').readFileSync(_cfgPath, 'utf8'));
-          _swapModel = (_cfg.manually_toprank && _cfg.manually_toprank.E5 && _cfg.manually_toprank.E5[0]) || '';
-          if (!_swapModel) {
-            const _tm = (_cfg.tiers && _cfg.tiers.E5 && _cfg.tiers.E5.models) || [];
-            const _co = (_cfg.ranking_rules && _cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
-            for (const _c of _co) {
-              const _b = _tm.filter(m => m.cost === _c).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0));
-              if (_b.length && _b[0].id) { _swapModel = _b[0].id; break; }
-            }
+          // Build chain: toprank first, then E5 models by cost_order→tier_score
+          const _top = (_cfg.manually_toprank && _cfg.manually_toprank.E5) || [];
+          const _tm = (_cfg.tiers && _cfg.tiers.E5 && _cfg.tiers.E5.models) || [];
+          const _co = (_cfg.ranking_rules && _cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
+          for (const _c of _co) {
+            _swapChain.push(..._tm.filter(m => m.cost === _c).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
           }
-          // Resolve OmniRoute provider prefix from the model's provider field.
-          for (const _tier of Object.values(_cfg.tiers || {})) {
-            for (const _m of (_tier.models || [])) {
-              if (_m.id === _swapModel) {
-                const _p = _m.provider || '';
-                if (_p === 'codex') _omniProvider = 'cx';
-                else if (_p === 'opencode_go') _omniProvider = 'opencode-go';
-                else if (_p === 'opencode') _omniProvider = 'opencode';
-                break;
-              }
-            }
+          // Prepend topranked (keep their order, deduped from chain)
+          const _chainIds = new Set(_swapChain.map(m => m.id));
+          const _topDeduped = _top.filter(id => !_chainIds.has(id));
+          for (const _id of _topDeduped) {
+            const _m = _tm.find(m => m.id === _id);
+            if (_m) _swapChain.unshift(_m);
+          }
+          // Pick from chain: first model, unless a recent failure advanced us.
+          if (_swapChain.length > 0) {
+            let _stIdx = 0;
+            try {
+              const _fs2 = require('fs');
+              const _pth2 = require('path');
+              const _stFile2 = _pth2.join(__dirname, '..', '..', '..', 'tmp', 'hme-omni-swap-state.json');
+              const _st2 = JSON.parse(_fs2.readFileSync(_stFile2, 'utf8'));
+              _stIdx = Math.min(_st2.idx || 0, _swapChain.length - 1);
+            } catch (_) {}
+            _swapModel = _swapChain[_stIdx].id;
+            const _p = _swapChain[_stIdx].provider || '';
+            if (_p === 'codex') _omniProvider = 'cx';
+            else if (_p === 'opencode_go') _omniProvider = 'opencode-go';
+            else if (_p === 'opencode') _omniProvider = 'opencode';
           }
         } catch (_) { /* keep defaults */ }
 
@@ -1020,6 +1031,29 @@ if (_mode4WasStreaming) {
             const _coolingDown = _alertCooldownActive(_errInfo.type || `http_${status}`, _pathLabel);
             const _shouldRetry = headers['x-should-retry'] === 'true';
             const _isRateLimit = _errInfo.type === 'rate_limit_error';
+
+            // MODE=4/5 OmniRoute fallback: advance to next model in E5 chain on failure.
+            if (_isMode4OmniRoute && _swapChain.length > 1) {
+              const _fs = require('fs');
+              const _pth = require('path');
+              const _stFile = _pth.join(PROJECT_ROOT, 'tmp', 'hme-omni-swap-state.json');
+              let _st = { idx: 0, ts: 0, fail: 0 };
+              try { _st = JSON.parse(_fs.readFileSync(_stFile, 'utf8')); } catch (_) {}
+              const _now = Date.now();
+              // Advance on failure; reset to start after 5min success window
+              if (_st.fail > 0 || _st.ts > 0 && (_now - _st.ts) < 300000) {
+                _st.idx = (_st.idx + 1) % _swapChain.length;
+              } else {
+                _st.idx = 0;
+              }
+              _st.ts = _now;
+              _st.fail++;
+              _fs.writeFileSync(_stFile, JSON.stringify(_st));
+              const _next = _swapChain[_st.idx];
+              const _np = _next.provider === 'codex' ? 'cx' : _next.provider === 'opencode_go' ? 'opencode-go' : 'opencode';
+              console.error(`[hme-proxy] MODE=${_odMode} fallback: rate-limited on ${_omniProvider}/${_swapModel} -> advancing to ${_np}/${_next.id} (chain pos ${_st.idx}/${_swapChain.length}, fail count ${_st.fail})`);
+            }
+
             // ITPM-exhaustion bumps panic-shrink so next request is smaller.
             if (_isRateLimit && !_shouldRetry) {
               _consecutive429s = Math.min(_consecutive429s + 1, 4);
