@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2030,
-      "updated_ts": 1778656477.9391286
+      "max_id": 2034,
+      "updated_ts": 1778656524.4252245
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2020,
     "text": "Identify boyscout clean violations in files touched this turn",
     "activeForm": "Identifying boyscout clean violations in files touched this turn",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2021,
     "text": "Add synthetic hook routing tests for requested hook classes",
     "activeForm": "Adding synthetic hook routing tests for requested hook classes",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
