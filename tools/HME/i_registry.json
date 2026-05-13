@@ -360,6 +360,46 @@
       "description": "UX stress test for i/* CLI surface. Each probe runs inside a transient systemd-run --scope cgroup (MemoryMax=512M, TasksMax=64) so disown'd/double-forked descendants of HME posttooluse hooks die atomically with the scope. Crashed the host twice before this isolation landed; treat with caution on first re-enable.",
       "category": "meta",
       "usage": "i/audit-tools"
+    },
+    "audit-tiered": {
+      "description": "Run tiered HME audits over changed files and coherence surfaces.",
+      "category": "review-discipline",
+      "usage": "i/audit-tiered [args...]"
+    },
+    "blast-radius": {
+      "description": "Estimate implementation blast radius for changed files or targets.",
+      "category": "diagnostic",
+      "usage": "i/blast-radius [target]"
+    },
+    "decision-audit": {
+      "description": "Audit recent decisions for evidence, reversibility, and coherence debt.",
+      "category": "review-discipline",
+      "usage": "i/decision-audit [args...]"
+    },
+    "fork-watchdog": {
+      "description": "Watch forked/background agent tasks for stale or missing completion signals.",
+      "category": "orchestration",
+      "usage": "i/fork-watchdog [args...]"
+    },
+    "learnings": {
+      "description": "Surface extracted HME learning candidates and summaries.",
+      "category": "knowledge",
+      "usage": "i/learnings [args...]"
+    },
+    "parallel-detect": {
+      "description": "Run detector groups in parallel for faster coherence checks.",
+      "category": "diagnostic",
+      "usage": "i/parallel-detect [args...]"
+    },
+    "project-detect": {
+      "description": "Detect project shape and HME-relevant environment signals.",
+      "category": "diagnostic",
+      "usage": "i/project-detect [args...]"
+    },
+    "_dispatch.sh": {
+      "description": "Private dispatch helper shared by i/dispatch aliases.",
+      "category": "orchestration",
+      "usage": "i/_dispatch.sh <internal>"
     }
   }
 }
