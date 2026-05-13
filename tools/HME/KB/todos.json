@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2207,
-      "updated_ts": 1778699551.8577487
+      "max_id": 2212,
+      "updated_ts": 1778699865.0803282
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2199,
     "text": "Implement hook execution ledger and report tool",
     "activeForm": "Implementing hook execution ledger and report tool",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2200,
     "text": "Add direct hook test harness",
     "activeForm": "Adding direct hook test harness",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
