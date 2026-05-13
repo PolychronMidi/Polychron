@@ -296,7 +296,7 @@ async function dispatchEvent(eventName, stdinJson) {
       return result;
     }
     case 'PreCompact':
-      return runChain([path.join(LIFECYCLE, 'precompact.sh')], empty);
+      return runChain([path.join(LIFECYCLE, 'precompact.sh')], empty, 30_000, 'PreCompact');
     case 'PostCompact':
       return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty);
     case 'PreToolUse': {
