@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1830,
-      "updated_ts": 1778637809.0399904
+      "max_id": 1833,
+      "updated_ts": 1778637861.8384247
     }
   },
   {
     "id": 1828,
     "text": "Address advisor doctrine with consult on registry fix",
     "activeForm": "Addressing advisor doctrine with consult on registry fix",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 1829,
     "text": "Check current detector verdicts after consult",
     "activeForm": "Checking current detector verdicts after consult",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 1830,
     "text": "Give concise next suggestions without deferral language",
     "activeForm": "Giving concise next suggestions without deferral language",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
