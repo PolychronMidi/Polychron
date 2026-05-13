@@ -9,7 +9,12 @@ from pathlib import Path
 
 def _fetch_catalog(port: str) -> dict:
     url = f"http://127.0.0.1:{port}/api/models/catalog"
-    with urllib.request.urlopen(url, timeout=10) as resp:
+    headers = {}
+    api_key = os.environ.get("OMNIROUTE_API_KEY") or os.environ.get("ROUTER_API_KEY")
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read())
 
 
