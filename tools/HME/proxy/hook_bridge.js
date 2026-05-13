@@ -219,7 +219,6 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
     let combinedStderr = '';
     for (const e of errors) combinedStderr += `[unified-policies] ${e.policy}: ${e.error}\n`;
     if (firstDeny) {
-      // PreToolUse uses Claude Code's permissionDecision shape; PostToolUse uses additionalContext.
       let stdout;
       if (eventName === 'PreToolUse') {
         stdout = JSON.stringify({
