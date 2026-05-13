@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1905,
-      "updated_ts": 1778640781.6074095
+      "max_id": 1910,
+      "updated_ts": 1778640830.3655589
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 1898,
     "text": "Tick SPEC metadata items with evidence",
     "activeForm": "Ticking SPEC metadata items with evidence",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 1899,
     "text": "Run detector, registry, clean-room, and guard verification",
     "activeForm": "Running detector, registry, clean-room, and guard verification",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
