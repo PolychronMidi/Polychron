@@ -24,7 +24,7 @@ function _withSandbox(fn) {
       path.join(REPO, 'tools', 'HME', 'scripts', 'detectors', 'registry.json'),
       'utf8',
     ));
-    registry.detectors = registry.detectors.filter(d => d.deny);
+    registry.detectors = registry.detectors.filter(d => d.deny || d.bash_var === 'CLAIM_WITHOUT_EVIDENCE');
     fs.writeFileSync(path.join(registryDir, 'registry.json'), JSON.stringify(registry));
     const prev = process.env.PROJECT_ROOT;
     process.env.PROJECT_ROOT = sandbox;
