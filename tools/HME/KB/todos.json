@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2458,
-      "updated_ts": 1778713022.335878
+      "max_id": 2461,
+      "updated_ts": 1778713087.4648867
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2455,
     "text": "Run verification and confirm clean tree",
     "activeForm": "Running verification and confirming clean tree",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
