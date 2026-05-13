@@ -1,0 +1,4 @@
+{"child":"worker","dotted_order":"1778688173_e6bfa168","event":"child_started","pid":5932,"run_id":"e6bfa168-7efd-4ce2-9da8-d7634f64f9bd","trace_id":"43bfe37e-a836-44f8-93c6-59423215fe62","ts":1778688173}
+{"child":"llamacpp_daemon","dotted_order":"1778688173_31d96c9b","event":"child_started","pid":5939,"run_id":"31d96c9b-310b-4ba4-b08d-f8bb503b807d","trace_id":"8946913a-9432-4c35-a0e4-1075bcf82532","ts":1778688173}
+{"child":"worker","code":"SIGTERM","dotted_order":"1778688784_cbca6b55","event":"child_exited","run_id":"cbca6b55-8aee-4389-a836-e1bbfd37b42b","trace_id":"d431fdc4-49e9-4e67-9152-ccf2d8107f2d","ts":1778688784}
+{"attempt":1,"child":"worker","dotted_order":"1778688788_b9ce0bf0","event":"child_restarted","run_id":"b9ce0bf0-505d-4fc8-886f-2bfbb4e13620","trace_id":"8e280b39-89da-40ca-b85c-0da3978e8ea8","ts":1778688788}

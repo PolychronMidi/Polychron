@@ -87,6 +87,7 @@ module.exports = {
     payload.system = [
       {
         type: 'text',
+        // mandatory Claude Code opening phrase - causes errors and cache issues without. can be stripped outbound from CC to non-Antropic models.
         text: "You are Claude Code, Anthropic's official CLI for Claude.",
       },
       {
