@@ -122,7 +122,7 @@ _sv_spawn_and_verify() {
   # Wrapper: ensure OmniRoute (if MODE=4), spawn the proxy, wait up
   # to _SV_SPAWN_HEALTH_TIMEOUT seconds for /health to respond.
 
-  # ── OmniRoute pre-flight (MODE=4/5 main-agent translator) ──
+  # -- OmniRoute pre-flight (MODE=4/5 main-agent translator) --
   local _or_port="${HME_OMNIROUTE_PORT:-20128}"
   local _or_url="http://127.0.0.1:${_or_port}/v1/models"
   local _or_dir="$_SV_ROOT/tools/omniroute"
