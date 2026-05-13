@@ -157,9 +157,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
     base_url = _os.environ.get("ANTHROPIC_BASE_URL", "http://127.0.0.1:9099").rstrip("/")
 
-    # Read env-tunable knobs fresh per call so .env changes take effect
-    # without restarting the worker. The hme_env cache already handles
-    # refresh policy; these helpers are thin wrappers.
+    # Read env-tunable knobs fresh per call; hme_env handles refresh policy.
     from . import synthesis_reasoning as _sr
     budget = _sr._overdrive_think_budget()
     timeout_secs = _sr._overdrive_timeout()
