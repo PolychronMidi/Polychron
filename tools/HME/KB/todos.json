@@ -2,34 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2096,
-      "updated_ts": 1778657993.809762
+      "max_id": 2101,
+      "updated_ts": 1778658133.2639356
     }
   },
   {
-    "id": 2092,
-    "text": "Investigate and clear LIFESAVER upstream timeout root cause",
-    "activeForm": "Investigating and clearing LIFESAVER upstream timeout root cause",
+    "id": 2097,
+    "text": "Revise state fallback order to filesystem IPC then HTTP then local",
+    "activeForm": "Revising state fallback order to filesystem IPC then HTTP then local",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778657993.8097148,
+    "ts": 1778658133.263887,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2088,
-    "text": "Implement HTTP-first session-state API with local fallback",
-    "activeForm": "Implementing HTTP-first session-state API with local fallback",
+    "id": 2098,
+    "text": "Implement session-state API/fallback plumbing",
+    "activeForm": "Implementing session-state API/fallback plumbing",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778657826.7247427,
+    "ts": 1778658133.2639017,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
