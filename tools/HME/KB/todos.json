@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2082,
-      "updated_ts": 1778657440.422714
+      "max_id": 2087,
+      "updated_ts": 1778657460.2517688
     }
   },
   {
@@ -66,8 +66,8 @@
     "id": 2077,
     "text": "Rank and present top 10 ideas with rationale",
     "activeForm": "Ranking and presenting top 10 ideas with rationale",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
