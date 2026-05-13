@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1771,
-      "updated_ts": 1778636423.518311
+      "max_id": 1774,
+      "updated_ts": 1778636570.831829
     }
   },
   {
     "id": 1769,
     "text": "Inspect onboarding hook scripts and registration paths",
     "activeForm": "Inspecting onboarding hook scripts and registration paths",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 1770,
     "text": "Trace why hook output is absent and errors are suppressed",
     "activeForm": "Tracing why hook output is absent and errors are suppressed",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
