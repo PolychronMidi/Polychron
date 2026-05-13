@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2240,
-      "updated_ts": 1778701271.3073819
+      "max_id": 2243,
+      "updated_ts": 1778701339.0396037
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2234,
     "text": "Run clean-room and scoped validation",
     "activeForm": "Running clean-room and scoped validation",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
