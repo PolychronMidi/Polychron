@@ -7,6 +7,7 @@
 set +u +e
 
 EVENT="${1:-unknown}"
+export HME_HOOK_EVENT="$EVENT"
 PROJECT_ROOT="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
 HOOKS_DIR="$PROJECT_ROOT/tools/HME/hooks"
 PRETOOLUSE_DIR="$HOOKS_DIR/pretooluse"
