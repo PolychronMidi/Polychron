@@ -926,8 +926,6 @@ if (_mode4WasStreaming) {
 
       // text_delta event contains both the discriminator and the marker
       // text in the same JSON line. thinking_delta uses field "thinking"
-      // not "text", so its content with the marker substring won't match
-      // this combined pattern.
       const _FP_TEXT_DELTA_RE = /"type"\s*:\s*"text_delta"[\s\S]{0,200}\[FP-CHECK:\s*yes\]|\[FP-CHECK:\s*yes\][\s\S]{0,200}"type"\s*:\s*"text_delta"/;
 
       upstreamRes.on('data', (c) => {
@@ -953,7 +951,6 @@ if (_mode4WasStreaming) {
           } else {
             // Trailing buffer must cover both the regex window AND the
             // marker length. 600 bytes covers a text_delta + 200-char
-            // distance + the marker comfortably.
             _fpTrailingBuf = scan.slice(-600);
           }
         } catch (_e) { /* scan is best-effort */ }
