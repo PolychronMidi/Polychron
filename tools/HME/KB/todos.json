@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2234,
-      "updated_ts": 1778701206.9625905
+      "max_id": 2237,
+      "updated_ts": 1778701231.0933466
     }
   },
   {
     "id": 2232,
     "text": "Locate system prompt tool-rewrite middleware",
     "activeForm": "Locating system prompt tool-rewrite middleware",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2233,
     "text": "Implement concise Read and Agent tool description rewrites",
     "activeForm": "Implementing concise Read and Agent tool description rewrites",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
