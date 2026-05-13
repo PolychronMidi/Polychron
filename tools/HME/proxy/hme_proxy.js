@@ -103,6 +103,7 @@ const {
   handleLifecycleRoute: _handleLifecycleRoute,
 } = require('./lifecycle_bridge');
 const { handlePreWriteCheckRoute: _handlePreWriteCheckRoute } = require('./pre_write_route');
+const { handleSessionStateRoute: _handleSessionStateRoute } = require('./session_state_route');
 // handleSpawnRoute extracted to routes_admin.js.
 const { handleSpawnRoute: _handleSpawnRoute } = require('./routes_admin');
 
