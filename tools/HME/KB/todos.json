@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2312,
-      "updated_ts": 1778708099.092648
+      "max_id": 2316,
+      "updated_ts": 1778708184.212353
     }
   },
   {
     "id": 2309,
     "text": "Inspect model registry tooling",
     "activeForm": "Inspecting model registry tooling",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2310,
     "text": "Add OmniRoute sync script for models.json limits",
     "activeForm": "Adding OmniRoute sync script for models.json limits",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2311,
     "text": "Revert runtime catalog fetch to models.json lookup",
     "activeForm": "Reverting runtime catalog fetch to models.json lookup",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,8 +52,8 @@
     "id": 2312,
     "text": "Verify sync and compile",
     "activeForm": "Verifying sync and compile",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
