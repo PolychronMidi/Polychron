@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1977,
-      "updated_ts": 1778642521.739032
+      "max_id": 1981,
+      "updated_ts": 1778642527.0998173
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 1977,
     "text": "Summarize concise file anchors and reusable logic without editing",
     "activeForm": "Summarizing concise file anchors and reusable logic without editing",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
