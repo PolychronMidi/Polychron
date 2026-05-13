@@ -4,12 +4,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DB = Path.home() / '.omniroute' / 'storage.sqlite'
-RULES = ROOT / 'config' / 'omniroute-payloadRules.json'
-THINKING = {'mode': 'adaptive', 'customBudget': 131072, 'effortLevel': 'xhigh'}
+CONFIG = ROOT / 'config' / 'omniroute-max-reasoning.json'
 
 
-def load_rules() -> dict:
-    return json.loads(RULES.read_text())
+def load_config() -> dict:
+    return json.loads(CONFIG.read_text())
 
 
 def read_setting(key: str):
@@ -20,11 +19,11 @@ def read_setting(key: str):
     return json.loads(row[0]) if row else None
 
 
-def write_settings(rules: dict | None = None) -> None:
+def write_settings(config: dict | None = None) -> None:
+    cfg = config or load_config()
     con = sqlite3.connect(DB)
     cur = con.cursor()
-    vals = {'thinkingBudget': THINKING, 'payloadRules': rules or load_rules()}
-    for key, val in vals.items():
+    for key, val in cfg.items():
         cur.execute(
             "insert or replace into key_value(namespace,key,value) values('settings',?,?)",
             (key, json.dumps(val)),
@@ -33,16 +32,8 @@ def write_settings(rules: dict | None = None) -> None:
 
 
 def verify() -> tuple[bool, str]:
-    thinking = read_setting('thinkingBudget')
-    rules = read_setting('payloadRules')
-    if thinking != THINKING:
-        return False, 'thinkingBudget mismatch'
-    defaults = rules.get('default') if isinstance(rules, dict) else None
-    if not isinstance(defaults, list):
-        return False, 'payloadRules.default missing'
-    params = [r.get('params', {}) for r in defaults]
-    if {'reasoning_effort': 'xhigh'} not in params:
-        return False, 'reasoning_effort rule missing'
-    if {'thinkingLevel': 'xhigh'} not in params:
-        return False, 'thinkingLevel rule missing'
+    cfg = load_config()
+    for key, expected in cfg.items():
+        if read_setting(key) != expected:
+            return False, f'{key} mismatch'
     return True, 'ok'
