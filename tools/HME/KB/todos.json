@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2339,
-      "updated_ts": 1778708983.884202
+      "max_id": 2343,
+      "updated_ts": 1778709218.7952685
     }
   },
   {
     "id": 2336,
     "text": "Search token budget caps across repo",
     "activeForm": "Searching token budget caps across repo",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2337,
     "text": "Classify artificial vs local/time caps",
     "activeForm": "Classifying artificial vs local/time caps",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2338,
     "text": "Fix inappropriate static caps",
     "activeForm": "Fixing inappropriate static caps",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,8 +52,8 @@
     "id": 2339,
     "text": "Verify changes",
     "activeForm": "Verifying changes",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
