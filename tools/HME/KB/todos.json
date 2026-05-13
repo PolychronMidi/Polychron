@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2489,
-      "updated_ts": 1778715301.8102794
+      "max_id": 2494,
+      "updated_ts": 1778715351.7895603
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2481,
     "text": "Explore repository structure and HME entrypoints",
     "activeForm": "Exploring repository structure and HME entrypoints",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2482,
     "text": "Run targeted checks to measure onboarding/HME tool flow",
     "activeForm": "Running targeted onboarding and HME checks",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
