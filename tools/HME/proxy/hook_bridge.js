@@ -282,6 +282,7 @@ async function dispatchEvent(eventName, stdinJson) {
       return runChain(scripts, empty);
     }
     case 'PostToolUse': {
+      _recordPostToolEvidence(empty);
       const tool = _toolName(empty);
       // Run unified registry's PostToolUse policies first (currently a
       // small set; will grow as bash trackers migrate). Block decisions
