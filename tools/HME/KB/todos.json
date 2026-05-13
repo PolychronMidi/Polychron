@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2051,
-      "updated_ts": 1778657122.101041
+      "max_id": 2055,
+      "updated_ts": 1778657138.1707397
     }
   },
   {
     "id": 2048,
     "text": "Survey reference and target repository structure",
     "activeForm": "Surveying reference and target repository structure",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2049,
     "text": "Inspect high-value Writ architecture and workflow files",
     "activeForm": "Inspecting high-value Writ architecture and workflow files",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
