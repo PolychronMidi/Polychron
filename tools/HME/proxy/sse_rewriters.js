@@ -36,22 +36,22 @@ function _buildSpawnCommand(originalCmd, description) {
   return `curl -sf -X POST ${SPAWN_URL} -H 'content-type: application/json' -d '${payload}'`;
 }
 
-function runInBackgroundRewrite(eventName, data, ctx) {
-  const key = 'bash_hold';
+function _holdToolInput(ctx, key, eventName, data, names) {
   let holds = ctx.get(key);
   if (!holds) { holds = new Map(); ctx.set(key, holds); }
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') {
+    if (names.has(data.content_block.name)) {
+      holds.set(data.index, { id: data.content_block.id, name: data.content_block.name, partial: '', firstDeltaShape: null });
+    }
+  }
+  return holds;
+}
+
+function runInBackgroundRewrite(eventName, data, ctx) {
+  const holds = _holdToolInput(ctx, 'bash_hold', eventName, data, new Set(['Bash']));
 
   // Track Bash tool_use blocks -- start holding their deltas.
-  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') {
-    if (data.content_block.name === 'Bash') {
-      holds.set(data.index, {
-        id: data.content_block.id,
-        partial: '',
-        firstDeltaShape: null,
-      });
-    }
-    return data;
-  }
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') return data;
 
   // Hold deltas for tracked Bash tool_uses.
   if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'input_json_delta') {
