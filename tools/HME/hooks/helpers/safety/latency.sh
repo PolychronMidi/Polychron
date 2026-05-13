@@ -55,6 +55,7 @@ _hme_log_hook_latency() {
 # is the smallest signal set that still distinguishes clean from broken.
 _hme_exit_combined() {
   local code=$?
+  _HME_HOOK_EXIT_CODE="$code"
   local end_ns dur_ms
   end_ns="$(date +%s%N)"
   dur_ms=$(( (end_ns - _HME_HOOK_START_NS) / 1000000 ))
