@@ -90,9 +90,9 @@ const POSTTOOL_SCRIPTS = {
     path.join(POSTTOOLUSE, 'posttooluse_bash.sh'),
     path.join(POSTTOOLUSE, 'posttooluse_pipeline_kb.sh'),
   ],
-  Edit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
-  MultiEdit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
-  Write: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
+  Edit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh'), path.join(POSTTOOLUSE, 'posttooluse_diagnostics.sh')],
+  MultiEdit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh'), path.join(POSTTOOLUSE, 'posttooluse_diagnostics.sh')],
+  Write: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh'), path.join(POSTTOOLUSE, 'posttooluse_diagnostics.sh')],
   Read: [path.join(POSTTOOLUSE, 'posttooluse_read_kb.sh')],
   TodoWrite: [path.join(POSTTOOLUSE, 'posttooluse_todowrite.sh')],
 };
