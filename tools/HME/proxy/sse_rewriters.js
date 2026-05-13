@@ -1112,6 +1112,7 @@ function soloRationaleTrimRewrite(eventName, data, ctx) {
 }
 
 module.exports = {
+  readInputNormalizeRewrite,
   runInBackgroundRewrite,
   longLeadingSleepRewrite,
   ackStripRewrite,
