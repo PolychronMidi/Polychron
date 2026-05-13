@@ -6,7 +6,14 @@
     "fires_when": "the verdict string the python detector prints when violation found (the bash variable equals this when firing); 'ok' otherwise",
     "bash_var": "UPPER_SNAKE bash variable name in detectors.sh",
     "deny": "true => work_checks.js adds to FIRING_RULES (causes ctx.deny); false => detected-only",
-    "reason_key": "key into work_checks.js REASONS object (only when deny=true)"
+    "reason_key": "key into work_checks.js REASONS object (only when deny=true)",
+    "category": "universal | security | project_contract",
+    "scope": "where the detector applies, e.g. stop-hook, transcript, changed-files",
+    "owning_invariant": "stable doctrine/invariant/devlog reference protected by this detector",
+    "fixture_path": "project-root-relative fixture path or list of paths",
+    "fixture_waiver": "optional waiver object; requires review_date and reason",
+    "why": "one-line reason this detector exists",
+    "outage_link": "optional devlog, KB, issue, or incident path"
   },
   "detectors": [
     {
