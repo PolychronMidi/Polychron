@@ -172,7 +172,7 @@ function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') 
  * Exception: hook output containing `{"decision":"block"...}` halts the
  * chain -- a blocking decision from any hook supersedes later hooks.
  */
-async function runChain(scripts, stdinJson, timeoutMs = 30_000) {
+async function runChain(scripts, stdinJson, timeoutMs = 30_000, eventName = 'hook') {
   let combinedStdout = '';
   let combinedStderr = '';
   let firstNonZeroCode = 0;
