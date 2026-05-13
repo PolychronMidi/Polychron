@@ -120,3 +120,35 @@ test('synthetic autocommit direct fallback script exists', () => {
   assert.ok(fs.existsSync(script));
   assert.ok(fs.statSync(script).mode & 0o111);
 });
+
+
+test('hook envelope normalizes JSON string tool_input', () => {
+  const { normalize } = require('../../proxy/hook_envelope');
+  const env = normalize(JSON.stringify({
+    session_id: 's8',
+    tool_name: 'Write',
+    tool_input: JSON.stringify({ file_path: '/tmp/x.js', content: 'const x = 1;' }),
+  }));
+  assert.strictEqual(env.session_id, 's8');
+  assert.strictEqual(env.file_path, '/tmp/x.js');
+  assert.strictEqual(env.content, 'const x = 1;');
+});
+
+test('session-state client uses filesystem path before HTTP fallback', async () => {
+  const root = sandbox('hme-state-client-');
+  const client = require('../../proxy/session_state_client');
+  await client.call('verification-evidence', 's9', { command: 'probe', exit_code: 0, excerpt: 'ok' });
+  const state = require('../../proxy/session_state').readState('s9');
+  assert.ok(state.verification_evidence.some((e) => e.command === 'probe'));
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('synthetic hooks manifest maps lifecycle through proxy bridge', () => {
+  const hooksPath = path.resolve(__dirname, '..', '..', 'hooks', 'hooks.json');
+  const data = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+  for (const event of ['PreToolUse', 'PostToolUse', 'Stop', 'SessionStart', 'PostCompact']) {
+    const entries = data.hooks[event] || [];
+    const text = JSON.stringify(entries);
+    assert.match(text, /_proxy_bridge\.sh/);
+  }
+});
