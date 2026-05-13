@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2383,
-      "updated_ts": 1778710321.2785664
+      "max_id": 2387,
+      "updated_ts": 1778710394.4233978
     }
   },
   {
     "id": 2380,
     "text": "Explore AIPass reference for transferable middleware ideas",
     "activeForm": "Exploring AIPass reference for transferable middleware ideas",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2381,
     "text": "Identify highest-value integration candidate",
     "activeForm": "Identifying highest-value integration candidate",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2382,
     "text": "Implement selected integration",
     "activeForm": "Implementing selected integration",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
