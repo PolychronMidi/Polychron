@@ -37,6 +37,7 @@ _COMMIT = re.compile(
     r"verify|check|run|address|do|make|handle|resolve|finish|complete))",
     re.IGNORECASE
 )
+_BULLET = re.compile(r"^\s*[-*]\s+(.+)$", re.MULTILINE)
 
 all_items = []
 
