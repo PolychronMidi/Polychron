@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1833,
-      "updated_ts": 1778637861.8384247
+      "max_id": 1836,
+      "updated_ts": 1778637866.7361403
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 1830,
     "text": "Give concise next suggestions without deferral language",
     "activeForm": "Giving concise next suggestions without deferral language",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
