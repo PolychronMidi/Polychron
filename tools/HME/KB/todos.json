@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2026,
-      "updated_ts": 1778656328.9351814
+      "max_id": 2030,
+      "updated_ts": 1778656477.9391286
     }
   },
   {
     "id": 2023,
     "text": "Fix LIFESAVER unresolved upstream timeout root cause",
     "activeForm": "Fixing LIFESAVER unresolved upstream timeout root cause",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2020,
     "text": "Identify boyscout clean violations in files touched this turn",
     "activeForm": "Identifying boyscout clean violations in files touched this turn",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
