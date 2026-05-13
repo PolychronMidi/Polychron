@@ -231,7 +231,7 @@ def dispatch_direct(prompt: str, system: str, max_tokens: int,
     try:
         t0 = time.monotonic()
         result = subprocess.run(
-            ["claude", "-p", "--model", "sonnet",
+            ["claude", "-p", "--model", _claude_model_for_tier(tier),
              "--system-prompt", system[:6000],
              "--settings", settings,
              prompt[:32000]],
