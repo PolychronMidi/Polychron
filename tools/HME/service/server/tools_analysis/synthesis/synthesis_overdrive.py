@@ -375,7 +375,8 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
     """
     from hme_env import ENV as _ENV_OD
     if allow_subagent and _ENV_OD.optional("OVERDRIVE_VIA_SUBAGENT", "0") == "1":
-        return _dispatch_via_subagent(prompt, system, max_tokens)
+        _tier = _ENV_OD.optional("OVERDRIVE_TIER", "E3")
+        return _dispatch_via_subagent(prompt, system, max_tokens, tier=_tier)
     if chain_override is not None:
         chain = tuple((m, _label_for_model(m)) for m in chain_override)
     else:
