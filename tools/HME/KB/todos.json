@@ -2,34 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2281,
-      "updated_ts": 1778703113.4763286
+      "max_id": 2284,
+      "updated_ts": 1778706643.5504565
     }
   },
   {
-    "id": 2280,
-    "text": "Remove duplicated expected model chains from tests",
-    "activeForm": "Removing duplicated expected model chains from tests",
+    "id": 2282,
+    "text": "Find where CLAUDE.md reminder is represented and current strip path",
+    "activeForm": "Finding CLAUDE.md reminder representation and strip path",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778703113.476312,
+    "ts": 1778706643.5504282,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2281,
-    "text": "Re-run mode5 and clean-room validation",
-    "activeForm": "Re-running mode5 and clean-room validation",
+    "id": 2283,
+    "text": "Add safe configurable strip for userEmail/currentDate tail",
+    "activeForm": "Adding safe configurable strip for userEmail/currentDate tail",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778703113.4763262,
+    "ts": 1778706643.5504425,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2284,
+    "text": "Verify strip behavior and no email literal committed",
+    "activeForm": "Verifying strip behavior and no email literal committed",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778706643.5504527,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
