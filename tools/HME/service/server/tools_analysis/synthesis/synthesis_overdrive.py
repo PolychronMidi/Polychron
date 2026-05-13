@@ -358,7 +358,8 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
 
 def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
                           chain_override: tuple[str, ...] | None = None,
-                          allow_subagent: bool = True) -> tuple[str, str] | None:
+                          allow_subagent: bool = True,
+                          tier: str = "E3") -> tuple[str, str] | None:
     """Walk a model chain, returning the first successful response.
 
     Walks the resolved chain in order: on rate-limit for the current model,
