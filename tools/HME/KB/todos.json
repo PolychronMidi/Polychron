@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2470,
-      "updated_ts": 1778713861.022899
+      "max_id": 2473,
+      "updated_ts": 1778713900.4704335
     }
   },
   {
     "id": 2468,
     "text": "Scan recent HME proxy changes for design-pattern issues",
     "activeForm": "Scanning recent HME proxy changes for design-pattern issues",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2469,
     "text": "Apply focused pattern optimizations",
     "activeForm": "Applying focused pattern optimizations",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
