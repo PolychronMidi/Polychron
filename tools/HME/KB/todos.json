@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2264,
-      "updated_ts": 1778702196.76402
+      "max_id": 2267,
+      "updated_ts": 1778702212.1873999
     }
   },
   {
     "id": 2262,
     "text": "Inspect Agent rewrite and model ranking config",
     "activeForm": "Inspecting Agent rewrite and model ranking config",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2263,
     "text": "Verify whether Agent launches follow E1-E5 model choice",
     "activeForm": "Verifying whether Agent launches follow E1-E5 model choice",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
