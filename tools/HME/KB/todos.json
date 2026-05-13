@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2329,
-      "updated_ts": 1778708781.5377305
+      "max_id": 2332,
+      "updated_ts": 1778708811.0229826
     }
   },
   {
-    "id": 2327,
-    "text": "Trace env var usage and timeout error",
-    "activeForm": "Tracing env var usage and timeout error",
+    "id": 2330,
+    "text": "Make overdrive thinking budget model-limit derived",
+    "activeForm": "Making overdrive thinking budget model-limit derived",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778708781.5377014,
+    "ts": 1778708811.0229545,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2328,
-    "text": "Adjust config/code if vars are obsolete or misleading",
-    "activeForm": "Adjusting config/code if vars are obsolete or misleading",
+    "id": 2331,
+    "text": "Phase out obsolete .env caps",
+    "activeForm": "Phasing out obsolete .env caps",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778708781.5377176,
+    "ts": 1778708811.02297,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2329,
-    "text": "Verify resulting budget behavior",
-    "activeForm": "Verifying resulting budget behavior",
+    "id": 2332,
+    "text": "Verify code and env behavior",
+    "activeForm": "Verifying code and env behavior",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778708781.5377285,
+    "ts": 1778708811.0229805,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
