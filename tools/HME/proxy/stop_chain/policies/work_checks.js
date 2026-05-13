@@ -285,10 +285,8 @@ module.exports = {
     for (const [field, value, reasonKey] of FIRING_RULES) {
       if (v[field] === value) firing.push({ name: reasonKey, reason: REASONS[reasonKey] });
     }
-    if (firing.some((f) => f.name === 'CLAIM_WITHOUT_EVIDENCE')) {
-      const ev = sessionState.recentVerificationEvidence(5 * 60 * 1000)
-        .filter((e) => (e.exit_code === 0 || e.artifact || e.excerpt));
-      if (ev.length) firing = firing.filter((f) => f.name !== 'CLAIM_WITHOUT_EVIDENCE');
+    if (firing.some((f) => f.name === 'CLAIM_WITHOUT_EVIDENCE') && sessionState.recentVerificationEvidence(5 * 60 * 1000).some((e) => (e.exit_code === 0 || e.artifact || e.excerpt))) {
+      firing = firing.filter((f) => f.name !== 'CLAIM_WITHOUT_EVIDENCE');
     }
     if (firing.length === 1) {
       armFpGate(firing[0].name); return ctx.deny(firing[0].reason);
