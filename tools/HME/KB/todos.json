@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2373,
-      "updated_ts": 1778710139.0346613
+      "max_id": 2379,
+      "updated_ts": 1778710156.6090083
     }
   },
   {
@@ -66,8 +66,8 @@
     "id": 2354,
     "text": "Collapse repeated stop-hook feedback context",
     "activeForm": "Collapsing repeated stop-hook feedback context",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -80,8 +80,8 @@
     "id": 2355,
     "text": "Verify all changes",
     "activeForm": "Verifying all changes",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
