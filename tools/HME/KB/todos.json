@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2255,
-      "updated_ts": 1778701861.6160681
+      "max_id": 2258,
+      "updated_ts": 1778701913.1193063
     }
   },
   {
     "id": 2253,
     "text": "Add concise TodoWrite, WebFetch, and WebSearch rewrites",
     "activeForm": "Adding concise TodoWrite, WebFetch, and WebSearch rewrites",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2254,
     "text": "Extend compact tool description tests",
     "activeForm": "Extending compact tool description tests",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2246,
     "text": "Run scoped validation and clean-room checks",
     "activeForm": "Running scoped validation and clean-room checks",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
