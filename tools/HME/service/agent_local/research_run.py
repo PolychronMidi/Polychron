@@ -146,7 +146,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
     # KB search
     kb_context = _get_rag_context(prompt)
     if kb_context:
-        sections.append(f"=== Knowledge Base ===\n{kb_context}")
+        sections.append(f"Knowledge Base\n{kb_context}")
         tools_used.append("KB(query)")
 
     # Grep with arbiter-planned patterns across inferred directories.
@@ -189,13 +189,13 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
 
     if grep_results:
         parts = [f" {key} \n{result}" for key, result in grep_results.items()]
-        sections.append("=== Grep Results ===\n" + "\n".join(parts))
+        sections.append("Grep Results\n" + "\n".join(parts))
 
     # Glob with arbiter-planned patterns
     for pattern in glob_patterns[:4]:
         result = _exec_glob(pattern)
         if not result.startswith("No files"):
-            sections.append(f"=== Files: {pattern} ===\n{result}")
+            sections.append(f"Files: {pattern}\n{result}")
             tools_used.append(f"GLOB({pattern})")
 
     # Also glob for search terms if arbiter didn't provide glob patterns
@@ -203,7 +203,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
         for term in search_terms[:3]:
             result = _exec_glob(f"src/**/*{term}*")
             if not result.startswith("No files"):
-                sections.append(f"=== Files matching '*{term}*' ===\n{result}")
+                sections.append(f"Files matching '*{term}*'\n{result}")
                 tools_used.append(f"GLOB(*{term}*)")
 
     # Read key files found in grep. Budget varies by mode: explore=6*80, plan=12*150.
@@ -223,7 +223,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
     for fpath in files_to_read:
         read_result = _exec_read(fpath, 1, _file_lines)
         if not read_result.startswith("ERROR"):
-            sections.append(f"=== {fpath} (lines 1-{_file_lines}) ===\n{read_result}")
+            sections.append(f"{fpath} (lines 1-{_file_lines})\n{read_result}")
             tools_used.append(f"READ({fpath})")
 
     research_context = "\n\n".join(sections)
@@ -310,5 +310,3 @@ Question: {prompt}
         "elapsed_s": round(elapsed, 1),
         "model": f"{_ARBITER_MODEL} -> {model_label}({_route_model(prompt)[0]})",
     }
-
-

@@ -23,13 +23,13 @@ moduleLifecycle.declare({
     return { publicMethod, anotherMethod };
   },
 
-  // === Post-init wiring fields (all optional) ===
+  // Post-init wiring fields (all optional)
   crossLayerScopes: ['all', 'section'],    // -> crossLayerRegistry.register(name, api, scopes)
   conductorScopes: ['section'],            // -> conductorIntelligence.registerModule(name, api, scopes)
   recorder: (ctx) => api.refresh(ctx),     // -> conductorIntelligence.registerRecorder(name, fn)
   stateProvider: () => ({ ...api.snapshot() }),  // -> conductorIntelligence.registerStateProvider(name, fn)
 
-  // === Optional metadata (consumed by check-module-manifests verifier) ===
+  // Optional metadata (consumed by check-module-manifests verifier)
   reads: ['LM.activeLayer'],               // cross-subsystem reads (firewall metadata)
   emits: ['L0_TEST_CHANNEL'],              // L0 channels written
 });

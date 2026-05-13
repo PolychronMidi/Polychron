@@ -120,7 +120,7 @@ def _pre_research(prompt: str) -> tuple[str, list[str]]:
     # Phase 1: KB search
     kb_context = _get_rag_context(prompt)
     if kb_context:
-        sections.append(f"=== Knowledge Base Results ===\n{kb_context}")
+        sections.append(f"Knowledge Base Results\n{kb_context}")
         tools_used.append("KB(query)")
 
     # Phase 2: Grep for each search term
@@ -141,13 +141,13 @@ def _pre_research(prompt: str) -> tuple[str, list[str]]:
         parts = []
         for term, result in grep_results.items():
             parts.append(f" grep '{term}' \n{result}")
-        sections.append(f"=== Grep Results ===\n" + "\n".join(parts))
+        sections.append(f"Grep Results\n" + "\n".join(parts))
 
     # Phase 3: Glob for related files
     for term in terms[:3]:
         glob_result = _exec_glob(f"src/**/*{term}*")
         if not glob_result.startswith("No files"):
-            sections.append(f"=== Files matching '*{term}*' ===\n{glob_result}")
+            sections.append(f"Files matching '*{term}*'\n{glob_result}")
             tools_used.append(f"GLOB(*{term}*)")
 
     # Phase 4: Read key files found in grep (first 80 lines of top matches)
@@ -166,7 +166,7 @@ def _pre_research(prompt: str) -> tuple[str, list[str]]:
     for fpath in files_to_read:
         read_result = _exec_read(fpath, 1, 80)
         if not read_result.startswith("ERROR"):
-            sections.append(f"=== {fpath} (lines 1-80) ===\n{read_result}")
+            sections.append(f"{fpath} (lines 1-80)\n{read_result}")
             tools_used.append(f"READ({fpath})")
 
     return "\n\n".join(sections), tools_used

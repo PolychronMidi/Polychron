@@ -366,7 +366,7 @@ _CASES = [
      [
          _user_msg("build the audit"),
          _assistant_msg(
-             "Committing to the approach below.\n=== BUILD === 4/7"
+             "Committing to the approach below.\nBUILD 4/7"
          ),
      ],
      "advisor_missing_pre_build",
@@ -377,7 +377,7 @@ _CASES = [
      [
          _user_msg("rename foo to bar"),
          _assistant_msg(
-             "Mechanical rename -- solo was right. === BUILD ==="
+             "Mechanical rename -- solo was right. BUILD"
          ),
      ],
      "ok",
@@ -388,7 +388,7 @@ _CASES = [
      [
          _user_msg("tweak this constant"),
          _assistant_msg(
-             "Committing to the approach below.\n=== BUILD ==="
+             "Committing to the approach below.\nBUILD"
          ),
      ],
      "ok",
@@ -473,7 +473,7 @@ _CASES = [
                                       "old_string": "a", "new_string": "b"}),
          _assistant_msg(
              "Work complete.\n\n"
-             "=== SUMMARY ===\n"
+             "SUMMARY\n"
              "[ITERATION]: turn 7/7\n"
              "[CONTENT]: PAI imports #6-#10 wired and verified\n"
              "[STORY]:\n"
@@ -494,7 +494,7 @@ _CASES = [
          _assistant_tool_use("Edit", {"file_path": "/x.py",
                                       "old_string": "a", "new_string": "b"}),
          _assistant_msg(
-             "Done.\n\n=== SUMMARY ===\n[ITERATION]: 1\n"
+             "Done.\n\nSUMMARY\n[ITERATION]: 1\n"
              "[STORY]:\n- problem: x\n- what we did: y\n"
              "(missing CONTENT, story bullets, voice line)"
          ),
@@ -549,7 +549,7 @@ _CASES = [
     ("phase_gate", "build-marker-allows-edit",
      [
          _user_msg("design the new subsystem"),
-         _assistant_msg("=== BUILD ===\nGoing with this approach."),
+         _assistant_msg("BUILD\nGoing with this approach."),
          _assistant_tool_use("Edit", {"file_path": "/x.py",
                                       "old_string": "a", "new_string": "b"}),
      ],

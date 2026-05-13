@@ -7,7 +7,7 @@ detail." The original PAI doctrine uses emoji markers; Polychron's
 ASCII-first project rule (project-wide no-non-ascii audit, no emoji
 allowlist) requires the same structure with text labels:
 
-    === SUMMARY ===
+    SUMMARY
     [ITERATION]: <round/turn marker>
     [CONTENT]: <one-line content summary>
     [STORY]:

@@ -40,7 +40,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                 f"[{i+1}] {r['source']}:{r['start_line']}-{r['end_line']} "
                 f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}"
             )
-        return f"=== Lib: {lib_key} ===\n" + "\n".join(code_lines)
+        return f"Lib: {lib_key}\n" + "\n".join(code_lines)
 
     concise = response_format == "concise"
 
@@ -138,7 +138,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                         f"[{i+1}] {r['source']}:{r['start_line']}-{r['end_line']} "
                         f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}{kb_tag}{_htag}"
                     )
-            output_parts.append("=== Main ===\n" + "\n".join(code_lines))
+            output_parts.append("Main\n" + "\n".join(code_lines))
 
     if scope in ("libs", "all") and ctx.lib_engines:
         for lib_key, engine in ctx.lib_engines.items():
@@ -151,7 +151,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                         f"[{i+1}] {r['source']}:{r['start_line']}-{r['end_line']} "
                         f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}"
                     )
-                output_parts.append(f"=== Lib: {lib_key} ===\n" + "\n".join(code_lines))
+                output_parts.append(f"Lib: {lib_key}\n" + "\n".join(code_lines))
 
     if not output_parts:
         status = ctx.project_engine.get_status()
@@ -203,7 +203,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                         f"{r['source']}:{r['start_line']}-{r['end_line']} "
                         f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}"
                     )
-            header = f"=== Main (auto-retried: '{retry_query}') ==="
+            header = f"Main (auto-retried: '{retry_query}')"
             return header + "\n" + "\n".join(code_lines)
         return f"No results for '{query}'. Try: broader terms, remove path filter, or check spelling. Index has {status.get('total_chunks', '?')} chunks across {status.get('total_files', '?')} files."
 

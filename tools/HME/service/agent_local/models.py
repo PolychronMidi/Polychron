@@ -238,7 +238,7 @@ def _get_rag_context(query: str) -> str:
         with urllib.request.urlopen(req, timeout=5) as resp:
             kb = json.loads(resp.read()).get("result", [])
         if kb:
-            parts.append("=== Knowledge Base ===")
+            parts.append("Knowledge Base")
             for r in kb[:6]:
                 title = r.get("title", "")
                 content = r.get("content", "")[:300]
@@ -254,7 +254,7 @@ def _get_rag_context(query: str) -> str:
         with urllib.request.urlopen(req, timeout=5) as resp:
             code = json.loads(resp.read()).get("result", [])
         if code:
-            parts.append("\n=== Relevant Code Chunks ===")
+            parts.append("\nRelevant Code Chunks")
             for r in code[:5]:
                 meta = r.get("metadata", {})
                 path = meta.get("path", r.get("path", "?"))
@@ -264,5 +264,3 @@ def _get_rag_context(query: str) -> str:
     except Exception as _code_err:
         logger.debug(f"agent_local code-chunk probe failed: {type(_code_err).__name__}: {_code_err}")
     return "\n".join(parts) if parts else ""
-
-

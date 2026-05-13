@@ -12,13 +12,13 @@ approach, then the design has to be reverse-engineered from diffs.
 
 Phase tracking:
   - The agent declares phase transitions via ASCII markers in text:
-      === OBSERVE === | phase: observe
-      === THINK ===   | phase: think
-      === PLAN ===    | phase: plan
-      === BUILD ===   | phase: build
-      === EXECUTE === | phase: execute
-      === VERIFY ===  | phase: verify
-      === LEARN ===   | phase: learn
+      OBSERVE | phase: observe
+      THINK   | phase: think
+      PLAN    | phase: plan
+      BUILD   | phase: build
+      EXECUTE | phase: execute
+      VERIFY  | phase: verify
+      LEARN   | phase: learn
   - Each transition is appended to output/metrics/phase_transitions.jsonl
     for cross-session timeline analysis.
   - The detector reads ALL events (current turn) and finds the phase
@@ -56,7 +56,7 @@ _PHASE_LOG = _PROJECT / "output" / "metrics" / "phase_transitions.jsonl"
 
 _PHASES = ("OBSERVE", "THINK", "PLAN", "BUILD", "EXECUTE", "VERIFY", "LEARN")
 
-# Phase-marker regexes. Match either === <PHASE> === banner or `phase: <p>`.
+# Phase-marker regexes. Match either <PHASE> banner or `phase: <p>`.
 _PHASE_RE = re.compile(
     r"(?:={3,}\s*(OBSERVE|THINK|PLAN|BUILD|EXECUTE|VERIFY|LEARN)\s*={3,}|"
     r"\bphase\s*:\s*(observe|think|plan|build|execute|verify|learn)\b)",

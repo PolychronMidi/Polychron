@@ -141,7 +141,7 @@ def format_knowledge_results(results: list[dict], label: str, min_score: float =
             f"  [{k['category']}] {k['title']} (score: {fmt_score(k['score'])}){' | ' + tags_str if tags_str else ''}\n"
             f"  {k['content']}"
         )
-    return [f"=== {label} ===\n" + "\n\n".join(lines)]
+    return [f"{label}\n" + "\n\n".join(lines)]
 
 
 def check_path_in_project(path: str, project_root: str) -> str | None:

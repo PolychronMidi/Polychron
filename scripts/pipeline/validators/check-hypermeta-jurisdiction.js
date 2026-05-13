@@ -423,7 +423,7 @@ function main() {
     return;
   }
 
-  // === Phase 1: SpecialCaps overrides ===
+  // Phase 1: SpecialCaps overrides
   const specialCapsSrc = extractSpecialCapsSource();
   const detected = detectManualOverrides(specialCapsSrc);
 
@@ -455,13 +455,13 @@ function main() {
     }
   }
 
-  // === Phase 2: Coupling matrix bypasses ===
+  // Phase 2: Coupling matrix bypasses
   const { violations: matrixViolations, legacyHits: matrixLegacy } = detectCouplingMatrixBypasses();
 
-  // === Phase 3: Bias registration bounds lock ===
+  // Phase 3: Bias registration bounds lock
   const biasResult = detectBiasBoundsViolations();
 
-  // === Phase 4: Watched constant lock ===
+  // Phase 4: Watched constant lock
   const watchedViolations = detectWatchedConstantViolations();
 
   // Write results

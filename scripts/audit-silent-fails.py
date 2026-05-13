@@ -124,7 +124,7 @@ for sh in HOOKS.rglob("*.sh"):
         })
 
 # Report. Suspicious first, then fallback-masking, then unclassified, then legitimate.
-print(f"=== AUDIT: tools/HME/hooks/ silent-fail patterns ===\n")
+print(f"AUDIT: tools/HME/hooks/ silent-fail patterns\n")
 for cat in ["SUSPICIOUS", "FALLBACK_MASKING", "UNCLASSIFIED", "LEGITIMATE_TOLERANT"]:
     print(f"\n{cat}: {len(hits[cat])} hits")
     if cat == "LEGITIMATE_TOLERANT":
@@ -141,6 +141,6 @@ for cat in ["SUSPICIOUS", "FALLBACK_MASKING", "UNCLASSIFIED", "LEGITIMATE_TOLERA
         if len(hits[cat]) > 20:
             print(f"  ...+{len(hits[cat]) - 20} more")
 
-print(f"\n=== TOTALS ===")
+print(f"\nTOTALS")
 for cat in ["SUSPICIOUS", "FALLBACK_MASKING", "UNCLASSIFIED", "LEGITIMATE_TOLERANT"]:
     print(f"  {cat}: {len(hits[cat])}")
