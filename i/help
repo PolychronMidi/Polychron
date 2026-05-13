@@ -71,6 +71,7 @@ SHOW_ALL=0
 python3 - "$REGISTRY" "$(pwd)" "$SHOW_ALL" <<'PY'
 import json, os, sys
 reg_path, i_dir, show_all = sys.argv[1], sys.argv[2], sys.argv[3] == "1"
+check_drift = show_all or os.environ.get("HME_HELP_DRIFT") == "1"
 with open(reg_path) as f:
     reg = json.load(f)
 commands = reg.get("commands", {})
