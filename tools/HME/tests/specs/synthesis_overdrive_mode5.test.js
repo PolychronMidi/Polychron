@@ -47,11 +47,11 @@ function _runPython(envOverrides, body) {
 // Expected chains from models.json: cost_order free>subscription>usage, each
 // by tier_score desc, then manually_toprank reorder. No claude-* models.
 const EXPECTED_CHAINS = {
-  E5: ['mimo-v2.5-pro-go', 'deepseek-v4-pro-go', 'deepseek-v4-pro', 'mimo-v2.5-pro', 'gpt-5.2'],
-  E4: ['mistral-large-3', 'gemini-3-pro', 'glm-5.1-go', 'mimo-v2-pro-go', 'glm-5.1', 'kimi-k2.6', 'minimax-m2.7', 'qwen3.6-plus', 'mimo-v2-pro'],
-  E3: ['gpt-5.2-turbo', 'deepseek-v4-flash', 'glm-5-go', 'mimo-v2.5-go', 'glm-5', 'mimo-v2.5', 'minimax-m2.5', 'gemini-3-flash'],
-  E2: ['gpt-5.2-mini', 'nemotron-3-super', 'mimo-v2-omni', 'qwen3.5-plus'],
-  E1: ['gemini-3-flash-lite', 'big-pickle', 'ring-2.6-1t', 'gpt-5.4-nano'],
+  E5: ['gpt-5.5-xhigh', 'gpt-5.5-high', 'deepseek-v4-pro-go', 'mimo-v2.5-pro-go', 'deepseek-v4-pro', 'mimo-v2.5-pro', 'gpt-5.2'],
+  E4: ['mistral-large-latest', 'gemini-2.5-pro', 'gemini-2.5-pro', 'nemotron-super-49b', 'llama-4-maverick', 'llama-3.3-70b-versatile', 'llama-4-maverick-17b-128e-instruct', 'llama-4-scout-17b-16e-instruct', 'gpt-5.5-medium', 'gpt-5.5-low', 'glm-5.1-go', 'gpt-5.4', 'mimo-v2-pro-go', 'glm-5.1', 'kimi-k2.6', 'minimax-m2.7', 'qwen3.6-plus', 'mimo-v2-pro'],
+  E3: ['gpt-4o-mini', 'deepseek-v4-flash', 'mistral-medium-latest', 'gemini-2.5-flash', 'codestral-latest', 'deepseek-chat', 'mistral-large', 'qwen3-32b', 'llama-3.3-70b-instruct', 'glm-5-go', 'gpt-5.3-codex', 'gpt-5.3-codex-spark', 'gpt-5.4-mini', 'mimo-v2.5-go', 'glm-5', 'mimo-v2.5', 'minimax-m2.5', 'gemini-3-flash'],
+  E2: ['gemini-2.0-flash', 'gpt-4o-mini', 'nemotron-3-super', 'gemini-2.5-flash', 'nemotron-3-nano-30b-a3b', 'llama-3.2-3b-instruct', 'llama3.1-8b', 'mimo-v2-omni', 'qwen3.5-plus'],
+  E1: ['gemini-2.5-flash-lite', 'gemini-2.5-flash-lite', 'big-pickle', 'ring-2.6-1t', 'gpt-5.4-nano'],
 };
 
 test('overdrive mode=5: _resolve_mode5_chain returns correct per-tier model lists', () => {
