@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2172,
-      "updated_ts": 1778698377.2659857
+      "max_id": 2176,
+      "updated_ts": 1778698407.2704618
     }
   },
   {
     "id": 2161,
     "text": "Resolve lifesaver rogue metrics directory blocker",
     "activeForm": "Resolving lifesaver rogue metrics directory blocker",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2158,
     "text": "Map AIPass repository structure and key files",
     "activeForm": "Mapping AIPass repository structure and key files",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
