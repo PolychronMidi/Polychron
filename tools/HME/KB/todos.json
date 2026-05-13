@@ -2,48 +2,20 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1886,
-      "updated_ts": 1778640179.2311697
+      "max_id": 1889,
+      "updated_ts": 1778640331.0685802
     }
   },
   {
-    "id": 1883,
-    "text": "Find remaining stale autocommit directory guard",
-    "activeForm": "Finding remaining stale autocommit directory guard",
+    "id": 1887,
+    "text": "Clear stale resolved HME error entries",
+    "activeForm": "Clearing stale resolved HME error entries",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778640179.2311316,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1884,
-    "text": "Patch guard to allow output/metrics everywhere used",
-    "activeForm": "Patching guard to allow output/metrics everywhere used",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778640179.2311492,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1885,
-    "text": "Clear resolved stale HME error entries",
-    "activeForm": "Clearing resolved stale HME error entries",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778640179.2311594,
+    "ts": 1778640331.0685518,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -58,6 +30,20 @@
     "source": "native",
     "on_done": "",
     "ts": 1778640179.231168,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1889,
+    "text": "Answer suggestion filtering question concisely",
+    "activeForm": "Answering suggestion filtering question concisely",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778640331.068578,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
