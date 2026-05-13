@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2225,
-      "updated_ts": 1778700345.6735911
+      "max_id": 2228,
+      "updated_ts": 1778700364.352898
     }
   },
   {
     "id": 2223,
     "text": "Remove rogue AIPass subagent worktree metrics directory",
     "activeForm": "Removing rogue AIPass subagent worktree metrics directory",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2224,
     "text": "Resolve HME test failure surfaced during validation",
     "activeForm": "Resolving HME test failure surfaced during validation",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
