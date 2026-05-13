@@ -313,6 +313,10 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     elif _provider == "cascade":
         # cascade models call provider modules directly (OpenAI-compatible API)
         return _try_cascade_model(model_id, prompt, system, max_tokens)
+    elif _provider == "codex":
+        # codex models go through OmniRoute (local proxy → codex OAuth provider)
+        headers["X-HME-Upstream"] = f"http://127.0.0.1:{_os.environ.get('HME_OMNIROUTE_PORT', '20128')}"
+        # OmniRoute handles codex OAuth internally; no API key needed
 
     try:
         request = _req.Request(

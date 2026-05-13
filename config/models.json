@@ -7,29 +7,98 @@
         "note": "Zen (free tier and usage-based)"
       },
       "opencode_go": {
-        "note": "Go subscription, $99/yr unlimited"
+        "note": "Go subscription, $10/month"
       },
       "cascade": {
         "note": "API cascade, free tier"
       }
     },
     "toprank_rationale": {
-      "E5": "MiMo V2.5-Pro uses less OpenCode Go credits and leads despite tier_score=4 vs DeepSeek V4 Pro tier_score=5. Rationale: E5 tier targets complex multi-file agentic tasks; MiMo notes claim top agentic benchmarks + autonomous-agent specialization. DeepSeek-Pro remains the fallback for deep logic/system architecture work. Leave override in place until benchmark data contradicts."
+      "E5": "gpt5.5 frontier with abundant usage credits."
     }
   },
   "ranking_rules": {
     "description": "Per-tier: rank each cost type independently by tier_score descending (free > subscription > usage). Tiers E5/E4 tier_score capped at 5/7 due to value focus and exclusion of premium models.",
-    "cost_order": ["free", "subscription", "usage"]
+    "cost_order": [
+      "free",
+      "subscription",
+      "usage"
+    ]
   },
   "legacy_chains": {
     "_description": "MODE=1..4 static chains. Value: array (chain, allow_subagent derived) or object {chain:[], allow_subagent:bool}. Empty array = cascade. allow_subagent auto-derived: True iff any model starts with claude-.",
-    "mode1": {"E5": ["claude-opus-4-7","claude-sonnet-4-6"], "E4": ["claude-opus-4-7","claude-sonnet-4-6"], "E3": ["claude-opus-4-7","claude-sonnet-4-6"], "E2": ["claude-opus-4-7","claude-sonnet-4-6"], "E1": ["claude-opus-4-7","claude-sonnet-4-6"]},
-    "mode2": {"E5": ["claude-opus-4-7","claude-sonnet-4-6"], "E4": ["claude-opus-4-7","claude-sonnet-4-6"], "E3": {"chain": ["claude-sonnet-4-6"], "allow_subagent": false}, "E2": [], "E1": []},
-    "mode3": {"E5": ["claude-opus-4-7","claude-sonnet-4-6"], "E4": ["deepseek-v4-pro"], "E3": ["deepseek-v4-flash"], "E2": [], "E1": []},
-    "mode4": {"E5": ["glm-5.1"], "E4": ["deepseek-v4-pro"], "E3": ["deepseek-v4-flash"], "E2": [], "E1": []}
+    "mode1": {
+      "E5": [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6"
+      ],
+      "E4": [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6"
+      ],
+      "E3": [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6"
+      ],
+      "E2": [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6"
+      ],
+      "E1": [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6"
+      ]
+    },
+    "mode2": {
+      "E5": [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6"
+      ],
+      "E4": [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6"
+      ],
+      "E3": {
+        "chain": [
+          "claude-sonnet-4-6"
+        ],
+        "allow_subagent": false
+      },
+      "E2": [],
+      "E1": []
+    },
+    "mode3": {
+      "E5": [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6"
+      ],
+      "E4": [
+        "deepseek-v4-pro"
+      ],
+      "E3": [
+        "deepseek-v4-flash"
+      ],
+      "E2": [],
+      "E1": []
+    },
+    "mode4": {
+      "E5": [
+        "glm-5.1"
+      ],
+      "E4": [
+        "deepseek-v4-pro"
+      ],
+      "E3": [
+        "deepseek-v4-flash"
+      ],
+      "E2": [],
+      "E1": []
+    }
   },
   "manually_toprank": {
-    "E5": ["mimo-v2.5-pro-go"],
+    "E5": [
+      "gpt-5.5-xhigh"
+    ],
     "E4": [],
     "E3": [],
     "E2": [],
@@ -93,7 +162,29 @@
           "cost": "usage",
           "cost_amt": 1.1,
           "notes": "General-purpose frontier reasoning.",
-          "tier_score": 3
+          "tier_score": 4
+        },
+        {
+          "id": "gpt-5.5-xhigh",
+          "name": "GPT 5.5 (xhigh)",
+          "maker": "OpenAI",
+          "provider": "codex",
+          "max_context": 1050000,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "ChatGPT Plus via Codex OAuth. Max reasoning effort, best for architecture/planning.",
+          "tier_score": 8
+        },
+        {
+          "id": "gpt-5.5-high",
+          "name": "GPT 5.5 (high)",
+          "maker": "OpenAI",
+          "provider": "codex",
+          "max_context": 1050000,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "ChatGPT Plus via Codex OAuth. High reasoning effort.",
+          "tier_score": 7
         }
       ]
     },
@@ -101,6 +192,39 @@
       "label": "Advanced Reasoning and Planning",
       "description": "Complex tool-calling, multi-file edits, planning-heavy refactors.",
       "models": [
+        {
+          "id": "gpt-5.5-medium",
+          "name": "GPT 5.5 (medium)",
+          "maker": "OpenAI",
+          "provider": "codex",
+          "max_context": 1050000,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "ChatGPT Plus via Codex OAuth. Balanced reasoning effort.",
+          "tier_score": 8
+        },
+        {
+          "id": "gpt-5.5-low",
+          "name": "GPT 5.5 (low)",
+          "maker": "OpenAI",
+          "provider": "codex",
+          "max_context": 1050000,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "ChatGPT Plus via Codex OAuth. Fast frontier for simpler tasks. 1M context.",
+          "tier_score": 7
+        },
+        {
+          "id": "gpt-5.4",
+          "name": "GPT 5.4",
+          "maker": "OpenAI",
+          "provider": "codex",
+          "max_context": 400000,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "ChatGPT Plus via Codex OAuth. Strong general-purpose coding.",
+          "tier_score": 5
+        },
         {
           "id": "mistral-large-3",
           "name": "Mistral Large 3",
@@ -121,7 +245,7 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Cascade free tier. Strong multi-modal; solid coding and planning.",
-          "tier_score": 5
+          "tier_score": 6
         },
         {
           "id": "glm-5.1-go",
@@ -154,7 +278,7 @@
           "cost": "usage",
           "cost_amt": 1.4,
           "notes": "Nearly on par with frontier models for reasoning-heavy tasks.",
-          "tier_score": 6
+          "tier_score": 7
         },
         {
           "id": "kimi-k2.6",
@@ -165,7 +289,7 @@
           "cost": "usage",
           "cost_amt": 0.95,
           "notes": "Superior needle-in-haystack at 1M tokens; rarely forgets context.",
-          "tier_score": 6
+          "tier_score": 7
         },
         {
           "id": "minimax-m2.7",
@@ -176,7 +300,7 @@
           "cost": "usage",
           "cost_amt": 0.3,
           "notes": "Smartest-for-price on Zen; rivals high-end reasoning at low cost.",
-          "tier_score": 5
+          "tier_score": 6
         },
         {
           "id": "qwen3.6-plus",
@@ -187,7 +311,7 @@
           "cost": "usage",
           "cost_amt": 0.5,
           "notes": "Highly consistent for coding; excellent at complex system prompts.",
-          "tier_score": 4
+          "tier_score": 5
         },
         {
           "id": "mimo-v2-pro",
@@ -206,6 +330,39 @@
       "label": "Reliable Development Workhorses",
       "description": "Standard feature development, refactoring, multi-file updates.",
       "models": [
+        {
+          "id": "gpt-5.3-codex",
+          "name": "GPT 5.3 Codex",
+          "maker": "OpenAI",
+          "provider": "codex",
+          "max_context": 400000,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "ChatGPT Plus via Codex OAuth. Solid coding/review model.",
+          "tier_score": 8
+        },
+        {
+          "id": "gpt-5.3-codex-spark",
+          "name": "GPT 5.3 Codex Spark",
+          "maker": "OpenAI",
+          "provider": "codex",
+          "max_context": 400000,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "ChatGPT Plus via Codex OAuth. Fast spark variant for quick iterations.",
+          "tier_score": 8
+        },
+        {
+          "id": "gpt-5.4-mini",
+          "name": "GPT 5.4 Mini",
+          "maker": "OpenAI",
+          "provider": "codex",
+          "max_context": 400000,
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "ChatGPT Plus via Codex OAuth. Fast, lightweight.",
+          "tier_score": 7
+        },
         {
           "id": "gpt-5.2-turbo",
           "name": "GPT 5.2 Turbo",
@@ -237,7 +394,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Stable repo maintenance at flat rate.",
-          "tier_score": 8
+          "tier_score": 9
         },
         {
           "id": "mimo-v2.5-go",
@@ -331,7 +488,7 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Multi-modal optimized; 512K context.",
-          "tier_score": 8
+          "tier_score": 5
         },
         {
           "id": "qwen3.5-plus",
