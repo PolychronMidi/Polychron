@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2399,
-      "updated_ts": 1778710866.3145669
+      "max_id": 2403,
+      "updated_ts": 1778710905.3818214
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2394,
     "text": "Implement subagent stop clean gate",
     "activeForm": "Implementing subagent stop clean gate",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 2395,
     "text": "Verify audits and behavior",
     "activeForm": "Verifying audits and behavior",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
