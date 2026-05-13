@@ -1251,7 +1251,7 @@ if (_mode4WasStreaming) {
             try {
             const _fs3 = require('fs');
             const _pth3 = require('path');
-            const _stFile3 = _pth3.join(PROJECT_ROOT, 'tmp', 'hme-omni-swap-state.json');
+            const _stFile3 = _pth3.join(_bdRoot, 'tmp', 'hme-omni-swap-state.json');
             let _st3 = { idx: 0 };
             try { _st3 = JSON.parse(_fs3.readFileSync(_stFile3, 'utf8')); } catch (_) {}
 
