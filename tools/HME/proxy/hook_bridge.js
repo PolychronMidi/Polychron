@@ -294,7 +294,7 @@ async function dispatchEvent(eventName, stdinJson) {
       // stop_chain evaluator: first-deny-wins, shell stages wrapped via shell_policy
       const stopChain = require('./stop_chain');
       const result = await stopChain.runStopChain(empty);
-      // dominance rewriter removed — was eating deny messages; re-add via enhance only
+      // dominance rewriter removed -- was eating deny messages; re-add via enhance only
       return result;
     }
     case 'PreCompact':
