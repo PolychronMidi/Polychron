@@ -115,8 +115,7 @@ def _emit_overdrive_activity(source_label: str, model_id: str,
 # (bounded_log import moved to module top alongside other imports)
 
 
-def _resolve_model_provider(model_id: str) -> str | None:
-    """Look up a model's provider from config/models.json. Returns None if not found."""
+def _resolve_model_meta(model_id: str) -> dict:
     import json as _json
     import os as _os
     try:
@@ -126,10 +125,35 @@ def _resolve_model_provider(model_id: str) -> str | None:
         for _tier in _cfg.get("tiers", {}).values():
             for _m in _tier.get("models", []):
                 if _m.get("id") == model_id:
-                    return _m.get("provider")
-    except Exception:  # silent-ok: config read best-effort, fall through to prefix
+                    return _m
+    except Exception:  # silent-ok: config read best-effort, fallback context cap applies
         pass
-    return None
+    return {}
+
+
+def _resolve_model_provider(model_id: str) -> str | None:
+    return _resolve_model_meta(model_id).get("provider")
+
+
+def _estimate_tokens(*texts: str) -> int:
+    chars = sum(len(t or "") for t in texts)
+    return max(1, (chars + 2) // 3)
+
+
+def _context_limit_for(model_id: str, provider: str | None) -> int:
+    from hme_env import ENV as _ENV
+    meta_limit = int(_resolve_model_meta(model_id).get("max_context") or 0)
+    provider_key = (provider or "").replace("-", "_").upper()
+    env_key = f"OVERDRIVE_{provider_key}_CONTEXT_LIMIT" if provider_key else ""
+    try:
+        env_limit = _ENV.optional_int(env_key, 0) if env_key else 0
+    except Exception:  # silent-ok: malformed env falls back to registry cap
+        env_limit = 0
+    if env_limit > 0:
+        return env_limit
+    if meta_limit > 0:
+        return meta_limit
+    return 128000
 
 
 def _try_overdrive_model(model_id: str, prompt: str, system: str,
