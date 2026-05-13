@@ -143,8 +143,8 @@ function longLeadingSleepRewrite(eventName, data, ctx) {
   // chain) will handle deletion + final emit.
   const state = holds.get(data.index);
   if (!state) return data;
-  let input = null;
-  try { input = JSON.parse(state.partial); } catch (_e) { return data; }
+  const input = _parseToolInput(state);
+  if (!input) return data;
   if (!input || typeof input.command !== 'string') return data;
   const rewritten = _rewriteLongLeadingSleep(input.command);
   if (rewritten === input.command) return data;
