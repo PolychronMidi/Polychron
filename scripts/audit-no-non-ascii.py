@@ -92,7 +92,7 @@ def main() -> int:
 
     all_hits = []
     for root in roots:
-        for f in _walk(root):
+        for f in _walk(root, project):
             all_hits.extend(_scan_file(f))
 
     if all_hits:
