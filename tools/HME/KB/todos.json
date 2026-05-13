@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2467,
-      "updated_ts": 1778713821.7045631
+      "max_id": 2470,
+      "updated_ts": 1778713861.022899
     }
   },
   {
-    "id": 2462,
-    "text": "Collect advisor consult result or replace with bounded self-review",
-    "activeForm": "Collecting advisor consult result or replacing with bounded self-review",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778713794.7872248,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2463,
-    "text": "Run final verification after Read normalization cleanup",
-    "activeForm": "Running final verification after Read normalization cleanup",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778713794.7872405,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2464,
-    "text": "Emit required E5 summary with evidence",
-    "activeForm": "Emitting required E5 summary with evidence",
+    "id": 2468,
+    "text": "Scan recent HME proxy changes for design-pattern issues",
+    "activeForm": "Scanning recent HME proxy changes for design-pattern issues",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778713794.787251,
+    "ts": 1778713861.0228662,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2469,
+    "text": "Apply focused pattern optimizations",
+    "activeForm": "Applying focused pattern optimizations",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778713861.0228825,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2470,
+    "text": "Run clean-room and functional verification",
+    "activeForm": "Running clean-room and functional verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778713861.0228965,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
