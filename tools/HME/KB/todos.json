@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2367,
-      "updated_ts": 1778710091.3788207
+      "max_id": 2373,
+      "updated_ts": 1778710139.0346613
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2352,
     "text": "Add runtime verification probe",
     "activeForm": "Adding runtime verification probe",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 2354,
     "text": "Collapse repeated stop-hook feedback context",
     "activeForm": "Collapsing repeated stop-hook feedback context",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
