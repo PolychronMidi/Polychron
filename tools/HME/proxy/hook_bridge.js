@@ -315,7 +315,7 @@ async function dispatchEvent(eventName, stdinJson) {
         scripts.unshift(path.join(PRETOOLUSE, 'pretooluse_hme_primer.sh'));
       }
       if (scripts.length === 0) return { stdout: '', stderr: ' ', exit_code: 0 };
-      return runChain(scripts, empty);
+      return runChain(scripts, empty, 30_000, 'PreToolUse');
     }
     case 'PostToolUse': {
       _recordPostToolEvidence(empty);
