@@ -491,6 +491,9 @@ function handleRequest(clientReq, clientRes) {
     let _isMode4Swap = false;
     let _mode4WasStreaming = false;
     let _isMode4OmniRoute = false;
+    let _swapChain = [];
+    let _swapModel = 'deepseek-v4-pro';
+    let _omniProvider = 'opencode-go';
 
     const _OMNIROUTE_PORT = process.env.HME_OMNIROUTE_PORT || '20128';
     const _OMNIROUTE_OFF = process.env.HME_OMNIROUTE_OFF === '1';
@@ -509,9 +512,6 @@ function handleRequest(clientReq, clientRes) {
 
         // Read swap model chain from config/models.json E5 tier.
         // Falls back through ranked models when primary rate-limits.
-        let _swapModel = 'deepseek-v4-pro';
-        let _omniProvider = 'opencode-go';
-        let _swapChain = [];
         try {
           const _cfgPath = require('path').resolve(__dirname, '..', '..', '..', 'config', 'models.json');
           const _cfg = JSON.parse(require('fs').readFileSync(_cfgPath, 'utf8'));
