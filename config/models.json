@@ -285,7 +285,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "OpenRouter free tier. Strong open-source reasoning model.",
-          "tier_score": 4
+          "tier_score": 4,
+          "max_output_tokens": 8192
         },
         {
           "id": "glm-5.1-go",
@@ -309,7 +310,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Agentic coding at flat rate.",
-          "tier_score": 4
+          "tier_score": 4,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "glm-5.1",
@@ -372,7 +375,9 @@
           "cost": "usage",
           "cost_amt": 0.7,
           "notes": "Top agentic model; reliable for routine coding.",
-          "tier_score": 3
+          "tier_score": 3,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "llama-3.3-70b-versatile",
@@ -395,7 +400,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Groq free tier. Fast reasoning model.",
-          "tier_score": 3
+          "tier_score": 3,
+          "max_output_tokens": 8192
         },
         {
           "id": "llama-4-maverick-17b-128e-instruct",
@@ -406,7 +412,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "NVIDIA free credits. Strong open-source reasoning.",
-          "tier_score": 4
+          "tier_score": 4,
+          "max_output_tokens": 8192
         },
         {
           "id": "nemotron-super-49b",
@@ -417,7 +424,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "NVIDIA free credits. Advanced reasoning model.",
-          "tier_score": 5
+          "tier_score": 5,
+          "max_output_tokens": 8192
         }
       ]
     },
@@ -630,7 +638,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Groq free tier. Strong coding and reasoning.",
-          "tier_score": 5
+          "tier_score": 5,
+          "max_output_tokens": 8192
         },
         {
           "id": "llama-3.3-70b-instruct",
@@ -641,7 +650,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "NVIDIA free credits. Solid general-purpose model.",
-          "tier_score": 4
+          "tier_score": 4,
+          "max_output_tokens": 8192
         }
       ]
     },
@@ -669,7 +679,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Strong instruction following; less creative on debugging.",
-          "tier_score": 6
+          "tier_score": 6,
+          "max_output_tokens": 8192
         },
         {
           "id": "gemini-2.0-flash",
@@ -702,7 +713,9 @@
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "OpenCode Go subscription. Multi-modal optimized; 512K context.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 200000,
+          "max_output_tokens": 8192
         },
         {
           "id": "qwen3.5-plus",
@@ -726,7 +739,8 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Cerebras free tier. Ultra-fast small model.",
-          "tier_score": 4
+          "tier_score": 4,
+          "max_output_tokens": 8192
         },
         {
           "id": "nemotron-3-nano-30b-a3b",
