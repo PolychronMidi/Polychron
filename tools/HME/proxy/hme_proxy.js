@@ -532,7 +532,7 @@ function handleRequest(clientReq, clientRes) {
         try {
           const _cfgPath = require('path').resolve(__dirname, '..', '..', '..', 'config', 'models.json');
           const _cfg = JSON.parse(require('fs').readFileSync(_cfgPath, 'utf8'));
-          // Build chain: toprank first, then E5 models by cost_order→tier_score
+          // Build chain: toprank first, then E5 models by cost_order -> tier_score
           const _top = (_cfg.manually_toprank && _cfg.manually_toprank.E5) || [];
           const _tm = (_cfg.tiers && _cfg.tiers.E5 && _cfg.tiers.E5.models) || [];
           const _co = (_cfg.ranking_rules && _cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
