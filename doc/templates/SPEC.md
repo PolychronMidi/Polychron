@@ -10,23 +10,32 @@ _Previous set (MODE=5 design-pattern consolidation (worthiness P/C/S/E = 3/2/3/3
 
 ## Goal
 
-<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>
+Implement detector registry contract metadata so HME can separate universal hygiene gates, security gates, and Polychron/HME project-contract gates. The registry should explain each detector's category, scope, owning invariant, fixture coverage, and origin so future policy edits improve coherence instead of piling on anonymous rules.
 
 ## Architecture / stack (one-liner each, current-initiative-relevant)
 
-<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
-
-- <subsystem>: <one-line>
-- <data dir / queue / manifest>: <one-line>
-- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)
+- `tools/HME/scripts/detectors/registry.json`: detector single source of truth, extended with contract metadata.
+- `tools/HME/scripts/detectors/verify_registry_consistency.py`: registry wiring and metadata validator.
+- `tools/HME/scripts/detectors/test_detector_chain.py`: canonical detector fixture suite and verdict coverage gate.
+- `tools/HME/proxy/stop_chain/policies/work_checks.js`: deny-policy consumer of registry metadata.
+- `doc/templates/SPEC.md` + `doc/templates/TODO.md`: active initiative handoff and closure evidence.
 
 ## Phases
 
-### Phase 0: <next initiative -- name>
+### Phase 0: Detector registry metadata split (worthiness P/C/S/E = 3/3/3/3)
 
-<1-paragraph context for the new initiative.>
+Classify every stop-side detector by contract type and add enough metadata that reviewers can tell whether a detector is universal hygiene, security-sensitive, or Polychron/HME-specific. This phase turns detector registry entries into auditable contracts with fixture and invariant ownership instead of bare verdict wiring.
 
-- [ ] [easy] First item of the new initiative
+- [ ] [E3] Add registry schema fields: `category`, `scope`, `owning_invariant`, `fixture_path`, `fixture_waiver`, `why`, and `outage_link`.
+- [ ] [E3] Classify all existing detector entries as `universal`, `security`, or `project_contract`.
+- [ ] [E3] Extend `verify_registry_consistency.py` to validate metadata on every detector entry.
+- [ ] [E3] Extend detector coverage so every deny detector has fixture metadata matching a real fixture or waiver.
+- [ ] [E2] Define waiver semantics: `fixture_waiver` requires `review_date` and a one-line reason.
+- [ ] [E2] Define `owning_invariant` as a stable reference string to existing doctrine, invariant config, or devlog evidence.
+- [ ] [E2] Define `fixture_path` as project-root-relative; lists are allowed for multi-fixture detectors.
+- [ ] [E2] Document category meanings and promotion rules in the registry `_schema` block.
+- [ ] [E2] Preserve behavior: modules, verdicts, bash vars, deny flags, and reason keys remain unchanged.
+- [ ] [E2] Run detector-chain, registry-consistency, pre-commit, and clean-room audits as closure evidence.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
 
