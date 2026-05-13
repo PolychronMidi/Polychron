@@ -101,7 +101,22 @@ const POSTTOOL_SCRIPTS = {
  * resolving to {stdout, stderr, exit_code}. Never throws -- errors become
  * exit_code=-1 with an error message on stderr.
  */
-function runHook(scriptPath, stdinJson, timeoutMs = 30_000) {
+function _finishHook(eventName, scriptPath, startedAt, result) {
+  appendHookExec({
+    event: eventName || 'hook',
+    script: path.basename(scriptPath),
+    cwd: process.cwd(),
+    session_id: '',
+    exit_code: result.exit_code ?? 0,
+    duration_ms: Date.now() - startedAt,
+    stdout_bytes: Buffer.byteLength(result.stdout || ''),
+    stderr_bytes: Buffer.byteLength(result.stderr || ''),
+  });
+  return result;
+}
+
+function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') {
+  const startedAt = Date.now();
   return new Promise((resolve) => {
     let child;
     try {
