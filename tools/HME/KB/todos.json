@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2101,
-      "updated_ts": 1778658133.2639356
+      "max_id": 2106,
+      "updated_ts": 1778658300.0908105
     }
   },
   {
     "id": 2097,
     "text": "Revise state fallback order to filesystem IPC then HTTP then local",
     "activeForm": "Revising state fallback order to filesystem IPC then HTTP then local",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2098,
     "text": "Implement session-state API/fallback plumbing",
     "activeForm": "Implementing session-state API/fallback plumbing",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
