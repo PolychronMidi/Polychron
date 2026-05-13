@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2212,
-      "updated_ts": 1778699865.0803282
+      "max_id": 2217,
+      "updated_ts": 1778699903.2920995
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2200,
     "text": "Add direct hook test harness",
     "activeForm": "Adding direct hook test harness",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 2201,
     "text": "Add CWD-aware hook guard support",
     "activeForm": "Adding CWD-aware hook guard support",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
