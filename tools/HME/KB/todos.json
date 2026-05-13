@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1844,
-      "updated_ts": 1778638112.3687327
+      "max_id": 1848,
+      "updated_ts": 1778638348.3982892
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 1840,
     "text": "Run focused detector and hook tests",
     "activeForm": "Running focused detector and hook tests",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
