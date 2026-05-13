@@ -214,9 +214,7 @@ def dispatch_direct(prompt: str, system: str, max_tokens: int,
     """
     if os.environ.get("OVERDRIVE_DIRECT_AGENT") != "1":
         return None  # feature-flag gated
-    # Assemble a minimal settings JSON that requests the subagent type
-    # HME wants for this task. `alwaysThinkingEnabled` left off -- HME
-    # reasoning prompts typically don't need thinking blocks.
+    # Minimal settings request only the subagent type; thinking remains default-off.
     settings = json.dumps({"subagent_type": subagent_type})
     # Claude CLI consumes `-p` with prompt as final positional arg.
     # stream-json isn't needed here -- we want the blocking final result.
