@@ -17,6 +17,8 @@
 // Bash run_in_background -> /hme/spawn; avoids task-notification spam.
 
 const SPAWN_URL = 'http://127.0.0.1:9099/hme/spawn';
+const BASH_TOOL_NAMES = new Set(['Bash']);
+const READ_TOOL_NAMES = new Set(['Read']);
 
 function _buildSpawnCommand(originalCmd, description) {
   const payload = JSON.stringify({
