@@ -12,8 +12,9 @@ const { spawnSync } = require('child_process');
 function _runPython(sandbox, body) {
   const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
   const env = {
-    ...process.env,
     PROJECT_ROOT: sandbox,
+    PATH: process.env.PATH,
+    HOME: process.env.HOME,
     PYTHONPATH: '',
   };
   const result = spawnSync('python3', ['-c', body], { env, encoding: 'utf8' });
