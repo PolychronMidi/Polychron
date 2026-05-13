@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2387,
-      "updated_ts": 1778710394.4233978
+      "max_id": 2391,
+      "updated_ts": 1778710408.0517554
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2382,
     "text": "Implement selected integration",
     "activeForm": "Implementing selected integration",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,8 +52,8 @@
     "id": 2383,
     "text": "Verify integration",
     "activeForm": "Verifying integration",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
