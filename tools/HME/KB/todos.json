@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2476,
-      "updated_ts": 1778713985.8364973
+      "max_id": 2479,
+      "updated_ts": 1778714003.1389594
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2470,
     "text": "Run clean-room and functional verification",
     "activeForm": "Running clean-room and functional verification",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
