@@ -17,7 +17,7 @@ function fresh(projectRoot) {
 }
 
 test('pre-write check centralizes deny decision for credential writes', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-pre-write-'));
+  const root = fs.mkdtempSync(path.join(os.homedir(), 'hme-pre-write-'));
   fs.mkdirSync(path.join(root, 'src'), { recursive: true });
   fresh(root);
   const { preWriteCheck } = require('../../proxy/pre_write_check');
