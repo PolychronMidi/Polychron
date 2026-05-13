@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2443,
-      "updated_ts": 1778712616.8332198
+      "max_id": 2446,
+      "updated_ts": 1778712679.6082401
     }
   },
   {
     "id": 2441,
     "text": "Find Read middleware request path and schema handling",
     "activeForm": "Finding Read middleware request path and schema handling",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2442,
     "text": "Add auto-normalization for invalid Read pages",
     "activeForm": "Adding auto-normalization for invalid Read pages",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
