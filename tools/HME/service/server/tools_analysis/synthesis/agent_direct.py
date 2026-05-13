@@ -160,9 +160,7 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
         logger.warning(f"dispatch_thread: read sid failed: {e}")
         return None
     if not sid:
-        # Empty sid file = silent-fall-through footgun (mid-write fail or
-        # manual clear). Recovery: rm the file (next sessionstart re-inits)
-        # or set .env BUDDY_SYSTEM=0 to disable the buddy.
+        # Empty sid file is a spawn-state fault; warn and fall through.
         logger.warning(f"dispatch_thread: sid file {sid_file} exists but is empty "
                        "-- rm the file (next sessionstart re-inits) or set "
                        ".env BUDDY_SYSTEM=0 to disable the buddy")
