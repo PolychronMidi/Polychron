@@ -15,6 +15,7 @@ source "${_HME_SAFETY_DIR}/project_root.sh"
 # multiple tmp/ files.
 # shellcheck disable=SC1091
 source "${_HME_HELPERS_DIR}/_signals.sh"
+source "${_HME_HELPERS_DIR}/hook_ledger.sh"
 
 # 3) Capture hook identity from caller at TOP LEVEL so BASH_SOURCE[1] refers
 # to the hook script that sourced _safety.sh (not a sub-helper).
