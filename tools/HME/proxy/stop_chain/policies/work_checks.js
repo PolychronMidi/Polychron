@@ -132,10 +132,6 @@ function readVerdicts() {
 }
 
 function lastAssistantText(transcriptPath) {
-  // Read the most recent assistant turn's text content from the
-  // transcript JSONL. Used by the round-2 skip check below -- when the
-  // agent's response to round 1 was already a clean "nothing missed"
-  // declaration, round 2 is pure context burn and should NOT fire.
   if (!transcriptPath) return '';
   let lines;
   try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); }
