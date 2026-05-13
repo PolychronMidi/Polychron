@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2446,
-      "updated_ts": 1778712679.6082401
+      "max_id": 2449,
+      "updated_ts": 1778712766.4432216
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2442,
     "text": "Add auto-normalization for invalid Read pages",
     "activeForm": "Adding auto-normalization for invalid Read pages",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2443,
     "text": "Verify with focused tests",
     "activeForm": "Verifying with focused tests",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
