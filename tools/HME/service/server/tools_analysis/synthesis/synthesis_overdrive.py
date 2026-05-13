@@ -221,9 +221,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
         logger.warning(f"OVERDRIVE {model_id} call failed ({type(e).__name__}: {e})")
         return (None, False)
 
-    # Some upstreams (including the current proxy when upstream 429s)
-    # wrap the rate-limit as a normal 200 with {"type":"error",...}.
-    # Treat that identically to an HTTP 429.
+    # Some upstreams wrap rate limits as HTTP 200 error payloads; treat as 429.
     if isinstance(data, dict) and data.get("type") == "error":
         err = data.get("error", {}) or {}
         is_rate = err.get("type") == "rate_limit_error"
