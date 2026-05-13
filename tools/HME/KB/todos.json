@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1926,
-      "updated_ts": 1778641326.134156
+      "max_id": 1929,
+      "updated_ts": 1778641336.5967252
     }
   },
   {
     "id": 1924,
     "text": "Inspect Writ-main repository structure for workflow and guardrail artifacts",
     "activeForm": "Inspecting Writ-main repository structure for workflow and guardrail artifacts",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 1925,
     "text": "Read key hook, test, script, and CI files for concrete mechanisms",
     "activeForm": "Reading key hook, test, script, and CI files for concrete mechanisms",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
