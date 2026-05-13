@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2323,
-      "updated_ts": 1778708601.206565
+      "max_id": 2326,
+      "updated_ts": 1778708694.8227384
     }
   },
   {
     "id": 2321,
     "text": "Compare unsynced models against OmniRoute /v1/models ids",
     "activeForm": "Comparing unsynced models against OmniRoute /v1/models ids",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2322,
     "text": "Improve sync matching for aliases/provider prefixes",
     "activeForm": "Improving sync matching for aliases/provider prefixes",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2323,
     "text": "Rerun sync and verify all possible models populated",
     "activeForm": "Rerunning sync and verifying populated models",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
