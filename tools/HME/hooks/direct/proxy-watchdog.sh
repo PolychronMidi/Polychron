@@ -31,7 +31,7 @@ fi
 _WD_PORT="${HME_PROXY_PORT:-9099}"
 _WD_URL="http://127.0.0.1:${_WD_PORT}/health"
 
-# ── OmniRoute health-check + respawn (MODE=4/5 main-agent translator) ──
+# -- OmniRoute health-check + respawn (MODE=4/5 main-agent translator) --
 # Session resume doesn't go through polychron-launch.sh, so the watchdog
 # must ensure OmniRoute is running before attempting proxy spawn.
 _OR_PORT="${HME_OMNIROUTE_PORT:-20128}"
