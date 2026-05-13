@@ -93,9 +93,8 @@ function _shellParityDecision(payload) {
 }
 
 async function preWriteCheck(stdinJson) {
-  let payload;
-  try { payload = typeof stdinJson === 'string' ? JSON.parse(stdinJson || '{}') : (stdinJson || {}); }
-  catch (_e) { payload = {}; }
+  const env = normalize(stdinJson);
+  const payload = { ...env.raw, session_id: env.session_id, tool_name: env.tool_name, tool_input: env.tool_input };
   const tool = payload.tool_name || '';
   if (!['Write', 'Edit', 'MultiEdit'].includes(tool)) return _permission('allow');
 
@@ -115,17 +114,17 @@ async function preWriteCheck(stdinJson) {
     const { firstDeny, instructs, errors } = await registry.runChain(policies, ctx);
     if (firstDeny) {
       const out = _permission('deny', firstDeny.reason, `policy:${firstDeny.policy}`);
-      sessionState.recordWrite(payload, out);
+      await stateClient.call('write', payload.session_id || '', { payload, decision: out });
       return out;
     }
     if (errors.length) return _permission('ask', errors.map((e) => `${e.policy}: ${e.error}`).join('\n'));
     const shellDecision = _shellParityDecision(payload);
     if (shellDecision.permissionDecision !== 'allow') {
-      sessionState.recordWrite(payload, shellDecision);
+      await stateClient.call('write', payload.session_id || '', { payload, decision: shellDecision });
       return shellDecision;
     }
     if (instructs.length) shellDecision.contextualRules.push(...instructs.map((i) => i.message));
-    sessionState.recordWrite(payload, shellDecision);
+    await stateClient.call('write', payload.session_id || '', { payload, decision: shellDecision });
     return shellDecision;
   } catch (err) {
     return _permission('ask', `pre-write-check failed: ${err.message}`);
