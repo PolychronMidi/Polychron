@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1815,
-      "updated_ts": 1778637499.1421895
+      "max_id": 1818,
+      "updated_ts": 1778637642.0100555
     }
   },
   {
-    "id": 1807,
-    "text": "Clean boyscout audit violations in touched files",
-    "activeForm": "Cleaning boyscout audit violations in touched files",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778637288.9999237,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1808,
-    "text": "Rerun targeted hook and detector verification",
-    "activeForm": "Rerunning targeted hook and detector verification",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778637288.9999385,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1809,
-    "text": "Close with required summary block",
-    "activeForm": "Closing with required summary block",
+    "id": 1816,
+    "text": "Identify why EXHAUST fired on previous close",
+    "activeForm": "Identifying why EXHAUST fired on previous close",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778637288.9999495,
+    "ts": 1778637642.0100281,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1817,
+    "text": "Fix detector false positive or remaining work",
+    "activeForm": "Fixing detector false positive or remaining work",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778637642.010043,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1818,
+    "text": "Verify stop detector behavior",
+    "activeForm": "Verifying stop detector behavior",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778637642.0100536,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
