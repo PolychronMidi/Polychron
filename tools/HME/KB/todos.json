@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2106,
-      "updated_ts": 1778658300.0908105
+      "max_id": 2111,
+      "updated_ts": 1778658448.069452
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2098,
     "text": "Implement session-state API/fallback plumbing",
     "activeForm": "Implementing session-state API/fallback plumbing",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2089,
     "text": "Expand synthetic hook manifest and routing contract tests",
     "activeForm": "Expanding synthetic hook manifest and routing contract tests",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
