@@ -240,13 +240,7 @@ def main() -> int:
     n_work = _substantive_work_count(events)
     text_lower = text.lower()
 
-    # Implicit-solo rescue: a turn with >= 3 concrete code-changing tool
-    # calls (Edit/MultiEdit/Write/NotebookEdit) is IMPLEMENTING a decision,
-    # not crystallizing one. The user's prompt is the commitment moment;
-    # writing code to fulfill it is execution, and demanding a fresh
-    # advisor consult per execution turn is the cascading-ceremony failure
-    # mode (see ceremony_dodge.py). Below 3 substantive edits = light or
-    # zero work, so the doctrine still fires normally.
+    # Implicit-solo rescue: >=3 code-changing tool calls means execution.
     implicit_solo = n_work >= 3
 
     # Rule 3 cap -- historic violation across turns.
