@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2346,
-      "updated_ts": 1778709684.1957607
+      "max_id": 2349,
+      "updated_ts": 1778709773.6447535
     }
   },
   {
     "id": 2344,
     "text": "Find OmniRoute settings storage for thinking budget/payload rules",
     "activeForm": "Finding OmniRoute settings storage for thinking budget/payload rules",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2345,
     "text": "Apply global xhigh/adaptive reasoning config",
     "activeForm": "Applying global xhigh/adaptive reasoning config",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2346,
     "text": "Verify persisted config and runtime response",
     "activeForm": "Verifying persisted config and runtime response",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
