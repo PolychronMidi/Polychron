@@ -65,9 +65,6 @@ function runInBackgroundRewrite(eventName, data, ctx) {
     const state = holds.get(data.index);
     if (state) {
       state.partial += (data.delta.partial_json || '');
-      if (!state.firstDeltaShape) {
-        state.firstDeltaShape = { type: data.type, index: data.index };
-      }
       return null; // drop -- we re-emit on content_block_stop
     }
     return data;
