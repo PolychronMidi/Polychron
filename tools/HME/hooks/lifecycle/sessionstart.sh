@@ -204,7 +204,6 @@ _LANCE_DEL="$PROJECT/tools/HME/KB/code_chunks.lance/_deletions"
 if [ -d "$_LANCE_DEL" ]; then
   _DEL_COUNT=$(ls -1 "$_LANCE_DEL" 2>/dev/null | wc -l)
   if [ "$_DEL_COUNT" -gt 50 ]; then
-    echo "HME: lance _deletions has $_DEL_COUNT files -- compacting in background" >&2
     PROJECT_ROOT="$PROJECT" python3 "$PROJECT/scripts/compact-lance-tables.py" \
       > "$PROJECT/log/hme-lance-compact.log" 2>&1 &
   fi
@@ -218,8 +217,6 @@ if [ -f "$HOLO_SCRIPT" ]; then
   : > "$PROJECT/log/hme-bg-snapshot-holograph.err"
   # Atomic write: temp file + mv on the same filesystem. Without this,
   # two concurrent session starts (or restarts within the same second)
-  # can interleave the redirected stdout and produce concatenated JSON
-  # objects that crash the stop_holograph diff reader.
   (
     SESSION_HOLO_TMP="${SESSION_HOLO}.$$.tmp"
     PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout \
@@ -231,7 +228,6 @@ fi
 
 # Refresh the tool-effectiveness analysis in the background. Reads log/hme.log
 # and writes metrics/hme-tool-effectiveness.json, which the LifesaverRate
-# and MetaObserverCoherence verifiers consume to compute the HCI.
 EFF_SCRIPT="$PROJECT/tools/HME/scripts/analyze-tool-effectiveness.py"
 EFF_PID=""
 if [ -f "$EFF_SCRIPT" ]; then
