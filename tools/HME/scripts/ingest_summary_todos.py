@@ -50,7 +50,7 @@ if banner_m:
         ss = sm.end()
         nx = re.search(r"\n\s*\[[A-Z]", st[ss:])
         story_text = st[ss:ss + nx.start()] if nx else st[ss:]
-        wn = re.search(r"^\s*[-*]\s*what(?:'|’)?s?\s+next\s*:(.*)", story_text, re.IGNORECASE | re.MULTILINE)
+        wn = re.search(r"^\s*[-*]\s*what'?s?\s+next\s*:(.*)", story_text, re.IGNORECASE | re.MULTILINE)
         if wn:
             it = wn.group(1).strip()
             if it and it.lower() not in ("none", "nothing", "n/a"):
