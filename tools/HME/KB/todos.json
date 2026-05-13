@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2121,
-      "updated_ts": 1778658597.0523307
+      "max_id": 2126,
+      "updated_ts": 1778658749.944089
     }
   },
   {
@@ -66,8 +66,8 @@
     "id": 2091,
     "text": "Run focused tests and clean-room audits",
     "activeForm": "Running focused tests and clean-room audits",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
