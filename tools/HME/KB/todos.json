@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2134,
-      "updated_ts": 1778660028.2034957
+      "max_id": 2137,
+      "updated_ts": 1778660063.928165
     }
   },
   {
     "id": 2132,
     "text": "Map AIPass structure and relevant Polychron HME files",
     "activeForm": "Mapping AIPass structure and relevant Polychron HME files",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2133,
     "text": "Inspect high-value hooks, agents, enforcement, state, tests, and workflow files",
     "activeForm": "Inspecting high-value hooks, agents, enforcement, state, tests, and workflow files",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
