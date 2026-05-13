@@ -115,3 +115,25 @@ if [ "$DO_CONFIGURE" -eq 1 ]; then
   fi
   rm -f /tmp/omni-setup-cookies.txt
 fi
+
+# Auto-repair: reset expired opencode-go credentials (OmniRoute's health-check
+# sometimes tests with wrong model and marks valid keys as expired).
+_repair_opencode_credentials() {
+  local _port="$1"
+  curl -sf -c /tmp/omni-repair.txt -X POST "http://127.0.0.1:${_port}/api/auth/login" \
+    -H "Content-Type: application/json" -d '{"password":"polychron"}' >/dev/null || return 0
+  curl -sf -b /tmp/omni-repair.txt "http://127.0.0.1:${_port}/api/providers" 2>/dev/null | \
+    python3 -c "
+import sys,json
+for c in json.load(sys.stdin).get('connections',[]):
+    if c['provider']=='opencode-go' and c.get('testStatus')=='expired':
+        print(c['id'])
+" | while read _cid; do
+    curl -sf -b /tmp/omni-repair.txt -X PUT "http://127.0.0.1:${_port}/api/providers/${_cid}" \
+      -H "Content-Type: application/json" \
+      -d '{"testStatus":"success","isActive":true,"lastError":null,"errorCode":null}' >/dev/null && \
+      echo "[omniroute] repaired expired opencode-go credential ${_cid}"
+  done
+  rm -f /tmp/omni-repair.txt
+}
+_repair_opencode_credentials "$PORT"

@@ -1,68 +1,7 @@
-"""Reasoning/coder tier dispatcher -- two quality-ranked cascades across providers.
+"""Synthesis model dispatcher — everything routes through OmniRoute (port 20128).
 
-Two profiles -- callers pass `profile="reasoning"` (default) or `profile="coder"`.
-Each profile has its own ordered (provider, model) list so reasoning fallbacks
-pick reasoning-strong models and coder fallbacks pick code-strong models.
-
-Both rankings share the same provider modules and quota pools -- splitting the
-order only changes which slot fires first, not which free tiers are consumed.
-
-profile="reasoning" -- general analysis, architecture, deep think:
-     1. nvidia     deepseek-ai/deepseek-v4-pro            full DeepSeek V4 Pro
-     2. nvidia     mistralai/mistral-large-3-675b-...     675B Mistral Large 3
-     3. openrouter deepseek/deepseek-r1:free              R1 reasoning
-     4. nvidia     nvidia/llama-3.1-nemotron-ultra-253b   253B Nemotron Ultra
-     5. nvidia     qwen/qwen3.5-397b-a17b                 397B Qwen 3.5
-     6. cerebras   qwen-3-235b-a22b-instruct-2507         235B, wafer-scale fast
-     7. mistral    magistral-medium-latest                Mistral reasoning
-     8. nvidia     z-ai/glm5                              GLM-5 (paywalled elsewhere)
-     9. groq       openai/gpt-oss-120b                    120B OpenAI-open
-    10. mistral    mistral-large-latest                   Mistral general flagship
-    11. groq       moonshotai/kimi-k2-instruct-0905       Kimi K2
-    12. nvidia     meta/llama-3.3-70b-instruct            Meta 70B on NVIDIA
-    13. gemini     gemini-3-flash-preview                 newest Gemini flash
-    14. gemini     gemini-flash-latest                    floating alias
-    15. mistral    mistral-medium-latest                  smaller general
-    16. groq       llama-3.3-70b-versatile                Meta 70B on Groq
-    17. openrouter meta-llama/llama-3.3-70b-instruct:free slower 70B host
-    18. mistral    magistral-small-latest                 small reasoning
-    19. gemini     gemini-2.5-flash                       workhorse
-    20. gemini     gemini-2.0-flash                       older 2.x
-    21. cerebras   llama3.1-8b                            weak fallback
-    22. gemini     gemini-2.5-flash-lite                  last before local
-
-profile="coder" -- structural code extraction, verified facts, file-aware work:
-     1. nvidia     qwen/qwen3-coder-480b-a35b-instruct    480B Qwen3 coder flagship
-     2. nvidia     mistralai/devstral-2-123b-instruct     123B agentic coder
-     3. nvidia     deepseek-ai/deepseek-v4-pro            strong all-round coder
-     4. groq       openai/gpt-oss-120b                    strong code + fast
-     5. nvidia     mistralai/mistral-large-3-675b-...     675B Mistral Large 3
-     6. cerebras   qwen-3-235b-a22b-instruct-2507         235B, great on code
-     7. nvidia     z-ai/glm5                              GLM-5 (strong on SWE-Bench)
-     8. mistral    devstral-medium-latest                 agentic coder (Mistral direct)
-     9. mistral    codestral-latest                       code completion specialist
-    10. groq       moonshotai/kimi-k2-instruct-0905       Kimi K2
-    11. openrouter deepseek/deepseek-r1:free              R1 (also good at code)
-    12. nvidia     meta/llama-3.3-70b-instruct            Meta 70B on NVIDIA
-    13. gemini     gemini-3-flash-preview                 Gemini 3
-    14. mistral    mistral-large-latest                   flagship general
-    15. gemini     gemini-flash-latest                    floating alias
-    16. groq       llama-3.3-70b-versatile                Meta 70B on Groq
-    17. openrouter meta-llama/llama-3.3-70b-instruct:free slower 70B
-    18. mistral    mistral-medium-latest                  medium general
-    19. gemini     gemini-2.5-flash                       workhorse
-    20. gemini     gemini-2.0-flash                       older 2.x
-    21. cerebras   llama3.1-8b                            weak fallback
-    22. gemini     gemini-2.5-flash-lite                  last before local
-
-Reasoning models (magistral-*, deepseek-r1) are demoted on the coder profile
-because they waste output tokens on chain-of-thought that then gets discarded
-when the caller only wants file paths and function names.
-
-Z.ai provider omitted: all GLM models on z.ai are paywalled despite "free tier"
-marketing -- API returns "insufficient balance" on every request.
-
-Local qwen3-coder:30b-a3b is the final fallback handled by the caller.
+OmniRoute handles all provider-specific auth, compression, and Anthropic↔OpenAI
+translation. Models are resolved per-tier from config/models.json.
 """
 import logging
 import os
@@ -87,10 +26,8 @@ _env_last_refresh = 0.0
 
 
 def _label_for_model(model_id: str) -> str:
-    """Turn 'claude-opus-4-7' -> 'overdrive/opus', 'claude-sonnet-4-6' ->
-    'overdrive/sonnet', 'claude-haiku-4-5-20251001' -> 'overdrive/haiku',
-    'deepseek-v4-pro' -> 'overdrive/zen/deepseek-pro', 'deepseek-v4-flash'
-    -> 'overdrive/zen/deepseek-flash'. Falls back to the full model id."""
+    """Turn 'deepseek-v4-pro' -> 'overdrive/zen/deepseek-pro', etc.
+    Falls back to 'overdrive/{model_id}'."""
     lower = model_id.lower()
     if lower.startswith("deepseek-"):
         if "pro" in lower:
@@ -100,9 +37,6 @@ def _label_for_model(model_id: str) -> str:
         return f"overdrive/zen/{model_id}"
     if lower.startswith("glm-"):
         return f"overdrive/zen/{model_id}"
-    for slug in ("opus", "sonnet", "haiku"):
-        if slug in lower:
-            return f"overdrive/{slug}"
     return f"overdrive/{model_id}"
 
 
@@ -181,41 +115,6 @@ def _emit_overdrive_activity(source_label: str, model_id: str,
 # (bounded_log import moved to module top alongside other imports)
 
 
-def _try_cascade_model(model_id: str, prompt: str, system: str,
-                       max_tokens: int) -> tuple[str | None, bool]:
-    """Call a cascade model through its provider module (OpenAI-compatible API)."""
-    _PROVIDER_MAP = {
-        "mistral-large-3": "mistral",
-        "gemini-3-pro": "gemini",
-        "gemini-3-flash-lite": "gemini",
-        "gpt-5.2-turbo": "openrouter",
-        "gpt-5.2-mini": "openrouter",
-    }
-    _MODEL_MAP = {
-        "mistral-large-3": "mistral-large-latest",
-        "gemini-3-pro": "gemini-2.5-pro-exp-03-25",
-        "gemini-3-flash-lite": "gemini-2.5-flash-lite",
-        "gpt-5.2-turbo": "gpt-5.2-turbo",
-        "gpt-5.2-mini": "gpt-5.2-mini",
-    }
-    _provider_key = _PROVIDER_MAP.get(model_id)
-    if not _provider_key:
-        return (None, False)
-    _api_model = _MODEL_MAP.get(model_id, model_id)
-    try:
-        from . import synthesis_reasoning as _sr
-        _providers = _sr._load_providers()
-        _mod = _providers.get(_provider_key)
-        if not _mod:
-            return (None, False)
-        _text = _mod.cascade(prompt, system=system, max_tokens=max_tokens)
-        if _text:
-            return (_text, f"cascade/{_provider_key}")
-        return (None, True)  # rate-limited, try next model
-    except Exception:
-        return (None, False)
-
-
 def _resolve_model_provider(model_id: str) -> str | None:
     """Look up a model's provider from config/models.json. Returns None if not found."""
     import json as _json
@@ -271,22 +170,23 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     # value to budget+slack when it's too low.
     _floor = budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK
     resolved_max = max(max_tokens, _floor)
-    # Per-model output cap. Haiku tops at 64K; opus/sonnet at 128K.
-    _MODEL_MAX_OUT = {"claude-haiku-4-5": 64000, "claude-haiku-4-5-20251001": 64000}
-    _cap = next((v for k, v in _MODEL_MAX_OUT.items() if k in model_id), 128000)
+    # Per-model output cap. Default 128K; no Claude-specific caps needed for MODE=5.
+    _cap = 128000
     # If thinking budget would exceed the model's cap minus slack, disable thinking.
     _drop_thinking = (budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK) > _cap
     if resolved_max > _cap:
         resolved_max = _cap
 
     # Zen requires content-blocks form; Anthropic accepts both. Use blocks uniformly.
-    _ZEN_PREFIXES = ("deepseek", "glm", "minimax", "qwen", "kimi", "mimo", "nemotron", "big-pickle", "ring", "gpt", "gemini")
-    _is_zen = model_id.startswith(_ZEN_PREFIXES)
-    _user_content = [{"type": "text", "text": prompt}] if _is_zen else prompt
-    # Go models share API names with Zen; strip the -go suffix for the actual API call
+    _user_content = [{"type": "text", "text": prompt}]
+    # Resolve provider from models.json for OmniRoute routing
+    _provider = _resolve_model_provider(model_id)
     _api_model = model_id
     if _api_model.endswith("-go"):
         _api_model = _api_model[:-3]
+    # Prefix with OmniRoute provider (codex uses "cx" alias, others match)
+    _omni_prefix = "cx" if _provider == "codex" else (_provider or "opencode-go")
+    _api_model = f"{_omni_prefix}/{_api_model}"
     payload = {
         "model": _api_model,
         "max_tokens": resolved_max,
@@ -298,25 +198,9 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     if system:
         payload["system"] = system
 
-    # Resolve provider from models.json for routing. Zen models go to OpenCode;
-    # cascade models go via OmniRoute translator (Anthropic-shape proxy).
-    _provider = _resolve_model_provider(model_id)
+    # Everything goes through OmniRoute — uniform compression, translation, auth.
     headers = {"Content-Type": "application/json", "anthropic-version": "2023-06-01"}
-    if _is_zen:
-        _zen_key = _os.environ.get("OPENCODE_API_KEY", "")
-        if not _zen_key:
-            logger.warning(f"OVERDRIVE {model_id}: OPENCODE_API_KEY missing -- aborting")
-            return (None, False)
-        headers["X-HME-Upstream"] = "https://opencode.ai/zen/go"
-        headers["x-api-key"] = _zen_key
-        headers["User-Agent"] = "curl/8.0.1"
-    elif _provider == "cascade":
-        # cascade models call provider modules directly (OpenAI-compatible API)
-        return _try_cascade_model(model_id, prompt, system, max_tokens)
-    elif _provider == "codex":
-        # codex models go through OmniRoute (local proxy → codex OAuth provider)
-        headers["X-HME-Upstream"] = f"http://127.0.0.1:{_os.environ.get('HME_OMNIROUTE_PORT', '20128')}"
-        # OmniRoute handles codex OAuth internally; no API key needed
+    headers["X-HME-Upstream"] = f"http://127.0.0.1:{_os.environ.get('HME_OMNIROUTE_PORT', '20128')}"
 
     try:
         request = _req.Request(
@@ -475,41 +359,20 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
 def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
                           chain_override: tuple[str, ...] | None = None,
                           allow_subagent: bool = True) -> tuple[str, str] | None:
-    """OVERDRIVE_MODE dispatch -- MODE=1 default Opus->Sonnet; MODE>=2 callers pass
-    chain_override to reuse this for per-model dispatch with max extended thinking.
+    """Walk a model chain, returning the first successful response.
 
-    Triggered when OVERDRIVE_MODE>=1 in .env. Bypasses the free-tier cascade
-    and spends Claude Code subscription credits for highest-quality output.
     Walks the resolved chain in order: on rate-limit for the current model,
     advances to the next; on any other failure (proxy down, timeout, empty
-    content, malformed response), returns None so the caller falls through
-    to the free cascade.
+    content), returns None so the caller falls through to the cascade.
 
-    OVERDRIVE_VIA_SUBAGENT=1 short-circuits direct API calls and routes
-    through Claude Code's Agent tool instead (different rate-limit bucket --
-    session budget, not per-minute RPM). See _dispatch_via_subagent.
+    chain_override: optional explicit (model_id, ...) tuple. MODE=5 always
+    provides this via the registry resolver.
 
-    chain_override: optional explicit (model_id, ...) tuple -- overrides the
-    .env-resolved chain. Used by OVERDRIVE_MODE>=2 (tier-aware / registry
-    routing) to pin specific models per task tier (e.g. Sonnet-only for
-    tier=E3). Source labels are auto-generated via _label_for_model.
+    OVERDRIVE_VIA_SUBAGENT=1 routes through Claude Code's Agent tool instead
+    of direct API calls (different rate-limit bucket).
 
-    allow_subagent: when False, force direct API even if OVERDRIVE_VIA_SUBAGENT=1.
-    Used by OVERDRIVE_MODE>=2 to pin model selection per tier -- subagent
-    dispatch runs at whatever /model is set, so it can't honor a model-
-    specific chain. E4-E5 (Opus chain) keeps subagent compatibility.
-
-    Returns (text, source_label) on success where source_label is e.g.
-    'overdrive/opus' or 'overdrive/sonnet'. Returns None when every model in
-    the chain failed.
-
-    Route: POSTs to the local HME proxy at ANTHROPIC_BASE_URL (default
-    http://127.0.0.1:9099). The proxy forwards to api.anthropic.com and,
-    because loopback out-of-band requests arrive with no Authorization
-    header, auto-injects the Claude Code OAuth token from
-    ~/.claude/.credentials.json. Same credential Claude Code's live
-    session uses -- your subscription covers both paths identically.
-    The user configures nothing; auth is ambient."""
+    allow_subagent: when False, force direct API even with OVERDRIVE_VIA_SUBAGENT=1.
+    """
     from hme_env import ENV as _ENV_OD
     if allow_subagent and _ENV_OD.optional("OVERDRIVE_VIA_SUBAGENT", "0") == "1":
         return _dispatch_via_subagent(prompt, system, max_tokens)

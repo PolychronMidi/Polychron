@@ -554,11 +554,12 @@ function handleRequest(clientReq, clientRes) {
 
         // Env override wins over auto-detection
         if (process.env.HME_OMNIROUTE_PROVIDER) _omniProvider = process.env.HME_OMNIROUTE_PROVIDER;
-        const _omniModel = process.env.HME_OMNIROUTE_MODEL || _swapModel;
 
         if (!_OMNIROUTE_OFF) {
-          // OmniRoute path (default)
-          // Keep request in Anthropic format; OmniRoute handles translation.
+          // OmniRoute path (default) — keep Anthropic format.
+          // Enable OmniRoute's built-in RTK+Caveman compression to handle
+          // conversation growth (saves 15-95% of eligible tokens).
+          if (!payload.compression) payload.compression = { enabled: true };
           payload.model = `${_omniProvider}/${_swapModel}`;
           clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${_OMNIROUTE_PORT}`;
           delete clientReq.headers['authorization'];

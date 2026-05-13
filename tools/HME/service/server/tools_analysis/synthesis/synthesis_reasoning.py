@@ -340,8 +340,8 @@ _MODE_CHAIN_RESOLVERS = {
 def last_source() -> str | None:
     """Return a short string identifying which path produced the most
     recent non-None result from synthesis_reasoning.call(). Values:
-        'overdrive/opus'                 -- Opus answered under OVERDRIVE_MODE
-        'overdrive/sonnet'               -- Opus rate-limited, Sonnet took over
+        'overdrive/zen/<model>'          -- model from MODE=5 registry chain
+        'overdrive/<model>'              -- model from overdrive chain
         '<provider>/<model>'             -- free-cascade slot fired
         None                             -- last call returned None OR
                                            no call made yet this process
