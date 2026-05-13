@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1953,
-      "updated_ts": 1778642406.2077553
+      "max_id": 1956,
+      "updated_ts": 1778642407.243485
     }
   },
   {
-    "id": 1951,
-    "text": "Map repository structure and locate HME state-related files",
-    "activeForm": "Mapping repository structure and locating HME state-related files",
+    "id": 1954,
+    "text": "Search repository for approval and gate terminology",
+    "activeForm": "Searching repository for approval and gate terminology",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778642406.2077296,
+    "ts": 1778642407.2434583,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1952,
-    "text": "Inspect session-state helpers, docs, and tests for ownership patterns",
-    "activeForm": "Inspecting session-state helpers, docs, and tests for ownership patterns",
+    "id": 1955,
+    "text": "Inspect relevant hooks, scripts, policies, and settings files",
+    "activeForm": "Inspecting relevant hooks, scripts, policies, and settings files",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778642406.2077434,
+    "ts": 1778642407.2434726,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1953,
-    "text": "Summarize file anchors and reusable patterns without edits",
-    "activeForm": "Summarizing file anchors and reusable patterns without edits",
+    "id": 1956,
+    "text": "Summarize anchors and insertion points",
+    "activeForm": "Summarizing anchors and insertion points",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778642406.2077534,
+    "ts": 1778642407.2434826,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
