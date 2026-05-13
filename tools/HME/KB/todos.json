@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1889,
-      "updated_ts": 1778640331.0685802
+      "max_id": 1892,
+      "updated_ts": 1778640367.787569
     }
   },
   {
     "id": 1887,
     "text": "Clear stale resolved HME error entries",
     "activeForm": "Clearing stale resolved HME error entries",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 1886,
     "text": "Verify commit guard and detector status",
     "activeForm": "Verifying commit guard and detector status",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 1889,
     "text": "Answer suggestion filtering question concisely",
     "activeForm": "Answering suggestion filtering question concisely",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
