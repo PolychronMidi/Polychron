@@ -119,7 +119,7 @@ def _get_max_tokens(default: int = 1024) -> int:
 def _get_effort() -> str:
     """Map context budget to output_config.effort level."""
     budget = get_context_budget()
-    return _BUDGET_EFFORT.get(budget, "medium")
+    return _BUDGET_EFFORT.get(budget, "max")
 
 
 def _get_tool_budget() -> int:
