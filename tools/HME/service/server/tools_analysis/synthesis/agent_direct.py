@@ -213,7 +213,8 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
 
 def dispatch_direct(prompt: str, system: str, max_tokens: int,
                     subagent_type: str = "general-purpose",
-                    timeout_sec: float = 90.0) -> str | None:
+                    timeout_sec: float = 90.0,
+                    tier: str = "E3") -> str | None:
     """Spawn `claude -p` with the given prompt, capture stdout, return text.
 
     Returns the raw text output or None on any failure. Callers treat None
