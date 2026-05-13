@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2284,
-      "updated_ts": 1778706643.5504565
+      "max_id": 2287,
+      "updated_ts": 1778706667.293056
     }
   },
   {
     "id": 2282,
     "text": "Find where CLAUDE.md reminder is represented and current strip path",
     "activeForm": "Finding CLAUDE.md reminder representation and strip path",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2283,
     "text": "Add safe configurable strip for userEmail/currentDate tail",
     "activeForm": "Adding safe configurable strip for userEmail/currentDate tail",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
