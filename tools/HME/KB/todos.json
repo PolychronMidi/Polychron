@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2494,
-      "updated_ts": 1778715351.7895603
+      "max_id": 2499,
+      "updated_ts": 1778715832.1502204
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2482,
     "text": "Run targeted checks to measure onboarding/HME tool flow",
     "activeForm": "Running targeted onboarding and HME checks",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 2483,
     "text": "Apply concise tweaks that improve coherence without bloat",
     "activeForm": "Applying concise coherence tweaks",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
