@@ -114,7 +114,8 @@ def _persist_call_count() -> None:
 _hydrate_call_count()
 
 
-def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
+def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
+                    tier: str = "E3") -> str | None:
     """Synchronously route a reasoning prompt through the buddy session
     whose sid is recorded in runtime/hme/buddy.sid (legacy: runtime/hme/thread.sid,
     one-time fallback during the rename window -- see code below).
