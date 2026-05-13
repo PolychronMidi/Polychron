@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1915,
-      "updated_ts": 1778640864.9082112
+      "max_id": 1920,
+      "updated_ts": 1778640872.192175
     }
   },
   {
@@ -66,8 +66,8 @@
     "id": 1900,
     "text": "Suggest mechanism-anchored next items",
     "activeForm": "Suggesting mechanism-anchored next items",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
