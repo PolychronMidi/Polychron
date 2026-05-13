@@ -1,5 +1,5 @@
 'use strict';
-// Regression: OVERDRIVE_MODE=3 routes E3 to deepseek-flash, E4 to deepseek-pro, E5 to Opus.
+// Regression: OVERDRIVE_MODE=3 maps E3/E4/E5 to configured chains.
 
 const { test } = require('node:test');
 const assert = require('node:assert');
