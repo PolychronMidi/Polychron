@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1821,
-      "updated_ts": 1778637690.9854379
+      "max_id": 1824,
+      "updated_ts": 1778637734.6115026
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 1817,
     "text": "Fix detector false positive or remaining work",
     "activeForm": "Fixing detector false positive or remaining work",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 1818,
     "text": "Verify stop detector behavior",
     "activeForm": "Verifying stop detector behavior",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
