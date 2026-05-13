@@ -198,10 +198,7 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
         logger.warning(f"dispatch_thread: claude exited {result.returncode}: "
                        f"{(result.stderr or '')[:200]}")
         return None
-    # Empty stdout on returncode=0 is a valid (if odd) result -- e.g.
-    # post-filter drop or the session replying with nothing. Preserve
-    # it as-is so callers don't fall through and re-bill. Prior
-    # behavior returned None on empty, which caused double-dispatch.
+    # Preserve empty successful replies so callers don't re-dispatch and double-bill.
     out = (result.stdout or "").rstrip()
     logger.info(f"dispatch_thread: succeeded ({len(out)}c in {elapsed:.1f}s, "
                 f"sid={sid[:8]}, call {_DISPATCH_THREAD_CALL_COUNT}/{_DISPATCH_THREAD_CALL_CAP})")
