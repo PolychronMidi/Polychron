@@ -70,11 +70,9 @@ def sync(path: Path, catalog: dict, dry_run: bool) -> int:
     for tier in (cfg.get("tiers") or {}).values():
         for model in tier.get("models") or []:
             hit = next((idx[c] for c in _candidates(model) if c in idx), None)
-            if not hit:
-                continue
             mapping = {
-                "context_length": hit.get("context_length"),
-                "max_output_tokens": hit.get("max_output_tokens"),
+                "context_length": hit.get("context_length") if hit else model.get("max_context"),
+                "max_output_tokens": hit.get("max_output_tokens") if hit else 8192,
             }
             for key, val in mapping.items():
                 if not isinstance(val, int) or val <= 0:
