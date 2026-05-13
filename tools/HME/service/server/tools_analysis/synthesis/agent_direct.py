@@ -188,6 +188,7 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
         t0 = time.monotonic()
         result = subprocess.run(
             ["claude", "--resume", sid,
+             "--model", _claude_model_for_tier(tier),
              "--settings", '{"alwaysThinkingEnabled":false}',
              "-p", prompt[:32000]],
             capture_output=True, text=True, timeout=timeout_sec, env=env,
