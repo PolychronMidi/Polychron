@@ -58,7 +58,9 @@ function writeState(state) {
   s.updated_at = nowIso();
   fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
   const text = JSON.stringify(s, null, 2);
-  fs.writeFileSync(STATE_FILE, text);
+  const tmp = `${STATE_FILE}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, text);
+  fs.renameSync(tmp, STATE_FILE);
   try { fs.writeFileSync(LEGACY_STATE_FILE, text); } catch (_e) { /* best-effort mirror */ }
   return s;
 }
