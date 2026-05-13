@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2180,
-      "updated_ts": 1778698415.4747381
+      "max_id": 2184,
+      "updated_ts": 1778698527.5917835
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2159,
     "text": "Read README/setup, src modules, hooks, commands, skills, config, and tests",
     "activeForm": "Reading README/setup, src modules, hooks, commands, skills, config, and tests",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 2160,
     "text": "Rank integration-worthy ideas for Polychron with evidence",
     "activeForm": "Ranking integration-worthy ideas for Polychron with evidence",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
