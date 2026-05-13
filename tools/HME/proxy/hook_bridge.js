@@ -158,7 +158,7 @@ function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') 
       if (finished) return;
       finished = true;
       clearTimeout(timer);
-      resolve({ stdout, stderr: `[hook_bridge] stdin write failed: ${err.message}`, exit_code: -1 });
+      resolve(_finishHook(eventName, scriptPath, startedAt, { stdout, stderr: `[hook_bridge] stdin write failed: ${err.message}`, exit_code: -1 }));
     }
   });
 }
