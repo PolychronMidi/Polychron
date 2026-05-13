@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2332,
-      "updated_ts": 1778708811.0229826
+      "max_id": 2335,
+      "updated_ts": 1778708862.6101606
     }
   },
   {
     "id": 2330,
     "text": "Make overdrive thinking budget model-limit derived",
     "activeForm": "Making overdrive thinking budget model-limit derived",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2331,
     "text": "Phase out obsolete .env caps",
     "activeForm": "Phasing out obsolete .env caps",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2332,
     "text": "Verify code and env behavior",
     "activeForm": "Verifying code and env behavior",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
