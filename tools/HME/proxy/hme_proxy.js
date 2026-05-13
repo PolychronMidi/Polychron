@@ -565,7 +565,7 @@ function handleRequest(clientReq, clientRes) {
           delete clientReq.headers['x-api-key'];
           _isMode4OmniRoute = true;
 
-          console.error(`[hme-proxy] MODE=${_odMode} OmniRoute: claude-* -> ${_omniProvider}/${_swapModel} via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming})`);
+          console.error(`[hme-proxy] MODE=${_odMode} OmniRoute: claude-* -> ${_omniProvider}/${_swapModel} via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming} msgs=${payload.messages.length} sys=${(payload.system||'').length}B tools=${(payload.tools||[]).length})`);
         } else {
           // Legacy zen_translator path (HME_OMNIROUTE_OFF=1)
           const { translateRequestToOpenAI } = require('./zen_translator');
@@ -1246,16 +1246,14 @@ if (_mode4WasStreaming) {
           const _verdict = _isBlank ? 'BLANK' : 'OK';
           console.error(`[hme-proxy] verdict=${_verdict} omni=${_isMode4OmniRoute} chain=${_swapChain.length} blank=${_isBlank} text=${_textChars} tools=${_toolUseBlocks}`);
 
-          // MODE=4/5 OmniRoute: blank -> retry next model transparently.
+          // MODE=4/5 OmniRoute: blank response -> try next chain model (one attempt each).
           if (_isBlank && _isMode4OmniRoute && _swapChain.length > 1) {
-            try {
             const _fs3 = require('fs');
-            const _pth3 = require('path');
-            const _stFile3 = _pth3.join(_bdRoot, 'tmp', 'hme-omni-swap-state.json');
+            const _stFile3 = _bdPath.join(_bdRoot, 'tmp', 'hme-omni-swap-state.json');
             let _st3 = { idx: 0 };
             try { _st3 = JSON.parse(_fs3.readFileSync(_stFile3, 'utf8')); } catch (_) {}
-
-            for (let _ri = 1; _ri < _swapChain.length; _ri++) {
+            let _found = false;
+            for (let _ri = 1; _ri < _swapChain.length && !_found; _ri++) {
               const _try = _swapChain[(_st3.idx + _ri) % _swapChain.length];
               const _tp = _try.provider === 'codex' ? 'cx' : _try.provider === 'opencode_go' ? 'opencode-go' : 'opencode';
               let _tid = _try.id;
@@ -1263,22 +1261,19 @@ if (_mode4WasStreaming) {
               const _rp = JSON.parse(JSON.stringify(payload));
               _rp.model = `${_tp}/${_tid}`;
               _rp.stream = false;
+              if (typeof _rp.max_tokens !== 'number' || _rp.max_tokens < 200) _rp.max_tokens = 200;
+              delete _rp.thinking;
               const _rbody = Buffer.from(JSON.stringify(_rp), 'utf8');
-              console.error(`[hme-proxy] BLANK retry ${_ri}: ${_tp}/${_tid}`);
+              console.error(`[hme-proxy] BLANK retry ${_ri}/${_swapChain.length - 1}: ${_tp}/${_tid}`);
               try {
                 const _rRes = await new Promise((resolve, reject) => {
-                  const _rOpts = {
+                  const _rr = require('http').request({
                     hostname: '127.0.0.1',
                     port: parseInt(process.env.HME_OMNIROUTE_PORT || '20128', 10),
                     path: '/v1/messages',
                     method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'anthropic-version': '2023-06-01',
-                      'content-length': String(_rbody.length),
-                    },
-                  };
-                  const _rr = require('http').request(_rOpts, (res) => {
+                    headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'content-length': String(_rbody.length) },
+                  }, (res) => {
                     const _cs = []; res.on('data', c => _cs.push(c));
                     res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(_cs).toString('utf8') }));
                     res.on('error', reject);
@@ -1290,27 +1285,23 @@ if (_mode4WasStreaming) {
                 if (_rRes.status >= 200 && _rRes.status < 300) {
                   try {
                     const _rj = JSON.parse(_rRes.body);
-                    if (_rj.content && _rj.content.length > 0) {
-                      const _rt = _rj.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
-                      if (_rt) {
-                        _st3.idx = (_st3.idx + _ri) % _swapChain.length;
-                        _st3.ts = Date.now();
-                        _st3.fail = 0;
-                        _fs3.writeFileSync(_stFile3, JSON.stringify(_st3));
-                        outStatus = _rRes.status;
-                        outBuf = Buffer.from(_rRes.body);
-                        outHeaders['content-type'] = 'application/json';
-                        delete outHeaders['transfer-encoding'];
-                        console.error(`[hme-proxy] BLANK retry OK: ${_tp}/${_tid} -> "${_rt.slice(0, 60)}"`);
-                        return;
-                      }
+                    const _rt = (_rj.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+                    if (_rt && _rt !== '(empty response)') {
+                      _found = true;
+                      _st3.idx = (_st3.idx + _ri) % _swapChain.length;
+                      _st3.ts = Date.now(); _st3.fail = 0;
+                      _fs3.writeFileSync(_stFile3, JSON.stringify(_st3));
+                      outStatus = _rRes.status;
+                      outBuf = Buffer.from(_rRes.body);
+                      outHeaders['content-type'] = 'application/json';
+                      delete outHeaders['transfer-encoding'];
+                      console.error(`[hme-proxy] BLANK retry OK: ${_tp}/${_tid} -> "${_rt.slice(0,80)}"`);
                     }
-                  } catch (_) { console.error('[hme-proxy] BLANK retry parse fail:', _.message); }
+                  } catch (_) {}
                 }
-              } catch (_re) { console.error('[hme-proxy] BLANK retry fail:', _re.message); }
+              } catch (_re) { console.error(`[hme-proxy] BLANK retry fail: ${_re.message}`); }
             }
-            console.error('[hme-proxy] BLANK retry exhausted all models');
-            } catch (_outer) { console.error('[hme-proxy] BLANK retry outer fail:', _outer.message); }
+            if (!_found) console.error('[hme-proxy] BLANK retry exhausted all models');
           }
 
           const _ts = new Date().toISOString().replace(/[:.]/g, '-');
