@@ -135,7 +135,7 @@ function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') 
       if (finished) return;
       finished = true;
       try { child.kill('SIGTERM'); } catch (_) { /* ignore */ }
-      resolve({ stdout, stderr: stderr + `\n[hook_bridge] timeout after ${timeoutMs}ms: ${scriptPath}`, exit_code: -1 });
+      resolve(_finishHook(eventName, scriptPath, startedAt, { stdout, stderr: stderr + `\n[hook_bridge] timeout after ${timeoutMs}ms: ${scriptPath}`, exit_code: -1 }));
     }, timeoutMs);
     child.stdout.on('data', (c) => { stdout += c.toString('utf8'); });
     child.stderr.on('data', (c) => { stderr += c.toString('utf8'); });
