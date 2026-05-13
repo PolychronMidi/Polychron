@@ -46,9 +46,22 @@ def _scan_file(f: pathlib.Path) -> list[str]:
     return hits
 
 
-def _walk(root: pathlib.Path) -> list[pathlib.Path]:
+def _is_git_ignored(p: pathlib.Path, project: pathlib.Path) -> bool:
+    try:
+        res = subprocess.run(
+            ['git', '-C', str(project), 'check-ignore', '-q', str(p)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    except OSError:
+        return False
+    return res.returncode == 0
+
+
+def _walk(root: pathlib.Path, project: pathlib.Path) -> list[pathlib.Path]:
     if root.is_file():
-        return [root]
+        return [] if _is_git_ignored(root, project) else [root]
     out = []
     for p in root.rglob('*'):
         if not p.is_file():
@@ -56,6 +69,8 @@ def _walk(root: pathlib.Path) -> list[pathlib.Path]:
         if any(part in EXCLUDE_DIRS for part in p.parts):
             continue
         if p.suffix not in EXTS:
+            continue
+        if _is_git_ignored(p, project):
             continue
         out.append(p)
     return out
