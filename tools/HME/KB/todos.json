@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2145,
-      "updated_ts": 1778660489.4171877
+      "max_id": 2154,
+      "updated_ts": 1778698292.7198164
     }
   },
   {
-    "id": 2143,
-    "text": "Map AIPass structure and relevant Polychron HME files",
-    "activeForm": "Mapping AIPass structure and relevant Polychron HME files",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778660489.41716,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2144,
-    "text": "Inspect high-value hooks, agents, enforcement, state, tests, and workflow files",
-    "activeForm": "Inspecting high-value hooks, agents, enforcement, state, tests, and workflow files",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778660489.4171746,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2145,
-    "text": "Rank candidate integrations with anchors and cautions",
-    "activeForm": "Ranking candidate integrations with anchors and cautions",
+    "id": 2146,
+    "text": "Resolve the reported rogue metrics directory blocking commits",
+    "activeForm": "Resolving the reported rogue metrics directory blocking commits",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778660489.4171853,
+    "ts": 1778698226.043799,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2147,
+    "text": "Study AIPass-main for integration-worthy concepts",
+    "activeForm": "Studying AIPass-main for integration-worthy concepts",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778698226.043818,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2148,
+    "text": "Rank and summarize the top 10 ideas for Polychron",
+    "activeForm": "Ranking and summarizing the top 10 ideas for Polychron",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778698226.0438292,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
