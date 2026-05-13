@@ -8,24 +8,22 @@ from pathlib import Path
 
 
 def _fetch_catalog(port: str) -> dict:
-    url = f"http://127.0.0.1:{port}/api/models/catalog"
-    headers = {}
-    api_key = os.environ.get("OMNIROUTE_API_KEY") or os.environ.get("ROUTER_API_KEY")
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=10) as resp:
+    url = f"http://127.0.0.1:{port}/v1/models"
+    with urllib.request.urlopen(url, timeout=10) as resp:
         return json.loads(resp.read())
 
 
 def _catalog_index(catalog: dict) -> dict:
     out = {}
-    for group in (catalog.get("catalog") or {}).values():
-        for model in group.get("models") or []:
-            mid = model.get("id")
-            if not mid:
-                continue
-            out[mid] = model
+    for model in catalog.get("data") or []:
+        ids = [model.get("id"), model.get("root"), model.get("parent")]
+        owned_by = model.get("owned_by")
+        root = model.get("root")
+        if owned_by and root:
+            ids.append(f"{owned_by}/{root}")
+        for mid in ids:
+            if mid:
+                out[mid] = model
     return out
 
 
