@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1824,
-      "updated_ts": 1778637734.6115026
+      "max_id": 1827,
+      "updated_ts": 1778637753.3757637
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 1818,
     "text": "Verify stop detector behavior",
     "activeForm": "Verifying stop detector behavior",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
