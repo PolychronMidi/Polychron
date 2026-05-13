@@ -227,16 +227,8 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
         return None
 
 
-# Overdrive: 64k think budget, 240s timeout. Tunable via OVERDRIVE_THINK_BUDGET/TIMEOUT.
+# Anthropic requires max_tokens to exceed thinking.budget_tokens.
 _OVERDRIVE_MAX_TOKENS_SLACK = 4096
-
-
-def _overdrive_think_budget() -> int:
-    from hme_env import ENV as _ENV
-    try:
-        return _ENV.optional_int("OVERDRIVE_THINK_BUDGET", 64000)
-    except Exception:
-        return 64000
 
 
 def _overdrive_timeout() -> int:
