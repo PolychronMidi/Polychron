@@ -26,15 +26,15 @@ Implement detector registry contract metadata so HME can separate universal hygi
 
 Classify every stop-side detector by contract type and add enough metadata that reviewers can tell whether a detector is universal hygiene, security-sensitive, or Polychron/HME-specific. This phase turns detector registry entries into auditable contracts with fixture and invariant ownership instead of bare verdict wiring.
 
-- [ ] [E3] Add registry schema fields: `category`, `scope`, `owning_invariant`, `fixture_path`, `fixture_waiver`, `why`, and `outage_link`.
-- [ ] [E3] Classify all existing detector entries as `universal`, `security`, or `project_contract`.
-- [ ] [E3] Extend `verify_registry_consistency.py` to validate metadata on every detector entry.
-- [ ] [E3] Extend detector coverage so every deny detector has fixture metadata matching a real fixture or waiver.
-- [ ] [E2] Define waiver semantics: `fixture_waiver` requires `review_date` and a one-line reason.
-- [ ] [E2] Define `owning_invariant` as a stable reference string to existing doctrine, invariant config, or devlog evidence.
-- [ ] [E2] Define `fixture_path` as project-root-relative; lists are allowed for multi-fixture detectors.
+- [x] Add registry schema fields: `category`, `scope`, `owning_invariant`, `fixture_path`, `fixture_waiver`, `why`, and `outage_link`. Evidence: `registry.json` `_schema` now declares all seven fields plus `review_date`.
+- [x] Classify all existing detector entries as `universal`, `security`, or `project_contract`. Evidence: every `registry.json` detector now carries a validated `category`.
+- [x] Extend `verify_registry_consistency.py` to validate metadata on every detector entry. Evidence: validator now checks category, required metadata, fixture XOR waiver, waiver date format, and fixture path existence.
+- [x] Extend detector coverage so every deny detector has fixture metadata matching a real fixture or waiver. Evidence: validator accepts fixture paths or waiver objects for all detector entries.
+- [x] Define waiver semantics: `fixture_waiver` requires `review_date` and a one-line reason. Evidence: validator rejects waiver objects missing `reason` or YYYY-MM-DD `review_date`.
+- [x] Define `owning_invariant` as a stable reference string to existing doctrine, invariant config, or devlog evidence. Evidence: registry entries now include `owning_invariant` and validator requires it.
+- [x] Define `fixture_path` as project-root-relative; lists are allowed for multi-fixture detectors. Evidence: validator resolves string or list fixture paths relative to `PROJECT_ROOT`.
 - [x] Document category meanings and promotion rules in the registry `_schema` block. Evidence: added `category`, `scope`, `owning_invariant`, `fixture_path`, `fixture_waiver`, `why`, and `outage_link` schema entries to `tools/HME/scripts/detectors/registry.json`.
-- [ ] [E2] Preserve behavior: modules, verdicts, bash vars, deny flags, and reason keys remain unchanged.
+- [x] Preserve behavior: modules, verdicts, bash vars, deny flags, and reason keys remain unchanged. Evidence: validator still reports 26 bash vars covered and detector-chain remains green.
 - [ ] [E2] Run detector-chain, registry-consistency, pre-commit, and clean-room audits as closure evidence.
 
 ## Deferred to next cycle (ranked surfaces from this round's reviews)
