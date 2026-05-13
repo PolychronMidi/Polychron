@@ -251,7 +251,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Cascade free tier. Strong multi-modal; solid coding and planning.",
-          "tier_score": 6
+          "tier_score": 6,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "mistral-large-latest",
@@ -263,7 +265,8 @@
           "cost_amt": 0,
           "notes": "Mistral free tier via OmniRoute. Strong reasoning at frontier level.",
           "tier_score": 7,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 131072
         },
         {
           "id": "gemini-2.5-pro",
@@ -274,7 +277,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "OpenRouter free tier. Gemini 2.5 Pro with 1M context.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "llama-4-maverick",
@@ -286,7 +291,8 @@
           "cost_amt": 0,
           "notes": "OpenRouter free tier. Strong open-source reasoning model.",
           "tier_score": 4,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 1048576
         },
         {
           "id": "glm-5.1-go",
@@ -389,7 +395,8 @@
           "cost_amt": 0,
           "notes": "Groq free tier. Strong general-purpose reasoning.",
           "tier_score": 4,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 131072
         },
         {
           "id": "llama-4-scout-17b-16e-instruct",
@@ -401,7 +408,8 @@
           "cost_amt": 0,
           "notes": "Groq free tier. Fast reasoning model.",
           "tier_score": 3,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 131072
         },
         {
           "id": "llama-4-maverick-17b-128e-instruct",
@@ -413,7 +421,8 @@
           "cost_amt": 0,
           "notes": "NVIDIA free credits. Strong open-source reasoning.",
           "tier_score": 4,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 131072
         },
         {
           "id": "nemotron-super-49b",
@@ -425,7 +434,8 @@
           "cost_amt": 0,
           "notes": "NVIDIA free credits. Advanced reasoning model.",
           "tier_score": 5,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 131072
         }
       ]
     },
@@ -481,7 +491,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "OpenRouter free tier. GPT-4o mini, strong general-purpose.",
-          "tier_score": 9
+          "tier_score": 9,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "deepseek-v4-flash",
@@ -506,7 +518,8 @@
           "cost_amt": 0,
           "notes": "Mistral free tier. Coding-specialized model.",
           "tier_score": 5,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 131072
         },
         {
           "id": "mistral-medium-latest",
@@ -518,7 +531,8 @@
           "cost_amt": 0,
           "notes": "Mistral free tier. Balanced performance model.",
           "tier_score": 6,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 131072
         },
         {
           "id": "gemini-2.5-flash",
@@ -529,7 +543,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Gemini free tier. Fast, strong tool-calling with 1M context.",
-          "tier_score": 6
+          "tier_score": 6,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "deepseek-chat",
@@ -540,7 +556,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "OpenRouter free tier. DeepSeek V3 chat model.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 131072,
+          "max_output_tokens": 8192
         },
         {
           "id": "mistral-large",
@@ -551,7 +569,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "OpenRouter free tier. Mistral Large via OpenRouter.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 131072,
+          "max_output_tokens": 8192
         },
         {
           "id": "glm-5-go",
@@ -627,7 +647,9 @@
           "cost": "usage",
           "cost_amt": 0.5,
           "notes": "Exceptional speed and context; struggles with complex agentic loops.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "qwen3-32b",
@@ -639,7 +661,8 @@
           "cost_amt": 0,
           "notes": "Groq free tier. Strong coding and reasoning.",
           "tier_score": 5,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 131072
         },
         {
           "id": "llama-3.3-70b-instruct",
@@ -651,7 +674,8 @@
           "cost_amt": 0,
           "notes": "NVIDIA free credits. Solid general-purpose model.",
           "tier_score": 4,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 131072
         }
       ]
     },
@@ -668,7 +692,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "OpenRouter free tier. GPT-4o mini, fast and capable.",
-          "tier_score": 7
+          "tier_score": 7,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "nemotron-3-super",
@@ -680,7 +706,8 @@
           "cost_amt": 0,
           "notes": "Strong instruction following; less creative on debugging.",
           "tier_score": 6,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 1048576
         },
         {
           "id": "gemini-2.0-flash",
@@ -691,7 +718,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Gemini free tier. Fast general-purpose with 1M context.",
-          "tier_score": 8
+          "tier_score": 8,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "gemini-2.5-flash",
@@ -702,7 +731,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "OpenRouter free tier. Gemini 2.5 Flash via OpenRouter.",
-          "tier_score": 6
+          "tier_score": 6,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "mimo-v2-omni",
@@ -740,7 +771,8 @@
           "cost_amt": 0,
           "notes": "Cerebras free tier. Ultra-fast small model.",
           "tier_score": 4,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "context_length": 131072
         },
         {
           "id": "nemotron-3-nano-30b-a3b",
@@ -751,7 +783,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "NVIDIA free credits. Fast lightweight model.",
-          "tier_score": 6
+          "tier_score": 6,
+          "context_length": 131072,
+          "max_output_tokens": 8192
         },
         {
           "id": "llama-3.2-3b-instruct",
@@ -762,7 +796,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "NVIDIA free credits. Ultra-fast tiny model.",
-          "tier_score": 5
+          "tier_score": 5,
+          "context_length": 131072,
+          "max_output_tokens": 8192
         }
       ]
     },
@@ -779,7 +815,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Cascade free tier. Ultra-fast; log summarization and single-line edits.",
-          "tier_score": 9
+          "tier_score": 9,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "big-pickle",
@@ -790,7 +828,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Large free context; reasoning inconsistent for complex codebases.",
-          "tier_score": 4
+          "tier_score": 4,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "ring-2.6-1t",
@@ -801,7 +841,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Basic script translation and data extraction only.",
-          "tier_score": 3
+          "tier_score": 3,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "gemini-2.5-flash-lite",
@@ -812,7 +854,9 @@
           "cost": "free",
           "cost_amt": 0,
           "notes": "Gemini free tier. Lightweight with 1M context.",
-          "tier_score": 9
+          "tier_score": 9,
+          "context_length": 1048576,
+          "max_output_tokens": 8192
         },
         {
           "id": "gpt-5.4-nano",
@@ -823,7 +867,9 @@
           "cost": "usage",
           "cost_amt": 0.2,
           "notes": "Extremely fast; single-file edits and log summarization only.",
-          "tier_score": 7
+          "tier_score": 7,
+          "context_length": 524288,
+          "max_output_tokens": 8192
         }
       ]
     }
