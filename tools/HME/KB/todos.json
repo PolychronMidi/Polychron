@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1994,
-      "updated_ts": 1778653839.568866
+      "max_id": 1999,
+      "updated_ts": 1778653929.2701685
     }
   },
   {
     "id": 1990,
     "text": "Inspect existing HME hook and state architecture for pre-write, session phase, and verification evidence",
     "activeForm": "Inspecting existing HME hook and state architecture for pre-write, session phase, and verification evidence",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 1991,
     "text": "Implement centralized HME pre-write decision endpoint/path",
     "activeForm": "Implementing centralized HME pre-write decision endpoint/path",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
