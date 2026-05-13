@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1802,
-      "updated_ts": 1778637197.0396225
+      "max_id": 1806,
+      "updated_ts": 1778637266.1385832
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 1790,
     "text": "Run targeted hook tests and report evidence",
     "activeForm": "Running targeted hook tests and reporting evidence",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
