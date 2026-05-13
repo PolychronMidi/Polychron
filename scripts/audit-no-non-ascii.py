@@ -19,6 +19,7 @@ Usage:
 from __future__ import annotations
 import argparse
 import pathlib
+import subprocess
 import sys
 
 ALLOWED = {0x09, 0x0a, 0x0d}  # tab, LF, CR
