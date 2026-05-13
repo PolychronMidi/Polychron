@@ -423,12 +423,7 @@ const _SLOP_PATTERNS = [
   { name: 'numbered_wisdom_list',
     re: /(?:^|\n)(?:\s*\d+\.\s+[A-Z][^.\n]{5,75}\.\s*\n){3,}/gm,
     repl: '\n' },
-  // #3 Three parallel dramatic sentences. 3+ consecutive short
-  // sentences (<=50 chars body each) that share an identical opening
-  // pronoun. Catalog example: "You can't see it. You can't copy-paste
-  // it away. You have to know it exists." -- collapse to the first
-  // sentence. Backref `\1` captures just the opening token, NOT the
-  // whole sentence, so the match anchors on shared opener.
+  // #3 Parallel dramatic sentences: keep first repeated-opener sentence.
   { name: 'parallel_dramatic',
     re: /(\b(?:You|I|We|It|This|That|They)\b)([^.!?\n]{1,50}[.!?])\s+\1[^.!?\n]{1,50}[.!?]\s+\1[^.!?\n]{1,50}[.!?]/g,
     repl: '$1$2' },
