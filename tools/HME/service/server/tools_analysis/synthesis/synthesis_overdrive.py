@@ -135,48 +135,12 @@ def _resolve_model_provider(model_id: str) -> str | None:
     return _resolve_model_meta(model_id).get("provider")
 
 
-_catalog_cache = {"ts": 0.0, "data": None}
 
-
-def _omniroute_catalog() -> dict | None:
-    import json as _json
-    import os as _os
-    import time as _time
-    import urllib.request as _req
-    now = _time.monotonic()
-    if _catalog_cache["data"] is not None and now - _catalog_cache["ts"] < 300:
-        return _catalog_cache["data"]
-    port = _os.environ.get("HME_OMNIROUTE_PORT", "20128")
-    try:
-        with _req.urlopen(f"http://127.0.0.1:{port}/api/models/catalog", timeout=2) as resp:
-            data = _json.loads(resp.read())
-    except Exception as err:  # silent-ok: OmniRoute may be down; local registry fallback remains
-        logger.debug(f"OmniRoute catalog unavailable: {type(err).__name__}: {err}")
-        return None
-    _catalog_cache.update({"ts": now, "data": data})
-    return data
-
-
-def _omniroute_model_limits(model_id: str, provider: str | None) -> tuple[int | None, int | None]:
-    catalog = _omniroute_catalog()
-    if not catalog:
-        return (None, None)
-    raw_model = model_id[:-3] if model_id.endswith("-go") else model_id
-    wanted = {model_id, raw_model, f"{provider}/{raw_model}" if provider else raw_model}
-    for group in (catalog.get("catalog") or {}).values():
-        for model in group.get("models") or []:
-            if model.get("id") not in wanted:
-                continue
-            return (model.get("context_length"), model.get("max_output_tokens"))
-    return (None, None)
-
-
-def _context_limits_for(model_id: str, provider: str | None) -> tuple[int, int | None]:
-    ctx_limit, output_limit = _omniroute_model_limits(model_id, provider)
-    if ctx_limit:
-        return (int(ctx_limit), int(output_limit) if output_limit else None)
-    meta_limit = int(_resolve_model_meta(model_id).get("max_context") or 0)
-    return (meta_limit if meta_limit > 0 else 128000, None)
+def _context_limits_for(model_id: str) -> tuple[int, int | None]:
+    meta = _resolve_model_meta(model_id)
+    ctx_limit = int(meta.get("context_length") or meta.get("max_context") or 0)
+    output_limit = int(meta.get("max_output_tokens") or 0)
+    return (ctx_limit if ctx_limit > 0 else 128000, output_limit if output_limit > 0 else None)
 
 
 def _try_overdrive_model(model_id: str, prompt: str, system: str,
@@ -209,7 +173,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     budget = _sr._overdrive_think_budget()
     timeout_secs = _sr._overdrive_timeout()
     _provider = _resolve_model_provider(model_id)
-    _limit, _output_limit = _context_limits_for(model_id, _provider)
+    _limit, _output_limit = _context_limits_for(model_id)
     _reserve = 4096
     _max_output = _output_limit or max(256, _limit - _reserve)
     _floor = min(budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK, _max_output)
