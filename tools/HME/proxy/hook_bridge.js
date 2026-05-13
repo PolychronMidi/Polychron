@@ -283,6 +283,7 @@ function _toolName(stdinJson) {
  */
 async function dispatchEvent(eventName, stdinJson) {
   const empty = stdinJson || '{}';
+  if (shouldSkipForNestedHooks(eventName, empty)) return { stdout: '', stderr: ' ', exit_code: 0 };
   _recordLifecycleState(eventName, empty);
   switch (eventName) {
     case 'SessionStart':
