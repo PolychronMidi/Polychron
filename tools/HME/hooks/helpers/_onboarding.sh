@@ -108,12 +108,16 @@ _onb_step_label() {
 _onb_init() {
   mkdir -p "$(dirname "$_ONB_STATE_FILE")"
   local _cur
-  _cur="$(cat "$_ONB_STATE_FILE" 2>/dev/null | tr -d '[:space:]')"
+  if [ -f "$_ONB_STATE_FILE" ]; then
+    _cur="$(cat "$_ONB_STATE_FILE" 2>/dev/null | tr -d '[:space:]')"
+  else
+    _cur=""
+  fi
   case "$_cur" in
-    boot|selftest_ok|targeted|edited|reviewed|piped|verified|graduated)
+    boot|selftest_ok|targeted|edited|reviewed|piped|verified)
       return 0 ;;
     *)
-      # Only init to boot when file is missing or contains garbage.
+      # Missing, graduated, or garbage state re-arms onboarding for this session.
       echo "boot" > "$_ONB_STATE_FILE"
       rm -f "$_ONB_TARGET_FILE" ;;
   esac
