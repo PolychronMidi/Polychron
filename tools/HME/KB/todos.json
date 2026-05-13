@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1809,
-      "updated_ts": 1778637288.9999518
+      "max_id": 1812,
+      "updated_ts": 1778637476.567872
     }
   },
   {
     "id": 1807,
     "text": "Clean boyscout audit violations in touched files",
     "activeForm": "Cleaning boyscout audit violations in touched files",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 1808,
     "text": "Rerun targeted hook and detector verification",
     "activeForm": "Rerunning targeted hook and detector verification",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
