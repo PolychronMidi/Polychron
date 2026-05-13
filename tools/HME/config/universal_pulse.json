@@ -52,6 +52,12 @@
       "path": "output/metrics/hme-activity.jsonl",
       "max_stale_sec": 1800,
       "_why": "Activity bridge writes here on every turn_complete. Stale-for-30min means turn-end hooks stopped firing."
+    },
+    {
+      "name": "doctor_health",
+      "path": "tmp/hme-doctor.ok",
+      "max_stale_sec": 1800,
+      "_why": "hme-doctor writes this after successful health checks; stale means doctor stopped running or health is failing."
     }
   ],
   "hook_latency_probes": [
