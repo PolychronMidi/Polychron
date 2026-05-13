@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1790,
-      "updated_ts": 1778636831.5138862
+      "max_id": 1794,
+      "updated_ts": 1778636985.6799915
     }
   },
   {
     "id": 1787,
     "text": "Trace SessionStart fail=1 source",
     "activeForm": "Tracing SessionStart fail=1 source",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 1788,
     "text": "Inspect Stop work-check detector for missed enforcement",
     "activeForm": "Inspecting Stop work-check detector for missed enforcement",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
