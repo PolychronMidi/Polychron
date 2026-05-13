@@ -892,8 +892,8 @@ function _runBuddyInit(sandbox, env) {
     '[{"type":"system","subtype":"init","session_id":"fake-sid-$$"}]\n' +
     'EOF\n', { mode: 0o755 });
   const fullEnv = {
-    ...process.env,
     ...env,
+    HOME: process.env.HOME,
     PATH: `${stubBin}:${process.env.PATH}`,
     PROJECT_ROOT: sandbox,
     CLAUDE_PROJECT_DIR: sandbox,
