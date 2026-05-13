@@ -21,10 +21,31 @@ def _catalog_index(catalog: dict) -> dict:
         root = model.get("root")
         if owned_by and root:
             ids.append(f"{owned_by}/{root}")
+            ids.append(root.split("/")[-1])
         for mid in ids:
             if mid:
                 out[mid] = model
     return out
+
+
+PROVIDER_ALIASES = {
+    "nvidia-ngc": ["nvidia"],
+    "gemini": ["google"],
+}
+
+
+MODEL_ALIASES = {
+    "mimo-v2-pro": ["mimo-v2.5-pro"],
+    "mimo-v2-omni": ["mimo-v2.5"],
+    "nemotron-3-super": ["nemotron-3-super-120b-a12b"],
+    "gemini-3-flash": ["gemini-3.1-flash-image-preview"],
+    "llama-3.3-70b-instruct": ["llama-3.3-70b-versatile"],
+    "llama-4-maverick": ["llama-4-maverick-17b-128e-instruct"],
+    "llama-4-scout-17b-16e-instruct": ["llama-4-maverick-17b-128e-instruct"],
+    "qwen3-32b": ["qwen/qwen3-32b"],
+    "llama3.1-8b": ["gpt-oss-120b"],
+    "nemotron-super-49b": ["nemotron-3-super-120b-a12b"],
+}
 
 
 def _candidates(model: dict) -> list[str]:
