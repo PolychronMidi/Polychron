@@ -1244,6 +1244,7 @@ if (_mode4WasStreaming) {
           // Verdict: visible to user? text_chars>0 OR tool_use blocks present.
           const _isBlank = _textChars === 0 && _toolUseBlocks === 0;
           const _verdict = _isBlank ? 'BLANK' : 'OK';
+          console.error(`[hme-proxy] verdict=${_verdict} omni=${_isMode4OmniRoute} chain=${_swapChain.length} blank=${_isBlank} text=${_textChars} tools=${_toolUseBlocks}`);
 
           // MODE=4/5 OmniRoute: blank -> retry next model transparently.
           if (_isBlank && _isMode4OmniRoute && _swapChain.length > 1) {
