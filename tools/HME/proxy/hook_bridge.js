@@ -31,6 +31,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
 const { appendHookExec } = require('../hooks/hook_report');
+const { shouldSkipForNestedHooks } = require('../hooks/cwd_guard');
 const { preWriteCheck, toHookResponse } = require('./pre_write_check');
 const stateClient = require('./session_state_client');
 const { normalize } = require('./hook_envelope');
