@@ -285,7 +285,7 @@ async function dispatchEvent(eventName, stdinJson) {
   _recordLifecycleState(eventName, empty);
   switch (eventName) {
     case 'SessionStart':
-      return runChain([path.join(LIFECYCLE, 'sessionstart.sh')], empty);
+      return runChain([path.join(LIFECYCLE, 'sessionstart.sh')], empty, 30_000, 'SessionStart');
     case 'UserPromptSubmit':
       return runChain([path.join(LIFECYCLE, 'userpromptsubmit.sh')], empty);
     case 'Stop': {
