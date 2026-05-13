@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2355,
-      "updated_ts": 1778709990.1067495
+      "max_id": 2361,
+      "updated_ts": 1778710018.88934
     }
   },
   {
     "id": 2350,
     "text": "Restart OmniRoute safely",
     "activeForm": "Restarting OmniRoute safely",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2351,
     "text": "Create authenticated OmniRoute reasoning config script",
     "activeForm": "Creating authenticated OmniRoute reasoning config script",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
