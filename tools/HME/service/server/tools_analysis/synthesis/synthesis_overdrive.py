@@ -290,9 +290,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     req_id = _uuid.uuid4().hex[:12]
     queue_dir = _os.path.join(_ctx.PROJECT_ROOT, "tmp", "hme-subagent-queue")
     _os.makedirs(queue_dir, exist_ok=True)
-    # Known-valid Claude Code subagent_types. The middleware validates against
-    # this list before instructing the agent, so an unknown type silently
-    # falls back to general-purpose (fail-safe default).
+    # Unknown Claude Code subagent types fall back to general-purpose.
     _VALID_TYPES = {
         "general-purpose", "Explore", "Plan",
         "statusline-setup", "claude-code-guide",
