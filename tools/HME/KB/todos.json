@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1929,
-      "updated_ts": 1778641336.5967252
+      "max_id": 1932,
+      "updated_ts": 1778641374.0980222
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 1925,
     "text": "Read key hook, test, script, and CI files for concrete mechanisms",
     "activeForm": "Reading key hook, test, script, and CI files for concrete mechanisms",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 1926,
     "text": "Synthesize top five Polychron/HME integration takeaways",
     "activeForm": "Synthesizing top five Polychron/HME integration takeaways",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
