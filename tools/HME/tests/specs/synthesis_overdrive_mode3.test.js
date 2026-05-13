@@ -48,7 +48,7 @@ test('overdrive mode=3: tier=E5 routes through full Opus chain', () => {
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     captured["allow_subagent"] = allow_subagent
     return ("e5-response", "overdrive/opus")
@@ -74,7 +74,7 @@ test('overdrive mode=3: tier=E4 pins deepseek-v4-pro + forces direct API', () =>
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     captured["allow_subagent"] = allow_subagent
     return ("e4-response", "overdrive/zen/deepseek-pro")
@@ -100,7 +100,7 @@ test('overdrive mode=3: tier=E3 pins deepseek-v4-flash + forces direct API', () 
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     captured["allow_subagent"] = allow_subagent
     return ("e3-response", "overdrive/zen/deepseek-flash")
@@ -166,7 +166,7 @@ test('overdrive mode=3: legacy tier=hard maps to E4 (deepseek-pro)', () => {
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     return ("hard-response", "overdrive/zen/deepseek-pro")
 sr._call_opus_overdrive = fake_call_opus_overdrive

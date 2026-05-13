@@ -51,7 +51,7 @@ test('overdrive mode=2: tier=hard routes through full Opus chain', () => {
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     captured["allow_subagent"] = allow_subagent
     return ("hard-response", "overdrive/opus")
@@ -77,7 +77,7 @@ test('overdrive mode=2: tier=medium pins Sonnet-only chain + forces direct API',
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     captured["allow_subagent"] = allow_subagent
     return ("medium-response", "overdrive/sonnet")
@@ -130,7 +130,7 @@ test('overdrive mode=1: tier parameter ignored (Opus chain regardless of tier)',
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {"calls": []}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["calls"].append({"chain_override": chain_override, "allow_subagent": allow_subagent})
     return ("response", "overdrive/opus")
 sr._call_opus_overdrive = fake_call_opus_overdrive

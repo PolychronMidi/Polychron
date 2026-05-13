@@ -48,7 +48,7 @@ test('overdrive mode=4: tier=E5 pins glm-5.1 + forces direct API', () => {
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     captured["allow_subagent"] = allow_subagent
     return ("e5-response", "overdrive/zen/glm-5.1")
@@ -74,7 +74,7 @@ test('overdrive mode=4: tier=E4 pins deepseek-v4-pro', () => {
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     captured["allow_subagent"] = allow_subagent
     return ("e4-response", "overdrive/zen/deepseek-pro")
@@ -96,7 +96,7 @@ test('overdrive mode=4: tier=E3 pins deepseek-v4-flash', () => {
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     return ("e3-response", "overdrive/zen/deepseek-flash")
 sr._call_opus_overdrive = fake_call_opus_overdrive

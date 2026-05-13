@@ -103,7 +103,7 @@ test('overdrive mode=5: tier=E5 dispatches via registry chain + forces direct AP
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     captured["allow_subagent"] = allow_subagent
     return ("e5-response", "overdrive/mode5/E5")
@@ -130,7 +130,7 @@ test('overdrive mode=5: tier=E3 dispatches via registry chain (different tier) +
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     captured["allow_subagent"] = allow_subagent
     return ("e3-response", "overdrive/mode5/E3")
@@ -157,7 +157,7 @@ test('overdrive mode=5: tier=E1 dispatches via registry chain + forces direct AP
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True):
+def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
     captured["chain_override"] = chain_override
     captured["allow_subagent"] = allow_subagent
     return ("e1-response", "overdrive/mode5/E1")
