@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2449,
-      "updated_ts": 1778712766.4432216
+      "max_id": 2452,
+      "updated_ts": 1778712785.2929099
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2443,
     "text": "Verify with focused tests",
     "activeForm": "Verifying with focused tests",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
