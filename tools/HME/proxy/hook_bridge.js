@@ -42,6 +42,28 @@ function _recordLifecycleState(eventName, stdinJson) {
   if (eventName === 'Stop') sessionState.recordPhase('verify', { session_id: sid, event: eventName });
 }
 
+function _recordPostToolEvidence(stdinJson) {
+  let payload;
+  try { payload = JSON.parse(stdinJson || '{}'); } catch (_e) { return; }
+  const tool = payload.tool_name || '';
+  const input = payload.tool_input || {};
+  const response = payload.tool_response || {};
+  if (tool !== 'Bash' && tool !== 'Read') return;
+  const command = tool === 'Bash' ? String(input.command || '') : `Read ${input.file_path || ''}`;
+  const excerpt = typeof response === 'string'
+    ? response.slice(0, 500)
+    : JSON.stringify(response).slice(0, 500);
+  const exitCode = Number.isInteger(response.exit_code) ? response.exit_code : null;
+  sessionState.recordVerificationEvidence({
+    session_id: payload.session_id || '',
+    command,
+    exit_code: exitCode,
+    excerpt,
+    artifact: input.file_path || '',
+    source: `PostToolUse:${tool}`,
+  });
+}
+
 const HOOKS_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'hooks');
 const LIFECYCLE = path.join(HOOKS_DIR, 'lifecycle');
 const PRETOOLUSE = path.join(HOOKS_DIR, 'pretooluse');
