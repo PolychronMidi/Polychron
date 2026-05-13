@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2395,
-      "updated_ts": 1778710785.5669107
+      "max_id": 2399,
+      "updated_ts": 1778710866.3145669
     }
   },
   {
     "id": 2392,
     "text": "Inspect existing post-tool and subagent middleware",
     "activeForm": "Inspecting existing post-tool and subagent middleware",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2393,
     "text": "Implement targeted diagnostics after edits",
     "activeForm": "Implementing targeted diagnostics after edits",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2394,
     "text": "Implement subagent stop clean gate",
     "activeForm": "Implementing subagent stop clean gate",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
