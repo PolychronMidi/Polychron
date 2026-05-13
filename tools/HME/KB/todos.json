@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2305,
-      "updated_ts": 1778707843.4054728
+      "max_id": 2308,
+      "updated_ts": 1778707984.623637
     }
   },
   {
     "id": 2303,
     "text": "Read OmniRoute docs for model context metadata",
     "activeForm": "Reading OmniRoute docs for model context metadata",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2304,
     "text": "Replace local context registry fallback with OmniRoute-provided metadata if available",
     "activeForm": "Replacing local context registry fallback with OmniRoute metadata",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2305,
     "text": "Verify metadata path and compile",
     "activeForm": "Verifying metadata path and compile",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
