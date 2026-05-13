@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1999,
-      "updated_ts": 1778653929.2701685
+      "max_id": 2004,
+      "updated_ts": 1778654208.6003332
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 1991,
     "text": "Implement centralized HME pre-write decision endpoint/path",
     "activeForm": "Implementing centralized HME pre-write decision endpoint/path",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 1992,
     "text": "Implement authoritative session-state owner/API for phase and gate state",
     "activeForm": "Implementing authoritative session-state owner/API for phase and gate state",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
