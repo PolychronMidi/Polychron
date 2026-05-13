@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2191,
-      "updated_ts": 1778698992.9232898
+      "max_id": 2194,
+      "updated_ts": 1778699002.3237896
     }
   },
   {
     "id": 2189,
     "text": "Stop the mis-scoped AIPass subagent and remove its rogue metrics path",
     "activeForm": "Stopping the mis-scoped AIPass subagent and removing its rogue metrics path",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2190,
     "text": "Study AIPass-main directly without delegation",
     "activeForm": "Studying AIPass-main directly without delegation",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
