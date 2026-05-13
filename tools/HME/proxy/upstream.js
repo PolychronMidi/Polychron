@@ -98,6 +98,11 @@ function isPassthroughMode() {
 }
 
 function tripEmergencyValve(lastErr) {
+  // OVERDRIVE_MODE=5: never enter passthrough (would leak to api.anthropic.com).
+  if (process.env.OVERDRIVE_MODE === '5') {
+    console.error(`[hme-proxy] MODE=5: suppressing escape-hatch trip (Anthropic-free mode). Error: ${lastErr}`);
+    return;
+  }
   if (_valveTripped) return;
   _valveTripped = true;
   _valveTrippedAt = Date.now();

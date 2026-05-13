@@ -988,8 +988,10 @@ if (_mode4WasStreaming) {
         if (_proxyMutatedBody) {
           const _errInfo = _detectUpstreamFailure(status, headers, fullBody);
           if (_errInfo) {
+            const _isOmniRouteErr = _isMode4OmniRoute;
+            const _provider = _isOmniRouteErr ? 'omniroute' : 'anthropic';
             const _pathLabel = _isInteractivePath ? 'interactive' : 'sub-pipeline';
-            const _errMsg = `anthropic ${status} ${_errInfo.type || 'error'} [${_pathLabel}]: ${_errInfo.message || '<no message>'}`;
+            const _errMsg = `${_provider} ${status} ${_errInfo.type || 'error'} [${_pathLabel}]: ${_errInfo.message || '<no message>'}`;
             const _stamp = new Date().toISOString().replace(/[:.]/g, '-');
             const _snapshotRel = `tmp/claude-${status}-${_pathLabel}-payload-${_stamp}.json`;
             console.error(`UPSTREAM FAILURE detected: ${_errMsg}`);
@@ -1008,8 +1010,12 @@ if (_mode4WasStreaming) {
             }
             // Trip escape hatch on every interactive 4xx (incl x-should-retry
             // 429s -- user wants the lifesaver alert as recovery signal).
-            if (_isInteractivePath && !_coolingDown) {
+            // MODE=5: never trip the escape hatch (OmniRoute errors must not
+            // cause passthrough to api.anthropic.com).
+            if (_isInteractivePath && !_coolingDown && process.env.OVERDRIVE_MODE !== '5') {
               recordUpstreamFailure(_errMsg);
+            } else if (_isInteractivePath) {
+              console.error(`escape hatch SUPPRESSED (OVERDRIVE_MODE=${process.env.OVERDRIVE_MODE || '0'}, _isMode4OmniRoute=${_isMode4OmniRoute}) -- passthrough blocked`);
             } else if (!_isInteractivePath) {
               console.error(`sub-pipeline failure -- NOT tripping escape hatch (interactive path unaffected)`);
             }
