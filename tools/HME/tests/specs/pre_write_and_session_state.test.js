@@ -27,9 +27,7 @@ async function dispatch(root, event, payload) {
 }
 
 test('pre-write check centralizes deny decision for credential writes', async () => {
-  const root = fs.mkdtempSync(path.join(os.homedir(), 'hme-pre-write-'));
-  fs.mkdirSync(path.join(root, 'src'), { recursive: true });
-  fresh(root);
+  const root = sandbox('hme-pre-write-');
   const { preWriteCheck } = require('../../proxy/pre_write_check');
   const decision = await preWriteCheck(JSON.stringify({
     tool_name: 'Write',
