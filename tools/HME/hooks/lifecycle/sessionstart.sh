@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME SessionStart: orientation -- surface previous session state + current project state
-#
-# MUST RUN BEFORE: userpromptsubmit
-# COORDINATES WITH: postcompact
-#
-# First hook of a fresh session; sets up nexus state files that
-# downstream hooks (userpromptsubmit, stop, posttooluse) depend on.
+# HME SessionStart orientation; MUST RUN BEFORE userpromptsubmit.
 cat > /dev/null  # consume stdin
 
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -84,24 +78,13 @@ if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   echo "export HME_ACTIVE=1" >> "$CLAUDE_ENV_FILE"
 fi
 
-# Worker health -- surface recent_errors
-# The worker's /health endpoint returns a `recent_errors` array (populated by
-# the meta-observer, llamacpp_supervisor, rag_proxy, etc.) that previously had
-# no surface. Agents would step over accumulating CUDA/memory/connection
-# warnings without seeing them. Fetch with a tight timeout so an unreachable
-# worker doesn't delay SessionStart, and emit a loud banner if non-empty.
+# Worker health: surface recent_errors without delaying SessionStart.
 WORKER_PORT="${HME_SHIM_PORT:-9098}"
-# Preemptively drop recent_errors older than 30 min so stale entries from a
-# prior session (typically watchdog fires that resolved themselves) don't
-# keep re-surfacing here -> LIFESAVER -> next-turn block. 30 min is longer
-# than the typical active-debug window; anything older is operationally dead.
+# Drop stale worker errors so resolved prior-session noise stays quiet.
 curl -sf --max-time 2 -X POST "http://127.0.0.1:${WORKER_PORT}/clear-errors" \
   -H 'Content-Type: application/json' \
   -d '{"older_than_ms":1800000}' >/dev/null 2>&1 || true
-# FAIL-LOUD: capture curl stderr; if non-empty AND it's not a "connection
-# refused" (worker genuinely down), surface it. Connection-refused while
-# the worker is starting is normal early-session noise; treat that as
-# silent. Anything else (DNS, permission, malformed URL) gets logged.
+# Log unexpected health-curl stderr; worker-start connection failures are normal.
 _SS_CURL_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_curl_err_$$")
 HEALTH_JSON=$(curl -sf --max-time 1 "http://127.0.0.1:${WORKER_PORT}/health" 2>"$_SS_CURL_ERR" || echo "")
 if [ -s "$_SS_CURL_ERR" ] && ! grep -qiE 'connect|refused|timed out|timeout' "$_SS_CURL_ERR"; then
@@ -177,13 +160,7 @@ LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)
 ONB_STEP="$(_onb_step_label)"
 echo -e "HyperMeta Ecstasy active. Load skill: /HME\nOnboarding: $ONB_STEP$MSG" >&2
 
-# Surface carried-over open todos from previous session -- so the agent resumes
-# with full visibility into unfinished work. LIFESAVER criticals surface first,
-# then everything else. The TodoWrite hook will re-merge these into native view
-# on the next TodoWrite call.
-# FAIL-LOUD: capture stderr; ImportError / module-load failures used to
-# vanish into `2>/dev/null` + `except Exception: pass`. Now: bridge crashes
-# to errors.log so LIFESAVER catches them next turn.
+# Surface carried-over todos; log carry-over loader failures loudly.
 _SS_CARRY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_carry_err_$$")
 CARRIED=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>"$_SS_CARRY_ERR"
 from server.tools_analysis.todo import list_carried_over
@@ -211,10 +188,7 @@ fi
 rm -f "$_SS_CARRY_ERR" 2>/dev/null
 [ -n "$CARRIED" ] && echo "$CARRIED" >&2
 
-# Surface doc/templates/TODO.md "In flight" section so cross-cycle handoff state
-# (per skill-set's SPEC/TODO substrate) is visible at session start
-# alongside the i/todo carry-over. Read-only sed extraction -- no python
-# needed for a single section read.
+# Surface doc/templates/TODO.md in-flight handoff state.
 _TODO_MD="$PROJECT/doc/templates/TODO.md"
 if [ -f "$_TODO_MD" ]; then
   IN_FLIGHT=$(sed -n '/^## In flight/,/^## /p' "$_TODO_MD" | grep -E '^\s*-\s+\[' | head -10)
@@ -225,11 +199,7 @@ if [ -f "$_TODO_MD" ]; then
   fi
 fi
 
-# Lance _deletions compaction
-# If code_chunks.lance/_deletions/ has accumulated too many arrow files (>50),
-# run a background compaction so table opens stay fast. Non-blocking -- runs
-# detached and won't delay session start. The invariant warns at >50; we
-# compact at the same threshold so the session usually starts clean.
+# Compact large Lance deletion queues in the background.
 _LANCE_DEL="$PROJECT/tools/HME/KB/code_chunks.lance/_deletions"
 if [ -d "$_LANCE_DEL" ]; then
   _DEL_COUNT=$(ls -1 "$_LANCE_DEL" 2>/dev/null | wc -l)
@@ -240,14 +210,7 @@ if [ -d "$_LANCE_DEL" ]; then
   fi
 fi
 
-# Capture a session-start holograph so the stop hook can diff against it and
-# surface drift that happened during the session. The holograph is the
-# substrate for self-coherence time-series analysis -- every session adds a
-# data point. Run in background so SessionStart stays fast.
-# Background-spawn discipline (per CLAUDE.md): stderr goes to a per-script
-# `log/hme-bg-<name>.err` file, truncated per session-start, surfaced via
-# the `pipeline-bg-script-health` HCI verifier. The previous `2>/dev/null`
-# made every crash invisible.
+# Capture session-start holograph; keep background stderr auditable.
 mkdir -p "$PROJECT/log" 2>/dev/null
 HOLO_SCRIPT="$PROJECT/tools/HME/scripts/snapshot-holograph.py"
 if [ -f "$HOLO_SCRIPT" ]; then
@@ -316,11 +279,7 @@ if [ -f "$TRAJ_SCRIPT" ]; then
   [ -n "$TRAJ_LINE" ] && echo "$TRAJ_LINE" >&2
 fi
 
-# Antagonism bridge: streak calibrator recommendation
-# The bridge observes post-banner resolution velocity across recent turns and
-# recommends where HME_STREAK_WARN should sit. Currently observe-only -- prints
-# the recommendation and rationale so we can verify the signal tracks reality
-# before wiring auto-application. If recommended != current default, surface.
+# Antagonism bridge: surface observe-only streak threshold recommendations.
 CALIB_SCRIPT="$PROJECT/tools/HME/activity/streak_calibrator.py"
 if [ -f "$CALIB_SCRIPT" ]; then
   _SS_CALIB_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_calib_err_$$")
@@ -355,9 +314,7 @@ if [ -n "$PREV_PENDING" ]; then
   echo -e "\nPrevious session left unfinished:$PREV_PENDING" >&2
 fi
 
-# R23 #10: Substrate pre-turn briefing -- four-arc state auto-surfaced at
-# session start so the agent enters with substrate context visible. Reads
-# pre-computed artifacts only (no heavy computation), silent if unavailable.
+# Substrate pre-turn briefing from precomputed metrics only.
 SUBSTRATE_BRIEF=$(python3 - <<'PY' 2>/dev/null || true
 import json, os
 root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or "."
@@ -381,20 +338,16 @@ PY
 )
 [ -n "$SUBSTRATE_BRIEF" ] && echo -e "\n$SUBSTRATE_BRIEF" >&2
 
-# Buddy system -- auto-init the persistent peer subagent for this session
-# when .env BUDDY_SYSTEM=1 (default). The helper backgrounds itself so
-# SessionStart returns immediately; sid file appears once init completes
-# (~10-20s). Reasoning calls before then fall through to ephemeral
-# dispatch. Idempotent -- no-op if a buddy is already active.
+# Buddy system: async persistent-peer init when enabled.
 _BUDDY_INIT="$PROJECT_ROOT/tools/HME/hooks/helpers/buddy_init.sh"
 [ -x "$_BUDDY_INIT" ] && bash "$_BUDDY_INIT" >/dev/null 2>&1 || true
 
-# Buddy watchdog: clear primary pointer iff transcript missing (one-shot, silent on healthy).
+# Buddy watchdog: clear missing-transcript primary pointer.
 _BUDDY_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/buddy_watchdog.py"
 [ -x "$_BUDDY_WATCHDOG" ] && \
   PROJECT_ROOT="$PROJECT_ROOT" python3 "$_BUDDY_WATCHDOG" >/dev/null 2>&1 || true
 
-# Stale-soft-warn auditor: surface registry entries needing promotion review (silent on clean).
+# Stale-soft-warn auditor: surface promotion-review candidates.
 _SOFT_AUDIT="$PROJECT_ROOT/tools/HME/scripts/detectors/audit_stale_soft_warns.py"
 if [ -x "$_SOFT_AUDIT" ]; then
   _SOFT_OUT=$(PROJECT_ROOT="$PROJECT_ROOT" python3 "$_SOFT_AUDIT" 2>/dev/null || true)
@@ -403,16 +356,16 @@ if [ -x "$_SOFT_AUDIT" ]; then
   esac
 fi
 
-# Consult-gate state: surface whether HME_CONSULT_GATE is on so missed-export silent-disable is visible.
+# Consult-gate visibility.
 if [ "${HME_CONSULT_GATE:-0}" = "1" ]; then
   echo "[consult-gate] ON -- architectural edits without consults will be blocked" >&2
 fi
 
-# Buddy primary visibility: surface absence of buddy-primary.sid under BUDDY_HANDOFF=1 so the operator sees the gap without running i/handoff status manually. The fresh spawn from buddy_init.sh is async (~10-20s) -- this banner just confirms whether the inaugural is needed.
+# Buddy primary visibility under BUDDY_HANDOFF=1.
 if [ "${BUDDY_HANDOFF:-0}" = "1" ] && [ "${BUDDY_SYSTEM:-1}" = "1" ]; then
   _BP_SID="$PROJECT_ROOT/runtime/hme/buddy-primary.sid"
   if [ ! -s "$_BP_SID" ]; then
-    echo "[buddy-primary] missing -- inaugural spawn in flight; failures land in log/hme-buddy-spawn.log" >&2
+    echo "[buddy-primary] missing -- spawn in flight; see log/hme-buddy-spawn.log" >&2
   fi
 fi
 
@@ -425,11 +378,12 @@ if [ -x "$_FORK_WATCHDOG" ]; then
   esac
 fi
 
-# Learning-surface: prime new session with top-3 patterns matching the latest Phase title.
+# Learning-surface: prime patterns for latest Phase title.
 _LE="$PROJECT_ROOT/tools/HME/scripts/learning_extract.py"
 _SPEC_FILE="$PROJECT_ROOT/doc/templates/SPEC.md"
 if [ -x "$_LE" ] && [ -f "$_SPEC_FILE" ]; then
-  _LATEST_PHASE_TITLE=$(grep -E "^### Phase [0-9]+:" "$_SPEC_FILE" | tail -1 | sed -E 's/^### Phase [0-9]+:\s*([^(]+).*/\1/' | tr -d '[:cntrl:]' | xargs)
+  _LATEST_PHASE_TITLE=$(grep -E "^### Phase [0-9]+:" "$_SPEC_FILE" | tail -1 \
+    | sed -E 's/^### Phase [0-9]+:\s*([^(]+).*/\1/' | tr -d '[:cntrl:]' | xargs)
   if [ -n "$_LATEST_PHASE_TITLE" ]; then
     _FIRST_KW=$(echo "$_LATEST_PHASE_TITLE" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) if(length($i)>=4){print $i; exit}}')
     if [ -n "$_FIRST_KW" ]; then
