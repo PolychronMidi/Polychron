@@ -149,7 +149,7 @@ function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') 
       if (finished) return;
       finished = true;
       clearTimeout(timer);
-      resolve({ stdout, stderr, exit_code: code ?? 0 });
+      resolve(_finishHook(eventName, scriptPath, startedAt, { stdout, stderr, exit_code: code ?? 0 }));
     });
     try {
       child.stdin.write(stdinJson);
