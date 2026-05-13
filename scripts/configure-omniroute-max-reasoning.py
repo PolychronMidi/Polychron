@@ -2,7 +2,12 @@
 import argparse
 import json
 import subprocess
-from omniroute_reasoning_config import THINKING, ROOT, load_rules, write_settings
+from omniroute_reasoning_config import ROOT, load_config, write_settings
+
+ENDPOINTS = {
+    'thinkingBudget': '/api/settings/thinking-budget',
+    'payloadRules': '/api/settings/payload-rules',
+}
 
 
 def _login(port: str, password: str):
@@ -32,15 +37,14 @@ def main() -> int:
     ap.add_argument('--password', default='polychron')
     ap.add_argument('--db-only', action='store_true')
     args = ap.parse_args()
-    rules = load_rules()
+    cfg = load_config()
     ok = False
     if not args.db_only:
         jar = _login(args.port, args.password)
         if jar:
-            ok = _put(args.port, '/api/settings/thinking-budget', THINKING, jar)
-            ok = _put(args.port, '/api/settings/payload-rules', rules, jar) and ok
+            ok = all(_put(args.port, ENDPOINTS[k], v, jar) for k, v in cfg.items())
     if not ok:
-        write_settings(rules)
+        write_settings(cfg)
     print('configured=api' if ok else 'configured=db')
     return 0
 
