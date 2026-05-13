@@ -135,20 +135,48 @@ def _resolve_model_provider(model_id: str) -> str | None:
     return _resolve_model_meta(model_id).get("provider")
 
 
-def _context_limit_for(model_id: str, provider: str | None) -> int:
-    from hme_env import ENV as _ENV
-    meta_limit = int(_resolve_model_meta(model_id).get("max_context") or 0)
-    provider_key = (provider or "").replace("-", "_").upper()
-    env_key = f"OVERDRIVE_{provider_key}_CONTEXT_LIMIT" if provider_key else ""
+_catalog_cache = {"ts": 0.0, "data": None}
+
+
+def _omniroute_catalog() -> dict | None:
+    import json as _json
+    import os as _os
+    import time as _time
+    import urllib.request as _req
+    now = _time.monotonic()
+    if _catalog_cache["data"] is not None and now - _catalog_cache["ts"] < 300:
+        return _catalog_cache["data"]
+    port = _os.environ.get("HME_OMNIROUTE_PORT", "20128")
     try:
-        env_limit = _ENV.optional_int(env_key, 0) if env_key else 0
-    except Exception:  # silent-ok: malformed env falls back to registry cap
-        env_limit = 0
-    if env_limit > 0:
-        return env_limit
-    if meta_limit > 0:
-        return meta_limit
-    return 128000
+        with _req.urlopen(f"http://127.0.0.1:{port}/api/models/catalog", timeout=2) as resp:
+            data = _json.loads(resp.read())
+    except Exception as err:  # silent-ok: OmniRoute may be down; local registry fallback remains
+        logger.debug(f"OmniRoute catalog unavailable: {type(err).__name__}: {err}")
+        return None
+    _catalog_cache.update({"ts": now, "data": data})
+    return data
+
+
+def _omniroute_model_limits(model_id: str, provider: str | None) -> tuple[int | None, int | None]:
+    catalog = _omniroute_catalog()
+    if not catalog:
+        return (None, None)
+    raw_model = model_id[:-3] if model_id.endswith("-go") else model_id
+    wanted = {model_id, raw_model, f"{provider}/{raw_model}" if provider else raw_model}
+    for group in (catalog.get("catalog") or {}).values():
+        for model in group.get("models") or []:
+            if model.get("id") not in wanted:
+                continue
+            return (model.get("context_length"), model.get("max_output_tokens"))
+    return (None, None)
+
+
+def _context_limits_for(model_id: str, provider: str | None) -> tuple[int, int | None]:
+    ctx_limit, output_limit = _omniroute_model_limits(model_id, provider)
+    if ctx_limit:
+        return (int(ctx_limit), int(output_limit) if output_limit else None)
+    meta_limit = int(_resolve_model_meta(model_id).get("max_context") or 0)
+    return (meta_limit if meta_limit > 0 else 128000, None)
 
 
 def _try_overdrive_model(model_id: str, prompt: str, system: str,
