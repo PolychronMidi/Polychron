@@ -333,8 +333,6 @@ module.exports = {
     saveComplStore(store);
 
     if (next === 1) {
-      // Round 1: targeted speculation-debt scan + named phrases in inject
-      // so each must resolve to evidence-or-drop (no permanent-fog accrual).
       const lastAssistant = lastAssistantText(transcriptPath);
       const specs = scanSpeculation(lastAssistant);
       if (specs.length > 0) {
