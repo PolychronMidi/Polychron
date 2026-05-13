@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2064,
-      "updated_ts": 1778657271.4734182
+      "max_id": 2068,
+      "updated_ts": 1778657323.6581082
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2063,
     "text": "Compare against Polychron HME and project rules",
     "activeForm": "Comparing against Polychron HME and project rules",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 2064,
     "text": "Produce ranked candidate integration list with anchors",
     "activeForm": "Producing ranked candidate integration list with anchors",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
