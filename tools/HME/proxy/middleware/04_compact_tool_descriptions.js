@@ -19,5 +19,4 @@ module.exports = {
     }
     if (changed) ctx.markDirty();
   },
-  _COMPACT: COMPACT,
 };
