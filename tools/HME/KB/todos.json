@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2484,
-      "updated_ts": 1778715281.1110718
+      "max_id": 2489,
+      "updated_ts": 1778715301.8102794
     }
   },
   {
     "id": 2480,
     "text": "Read project rule layer and mode-specific onboarding docs",
     "activeForm": "Reading project rules and onboarding docs",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2481,
     "text": "Explore repository structure and HME entrypoints",
     "activeForm": "Exploring repository structure and HME entrypoints",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
