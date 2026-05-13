@@ -76,10 +76,7 @@ function runInBackgroundRewrite(eventName, data, ctx) {
     if (!state) return data;
     holds.delete(data.index);
 
-    let input = null;
-    try { input = JSON.parse(state.partial); }
-    catch (_e) { /* malformed partial -- emit as-is so the error surfaces */ }
-
+    const input = _parseToolInput(state);
     let finalInput = input;
     if (input && input.run_in_background === true && typeof input.command === 'string') {
       finalInput = {
@@ -88,21 +85,7 @@ function runInBackgroundRewrite(eventName, data, ctx) {
       };
     }
 
-    const events = [];
-    if (finalInput !== null) {
-      events.push(['content_block_delta', {
-        type: 'content_block_delta',
-        index: data.index,
-        delta: { type: 'input_json_delta', partial_json: JSON.stringify(finalInput) },
-      }]);
-    } else if (state.partial) {
-      // Malformed JSON -- replay the original partial so the client can error.
-      events.push(['content_block_delta', {
-        type: 'content_block_delta',
-        index: data.index,
-        delta: { type: 'input_json_delta', partial_json: state.partial },
-      }]);
-    }
+    const events = _emitHeldInput(state, data.index, finalInput);
     events.push(['content_block_stop', data]);
     return { events };
   }
