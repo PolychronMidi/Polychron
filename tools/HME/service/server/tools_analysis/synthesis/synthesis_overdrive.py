@@ -251,7 +251,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     return (None, False)
 
 
-def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_type: str = "general-purpose") -> tuple[str, str] | None:
+def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_type: str = "general-purpose", tier: str = "E3") -> tuple[str, str] | None:
     # Priority 1: persistent thread via thread.sid; falls through to direct/sentinel
     try:
         from .agent_direct import dispatch_thread as _thread
