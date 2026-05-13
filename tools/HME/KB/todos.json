@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1950,
-      "updated_ts": 1778642392.3562589
+      "max_id": 1953,
+      "updated_ts": 1778642406.2077553
     }
   },
   {
-    "id": 1948,
-    "text": "Search repository for approval and gate terminology",
-    "activeForm": "Searching repository for approval and gate terminology",
+    "id": 1951,
+    "text": "Map repository structure and locate HME state-related files",
+    "activeForm": "Mapping repository structure and locating HME state-related files",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778642406.2077296,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 1952,
+    "text": "Inspect session-state helpers, docs, and tests for ownership patterns",
+    "activeForm": "Inspecting session-state helpers, docs, and tests for ownership patterns",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778642392.356232,
+    "ts": 1778642406.2077434,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1949,
-    "text": "Inspect relevant hooks, scripts, policies, and settings files",
-    "activeForm": "Inspecting relevant hooks, scripts, policies, and settings files",
+    "id": 1953,
+    "text": "Summarize file anchors and reusable patterns without edits",
+    "activeForm": "Summarizing file anchors and reusable patterns without edits",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778642392.3562462,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1950,
-    "text": "Summarize anchors and insertion points",
-    "activeForm": "Summarizing anchors and insertion points",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778642392.3562567,
+    "ts": 1778642406.2077534,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
