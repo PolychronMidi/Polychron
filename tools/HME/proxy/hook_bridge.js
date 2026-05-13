@@ -33,6 +33,15 @@ const { PROJECT_ROOT } = require('./shared');
 const { preWriteCheck, toHookResponse } = require('./pre_write_check');
 const sessionState = require('./session_state');
 
+function _recordLifecycleState(eventName, stdinJson) {
+  let payload;
+  try { payload = JSON.parse(stdinJson || '{}'); } catch (_e) { payload = {}; }
+  const sid = payload.session_id || '';
+  if (eventName === 'SessionStart') sessionState.writeState(sessionState.readState(sid));
+  if (eventName === 'UserPromptSubmit') sessionState.recordPhase('observe', { session_id: sid, event: eventName });
+  if (eventName === 'Stop') sessionState.recordPhase('verify', { session_id: sid, event: eventName });
+}
+
 const HOOKS_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'hooks');
 const LIFECYCLE = path.join(HOOKS_DIR, 'lifecycle');
 const PRETOOLUSE = path.join(HOOKS_DIR, 'pretooluse');
