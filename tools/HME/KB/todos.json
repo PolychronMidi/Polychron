@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2293,
-      "updated_ts": 1778706958.6678026
+      "max_id": 2296,
+      "updated_ts": 1778707331.3145742
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2292,
     "text": "Implement targeted suppression without disabling real denials",
     "activeForm": "Implementing targeted suppression without disabling real denials",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2293,
     "text": "Verify suppression behavior with smoke tests",
     "activeForm": "Verifying suppression behavior with smoke tests",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
