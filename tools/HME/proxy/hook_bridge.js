@@ -31,7 +31,8 @@ const { spawn } = require('child_process');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
 const { preWriteCheck, toHookResponse } = require('./pre_write_check');
-const sessionState = require('./session_state');
+const stateClient = require('./session_state_client');
+const { normalize } = require('./hook_envelope');
 
 function _recordLifecycleState(eventName, stdinJson) {
   let payload;
