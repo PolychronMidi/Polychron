@@ -25,6 +25,17 @@ const VERDICTS_FILE = path.join(RUNTIME_DIR, 'stop-detector-verdicts.env');
 const COMPL_FILE = path.join(RUNTIME_DIR, 'completeness-injected.json');
 const FP_GATE_ARMED_FLAG = path.join(RUNTIME_DIR, 'fp-gate-armed.flag');
 const COMPL_MAX = 2;
+const STARTUP_GRACE_MS = 90_000;
+
+function isStartupGraceTurn(ctx) {
+  const payload = ctx.payload || {};
+  const transcript = payload.transcript_path || '';
+  if (!transcript) return false;
+  const startMs = Number(payload.session_start_time_ms || payload.start_time_ms || 0);
+  if (startMs > 0 && Date.now() - startMs > STARTUP_GRACE_MS) return false;
+  const text = String(ctx.shared && ctx.shared.lastRealUserText || '').trim().toLowerCase();
+  return text === 'hi' || text === 'hello' || text === 'hey';
+}
 
 function armFpGate(reason) {
   try {
@@ -295,6 +306,8 @@ module.exports = {
     if (!transcriptPath) return ctx.allow();
     const { text: lastUser, turnIndex } = lastRealUserPrompt(transcriptPath);
     if (!lastUser) return ctx.allow();
+    ctx.shared.lastRealUserText = lastUser;
+    if (isStartupGraceTurn(ctx)) return ctx.allow();
 
     // Dedup key = turnIndex+text so identical retypes get separate budgets.
     const turnKey = crypto.createHash('sha256')
