@@ -35,28 +35,26 @@ const stateClient = require('./session_state_client');
 const { normalize } = require('./hook_envelope');
 
 function _recordLifecycleState(eventName, stdinJson) {
-  let payload;
-  try { payload = JSON.parse(stdinJson || '{}'); } catch (_e) { payload = {}; }
-  const sid = payload.session_id || '';
-  if (eventName === 'SessionStart') sessionState.writeState(sessionState.readState(sid));
-  if (eventName === 'UserPromptSubmit') sessionState.recordPhase('observe', { session_id: sid, event: eventName });
-  if (eventName === 'Stop') sessionState.recordPhase('verify', { session_id: sid, event: eventName });
+  const env = normalize(stdinJson);
+  const sid = env.session_id || '';
+  if (eventName === 'SessionStart') stateClient.call('read', sid);
+  if (eventName === 'UserPromptSubmit') stateClient.call('phase', sid, { phase: 'observe', meta: { event: eventName } });
+  if (eventName === 'Stop') stateClient.call('phase', sid, { phase: 'verify', meta: { event: eventName } });
 }
 
 function _recordPostToolEvidence(stdinJson) {
-  let payload;
-  try { payload = JSON.parse(stdinJson || '{}'); } catch (_e) { return; }
-  const tool = payload.tool_name || '';
-  const input = payload.tool_input || {};
-  const response = payload.tool_response || {};
+  const env = normalize(stdinJson);
+  const tool = env.tool_name || '';
+  const input = env.tool_input || {};
+  const response = env.tool_response || {};
   if (tool !== 'Bash' && tool !== 'Read') return;
   const command = tool === 'Bash' ? String(input.command || '') : `Read ${input.file_path || ''}`;
   const excerpt = typeof response === 'string'
     ? response.slice(0, 500)
     : JSON.stringify(response).slice(0, 500);
   const exitCode = Number.isInteger(response.exit_code) ? response.exit_code : null;
-  sessionState.recordVerificationEvidence({
-    session_id: payload.session_id || '',
+  stateClient.call('verification-evidence', env.session_id || '', {
+    session_id: env.session_id || '',
     command,
     exit_code: exitCode,
     excerpt,
