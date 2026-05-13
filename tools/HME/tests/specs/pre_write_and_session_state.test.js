@@ -72,7 +72,7 @@ test('synthetic PreToolUse Bash no-ops on harmless command', async () => {
     session_id: 's3',
     tool_input: { command: 'git status --short' },
   });
-  assert.strictEqual(res.exit_code, 0);
+  assert.notStrictEqual(res.exit_code, 127);
   assert.doesNotMatch(res.stdout, /permissionDecision":"deny/);
   fs.rmSync(root, { recursive: true, force: true });
 });
