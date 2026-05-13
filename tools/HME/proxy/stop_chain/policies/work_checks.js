@@ -289,11 +289,6 @@ module.exports = {
       armFpGate('MULTI_FLAG'); return ctx.deny(header + body);
     }
 
-    // Auto-completeness: fires up to COMPL_MAX times per user-turn,
-    // regardless of prior denies (counter advances even when first-deny-wins
-    // hides this deny). Removing the prior-deny short-circuit fixed cases
-    // where PSYCHOPATHIC-STOP silently suppressed auto-completeness.
-
     let transcriptPath = ctx.payload && ctx.payload.transcript_path;
     if (!transcriptPath) {
       try {
