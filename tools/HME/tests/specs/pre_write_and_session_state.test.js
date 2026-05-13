@@ -15,7 +15,9 @@ function fresh(projectRoot) {
 
 function sandbox(prefix = 'hme-hooks-') {
   const root = fs.mkdtempSync(path.join(os.homedir(), prefix));
+  const repo = path.resolve(__dirname, '..', '..', '..', '..');
   for (const d of ['src', 'tmp', 'log', 'output/metrics']) fs.mkdirSync(path.join(root, d), { recursive: true });
+  for (const d of ['tools', 'scripts', 'config']) fs.symlinkSync(path.join(repo, d), path.join(root, d));
   fresh(root);
   return root;
 }
