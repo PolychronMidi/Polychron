@@ -1244,6 +1244,7 @@ if (_mode4WasStreaming) {
           // Verdict: visible to user? text_chars>0 OR tool_use blocks present.
           const _isBlank = _textChars === 0 && _toolUseBlocks === 0;
           const _verdict = _isBlank ? 'BLANK' : 'OK';
+          console.error(`[hme-proxy] dump verdict: ${_verdict} text=${_textChars} thinking=${_thinkingChars} tools=${_toolUseBlocks} stop=${_stopReason} sse=${_isSse} omni=${_isMode4OmniRoute} chain=${typeof _swapChain !== 'undefined' ? _swapChain.length : 'UNDEFINED'}`);
 
           // MODE=4/5 OmniRoute: blank response -> advance model, emit retry error.
           if (_isBlank && _isMode4OmniRoute && _swapChain.length > 1) {
