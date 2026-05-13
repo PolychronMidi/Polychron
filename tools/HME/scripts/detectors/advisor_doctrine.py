@@ -79,6 +79,13 @@ _SOLO_RES = (
     re.compile(r"\bmechanical\s+(rename|edit|change)\b", re.IGNORECASE),
 )
 
+DECLARED_VERDICTS = {
+    "ok",
+    "advisor_missing_pre_build",
+    "advisor_missing_post_deliver",
+    "advisor_silently_skipped",
+}
+
 
 def _last_assistant_text(events: list) -> str:
     last = None

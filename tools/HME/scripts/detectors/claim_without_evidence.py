@@ -79,6 +79,8 @@ _EVIDENCE_BASH_TOKENS = (
 
 _PROBE_TOOL_NAMES = {"Bash", "Read", "Grep", "Glob", "WebFetch", "TaskOutput"}
 
+DECLARED_VERDICTS = {"ok", "claim_without_evidence"}
+
 
 def _last_assistant_event(events: list) -> dict | None:
     last = None

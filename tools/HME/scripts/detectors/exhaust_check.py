@@ -83,6 +83,8 @@ ALWAYS_FIRE_PHRASES = (
     "i'll implement",
 )
 
+DECLARED_VERDICTS = {"ok", "exhaust_violation"}
+
 
 def _last_user_text(events: list) -> str:
     """Extract the last user message's text content. Mirrors
