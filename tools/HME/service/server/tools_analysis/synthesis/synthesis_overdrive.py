@@ -255,7 +255,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     # Priority 1: persistent thread via thread.sid; falls through to direct/sentinel
     try:
         from .agent_direct import dispatch_thread as _thread
-        thread_result = _thread(prompt)
+        thread_result = _thread(prompt, tier=tier)
         if thread_result is not None:
             return (thread_result, "overdrive/thread")
     except (ImportError, AttributeError) as _thr_struct:
