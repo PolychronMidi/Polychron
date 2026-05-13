@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2014,
-      "updated_ts": 1778654723.8590598
+      "max_id": 2019,
+      "updated_ts": 1778654977.7367103
     }
   },
   {
@@ -66,8 +66,8 @@
     "id": 1994,
     "text": "Run focused tests and report same-turn evidence",
     "activeForm": "Running focused tests and collecting same-turn evidence",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
