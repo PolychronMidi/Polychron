@@ -401,7 +401,7 @@ test('i/why mode=causality --chain recursively walks caused_by chains', () => {
   // If chain rendered, it must show either at least one arrow or a
   // terminal/leaf marker -- proves the walker actually traversed.
   if (r.stdout.includes('Recursive causal chain')) {
-    assert.match(r.stdout, />|+-|terminal|leaf description|cycle detected/);
+    assert.match(r.stdout, />|\+-|terminal|leaf description|cycle detected/);
   }
 });
 
