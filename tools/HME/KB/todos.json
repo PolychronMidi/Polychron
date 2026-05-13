@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1923,
-      "updated_ts": 1778641308.1934574
+      "max_id": 1926,
+      "updated_ts": 1778641326.134156
     }
   },
   {
-    "id": 1921,
-    "text": "Map Writ-main repository structure and purpose",
-    "activeForm": "Mapping Writ-main repository structure and purpose",
+    "id": 1924,
+    "text": "Inspect Writ-main repository structure for workflow and guardrail artifacts",
+    "activeForm": "Inspecting Writ-main repository structure for workflow and guardrail artifacts",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778641308.19343,
+    "ts": 1778641326.1341264,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1922,
-    "text": "Run focused subagent reviews of architecture and hooks",
-    "activeForm": "Running focused subagent reviews of architecture and hooks",
+    "id": 1925,
+    "text": "Read key hook, test, script, and CI files for concrete mechanisms",
+    "activeForm": "Reading key hook, test, script, and CI files for concrete mechanisms",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778641308.1934445,
+    "ts": 1778641326.1341403,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 1923,
-    "text": "Synthesize Polychron-specific integration takeaways",
-    "activeForm": "Synthesizing Polychron-specific integration takeaways",
+    "id": 1926,
+    "text": "Synthesize top five Polychron/HME integration takeaways",
+    "activeForm": "Synthesizing top five Polychron/HME integration takeaways",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778641308.1934555,
+    "ts": 1778641326.1341543,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
