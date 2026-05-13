@@ -426,6 +426,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
             _overdrive_result = _call_opus_overdrive(
                 prompt, system, max_tokens,
                 chain_override=_chain, allow_subagent=_allow_sub,
+                tier=_normalized_tier,
             )
             if _overdrive_result:
                 _text, _source = _overdrive_result
