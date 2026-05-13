@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1812,
-      "updated_ts": 1778637476.567872
+      "max_id": 1815,
+      "updated_ts": 1778637499.1421895
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 1808,
     "text": "Rerun targeted hook and detector verification",
     "activeForm": "Rerunning targeted hook and detector verification",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 1809,
     "text": "Close with required summary block",
     "activeForm": "Closing with required summary block",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
