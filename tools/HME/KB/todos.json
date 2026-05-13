@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1818,
-      "updated_ts": 1778637642.0100555
+      "max_id": 1821,
+      "updated_ts": 1778637690.9854379
     }
   },
   {
     "id": 1816,
     "text": "Identify why EXHAUST fired on previous close",
     "activeForm": "Identifying why EXHAUST fired on previous close",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 1817,
     "text": "Fix detector false positive or remaining work",
     "activeForm": "Fixing detector false positive or remaining work",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
