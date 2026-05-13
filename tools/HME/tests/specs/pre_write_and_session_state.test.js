@@ -40,9 +40,7 @@ test('pre-write check centralizes deny decision for credential writes', async ()
 });
 
 test('session state records structured verification evidence', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-session-state-'));
-  fs.mkdirSync(path.join(root, 'src'), { recursive: true });
-  fresh(root);
+  const root = sandbox('hme-session-state-');
   const state = require('../../proxy/session_state');
   state.recordVerificationEvidence({ command: 'node --test x', exit_code: 0, excerpt: 'pass', artifact: 'x' });
   const recent = state.recentVerificationEvidence(60_000);
