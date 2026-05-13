@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2464,
-      "updated_ts": 1778713794.7872531
+      "max_id": 2467,
+      "updated_ts": 1778713821.7045631
     }
   },
   {
     "id": 2462,
     "text": "Collect advisor consult result or replace with bounded self-review",
     "activeForm": "Collecting advisor consult result or replacing with bounded self-review",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2463,
     "text": "Run final verification after Read normalization cleanup",
     "activeForm": "Running final verification after Read normalization cleanup",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2464,
     "text": "Emit required E5 summary with evidence",
     "activeForm": "Emitting required E5 summary with evidence",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
