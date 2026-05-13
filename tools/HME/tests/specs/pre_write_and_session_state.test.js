@@ -7,13 +7,23 @@ const path = require('path');
 
 function fresh(projectRoot) {
   process.env.PROJECT_ROOT = projectRoot;
-  const roots = [
-    path.resolve(__dirname, '..', '..', 'proxy'),
-    path.resolve(__dirname, '..', '..', 'policies'),
-  ];
+  const roots = [path.resolve(__dirname, '..', '..', 'proxy'), path.resolve(__dirname, '..', '..', 'policies')];
   for (const k of Object.keys(require.cache)) {
     if (roots.some((r) => k.startsWith(r))) delete require.cache[k];
   }
+}
+
+function sandbox(prefix = 'hme-hooks-') {
+  const root = fs.mkdtempSync(path.join(os.homedir(), prefix));
+  for (const d of ['src', 'tmp', 'log', 'output/metrics']) fs.mkdirSync(path.join(root, d), { recursive: true });
+  fresh(root);
+  return root;
+}
+
+async function dispatch(root, event, payload) {
+  fresh(root);
+  const bridge = require('../../proxy/hook_bridge');
+  return bridge.dispatchEvent(event, JSON.stringify(payload || {}));
 }
 
 test('pre-write check centralizes deny decision for credential writes', async () => {
