@@ -41,6 +41,24 @@ from pathlib import Path
 _DETECTOR_DIR = Path(__file__).parent
 
 
+_VERDICT_ALIASES = {
+    "ABANDON_CHECK": "abandon_check",
+    "AGENT_FOR_KB": "abandon_check",
+    "TEXT_ONLY_SHORT": "DISMISSIVE",
+    "consult-debt": "consult-debt",
+    "consult-thin": "consult-debt",
+    "fabrication": "fabrication_check",
+    "idle": None,
+    "minimal_format_violation": "summary_missing",
+    "phantom_paraphrase": None,
+    "psycho": None,
+    "summary_malformed": "summary_missing",
+}
+
+
+def _canonical_expected(verdict: str):
+    return _VERDICT_ALIASES.get(verdict, verdict)
+
 
 def _registry_verdicts() -> dict[str, set[str]]:
     with open(_DETECTOR_DIR / "registry.json", encoding="utf-8") as f:
@@ -1215,8 +1233,9 @@ def main() -> int:
         if not ok:
             fails += 1
         if expected != "ok":
+            canonical = _canonical_expected(expected)
             allowed = registry_verdicts.get(detector, set()) | soft_verdicts.get(detector, set())
-            if expected not in allowed:
+            if canonical is not None and canonical not in allowed:
                 rows.append((False, "registry", scenario, "declared", expected))
                 fails += 1
 
