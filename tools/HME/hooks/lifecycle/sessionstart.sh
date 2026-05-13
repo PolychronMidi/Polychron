@@ -358,25 +358,27 @@ fi
 # R23 #10: Substrate pre-turn briefing -- four-arc state auto-surfaced at
 # session start so the agent enters with substrate context visible. Reads
 # pre-computed artifacts only (no heavy computation), silent if unavailable.
-SUBSTRATE_BRIEF=$(python3 -c "
+SUBSTRATE_BRIEF=$(python3 - <<'PY' 2>/dev/null || true
 import json, os
-ROOT = '$PROJECT'
-def _j(p):
+root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or "."
+metrics_dir = os.environ.get("METRICS_DIR", os.path.join(root, "output", "metrics"))
+def _j(name):
     try:
-        with open(os.path.join(ROOT, p)) as f: return json.load(f)
-    except Exception: return None
-na = _j(os.path.join(os.environ.get("METRICS_DIR", os.path.join(os.environ["PROJECT_ROOT"], "output", "metrics")), "hme-next-actions.json")) or {}
-con = _j(os.path.join(os.environ.get("METRICS_DIR", os.path.join(os.environ["PROJECT_ROOT"], "output", "metrics")), "hme-consensus.json")) or {}
-dr  = _j(os.path.join(os.environ.get("METRICS_DIR", os.path.join(os.environ["PROJECT_ROOT"], "output", "metrics")), "hme-legendary-drift.json")) or {}
-eff = _j(os.path.join(os.environ.get("METRICS_DIR", os.path.join(os.environ["PROJECT_ROOT"], "output", "metrics")), "hme-invariant-efficacy.json")) or {}
-n_act = na.get('total_actions', 0)
-bits = []
-bits.append(f'substrate: consensus={con.get(\"mean\",\"?\")} stdev={con.get(\"stdev\",\"?\")} drift={dr.get(\"drift_score\",\"?\")} actions={n_act}')
+        with open(os.path.join(metrics_dir, name), encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+na = _j("hme-next-actions.json")
+con = _j("hme-consensus.json")
+dr = _j("hme-legendary-drift.json")
+n_act = na.get("total_actions", 0)
+bits = [f'substrate: consensus={con.get("mean","?")} stdev={con.get("stdev","?")} drift={dr.get("drift_score","?")} actions={n_act}']
 if n_act > 0:
-    for a in (na.get('actions') or [])[:3]:
-        bits.append(f'  -> [{a.get(\"source\",\"?\")}] {a.get(\"id\",\"?\")}')
-print('\\n'.join(bits))
-" 2>/dev/null)
+    for a in (na.get("actions") or [])[:3]:
+        bits.append(f'  -> [{a.get("source","?")}] {a.get("id","?")}')
+print("\n".join(bits))
+PY
+)
 [ -n "$SUBSTRATE_BRIEF" ] && echo -e "\n$SUBSTRATE_BRIEF" >&2
 
 # Buddy system -- auto-init the persistent peer subagent for this session
