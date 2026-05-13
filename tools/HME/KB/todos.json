@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2499,
-      "updated_ts": 1778715854.0971425
+      "max_id": 2504,
+      "updated_ts": 1778715868.0923748
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 2483,
     "text": "Apply concise tweaks that improve coherence without bloat",
     "activeForm": "Applying concise coherence tweaks",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 2484,
     "text": "Verify changes and report evidence",
     "activeForm": "Verifying changes and collecting evidence",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
