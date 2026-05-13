@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2009,
-      "updated_ts": 1778654275.6437864
+      "max_id": 2014,
+      "updated_ts": 1778654723.8590598
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 1993,
     "text": "Persist structured verification evidence and update stop checks to consume it",
     "activeForm": "Persisting structured verification evidence and updating stop checks to consume it",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 1994,
     "text": "Run focused tests and report same-turn evidence",
     "activeForm": "Running focused tests and collecting same-turn evidence",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
