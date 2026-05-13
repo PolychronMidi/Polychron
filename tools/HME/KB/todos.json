@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2504,
-      "updated_ts": 1778715868.0923748
+      "max_id": 2510,
+      "updated_ts": 1778715978.696831
     }
   },
   {
@@ -49,29 +49,43 @@
     "tier": "E3"
   },
   {
-    "id": 2483,
-    "text": "Apply concise tweaks that improve coherence without bloat",
-    "activeForm": "Applying concise coherence tweaks",
+    "id": 2508,
+    "text": "Apply concise tweak to reduce i/help onboarding noise",
+    "activeForm": "Applying concise i/help coherence tweak",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778715281.1110616,
+    "ts": 1778715978.6968117,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2484,
-    "text": "Verify changes and report evidence",
-    "activeForm": "Verifying changes and collecting evidence",
+    "id": 2509,
+    "text": "Fix audit failures surfaced during verification",
+    "activeForm": "Fixing audit failures surfaced during verification",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778715281.1110694,
+    "ts": 1778715978.6968207,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2510,
+    "text": "Re-run targeted/strict verification and report evidence",
+    "activeForm": "Re-running verification and collecting evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778715978.6968288,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
