@@ -152,6 +152,7 @@ if [ -n "$FILE_PATH" ]; then
   case "$TOOL_NAME" in
     Edit|Write)
       (_safe_curl "http://127.0.0.1:9098/reindex" "{\"files\":[\"$FILE_PATH\"]}") &
+      node -e "const s=require('${PROJECT_ROOT}/tools/HME/proxy/session_state'); s.recordWrite(JSON.parse(process.argv[1]), {permissionDecision:'allow'});" "$HOOK_DATA" >/dev/null 2>&1 || true
       ;;
   esac
 fi
