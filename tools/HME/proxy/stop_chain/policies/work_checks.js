@@ -274,8 +274,6 @@ module.exports = {
   name: 'work_checks',
   async run(ctx) {
     const v = readVerdicts();
-    // FIRING_RULES + willDeny derived from registry.json (single SoT). Adding
-    // a deny detector = one entry in registry.json with deny:true + reason_key.
     const FIRING_RULES = DETECTOR_REGISTRY
       .filter((d) => d.deny)
       .map((d) => [d.bash_var, d.fires_when, d.reason_key]);
