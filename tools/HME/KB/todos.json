@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2176,
-      "updated_ts": 1778698407.2704618
+      "max_id": 2180,
+      "updated_ts": 1778698415.4747381
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2158,
     "text": "Map AIPass repository structure and key files",
     "activeForm": "Mapping AIPass repository structure and key files",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2159,
     "text": "Read README/setup, src modules, hooks, commands, skills, config, and tests",
     "activeForm": "Reading README/setup, src modules, hooks, commands, skills, config, and tests",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
