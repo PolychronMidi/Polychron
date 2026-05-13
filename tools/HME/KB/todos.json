@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2267,
-      "updated_ts": 1778702212.1873999
+      "max_id": 2271,
+      "updated_ts": 1778702528.5042872
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2263,
     "text": "Verify whether Agent launches follow E1-E5 model choice",
     "activeForm": "Verifying whether Agent launches follow E1-E5 model choice",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -35,15 +35,29 @@
     "tier": "E3"
   },
   {
-    "id": 2264,
-    "text": "Report finding with evidence and fix if needed",
-    "activeForm": "Reporting finding with evidence and fixing if needed",
+    "id": 2270,
+    "text": "Patch Claude subagent launch paths to honor tier-compatible model choice",
+    "activeForm": "Patching Claude subagent launch paths to honor tier-compatible model choice",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778702528.5042727,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2271,
+    "text": "Run scoped tests and clean-room checks",
+    "activeForm": "Running scoped tests and clean-room checks",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778702196.7640178,
+    "ts": 1778702528.5042849,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
