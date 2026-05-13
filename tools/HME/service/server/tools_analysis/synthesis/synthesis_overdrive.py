@@ -135,11 +135,6 @@ def _resolve_model_provider(model_id: str) -> str | None:
     return _resolve_model_meta(model_id).get("provider")
 
 
-def _estimate_tokens(*texts: str) -> int:
-    chars = sum(len(t or "") for t in texts)
-    return max(1, (chars + 2) // 3)
-
-
 def _context_limit_for(model_id: str, provider: str | None) -> int:
     from hme_env import ENV as _ENV
     meta_limit = int(_resolve_model_meta(model_id).get("max_context") or 0)
@@ -187,14 +182,10 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     timeout_secs = _sr._overdrive_timeout()
     _provider = _resolve_model_provider(model_id)
     _limit = _context_limit_for(model_id, _provider)
-    _input_est = _estimate_tokens(prompt, system)
-    _safe_room = max(1, _limit - _input_est - 512)
-
-    _floor = min(budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK, _safe_room)
-    resolved_max = min(max(max_tokens, _floor), _safe_room)
-    if resolved_max < 256:
-        logger.warning(f"OVERDRIVE {model_id} prompt too large for context cap {_limit} (input~{_input_est}t)")
-        return (None, False)
+    _reserve = 4096
+    _max_output = max(256, _limit - _reserve)
+    _floor = min(budget + _sr._OVERDRIVE_MAX_TOKENS_SLACK, _max_output)
+    resolved_max = min(max(max_tokens, _floor), _max_output)
     if resolved_max < max_tokens:
         logger.info(f"OVERDRIVE {model_id} max_tokens clamped {max_tokens}->{resolved_max} for cap {_limit}")
 
