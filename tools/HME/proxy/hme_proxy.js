@@ -1248,13 +1248,13 @@ if (_mode4WasStreaming) {
 
           // MODE=4/5 OmniRoute: blank -> retry next model transparently.
           if (_isBlank && _isMode4OmniRoute && _swapChain.length > 1) {
+            try {
             const _fs3 = require('fs');
             const _pth3 = require('path');
             const _stFile3 = _pth3.join(PROJECT_ROOT, 'tmp', 'hme-omni-swap-state.json');
             let _st3 = { idx: 0 };
             try { _st3 = JSON.parse(_fs3.readFileSync(_stFile3, 'utf8')); } catch (_) {}
 
-            // Walk remaining chain models (sync, non-streaming)
             for (let _ri = 1; _ri < _swapChain.length; _ri++) {
               const _try = _swapChain[(_st3.idx + _ri) % _swapChain.length];
               const _tp = _try.provider === 'codex' ? 'cx' : _try.provider === 'opencode_go' ? 'opencode-go' : 'opencode';
@@ -1263,16 +1263,28 @@ if (_mode4WasStreaming) {
               const _rp = JSON.parse(JSON.stringify(payload));
               _rp.model = `${_tp}/${_tid}`;
               _rp.stream = false;
-              console.error(`[hme-proxy] BLANK retry ${_ri}: ${_omniProvider}/${_swapModel} -> ${_tp}/${_tid}`);
+              const _rbody = Buffer.from(JSON.stringify(_rp), 'utf8');
+              console.error(`[hme-proxy] BLANK retry ${_ri}: ${_tp}/${_tid}`);
               try {
                 const _rRes = await new Promise((resolve, reject) => {
-                  const _rr = transport.request({ ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(Buffer.byteLength(JSON.stringify(_rp))) } }, (res) => {
+                  const _rOpts = {
+                    hostname: '127.0.0.1',
+                    port: parseInt(process.env.HME_OMNIROUTE_PORT || '20128', 10),
+                    path: '/v1/messages',
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'anthropic-version': '2023-06-01',
+                      'content-length': String(_rbody.length),
+                    },
+                  };
+                  const _rr = require('http').request(_rOpts, (res) => {
                     const _cs = []; res.on('data', c => _cs.push(c));
                     res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(_cs).toString('utf8') }));
                     res.on('error', reject);
                   });
                   _rr.on('error', reject);
-                  _rr.write(JSON.stringify(_rp));
+                  _rr.write(_rbody);
                   _rr.end();
                 });
                 if (_rRes.status >= 200 && _rRes.status < 300) {
@@ -1290,14 +1302,15 @@ if (_mode4WasStreaming) {
                         outHeaders['content-type'] = 'application/json';
                         delete outHeaders['transfer-encoding'];
                         console.error(`[hme-proxy] BLANK retry OK: ${_tp}/${_tid} -> "${_rt.slice(0, 60)}"`);
-                        break;
+                        return;
                       }
                     }
-                  } catch (_) {}
+                  } catch (_) { console.error('[hme-proxy] BLANK retry parse fail:', _.message); }
                 }
-                console.error(`[hme-proxy] BLANK retry ${_tp}/${_tid}: still no content`);
-              } catch (_re) { console.error(`[hme-proxy] BLANK retry error: ${_re.message}`); }
+              } catch (_re) { console.error('[hme-proxy] BLANK retry fail:', _re.message); }
             }
+            console.error('[hme-proxy] BLANK retry exhausted all models');
+            } catch (_outer) { console.error('[hme-proxy] BLANK retry outer fail:', _outer.message); }
           }
 
           const _ts = new Date().toISOString().replace(/[:.]/g, '-');
