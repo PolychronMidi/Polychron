@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2299,
-      "updated_ts": 1778707521.9953725
+      "max_id": 2302,
+      "updated_ts": 1778707654.517653
     }
   },
   {
     "id": 2297,
     "text": "Trace consult token-limit failure path",
     "activeForm": "Tracing consult token-limit failure path",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2298,
     "text": "Add provider/model token budget clamping",
     "activeForm": "Adding provider/model token budget clamping",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2299,
     "text": "Verify oversized consult no longer requests impossible output",
     "activeForm": "Verifying oversized consult no longer requests impossible output",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
