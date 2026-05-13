@@ -32,6 +32,27 @@ import time
 
 logger = logging.getLogger("HME")
 
+_CLAUDE_MODEL_BY_TIER = {
+    "E1": "haiku",
+    "E2": "haiku",
+    "E3": "sonnet",
+    "E4": "opus",
+    "E5": "opus",
+}
+_LEGACY_TIER = {"easy": "E2", "medium": "E3", "hard": "E4"}
+
+
+def _normalize_tier(tier: str) -> str:
+    raw = (tier or "E3").strip()
+    up = raw.upper()
+    if up in _CLAUDE_MODEL_BY_TIER:
+        return up
+    return _LEGACY_TIER.get(raw.lower(), "E3")
+
+
+def _claude_model_for_tier(tier: str) -> str:
+    return _CLAUDE_MODEL_BY_TIER[_normalize_tier(tier)]
+
 
 # Per-process call counter + cap for thread dispatch. `claude --resume`
 # subprocesses bill silently with no organic choke. Mirror to
