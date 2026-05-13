@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1782,
-      "updated_ts": 1778636732.5984294
+      "max_id": 1786,
+      "updated_ts": 1778636743.7944071
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 1771,
     "text": "Report root cause with evidence and next fix options",
     "activeForm": "Reporting root cause with evidence and next fix options",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
