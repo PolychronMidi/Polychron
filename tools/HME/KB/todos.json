@@ -2,34 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2987,
-      "updated_ts": 1778774738.8544192
+      "max_id": 2989,
+      "updated_ts": 1778775168.2562284
     }
   },
   {
-    "id": 2986,
-    "text": "Fix MODE=6 role model attribution without fallback masking",
-    "activeForm": "Fixing MODE=6 role model attribution without fallback masking",
+    "id": 2988,
+    "text": "Fix proxy role precedence so MODE=6 prompt role beats inherited HME_TEAM_ROLE",
+    "activeForm": "Fixing proxy role precedence so MODE=6 prompt role beats inherited HME_TEAM_ROLE",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778774738.8543992,
+    "ts": 1778775168.2562103,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2987,
-    "text": "Verify dashboard output shows role-appropriate models and syntax/tests pass",
-    "activeForm": "Verifying dashboard output shows role-appropriate models and syntax/tests pass",
+    "id": 2989,
+    "text": "Verify dashboard role model attribution and stale shared-model state",
+    "activeForm": "Verifying dashboard role model attribution and stale shared-model state",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778774738.8544166,
+    "ts": 1778775168.2562258,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
