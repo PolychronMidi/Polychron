@@ -527,25 +527,45 @@ function handleRequest(clientReq, clientRes) {
         _mode4WasStreaming = (payload.stream === true);
         injected = true;
 
-        // Read swap model chain from config/models.json E5 tier.
-        // Falls back through ranked models when primary rate-limits.
+        // Read swap model chain from config/models.json.
+        // MODE=6 routes by team role when present, else by requested Claude family.
         try {
           const _cfg = require('./shared').loadModelsJson();
-          // Build chain: toprank first, then E5 models by cost_order -> tier_score
-          const _top = (_cfg.manually_toprank && _cfg.manually_toprank.E5) || [];
-          const _tm = (_cfg.tiers && _cfg.tiers.E5 && _cfg.tiers.E5.models) || [];
+          const _role = (process.env.HME_TEAM_ROLE || '').toLowerCase();
+          const _roleTier = (() => {
+            if (['driver', 'blue_lead', 'red_lead', 'team_lead'].includes(_role)) return 'E5';
+            if (['blue_purple', 'red_purple', 'team_purple'].includes(_role)) return 'E4';
+            const m = /^crew_e([1-4])/.exec(_role);
+            return m ? `E${m[1]}` : null;
+          })();
+          const _modelTier = (() => {
+            const model = String(payload.model || '').toLowerCase();
+            if (model.includes('opus')) return 'E5';
+            if (model.includes('sonnet')) return 'E4';
+            if (model.includes('haiku')) return 'E2';
+            return 'E5';
+          })();
+          const _tier = _odMode === '6' ? (_roleTier || _modelTier) : 'E5';
+          const _roleKey = (() => {
+            if (_role === 'driver') return 'driver';
+            if (['blue_lead', 'red_lead', 'team_lead'].includes(_role)) return 'team_lead';
+            if (['blue_purple', 'red_purple', 'team_purple'].includes(_role)) return 'team_purple';
+            if (_role.startsWith('crew_') || _role === 'stage_crew') return 'stage_crew';
+            return '';
+          })();
+          const _tm = (_cfg.tiers && _cfg.tiers[_tier] && _cfg.tiers[_tier].models) || [];
           const _co = (_cfg.ranking_rules && _cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
+          const _ranked = [];
           for (const _c of _co) {
-            _swapChain.push(..._tm.filter(m => m.cost === _c).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
+            _ranked.push(..._tm.filter(m => m.cost === _c).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
           }
-          // Prepend topranked (keep their order, deduped from chain)
-          const _chainIds = new Set(_swapChain.map(m => m.id));
-          const _topDeduped = _top.filter(id => !_chainIds.has(id));
-          for (const _id of _topDeduped) {
-            const _m = _tm.find(m => m.id === _id);
-            if (_m) _swapChain.unshift(_m);
-          }
-          console.error(`[hme-proxy] MODE=${_odMode} E5 chain built: ${_swapChain.map(m => m.id).join(' -> ')} (${_swapChain.length} models)`);
+          let _front = [];
+          if (_odMode === '6' && _roleKey) _front = ((_cfg.team_role_models && _cfg.team_role_models[_roleKey]) || []);
+          if (_front.length === 0) _front = (_cfg.manually_toprank && _cfg.manually_toprank[_tier]) || [];
+          const _frontSet = new Set(_front);
+          _swapChain.push(..._front.map(id => _tm.find(m => m.id === id)).filter(Boolean));
+          _swapChain.push(..._ranked.filter(m => !_frontSet.has(m.id)));
+          console.error(`[hme-proxy] MODE=${_odMode} ${_tier} chain built (role=${_role || 'none'} model=${payload.model}): ${_swapChain.map(m => m.id).join(' -> ')} (${_swapChain.length} models)`);
           // Pick from chain: first model, unless a recent failure advanced us.
           if (_swapChain.length > 0) {
             let _stIdx = 0;
