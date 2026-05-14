@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""MODE=6 Agent reroute per enshrined team_subagent_routing_rules (models.json line 25).
-
-Every Agent call from a team role is intercepted. The caller's role determines
-which persistent stage-crew / lead / purple partner receives the task. The hook
-pays no attention to subagent_type -- tier is determined by the ORIGINAL
-subagent_type's effort tier, not the caller's tier.
-"""
+"""MODE=6 Agent level router."""
 from __future__ import annotations
 
 import json
