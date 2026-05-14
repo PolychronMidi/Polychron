@@ -199,10 +199,8 @@ def _empty_dashboard() -> dict:
  mode = os.environ.get("OVERDRIVE_MODE")
  data = {"updated_at": _now(), "agents": {}}
  if mode:
-  try:
-   data["mode"] = int(mode)
-  except ValueError:
-   data["mode"] = mode
+  try: data["mode"] = int(mode)
+  except ValueError: data["mode"] = mode
  return data
 def _normalize(data: dict) -> dict:
  data.setdefault("agents", {})
