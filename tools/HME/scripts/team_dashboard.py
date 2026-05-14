@@ -20,7 +20,7 @@ Usage:
   team_dashboard.py summary                      # terse health one-liner
 """
 from __future__ import annotations
-import argparse, json, os, sys
+import argparse, json, os, re, sqlite3, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
