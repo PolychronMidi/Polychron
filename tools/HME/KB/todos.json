@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2919,
-      "updated_ts": 1778745903.6120067
+      "max_id": 2922,
+      "updated_ts": 1778745979.9007952
     }
   },
   {
-    "id": 2917,
-    "text": "Inspect HME dashboard/model config paths and current failures",
-    "activeForm": "Inspecting HME dashboard/model config paths and current failures",
+    "id": 2920,
+    "text": "Run HME onboarding checks locally without subagents",
+    "activeForm": "Running HME onboarding checks locally without subagents",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745903.6119795,
+    "ts": 1778745979.9007678,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2918,
-    "text": "Patch dashboard ctx sizing to derive model windows dynamically",
-    "activeForm": "Patching dashboard ctx sizing to derive model windows dynamically",
+    "id": 2921,
+    "text": "Fix MODE=6 model/team dashboard issues from user brief",
+    "activeForm": "Fixing MODE=6 model/team dashboard issues from user brief",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745903.6119938,
+    "ts": 1778745979.9007823,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2919,
-    "text": "Run targeted checks/selftests and report evidence",
-    "activeForm": "Running targeted checks/selftests and reporting evidence",
+    "id": 2922,
+    "text": "Verify changed behavior with targeted commands/tests",
+    "activeForm": "Verifying changed behavior with targeted commands/tests",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745903.6120043,
+    "ts": 1778745979.9007926,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
