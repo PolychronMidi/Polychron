@@ -250,7 +250,7 @@ def cmd_update(args):
         sys.exit(1)
     agent = data["agents"][role]
     if args.ctx_pct is not None:
-        agent["ctx_used_pct"] = int(args.ctx_pct)
+        agent["ctx_used_pct"] = float(args.ctx_pct)
     if args.status:
         agent["status"] = args.status
     if args.task is not None:
