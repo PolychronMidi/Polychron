@@ -2,34 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2778,
-      "updated_ts": 1778733221.662517
+      "max_id": 2781,
+      "updated_ts": 1778733501.0017755
     }
   },
   {
-    "id": 2775,
-    "text": "Fix MODE=6 ctx tracking for 0% false readings",
-    "activeForm": "Fixing MODE=6 ctx tracking for 0% false readings",
-    "status": "completed",
-    "done": true,
+    "id": 2779,
+    "text": "Add providers_to_skip to proxy chain builder (hme_proxy.js)",
+    "activeForm": "Adding providers_to_skip to proxy chain builder",
+    "status": "in_progress",
+    "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778732233.824105,
+    "ts": 1778733501.001749,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2776,
-    "text": "Re-verify dashboard after fix",
-    "activeForm": "Re-verifying dashboard after fix",
-    "status": "completed",
-    "done": true,
+    "id": 2780,
+    "text": "Add providers_to_skip to Python synthesis chain (synthesis_reasoning.py)",
+    "activeForm": "Adding providers_to_skip to Python synthesis chain",
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778732233.8241193,
+    "ts": 1778733501.0017633,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2781,
+    "text": "Verify opencode_go models excluded from chains",
+    "activeForm": "Verifying opencode_go models excluded from chains",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778733501.0017738,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
