@@ -2,48 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2985,
-      "updated_ts": 1778774271.6728427
+      "max_id": 2987,
+      "updated_ts": 1778774738.8544192
     }
   },
   {
-    "id": 2983,
-    "text": "Fix MODE=6 proxy role detection so old all-role history cannot force one model",
-    "activeForm": "Fixing MODE=6 proxy role detection",
+    "id": 2986,
+    "text": "Fix MODE=6 role model attribution without fallback masking",
+    "activeForm": "Fixing MODE=6 role model attribution without fallback masking",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778774271.6728141,
+    "ts": 1778774738.8543992,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2984,
-    "text": "Refresh dashboard role model fields from intended role routing instead of stale single SID rows",
-    "activeForm": "Refreshing dashboard role model fields",
+    "id": 2987,
+    "text": "Verify dashboard output shows role-appropriate models and syntax/tests pass",
+    "activeForm": "Verifying dashboard output shows role-appropriate models and syntax/tests pass",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778774271.6728294,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2985,
-    "text": "Verify routing and dashboard evidence without claiming stale success",
-    "activeForm": "Verifying routing and dashboard evidence",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778774271.6728404,
+    "ts": 1778774738.8544166,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
