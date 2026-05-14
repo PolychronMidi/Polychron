@@ -112,7 +112,6 @@ i/todo action=add text=... parent_id=... critical=... on_done=...
 ```
 
 (Run `i/help` for the full wrapper surface and `i/help <name>` for usage.
-For the architectural map of HME's evolution trajectory see [doc/HME_HORIZONS.md](../HME_HORIZONS.md).)
 
 ## Todo system
 
