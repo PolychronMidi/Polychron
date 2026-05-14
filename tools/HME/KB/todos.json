@@ -2,34 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2621,
-      "updated_ts": 1778726392.0009065
+      "max_id": 2624,
+      "updated_ts": 1778726392.6783924
     }
   },
   {
-    "id": 2620,
-    "text": "Inspect HME onboarding/team/compression/model routing flow read-only",
-    "activeForm": "Inspecting HME flow read-only",
+    "id": 2622,
+    "text": "Find Blue Lead artifacts and defense-related files",
+    "activeForm": "Finding Blue Lead artifacts and defense-related files",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778726392.0008895,
+    "ts": 1778726392.6783638,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2621,
-    "text": "Identify adversarial assumptions and concise defenses",
-    "activeForm": "Identifying adversarial assumptions and concise defenses",
+    "id": 2623,
+    "text": "Review onboarding, compression, routing, and dashboard IPC assumptions",
+    "activeForm": "Reviewing onboarding, compression, routing, and dashboard IPC assumptions",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778726392.0009038,
+    "ts": 1778726392.6783786,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2624,
+    "text": "Return terse purple-team feedback with evidence",
+    "activeForm": "Returning terse purple-team feedback with evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778726392.6783903,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
