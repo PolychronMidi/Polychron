@@ -25,8 +25,8 @@ ROLES = {
 }
 
 # Dynamic context is loaded from configured model windows.
-DEFAULT_CTX = {"E5": 200000, "E4": 128000, "E3": 64000, "E2": 32000, "E1": 16000}
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
+MODEL_WINDOWS: dict[str, int] | None = None
 
 ROLE_NEEDLES = {
     "blue_lead": ("You are Blue Lead",),
