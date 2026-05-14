@@ -166,6 +166,7 @@ const _PASSTHROUGH_COMPACT_KEEP_MIN = 4;
 let _lastInputTokensRemaining = null; // updated by response handler
 let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from headers
 let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
+let _lastPayloadBytes = 0;            // last OmniRoute payload size for context monitoring
 const _BYTES_PER_TOKEN_EST = 3.5;
 const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 40_000;
 function _effectiveCompactThreshold() {
@@ -228,13 +229,55 @@ async function _acquireOpusSlot() {
   };
 }
 
-function _stripClaudeIdentity(payload) {
-  if (!payload || !Array.isArray(payload.system)) return;
-  payload.system = payload.system.filter(block => {
-    if (!block || block.type !== 'text') return true;
-    const t = block.text || '';
-    return !t.startsWith('You are Claude Code');
-  });
+// Context monitoring: injects anthropic-ratelimit-input-tokens-remaining header
+// to trigger Claude Code's native /compact when context approaches model limits.
+const _MODEL_CTX = {
+  'deepseek-v4-pro': 1048576, 'deepseek-v4-flash': 1048576,
+  'mimo-v2.5-pro': 1048576, 'mimo-v2-pro': 1048576,
+  'glm-5.1': 1048576, 'glm-5': 1048576,
+  'kimi-k2.6': 1048576, 'kimi-k2.5': 1048576,
+  'minimax-m2.7': 1048576, 'minimax-m2.5': 1048576,
+  'qwen3.6-plus': 1048576, 'qwen3.5-plus': 1048576,
+  'mistral-large-latest': 131072, 'gemini-2.5-flash': 1048576,
+  'llama-4-maverick': 1048576, 'llama-3.3-70b': 131072,
+  'gpt-5.5': 1050000, 'gpt-5.4': 400000, 'gpt-5.3': 400000, 'gpt-5.2': 400000,
+  'gpt-4o': 200000, 'nemotron-super-49b': 131072, 'nemotron-3-nano': 131072,
+};
+const _DEFAULT_CTX = 200000;
+
+function _resolveModelCtx(modelId) {
+  for (const [k, v] of Object.entries(_MODEL_CTX)) {
+    if (modelId.includes(k)) return v;
+  }
+  return _DEFAULT_CTX;
+}
+
+// Strip tool_result blocks older than 3 turns to prevent context bloat.
+// These get compacted by OmniRoute's RTK compression, but stripping them
+// before sending ensures the payload never exceeds the model's hard limit.
+function _stripStaleToolResults(payload) {
+  if (!payload || !Array.isArray(payload.messages)) return;
+  const msgs = payload.messages;
+  // Count user messages containing tool_results from the end
+  let userWithToolResults = 0;
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i];
+    if (!m || m.role !== 'user') continue;
+    const content = m.content;
+    if (!Array.isArray(content)) continue;
+    const hasToolResult = content.some(b => b && b.type === 'tool_result');
+    if (!hasToolResult) continue;
+    userWithToolResults++;
+    if (userWithToolResults > 3) {
+      // Replace tool_result blocks in this (older) message with compact placeholder
+      for (const b of content) {
+        if (b && b.type === 'tool_result') {
+          b.content = '(tool output elided by hme-proxy: older than 3 turns)';
+          b.is_error = false;
+        }
+      }
+    }
+  }
 }
 
 function _shrinkForPassthrough(payload) {
@@ -594,6 +637,8 @@ function handleRequest(clientReq, clientRes) {
         if (!_OMNIROUTE_OFF) {
           // OmniRoute path (default). No per-request compression overrides --
           // let the dashboard combo's compression settings do their job.
+          _lastPayloadBytes = JSON.stringify(payload).length;
+          _stripStaleToolResults(payload);
           _stripClaudeIdentity(payload);
           payload.model = `${_omniProvider}/${_swapModel}`;
           clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${_OMNIROUTE_PORT}`;
@@ -1027,6 +1072,9 @@ if (_mode4WasStreaming) {
         let fullBody = Buffer.concat(chunks);
         let status = upstreamRes.statusCode || 502;
         let headers = { ...upstreamRes.headers };
+        // Context monitoring: inject synthetic token-remaining header so
+        // Claude Code's native /compact fires before hitting model context limits.
+        if (_isMode4OmniRoute) _injectContextHeader(headers, _swapModel);
         // Capture Anthropic's rate-limit telemetry so the next request's
         // _shrinkForPassthrough can size the byte budget dynamically
         // instead of using the static 400KB ceiling. Header name per
