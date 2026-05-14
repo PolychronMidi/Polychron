@@ -113,6 +113,18 @@ def _user_text(body: dict) -> str:
  return "\n".join(chunks)
 def _looks_real_sid(sid: str) -> bool:
  return len(sid) == 36 and sid.count("-") == 4 and all(c in "0123456789abcdef-" for c in sid.lower())
+def _role_identity(role: str) -> str:
+ root = TRANSCRIPTS / "7992e911-8138-4ca3-9b34-6b6c69dc03d6" / "subagents"
+ newest = ("", "")
+ for p in root.glob("agent-*.jsonl"):
+  try:
+   first = json.loads(p.read_text(errors="ignore").splitlines()[0])
+  except (OSError, IndexError, json.JSONDecodeError):
+   continue
+  if _role_names({"messages": [first.get("message", {})]}) == [role]:
+   newest = max(newest, (first.get("timestamp", ""), first.get("agentId", "")))
+ if not newest[1]: raise RuntimeError(f"subagent identity unavailable for {role}")
+ return newest[1]
 def _role_key(role: str) -> str:
  if role in ("blue_lead", "red_lead"): return "team_lead"
  if role in ("blue_purple", "red_purple"): return "team_purple"
