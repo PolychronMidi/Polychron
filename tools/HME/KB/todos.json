@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2675,
-      "updated_ts": 1778727654.0378504
+      "max_id": 2682,
+      "updated_ts": 1778727663.0524135
     }
   },
   {
@@ -80,8 +80,8 @@
     "id": 2659,
     "text": "Capture MODE=6\u2192buddy deprecation migration note",
     "activeForm": "Capturing MODE=6\u2192buddy deprecation migration note",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -94,7 +94,7 @@
     "id": 2660,
     "text": "Report same-turn evidence and next actions",
     "activeForm": "Reporting same-turn evidence and next actions",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
