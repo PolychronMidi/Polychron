@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2674,
-      "updated_ts": 1778727570.3814054
+      "max_id": 2675,
+      "updated_ts": 1778727654.0378504
     }
   },
   {
@@ -216,5 +216,19 @@
       }
     ],
     "tier": "E3"
+  },
+  {
+    "id": 2675,
+    "text": "MODE=6 migration: audit buddy/consult overlap after team fanout stabilizes; merge reusable queue/context/status semantics into team paradigm, then retire obsolete buddy docs/code",
+    "activeForm": "MODE=6 migration: audit buddy/consult overlap after team fanout stabilizes; merge reusable queue/context/status semantics into team paradigm, then retire obsolete buddy docs/code",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "hme_todo",
+    "on_done": "",
+    "ts": 1778727654.0378482,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E4"
   }
 ]
