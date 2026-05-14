@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2757,
-      "updated_ts": 1778729646.4984891
+      "max_id": 2760,
+      "updated_ts": 1778729753.8833096
     }
   },
   {
     "id": 2755,
     "text": "Trace Agent/fork model routing under MODE=6",
     "activeForm": "Tracing Agent/fork model routing under MODE=6",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2756,
     "text": "Compare proxy interactive swap vs synthesis role resolver",
     "activeForm": "Comparing proxy interactive swap vs synthesis role resolver",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2757,
     "text": "Report whether Agent replacement is needed for tier routing",
     "activeForm": "Reporting whether Agent replacement is needed for tier routing",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
