@@ -254,12 +254,9 @@ def cmd_update(args):
         print(f"role '{role}' not registered; use register first", file=sys.stderr)
         sys.exit(1)
     agent = data["agents"][role]
-    if args.ctx_pct is not None:
-        agent["ctx_used_pct"] = float(args.ctx_pct)
-    if args.status:
-        agent["status"] = args.status
-    if args.task is not None:
-        agent["task"] = args.task
+    if args.ctx_pct is not None: agent["ctx_used_pct"] = float(args.ctx_pct)
+    if args.status: agent["status"] = args.status
+    if args.task is not None: agent["task"] = args.task
     agent["last_active"] = _now()
     _save(data)
 def cmd_heartbeat(args):
