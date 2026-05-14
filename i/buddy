@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-# i/buddy — DEPRECATED alias for i/dispatch. The dispatcher is no longer
-# buddy-specific — it routes tasks through whatever HME_DISPATCH_MODE
-# selects (claude-resume / synthesis / disabled). Use i/dispatch for new
-# code. This wrapper is preserved so existing callers + transcripts
-# referencing `i/buddy <action>` keep working.
-exec "$(dirname "$0")/dispatch" "$@"
