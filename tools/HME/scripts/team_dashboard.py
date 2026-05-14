@@ -201,7 +201,8 @@ def _omniroute_ctx(role: str, sid: str, fallback: int, forked_at: str | None = N
             continue
         model = row["requested_model"] or row["model"] or ""
         window = _model_ctx_window(model)
-        window = window or fallback
+        if not window:
+            raise RuntimeError(f"unknown ctx window for model={model!r}")
         pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
         return {"pct": pct, "window": window, "timestamp": row["timestamp"]}
     return None
@@ -211,18 +212,21 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
     fallback = DEFAULT_CTX.get(tier, 0)
     if _is_mode6():
         ctx = _omniroute_ctx(role, sid, fallback, forked_at)
-        if ctx:
-            return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute"}
-        return {"pct": 0, "window": fallback, "source": "unknown"}
+        if not ctx:
+            raise RuntimeError(f"omniroute ctx unavailable for role={role} sid={sid}")
+        return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute"}
     try:
         from buddy_dispatch_status import _buddy_context_used  # noqa: E402
         ctx = _buddy_context_used(sid)
         if ctx and "used_pct" in ctx:
             pct = min(100, max(0, int(ctx["used_pct"])))
-            return {"pct": pct, "window": int(ctx.get("ctx_window") or fallback), "source": "buddy"}
-    except (ImportError, ValueError, TypeError):
-        pass  # silent-ok: legacy buddy ctx may be unavailable
-    return {"pct": 0, "window": fallback, "source": "unknown"}
+            window = int(ctx.get("ctx_window") or 0)
+            if not window:
+                raise RuntimeError(f"buddy ctx window unavailable for role={role} sid={sid}")
+            return {"pct": pct, "window": window, "source": "buddy"}
+    except (ImportError, ValueError, TypeError) as exc:
+        raise RuntimeError(f"buddy ctx unavailable for role={role} sid={sid}") from exc
+    raise RuntimeError(f"ctx unavailable for role={role} sid={sid}")
 
 def cmd_register(args):
     data = _load()
