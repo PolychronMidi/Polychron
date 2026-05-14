@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2881,
-      "updated_ts": 1778745446.7865267
+      "max_id": 2885,
+      "updated_ts": 1778745508.8709466
     }
   },
   {
     "id": 2878,
     "text": "Inspect MODE=6/HME routing and dashboard code",
     "activeForm": "Inspecting MODE=6/HME routing and dashboard code",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -23,8 +23,8 @@
   {
     "id": 2879,
     "text": "Fix model role defaults if broken",
-    "activeForm": "Fixing model role defaults if broken",
-    "status": "pending",
+    "activeForm": "Fixing model role defaults",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -37,7 +37,7 @@
   {
     "id": 2880,
     "text": "Fix dashboard heartbeat/register behavior if broken",
-    "activeForm": "Fixing dashboard heartbeat/register behavior if broken",
+    "activeForm": "Fixing dashboard heartbeat/register behavior",
     "status": "pending",
     "done": false,
     "critical": false,
