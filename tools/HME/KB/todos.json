@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2843,
-      "updated_ts": 1778744972.6445959
+      "max_id": 2847,
+      "updated_ts": 1778744976.9130933
     }
   },
   {
     "id": 2840,
     "text": "Establish HME state with local commands only",
     "activeForm": "Establishing HME state with local commands only",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2827,
     "text": "Inspect role-model/dashboard/handoff files for requested gaps",
     "activeForm": "Inspecting role-model/dashboard/handoff files for requested gaps",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
