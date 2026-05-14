@@ -83,6 +83,11 @@ if [ "$EVENT" = "Stop" ] && [ -n "$_PB_ROOT" ]; then
   fi
 fi
 
+  # Forward HME_TEAM_ROLE so PreToolUse hooks can route by caller role.
+  if [ -n "${HME_TEAM_ROLE:-}" ]; then
+    BODY=$(printf '%s' "$BODY" | jq -c --arg role "$HME_TEAM_ROLE" '. + {_hme_team_role: $role}')
+  fi
+
 # POST to proxy. --max-time 60s accommodates stop.sh's longer chain
 # (auto-commit + lifecycle checks).
 RESP=$(curl -sf --max-time 60 -X POST \
