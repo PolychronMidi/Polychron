@@ -2,48 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2957,
-      "updated_ts": 1778758055.2637675
+      "max_id": 2959,
+      "updated_ts": 1778759515.9914808
     }
   },
   {
-    "id": 2955,
-    "text": "Identify why role heartbeats still collapse onto one session id",
-    "activeForm": "Identifying duplicate session collapse root cause",
+    "id": 2958,
+    "text": "Make dashboard derive ctx windows dynamically and report one-decimal percentages for all roles",
+    "activeForm": "Updating dashboard dynamic ctx and decimal pct",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778758055.2637398,
+    "ts": 1778759515.9914637,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2956,
-    "text": "Patch team_dashboard.py to fail fast on duplicate or unproven role sessions",
-    "activeForm": "Patching team_dashboard.py duplicate session guard",
+    "id": 2959,
+    "text": "Verify driver plus all-role behavior without fake collapsed sessions",
+    "activeForm": "Verifying dashboard role context behavior",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778758055.2637541,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2957,
-    "text": "Verify compile, LOC, and dashboard duplicate detection behavior",
-    "activeForm": "Verifying dashboard context tracking behavior",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778758055.2637644,
+    "ts": 1778759515.991478,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
