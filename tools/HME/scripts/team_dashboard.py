@@ -116,6 +116,7 @@ def cmd_register(args):
         "tier": meta["tier"],
         "sid": args.sid,
         "ctx_used_pct": _ctx_pct(args.sid, meta["tier"]),
+        "ctx_source": _ctx_source(args.sid),
         "ctx_available": DEFAULT_CTX.get(meta["tier"], 0),
         "last_active": _now(),
         "status": "registered",
