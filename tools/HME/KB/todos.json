@@ -2,48 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2980,
-      "updated_ts": 1778773260.905042
+      "max_id": 2982,
+      "updated_ts": 1778773765.3702304
     }
   },
   {
-    "id": 2975,
-    "text": "Fix proxy MODE=6 model mutation so OmniRoute receives role-selected model",
-    "activeForm": "Fixing proxy MODE=6 model mutation so OmniRoute receives role-selected model",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778773201.8295336,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2976,
-    "text": "Verify role chains via focused proxy/unit tests",
-    "activeForm": "Verifying role chains via focused proxy/unit tests",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778773201.8295484,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2977,
-    "text": "Check dashboard model output after routing fix",
-    "activeForm": "Checking dashboard model output after routing fix",
+    "id": 2981,
+    "text": "Add 3-minute grace window to verify-landed hook blocks",
+    "activeForm": "Adding 3-minute grace window to verify-landed hook blocks",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778773201.8295586,
+    "ts": 1778773765.3702104,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2982,
+    "text": "Verify hook behavior with focused local checks",
+    "activeForm": "Verifying hook behavior with focused local checks",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778773765.3702273,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
