@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2974,
-      "updated_ts": 1778773133.04219
+      "max_id": 2977,
+      "updated_ts": 1778773201.829561
     }
   },
   {
-    "id": 2972,
-    "text": "Find why MODE=6 role model routing still collapses in dashboard",
-    "activeForm": "Finding MODE=6 role model collapse cause",
+    "id": 2975,
+    "text": "Fix proxy MODE=6 model mutation so OmniRoute receives role-selected model",
+    "activeForm": "Fixing proxy MODE=6 model mutation so OmniRoute receives role-selected model",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778773133.0421615,
+    "ts": 1778773201.8295336,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2973,
-    "text": "Patch proxy/dashboard routing with fail-fast role attribution",
-    "activeForm": "Patching proxy/dashboard role attribution",
+    "id": 2976,
+    "text": "Verify role chains via focused proxy/unit tests",
+    "activeForm": "Verifying role chains via focused proxy/unit tests",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778773133.0421772,
+    "ts": 1778773201.8295484,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2974,
-    "text": "Verify role model diversity with tests and live dashboard evidence",
-    "activeForm": "Verifying role model diversity",
+    "id": 2977,
+    "text": "Check dashboard model output after routing fix",
+    "activeForm": "Checking dashboard model output after routing fix",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778773133.0421877,
+    "ts": 1778773201.8295586,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
