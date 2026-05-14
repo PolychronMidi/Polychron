@@ -26,7 +26,6 @@ from pathlib import Path
 
 PROJECT = Path(os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "")))
 DASHBOARD = PROJECT / "runtime" / "hme" / "team-dashboard.json"
-SESSION_ROOT = Path.home() / ".claude" / "projects" / "-home-jah-Polychron"
 
 ROLES = {
     "driver":       {"team": "command",  "tier": "E5"},
@@ -158,43 +157,9 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
     return None
 
 
-def _subagent_ctx(role: str, fallback: int) -> dict | None:
-    root = SESSION_ROOT / "7992e911-8138-4ca3-9b34-6b6c69dc03d6" / "subagents"
-    if not root.is_dir():
-        return None
-    newest = None
-    for path in root.glob("*.jsonl"):
-        try:
-            text = path.read_text(errors="ignore")
-        except OSError:
-            continue
-        if not any(n in text[:5000] for n in ROLE_NEEDLES.get(role, ())):
-            continue
-        usage = None; ts = ""
-        for line in text.splitlines():
-            try:
-                ev = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            msg = ev.get("message") if isinstance(ev.get("message"), dict) else {}
-            if isinstance(msg.get("usage"), dict):
-                usage = msg["usage"]; ts = ev.get("timestamp", "")
-        if not usage:
-            continue
-        tokens = sum(int(usage.get(k) or 0) for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
-        item = {"pct": int(min(100, max(0, round(tokens / max(1, fallback) * 100)))), "window": fallback, "timestamp": ts}
-        if newest is None or item["timestamp"] > newest["timestamp"]:
-            newest = item
-    return newest
-
-
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
     fallback = DEFAULT_CTX.get(tier, 0)
     if _is_mode6():
-        if role != "driver":
-            ctx = _subagent_ctx(role, fallback)
-            if ctx:
-                return {"pct": ctx["pct"], "window": ctx["window"], "source": "transcript"}
         ctx = _omniroute_ctx(role, sid, fallback, forked_at)
         if ctx:
             return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute"}
