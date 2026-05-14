@@ -73,7 +73,7 @@ _port_healthy() {
 _OMNIROUTE_PORT="${HME_OMNIROUTE_PORT:-20128}"
 _OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
 _OD_START="${OVERDRIVE_MODE:-0}"
-if [ "$_OD_START" = "4" ] || [ "$_OD_START" = "5" ]; then
+if [ "$_OD_START" = "4" ] || [ "$_OD_START" = "5" ] || [ "$_OD_START" = "6" ]; then
   if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
   _OR_DIR="$PROJECT_ROOT/tools/omniroute"
   if [ -x "$_OR_DIR/start.sh" ]; then
