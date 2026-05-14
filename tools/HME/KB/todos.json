@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3008,
-      "updated_ts": 1778781234.9889991
+      "max_id": 3011,
+      "updated_ts": 1778781809.3617496
     }
   },
   {
     "id": 3003,
     "text": "Make Agent level/prompt runtime routing strict and schema-matched",
-    "activeForm": "Aligning Agent level/prompt runtime routing with compact schema",
-    "status": "in_progress",
-    "done": false,
+    "activeForm": "Making Agent level/prompt runtime routing strict and schema-matched",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 3001,
     "text": "Add focused coverage for level routing and native Agent input rewrite",
     "activeForm": "Adding focused coverage for level routing and native Agent input rewrite",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 3002,
     "text": "Run syntax and relevant tests with evidence",
     "activeForm": "Running syntax and relevant tests with evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
