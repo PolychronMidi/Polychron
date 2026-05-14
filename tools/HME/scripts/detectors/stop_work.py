@@ -37,6 +37,7 @@ DISMISSIVE_PHRASES = (
     "no work remaining",
     "all done",
 )
+SUCCESS_ONLY = re.compile(r"^\s*\[?success\]?\s*[.!]?\s*$", re.IGNORECASE)
 
 # User-prompt patterns that explicitly invite a short confirmation reply.
 # When matched, TEXT_ONLY_SHORT is exempted because brevity IS the
