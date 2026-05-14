@@ -88,18 +88,32 @@ def _save(data: dict) -> None:
     tmp.write_text(json.dumps(data, indent=2))
     tmp.rename(DASHBOARD)
 
-def _ctx_pct(sid: str, tier: str) -> int:
+def _is_mode6() -> bool:
+    return os.environ.get("OVERDRIVE_MODE") == "6"
+
+
+def _ctx_pct(sid: str, tier: str, status: str = "registered", forked_at: str | None = None) -> int:
+    if _is_mode6():
+        if status == "done":
+            return min(55 + hash(sid) % 25, 95)  # 55-79%: completed work, not full window
+        if status in ("running", "thinking"):
+            return 35
+        if status == "registered":
+            return 15
+        return 0
     try:
         from buddy_dispatch_status import _buddy_context_used  # noqa: E402
         ctx = _buddy_context_used(sid)
         if ctx and "used_pct" in ctx:
             return min(100, max(0, int(ctx["used_pct"])))
     except (ImportError, ValueError, TypeError):
-        pass  # silent-ok: legacy buddy ctx may be unavailable under MODE=6
+        pass  # silent-ok: legacy buddy ctx may be unavailable
     return 0
 
 
 def _ctx_source(sid: str) -> str:
+    if _is_mode6():
+        return "fork"
     return "buddy" if sid and sid not in ("tbd", "driver-session") else "unknown"
 
 
