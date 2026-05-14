@@ -313,22 +313,45 @@ def _resolve_mode5_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     return (chain, allow_sub)
 
 
-def _role_tier(role: str) -> str:
+def _role_tier(role: str, fallback: str) -> str:
     if role in ("driver", "blue_lead", "red_lead", "team_lead"):
         return "E5"
     if role in ("blue_purple", "red_purple", "team_purple"):
         return "E4"
     if role.startswith("crew_e") and len(role) >= 7 and role[6] in "1234":
         return "E" + role[6]
-    if role == "stage_crew":
-        return "E3"
-    return "E3"
+    return fallback
+
+
+def _role_key(role: str) -> str:
+    if role == "driver":
+        return "driver"
+    if role in ("blue_lead", "red_lead", "team_lead"):
+        return "team_lead"
+    if role in ("blue_purple", "red_purple", "team_purple"):
+        return "team_purple"
+    if role.startswith("crew_") or role == "stage_crew":
+        return "stage_crew"
+    return ""
 
 
 def _resolve_mode6_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     from hme_env import ENV as _ENV
+    from . import _load_models_json as _lmj
     role = _ENV.optional("HME_TEAM_ROLE", "").strip().lower()
-    role_tier = _role_tier(role) if role else tier
+    role_tier = _role_tier(role, tier)
+    try:
+        cfg = _lmj()
+    except Exception:
+        return _resolve_mode5_entry(role_tier)
+    ids = {m.get("id") for v in cfg.get("tiers", {}).values() for m in v.get("models", [])}
+    explicit = [m for m in cfg.get("team_role_models", {}).get(_role_key(role), []) if m in ids]
+    if explicit:
+        return (tuple(explicit), any(m.startswith("claude-") for m in explicit))
+    if role in ("driver", "blue_lead", "red_lead", "team_lead", "team_purple", "blue_purple", "red_purple"):
+        top = [m for m in cfg.get("manually_toprank", {}).get(role_tier, []) if m in ids]
+        if top:
+            return (tuple(top), any(m.startswith("claude-") for m in top))
     return _resolve_mode5_entry(role_tier)
 
 
