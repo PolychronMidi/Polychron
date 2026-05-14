@@ -145,21 +145,11 @@ def _current_session_id() -> str:
 
 
 def _role_matches(role: str, body: dict, current_sid: str) -> bool:
-    if role == "driver":
-        return _metadata_session_id(body) == current_sid
     text = _first_user_text(body)
-    return any(n in text for n in ROLE_NEEDLES.get(role, ()))
+    return _metadata_session_id(body) == current_sid if role == "driver" else any(n in text for n in ROLE_NEEDLES.get(role, ()))
 
 
 def _model_ctx_window(model: str, fallback: int) -> int:
-    if OMNI_DB.is_file():
-        try:
-            con = sqlite3.connect(str(OMNI_DB))
-            row = con.execute("select context_length from model_capabilities where model_id = ? limit 1", (model,)).fetchone()
-            if row and row[0]:
-                return int(row[0])
-        except (sqlite3.Error, ValueError, TypeError):
-            pass  # silent-ok: model table may not have local/generated names
     if model.startswith("codex/") or model.startswith("cx/") or model.startswith("gpt-5.5"):
         return 1050000
     return fallback
@@ -183,9 +173,7 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
         if forked_at and row["timestamp"] < forked_at:
             break
         body = _artifact_body(row["artifact_relpath"] or "")
-        if sid and len(sid) >= 12 and _metadata_session_id(body) == sid:
-            pass
-        elif not _role_matches(role, body, current_sid):
+        if not (sid and len(sid) >= 12 and _metadata_session_id(body) == sid) and not _role_matches(role, body, current_sid):
             continue
         model = row["requested_model"] or row["model"] or ""
         window = _model_ctx_window(model, fallback_window)
@@ -205,7 +193,8 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
         from buddy_dispatch_status import _buddy_context_used  # noqa: E402
         ctx = _buddy_context_used(sid)
         if ctx and "used_pct" in ctx:
-            return {"pct": min(100, max(0, int(ctx["used_pct"]))), "window": int(ctx.get("ctx_window") or fallback), "source": "buddy"}
+            pct = min(100, max(0, int(ctx["used_pct"])))
+            return {"pct": pct, "window": int(ctx.get("ctx_window") or fallback), "source": "buddy"}
     except (ImportError, ValueError, TypeError):
         pass  # silent-ok: legacy buddy ctx may be unavailable
     return {"pct": 0, "window": fallback, "source": "unknown"}
