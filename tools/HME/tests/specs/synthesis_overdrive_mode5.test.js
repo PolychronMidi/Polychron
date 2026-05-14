@@ -113,7 +113,7 @@ print(json.dumps({"chain": list(chain), "allow_subagent": allow_sub}))
   assert.strictEqual(parsed.allow_subagent, false);
 });
 
-test('overdrive mode=6: purple and crew roles use team_role_models', () => {
+test('overdrive mode=6: purple and crew roles use team_role_models logic', () => {
   const purple = _runPython({ OVERDRIVE_MODE: '6', HME_TEAM_ROLE: 'blue_purple' }, `
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
@@ -122,7 +122,7 @@ print(json.dumps({"chain": list(chain), "allow_subagent": allow_sub}))
 `);
   if (purple.status !== 0) throw new Error(`python failed: ${purple.stderr}`);
   const p = JSON.parse(purple.stdout.trim().split('\n').pop());
-  assert.deepStrictEqual(p.chain.slice(0, 2), ['mistral-large-latest', 'gemini-2.5-pro']);
+  assert.deepStrictEqual(p.chain, EXPECTED_CHAINS.E4);
   assert.strictEqual(p.allow_subagent, false);
 
   const crew = _runPython({ OVERDRIVE_MODE: '6', HME_TEAM_ROLE: 'crew_e2_1' }, `
@@ -133,7 +133,7 @@ print(json.dumps({"chain": list(chain), "allow_subagent": allow_sub}))
 `);
   if (crew.status !== 0) throw new Error(`python failed: ${crew.stderr}`);
   const c = JSON.parse(crew.stdout.trim().split('\n').pop());
-  assert.deepStrictEqual(c.chain.slice(0, 2), ['gemini-2.0-flash', 'gpt-4o-mini']);
+  assert.deepStrictEqual(c.chain, EXPECTED_CHAINS.E2);
   assert.strictEqual(c.allow_subagent, false);
 });
 
