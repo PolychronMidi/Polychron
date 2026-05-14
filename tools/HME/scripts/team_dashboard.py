@@ -134,18 +134,28 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
     return matches == [role]
 
 
+def _model_windows() -> dict[str, int]:
+    global MODEL_WINDOWS
+    if MODEL_WINDOWS is None:
+        cfg = json.loads((PROJECT / "config" / "models.json").read_text())
+        MODEL_WINDOWS = {m["name"]: int(m["context_window"]) for m in cfg["models"]}
+    return MODEL_WINDOWS
+
+
 def _model_ctx_window(model: str, tier: str) -> int:
-    if model.startswith(("codex/", "cx/", "gpt-5.5")):
-        return 1050000
-    if model:
-        raise RuntimeError(f"context window unknown for model={model} tier={tier}")
-    raise RuntimeError(f"omniroute row missing model for tier={tier}")
+    name = model.split("/", 1)[-1]
+    try:
+        return _model_windows()[name]
+    except KeyError as exc:
+        raise RuntimeError(f"context window unknown for model={model} tier={tier}") from exc
 
 
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
     model = row["requested_model"] or row["model"] or ""
+    if not model:
+        raise RuntimeError(f"omniroute row missing model for tier={tier}")
     window = _model_ctx_window(model, tier)
-    pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
+    pct = round(min(100, max(0, (row["tokens_in"] or 0) / max(1, window) * 100)), 1)
     return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id}
 
 
