@@ -38,8 +38,9 @@ function _stripFromContent(content) {
       continue;
     }
     const compactedStopHook = _compactRepeatedStopHook(block.text);
-    if (compactedStopHook) {
-      block.text = compactedStopHook;
+    if (compactedStopHook !== null) {
+      if (compactedStopHook) block.text = compactedStopHook;
+      else content.splice(i, 1);
       stripped++;
       continue;
     }
