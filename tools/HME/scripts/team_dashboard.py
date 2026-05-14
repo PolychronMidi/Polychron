@@ -23,126 +23,27 @@ ROLES = {
 }
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
 _MODEL_WINDOWS: dict[str, int] | None = None
-def _jsonc(text: str) -> str:
- out = []; quote = ""; esc = False; i = 0
- while i < len(text):
-  c = text[i]; n = text[i + 1:i + 2]
-  if quote:
-   out.append(c)
-   if esc: esc = False
-   elif c == "\\": esc = True
-   elif c == quote: quote = ""
-  elif c in "\"'":
-   quote = c; out.append(c)
-  elif c == "#" or (c == "/" and n == "/"):
-   while i < len(text) and text[i] != "\n": i += 1
-   out.append("\n")
-  else:
-   out.append(c)
-  i += 1
- return "".join(out)
-def _strip_json_comments(text: str) -> str:
- out=[]; q=""; esc=False; i=0
- while i < len(text):
-  c=text[i]; n=text[i:i+2]
-  if q:
-   out.append(c); was=esc; esc=(c == "\\" and not esc)
-   if c == q and not was: q=""
-  elif c in "\"'": q=c; out.append(c)
-  elif c == "#" or n == "//":
-   i=text.find("\n", i)
-   if i < 0: break
-   out.append("\n")
-  else: out.append(c)
-  i += 1
- return "".join(out)
-
-def _artifact_body(relpath: str) -> dict:
- p = Path.home() / ".omniroute" / "call_logs" / relpath
- try:
-  return json.loads(p.read_text()).get("requestBody", {})
- except (OSError, json.JSONDecodeError, TypeError):
-  return {}
-
-def _metadata_session_id(body: dict) -> str:
- meta = body.get("metadata") if isinstance(body, dict) else {}
- user_id = meta.get("user_id") if isinstance(meta, dict) else None
- try:
-  return json.loads(user_id).get("session_id", "") if isinstance(user_id, str) else ""
- except (json.JSONDecodeError, TypeError):
-  return ""
-
-def _current_session_id() -> str:
- try:
-  return Path((PROJECT / "tmp" / "hme-transcript-path.txt").read_text().strip()).stem
- except OSError:
-  return ""
-
-def _user_text(body: dict) -> str:
- chunks = []
- for msg in body.get("messages", []):
-  if msg.get("role") != "user":
-   continue
-  parts = msg.get("content")
-  if isinstance(parts, str):
-   chunks.append(parts)
-  elif isinstance(parts, list):
-   chunks.extend(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
- return "\n".join(chunks)
-
-def _role_matches(role: str, body: dict, current_sid: str) -> bool:
- if role == "driver":
-  return _metadata_session_id(body) == current_sid
- if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
-  return False
- text = _user_text(body)
- if "Filesystem IPC only" not in text or "MODE=6" not in text:
-  return False
- matches = [r for r, needles in ROLE_NEEDLES.items() if any(n in text for n in needles)]
- return matches == [role]
-
-def _looks_real_sid(sid: str) -> bool:
- return len(sid) == 36 and sid.count("-") == 4 and all(c in "0123456789abcdef-" for c in sid.lower())
-
-def _jsonc(text: str) -> dict:
- out = []
- in_str = esc = False
- for i, c in enumerate(text):
-  if c == '"' and not esc:
-   in_str = not in_str
-  if not in_str and c == '/' and i + 1 < len(text) and text[i + 1] == '/':
-   out.append('
-'); esc = False; continue
-  if not in_str or not out or out[-1] == '
-':
-   out.append(c)
-  esc = c == '\' and not esc
- return json.loads(''.join(out))
-
-def _tier_window(value) -> int | None:
- if isinstance(value, dict):
-  return int(value.get('context_window') or value.get('ctx_window') or value.get('context') or 0) or None
- if isinstance(value, int):
-  return value
- return None
-
 def _model_ctx_window(model: str, tier: str) -> int:
  if not model:
   raise RuntimeError(f"omniroute row missing model for tier={tier}")
  path = PROJECT / "config" / "models.json"
  try:
-  cfg = _jsonc(path.read_text())
- except (OSError, json.JSONDecodeError) as exc:
+  text = path.read_text()
+ except OSError as exc:
   raise RuntimeError(f"model config unavailable: {path}") from exc
- for section in ("models", "ranking_rules", "manually_toprank"):
-  val = cfg.get(section, {}).get(model) if isinstance(cfg.get(section), dict) else None
-  win = _tier_window(val)
-  if win:
-   return win
- win = _tier_window(cfg.get("tiers", {}).get(tier) if isinstance(cfg.get("tiers"), dict) else None)
- if win:
-  return win
- raise RuntimeError(f"context window unknown for model={model} tier={tier}")
+ marker = f'"id": "{model}"'
+ i = text.find(marker)
+ if i < 0:
+  raise RuntimeError(f"context window unknown for model={model} tier={tier}")
+ j = text.find('"max_context"', i)
+ if j < 0:
+  raise RuntimeError(f"context window missing for model={model} tier={tier}")
+ k = text.find(':', j)
+ n = ''.join(c for c in text[k + 1:k + 20] if c.isdigit())
+ if not n:
+  raise RuntimeError(f"context window malformed for model={model} tier={tier}")
+ return int(n)
+
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
  model = row["requested_model"] or row["model"] or ""
  window = _model_ctx_window(model, tier)
