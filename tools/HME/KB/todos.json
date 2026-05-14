@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2748,
-      "updated_ts": 1778729390.6606894
+      "max_id": 2751,
+      "updated_ts": 1778729490.305965
     }
   },
   {
-    "id": 2740,
-    "text": "Disable legacy buddy/subagent paths for MODE=6 purity",
-    "activeForm": "Disabling legacy buddy/subagent paths for MODE=6 purity",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778729260.090774,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2741,
-    "text": "Verify Agent tool is not proxy-replaced",
-    "activeForm": "Verifying Agent tool is not proxy-replaced",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778729260.0907881,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2742,
-    "text": "Report E5 summary with evidence",
-    "activeForm": "Reporting E5 summary with evidence",
+    "id": 2749,
+    "text": "Trace OVERDRIVE_VIA_SUBAGENT=0 effect under MODE=6",
+    "activeForm": "Tracing OVERDRIVE_VIA_SUBAGENT=0 effect under MODE=6",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778729260.0907986,
+    "ts": 1778729490.3059373,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2750,
+    "text": "Fix misleading env comment if MODE=6 routes through OmniRoute",
+    "activeForm": "Fixing misleading env comment if MODE=6 routes through OmniRoute",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778729490.3059523,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2751,
+    "text": "Verify direct API not used for MODE=6 registry models",
+    "activeForm": "Verifying direct API not used for MODE=6 registry models",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778729490.3059628,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
