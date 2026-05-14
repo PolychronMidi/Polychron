@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2739,
-      "updated_ts": 1778729239.6866841
+      "max_id": 2742,
+      "updated_ts": 1778729260.0908005
     }
   },
   {
-    "id": 2734,
-    "text": "Trace proxy Agent/subagent middleware path",
-    "activeForm": "Tracing proxy Agent/subagent middleware path",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778729026.5533931,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2735,
-    "text": "Determine if legacy persistent subagent replacement is still active",
-    "activeForm": "Determining if legacy persistent subagent replacement is still active",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778729026.5534112,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2736,
-    "text": "Report cleanup recommendation with file evidence",
-    "activeForm": "Reporting cleanup recommendation with file evidence",
+    "id": 2740,
+    "text": "Disable legacy buddy/subagent paths for MODE=6 purity",
+    "activeForm": "Disabling legacy buddy/subagent paths for MODE=6 purity",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778729026.5534244,
+    "ts": 1778729260.090774,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2741,
+    "text": "Verify Agent tool is not proxy-replaced",
+    "activeForm": "Verifying Agent tool is not proxy-replaced",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778729260.0907881,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2742,
+    "text": "Report E5 summary with evidence",
+    "activeForm": "Reporting E5 summary with evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778729260.0907986,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
