@@ -21,16 +21,54 @@ ROLES = {
     "crew_e1_0":    {"team": "crew",     "tier": "E1"},
     "crew_e1_1":    {"team": "crew",     "tier": "E1"},
 }
+ROLE_NEEDLES = {
+    "blue_lead": ("You are Blue Lead",),
+    "blue_purple": ("You are Blue Purple",),
+    "red_lead": ("You are Red Lead",),
+    "red_purple": ("You are Red Purple",),
+    "crew_e4_0": ("crew_e4_0",), "crew_e4_1": ("crew_e4_1",),
+    "crew_e3_0": ("crew_e3_0",), "crew_e3_1": ("crew_e3_1",),
+    "crew_e2_0": ("crew_e2_0",), "crew_e2_1": ("crew_e2_1",),
+    "crew_e1_0": ("crew_e1_0",), "crew_e1_1": ("crew_e1_1",),
+}
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
 _MODEL_WINDOWS: dict[str, int] | None = None
+def _jsonc_load(text: str) -> dict:
+ out = []
+ i = 0
+ in_str = esc = False
+ while i < len(text):
+  c = text[i]
+  n = text[i + 1] if i + 1 < len(text) else ""
+  if in_str:
+   out.append(c)
+   if esc: esc = False
+   elif c == "\\": esc = True
+   elif c == '"': in_str = False
+   i += 1; continue
+  if c == '"':
+   in_str = True; out.append(c); i += 1; continue
+  if c == "/" and n == "/":
+   j = text.find("\n", i)
+   if j < 0: break
+   out.append("\n"); i = j + 1; continue
+  if c == "/" and n == "*":
+   j = text.find("*/", i + 2)
+   if j < 0: raise RuntimeError("unterminated block comment in model config")
+   out.append("\n" * text[i:j + 2].count("\n")); i = j + 2; continue
+  out.append(c); i += 1
+ return json.loads("".join(out))
+
 def _model_windows() -> dict[str, int]:
  global _MODEL_WINDOWS
  if _MODEL_WINDOWS is None:
   path = PROJECT / "config" / "models.json"
   try:
-   cfg = json.loads(path.read_text())
-  except (OSError, json.JSONDecodeError) as exc:
+   cfg = _jsonc_load(path.read_text())
+  except OSError as exc:
    raise RuntimeError(f"model config unavailable: {path}") from exc
+  except (json.JSONDecodeError, RuntimeError) as exc:
+   raise RuntimeError(f"model config invalid: {path}") from exc
   windows = {}
   for tier in cfg.get("model_tiers", {}).values():
    for model in tier.get("models", []):
@@ -38,6 +76,8 @@ def _model_windows() -> dict[str, int]:
     win = model.get("max_context") or model.get("context_length")
     if mid and win:
      windows[str(mid)] = int(win)
+  if not windows:
+   raise RuntimeError(f"model config has no context windows: {path}")
   _MODEL_WINDOWS = windows
  return _MODEL_WINDOWS
 
@@ -45,10 +85,11 @@ def _model_ctx_window(model: str, tier: str) -> int:
  if not model:
   raise RuntimeError(f"omniroute row missing model for tier={tier}")
  name = model.split("/", 1)[1] if model.startswith("codex/") else model
- try:
-  return _model_windows()[name]
- except KeyError as exc:
-  raise RuntimeError(f"context window unknown for model={model} tier={tier}") from exc
+ windows = _model_windows()
+ for key in (model, name):
+  if key in windows:
+   return windows[key]
+ raise RuntimeError(f"context window unknown for model={model} tier={tier}")
 
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
  model = row["requested_model"] or row["model"] or ""
@@ -56,6 +97,46 @@ def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
  used = float(row["tokens_in"] or 0)
  pct = round(min(100.0, max(0.0, used / max(1, window) * 100)), 1)
  return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id}
+
+def _metadata_session_id(body: dict) -> str:
+ meta = body.get("metadata") if isinstance(body, dict) else {}
+ user_id = meta.get("user_id") if isinstance(meta, dict) else None
+ try:
+  return json.loads(user_id).get("session_id", "") if isinstance(user_id, str) else ""
+ except (json.JSONDecodeError, TypeError):
+  return ""
+
+def _user_text(body: dict) -> str:
+ chunks = []
+ for msg in body.get("messages", []):
+  if msg.get("role") != "user":
+   continue
+  parts = msg.get("content")
+  if isinstance(parts, str):
+   chunks.append(parts)
+  elif isinstance(parts, list):
+   chunks.extend(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
+ return "\n".join(chunks)
+
+def _looks_real_sid(sid: str) -> bool:
+ return len(sid) == 36 and sid.count("-") == 4 and all(c in "0123456789abcdef-" for c in sid.lower())
+
+def _role_names(body: dict) -> list[str]:
+ if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
+  return []
+ text = _user_text(body)
+ if "Filesystem IPC only" not in text or "MODE=6" not in text:
+  return []
+ return [r for r, needles in ROLE_NEEDLES.items() if any(n in text for n in needles)]
+
+def _role_matches(role: str, body: dict, current_sid: str) -> bool:
+ if role == "driver":
+  return _metadata_session_id(body) == current_sid
+ names = _role_names(body)
+ if len(names) > 1 and role in names:
+  sid = _metadata_session_id(body) or "?"
+  raise RuntimeError(f"session {sid} matches multiple roles: {', '.join(names)}")
+ return names == [role]
 
 def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict | None:
  if not OMNI_DB.is_file():
