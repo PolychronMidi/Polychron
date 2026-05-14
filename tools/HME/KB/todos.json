@@ -2,20 +2,20 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2839,
-      "updated_ts": 1778744741.0098386
+      "max_id": 2843,
+      "updated_ts": 1778744930.5847747
     }
   },
   {
-    "id": 2826,
-    "text": "Run HME selftest/status/evolve to establish current state",
-    "activeForm": "Running HME selftest/status/evolve to establish current state",
-    "status": "completed",
-    "done": true,
+    "id": 2840,
+    "text": "Establish HME state with local commands only",
+    "activeForm": "Establishing HME state with local commands only",
+    "status": "in_progress",
+    "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778744544.3051808,
+    "ts": 1778744930.5847352,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -24,7 +24,7 @@
     "id": 2827,
     "text": "Inspect role-model/dashboard/handoff files for requested gaps",
     "activeForm": "Inspecting role-model/dashboard/handoff files for requested gaps",
-    "status": "in_progress",
+    "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
