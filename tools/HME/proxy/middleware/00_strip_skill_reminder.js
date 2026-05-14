@@ -7,6 +7,7 @@ const STOP_HOOK_KEEP_RE = /MULTI-FLAG STOP|ADVISOR|SUMMARY_|LIVE-PROBE|VERIFICAT
 const STOP_HOOK_COMPACT = 'Stop hook feedback: repeated auto-completeness/exhaust gate compacted by hme-proxy.';
 const STOP_HOOK_COMPACT_AUTO = 'Stop hook feedback: AUTO-COMPLETENESS CHECK compacted by hme-proxy.';
 const STOP_HOOK_COMPACT_EXHAUST = 'Stop hook feedback: EXHAUST PROTOCOL VIOLATION compacted by hme-proxy.';
+const STOP_HOOK_COMPACTS = [STOP_HOOK_COMPACT, STOP_HOOK_COMPACT_AUTO, STOP_HOOK_COMPACT_EXHAUST];
 
 const RECENT_STOP_HOOKS = [];
 
