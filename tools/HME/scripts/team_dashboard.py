@@ -48,12 +48,9 @@ def _model_cfg() -> dict:
  global _MODEL_CFG
  if _MODEL_CFG is None:
   path = PROJECT / "config" / "models.json"
-  try:
-   _MODEL_CFG = _jsonc_load(path.read_text())
-  except OSError as exc:
-   raise RuntimeError(f"model config unavailable: {path}") from exc
-  except (json.JSONDecodeError, RuntimeError) as exc:
-   raise RuntimeError(f"model config invalid: {path}") from exc
+  try: _MODEL_CFG = _jsonc_load(path.read_text())
+  except OSError as exc: raise RuntimeError(f"model config unavailable: {path}") from exc
+  except (json.JSONDecodeError, RuntimeError) as exc: raise RuntimeError(f"model config invalid: {path}") from exc
  return _MODEL_CFG
 
 def _model_windows() -> dict[str, int]:
