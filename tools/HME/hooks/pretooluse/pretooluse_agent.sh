@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # MODE=6 Agent reroute: nested subagent calls go through stage-crew tier policy.
 INPUT=$(cat)
 PROJECT="${PROJECT_ROOT:-$(pwd)}"
