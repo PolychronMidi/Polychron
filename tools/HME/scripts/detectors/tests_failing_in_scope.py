@@ -73,23 +73,26 @@ def _collect_edited_impls(events: list) -> list[Path]:
     return out
 
 
-def _candidate_tests(impl: Path) -> list[Path]:
+def _candidate_tests(impl: Path) -> tuple[list[Path], list[Path]]:
+    """Return (py_tests, js_tests) for an edited impl file."""
     parent = impl.parent
     stem = impl.stem
-    cands = []
+    py_cands: list[Path] = []
+    js_cands: list[Path] = []
     spec_dir = _PROJECT / "tools" / "HME" / "tests" / "specs"
     if impl.suffix == ".py":
         for d in (parent, parent / "tests", parent.parent / "tests"):
             for name in (f"test_{stem}.py", f"{stem}_test.py"):
-                cands.append(d / name)
-        # Polychron pattern: many Python modules are tested by JS spec files
+                py_cands.append(d / name)
+        # Polychron pattern: Python modules may have JS spec companions
         # in tools/HME/tests/specs/<stem>.test.js (node --test runs them).
-        cands.append(spec_dir / f"{stem}.test.js")
+        js_cands.append(spec_dir / f"{stem}.test.js")
     else:
         for d in (parent, parent / "tests", parent.parent / "tests", spec_dir):
             for name in (f"{stem}.test.js", f"{stem}.test.ts", f"test_{stem}.js"):
-                cands.append(d / name)
-    return [c for c in cands if c.is_file()]
+                js_cands.append(d / name)
+    return ([c for c in py_cands if c.is_file()],
+            [c for c in js_cands if c.is_file()])
 
 
 # pytest exit 5 = no tests collected; treat as ok (no tests = no failures).
