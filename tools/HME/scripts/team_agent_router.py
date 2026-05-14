@@ -15,11 +15,11 @@ DASH = PROJECT / "runtime" / "hme" / "team-dashboard.json"
 TYPE_TIER: dict[str, str] = {
     "Plan": "E4",
     "Explore": "E3",
+    "explorer": "E3",
     "general-purpose": "E3",
     "claude-code-guide": "E2",
     "statusline-setup": "E1",
 }
-_NATIVE_AGENT_KEYS = {"description", "prompt", "subagent_type"}
 
 # Who cannot spawn subagents at all
 _BLOCKED_CALLERS = frozenset({"crew_e1_0", "crew_e1_1", "crew_e2_0", "crew_e2_1"})
