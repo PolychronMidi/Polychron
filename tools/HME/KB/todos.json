@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2720,
-      "updated_ts": 1778728252.725599
+      "max_id": 2724,
+      "updated_ts": 1778728260.9612887
     }
   },
   {
     "id": 2717,
     "text": "Undo premature team fanout dashboard state",
     "activeForm": "Undoing premature team fanout dashboard state",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2718,
     "text": "Find real HME onboarding graduation gate",
     "activeForm": "Finding real HME onboarding graduation gate",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2719,
     "text": "Graduate onboarding without full pipeline if supported",
     "activeForm": "Graduating onboarding without full pipeline if supported",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 2720,
     "text": "Report concise evidence and correction",
     "activeForm": "Reporting concise evidence and correction",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
