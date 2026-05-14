@@ -83,6 +83,13 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
   return _row_ctx(row, tier, session_id)
  return None
 
+def _artifact_body(relpath: str) -> dict:
+ p = Path.home() / ".omniroute" / "call_logs" / relpath
+ try:
+  return json.loads(p.read_text()).get("requestBody", {})
+ except (OSError, json.JSONDecodeError, TypeError):
+  return {}
+
 def _current_session_id() -> str:
  path = PROJECT / "tmp" / "hme-transcript-path.txt"
  try:
