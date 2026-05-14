@@ -14,6 +14,12 @@
       "E5": "gpt5.5 frontier with abundant usage credits."
     }
   },
+  "providers_to_skip": {
+    "description": "Pause provider usage in case of credit shortage.",
+    "providers": [
+      "opencode_go"
+    ]
+  },
   "ranking_rules": {
     "description": "Per-tier: rank each cost type independently by tier_score descending (free > subscription > usage). Tiers E5/E4 tier_score capped at 5/7 due to value focus and exclusion of premium models.",
     "cost_order": [
