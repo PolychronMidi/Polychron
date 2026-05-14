@@ -99,9 +99,9 @@ const REASONS = {
   ORPHAN_REFERENCE:
     'ORPHAN REFERENCE: A file you DELETED this turn still has live references in source/scripts/docs. Sweep them: `grep -rln <stem> tools/ scripts/ src/ doc/` then either remove the references or restore the file. Deletion-without-cleanup is the bug class that produces broken imports / dead require paths / stale doc links. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   COMPL_ROUND_1:
-    "AUTO-COMPLETENESS CHECK (round 1/2): If anything substantive is still unfinished from THIS TURN's work, finish it. If the work is actually complete, the correct response is silence -- end the turn. Do NOT write ceremony text, enumerated 'nothing missed' summaries, or rescue clauses just to satisfy this gate. Imperfect rules are OK; ceremony to dodge them is not.",
+    "AUTO-COMPLETENESS CHECK (round 1/2): If anything substantive is still unfinished from THIS TURN's work, finish it. If the work is complete, the next response may be empty or just the fp-gate marker when prompted. Do NOT write ceremony text, enumerated 'nothing missed' summaries, or rescue clauses just to satisfy this gate. Imperfect rules are OK; ceremony to dodge them is not.",
   COMPL_ROUND_2:
-    "AUTO-COMPLETENESS CHECK (round 2/2 -- safety net): Last pass. If genuine substantive work remains, do it. Otherwise the correct response is silence -- end the turn. No 'Nothing missed' boilerplate required.",
+    "AUTO-COMPLETENESS CHECK (round 2/2 -- safety net): Last pass. If genuine substantive work remains, do it. If complete, the next response may be empty or just the fp-gate marker when prompted. No 'Nothing missed' boilerplate required.",
 };
 
 const ENFORCEMENT_REMINDER =
