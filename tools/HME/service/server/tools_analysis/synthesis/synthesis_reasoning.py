@@ -247,12 +247,12 @@ def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
     Chain ordered free first (including cascade), then subscription, then
     usage; each group by tier_score desc. Returns None if config unreadable
     or tier empty. Caller determines allow_subagent from chain contents."""
-    import json as _json
-    import os as _os
+    import json as _json, os as _os, re as _re
     _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
     try:
         with open(_cfg_path) as _f:
-            _cfg = _json.load(_f)
+            _raw = _f.read()
+        _cfg = _json.loads(_re.sub(r'^\s*//.*$|[ \t]+//.*$', '', _raw, flags=_re.MULTILINE))
     except Exception:
         return None
     _models = (_cfg.get("tiers", {}).get(tier, {}).get("models", []) or [])
