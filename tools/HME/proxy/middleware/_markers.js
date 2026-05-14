@@ -37,7 +37,7 @@ const MARKERS = {
     producer: 'tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py',
     consumers: [
       'tools/HME/proxy/middleware/13_subagent_bridge.js',
-      '(buddy system: server-side dispatch_thread routes to runtime/hme/buddy.sid when BUDDY_SYSTEM=1)',
+      'tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py',
     ],
     sentinel: '[[HME_AGENT_TASK req_id=<hex12+> prompt_file=tmp/hme-subagent-queue/<reqId>.json subagent_type=<type>...]]',
     reqIdRegex: /HME reasoning for ([a-f0-9]{12,})\b/,

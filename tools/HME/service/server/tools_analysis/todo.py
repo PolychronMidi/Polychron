@@ -125,7 +125,7 @@ def _allocate_id(meta: dict) -> int:
 
 
 _VALID_TIERS = ("E1", "E2", "E3", "E4", "E5")
-# Legacy easy/medium/hard auto-translate on read; doc/BUDDY_SYSTEM.md tier section.
+# Legacy easy/medium/hard auto-translate on read.
 _LEGACY_TIER_MAP = {"easy": "E2", "medium": "E3", "hard": "E4"}
 
 
@@ -150,10 +150,8 @@ def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
     schema stability across LIFESAVER, native mirror, hme_todo, and onboarding.
 
     `tier` is one of E1..E5 (canonical) or legacy easy/medium/hard (translated
-    on read via _normalize_tier: easy->E2, medium->E3, hard->E4). Routes the
-    item to the appropriate co-buddy via the `effective = max(item_tier,
-    buddy_floor)` rule. Defaults to E3 so legacy/unlabeled items still
-    dispatch sensibly.
+    on read via _normalize_tier: easy->E2, medium->E3, hard->E4). Defaults
+    to E3 so legacy/unlabeled items still sort sensibly.
     """
     # Single-writer invariant: only tools_analysis.todo may write the store.
     try:
@@ -355,7 +353,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         Dedup against existing open i/todo entries.
     action='promote_to_spec': move ephemeral i/todo #todo_id into doc/templates/TODO.md
         "Next up" with a Reason: cite. Promotes one-off operational state
-        into the durable cross-cycle handoff queue.
+        into the durable cross-cycle continuity queue.
     action='close_with_spec_update': atomically flip the matching `- [ ] [tier]
         <text>` in doc/templates/SPEC.md to `[x]` (longest-common-prefix match), append
         to doc/templates/TODO.md "Just shipped" (rolling-10 trim), mark i/todo #todo_id
@@ -629,7 +627,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 note = f" (flipped doc/templates/SPEC.md item: {spec_flipped[:80]})"
             # Phase-completion detection: if this flip closed the last
             # `[ ]` in any Phase block, surface that to the caller so a
-            # buddy / human can append the completion-ritual paragraph
+            # caller can append the completion-ritual paragraph
             # via `i/todo phase_complete phase=N summary=\"...\"`.
             phase_complete_msg = ""
             if spec_flipped and os.path.exists(_spec_file()):

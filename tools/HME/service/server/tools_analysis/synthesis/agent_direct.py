@@ -54,7 +54,7 @@ def _claude_model_for_tier(tier: str) -> str:
     return _CLAUDE_MODEL_BY_TIER[_normalize_tier(tier)]
 
 
-# Per-process cap for `claude --resume`; persisted count prevents restart-bypass.
+# Per-process cap for legacy `claude --resume`; persisted count prevents restart-bypass.
 _DISPATCH_THREAD_CALL_COUNT = 0
 _DISPATCH_THREAD_CALL_CAP = int(os.environ.get("HME_THREAD_CALL_CAP", "50"))
 _DISPATCH_THREAD_COUNT_TTL_SEC = 24 * 3600
@@ -62,7 +62,7 @@ _DISPATCH_THREAD_COUNT_TTL_SEC = 24 * 3600
 
 def _count_file() -> str | None:
     root = os.environ.get("PROJECT_ROOT", "")
-    return os.path.join(root, "tmp", "hme-buddy-call-count") if root else None
+    return os.path.join(root, "tmp", "hme-thread-call-count") if root else None
 
 
 def _hydrate_call_count() -> None:
@@ -113,17 +113,10 @@ _hydrate_call_count()
 
 def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
                     tier: str = "E3") -> str | None:
-    """Synchronously route a reasoning prompt through the buddy session
-    whose sid is recorded in runtime/hme/buddy.sid (legacy: runtime/hme/thread.sid,
-    one-time fallback during the rename window -- see code below).
-
-    Used by synthesis_reasoning when the buddy system is active
-    (.env BUDDY_SYSTEM=1, default). Sessionstart auto-inits the buddy
-    via tools/HME/hooks/helpers/buddy_init.sh; every reasoning call
-    (review reflection, OVERDRIVE cascade, suggest_evolution) flows
-    into the same long-lived claude session so context accumulates
-    across calls. The session is observable via VSCode's Claude Code
-    extension by resuming its sid. See doc/BUDDY_SYSTEM.md.
+    """Synchronously route a reasoning prompt through a legacy persisted
+    Claude session. This path is disabled by default after legacy thread
+    removal; set HME_LEGACY_THREAD_DISPATCH=1 only when intentionally
+    operating against an existing tmp/hme-thread.sid.
 
     Returns the assistant's text reply (possibly empty) on success, or
     None if the thread path is unavailable / failed. Empty replies are
@@ -137,22 +130,14 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
     dedupes the second).
     """
     global _DISPATCH_THREAD_CALL_COUNT
+    if os.environ.get("HME_LEGACY_THREAD_DISPATCH") != "1":
+        return None
     project_root = os.environ.get("PROJECT_ROOT", "")
     if not project_root:
         return None
-    # BUDDY_SYSTEM gate (default on). When .env sets BUDDY_SYSTEM=0 the
-    # buddy is intentionally disabled even if a stale sid file exists.
-    if os.environ.get("BUDDY_SYSTEM", "1") == "0":
-        return None
-    sid_file = os.path.join(project_root, "tmp", "hme-buddy.sid")
-    # Back-compat: read the legacy hme-thread.sid path if present and
-    # the new path isn't (one-time fallback during the rename window).
+    sid_file = os.path.join(project_root, "tmp", "hme-thread.sid")
     if not os.path.isfile(sid_file):
-        legacy = os.path.join(project_root, "tmp", "hme-thread.sid")
-        if os.path.isfile(legacy):
-            sid_file = legacy
-        else:
-            return None
+        return None
     try:
         with open(sid_file, "r") as f:
             sid = f.read().strip()
@@ -162,8 +147,7 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
     if not sid:
         # Empty sid file is a spawn-state fault; warn and fall through.
         logger.warning(f"dispatch_thread: sid file {sid_file} exists but is empty "
-                       "-- rm the file (next sessionstart re-inits) or set "
-                       ".env BUDDY_SYSTEM=0 to disable the buddy")
+                       "-- remove it or disable HME_LEGACY_THREAD_DISPATCH")
         return None
 
     # Budget cap -- returning None past the ceiling forces fallback.

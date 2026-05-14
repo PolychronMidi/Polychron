@@ -23,48 +23,6 @@ BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub.sh" 10 "" || true)
 [ -n "$_RESOLVED" ] && INPUT="$_RESOLVED"
 
-# Universal enqueue-sentinel scanner: outputs containing
-#   [enqueue: tier=<easy|medium|hard> text="..." source="..."]
-# materialize as task files in tmp/hme-buddy-queue/pending/.
-# Only fires when a drainer is active (BUDDY_SYSTEM=1 or
-# HME_DISPATCH_MODE=synthesis); otherwise log-only to avoid pile-up.
-_DISP_MODE="${HME_DISPATCH_MODE:-}"
-if [ -z "$_DISP_MODE" ]; then
-  [ "${BUDDY_SYSTEM:-0}" = "1" ] && _DISP_MODE="claude-resume" || _DISP_MODE="disabled"
-fi
-if [ "$_DISP_MODE" = "claude-resume" ] || [ "$_DISP_MODE" = "synthesis" ]; then
-  _ENQUEUE_OUTPUT=$(_safe_jq "$INPUT" '.tool_response' '')
-  if [ -n "$_ENQUEUE_OUTPUT" ] && [ -n "${PROJECT_ROOT:-}" ]; then
-    # Prefer i/dispatch (canonical name); fall back to i/buddy for
-    # back-compat with any setup that hasn't yet pulled the rename.
-    _DISPATCH_CLI="$PROJECT_ROOT/i/dispatch"
-    [ -x "$_DISPATCH_CLI" ] || _DISPATCH_CLI="$PROJECT_ROOT/i/buddy"
-    if [ -x "$_DISPATCH_CLI" ]; then
-      while IFS= read -r _ENQ_LINE; do
-        [ -z "$_ENQ_LINE" ] && continue
-        _ENQ_TIER=$(echo "$_ENQ_LINE" | grep -oE 'tier=(easy|medium|hard)' | head -1 | cut -d= -f2)
-        _ENQ_TEXT=$(echo "$_ENQ_LINE" | grep -oE 'text="[^"]+"' | head -1 | sed 's/^text="\(.*\)"$/\1/')
-        _ENQ_SRC=$(echo "$_ENQ_LINE" | grep -oE 'source="[^"]+"' | head -1 | sed 's/^source="\(.*\)"$/\1/')
-        [ -z "$_ENQ_TIER" ] && _ENQ_TIER="medium"
-        [ -z "$_ENQ_SRC" ] && _ENQ_SRC="enqueue-sentinel"
-        [ -z "$_ENQ_TEXT" ] && continue
-        # Background fire -- never block the parent hook.
-        ("$_DISPATCH_CLI" enqueue tier="$_ENQ_TIER" text="$_ENQ_TEXT" source="$_ENQ_SRC" \
-          > /dev/null 2>&1) &
-        disown 2>/dev/null || true
-      done < <(printf '%s\n' "$_ENQUEUE_OUTPUT" | grep -oE '\[enqueue:[^]]+\]')
-    fi
-  fi
-else
-  # Surface seen-but-skipped sentinels so the operator knows their
-  # follow-up declarations aren't being dropped silently. Avoids the
-  # "I emitted [enqueue: ...] but nothing happened" debugging gap.
-  _ENQ_PEEK=$(_safe_jq "$INPUT" '.tool_response' '' | grep -oE '\[enqueue:[^]]+\]' | head -3)
-  if [ -n "$_ENQ_PEEK" ]; then
-    echo "[enqueue-sentinel] dispatch disabled -- $(echo "$_ENQ_PEEK" | wc -l) enqueue sentinel(s) seen but not queued. Set BUDDY_SYSTEM=1 (claude-resume) OR HME_DISPATCH_MODE=synthesis (route through HME's synthesis cascade) in .env to activate." >&2
-  fi
-fi
-
 # Dispatch HME shell-wrapper post-processors. These used to be triggered via
 # hooks.json matchers on mcp__HME__{learn,read,review} back when HME was an
 # MCP server; now HME tools run as Bash(i/<tool>) shell wrappers and the

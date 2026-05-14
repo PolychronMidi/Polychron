@@ -31,7 +31,6 @@ def _load_current_turn(transcript_path: str) -> list:
     The default load_turn_events slices after the LAST user event, which
     includes tool_result-wrapper user events -- that loses the
     tool_results we need to scan for CRITICAL/FAIL surface markers.
-    senior_consult_debt has the same issue and the same fix.
     """
     events = _parse_all(transcript_path)
     last_real_user_idx = -1

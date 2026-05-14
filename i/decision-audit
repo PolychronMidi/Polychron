@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# i/decision-audit -- summarise architectural-edit consult-rate from decision-audit.jsonl.
+# i/decision-audit -- summarise architectural-edit audit rows from decision-audit.jsonl.
 LOG="${PROJECT_ROOT:-/home/jah/Polychron}/output/metrics/decision-audit.jsonl"
 [ -f "$LOG" ] || { echo "decision-audit: no log at $LOG (no architectural edits yet)"; exit 0; }
 PROJECT_ROOT="${PROJECT_ROOT:-/home/jah/Polychron}" python3 - "$LOG" <<'PYEOF'
@@ -26,7 +26,7 @@ with open(log) as f:
         recent.append(d)
 recent = recent[-10:]
 rate = (consulted / total * 100) if total else 0.0
-print(f"decision-audit: {total} architectural edit(s) total, {consulted} with consult ({rate:.1f}%)")
+print(f"decision-audit: {total} architectural edit(s) total, {consulted} with legacy advisor record ({rate:.1f}%)")
 print()
 print("most-touched architectural files:")
 for f, n in by_file.most_common(5):

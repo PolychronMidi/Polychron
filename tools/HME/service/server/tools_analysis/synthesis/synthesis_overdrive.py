@@ -251,7 +251,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
 
 def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_type: str = "general-purpose", tier: str = "E3") -> tuple[str, str] | None:
-    # Priority 1: persistent thread via thread.sid; falls through to direct/sentinel
+    # Priority 1: optional legacy persisted thread; falls through to direct/sentinel.
     try:
         from .agent_direct import dispatch_thread as _thread
         thread_result = _thread(prompt, tier=tier)
@@ -392,5 +392,4 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
     # Every model in the chain rate-limited or was in cooldown.
     logger.warning("OVERDRIVE: every model in chain rate-limited -- falling through to cascade")
     return None
-
 

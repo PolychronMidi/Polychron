@@ -1,3 +1,0 @@
-{"child":"worker","dotted_order":"1778785248_4ccfa309","event":"child_started","pid":3638466,"run_id":"4ccfa309-67da-4bb8-8737-a4a77f332883","trace_id":"e6041ec4-1dcd-4a3a-9464-4a412aea255e","ts":1778785248}
-{"child":"llamacpp_daemon","dotted_order":"1778785248_176f857e","event":"child_started","pid":3638472,"run_id":"176f857e-fad0-4fb6-af6e-c2b8f38090cc","trace_id":"24efa1a8-d0af-4e72-9416-0d64ae50327d","ts":1778785248}
-{"child":"llamacpp_daemon","code":0,"dotted_order":"1778785375_b3e705a7","event":"child_exited","run_id":"b3e705a7-f079-41bf-ae76-b5435c698932","trace_id":"1cde788f-296c-49fe-b83e-f0d6032b48b6","ts":1778785375}

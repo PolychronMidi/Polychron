@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Detect missing advisor calls at commitment boundaries -- PAI Verification
-Doctrine Rule 2 + Rule 3 (conflict-cap).
+"""Legacy advisor-call detector.
 
 PAI v6.3.0 doctrine: on Extended+ effort (E2+) tasks, the advisor MUST be
 consulted at:
@@ -8,15 +7,16 @@ consulted at:
   (2) when stuck or diverging (after two failed attempts)
   (3) once after a durable deliverable (before phase: complete)
 
-Polychron analog: the advisor IS the buddy. `i/consult` invocations are
-the wire format.
+The legacy advisor toolchain has been removed. In live sessions this detector
+returns ok when the legacy advisor CLI is absent, while keeping the historical
+fixture path available through ADVISOR_DOCTRINE_TIER overrides.
 
 Rule 3 hard cap: max 2 re-calls of the advisor on the SAME conflict. The
 third re-call is a violation -- escalate to the user instead.
 
 This detector fires post-turn. Inputs:
   - tier (from mode-classifier.jsonl most-recent line, or override env)
-  - tool_use list this turn (Bash invocations of `i/consult`)
+  - tool_use list this turn (legacy advisor Bash invocations)
   - the assistant's closing summary (looks for commitment markers)
   - tmp/hme-advisor-conflicts.jsonl (project-local advisor history;
     enables Rule 3 cap detection across turns)
@@ -30,8 +30,7 @@ Verdicts:
                                   rescue clause justifying solo
 
 Rescue: "solo was right" / "no decision to crystallize" / "(b)-clause"
-language in assistant text suppresses the gate (consistent with the
-solo-rationale rescue we added to senior_consult_debt).
+language in assistant text suppresses the gate.
 """
 from __future__ import annotations
 
@@ -72,7 +71,7 @@ _CONSULT_INVOKE_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Solo-rationale rescue (mirrors senior_consult_debt).
+# Solo-rationale rescue.
 _SOLO_RES = (
     re.compile(r"\bsolo\s+(was|is)\s+(the\s+)?right\b", re.IGNORECASE),
     re.compile(r"\bno\s+decision\s+to\s+crystallize\b", re.IGNORECASE),
@@ -85,6 +84,10 @@ DECLARED_VERDICTS = {
     "advisor_missing_post_deliver",
     "advisor_silently_skipped",
 }
+
+
+def _legacy_consult_available() -> bool:
+    return (_PROJECT / "i" / "consult").is_file()
 
 
 def _last_assistant_text(events: list) -> str:
@@ -134,8 +137,7 @@ def _solo_rescue(text: str) -> bool:
 
 
 def _consult_invocations(events: list) -> int:
-    """Count this turn's `i/consult` Bash invocations (proxy for
-    advisor calls). Polychron-side wire format."""
+    """Count this turn's legacy advisor Bash invocations."""
     count = 0
     for ev in events:
         for tu in iter_tool_uses(ev):
@@ -206,9 +208,8 @@ def _conflict_cap_exceeded() -> bool:
 
 
 def _load_current_turn(transcript_path: str) -> list[dict]:
-    """Slice from the last REAL user prompt onward -- same pattern as
-    senior_consult_debt, so tool_result wrapper events don't lose the
-    consult tool_use that preceded them."""
+    """Slice from the last REAL user prompt onward so tool_result wrapper
+    events don't lose the advisor tool_use that preceded them."""
     events = _parse_all(transcript_path)
     last_real_user_idx = -1
     for i, ev in enumerate(events):
@@ -231,6 +232,9 @@ def main() -> int:
     tier = _read_tier()
     if tier in (None, "MINIMAL", "NATIVE", "E1"):
         # Doctrine only fires at E2+.
+        print("ok")
+        return 0
+    if not os.environ.get("ADVISOR_DOCTRINE_TIER") and not _legacy_consult_available():
         print("ok")
         return 0
 

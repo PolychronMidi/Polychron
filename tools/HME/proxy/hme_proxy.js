@@ -1735,9 +1735,9 @@ if (_mode4WasStreaming) {
     });
 
     const isStreaming = payload && payload.stream === true;
-    // 30-min upstream timeout: covers worst-case multi-MB `claude --resume`
-    // turnaround. claude's own subprocess timeout is the tighter bound
-    // (buddy_handoff.py cmd_consult); proxy is not the throttle.
+    // 30-min upstream timeout: covers worst-case multi-MB local subprocess
+    // turnaround. The subprocess timeout is the tighter bound; proxy is
+    // not the throttle.
     const UPSTREAM_TIMEOUT_MS = 1_800_000;
     upstreamReq.setTimeout(UPSTREAM_TIMEOUT_MS, () => {
       console.error(`upstream timeout (${isStreaming ? 'streaming' : 'sync'})`);

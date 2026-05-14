@@ -154,19 +154,6 @@
       "outage_link": null
     },
     {
-      "name": "senior_consult_debt",
-      "module": "senior_consult_debt",
-      "fires_when": "consult-debt",
-      "bash_var": "SENIOR_CONSULT_DEBT",
-      "deny": false,
-      "category": "project_contract",
-      "scope": "transcript",
-      "owning_invariant": "CLAUDE.md / HME workflow contract",
-      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
-      "why": "Protects transcript against senior consult debt failures.",
-      "outage_link": null
-    },
-    {
       "name": "phantom_capability",
       "module": "phantom_capability",
       "fires_when": "phantom_capability",

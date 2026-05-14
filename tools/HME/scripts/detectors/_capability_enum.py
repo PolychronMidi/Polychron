@@ -14,14 +14,14 @@ recognizer description to capabilities.md (TODO).
 
 Polychron-side adaptation: the enumeration covers the capabilities
 this codebase exercises, not PAI's full set. We DO use first-principles
-reasoning, root-cause analysis, council-style review (via i/consult),
-red-team adversarial probes (selftest probes), and so on. We do NOT
-have PAI-specific capabilities like Forge, Anvil, Cato, Fabric.
+reasoning, root-cause analysis, red-team adversarial probes (selftest
+probes), and so on. We do NOT have PAI-specific capabilities like Forge,
+Anvil, Cato, Fabric.
 """
 from __future__ import annotations
 
 # Version: bump on additions or removals.
-ENUMERATION_VERSION = "0.1.0-polychron"
+ENUMERATION_VERSION = "0.2.0-polychron"
 
 # Thinking-capability vocabulary (closed). Verbatim names.
 THINKING_CAPABILITIES = (
@@ -37,7 +37,6 @@ THINKING_CAPABILITIES = (
     # Multi-agent / adversarial
     "Council",                  # multi-agent debate with visible transcripts
     "RedTeam",                  # adversarial stress-test
-    "Advisor",                  # commitment-boundary second opinion (i/consult)
 
     # Project-specific
     "FeedbackMemoryConsult",    # grep prior feedback / KB for matching incidents
@@ -59,7 +58,6 @@ DELEGATION_CAPABILITIES = (
     "Subagent",                 # general-purpose / Plan / Explore subagent
     "BackgroundJob",            # run_in_background bash
     "Worktree",                 # EnterWorktree / ExitWorktree
-    "Buddy",                    # buddy_handoff consult -- primary/senior
 )
 
 # Phantom-detection signal phrases -- patterns that LOOK like declared

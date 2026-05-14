@@ -188,7 +188,7 @@ fi
 rm -f "$_SS_CARRY_ERR" 2>/dev/null
 [ -n "$CARRIED" ] && echo "$CARRIED" >&2
 
-# Surface doc/templates/TODO.md in-flight handoff state.
+# Surface doc/templates/TODO.md in-flight continuity state.
 _TODO_MD="$PROJECT/doc/templates/TODO.md"
 if [ -f "$_TODO_MD" ]; then
   IN_FLIGHT=$(sed -n '/^## In flight/,/^## /p' "$_TODO_MD" | grep -E '^\s*-\s+\[' | head -10)
@@ -341,19 +341,6 @@ if [ -x "$_SOFT_AUDIT" ]; then
   case "$_SOFT_OUT" in
     *"need review"*) echo "$_SOFT_OUT" >&2 ;;
   esac
-fi
-
-# Consult-gate visibility.
-if [ "${HME_CONSULT_GATE:-0}" = "1" ]; then
-  echo "[consult-gate] ON -- architectural edits without consults will be blocked" >&2
-fi
-
-# Buddy primary visibility under BUDDY_HANDOFF=1.
-if [ "${BUDDY_HANDOFF:-0}" = "1" ] && [ "${BUDDY_SYSTEM:-1}" = "1" ]; then
-  _BP_SID="$PROJECT_ROOT/runtime/hme/buddy-primary.sid"
-  if [ ! -s "$_BP_SID" ]; then
-    echo "[buddy-primary] missing -- spawn in flight; see log/hme-buddy-spawn.log" >&2
-  fi
 fi
 
 # Fork-watchdog: surface silently-dropped completion notifications (recent only).

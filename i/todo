@@ -8,8 +8,8 @@
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
 [ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
 
-# Accept positional first arg as action= for symmetry with i/buddy /
-# i/review / etc. The hme-cli.js dispatcher only accepts key=value /
+# Accept positional first arg as action= for symmetry with i/review /
+# i/status / etc. The hme-cli.js dispatcher only accepts key=value /
 # --key value / --flag forms; rewrite a bare first arg into action=<X>
 # so users don't have to remember which i/* tools take positional and
 # which don't.

@@ -27,8 +27,6 @@ Design rules:
     (every walkthrough targets a composition evolution).
   * Hooks enforce what the chain decider cannot. Hooks handle Edit/Bash/
     Write; for HME tools the chain decider is the authority.
-  * Buddy continuity is orthogonal -- buddy_init.sh runs in parallel;
-    onboarding state and buddy state never read each other.
 
 Auto-chaining (one rule):
   When state == boot AND any HME tool other than hme_admin(action='selftest')

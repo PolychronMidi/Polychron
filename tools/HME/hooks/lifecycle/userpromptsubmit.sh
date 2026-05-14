@@ -280,9 +280,6 @@ fi
 _PD="$PROJECT_ROOT/tools/HME/scripts/project_detect.py"
 [ -x "$_PD" ] && PROJECT_ROOT="$PROJECT_ROOT" python3 "$_PD" --tag 2>/dev/null >&2 || true
 
-# Decision-audit per-turn reset: clear consult sentinel so each new prompt starts at zero consults.
-rm -f "$PROJECT_ROOT/tmp/hme-turn-consults.txt" 2>/dev/null || true
-
 # inject auto-todo reminders from last turn's ingest
 _AUTO_TODO_REMINDER="$PROJECT_ROOT/tmp/hme-auto-todos.reminder"
 if [ -f "$_AUTO_TODO_REMINDER" ] && [ -s "$_AUTO_TODO_REMINDER" ]; then

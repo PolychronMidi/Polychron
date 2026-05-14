@@ -43,7 +43,7 @@ PYEOF
     done < "$_TURN_EDIT_STATE"
   fi
 fi
-# Recording deferred to AFTER blocking gates -- see end of file. Premature recording poisoned verify-landed when consult-gate or TDD-gate blocked the edit.
+# Recording deferred to AFTER blocking gates -- see end of file.
 
 # Mid-pipeline src edit block. JS counterpart: block-mid-pipeline-write.
 if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
@@ -99,21 +99,15 @@ if [ -n "$FILE" ] && [ -x "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate
     exit 2
   fi
 fi
-# Architectural-decision audit + optional gate (HME_CONSULT_GATE=1 to enforce).
+# Architectural-decision audit. Legacy consult fields are retained so
+# existing decision-audit readers can still parse historical rows.
 case "$FILE" in
   *CONSTITUTION.md|*CLAUDE.md|*doc/templates/SPEC.md|*.claude/agents/*.md|*tools/HME/scripts/detectors/*.py|*tools/HME/proxy/stop_chain/policies/*.js)
     _DA_LOG="$PROJECT_ROOT/output/metrics/decision-audit.jsonl"
     mkdir -p "$(dirname "$_DA_LOG")" 2>/dev/null
     _DA_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-    _DA_TURN="${PROJECT_ROOT}/tmp/hme-turn-consults.txt"
-    _DA_CONSULTED=$([ -f "$_DA_TURN" ] && [ -s "$_DA_TURN" ] && echo true || echo false)
-    _DA_SKIP="${HME_CONSULT_SKIP_REASON:-}"
     printf '{"ts":"%s","file":"%s","consulted":%s,"skip_reason":"%s"}\n' \
-      "$_DA_TS" "$FILE" "$_DA_CONSULTED" "$_DA_SKIP" >> "$_DA_LOG" 2>/dev/null || true
-    if [ "${HME_CONSULT_GATE:-0}" = "1" ] && [ "$_DA_CONSULTED" = "false" ] && [ -z "$_DA_SKIP" ]; then
-      _emit_block "BLOCKED: HME_CONSULT_GATE=1 -- editing $FILE without a buddy consult this turn. Run \`i/consult --engine=synthesis --question=\"...\"\` first OR set HME_CONSULT_SKIP_REASON=\"<why>\"."
-      exit 2
-    fi
+      "$_DA_TS" "$FILE" false "" >> "$_DA_LOG" 2>/dev/null || true
     ;;
 esac
 
