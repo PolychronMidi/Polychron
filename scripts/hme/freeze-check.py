@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/freeze check -- does the arc-freeze marker permit a proposed action?"""
+"""i/why mode=freeze -- does the arc-freeze marker permit a proposed action?"""
 from __future__ import annotations
 import json
 import os

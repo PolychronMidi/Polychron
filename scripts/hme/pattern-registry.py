@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""i/pattern -- query the pattern registry.
+"""i/learn patterns -- query the pattern registry.
 
 Usage:
-  i/pattern                # list all patterns
-  i/pattern <id>           # show full pattern
-  i/pattern matched        # show currently-matched patterns
-  i/pattern history        # show pattern match history (TODO: requires hme-pattern-history.jsonl)
+  i/learn patterns                # list all patterns
+  i/learn patterns <id>           # show full pattern
+  i/learn patterns matched        # show currently-matched patterns
+  i/learn patterns history        # show pattern match history (TODO: requires hme-pattern-history.jsonl)
 """
 from __future__ import annotations
 import glob
@@ -76,7 +76,7 @@ def main(argv):
                 trig_s = str(trig).strip()[:140] if trig else "(no `trigger` declared)"
                 print(f"  [{p.get('category', '?')}] {pid}")
                 print(f"    when: {trig_s}")
-            print("\nInspect the full pattern with: i/pattern <id>")
+            print("\nInspect the full pattern with: i/learn patterns <id>")
             print("Compute fresh matches with: node scripts/pipeline/hme/match-patterns.js")
         return 0
     # Otherwise treat as pattern id
@@ -84,7 +84,7 @@ def main(argv):
         if p.get("id") == cmd:
             print(json.dumps(p, indent=2))
             return 0
-    print(f"pattern '{cmd}' not found; try: i/pattern list", file=sys.stderr)
+    print(f"pattern '{cmd}' not found; try: i/learn patterns list", file=sys.stderr)
     return 1
 
 

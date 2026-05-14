@@ -17,9 +17,9 @@ Each pass is independent; failure of one doesn't abort the others. Output
 is a single human-readable report.
 
 Usage:
-  i/audit-tiered             # full sweep
-  i/audit-tiered --pass 3    # run only pass N
-  i/audit-tiered --json      # JSON output for tooling
+  i/audit tiered             # full sweep
+  i/audit tiered --pass 3    # run only pass N
+  i/audit tiered --json      # JSON output for tooling
 """
 from __future__ import annotations
 

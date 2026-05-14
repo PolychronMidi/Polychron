@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/substrate -- unified four-arc view.
+"""i/status substrate -- unified four-arc view.
 
 Rolls in what compute-consensus.js / propose-next-actions.py / auto-investigate.py /
 compute-legendary-drift.py produce, presented as the agent-facing surface.

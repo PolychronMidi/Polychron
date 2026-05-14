@@ -28,13 +28,12 @@
 | Testing & chaos battery (smoke tests + chaos injectors) | [HME_TESTING.md](HME_TESTING.md) |
 | Self-coherence verifier substrate, HCI engine, LIFESAVER no-dilution rule, detector calibration, session evolutions log, Phase 7 four-arc framework | [HME_SELF_COHERENCE.md](HME_SELF_COHERENCE.md) |
 | Onboarding state machine + per-session walkthrough | [ONBOARDING.md](templates/ONBOARDING.md) |
-| Architectural trajectory each `i/state` / `i/why` / `i/timeline` tool advances |
+| Architectural trajectory each `i/status state` / `i/why` / `i/status timeline` tool advances |
 | Mental model for HME's role in evolution | [HME_MENTAL_MODEL.md](HME_MENTAL_MODEL.md) |
 | State ownership rules (single-writer registry, etc.) | [HME_STATE_OWNERSHIP.md](HME_STATE_OWNERSHIP.md) |
 | LIFESAVER alert pipeline | [LIFESAVER.md](LIFESAVER.md) |
 | Local LLM stack (arbiter, embedders, daemon) | [LOCAL_LLMS.md](LOCAL_LLMS.md) |
 | Pure HME thesis (the why) | [HYPERMETA.md](HYPERMETA.md) |
-| Crystallized discoveries promoted from KB | [hme-discoveries.md](hme-discoveries.md) |
 
 ## Tool invocation
 
@@ -42,17 +41,17 @@
 ```
 i/learn   query="coupling"          i/trace  target=<module> mode=impact
 i/review  mode=forget               i/evolve focus=<axis>
-i/state                             i/timeline window=30m
+i/status state                      i/status timeline window=30m
 i/why     mode=<...>                i/help
 ```
-The `i/state` + `i/why` + `i/timeline` triad covers "what state am I in / why did this fire / what just happened".
+The `i/status state` + `i/why` + `i/status timeline` triad covers "what state am I in / why did this fire / what just happened".
 
 ## Core workflow
 
 1. **Edit** — `pretooluse_edit.sh` auto-surfaces KB constraints; no manual `read()` needed.
 2. **After change** — `i/review mode=forget` (auto-detects changed files from git).
 3. **After confirmed round** — `i/learn title=... content=... category=pattern` for calibration anchors.
-4. **When lost** — `i/state` (snapshot) → `i/why` (causality) → `i/timeline` (chronology).
+4. **When lost** — `i/status state` (snapshot) -> `i/why` (causality) -> `i/status timeline` (chronology).
 
 ## Stop-hook behavioral detectors
 

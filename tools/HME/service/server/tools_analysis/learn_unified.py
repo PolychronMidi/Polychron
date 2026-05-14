@@ -100,19 +100,6 @@ def learn(query: str = "", title: str = "", content: str = "",
         from .crystallizer import crystallize_cli as _cc
         return _cc()
 
-    if action == "promote_discovery":
-        # promote discovery draft from metrics/ to doc/hme-discoveries.md
-        from .discovery_promote import promote_discovery as _pd
-        return _pd(
-            draft_id=remove,
-            annotation=listening_notes or content or "",
-        )
-
-    if action == "discoveries":
-        # List all drafts with their stability + promotable status.
-        from .discovery_promote import list_discoveries as _ld
-        return _ld()
-
     if action == "suggest_predecessors":
         # semantic similarity suggestions for KB edge densification tags
         if not (title or content):

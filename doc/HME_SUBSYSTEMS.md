@@ -342,14 +342,13 @@ Phase 6.4 of the feature mapping, rewritten in R97 after the original pipeline p
 
 1. [`extract-generalizations.py`](../scripts/pipeline/hme/extract-generalizations.py) scores every crystallized pattern on `project_specificity`: the fraction of camelCase-split tokens in tags + synthesis that match a **dynamically-built** project vocabulary (bias-bounds manifest + L0 channel names + subsystem directory names + hand-curated seeds). Tokens like `emergentMelodicEngine` now score high where the old hardcoded-list version scored 0.00. Patterns below threshold 0.3 become candidates. Writes `metrics/hme-generalizations.json`.
 
-2. [`synthesize-generalizations.py`](../scripts/pipeline/hme/synthesize-generalizations.py) sends each candidate through the **free-tier reasoning API cascade** (Groq -> Cerebras -> Mistral -> NVIDIA -> OpenRouter -> local arbiter fallback) -- NOT the 4GB local arbiter that produced vague waffle. The prompt demands three structured fields: **invariant**, **falsifiable prediction for similar systems**, **counterexample that would disprove it**. Anything missing a field is rejected as tautology (`REJECT` or missing-label). Surviving drafts go to `output/metrics/hme-discoveries-draft.jsonl` (gitignored; regenerated every run).
+2. [`synthesize-generalizations.py`](../scripts/pipeline/hme/synthesize-generalizations.py) sends each candidate through the **free-tier reasoning API cascade** (Groq -> Cerebras -> Mistral -> NVIDIA -> OpenRouter -> local arbiter fallback) -- NOT the 4GB local arbiter that produced vague waffle. The prompt demands three structured fields: **invariant**, **falsifiable prediction for similar systems**, **counterexample that would disprove it**. Anything missing a field is rejected as tautology (`REJECT` or missing-label).
 
 3. **Novelty + stability gates** (enforced by step 2): a new draft whose invariant matches any existing one at cosine-similarity >=0.90 is dropped as duplicate. A draft whose text survives >=3 consecutive runs unchanged flips `promotable=true`.
 
 **Human-curated promotion** -- only the user can move a draft from jsonl into the permanent record:
 
 - `learn(action='discoveries')` -- list drafts with stability + promotable flag.
-- `learn(action='promote_discovery', remove=<draft_id>, listening_notes=<optional annotation>)` -- append to `doc/hme-discoveries.md` + remove from draft stream. Refuses if `promotable=false`. This keeps auto-generated sludge strictly out of the claims file.
 
 Surfaced also via `status(mode='generalizations')`.
 
@@ -428,4 +427,3 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 ### Bash-gate <-> JS-policy unification
 
 When adding a bash gate that has a JS-policy counterpart in [tools/HME/policies/builtin/](../tools/HME/policies/builtin/), source [hooks/helpers/_policy_enabled.sh](../tools/HME/hooks/helpers/_policy_enabled.sh) and wrap the gate body in `if _policy_enabled <kebab-name> && <existing-condition>; then ...`. The helper reads the same `config/policies.json` config that `i/policies` writes, so `i/policies disable <name>` works uniformly across both proxy-up (JS) and proxy-down direct-mode (bash) paths. Without this guard, disabling a JS policy leaves the bash gate firing -- the "disable-doesn't-fully-disable" wart now closed across all 7 currently-duplicated rules.
-

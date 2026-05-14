@@ -9,8 +9,8 @@ transcripts ended (stop_reason set) but whose harness still considers them
 pending.
 
 Usage:
-  i/fork-watchdog                # one-shot check
-  i/fork-watchdog --json         # machine output
+  i/status forks                # one-shot check
+  i/status forks --json         # machine output
 
 Detects:
   - completed: stop_reason in {end_turn, stop_sequence, max_tokens}

@@ -156,15 +156,9 @@ class HookMatcherValidityVerifier(Verifier):
     subtag = "structural-integrity"
     weight = 2.0  # high: silently-dead hooks are a major self-coherence failure
 
-    # read-only wrappers exempt from posttooluse dispatch: help, freeze, pattern,
-    # substrate, audit-tools, chain, dispatch, consult, handoff, holograph, state
     _NO_POSTHOOK_OK = {
         "status", "trace", "evolve", "hme-admin", "todo", "hme",
-        "help", "why", "freeze", "pattern", "substrate",
-        "audit-tools", "chain", "consult", "extract-spec", "handoff",
-        "holograph", "policies", "prove", "sensitivity", "state", "timeline",
-        "audit-tiered", "project-detect", "decision-audit", "blast-radius",
-        "learnings", "fork-watchdog", "parallel-detect", "team",
+        "help", "why", "policies", "audit", "learn", "review", "hme-read",
     }
 
     def run(self) -> VerdictResult:
@@ -175,8 +169,7 @@ class HookMatcherValidityVerifier(Verifier):
         if not os.path.isdir(i_dir):
             return _result(FAIL, 0.0, "i/ directory missing -- HME tool wrappers not installed")
 
-        # Enumerate wrappers (executable shell scripts in i/). Skip _
-        # prefixed helpers like _dispatch.sh that aren't public tools.
+        # Enumerate wrappers (executable shell scripts in i/).
         wrappers = set()
         try:
             for name in os.listdir(i_dir):
@@ -224,5 +217,4 @@ class HookMatcherValidityVerifier(Verifier):
             )
         score = 1.0 - len(errors) / total_checks
         return _result(FAIL, score, f"{len(errors)} wrapper/dispatch mismatch(es)", errors)
-
 

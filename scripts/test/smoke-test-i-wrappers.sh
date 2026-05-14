@@ -163,7 +163,7 @@ _tool_check_bg 4 "i/evolve focus=all" ./i/evolve focus=all &
 _tool_check_bg 5 "i/hme-admin action=selftest" ./i/hme-admin action=selftest &
 _tool_check_bg 6 "i/todo action=list" ./i/todo action=list &
 _tool_check_bg 7 "i/hme-read target=conductorState" ./i/hme-read target=conductorState &
-_tool_check_bg 8 "i/hme _mode_pipeline" ./i/hme _mode_pipeline &
+_tool_check_bg 8 "i/audit" ./i/audit &
 # Slot 9 -- verbose selftest, reused for HCI/symlink checks.
 ( ./i/hme-admin action=selftest modules=verbose > "$SMOKE_TMP/selftest-verbose.out" 2>&1 ) &
 

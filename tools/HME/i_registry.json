@@ -1,5 +1,5 @@
 {
-  "_comment": "Metadata registry for the i/* command surface. Loaded by i/help and any future tab-completion / cross-discovery tooling. Adding a new command: drop the script in i/, register it here, done. Schema per command: {description, usage?, examples?, category, modes?}. Fields beyond description are optional  i/help degrades gracefully when missing.",
+  "_comment": "Metadata registry for the public i/* command surface. Loaded by i/help and any future tab-completion / cross-discovery tooling. Keep this registry in one-to-one sync with executable files in i/. Internal helpers and retired aliases belong under scripts/, not i/.",
   "commands": {
     "review": {
       "description": "Post-change audit: KB constraints, boundary rules, doc drift, review verdicts.",
@@ -27,10 +27,96 @@
       ],
       "safe_no_args": true
     },
+    "why": {
+      "description": "Explain system behavior: invariants, hook blocks, state, verifier status, HCI drops, causality, freeze markers, and free-text retrieval.",
+      "category": "review-discipline",
+      "usage": "i/why <invariant-id> | i/why mode=<block|state|verifier|hci-drop|hook|freeze|causality|...> | i/why \"<question>\" [--deep]",
+      "modes": [
+        "invariant (default)",
+        "block",
+        "state",
+        "verifier",
+        "hci-drop",
+        "hook",
+        "freeze",
+        "verifier-utility",
+        "verifier-coverage",
+        "verifier-drift",
+        "kb-graph",
+        "kb-context",
+        "predict",
+        "conscience",
+        "causality",
+        "fractal-shape",
+        "architecture-snapshot",
+        "search"
+      ],
+      "examples": [
+        "i/why nexus-state-integrity",
+        "i/why mode=block",
+        "i/why mode=state",
+        "i/why mode=freeze \"never disable trust ceiling\"",
+        "i/why mode=verifier doc-drift",
+        "i/why \"where is the spam verifier defined\"",
+        "i/why \"what caused the HCI drop yesterday\" --deep"
+      ]
+    },
+    "todo": {
+      "description": "Hierarchical todo store plus SPEC/TODO bridge and KB devlog archive on set completion.",
+      "category": "review-discipline",
+      "usage": "i/todo <action> [text=...] [todo_id=N] [parent_id=N] [tier=easy|medium|hard] [critical=true]",
+      "modes": [
+        "list",
+        "add",
+        "done",
+        "show",
+        "update"
+      ],
+      "actions": [
+        "list",
+        "add",
+        "done",
+        "undo",
+        "remove",
+        "clear",
+        "critical",
+        "ingest_from_spec",
+        "promote_to_spec",
+        "close_with_spec_update",
+        "phase_complete"
+      ],
+      "examples": [
+        "i/todo list",
+        "i/todo add text=\"refactor X\" tier=hard",
+        "i/todo done todo_id=42",
+        "i/todo ingest_from_spec",
+        "i/todo phase_complete todo_id=2 text=\"Phase 2 complete: <summary>\""
+      ]
+    },
+    "audit": {
+      "description": "Umbrella for explicit audit/proof utilities: tiered sweeps, blast radius, parallel detection, sensitivity, invariant proofs, and isolated command-surface stress tests.",
+      "category": "review-discipline",
+      "usage": "i/audit <tiered|blast|parallel|sensitivity|prove|tools> [args...]",
+      "modes": [
+        "tiered",
+        "blast",
+        "parallel",
+        "sensitivity",
+        "prove",
+        "tools"
+      ],
+      "examples": [
+        "i/audit tiered",
+        "i/audit blast --base HEAD~3",
+        "i/audit prove sole-writer target=couplingMatrix allowed='src/conductor/**'",
+        "i/audit sensitivity"
+      ],
+      "safe_no_args": true
+    },
     "learn": {
-      "description": "HME knowledge base: add, search, list, compact, export, dream, hypothesize.",
+      "description": "HME knowledge base plus extracted learning and pattern registry views.",
       "category": "knowledge",
-      "usage": "i/learn [query=<q>|action=search|add|remove|list|compact|export|graph|dream|health|hypothesize|hypotheses|ground_truth|discoveries|promote_discovery]",
+      "usage": "i/learn [query=<q>|action=search|add|remove|list|compact|export|graph|dream|health|hypothesize|...] | i/learn learnings <extract|list|surface> | i/learn patterns [list|matched|<id>]",
       "modes": [
         "search",
         "add",
@@ -45,17 +131,20 @@
         "hypotheses",
         "ground_truth",
         "discoveries",
-        "promote_discovery"
+        "promote_discovery",
+        "learnings",
+        "patterns"
       ],
       "examples": [
         "i/learn query=\"regime self-balancer\"",
         "i/learn action=add title=\"...\" content=\"...\" category=pattern",
-        "i/learn action=ground_truth title=R98 tags=[stable] content=\"verdict\""
+        "i/learn learnings list",
+        "i/learn patterns matched"
       ],
       "safe_no_args": true
     },
     "trace": {
-      "description": "Causal/impact analysis and semantic search across signals, modules, beats.",
+      "description": "Causal/impact analysis and semantic search across signals, modules, and beats.",
       "category": "diagnostic",
       "usage": "i/trace target=<channel|module|beat-key> [mode=auto|cascade|module|causal|snapshot|impact|delta]",
       "modes": [
@@ -73,68 +162,58 @@
       ],
       "safe_no_args": true
     },
-    "holograph": {
-      "description": "Interstellar overview -- single ~12-line panel summarizing all 10 HME horizons (HCI phase, agent-loop, conjugate quadrant, KB graph density, fractal Gini trend, ground-truth verdicts, band proposal, causality marker, etc). Pure composition over existing data. The asymptote of the observability triad -- when you want every dimension at once. `mode=trajectory` shows horizon evolution over recent invocations.",
-      "category": "diagnostic",
-      "usage": "i/holograph  |  i/holograph mode=trajectory",
-      "examples": [
-        "i/holograph",
-        "i/holograph mode=trajectory"
-      ]
-    },
-    "timeline": {
-      "description": "Unified audit trail -- chronological view of HME's silent automations (auto-reload, KB draft writes, posttooluse hooks, fs_watcher events) joined into one timeline. Answers 'what has HME done in the last N minutes?' without reading 5+ files.",
-      "category": "diagnostic",
-      "usage": "i/timeline [window=<5m|1h|30s>]",
-      "examples": [
-        "i/timeline",
-        "i/timeline window=5m",
-        "i/timeline window=1h"
-      ]
-    },
-    "state": {
-      "description": "Unified state panel -- every state machine HME tracks, in one ~10-line view.",
-      "category": "diagnostic",
-      "usage": "i/state  |  i/state mode=brief",
-      "modes": [
-        "full (default)",
-        "brief"
-      ],
-      "examples": [
-        "i/state",
-        "i/state mode=brief"
-      ],
-      "safe_no_args": true
-    },
     "status": {
-      "description": "Status modes: budget, coherence, trajectory, resume, list, plus ~35 others.",
+      "description": "Status hub. Bare command shows the substrate brief; local modes cover state/timeline/holograph/team/project/forks/decision-audit/freeze/patterns; worker modes still use mode=<name>.",
       "category": "diagnostic",
-      "usage": "i/status [mode=<mode-name>]",
+      "usage": "i/status [state|timeline|holograph|substrate|team|project|forks|decision-audit|freeze] [args...] | i/status mode=<worker-mode>",
+      "modes": [
+        "state",
+        "timeline",
+        "holograph",
+        "substrate",
+        "team",
+        "project",
+        "forks",
+        "decision-audit",
+        "freeze",
+        "patterns",
+        "list",
+        "resume",
+        "budget",
+        "coherence",
+        "hci-diff",
+        "hci-by-subtag",
+        "agent-loop",
+        "band-tuning",
+        "conjugate",
+        "multi-axis-band",
+        "tool-latency"
+      ],
       "examples": [
-        "i/status mode=list",
-        "i/status mode=resume",
-        "i/status mode=budget",
-        "i/status mode=hci-diff",
-        "i/status mode=hci-by-subtag",
-        "i/status mode=agent-loop",
-        "i/status mode=band-tuning",
-        "i/status mode=conjugate",
-        "i/status mode=multi-axis-band",
-        "i/status mode=tool-latency"
+        "i/status",
+        "i/status state mode=brief",
+        "i/status timeline window=5m",
+        "i/status holograph mode=trajectory",
+        "i/status substrate drift",
+        "i/status team summary",
+        "i/status mode=coherence",
+        "i/status mode=list"
       ],
       "safe_no_args": true
     },
     "evolve": {
-      "description": "Evolution recommendations: what to change next round, plus selftest.",
+      "description": "Evolution recommendations and planning helpers, including structured spec extraction.",
       "category": "evolution",
-      "usage": "i/evolve [mode=...]",
+      "usage": "i/evolve [focus=...] | i/evolve spec <dir> [--md]",
       "examples": [
-        "i/evolve"
+        "i/evolve",
+        "i/evolve focus=invariants",
+        "i/evolve spec src/conductor --md"
       ],
       "safe_no_args": true
     },
     "hme-read": {
-      "description": "Pre-edit briefing: read a target with KB context, callers, structure.",
+      "description": "Pre-edit briefing: read a target with KB context, callers, and structure.",
       "category": "review-discipline",
       "usage": "i/hme-read target=<path|module|function> [mode=before|story|impact|both|lines|function|structure|callers|deps] [fast=true]",
       "modes": [
@@ -176,114 +255,8 @@
         "i/hme-admin action=index"
       ]
     },
-    "hme": {
-      "description": "Convenience wrapper that dispatches to other i/* tools by subcommand.",
-      "category": "meta",
-      "safe_no_args": true
-    },
-    "freeze": {
-      "description": "Show arc-freeze marker; optionally check a query against the forbidden-pattern list.",
-      "category": "review-discipline",
-      "usage": "i/freeze [query-string]",
-      "examples": [
-        "i/freeze",
-        "i/freeze \"never disable trust ceiling\""
-      ],
-      "safe_no_args": true
-    },
-    "pattern": {
-      "description": "Pattern catalogue: list, matched, or fetch by id.",
-      "category": "knowledge",
-      "usage": "i/pattern [list|matched|<id>]"
-    },
-    "why": {
-      "description": "Explain something the system did or is in. Three tiers: deterministic modes (block/state/verifier/hci-drop/hook), Tier-2 retrieval catch-all on multi-word questions (grep + KB + activity), Tier-3 subagent synthesis with --deep.",
-      "category": "review-discipline",
-      "usage": "i/why <invariant-id>  |  i/why mode=<block|state|verifier|hci-drop|hook|causality>  |  i/why mode=causality <event> [--chain] [depth=N]  |  i/why \"<question>\" [--deep]",
-      "modes": [
-        "invariant (default)",
-        "block",
-        "state",
-        "verifier",
-        "hci-drop",
-        "hook",
-        "verifier-utility",
-        "verifier-coverage",
-        "verifier-drift",
-        "kb-graph",
-        "kb-context",
-        "predict",
-        "conscience",
-        "causality (with --chain / --root-cause)",
-        "fractal-shape",
-        "architecture-snapshot",
-        "search (auto on multi-word)"
-      ],
-      "examples": [
-        "i/why nexus-state-integrity",
-        "i/why mode=block",
-        "i/why mode=state",
-        "i/why mode=verifier doc-drift",
-        "i/why mode=hci-drop",
-        "i/why mode=hook",
-        "i/why mode=verifier-utility",
-        "i/why \"where is the spam verifier defined\"",
-        "i/why \"what caused the HCI drop yesterday\" --deep"
-      ]
-    },
-    "todo": {
-      "description": "Hierarchical todo store + SPEC/TODO bridge + KB devlog archive on set completion.",
-      "category": "review-discipline",
-      "usage": "i/todo <action> [text=...] [todo_id=N] [parent_id=N] [tier=easy|medium|hard] [critical=true]",
-      "modes": [
-        "list",
-        "add",
-        "done",
-        "show",
-        "update"
-      ],
-      "examples": [
-        "i/todo list",
-        "i/todo add text=\"refactor X\" tier=hard",
-        "i/todo done todo_id=42",
-        "i/todo ingest_from_spec",
-        "i/todo close_with_spec_update todo_id=42",
-        "i/todo phase_complete todo_id=2 text=\"Phase 2 complete: <summary>\"",
-        "i/todo clear text=\"set name for archive\""
-      ],
-      "actions": [
-        "list",
-        "add",
-        "done",
-        "undo",
-        "remove",
-        "clear",
-        "critical",
-        "ingest_from_spec",
-        "promote_to_spec",
-        "close_with_spec_update",
-        "phase_complete"
-      ]
-    },
-    "substrate": {
-      "description": "Substrate browser: brief, detail, actions, drift, consensus, efficacy, patterns, diff, invariants.",
-      "category": "diagnostic",
-      "usage": "i/substrate [mode=brief|detail|actions|drift|consensus|efficacy|patterns|diff|invariants] [filter=<substring>]",
-      "modes": [
-        "brief",
-        "detail",
-        "actions",
-        "drift",
-        "consensus",
-        "efficacy",
-        "patterns",
-        "diff",
-        "invariants"
-      ],
-      "safe_no_args": true
-    },
     "policies": {
-      "description": "Unified hook-time policy registry  list/show/enable/disable/reset/paths/eval.",
+      "description": "Unified hook-time policy registry: list/show/enable/disable/reset/paths/eval.",
       "category": "policy-config",
       "usage": "i/policies <list|all|summary|show|enable|disable|reset|paths|eval> [args] [--scope=local|project|global]",
       "modes": [
@@ -304,87 +277,17 @@
         "i/policies disable block-curl-pipe-sh"
       ]
     },
-    "extract-spec": {
-      "description": "Extract a structured spec for a target module/feature for evolution planning.",
-      "category": "evolution",
-      "safe_no_args": true
-    },
-    "prove": {
-      "description": "Cross-file architectural invariant prover. Complements per-file ESLint rules with global/dataflow questions.",
-      "category": "review-discipline",
-      "safe_no_args": true
-    },
     "help": {
       "description": "List all i/ tools grouped by category, with descriptions and usage.",
-      "category": "meta"
-    },
-    "sensitivity": {
-      "description": "Metaprofile attribution aggregator  per-profile score distribution, per-(profile, sectionType) breakdown, and ranking by mean score.",
-      "category": "diagnostic",
-      "usage": "i/sensitivity",
-      "examples": [
-        "i/sensitivity"
-      ],
-      "safe_no_args": true
-    },
-    "audit-tools": {
-      "description": "UX stress test for i/* CLI surface. Each probe runs inside a transient systemd-run --scope cgroup (MemoryMax=512M, TasksMax=64) so disown'd/double-forked descendants of HME posttooluse hooks die atomically with the scope. Crashed the host twice before this isolation landed; treat with caution on first re-enable.",
       "category": "meta",
-      "usage": "i/audit-tools"
-    },
-    "audit-tiered": {
-      "description": "Run tiered HME audits over changed files and coherence surfaces.",
-      "category": "review-discipline",
-      "usage": "i/audit-tiered [args...]"
-    },
-    "blast-radius": {
-      "description": "Estimate implementation blast radius for changed files or targets.",
-      "category": "diagnostic",
-      "usage": "i/blast-radius [target]"
-    },
-    "decision-audit": {
-      "description": "Audit recent decisions for evidence, reversibility, and coherence debt.",
-      "category": "review-discipline",
-      "usage": "i/decision-audit [args...]"
-    },
-    "fork-watchdog": {
-      "description": "Watch forked/background agent tasks for stale or missing completion signals.",
-      "category": "orchestration",
-      "usage": "i/fork-watchdog [args...]"
-    },
-    "learnings": {
-      "description": "Surface extracted HME learning candidates and summaries.",
-      "category": "knowledge",
-      "usage": "i/learnings [args...]"
-    },
-    "parallel-detect": {
-      "description": "Run detector groups in parallel for faster coherence checks.",
-      "category": "diagnostic",
-      "usage": "i/parallel-detect [args...]"
-    },
-    "project-detect": {
-      "description": "Detect project shape and HME-relevant environment signals.",
-      "category": "diagnostic",
-      "usage": "i/project-detect [args...]"
-    },
-    "team": {
-      "description": "Team IPC coordination dashboard -- multi-agent context health, status, and last-active tracking.",
-      "category": "diagnostic",
-      "usage": "i/team [show|register|update|heartbeat|unregister|summary|--json]",
-      "examples": [
-        "i/team show",
-        "i/team summary",
-        "i/team --json",
-        "i/team register blue_lead <sid> E5 --task \"defense coherence\"",
-        "i/team update driver status=active ctx_pct=45",
-        "i/team heartbeat driver"
-      ],
+      "usage": "i/help [command|--json|--all]",
       "safe_no_args": true
     },
-    "_dispatch.sh": {
-      "description": "Private helper shared by thin i/* wrappers that call repo-local Python scripts.",
-      "category": "orchestration",
-      "usage": "i/_dispatch.sh <internal>"
+    "hme": {
+      "description": "Generic low-level dispatcher for worker tools that do not have a curated i/* wrapper.",
+      "category": "meta",
+      "usage": "i/hme <worker-tool-name> [key=value ...]",
+      "safe_no_args": true
     }
   },
   "scripts": []

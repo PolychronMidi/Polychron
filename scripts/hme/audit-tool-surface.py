@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/audit-tools -- stress-test the i/* CLI surface for UX failures.
+"""i/audit tools -- stress-test the i/* CLI surface for UX failures.
 
 For each tool registered in tools/HME/i_registry.json, runs a battery
 of edge cases and rates the response shape against a UX rubric. Tools
@@ -324,7 +324,7 @@ def main() -> int:
         # process-group kill suspenders.
         time.sleep(0.2)
     # Render summary
-    print(f"i/audit-tools -- surface stress test ({len(results)} tools probed)")
+    print(f"i/audit tools -- surface stress test ({len(results)} tools probed)")
     print("=" * 78)
     flagged = []
     skipped = []

@@ -9,9 +9,9 @@ specialist) know to use `pytest` vs `npm test` vs `cargo test` without
 inferring per-call.
 
 Usage:
-  i/project-detect            # human-readable
-  i/project-detect --json     # machine output
-  i/project-detect --tag      # one-line additionalContext tag for hooks
+  i/status project            # human-readable
+  i/status project --json     # machine output
+  i/status project --tag      # one-line additionalContext tag for hooks
 """
 from __future__ import annotations
 

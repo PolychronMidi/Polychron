@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/holograph -- single-screen interstellar overview of HME's state.
+"""i/status holograph -- single-screen interstellar overview of HME's state.
 
 One row per horizon. Each row pulls the most informative signal that
 horizon contributes. Together they answer "where is HME right now,
@@ -7,8 +7,8 @@ across every dimension simultaneously?" -- a question no other single
 command answers today.
 
 Pure composition: zero new computation, all data already exists. This
-is the asymptote of the observability triad -- `i/state` (snapshot),
-`i/timeline` (chronology), `i/why` (causality) -- extended to span
+is the asymptote of the observability triad -- `i/status state` (snapshot),
+`i/status timeline` (chronology), `i/why` (causality) -- extended to span
 every architectural axis at once.
 """
 from __future__ import annotations
@@ -275,7 +275,7 @@ def _predict_summary() -> str:
 def _persist_snapshot(rows: list[tuple]) -> None:
     """Append a holograph snapshot to history JSONL for trajectory view.
     Atomic-ish via append; cheap (~12 lines per row, runs at most once
-    per i/holograph invocation)."""
+    per i/status holograph invocation)."""
     history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
                                 "hme-holograph-history.jsonl")
     try:
@@ -300,17 +300,17 @@ def _render_trajectory(n: int = 5) -> int:
     history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
                                 "hme-holograph-history.jsonl")
     if not os.path.isfile(history_path):
-        print("# i/holograph mode=trajectory")
-        print("  No history yet. Run `i/holograph` (default mode) several times to accumulate.")
+        print("# i/status holograph mode=trajectory")
+        print("  No history yet. Run `i/status holograph` (default mode) several times to accumulate.")
         return 0
     try:
         with open(history_path) as f:
             rows = [json.loads(ln) for ln in f if ln.strip()][-n:]
     except (OSError, ValueError) as e:
-        print(f"# i/holograph mode=trajectory\nFailed to read history: {e}")
+        print(f"# i/status holograph mode=trajectory\nFailed to read history: {e}")
         return 1
     if len(rows) < 2:
-        print(f"# i/holograph mode=trajectory")
+        print(f"# i/status holograph mode=trajectory")
         print(f"  Only {len(rows)} snapshot(s) recorded -- need >=2 for trajectory.")
         return 0
 
@@ -334,7 +334,7 @@ def _render_trajectory(n: int = 5) -> int:
         print(line)
     print()
     print("# Note: cell width truncated to 30 chars for column alignment.")
-    print("  Use `i/holograph` for the full latest snapshot.")
+    print("  Use `i/status holograph` for the full latest snapshot.")
     return 0
 
 
@@ -369,10 +369,10 @@ def main(argv):
         print(f"  [{hid:4}] {label:24}  {summary}")
     print()
     print("# Drill-in:")
-    print("  i/state                    state-machine snapshot")
-    print("  i/timeline window=10m      chronological audit trail")
+    print("  i/status state              state-machine snapshot")
+    print("  i/status timeline window=10m  chronological audit trail")
     print("  i/why mode=<...>             causality / per-horizon detail")
-    print("  i/holograph mode=trajectory   horizon-evolution over recent runs")
+    print("  i/status holograph mode=trajectory  horizon-evolution over recent runs")
     return 0
 
 

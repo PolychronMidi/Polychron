@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-# i/holograph -- trivial-dispatch wrapper; logic in scripts/hme/holograph-panel.py.
-exec "$(dirname "$0")/_dispatch.sh" holograph scripts/hme/holograph-panel.py "$@"

@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-# i/state -- trivial-dispatch wrapper; logic in scripts/hme/state-panel.py.
-exec "$(dirname "$0")/_dispatch.sh" state scripts/hme/state-panel.py "$@"

@@ -260,8 +260,7 @@ def _mode_agent_loop():
 
     out.append("")
     out.append("# Drill-in:")
-    out.append("  i/timeline window=1h           full chronological view")
+    out.append("  i/status timeline window=1h    full chronological view")
     out.append("  i/why mode=hook                broader hook-firing detail")
     return "\n".join(out)
-
 

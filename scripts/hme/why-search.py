@@ -4,7 +4,7 @@
 Fires when the question doesn't match a known mode or invariant ID.
 Performs deterministic retrieval (no LLM): grep over source for
 keywords from the question, KB search via i/learn, recent activity
-events, current i/state. Assembles a citation packet the agent can
+events, current i/status state. Assembles a citation packet the agent can
 read and synthesize from.
 
 Per the design argument: retrieval should be deterministic +

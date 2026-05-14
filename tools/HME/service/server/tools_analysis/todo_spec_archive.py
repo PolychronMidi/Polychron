@@ -215,7 +215,7 @@ def _archive_set(set_name: str = "", force: bool = False) -> dict:
     _reset_spec_to_fresh_slate(set_name, ts, devlog_path)
     _reset_todo_to_fresh_slate()
     # Auto-fire learning extraction on the new devlog so KB/learnings.jsonl
-    # accumulates each cycle's patterns without a human running i/learnings.
+    # accumulates each cycle's patterns without a human running i/learn learnings.
     try:
         import subprocess as _sp
         _le = os.path.join(ENV.require("PROJECT_ROOT"),
@@ -448,4 +448,3 @@ def _trim_just_shipped(md: str) -> tuple[str, int]:
             continue
         out.append(line)
     return "\n".join(out), trimmed
-

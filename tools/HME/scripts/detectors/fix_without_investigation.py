@@ -55,8 +55,8 @@ _BUG_REPORT_RE = re.compile(
 _INVESTIGATION_BASH_TOKENS = (
     "grep", "find", "ls", "stat", "cat", "head", "tail", "wc", "diff",
     "git log", "git show", "git diff", "git blame", "git status",
-    "ps", "lsof", "netstat", "curl", "i/why", "i/status", "i/holograph",
-    "i/state", "i/timeline", "i/learn", "audit-", "verify-",
+    "ps", "lsof", "netstat", "curl", "i/why", "i/status",
+    "i/learn", "audit-", "verify-",
     "/health",
 )
 

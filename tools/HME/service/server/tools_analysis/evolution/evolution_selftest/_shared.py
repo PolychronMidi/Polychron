@@ -54,7 +54,7 @@ RELOADABLE = [
     "cascade_analysis", "hypothesis_registry", "prediction_accuracy",
     "semantic_drift_report", "crystallizer", "self_audit", "probe",
     "epistemic_reports", "negative_space", "cognitive_load", "ground_truth",
-    "phase6_reports", "multi_agent", "discovery_promote",
+    "phase6_reports", "multi_agent",
     "digest_pipeline_status", "perceptual_inference", "reasoning_blast",
     "review_unified_recommender", "symbols_hierarchy",
     "todo_lifesaver", "todo_native_merge", "todo_spec_archive",
@@ -64,5 +64,3 @@ RELOADABLE = [
 TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge",
                         "meta_layers", "meta_observer"]
 ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker", "structure"]
-
-

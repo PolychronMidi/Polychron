@@ -31,6 +31,14 @@ for arg in "$@"; do
     mode=fractal-shape) exec python3 "$SCRIPT_DIR/why-fractal-shape.py" "$@" ;;
     mode=architecture-snapshot) exec python3 "$SCRIPT_DIR/why-architecture-snapshot.py" "$@" ;;
     mode=search)    exec python3 "$SCRIPT_DIR/why-search.py" "$@" ;;
+    mode=freeze)
+      _ARGS=()
+      for _a in "$@"; do
+        [ "$_a" = "mode=freeze" ] && continue
+        _ARGS+=("$_a")
+      done
+      exec python3 "$SCRIPT_DIR/freeze-check.py" "${_ARGS[@]}"
+      ;;
   esac
 done
 

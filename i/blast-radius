@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-# i/blast-radius -- cross-file impact analyzer for staged + unstaged changes.
-#
-# Calls tools/HME/scripts/blast_radius.py. Pass-through args:
-#   i/blast-radius                  # working tree vs index+HEAD
-#   i/blast-radius --base HEAD~3    # explicit base ref
-#   i/blast-radius --json           # machine output
-#   i/blast-radius --top 30         # top N most-impacted files
-exec python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../tools/HME/scripts/blast_radius.py" "$@"

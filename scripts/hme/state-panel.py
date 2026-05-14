@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""i/state -- unified panel: every state machine in one ~15-line view.
+"""i/status state -- unified panel: every state machine in one ~15-line view.
 
 Aggregates the 5+ state files an agent currently has to mentally
 reconcile (onboarding, NEXUS lifecycle, pipeline lock, fingerprint
 verdict, KB freshness, last activity).
 
 Usage:
-    i/state              # full panel (default)
-    i/state mode=brief   # only the most-recent state of each
+    i/status state              # full panel (default)
+    i/status state mode=brief   # only the most-recent state of each
 """
 from __future__ import annotations
 import json

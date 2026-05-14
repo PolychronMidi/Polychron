@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# i/audit-tiered -- multi-pass cleanup orchestrator (composes existing detectors).
-# Adapted from pensive:tiered-audit. Adds zero new rules; runs lint floor +
-# marker registry + identity/slop + tests + README in leverage order.
-exec python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../tools/HME/scripts/tiered_audit.py" "$@"

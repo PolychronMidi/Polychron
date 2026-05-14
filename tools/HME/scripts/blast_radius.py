@@ -7,10 +7,10 @@ uses git diff to find changed files, extracts top-level identifiers
 src/ + tools/ + lab/ to estimate cross-file impact.
 
 Usage:
-  i/blast-radius                # analyze staged + unstaged changes
-  i/blast-radius --base HEAD~3  # against an explicit base
-  i/blast-radius --json         # JSON output
-  i/blast-radius --top N        # show top N most-impacted files (default 15)
+  i/audit blast                # analyze staged + unstaged changes
+  i/audit blast --base HEAD~3  # against an explicit base
+  i/audit blast --json         # JSON output
+  i/audit blast --top N        # show top N most-impacted files (default 15)
 """
 from __future__ import annotations
 

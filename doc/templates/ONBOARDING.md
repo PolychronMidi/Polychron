@@ -47,9 +47,9 @@ You never call `i/hme-read mode=before` explicitly -- the briefing is woven into
 ### Observability triad -- three orthogonal questions
 
 ```
-i/state                                  snapshot: every state machine in one ~10-line view
-i/timeline window=5m|1h                  chronological audit trail of silent automations
-i/holograph                              interstellar overview: one row per HME horizon (all 10 dimensions at once)
+i/status state                           snapshot: every state machine in one ~10-line view
+i/status timeline window=5m|1h           chronological audit trail of silent automations
+i/status holograph                       interstellar overview: one row per HME horizon (all 10 dimensions at once)
 i/why mode=...                             causality (see modes below)
 ```
 
@@ -216,7 +216,6 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 - [tools/HME/service/server/onboarding_chain.py](../../tools/HME/service/server/onboarding_chain.py) -- chain decider source + design spec (decorator wiring, gate hooks, failure modes, "adding new steps" recipe). The state machine itself is documented above in this primer.
 - [doc/HME.md](../HME.md) -- HME internals, tool surface, Phase 1-6 per-subsystem narrative.
 - [doc/ARCHITECTURE.md](../ARCHITECTURE.md) -- beat lifecycle, signal flow, L1/L2 layer isolation.
-- [doc/hme-discoveries.md](../hme-discoveries.md) -- human-curated universal principles promoted from HME's generalization drafts.
 - [doc/theory/](../theory/) -- long-form arguments for the architecture's commitments. Read when the *why* behind a rule is needed.
 - `python3 tools/HME/scripts/verify-numeric-drift.py` -- audit counted claims ("N hypermeta controllers" / "K verifiers" / etc.) across all markdown against live code counts. Fires via the `numeric-claim-drift` HCI verifier every pipeline run.
 - `python3 scripts/audit-core-principles.py` -- survey `src/` against the five core principles. Fires via the `core-principles-audit` HCI verifier every pipeline run. Critical violations (files >400 LOC, subsystems without `index.js`) drop HCI; 200-line warnings are informational.

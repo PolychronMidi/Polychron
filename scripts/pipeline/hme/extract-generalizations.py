@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 6.4 -- generalization extractor (R97 rewrite).
-
+"""
 Scans the crystallized pattern registry and separates project-specific
 patterns (depend on Polychron's particular architecture) from structurally
 general ones (would apply to any similar topological system).
@@ -9,9 +8,9 @@ Output:
   output/metrics/hme-generalizations.json -- machine-readable, per-pattern
   scores + candidate list. Consumed by `synthesize-generalizations.py`,
   `render-generalizations.py` was retired in R97 along with the spam path
-  that appended vague LLM waffle to `doc/hme-discoveries.md`.
+  that appended vague LLM waffle
 
-Scoring fix (R97): vocabulary is now built dynamically from three sources
+Scoring fix: vocabulary is now built dynamically from three sources
 and matched against camelCase-split pattern tags + synthesis text:
   - scripts/pipeline/bias-bounds-manifest.json  (93 bias registrations)
   - src/time/l0Channels.js                       (~45 canonical channel names)

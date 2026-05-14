@@ -156,8 +156,6 @@ Implemented and wired into the pipeline.
 | Step | Output | Produces |
 |---|---|---|
 | `detect-doc-drift` | `hme-doc-drift.json` | Where docs diverged from KB knowledge |
-| `extract-generalizations` | `hme-generalizations.json` | Project-agnostic patterns from crystallized KB |
-| `synthesize-generalizations` | `hme-discoveries-draft.jsonl` | Structured drafts (invariant/prediction/counterexample). Promoted via `i/learn action=promote_discovery` |
 | `compute-evolution-priority` | `hme-evolution-priority.json` | Ranked next-change list from 9 signal sources |
 
 ### Compounding structure
@@ -202,10 +200,10 @@ Phases 1-6 produced seven independent observability substrates. Phase 7 made the
 
 | Tool | Purpose |
 |---|---|
-| `i/substrate [mode]` | Unified four-arc view. Modes: brief, detail, actions, drift, consensus, efficacy, patterns, diff |
+| `i/status substrate [mode]` | Unified four-arc view. Modes: brief, detail, actions, drift, consensus, efficacy, patterns, diff |
 | `i/why <invariant-id>` | Explain invariant's class, streak, commit citations, recent history |
-| `i/freeze [query]` | Show arc-freeze marker; check query against forbidden list |
-| `i/pattern [list\|matched\|<id>]` | Query pattern registry |
+| `i/why mode=freeze [query]` | Show arc-freeze marker; check query against forbidden list |
+| `i/learn patterns [list\|matched\|<id>]` | Query pattern registry |
 
 `userpromptsubmit.sh` auto-captures `listening verdict: X` from user messages → ground-truth entry (listening voter in Arc I becomes automatic). `posttooluse_bash.sh` auto-fires `i/review mode=forget` after git commits.
 

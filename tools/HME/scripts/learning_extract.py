@@ -16,9 +16,9 @@ Storage: appends a `tools/HME/KB/learnings.jsonl` line per detected pattern,
 deduped by (category, description) on read.
 
 Usage:
-  i/learnings extract            # walk devlog + extract new patterns
-  i/learnings list               # show all known patterns sorted by frequency
-  i/learnings surface --keyword X  # patterns matching keyword (for new-Phase priming)
+  i/learn learnings extract              # walk devlog + extract new patterns
+  i/learn learnings list                 # show all known patterns sorted by frequency
+  i/learn learnings surface --keyword X  # patterns matching keyword (for new-Phase priming)
 """
 from __future__ import annotations
 
@@ -188,7 +188,7 @@ def cmd_extract() -> int:
 def cmd_list(top: int) -> int:
     patterns = _read_learnings()
     if not patterns:
-        print("learnings: no patterns yet -- run `i/learnings extract` first")
+        print("learnings: no patterns yet -- run `i/learn learnings extract` first")
         return 0
     by_cat: dict[str, list[Pattern]] = defaultdict(list)
     for p in patterns:

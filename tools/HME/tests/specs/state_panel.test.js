@@ -1,5 +1,5 @@
 'use strict';
-// Smoke tests for i/state. Verifies the panel renders without
+// Smoke tests for i/status state. Verifies the panel renders without
 // crashing, shows core sections (HCI, KB, last activity), and emits
 // the multi-timescale HCI line when timeseries is present.
 
@@ -10,10 +10,10 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const I_STATE = path.join(PROJECT_ROOT, 'i', 'state');
+const I_STATUS = path.join(PROJECT_ROOT, 'i', 'status');
 
 function _run(args = []) {
-  const r = spawnSync(I_STATE, args, {
+  const r = spawnSync(I_STATUS, ['state', ...args], {
     encoding: 'utf8',
     timeout: 15000,
     cwd: PROJECT_ROOT,
@@ -22,23 +22,23 @@ function _run(args = []) {
   return { stdout: r.stdout || '', stderr: r.stderr || '', status: r.status };
 }
 
-test('i/state renders without crashing', () => {
+test('i/status state renders without crashing', () => {
   const r = _run();
   assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
   assert.match(r.stdout, /HME state panel/);
 });
 
-test('i/state shows onboarding state line', () => {
+test('i/status state shows onboarding state line', () => {
   const r = _run();
   assert.match(r.stdout, /onboarding\s+\S+/);
 });
 
-test('i/state shows HCI line with verifier count', () => {
+test('i/status state shows HCI line with verifier count', () => {
   const r = _run();
   assert.match(r.stdout, /HCI\s+\d+(?:\.\d+)?\/100\s+\(\d+\s+verifiers\)/);
 });
 
-test('i/state shows multi-timescale phase line when timeseries exists', () => {
+test('i/status state shows multi-timescale phase line when timeseries exists', () => {
   // Skip gracefully if timeseries isn't there (clean checkout)
   const ts = path.join(PROJECT_ROOT, 'output', 'metrics',
     'hme-coherence-timeseries.jsonl');
@@ -52,20 +52,19 @@ test('i/state shows multi-timescale phase line when timeseries exists', () => {
   );
 });
 
-test('i/state mode=brief omits drill-in footer', () => {
+test('i/status state mode=brief omits drill-in footer', () => {
   const r = _run(['mode=brief']);
   assert.strictEqual(r.status, 0);
   assert.doesNotMatch(r.stdout, /Drill-in:/);
 });
 
-test('i/state shows pipeline state', () => {
+test('i/status state shows pipeline state', () => {
   const r = _run();
   assert.match(r.stdout, /pipeline\s+(idle|RUNNING)/);
 });
 
 
 // Smoke tests for the three new horizon-seed modes shipped this session.
-const I_STATUS = path.join(PROJECT_ROOT, 'i', 'status');
 function _runStatus(mode) {
   const r = spawnSync(I_STATUS, [`mode=${mode}`], {
     encoding: 'utf8',
@@ -309,18 +308,18 @@ test('conjugate-channel V-coupling: tightening file lifecycle is sane', () => {
   // whether it was present); just assert no exception.
 });
 
-test('i/holograph mode=trajectory renders horizon evolution over time', () => {
+test('i/status holograph mode=trajectory renders horizon evolution over time', () => {
   // Run once to ensure history has at least 1 snapshot, then again so
   // we have 2 (the trajectory view requires >=2 to render side-by-side).
-  spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
+  spawnSync(path.join(PROJECT_ROOT, 'i', 'status'), ['holograph'], {
     encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT },
   });
-  spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
+  spawnSync(path.join(PROJECT_ROOT, 'i', 'status'), ['holograph'], {
     encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT },
   });
-  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), ['mode=trajectory'], {
+  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'status'), ['holograph', 'mode=trajectory'], {
     encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT },
   });
@@ -328,8 +327,8 @@ test('i/holograph mode=trajectory renders horizon evolution over time', () => {
   assert.match(r.stdout, /Holograph trajectory|need.*for trajectory/);
 });
 
-test('i/holograph renders all 10 horizons as one panel', () => {
-  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
+test('i/status holograph renders all 10 horizons as one panel', () => {
+  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'status'), ['holograph'], {
     encoding: 'utf8',
     timeout: 30000,
     cwd: PROJECT_ROOT,
@@ -340,11 +339,11 @@ test('i/holograph renders all 10 horizons as one panel', () => {
   // Each horizon should appear as a [N] tag
   for (const hid of ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']) {
     assert.match(r.stdout, new RegExp(`\\[${hid}\\s*\\]`),
-      `i/holograph missing horizon [${hid}] row`);
+      `i/status holograph missing horizon [${hid}] row`);
   }
 });
 
-test('i/state surfaces agent-loop-quality verifier inline', () => {
+test('i/status state surfaces agent-loop-quality verifier inline', () => {
   const r = _run();
   assert.strictEqual(r.status, 0);
   // Either the agent-loop line is visible (verifier present in snapshot)
@@ -439,8 +438,8 @@ test('rotate-history-files dry-run reports policy state without modifying', () =
   assert.strictEqual(beforeSize, afterSize, 'dry-run modified file');
 });
 
-test('i/holograph reflects tier marker + prune-candidate count', () => {
-  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
+test('i/status holograph reflects tier marker + prune-candidate count', () => {
+  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'status'), ['holograph'], {
     encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT },
   });
@@ -505,7 +504,7 @@ test('i/why mode=kb-graph reports entity-name edges (Horizon III maturity)', () 
   assert.match(r.stdout, /entity-name|KB empty|0 edges/);
 });
 
-test('i/state HCI line carries confidence indicator (Horizon II maturity)', () => {
+test('i/status state HCI line carries confidence indicator (Horizon II maturity)', () => {
   const r = _run();
   assert.strictEqual(r.status, 0);
   // HCI line should include conf=uniform/mixed/fragile when a snapshot

@@ -12,9 +12,9 @@ text; two items are independent iff their file-ref sets are disjoint.
 Output: ranked groups (largest independent set first), human-readable + JSON.
 
 Usage:
-  i/parallel-detect              # latest Phase
-  i/parallel-detect --phase 3    # explicit Phase number
-  i/parallel-detect --json       # machine output
+  i/audit parallel              # latest Phase
+  i/audit parallel --phase 3    # explicit Phase number
+  i/audit parallel --json       # machine output
 """
 from __future__ import annotations
 

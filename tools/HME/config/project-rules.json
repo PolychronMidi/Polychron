@@ -155,7 +155,6 @@
     "decision_gate",
     "depends_on",
     "discoveries",
-    "discovery_promote",
     "divergence_override_applied",
     "done_signal",
     "drifted_dimension_count",

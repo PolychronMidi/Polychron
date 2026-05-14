@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-# i/learnings -- extract / list / surface cross-Phase patterns from KB devlog.
-exec python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../tools/HME/scripts/learning_extract.py" "$@"

@@ -6,4 +6,49 @@
 #   i/learn action=ground_truth title=<section> content=<comment> query=<round>
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
 [ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
+_REPO_ROOT="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}}"
+
+if [ "${1:-}" = "learnings" ] || [ "${1:-}" = "learning" ]; then
+  shift
+  _ARGS=()
+  for _a in "$@"; do
+    if [[ "$_a" == *"="* && "$_a" != --* ]]; then
+      _k="${_a%%=*}"
+      _k="${_k//_/-}"
+      _v="${_a#*=}"
+      _ARGS+=("--$_k" "$_v")
+    else
+      _ARGS+=("$_a")
+    fi
+  done
+  [ "${#_ARGS[@]}" -gt 0 ] || _ARGS=("list")
+  exec python3 "$_REPO_ROOT/tools/HME/scripts/learning_extract.py" "${_ARGS[@]}"
+fi
+
+if [ "${1:-}" = "pattern" ] || [ "${1:-}" = "patterns" ]; then
+  shift
+  exec python3 "$_REPO_ROOT/scripts/hme/pattern-registry.py" "$@"
+fi
+
+for _a in "$@"; do
+  case "$_a" in
+    action=learnings|action=learning)
+      _ARGS=()
+      for _b in "$@"; do
+        case "$_b" in
+          action=learnings|action=learning) ;;
+          *=*)
+            _k="${_b%%=*}"
+            _k="${_k//_/-}"
+            _v="${_b#*=}"
+            _ARGS+=("--$_k" "$_v")
+            ;;
+          *) _ARGS+=("$_b") ;;
+        esac
+      done
+      [ "${#_ARGS[@]}" -gt 0 ] || _ARGS=("list")
+      exec python3 "$_REPO_ROOT/tools/HME/scripts/learning_extract.py" "${_ARGS[@]}"
+      ;;
+  esac
+done
 exec node "$_HME_CLI" learn "$@"

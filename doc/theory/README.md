@@ -12,7 +12,7 @@ Polychron is not a neutral piece of infrastructure. Every architectural choice i
 
 Theory here is not speculation. Every essay in this directory is *answerable to the code*: it takes specific architectural features as its material, names the principle they implement, and argues for what that principle means outside the walls of this project. If an essay could be written without reference to any specific file, verifier, or subsystem, it does not belong here. If it could be written about any generative-music engine, it does not belong here either.
 
-This is also the directory where Polychron's externalized intellectual contribution lives long-form. `doc/hme-discoveries.md` extracts generalizations mechanically from crystallized patterns. Theory is the hand-written extension: the full argument, in prose, for what we believe the system has discovered.
+This is also the directory where Polychron's externalized intellectual contribution lives long-form. Theory is the hand-written extension: the full argument, in prose, for what we believe the system has discovered.
 
 ## The collection
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/timeline -- unified audit trail of HME's silent automations.
+"""i/status timeline -- unified audit trail of HME's silent automations.
 
 HME has many invisible side-effects per turn: auto-reload (watcher),
 KB draft writes (posttooluse_bash on STABLE/EVOLVED), reindex (fs_watcher
@@ -10,9 +10,9 @@ chronological list so an agent can answer "what has HME done in the last
 N minutes?" without reading 5+ files.
 
 Usage:
-    i/timeline              # last 30 events
-    i/timeline window=5m    # last 5 minutes only
-    i/timeline window=1h    # last hour
+    i/status timeline              # last 30 events
+    i/status timeline window=5m    # last 5 minutes only
+    i/status timeline window=1h    # last hour
 """
 from __future__ import annotations
 import json
@@ -170,9 +170,9 @@ def main(argv):
             out.append(f"  {time_str} ({age:>5} ago)  {label.lstrip()}")
     out.append("")
     out.append("# When in doubt:")
-    out.append("  i/timeline window=5m       narrow to last 5 minutes")
-    out.append("  i/timeline window=1h       widen to last hour")
-    out.append("  i/state                    snapshot of current state machines")
+    out.append("  i/status timeline window=5m       narrow to last 5 minutes")
+    out.append("  i/status timeline window=1h       widen to last hour")
+    out.append("  i/status state                    snapshot of current state machines")
     out.append("  i/why mode=hook            recent hook firings only (narrower scope)")
     print("\n".join(out))
     return 0

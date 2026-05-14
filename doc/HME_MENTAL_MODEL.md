@@ -1,6 +1,6 @@
 # HME -- Mental Model
 
-The one-page picture you need before reading anything else. Read this once, then `i/state`, then start working. Everything else is a footnote.
+The one-page picture you need before reading anything else. Read this once, then `i/status state`, then start working. Everything else is a footnote.
 
 ## What HME is, in one sentence
 
@@ -53,7 +53,7 @@ The MCP server, proxy, and hooks all read/write a shared substrate: KB (LanceDB)
 - **Fingerprint verdict** -- `output/metrics/fingerprint-comparison.json`. STABLE/EVOLVED/DRIFTED.
 - **KB freshness** -- `tools/HME/KB/*.lance` mtime. Staleness verifier.
 
-`i/state` consolidates all five in one ~10-line view. Always check it first when you lose your place.
+`i/status state` consolidates all five in one ~10-line view. Always check it first when you lose your place.
 
 ## The four enforcement layers (and where to look when one fires)
 
@@ -91,9 +91,9 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 
 ## Where to look when you lose your place
 
-- **"Where is HME across every dimension at once?"** -> `i/holograph` (interstellar overview -- one row per horizon, all 10 in ~12 lines)
-- **"Where am I in the workflow?"** -> `i/state`
-- **"What just happened? what has HME done in the last N minutes?"** -> `i/timeline` (joins markers + activity log into one chronological view)
+- **"Where is HME across every dimension at once?"** -> `i/status holograph` (interstellar overview -- one row per horizon, all 10 in ~12 lines)
+- **"Where am I in the workflow?"** -> `i/status state`
+- **"What just happened? what has HME done in the last N minutes?"** -> `i/status timeline` (joins markers + activity log into one chronological view)
 - **"What's HME's current health?"** -> `i/hme-admin action=selftest`
 - **"Did my last edit help or hurt the score?"** -> `i/status mode=hci-diff`
 - **"What kind of broken is everything that's red?"** -> `i/status mode=hci-by-subtag` (aggregates by category)
@@ -108,7 +108,7 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 - **"What's the context around this KB entry?"** -> `i/why mode=kb-context <id>` (per-entry traversal: outgoing/incoming edges + same-category siblings)
 - **"What KB entries should I cite when adding a new one?"** -> `i/learn action=suggest_predecessors title=... content=...` (Horizon III asymptote -- semantic similarity -> copy-paste-ready `tags=derived_from:<id>` suggestions)
 - **"What verifiers might flip if I edit this file?"** -> `i/why mode=predict <file>` (Horizon I -- historical edit->flip correlation; per-FILE first, then per-dir fallback)
-- **"How healthy is my agent loop right now?"** -> `i/state` reads the GREEN/YELLOW/RED tier from `tmp/hme-agent-loop-tier.json` (Horizon IV maturity)
+- **"How healthy is my agent loop right now?"** -> `i/status state` reads the GREEN/YELLOW/RED tier from `tmp/hme-agent-loop-tier.json` (Horizon IV maturity)
 - **"Which verifiers should be down-weighted as dead-weight?"** -> `tmp/hme-verifier-prune.json` lists always-PASS-for->=10-runs candidates with `weight_multiplier: 0.5` (Horizon VI maturity; advisory)
 - **"What will my next call probably cost?"** -> `i/status mode=tool-latency` (Horizon I -- per-tool p50/p95/p99 from recent invocations)
 - **"What does the user's verdict history say about good moves?"** -> `i/why mode=conscience` (Horizon VIII -- approved/rejected move signatures from ground-truth log)

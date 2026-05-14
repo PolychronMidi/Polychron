@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-# i/freeze -- trivial-dispatch wrapper; logic in scripts/hme/freeze-check.py.
-exec "$(dirname "$0")/_dispatch.sh" freeze scripts/hme/freeze-check.py "$@"

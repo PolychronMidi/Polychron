@@ -72,7 +72,7 @@ _EVIDENCE_BASH_TOKENS = (
     "curl", "wget", "http",
     "verify-coherence", "verify-doc-sync", "audit-",
     "polychron-proxy-restart", "polychron-restart",
-    "/health", "i/why", "i/status", "i/holograph", "i/state", "i/timeline",
+    "/health", "i/why", "i/status",
     "wc -l", "stat", "diff",
     "node -e",  # inline JS test runner -- used for unit testing rewriters
 )

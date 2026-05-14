@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-# i/timeline — unified audit trail of HME's silent automations.
-#   i/timeline                  last 30m of events (default)
-#   i/timeline window=5m        narrow to last 5 minutes
-#   i/timeline window=1h        widen to last hour
-exec "$(dirname "$0")/_dispatch.sh" timeline scripts/hme/timeline-panel.py "$@"

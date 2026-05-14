@@ -214,7 +214,7 @@ def _native_input(tool_input: dict, target: str) -> dict:
         "description": f"{target} routed: {desc}"[:200],
         "prompt": (
             f"MODE=6 team-routed task. You are {target}.\n"
-            f"Register/heartbeat via i/team if not present. Do not fork further subagents.\n\n"
+            f"Register/heartbeat via i/status team if not present. Do not fork further subagents.\n\n"
             f"Original task:\n{prompt}"
         ),
         "subagent_type": "general-purpose",

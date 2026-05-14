@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-# i/pattern [list|matched|<id>] — query the pattern registry (Arc II).
-exec "$(dirname "$0")/_dispatch.sh" pattern scripts/hme/pattern-registry.py "$@"

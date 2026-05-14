@@ -111,40 +111,6 @@ def doc_drift_report() -> str:
     return "\n".join(lines)
 
 
-def generalizations_report() -> str:
-    _track("generalizations_report")
-    data = _load(GENERALIZATIONS_REL)
-    if not data:
-        return (
-            "# HME Generalizations\n\n"
-            "output/metrics/hme-generalizations.json not found.\n"
-            "Run: python3 scripts/pipeline/extract-generalizations.py"
-        )
-    meta = data.get("meta", {}) or {}
-    candidates = data.get("candidates", []) or []
-    lines = [
-        "# HME Generalizations",
-        "",
-        f"Scanned {meta.get('patterns_scanned', 0)} crystallized patterns",
-        f"Candidates below specificity {meta.get('specificity_threshold', '?')}: "
-        f"{len(candidates)}",
-        "",
-        "Patterns that might generalize beyond Polychron -- these go through",
-        "synthesize-generalizations -> `hme-discoveries-draft.jsonl` -> human promotion",
-        "via `learn(action='promote_discovery')` -> `doc/hme-discoveries.md`.",
-        "",
-    ]
-    for c in candidates[:15]:
-        lines.append(
-            f"  [{c['specificity']:.2f}]  {c['pattern_id']}  "
-            f"({c['member_count']} members, {len(c['rounds'])} rounds)"
-        )
-        tags = c.get("shared_tags") or []
-        if tags:
-            lines.append(f"    tags: {', '.join(tags[:6])}")
-    return "\n".join(lines)
-
-
 def reflexivity_report() -> str:
     """Phase 6.1 -- show how much of this round's prediction accuracy was
     contaminated by proxy injection vs clean post-hoc scoring."""

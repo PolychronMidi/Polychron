@@ -7,7 +7,7 @@ of HME with another agent, archiving for post-mortem, or just "show
 me everything" moments without invoking 8 commands.
 
 Pure composition: no new computation. Each panel is invoked via its
-existing wrapper; output is collected and labeled with section headers.
+current public command surface; output is collected and labeled with section headers.
 """
 from __future__ import annotations
 import os
@@ -19,8 +19,8 @@ from _common import PROJECT_ROOT
 
 PANELS = [
     # (label, wrapper, args)
-    ("State machine snapshot", "i/state", []),
-    ("Holograph (all 10 horizons)", "i/holograph", []),
+    ("State machine snapshot", "i/status", ["state"]),
+    ("Holograph (all 10 horizons)", "i/status", ["holograph"]),
     ("Multi-axis bands", "i/status", ["mode=multi-axis-band"]),
     ("Conjugate channel quadrants", "i/status", ["mode=conjugate"]),
     ("Agent-loop quality", "i/status", ["mode=agent-loop"]),

@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-# i/parallel-detect -- group SPEC.md Phase items by file-overlap independence.
-exec python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../tools/HME/scripts/parallel_detect.py" "$@"

@@ -41,7 +41,7 @@
       "artifacts": [
         { "path": "output/metrics/hme-pattern-matches.json", "freshness": "pipeline", "allow_empty": true }
       ],
-      "public_surfaces": ["status(mode='patterns')", "i/pattern"],
+      "public_surfaces": ["status(mode='patterns')", "i/learn patterns"],
       "depends_on": ["activity_bridge"]
     },
     {
