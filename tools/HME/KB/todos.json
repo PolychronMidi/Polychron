@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2549,
-      "updated_ts": 1778717512.9738145
+      "max_id": 2552,
+      "updated_ts": 1778717636.0541275
     }
   },
   {
     "id": 2547,
     "text": "Find every suggestion tied to auto-completeness/exhaust compaction",
     "activeForm": "Finding every auto-completeness/exhaust compaction suggestion",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2548,
     "text": "Implement remaining suggested fixes without broad suite",
     "activeForm": "Implementing remaining suggested fixes without broad suite",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2549,
     "text": "Run tiny targeted checks and report exact evidence",
     "activeForm": "Running tiny targeted checks and reporting exact evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
