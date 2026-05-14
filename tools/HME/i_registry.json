@@ -396,6 +396,20 @@
       "category": "diagnostic",
       "usage": "i/project-detect [args...]"
     },
+    "team": {
+      "description": "Team IPC coordination dashboard -- multi-agent context health, status, and last-active tracking.",
+      "category": "diagnostic",
+      "usage": "i/team [show|register|update|heartbeat|unregister|summary|--json]",
+      "examples": [
+        "i/team show",
+        "i/team summary",
+        "i/team --json",
+        "i/team register blue_lead <sid> E5 --task \"defense coherence\"",
+        "i/team update driver status=active ctx_pct=45",
+        "i/team heartbeat driver"
+      ],
+      "safe_no_args": true
+    },
     "_dispatch.sh": {
       "description": "Private dispatch helper shared by i/dispatch aliases.",
       "category": "orchestration",
