@@ -4,10 +4,8 @@ from __future__ import annotations
 import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
 from pathlib import Path
-
 PROJECT = Path(os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "")))
 DASHBOARD = PROJECT / "runtime" / "hme" / "team-dashboard.json"
-
 ROLES = {
     "driver":       {"team": "command",  "tier": "E5"},
     "blue_lead":    {"team": "blue",     "tier": "E5"},
@@ -23,11 +21,9 @@ ROLES = {
     "crew_e1_0":    {"team": "crew",     "tier": "E1"},
     "crew_e1_1":    {"team": "crew",     "tier": "E1"},
 }
-
 # Dynamic context is loaded from configured model windows.
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
 MODEL_WINDOWS: dict[str, int] | None = None
-
 ROLE_NEEDLES = {
     "blue_lead": ("You are Blue Lead",),
     "blue_purple": ("You are Blue Purple",),
@@ -38,11 +34,8 @@ ROLE_NEEDLES = {
     "crew_e2_0": ("crew_e2_0",), "crew_e2_1": ("crew_e2_1",),
     "crew_e1_0": ("crew_e1_0",), "crew_e1_1": ("crew_e1_1",),
 }
-
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 def _empty_dashboard() -> dict:
     mode = os.environ.get("OVERDRIVE_MODE")
     data = {"updated_at": _now(), "agents": {}}
@@ -52,8 +45,6 @@ def _empty_dashboard() -> dict:
         except ValueError:
             data["mode"] = mode
     return data
-
-
 def _normalize(data: dict) -> dict:
     data.setdefault("agents", {})
     if "mode" not in data:
@@ -65,12 +56,8 @@ def _normalize(data: dict) -> dict:
                 data["mode"] = mode
     data.pop("stage_crew", None)
     return data
-
-
 def _load() -> dict:
     return _normalize(json.loads(DASHBOARD.read_text())) if DASHBOARD.is_file() else _empty_dashboard()
-
-
 def _save(data: dict) -> None:
     data = _normalize(data)
     data["updated_at"] = _now()
@@ -78,16 +65,12 @@ def _save(data: dict) -> None:
     tmp = Path(str(DASHBOARD) + f".{os.getpid()}.tmp")
     tmp.write_text(json.dumps(data, indent=2))
     tmp.rename(DASHBOARD)
-
-
 def _artifact_body(relpath: str) -> dict:
     p = Path.home() / ".omniroute" / "call_logs" / relpath
     try:
         return json.loads(p.read_text()).get("requestBody", {})
     except (OSError, json.JSONDecodeError, TypeError):
         return {}
-
-
 def _metadata_session_id(body: dict) -> str:
     meta = body.get("metadata") if isinstance(body, dict) else {}
     user_id = meta.get("user_id") if isinstance(meta, dict) else None
@@ -95,15 +78,11 @@ def _metadata_session_id(body: dict) -> str:
         return json.loads(user_id).get("session_id", "") if isinstance(user_id, str) else ""
     except (json.JSONDecodeError, TypeError):
         return ""
-
-
 def _current_session_id() -> str:
     try:
         return Path((PROJECT / "tmp" / "hme-transcript-path.txt").read_text().strip()).stem
     except OSError:
         return ""
-
-
 def _user_text(body: dict) -> str:
     chunks = []
     for msg in body.get("messages", []):
@@ -115,8 +94,6 @@ def _user_text(body: dict) -> str:
         elif isinstance(parts, list):
             chunks.extend(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
     return "\n".join(chunks)
-
-
 def _role_matches(role: str, body: dict, current_sid: str) -> bool:
     if role == "driver":
         return _metadata_session_id(body) == current_sid
@@ -127,30 +104,37 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
         return False
     matches = [r for r, needles in ROLE_NEEDLES.items() if any(n in text for n in needles)]
     return matches == [role]
-
-
+def _strip_jsonc(text: str) -> str:
+    out = []; i = 0; quote = ""; esc = False
+    while i < len(text):
+        c = text[i]; n = text[i + 1] if i + 1 < len(text) else ""
+        if quote:
+            out.append(c)
+            if esc: esc = False
+            elif c == "\\": esc = True
+            elif c == quote: quote = ""
+        elif c in "\"'":
+            quote = c; out.append(c)
+        elif c == "#" or (c == "/" and n == "/"):
+            while i < len(text) and text[i] != "\n": i += 1
+            out.append("\n")
+        else:
+            out.append(c)
+        i += 1
+    return "".join(out)
 def _model_windows() -> dict[str, int]:
     global MODEL_WINDOWS
-    if MODEL_WINDOWS is not None:
-        return MODEL_WINDOWS
-    text = (PROJECT / "config" / "models.json").read_text()
-    clean = "\n".join(l for l in text.splitlines() if not l.lstrip().startswith(("//", "#")))
-    cfg, wins = json.loads(clean), {}
+    if MODEL_WINDOWS is not None: return MODEL_WINDOWS
+    cfg, wins = json.loads(_strip_jsonc((PROJECT / "config" / "models.json").read_text())), {}
     for m in cfg["models"]:
         name = m.get("name") or m.get("id")
         win = m.get("context_window") or m.get("context_length") or m.get("max_context")
-        if not name or not win:
-            raise RuntimeError("model config entry missing name/window")
+        if not name or not win: raise RuntimeError("model config entry missing name/window")
         keys = {name, name.split("/", 1)[-1]}
-        if m.get("provider"):
-            keys.add(f"{m['provider']}/{name}")
+        if m.get("provider"): keys.add(f"{m['provider']}/{name}")
         wins.update({k: int(win) for k in keys})
-    if not wins:
-        raise RuntimeError("model config has no model windows")
-    MODEL_WINDOWS = wins
-    return wins
-
-
+    if not wins: raise RuntimeError("model config has no model windows")
+    MODEL_WINDOWS = wins; return wins
 def _model_ctx_window(model: str, tier: str) -> int:
  if not model:
   raise RuntimeError(f"omniroute row missing model for tier={tier}")
@@ -159,8 +143,6 @@ def _model_ctx_window(model: str, tier: str) -> int:
   if key in wins:
    return wins[key]
  raise RuntimeError(f"context window unknown for model={model} tier={tier}")
-
-
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
     model = row["requested_model"] or row["model"] or ""
     if not model:
@@ -168,16 +150,12 @@ def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
     window = _model_ctx_window(model, tier)
     pct = round(min(100, max(0, (row["tokens_in"] or 0) / max(1, window) * 100)), 1)
     return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id}
-
-
 def _latest_session_ctx(rows: list[sqlite3.Row], session_id: str, tier: str) -> dict:
     for row in rows:
         body = _artifact_body(row["artifact_relpath"] or "")
         if _metadata_session_id(body) == session_id:
             return _row_ctx(row, tier, session_id)
     raise RuntimeError(f"resolved session has no context rows: {session_id}")
-
-
 def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict | None:
     if not OMNI_DB.is_file():
         raise RuntimeError(f"omniroute db missing: {OMNI_DB}")
@@ -209,8 +187,6 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
     peers = sorted(matches[unique[0]] - {role})
     if peers: raise RuntimeError(f"session {unique[0]} matches multiple roles for {role}: {', '.join(peers)}")
     return _latest_session_ctx(rows, unique[0], tier)
-
-
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
     if os.environ.get("OVERDRIVE_MODE") == "6":
         ctx = _omniroute_ctx(role, sid, tier, forked_at)
@@ -226,7 +202,6 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
         raise RuntimeError(f"buddy context unavailable for {role} sid={sid}")
     pct = min(100.0, max(0.0, round(float(ctx["used_pct"]), 1)))
     return {"pct": pct, "window": int(ctx["ctx_window"]), "sid": sid}
-
 def cmd_register(args):
     data = _load()
     role = args.role
@@ -249,7 +224,6 @@ def cmd_register(args):
     }
     _save(data)
     print(f"team_dashboard: {role} registered (sid={info['sid']})")
-
 def cmd_update(args):
     data = _load()
     role = args.role
@@ -265,7 +239,6 @@ def cmd_update(args):
         agent["task"] = args.task
     agent["last_active"] = _now()
     _save(data)
-
 def cmd_heartbeat(args):
     data = _load()
     role = args.role
@@ -277,16 +250,13 @@ def cmd_heartbeat(args):
         a["ctx_available"] = info["window"]
         a["sid"] = info["sid"]
     _save(data)
-
 def cmd_unregister(args):
     data = _load(); data.get("agents", {}).pop(args.role, None)
     _save(data)
     print(f"team_dashboard: {args.role} unregistered")
-
 def _bar(pct: float, width: int = 10) -> str:
     filled = round(pct / 100 * width)
     return "#" * filled + "-" * (width - filled)
-
 def cmd_show(args):
     data = _load()
     if getattr(args, "json_output", False):
@@ -309,7 +279,6 @@ def cmd_show(args):
         la = a.get("last_active", "")[11:19] if a.get("last_active") else "?"
         task = (a.get("task") or "")[:40]
         print(f"{role:<14} {a.get('team','?'):<8} {a.get('tier','?'):<4} {pct:>5.1f}%  {_bar(pct):<10} {a.get('status','?'):<12}  {la:<8}  {task}")
-
 def cmd_summary(args):
     data = _load()
     agents = data.get("agents", {})
@@ -330,7 +299,6 @@ def cmd_summary(args):
         except (ValueError, TypeError):
             stale += 1
     print(f"team={len(agents)} active={active} high_ctx={high_ctx} stale={stale} unknown_ctx={unknown_ctx} max_idle_s={int(idle_s)}")
-
 def main() -> int:
     p = argparse.ArgumentParser(description="Team IPC coordination dashboard")
     sub = p.add_subparsers(dest="cmd")
@@ -362,6 +330,5 @@ def main() -> int:
         args.json_output = False
         args.func = cmd_show
     return args.func(args) or 0
-
 if __name__ == "__main__":
     sys.exit(main())
