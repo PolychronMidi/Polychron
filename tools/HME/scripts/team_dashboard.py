@@ -26,6 +26,7 @@ ROLE_NEEDLES = {
     "crew_e1_0": ("crew_e1_0",), "crew_e1_1": ("crew_e1_1",),
 }
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
+_MODEL_CFG: dict | None = None
 _MODEL_WINDOWS: dict[str, int] | None = None
 def _jsonc_load(text: str) -> dict:
  out = []
