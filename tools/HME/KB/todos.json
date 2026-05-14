@@ -2,34 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2951,
-      "updated_ts": 1778750781.9283814
+      "max_id": 2954,
+      "updated_ts": 1778757201.843232
     }
   },
   {
-    "id": 2950,
-    "text": "Fix work-check hook failures blocking false closures and success spam",
-    "activeForm": "Fixing work-check hook failures blocking false closures and success spam",
+    "id": 2952,
+    "text": "Use the research file to identify the intended dashboard/session-tracking invariant",
+    "activeForm": "Reading research for dashboard invariant",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778750781.9283626,
+    "ts": 1778757201.8432033,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2951,
-    "text": "Verify detectors catch prior bad reply shapes",
-    "activeForm": "Verifying detectors catch prior bad reply shapes",
+    "id": 2953,
+    "text": "Patch team_dashboard.py so role ownership is proven before accepting live context",
+    "activeForm": "Patching dashboard role ownership checks",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778750781.9283788,
+    "ts": 1778757201.8432193,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2954,
+    "text": "Verify compile, LOC, and dashboard behavior with concrete evidence",
+    "activeForm": "Verifying dashboard context tracking",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778757201.84323,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
