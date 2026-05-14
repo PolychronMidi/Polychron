@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2820,
-      "updated_ts": 1778735179.142566
+      "max_id": 2825,
+      "updated_ts": 1778735628.006295
     }
   },
   {
     "id": 2816,
     "text": "Remove incorrect Mode 6 estimate patch before proceeding",
     "activeForm": "Removing incorrect Mode 6 estimate patch before proceeding",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2817,
     "text": "Find OmniRoute context telemetry endpoint or local source",
     "activeForm": "Finding OmniRoute context telemetry endpoint or local source",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2818,
     "text": "Wire team dashboard ctx_used_pct to OmniRoute actual value",
     "activeForm": "Wiring team dashboard ctx_used_pct to OmniRoute actual value",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
