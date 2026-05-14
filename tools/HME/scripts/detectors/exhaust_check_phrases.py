@@ -84,6 +84,7 @@ _EXHAUST_LOCAL_PHRASES = (
     "a later pass",
     "not this turn",
     "another turn",
+    "i should have:",
     # "Banked / waiting-on-user-action" register: "I did my part, waiting on you" frame.
     "still banked",
     "banked for",
