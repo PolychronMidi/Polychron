@@ -16,8 +16,11 @@ function _compactRepeatedStopHook(text) {
   const seen = RECENT_STOP_HOOKS.includes(fp);
   RECENT_STOP_HOOKS.push(fp);
   if (RECENT_STOP_HOOKS.length > 12) RECENT_STOP_HOOKS.shift();
-  if (seen) return STOP_HOOK_COMPACT;
-  if (!STOP_HOOK_KEEP_RE.test(text)) return STOP_HOOK_COMPACT;
+  let compact = STOP_HOOK_COMPACT;
+  if (text.includes('AUTO-COMPLETENESS CHECK')) compact = STOP_HOOK_COMPACT_AUTO;
+  else if (text.includes('EXHAUST PROTOCOL VIOLATION')) compact = STOP_HOOK_COMPACT_EXHAUST;
+  if (seen) return compact;
+  if (!STOP_HOOK_KEEP_RE.test(text)) return compact;
   return null;
 }
 
