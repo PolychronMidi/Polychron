@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2650,
-      "updated_ts": 1778726572.918656
+      "max_id": 2653,
+      "updated_ts": 1778726623.920226
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2650,
     "text": "Return terse purple-team feedback with evidence",
     "activeForm": "Returning terse purple-team feedback with evidence",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
