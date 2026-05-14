@@ -2,34 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2964,
-      "updated_ts": 1778769366.6662412
+      "max_id": 2967,
+      "updated_ts": 1778772616.516372
     }
   },
   {
-    "id": 2963,
-    "text": "Fix team dashboard role ownership and one-decimal live context",
-    "activeForm": "Fixing team dashboard role ownership and one-decimal live context",
+    "id": 2965,
+    "text": "Find why dashboard model values collapse to one model",
+    "activeForm": "Inspecting model attribution collapse",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778769366.6662238,
+    "ts": 1778772616.5163407,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2964,
-    "text": "Validate driver and team heartbeat behavior with concrete evidence",
-    "activeForm": "Validating driver and team heartbeat behavior with concrete evidence",
+    "id": 2966,
+    "text": "Patch routing/dashboard attribution without fallback masking",
+    "activeForm": "Patching role model attribution",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778769366.6662385,
+    "ts": 1778772616.516358,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2967,
+    "text": "Verify with tests and dashboard evidence",
+    "activeForm": "Verifying model attribution",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778772616.5163696,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
