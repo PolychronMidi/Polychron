@@ -57,6 +57,55 @@ def _strip_json_comments(text: str) -> str:
   i += 1
  return "".join(out)
 
+def _artifact_body(relpath: str) -> dict:
+ p = Path.home() / ".omniroute" / "call_logs" / relpath
+ try:
+  return json.loads(p.read_text()).get("requestBody", {})
+ except (OSError, json.JSONDecodeError, TypeError):
+  return {}
+
+
+def _metadata_session_id(body: dict) -> str:
+ meta = body.get("metadata") if isinstance(body, dict) else {}
+ user_id = meta.get("user_id") if isinstance(meta, dict) else None
+ try:
+  return json.loads(user_id).get("session_id", "") if isinstance(user_id, str) else ""
+ except (json.JSONDecodeError, TypeError):
+  return ""
+
+
+def _current_session_id() -> str:
+ try:
+  return Path((PROJECT / "tmp" / "hme-transcript-path.txt").read_text().strip()).stem
+ except OSError:
+  return ""
+
+
+def _user_text(body: dict) -> str:
+ chunks = []
+ for msg in body.get("messages", []):
+  if msg.get("role") != "user":
+   continue
+  parts = msg.get("content")
+  if isinstance(parts, str):
+   chunks.append(parts)
+  elif isinstance(parts, list):
+   chunks.extend(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
+ return "\n".join(chunks)
+
+
+def _role_matches(role: str, body: dict, current_sid: str) -> bool:
+ if role == "driver":
+  return _metadata_session_id(body) == current_sid
+ if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
+  return False
+ text = _user_text(body)
+ if "Filesystem IPC only" not in text or "MODE=6" not in text:
+  return False
+ matches = [r for r, needles in ROLE_NEEDLES.items() if any(n in text for n in needles)]
+ return matches == [role]
+
+
 def _model_ctx_window(model: str, tier: str) -> int:
  if not model:
   raise RuntimeError(f"omniroute row missing model for tier={tier}")
