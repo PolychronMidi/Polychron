@@ -516,7 +516,7 @@ function handleRequest(clientReq, clientRes) {
     const _OMNIROUTE_OFF = process.env.HME_OMNIROUTE_OFF === '1';
     const _odMode = process.env.OVERDRIVE_MODE || '0';
 
-    if ((_odMode === '4' || _odMode === '5')
+    if ((_odMode === '4' || _odMode === '5' || _odMode === '6')
         && !_isSeniorConsult
         && payload && typeof payload.model === 'string'
         && payload.model.startsWith('claude-')
@@ -1084,7 +1084,7 @@ if (_mode4WasStreaming) {
             // 429s -- user wants the lifesaver alert as recovery signal).
             // MODE=5: never trip the escape hatch (OmniRoute errors must not
             // cause passthrough to api.anthropic.com).
-            if (_isInteractivePath && !_coolingDown && process.env.OVERDRIVE_MODE !== '5') {
+            if (_isInteractivePath && !_coolingDown && (process.env.OVERDRIVE_MODE !== '5' && process.env.OVERDRIVE_MODE !== '6')) {
               recordUpstreamFailure(_errMsg);
             } else if (_isInteractivePath) {
               console.error(`escape hatch SUPPRESSED (OVERDRIVE_MODE=${process.env.OVERDRIVE_MODE || '0'}, _isMode4OmniRoute=${_isMode4OmniRoute}) -- passthrough blocked`);
