@@ -138,9 +138,8 @@ def _model_windows() -> dict[str, int]:
 
 
 def _model_ctx_window(model: str, tier: str) -> int:
-    name = model.split("/", 1)[-1]
     try:
-        return _model_windows()[name]
+        return _model_windows()[model.split("/", 1)[-1]]
     except KeyError as exc:
         raise RuntimeError(f"context window unknown for model={model} tier={tier}") from exc
 
