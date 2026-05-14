@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2941,
-      "updated_ts": 1778746291.7694485
+      "max_id": 2944,
+      "updated_ts": 1778746329.9058676
     }
   },
   {
-    "id": 2939,
-    "text": "Fix team model role config",
-    "activeForm": "Fixing team model role config",
+    "id": 2942,
+    "text": "Patch models team role mapping",
+    "activeForm": "Patching models team role mapping",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778746291.7694218,
+    "ts": 1778746329.9058397,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2940,
-    "text": "Repair team dashboard ctx sizing and syntax",
-    "activeForm": "Repairing team dashboard ctx sizing and syntax",
+    "id": 2943,
+    "text": "Patch team dashboard defaults/register behavior",
+    "activeForm": "Patching team dashboard defaults/register behavior",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778746291.769436,
+    "ts": 1778746329.9058545,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2941,
-    "text": "Verify commands/tests",
-    "activeForm": "Verifying commands/tests",
+    "id": 2944,
+    "text": "Run focused checks",
+    "activeForm": "Running focused checks",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778746291.769446,
+    "ts": 1778746329.9058652,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
