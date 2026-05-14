@@ -263,7 +263,7 @@ def main() -> int:
             "hookEventName": "PreToolUse",
             "permissionDecision": "allow",
             "additionalContext": (
-                f"No available {sub_type} target for {caller or 'unknown'} "
+                f"No available {request_tier} target for {caller or 'unknown'} "
                 f"(no eligible agents registered). Agent call will proceed natively."
             ),
         }}))
