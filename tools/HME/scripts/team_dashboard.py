@@ -340,9 +340,7 @@ def main() -> int:
     sub.add_parser("summary", help="terse health one-liner").set_defaults(func=cmd_summary)
     args = p.parse_args()
     if not args.cmd:
-        args.cmd = "show"
-        args.json_output = False
-        args.func = cmd_show
+        args.cmd = "show"; args.json_output = False; args.func = cmd_show
     return args.func(args) or 0
 if __name__ == "__main__":
     sys.exit(main())
