@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2624,
-      "updated_ts": 1778726392.6783924
+      "max_id": 2627,
+      "updated_ts": 1778726395.609883
     }
   },
   {
-    "id": 2622,
-    "text": "Find Blue Lead artifacts and defense-related files",
-    "activeForm": "Finding Blue Lead artifacts and defense-related files",
+    "id": 2625,
+    "text": "Locate HME onboarding/team/compression artifacts",
+    "activeForm": "Locating HME onboarding/team/compression artifacts",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778726392.6783638,
+    "ts": 1778726395.6098554,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2623,
-    "text": "Review onboarding, compression, routing, and dashboard IPC assumptions",
-    "activeForm": "Reviewing onboarding, compression, routing, and dashboard IPC assumptions",
+    "id": 2626,
+    "text": "Read relevant docs and IPC state read-only",
+    "activeForm": "Reading relevant docs and IPC state read-only",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778726392.6783786,
+    "ts": 1778726395.6098707,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2624,
-    "text": "Return terse purple-team feedback with evidence",
-    "activeForm": "Returning terse purple-team feedback with evidence",
+    "id": 2627,
+    "text": "Summarize assumptions, risks, next action with evidence",
+    "activeForm": "Summarizing assumptions, risks, next action with evidence",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778726392.6783903,
+    "ts": 1778726395.609881,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
