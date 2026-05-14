@@ -26,6 +26,7 @@ from pathlib import Path
 
 PROJECT = Path(os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "")))
 DASHBOARD = PROJECT / "runtime" / "hme" / "team-dashboard.json"
+SESSION_ROOT = Path.home() / ".claude" / "projects" / "-home-jah-Polychron"
 
 ROLES = {
     "driver":       {"team": "command",  "tier": "E5"},
@@ -124,31 +125,6 @@ def _metadata_session_id(body: dict) -> str:
         return ""
 
 
-def _first_user_text(body: dict) -> str:
-    for msg in body.get("messages", []):
-        if msg.get("role") != "user":
-            continue
-        parts = msg.get("content")
-        if isinstance(parts, str):
-            return parts
-        if isinstance(parts, list):
-            return "\n".join(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
-    return ""
-
-
-def _current_session_id() -> str:
-    try:
-        p = PROJECT / "tmp" / "hme-transcript-path.txt"
-        return Path(p.read_text().strip()).stem
-    except OSError:
-        return ""
-
-
-def _role_matches(role: str, body: dict, current_sid: str) -> bool:
-    text = _first_user_text(body)
-    return _metadata_session_id(body) == current_sid if role == "driver" else any(n in text for n in ROLE_NEEDLES.get(role, ()))
-
-
 def _model_ctx_window(model: str, fallback: int) -> int:
     if model.startswith("codex/") or model.startswith("cx/") or model.startswith("gpt-5.5"):
         return 1050000
@@ -168,12 +144,12 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
         ).fetchall()
     except sqlite3.Error:
         return None
-    current_sid = _current_session_id()
+    match_sid = _current_session_id() if role == "driver" else sid
     for row in rows:
         if forked_at and row["timestamp"] < forked_at:
             break
         body = _artifact_body(row["artifact_relpath"] or "")
-        if not (sid and len(sid) >= 12 and _metadata_session_id(body) == sid) and not _role_matches(role, body, current_sid):
+        if not (match_sid and len(match_sid) >= 12 and _metadata_session_id(body) == match_sid):
             continue
         model = row["requested_model"] or row["model"] or ""
         window = _model_ctx_window(model, fallback_window)
@@ -182,9 +158,43 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
     return None
 
 
+def _subagent_ctx(role: str, fallback: int) -> dict | None:
+    root = SESSION_ROOT / "7992e911-8138-4ca3-9b34-6b6c69dc03d6" / "subagents"
+    if not root.is_dir():
+        return None
+    newest = None
+    for path in root.glob("*.jsonl"):
+        try:
+            text = path.read_text(errors="ignore")
+        except OSError:
+            continue
+        if not any(n in text[:5000] for n in ROLE_NEEDLES.get(role, ())):
+            continue
+        usage = None; ts = ""
+        for line in text.splitlines():
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            msg = ev.get("message") if isinstance(ev.get("message"), dict) else {}
+            if isinstance(msg.get("usage"), dict):
+                usage = msg["usage"]; ts = ev.get("timestamp", "")
+        if not usage:
+            continue
+        tokens = sum(int(usage.get(k) or 0) for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+        item = {"pct": int(min(100, max(0, round(tokens / max(1, fallback) * 100)))), "window": fallback, "timestamp": ts}
+        if newest is None or item["timestamp"] > newest["timestamp"]:
+            newest = item
+    return newest
+
+
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
     fallback = DEFAULT_CTX.get(tier, 0)
     if _is_mode6():
+        if role != "driver":
+            ctx = _subagent_ctx(role, fallback)
+            if ctx:
+                return {"pct": ctx["pct"], "window": ctx["window"], "source": "transcript"}
         ctx = _omniroute_ctx(role, sid, fallback, forked_at)
         if ctx:
             return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute"}
