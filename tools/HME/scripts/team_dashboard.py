@@ -58,64 +58,56 @@ def _strip_json_comments(text: str) -> str:
  return "".join(out)
 
 def _model_ctx_window(model: str, tier: str) -> int:
- if not model: raise RuntimeError(f"omniroute row missing model for tier={tier}")
+ if not model:
+  raise RuntimeError(f"omniroute row missing model for tier={tier}")
+ path = PROJECT / "config" / "models.json"
  try:
-  cfg = json.loads(_strip_json_comments((PROJECT / "config" / "models.json").read_text()))
+  tiers = json.loads("\n".join(l for l in path.read_text().splitlines() if not l.lstrip().startswith(("#", "//")))).get("tiers", {})
  except (OSError, json.JSONDecodeError) as exc:
-  raise RuntimeError("model config unavailable") from exc
- wanted = {model, model.removeprefix("codex/"), model.removeprefix("cx/")}
- for entry in cfg.get("tiers", {}).get(tier, {}).get("models", []):
-  names = {str(k) for k in entry} | {v for v in entry.values() if isinstance(v, str)}
-  if wanted & names:
-   window = entry.get("max_context") or entry.get("context_length")
-   if not window: raise RuntimeError(f"context window missing for model={model} tier={tier}")
-   return int(window)
+  raise RuntimeError(f"model config unavailable: {path}") from exc
+ for data in tiers.values():
+  for m in data.get("models", []):
+   mid = m.get("id"); keys = (mid, f"{m.get('provider')}/{mid}" if m.get("provider") else "")
+   if model in keys and (m.get("context_length") or m.get("max_context")):
+    return int(m.get("context_length") or m.get("max_context"))
  raise RuntimeError(f"context window unknown for model={model} tier={tier}")
 
+
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
-    model = row["requested_model"] or row["model"] or ""
-    if not model:
-        raise RuntimeError(f"omniroute row missing model for tier={tier}")
-    window = _model_ctx_window(model, tier)
-    pct = round(min(100, max(0, (row["tokens_in"] or 0) / max(1, window) * 100)), 1)
-    return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id}
-def _latest_session_ctx(rows: list[sqlite3.Row], session_id: str, tier: str) -> dict:
-    for row in rows:
-        body = _artifact_body(row["artifact_relpath"] or "")
-        if _metadata_session_id(body) == session_id:
-            return _row_ctx(row, tier, session_id)
-    raise RuntimeError(f"resolved session has no context rows: {session_id}")
+ model = row["requested_model"] or row["model"] or ""
+ window = _model_ctx_window(model, tier)
+ used = float(row["tokens_in"] or 0)
+ pct = round(min(100.0, max(0.0, used / max(1, window) * 100)), 1)
+ return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id}
+
+
 def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict | None:
-    if not OMNI_DB.is_file():
-        raise RuntimeError(f"omniroute db missing: {OMNI_DB}")
-    try:
-        con = sqlite3.connect(str(OMNI_DB))
-        con.row_factory = sqlite3.Row
-        rows = con.execute(
-            "select timestamp,tokens_in,model,requested_model,artifact_relpath "
-            "from call_logs where path = '/v1/messages' and status = 200 "
-            "and artifact_relpath is not null order by timestamp desc limit 3000"
-        ).fetchall()
-    except sqlite3.Error as exc:
-        raise RuntimeError("omniroute context query failed") from exc
-    current_sid = _current_session_id()
-    matches = {}
-    for row in rows:
-        body = _artifact_body(row["artifact_relpath"] or "")
-        session_id = _metadata_session_id(body)
-        hits = [r for r in ROLES if _role_matches(r, body, current_sid)]
-        if not hits: continue
-        if not session_id: raise RuntimeError(f"omniroute artifact missing session_id for {role}")
-        matches.setdefault(session_id, set()).update(hits)
-    unique = sorted(s for s, hits in matches.items() if role in hits)
-    if sid.count("-") == 4 and sid not in unique:
-        raise RuntimeError(f"stored sid does not match role {role}: {sid}")
-    if len(unique) > 1:
-        raise RuntimeError(f"ambiguous omniroute sessions for {role}: {', '.join(unique)}")
-    if not unique: return None
-    peers = sorted(matches[unique[0]] - {role})
-    if peers: raise RuntimeError(f"session {unique[0]} matches multiple roles for {role}: {', '.join(peers)}")
-    return _latest_session_ctx(rows, unique[0], tier)
+ if not OMNI_DB.is_file():
+  raise RuntimeError(f"omniroute db missing: {OMNI_DB}")
+ try:
+  con = sqlite3.connect(str(OMNI_DB))
+  con.row_factory = sqlite3.Row
+  rows = con.execute(
+   "select timestamp,tokens_in,model,requested_model,artifact_relpath "
+   "from call_logs where path = '/v1/messages' and status = 200 "
+   "and artifact_relpath is not null order by timestamp desc limit 3000"
+  ).fetchall()
+ except sqlite3.Error as exc:
+  raise RuntimeError("omniroute context query failed") from exc
+ current_sid = _current_session_id()
+ for row in rows:
+  body = _artifact_body(row["artifact_relpath"] or "")
+  if not _role_matches(role, body, current_sid):
+   continue
+  session_id = _metadata_session_id(body)
+  if not session_id:
+   raise RuntimeError(f"omniroute artifact missing session_id for {role}")
+  if _looks_real_sid(sid) and sid != session_id:
+   raise RuntimeError(f"stored sid mismatch for {role}: {sid} != {session_id}")
+  return _row_ctx(row, tier, session_id)
+ return None
+
+
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
  if os.environ.get("OVERDRIVE_MODE") == "6":
   ctx = _omniroute_ctx(role, sid, tier, forked_at)
