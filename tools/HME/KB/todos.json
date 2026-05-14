@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2660,
-      "updated_ts": 1778726968.5743465
+      "max_id": 2667,
+      "updated_ts": 1778727543.2408016
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 2657,
     "text": "Investigate selftest temporal drift regression",
     "activeForm": "Investigating selftest temporal drift regression",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 2658,
     "text": "Assess/fix MODE=6 role routing and dashboard drift",
     "activeForm": "Assessing/fixing MODE=6 role routing and dashboard drift",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
