@@ -2,48 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2947,
-      "updated_ts": 1778747798.428861
+      "max_id": 2949,
+      "updated_ts": 1778748851.5564466
     }
   },
   {
-    "id": 2945,
-    "text": "Patch context tracking fail-fast behavior in team dashboard",
-    "activeForm": "Patching context tracking fail-fast behavior in team dashboard",
+    "id": 2948,
+    "text": "Patch team dashboard context tracking to require real session IDs",
+    "activeForm": "Patching dashboard context tracking",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778747798.4288328,
+    "ts": 1778748851.5564291,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2946,
-    "text": "Run focused verification for dashboard context path",
-    "activeForm": "Running focused verification for dashboard context path",
+    "id": 2949,
+    "text": "Verify no placeholder SIDs/fallbacks and compile changed code",
+    "activeForm": "Verifying dashboard patch",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778747798.428848,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2947,
-    "text": "Report exact diff/test evidence",
-    "activeForm": "Reporting exact diff/test evidence",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778747798.4288585,
+    "ts": 1778748851.556444,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
