@@ -12,6 +12,7 @@ const STOP_HOOK_COMPACTS = [STOP_HOOK_COMPACT, STOP_HOOK_COMPACT_AUTO, STOP_HOOK
 const RECENT_STOP_HOOKS = [];
 
 function _compactRepeatedStopHook(text) {
+  if (STOP_HOOK_COMPACTS.includes((text || '').trim())) return '';
   if (!STOP_HOOK_RE.test(text)) return null;
   const fp = text.replace(/\d{4}-\d{2}-\d{2}T\S+/g, '<ts>').slice(0, 240);
   const seen = RECENT_STOP_HOOKS.includes(fp);
