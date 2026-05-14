@@ -157,13 +157,30 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
     return matches == [role]
 
 
-def _model_ctx_window(model: str, fallback: int) -> int:
-    if model.startswith("codex/") or model.startswith("cx/") or model.startswith("gpt-5.5"):
-        return 1050000
-    return fallback
+@lru_cache(maxsize=1)
+def _model_windows() -> dict:
+    try:
+        raw = json.loads(MODELS_CONFIG.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+    models = raw.get("models", {}) if isinstance(raw, dict) else {}
+    return {
+        str(name): int(cfg.get("context_window") or cfg.get("max_input_tokens") or 0)
+        for name, cfg in models.items()
+        if isinstance(cfg, dict) and (cfg.get("context_window") or cfg.get("max_input_tokens"))
+    }
 
 
-def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | None = None) -> dict | None:
+def _model_ctx_window(model: str) -> int:
+    windows = _model_windows()
+    if model in windows:
+        return windows[model]
+    if "/" in model and model.split("/", 1)[1] in windows:
+        return windows[model.split("/", 1)[1]]
+    return 0
+
+
+def _omniroute_ctx(role: str, sid: str, forked_at: str | None = None) -> dict | None:
     if not OMNI_DB.is_file():
         return None
     try:
