@@ -172,7 +172,7 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
    raise RuntimeError(f"omniroute artifact missing session_id for {role}")
   if _looks_real_sid(sid) and sid != session_id:
    raise RuntimeError(f"stored sid mismatch for {role}: {sid} != {session_id}")
-  return _row_ctx(row, tier, session_id)
+  return _row_ctx(role, row, tier, session_id)
  return None
 def _artifact_body(relpath: str) -> dict:
  p = Path.home() / ".omniroute" / "call_logs" / relpath
