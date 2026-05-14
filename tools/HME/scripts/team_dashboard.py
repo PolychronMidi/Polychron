@@ -184,7 +184,8 @@ def cmd_show(args):
         pct = a.get("ctx_used_pct", 0)
         la = a.get("last_active", "")[11:19] if a.get("last_active") else "?"
         task = (a.get("task") or "")[:40]
-        print(f"{role:<14} {a.get('team','?'):<8} {a.get('tier','?'):<4} {pct:>3}%  {_bar(pct):<10} {a.get('status','?'):<12}  {la:<8}  {task}")
+        src = a.get("ctx_source") or "unknown"
+        print(f"{role:<14} {a.get('team','?'):<8} {a.get('tier','?'):<4} {pct:>3}%  {_bar(pct):<10} {src:<8} {a.get('status','?'):<12}  {la:<8}  {task}")
 
 def cmd_summary(args):
     data = _load()
