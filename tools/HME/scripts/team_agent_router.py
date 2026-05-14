@@ -217,13 +217,23 @@ def main() -> int:
     caller = str(payload.get("_hme_team_role") or os.environ.get("HME_TEAM_ROLE") or "").strip().lower()
     sub_type = str(tool_input.get("subagent_type") or "general-purpose")
     target = resolve_target(caller, sub_type)
-    if target is None:
+    if target is None and caller in _BLOCKED_CALLERS:
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
             "permissionDecisionReason": (
-                f"Agent tool blocked for {caller or 'unknown'} "
-                f"(E1-E2 crew may not spawn subagents)"
+                f"Agent tool blocked for {caller}: "
+                f"E1-E2 stage crew may not spawn subagents per team_subagent_routing_rules"
+            ),
+        }}))
+        return 0
+    if target is None:
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "allow",
+            "additionalContext": (
+                f"No available {sub_type} target for {caller or 'unknown'} "
+                f"(no eligible agents registered). Agent call will proceed natively."
             ),
         }}))
         return 0
