@@ -170,21 +170,23 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
 
 
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
-    fallback = DEFAULT_CTX.get(tier, 0)
+    fallback = DEFAULT_CTX.get(tier)
+    if fallback is None:
+        raise RuntimeError(f"unknown tier for context window: {tier}")
     if _is_mode6():
         ctx = _omniroute_ctx(role, sid, fallback, forked_at)
-        if ctx:
-            return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute"}
-        return {"pct": 0, "window": fallback, "source": "unknown"}
+        if not ctx:
+            raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")
+        return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute"}
     try:
         from buddy_dispatch_status import _buddy_context_used  # noqa: E402
-        ctx = _buddy_context_used(sid)
-        if ctx and "used_pct" in ctx:
-            pct = min(100, max(0, int(ctx["used_pct"])))
-            return {"pct": pct, "window": int(ctx.get("ctx_window") or fallback), "source": "buddy"}
-    except (ImportError, ValueError, TypeError):
-        pass  # silent-ok: legacy buddy ctx may be unavailable
-    return {"pct": 0, "window": fallback, "source": "unknown"}
+    except ImportError as exc:
+        raise RuntimeError("buddy context provider unavailable") from exc
+    ctx = _buddy_context_used(sid)
+    if not ctx or "used_pct" not in ctx:
+        raise RuntimeError(f"buddy context unavailable for {role} sid={sid}")
+    pct = min(100, max(0, int(ctx["used_pct"])))
+    return {"pct": pct, "window": int(ctx.get("ctx_window") or fallback), "source": "buddy"}
 
 def cmd_register(args):
     data = _load()
