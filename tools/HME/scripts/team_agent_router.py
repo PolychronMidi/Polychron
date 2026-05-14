@@ -194,9 +194,17 @@ def _level_tier(value) -> Optional[str]:
     return f"E{level}" if 1 <= level <= 5 else None
 
 
-def _tool_tier(tool_input: dict) -> str:
-    return _level_tier(tool_input.get("level")) or TYPE_TIER.get(
-        str(tool_input.get("subagent_type") or "general-purpose"), "E3")
+def _tool_input(payload: dict) -> dict:
+    data = payload.get("tool_input")
+    if data is None:
+        data = payload.get("input")
+    return data if isinstance(data, dict) else {}
+
+
+def _tool_tier(tool_input: dict) -> Optional[str]:
+    if "level" in tool_input:
+        return _level_tier(tool_input.get("level"))
+    return TYPE_TIER.get(str(tool_input.get("subagent_type") or "general-purpose"), "E3")
 
 
 def _native_input(tool_input: dict, target: str) -> dict:
