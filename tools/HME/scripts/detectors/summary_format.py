@@ -83,7 +83,7 @@ _MODE_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
 # E5 only; E3/E4 fired too often, became ceremony-spam. E5 is the narrow case worth it.
 _TRIGGER_TIERS = {"E5"}
 
-_BANNER_RE = re.compile(r"^\s*(?:={3,}\s*)?SUMMARY(?:\s*={3,})?\s*$", re.IGNORECASE | re.MULTILINE)
+_BANNER_RE = re.compile(r"^\s*SUMMARY\s*$", re.IGNORECASE | re.MULTILINE)
 _ITER_RE   = re.compile(r"\[ITERATION\]\s*:", re.IGNORECASE)
 _CONTENT_RE = re.compile(r"\[CONTENT\]\s*:", re.IGNORECASE)
 _STORY_RE  = re.compile(r"\[STORY\]\s*:", re.IGNORECASE)
