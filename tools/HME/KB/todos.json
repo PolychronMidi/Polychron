@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2999,
-      "updated_ts": 1778779850.0005374
+      "max_id": 3002,
+      "updated_ts": 1778780082.6528814
     }
   },
   {
-    "id": 2997,
-    "text": "Trace current Agent tool input handling and schema rewrite path",
-    "activeForm": "Tracing Agent tool behavior path",
+    "id": 3000,
+    "text": "Make Agent level/prompt runtime routing match compacted tool schema",
+    "activeForm": "Aligning Agent level/prompt runtime routing with compacted tool schema",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778779850.0005102,
+    "ts": 1778780082.6528535,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2998,
-    "text": "Implement level/prompt compatibility so Agent calls map to existing subagent launch routing",
-    "activeForm": "Implementing Agent level/prompt behavior",
+    "id": 3001,
+    "text": "Add focused coverage for level routing and native Agent input rewrite",
+    "activeForm": "Adding focused coverage for level routing and native Agent input rewrite",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778779850.000525,
+    "ts": 1778780082.652868,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2999,
-    "text": "Add focused tests proving Agent level/prompt behavior and compacted schema stay aligned",
-    "activeForm": "Adding Agent behavior tests",
+    "id": 3002,
+    "text": "Run syntax and relevant tests with evidence",
+    "activeForm": "Running syntax and relevant tests with evidence",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778779850.000535,
+    "ts": 1778780082.6528788,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
