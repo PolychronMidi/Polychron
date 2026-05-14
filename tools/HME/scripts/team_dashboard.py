@@ -54,10 +54,6 @@ def _empty_dashboard() -> dict:
     return data
 
 
-def _is_mode6() -> bool:
-    return os.environ.get("OVERDRIVE_MODE") == "6"
-
-
 def _normalize(data: dict) -> dict:
     data.setdefault("agents", {})
     if "mode" not in data:
@@ -191,7 +187,7 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
     fallback = DEFAULT_CTX.get(tier)
     if fallback is None:
         raise RuntimeError(f"unknown tier for context window: {tier}")
-    if _is_mode6():
+    if os.environ.get("OVERDRIVE_MODE") == "6":
         ctx = _omniroute_ctx(role, sid, tier, forked_at)
         if not ctx:
             raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")
@@ -260,9 +256,7 @@ def cmd_heartbeat(args):
     _save(data)
 
 def cmd_unregister(args):
-    data = _load()
-    if args.role in data.get("agents", {}):
-        del data["agents"][args.role]
+    data = _load(); data.get("agents", {}).pop(args.role, None)
     _save(data)
     print(f"team_dashboard: {args.role} unregistered")
 
