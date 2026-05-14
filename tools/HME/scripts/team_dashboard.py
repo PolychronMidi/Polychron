@@ -134,6 +134,10 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
     return matches == [role]
 
 
+def _looks_real_sid(sid: str) -> bool:
+    return len(sid) == 36 and sid.count("-") == 4 and all(c in "0123456789abcdef-" for c in sid.lower())
+
+
 def _model_ctx_window(model: str, tier: str) -> int:
     if model.startswith(("codex/", "cx/", "gpt-5.5")):
         return 1050000
