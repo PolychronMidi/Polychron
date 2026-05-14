@@ -110,15 +110,121 @@ def _is_mode6() -> bool:
     return os.environ.get("OVERDRIVE_MODE") == "6"
 
 
-def _ctx_pct(sid: str, tier: str, status: str = "registered", forked_at: str | None = None) -> int:
+def _session_id_from_artifact(relpath: str) -> str:
+    try:
+        p = Path.home() / ".omniroute" / "call_logs" / relpath
+        metadata = json.loads(p.read_text()).get("requestBody", {}).get("metadata", {})
+        user_id = metadata.get("user_id")
+        return json.loads(user_id).get("session_id", "") if isinstance(user_id, str) else ""
+    except (OSError, json.JSONDecodeError, TypeError):
+        return ""
+
+
+def _role_from_artifact(relpath: str) -> str:
+    try:
+        p = Path.home() / ".omniroute" / "call_logs" / relpath
+        body = json.loads(p.read_text()).get("requestBody", {})
+        text = json.dumps(body)[:20000]
+    except (OSError, json.JSONDecodeError, TypeError):
+        return ""
+    for role, needles in ROLE_NEEDLES.items():
+        if any(n in text for n in needles):
+            return role
+    return ""
+
+
+def _model_ctx_window(model: str, fallback: int) -> int:
+    if OMNI_DB.is_file():
+        try:
+            con = sqlite3.connect(str(OMNI_DB))
+            row = con.execute(
+                "select context_length from model_capabilities where model_id = ? limit 1",
+                (model,),
+            ).fetchone()
+            if row and row[0]:
+                return int(row[0])
+        except (sqlite3.Error, ValueError, TypeError):
+            pass  # silent-ok: fall through to API/config limits
+    try:
+        import urllib.request
+        with urllib.request.urlopen("http://127.0.0.1:20128/v1/models", timeout=1) as r:
+            for item in json.loads(r.read().decode()).get("data", []):
+                if item.get("id") == model or item.get("id", "").endswith("/" + model):
+                    limit = item.get("context_length") or item.get("max_input_tokens")
+                    if limit:
+                        return int(limit)
+    except (OSError, json.JSONDecodeError, ValueError, TypeError):
+        pass  # silent-ok: OmniRoute may be down; use declared fallback
+    return fallback
+
+
+def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | None = None) -> dict | None:
+    if not OMNI_DB.is_file():
+        return None
+    try:
+        con = sqlite3.connect(str(OMNI_DB))
+        con.row_factory = sqlite3.Row
+        rows = con.execute(
+            "select timestamp,tokens_in,model,requested_model,artifact_relpath "
+            "from call_logs where path = '/v1/messages' and status = 200 "
+            "and artifact_relpath is not null order by timestamp desc limit 300"
+        ).fetchall()
+    except sqlite3.Error:
+        return None
+    for row in rows:
+        rel = row["artifact_relpath"] or ""
+        if sid and len(sid) >= 12 and _session_id_from_artifact(rel) == sid:
+            window = _model_ctx_window(row["requested_model"] or row["model"] or "", fallback_window)
+            pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
+            return {"pct": pct, "window": window, "timestamp": row["timestamp"]}
+        if forked_at and row["timestamp"] < forked_at:
+            break
+        if _role_from_artifact(rel) == role:
+            window = _model_ctx_window(row["requested_model"] or row["model"] or "", fallback_window)
+            pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
+            return {"pct": pct, "window": window, "timestamp": row["timestamp"]}
+    return None
+
+
+def _subagent_ctx(role: str, fallback_window: int) -> dict | None:
+    root = SESSION_ROOT / "7992e911-8138-4ca3-9b34-6b6c69dc03d6" / "subagents"
+    if not root.is_dir():
+        return None
+    newest = None
+    for path in root.glob("*.jsonl"):
+        try:
+            text = path.read_text(errors="ignore")
+        except OSError:
+            continue
+        if not any(n in text[:5000] for n in ROLE_NEEDLES.get(role, ())):
+            continue
+        usage = None
+        ts = ""
+        for line in text.splitlines():
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            msg = ev.get("message") if isinstance(ev.get("message"), dict) else {}
+            if isinstance(msg.get("usage"), dict):
+                usage = msg["usage"]
+                ts = ev.get("timestamp", "")
+        if not usage:
+            continue
+        tokens = sum(int(usage.get(k) or 0) for k in (
+            "input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+        pct = int(min(100, max(0, round(tokens / max(1, fallback_window) * 100))))
+        item = {"pct": pct, "window": fallback_window, "timestamp": ts}
+        if newest is None or item["timestamp"] > newest["timestamp"]:
+            newest = item
+    return newest
+
+
+def _ctx_pct(sid: str, tier: str, status: str = "registered", forked_at: str | None = None, role: str = "") -> int:
+    fallback_window = DEFAULT_CTX.get(tier, 0)
     if _is_mode6():
-        if status == "done":
-            return min(55 + hash(sid) % 25, 95)  # 55-79%: completed work, not full window
-        if status in ("running", "thinking"):
-            return 35
-        if status == "registered":
-            return 15
-        return 0
+        ctx = _subagent_ctx(role, fallback_window) or _omniroute_ctx(role, sid, fallback_window, forked_at)
+        return ctx["pct"] if ctx else 0
     try:
         from buddy_dispatch_status import _buddy_context_used  # noqa: E402
         ctx = _buddy_context_used(sid)
@@ -129,9 +235,13 @@ def _ctx_pct(sid: str, tier: str, status: str = "registered", forked_at: str | N
     return 0
 
 
-def _ctx_source(sid: str) -> str:
+def _ctx_source(sid: str, role: str = "", forked_at: str | None = None) -> str:
     if _is_mode6():
-        return "fork"
+        if _subagent_ctx(role, DEFAULT_CTX.get(ROLES.get(role, {}).get("tier", "E3"), 0)):
+            return "transcript"
+        if _omniroute_ctx(role, sid, DEFAULT_CTX.get(ROLES.get(role, {}).get("tier", "E3"), 0), forked_at):
+            return "omniroute"
+        return "unknown"
     return "buddy" if sid and sid not in ("tbd", "driver-session") else "unknown"
 
 
