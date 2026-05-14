@@ -41,11 +41,37 @@ def _jsonc(text: str) -> str:
    out.append(c)
   i += 1
  return "".join(out)
+def _strip_json_comments(text: str) -> str:
+ out=[]; q=""; esc=False; i=0
+ while i < len(text):
+  c=text[i]; n=text[i:i+2]
+  if q:
+   out.append(c); was=esc; esc=(c == "\\" and not esc)
+   if c == q and not was: q=""
+  elif c in "\"'": q=c; out.append(c)
+  elif c == "#" or n == "//":
+   i=text.find("\n", i)
+   if i < 0: break
+   out.append("\n")
+  else: out.append(c)
+  i += 1
+ return "".join(out)
+
 def _model_ctx_window(model: str, tier: str) -> int:
- key = model.split("/", 1)[-1] if model else ""
- if key in _model_windows(): return _model_windows()[key]
- if model: raise RuntimeError(f"context window unknown for model={model} tier={tier}")
- raise RuntimeError(f"omniroute row missing model for tier={tier}")
+ if not model: raise RuntimeError(f"omniroute row missing model for tier={tier}")
+ try:
+  cfg = json.loads(_strip_json_comments((PROJECT / "config" / "models.json").read_text()))
+ except (OSError, json.JSONDecodeError) as exc:
+  raise RuntimeError("model config unavailable") from exc
+ wanted = {model, model.removeprefix("codex/"), model.removeprefix("cx/")}
+ for entry in cfg.get("tiers", {}).get(tier, {}).get("models", []):
+  names = {str(k) for k in entry} | {v for v in entry.values() if isinstance(v, str)}
+  if wanted & names:
+   window = entry.get("max_context") or entry.get("context_length")
+   if not window: raise RuntimeError(f"context window missing for model={model} tier={tier}")
+   return int(window)
+ raise RuntimeError(f"context window unknown for model={model} tier={tier}")
+
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
     model = row["requested_model"] or row["model"] or ""
     if not model:
@@ -180,7 +206,7 @@ def cmd_show(args):
         a = agents.get(role)
         if not a:
             continue
-        pct = a.get("ctx_used_pct", 0)
+        pct = float(a.get("ctx_used_pct", 0) or 0)
         la = a.get("last_active", "")[11:19] if a.get("last_active") else "?"
         task = (a.get("task") or "")[:40]
         print(f"{role:<14} {a.get('team','?'):<8} {a.get('tier','?'):<4} {pct:>5.1f}%  {_bar(pct):<10} {a.get('status','?'):<12}  {la:<8}  {task}")
