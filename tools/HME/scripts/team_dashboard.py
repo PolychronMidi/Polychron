@@ -15,6 +15,7 @@ Usage:
   team_dashboard.py --json                       # raw JSON
   team_dashboard.py register <role> <sid> <tier> # add/update agent slot
   team_dashboard.py update <role> ctx_pct=<n> status=<s> task=<t>
+  Mode 6 fork ctx defaults are estimates, not transcript telemetry.
   team_dashboard.py heartbeat <role>             # bump last_active
   team_dashboard.py unregister <role>            # remove from active
   team_dashboard.py summary                      # terse health one-liner
