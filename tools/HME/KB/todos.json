@@ -2,48 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2962,
-      "updated_ts": 1778763495.092858
+      "max_id": 2964,
+      "updated_ts": 1778769366.6662412
     }
   },
   {
-    "id": 2960,
-    "text": "Fix models.json comment stripping so config model windows load fail-fast",
-    "activeForm": "Fixing model-window config parsing",
+    "id": 2963,
+    "text": "Fix team dashboard role ownership and one-decimal live context",
+    "activeForm": "Fixing team dashboard role ownership and one-decimal live context",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778763495.09283,
+    "ts": 1778769366.6662238,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2961,
-    "text": "Update driver context to one decimal from real OmniRoute tokens/window",
-    "activeForm": "Updating driver context",
+    "id": 2964,
+    "text": "Validate driver and team heartbeat behavior with concrete evidence",
+    "activeForm": "Validating driver and team heartbeat behavior with concrete evidence",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778763495.0928452,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2962,
-    "text": "Validate non-driver role resolution behavior without fake shared SIDs",
-    "activeForm": "Validating team role ordering",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778763495.0928557,
+    "ts": 1778769366.6662385,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
