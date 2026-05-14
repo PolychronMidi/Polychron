@@ -20,7 +20,7 @@ Usage:
   team_dashboard.py summary                      # terse health one-liner
 """
 from __future__ import annotations
-import argparse, json, os, re, sqlite3, sys
+import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -45,26 +45,22 @@ ROLES = {
 
 DEFAULT_CTX = {"E5": 200000, "E4": 128000, "E3": 64000, "E2": 32000, "E1": 16000}
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
-SESSION_ROOT = Path.home() / ".claude" / "projects" / "-home-jah-Polychron"
 
 ROLE_NEEDLES = {
-    "driver": ("MODE=6 team fanout active", "MODE6 Driver"),
-    "blue_lead": ("Blue Lead", "blue_lead"),
-    "blue_purple": ("Blue Purple", "blue_purple"),
-    "red_lead": ("Red Lead", "red_lead"),
-    "red_purple": ("Red Purple", "red_purple"),
-    "crew_e4_0": ("crew_e4_0",),
-    "crew_e4_1": ("crew_e4_1",),
-    "crew_e3_0": ("crew_e3_0",),
-    "crew_e3_1": ("crew_e3_1",),
-    "crew_e2_0": ("crew_e2_0",),
-    "crew_e2_1": ("crew_e2_1",),
-    "crew_e1_0": ("crew_e1_0",),
-    "crew_e1_1": ("crew_e1_1",),
+    "blue_lead": ("You are Blue Lead", "register blue_lead"),
+    "blue_purple": ("You are Blue Purple", "register blue_purple"),
+    "red_lead": ("You are Red Lead", "register red_lead"),
+    "red_purple": ("You are Red Purple", "register red_purple"),
+    "crew_e4_0": ("crew_e4_0",), "crew_e4_1": ("crew_e4_1",),
+    "crew_e3_0": ("crew_e3_0",), "crew_e3_1": ("crew_e3_1",),
+    "crew_e2_0": ("crew_e2_0",), "crew_e2_1": ("crew_e2_1",),
+    "crew_e1_0": ("crew_e1_0",), "crew_e1_1": ("crew_e1_1",),
 }
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
 
 def _empty_dashboard() -> dict:
     mode = os.environ.get("OVERDRIVE_MODE")
@@ -75,6 +71,10 @@ def _empty_dashboard() -> dict:
         except ValueError:
             data["mode"] = mode
     return data
+
+
+def _is_mode6() -> bool:
+    return os.environ.get("OVERDRIVE_MODE") == "6"
 
 
 def _normalize(data: dict) -> dict:
@@ -106,55 +106,62 @@ def _save(data: dict) -> None:
     tmp.write_text(json.dumps(data, indent=2))
     tmp.rename(DASHBOARD)
 
-def _is_mode6() -> bool:
-    return os.environ.get("OVERDRIVE_MODE") == "6"
 
-
-def _session_id_from_artifact(relpath: str) -> str:
+def _artifact_body(relpath: str) -> dict:
+    p = Path.home() / ".omniroute" / "call_logs" / relpath
     try:
-        p = Path.home() / ".omniroute" / "call_logs" / relpath
-        metadata = json.loads(p.read_text()).get("requestBody", {}).get("metadata", {})
-        user_id = metadata.get("user_id")
+        return json.loads(p.read_text()).get("requestBody", {})
+    except (OSError, json.JSONDecodeError, TypeError):
+        return {}
+
+
+def _metadata_session_id(body: dict) -> str:
+    meta = body.get("metadata") if isinstance(body, dict) else {}
+    user_id = meta.get("user_id") if isinstance(meta, dict) else None
+    try:
         return json.loads(user_id).get("session_id", "") if isinstance(user_id, str) else ""
-    except (OSError, json.JSONDecodeError, TypeError):
+    except (json.JSONDecodeError, TypeError):
         return ""
 
 
-def _role_from_artifact(relpath: str) -> str:
-    try:
-        p = Path.home() / ".omniroute" / "call_logs" / relpath
-        body = json.loads(p.read_text()).get("requestBody", {})
-        text = json.dumps(body)[:20000]
-    except (OSError, json.JSONDecodeError, TypeError):
-        return ""
-    for role, needles in ROLE_NEEDLES.items():
-        if any(n in text for n in needles):
-            return role
+def _first_user_text(body: dict) -> str:
+    for msg in body.get("messages", []):
+        if msg.get("role") != "user":
+            continue
+        parts = msg.get("content")
+        if isinstance(parts, str):
+            return parts
+        if isinstance(parts, list):
+            return "\n".join(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
     return ""
+
+
+def _current_session_id() -> str:
+    try:
+        p = PROJECT / "tmp" / "hme-transcript-path.txt"
+        return Path(p.read_text().strip()).stem
+    except OSError:
+        return ""
+
+
+def _role_matches(role: str, body: dict, current_sid: str) -> bool:
+    if role == "driver":
+        return _metadata_session_id(body) == current_sid
+    text = _first_user_text(body)
+    return any(n in text for n in ROLE_NEEDLES.get(role, ()))
 
 
 def _model_ctx_window(model: str, fallback: int) -> int:
     if OMNI_DB.is_file():
         try:
             con = sqlite3.connect(str(OMNI_DB))
-            row = con.execute(
-                "select context_length from model_capabilities where model_id = ? limit 1",
-                (model,),
-            ).fetchone()
+            row = con.execute("select context_length from model_capabilities where model_id = ? limit 1", (model,)).fetchone()
             if row and row[0]:
                 return int(row[0])
         except (sqlite3.Error, ValueError, TypeError):
-            pass  # silent-ok: fall through to API/config limits
-    try:
-        import urllib.request
-        with urllib.request.urlopen("http://127.0.0.1:20128/v1/models", timeout=1) as r:
-            for item in json.loads(r.read().decode()).get("data", []):
-                if item.get("id") == model or item.get("id", "").endswith("/" + model):
-                    limit = item.get("context_length") or item.get("max_input_tokens")
-                    if limit:
-                        return int(limit)
-    except (OSError, json.JSONDecodeError, ValueError, TypeError):
-        pass  # silent-ok: OmniRoute may be down; use declared fallback
+            pass  # silent-ok: model table may not have local/generated names
+    if model.startswith("codex/") or model.startswith("cx/") or model.startswith("gpt-5.5"):
+        return 1050000
     return fallback
 
 
@@ -167,83 +174,41 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
         rows = con.execute(
             "select timestamp,tokens_in,model,requested_model,artifact_relpath "
             "from call_logs where path = '/v1/messages' and status = 200 "
-            "and artifact_relpath is not null order by timestamp desc limit 300"
+            "and artifact_relpath is not null order by timestamp desc limit 400"
         ).fetchall()
     except sqlite3.Error:
         return None
+    current_sid = _current_session_id()
     for row in rows:
-        rel = row["artifact_relpath"] or ""
-        if sid and len(sid) >= 12 and _session_id_from_artifact(rel) == sid:
-            window = _model_ctx_window(row["requested_model"] or row["model"] or "", fallback_window)
-            pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
-            return {"pct": pct, "window": window, "timestamp": row["timestamp"]}
         if forked_at and row["timestamp"] < forked_at:
             break
-        if _role_from_artifact(rel) == role:
-            window = _model_ctx_window(row["requested_model"] or row["model"] or "", fallback_window)
-            pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
-            return {"pct": pct, "window": window, "timestamp": row["timestamp"]}
+        body = _artifact_body(row["artifact_relpath"] or "")
+        if sid and len(sid) >= 12 and _metadata_session_id(body) == sid:
+            pass
+        elif not _role_matches(role, body, current_sid):
+            continue
+        model = row["requested_model"] or row["model"] or ""
+        window = _model_ctx_window(model, fallback_window)
+        pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
+        return {"pct": pct, "window": window, "timestamp": row["timestamp"]}
     return None
 
 
-def _subagent_ctx(role: str, fallback_window: int) -> dict | None:
-    root = SESSION_ROOT / "7992e911-8138-4ca3-9b34-6b6c69dc03d6" / "subagents"
-    if not root.is_dir():
-        return None
-    newest = None
-    for path in root.glob("*.jsonl"):
-        try:
-            text = path.read_text(errors="ignore")
-        except OSError:
-            continue
-        if not any(n in text[:5000] for n in ROLE_NEEDLES.get(role, ())):
-            continue
-        usage = None
-        ts = ""
-        for line in text.splitlines():
-            try:
-                ev = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            msg = ev.get("message") if isinstance(ev.get("message"), dict) else {}
-            if isinstance(msg.get("usage"), dict):
-                usage = msg["usage"]
-                ts = ev.get("timestamp", "")
-        if not usage:
-            continue
-        tokens = sum(int(usage.get(k) or 0) for k in (
-            "input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
-        pct = int(min(100, max(0, round(tokens / max(1, fallback_window) * 100))))
-        item = {"pct": pct, "window": fallback_window, "timestamp": ts}
-        if newest is None or item["timestamp"] > newest["timestamp"]:
-            newest = item
-    return newest
-
-
-def _ctx_pct(sid: str, tier: str, status: str = "registered", forked_at: str | None = None, role: str = "") -> int:
-    fallback_window = DEFAULT_CTX.get(tier, 0)
+def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
+    fallback = DEFAULT_CTX.get(tier, 0)
     if _is_mode6():
-        ctx = _subagent_ctx(role, fallback_window) or _omniroute_ctx(role, sid, fallback_window, forked_at)
-        return ctx["pct"] if ctx else 0
+        ctx = _omniroute_ctx(role, sid, fallback, forked_at)
+        if ctx:
+            return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute"}
+        return {"pct": 0, "window": fallback, "source": "unknown"}
     try:
         from buddy_dispatch_status import _buddy_context_used  # noqa: E402
         ctx = _buddy_context_used(sid)
         if ctx and "used_pct" in ctx:
-            return min(100, max(0, int(ctx["used_pct"])))
+            return {"pct": min(100, max(0, int(ctx["used_pct"]))), "window": int(ctx.get("ctx_window") or fallback), "source": "buddy"}
     except (ImportError, ValueError, TypeError):
         pass  # silent-ok: legacy buddy ctx may be unavailable
-    return 0
-
-
-def _ctx_source(sid: str, role: str = "", forked_at: str | None = None) -> str:
-    if _is_mode6():
-        if _subagent_ctx(role, DEFAULT_CTX.get(ROLES.get(role, {}).get("tier", "E3"), 0)):
-            return "transcript"
-        if _omniroute_ctx(role, sid, DEFAULT_CTX.get(ROLES.get(role, {}).get("tier", "E3"), 0), forked_at):
-            return "omniroute"
-        return "unknown"
-    return "buddy" if sid and sid not in ("tbd", "driver-session") else "unknown"
-
+    return {"pct": 0, "window": fallback, "source": "unknown"}
 
 def cmd_register(args):
     data = _load()
