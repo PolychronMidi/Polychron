@@ -132,7 +132,9 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
 def _model_windows() -> dict[str, int]:
     global MODEL_WINDOWS
     if MODEL_WINDOWS is None:
-        cfg = json.loads((PROJECT / "config" / "models.json").read_text())
+        text = (PROJECT / "config" / "models.json").read_text()
+        clean = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(("//", "#")))
+        cfg = json.loads(clean)
         MODEL_WINDOWS = {m["name"]: int(m["context_window"]) for m in cfg["models"]}
     return MODEL_WINDOWS
 
