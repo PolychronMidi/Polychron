@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2727,
-      "updated_ts": 1778728656.537774
+      "max_id": 2730,
+      "updated_ts": 1778728694.6786084
     }
   },
   {
-    "id": 2725,
-    "text": "Verify fork guidance and post-graduation state",
-    "activeForm": "Verifying fork guidance and post-graduation state",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778728656.5377445,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2726,
-    "text": "Fork MODE=6 leads via context-inheriting Agent calls",
-    "activeForm": "Forking MODE=6 leads via context-inheriting Agent calls",
+    "id": 2728,
+    "text": "Inspect MODE6 launch context and Red assumptions read-only",
+    "activeForm": "Inspecting MODE6 launch context and Red assumptions read-only",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778728656.53776,
+    "ts": 1778728694.6785827,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2727,
-    "text": "Verify team dashboard after fork registration",
-    "activeForm": "Verifying team dashboard after fork registration",
+    "id": 2729,
+    "text": "Identify challenged assumptions, risks, false alarms, defense test, evidence",
+    "activeForm": "Identifying challenged assumptions, risks, false alarms, defense test, evidence",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778728656.5377717,
+    "ts": 1778728694.6785963,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2730,
+    "text": "Return concise max 5 bullets with evidence",
+    "activeForm": "Returning concise max 5 bullets with evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778728694.678606,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
