@@ -7,23 +7,14 @@ from pathlib import Path
 PROJECT = Path(os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "")))
 DASHBOARD = PROJECT / "runtime" / "hme" / "team-dashboard.json"
 ROLES = {
- "driver": {"team": "command", "tier": "E5"}, "blue_lead": {"team": "blue", "tier": "E5"},
- "blue_purple": {"team": "blue", "tier": "E4"}, "red_lead": {"team": "red", "tier": "E5"},
- "red_purple": {"team": "red", "tier": "E4"}, "crew_e4_0": {"team": "crew", "tier": "E4"},
- "crew_e4_1": {"team": "crew", "tier": "E4"}, "crew_e3_0": {"team": "crew", "tier": "E3"},
- "crew_e3_1": {"team": "crew", "tier": "E3"}, "crew_e2_0": {"team": "crew", "tier": "E2"},
- "crew_e2_1": {"team": "crew", "tier": "E2"}, "crew_e1_0": {"team": "crew", "tier": "E1"},
- "crew_e1_1": {"team": "crew", "tier": "E1"},
+ "driver": {"team": "command", "tier": "E5"}, "blue_lead": {"team": "blue", "tier": "E5"}, "blue_purple": {"team": "blue", "tier": "E4"},
+ "red_lead": {"team": "red", "tier": "E5"}, "red_purple": {"team": "red", "tier": "E4"},
+ **{f"crew_e{tier}_{idx}": {"team": "crew", "tier": f"E{tier}"} for tier in range(4, 0, -1) for idx in range(2)},
 }
 ROLE_NEEDLES = {
-    "blue_lead": ("You are Blue Lead",),
-    "blue_purple": ("You are Blue Purple",),
-    "red_lead": ("You are Red Lead",),
-    "red_purple": ("You are Red Purple",),
-    "crew_e4_0": ("crew_e4_0",), "crew_e4_1": ("crew_e4_1",),
-    "crew_e3_0": ("crew_e3_0",), "crew_e3_1": ("crew_e3_1",),
-    "crew_e2_0": ("crew_e2_0",), "crew_e2_1": ("crew_e2_1",),
-    "crew_e1_0": ("crew_e1_0",), "crew_e1_1": ("crew_e1_1",),
+    "blue_lead": ("You are Blue Lead",), "blue_purple": ("You are Blue Purple",),
+    "red_lead": ("You are Red Lead",), "red_purple": ("You are Red Purple",),
+    **{f"crew_e{tier}_{idx}": (f"crew_e{tier}_{idx}",) for tier in range(4, 0, -1) for idx in range(2)},
 }
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
 _MODEL_CFG: dict | None = None
