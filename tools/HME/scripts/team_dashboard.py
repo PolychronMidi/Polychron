@@ -7,19 +7,13 @@ from pathlib import Path
 PROJECT = Path(os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "")))
 DASHBOARD = PROJECT / "runtime" / "hme" / "team-dashboard.json"
 ROLES = {
-    "driver":       {"team": "command",  "tier": "E5"},
-    "blue_lead":    {"team": "blue",     "tier": "E5"},
-    "blue_purple":  {"team": "blue",     "tier": "E4"},
-    "red_lead":     {"team": "red",      "tier": "E5"},
-    "red_purple":   {"team": "red",      "tier": "E4"},
-    "crew_e4_0":    {"team": "crew",     "tier": "E4"},
-    "crew_e4_1":    {"team": "crew",     "tier": "E4"},
-    "crew_e3_0":    {"team": "crew",     "tier": "E3"},
-    "crew_e3_1":    {"team": "crew",     "tier": "E3"},
-    "crew_e2_0":    {"team": "crew",     "tier": "E2"},
-    "crew_e2_1":    {"team": "crew",     "tier": "E2"},
-    "crew_e1_0":    {"team": "crew",     "tier": "E1"},
-    "crew_e1_1":    {"team": "crew",     "tier": "E1"},
+ "driver": {"team": "command", "tier": "E5"}, "blue_lead": {"team": "blue", "tier": "E5"},
+ "blue_purple": {"team": "blue", "tier": "E4"}, "red_lead": {"team": "red", "tier": "E5"},
+ "red_purple": {"team": "red", "tier": "E4"}, "crew_e4_0": {"team": "crew", "tier": "E4"},
+ "crew_e4_1": {"team": "crew", "tier": "E4"}, "crew_e3_0": {"team": "crew", "tier": "E3"},
+ "crew_e3_1": {"team": "crew", "tier": "E3"}, "crew_e2_0": {"team": "crew", "tier": "E2"},
+ "crew_e2_1": {"team": "crew", "tier": "E2"}, "crew_e1_0": {"team": "crew", "tier": "E1"},
+ "crew_e1_1": {"team": "crew", "tier": "E1"},
 }
 ROLE_NEEDLES = {
     "blue_lead": ("You are Blue Lead",),
