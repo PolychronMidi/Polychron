@@ -146,7 +146,10 @@ def _first_user_text(body: dict) -> str:
 def _role_matches(role: str, body: dict, current_sid: str) -> bool:
     if role == "driver":
         return _metadata_session_id(body) == current_sid
-    return any(n in _first_user_text(body) for n in ROLE_NEEDLES.get(role, ()))
+    if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
+        return False
+    text = _first_user_text(body)
+    return "Filesystem IPC only" in text and any(n in text for n in ROLE_NEEDLES.get(role, ()))
 
 
 def _model_ctx_window(model: str, fallback: int) -> int:
