@@ -23,8 +23,8 @@ test('compact_tool_descriptions rewrites verbose tool descriptions only', () => 
   ] };
   assert.equal(run(payload), true);
   assert.match(payload.tools[0].description, /^Read a file by absolute path/);
-  assert.match(payload.tools[1].description, /^Agent routes subagents through E1-E5 effort tiers/);
-  assert.match(payload.tools[1].description, /Legacy names like explorer still work/);
+  assert.match(payload.tools[1].description, /^Run a subagent/);
+  assert.match(payload.tools[1].description, /Agent level=3 prompt=/);
   assert.match(payload.tools[2].description, /^Run a bash command/);
   assert.match(payload.tools[3].description, /^Maintain a session task list/);
   assert.match(payload.tools[4].description, /^Fetch and summarize a public URL/);
