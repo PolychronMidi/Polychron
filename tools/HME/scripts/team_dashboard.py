@@ -23,26 +23,32 @@ ROLES = {
 }
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
 _MODEL_WINDOWS: dict[str, int] | None = None
+def _model_windows() -> dict[str, int]:
+ global _MODEL_WINDOWS
+ if _MODEL_WINDOWS is None:
+  path = PROJECT / "config" / "models.json"
+  try:
+   cfg = json.loads(path.read_text())
+  except (OSError, json.JSONDecodeError) as exc:
+   raise RuntimeError(f"model config unavailable: {path}") from exc
+  windows = {}
+  for tier in cfg.get("model_tiers", {}).values():
+   for model in tier.get("models", []):
+    mid = model.get("id")
+    win = model.get("max_context") or model.get("context_length")
+    if mid and win:
+     windows[str(mid)] = int(win)
+  _MODEL_WINDOWS = windows
+ return _MODEL_WINDOWS
+
 def _model_ctx_window(model: str, tier: str) -> int:
  if not model:
   raise RuntimeError(f"omniroute row missing model for tier={tier}")
- path = PROJECT / "config" / "models.json"
+ name = model.split("/", 1)[1] if model.startswith("codex/") else model
  try:
-  text = path.read_text()
- except OSError as exc:
-  raise RuntimeError(f"model config unavailable: {path}") from exc
- marker = f'"id": "{model}"'
- i = text.find(marker)
- if i < 0:
-  raise RuntimeError(f"context window unknown for model={model} tier={tier}")
- j = text.find('"max_context"', i)
- if j < 0:
-  raise RuntimeError(f"context window missing for model={model} tier={tier}")
- k = text.find(':', j)
- n = ''.join(c for c in text[k + 1:k + 20] if c.isdigit())
- if not n:
-  raise RuntimeError(f"context window malformed for model={model} tier={tier}")
- return int(n)
+  return _model_windows()[name]
+ except KeyError as exc:
+  raise RuntimeError(f"context window unknown for model={model} tier={tier}") from exc
 
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
  model = row["requested_model"] or row["model"] or ""
