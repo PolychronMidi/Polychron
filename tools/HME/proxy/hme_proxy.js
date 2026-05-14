@@ -619,21 +619,21 @@ function handleRequest(clientReq, clientRes) {
             if (_role.startsWith('crew_') || _role === 'stage_crew') return 'stage_crew';
             return '';
           })();
-          const _tm = (_cfg.tiers && _cfg.tiers[_tier] && _cfg.tiers[_tier].models) || [];
           const _co = (_cfg.ranking_rules && _cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
-          const _ranked = [];
-          for (const _c of _co) {
-            _ranked.push(..._tm.filter(m => m.cost === _c).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
-          }
+          const _chainFor = (tier) => {
+            const tm = (_cfg.tiers && _cfg.tiers[tier] && _cfg.tiers[tier].models) || [];
+            const ranked = [];
+            for (const c of _co) ranked.push(...tm.filter(m => m.cost === c).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
+            return { tm, ranked };
+          };
+          const _spec = _odMode === '6' && _roleKey && _cfg.team_role_models ? _cfg.team_role_models[_roleKey] : null;
+          const _specTier = _spec && _spec.tier === 'role' ? _tier : ((_spec && _spec.tier) || _tier);
+          const _base = _chainFor(_specTier);
           let _front = [];
-          if (_odMode === '6' && _roleKey) {
-            _front = ((_cfg.team_role_models && _cfg.team_role_models[_roleKey]) || []);
-            if (!Array.isArray(_front)) _front = _front[_tier] || [];
-          }
-          if (_front.length === 0) _front = (_cfg.manually_toprank && _cfg.manually_toprank[_tier]) || [];
+          if (_spec && _spec.source === 'manually_toprank') _front = (_cfg.manually_toprank && _cfg.manually_toprank[_specTier]) || [];
           const _frontSet = new Set(_front);
-          _swapChain.push(..._front.map(id => _tm.find(m => m.id === id)).filter(Boolean));
-          _swapChain.push(..._ranked.filter(m => !_frontSet.has(m.id)));
+          _swapChain.push(..._front.map(id => _base.tm.find(m => m.id === id)).filter(Boolean));
+          _swapChain.push(..._base.ranked.filter(m => !_frontSet.has(m.id)));
           console.error(`[hme-proxy] MODE=${_odMode} ${_tier} chain built (role=${_role || 'none'} model=${payload.model}): ${_swapChain.map(m => m.id).join(' -> ')} (${_swapChain.length} models)`);
           // Pick from chain: first model, unless a recent failure advanced us.
           if (_swapChain.length > 0) {
