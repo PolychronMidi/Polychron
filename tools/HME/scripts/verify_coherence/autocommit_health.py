@@ -29,7 +29,7 @@ class AutocommitHealthVerifier(Verifier):
     activity bridge). This verifier checks the most durable of those --
     the sticky fail flag and the attempt counter under tmp/ -- which are
     independent of PROJECT_ROOT, .env loading, log-dir writability, and
-    _proxy_bridge stderr filtering. FAILs at weight 5.0 (same tier as
+    adapter stderr filtering. FAILs at weight 5.0 (same tier as
     LifesaverIntegrity) because autocommit going silent is the exact
     structural-dampening failure mode that weight exists for."""
     name = "autocommit-health"
@@ -125,5 +125,4 @@ class ShimHealthVerifier(Verifier):
         except Exception as e:
             return _result(WARN, 0.0, f"shim unreachable: {type(e).__name__}",
                            [str(e)])
-
 

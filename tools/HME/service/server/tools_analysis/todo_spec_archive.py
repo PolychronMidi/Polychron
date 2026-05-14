@@ -1,5 +1,5 @@
 """SPEC.md / TODO.md / devlog lifecycle bridge -- connects ephemeral todo state
-to durable handoff documentation. Surface (via hidden hme_todo actions):
+to durable active-initiative documentation. Surface (via hidden hme_todo actions):
 ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
 Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
@@ -35,7 +35,7 @@ from server.tools_analysis.todo import (
 
 
 # SPEC/TODO bridge -- connects ephemeral HME todo state to durable
-# doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
+# doc/templates/SPEC.md + doc/templates/TODO.md active docs. See doc/templates/SPEC.md Phase 0.
 
 
 # _spec_file() moved to paths.spec_file() -- lazy resolution for hot-reload
@@ -238,14 +238,12 @@ def _archive_set(set_name: str = "", force: bool = False) -> dict:
 def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: str) -> None:
     """After archiving a set, replace BOTH the preamble AND the Phase
     blocks in doc/templates/SPEC.md with generic-initiative placeholders pointing
-    at the devlog. Trailing sections (Glossary, NEVER lists,
-    How-this-file-evolves, Difficulty labels, Empty-queue bail) are
-    truly stable across sets and preserved verbatim.
+    at the devlog. Trailing sections (how-this-file-evolves, difficulty
+    labels, empty-queue bail) are stable across sets and preserved verbatim.
 
     Why reset the preamble too: the previous set's Goal / Architecture
-    sections are set-specific narrative ("Evolve buddy_system into
-    co-buddies", etc.) -- preserving them frames the NEXT set as if
-    it's a continuation of the PREVIOUS one, which it usually isn't.
+    sections are set-specific narrative -- preserving them frames the NEXT set
+    as if it is a continuation of the PREVIOUS one, which it usually is not.
     Each set should declare its own Goal at the start; the placeholder
     text invites that.
     """
@@ -281,33 +279,33 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
     fresh_preamble = [
         "# Polychron Active SPEC",
         "",
-        "> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; the title resets to \"Polychron Active SPEC\" automatically when the hidden HME todo archive bridge closes the set.",
+        "> Canonical project spec for the **current initiative**. Agents read this file before planning and update it with `doc/templates/TODO.md` when a change materially moves the initiative.",
         ">",
-        "> Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](../HME.md), [doc/ARCHITECTURE.md](../ARCHITECTURE.md), [README.md](../../README.md), and [CLAUDE.md](../../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.",
+        "> Stable project context lives in [doc/HME.md](../HME.md), [doc/SRC.md](../SRC.md), [doc/hme_full.md](../hme_full.md), [doc/src_full.md](../src_full.md), [README.md](../../README.md), and [CLAUDE.md](../../CLAUDE.md). This SPEC is for time-bounded work, not durable architecture.",
         ">",
-        "> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles. The hidden HME todo archive bridge owns the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.",
+        "> Completed sets archive to [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). The hidden HME todo archive bridge owns reset; do not manually reset SPEC/TODO to fake closure.",
         "",
         f"_Previous set ({prev_set_name}) archived {prev_ts} to {rel_devlog}._",
         "",
         "## Goal",
         "",
-        "<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>",
+        "<One paragraph naming the current initiative, why this set exists, and what done means.>",
         "",
-        "## Architecture / stack (one-liner each, current-initiative-relevant)",
+        "## Architecture / Stack",
         "",
-        "<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>",
+        "<Bullet the architectural touchpoints this initiative interacts with. Link stable core docs instead of restating them.>",
         "",
         "- <subsystem>: <one-line>",
-        "- <data dir / queue / manifest>: <one-line>",
-        "- <handoff doc>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)",
+        "- <state or data file>: <one-line>",
+        "- <active docs>: doc/templates/SPEC.md (canonical phases) + doc/templates/TODO.md (3-section: In flight / Just shipped / Next up)",
         "",
         "## Phases",
         "",
-        "### Phase 0: <next initiative -- name>",
+        "### Phase 0: <next initiative name>",
         "",
         "<1-paragraph context for the new initiative.>",
         "",
-        "- [ ] [easy] First item of the new initiative",
+        "- [ ] [E2] First item of the new initiative.",
         "",
     ]
     # Strip per-cycle scratch from trailing block before write.
@@ -349,9 +347,9 @@ def _reset_todo_to_fresh_slate() -> None:
     if not os.path.exists(_todo_md_file()):
         return
     fresh = (
-        "# Polychron HME TODO (handoff doc)\n\n"
-        "> Cross-cycle state. Every skill reads this on start and updates it on close. "
-        "Three sections, in this order. See [doc/templates/SPEC.md](SPEC.md) for the full architectural plan.\n\n"
+        "# Polychron HME TODO\n\n"
+        "> Cross-cycle state. Agents update this with SPEC when work spans turns. "
+        "Three sections, in this order. See [doc/templates/SPEC.md](SPEC.md) for the active plan.\n\n"
         "## In flight\n\n"
         "<!-- Exactly one line per currently-running skill, format:\n"
         "  - [<skill-name> @ <utc-iso>] <one-line: what this skill is currently doing>\n"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Direct autocommit: runs from settings.json without proxy dependency.
-# Pairs with _proxy_bridge.sh path; safe no-op when both run (nothing to commit).
+# Pairs with the Claude adapter path; safe no-op when both run (nothing to commit).
 # Constraints: NOT _safety.sh (fragile); NO stdout (interpreted as hook JSON);
 # always exit 0 (blocking would be worse than silent failure).
 
@@ -38,7 +38,7 @@ if [ ! -f "$_HELPER" ]; then
   ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
   echo "[autocommit-direct FAIL $ts] helper missing at $_HELPER" >&2
   mkdir -p "$_DIRECT_ROOT/log" 2>/dev/null
-  # FAIL-LOUD on alert-sink writes (see _proxy_bridge.sh rationale).
+  # FAIL-LOUD on alert-sink writes (see claude_adapter.js rationale).
   echo "[$ts] [autocommit-direct] helper missing at $_HELPER" >> "$_DIRECT_ROOT/log/hme-errors.log"
   mkdir -p "$_DIRECT_ROOT/tmp" 2>/dev/null
   echo "[$ts] helper missing at $_HELPER" > "$_DIRECT_ROOT/runtime/hme/autocommit.fail" 2>/dev/null

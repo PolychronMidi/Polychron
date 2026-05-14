@@ -6,16 +6,15 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
-const DISPATCH = path.join(PROJECT_ROOT, 'tools', 'HME', 'hooks', 'direct_dispatch.sh');
+const DISPATCH = path.join(PROJECT_ROOT, 'tools', 'HME', 'event_kernel', 'cli.js');
 
 const CASES = [
   { name: 'PreToolUse Read', event: 'PreToolUse', payload: { tool_name: 'Read', tool_input: { file_path: path.join(PROJECT_ROOT, 'CLAUDE.md') }, session_id: 'direct-test' } },
   { name: 'PostToolUse Bash', event: 'PostToolUse', payload: { tool_name: 'Bash', tool_input: { command: 'true' }, tool_response: { exit_code: 0, stdout: '', stderr: '' }, session_id: 'direct-test' } },
-  { name: 'UserPromptSubmit', event: 'UserPromptSubmit', payload: { prompt: 'direct hook test', session_id: 'direct-test' } },
 ];
 
 function runCase(testCase) {
-  const res = spawnSync('bash', [DISPATCH, testCase.event], {
+  const res = spawnSync('node', [DISPATCH, testCase.event], {
     cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT, CLAUDE_PROJECT_DIR: PROJECT_ROOT, HME_HOOK_DIRECT_TEST: '1' },
     input: JSON.stringify(testCase.payload),

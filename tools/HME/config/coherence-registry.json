@@ -80,7 +80,7 @@
       "description": "Lifecycle dispatch + middleware pipeline for tool events",
       "artifacts": [{ "path": "log/hme-proxy.out", "freshness": null, "allow_empty": true }],
       "_freshness_note": "Proxy log appends only on lifecycle events (tool_use, tool_result, errors). 5+ min of agent idleness legitimately keeps it quiet; the previous 'session' ceiling flagged idleness as ill-health. Liveness is better verified by universal_pulse's /health probe of port 9099, not log-mtime.",
-      "public_surfaces": ["hook dispatch via _proxy_bridge.sh", "middleware: grep_glob_neighborhood, read_context, edit_context, lifesaver_inject"],
+      "public_surfaces": ["hook dispatch via event_kernel/claude_adapter.js", "middleware: grep_glob_neighborhood, read_context, edit_context, lifesaver_inject"],
       "depends_on": []
     },
     {

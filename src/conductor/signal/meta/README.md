@@ -19,7 +19,7 @@ Bias registrations live in `scripts/pipeline/bias-bounds-manifest.json` (93 entr
 3. Declare every bias registration range in `bias-bounds-manifest.json`
 4. Re-snapshot: `node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`
 
-See [doc/TUNING_MAP.md](../../../../doc/TUNING_MAP.md) for the axis <-> controller mapping.
+See [doc/src_full.md](../../../../doc/src_full.md) for the axis <-> controller mapping.
 
 <!-- HME-DIR-INTENT
 rules:

@@ -57,7 +57,7 @@ _ac_record_failure() {
   mkdir -p "$(dirname "$_AC_ERROR_LOG")" 2>/dev/null || true
   echo "[$ts] [autocommit] $reason" >> "$_AC_ERROR_LOG" 2>/dev/null || true
 
-  # Channel C: stderr. Even when _proxy_bridge drops this, local terminals
+  # Channel C: stderr. Even when an adapter drops this, local terminals
   # see it. Keep short and marked so search/grep locates it instantly.
   echo "[autocommit FAIL $ts] $reason" >&2 2>/dev/null || true
 

@@ -50,7 +50,6 @@ TESTS = [
         "prompt": "List all files that source _tab_helpers.sh in tools/HME/hooks/",
         "mode": "explore",
         "must_contain": [
-            "posttooluse_agent.sh",
             "posttooluse_bash.sh",
             "posttooluse_write.sh",
             "posttooluse_addknowledge.sh",

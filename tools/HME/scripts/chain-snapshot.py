@@ -7,7 +7,7 @@ local-LLM narrative), dense (10x smaller than prose), and designed to be
 loaded by postcompact as seed state for a fresh window.
 
 Implements optimizations 2-13 from the compaction design. Optimization 1
-(preemption trigger) lives in statusline.sh / posttooluse hooks which
+(preemption trigger) lives in event_kernel/statusline.js / posttooluse hooks which
 invoke this script when used_pct crosses 70%.
 
 Output: metrics/chain-history/link-<seq>-<timestamp>.yaml

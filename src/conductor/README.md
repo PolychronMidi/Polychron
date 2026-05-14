@@ -14,7 +14,7 @@ This directory **is** the control authority. Cross-layer and other subsystems co
 - `journey/` -- section-arc narrative + climax detection
 - `melodic/` -- melodic dimension scoring + fresh-dimension tracking
 
-See [doc/SUBSYSTEMS.md](../../doc/SUBSYSTEMS.md) and [doc/TUNING_MAP.md](../../doc/TUNING_MAP.md) for architectural context. Any change here must preserve the invariants validated by `check-hypermeta-jurisdiction.js` (4 phases).
+See [doc/src_full.md](../../doc/src_full.md) for architectural context. Any change here must preserve the invariants validated by `check-hypermeta-jurisdiction.js` (4 phases).
 
 <!-- HME-DIR-INTENT
 rules:

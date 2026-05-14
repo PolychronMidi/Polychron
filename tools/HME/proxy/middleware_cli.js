@@ -7,7 +7,7 @@
  *
  * Architectural intent (mirrors event_kernel / stop_chain): make the
  * pipeline a callable utility, not a proxy-internal coupling. Other
- * components (direct_dispatch, test harnesses, sanitization helpers,
+ * components (event-kernel adapters, test harnesses, sanitization helpers,
  * future agent-side tools) can shell out to this CLI to get the same
  * mutation semantics middleware/index.js applies on the request path.
  *

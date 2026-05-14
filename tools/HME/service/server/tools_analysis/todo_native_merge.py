@@ -1,5 +1,5 @@
 """Native TodoWrite <-> HME merge -- bridges Claude Code's native TodoWrite
-tool to HME's persistent todo store via the pretooluse_todowrite hook.
+tool to HME's persistent todo store via the event-kernel TodoWrite hook.
 
 Extracted from todo.py (was lines 717-849). todo.py re-exports merge_native_todowrite.
 """
@@ -166,5 +166,4 @@ def merge_native_todowrite(incoming: list) -> list:
                 "status": "pending",
             })
         return flat
-
 

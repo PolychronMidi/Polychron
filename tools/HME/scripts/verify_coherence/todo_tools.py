@@ -122,34 +122,31 @@ class ToolSurfaceCoverageVerifier(Verifier):
 
 
 class TodoMergeHookConsistencyVerifier(Verifier):
-    """The TodoWrite hook should NOT block -- it should exit 0 so native
-    TodoWrite proceeds. If it ever goes back to exit 2 / decision:block the
-    agent's session-visible todo list freezes. This regression check."""
+    """The native TodoWrite hook should merge updatedInput without blocking."""
     name = "todowrite-hook-nonblock"
     category = "code"
     subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        hook = os.path.join(_HOOKS_DIR, "pretooluse_todowrite.sh")
+        hook = os.path.join(_PROJECT, "tools", "HME", "event_kernel", "native_hooks", "todo.js")
         if not os.path.isfile(hook):
-            return _result(SKIP, 1.0, "todowrite hook not found")
+            return _result(SKIP, 1.0, "native TodoWrite hook not found")
         try:
             with open(hook) as f:
                 src = f.read()
         except Exception as e:
             return _result(ERROR, 0.0, f"read error: {e}")
-        # Regression check: must NOT contain a blocking decision
-        if '"decision":"block"' in src or "'decision':'block'" in src:
+        m = re.search(r'async function pretoolTodoWrite\(.*?\n}\n\nasync function posttoolTodoWrite', src, re.DOTALL)
+        if not m:
+            return _result(FAIL, 0.0, "pretoolTodoWrite handler not found")
+        body = m.group(0)
+        if "hookBlock(" in body or '"decision":"block"' in body or "'decision':'block'" in body:
             return _result(FAIL, 0.0,
-                           "TodoWrite hook has a blocking decision -- native TodoWrite will be frozen",
-                           ["remove the decision: block to restore native TodoWrite"])
-        if "exit 2" in src:
+                           "TodoWrite handler has a blocking decision -- native TodoWrite will be frozen",
+                           ["return allow(...updatedInput...) so native TodoWrite proceeds"])
+        if "updatedInput" not in body or "return allow" not in body:
             return _result(FAIL, 0.5,
-                           "TodoWrite hook has exit 2 -- may block native TodoWrite",
-                           ["replace exit 2 with exit 0 so native TodoWrite proceeds"])
-        if "exit 0" not in src:
-            return _result(WARN, 0.5, "TodoWrite hook has no explicit exit 0")
+                           "TodoWrite handler does not visibly return allow(...updatedInput...)",
+                           ["preserve native TodoWrite with a merged updatedInput payload"])
         return _result(PASS, 1.0, "TodoWrite hook allows native TodoWrite to proceed")
-
-

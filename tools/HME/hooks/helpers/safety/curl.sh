@@ -34,7 +34,7 @@ _hme_curl_streak_path() {
   fi
 }
 # During a planned proxy/worker restart (proxy-maintenance.sh start), the
-# fail-LOUD path in _proxy_bridge.sh is suppressed. _safe_curl must honor
+# fail-LOUD path in claude_adapter.js is suppressed. _safe_curl must honor
 # the SAME flag -- otherwise its streak counter ticks up during legitimate
 # restart windows and LIFESAVER fires spurious errors (rc=7/rc=28) that
 # are actually "caller intentionally cycled the worker", not a real

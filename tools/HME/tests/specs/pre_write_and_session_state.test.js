@@ -31,7 +31,7 @@ function sandbox(prefix = 'hme-hooks-') {
 async function dispatch(root, event, payload) {
   fresh(root);
   const bridge = require('../../event_kernel/dispatcher');
-  return bridge.dispatchEvent(event, JSON.stringify(payload || {}));
+  return bridge.dispatchEvent(event, JSON.stringify({ cwd: root, ...(payload || {}) }));
 }
 
 test('pre-write check centralizes deny decision for credential writes', async () => {
@@ -149,12 +149,12 @@ test('session-state client uses filesystem path before HTTP fallback', async () 
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('synthetic hooks manifest maps lifecycle through proxy bridge', () => {
+test('synthetic hooks manifest maps lifecycle through Claude adapter', () => {
   const hooksPath = path.resolve(__dirname, '..', '..', 'hooks', 'hooks.json');
   const data = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
   for (const event of ['PreToolUse', 'PostToolUse', 'Stop', 'SessionStart', 'PostCompact']) {
     const entries = data.hooks[event] || [];
     const text = JSON.stringify(entries);
-    assert.match(text, /_proxy_bridge\.sh/);
+    assert.match(text, /event_kernel\/claude_adapter\.js/);
   }
 });

@@ -7,16 +7,16 @@
  * their own Event -> script tables.
  *
  * Current adapters:
- *   - Claude Code hooks: hooks/_proxy_bridge.sh -> /hme/lifecycle -> this file
- *   - Proxy-down direct mode: hooks/direct_dispatch.sh -> event_kernel/cli.js
+ *   - Claude Code hooks: event_kernel/claude_adapter.js -> /hme/lifecycle -> this file
+ *   - Proxy-down direct mode: event_kernel/claude_adapter.js -> this file
  *   - Compatibility imports: proxy/hook_bridge.js re-exports this module
  *
  * Dispatch surface:
  *   SessionStart      -> sessionstart.sh
  *   UserPromptSubmit  -> userpromptsubmit.sh
  *   Stop              -> proxy stop_chain
- *   PreToolUse        -> routed by tool_name to pretooluse_<tool>.sh (+ primer)
- *   PostToolUse       -> log-tool-call.sh + routed posttool hooks
+ *   PreToolUse        -> routed by tool_name to native handlers or shell hooks
+ *   PostToolUse       -> log-tool-call.sh + native handlers or shell hooks
  *   PreCompact        -> precompact.sh
  *   PostCompact       -> postcompact.sh
  *
@@ -24,7 +24,6 @@
  * Adapters translate that into their host CLI protocol.
  */
 
-const { spawn } = require('child_process');
 const path = require('path');
 const { PROJECT_ROOT } = require('../proxy/shared');
 const { appendHookExec } = require('../hooks/hook_report');
@@ -32,16 +31,18 @@ const { shouldSkipForNestedHooks } = require('../hooks/cwd_guard');
 const { preWriteCheck, toHookResponse } = require('../proxy/pre_write_check');
 const stateClient = require('../proxy/session_state_client');
 const { normalize } = require('./envelope');
+const { spawnFileInput } = require('./fs_ipc');
+const nativeHooks = require('./native_hooks');
 
-function _recordLifecycleState(eventName, stdinJson) {
+async function _recordLifecycleState(eventName, stdinJson) {
   const env = normalize(stdinJson);
   const sid = env.session_id || '';
-  if (eventName === 'SessionStart') stateClient.call('read', sid);
-  if (eventName === 'UserPromptSubmit') stateClient.call('phase', sid, { phase: 'observe', meta: { event: eventName } });
-  if (eventName === 'Stop') stateClient.call('phase', sid, { phase: 'verify', meta: { event: eventName } });
+  if (eventName === 'SessionStart') await stateClient.call('read', sid);
+  if (eventName === 'UserPromptSubmit') await stateClient.call('phase', sid, { phase: 'observe', meta: { event: eventName } });
+  if (eventName === 'Stop') await stateClient.call('phase', sid, { phase: 'verify', meta: { event: eventName } });
 }
 
-function _recordPostToolEvidence(stdinJson) {
+async function _recordPostToolEvidence(stdinJson) {
   const env = normalize(stdinJson);
   const tool = env.tool_name || '';
   const input = env.tool_input || {};
@@ -52,7 +53,7 @@ function _recordPostToolEvidence(stdinJson) {
     ? response.slice(0, 500)
     : JSON.stringify(response).slice(0, 500);
   const exitCode = Number.isInteger(response.exit_code) ? response.exit_code : null;
-  stateClient.call('verification-evidence', env.session_id || '', {
+  await stateClient.call('verification-evidence', env.session_id || '', {
     session_id: env.session_id || '',
     command,
     exit_code: exitCode,
@@ -75,10 +76,6 @@ const PRETOOL_SCRIPTS = {
   Bash: [path.join(PRETOOLUSE, 'pretooluse_bash.sh')],
   Read: [path.join(PRETOOLUSE, 'pretooluse_read.sh')],
   Grep: [path.join(PRETOOLUSE, 'pretooluse_grep.sh')],
-  Glob: [path.join(PRETOOLUSE, 'pretooluse_glob.sh')],
-  TodoWrite: [path.join(PRETOOLUSE, 'pretooluse_todowrite.sh')],
-  ToolSearch: [path.join(PRETOOLUSE, 'pretooluse_toolsearch.sh')],
-  Agent: [path.join(PRETOOLUSE, 'pretooluse_agent.sh')],
 };
 
 // Tool-name -> posttooluse scripts (log-tool-call runs for all).
@@ -88,12 +85,14 @@ const POSTTOOL_SCRIPTS = {
     path.join(POSTTOOLUSE, 'posttooluse_bash.sh'),
     path.join(POSTTOOLUSE, 'posttooluse_pipeline_kb.sh'),
   ],
-  Edit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh'), path.join(POSTTOOLUSE, 'posttooluse_diagnostics.sh')],
-  MultiEdit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh'), path.join(POSTTOOLUSE, 'posttooluse_diagnostics.sh')],
-  Write: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh'), path.join(POSTTOOLUSE, 'posttooluse_diagnostics.sh')],
+  Edit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
+  MultiEdit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
+  Write: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
   Read: [path.join(POSTTOOLUSE, 'posttooluse_read_kb.sh')],
-  TodoWrite: [path.join(POSTTOOLUSE, 'posttooluse_todowrite.sh')],
 };
+
+const NATIVE_PRETOOL = nativeHooks.preToolHandlers;
+const NATIVE_POSTTOOL = nativeHooks.postToolHandlers;
 
 /**
  * Invoke a single bash hook with the given stdin payload. Returns a Promise
@@ -116,50 +115,16 @@ function _finishHook(eventName, scriptPath, startedAt, result) {
 
 function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') {
   const startedAt = Date.now();
-  return new Promise((resolve) => {
-    let child;
-    try {
-      child = spawn('bash', [scriptPath], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        env: { ...process.env, PROJECT_ROOT },
-      });
-    } catch (err) {
-      resolve(_finishHook(eventName, scriptPath, startedAt, { stdout: '', stderr: `[event_kernel] spawn failed for ${scriptPath}: ${err.message}`, exit_code: -1 }));
-      return;
-    }
-    let stdout = '';
-    let stderr = '';
-    let finished = false;
-    const timer = setTimeout(() => {
-      if (finished) return;
-      finished = true;
-      try { child.kill('SIGTERM'); } catch (_) { /* ignore */ }
-      resolve(_finishHook(eventName, scriptPath, startedAt, { stdout, stderr: stderr + `\n[event_kernel] timeout after ${timeoutMs}ms: ${scriptPath}`, exit_code: -1 }));
-    }, timeoutMs);
-    child.stdout.on('data', (c) => { stdout += c.toString('utf8'); });
-    child.stderr.on('data', (c) => { stderr += c.toString('utf8'); });
-    child.on('error', (err) => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(timer);
-      resolve(_finishHook(eventName, scriptPath, startedAt, { stdout, stderr: stderr + `\n[event_kernel] error: ${err.message}`, exit_code: -1 }));
-    });
-    child.on('close', (code) => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(timer);
-      resolve(_finishHook(eventName, scriptPath, startedAt, { stdout, stderr, exit_code: code ?? 0 }));
-    });
-    try {
-      child.stdin.write(stdinJson);
-      child.stdin.end();
-    } catch (err) {
-      if (finished) return;
-      finished = true;
-      clearTimeout(timer);
-      resolve(_finishHook(eventName, scriptPath, startedAt, { stdout, stderr: `[event_kernel] stdin write failed: ${err.message}`, exit_code: -1 }));
-    }
-  });
+  return spawnFileInput('bash', [scriptPath], {
+    input: stdinJson,
+    timeoutMs,
+    label: `${eventName}-${path.basename(scriptPath)}`,
+    env: { PROJECT_ROOT },
+  }).then((result) => _finishHook(eventName, scriptPath, startedAt, {
+    stdout: result.stdout,
+    stderr: result.stderr,
+    exit_code: result.exit_code,
+  }));
 }
 
 /**
@@ -282,7 +247,7 @@ function _toolName(stdinJson) {
 async function dispatchEvent(eventName, stdinJson) {
   const empty = stdinJson || '{}';
   if (shouldSkipForNestedHooks(eventName, empty)) return { stdout: '', stderr: ' ', exit_code: 0 };
-  _recordLifecycleState(eventName, empty);
+  await _recordLifecycleState(eventName, empty);
   switch (eventName) {
     case 'SessionStart':
       return runChain([path.join(LIFECYCLE, 'sessionstart.sh')], empty, 30_000, 'SessionStart');
@@ -308,6 +273,7 @@ async function dispatchEvent(eventName, stdinJson) {
       }
       const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;
+      if (NATIVE_PRETOOL[tool]) return NATIVE_PRETOOL[tool](empty);
       const scripts = PRETOOL_SCRIPTS[tool] || [];
       // HME primer runs before first HME_* tool each session -- always chain it
       // for any HME_-prefixed tool, the primer self-guards against re-fire.
@@ -318,10 +284,20 @@ async function dispatchEvent(eventName, stdinJson) {
       return runChain(scripts, empty, 30_000, 'PreToolUse');
     }
     case 'PostToolUse': {
-      _recordPostToolEvidence(empty);
+      await _recordPostToolEvidence(empty);
       const tool = _toolName(empty);
       const unifiedRes = await _runUnifiedPolicies('PostToolUse', tool, empty);
       if (unifiedRes && unifiedRes.stdout) return unifiedRes;
+      if (NATIVE_POSTTOOL[tool]) {
+        const scripts = [...UNIVERSAL_POSTTOOL, ...(POSTTOOL_SCRIPTS[tool] || [])];
+        const universal = await runChain(scripts, empty, 30_000, 'PostToolUse');
+        const native = await NATIVE_POSTTOOL[tool](empty);
+        return {
+          stdout: `${universal.stdout || ''}${native.stdout || ''}`,
+          stderr: `${universal.stderr || ''}${native.stderr || ''}` || ' ',
+          exit_code: universal.exit_code || native.exit_code || 0,
+        };
+      }
       const scripts = [...UNIVERSAL_POSTTOOL, ...(POSTTOOL_SCRIPTS[tool] || [])];
       return runChain(scripts, empty, 30_000, 'PostToolUse');
     }

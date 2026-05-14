@@ -1,44 +1,44 @@
 {
-  "description": "HyperMeta Ecstasy hooks -- ALL Claude Code events route through a single stateless forwarder (_proxy_bridge.sh). Proxy-up mode POSTs to /hme/lifecycle; proxy-down mode calls the local event-kernel CLI. All Event -> script routing lives in tools/HME/event_kernel/dispatcher.js. The individual hook scripts in hooks/{lifecycle,pretooluse,posttooluse}/ are invoked by that dispatcher, not by Claude Code directly. This is the single minimal coupling surface with Claude Code's plugin system.",
+  "description": "HyperMeta Ecstasy hooks -- ALL Claude Code events route through node event_kernel/claude_adapter.js. Proxy-up mode POSTs to /hme/lifecycle; proxy-down mode calls the local event-kernel dispatcher directly. All Event -> hook routing lives in tools/HME/event_kernel/dispatcher.js. Claude Code never invokes individual hook handlers directly.",
   "hooks": {
     "SessionStart": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh SessionStart", "timeout": 15}]
+        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js SessionStart", "timeout": 15}]
       }
     ],
     "PreToolUse": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh PreToolUse", "timeout": 15}]
+        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PreToolUse", "timeout": 15}]
       }
     ],
     "PostToolUse": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh PostToolUse", "timeout": 15}]
+        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PostToolUse", "timeout": 15}]
       }
     ],
     "UserPromptSubmit": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh UserPromptSubmit", "timeout": 15}]
+        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js UserPromptSubmit", "timeout": 15}]
       }
     ],
     "PreCompact": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh PreCompact", "timeout": 15}]
+        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PreCompact", "timeout": 15}]
       }
     ],
     "PostCompact": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh PostCompact", "timeout": 15}]
+        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PostCompact", "timeout": 15}]
       }
     ],
     "Stop": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh Stop", "timeout": 60}]
+        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js Stop", "timeout": 60}]
       }
     ],
     "StatusLine": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/statusline.sh", "timeout": 5}]
+        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/statusline.js", "timeout": 5}]
       }
     ]
   }

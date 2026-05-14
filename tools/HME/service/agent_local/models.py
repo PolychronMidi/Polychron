@@ -159,7 +159,7 @@ def _call_arbiter(prompt: str, system: str = "", max_tokens: int = 1024) -> str:
 
 def _load_cascade_module():
     """Import synthesis_reasoning + sibling provider modules. In standalone
-    agent_local invocation (pretooluse_agent.sh), ctx.mcp is None and the
+    agent_local invocation, ctx.mcp is None and the
     tools_analysis __init__'s @ctx.mcp.tool() decorators would crash; stub
     it with a no-op registry before the import so the package init can
     complete. Returns the cascade module or None on failure."""

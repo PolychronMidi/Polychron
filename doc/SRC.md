@@ -1,17 +1,32 @@
-# SRC -- Composition Engine Rules
+# SRC
 
-Rules for code under `src/` (the polyrhythmic engine). The two CLAUDE.md
-meta-rules apply here too: keep lean, and if a rule is auto-enforced
-don't document it -- improve the enforcement instead.
+Rules for `src/`, the polyrhythmic composition engine.
 
-For orientation, see [README.md](../README.md), [HME_MENTAL_MODEL.md](HME_MENTAL_MODEL.md),
-[ARCHITECTURE.md](ARCHITECTURE.md), [SUBSYSTEMS.md](SUBSYSTEMS.md),
-[HYPERMETA.md](HYPERMETA.md).
+Read this before editing engine code. Use [src_full.md](src_full.md) when you
+need the full architecture, subsystem map, tuning context, or historical
+design primitives.
 
-## Judgment calls (not lint-enforced)
+## Judgment Calls
 
-- **File size target <=200 lines.** When exceeded, extract a focused helper loaded BEFORE the consumer.
-- **Single-Manager Hub per subsystem.** One `*Manager` (Facade + service locator); helpers load first via `index.js`, then the manager.
-- **New mutable per-layer state** needs per-layer treatment if written per-beat AND read by both layers -- either in `LM.perLayerState` or a `byLayer` map keyed by `LM.activeLayer`.
-- **Lab sketches:** every `postBoot()` must contain real implementation. A `setActiveProfile()`-only postBoot is empty.
-- **Pipeline non-fatal steps:** a step marked OK with exit 0 can still contain real failures. Check `errorPatterns` in `output/metrics/pipeline-summary.json`.
+- Keep files focused. Target <=200 lines; hard project ceiling is enforced
+  elsewhere.
+- Prefer the existing manager/helper shape. A subsystem has one public manager
+  or facade; helpers load before the consumer through `index.js`.
+- Mutable per-beat state that is written per layer and read by both layers must
+  be per-layer: `LM.perLayerState` or a `byLayer` map keyed by
+  `LM.activeLayer`.
+- Cross-layer modules read conductor signals through `conductorSignalBridge`;
+  do not reach into conductor state directly.
+- Use L0 channels for cross-module event flow where a direct call would create
+  a hidden coupling.
+- Lab sketches must contain audible implementation. A profile-only `postBoot()`
+  is an empty sketch.
+- A pipeline step with exit 0 can still contain real failures. Check
+  `output/metrics/pipeline-summary.json` and error-pattern output.
+
+## Fast Links
+
+- Project orientation: [README.md](../README.md)
+- Agent rules: [CLAUDE.md](../CLAUDE.md)
+- Full engine reference: [src_full.md](src_full.md)
+- HME reference: [HME.md](HME.md)

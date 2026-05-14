@@ -209,8 +209,9 @@ class EnvLoadVerifier(Verifier):
     """The .env file at the project root is the single source of
     PROJECT_ROOT, METRICS_DIR, HME_PROXY_PORT, and every other *HME_*
     setting the hook stack depends on. When .env fails to load,
-    `_safety.sh` logs to stderr and _proxy_bridge drops stderr, and every
-    hook downstream silently runs with PROJECT_ROOT="".
+    `_safety.sh` logs to stderr and the event-kernel adapter must preserve
+    that failure signal, or every hook downstream silently runs with
+    PROJECT_ROOT="".
 
     This verifier catches that silent-failure class at its source:
     - .env must exist at $PROJECT/.env
@@ -282,5 +283,4 @@ class EnvLoadVerifier(Verifier):
                            issues)
         return _result(PASS, 1.0,
                        f".env loads cleanly ({len(declared)} keys)")
-
 

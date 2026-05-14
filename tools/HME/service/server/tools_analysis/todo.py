@@ -1,5 +1,5 @@
 """HME hierarchical todo list -- MCP tool with sub-todo support, criticality, and
-lifecycle side effects. Unified with native TodoWrite via pretooluse_todowrite.sh.
+lifecycle side effects. Unified with native TodoWrite via event_kernel/native_hooks/todo.js.
 
 Schema (authoritative -- all producers use _write_todo_entry to create items):
 
@@ -354,7 +354,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         When all phases gain sentinels, next clear auto-archives the set.
 
     Changes to this store propagate back to native TodoWrite via the
-    pretooluse_todowrite.sh merge -- items appear in the agent's native view
+    native TodoWrite merge -- items appear in the agent's native view
     on the next TodoWrite call.
     """
     _track("hme_todo")

@@ -5,9 +5,9 @@ agent_local.py which now routes through synthesis_reasoning.call() (the
 22-slot free-API cascade) with local llama-server as the final fallback.
 
 Modes: 'explore' (code research), 'plan' (architecture planning). Matches
-the existing pretooluse_agent.sh interception contract so the same modes
+the native Agent interception contract so the same modes
 are reachable whether Claude invokes the native Agent tool (intercepted by
-the shell hook) or calls mcp__HME__agent directly.
+the event kernel) or calls mcp__HME__agent directly.
 """
 import logging
 

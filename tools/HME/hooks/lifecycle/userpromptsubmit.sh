@@ -130,7 +130,7 @@ if [ -f "$ERROR_LOG" ]; then
       | sort -u)
     # Stop hook is the ONLY gate that advances watermark (else unfixed errors
     # vanish on TOTAL==TURNSTART). Emit to BOTH stderr + stdout-as-additionalContext
-    # because _proxy_bridge.sh drops stderr-only output.
+    # because the Claude adapter can drop stderr-only output.
     echo "" >&2
     echo "LIFESAVER -- unresolved errors in hme-errors.log:" >&2
     echo "$NEW_ERRORS" >&2

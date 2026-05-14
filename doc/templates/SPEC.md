@@ -1,150 +1,97 @@
 # Polychron Active SPEC
 
-> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; the title resets to "Polychron Active SPEC" automatically when the hidden HME todo archive bridge closes the set.
+> Canonical project spec for the current initiative. Agents read this file
+> before planning and update it with `doc/templates/TODO.md` when a change
+> materially moves the initiative.
 >
-> Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](../HME.md), [doc/ARCHITECTURE.md](../ARCHITECTURE.md), [README.md](../../README.md), and [CLAUDE.md](../../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.
+> Stable project context lives in [doc/HME.md](../HME.md),
+> [doc/SRC.md](../SRC.md), [doc/hme_full.md](../hme_full.md),
+> [doc/src_full.md](../src_full.md), [README.md](../../README.md), and
+> [CLAUDE.md](../../CLAUDE.md). This SPEC is for time-bounded work, not
+> durable architecture.
 >
-> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles. The hidden HME todo archive bridge owns the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.
-
-_Previous set (MODE=5 design-pattern consolidation (worthiness P/C/S/E = 3/2/3/3)) archived 2026-05-12T232916Z to tools/HME/KB/devlog/2026-05-12T232916Z-mode-5-design-pattern-consolidation-wort.md._
+> Completed sets archive to [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/).
+> The hidden HME todo archive bridge owns reset; do not manually reset SPEC/TODO
+> to fake closure.
 
 ## Goal
 
-Implement detector registry contract metadata so HME can separate universal hygiene gates, security gates, and Polychron/HME project-contract gates. The registry should explain each detector's category, scope, owning invariant, fixture coverage, and origin so future policy edits improve coherence instead of piling on anonymous rules.
+<One paragraph naming the current initiative, why this set exists, and what
+done means.>
 
-## Architecture / stack (one-liner each, current-initiative-relevant)
+## Architecture / Stack
 
-- `tools/HME/scripts/detectors/registry.json`: detector single source of truth, extended with contract metadata.
-- `tools/HME/scripts/detectors/verify_registry_consistency.py`: registry wiring and metadata validator.
-- `tools/HME/scripts/detectors/test_detector_chain.py`: canonical detector fixture suite and verdict coverage gate.
-- `tools/HME/proxy/stop_chain/policies/work_checks.js`: deny-policy consumer of registry metadata.
-- `doc/templates/SPEC.md` + `doc/templates/TODO.md`: active initiative handoff and closure evidence.
+- `<subsystem>`: <one-line touchpoint>
+- `<state or data file>`: <one-line touchpoint>
+- `doc/templates/SPEC.md` + `doc/templates/TODO.md`: active initiative plan and
+  cross-turn queue.
 
 ## Phases
 
-### Phase 0: Detector registry metadata split (worthiness P/C/S/E = 3/3/3/3)
+### Phase 0: <next initiative name>
 
-Classify every stop-side detector by contract type and add enough metadata that reviewers can tell whether a detector is universal hygiene, security-sensitive, or Polychron/HME-specific. This phase turns detector registry entries into auditable contracts with fixture and invariant ownership instead of bare verdict wiring.
+<One paragraph of context for this phase.>
 
-- [x] Add registry schema fields: `category`, `scope`, `owning_invariant`, `fixture_path`, `fixture_waiver`, `why`, and `outage_link`. Evidence: `registry.json` `_schema` now declares all seven fields plus `review_date`.
-- [x] Classify all existing detector entries as `universal`, `security`, or `project_contract`. Evidence: every `registry.json` detector now carries a validated `category`.
-- [x] Extend `verify_registry_consistency.py` to validate metadata on every detector entry. Evidence: validator now checks category, required metadata, fixture XOR waiver, waiver date format, and fixture path existence.
-- [x] Extend detector coverage so every deny detector has fixture metadata matching a real fixture or waiver. Evidence: validator accepts fixture paths or waiver objects for all detector entries.
-- [x] Define waiver semantics: `fixture_waiver` requires `review_date` and a one-line reason. Evidence: validator rejects waiver objects missing `reason` or YYYY-MM-DD `review_date`.
-- [x] Define `owning_invariant` as a stable reference string to existing doctrine, invariant config, or devlog evidence. Evidence: registry entries now include `owning_invariant` and validator requires it.
-- [x] Define `fixture_path` as project-root-relative; lists are allowed for multi-fixture detectors. Evidence: validator resolves string or list fixture paths relative to `PROJECT_ROOT`.
-- [x] Document category meanings and promotion rules in the registry `_schema` block. Evidence: added `category`, `scope`, `owning_invariant`, `fixture_path`, `fixture_waiver`, `why`, and `outage_link` schema entries to `tools/HME/scripts/detectors/registry.json`.
-- [x] Preserve behavior: modules, verdicts, bash vars, deny flags, and reason keys remain unchanged. Evidence: validator still reports 26 bash vars covered and detector-chain remains green.
-- [ ] [E2] Run detector-chain, registry-consistency, pre-commit, and clean-room audits as closure evidence.
+- [ ] [E2] First item of the initiative.
 
-## Deferred to next cycle (ranked surfaces from this round's reviews)
+## Deferred To Next Cycle
 
-<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
+<!-- Populate only with work intentionally excluded from this set. -->
 
-## Deferred / out of scope
+## Deferred / Out Of Scope
 
-<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
+<!-- Populate only with work explicitly rejected for this set. -->
 
-## Deferred to next cycle (ranked surfaces from this round's reviews)
+## How This File Evolves
 
-<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
+- Close an item by flipping `- [ ]` to `- [x]` in the same commit as the change.
+- When all items in a phase are complete, add a short `_Phase N complete_`
+  paragraph with evidence.
+- New work discovered mid-cycle goes to `doc/templates/TODO.md` under
+  "Next up"; promote it to a SPEC phase only when it belongs to the current
+  initiative.
+- Do not duplicate durable architecture here. Link to the core docs instead.
 
-## Deferred / out of scope
+## Worthiness Gate
 
-<!-- Empty; populate per-cycle, auto-cleared on archive_now. -->
-
-## Three-loop role separation (NEVER lists)
-
-Per skill-set's chain-driver / chain-runner / supervisor jurisdiction discipline. Each loop has an explicit NEVER list -- actions outside its jurisdiction. Violations are framework bugs, not edge cases.
-
-**Co-buddy (the workers -- `claude --resume <sid>`):**
-- NEVER edit `doc/SPEC.md` or `doc/TODO.md` directly. Updates flow through the HME todo/SPEC bridge or same-commit SPEC/TODO edits when explicitly assigned.
-- NEVER make git commits. Autocommit-direct is the only writer.
-- NEVER decide which item to pick. The dispatcher picks; the buddy executes.
-- NEVER edit other buddies' processing/ files. Atomic-mv claim semantics own each task; cross-buddy peeking is a race.
-
-**Dispatcher (`tools/HME/scripts/buddy_dispatcher.py`):**
-- NEVER mutate task content. Reads JSON, routes, archives -- never modifies the payload.
-- NEVER suppress a buddy's stderr. Errors land in `log/hme-errors.log` per the LIFESAVER chain.
-- NEVER skip the verdict file. Every drain, including fast-path-clean, writes one.
-- NEVER bypass the floor-based escalation. `effective = max(item_tier, buddy_floor)` per axis is the routing contract.
-
-**Operator (humans + the agent at session-leader scope):**
-- NEVER hand-edit `tmp/hme-buddy-queue/processing/`. Atomic claims live there; manual edits race the dispatcher.
-- NEVER kill a buddy mid-task. Halt fires SIGINT between tasks (skill-set's "halt-best-effort-between-atomic-units" rule).
-- NEVER skip the SPEC/TODO sync. The autocommit-guard surfaces drift; closing the loop on flagged drift is on you.
-- NEVER add policy to the dispatcher to handle an outlier. The dispatcher is mechanism; policy belongs in `doc/SPEC.md`.
-
-## Glossary (project-specific terms)
-
-- **co-buddy**: one of N parallel persistent `claude --resume <sid>` sessions in the buddy fanout
-- **task tier**: one of `[E1|E2|E3|E4|E5]` (legacy easy/medium/hard accepted, translated to E2/E3/E4); routes to a model+effort tier per the floor-based escalation rule
-- **`[no-work]` sentinel**: stdout marker emitted by a co-buddy when its task is complete AND the queue is drained; positive idle declaration
-- **iter-boundary drafts sweep**: self-healing scan of prior iter's `processing/` dir at start of next iter; consumes orphans from buddies that died mid-task
-- **verdict file**: per-co-buddy-turn `buddy-<N>-verdict.md` recording task outcomes; required by the exit-contract gate
-- **floor-based escalation**: `effective = max(item_tier, buddy_floor)` per axis (model and effort resolved independently); higher of (item-tier, buddy-floor) wins per axis
-
----
-
-### How this file evolves
-
-- A skill closes an item by flipping `- [ ]` -> `- [x]` in the same commit as the code change, with the HME todo/SPEC bridge mirroring durable state.
-- When all items in a phase are checked, append a meaningful "completed" block: one paragraph of result plus bulleted file citations and test-count delta.
-- New work surfaced mid-cycle goes to `doc/TODO.md`'s "Next up", not directly here. The next cycle decides whether it merits a new spec phase or was actually a follow-up to the current one.
-
-### Worthiness gate (before adding a Phase)
-
-Adapted from imbue:scope-guard:worthiness-scored. Score each candidate Phase against four axes BEFORE writing it. If the total is < 6/12, the work doesn't belong in SPEC.md yet -- defer to TODO.md "Next up" or drop. Pairs with CLAUDE.md additive-bias scrutiny (default answer to "should we add?" is no).
+Score each candidate phase before adding it. If the total is below 6/12, put it
+in TODO or drop it.
 
 | Axis | 0 | 1 | 2 | 3 |
 |---|---|---|---|---|
-| **priority alignment** | unrelated | tangential | aligned | central to current Phase chain |
-| **criticality** | nice-to-have | could wait | needs to happen this cycle | blocks downstream work |
-| **simplicity** | complex new abstraction | adds dependencies | reuses existing surface | strict subset of installed surface |
-| **evidence** | none | one-off observation | reproducible / detector flagged | bug report + failing test |
+| priority alignment | unrelated | tangential | aligned | central |
+| criticality | nice-to-have | can wait | needed this cycle | blocks work |
+| simplicity | new abstraction | adds dependency | reuses surface | strict subset |
+| evidence | none | one-off | reproducible | failing test or bug report |
 
-Add the score to the Phase header as `### Phase N: <title> (worthiness P/C/S/E = N/N/N/N)` so future archive readers see the gate's verdict at a glance.
+Add the score to the phase header as
+`### Phase N: <title> (worthiness P/C/S/E = N/N/N/N)`.
 
-### Archive on set completion (KB devlog)
+## Archive On Set Completion
 
-Diverges deliberately from skill-set's roll-forward design. Their model leaves completed phases stacked in the active SPEC.md (45KB+ over 20 phases) -- every skill that reads the spec end-to-end pays that context tax. Polychron archives whole sets to KB devlog instead.
+A set is archive-eligible when every phase has zero open `- [ ]` items and a
+`_Phase N complete_` sentinel paragraph. The archive bridge snapshots SPEC and
+TODO to a devlog file, resets active SPEC/TODO to fresh templates, and extracts
+learned patterns.
 
-**Trigger:** when ALL phases in `doc/SPEC.md` have zero open `- [ ]` items AND every phase carries its `_Phase N complete_` sentinel paragraph, the set is archive-eligible.
+## Difficulty Labels
 
-**Archive rule:** do not manually reset SPEC.md / TODO.md. The hidden HME todo archive bridge owns set snapshots and fresh-slate resets.
+Every open SPEC item and every TODO "Next up" entry carries a leading
+difficulty label:
 
-Both invoke `_archive_set` in `tools/HME/service/server/tools_analysis/todo_spec_archive.py`, which performs the full flow atomically:
+- `[E1]` trivial, inline, low effort.
+- `[E2]` mechanical and bounded.
+- `[E3]` substantial multi-step work.
+- `[E4]` cross-file or architectural work.
+- `[E5]` comprehensive sweep or high-risk refactor.
 
-1. Snapshots `doc/templates/SPEC.md` + `doc/templates/TODO.md` verbatim into a single timestamped file at `tools/HME/KB/devlog/<YYYY-MM-DDTHHMMSSZ>-<slug>.md`
-2. Resets `doc/templates/SPEC.md` Phase blocks to a fresh-slate Phase 0 placeholder with a pointer back to the devlog file
-3. Resets `doc/templates/TODO.md` to the empty 3-section template
-4. Auto-fires `learning_extract.py extract` to populate KB/learnings.jsonl with patterns from the just-snapshotted devlog
-5. Preamble (Goal / Architecture) and trailing sections (Glossary, Three-loop NEVER lists, Worthiness gate, Difficulty labels, Empty-queue bail) are preserved across the reset since they're stable across sets
+Closed items do not need labels.
 
-**Mid-set:** if the set isn't complete (any open `[ ]` items remaining), completed HME todo entries can be pruned without archiving -- no SPEC reset. The archive bridge surfaces what's still blocking archive.
+## Empty-Queue Bail
 
-The active doc/ directory thus stays lean; deeper history lives in the devlog and `git log`. Searching past sets: `grep -r "<keyword>" tools/HME/KB/devlog/` or any KB query that includes the devlog directory.
+When TODO "Next up" is empty, every SPEC item is checked, and the user gave no
+specific task, the dev cycle exits cleanly with:
 
-### Difficulty labels (model + effort routing)
-
-Every open `- [ ]` SPEC item AND every `## Next up` TODO entry MUST carry a difficulty label as the leading bracket immediately after the `- [ ]` checkbox (or the leading `- ` for TODO entries). Five values (E1-E5); legacy easy/medium/hard accepted and translated:
-
-- `[E1]` -> Haiku tier + low effort. Trivial, inline-call shape.
-- `[E2]` -> Haiku tier + low effort. Mechanical, well-bounded. (legacy `[easy]` translates here)
-- `[E3]` -> Sonnet tier + medium effort. Substantial reasoning, multi-step, structured. (legacy `[medium]`)
-- `[E4]` -> Sonnet/Opus tier + high effort. Cross-file reasoning, architectural. (legacy `[hard]`)
-- `[E5]` -> Opus tier + high effort. Comprehensive sweep, exhaustive cross-cutting refactor.
-
-Resolution rule: `effective = max(item_tier, skill_floor)` per axis (model and effort independent).
-
-Closed items (`- [x]`) and `## Just shipped` entries don't carry labels (historical).
-
-### Empty-queue bail (steady state)
-
-When `doc/TODO.md`'s "Next up" is empty AND every `- [ ]` in this spec has been flipped to `[x]` AND the user gave no specific task, the dev cycle exits 0 cleanly without picking an item. Before exiting it prints exactly one line on stdout:
-
-```
+```text
 [no-work] <one-line reason>
 ```
-
-The dispatcher recognizes this sentinel and aborts the loop entirely. The iteration's manifest records `iter_manifest["no_work_bail"] = {"buddy": "<N>", "reason": "<sentinel-line>"}`; the top-level `manifest["loop"]["terminated_by"] = "no_work_bail"` distinguishes a bail from natural max-cycles completion or a real failure.

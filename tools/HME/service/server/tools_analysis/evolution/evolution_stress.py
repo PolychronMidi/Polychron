@@ -46,23 +46,33 @@ def _adversarial_stress() -> str:
     # Simulate: turnstart=10, total=15 -> should detect 5 new errors
     results.append(("LIFESAVER: watermark detects new errors (15 > 10)", 15 > 10, ""))
 
-    # Probe 3: Stop hook has all enforcement sections
+    # Probe 3: Stop chain has all enforcement sections
     try:
-        with open(_find_hook("stop.sh"), encoding="utf-8") as f:
-            stop_content = f.read()
+        stop_files = [
+            "tools/HME/proxy/stop_chain/index.js",
+            "tools/HME/proxy/stop_chain/policies/anti_patterns.js",
+            "tools/HME/proxy/stop_chain/policies/work_checks.js",
+            "tools/HME/proxy/stop_chain/policies/lifesaver.js",
+            "tools/HME/proxy/stop_chain/policies/evolver.js",
+            "tools/HME/proxy/stop_chain/policies/nexus_pending.js",
+        ]
+        stop_content = ""
+        for rel in stop_files:
+            with open(os.path.join(ctx.PROJECT_ROOT, rel), encoding="utf-8") as f:
+                stop_content += "\n" + f.read()
         checks = {
             "error detection": "hme-errors.log",
             "evolver loop": "hme-evolver.local.md",
             "anti-polling": "ANTI-POLLING",
             "anti-idle": "ANTI-IDLE",
             "plan abandonment": "PLAN-ABANDONMENT",
-            "nexus audit": "_nexus_pending",
+            "nexus audit": "nexus_pending",
         }
         for name, marker in checks.items():
             found = marker in stop_content
-            results.append((f"Stop hook: {name}", found, "" if found else f"missing '{marker}'"))
+            results.append((f"Stop chain: {name}", found, "" if found else f"missing '{marker}'"))
     except Exception as e:
-        results.append(("Stop hook: readable", False, str(e)))
+        results.append(("Stop chain: readable", False, str(e)))
 
     # Probe 4: FAIL->hme-errors.log pipeline lives in proxy middleware
     # (moved from log-tool-call.sh when HME decoupled from Claude Code MCP).
@@ -99,9 +109,8 @@ def _adversarial_stress() -> str:
         results.append(("ESLint: rules directory exists", False, "scripts/eslint-rules/ missing"))
 
     # Probe 7: All critical hook scripts exist and are executable.
-    # Post-migration layout: LIFESAVER moved to proxy middleware (no more
-    # pretooluse_lifesaver.sh), posttooluse_read.sh renamed to
-    # posttooluse_read_kb.sh, log-tool-call.sh fully implemented
+    # Post-migration layout: LIFESAVER moved to proxy middleware, Read KB
+    # enrichment lives in posttooluse_read_kb.sh, log-tool-call.sh fully implemented
     # (sources _safety.sh, posts to /transcript, triggers /reindex --
     # the prior "stub" comment was stale).
     critical_hooks = [
@@ -118,10 +127,8 @@ def _adversarial_stress() -> str:
         results.append((f"Hook: {hook}", ok,
                         "" if ok else ("missing" if not exists else "not executable")))
 
-    # Probe 8: hooks.json coverage -- post-migration, all events route through
-    # _proxy_bridge.sh which dispatches internally to the real handlers. So
-    # the check is inverted: every event declared in hooks.json must point to
-    # _proxy_bridge.sh (otherwise the proxy-based dispatch is bypassed).
+    # Probe 8: hooks.json coverage -- all Claude Code events route through
+    # event_kernel/claude_adapter.js, which handles proxy-up and direct fallback.
     try:
         with open(hooks_json_path, encoding="utf-8") as f:
             hooks_cfg = json.load(f)
@@ -131,10 +138,10 @@ def _adversarial_stress() -> str:
                 for cmd in h.get("hooks", []):
                     command_str = cmd.get("command", "")
                     # Any registered command that doesn't route through
-                    # _proxy_bridge.sh would bypass the proxy dispatch.
-                    if "_proxy_bridge.sh" not in command_str:
+                    # claude_adapter.js would bypass the event kernel.
+                    if "event_kernel/claude_adapter.js" not in command_str and event_name != "StatusLine":
                         event_misrouted.append(f"{event_name}:{command_str.split('/')[-1]}")
-        results.append((f"hooks.json: all events route through _proxy_bridge.sh",
+        results.append((f"hooks.json: all lifecycle/tool events route through claude_adapter.js",
                         len(event_misrouted) == 0,
                         f"misrouted: {', '.join(event_misrouted)}" if event_misrouted else ""))
     except Exception as e:

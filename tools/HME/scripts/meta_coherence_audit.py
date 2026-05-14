@@ -229,10 +229,10 @@ def audit_stress_probe_refs(root: Path) -> list[dict]:
     hooks_dir = root / "tools" / "HME" / "hooks"
     sub_dirs = ["", "lifecycle", "pretooluse", "posttooluse", "helpers"]
     critical_hooks = [
-        "stop.sh", "sessionstart.sh", "userpromptsubmit.sh",
-        "log-tool-call.sh", "pretooluse_lifesaver.sh",
+        "sessionstart.sh", "userpromptsubmit.sh",
+        "log-tool-call.sh",
         "pretooluse_edit.sh", "pretooluse_bash.sh",
-        "posttooluse_read.sh", "postcompact.sh", "_safety.sh",
+        "posttooluse_read_kb.sh", "postcompact.sh", "_safety.sh",
     ]
     for hook in critical_hooks:
         found = False

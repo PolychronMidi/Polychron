@@ -94,7 +94,7 @@ const _loadedMiddleware = middleware.loadAll();
 console.log(`loaded middleware: ${_loadedMiddleware.join(', ')}`);
 
 // Lifecycle hook adapter: Claude Code events funnel through
-// hooks/_proxy_bridge.sh -> /hme/lifecycle -> event_kernel/dispatcher.js.
+// event_kernel/claude_adapter.js -> /hme/lifecycle -> event_kernel/dispatcher.js.
 // lifecycle_bridge.js owns HTTP transport/dedup only; routing is not proxy-owned.
 const {
   recordLifecycleHit: _recordLifecycleHit,
@@ -168,7 +168,7 @@ let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from he
 let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
 let _lastPayloadBytes = 0;            // last OmniRoute payload size for context monitoring
 const _BYTES_PER_TOKEN_EST = 3.5;
-const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 90_000;
+const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 70_000;
 function _effectiveCompactThreshold() {
   // CEILING: HME_PROXY_COMPACT_BYTES (explicit) honored as hard cap.
   // Otherwise: 50% of learned ITPM cap (leaves room for response +

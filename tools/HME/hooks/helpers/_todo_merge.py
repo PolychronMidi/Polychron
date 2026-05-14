@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bridge helper for pretooluse_todowrite.sh.
+"""Merge helper for event_kernel/native_hooks/todo.js TodoWrite handling.
 
 Reads a TodoWrite tool_input payload on stdin, invokes the HME todo module's
 merge_native_todowrite() function, and prints the merged list as JSON on

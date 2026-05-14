@@ -2,7 +2,7 @@
 
 const SKILL_REMINDER_RE = /^<system-reminder>\nThe following skills are available for use with the Skill tool:[\s\S]*?\n<\/system-reminder>\n?$/;
 const CONTEXT_TAIL_RE = /\n# userEmail\nThe user's email address is [^\n]*\.\n# currentDate\nToday's date is \d{4}-\d{2}-\d{2}\.\n\n\s*IMPORTANT: this context may or may not be relevant to your tasks\. You should not respond to this context unless it is highly relevant to your task\.\n(?=<\/system-reminder>\n?$)/;
-const STOP_HOOK_RE = /^Stop hook feedback:\n\[bash [^\]]+_proxy_bridge\.sh Stop\]: [\s\S]*$/;
+const STOP_HOOK_RE = /^Stop hook feedback:\n\[node [^\]]+event_kernel\/claude_adapter\.js Stop\]: [\s\S]*$/;
 const STOP_HOOK_KEEP_RE = /MULTI-FLAG STOP|ADVISOR|SUMMARY_|LIVE-PROBE|VERIFICATION|PHASE GATE|CLAIM_WITHOUT_EVIDENCE/;
 const STOP_HOOK_COMPACT = 'Stop hook feedback: repeated auto-completeness/exhaust gate compacted by hme-proxy.';
 const STOP_HOOK_COMPACT_AUTO = 'Stop hook feedback: AUTO-COMPLETENESS CHECK compacted by hme-proxy.';

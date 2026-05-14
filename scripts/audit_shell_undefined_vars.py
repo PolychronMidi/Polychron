@@ -6,8 +6,8 @@ assignment anywhere in scope (the file itself, any file it sources, or the
 `.env` / system defaults set by `_safety.sh`). Catches the exact bug class
 that silently broke auto-completeness-inject for months: `$_AC_PROJECT`
 referenced in `holograph.sh` had never been defined anywhere in the repo's
-history, and under `set -u` in `_safety.sh`, it crashed `stop.sh` before the
-completeness gate (in `work_checks.sh`) ever got a chance to run.
+history, and under `set -u` in `_safety.sh`, it crashed the stop stage before
+the completeness gate ever got a chance to run.
 
 Why not shellcheck: shellcheck isn't in the HME baseline toolchain (the
 audit-shell-hooks.py sister script chose the same path -- custom Python
@@ -347,7 +347,7 @@ _SAFETY_SH = HOOKS_DIR / "helpers" / "_safety.sh"
 # `$POLL_COUNT`, `$_STOP_DIR`, etc. in sub-files looks undefined.
 _DISPATCHER_FOR = {
     HOOKS_DIR / "helpers" / "safety":      _SAFETY_SH,
-    HOOKS_DIR / "lifecycle" / "stop":      HOOKS_DIR / "lifecycle" / "stop.sh",
+    HOOKS_DIR / "lifecycle" / "stop":      _SAFETY_SH,
     HOOKS_DIR / "pretooluse" / "bash":     HOOKS_DIR / "pretooluse" / "pretooluse_bash.sh",
 }
 

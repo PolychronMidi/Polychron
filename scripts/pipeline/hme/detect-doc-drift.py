@@ -9,7 +9,7 @@ from the more-current knowledge in the KB.
 Four check classes:
 
   1. KB module references that no longer exist in src/
-  2. Module names mentioned in HME.md / ARCHITECTURE.md / CLAUDE.md
+  2. Module names mentioned in the core docs
      that no longer have a matching file
   3. Hard rules in CLAUDE.md that have generated productive_incoherence
      events (rule is blocking legitimate exploration -- promotion candidate)
@@ -35,10 +35,10 @@ PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
 )
 METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 DOCS = [
-    "doc/ARCHITECTURE.md",
-    "doc/SUBSYSTEMS.md",
+    "doc/src_full.md",
+    "doc/hme_full.md",
+    "doc/SRC.md",
     "doc/HME.md",
-    "doc/TUNING_MAP.md",
     "CLAUDE.md",
 ]
 OUT_PATH = os.path.join(METRICS_DIR, "hme-doc-drift.json")

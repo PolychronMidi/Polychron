@@ -1,6 +1,9 @@
 # HME hooks
 
-Claude Code lifecycle hooks registered in `hooks.json` -- shell scripts that fire before tool calls, after tool calls, at session start, on stop, on pre/post compact, and on user prompt submit. Every hook sources `helpers/_safety.sh` first for the standard emit/block/streak/latency machinery.
+Claude Code lifecycle hooks registered in `hooks.json`. Claude Code calls the
+event-kernel adapter; the kernel routes to native handlers or the remaining
+shell stages. Every remaining shell hook sources `helpers/_safety.sh` first for
+the standard emit/block/streak/latency machinery.
 
 Most reactive enrichment has migrated to the proxy middleware (`tools/HME/proxy/middleware/`). What stays here: **true pre-execution rejection** (block a tool before it runs), **lifecycle events** that Claude Code delivers only via hooks, and **user-facing output** that belongs in the terminal, not the agent's context.
 
@@ -11,7 +14,8 @@ Most reactive enrichment has migrated to the proxy middleware (`tools/HME/proxy/
 - `lifecycle/` -- `sessionstart`, `stop`, `precompact`, `postcompact`, `userpromptsubmit`
 - `helpers/` -- `_safety.sh`, `_onboarding.sh`, `_nexus.sh`, `_tab_helpers.sh`; shared functions sourced by every hook
 - `log-tool-call.sh` -- universal tool-call logger (session-transcript.jsonl + hme.log)
-- `statusline.sh` -- Claude Code status line renderer (context-meter)
+- `../event_kernel/statusline.js` -- Claude Code status line renderer (context-meter)
+- `../event_kernel/native_hooks/` -- portable JS handlers for Agent, TodoWrite, ToolSearch, Glob streak, and diagnostics
 
 ## Output channels
 
@@ -29,34 +33,67 @@ Use `_emit_block "reason"` + `exit 2` only for rules the agent MUST NOT violate 
 
 ## Dispatch tree
 
-`.claude/settings.json` registers `bash _proxy_bridge.sh <Event>` for every Claude Code lifecycle event. The bridge POSTs the hook stdin to `http://127.0.0.1:9099/hme/lifecycle?event=<Event>` and relays the JSON response back. If the proxy is unreachable, it falls through to `direct_dispatch.sh <Event>`, which calls the same event-kernel dispatcher through `event_kernel/cli.js`.
+`.claude/settings.json` registers `node event_kernel/claude_adapter.js <Event>` for every Claude Code lifecycle event. The adapter POSTs the hook stdin to `http://127.0.0.1:9099/hme/lifecycle?event=<Event>` and relays the JSON response back. If the proxy is unreachable, it calls the same event-kernel dispatcher directly.
+
+Subprocess transfer uses filesystem IPC under `runtime/hme/event-ipc/`; hook
+payloads are written once and redirected into child processes from a file.
 
 ```text
 Claude Code event
        |
        v
-bash _proxy_bridge.sh <Event>
+node event_kernel/claude_adapter.js <Event>
        |
        +--- proxy alive? ---> POST /hme/lifecycle ---> proxy/lifecycle_bridge.js ---> event_kernel/dispatcher.js
        |
-       \--- proxy down? ----> direct_dispatch.sh <Event> ---> event_kernel/cli.js ---> event_kernel/dispatcher.js
+       \--- proxy down? ----> event_kernel/dispatcher.js
 ```
 
 ### Event -> scripts (proxy-up path; same scripts run on direct fallback)
 
 | Event | Scripts fired | Notes |
 |---|---|---|
-| `SessionStart` | `direct/proxy-watchdog.sh`, `direct/proxy-supervisor.sh start`, `lifecycle/sessionstart.sh` | Watchdog respawns proxy; supervisor keeps it alive long-running. |
-| `UserPromptSubmit` | `lifecycle/userpromptsubmit.sh`, `direct/autocommit-direct.sh userpromptsubmit`, `lifecycle/canary.sh` | Stale-state sweep, lifesaver scan, autocommit, canary. |
-| `PreToolUse` | `pretooluse/pretooluse_<tool>.sh` (e.g. `_edit.sh`, `_write.sh`, `_bash.sh`) | Can deny via `_emit_block` + exit 2. |
-| `PostToolUse` | `posttooluse/posttooluse_<tool>.sh` | NEXUS state, activity emission, knowledge add. |
+| `SessionStart` | `lifecycle/sessionstart.sh` | Session orientation, state reset, worker/proxy health surface. |
+| `UserPromptSubmit` | `lifecycle/userpromptsubmit.sh` | Stale-state sweep, lifesaver scan, autocommit. |
+| `PreToolUse` | `event_kernel/native_hooks/*` or `pretooluse/pretooluse_<tool>.sh` | Native first where ported; remaining shell gates can deny via `_emit_block` + exit 2. |
+| `PostToolUse` | `log-tool-call.sh` + native handlers or `posttooluse/posttooluse_<tool>.sh` | Universal logging, NEXUS state, activity emission, knowledge add. |
 | `PreCompact` | `lifecycle/precompact.sh` | Flush KB, snapshot. |
 | `PostCompact` | `lifecycle/postcompact.sh` | Reload KB. |
-| `Stop` | `lifecycle/stop/_preamble.sh` -> `detectors.sh` -> `holograph.sh` -> `lifesaver.sh` -> `evolver.sh` -> `post_hooks.sh` -> `autocommit.sh`, plus `direct/autocommit-direct.sh stop` | Detector chain runs first, then policies; can deny via decision:block. |
+| `Stop` | `proxy/stop_chain` policies, with remaining shell stages behind `shell_policy.js` | First-deny-wins policy chain; shell stage input uses filesystem IPC. |
+
+### Script inventory
+
+Directly invoked shell entrypoints:
+
+- `log-tool-call.sh`
+- `sessionstart.sh`
+- `userpromptsubmit.sh`
+- `precompact.sh`
+- `postcompact.sh`
+- `canary.sh`
+- `pretooluse_bash.sh`
+- `pretooluse_check_pipeline.sh`
+- `pretooluse_edit.sh`
+- `pretooluse_grep.sh`
+- `pretooluse_hme_primer.sh`
+- `pretooluse_read.sh`
+- `pretooluse_write.sh`
+- `posttooluse_addknowledge.sh`
+- `posttooluse_bash.sh`
+- `posttooluse_edit.sh`
+- `posttooluse_hme_review.sh`
+- `posttooluse_pipeline_kb.sh`
+- `posttooluse_read_kb.sh`
+- `posttooluse_write.sh`
+- `autocommit-direct.sh`
+- `proxy-maintenance.sh`
+- `proxy-supervisor.sh`
+- `proxy-watchdog.sh`
+- `universal-pulse-supervisor.sh`
 
 ### Direct-mode fallback (proxy down)
 
-`direct_dispatch.sh` owns no Event -> script routing. It resolves `PROJECT_ROOT` and calls `event_kernel/cli.js`, so proxy-up and proxy-down modes use the same dispatcher and policy order. Proxy HTTP middleware still does not run while the daemon is down, but hook routing, JS policies, bash gates, the HME-tool primer, and Stop-chain semantics stay aligned.
+`claude_adapter.js` owns no Event -> hook routing. It resolves `PROJECT_ROOT` and calls `event_kernel/dispatcher.js`, so proxy-up and proxy-down modes use the same dispatcher and policy order. Proxy HTTP middleware still does not run while the daemon is down, but hook routing, JS policies, bash gates, the HME-tool primer, and Stop-chain semantics stay aligned.
 
 ### Helpers
 

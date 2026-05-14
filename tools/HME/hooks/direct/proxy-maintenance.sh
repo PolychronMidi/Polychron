@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # proxy-maintenance.sh: announce planned proxy-restart window.
 # Usage: start [ttl_seconds]  | clear  | status   (default TTL 180s)
-# While active, _proxy_bridge.sh suppresses fail-LOUD banners (logged to
+# While active, claude_adapter.js suppresses fail-LOUD banners (logged to
 # hme-proxy-lifecycle.log instead). TTL <60s under-shoots supervisor cycle
 # (10s poll * 3 miss + 25s worker cold-boot); 180s = safe restart window.
 

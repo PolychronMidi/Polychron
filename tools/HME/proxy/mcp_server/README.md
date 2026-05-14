@@ -91,7 +91,7 @@ Tradeoffs vs HTTP-only:
   `HME_WORKER_FS_POLL_MS`) -- not inotify
 
 The MCP wire spec is fully unaffected: external clients keep talking
-HTTP/SSE to `/mcp/*`. Same pattern as `_proxy_bridge.sh` <-> proxy <->
+HTTP/SSE to `/mcp/*`. Same pattern as `claude_adapter.js` <-> proxy <->
 direct dispatch -- boundary stays standards-compliant; internal legs
 use whatever transport is most bug-proof for their workload.
 

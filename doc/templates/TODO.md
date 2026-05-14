@@ -1,6 +1,6 @@
-# Polychron HME TODO (handoff doc)
+# Polychron HME TODO
 
-> Cross-cycle state. Every skill reads this on start and updates it on close. Three sections, in this order. See [doc/templates/SPEC.md](SPEC.md) for the full architectural plan.
+> Cross-cycle state. Agents update this with SPEC when work spans turns. Three sections, in this order. See [doc/templates/SPEC.md](SPEC.md) for the active plan.
 
 ## In flight
 

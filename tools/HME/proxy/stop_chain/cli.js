@@ -4,7 +4,7 @@
  * Standalone CLI for the Stop hook policy chain. Runs without the proxy
  * daemon -- implements the filesystem-IPC architectural lesson: the proxy
  * is an accelerator, not a single point of failure. When the proxy is up,
- * `_proxy_bridge.sh` posts Stop events to it and the proxy invokes
+ * `event_kernel/claude_adapter.js` posts Stop events to it and the proxy invokes
  * `runStopChain` in-process. When the proxy is unreachable, the bridge
  * falls through to this CLI so the chain still fires.
  *
@@ -12,7 +12,7 @@
  *   echo '{"transcript_path":"...","session_id":"..."}' \
  *     | node tools/HME/proxy/stop_chain/cli.js
  *
- * Output shape matches what _proxy_bridge.sh expects to relay back to
+ * Output shape matches what the event-kernel adapter expects to relay back to
  * Claude Code: stdout = decision JSON (or empty), stderr = informational
  * messages, exit_code 0 always (a chain crash should not wedge the agent).
  *

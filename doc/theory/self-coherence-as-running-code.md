@@ -20,9 +20,9 @@ Polychron's HME collapses that divide, not by simulating any of the above, but b
 
 HME -- *Hypermeta Ecstasy*, "master executive for hypermeta evolutionary intelligence" -- is described in its own documentation as "the cognitive substrate that makes self-evolving composition possible -- not a code search tool but an evolutionary nervous system." The name matters. This is not a retrieval utility that got a grand marketing coat; it is a substrate claim.
 
-The five-layer executive: an MCP server exposing five explicit HME tools (`evolve`, `review`, `learn`, `trace`, `hme_admin`) plus proxy-enriched native tools; a CLAUDE.md that encodes rules, boundaries, and hard constraints; skills loaded per session via `/HME`; lifecycle hooks enforcing workflow automatically; and an Evolver agent plus lab running a seven-phase evolution loop. On top of this substrate sits a thirty-feature observability and governance architecture (Phases 1 through 6) surfaced through `status(mode=...)` branches. The HME's own documentation says flatly: "No layer is optional. Removing any one collapses the executive."
+The five-layer executive: an MCP server behind explicit `i/` commands (`i/evolve`, `i/review`, `i/learn`, `i/trace`, `i/hme admin`) plus proxy-enriched native tools; a CLAUDE.md that encodes rules, boundaries, and hard constraints; lifecycle hooks enforcing workflow automatically; and an evolution loop grounded in metrics and KB learning. On top of this substrate sits an observability and governance architecture surfaced through `i/status mode=...` branches.
 
-The companion document -- HME_SELF_COHERENCE.md -- is subtitled *Subquantum Depth, Interstellar Breadth* and opens with a sentence that should be taken exactly at face value: "HME used to be a tool that helps Polychron evolve. It's becoming the same kind of organism Polychron is, evolving by the same rules, monitored by the same instruments, and coupled to Polychron's evolution as a co-equal subsystem."
+The companion operational material now lives in `hme_full.md`: HME used to be a tool that helps Polychron evolve; it is becoming the same kind of organism Polychron is, evolving by the same rules, monitored by the same instruments, and coupled to Polychron's evolution as a co-equal subsystem.
 
 This is where the work psychology has done on coherence meets a substrate that can finally hold it.
 

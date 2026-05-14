@@ -64,7 +64,8 @@
         "tools/HME/hooks/*.sh",
         "tools/HME/hooks/lifecycle/*.sh",
         "tools/HME/hooks/pretooluse/*.sh",
-        "tools/HME/hooks/posttooluse/*.sh"
+        "tools/HME/hooks/posttooluse/*.sh",
+        "tools/HME/hooks/direct/*.sh"
       ],
       "exclude": [
         "_*.sh"
@@ -73,22 +74,18 @@
     },
     {
       "id": "hooks-registered",
-      "description": "Every TOP-LEVEL hook script (the ones the event-kernel dispatcher calls directly) must be referenced in tools/HME/event_kernel/dispatcher.js. Adapter scripts and sub-dispatched scripts (posttooluse_addknowledge.sh, posttooluse_hme_*.sh, posttooluse_write.sh, posttooluse_agent.sh, pretooluse_check_pipeline.sh) are invoked outside this routing table -- they're excluded from this check and verified separately by their callers.",
+      "description": "Every TOP-LEVEL hook script (the ones the event-kernel dispatcher calls directly) must be referenced in tools/HME/event_kernel/dispatcher.js. Adapter scripts and sub-dispatched scripts (posttooluse_addknowledge.sh, posttooluse_hme_*.sh, posttooluse_write.sh, pretooluse_check_pipeline.sh) are invoked outside this routing table -- they're excluded from this check and verified separately by their callers.",
       "type": "files_referenced",
       "glob": [
         "tools/HME/hooks/*.sh",
         "tools/HME/hooks/lifecycle/*.sh",
         "tools/HME/hooks/pretooluse/*.sh",
-        "tools/HME/hooks/posttooluse/*.sh",
-        "tools/HME/hooks/direct/*.sh"
+        "tools/HME/hooks/posttooluse/*.sh"
       ],
       "exclude": [
         "_*.sh",
-        "direct_dispatch.sh",
-        "statusline.sh",
+        "canary.sh",
         "posttooluse_addknowledge.sh",
-        "posttooluse_agent.sh",
-        "posttooluse_hme_read.sh",
         "posttooluse_hme_review.sh",
         "posttooluse_write.sh",
         "pretooluse_check_pipeline.sh"
@@ -204,18 +201,18 @@
     },
     {
       "id": "stop-hook-enforcement",
-      "description": "Stop hook must have all 8 critical enforcement sections",
+      "description": "Stop chain must register every critical enforcement policy",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/hooks/lifecycle/stop.sh",
+      "path": "tools/HME/proxy/stop_chain/index.js",
       "patterns": [
-        "hme-errors\\.log",
-        "hme-evolver\\.local\\.md",
-        "_nexus_pending",
-        "ANTI-POLLING",
-        "PLAN-ABANDONMENT",
-        "ANTI-IDLE",
-        "DISMISSIVE",
-        "TEXT_ONLY_SHORT"
+        "'lifesaver'",
+        "'evolver'",
+        "'detectors'",
+        "'anti_patterns'",
+        "'nexus_pending'",
+        "'work_checks'",
+        "'holograph'",
+        "'post_hooks'"
       ],
       "severity": "error"
     },
@@ -394,9 +391,9 @@
     },
     {
       "id": "coupling-labels-documented",
-      "description": "All 11 known active coupling label pairs must be documented in ARCHITECTURE.md",
+      "description": "All 11 known active coupling label pairs must be documented in doc/src_full.md",
       "type": "patterns_all_in_file",
-      "path": "doc/ARCHITECTURE.md",
+      "path": "doc/src_full.md",
       "patterns": [
         "density-entropy",
         "density-flicker",
@@ -414,9 +411,9 @@
     },
     {
       "id": "directionbias-documented",
-      "description": "ARCHITECTURE.md must document all three directionBias coupling sections",
+      "description": "doc/src_full.md must document all three directionBias coupling sections",
       "type": "patterns_all_in_file",
-      "path": "doc/ARCHITECTURE.md",
+      "path": "doc/src_full.md",
       "patterns": [
         "directionBias Swap Gate Coupling",
         "directionBias Articulation Contrast Coupling",
@@ -454,11 +451,18 @@
       "severity": "error"
     },
     {
-      "id": "hooks-json-points-to-bridge",
-      "description": "hooks.json must route every event through _proxy_bridge.sh -- the single entrypoint that forwards lifecycle events to the proxy-side dispatcher",
+      "id": "hooks-json-points-to-event-kernel-adapter",
+      "description": "hooks.json must route every Claude event through event_kernel/claude_adapter.js -- the single adapter for proxy-up and direct fallback dispatch",
       "type": "pattern_in_file",
       "path": "tools/HME/hooks/hooks.json",
-      "pattern": "_proxy_bridge\\.sh",
+      "pattern": "event_kernel/claude_adapter\\.js",
+      "severity": "error"
+    },
+    {
+      "id": "event-kernel-subprocesses-use-fs-ipc",
+      "description": "Event-kernel and Stop-chain subprocess boundaries must use filesystem IPC rather than live stdin pipes, so hook portability does not depend on a specific agent CLI or Node spawn input semantics.",
+      "type": "shell_output_empty",
+      "shell": "rg -nE \"child\\.stdin|stdin\\.write|spawnSync\\([^\\n]*input\" tools/HME/event_kernel tools/HME/proxy/stop_chain 2>/dev/null || true",
       "severity": "error"
     },
     {
@@ -480,30 +484,33 @@
     },
     {
       "id": "lifesaver-doc-exists",
-      "description": "LIFESAVER.md enforcement reference must exist",
+      "description": "HME full reference must include LIFESAVER enforcement",
       "type": "file_exists",
-      "path": "doc/LIFESAVER.md",
+      "path": "doc/hme_full.md",
       "severity": "error"
     },
     {
       "id": "tab-helpers-exists",
-      "description": "_tab_helpers.sh must exist  sourced by posttooluse_addknowledge, posttooluse_agent, posttooluse_write",
+      "description": "_tab_helpers.sh must exist; posttooluse_bash, posttooluse_addknowledge, and posttooluse_write still source it.",
       "type": "file_exists",
       "path": "tools/HME/hooks/helpers/_tab_helpers.sh",
       "severity": "error"
     },
     {
-      "id": "hooks-documented-hme-md",
-      "description": "Every hook script must be documented in doc/HME.md hook table",
+      "id": "hooks-documented-hooks-readme",
+      "description": "Every directly-invoked hook script must be documented in tools/HME/hooks/README.md",
       "type": "files_referenced",
-      "glob": "tools/HME/hooks/**/*.sh",
-      "exclude": [
-        "_*.sh",
-        "hooks.json",
-        "statusline.sh",
-        "pretooluse_glob.sh"
+      "glob": [
+        "tools/HME/hooks/*.sh",
+        "tools/HME/hooks/lifecycle/*.sh",
+        "tools/HME/hooks/pretooluse/*.sh",
+        "tools/HME/hooks/posttooluse/*.sh",
+        "tools/HME/hooks/direct/*.sh"
       ],
-      "reference_file": "doc/HME.md",
+      "exclude": [
+        "_*.sh"
+      ],
+      "reference_file": "tools/HME/hooks/README.md",
       "severity": "warning"
     },
     {
@@ -648,7 +655,7 @@
     },
     {
       "id": "hme-cli-error-prefix-emitter",
-      "description": "scripts/hme-cli.js must prefix every stderr error line with 'hme-cli:'  three PostToolUse hooks (posttooluse_hme_read, posttooluse_hme_review, posttooluse_addknowledge) grep for this prefix to detect transport failures. Drift here silently turns 'worker down' into 'operation succeeded cleanly' in nexus state.",
+      "description": "scripts/hme-cli.js must prefix every stderr error line with 'hme-cli:' so PostToolUse hooks such as posttooluse_hme_review and posttooluse_addknowledge can distinguish transport failure from content. Drift here silently turns 'worker down' into 'operation succeeded cleanly' in nexus state.",
       "type": "patterns_all_in_file",
       "path": "scripts/hme-cli.js",
       "patterns": [
@@ -778,7 +785,7 @@
       "id": "activity-hook-wiring",
       "description": "Hooks that touch src/ or tools/HME/ edits must call tools/HME/activity/emit.py so the activity stream captures structural changes",
       "type": "shell_output_empty",
-      "shell": "for f in tools/HME/hooks/posttooluse/posttooluse_edit.sh tools/HME/hooks/lifecycle/stop.sh tools/HME/hooks/pretooluse/pretooluse_edit.sh; do grep -qE 'activity/emit\\.py|_emit_activity' \"$f\" || echo \"$f missing activity emit\"; done"
+      "shell": "for f in tools/HME/hooks/posttooluse/posttooluse_edit.sh tools/HME/hooks/lifecycle/stop/post_hooks.sh tools/HME/hooks/pretooluse/pretooluse_edit.sh; do grep -qE 'activity/emit\\.py|_emit_activity|_signal_emit' \"$f\" || echo \"$f missing activity emit\"; done"
     },
     {
       "id": "hme-proxy-exists",
@@ -1519,7 +1526,7 @@
     },
     {
       "id": "antagonism-registry-covers-observed-pairs",
-      "description": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted. An unaccounted negative correlation means the system is observing a tension it hasn't named  per the antagonism-bridge principle, that's a missing design artifact. See doc/ANTAGONISM_BRIDGES.md.",
+      "description": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted. An unaccounted negative correlation means the system is observing a tension it has not named per the antagonism-bridge principle. See doc/src_full.md.",
       "type": "shell_output_empty",
       "shell": "python3 scripts/check-antagonism-registry.py 2>&1 | grep -v '^$'",
       "severity": "warning"

@@ -24,7 +24,7 @@ _hme_check_errors_inline() {
 
   local TOTAL WATERMARK
   # Don't suppress wc/cat stderr -- if reading fails (permission, missing
-  # parent dir), the caller (_proxy_bridge) routes our stderr to errors.log
+  # parent dir), the caller routes our stderr to errors.log
   # so the failure is visible. Use -f tests + explicit zero defaults.
   TOTAL=$(wc -l < "$ERROR_LOG" | tr -d ' \t')
   TOTAL=${TOTAL:-0}
@@ -99,7 +99,7 @@ ${SELF_ERRORS}]"
     fi
     # additionalContext lands in the next turn's context. Silent on stdout
     # for non-output-accepting events, but PostToolUse accepts this shape.
-    # No stderr suppression on jq -- if jq is missing or fails, _proxy_bridge
+    # No stderr suppression on jq -- if jq is missing or fails, the adapter
     # routes our stderr to errors.log so the failure surfaces.
     if ! jq -n \
       --arg banner "$BANNER" \

@@ -10,6 +10,8 @@ Polychron development has two interleaving modes; mode-specific rules live in co
 - **Composition** (`src/`) -- [doc/SRC.md](doc/SRC.md)
 - **HME** (`tools/HME/`) -- [doc/HME.md](doc/HME.md)
 
+Deep references live in [doc/src_full.md](doc/src_full.md) and [doc/hme_full.md](doc/hme_full.md). Keep the short files short.
+
 ## Universal Principles (operational)
 
 - **Stop hooks.** Never explain declining a stop hook's directive when it doesn't fit. End the turn in silence, or just a minimal ".", immediately if the hook should not apply to the scenario.

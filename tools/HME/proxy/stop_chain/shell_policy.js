@@ -1,21 +1,21 @@
 'use strict';
 /**
- * Shell-wrapper helper for transitional policies. Spawns a bash subprocess
- * that sources the named lifecycle stage script with the right helpers and
- * env, captures stdout/stderr, and parses for a block-decision JSON.
+ * Portable shell-stage adapter for Stop policies. It writes the event payload
+ * through event-kernel filesystem IPC, sources the named stage script with the
+ * right helpers/env, captures stdout/stderr, and parses block-decision JSON.
  *
  * Why this exists: not every legacy `stop/<stage>.sh` is worth porting to
  * pure JS in one pass. autocommit is hundreds of lines of git logic;
  * holograph and post_hooks are diagnostic side-effects with no decisions.
- * Wrapping them keeps the chain working while pure-JS conversions land
- * incrementally. The PROCESS BOUNDARY between the evaluator and bash means
+ * Keeping them behind this adapter preserves behavior while pure-JS
+ * conversions land incrementally. The PROCESS BOUNDARY between evaluator and bash means
  * an `exit 0` from a shell stage exits only the child -- the evaluator
  * cannot be bypassed.
  */
 
-const { spawn } = require('child_process');
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
+const { spawnFileInput } = require('../../event_kernel/fs_ipc');
 
 const HELPERS_DIR  = path.join(PROJECT_ROOT, 'tools/HME/hooks/helpers');
 const STAGE_DIR    = path.join(PROJECT_ROOT, 'tools/HME/hooks/lifecycle/stop');
@@ -65,12 +65,11 @@ function defaultParseDecision(stdout, ctx) {
 }
 
 function spawnStage(stageName, stdinJson, timeoutMs) {
-  return new Promise((resolve) => {
-    // PROJECT alias for PROJECT_ROOT (legacy; lifesaver.sh + post_hooks.sh
-    // depend on it; subprocess isolation breaks the inherited-from-parent path).
-    // _HME_HOOK_NAME set explicitly because `bash -c` has no BASH_SOURCE[1] so
-    // _safety.sh's basename fallback resolves to "unknown".
-    const wrapper = `
+  // PROJECT alias for PROJECT_ROOT (legacy; lifesaver.sh + post_hooks.sh
+  // depend on it; subprocess isolation breaks the inherited-from-parent path).
+  // _HME_HOOK_NAME set explicitly because `bash -c` has no BASH_SOURCE[1] so
+  // _safety.sh's basename fallback resolves to "unknown".
+  const wrapper = `
 set +u +e
 PROJECT="${PROJECT_ROOT}"
 _HME_HELPERS_DIR="${HELPERS_DIR}"
@@ -86,43 +85,12 @@ _HME_HOOK_NAME="$_HME_STAGE_NAME"
 INPUT=$(cat)
 source "${path.join(STAGE_DIR, stageName + '.sh')}"
 `;
-    let child;
-    try {
-      child = spawn('bash', ['-c', wrapper], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        env: { ...process.env, PROJECT_ROOT },
-      });
-    } catch (err) {
-      resolve({ stdout: '', stderr: `[shell_policy] spawn failed: ${err.message}`, exit_code: -1 });
-      return;
-    }
-    let stdout = '';
-    let stderr = '';
-    let finished = false;
-    const timer = setTimeout(() => {
-      if (finished) return;
-      finished = true;
-      try { child.kill('SIGTERM'); } catch (_) { /* ignore */ }
-      resolve({ stdout, stderr: stderr + `\n[shell_policy] timeout: ${stageName}`, exit_code: -1 });
-    }, timeoutMs);
-    child.stdout.on('data', (c) => { stdout += c.toString('utf8'); });
-    child.stderr.on('data', (c) => { stderr += c.toString('utf8'); });
-    child.on('error', (err) => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(timer);
-      resolve({ stdout, stderr: stderr + `\n[shell_policy] error: ${err.message}`, exit_code: -1 });
-    });
-    child.on('close', (code) => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(timer);
-      resolve({ stdout, stderr, exit_code: code ?? 0 });
-    });
-    try {
-      child.stdin.write(stdinJson || '');
-      child.stdin.end();
-    } catch (_e) { /* swallow -- child error/close handler will resolve */ }
+
+  return spawnFileInput('bash', ['-c', wrapper], {
+    input: stdinJson || '',
+    timeoutMs,
+    label: `stop-${stageName}`,
+    env: { PROJECT_ROOT },
   });
 }
 

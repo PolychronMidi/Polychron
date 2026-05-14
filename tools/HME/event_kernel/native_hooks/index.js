@@ -1,0 +1,32 @@
+'use strict';
+
+const agent = require('./agent');
+const diagnostics = require('./diagnostics');
+const streak = require('./streak');
+const todo = require('./todo');
+const toolsearch = require('./toolsearch');
+
+const preToolHandlers = {
+  Agent: agent.pretoolAgent,
+  Glob: streak.pretoolGlob,
+  TodoWrite: todo.pretoolTodoWrite,
+  ToolSearch: toolsearch.pretoolToolSearch,
+};
+
+const postToolHandlers = {
+  Agent: agent.posttoolAgent,
+  TodoWrite: todo.posttoolTodoWrite,
+  Edit: diagnostics.posttoolDiagnostics,
+  MultiEdit: diagnostics.posttoolDiagnostics,
+  Write: diagnostics.posttoolDiagnostics,
+};
+
+module.exports = {
+  ...agent,
+  ...diagnostics,
+  ...streak,
+  ...todo,
+  ...toolsearch,
+  preToolHandlers,
+  postToolHandlers,
+};

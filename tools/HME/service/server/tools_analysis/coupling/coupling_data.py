@@ -186,9 +186,9 @@ def _detect_kb_covered_modules(project_root: str) -> set:
 
 
 def _detect_documented_modules(project_root: str) -> set:
-    """Return set of module names mentioned in ARCHITECTURE.md or TUNING_MAP.md."""
+    """Return set of module names mentioned in the core SRC docs."""
     found: set = set()
-    for doc in ["doc/ARCHITECTURE.md", "doc/TUNING_MAP.md"]:
+    for doc in ["doc/src_full.md", "doc/SRC.md"]:
         path = os.path.join(project_root, doc)
         if not os.path.isfile(path):
             continue

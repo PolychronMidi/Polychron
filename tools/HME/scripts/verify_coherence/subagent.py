@@ -18,105 +18,85 @@ from ._base import (
 
 
 class SubagentModeVerifier(Verifier):
-    """Checks that agent_local.py's declared modes match what pretooluse_agent.sh
-    routes to. If the hook intercepts 'Plan' but agent_local doesn't have a
-    'plan' mode config, the subprocess crashes silently and the result file
-    stays empty. This catches the drift at HCI time."""
+    """Checks that the public HME agent tool exposes only agent_local modes."""
     name = "subagent-mode-sync"
     category = "coverage"
     subtag = "interface-contract"
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        agent_py = os.path.join(_PROJECT, "tools", "HME", "mcp", "agent_local.py")
-        hook_sh = os.path.join(_HOOKS_DIR, "pretooluse_agent.sh")
-        if not os.path.isfile(agent_py) or not os.path.isfile(hook_sh):
-            return _result(SKIP, 1.0, "agent_local or hook missing")
-        # Parse agent_local.py for _MODE_CONFIGS keys
+        agent_py = os.path.join(_PROJECT, "tools", "HME", "service", "agent_local", "research.py")
+        tool_py = os.path.join(_SERVER_DIR, "tools_analysis", "agent_unified.py")
+        if not os.path.isfile(agent_py) or not os.path.isfile(tool_py):
+            return _result(SKIP, 1.0, "agent_local or HME agent tool missing")
         try:
             with open(agent_py) as f:
                 src = f.read()
             m = re.search(r'_MODE_CONFIGS\s*=\s*\{(.*?)^\}', src, re.DOTALL | re.MULTILINE)
             if not m:
-                return _result(FAIL, 0.0, "could not find _MODE_CONFIGS in agent_local.py")
+                return _result(FAIL, 0.0, "could not find _MODE_CONFIGS in agent_local/research.py")
             declared_modes = set(re.findall(r'"(\w+)"\s*:\s*\{', m.group(1)))
         except Exception as e:
-            return _result(ERROR, 0.0, f"parse error on agent_local.py: {e}")
-        # Parse pretooluse_agent.sh for routed modes (HME_MODE="...")
+            return _result(ERROR, 0.0, f"parse error on agent_local/research.py: {e}")
         try:
-            with open(hook_sh) as f:
-                hook_src = f.read()
-            routed = set(re.findall(r'HME_MODE="(\w+)"', hook_src))
+            with open(tool_py) as f:
+                tool_src = f.read()
+            m = re.search(r'if\s+mode\s+not\s+in\s+\((.*?)\):', tool_src, re.DOTALL)
+            if not m:
+                return _result(FAIL, 0.0, "could not find mode allowlist in agent_unified.py")
+            routed = set(re.findall(r'"(\w+)"|\'(\w+)\'', m.group(1)))
+            routed = {a or b for a, b in routed}
         except Exception as e:
-            return _result(ERROR, 0.0, f"parse error on hook: {e}")
+            return _result(ERROR, 0.0, f"parse error on HME agent tool: {e}")
 
         missing = routed - declared_modes
         extra = declared_modes - routed
         if missing:
             return _result(
                 FAIL, 0.0,
-                f"hook routes to modes missing from agent_local: {sorted(missing)}",
+                f"HME agent tool exposes modes missing from agent_local: {sorted(missing)}",
                 [f"declared: {sorted(declared_modes)}", f"routed: {sorted(routed)}"],
             )
         return _result(
             PASS, 1.0,
-            f"hook routes {sorted(routed)} -> agent_local declares {sorted(declared_modes)}",
+            f"HME agent tool exposes {sorted(routed)} -> agent_local declares {sorted(declared_modes)}",
             [f"unused mode configs: {sorted(extra)}"] if extra else [],
         )
 
 
 class SubagentPassthroughVerifier(Verifier):
-    """The general-purpose subagent type must remain a passthrough because it
-    needs Write/Edit/Bash capabilities, which the read-only agent_local.py
-    cannot provide. If someone hastily adds 'general-purpose' to the
-    interception case, the verifier fails at weight 3.0 -- this regression
-    would downgrade every general-purpose agent call to a read-only stub."""
-    name = "subagent-general-purpose-passthrough"
+    """The native Agent hook routes via team_agent_router, not local read-only stubs."""
+    name = "subagent-router-type-tier"
     category = "coverage"
     subtag = "interface-contract"
     weight = 3.0
 
-    _FORBIDDEN_INTERCEPTS = ("general-purpose", "statusline-setup")
+    _REQUIRED_TYPES = ("general-purpose", "statusline-setup", "Plan", "Explore")
 
     def run(self) -> VerdictResult:
-        hook_sh = os.path.join(_HOOKS_DIR, "pretooluse_agent.sh")
-        if not os.path.isfile(hook_sh):
-            return _result(SKIP, 1.0, "hook missing")
+        router_py = os.path.join(_SCRIPTS_DIR, "team_agent_router.py")
+        if not os.path.isfile(router_py):
+            return _result(SKIP, 1.0, "team_agent_router.py missing")
         try:
-            with open(hook_sh) as f:
+            with open(router_py) as f:
                 src = f.read()
         except Exception as e:
             return _result(ERROR, 0.0, f"read error: {e}")
-
-        # Walk the `case` block and look for each forbidden subagent type
-        # being assigned a HME_MODE. If any appear as intercept targets, fail.
-        violations = []
-        for forbidden in self._FORBIDDEN_INTERCEPTS:
-            # Match: "general-purpose)" followed by "HME_MODE=..."
-            pat = re.compile(
-                re.escape(forbidden) + r'\)\s*HME_MODE="(\w+)"',
-                re.DOTALL,
-            )
-            m = pat.search(src)
-            if m:
-                violations.append(
-                    f"{forbidden} -> intercepted as mode={m.group(1)} "
-                    f"(read-only replacement = capability downgrade)"
-                )
-
-        if violations:
+        m = re.search(r'TYPE_TIER\s*:\s*dict\[str,\s*str\]\s*=\s*\{(.*?)^\}', src, re.DOTALL | re.MULTILINE)
+        if not m:
+            return _result(FAIL, 0.0, "could not find TYPE_TIER in team_agent_router.py")
+        pairs = dict(re.findall(r'"([^"]+)"\s*:\s*"(E[1-5])"', m.group(1)))
+        missing = [name for name in self._REQUIRED_TYPES if name not in pairs]
+        invalid = [f"{name}={tier}" for name, tier in pairs.items() if not re.fullmatch(r"E[1-5]", tier)]
+        if missing or invalid:
             return _result(
                 FAIL, 0.0,
-                f"{len(violations)} forbidden intercept(s) -- read-only replacement",
-                violations + [
-                    "RULE: general-purpose and statusline-setup must passthrough to Claude.",
-                    "general-purpose needs Edit/Write/Bash which local agent cannot provide.",
-                    "Revert the intercept; keep these types in the default branch of the case statement.",
-                ],
+                "team_agent_router TYPE_TIER is missing required native Agent type coverage",
+                [f"missing: {missing}", f"invalid: {invalid}", f"known: {sorted(pairs)}"],
             )
         return _result(
             PASS, 1.0,
-            f"general-purpose + statusline-setup correctly passthrough to Claude",
+            f"team_agent_router maps native Agent types: {sorted(pairs.items())}",
         )
 
 
@@ -255,5 +235,4 @@ class SubagentBackendsVerifier(Verifier):
             f"{len(missing)} subagent backend(s) missing: {', '.join(missing)}",
             details,
         )
-
 

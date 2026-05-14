@@ -50,14 +50,14 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
         parts.append(comp)
 
     tuning_context = ""
-    tuning_path = os.path.join(ctx.PROJECT_ROOT, "doc", "TUNING_MAP.md")
+    tuning_path = os.path.join(ctx.PROJECT_ROOT, "doc", "src_full.md")
     if os.path.isfile(tuning_path):
         try:
             with open(tuning_path, encoding="utf-8") as _f:
                 tuning = _f.read()
             tuning_lines = [l for l in tuning.split("\n") if symptom.lower() in l.lower()]
             if tuning_lines:
-                tuning_context = "Tuning map references:\n" + "\n".join(tuning_lines[:10])
+                tuning_context = "Tuning references:\n" + "\n".join(tuning_lines[:10])
         except Exception as _err1:
             logger.debug(f'silent-except evolution_trace.py:61: {type(_err1).__name__}: {_err1}')
 

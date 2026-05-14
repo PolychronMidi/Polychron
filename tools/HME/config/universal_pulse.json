@@ -74,7 +74,7 @@
         "userpromptsubmit": 700,
         "stop_chain:holograph": 2200
       },
-      "_threshold_notes": "Per-hook overrides -- `stop` legitimately runs ~600-700ms (autocommit + detectors run_all + /audit curl + lifesaver scan); 900ms allows normal variance without false alarms. sessionstart includes RAG-engine cold-start context-meter + holograph snapshot; 2.5s budget is realistic. userpromptsubmit includes LIFESAVER scan + onboarding checks; 700ms. stop_chain:holograph spawns `timeout 2 python3 snapshot-holograph.py --diff` -- p95 legitimately approaches the 2s hard cap; 2200ms = 2s timeout + 200ms shell-wrapper headroom. Lookup in universal_pulse_tick.py is exact-match-then-longest-prefix, so shell_policy substages (`stop_chain:*`) inherit the parent `stop` budget by default; only outliers like `stop_chain:holograph` need explicit entries."
+      "_threshold_notes": "Per-hook overrides -- `stop` legitimately runs ~600-700ms (autocommit + detectors run_all + /audit curl + lifesaver scan); 900ms allows normal variance without false alarms. sessionstart includes RAG-engine cold-start context-meter + holograph snapshot; 2.5s budget is realistic. userpromptsubmit includes LIFESAVER scan + onboarding checks; 700ms. stop_chain:holograph spawns `timeout 2 python3 snapshot-holograph.py --diff` -- p95 legitimately approaches the 2s hard cap; 2200ms = 2s timeout + 200ms shell-stage headroom. Lookup in universal_pulse_tick.py is exact-match-then-longest-prefix, so shell_policy substages (`stop_chain:*`) inherit the parent `stop` budget by default; only outliers like `stop_chain:holograph` need explicit entries."
     }
   ],
   "heartbeat_file": "tmp/hme-universal-pulse.heartbeat"

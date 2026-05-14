@@ -14,7 +14,7 @@ function runOnText(text) {
 }
 
 test('stop-hook compaction preserves auto-completeness discriminator', () => {
-  const input = 'Stop hook feedback:\n[bash /x/_proxy_bridge.sh Stop]: AUTO-COMPLETENESS CHECK (round 1/2): long payload';
+  const input = 'Stop hook feedback:\n[node /x/event_kernel/claude_adapter.js Stop]: AUTO-COMPLETENESS CHECK (round 1/2): long payload';
   const out = runOnText(input);
   assert.strictEqual(out.dirty, true);
   assert.match(out.text, /AUTO-COMPLETENESS CHECK/);
@@ -22,7 +22,7 @@ test('stop-hook compaction preserves auto-completeness discriminator', () => {
 });
 
 test('stop-hook compaction preserves exhaust discriminator', () => {
-  const input = 'Stop hook feedback:\n[bash /x/_proxy_bridge.sh Stop]: EXHAUST PROTOCOL VIOLATION: long payload';
+  const input = 'Stop hook feedback:\n[node /x/event_kernel/claude_adapter.js Stop]: EXHAUST PROTOCOL VIOLATION: long payload';
   const out = runOnText(input);
   assert.strictEqual(out.dirty, true);
   assert.match(out.text, /EXHAUST PROTOCOL VIOLATION/);

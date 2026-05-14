@@ -77,11 +77,11 @@ fi
 # Not healthy. Attempt spawn. Prereq: node binary + proxy script.
 _WD_SCRIPT="$_WD_ROOT/tools/HME/proxy/hme_proxy.js"
 if [ ! -f "$_WD_SCRIPT" ]; then
-  # Log but don't fail. The fail-LOUD banner from _proxy_bridge.sh will
+  # Log but don't fail. The fail-LOUD banner from claude_adapter.js will
   # still surface the proxy-down state on next UserPromptSubmit.
   ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
   mkdir -p "$_WD_ROOT/log" 2>/dev/null
-  # FAIL-LOUD on alert-sink writes (see _proxy_bridge.sh rationale).
+  # FAIL-LOUD on alert-sink writes (see claude_adapter.js rationale).
   echo "[$ts] [proxy-watchdog] SessionStart: proxy down AND hme_proxy.js missing at $_WD_SCRIPT" \
     >> "$_WD_ROOT/log/hme-errors.log"
   exit 0
@@ -130,7 +130,7 @@ while [ "$_waited" -lt 8 ]; do
   _waited=$((_waited + 1))
 done
 
-# Spawn attempted but not healthy. Log and let _proxy_bridge.sh's
+# Spawn attempted but not healthy. Log and let claude_adapter.js's
 # fail-LOUD banner take over.
 ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
 echo "[$ts] [proxy-watchdog] spawn attempted (pid=$_WD_PID) but proxy still not responding after 8s" >&2

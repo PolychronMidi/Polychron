@@ -40,7 +40,7 @@ OUT = ROOT / "output" / "metrics" / "hme-hook-signal-value.json"
 # verdict capture lands for more hooks.
 _VERDICT_HOOKS = {
     "pretooluse_bash", "pretooluse_edit", "pretooluse_read",
-    "pretooluse_write", "pretooluse_toolsearch",
+    "pretooluse_write",
     "posttooluse_bash", "posttooluse_edit", "posttooluse_read_kb",
     "posttooluse_hme_review", "stop",
 }

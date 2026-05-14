@@ -24,7 +24,7 @@ Polychron's HME proceeds on the opposite assumption. The regress is not a proble
 
 ## II. What Polychron commits to
 
-The Phase inf section of `HME_SELF_COHERENCE.md` contains the architecture's most philosophically ambitious commitment, stated with the project's characteristic directness:
+The full HME reference contains the architecture's most philosophically ambitious commitment, stated with the project's characteristic directness:
 
 > **HME inside HME inside HME.** The observer becomes the observed. Every meta-level introspection is itself observable by the next meta-level. There is no terminal level -- the system is open at the top.
 
@@ -84,7 +84,7 @@ These three -- Von Foerster, Varela, Spencer-Brown -- are the patron saints of a
 
 HME is what these traditions pointed at, built out. Not in spirit, as homage -- in substance, as a running implementation of second-order cybernetics where the observer is literally within the system, the regulatory dynamics of the observer are themselves instrumented, and the recursion is architecturally open rather than theoretically posited.
 
-The five explicit HME tools (`evolve`, `review`, `learn`, `trace`, `hme_admin`) operate on Polychron, while native tools such as `Read`, `Edit`, and `TodoWrite` are enriched automatically by proxy hooks. But HME also observes itself through them. `hme_admin(action='introspect')` runs self-benchmarking on tool usage patterns, workflow discipline, and KB health. The `review(mode='self_audit')` call, surfaced by `tools_analysis/self_audit.py`, reports architectural inefficiencies in HME itself as evolution candidates alongside the Polychron evolution candidates the Evolver is already tracking. The `status(mode='reflexivity')` branch measures how much of HME's prediction accuracy is genuinely predictive versus merely self-fulfilling through injection. The system is not just observing Polychron. It is observing its observation of Polychron. And it has explicit machinery for observing that observation in turn.
+The explicit HME commands (`i/evolve`, `i/review`, `i/learn`, `i/trace`, `i/hme admin`) operate on Polychron, while native tools such as `Read`, `Edit`, and `TodoWrite` are enriched automatically by proxy hooks. But HME also observes itself through them. `i/hme admin action=introspect` runs self-benchmarking on tool usage patterns, workflow discipline, and KB health. The `i/review mode=self_audit` call, surfaced by `tools_analysis/self_audit.py`, reports architectural inefficiencies in HME itself as evolution candidates alongside the Polychron evolution candidates the Evolver is already tracking. The `i/status mode=reflexivity` branch measures how much of HME's prediction accuracy is genuinely predictive versus merely self-fulfilling through injection. The system is not just observing Polychron. It is observing its observation of Polychron. And it has explicit machinery for observing that observation in turn.
 
 This is what second-order cybernetics looks like as working code. The observer is inside the system, the regulatory dynamics of the observer are instrumented, the recursion is open upward, and the architecture doesn't pretend to close the loop it cannot close.
 
@@ -92,7 +92,7 @@ This is what second-order cybernetics looks like as working code. The observer i
 
 Suppose, tomorrow, `verify-coherence-coherence.py` is implemented. What would it actually do?
 
-The proposal is sketched in `HME_SELF_COHERENCE.md` only briefly: it would verify that `verify-coherence.py` covers what it should. Unpacking that: the meta-verifier would check the verifier registry against the space of coherence dimensions that the system ought to be measuring. It would flag dimensions that have become load-bearing in the codebase but are not yet instrumented. It would flag verifiers whose scoring functions have drifted from their original semantics -- where a verifier still returns PASS but is measuring something different from what it was originally measuring, because the surrounding code has evolved. It would flag verifier weight assignments that no longer match the demonstrated impact of those dimensions on actual system behavior.
+The proposal is sketched in `hme_full.md` only briefly: it would verify that `verify-coherence.py` covers what it should. Unpacking that: the meta-verifier would check the verifier registry against the space of coherence dimensions that the system ought to be measuring. It would flag dimensions that have become load-bearing in the codebase but are not yet instrumented. It would flag verifiers whose scoring functions have drifted from their original semantics -- where a verifier still returns PASS but is measuring something different from what it was originally measuring, because the surrounding code has evolved. It would flag verifier weight assignments that no longer match the demonstrated impact of those dimensions on actual system behavior.
 
 All of this is meaningful work. The meta-verifier is not a philosophical flourish. It is a concrete piece of engineering that would catch a real class of drift that the first-order verifiers cannot catch -- the class where the verifiers themselves have become unreliable narrators.
 

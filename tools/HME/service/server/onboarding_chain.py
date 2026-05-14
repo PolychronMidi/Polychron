@@ -82,7 +82,7 @@ Adding a new gate for an external tool:
 
 Native TodoWrite integration:
   set_state writes the state file AND register_onboarding_tree(steps) in
-  todo.py. pretooluse_todowrite.sh merges the HME tree into the agent's
+  todo.py. event_kernel/native_hooks/todo.js merges the HME tree into the agent's
   native list via updatedInput, preserving sub IDs across transitions.
   On graduation, clear_onboarding_tree() removes the parent + subs.
 

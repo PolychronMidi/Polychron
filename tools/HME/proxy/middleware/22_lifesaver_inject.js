@@ -1,5 +1,5 @@
 'use strict';
-// Hook-independent LIFESAVER alert injection. Doc: doc/LIFESAVER.md.
+// Hook-independent LIFESAVER alert injection. Doc: doc/hme_full.md.
 
 const fs = require('fs');
 const path = require('path');

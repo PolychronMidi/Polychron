@@ -78,16 +78,16 @@
   ],
   "doc_update_triggers": {
     "src/conductor/": [
-      "doc/ARCHITECTURE.md (conductor changes)"
+      "doc/src_full.md (conductor changes)"
     ],
     "src/crossLayer/": [
-      "doc/ARCHITECTURE.md (cross-layer changes)"
+      "doc/src_full.md (cross-layer changes)"
     ],
     "src/utils/": [
       "CLAUDE.md (new utility)"
     ],
     "src/time/": [
-      "doc/ARCHITECTURE.md (timing changes)"
+      "doc/src_full.md (timing changes)"
     ]
   },
   "known_non_tool_identifiers": [
@@ -202,14 +202,14 @@
     "pipeline_test_probe",
     "poll_count",
     "posttooluse_addknowledge",
-    "posttooluse_agent",
+    "native_hooks",
     "posttooluse_bash",
     "posttooluse_edit",
     "posttooluse_hme_admin",
-    "posttooluse_hme_read",
+    "posttooluse_read_kb",
     "posttooluse_hme_review",
     "posttooluse_pipeline_kb",
-    "posttooluse_read",
+    "posttooluse_read_kb",
     "posttooluse_write",
     "prediction_accuracy",
     "prediction_recall",

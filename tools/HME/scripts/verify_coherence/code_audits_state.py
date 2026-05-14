@@ -21,7 +21,7 @@ from ._base import (
 class StateFileOwnershipVerifier(Verifier):
     """Delegates to scripts/audit-state-file-ownership.py, which checks
     that every grep-detectable writer of a shared state file is declared
-    in `doc/HME_STATE_OWNERSHIP.md`. Pattern surfaced by peer-review
+    in `doc/hme_full.md`. Pattern surfaced by peer-review
     iter 136 as the most-impactful unwatched architectural contract:
     HME spans 4+ runtimes that all touch shared filesystem state, and
     until this verifier existed nothing automated guarded against an
@@ -365,5 +365,4 @@ class ActivityEventsDocSyncVerifier(Verifier):
         # code_only only: WARN, partial credit.
         score = max(0.5, 1.0 - len(code_only) / 20.0)
         return _result(WARN, score, f"{len(code_only)} undocumented event(s)", details)
-
 

@@ -1,6 +1,6 @@
 // scripts/check-tuning-invariants.js
 // Executable cross-constant invariant checker.
-// Verifies that the feedback loop constants documented in TUNING_MAP.md
+// Verifies that the feedback loop constants documented in doc/src_full.md
 // maintain their required relationships. Fails fast if any invariant is
 // violated, preventing silent drift as constants are tuned.
 //
@@ -285,7 +285,7 @@ function main() {
     throw new Error(
       'check-tuning-invariants: ' + failures + ' invariant(s) FAILED. ' +
       'See metrics/tuning-invariants.json for details. ' +
-      'Cross-reference TUNING_MAP.md before changing feedback loop constants.'
+      'Cross-reference doc/src_full.md before changing feedback loop constants.'
     );
   }
 

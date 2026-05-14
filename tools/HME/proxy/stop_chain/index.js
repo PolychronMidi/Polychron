@@ -149,7 +149,7 @@ function loadPolicy(name) {
 }
 
 /**
- * Run the Stop chain. Returns the proxy-bridge response shape:
+ * Run the Stop chain. Returns the event-kernel response shape:
  *   { stdout: <decision-json or empty>, stderr: <accumulated>, exit_code: 0 }
  */
 // Cascade-break: when the prior user message is a stop-hook deny payload

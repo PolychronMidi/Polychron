@@ -4,7 +4,7 @@
 
 ## What this directory is
 
-Every other doc in the `doc/` tree describes *what is*. `ARCHITECTURE.md` traces signal flow. `SUBSYSTEMS.md` maps the directory structure. `HME.md` catalogs the executive. `TUNING_MAP.md` enumerates constants and their interactions. `HYPERMETA.md`, `COORDINATION_INDEPENDENCE.md`, `FEEDBACK_LOOPS.md`, `TRUST_ECOLOGY.md` -- all operational reference. They answer *how*.
+The operational docs describe *what is*. `SRC.md` and `src_full.md` trace the composition engine. `HME.md` and `hme_full.md` catalog the executive substrate. They answer *how*.
 
 `doc/theory/` answers *why this shape, and what does it entail*.
 

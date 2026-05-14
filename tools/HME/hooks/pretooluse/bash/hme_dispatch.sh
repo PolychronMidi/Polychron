@@ -1,4 +1,4 @@
-# Dispatch HME shell-wrapper pre-hooks. These used to be triggered by MCP
+# Dispatch HME shell-command pre-hooks. These used to be triggered by MCP
 # matchers in hooks.json (mcp__HME__* PreToolUse); now HME tools run via
 # Bash(i/<tool>) shell wrappers and the dispatch happens here. The handler
 # scripts read stdin (the same hook JSON) and emit their own jq blocks when

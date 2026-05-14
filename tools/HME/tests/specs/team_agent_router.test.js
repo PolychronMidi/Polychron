@@ -11,12 +11,18 @@ const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 const ROUTER = path.join(PROJECT_ROOT, 'tools/HME/scripts/team_agent_router.py');
 
 function runRouter(project, payload, role = 'driver') {
-  return spawnSync('python3', [ROUTER], {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-agent-router-input-'));
+  const inputFile = path.join(dir, 'payload.json');
+  fs.writeFileSync(inputFile, JSON.stringify(payload));
+  const command = `PROJECT_ROOT=${JSON.stringify(project)} OVERDRIVE_MODE=6 HME_TEAM_ROLE=${JSON.stringify(role)} python3 ${JSON.stringify(ROUTER)} < ${JSON.stringify(inputFile)}`;
+  const result = spawnSync('bash', ['-lc', command], {
     cwd: PROJECT_ROOT,
-    env: { ...process.env, PROJECT_ROOT: project, OVERDRIVE_MODE: '6', HME_TEAM_ROLE: role },
-    input: JSON.stringify(payload),
+    env: { ...process.env },
     encoding: 'utf8',
+    timeout: 10_000,
   });
+  fs.rmSync(dir, { recursive: true, force: true });
+  return result;
 }
 
 function projectWithDashboard(agents) {

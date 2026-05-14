@@ -7,7 +7,7 @@ architectural contract: HME spans bash/python/JS runtimes that all touch
 shared filesystem state, and there is no automated guard against an
 unregistered writer.
 
-The registry is `doc/HME_STATE_OWNERSHIP.md`. Files listed under "single
+The registry is `doc/hme_full.md`. Files listed under "single
 owner" must have writes only from the declared owner. Files listed under
 "multiple writers" must have all writers enumerated. New files writing
 into `tmp/` or `log/` or `output/metrics/` that aren't in either table
@@ -31,7 +31,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", "/home/jah/Polychron"))
-REGISTRY_DOC = PROJECT_ROOT / "doc" / "HME_STATE_OWNERSHIP.md"
+REGISTRY_DOC = PROJECT_ROOT / "doc" / "hme_full.md"
 
 # Roots to scan for write operations against shared state.
 SCAN_ROOTS = [
