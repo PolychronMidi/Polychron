@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2901,
-      "updated_ts": 1778745699.2127843
+      "max_id": 2905,
+      "updated_ts": 1778745722.0492249
     }
   },
   {
     "id": 2894,
     "text": "Run HME selftest/status/evolve locally without subagents",
     "activeForm": "Running HME selftest/status/evolve locally without subagents",
-    "status": "completed",
-    "done": true,
+    "status": "in_progress",
+    "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2895,
     "text": "Inspect team config/dashboard state from filesystem",
     "activeForm": "Inspecting team config/dashboard state from filesystem",
-    "status": "in_progress",
+    "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
