@@ -82,10 +82,10 @@ def _model_ctx_window(model: str, tier: str) -> int:
    return windows[key]
  raise RuntimeError(f"context window unknown for model={model} tier={tier}")
 def _role_model(role: str, tier: str, observed: str) -> str:
- cfg = _model_cfg(); spec = cfg.get("team_role_models", {}).get(_role_key(role)) if role != "driver" else cfg.get("team_role_models", {}).get("driver")
- rtier = tier if spec and spec.get("tier") == "role" else (spec or {}).get("tier", tier)
+ cfg = _model_cfg(); spec = cfg.get("team_role_models", {}).get(_role_key(role)) or {}
+ rtier = tier if spec.get("tier") == "role" else spec.get("tier", tier)
  models = cfg.get("tiers", {}).get(rtier, {}).get("models", [])
- if spec and spec.get("source") == "manually_toprank":
+ if spec.get("source") == "manually_toprank":
   for mid in cfg.get("manually_toprank", {}).get(rtier, []):
    if any(m.get("id") == mid for m in models): return mid
  order = cfg.get("ranking_rules", {}).get("cost_order", ["free", "subscription", "usage"])
