@@ -169,7 +169,7 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
   ctx = _omniroute_ctx(role, sid, tier, forked_at)
   if not ctx:
    raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")
-  return {"pct": ctx["pct"], "window": ctx["window"], "sid": ctx["sid"]}
+  return {"pct": ctx["pct"], "window": ctx["window"], "sid": ctx["sid"], "model": ctx["model"]}
  try:
   from buddy_dispatch_status import _buddy_context_used # noqa: E402
  except ImportError as exc:
