@@ -2,34 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2971,
-      "updated_ts": 1778772921.0283775
+      "max_id": 2974,
+      "updated_ts": 1778773133.04219
     }
   },
   {
-    "id": 2968,
-    "text": "Fix dashboard stale/collapsed model attribution",
-    "activeForm": "Fixing dashboard stale/collapsed model attribution",
+    "id": 2972,
+    "text": "Find why MODE=6 role model routing still collapses in dashboard",
+    "activeForm": "Finding MODE=6 role model collapse cause",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778772724.5227256,
+    "ts": 1778773133.0421615,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2969,
-    "text": "Validate routing/dashboard with concrete evidence",
-    "activeForm": "Validating routing/dashboard with concrete evidence",
+    "id": 2973,
+    "text": "Patch proxy/dashboard routing with fail-fast role attribution",
+    "activeForm": "Patching proxy/dashboard role attribution",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778772724.5227396,
+    "ts": 1778773133.0421772,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2974,
+    "text": "Verify role model diversity with tests and live dashboard evidence",
+    "activeForm": "Verifying role model diversity",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778773133.0421877,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
