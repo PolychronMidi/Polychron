@@ -218,10 +218,11 @@ print(json.dumps({
 test('overdrive mode=5: empty tier (models=[]) falls through to free cascade', () => {
   // Empty E1 models before import so _resolve_mode5_chain returns None.
   const result = _runPython({ OVERDRIVE_MODE: '5', OVERDRIVE_VIA_SUBAGENT: '0' }, `
-import json, os
+import json, os, re
 cfg_path = os.path.join(os.environ["PROJECT_ROOT"], "config", "models.json")
 with open(cfg_path) as f:
-    cfg = json.load(f)
+    raw = f.read()
+cfg = json.loads(re.sub(r'^\s*//.*$|[ \t]+//.*$', '', raw, flags=re.MULTILINE))
 cfg["tiers"]["E1"]["models"] = []
 with open(cfg_path, "w") as f:
     json.dump(cfg, f)
