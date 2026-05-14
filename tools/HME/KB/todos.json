@@ -2,48 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2967,
-      "updated_ts": 1778772616.516372
+      "max_id": 2969,
+      "updated_ts": 1778772724.5227423
     }
   },
   {
-    "id": 2965,
-    "text": "Find why dashboard model values collapse to one model",
-    "activeForm": "Inspecting model attribution collapse",
+    "id": 2968,
+    "text": "Fix dashboard stale/collapsed model attribution",
+    "activeForm": "Fixing dashboard stale/collapsed model attribution",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778772616.5163407,
+    "ts": 1778772724.5227256,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2966,
-    "text": "Patch routing/dashboard attribution without fallback masking",
-    "activeForm": "Patching role model attribution",
+    "id": 2969,
+    "text": "Validate routing/dashboard with concrete evidence",
+    "activeForm": "Validating routing/dashboard with concrete evidence",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778772616.516358,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2967,
-    "text": "Verify with tests and dashboard evidence",
-    "activeForm": "Verifying model attribution",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778772616.5163696,
+    "ts": 1778772724.5227396,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
