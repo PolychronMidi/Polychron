@@ -2,48 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2863,
-      "updated_ts": 1778745175.3309648
+      "max_id": 2865,
+      "updated_ts": 1778745196.613968
     }
   },
   {
-    "id": 2861,
-    "text": "Repair team_dashboard.py syntax and context-window source",
-    "activeForm": "Repairing team_dashboard.py syntax and context-window source",
+    "id": 2864,
+    "text": "Fix team dashboard context-window source locally, no subagents",
+    "activeForm": "Fixing team dashboard context-window source locally, no subagents",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745175.3309376,
+    "ts": 1778745196.6139505,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2862,
-    "text": "Run HME validation commands locally",
-    "activeForm": "Running HME validation commands locally",
+    "id": 2865,
+    "text": "Verify syntax and targeted dashboard behavior",
+    "activeForm": "Verifying syntax and targeted dashboard behavior",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745175.3309522,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2863,
-    "text": "Report concise evidence",
-    "activeForm": "Reporting concise evidence",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778745175.3309624,
+    "ts": 1778745196.613965,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
