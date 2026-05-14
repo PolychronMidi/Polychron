@@ -90,7 +90,6 @@ Categories:
 - **Exhaust violation:** `exhaust_check.py` -- final text enumerates remaining items (TBD/banked/takes-effect-on-next/etc.) without fixing them.
 - **Scope-escape:** `scope_escape.py` -- final text dismisses a problem as `pre-existing` / `out of scope` instead of fixing.
 - **Phantom capability:** `phantom_capability.py` -- agent declared a thinking/delegation capability not in `_capability_enum.py`.
-- **Advisor doctrine:** `advisor_doctrine.py` -- E4/E5 work without `i/consult` invocation.
 - **Verification doctrine:** `claim_without_evidence.py` -- completion claim (`works`/`passes`/`lands`) without same-turn evidence-producing tool call.
 - **Systematic-debugging gate:** `fix_without_investigation.py` -- bug report → Edit/Write without prior investigation tool call.
 
