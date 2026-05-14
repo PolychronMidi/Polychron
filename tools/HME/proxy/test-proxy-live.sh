@@ -85,8 +85,8 @@ test_provider() {
 # Anthropic
 echo " Anthropic (default upstream) "
 ANTHROPIC_KEY_VALUE="${ANTHROPIC_KEY:-}"
-if [ "${OVERDRIVE_MODE:-0}" = "5" ]; then
-  echo "  SKIP: OVERDRIVE_MODE=5 (Anthropic-free -- live Anthropic test suppressed)"
+if [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
+  echo "  SKIP: OVERDRIVE_MODE=${OVERDRIVE_MODE} (Anthropic-free -- live Anthropic test suppressed)"
 elif [ -z "$ANTHROPIC_KEY_VALUE" ]; then
   echo "  SKIP: no ANTHROPIC_API_KEY in env (Claude Code manages its own key)"
 else
