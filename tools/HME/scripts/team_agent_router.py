@@ -246,9 +246,16 @@ def main() -> int:
         return 0
     if payload.get("tool_name") != "Agent":
         return 0
-    tool_input = payload.get("tool_input") or {}
+    tool_input = _tool_input(payload)
     caller = str(payload.get("_hme_team_role") or os.environ.get("HME_TEAM_ROLE") or "").strip().lower()
     request_tier = _tool_tier(tool_input)
+    if request_tier is None:
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": "Agent level must be an integer from 1 to 5",
+        }}))
+        return 0
     target = resolve_target_for_tier(caller, request_tier)
     if target is None and caller in _BLOCKED_CALLERS:
         print(json.dumps({"hookSpecificOutput": {
