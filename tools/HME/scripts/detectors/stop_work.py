@@ -39,12 +39,7 @@ DISMISSIVE_PHRASES = (
 )
 SUCCESS_ONLY = re.compile(r"^\s*\[?success\]?\s*[.!]?\s*$", re.IGNORECASE)
 
-# User-prompt patterns that explicitly invite a short confirmation reply.
-# When matched, TEXT_ONLY_SHORT is exempted because brevity IS the
-# correct response shape. Includes the AUTO-COMPLETENESS round-2 hook
-# directive itself, which literally says "say so plainly and the turn
-# will end" -- forcing the agent to pad against that directive is the
-# false-positive this exemption closes.
+# User prompts that legitimately invite a short confirmation.
 SHORT_CONFIRM_INVITATION_PATTERNS = (
     re.compile(r"\bsay\s+so\s+plainly\s+and\s+the\s+turn\s+will\s+end\b", re.IGNORECASE),
     re.compile(r"\bauto-completeness\s+inject\s*\(round\s+2", re.IGNORECASE),
