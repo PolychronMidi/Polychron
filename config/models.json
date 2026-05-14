@@ -29,7 +29,7 @@
 
     Purple Partner subagent routing: E4 & E5: Purple partner of opposing team, or E4 stagecrew. E1-E3: appropriately tiered stage crew, falling to lower tiers when desired tier unavailble.
 
-    Stage Crew subagent routing: Only allowed for E3 & E4 stage crew (E1-E3 agents blocked from using Agent tool), capped at level of originating stage crew. Routes to appropriately tiered stage crew, falling to lower tiers when desired tier unavailble.
+    Stage Crew subagent routing: Only allowed for E3 & E4 stage crew (E1-E3 agents blocked from using Agent tool), capped at level of originating stage crew. Routes to appropriately tiered stage crew, falling to lower tiers when desired tier unavailble."
   },
   "legacy_chains": {
     "_description": "MODE=1..4 static chains. Value: array (chain, allow_subagent derived) or object {chain:[], allow_subagent:bool}. Empty array = cascade. allow_subagent auto-derived: True iff any model starts with claude-.",
