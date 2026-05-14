@@ -44,6 +44,24 @@ ROLES = {
 }
 
 DEFAULT_CTX = {"E5": 200000, "E4": 128000, "E3": 64000, "E2": 32000, "E1": 16000}
+OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
+SESSION_ROOT = Path.home() / ".claude" / "projects" / "-home-jah-Polychron"
+
+ROLE_NEEDLES = {
+    "driver": ("MODE=6 team fanout active", "MODE6 Driver"),
+    "blue_lead": ("Blue Lead", "blue_lead"),
+    "blue_purple": ("Blue Purple", "blue_purple"),
+    "red_lead": ("Red Lead", "red_lead"),
+    "red_purple": ("Red Purple", "red_purple"),
+    "crew_e4_0": ("crew_e4_0",),
+    "crew_e4_1": ("crew_e4_1",),
+    "crew_e3_0": ("crew_e3_0",),
+    "crew_e3_1": ("crew_e3_1",),
+    "crew_e2_0": ("crew_e2_0",),
+    "crew_e2_1": ("crew_e2_1",),
+    "crew_e1_0": ("crew_e1_0",),
+    "crew_e1_1": ("crew_e1_1",),
+}
 
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
