@@ -216,7 +216,6 @@ def cmd_register(args):
         "tier": meta["tier"],
         "sid": info["sid"],
         "ctx_used_pct": info["pct"],
-        "ctx_source": info["source"],
         "ctx_available": info["window"],
         "last_active": _now(),
         "status": "registered",
@@ -250,7 +249,6 @@ def cmd_heartbeat(args):
         a["last_active"] = _now()
         info = _ctx_info(role, a.get("sid", ""), a.get("tier", "E3"), a.get("forked_at"))
         a["ctx_used_pct"] = info["pct"]
-        a["ctx_source"] = info["source"]
         a["ctx_available"] = info["window"]
         a["sid"] = info["sid"]
     _save(data)
@@ -274,7 +272,7 @@ def cmd_show(args):
         print("team-dashboard: no agents registered")
         return
     print(f"team-dashboard  updated={data.get('updated_at','?')}  mode={data.get('mode','?')}  agents={len(agents)}")
-    print(f"{'role':<14} {'team':<8} {'tier':<4} {'ctx%':>4}  {'bar':<10} {'ctx_src':<8} {'status':<12}  {'last_active':<8}  task")
+    print(f"{'role':<14} {'team':<8} {'tier':<4} {'ctx%':>4}  {'bar':<10} {'status':<12}  {'last_active':<8}  task")
     print("-" * 95)
     order = ["driver", "blue_lead", "blue_purple", "red_lead", "red_purple"]
     order += sorted([k for k in agents if k not in order])
@@ -285,8 +283,7 @@ def cmd_show(args):
         pct = a.get("ctx_used_pct", 0)
         la = a.get("last_active", "")[11:19] if a.get("last_active") else "?"
         task = (a.get("task") or "")[:40]
-        src = a.get("ctx_source") or "unknown"
-        print(f"{role:<14} {a.get('team','?'):<8} {a.get('tier','?'):<4} {pct:>3}%  {_bar(pct):<10} {src:<8} {a.get('status','?'):<12}  {la:<8}  {task}")
+        print(f"{role:<14} {a.get('team','?'):<8} {a.get('tier','?'):<4} {pct:>3}%  {_bar(pct):<10} {a.get('status','?'):<12}  {la:<8}  {task}")
 
 def cmd_summary(args):
     data = _load()
@@ -298,10 +295,6 @@ def cmd_summary(args):
     unknown_ctx = 0
     now = datetime.now(timezone.utc)
     for a in agents.values():
-        if not a.get("ctx_source"):
-            raise RuntimeError("context source missing in dashboard")
-        if a.get("ctx_source") == "unknown":
-            unknown_ctx += 1
         la = a.get("last_active", "")
         try:
             dt = datetime.fromisoformat(la.replace("Z", "+00:00"))
