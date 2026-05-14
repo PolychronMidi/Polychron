@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2593,
-      "updated_ts": 1778725379.850669
+      "max_id": 2599,
+      "updated_ts": 1778725521.1699886
     }
   },
   {
     "id": 2591,
     "text": "Create ONE shared models.json loader (JS + Python) and route all parsers through it",
-    "activeForm": "Creating centralized models.json loader",
-    "status": "in_progress",
-    "done": false,
+    "activeForm": "Created centralized models.json loader",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -35,15 +35,57 @@
     "tier": "E3"
   },
   {
-    "id": 2593,
-    "text": "Verify all loaders work end-to-end",
-    "activeForm": "Verifying loaders end-to-end",
+    "id": 2596,
+    "text": "Verify loaders end-to-end",
+    "activeForm": "Verified loaders end-to-end",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778725521.169961,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2597,
+    "text": "Register team dashboard: Blue Lead/Purple, Red Lead/Purple, 8 Stage Crew",
+    "activeForm": "Registering team dashboard agents",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778725521.16997,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2598,
+    "text": "Check OmniRoute compression settings",
+    "activeForm": "Checking OmniRoute compression",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778725379.8506665,
+    "ts": 1778725521.1699784,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2599,
+    "text": "Check HME onboarding status and evolve",
+    "activeForm": "Checking HME onboarding status",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778725521.1699867,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
