@@ -180,7 +180,7 @@ def _model_ctx_window(model: str) -> int:
     return 0
 
 
-def _omniroute_ctx(role: str, sid: str, forked_at: str | None = None) -> dict | None:
+def _omniroute_ctx(role: str, sid: str, fallback: int, forked_at: str | None = None) -> dict | None:
     if not OMNI_DB.is_file():
         return None
     try:
