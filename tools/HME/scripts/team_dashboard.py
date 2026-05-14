@@ -21,8 +21,43 @@ ROLES = {
     "crew_e1_0":    {"team": "crew",     "tier": "E1"},
     "crew_e1_1":    {"team": "crew",     "tier": "E1"},
 }
-# Dynamic context is loaded from configured model windows.
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
+_MODEL_WINDOWS: dict[str, int] | None = None
+def _jsonc(text: str) -> str:
+ out = []; quote = ""; esc = False; i = 0
+ while i < len(text):
+  c = text[i]; n = text[i + 1:i + 2]
+  if quote:
+   out.append(c)
+   if esc: esc = False
+   elif c == "\": esc = True
+   elif c == quote: quote = ""
+  elif c in "\"'":
+   quote = c; out.append(c)
+  elif c == "#" or (c == "/" and n == "/"):
+   while i < len(text) and text[i] != "
+": i += 1
+   out.append("
+")
+  else:
+   out.append(c)
+  i += 1
+ return "".join(out)
+def _model_windows() -> dict[str, int]:
+ global _MODEL_WINDOWS
+ if _MODEL_WINDOWS is not None: return _MODEL_WINDOWS
+ path = PROJECT / "config" / "models.json"
+ try:
+  cfg = json.loads(_jsonc(path.read_text()))
+ except (OSError, json.JSONDecodeError) as exc:
+  raise RuntimeError(f"model config unavailable: {path}") from exc
+ wins = {}
+ for td in cfg.get("tiers", {}).values():
+  for m in td.get("models", []):
+   if isinstance(m, dict) and m.get("id") and (m.get("max_context") or m.get("context_length")):
+    wins[str(m["id"])] = int(m.get("max_context") or m.get("context_length"))
+ if not wins: raise RuntimeError(f"model config has no context windows: {path}")
+ _MODEL_WINDOWS = wins; return wins
 MODEL_WINDOWS: dict[str, int] | None = None
 ROLE_NEEDLES = {
     "blue_lead": ("You are Blue Lead",),
@@ -136,13 +171,10 @@ def _model_windows() -> dict[str, int]:
     if not wins: raise RuntimeError("model config has no model windows")
     MODEL_WINDOWS = wins; return wins
 def _model_ctx_window(model: str, tier: str) -> int:
- if not model:
-  raise RuntimeError(f"omniroute row missing model for tier={tier}")
- wins = _model_windows()
- for key in (model, model.split("/", 1)[-1]):
-  if key in wins:
-   return wins[key]
- raise RuntimeError(f"context window unknown for model={model} tier={tier}")
+ key = model.split("/", 1)[-1] if model else ""
+ if key in _model_windows(): return _model_windows()[key]
+ if model: raise RuntimeError(f"context window unknown for model={model} tier={tier}")
+ raise RuntimeError(f"omniroute row missing model for tier={tier}")
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
     model = row["requested_model"] or row["model"] or ""
     if not model:
@@ -188,20 +220,22 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
     if peers: raise RuntimeError(f"session {unique[0]} matches multiple roles for {role}: {', '.join(peers)}")
     return _latest_session_ctx(rows, unique[0], tier)
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
-    if os.environ.get("OVERDRIVE_MODE") == "6":
-        ctx = _omniroute_ctx(role, sid, tier, forked_at)
-        if not ctx:
-            raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")
-        return {"pct": ctx["pct"], "window": ctx["window"], "sid": ctx["sid"]}
-    try:
-        from buddy_dispatch_status import _buddy_context_used  # noqa: E402
-    except ImportError as exc:
-        raise RuntimeError("buddy context provider unavailable") from exc
-    ctx = _buddy_context_used(sid)
-    if not ctx or "used_pct" not in ctx or "ctx_window" not in ctx:
-        raise RuntimeError(f"buddy context unavailable for {role} sid={sid}")
-    pct = min(100.0, max(0.0, round(float(ctx["used_pct"]), 1)))
-    return {"pct": pct, "window": int(ctx["ctx_window"]), "sid": sid}
+ if os.environ.get("OVERDRIVE_MODE") == "6":
+  ctx = _omniroute_ctx(role, sid, tier, forked_at)
+  if not ctx:
+   raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")
+  return {"pct": ctx["pct"], "window": ctx["window"], "sid": ctx["sid"]}
+ try:
+  from buddy_dispatch_status import _buddy_context_used # noqa: E402
+ except ImportError as exc:
+  raise RuntimeError("buddy context provider unavailable") from exc
+ ctx = _buddy_context_used(sid)
+ if not ctx or "used_pct" not in ctx or "ctx_window" not in ctx:
+  raise RuntimeError(f"buddy context unavailable for {role} sid={sid}")
+ window = int(ctx["ctx_window"])
+ if window <= 0: raise RuntimeError(f"buddy context window invalid for {role} sid={sid}")
+ pct = round(min(100.0, max(0.0, float(ctx["used_pct"]))), 1)
+ return {"pct": pct, "window": window, "sid": sid}
 def cmd_register(args):
     data = _load()
     role = args.role
