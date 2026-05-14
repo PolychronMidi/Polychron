@@ -609,7 +609,7 @@ function handleRequest(clientReq, clientRes) {
             const m = /\bcrew_e[1-4]_[01]\b/.exec(_msgText);
             return m ? m[0] : '';
           })();
-          const _role = (process.env.HME_TEAM_ROLE || _roleFromText || '').toLowerCase();
+          const _role = (_roleFromText || process.env.HME_TEAM_ROLE || '').toLowerCase();
           const _roleTier = (() => {
             if (['driver', 'blue_lead', 'red_lead', 'team_lead'].includes(_role)) return 'E5';
             if (['blue_purple', 'red_purple', 'team_purple'].includes(_role)) return 'E4';
