@@ -275,12 +275,12 @@ def _resolve_mode_legacy_chain_from_registry(mode: str, tier: str) -> tuple[tupl
     """Resolve MODE=1..4 (chain, allow_subagent) from config/models.json
     legacy_chains block. Empty arrays = cascade fallthrough (None).
     allow_subagent: True iff any model in chain starts with 'claude-'."""
-    import json as _json
-    import os as _os
+    import json as _json, os as _os, re as _re
     _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
     try:
         with open(_cfg_path) as _f:
-            _cfg = _json.load(_f)
+            _raw = _f.read()
+        _cfg = _json.loads(_re.sub(r'^\s*//.*$|[ \t]+//.*$', '', _raw, flags=_re.MULTILINE))
     except Exception:
         return None
     _legacy = _cfg.get("legacy_chains", {})
