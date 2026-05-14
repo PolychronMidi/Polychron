@@ -246,8 +246,8 @@ def main() -> int:
         return 0
     tool_input = payload.get("tool_input") or {}
     caller = str(payload.get("_hme_team_role") or os.environ.get("HME_TEAM_ROLE") or "").strip().lower()
-    sub_type = str(tool_input.get("subagent_type") or "general-purpose")
-    target = resolve_target(caller, sub_type)
+    request_tier = _tool_tier(tool_input)
+    target = resolve_target_for_tier(caller, request_tier)
     if target is None and caller in _BLOCKED_CALLERS:
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse",
