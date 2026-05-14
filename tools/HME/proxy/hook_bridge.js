@@ -81,6 +81,7 @@ const PRETOOL_SCRIPTS = {
   Glob: [path.join(PRETOOLUSE, 'pretooluse_glob.sh')],
   TodoWrite: [path.join(PRETOOLUSE, 'pretooluse_todowrite.sh')],
   ToolSearch: [path.join(PRETOOLUSE, 'pretooluse_toolsearch.sh')],
+  Agent: [path.join(PRETOOLUSE, 'pretooluse_agent.sh')],
 };
 
 // Tool-name -> posttooluse scripts (log-tool-call runs for all).
