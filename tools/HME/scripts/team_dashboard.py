@@ -129,7 +129,7 @@ def cmd_register(args):
         "team": meta["team"],
         "tier": meta["tier"],
         "sid": args.sid,
-        "ctx_used_pct": _ctx_pct(args.sid, meta["tier"]),
+        "ctx_used_pct": _ctx_pct(args.sid, meta["tier"], status="registered"),
         "ctx_source": _ctx_source(args.sid),
         "ctx_available": DEFAULT_CTX.get(meta["tier"], 0),
         "last_active": _now(),
@@ -162,7 +162,7 @@ def cmd_heartbeat(args):
     if role in data.get("agents", {}):
         a = data["agents"][role]
         a["last_active"] = _now()
-        a["ctx_used_pct"] = _ctx_pct(a.get("sid", ""), a.get("tier", "E3"))
+        a["ctx_used_pct"] = _ctx_pct(a.get("sid", ""), a.get("tier", "E3"), status=a.get("status", "registered"))
         a["ctx_source"] = _ctx_source(a.get("sid", ""))
     _save(data)
 
