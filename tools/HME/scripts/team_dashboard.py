@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Team IPC dashboard for MODE=6 agent health."""
 from __future__ import annotations
-import argparse, json, os, re, sqlite3, sys
+import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -39,7 +39,6 @@ ROLE_NEEDLES = {
     "crew_e1_0": ("crew_e1_0",), "crew_e1_1": ("crew_e1_1",),
 }
 
-
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -61,12 +60,13 @@ def _is_mode6() -> bool:
 
 def _normalize(data: dict) -> dict:
     data.setdefault("agents", {})
-    mode = os.environ.get("OVERDRIVE_MODE")
-    if mode and "mode" not in data:
-        try:
-            data["mode"] = int(mode)
-        except ValueError:
-            data["mode"] = mode
+    if "mode" not in data:
+        mode = os.environ.get("OVERDRIVE_MODE")
+        if mode:
+            try:
+                data["mode"] = int(mode)
+            except ValueError:
+                data["mode"] = mode
     data.pop("stage_crew", None)
     return data
 
@@ -141,9 +141,9 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
 def _model_ctx_window(model: str, tier: str) -> int:
     if model.startswith(("codex/", "cx/", "gpt-5.5")):
         return 1050000
-    if not model:
-        raise RuntimeError(f"omniroute row missing model for tier={tier}")
-    raise RuntimeError(f"context window unknown for model={model} tier={tier}")
+    if model:
+        raise RuntimeError(f"context window unknown for model={model} tier={tier}")
+    raise RuntimeError(f"omniroute row missing model for tier={tier}")
 
 
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
