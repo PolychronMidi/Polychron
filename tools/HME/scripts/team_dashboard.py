@@ -89,7 +89,7 @@ def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
  window = _model_ctx_window(model, tier)
  used = float(row["tokens_in"] or 0)
  pct = round(min(100.0, max(0.0, used / max(1, window) * 100)), 1)
- return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id}
+ return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id, "model": model}
 def _metadata_session_id(body: dict) -> str:
  meta = body.get("metadata") if isinstance(body, dict) else {}
  user_id = meta.get("user_id") if isinstance(meta, dict) else None
