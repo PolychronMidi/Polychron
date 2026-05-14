@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2667,
-      "updated_ts": 1778727543.2408016
+      "max_id": 2674,
+      "updated_ts": 1778727570.3814054
     }
   },
   {
@@ -66,8 +66,8 @@
     "id": 2658,
     "text": "Assess/fix MODE=6 role routing and dashboard drift",
     "activeForm": "Assessing/fixing MODE=6 role routing and dashboard drift",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -80,7 +80,7 @@
     "id": 2659,
     "text": "Capture MODE=6\u2192buddy deprecation migration note",
     "activeForm": "Capturing MODE=6\u2192buddy deprecation migration note",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
