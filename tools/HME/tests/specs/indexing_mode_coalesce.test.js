@@ -7,7 +7,7 @@
 // `daemon refused indexing-mode` message and emitted a logger.warning
 // at every layer it touched. But concurrent reindex requests are the
 // design, not an aberration: the edit-watcher, scheduled refresh, and
-// manual `i/hme-admin action=index` all fire independently and
+// manual `i/hme admin action=index` all fire independently and
 // regularly overlap. Coalescing is the correct behavior.
 //
 // This test exercises the in-process Python lock by importing the

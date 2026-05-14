@@ -67,7 +67,7 @@ class CorePrinciplesAuditVerifier(Verifier):
 
 
 class HardcodedToolInvocationVerifier(Verifier):
-    """Strings like `i/hme-admin action=warm`, `i/status mode=hci-diff`,
+    """Strings like `i/hme admin action=warm`, `i/status mode=hci-diff`,
     `i/evolve focus=design`, `i/review mode=forget`, `i/why mode=block`
     in user-facing output paths (selftest hints, error messages, primer
     examples, narrative output) should render through `tool_invocations.py`
@@ -89,8 +89,7 @@ class HardcodedToolInvocationVerifier(Verifier):
     # Each entry is `i/<wrapper> <key>=<value>`. Bare `i/<wrapper>` calls
     # without parameters aren't flagged -- those rarely drift on rename.
     _RE = re.compile(
-        r'["\'`]i/(?:hme-admin|status|evolve|review|why|learn|trace|hme-read)'
-        r'\s+(?:action|mode|focus|target|name|query)=[a-zA-Z_][\w-]*'
+        r'["\'`](?:i/hme\s+admin\s+action|i/(?:status|evolve|review|why|learn|trace)\s+(?:mode|focus|target|name|query))=[a-zA-Z_][\w-]*'
     )
     _SKIP_FILES = {
         # Helper itself defines the canonical mapping
@@ -385,5 +384,3 @@ class CommentBloatVerifier(Verifier):
             f"{fail_count} comment block(s) >=5 lines, {warn_count} >=3 lines",
             detail,
         )
-
-

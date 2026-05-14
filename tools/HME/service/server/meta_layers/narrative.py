@@ -208,7 +208,7 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
         try:
             from tool_invocations import action_form as _action_form
         except ImportError:
-            def _action_form(a): return f"i/hme-admin action={a}"
+            def _action_form(a): return f"i/hme admin action={a}"
         parts.append(f"ACTION: High phantom rate in synthesis outputs -- consider running `{_action_form('index')}` to refresh module index.")
 
     return " ".join(parts)
@@ -269,4 +269,3 @@ def read_startup_narrative() -> str | None:
 
 
 # Layer 16: Environmental Awareness
-

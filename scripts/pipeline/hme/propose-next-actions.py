@@ -142,7 +142,7 @@ def main() -> int:
             "summary": f"Module '{mod}' has zero KB coverage",
             "detail": "Edits to this module can't benefit from KB constraints -- the KB is blind here.",
             "steps": [
-                f"i/hme-read target={mod} mode=before -- seeds KB via the staleness pass",
+                f"native Read on {mod} -- seeds KB via the staleness pass",
                 f"i/learn title='{mod} purpose' content='...' category=architecture -- capture first anchor",
             ],
         })

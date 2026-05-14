@@ -150,7 +150,7 @@ HME (via Bash):
   i/learn        action=ground_truth title=<...> tags=[...] content=<...> query=<round>
   i/trace        target=<module|query> [mode=auto|impact|diagnose] [limit=N]
   i/status       [mode=budget|coherence|trajectory]
-  i/hme-admin    action=selftest|index|warm
+  i/hme          admin action=selftest|index|warm
   i/evolve       [focus=all|design|invariants|coupling] [query=<topic>]
 
 DEFERRED (fetch schema with select: before calling):

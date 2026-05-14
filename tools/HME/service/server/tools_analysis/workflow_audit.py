@@ -220,7 +220,7 @@ def what_did_i_forget(changed_files: str) -> str:
     try:
         from tool_invocations import action_form as _action_form, i_form as _i_form
     except ImportError:
-        def _action_form(a): return f"i/hme-admin action={a}"
+        def _action_form(a): return f"i/hme admin action={a}"
         def _i_form(name, primer=False, value=""): return f"i/{name} action={value}" if value else f"i/{name}"
     parts.append(f"\n## Reminders")
     parts.append(f"  - `{_action_form('index')}` after batch changes (file watcher handles individual saves)")

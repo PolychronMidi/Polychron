@@ -58,7 +58,7 @@ The full-briefing internal function (`read(target, mode='before')`) still exists
 
 1. **`i/review mode=forget`** -- auto-detects changed files from git. Checks against KB constraints, boundary rules, L0 channels, doc needs. Optionally pass `changed_files=file1.js,file2.js` to override.
 2. File watcher auto-reindexes on save (5s debounce, 5min cooldown between full reindexes)
-3. For batch changes: `i/hme-admin action=index` once at the end
+3. For batch changes: `i/hme admin action=index` once at the end
 
 ### After Confirmed Round
 

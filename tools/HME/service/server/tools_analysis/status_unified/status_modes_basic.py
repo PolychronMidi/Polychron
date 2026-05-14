@@ -43,14 +43,14 @@ def _mode_hme():
     """HME session state -- distinct from selftest (pre-flight readiness).
     Surfaces: onboarding step, last activity events, current verdict.
     For pre-flight readiness (PASS/FAIL count + warnings), use
-    `i/hme-admin action=selftest`."""  # tool-form-ok (static docstring)
+    `i/hme admin action=selftest`."""  # tool-form-ok (static docstring)
     import os as _os
     import json as _json
     from .. import ctx as _ctx_mod
     try:
         from tool_invocations import action_form as _action_form
     except ImportError:
-        def _action_form(a): return f"i/hme-admin action={a}"
+        def _action_form(a): return f"i/hme admin action={a}"
     _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
     out = ["## HME session state",
            f"(For pre-flight check use `{_action_form('selftest')}`.)",

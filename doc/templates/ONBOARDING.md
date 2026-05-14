@@ -28,7 +28,7 @@ Every new session starts in onboarding state `boot`. The chain decider -- living
 State machine -- 7 forward-only states, advancement is automatic via tool handlers + hooks:
 
 ```
-boot --[i/hme-admin selftest passes]-->
+boot --[i/hme admin action=selftest passes]-->
   selftest_ok --[i/evolve focus=design|forge|curate|stress|invariants]-->
     targeted --[Edit on /src/ (briefing auto-chains)]-->
       edited --[i/review mode=forget reports zero warnings]-->
@@ -38,7 +38,7 @@ boot --[i/hme-admin selftest passes]-->
               graduated  (state file deleted)
 ```
 
-You never call `i/hme-read mode=before` explicitly -- the briefing is woven into every Edit on a `/src/` file automatically by the pretooluse hook. Each step either advances state automatically or gets blocked with a one-line redirect telling you the exact next call. If a call gets denied, the reason is the lesson.
+You never call an HME read wrapper explicitly -- the briefing is woven into native Read/Edit on tracked files automatically. Each step either advances state automatically or gets blocked with a one-line redirect telling you the exact next call. If a call gets denied, the reason is the lesson.
 
 **If you lose the thread mid-session**, run `i/status mode=all` -- it reports the current onboarding state, which step is in progress, the rolling metrics, and the most recent pipeline verdict. The correct next call is in that output. `i/status mode=hme` is the narrower version when you only need the onboarding state.
 
@@ -104,8 +104,8 @@ i/evolve focus=stress                    35 adversarial enforcement probes
 i/evolve focus=contradict                KB conflict scanner
 i/learn query=...                          KB search
 i/learn action=health                    KB staleness check
-i/hme-admin action=index                 reindex after batch changes
-i/hme-admin action=reload                hot-reload tool modules
+i/hme admin action=index                 reindex after batch changes
+i/hme admin action=reload                hot-reload tool modules
 i/todo action=add text=... parent_id=... critical=... on_done=...
                                          hierarchical extension of TodoWrite (subs, critical,
                                          on_done triggers 'reindex'/'learn'/'commit')

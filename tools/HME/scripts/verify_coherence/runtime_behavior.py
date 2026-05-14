@@ -207,14 +207,14 @@ class WarmContextFreshnessVerifier(Verifier):
 
 
 def _trigger_warm_reprime() -> None:
-    """Fire-and-forget background call to i/hme-admin action=warm.
+    """Fire-and-forget background call to i/hme admin action=warm.
 
     Previous design: drop a sentinel file (`tmp/hme-warm-reprime.request`)
     on the assumption that "sessionstart/admin path will pick up". A grep
     for that sentinel found ONLY producers (this verifier + main-pipeline.js)
     -- no consumer ever existed, so the auto-reprime never fired and the
     cache went stale until the verifier escalated from WARN to FAIL. Now
-    we directly invoke the i/hme-admin wrapper which actually starts the
+    we directly invoke the i/hme admin path which actually starts the
     background warm priming. The sentinel write stays as a side-effect
     breadcrumb (operator can still see "reprime was attempted at <ts>")
     but it's no longer load-bearing.
@@ -229,13 +229,13 @@ def _trigger_warm_reprime() -> None:
         except OSError:
             pass  # silent-ok: best-effort fs op
         try:
-            # Detached: start the warm and don't wait. i/hme-admin already
+            # Detached: start the warm and don't wait. i/hme admin already
             # backgrounds the actual priming work and returns immediately,
             # so a 5s timeout is plenty for the wrapper round-trip.
-            wrapper = os.path.join(_PROJECT, "i", "hme-admin")
+            wrapper = os.path.join(_PROJECT, "i", "hme")
             if os.path.isfile(wrapper) and os.access(wrapper, os.X_OK):
                 subprocess.run(
-                    [wrapper, "action=warm"],
+                    [wrapper, "admin", "action=warm"],
                     timeout=5,
                     capture_output=True,
                     check=False,
@@ -328,5 +328,3 @@ class BuddyPrimaryHealthVerifier(Verifier):
                            [f"sid: {content[:12]}",
                             "fix: i/handoff retire then SessionStart for fresh spawn"])
         return _result(PASS, 1.0, f"buddy-primary.sid present (age {int(age_s)}s, sid={content[:12]})")
-
-

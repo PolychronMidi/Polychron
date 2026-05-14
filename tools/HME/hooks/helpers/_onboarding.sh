@@ -91,7 +91,7 @@ _onb_advance_to() {
 _onb_step_label() {
   local s; s="$(_onb_state)"
   case "$s" in
-    boot)        echo "1/7 boot check (run i/hme-admin action=selftest)" ;;
+    boot)        echo "1/7 boot check (run i/hme admin action=selftest)" ;;
     selftest_ok) echo "2/7 pick evolution target (run i/evolve focus=design)" ;;
     targeted)    echo "3/7 edit target module (Edit tool -- briefing auto-chains)" ;;
     edited)      echo "4/7 audit changes (run i/review mode=forget)" ;;

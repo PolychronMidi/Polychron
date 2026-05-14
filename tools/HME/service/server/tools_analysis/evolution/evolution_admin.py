@@ -87,7 +87,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
         try:
             from tool_invocations import action_form as _action_form
         except ImportError:
-            def _action_form(a): return f"i/hme-admin action={a}"
+            def _action_form(a): return f"i/hme admin action={a}"
         parts.append(
             "Warm priming started (2 parallel background tasks: GPU KV contexts + pre-edit cache).\n"
             f"Use `{_action_form('selftest')}` to check status."

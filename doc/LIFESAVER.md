@@ -50,7 +50,7 @@ The `hookSpecificOutput` mechanism gives four response modes:
 
 ### Soft feedback (stderr, command proceeds)
 
-Editing src/ without prior `i/hme-read`; reading task-output files (reminder to wait for notification); writes to `lab/sketches.js` (lab-rules reminder).
+Editing src/ without native Read/Edit enrichment; reading task-output files (reminder to wait for notification); writes to `lab/sketches.js` (lab-rules reminder).
 
 ### Streak counter
 

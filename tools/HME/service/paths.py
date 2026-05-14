@@ -8,7 +8,7 @@ become a one-file edit instead of a sed-and-pray across N modules.
 Resolution is lazy: paths are functions, not module-level constants.
 Each call re-reads PROJECT_ROOT, so hot-reload + path changes take
 effect without a full proxy restart. Module-level constants computed
-at import time froze the OLD path even after `i/hme-admin reload`,
+at import time froze the OLD path even after `i/hme admin reload`,
 which is why the templates/ move required a full process restart.
 """
 from __future__ import annotations

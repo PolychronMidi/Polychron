@@ -8,8 +8,8 @@ hand-duplicating the translation across dozens of files.
 
 Usage:
     from tool_invocations import i_form, action_form
-    msg = f"run {i_form('hme_admin')} action=warm"   # -> "run i/hme-admin action=warm"
-    msg = f"fix: {action_form('clear_index')}"        # -> "fix: i/hme-admin action=clear_index"
+    msg = f"run {i_form('hme_admin')} action=warm"   # -> "run i/hme admin action=warm"
+    msg = f"fix: {action_form('clear_index')}"        # -> "fix: i/hme admin action=clear_index"
 """
 from __future__ import annotations
 
@@ -57,8 +57,8 @@ def i_form(mcp_name: str, primer: bool = False, value: str = "") -> str:
 
 
 def action_form(action: str) -> str:
-    """Return the canonical invocation for a known hme-admin action."""
-    return _DATA.get("actions", {}).get(action, f"i/hme-admin action={action}")
+    """Return the canonical invocation for a known HME admin action."""
+    return _DATA.get("actions", {}).get(action, f"i/hme admin action={action}")
 
 
 def reload() -> None:

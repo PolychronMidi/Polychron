@@ -11,7 +11,7 @@
   "rules": [
     {
       "id": "auto_read_before_edit_when_unbriefed_burst",
-      "description": "If the last 20 events show 3+ coherence_violation (edit_without_brief), auto-prompt i/hme-read on the next edit in the session.",
+      "description": "If the last 20 events show 3+ coherence_violation (edit_without_brief), rely on native Read/Edit enrichment before the next edit in the session.",
       "window": 20,
       "trigger": "count_event_reason(event='coherence_violation', reason_contains='write_without_hme_read') >= 3",
       "export": "HME_AUTO_READ_BEFORE_EDIT",

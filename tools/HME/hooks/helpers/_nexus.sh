@@ -149,7 +149,7 @@ _nexus_pending() {
 # Canonical BRIEF-recording entry point. Writes to tmp/hme-nexus.state AND
 # emits a `brief_recorded` activity event so downstream can see WHICH paths
 # are firing. Centralizes what was previously 4 independent _nexus_add
-# call sites (posttooluse_read_kb, posttooluse_hme_read, pretooluse_grep,
+# call sites (posttooluse_read_kb, pretooluse_grep,
 # nexus_tracking.js middleware) -- each can still call _nexus_add directly
 # for backward compat, but new paths should use _brief_add.
 _brief_add() {

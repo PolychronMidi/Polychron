@@ -83,9 +83,9 @@ def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
     ctx.ensure_ready_sync()
     if not target or not target.strip():
         return (
-            "i/hme-read -- KB-briefed code reader.\n\n"
+            "read(target, mode) -- internal KB-briefed code reader.\n\n"
             "Usage:\n"
-            "  i/hme-read target=<name> [mode=auto|before|story|impact|both|lines|function|structure|callers|deps] [fast=true]\n\n"
+            "  read target=<name> [mode=auto|before|story|impact|both|lines|function|structure|callers|deps] [fast=true]\n\n"
             "Target forms (auto-detected):\n"
             "  src/path/file.js           -> file_intel (structure + KB)\n"
             "  src/path/file.js:10-50     -> file_lines (line range)\n"
@@ -93,9 +93,9 @@ def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
             "  moduleName                 -> module_intel\n\n"
             "Modes:\n"
             "  auto (default)             detect from target shape\n"
-            "  before                     pre-edit briefing: KB constraints, callers, risks -- MANDATORY before edits\n"
+            "  before                     pre-edit briefing: KB constraints, callers, risks\n"
             "  fast=true                  skip slow adaptive-synthesis (~60-120s faster)\n"
-            "\nExample: i/hme-read target=harmonicIntervalGuard mode=before"
+            "\nPublic surface: use native Read/Edit; hooks add HME context automatically."
         )
 
     # Propagate fast flag via env so deep-call-chain synthesis gates can see it
@@ -103,8 +103,8 @@ def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
     if fast:
         os.environ["HME_READ_FAST"] = "1"  # env-ok: transient per-call flag, not persistent config
 
-    # Tool-layer BRIEF emission -- agent-independent. When the agent calls
-    # i/hme-read (or the Edit pre-hook auto-chains this), that IS a BRIEF.
+    # Tool-layer BRIEF emission -- agent-independent. When native Read/Edit
+    # enrichment or an internal scripted read reaches this path, that IS a BRIEF.
     # Emit from the tool itself so BRIEFs don't depend on hook substrate or
     # proxy middleware being active. Stores both bare module AND abs path so
     # downstream hme_read_prior matching works regardless of form.

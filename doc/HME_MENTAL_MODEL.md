@@ -59,7 +59,7 @@ The MCP server, proxy, and hooks all read/write a shared substrate: KB (LanceDB)
 
 - **Hooks** (bash) -- `_proxy_bridge.sh` dispatches to `pretooluse_*.sh` / `posttooluse_*.sh`. Fires every Tool call. Inspect via `tools/HME/hooks/` and `i/why mode=block`.
 - **Policies** (JS) -- `tools/HME/policies/builtin/*.js`. Fires every Tool call (proxy-side). Inspect via `i/policies list`, `show`, `disable`.
-- **HCI verifiers** (py) -- 67 verifiers in `tools/HME/scripts/verify_coherence/`. Fires every pipeline run + on-demand. Inspect via `i/hme-admin action=selftest` (subtag column reveals "what kind of broken").
+- **HCI verifiers** (py) -- 67 verifiers in `tools/HME/scripts/verify_coherence/`. Fires every pipeline run + on-demand. Inspect via `i/hme admin action=selftest` (subtag column reveals "what kind of broken").
 - **ESLint rules** -- `scripts/eslint-rules/`. Fires `npm run main` lint phase. Inspect via `npm run lint`.
 
 When something blocks you: bash hook (exit 2 + message), JS policy (`{decision: 'deny', reason: ...}`), HCI verifier (FAIL line in selftest), ESLint rule (lint output). Each has a unique signature.
@@ -94,7 +94,7 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 - **"Where is HME across every dimension at once?"** -> `i/status holograph` (interstellar overview -- one row per horizon, all 10 in ~12 lines)
 - **"Where am I in the workflow?"** -> `i/status state`
 - **"What just happened? what has HME done in the last N minutes?"** -> `i/status timeline` (joins markers + activity log into one chronological view)
-- **"What's HME's current health?"** -> `i/hme-admin action=selftest`
+- **"What's HME's current health?"** -> `i/hme admin action=selftest`
 - **"Did my last edit help or hurt the score?"** -> `i/status mode=hci-diff`
 - **"What kind of broken is everything that's red?"** -> `i/status mode=hci-by-subtag` (aggregates by category)
 - **"How is the agent loop running this session?"** -> `i/status mode=agent-loop` (Horizon IV -- tools-per-turn, brief coverage, error rate)

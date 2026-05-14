@@ -229,7 +229,7 @@ fi
 # 2. Logic: If blocked by streak, ensure message is clear.
 if [[ "$STDOUT" == *"STREAK_RESET"* ]] || [[ "$STDERR" == *"BLOCKED: Raw tool streak"* ]]; then
     if [ -z "$STDOUT" ]; then
-      STDOUT="NOTICE: My raw tool streak is too high (safety limit). To continue, I must now run one of the HME scripts (like 'npm run hme-read' or 'npm run review') to refresh my context."
+      STDOUT="NOTICE: My raw tool streak is too high (safety limit). To continue, I must now run one of the HME scripts (like 'i/review mode=forget') or use native Read to refresh my context."
     fi
     STDERR="Streak limit hit. Redirecting agent to HME tools."
     EXIT_CODE=0

@@ -35,7 +35,7 @@ echo "chaos: running selftest; expecting llama-server-count > 2"
 cd "$_PROJECT_ROOT"
 # pgrep still matches "tools/bin/llama-server" within "tools/bin/llama-server-chaos-decoy"
 # because of substring matching.
-_out=$(./i/hme-admin action=selftest modules=verbose 2>&1)
+_out=$(./i/hme admin action=selftest modules=verbose 2>&1)
 
 # Clean up fake process + binary before interpreting result so we leave
 # no orphans if the assertion fails.

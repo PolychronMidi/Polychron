@@ -37,7 +37,7 @@ module.exports = {
 
     if (name === 'Read' && _isTrackedPath(fp)) {
       // Silent KB enrichment: reading a tracked src/ file auto-marks BRIEF,
-      // same effect as an explicit i/hme-read call.
+      // same effect as the retired explicit HME read call.
       const module = _extractModule(fp);
       ctx.nexusAdd('BRIEF', module);
       ctx.emit({ event: 'brief_recorded', target: module, source: 'middleware_read' });

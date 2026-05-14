@@ -263,7 +263,7 @@ def start_watcher(project_root: str, engine, debounce: float = 30.0):
             # every Python import, and hot_reload itself imports, so without
             # the gate we got a 5s self-perpetuating reload loop.
             # Watcher binds once per server boot (rag_engines.py); edits here
-            # need full restart, not `i/hme-admin action=reload`.
+            # need full restart, not `i/hme admin action=reload`.
             if (
                 is_write
                 and ext == ".py"

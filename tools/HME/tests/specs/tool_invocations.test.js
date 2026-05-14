@@ -2,7 +2,7 @@
 // Smoke tests for the canonical tool-invocation helper. Verifies the
 // JSON config parses, the `i_form` shapes (default / primer / value=)
 // each produce expected forms, and `action_form` covers the known
-// hme-admin actions. Future renames of any wrapper should land in the
+// HME admin actions. Future renames of any wrapper should land in the
 // JSON; the helper API is the contract everything else depends on.
 
 const { test } = require('node:test');
@@ -60,7 +60,7 @@ test('i_form value= on hme_admin substitutes <ACTION>', () => {
   const out = _py(
     "from tool_invocations import i_form; print(i_form('hme_admin', value='warm'))"
   );
-  assert.strictEqual(out, 'i/hme-admin action=warm');
+  assert.strictEqual(out, 'i/hme admin action=warm');
 });
 
 test('i_form unknown wrapper falls back gracefully', () => {
@@ -77,24 +77,24 @@ test('i_form unknown wrapper with value= falls back to mode=', () => {
   assert.strictEqual(out, 'i/unknown-tool mode=x');
 });
 
-test('action_form covers known hme-admin actions', () => {
+test('action_form covers known HME admin actions', () => {
   const out = _py(
     "from tool_invocations import action_form;"
     + " print(action_form('warm')); print(action_form('selftest'));"
     + " print(action_form('reload')); print(action_form('index'))"
   );
   const lines = out.split('\n');
-  assert.strictEqual(lines[0], 'i/hme-admin action=warm');
-  assert.strictEqual(lines[1], 'i/hme-admin action=selftest');
-  assert.strictEqual(lines[2], 'i/hme-admin action=reload');
-  assert.strictEqual(lines[3], 'i/hme-admin action=index');
+  assert.strictEqual(lines[0], 'i/hme admin action=warm');
+  assert.strictEqual(lines[1], 'i/hme admin action=selftest');
+  assert.strictEqual(lines[2], 'i/hme admin action=reload');
+  assert.strictEqual(lines[3], 'i/hme admin action=index');
 });
 
 test('action_form unknown action falls back consistently', () => {
   const out = _py(
     "from tool_invocations import action_form; print(action_form('made_up_action'))"
   );
-  assert.strictEqual(out, 'i/hme-admin action=made_up_action');
+  assert.strictEqual(out, 'i/hme admin action=made_up_action');
 });
 
 test('all 8 wrappers covered by HardcodedToolInvocationVerifier have JSON entries', () => {

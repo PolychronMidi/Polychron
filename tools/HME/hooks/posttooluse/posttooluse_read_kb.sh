@@ -2,7 +2,7 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
 # PostToolUse: Read -- silent KB brief injection for src/ and tools/HME/ files.
-# Fires the same KB lookup as i/hme-read without requiring an explicit call.
+# Native Read is the public surface; this hook records the HME brief.
 # Only runs for tracked paths; exits 0 silently for everything else.
 
 INPUT=$(cat)

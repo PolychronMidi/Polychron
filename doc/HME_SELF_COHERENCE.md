@@ -24,7 +24,7 @@ python3 tools/HME/scripts/verify-coherence.py --json     # machine-readable
 python3 tools/HME/scripts/verify-coherence.py --score    # integer only
 ```
 
-The score also flows through `i/hme-admin action=selftest` and `i/status mode=hci-by-subtag`.
+The score also flows through `i/hme admin action=selftest` and `i/status mode=hci-by-subtag`.
 
 ### Reading the HCI
 

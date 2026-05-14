@@ -18,7 +18,7 @@ from _common import PROJECT_ROOT
 
 
 _STATE_DESC = {
-    "boot":        "Fresh session. Forward: i/hme-admin action=selftest with zero FAIL.",
+    "boot":        "Fresh session. Forward: i/hme admin action=selftest with zero FAIL.",
     "selftest_ok": "Selftest passed. Forward: i/evolve focus=design (or any focus= picking a target).",
     "targeted":    "Evolution target picked. Forward: Edit on any /src/ file (briefing auto-chains).",
     "edited":      "Edit applied. Forward: i/review mode=forget with no warnings.",

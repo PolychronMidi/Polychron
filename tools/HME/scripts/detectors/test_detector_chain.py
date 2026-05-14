@@ -14,8 +14,8 @@ had been silently broken for months:
   2. `_AC_PROJECT` unbound-variable in stop.sh's holograph step crashed
      the chain before `work_checks.sh` (auto-completeness-inject) ran.
 
-  3. `write_without_hme_read` emitter fired on 100% of edits because
-     `HME_READ_TOOLS` looked for MCP-era tool names that don't exist.
+  3. The old write-without-explicit-read emitter fired on 100% of edits
+     because it looked for MCP-era tool names that don't exist.
 
 One canonical-transcript smoke-test per detector, run as a CI gate,
 would have caught all three in seconds. This file is that gate.

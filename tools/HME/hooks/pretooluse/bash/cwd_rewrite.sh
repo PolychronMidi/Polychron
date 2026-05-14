@@ -11,7 +11,7 @@
 # (regex substitution), so we drop the cwd-guessing entirely. Still skips
 # when already absolute (leading `/`) or ./-prefixed.
 if [ -n "${PROJECT_ROOT:-}" ] \
-   && echo "$CMD" | grep -qE '(^|[[:space:]])i/(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b'; then
+   && echo "$CMD" | grep -qE '(^|[[:space:]])i/(review|learn|trace|evolve|status|todo|hme|audit|why|policies)\b'; then
   # FAIL-LOUD: was `2>/dev/null`. A python crash here silently disabled
   # the i/wrapper path auto-correct, leading to the hard-to-debug
   # `i/review: No such file or directory` error class this very hook
@@ -21,7 +21,7 @@ if [ -n "${PROJECT_ROOT:-}" ] \
 import os, re, sys
 cmd = sys.argv[1]
 root = os.environ["PROJECT_ROOT"]
-TOOLS = r'(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)'
+TOOLS = r'(review|learn|trace|evolve|status|todo|hme|audit|why|policies)'
 pat = re.compile(r'(^|(?<=[\s;&|(]))i/' + TOOLS + r'\b')
 print(pat.sub(lambda m: f"{m.group(1)}{root}/i/{m.group(2)}", cmd), end='')
 PYEOF

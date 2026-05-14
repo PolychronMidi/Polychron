@@ -24,7 +24,7 @@ printf '%s\n' "$_line" >> "$_DAEMON_LOG"
 
 echo "chaos: running selftest; expecting 'daemon thread hygiene' to FAIL"
 cd "$_PROJECT_ROOT"
-_out=$(./i/hme-admin action=selftest modules=verbose 2>&1)
+_out=$(./i/hme admin action=selftest modules=verbose 2>&1)
 if echo "$_out" | grep -qE "FAIL: daemon thread hygiene"; then
   echo "chaos PASS: probe detected the injected fault"
   # Clean up the injected line so normal selftest returns to clean state.

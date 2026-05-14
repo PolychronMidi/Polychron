@@ -26,7 +26,7 @@ try:
     from tool_invocations import action_form as _action_form, i_form as _i_form  # type: ignore
 except Exception:
     def _action_form(action: str) -> str:
-        return f"i/hme-admin action={action}"  # tool-form-ok: fallback when helper unavailable
+        return f"i/hme admin action={action}"  # tool-form-ok: fallback when helper unavailable
     def _i_form(name: str, primer: bool = False, value: str = "") -> str:
         # tool-form-ok: fallback when helper unavailable
         return f"i/{name} mode={value}" if value else f"i/{name}"
@@ -1003,5 +1003,5 @@ def hme_selftest(verbose: bool = False) -> str:
     if has_issues and non_pass and not verbose:
         # Show only non-PASS lines + a summary count of PASSes.
         body = "\n".join(f"  {_annotate(r)}" for r in non_pass)
-        return header + body + f"\n  ({passed} PASS suppressed -- use i/hme-admin action=selftest verbose=true for full listing)"
+        return header + body + f"\n  ({passed} PASS suppressed -- use i/hme admin action=selftest verbose=true for full listing)"
     return header + "\n".join(f"  {_annotate(r)}" for r in results)

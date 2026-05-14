@@ -1,7 +1,28 @@
 #!/usr/bin/env bash
-# HME generic dispatcher — pass any registered tool name as the first arg.
-# Usage: i/hme <tool-name> key=value ...
-# Example: i/hme agent prompt="explore coupling"
+# HME low-level dispatcher. Curated public tools have their own i/* wrappers;
+# admin lives here as `i/hme admin ...`.
+#
+# Usage:
+#   i/hme admin action=selftest
+#   i/hme selftest
+#   i/hme <worker-tool-name> key=value ...
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
-[ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
+[ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI -- run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
+
+case "${1:-}" in
+  admin|hme_admin)
+    shift
+    exec node "$_HME_CLI" hme_admin "$@"
+    ;;
+  selftest|reload|restart|index|clear_index|warm|introspect|validate|fix_antipattern|health|both)
+    _action="$1"
+    shift
+    exec node "$_HME_CLI" hme_admin "action=$_action" "$@"
+    ;;
+  read)
+    echo "i/hme: explicit HME read is retired; use the native Read tool. Read/Edit results are already HME-enriched." >&2
+    exit 2
+    ;;
+esac
+
 exec node "$_HME_CLI" "$@"

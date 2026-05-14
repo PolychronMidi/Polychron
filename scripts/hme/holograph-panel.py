@@ -14,6 +14,7 @@ every architectural axis at once.
 from __future__ import annotations
 import json
 import os
+import signal
 import sys
 import time
 from collections import defaultdict
@@ -106,18 +107,31 @@ def _multi_axis_summary() -> str:
 
 def _kb_summary() -> str:
     """Horizon III -- KB graph density."""
-    sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "service"))
+    def _timeout(_signum, _frame):
+        raise TimeoutError("lance summary timed out")
+
+    previous = signal.signal(signal.SIGALRM, _timeout)
+    signal.setitimer(signal.ITIMER_REAL, 2.0)
     try:
-        from direct_lance import _open_table  # type: ignore
-    except Exception:
-        return "lance unavailable"
-    table = _open_table()
-    if table is None:
-        return "no table"
-    try:
-        df = table.to_pandas()
-    except Exception:
-        return "read failed"
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "service"))
+        try:
+            from direct_lance import _open_table  # type: ignore
+        except Exception:
+            return "lance unavailable"
+        table = _open_table()
+        if table is None:
+            return "no table"
+        try:
+            df = table.to_pandas()
+        except TimeoutError:
+            return "lance timeout"
+        except Exception:
+            return "read failed"
+    except TimeoutError:
+        return "lance timeout"
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
     n = len(df)
     # Count tag-encoded edges
     import re as _re

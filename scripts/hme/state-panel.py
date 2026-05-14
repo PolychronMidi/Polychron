@@ -248,7 +248,7 @@ def main(argv):
     # 9. Last hot-reload -- auto-reload fires on .py edits under
     # tools/HME/service/server/ but is otherwise silent. Surfacing it
     # here means an agent can confirm "the code I just edited is
-    # loaded" without firing `i/hme-admin action=reload` redundantly.
+    # loaded" without firing `i/hme admin action=reload` redundantly.
     reload_marker = os.path.join(PROJECT_ROOT, "tmp", "hme-last-reload.json")
     reload_info = _read_json(reload_marker)
     if reload_info:
@@ -284,7 +284,7 @@ def main(argv):
         out.append("")
         out.append("# Drill-in:")
         out.append("  i/why mode=state                  onboarding state explanation")
-        out.append("  i/hme-admin action=selftest       full readiness check")
+        out.append("  i/hme admin action=selftest       full readiness check")
         out.append("  i/status mode=hme                 session-state + recent activity")
         out.append("  i/status mode=hci-diff            verifier deltas since last run")
         out.append("  i/status mode=hci-by-subtag       what KIND of broken everything is")

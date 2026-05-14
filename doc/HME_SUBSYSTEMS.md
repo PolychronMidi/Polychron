@@ -31,7 +31,7 @@ Phase 2 of the feature mapping. `tools/HME/proxy/hme_proxy.js` is a Node.js HTTP
 
 Every request is scanned stateless-ly: the full `messages` array is walked for `tool_use` blocks and write-bearing tool calls (`Edit`, `Write`, `NotebookEdit`). Every call emits one `inference_call` event into `output/metrics/hme-activity.jsonl`.
 
-The legacy `write_without_hme_read` / `inference_write_without_hme_read` detection was retired (Apr 2026). It enforced a legacy-MCP contract ("did the agent explicitly invoke `HME_read` before Edit?") that no longer maps to the architecture -- HME read now happens via `Bash(i/hme-read ...)` shell wrappers AND every `Edit` / `Read` tool_result is auto-enriched with KB context by the `edit_context.js` / `read_context.js` / `dir_context.js` middleware. The detector was firing false positives on 100% of edits; check-hme-coherence was aborting the pipeline over 200+ false violations per round.
+The legacy `write_without_hme_read` / `inference_write_without_hme_read` detection was retired (Apr 2026). It enforced a legacy-MCP contract ("did the agent explicitly invoke `HME_read` before Edit?") that no longer maps to the architecture -- every `Edit` / `Read` tool_result is auto-enriched with KB context by the `edit_context.js` / `read_context.js` / `dir_context.js` middleware. The detector was firing false positives on 100% of edits; check-hme-coherence was aborting the pipeline over 200+ false violations per round.
 
 Streaming SSE responses pipe through verbatim -- no buffering, no latency penalty. The proxy never modifies request bodies in v1 (observability only). System-prompt injection is deliberately deferred to a future phase so the observation signal can be validated in isolation.
 
@@ -224,7 +224,7 @@ Rolling 30-round EMA in `output/metrics/hme-intention-gap.json`. Surfaced via `s
 Phase 4.4 of the feature mapping. `tools_analysis/self_audit.py` queries three utility signals and surfaces architectural inefficiencies as *evolution candidates*:
 
 1. **KB category usage** -- categories with >=15 entries and zero retrievals (UNUSED), or >=10 entries with retrievals < entries/10 (UNDER_QUERIED)
-2. **Silent injections** -- proxy `jurisdiction_inject` events not followed by `i/hme-read` in the same session before `round_complete`
+2. **Silent injections** -- proxy `jurisdiction_inject` events not followed by native Read/Edit enrichment in the same session before `round_complete`
 3. **Cascade overconfidence** -- prediction-accuracy EMA < 0.5 over >=5 rounds
 
 Data sources: `tools/HME/KB/knowledge_access.json`, `output/metrics/hme-activity.jsonl`, `output/metrics/hme-prediction-accuracy.json`. Read-only -- never modifies anything, just reports.
@@ -398,7 +398,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement; **correct** timeout via `updatedInput` (strips timeout silently, command proceeds) |
 | `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Silent capture** -- writes tasks directly to HME todo store (todos.json), blocks native TodoWrite with no further action required |
-| `pretooluse_hme_primer.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `i/<hme-tool>`) | **Enrich** -- inject `templates/ONBOARDING.md` once per session via `systemMessage` on first HME tool call; appends mandatory boot check directive (run `i/hme-admin action=selftest` + `i/evolve focus=invariants`); clears flag so it only fires once |
+| `pretooluse_hme_primer.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `i/<hme-tool>`) | **Enrich** -- inject `templates/ONBOARDING.md` once per session via `systemMessage` on first HME tool call; appends mandatory boot check directive (run `i/hme admin action=selftest` + `i/evolve focus=invariants`); clears flag so it only fires once |
 | `pretooluse_check_pipeline.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `i/status`) | **Redirect** -- deny repeated status calls (polling anti-pattern); pipeline status surfaces automatically via posttooluse hook |
 | `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents -> route to local llama.cpp agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on llama.cpp unreachable or empty answer |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: detect HME calls (`Bash(i/<hme-tool>)` or legacy `mcp__HME__*`) and warn to stderr on 15-30s threshold |
@@ -410,7 +410,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog >= 3/5 files; **emit `file_written`** + **split into `coherence_violation` (lazy) vs `productive_incoherence` (exploratory)** using the KB staleness index |
 | `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |
 | `posttooluse_agent.sh` | PostToolUse | Agent | Track subagent background output files to tab |
-| `posttooluse_hme_read.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `i/hme-read`) | Track briefed files to NEXUS; reset streak |
+| `posttooluse_read_kb.sh` | PostToolUse | Read | Track briefed files to NEXUS; reset streak |
 | `posttooluse_hme_review.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `i/review`) | Clear NEXUS edit backlog on `mode=forget`; point to next step (pipeline / commit) |
 | `posttooluse_addknowledge.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `i/learn`) | Clear `KB:` entries from tab after `i/learn title=... content=...` add call |
 | `userpromptsubmit.sh` | UserPromptSubmit | * | Inject Evolver context on evolution-related prompts |

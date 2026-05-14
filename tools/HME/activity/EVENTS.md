@@ -13,7 +13,7 @@ file's listed events and FAILs if they drift.
 
 - **`file_written`** -- fs_watcher detected a write under an allow-listed path. Powers the read-coverage / activity-window calculation.
 - **`file_watcher_filtered`** -- a write was suppressed (ignore_dirs, ignore_exts, noise suffix). Used to debug "why didn't my edit show up."
-- **`brief_recorded`** -- agent ran `i/hme-read` on a target before editing it. Drops the file's "needs-brief" flag in NEXUS state.
+- **`brief_recorded`** -- native Read/Edit enrichment recorded a target brief before editing it. Drops the file's "needs-brief" flag in NEXUS state.
 - **`auto_brief_injected`** -- pretooluse_edit hook chained the KB briefing automatically. Counterpart to manual `brief_recorded`.
 - **`edit_without_brief`** -- a `/src/` Edit fired without a prior brief. Surfaces as a soft warning in selftest.
 - **`kb_draft_written`** -- posttooluse_bash auto-wrote `tmp/hme-learn-draft.json` after a STABLE/EVOLVED pipeline verdict. Carries `caused_by: pipeline_verdict:<VERDICT>` (Horizon VII Tier-1.5).

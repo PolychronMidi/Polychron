@@ -10,12 +10,6 @@ const WRITE_INTENT_TOOLS = new Set([
   'NotebookEdit',
 ]);
 
-// HME_READ_TOOLS retained as empty Set for legacy imports. Original
-// write-without-hme-read detector deleted: enforced obsolete MCP-era tool
-// contract; auto-enrichment middleware (edit_context/dir_context/read_context)
-// now attaches KB context to every Read/Edit result.
-const HME_READ_TOOLS = new Set();  // kept as empty Set for any lingering imports
-
 //  Boilerplate stub stripper
 // Strips signalless harness acknowledgement strings from the in-flight payload.
 // Runs BEFORE scanMessages so the scanner sees the cleaned payload.
@@ -360,7 +354,6 @@ function scanMessages(payload) {
 
 module.exports = {
   WRITE_INTENT_TOOLS,
-  HME_READ_TOOLS,
   stripBoilerplate,
   stripSemanticRedundancy,
   scanMessages,

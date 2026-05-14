@@ -126,7 +126,7 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     Background/warm-cache calls use single-stage to avoid competing with interactive work."""
     # Honor fast=true on read(): skip the 30-90s synthesis entirely when
     # the caller set HME_READ_FAST=1. Previously the flag only gated the
-    # "Key Constraints" synthesis in reasoning.py, so `i/hme-read fast=true`
+    # "Key Constraints" synthesis in reasoning.py, so native Read/Edit enrichment
     # still took 62s here -- the flag was effectively a lie for this path.
     if os.environ.get("HME_READ_FAST") in ("1", "true", "yes"):
         return "(Edit Risks synthesis skipped -- HME_READ_FAST=1)"

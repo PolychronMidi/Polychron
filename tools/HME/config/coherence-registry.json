@@ -72,7 +72,7 @@
       "id": "kb",
       "description": "Lance-backed semantic knowledge base",
       "artifacts": [{ "path": "tools/HME/KB", "freshness": null, "is_dir": true }],
-      "public_surfaces": ["i/learn", "i/trace", "i/hme-read"],
+      "public_surfaces": ["i/learn", "i/trace", "native Read"],
       "depends_on": []
     },
     {

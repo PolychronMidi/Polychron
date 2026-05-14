@@ -161,7 +161,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
     summary = f"## HME Hot Reload\n" + "\n".join(results) + f"\n\nTotal tools registered: {total_tools}"
 
     # Surface the reload as an observable artifact. Both manual
-    # (i/hme-admin action=reload) and auto (watcher.py debounced) paths
+    # (i/hme admin action=reload) and auto (watcher.py debounced) paths
     # converge here, so writing the marker here covers both. `i/status state`
     # reads it to show "last hot-reload Ns ago".
     try:
@@ -172,7 +172,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
         _marker_tmp = _marker_path + ".tmp"
         payload = {
             "ts": _time.time(),
-            "trigger": _trigger,  # "auto" from watcher, "manual" from i/hme-admin
+            "trigger": _trigger,  # "auto" from watcher, "manual" from i/hme admin
             "summary": summary.split("\n\n")[-1][:160],
         }
         # Horizon VII: explicit caused_by -- the specific file that
@@ -188,4 +188,3 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
         logger.debug("hot-reload marker write failed: %s", _werr)
 
     return summary
-

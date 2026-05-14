@@ -38,7 +38,7 @@ _DEFAULT_BUDGET = 15
 
 def _counter_path() -> Path:
     sid = os.environ.get("HME_SESSION_ID", "default")
-    return _TMP / f"hme-read-budget-{sid}.txt"
+    return _TMP / f"hme-native-read-budget-{sid}.txt"
 
 
 def _budget() -> int:

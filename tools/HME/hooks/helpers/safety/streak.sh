@@ -29,12 +29,12 @@ _streak_check() {
     local _sc_read_rem=$(( (_STREAK_BLOCK - score + 4) / 5 ))
     echo "BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: Bash=15, Edit=10, Read=5, Grep=20)." >&2
     echo "  After reset you get ~${_sc_bash_rem} Bash or ~${_sc_edit_rem} Edit or ~${_sc_read_rem} Read calls before blocking again." >&2
-    echo "  Reset now: run \`i/review mode=forget\` or \`i/hme-read <file>\` (any HME tool clears the counter)." >&2
+    echo "  Reset now: run \`i/review mode=forget\` or use native Read on the target (any HME tool clears the counter)." >&2
     echo "  HME tools add KB context that raw tools miss -- this is the designed workflow cadence." >&2
     return 1
   elif [ "$score" -ge "$_STREAK_WARN" ]; then
     local _sc_rem=$(( (_STREAK_BLOCK - score + 9) / 10 ))
-    echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK} (~${_sc_rem} Edit calls until block). Prefer HME tools (i/review, i/hme-read) for KB-enriched results." >&2
+    echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK} (~${_sc_rem} Edit calls until block). Prefer HME tools and native Read; Read/Edit are KB-enriched." >&2
   fi
   return 0
 }

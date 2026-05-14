@@ -350,13 +350,6 @@
       "severity": "info"
     },
     {
-      "id": "7layers-doc-exists",
-      "description": "7-layer coherence audit document must exist",
-      "type": "file_exists",
-      "path": "doc/7_LAYERS.md",
-      "severity": "warning"
-    },
-    {
       "id": "kb-minimum-entries",
       "description": "KB Lance database must exist and contain at least one data file",
       "type": "glob_count_gte",

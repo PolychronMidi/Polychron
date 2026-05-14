@@ -73,7 +73,7 @@ except Exception:
     def _i_form(name, primer=False):
         return f"i/{name.replace('_', '-')}"
     def _action_form(action):
-        return f"i/hme-admin action={action}"
+        return f"i/hme admin action={action}"
 
 logger = logging.getLogger("HME.onboarding")
 

@@ -17,7 +17,7 @@ BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 # the "Command running in background with ID: X" stub in .tool_response
 # for the real task-output content (short synchronous wait). Every
 # sub-hook dispatched below inherits the resolved INPUT, so review /
-# hme_read / learn / etc. see real output instead of the stub. The proxy
+# learn / review / etc. see real output instead of the stub. The proxy
 # middleware background_dominance.js handles the same resolution on the
 # API-stream side for the model -- two complementary layers.
 _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub.sh" 10 "" || true)
@@ -30,9 +30,6 @@ _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub
 # returns additionalContext / systemMessage / permissionDecisionReason.
 if echo "$CMD" | grep -qE '(^|[[:space:]/])i/learn\b|scripts/hme-cli\.js learn\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_addknowledge.sh" || true
-fi
-if echo "$CMD" | grep -qE '(^|[[:space:]/])i/hme-read\b|scripts/hme-cli\.js read\b'; then
-  echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_hme_read.sh" || true
 fi
 if echo "$CMD" | grep -qE '(^|[[:space:]/])i/review\b|scripts/hme-cli\.js review\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_hme_review.sh" || true

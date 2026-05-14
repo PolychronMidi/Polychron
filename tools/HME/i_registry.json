@@ -212,49 +212,6 @@
       ],
       "safe_no_args": true
     },
-    "hme-read": {
-      "description": "Pre-edit briefing: read a target with KB context, callers, and structure.",
-      "category": "review-discipline",
-      "usage": "i/hme-read target=<path|module|function> [mode=before|story|impact|both|lines|function|structure|callers|deps] [fast=true]",
-      "modes": [
-        "before",
-        "story",
-        "impact",
-        "both",
-        "lines",
-        "function",
-        "structure",
-        "callers",
-        "deps"
-      ],
-      "examples": [
-        "i/hme-read target=adaptiveTrustScores",
-        "i/hme-read target=src/conductor/conductorState.js mode=structure"
-      ],
-      "safe_no_args": true
-    },
-    "hme-admin": {
-      "description": "Admin: selftest, reload, restart, index/clear_index, warm, introspect, validate, fix_antipattern, health.",
-      "category": "infra",
-      "usage": "i/hme-admin action=<selftest|reload|restart|index|clear_index|warm|introspect|validate|fix_antipattern|health|both>",
-      "modes": [
-        "selftest",
-        "reload",
-        "restart",
-        "index",
-        "clear_index",
-        "warm",
-        "introspect",
-        "validate",
-        "fix_antipattern",
-        "health",
-        "both"
-      ],
-      "examples": [
-        "i/hme-admin action=health",
-        "i/hme-admin action=index"
-      ]
-    },
     "policies": {
       "description": "Unified hook-time policy registry: list/show/enable/disable/reset/paths/eval.",
       "category": "policy-config",
@@ -284,9 +241,28 @@
       "safe_no_args": true
     },
     "hme": {
-      "description": "Generic low-level dispatcher for worker tools that do not have a curated i/* wrapper.",
+      "description": "Low-level dispatcher for worker tools that do not have a curated i/* wrapper; also hosts admin actions.",
       "category": "meta",
-      "usage": "i/hme <worker-tool-name> [key=value ...]",
+      "usage": "i/hme admin action=<selftest|reload|restart|index|clear_index|warm|introspect|validate|fix_antipattern|health|both> | i/hme <worker-tool-name> [key=value ...]",
+      "modes": [
+        "admin",
+        "selftest",
+        "reload",
+        "restart",
+        "index",
+        "clear_index",
+        "warm",
+        "introspect",
+        "validate",
+        "fix_antipattern",
+        "health",
+        "both"
+      ],
+      "examples": [
+        "i/hme admin action=selftest",
+        "i/hme selftest",
+        "i/hme admin action=index"
+      ],
       "safe_no_args": true
     }
   },

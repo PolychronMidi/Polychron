@@ -7,16 +7,16 @@
   },
   "tools": {
     "hme_admin": {
-      "i": "i/hme-admin action=<ACTION>",
-      "primer": "i/hme-admin action=selftest"
+      "i": "i/hme admin action=<ACTION>",
+      "primer": "i/hme admin action=selftest"
     },
     "hme_selftest": {
-      "i": "i/hme-admin action=selftest",
-      "primer": "i/hme-admin action=selftest"
+      "i": "i/hme admin action=selftest",
+      "primer": "i/hme admin action=selftest"
     },
     "hme_hot_reload": {
-      "i": "i/hme-admin action=reload",
-      "primer": "i/hme-admin action=reload"
+      "i": "i/hme admin action=reload",
+      "primer": "i/hme admin action=reload"
     },
     "hme_todo": {
       "i": "i/todo action=<ACTION>",
@@ -55,8 +55,8 @@
       "primer": "Edit"
     },
     "read": {
-      "i": "i/hme-read target=<TARGET>",
-      "primer": "i/hme-read target=... mode=before"
+      "i": "Read",
+      "primer": "Read file_path=..."
     },
     "grep": {
       "i": "Grep",
@@ -68,12 +68,12 @@
     }
   },
   "actions": {
-    "warm": "i/hme-admin action=warm",
-    "selftest": "i/hme-admin action=selftest",
-    "reload": "i/hme-admin action=reload",
-    "index": "i/hme-admin action=index",
-    "clear_index": "i/hme-admin action=clear_index",
-    "validate": "i/hme-admin action=validate",
-    "health": "i/hme-admin action=health"
+    "warm": "i/hme admin action=warm",
+    "selftest": "i/hme admin action=selftest",
+    "reload": "i/hme admin action=reload",
+    "index": "i/hme admin action=index",
+    "clear_index": "i/hme admin action=clear_index",
+    "validate": "i/hme admin action=validate",
+    "health": "i/hme admin action=health"
   }
 }

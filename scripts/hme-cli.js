@@ -263,7 +263,7 @@ async function main() {
   const tool = argv[0];
   if (!tool || tool === '--help' || tool === '-h') {
     console.error('Usage: hme-cli <tool> [key=value | --key value | --flag]...');
-    console.error('Tools: review, learn, trace, evolve, hme_admin, status, hme_todo, read, agent');
+    console.error('Tools: review, learn, trace, evolve, hme_admin, status, hme_todo, agent');
     console.error(`hme-cli version: ${CLI_VERSION}`);
     process.exit(tool ? 0 : 1);
   }

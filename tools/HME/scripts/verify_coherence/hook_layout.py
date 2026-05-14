@@ -157,8 +157,8 @@ class HookMatcherValidityVerifier(Verifier):
     weight = 2.0  # high: silently-dead hooks are a major self-coherence failure
 
     _NO_POSTHOOK_OK = {
-        "status", "trace", "evolve", "hme-admin", "todo", "hme",
-        "help", "why", "policies", "audit", "learn", "review", "hme-read",
+        "status", "trace", "evolve", "todo", "hme",
+        "help", "why", "policies", "audit", "learn", "review",
     }
 
     def run(self) -> VerdictResult:
@@ -217,4 +217,3 @@ class HookMatcherValidityVerifier(Verifier):
             )
         score = 1.0 - len(errors) / total_checks
         return _result(FAIL, score, f"{len(errors)} wrapper/dispatch mismatch(es)", errors)
-

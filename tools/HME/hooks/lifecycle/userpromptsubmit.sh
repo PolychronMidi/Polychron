@@ -213,7 +213,7 @@ fi
 
 # Detect evolution-related prompts and inject workflow reminder
 if echo "$PROMPT" | grep -qiE 'evolve|evolution|next round|run main|pipeline|lab|sketch'; then
-  echo 'EVOLUTION CONTEXT: `i/hme-read target=<module> mode=before` before edits, `i/review mode=forget` after changes, `i/learn title="..." content="..." category=pattern` after confirmed rounds. Past round context lives in KB (query via `i/learn query=...`); the journal.md archive is historical only.' >&2
+  echo 'EVOLUTION CONTEXT: native Read/Edit are HME-enriched automatically; run `i/review mode=forget` after changes and `i/learn title="..." content="..." category=pattern` after confirmed rounds. Past round context lives in KB (query via `i/learn query=...`); the journal.md archive is historical only.' >&2
 fi
 
 # Context-aware reminders: silent default, fire only on nexus/prior-state signal.

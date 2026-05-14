@@ -4,13 +4,13 @@
 
 ## What HME is
 
-13 agent-callable tools (evolve / review / read / learn / trace / status / hme_admin / hme_todo / agent / grep / glob_search / edit / holograph), a self-coherence verifier substrate that scores HCI on 0-100, lifecycle hooks that automate the evolution loop, and a local-LLM subagent pipeline (Explore + Plan modes with a domain-fine-tuned QLoRA arbiter). No layer is optional.
+11 public `i/` commands plus native Read/Edit/Grep/Glob enrichment, a self-coherence verifier substrate that scores HCI on 0-100, lifecycle hooks that automate the evolution loop, and a local-LLM subagent pipeline (Explore + Plan modes with a domain-fine-tuned QLoRA arbiter). No layer is optional.
 
 ## The Five Layers
 
 | Layer | Location | Role |
 |---|---|---|
-| MCP / tools surface | `tools/HME/` | The 13 tools above (called via `i/<tool>` shell wrappers) |
+| MCP / tools surface | `tools/HME/` | Curated `i/<tool>` wrappers plus native tool enrichment |
 | CLAUDE.md | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | Hooks | `tools/HME/hooks/` + `~/.claude/settings.json` | Automated workflow + evolution-loop driver |
 | Lab | `lab/` | Experimental harness for isolated prototyping |
@@ -20,8 +20,8 @@
 
 | Topic | File |
 |---|---|
-| Setup, prerequisites, directory tree, lance tables, Worker HTTP endpoints, Operator commands (`hme_admin(action=...)`: selftest/health/reload/index/clear_index, indexing-mode R97), maintenance | [README.md](../README.md) (Setup) + [HME_TOOLS.md](HME_TOOLS.md) (operator commands) |
-| Public tool surface — full mode tables for evolve / review / read / learn / trace / hme_admin, "when to use what" lookup, Knowledge KB categories | [HME_TOOLS.md](HME_TOOLS.md) |
+| Setup, prerequisites, directory tree, lance tables, Worker HTTP endpoints, operator commands (`i/hme admin action=...`: selftest/health/reload/index/clear_index, indexing-mode R97), maintenance | [README.md](../README.md) (Setup) + [HME_TOOLS.md](HME_TOOLS.md) (operator commands) |
+| Public tool surface — full mode tables for evolve / review / learn / trace / status / hme admin, "when to use what" lookup, Knowledge KB categories | [HME_TOOLS.md](HME_TOOLS.md) |
 | Hooks integration & Phase 1-6 subsystems (activity bridge, inference proxy, pipeline policy gate, KB staleness, coherence score, blind-spots, cascade, jurisdiction injection, hypotheses, drift, prediction accuracy, crystallization, music truth, trust-weighted KB, intention gap, self-audit, adversarial probes, trajectory, coherence budget, negative space, cognitive load, reflexivity, constitutional identity, doc drift, generalizations, multi-agent scaffold, human ground truth, hook scripts) | [HME_SUBSYSTEMS.md](HME_SUBSYSTEMS.md) |
 | Polychron-specific RAG/synthesis stack (IIFE chunking, embedding model, symbol indexing, two-local arbiter fleet, warm KV contexts, five-stage synthesis pipeline, think-session memory, unified narrative, context-budget awareness, temporal decay, knowledge relationships) | [HME_RAG_STACK.md](HME_RAG_STACK.md) |
 | Evolution loop integration, mandatory per-session workflow, lab governance, autonomous ralph-loop | [HME_EVOLUTION_LOOP.md](HME_EVOLUTION_LOOP.md) |
@@ -105,7 +105,7 @@ Source tracked in `tools/HME/`. KB at `tools/HME/KB/`. Worker (`tools/HME/servic
 
 ## Maintenance
 
-- Reindex: file watcher auto-fires (5s debounce, 5min cooldown); batch via `i/hme-admin action=index`.
+- Reindex: file watcher auto-fires (5s debounce, 5min cooldown); batch via `i/hme admin action=index`.
 - KB: `i/learn action=health` (stale refs), `action=compact` (dedup at 30+ entries), `action=export` (markdown dump), `action=dream` (hidden-connection mining).
 - Doc sync: `i/review mode=docs` verifies docs match implementation.
 - Self-maintenance when tools feel wrong: selftest → health → compact → docs → reload.
