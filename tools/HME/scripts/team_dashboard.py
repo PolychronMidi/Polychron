@@ -35,10 +35,8 @@ def _jsonc(text: str) -> str:
   elif c in "\"'":
    quote = c; out.append(c)
   elif c == "#" or (c == "/" and n == "/"):
-   while i < len(text) and text[i] != "
-": i += 1
-   out.append("
-")
+   while i < len(text) and text[i] != "\n": i += 1
+   out.append("\n")
   else:
    out.append(c)
   i += 1
