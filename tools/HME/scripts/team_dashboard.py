@@ -58,7 +58,6 @@ def _jsonc_load(text: str) -> dict:
    out.append("\n" * text[i:j + 2].count("\n")); i = j + 2; continue
   out.append(c); i += 1
  return json.loads("".join(out))
-
 def _model_windows() -> dict[str, int]:
  global _MODEL_WINDOWS
  if _MODEL_WINDOWS is None:
@@ -80,7 +79,6 @@ def _model_windows() -> dict[str, int]:
    raise RuntimeError(f"model config has no context windows: {path}")
   _MODEL_WINDOWS = windows
  return _MODEL_WINDOWS
-
 def _model_ctx_window(model: str, tier: str) -> int:
  if not model:
   raise RuntimeError(f"omniroute row missing model for tier={tier}")
@@ -90,14 +88,12 @@ def _model_ctx_window(model: str, tier: str) -> int:
   if key in windows:
    return windows[key]
  raise RuntimeError(f"context window unknown for model={model} tier={tier}")
-
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
  model = row["requested_model"] or row["model"] or ""
  window = _model_ctx_window(model, tier)
  used = float(row["tokens_in"] or 0)
  pct = round(min(100.0, max(0.0, used / max(1, window) * 100)), 1)
  return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id}
-
 def _metadata_session_id(body: dict) -> str:
  meta = body.get("metadata") if isinstance(body, dict) else {}
  user_id = meta.get("user_id") if isinstance(meta, dict) else None
@@ -105,7 +101,6 @@ def _metadata_session_id(body: dict) -> str:
   return json.loads(user_id).get("session_id", "") if isinstance(user_id, str) else ""
  except (json.JSONDecodeError, TypeError):
   return ""
-
 def _user_text(body: dict) -> str:
  chunks = []
  for msg in body.get("messages", []):
@@ -117,10 +112,8 @@ def _user_text(body: dict) -> str:
   elif isinstance(parts, list):
    chunks.extend(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
  return "\n".join(chunks)
-
 def _looks_real_sid(sid: str) -> bool:
  return len(sid) == 36 and sid.count("-") == 4 and all(c in "0123456789abcdef-" for c in sid.lower())
-
 def _role_names(body: dict) -> list[str]:
  if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
   return []
@@ -128,7 +121,6 @@ def _role_names(body: dict) -> list[str]:
  if "Filesystem IPC only" not in text or "MODE=6" not in text:
   return []
  return [r for r, needles in ROLE_NEEDLES.items() if any(n in text for n in needles)]
-
 def _role_matches(role: str, body: dict, current_sid: str) -> bool:
  if role == "driver":
   return _metadata_session_id(body) == current_sid
@@ -137,7 +129,6 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
   sid = _metadata_session_id(body) or "?"
   raise RuntimeError(f"session {sid} matches multiple roles: {', '.join(names)}")
  return names == [role]
-
 def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict | None:
  if not OMNI_DB.is_file():
   raise RuntimeError(f"omniroute db missing: {OMNI_DB}")
@@ -163,14 +154,12 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
    raise RuntimeError(f"stored sid mismatch for {role}: {sid} != {session_id}")
   return _row_ctx(row, tier, session_id)
  return None
-
 def _artifact_body(relpath: str) -> dict:
  p = Path.home() / ".omniroute" / "call_logs" / relpath
  try:
   return json.loads(p.read_text()).get("requestBody", {})
  except (OSError, json.JSONDecodeError, TypeError):
   return {}
-
 def _current_session_id() -> str:
  path = PROJECT / "tmp" / "hme-transcript-path.txt"
  try:
@@ -180,7 +169,6 @@ def _current_session_id() -> str:
  if not value:
   raise RuntimeError(f"current session path empty: {path}")
  return Path(value).stem
-
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
  if os.environ.get("OVERDRIVE_MODE") == "6":
   ctx = _omniroute_ctx(role, sid, tier, forked_at)
@@ -200,7 +188,6 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
  return {"pct": pct, "window": window, "sid": sid}
 def _now() -> str:
  return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
 def _empty_dashboard() -> dict:
  mode = os.environ.get("OVERDRIVE_MODE")
  data = {"updated_at": _now(), "agents": {}}
@@ -210,7 +197,6 @@ def _empty_dashboard() -> dict:
   except ValueError:
    data["mode"] = mode
  return data
-
 def _normalize(data: dict) -> dict:
  data.setdefault("agents", {})
  if "mode" not in data:
@@ -222,7 +208,6 @@ def _normalize(data: dict) -> dict:
     data["mode"] = mode
  data.pop("stage_crew", None)
  return data
-
 def _load() -> dict:
  if DASHBOARD.is_file():
   try:
@@ -230,7 +215,6 @@ def _load() -> dict:
   except (json.JSONDecodeError, OSError):
    pass
  return _empty_dashboard()
-
 def _save(data: dict) -> None:
  data = _normalize(data)
  data["updated_at"] = _now()
@@ -238,7 +222,6 @@ def _save(data: dict) -> None:
  tmp = Path(str(DASHBOARD) + f".{os.getpid()}.tmp")
  tmp.write_text(json.dumps(data, indent=2))
  tmp.rename(DASHBOARD)
-
 def cmd_register(args):
     data = _load()
     role = args.role
