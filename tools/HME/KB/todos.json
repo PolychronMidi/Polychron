@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2699,
-      "updated_ts": 1778727828.345113
+      "max_id": 2708,
+      "updated_ts": 1778727872.7900476
     }
   },
   {
@@ -94,8 +94,8 @@
     "id": 2697,
     "text": "Fix pipeline lint scope regression from subagent worktrees",
     "activeForm": "Fixing pipeline lint scope regression from subagent worktrees",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -108,7 +108,7 @@
     "id": 2698,
     "text": "Rerun onboarding pipeline and capture verdict",
     "activeForm": "Rerunning onboarding pipeline and capturing verdict",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
