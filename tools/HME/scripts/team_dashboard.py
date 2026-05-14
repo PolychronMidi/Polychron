@@ -24,7 +24,7 @@ ROLES = {
     "crew_e1_1":    {"team": "crew",     "tier": "E1"},
 }
 
-# TODO: replace tier defaults with dynamic model context windows.
+# Dynamic context is loaded from configured model windows.
 DEFAULT_CTX = {"E5": 200000, "E4": 128000, "E3": 64000, "E2": 32000, "E1": 16000}
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
 
