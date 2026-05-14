@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Team IPC dashboard for MODE=6 agent health."""
 from __future__ import annotations
-import argparse, json, os, re, sqlite3, sys
+import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -131,36 +131,24 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
 
 def _model_windows() -> dict[str, int]:
     global MODEL_WINDOWS
-    if MODEL_WINDOWS is None:
-        text = (PROJECT / "config" / "models.json").read_text()
-        clean = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith(("//", "#")))
-        cfg = json.loads(clean)
-        MODEL_WINDOWS = {m["name"]: int(m["context_window"]) for m in cfg["models"]}
-    return MODEL_WINDOWS
-
-
-def _model_windows() -> dict[str, int]:
- global _MODEL_WINDOWS
- if _MODEL_WINDOWS is not None:
-  return _MODEL_WINDOWS
- try:
-  raw = CONFIG.read_text()
- except OSError as exc:
-  raise RuntimeError(f"model config missing: {CONFIG}") from exc
- wins = {}
- for m in re.finditer(r'{[^{}]*"id"\s*:\s*"([^"]+)"[^{}]*}', raw, re.S):
-  block, mid = m.group(0), m.group(1)
-  w = re.search(r'"context_length"\s*:\s*(\d+)', block) or re.search(r'"max_context"\s*:\s*(\d+)', block)
-  if not w:
-   raise RuntimeError(f"model config missing context window for {mid}")
-  wins[mid] = int(w.group(1))
-  provider = re.search(r'"provider"\s*:\s*"([^"]+)"', block)
-  if provider:
-   wins[f"{provider.group(1)}/{mid}"] = wins[mid]
- if not wins:
-  raise RuntimeError(f"model config has no model windows: {CONFIG}")
- _MODEL_WINDOWS = wins
- return wins
+    if MODEL_WINDOWS is not None:
+        return MODEL_WINDOWS
+    text = (PROJECT / "config" / "models.json").read_text()
+    clean = "\n".join(l for l in text.splitlines() if not l.lstrip().startswith(("//", "#")))
+    cfg, wins = json.loads(clean), {}
+    for m in cfg["models"]:
+        name = m.get("name") or m.get("id")
+        win = m.get("context_window") or m.get("context_length") or m.get("max_context")
+        if not name or not win:
+            raise RuntimeError("model config entry missing name/window")
+        keys = {name, name.split("/", 1)[-1]}
+        if m.get("provider"):
+            keys.add(f"{m['provider']}/{name}")
+        wins.update({k: int(win) for k in keys})
+    if not wins:
+        raise RuntimeError("model config has no model windows")
+    MODEL_WINDOWS = wins
+    return wins
 
 
 def _model_ctx_window(model: str, tier: str) -> int:
