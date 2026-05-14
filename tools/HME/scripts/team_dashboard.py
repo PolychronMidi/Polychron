@@ -195,23 +195,20 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
 
 
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
-    fallback = DEFAULT_CTX.get(tier)
-    if fallback is None:
-        raise RuntimeError(f"unknown tier for context window: {tier}")
     if os.environ.get("OVERDRIVE_MODE") == "6":
         ctx = _omniroute_ctx(role, sid, tier, forked_at)
         if not ctx:
             raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")
-        return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute", "sid": ctx["sid"]}
+        return {"pct": ctx["pct"], "window": ctx["window"], "sid": ctx["sid"]}
     try:
         from buddy_dispatch_status import _buddy_context_used  # noqa: E402
     except ImportError as exc:
         raise RuntimeError("buddy context provider unavailable") from exc
     ctx = _buddy_context_used(sid)
-    if not ctx or "used_pct" not in ctx:
+    if not ctx or "used_pct" not in ctx or "ctx_window" not in ctx:
         raise RuntimeError(f"buddy context unavailable for {role} sid={sid}")
-    pct = min(100, max(0, int(ctx["used_pct"])))
-    return {"pct": pct, "window": int(ctx.get("ctx_window") or fallback), "source": "buddy", "sid": sid}
+    pct = min(100.0, max(0.0, round(float(ctx["used_pct"]), 1)))
+    return {"pct": pct, "window": int(ctx["ctx_window"]), "sid": sid}
 
 def cmd_register(args):
     data = _load()
