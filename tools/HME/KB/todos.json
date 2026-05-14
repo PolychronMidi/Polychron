@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3026,
-      "updated_ts": 1778782481.5169272
+      "max_id": 3029,
+      "updated_ts": 1778782658.3861816
     }
   },
   {
-    "id": 3024,
-    "text": "Remove deprecated buddy consult handoff senior entrypoints and docs",
-    "activeForm": "Removing deprecated buddy consult handoff senior entrypoints and docs",
+    "id": 3027,
+    "text": "Remove deprecated buddy/consult/handoff CLI surface and registry entries",
+    "activeForm": "Removing deprecated buddy/consult/handoff CLI surface and registry entries",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778782481.5168998,
+    "ts": 1778782658.386154,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 3025,
-    "text": "Remove or rename live code references that invoke deprecated flows",
-    "activeForm": "Removing or renaming live code references that invoke deprecated flows",
+    "id": 3028,
+    "text": "Remove buddy/senior consult hooks, detectors, scripts, docs, and ownership references",
+    "activeForm": "Removing buddy/senior consult hooks, detectors, scripts, docs, and ownership references",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778782481.5169144,
+    "ts": 1778782658.3861685,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 3026,
-    "text": "Run focused tests and reference checks for cleanup",
-    "activeForm": "Running focused tests and reference checks for cleanup",
+    "id": 3029,
+    "text": "Run focused audits/tests and report only verified state",
+    "activeForm": "Running focused audits/tests and reporting only verified state",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778782481.5169246,
+    "ts": 1778782658.3861794,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
