@@ -1,24 +1,5 @@
 #!/usr/bin/env python3
-"""Team IPC dashboard -- single JSON file for multi-agent coordination health.
-
-Read by any agent/script for system visibility. Written by lifecycle hooks
-when agents fork, complete, or update context usage.
-
-Schema:
-  updated_at: ISO timestamp of last write
-  mode: optional OVERDRIVE_MODE snapshot
-  agents: { role_name -> { role, team, tier, sid, ctx_used_pct, ctx_available,
-             last_active, status, task, forked_at } }
-
-Usage:
-  team_dashboard.py                              # print dashboard
-  team_dashboard.py --json                       # raw JSON
-  team_dashboard.py register <role> <sid> <tier> # add/update agent slot
-  team_dashboard.py update <role> ctx_pct=<n> status=<s> task=<t>
-  team_dashboard.py heartbeat <role>             # bump last_active
-  team_dashboard.py unregister <role>            # remove from active
-  team_dashboard.py summary                      # terse health one-liner
-"""
+"""Team IPC dashboard for MODE=6 agent health."""
 from __future__ import annotations
 import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
