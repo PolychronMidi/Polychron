@@ -2,34 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2959,
-      "updated_ts": 1778759515.9914808
+      "max_id": 2962,
+      "updated_ts": 1778763495.092858
     }
   },
   {
-    "id": 2958,
-    "text": "Make dashboard derive ctx windows dynamically and report one-decimal percentages for all roles",
-    "activeForm": "Updating dashboard dynamic ctx and decimal pct",
+    "id": 2960,
+    "text": "Fix models.json comment stripping so config model windows load fail-fast",
+    "activeForm": "Fixing model-window config parsing",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778759515.9914637,
+    "ts": 1778763495.09283,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2959,
-    "text": "Verify driver plus all-role behavior without fake collapsed sessions",
-    "activeForm": "Verifying dashboard role context behavior",
+    "id": 2961,
+    "text": "Update driver context to one decimal from real OmniRoute tokens/window",
+    "activeForm": "Updating driver context",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778759515.991478,
+    "ts": 1778763495.0928452,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2962,
+    "text": "Validate non-driver role resolution behavior without fake shared SIDs",
+    "activeForm": "Validating team role ordering",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778763495.0928557,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
