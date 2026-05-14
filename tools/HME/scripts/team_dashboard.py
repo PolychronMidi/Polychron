@@ -190,18 +190,25 @@ def cmd_show(args):
 def cmd_summary(args):
     data = _load()
     agents = data.get("agents", {})
-    active = sum(1 for a in agents.values() if a.get("status") not in ("idle", "retired"))
+    active = sum(1 for a in agents.values() if a.get("status") not in ("idle", "retired", "done"))
     high_ctx = sum(1 for a in agents.values() if a.get("ctx_used_pct", 0) >= 85)
     idle_s = 0
+    stale = 0
+    unknown_ctx = 0
     now = datetime.now(timezone.utc)
     for a in agents.values():
+        if (a.get("ctx_source") or "unknown") == "unknown":
+            unknown_ctx += 1
         la = a.get("last_active", "")
         try:
             dt = datetime.fromisoformat(la.replace("Z", "+00:00"))
-            idle_s = max(idle_s, (now - dt).total_seconds())
+            idle = (now - dt).total_seconds()
+            idle_s = max(idle_s, idle)
+            if idle > 900 and a.get("status") not in ("idle", "retired", "done"):
+                stale += 1
         except (ValueError, TypeError):
-            pass  # silent-ok: unparseable timestamp, skip
-    print(f"team={len(agents)} active={active} high_ctx={high_ctx} max_idle_s={int(idle_s)}")
+            stale += 1
+    print(f"team={len(agents)} active={active} high_ctx={high_ctx} stale={stale} unknown_ctx={unknown_ctx} max_idle_s={int(idle_s)}")
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Team IPC coordination dashboard")
