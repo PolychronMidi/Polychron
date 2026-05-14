@@ -252,6 +252,16 @@ function _resolveModelCtx(modelId) {
   return _DEFAULT_CTX;
 }
 
+function _injectContextHeader(headers, swapModel) {
+  const ctx = _resolveModelCtx(swapModel);
+  const estUsed = Math.ceil(_lastPayloadBytes / 3.5);
+  const remaining = Math.max(0, ctx - estUsed);
+  if (remaining < ctx * 0.25) {
+    headers['anthropic-ratelimit-input-tokens-remaining'] = String(remaining);
+    console.error(`[hme-proxy] context signal: ~${estUsed}/${ctx} tokens (${remaining} remaining) -> triggering /compact`);
+  }
+}
+
 // Strip tool_result blocks older than 3 turns to prevent context bloat.
 // These get compacted by OmniRoute's RTK compression, but stripping them
 // before sending ensures the payload never exceeds the model's hard limit.
