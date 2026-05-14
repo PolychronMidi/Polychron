@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2797,
-      "updated_ts": 1778734537.8754804
+      "max_id": 2802,
+      "updated_ts": 1778734770.845566
     }
   },
   {
@@ -24,8 +24,8 @@
     "id": 2783,
     "text": "Identify why repeated feedback reaches prompt",
     "activeForm": "Identifying why repeated feedback reaches prompt",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2787,
     "text": "Patch proxy stripping so compacted stop-hook sentinels do not reach prompts",
     "activeForm": "Patching proxy stripping so compacted stop-hook sentinels do not reach prompts",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 2788,
     "text": "Verify with tests or focused repro",
     "activeForm": "Verifying with tests or focused repro",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
