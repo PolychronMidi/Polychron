@@ -269,7 +269,7 @@ def cmd_unregister(args):
     _save(data)
     print(f"team_dashboard: {args.role} unregistered")
 
-def _bar(pct: int, width: int = 10) -> str:
+def _bar(pct: float, width: int = 10) -> str:
     filled = round(pct / 100 * width)
     return "#" * filled + "-" * (width - filled)
 
