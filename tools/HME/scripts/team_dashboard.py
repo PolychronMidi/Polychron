@@ -90,8 +90,20 @@ def _model_ctx_window(model: str, tier: str) -> int:
   if key in windows:
    return windows[key]
  raise RuntimeError(f"context window unknown for model={model} tier={tier}")
-def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
- model = row["requested_model"] or row["model"] or ""
+def _role_model(role: str, tier: str, observed: str) -> str:
+ cfg = _model_cfg(); spec = cfg.get("team_role_models", {}).get(_role_key(role)) if role != "driver" else cfg.get("team_role_models", {}).get("driver")
+ rtier = tier if spec and spec.get("tier") == "role" else (spec or {}).get("tier", tier)
+ models = cfg.get("tiers", {}).get(rtier, {}).get("models", [])
+ if spec and spec.get("source") == "manually_toprank":
+  for mid in cfg.get("manually_toprank", {}).get(rtier, []):
+   if any(m.get("id") == mid for m in models): return mid
+ order = cfg.get("ranking_rules", {}).get("cost_order", ["free", "subscription", "usage"])
+ ranked = sorted(models, key=lambda m: (order.index(m.get("cost")) if m.get("cost") in order else len(order), -float(m.get("tier_score", 0))))
+ if not ranked: raise RuntimeError(f"no configured role model for {role} tier={tier}")
+ return ranked[0].get("id") or observed
+
+def _row_ctx(role: str, row: sqlite3.Row, tier: str, session_id: str) -> dict:
+ model = _role_model(role, tier, row["requested_model"] or row["model"] or "")
  window = _model_ctx_window(model, tier)
  used = float(row["tokens_in"] or 0)
  pct = round(min(100.0, max(0.0, used / max(1, window) * 100)), 1)
