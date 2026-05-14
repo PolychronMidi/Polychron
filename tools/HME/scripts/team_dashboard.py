@@ -232,6 +232,7 @@ def cmd_register(args):
         "sid": info["sid"],
         "ctx_used_pct": info["pct"],
         "ctx_available": info["window"],
+        "model": info.get("model", ""),
         "last_active": _now(),
         "status": "registered",
         "task": args.task or "",
