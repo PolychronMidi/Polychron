@@ -2,20 +2,20 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2889,
-      "updated_ts": 1778745567.0124063
+      "max_id": 2893,
+      "updated_ts": 1778745611.9601521
     }
   },
   {
-    "id": 2886,
-    "text": "Set MODE=6 role model defaults",
-    "activeForm": "Setting MODE=6 role model defaults",
+    "id": 2890,
+    "text": "Set MODE=6 role model defaults in models.json",
+    "activeForm": "Setting MODE=6 role model defaults in models.json",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745567.0123687,
+    "ts": 1778745611.960112,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
