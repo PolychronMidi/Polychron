@@ -124,6 +124,31 @@ def _metadata_session_id(body: dict) -> str:
         return ""
 
 
+def _current_session_id() -> str:
+    try:
+        return Path((PROJECT / "tmp" / "hme-transcript-path.txt").read_text().strip()).stem
+    except OSError:
+        return ""
+
+
+def _first_user_text(body: dict) -> str:
+    for msg in body.get("messages", []):
+        if msg.get("role") != "user":
+            continue
+        parts = msg.get("content")
+        if isinstance(parts, str):
+            return parts
+        if isinstance(parts, list):
+            return "\n".join(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
+    return ""
+
+
+def _role_matches(role: str, body: dict, current_sid: str) -> bool:
+    if role == "driver":
+        return _metadata_session_id(body) == current_sid
+    return any(n in _first_user_text(body) for n in ROLE_NEEDLES.get(role, ()))
+
+
 def _model_ctx_window(model: str, fallback: int) -> int:
     if model.startswith("codex/") or model.startswith("cx/") or model.startswith("gpt-5.5"):
         return 1050000
@@ -143,12 +168,13 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
         ).fetchall()
     except sqlite3.Error:
         return None
-    match_sid = _current_session_id() if role == "driver" else sid
+    current_sid = _current_session_id()
     for row in rows:
         if forked_at and row["timestamp"] < forked_at:
             break
         body = _artifact_body(row["artifact_relpath"] or "")
-        if not (match_sid and len(match_sid) >= 12 and _metadata_session_id(body) == match_sid):
+        by_sid = sid and len(sid) >= 12 and _metadata_session_id(body) == sid
+        if not by_sid and not _role_matches(role, body, current_sid):
             continue
         model = row["requested_model"] or row["model"] or ""
         window = _model_ctx_window(model, fallback_window)
