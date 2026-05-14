@@ -144,9 +144,24 @@ def _model_ctx_window(model: str, fallback: int) -> int:
     return fallback
 
 
+def _row_ctx(row: sqlite3.Row, fallback_window: int, session_id: str) -> dict:
+    model = row["requested_model"] or row["model"] or ""
+    window = _model_ctx_window(model, fallback_window)
+    pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
+    return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id}
+
+
+def _latest_session_ctx(rows: list[sqlite3.Row], session_id: str, fallback_window: int) -> dict:
+    for row in rows:
+        body = _artifact_body(row["artifact_relpath"] or "")
+        if _metadata_session_id(body) == session_id:
+            return _row_ctx(row, fallback_window, session_id)
+    raise RuntimeError(f"resolved session has no context rows: {session_id}")
+
+
 def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | None = None) -> dict | None:
     if not OMNI_DB.is_file():
-        return None
+        raise RuntimeError(f"omniroute db missing: {OMNI_DB}")
     try:
         con = sqlite3.connect(str(OMNI_DB))
         con.row_factory = sqlite3.Row
@@ -155,18 +170,18 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
             "from call_logs where path = '/v1/messages' and status = 200 "
             "and artifact_relpath is not null order by timestamp desc limit 3000"
         ).fetchall()
-    except sqlite3.Error:
-        return None
+    except sqlite3.Error as exc:
+        raise RuntimeError("omniroute context query failed") from exc
     current_sid = _current_session_id()
     for row in rows:
         body = _artifact_body(row["artifact_relpath"] or "")
-        by_sid = sid and len(sid) >= 12 and _metadata_session_id(body) == sid
+        session_id = _metadata_session_id(body)
+        by_sid = bool(sid and len(sid) >= 12 and session_id == sid)
         if not by_sid and not _role_matches(role, body, current_sid):
             continue
-        model = row["requested_model"] or row["model"] or ""
-        window = _model_ctx_window(model, fallback_window)
-        pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
-        return {"pct": pct, "window": window, "timestamp": row["timestamp"]}
+        if not session_id:
+            raise RuntimeError(f"omniroute artifact missing session_id for {role}")
+        return _latest_session_ctx(rows, session_id, fallback_window)
     return None
 
 
@@ -178,7 +193,7 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
         ctx = _omniroute_ctx(role, sid, fallback, forked_at)
         if not ctx:
             raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")
-        return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute"}
+        return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute", "sid": ctx["sid"]}
     try:
         from buddy_dispatch_status import _buddy_context_used  # noqa: E402
     except ImportError as exc:
@@ -187,7 +202,7 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
     if not ctx or "used_pct" not in ctx:
         raise RuntimeError(f"buddy context unavailable for {role} sid={sid}")
     pct = min(100, max(0, int(ctx["used_pct"])))
-    return {"pct": pct, "window": int(ctx.get("ctx_window") or fallback), "source": "buddy"}
+    return {"pct": pct, "window": int(ctx.get("ctx_window") or fallback), "source": "buddy", "sid": sid}
 
 def cmd_register(args):
     data = _load()
@@ -201,7 +216,7 @@ def cmd_register(args):
         "role": role,
         "team": meta["team"],
         "tier": meta["tier"],
-        "sid": args.sid,
+        "sid": info["sid"],
         "ctx_used_pct": info["pct"],
         "ctx_source": info["source"],
         "ctx_available": info["window"],
@@ -239,6 +254,7 @@ def cmd_heartbeat(args):
         a["ctx_used_pct"] = info["pct"]
         a["ctx_source"] = info["source"]
         a["ctx_available"] = info["window"]
+        a["sid"] = info["sid"]
     _save(data)
 
 def cmd_unregister(args):
