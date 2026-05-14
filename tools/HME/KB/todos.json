@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2831,
-      "updated_ts": 1778744633.2458317
+      "max_id": 2835,
+      "updated_ts": 1778744670.7858572
     }
   },
   {
     "id": 2826,
     "text": "Run HME selftest/status/evolve to establish current state",
     "activeForm": "Running HME selftest/status/evolve to establish current state",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,12 +24,26 @@
     "id": 2827,
     "text": "Inspect role-model/dashboard/handoff files for requested gaps",
     "activeForm": "Inspecting role-model/dashboard/handoff files for requested gaps",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
     "ts": 1778744544.3051956,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2834,
+    "text": "Re-plan around concrete defects before editing",
+    "activeForm": "Re-planning around concrete defects before editing",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778744670.7858455,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
