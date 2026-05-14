@@ -2,34 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2865,
-      "updated_ts": 1778745196.613968
+      "max_id": 2868,
+      "updated_ts": 1778745256.7253819
     }
   },
   {
-    "id": 2864,
-    "text": "Fix team dashboard context-window source locally, no subagents",
-    "activeForm": "Fixing team dashboard context-window source locally, no subagents",
+    "id": 2866,
+    "text": "Run required HME onboarding checks locally",
+    "activeForm": "Running required HME onboarding checks locally",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745196.6139505,
+    "ts": 1778745256.7253385,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2865,
-    "text": "Verify syntax and targeted dashboard behavior",
-    "activeForm": "Verifying syntax and targeted dashboard behavior",
+    "id": 2867,
+    "text": "Fix team dashboard context-window/model routing defects",
+    "activeForm": "Fixing team dashboard context-window/model routing defects",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745196.613965,
+    "ts": 1778745256.725362,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2868,
+    "text": "Verify dashboard/config behavior and repo gates",
+    "activeForm": "Verifying dashboard/config behavior and repo gates",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778745256.7253778,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
