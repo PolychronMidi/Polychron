@@ -83,6 +83,16 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
   return _row_ctx(row, tier, session_id)
  return None
 
+def _current_session_id() -> str:
+ path = PROJECT / "tmp" / "hme-transcript-path.txt"
+ try:
+  value = path.read_text().strip()
+ except OSError as exc:
+  raise RuntimeError(f"current session path unavailable: {path}") from exc
+ if not value:
+  raise RuntimeError(f"current session path empty: {path}")
+ return Path(value).stem
+
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
  if os.environ.get("OVERDRIVE_MODE") == "6":
   ctx = _omniroute_ctx(role, sid, tier, forked_at)
