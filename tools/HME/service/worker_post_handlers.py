@@ -179,6 +179,8 @@ def post_cascade_predict(handler, body: dict) -> None:
                         affected_modules=affected,
                         injected=True)
         handler._json(200, {"target": stem, "predicted": affected, "logged": True})
+    except BrokenPipeError as e:
+        logger.debug(f"/cascade_predict client disconnected: {type(e).__name__}: {e}")
     except Exception as e:
         logger.warning(f"/cascade_predict failed: {type(e).__name__}: {e}")
         handler._json(200, {"target": "", "predicted": [], "logged": False,
