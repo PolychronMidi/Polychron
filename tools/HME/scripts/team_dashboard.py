@@ -131,16 +131,17 @@ def _current_session_id() -> str:
         return ""
 
 
-def _first_user_text(body: dict) -> str:
+def _user_text(body: dict) -> str:
+    chunks = []
     for msg in body.get("messages", []):
         if msg.get("role") != "user":
             continue
         parts = msg.get("content")
         if isinstance(parts, str):
-            return parts
-        if isinstance(parts, list):
-            return "\n".join(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
-    return ""
+            chunks.append(parts)
+        elif isinstance(parts, list):
+            chunks.extend(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
+    return "\n".join(chunks)
 
 
 def _role_matches(role: str, body: dict, current_sid: str) -> bool:
@@ -148,7 +149,7 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
         return _metadata_session_id(body) == current_sid
     if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
         return False
-    text = _first_user_text(body)
+    text = _user_text(body)
     if "Filesystem IPC only" not in text or "MODE=6" not in text:
         return False
     matches = [r for r, needles in ROLE_NEEDLES.items() if any(n in text for n in needles)]
