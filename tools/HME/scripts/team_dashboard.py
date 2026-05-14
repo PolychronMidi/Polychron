@@ -162,7 +162,8 @@ def cmd_heartbeat(args):
     if role in data.get("agents", {}):
         a = data["agents"][role]
         a["last_active"] = _now()
-        a["ctx_used_pct"] = _ctx_pct(a.get("sid", ""), a.get("tier", "E3"), status=a.get("status", "registered"))
+        if (a.get("ctx_used_pct") or 0) == 0:
+            a["ctx_used_pct"] = _ctx_pct(a.get("sid", ""), a.get("tier", "E3"), status=a.get("status", "registered"))
         a["ctx_source"] = _ctx_source(a.get("sid", ""))
     _save(data)
 
