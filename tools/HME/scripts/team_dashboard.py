@@ -48,9 +48,9 @@ OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "stor
 
 ROLE_NEEDLES = {
     "blue_lead": ("You are Blue Lead", "register blue_lead"),
-    "blue_purple": ("You are Blue Purple", "register blue_purple"),
+    "blue_purple": ("You are Blue Purple", "register blue_purple", "Blue Purple"),
     "red_lead": ("You are Red Lead", "register red_lead"),
-    "red_purple": ("You are Red Purple", "register red_purple"),
+    "red_purple": ("You are Red Purple", "register red_purple", "Red Purple"),
     "crew_e4_0": ("crew_e4_0",), "crew_e4_1": ("crew_e4_1",),
     "crew_e3_0": ("crew_e3_0",), "crew_e3_1": ("crew_e3_1",),
     "crew_e2_0": ("crew_e2_0",), "crew_e2_1": ("crew_e2_1",),
