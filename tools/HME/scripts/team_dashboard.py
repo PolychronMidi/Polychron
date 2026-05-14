@@ -22,10 +22,12 @@ Usage:
 from __future__ import annotations
 import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 
 PROJECT = Path(os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "")))
 DASHBOARD = PROJECT / "runtime" / "hme" / "team-dashboard.json"
+MODELS_CONFIG = PROJECT / "config" / "models.json"
 
 ROLES = {
     "driver":       {"team": "command",  "tier": "E5"},
