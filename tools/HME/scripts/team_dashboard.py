@@ -217,14 +217,15 @@ def cmd_register(args):
         print(f"unknown role '{role}'; known: {', '.join(sorted(ROLES))}", file=sys.stderr)
         sys.exit(1)
     meta = ROLES[role]
+    info = _ctx_info(role, args.sid, meta["tier"])
     data["agents"][role] = {
         "role": role,
         "team": meta["team"],
         "tier": meta["tier"],
         "sid": args.sid,
-        "ctx_used_pct": _ctx_pct(args.sid, meta["tier"], status="registered"),
-        "ctx_source": _ctx_source(args.sid),
-        "ctx_available": DEFAULT_CTX.get(meta["tier"], 0),
+        "ctx_used_pct": info["pct"],
+        "ctx_source": info["source"],
+        "ctx_available": info["window"],
         "last_active": _now(),
         "status": "registered",
         "task": args.task or "",
@@ -255,9 +256,10 @@ def cmd_heartbeat(args):
     if role in data.get("agents", {}):
         a = data["agents"][role]
         a["last_active"] = _now()
-        if (a.get("ctx_used_pct") or 0) == 0:
-            a["ctx_used_pct"] = _ctx_pct(a.get("sid", ""), a.get("tier", "E3"), status=a.get("status", "registered"))
-        a["ctx_source"] = _ctx_source(a.get("sid", ""))
+        info = _ctx_info(role, a.get("sid", ""), a.get("tier", "E3"), a.get("forked_at"))
+        a["ctx_used_pct"] = info["pct"]
+        a["ctx_source"] = info["source"]
+        a["ctx_available"] = info["window"]
     _save(data)
 
 def cmd_unregister(args):
