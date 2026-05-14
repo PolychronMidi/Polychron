@@ -108,7 +108,8 @@ print(json.dumps({"chain": list(chain), "allow_subagent": allow_sub}))
 `);
   if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
   const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-  assert.deepStrictEqual(parsed.chain, ['gpt-5.5-xhigh']);
+  assert.deepStrictEqual(parsed.chain, EXPECTED_CHAINS.E5);
+  assert.strictEqual(parsed.chain[0], 'gpt-5.5-xhigh');
   assert.strictEqual(parsed.allow_subagent, false);
 });
 
