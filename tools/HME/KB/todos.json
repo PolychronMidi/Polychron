@@ -2,14 +2,14 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3005,
-      "updated_ts": 1778780510.7368934
+      "max_id": 3008,
+      "updated_ts": 1778781234.9889991
     }
   },
   {
     "id": 3003,
     "text": "Make Agent level/prompt runtime routing strict and schema-matched",
-    "activeForm": "Making Agent level/prompt runtime routing strict and schema-matched",
+    "activeForm": "Aligning Agent level/prompt runtime routing with compact schema",
     "status": "in_progress",
     "done": false,
     "critical": false,
