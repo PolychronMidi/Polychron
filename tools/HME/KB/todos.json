@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2563,
-      "updated_ts": 1778721054.8010464
+      "max_id": 2566,
+      "updated_ts": 1778721342.033671
     }
   },
   {
     "id": 2561,
     "text": "Create team dashboard JSON schema and writer script",
     "activeForm": "Creating team dashboard JSON schema and writer script",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2562,
     "text": "Wire dashboard into existing buddy runtime paths",
     "activeForm": "Wiring dashboard into existing buddy runtime paths",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2563,
     "text": "Verify dashboard script and report evidence",
     "activeForm": "Verifying dashboard script and reporting evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
