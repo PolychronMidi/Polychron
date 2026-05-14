@@ -70,7 +70,6 @@ Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py);
 | `early_stop` | Open-ended directive + enumerated gaps + no tools |
 | `exhaust_check` | Deferral phrase + bullet list (unconditional) |
 | `scope_escape` | Pre-existing/unrelated label-and-stop |
-| `senior_consult_debt` | Buddy-paradigm edits without `i/consult` |
 | `trample_gate` (proxy middleware) | Mid-response user message ignored (request-time, not Stop-time) |
 | `phantom_capability` | Declared capability outside the closed enum |
 | `advisor_doctrine` | E2+ commit boundary without consult / solo rationale |
