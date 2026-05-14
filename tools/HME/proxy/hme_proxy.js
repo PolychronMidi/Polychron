@@ -262,8 +262,8 @@ function _injectContextHeader(headers, swapModel) {
   }
 }
 
-// Strip tool_result blocks older than 3 turns to prevent context bloat.
-// These get compacted by OmniRoute's RTK compression, but stripping them
+// Strip tool_result blocks older than 7 turns to prevent context bloat.
+// stripping them
 // before sending ensures the payload never exceeds the model's hard limit.
 function _stripStaleToolResults(payload) {
   if (!payload || !Array.isArray(payload.messages)) return;
@@ -278,7 +278,7 @@ function _stripStaleToolResults(payload) {
     const toolResults = content.filter(b => b && b.type === 'tool_result');
     if (!toolResults.length) continue;
     userWithToolResults++;
-    if (userWithToolResults > 5) {
+    if (userWithToolResults > 7) {
       for (const b of toolResults) strippedIds.add(b.tool_use_id);
       m.content = content.filter(b => !b || b.type !== 'tool_result');
     }
