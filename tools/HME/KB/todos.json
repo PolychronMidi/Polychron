@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3041,
-      "updated_ts": 1778783943.538105
+      "max_id": 3044,
+      "updated_ts": 1778784143.1892693
     }
   },
   {
     "id": 3039,
     "text": "Identify remaining dangling buddy/consult/senior references after user deletions",
     "activeForm": "Identifying remaining dangling buddy/consult/senior references after user deletions",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 3040,
     "text": "Remove obsolete hooks/docs/code references without touching valid generic dispatch paths",
     "activeForm": "Removing obsolete hooks/docs/code references without touching valid generic dispatch paths",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
