@@ -171,7 +171,7 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
         rows = con.execute(
             "select timestamp,tokens_in,model,requested_model,artifact_relpath "
             "from call_logs where path = '/v1/messages' and status = 200 "
-            "and artifact_relpath is not null order by timestamp desc limit 400"
+            "and artifact_relpath is not null order by timestamp desc limit 3000"
         ).fetchall()
     except sqlite3.Error:
         return None
