@@ -181,7 +181,7 @@ _BUDDY_SYSTEM_FLAG = os.environ.get("BUDDY_SYSTEM", "0").strip()
 _DISPATCH_MODE = os.environ.get("HME_DISPATCH_MODE", "").strip().lower()
 _OD_MODE = os.environ.get("OVERDRIVE_MODE", "0").strip()
 if not _DISPATCH_MODE:
-    if _OD_MODE == "5":
+    if _OD_MODE in ("5", "6"):
         _DISPATCH_MODE = "synthesis"
     elif _BUDDY_SYSTEM_FLAG == "1":
         _DISPATCH_MODE = "claude-resume"
@@ -189,8 +189,8 @@ if not _DISPATCH_MODE:
         _DISPATCH_MODE = "disabled"
 if _DISPATCH_MODE not in ("claude-resume", "synthesis", "disabled"):
     _DISPATCH_MODE = "disabled"
-# OVERDRIVE_MODE=5 hard-lock: claude-resume is NEVER allowed (Anthropic quota).
-if _OD_MODE == "5" and _DISPATCH_MODE == "claude-resume":
+# OVERDRIVE_MODE=5/6 hard-lock: claude-resume is NEVER allowed (Anthropic quota).
+if _OD_MODE in ("5", "6") and _DISPATCH_MODE == "claude-resume":
     _DISPATCH_MODE = "synthesis"
 
 # HME_DISPATCH_SYNTHESIS_TIERS: tiers (E1..E5) routed through synthesis_reasoning (free cascade) instead of buddies.
