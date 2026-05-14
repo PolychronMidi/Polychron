@@ -2,20 +2,20 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3002,
-      "updated_ts": 1778780082.6528814
+      "max_id": 3005,
+      "updated_ts": 1778780510.7368934
     }
   },
   {
-    "id": 3000,
-    "text": "Make Agent level/prompt runtime routing match compacted tool schema",
-    "activeForm": "Aligning Agent level/prompt runtime routing with compacted tool schema",
+    "id": 3003,
+    "text": "Make Agent level/prompt runtime routing strict and schema-matched",
+    "activeForm": "Making Agent level/prompt runtime routing strict and schema-matched",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778780082.6528535,
+    "ts": 1778780510.7368627,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
