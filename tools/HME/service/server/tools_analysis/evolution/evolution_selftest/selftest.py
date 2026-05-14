@@ -380,7 +380,9 @@ def hme_selftest(verbose: bool = False) -> str:
             # pre-restart); only active failures should block.
             _now = _ts_mod.time()
             _window_s = 600  # 10 minutes
+            _warning_window_s = 1800  # 30 minutes
             _stale_err_count = 0
+            _stale_warn_count = 0
             for _line in _lines:
                 _em = _err_re.search(_line)
                 _wm = _warn_re.search(_line)
@@ -399,10 +401,21 @@ def hme_selftest(verbose: bool = False) -> str:
                     else:
                         _stale_err_count += 1
                 elif _wm:
-                    _msg = _wm.group(1).strip()[:80]
-                    _warn_counts[_msg] += 1
+                    _tsm = _ts_re.match(_line)
+                    _is_fresh = True
+                    if _tsm:
+                        try:
+                            _ts = _dt_log.datetime.strptime(_tsm.group(1), "%Y-%m-%d %H:%M:%S").timestamp()
+                            _is_fresh = (_now - _ts) <= _warning_window_s
+                        except Exception as _tse:
+                            logger.debug(f"hme.log ts parse: {type(_tse).__name__}: {_tse}")
+                    if _is_fresh:
+                        _msg = _wm.group(1).strip()[:80]
+                        _warn_counts[_msg] += 1
+                    else:
+                        _stale_warn_count += 1
             # Fresh ERROR entries in hme.log = active daemon failure, FAIL.
-            # Stale ERRORs (> 10min old) are historical residue, INFO only.
+            # Stale ERRORs/WARNINGs are historical residue, INFO only.
             if _error_counts:
                 _top_err = _error_counts.most_common(3)
                 _total_err = sum(_error_counts.values())
@@ -412,15 +425,17 @@ def hme_selftest(verbose: bool = False) -> str:
             if _warn_counts and not _error_counts:
                 _top_w = _warn_counts.most_common(3)
                 _total_w = sum(_warn_counts.values())
-                results.append(f"WARN: hme.log -- {_total_w} WARNING line(s) in last 500 lines:")
+                results.append(f"WARN: hme.log -- {_total_w} fresh WARNING line(s) (<30min):")
                 for _msg, _count in _top_w:
                     results.append(f"  > ({_count}x) {_msg}")
             elif _warn_counts:
                 _total_w = sum(_warn_counts.values())
-                results.append(f"INFO: hme.log -- {_total_w} additional WARNING line(s)")
+                results.append(f"INFO: hme.log -- {_total_w} additional fresh WARNING line(s)")
             if _stale_err_count and not _error_counts:
                 results.append(f"INFO: hme.log -- {_stale_err_count} historical ERROR line(s) (>10min old, already resolved)")
-            if not _error_counts and not _warn_counts and not _stale_err_count:
+            if _stale_warn_count and not _warn_counts:
+                results.append(f"INFO: hme.log -- {_stale_warn_count} historical WARNING line(s) (>30min old, already resolved)")
+            if not _error_counts and not _warn_counts and not _stale_err_count and not _stale_warn_count:
                 results.append("PASS: hme.log -- no warnings/errors in last 500 lines")
     except Exception as _err3:
         logger.debug(f"results.append: {type(_err3).__name__}: {_err3}")
