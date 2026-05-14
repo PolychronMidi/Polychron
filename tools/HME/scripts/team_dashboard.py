@@ -328,7 +328,7 @@ def main() -> int:
     sp.set_defaults(func=cmd_register)
     sp = sub.add_parser("update", help="update agent fields")
     sp.add_argument("role")
-    sp.add_argument("--ctx-pct", type=int, default=None)
+    sp.add_argument("--ctx-pct", type=float, default=None)
     sp.add_argument("--status", default="")
     sp.add_argument("--task", default=None)
     sp.set_defaults(func=cmd_update)
