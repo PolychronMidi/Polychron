@@ -2,20 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2945,
-      "updated_ts": 1778747043.2526748
+      "max_id": 2944,
+      "updated_ts": 1778746329.9058676
     }
   },
   {
-    "id": 2945,
-    "text": "Find and revert fail-fast violations without adding fallback masking",
-    "activeForm": "Checking git state and reverting fail-fast violations",
+    "id": 2942,
+    "text": "Patch models team role mapping",
+    "activeForm": "Patching models team role mapping",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778747043.2526712,
+    "ts": 1778746329.9058397,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2943,
+    "text": "Patch team dashboard defaults/register behavior",
+    "activeForm": "Patching team dashboard defaults/register behavior",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778746329.9058545,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2944,
+    "text": "Run focused checks",
+    "activeForm": "Running focused checks",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778746329.9058652,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"

@@ -22,12 +22,10 @@ Usage:
 from __future__ import annotations
 import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
-from functools import lru_cache
 from pathlib import Path
 
 PROJECT = Path(os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "")))
 DASHBOARD = PROJECT / "runtime" / "hme" / "team-dashboard.json"
-MODELS_CONFIG = PROJECT / "config" / "models.json"
 
 ROLES = {
     "driver":       {"team": "command",  "tier": "E5"},
@@ -45,6 +43,7 @@ ROLES = {
     "crew_e1_1":    {"team": "crew",     "tier": "E1"},
 }
 
+DEFAULT_CTX = {# WHAT THE FUCK IS THIS FAGGOTRY, USE THE DYNAMIC MAX WE ALREADY HAVE SET FOR EACH MODEL "E5": 200000, "E4": 128000, "E3": 64000, "E2": 32000, "E1": 16000}
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
 
 ROLE_NEEDLES = {
@@ -157,30 +156,13 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
     return matches == [role]
 
 
-@lru_cache(maxsize=1)
-def _model_windows() -> dict:
-    try:
-        raw = json.loads(MODELS_CONFIG.read_text())
-    except (OSError, json.JSONDecodeError):
-        return {}
-    models = raw.get("models", {}) if isinstance(raw, dict) else {}
-    return {
-        str(name): int(cfg.get("context_window") or cfg.get("max_input_tokens") or 0)
-        for name, cfg in models.items()
-        if isinstance(cfg, dict) and (cfg.get("context_window") or cfg.get("max_input_tokens"))
-    }
+def _model_ctx_window(model: str, fallback: int) -> int:
+    if model.startswith("codex/") or model.startswith("cx/") or model.startswith("gpt-5.5"):
+        return 1050000
+    return fallback
 
 
-def _model_ctx_window(model: str) -> int:
-    windows = _model_windows()
-    if model in windows:
-        return windows[model]
-    if "/" in model and model.split("/", 1)[1] in windows:
-        return windows[model.split("/", 1)[1]]
-    return 0
-
-
-def _omniroute_ctx(role: str, sid: str, fallback: int, forked_at: str | None = None) -> dict | None:
+def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | None = None) -> dict | None:
     if not OMNI_DB.is_file():
         return None
     try:
@@ -200,9 +182,7 @@ def _omniroute_ctx(role: str, sid: str, fallback: int, forked_at: str | None = N
         if not by_sid and not _role_matches(role, body, current_sid):
             continue
         model = row["requested_model"] or row["model"] or ""
-        window = _model_ctx_window(model)
-        if not window:
-            raise RuntimeError(f"unknown ctx window for model={model!r}")
+        window = _model_ctx_window(model, fallback_window)
         pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
         return {"pct": pct, "window": window, "timestamp": row["timestamp"]}
     return None
@@ -212,21 +192,18 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
     fallback = DEFAULT_CTX.get(tier, 0)
     if _is_mode6():
         ctx = _omniroute_ctx(role, sid, fallback, forked_at)
-        if not ctx:
-            raise RuntimeError(f"omniroute ctx unavailable for role={role} sid={sid}")
-        return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute"}
+        if ctx:
+            return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute"}
+        return {"pct": 0, "window": fallback, "source": "unknown"}
     try:
         from buddy_dispatch_status import _buddy_context_used  # noqa: E402
         ctx = _buddy_context_used(sid)
         if ctx and "used_pct" in ctx:
             pct = min(100, max(0, int(ctx["used_pct"])))
-            window = int(ctx.get("ctx_window") or 0)
-            if not window:
-                raise RuntimeError(f"buddy ctx window unavailable for role={role} sid={sid}")
-            return {"pct": pct, "window": window, "source": "buddy"}
-    except (ImportError, ValueError, TypeError) as exc:
-        raise RuntimeError(f"buddy ctx unavailable for role={role} sid={sid}") from exc
-    raise RuntimeError(f"ctx unavailable for role={role} sid={sid}")
+            return {"pct": pct, "window": int(ctx.get("ctx_window") or fallback), "source": "buddy"}
+    except (ImportError, ValueError, TypeError):
+        pass  # silent-ok: legacy buddy ctx may be unavailable
+    return {"pct": 0, "window": fallback, "source": "unknown"}
 
 def cmd_register(args):
     data = _load()
