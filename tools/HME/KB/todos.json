@@ -3,7 +3,7 @@
     "id": 0,
     "_meta": {
       "max_id": 2720,
-      "updated_ts": 1778728219.6081758
+      "updated_ts": 1778728252.725599
     }
   },
   {
@@ -60,119 +60,6 @@
     "ts": 1778728219.6081722,
     "parent_id": 0,
     "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 1982,
-    "text": "HME onboarding walkthrough",
-    "activeForm": "HME onboarding walkthrough",
-    "status": "in_progress",
-    "done": false,
-    "critical": false,
-    "source": "onboarding",
-    "on_done": "",
-    "ts": 1778644725.0870667,
-    "parent_id": 0,
-    "subs": [
-      {
-        "id": 1983,
-        "text": "boot check (i/hme-admin action=selftest)",
-        "activeForm": "boot check (i/hme-admin action=selftest)",
-        "status": "completed",
-        "done": true,
-        "critical": false,
-        "source": "onboarding",
-        "on_done": "",
-        "ts": 1778644725.087073,
-        "parent_id": 1982,
-        "subs": [],
-        "tier": "E3"
-      },
-      {
-        "id": 1984,
-        "text": "pick evolution target (i/evolve focus=design)",
-        "activeForm": "pick evolution target (i/evolve focus=design)",
-        "status": "completed",
-        "done": true,
-        "critical": false,
-        "source": "onboarding",
-        "on_done": "",
-        "ts": 1778644725.087077,
-        "parent_id": 1982,
-        "subs": [],
-        "tier": "E3"
-      },
-      {
-        "id": 1985,
-        "text": "edit target module (KB briefing auto-chains)",
-        "activeForm": "edit target module (KB briefing auto-chains)",
-        "status": "completed",
-        "done": true,
-        "critical": false,
-        "source": "onboarding",
-        "on_done": "",
-        "ts": 1778644725.0870795,
-        "parent_id": 1982,
-        "subs": [],
-        "tier": "E3"
-      },
-      {
-        "id": 1986,
-        "text": "audit changes (i/review mode=forget)",
-        "activeForm": "audit changes (i/review mode=forget)",
-        "status": "completed",
-        "done": true,
-        "critical": false,
-        "source": "onboarding",
-        "on_done": "",
-        "ts": 1778644725.0870817,
-        "parent_id": 1982,
-        "subs": [],
-        "tier": "E3"
-      },
-      {
-        "id": 1987,
-        "text": "run pipeline (Bash: npm run main)",
-        "activeForm": "run pipeline (Bash: npm run main)",
-        "status": "in_progress",
-        "done": false,
-        "critical": false,
-        "source": "onboarding",
-        "on_done": "",
-        "ts": 1778644725.0870838,
-        "parent_id": 1982,
-        "subs": [],
-        "tier": "E3"
-      },
-      {
-        "id": 1988,
-        "text": "await pipeline verdict",
-        "activeForm": "await pipeline verdict",
-        "status": "pending",
-        "done": false,
-        "critical": false,
-        "source": "onboarding",
-        "on_done": "",
-        "ts": 1778644725.087086,
-        "parent_id": 1982,
-        "subs": [],
-        "tier": "E3"
-      },
-      {
-        "id": 1989,
-        "text": "persist learning (i/learn title=... content=...)",
-        "activeForm": "persist learning (i/learn title=... content=...)",
-        "status": "pending",
-        "done": false,
-        "critical": false,
-        "source": "onboarding",
-        "on_done": "",
-        "ts": 1778644725.087088,
-        "parent_id": 1982,
-        "subs": [],
-        "tier": "E3"
-      }
-    ],
     "tier": "E3"
   },
   {
