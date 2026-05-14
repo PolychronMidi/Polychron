@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2868,
-      "updated_ts": 1778745256.7253819
+      "max_id": 2871,
+      "updated_ts": 1778745304.9588718
     }
   },
   {
     "id": 2866,
     "text": "Run required HME onboarding checks locally",
     "activeForm": "Running required HME onboarding checks locally",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2867,
     "text": "Fix team dashboard context-window/model routing defects",
     "activeForm": "Fixing team dashboard context-window/model routing defects",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
