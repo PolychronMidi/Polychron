@@ -245,7 +245,7 @@ def _check_llamacpp_connectivity() -> None:
             f"(no process listening). Loading: {loading}. Healthy: {healthy}."
         )
     elif loading:
-        logger.warning(
+        logger.info(
             f"llama-server connectivity: {len(loading)} still LOADING after "
             f"{warmup_wait}s: {loading}. Not a failure -- cold-start MoE models "
             f"can take 60-90s. Healthy: {healthy}."
