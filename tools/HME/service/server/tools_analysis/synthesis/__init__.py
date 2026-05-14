@@ -10,7 +10,14 @@ Split into focused modules:
   synthesis_warm.py       -- warm KV context, persona construction, priming
   synthesis_pipeline.py   -- arbiter triage, conflict resolution, two-stage/parallel think
 """
-import logging
+import json as _json, os as _os, re as _re, logging
+
+def _load_models_json():
+    """Single loader for config/models.json (JSONC with // comments)."""
+    _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
+    with open(_cfg_path) as _f:
+        _raw = _f.read()
+    return _json.loads(_re.sub(r'^\s*//.*$|[ \t]+//.*$', '', _raw, flags=_re.MULTILINE))
 
 logger = logging.getLogger("HME")
 

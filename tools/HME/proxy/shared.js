@@ -79,4 +79,12 @@ function mtimeCache({ ttlMs = 0 } = {}) {
   };
 }
 
-module.exports = { emit, shortHash, sessionKey, PROJECT_ROOT, EMIT_PY, RUNTIME_DIR, mtimeCache };
+// Single loader for config/models.json (JSONC with // comments). Every
+// caller routes through this so comment-stripping lives in one place.
+function loadModelsJson() {
+  const raw = require('fs').readFileSync(
+    require('path').resolve(PROJECT_ROOT, 'config', 'models.json'), 'utf8');
+  return JSON.parse(raw.replace(/^\s*\/\/.*$/gm, '').replace(/[ \t]+\/\/.*$/gm, ''));
+}
+
+module.exports = { emit, shortHash, sessionKey, PROJECT_ROOT, EMIT_PY, RUNTIME_DIR, mtimeCache, loadModelsJson };
