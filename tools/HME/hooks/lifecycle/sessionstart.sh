@@ -334,14 +334,15 @@ PY
 )
 [ -n "$SUBSTRATE_BRIEF" ] && echo -e "\n$SUBSTRATE_BRIEF" >&2
 
-# Buddy system: async persistent-peer init when enabled.
-_BUDDY_INIT="$PROJECT_ROOT/tools/HME/hooks/helpers/buddy_init.sh"
-[ -x "$_BUDDY_INIT" ] && bash "$_BUDDY_INIT" >/dev/null 2>&1 || true
+# Buddy legacy path: disabled under MODE=6 team/fork paradigm.
+if [ "${BUDDY_SYSTEM:-0}" = "1" ] && [ "${OVERDRIVE_MODE:-0}" != "6" ]; then
+  _BUDDY_INIT="$PROJECT_ROOT/tools/HME/hooks/helpers/buddy_init.sh"
+  [ -x "$_BUDDY_INIT" ] && bash "$_BUDDY_INIT" >/dev/null 2>&1 || true
 
-# Buddy watchdog: clear missing-transcript primary pointer.
-_BUDDY_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/buddy_watchdog.py"
-[ -x "$_BUDDY_WATCHDOG" ] && \
-  PROJECT_ROOT="$PROJECT_ROOT" python3 "$_BUDDY_WATCHDOG" >/dev/null 2>&1 || true
+  _BUDDY_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/buddy_watchdog.py"
+  [ -x "$_BUDDY_WATCHDOG" ] && \
+    PROJECT_ROOT="$PROJECT_ROOT" python3 "$_BUDDY_WATCHDOG" >/dev/null 2>&1 || true
+fi
 
 # Stale-soft-warn auditor: surface promotion-review candidates.
 _SOFT_AUDIT="$PROJECT_ROOT/tools/HME/scripts/detectors/audit_stale_soft_warns.py"
