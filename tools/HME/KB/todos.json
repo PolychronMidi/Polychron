@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2944,
-      "updated_ts": 1778746329.9058676
+      "max_id": 2947,
+      "updated_ts": 1778747798.428861
     }
   },
   {
-    "id": 2942,
-    "text": "Patch models team role mapping",
-    "activeForm": "Patching models team role mapping",
+    "id": 2945,
+    "text": "Patch context tracking fail-fast behavior in team dashboard",
+    "activeForm": "Patching context tracking fail-fast behavior in team dashboard",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778746329.9058397,
+    "ts": 1778747798.4288328,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2943,
-    "text": "Patch team dashboard defaults/register behavior",
-    "activeForm": "Patching team dashboard defaults/register behavior",
+    "id": 2946,
+    "text": "Run focused verification for dashboard context path",
+    "activeForm": "Running focused verification for dashboard context path",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778746329.9058545,
+    "ts": 1778747798.428848,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2944,
-    "text": "Run focused checks",
-    "activeForm": "Running focused checks",
+    "id": 2947,
+    "text": "Report exact diff/test evidence",
+    "activeForm": "Reporting exact diff/test evidence",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778746329.9058652,
+    "ts": 1778747798.4288585,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
