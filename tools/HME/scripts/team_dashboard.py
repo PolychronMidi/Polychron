@@ -97,10 +97,8 @@ def _row_ctx(role: str, row: sqlite3.Row, tier: str, session_id: str) -> dict:
 def _metadata_session_id(body: dict) -> str:
  meta = body.get("metadata") if isinstance(body, dict) else {}
  user_id = meta.get("user_id") if isinstance(meta, dict) else None
- try:
-  return json.loads(user_id).get("session_id", "") if isinstance(user_id, str) else ""
- except (json.JSONDecodeError, TypeError):
-  return ""
+ try: return json.loads(user_id).get("session_id", "") if isinstance(user_id, str) else ""
+ except (json.JSONDecodeError, TypeError): return ""
 def _user_text(body: dict) -> str:
  chunks = []
  for msg in body.get("messages", []):
