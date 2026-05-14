@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2781,
-      "updated_ts": 1778733501.0017755
+      "max_id": 2784,
+      "updated_ts": 1778734206.6461847
     }
   },
   {
-    "id": 2779,
-    "text": "Add providers_to_skip to proxy chain builder (hme_proxy.js)",
-    "activeForm": "Adding providers_to_skip to proxy chain builder",
+    "id": 2782,
+    "text": "Locate stop-hook emission path and session-start injection source",
+    "activeForm": "Locating stop-hook emission path and session-start injection source",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778733501.001749,
+    "ts": 1778734206.6461573,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2780,
-    "text": "Add providers_to_skip to Python synthesis chain (synthesis_reasoning.py)",
-    "activeForm": "Adding providers_to_skip to Python synthesis chain",
+    "id": 2783,
+    "text": "Identify why repeated feedback reaches prompt",
+    "activeForm": "Identifying why repeated feedback reaches prompt",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778733501.0017633,
+    "ts": 1778734206.6461716,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2781,
-    "text": "Verify opencode_go models excluded from chains",
-    "activeForm": "Verifying opencode_go models excluded from chains",
+    "id": 2784,
+    "text": "Report root cause with evidence and likely fix path",
+    "activeForm": "Reporting root cause with evidence and likely fix path",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778733501.0017738,
+    "ts": 1778734206.6461823,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
