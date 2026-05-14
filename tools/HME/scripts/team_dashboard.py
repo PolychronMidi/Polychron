@@ -68,12 +68,7 @@ def _normalize(data: dict) -> dict:
 
 
 def _load() -> dict:
-    if DASHBOARD.is_file():
-        try:
-            return _normalize(json.loads(DASHBOARD.read_text()))
-        except (json.JSONDecodeError, OSError):
-            pass
-    return _empty_dashboard()
+    return _normalize(json.loads(DASHBOARD.read_text())) if DASHBOARD.is_file() else _empty_dashboard()
 
 
 def _save(data: dict) -> None:
