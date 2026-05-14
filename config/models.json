@@ -32,8 +32,8 @@
     "description": "Driver can specify tier level (E1-E5) of subagents where Driver's routring works like this: if E5, goes to whichever Team lead has the least used context, or whichever Team Lead is available, or fallback to the following E4 logic if both Team Leads unavailable. If E4, goes to whichever Purple Partner has least used context, or whichever Purple Partner is available, or whichever E4 stage crew is available (never wait). For E1-E3, these go to either of the two stage crew per tier has the least used context, or whichever is available, or the next lowest tier, etc.  Team Lead subagent routing goes like this: E4 & E5: Purple partner of same team, or E4 stagecrew. E1-E3: appropriately tiered stage crew, falling to lower tiers when desired tier unavailble.  Purple Partner subagent routing: E4 & E5: Purple partner of opposing team, or E4 stagecrew. E1-E3: appropriately tiered stage crew, falling to lower tiers when desired tier unavailble.  Stage Crew subagent routing: Only allowed for E3 & E4 stage crew (E1-E3 agents blocked from using Agent tool), capped at level of originating stage crew. Routes to appropriately tiered stage crew, falling to lower tiers when desired tier unavailble."
   },
 
-// manually_toprank pins explicit front-runners; team_role_models defines role routing logic.
 
+// manually_toprank and team_role_models both fall back to ranking_rules if models here are either blank or unavailable.
   "manually_toprank": {
     "E5": [
       "gpt-5.5-xhigh"
