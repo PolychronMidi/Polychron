@@ -3,7 +3,7 @@
     "id": 0,
     "_meta": {
       "max_id": 2682,
-      "updated_ts": 1778727663.0524135
+      "updated_ts": 1778727763.6443784
     }
   },
   {
@@ -148,8 +148,8 @@
         "id": 1985,
         "text": "edit target module (KB briefing auto-chains)",
         "activeForm": "edit target module (KB briefing auto-chains)",
-        "status": "in_progress",
-        "done": false,
+        "status": "completed",
+        "done": true,
         "critical": false,
         "source": "onboarding",
         "on_done": "",
@@ -162,8 +162,8 @@
         "id": 1986,
         "text": "audit changes (i/review mode=forget)",
         "activeForm": "audit changes (i/review mode=forget)",
-        "status": "pending",
-        "done": false,
+        "status": "completed",
+        "done": true,
         "critical": false,
         "source": "onboarding",
         "on_done": "",
@@ -176,7 +176,7 @@
         "id": 1987,
         "text": "run pipeline (Bash: npm run main)",
         "activeForm": "run pipeline (Bash: npm run main)",
-        "status": "pending",
+        "status": "in_progress",
         "done": false,
         "critical": false,
         "source": "onboarding",
