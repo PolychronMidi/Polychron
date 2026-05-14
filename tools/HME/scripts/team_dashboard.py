@@ -30,7 +30,7 @@ def _jsonc(text: str) -> str:
   if quote:
    out.append(c)
    if esc: esc = False
-   elif c == "\": esc = True
+   elif c == "\\": esc = True
    elif c == quote: quote = ""
   elif c in "\"'":
    quote = c; out.append(c)
