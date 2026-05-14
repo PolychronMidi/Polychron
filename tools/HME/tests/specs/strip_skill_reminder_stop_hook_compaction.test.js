@@ -28,3 +28,16 @@ test('stop-hook compaction preserves exhaust discriminator', () => {
   assert.match(out.text, /EXHAUST PROTOCOL VIOLATION/);
   assert.match(out.text, /compacted by hme-proxy/);
 });
+
+test('existing compacted stop-hook sentinel is stripped', () => {
+  const input = 'Stop hook feedback: repeated auto-completeness/exhaust gate compacted by hme-proxy.';
+  const policy = require('../../proxy/middleware/00_strip_skill_reminder');
+  const content = [{ type: 'text', text: input }];
+  let dirty = false;
+  policy.onRequest({
+    payload: { messages: [{ role: 'user', content }] },
+    ctx: { markDirty: () => { dirty = true; }, emit: () => {} },
+  });
+  assert.strictEqual(dirty, true);
+  assert.deepStrictEqual(content, []);
+});
