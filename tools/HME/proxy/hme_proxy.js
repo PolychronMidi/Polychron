@@ -168,7 +168,7 @@ let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from he
 let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
 let _lastPayloadBytes = 0;            // last OmniRoute payload size for context monitoring
 const _BYTES_PER_TOKEN_EST = 3.5;
-const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 120_000;
+const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 90_000;
 function _effectiveCompactThreshold() {
   // CEILING: HME_PROXY_COMPACT_BYTES (explicit) honored as hard cap.
   // Otherwise: 50% of learned ITPM cap (leaves room for response +
@@ -316,8 +316,8 @@ function _shrinkForPassthrough(payload) {
 
   // TIER 1: microcompact -- elide older tool_result blocks. Floor=500B,
   // recent-keep=10%. Most large requests stop here with no message drops.
-  const _TOOL_RESULT_BYTE_FLOOR = 3000;
-  const _RECENT_KEEP_FRACTION = 0.30;
+  const _TOOL_RESULT_BYTE_FLOOR = 2000;
+  const _RECENT_KEEP_FRACTION = 0.20;
   const _recent_start = Math.floor(msgs.length * (1 - _RECENT_KEEP_FRACTION));
   let elided = 0;
   for (let i = 0; i < _recent_start; i++) {
