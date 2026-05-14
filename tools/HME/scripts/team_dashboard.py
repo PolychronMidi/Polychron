@@ -125,6 +125,10 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
  if window <= 0: raise RuntimeError(f"buddy context window invalid for {role} sid={sid}")
  pct = round(min(100.0, max(0.0, float(ctx["used_pct"]))), 1)
  return {"pct": pct, "window": window, "sid": sid}
+def _now() -> str:
+ return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def _empty_dashboard() -> dict:
  mode = os.environ.get("OVERDRIVE_MODE")
  data = {"updated_at": _now(), "agents": {}}
