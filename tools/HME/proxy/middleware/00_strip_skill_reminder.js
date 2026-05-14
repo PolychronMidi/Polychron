@@ -5,6 +5,8 @@ const CONTEXT_TAIL_RE = /\n# userEmail\nThe user's email address is [^\n]*\.\n# 
 const STOP_HOOK_RE = /^Stop hook feedback:\n\[bash [^\]]+_proxy_bridge\.sh Stop\]: [\s\S]*$/;
 const STOP_HOOK_KEEP_RE = /MULTI-FLAG STOP|ADVISOR|SUMMARY_|LIVE-PROBE|VERIFICATION|PHASE GATE|CLAIM_WITHOUT_EVIDENCE/;
 const STOP_HOOK_COMPACT = 'Stop hook feedback: repeated auto-completeness/exhaust gate compacted by hme-proxy.';
+const STOP_HOOK_COMPACT_AUTO = 'Stop hook feedback: AUTO-COMPLETENESS CHECK compacted by hme-proxy.';
+const STOP_HOOK_COMPACT_EXHAUST = 'Stop hook feedback: EXHAUST PROTOCOL VIOLATION compacted by hme-proxy.';
 
 const RECENT_STOP_HOOKS = [];
 
