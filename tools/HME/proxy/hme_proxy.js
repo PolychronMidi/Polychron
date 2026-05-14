@@ -157,7 +157,7 @@ const {
 const _PASSTHROUGH_COMPACT_BYTES = parseInt(process.env.HME_PROXY_COMPACT_BYTES || '250000', 10);
 const _COMPACT_BYTES_EXPLICIT = process.env.HME_PROXY_COMPACT_BYTES != null
   && process.env.HME_PROXY_COMPACT_BYTES !== '';
-const _PASSTHROUGH_COMPACT_KEEP_MIN = 4;
+const _PASSTHROUGH_COMPACT_KEEP_MIN = 6;
 
 // Dynamic threshold: track the most recent ITPM-remaining from Anthropic
 // response headers and shrink the byte budget when we're close to the
@@ -318,7 +318,7 @@ function _shrinkForPassthrough(payload) {
 
   // TIER 1: microcompact -- elide older tool_result blocks. Floor=500B,
   // recent-keep=10%. Most large requests stop here with no message drops.
-  const _TOOL_RESULT_BYTE_FLOOR = 500;
+  const _TOOL_RESULT_BYTE_FLOOR = 2000;
   const _RECENT_KEEP_FRACTION = 0.10;
   const _recent_start = Math.floor(msgs.length * (1 - _RECENT_KEEP_FRACTION));
   let elided = 0;
