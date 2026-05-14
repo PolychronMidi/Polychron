@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Team IPC dashboard for MODE=6 agent health."""
 from __future__ import annotations
-import argparse, json, os, re, sqlite3, sys
+import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
 from pathlib import Path
 PROJECT = Path(os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "")))
