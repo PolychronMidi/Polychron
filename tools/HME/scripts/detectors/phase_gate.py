@@ -58,7 +58,7 @@ _PHASES = ("OBSERVE", "THINK", "PLAN", "BUILD", "EXECUTE", "VERIFY", "LEARN")
 
 # Phase-marker regexes. Match either <PHASE> banner or `phase: <p>`.
 _PHASE_RE = re.compile(
-    r"(?:={3,}\s*(OBSERVE|THINK|PLAN|BUILD|EXECUTE|VERIFY|LEARN)\s*={3,}|"
+    r"(?:^\s*(?:={3,}\s*)?(OBSERVE|THINK|PLAN|BUILD|EXECUTE|VERIFY|LEARN)(?:\s*={3,})?\s*$|"
     r"\bphase\s*:\s*(observe|think|plan|build|execute|verify|learn)\b)",
     re.IGNORECASE,
 )
