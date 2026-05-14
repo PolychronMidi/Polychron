@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2770,
-      "updated_ts": 1778731438.5999954
+      "max_id": 2774,
+      "updated_ts": 1778732005.0334384
     }
   },
   {
     "id": 2767,
     "text": "Read enshrined routing rules from models.json line 25",
     "activeForm": "Reading enshrined routing rules from models.json line 25",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2768,
     "text": "Rewrite team_agent_router.py to match enshrined rules",
     "activeForm": "Rewriting team_agent_router.py to match enshrined rules",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2769,
     "text": "Forward HME_TEAM_ROLE via proxy bridge for caller identity",
     "activeForm": "Forwarding HME_TEAM_ROLE via proxy bridge for caller identity",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,8 +52,8 @@
     "id": 2770,
     "text": "Rewrite pretooluse_agent.sh + validate end-to-end",
     "activeForm": "Rewriting pretooluse_agent.sh + validating end-to-end",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
