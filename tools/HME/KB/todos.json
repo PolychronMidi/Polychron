@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2885,
-      "updated_ts": 1778745508.8709466
+      "max_id": 2889,
+      "updated_ts": 1778745567.0124063
     }
   },
   {
-    "id": 2878,
-    "text": "Inspect MODE=6/HME routing and dashboard code",
-    "activeForm": "Inspecting MODE=6/HME routing and dashboard code",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778745446.7864895,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2879,
-    "text": "Fix model role defaults if broken",
-    "activeForm": "Fixing model role defaults",
+    "id": 2886,
+    "text": "Set MODE=6 role model defaults",
+    "activeForm": "Setting MODE=6 role model defaults",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745446.7865045,
+    "ts": 1778745567.0123687,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2880,
-    "text": "Fix dashboard heartbeat/register behavior if broken",
-    "activeForm": "Fixing dashboard heartbeat/register behavior",
+    "id": 2887,
+    "text": "Replace dashboard hardcoded ctx fallback with models.json dynamic windows",
+    "activeForm": "Replacing dashboard hardcoded ctx fallback with models.json dynamic windows",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745446.786515,
+    "ts": 1778745567.0123832,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2888,
+    "text": "Validate router/dashboard/proxy behavior locally",
+    "activeForm": "Validating router/dashboard/proxy behavior locally",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778745567.0123937,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
