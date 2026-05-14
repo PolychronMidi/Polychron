@@ -145,13 +145,9 @@ def main() -> int:
     py_tests: list[Path] = []
     js_tests: list[Path] = []
     for impl in impls:
-        cands = _candidate_tests(impl)
-        if not cands:
-            continue
-        if impl.suffix in _PY_EXTS:
-            py_tests.extend(cands)
-        else:
-            js_tests.extend(cands)
+        py_cands, js_cands = _candidate_tests(impl)
+        py_tests.extend(py_cands)
+        js_tests.extend(js_cands)
 
     failures: list[str] = []
     if py_tests:
