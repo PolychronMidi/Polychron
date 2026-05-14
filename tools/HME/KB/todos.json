@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2556,
-      "updated_ts": 1778717732.633313
+      "max_id": 2560,
+      "updated_ts": 1778718384.3863115
     }
   },
   {
     "id": 2553,
     "text": "Confirm proxy process needs restart for patched middleware",
     "activeForm": "Confirming proxy restart requirement",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2554,
     "text": "Restart or reload proxy safely",
     "activeForm": "Restarting or reloading proxy safely",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2555,
     "text": "Run tiny synthetic compaction marker check",
     "activeForm": "Running tiny synthetic compaction marker check",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -52,7 +52,7 @@
     "id": 2556,
     "text": "Report exact next state",
     "activeForm": "Reporting exact next state",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
