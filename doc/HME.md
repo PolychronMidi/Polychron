@@ -72,7 +72,6 @@ Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py);
 | `scope_escape` | Pre-existing/unrelated label-and-stop |
 | `trample_gate` (proxy middleware) | Mid-response user message ignored (request-time, not Stop-time) |
 | `phantom_capability` | Declared capability outside the closed enum |
-| `advisor_doctrine` | E2+ commit boundary without consult / solo rationale |
 | `summary_format` | E5 work without `SUMMARY` block |
 | `ceremony_dodge` | Text-only rescue-pattern response to a deny |
 | `live_probe` | ISA edit leaving `[x]` ISCs without Verification |
