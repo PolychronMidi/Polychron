@@ -556,21 +556,8 @@ function handleRequest(clientReq, clientRes) {
     let outBody = bodyBuf;
     let injected = false;
 
-    // Detect [HME-SENIOR-CONSULT] marker -- senior traffic must reach Anthropic.
-    let _isSeniorConsult = false;
-    if (payload && Array.isArray(payload.messages)) {
-      for (const m of payload.messages) {
-        const c = m && m.content;
-        const txt = typeof c === 'string' ? c
-          : Array.isArray(c) ? c.map((b) => (b && b.type === 'text' ? (b.text || '') : '')).join('')
-          : '';
-        if (txt.includes('[HME-SENIOR-CONSULT]')) { _isSeniorConsult = true; break; }
-      }
-    }
-
-// OVERDRIVE_MODE=4 OmniRoute swap; zen_translator path behind HME_OMNIROUTE_OFF=1
-    let _isMode4Swap = false;
     let _mode4WasStreaming = false;
+    let _isMode4Swap = false;
     let _isMode4OmniRoute = false;
     let _swapChain = [];
     let _swapModel = 'deepseek-v4-pro';
@@ -580,8 +567,8 @@ function handleRequest(clientReq, clientRes) {
     const _OMNIROUTE_OFF = process.env.HME_OMNIROUTE_OFF === '1';
     const _odMode = process.env.OVERDRIVE_MODE || '0';
 
+    console.error(`[hme-proxy] swap-check: odMode=${_odMode} model=${payload && payload.model ? payload.model : 'no-payload'} upstream=${!!clientReq.headers['x-hme-upstream']}`);
     if ((_odMode === '4' || _odMode === '5' || _odMode === '6')
-        && !_isSeniorConsult
         && payload && typeof payload.model === 'string'
         && payload.model.startsWith('claude-')
         && !clientReq.headers['x-hme-upstream']) {
@@ -673,17 +660,25 @@ function handleRequest(clientReq, clientRes) {
         if (process.env.HME_OMNIROUTE_PROVIDER) _omniProvider = process.env.HME_OMNIROUTE_PROVIDER;
 
         if (!_OMNIROUTE_OFF) {
-          // OmniRoute path (default). No per-request compression overrides --
-          // let the dashboard combo's compression settings do their job.
-          _stripStaleToolResults(payload);
-          _stripClaudeIdentity(payload);
+          // OmniRoute path (default). No per-request compression overrides.
+          console.error(`[hme-proxy] swap pre-omni: chainLen=${_swapChain.length} model=${_swapModel} provider=${_omniProvider}`);
+          try {
+            _stripStaleToolResults(payload);
+            _stripClaudeIdentity(payload);
+          } catch (_e) {
+            console.error(`[hme-proxy] OmniRoute payload strip failed: ${_e.message}`);
+          }
           payload.model = `${_omniProvider}/${_swapModel}`;
-          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+          try { outBody = Buffer.from(JSON.stringify(payload), 'utf8'); } catch (_e) {
+            console.error(`[hme-proxy] OmniRoute payload serialize failed: ${_e.message} (len=${JSON.stringify(payload).length}B)`);
+            outBody = Buffer.from(JSON.stringify({ model: payload.model, messages: payload.messages.slice(-50), system: payload.system, stream: payload.stream, max_tokens: payload.max_tokens }), 'utf8');
+          }
           _lastPayloadBytes = outBody.length;
           clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${_OMNIROUTE_PORT}`;
           delete clientReq.headers['authorization'];
           delete clientReq.headers['x-api-key'];
           _isMode4OmniRoute = true;
+          console.error(`[hme-proxy] MODE=${_odMode} swap OK: omni=${_isMode4OmniRoute} model=${_omniProvider}/${_swapModel} chainLen=${_swapChain.length}`);
 
           console.error(`[hme-proxy] MODE=${_odMode} OmniRoute: claude-* -> ${_omniProvider}/${_swapModel} via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming} msgs=${payload.messages.length} sys=${(payload.system||'').length}B tools=${(payload.tools||[]).length})`);
         } else {

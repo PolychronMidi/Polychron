@@ -23,15 +23,6 @@ if [ -n "$_EDIT_FILES" ]; then
   echo "$_EDIT_FILES" | sed 's/^/  /' >&2
 fi
 
-# buddy hand-off per-turn auto_retire_check; wrapped in || true for safety
-if [ "${BUDDY_HANDOFF:-0}" = "1" ]; then
-  _HANDOFF_SCRIPT="$PROJECT/tools/HME/scripts/buddy_handoff.py"
-  if [ -f "$_HANDOFF_SCRIPT" ]; then
-    (PROJECT_ROOT="$PROJECT" python3 "$_HANDOFF_SCRIPT" auto_retire_check \
-       >/dev/null 2>&1) || true
-  fi
-fi
-
 # ingest "what's next" from SUMMARY blocks into HME todo system
 _INGESTOR="$PROJECT/tools/HME/scripts/ingest_summary_todos.py"
 if [ -f "$_INGESTOR" ]; then

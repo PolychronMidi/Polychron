@@ -96,7 +96,10 @@
       "description": "Unified state panel -- every state machine HME tracks, in one ~10-line view.",
       "category": "diagnostic",
       "usage": "i/state  |  i/state mode=brief",
-      "modes": ["full (default)", "brief"],
+      "modes": [
+        "full (default)",
+        "brief"
+      ],
       "examples": [
         "i/state",
         "i/state mode=brief"
@@ -197,7 +200,25 @@
       "description": "Explain something the system did or is in. Three tiers: deterministic modes (block/state/verifier/hci-drop/hook), Tier-2 retrieval catch-all on multi-word questions (grep + KB + activity), Tier-3 subagent synthesis with --deep.",
       "category": "review-discipline",
       "usage": "i/why <invariant-id>  |  i/why mode=<block|state|verifier|hci-drop|hook|causality>  |  i/why mode=causality <event> [--chain] [depth=N]  |  i/why \"<question>\" [--deep]",
-      "modes": ["invariant (default)", "block", "state", "verifier", "hci-drop", "hook", "verifier-utility", "verifier-coverage", "verifier-drift", "kb-graph", "kb-context", "predict", "conscience", "causality (with --chain / --root-cause)", "fractal-shape", "architecture-snapshot", "search (auto on multi-word)"],
+      "modes": [
+        "invariant (default)",
+        "block",
+        "state",
+        "verifier",
+        "hci-drop",
+        "hook",
+        "verifier-utility",
+        "verifier-coverage",
+        "verifier-drift",
+        "kb-graph",
+        "kb-context",
+        "predict",
+        "conscience",
+        "causality (with --chain / --root-cause)",
+        "fractal-shape",
+        "architecture-snapshot",
+        "search (auto on multi-word)"
+      ],
       "examples": [
         "i/why nexus-state-integrity",
         "i/why mode=block",
@@ -306,14 +327,6 @@
       ],
       "safe_no_args": true
     },
-    "buddy": {
-      "description": "DEPRECATED  alias for i/dispatch. Use i/dispatch for new code. Preserved so existing callers + transcripts keep working.",
-      "category": "orchestration",
-      "usage": "i/buddy <status|enqueue|drain|clean|chain> [key=value ...]  (forwards to i/dispatch)",
-      "examples": [
-        "i/buddy status  # equivalent to: i/dispatch status"
-      ]
-    },
     "chain": {
       "description": "Run an ordered Bash-skill chain from chains/<name>.yaml. Independent of BUDDY_SYSTEM.",
       "category": "orchestration",
@@ -322,38 +335,6 @@
         "i/chain review-then-test",
         "i/chain dev-cycle loop=3",
         "i/chain overnight on_rate_limit=pause-with-cap"
-      ]
-    },
-    "dispatch": {
-      "description": "Task dispatcher CLI (queue + worker routing). Subactions: status / enqueue / drain / clean / chain. Routes via HME_DISPATCH_MODE (claude-resume / synthesis / disabled).",
-      "category": "orchestration",
-      "usage": "i/dispatch <status|enqueue|drain|clean|chain> [key=value ...]",
-      "examples": [
-        "i/dispatch status",
-        "i/dispatch enqueue tier=medium text=\"address review finding\" source=i/review",
-        "i/dispatch drain loop=true loop_delay=5",
-        "i/dispatch chain review-then-test"
-      ]
-    },
-    "handoff": {
-      "description": "Buddy hand-off lifecycle CLI (BUDDY_HANDOFF=1). Manages a single dynamic primary + a senior pool of retired primaries. Subactions: status / retire / promote / auto_retire_check / consult.",
-      "category": "orchestration",
-      "usage": "i/handoff <status|retire|promote|auto_retire_check|consult> [key=value ...]",
-      "examples": [
-        "i/handoff status",
-        "i/handoff status json=true",
-        "i/handoff retire reason=\"too close to compaction\"",
-        "i/handoff promote sid=<new-sid> floor=easy",
-        "i/handoff auto_retire_check"
-      ]
-    },
-    "consult": {
-      "description": "Manually invoke a specific buddy (active primary OR retired senior) for a tough problem (BUDDY_HANDOFF=1). The primary is the inherited active buddy from the prior session; seniors are retired primaries in tmp/hme-buddy-seniors/. Each call grows the target's transcript -- reserve for problems where their depth would unlock the answer.",
-      "category": "orchestration",
-      "usage": "i/consult sid=<sid> question=\"...\"  (or primary=<sid>, buddy=<sid>, senior=<sid> as role-named aliases)",
-      "examples": [
-        "i/consult sid=abc123def question=\"why does feature X behave that way under load?\"",
-        "i/consult primary=$(cat runtime/hme/buddy-primary.sid) question=\"is this approach right?\""
       ]
     },
     "audit-tools": {
@@ -415,5 +396,6 @@
       "category": "orchestration",
       "usage": "i/_dispatch.sh <internal>"
     }
-  }
+  },
+  "scripts": []
 }
