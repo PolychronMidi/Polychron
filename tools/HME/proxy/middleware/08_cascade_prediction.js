@@ -58,7 +58,10 @@ function _post(pathName, payload, timeoutMs = REQUEST_TIMEOUT_MS) {
       });
     });
     req.on('error', () => resolve(null));
-    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(null);
+    });
     req.write(body);
     req.end();
   });
