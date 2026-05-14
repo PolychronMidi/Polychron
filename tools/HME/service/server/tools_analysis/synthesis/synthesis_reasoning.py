@@ -335,27 +335,31 @@ def _role_key(role: str) -> str:
     return ""
 
 
+def _mode6_role_chain(cfg: dict, role: str, role_tier: str) -> tuple[str, ...] | None:
+    spec = cfg.get("team_role_models", {}).get(_role_key(role))
+    if not isinstance(spec, dict):
+        return None
+    spec_tier = role_tier if spec.get("tier") == "role" else spec.get("tier", role_tier)
+    base = _resolve_mode5_chain(spec_tier)
+    if base is None:
+        return None
+    if spec.get("source") != "manually_toprank":
+        return base
+    top = [m for m in cfg.get("manually_toprank", {}).get(spec_tier, []) if m in base]
+    return tuple(top + [m for m in base if m not in top])
+
+
 def _resolve_mode6_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     from hme_env import ENV as _ENV
     from . import _load_models_json as _lmj
     role = _ENV.optional("HME_TEAM_ROLE", "").strip().lower()
     role_tier = _role_tier(role, tier)
-    base = _resolve_mode5_chain(role_tier)
-    if base is None:
-        return None
     try:
         cfg = _lmj()
     except Exception:
         return _resolve_mode5_entry(role_tier)
-    ids = set(base)
-    role_models = cfg.get("team_role_models", {}).get(_role_key(role), [])
-    if isinstance(role_models, dict):
-        role_models = role_models.get(role_tier, [])
-    front = [m for m in role_models if m in ids]
-    if not front and role in ("driver", "blue_lead", "red_lead", "team_lead"):
-        front = [m for m in cfg.get("manually_toprank", {}).get(role_tier, []) if m in ids]
-    chain = tuple(front + [m for m in base if m not in front])
-    return (chain, any(m.startswith("claude-") for m in chain))
+    chain = _mode6_role_chain(cfg, role, role_tier) or _resolve_mode5_chain(role_tier)
+    return (chain, any(m.startswith("claude-") for m in chain)) if chain else None
 
 
 # MODE 1..4 -> legacy_chains registry; MODE=5/6 -> tiers. None = cascade.
