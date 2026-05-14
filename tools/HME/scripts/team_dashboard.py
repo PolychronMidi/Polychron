@@ -47,10 +47,10 @@ DEFAULT_CTX = {"E5": 200000, "E4": 128000, "E3": 64000, "E2": 32000, "E1": 16000
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
 
 ROLE_NEEDLES = {
-    "blue_lead": ("You are Blue Lead", "Blue Lead"),
-    "blue_purple": ("You are Blue Purple", "Blue Purple"),
-    "red_lead": ("You are Red Lead", "Red Lead"),
-    "red_purple": ("You are Red Purple", "Red Purple"),
+    "blue_lead": ("You are Blue Lead",),
+    "blue_purple": ("You are Blue Purple",),
+    "red_lead": ("You are Red Lead",),
+    "red_purple": ("You are Red Purple",),
     "crew_e4_0": ("crew_e4_0",), "crew_e4_1": ("crew_e4_1",),
     "crew_e3_0": ("crew_e3_0",), "crew_e3_1": ("crew_e3_1",),
     "crew_e2_0": ("crew_e2_0",), "crew_e2_1": ("crew_e2_1",),
