@@ -200,7 +200,7 @@ def _omniroute_ctx(role: str, sid: str, forked_at: str | None = None) -> dict | 
         if not by_sid and not _role_matches(role, body, current_sid):
             continue
         model = row["requested_model"] or row["model"] or ""
-        window = _model_ctx_window(model, fallback_window)
+        window = _model_ctx_window(model)
         pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
         return {"pct": pct, "window": window, "timestamp": row["timestamp"]}
     return None
