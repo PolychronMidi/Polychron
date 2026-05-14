@@ -172,8 +172,8 @@ def cmd_show(args):
     if not agents:
         print("team-dashboard: no agents registered")
         return
-    print(f"team-dashboard  updated={data.get('updated_at','?')}  agents={len(agents)}")
-    print(f"{'role':<14} {'team':<8} {'tier':<4} {'ctx%':>4}  {'bar':<10} {'status':<12}  {'last_active':<8}  task")
+    print(f"team-dashboard  updated={data.get('updated_at','?')}  mode={data.get('mode','?')}  agents={len(agents)}")
+    print(f"{'role':<14} {'team':<8} {'tier':<4} {'ctx%':>4}  {'bar':<10} {'ctx_src':<8} {'status':<12}  {'last_active':<8}  task")
     print("-" * 95)
     order = ["driver", "blue_lead", "blue_purple", "red_lead", "red_purple"]
     order += sorted([k for k in agents if k not in order])
