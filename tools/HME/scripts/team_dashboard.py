@@ -95,8 +95,13 @@ def _ctx_pct(sid: str, tier: str) -> int:
         if ctx and "used_pct" in ctx:
             return min(100, max(0, int(ctx["used_pct"])))
     except (ImportError, ValueError, TypeError):
-        pass  # silent-ok: buddy infrastructure may not be loaded
+        pass  # silent-ok: legacy buddy ctx may be unavailable under MODE=6
     return 0
+
+
+def _ctx_source(sid: str) -> str:
+    return "buddy" if sid and sid not in ("tbd", "driver-session") else "unknown"
+
 
 def cmd_register(args):
     data = _load()
