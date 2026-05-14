@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2575,
-      "updated_ts": 1778723987.1831985
+      "max_id": 2581,
+      "updated_ts": 1778724589.3786435
     }
   },
   {
     "id": 2570,
     "text": "Investigate and fix all 9 stop detectors failing OPEN",
-    "activeForm": "Investigating stop detector failures",
-    "status": "in_progress",
-    "done": false,
+    "activeForm": "Fixed stop detector false-positive stderr noise",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2571,
     "text": "Run HME selftest \u2014 verify proxy/worker/KB/index",
     "activeForm": "Running HME selftest",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
