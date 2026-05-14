@@ -47,10 +47,10 @@ DEFAULT_CTX = {"E5": 200000, "E4": 128000, "E3": 64000, "E2": 32000, "E1": 16000
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
 
 ROLE_NEEDLES = {
-    "blue_lead": ("You are Blue Lead", "register blue_lead"),
-    "blue_purple": ("You are Blue Purple", "register blue_purple", "Blue Purple"),
-    "red_lead": ("You are Red Lead", "register red_lead"),
-    "red_purple": ("You are Red Purple", "register red_purple", "Red Purple"),
+    "blue_lead": ("You are Blue Lead", "Blue Lead"),
+    "blue_purple": ("You are Blue Purple", "Blue Purple"),
+    "red_lead": ("You are Red Lead", "Red Lead"),
+    "red_purple": ("You are Red Purple", "Red Purple"),
     "crew_e4_0": ("crew_e4_0",), "crew_e4_1": ("crew_e4_1",),
     "crew_e3_0": ("crew_e3_0",), "crew_e3_1": ("crew_e3_1",),
     "crew_e2_0": ("crew_e2_0",), "crew_e2_1": ("crew_e2_1",),
@@ -149,7 +149,10 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
     if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
         return False
     text = _first_user_text(body)
-    return "Filesystem IPC only" in text and any(n in text for n in ROLE_NEEDLES.get(role, ()))
+    if "Filesystem IPC only" not in text or "MODE=6" not in text:
+        return False
+    matches = [r for r, needles in ROLE_NEEDLES.items() if any(n in text for n in needles)]
+    return matches == [role]
 
 
 def _model_ctx_window(model: str, fallback: int) -> int:
