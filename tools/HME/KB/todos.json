@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2996,
-      "updated_ts": 1778777237.513144
+      "max_id": 2999,
+      "updated_ts": 1778779850.0005374
     }
   },
   {
-    "id": 2994,
-    "text": "Make dashboard non-driver identity use unique Claude subagent identity while keeping OmniRoute context rows",
-    "activeForm": "Implementing unique subagent identity for dashboard roles",
+    "id": 2997,
+    "text": "Trace current Agent tool input handling and schema rewrite path",
+    "activeForm": "Tracing Agent tool behavior path",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778777237.513116,
+    "ts": 1778779850.0005102,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2995,
-    "text": "Refresh every MODE=6 role and validate role model/context output",
-    "activeForm": "Refreshing and validating all MODE=6 roles",
+    "id": 2998,
+    "text": "Implement level/prompt compatibility so Agent calls map to existing subagent launch routing",
+    "activeForm": "Implementing Agent level/prompt behavior",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778777237.5131307,
+    "ts": 1778779850.000525,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2996,
-    "text": "Run syntax, LOC, and routing evidence checks before closing",
-    "activeForm": "Running syntax, LOC, and routing evidence checks",
+    "id": 2999,
+    "text": "Add focused tests proving Agent level/prompt behavior and compacted schema stay aligned",
+    "activeForm": "Adding Agent behavior tests",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778777237.5131412,
+    "ts": 1778779850.000535,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
