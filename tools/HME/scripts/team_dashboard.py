@@ -163,7 +163,9 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
   session_id = _metadata_session_id(body)
   if not session_id:
    raise RuntimeError(f"omniroute artifact missing session_id for {role}")
-  if _looks_real_sid(sid) and sid != session_id:
+  if role != "driver":
+   session_id = _role_identity(role)
+  elif _looks_real_sid(sid) and sid != session_id:
    raise RuntimeError(f"stored sid mismatch for {role}: {sid} != {session_id}")
   return _row_ctx(role, row, tier, session_id)
  return None
