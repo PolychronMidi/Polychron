@@ -313,13 +313,33 @@ def _resolve_mode5_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     return (chain, allow_sub)
 
 
-# MODE 1..4 -> legacy_chains registry; MODE=5 -> tiers. None = cascade.
+def _role_tier(role: str) -> str:
+    if role in ("driver", "blue_lead", "red_lead", "team_lead"):
+        return "E5"
+    if role in ("blue_purple", "red_purple", "team_purple"):
+        return "E4"
+    if role.startswith("crew_e") and len(role) >= 7 and role[6] in "1234":
+        return "E" + role[6]
+    if role == "stage_crew":
+        return "E3"
+    return "E3"
+
+
+def _resolve_mode6_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
+    from hme_env import ENV as _ENV
+    role = _ENV.optional("HME_TEAM_ROLE", "").strip().lower()
+    role_tier = _role_tier(role) if role else tier
+    return _resolve_mode5_entry(role_tier)
+
+
+# MODE 1..4 -> legacy_chains registry; MODE=5/6 -> tiers. None = cascade.
 _MODE_CHAIN_RESOLVERS = {
     "1": lambda tier: _resolve_mode_legacy_chain_from_registry("1", tier),
     "2": lambda tier: _resolve_mode_legacy_chain_from_registry("2", tier),
     "3": lambda tier: _resolve_mode_legacy_chain_from_registry("3", tier),
     "4": lambda tier: _resolve_mode_legacy_chain_from_registry("4", tier),
     "5": _resolve_mode5_entry,
+    "6": _resolve_mode6_entry,
 }
 
 
