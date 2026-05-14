@@ -53,16 +53,21 @@ def _jsonc_load(text: str) -> dict:
    out.append("\n" * text[i:j + 2].count("\n")); i = j + 2; continue
   out.append(c); i += 1
  return json.loads("".join(out))
-def _model_windows() -> dict[str, int]:
- global _MODEL_WINDOWS
- if _MODEL_WINDOWS is None:
+def _model_cfg() -> dict:
+ global _MODEL_CFG
+ if _MODEL_CFG is None:
   path = PROJECT / "config" / "models.json"
   try:
-   cfg = _jsonc_load(path.read_text())
+   _MODEL_CFG = _jsonc_load(path.read_text())
   except OSError as exc:
    raise RuntimeError(f"model config unavailable: {path}") from exc
   except (json.JSONDecodeError, RuntimeError) as exc:
    raise RuntimeError(f"model config invalid: {path}") from exc
+ return _MODEL_CFG
+
+def _model_windows() -> dict[str, int]:
+ global _MODEL_WINDOWS
+ if _MODEL_WINDOWS is None:
   keys = ("max_context", "context_length", "context_window", "ctx_window")
   def scan(node, name=""):
    if isinstance(node, dict):
@@ -72,8 +77,8 @@ def _model_windows() -> dict[str, int]:
     for key, value in node.items(): scan(value, str(key))
    elif isinstance(node, list):
     for value in node: scan(value)
-  windows = {}; scan(cfg)
-  if not windows: raise RuntimeError(f"model config has no context_length/max_context: {path}")
+  windows = {}; scan(_model_cfg())
+  if not windows: raise RuntimeError(f"model config has no context_length/max_context: {PROJECT / 'config' / 'models.json'}")
   _MODEL_WINDOWS = windows
  return _MODEL_WINDOWS
 def _model_ctx_window(model: str, tier: str) -> int:
