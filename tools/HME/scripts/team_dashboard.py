@@ -149,6 +149,7 @@ def cmd_heartbeat(args):
         a = data["agents"][role]
         a["last_active"] = _now()
         a["ctx_used_pct"] = _ctx_pct(a.get("sid", ""), a.get("tier", "E3"))
+        a["ctx_source"] = _ctx_source(a.get("sid", ""))
     _save(data)
 
 def cmd_unregister(args):
