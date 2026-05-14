@@ -138,28 +138,30 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
     return matches == [role]
 
 
-def _model_ctx_window(model: str, fallback: int) -> int:
-    if model.startswith("codex/") or model.startswith("cx/") or model.startswith("gpt-5.5"):
+def _model_ctx_window(model: str, tier: str) -> int:
+    if model.startswith(("codex/", "cx/", "gpt-5.5")):
         return 1050000
-    return fallback
+    if not model:
+        raise RuntimeError(f"omniroute row missing model for tier={tier}")
+    raise RuntimeError(f"context window unknown for model={model} tier={tier}")
 
 
-def _row_ctx(row: sqlite3.Row, fallback_window: int, session_id: str) -> dict:
+def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
     model = row["requested_model"] or row["model"] or ""
-    window = _model_ctx_window(model, fallback_window)
+    window = _model_ctx_window(model, tier)
     pct = int(min(100, max(0, round((row["tokens_in"] or 0) / max(1, window) * 100))))
     return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id}
 
 
-def _latest_session_ctx(rows: list[sqlite3.Row], session_id: str, fallback_window: int) -> dict:
+def _latest_session_ctx(rows: list[sqlite3.Row], session_id: str, tier: str) -> dict:
     for row in rows:
         body = _artifact_body(row["artifact_relpath"] or "")
         if _metadata_session_id(body) == session_id:
-            return _row_ctx(row, fallback_window, session_id)
+            return _row_ctx(row, tier, session_id)
     raise RuntimeError(f"resolved session has no context rows: {session_id}")
 
 
-def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | None = None) -> dict | None:
+def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict | None:
     if not OMNI_DB.is_file():
         raise RuntimeError(f"omniroute db missing: {OMNI_DB}")
     try:
@@ -181,7 +183,7 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
             continue
         if not session_id:
             raise RuntimeError(f"omniroute artifact missing session_id for {role}")
-        return _latest_session_ctx(rows, session_id, fallback_window)
+        return _latest_session_ctx(rows, session_id, tier)
     return None
 
 
@@ -190,7 +192,7 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
     if fallback is None:
         raise RuntimeError(f"unknown tier for context window: {tier}")
     if _is_mode6():
-        ctx = _omniroute_ctx(role, sid, fallback, forked_at)
+        ctx = _omniroute_ctx(role, sid, tier, forked_at)
         if not ctx:
             raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")
         return {"pct": ctx["pct"], "window": ctx["window"], "source": "omniroute", "sid": ctx["sid"]}
@@ -226,7 +228,7 @@ def cmd_register(args):
         "forked_at": _now(),
     }
     _save(data)
-    print(f"team_dashboard: {role} registered (sid={args.sid})")
+    print(f"team_dashboard: {role} registered (sid={info['sid']})")
 
 def cmd_update(args):
     data = _load()
@@ -302,7 +304,9 @@ def cmd_summary(args):
     unknown_ctx = 0
     now = datetime.now(timezone.utc)
     for a in agents.values():
-        if (a.get("ctx_source") or "unknown") == "unknown":
+        if not a.get("ctx_source"):
+            raise RuntimeError("context source missing in dashboard")
+        if a.get("ctx_source") == "unknown":
             unknown_ctx += 1
         la = a.get("last_active", "")
         try:
