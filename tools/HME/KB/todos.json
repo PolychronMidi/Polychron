@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3038,
-      "updated_ts": 1778783663.5973125
+      "max_id": 3041,
+      "updated_ts": 1778783943.538105
     }
   },
   {
-    "id": 3033,
-    "text": "Locate proxy tool-call normalization path for Edit inputs",
-    "activeForm": "Locating proxy tool-call normalization path for Edit inputs",
+    "id": 3039,
+    "text": "Identify remaining dangling buddy/consult/senior references after user deletions",
+    "activeForm": "Identifying remaining dangling buddy/consult/senior references after user deletions",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778783650.0416024,
+    "ts": 1778783943.538078,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 3034,
-    "text": "Add middleware guard that supplies empty new_string for explicit Edit deletions",
-    "activeForm": "Adding middleware guard that supplies empty new_string for explicit Edit deletions",
+    "id": 3040,
+    "text": "Remove obsolete hooks/docs/code references without touching valid generic dispatch paths",
+    "activeForm": "Removing obsolete hooks/docs/code references without touching valid generic dispatch paths",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778783650.041617,
+    "ts": 1778783943.5380924,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 3035,
-    "text": "Add focused test coverage and run relevant proxy tests",
-    "activeForm": "Adding focused test coverage and running relevant proxy tests",
+    "id": 3041,
+    "text": "Run focused checks for import/test breakage",
+    "activeForm": "Running focused checks for import/test breakage",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778783650.0416276,
+    "ts": 1778783943.5381029,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
