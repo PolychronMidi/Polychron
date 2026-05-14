@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2533,
-      "updated_ts": 1778717015.352643
+      "max_id": 2539,
+      "updated_ts": 1778717102.4872754
     }
   },
   {
@@ -80,8 +80,8 @@
     "id": 2515,
     "text": "Run targeted audits and strict audit",
     "activeForm": "Running targeted audits and strict audit",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
