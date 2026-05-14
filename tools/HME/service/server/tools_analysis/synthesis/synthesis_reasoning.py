@@ -340,19 +340,19 @@ def _resolve_mode6_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     from . import _load_models_json as _lmj
     role = _ENV.optional("HME_TEAM_ROLE", "").strip().lower()
     role_tier = _role_tier(role, tier)
+    base = _resolve_mode5_chain(role_tier)
+    if base is None:
+        return None
     try:
         cfg = _lmj()
     except Exception:
         return _resolve_mode5_entry(role_tier)
-    ids = {m.get("id") for v in cfg.get("tiers", {}).values() for m in v.get("models", [])}
-    explicit = [m for m in cfg.get("team_role_models", {}).get(_role_key(role), []) if m in ids]
-    if explicit:
-        return (tuple(explicit), any(m.startswith("claude-") for m in explicit))
-    if role in ("driver", "blue_lead", "red_lead", "team_lead", "team_purple", "blue_purple", "red_purple"):
-        top = [m for m in cfg.get("manually_toprank", {}).get(role_tier, []) if m in ids]
-        if top:
-            return (tuple(top), any(m.startswith("claude-") for m in top))
-    return _resolve_mode5_entry(role_tier)
+    ids = set(base)
+    front = [m for m in cfg.get("team_role_models", {}).get(_role_key(role), []) if m in ids]
+    if not front and role in ("driver", "blue_lead", "red_lead", "team_lead"):
+        front = [m for m in cfg.get("manually_toprank", {}).get(role_tier, []) if m in ids]
+    chain = tuple(front + [m for m in base if m not in front])
+    return (chain, any(m.startswith("claude-") for m in chain))
 
 
 # MODE 1..4 -> legacy_chains registry; MODE=5/6 -> tiers. None = cascade.
