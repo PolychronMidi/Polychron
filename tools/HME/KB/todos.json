@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2609,
-      "updated_ts": 1778726091.9614463
+      "max_id": 2614,
+      "updated_ts": 1778726175.391195
     }
   },
   {
     "id": 2606,
     "text": "Run HME onboarding selftest/status/evolve checks",
     "activeForm": "Running HME onboarding selftest/status/evolve checks",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2607,
     "text": "Verify OmniRoute compression and model role routing",
     "activeForm": "Verifying OmniRoute compression and model role routing",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -44,6 +44,20 @@
     "source": "native",
     "on_done": "",
     "ts": 1778726091.961405,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2613,
+    "text": "Investigate selftest temporal drift regression",
+    "activeForm": "Investigating selftest temporal drift regression",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778726175.3911839,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
