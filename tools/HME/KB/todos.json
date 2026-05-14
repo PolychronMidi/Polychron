@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2742,
-      "updated_ts": 1778729260.0908005
+      "max_id": 2745,
+      "updated_ts": 1778729359.749921
     }
   },
   {
     "id": 2740,
     "text": "Disable legacy buddy/subagent paths for MODE=6 purity",
     "activeForm": "Disabling legacy buddy/subagent paths for MODE=6 purity",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2741,
     "text": "Verify Agent tool is not proxy-replaced",
     "activeForm": "Verifying Agent tool is not proxy-replaced",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
