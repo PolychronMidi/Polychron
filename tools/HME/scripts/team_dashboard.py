@@ -68,15 +68,6 @@ def _normalize(data: dict) -> dict:
         except ValueError:
             data["mode"] = mode
     data.pop("stage_crew", None)
-    for agent in data.get("agents", {}).values():
-        if agent.get("ctx_source") == "fork":
-            agent["ctx_used_pct"] = None
-            agent["ctx_source"] = "unknown"
-        if _is_mode6(data.get("mode")) and "ctx_estimated_pct" not in agent:
-            est = _ctx_estimate(agent.get("status", "registered"), data.get("mode"))
-            if est is not None:
-                agent["ctx_estimated_pct"] = est
-                agent["ctx_estimate_source"] = "mode6_status"
     return data
 
 
