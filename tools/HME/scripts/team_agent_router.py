@@ -178,12 +178,12 @@ def _route_crew(caller: str, request_tier: str, data: dict) -> Optional[str]:
     return _crew_fallback(capped, data)
 
 
-_ROUTERS = {
-    "driver": _route_driver,
-    "blue_lead": _route_team_lead,
-    "red_lead": _route_team_lead,
-    "blue_purple": _route_purple,
-    "red_purple": _route_purple,
+_ROUTERS: dict[str, callable] = {
+    "driver": lambda tier, data: _route_driver(tier, data),
+    "blue_lead": lambda tier, data: _route_team_lead("blue_lead", tier, data),
+    "red_lead": lambda tier, data: _route_team_lead("red_lead", tier, data),
+    "blue_purple": lambda tier, data: _route_purple("blue_purple", tier, data),
+    "red_purple": lambda tier, data: _route_purple("red_purple", tier, data),
 }
 
 
