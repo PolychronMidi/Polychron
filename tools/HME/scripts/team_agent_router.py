@@ -192,12 +192,42 @@ def _is_crew(role: str) -> bool:
     return role.startswith("crew_e")
 
 
+def _level_tier(value) -> Optional[str]:
+    try:
+        level = int(value)
+    except (TypeError, ValueError):
+        return None
+    return f"E{level}" if 1 <= level <= 5 else None
+
+
+def _tool_tier(tool_input: dict) -> str:
+    return _level_tier(tool_input.get("level")) or TYPE_TIER.get(
+        str(tool_input.get("subagent_type") or "general-purpose"), "E3")
+
+
+def _native_input(tool_input: dict, target: str) -> dict:
+    prompt = str(tool_input.get("prompt") or "")
+    desc = str(tool_input.get("description") or prompt.splitlines()[0][:80] or "Agent task")
+    return {
+        "description": f"{target} routed: {desc}"[:200],
+        "prompt": (
+            f"MODE=6 team-routed task. You are {target}.\n"
+            f"Register/heartbeat via i/team if not present. Do not fork further subagents.\n\n"
+            f"Original task:\n{prompt}"
+        ),
+        "subagent_type": "general-purpose",
+    }
+
+
 def resolve_target(caller: str, subagent_type: str) -> Optional[str]:
     """Return the HME team role name to route to, or None if blocked."""
+    return resolve_target_for_tier(caller, TYPE_TIER.get(subagent_type, "E3"))
+
+
+def resolve_target_for_tier(caller: str, request_tier: str) -> Optional[str]:
     data = _load()
     if caller in _BLOCKED_CALLERS:
         return None  # E1-E2 crew blocked from Agent tool
-    request_tier = TYPE_TIER.get(subagent_type, "E3")
     router = _ROUTERS.get(caller)
     if router:
         return router(request_tier, data)
