@@ -83,8 +83,6 @@ Three orthogonal observability surfaces cover the entire "what's happening in HM
 - **`i/why mode=...`** -- causality. 14 modes spanning verifier internals (`mode=verifier <name>`), HCI regression (`mode=hci-drop`), KB structure (`mode=kb-graph` / `mode=kb-context <id>`), pre-edit prediction (`mode=predict <file>`), ground-truth signatures (`mode=conscience`), tensegrity-shape (`mode=fractal-shape`), and free-text retrieval (`mode=search` / `--deep`). Run `i/help why` for the full list.
 - **`i/timeline`** -- chronological audit trail of silent automations (auto-reload, KB drafts, fs_watcher events, hook firings) joined into one run-length-collapsed view. Default 30m window; `window=5m|1h` to narrow/widen.
 
-See [doc/HME_HORIZONS.md](HME_HORIZONS.md) for the architectural trajectory each tool advances.
-
 
 ## Autonomous Evolution Loop
 
@@ -122,4 +120,3 @@ The loop drives until `max_iterations` is reached or `done_signal` appears in th
 The prompt body (everything after the second ``) is injected verbatim as the next user prompt.
 
 **Note:** Hooks are registered in top-level `~/.claude/settings.json` and pick up edits at the next session start. The `HME@polychron-local` plugin has been retired -- no plugin cache refresh is required.
-
