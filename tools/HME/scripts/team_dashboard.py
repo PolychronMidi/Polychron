@@ -177,8 +177,6 @@ def _omniroute_ctx(role: str, sid: str, fallback_window: int, forked_at: str | N
         return None
     current_sid = _current_session_id()
     for row in rows:
-        if forked_at and row["timestamp"] < forked_at:
-            break
         body = _artifact_body(row["artifact_relpath"] or "")
         by_sid = sid and len(sid) >= 12 and _metadata_session_id(body) == sid
         if not by_sid and not _role_matches(role, body, current_sid):
