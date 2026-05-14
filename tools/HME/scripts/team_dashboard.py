@@ -69,12 +69,12 @@ def _model_windows() -> dict[str, int]:
   except (json.JSONDecodeError, RuntimeError) as exc:
    raise RuntimeError(f"model config invalid: {path}") from exc
   keys = ("max_context", "context_length", "context_window", "ctx_window")
-  def scan(node):
+  def scan(node, name=""):
    if isinstance(node, dict):
-    mid = node.get("id") or node.get("model") or node.get("name")
+    mid = node.get("id") or node.get("model") or node.get("name") or name
     win = next((node.get(k) for k in keys if node.get(k)), None)
-    if mid and win: windows[str(mid)] = int(win)
-    for value in node.values(): scan(value)
+    if win: windows[str(mid)] = int(win)
+    for key, value in node.items(): scan(value, str(key))
    elif isinstance(node, list):
     for value in node: scan(value)
   windows = {}; scan(cfg)
