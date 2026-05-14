@@ -597,7 +597,21 @@ function handleRequest(clientReq, clientRes) {
         // MODE=6 routes by team role when present, else by requested Claude family.
         try {
           const _cfg = require('./shared').loadModelsJson();
-          const _role = (process.env.HME_TEAM_ROLE || '').toLowerCase();
+          const _msgText = (payload.messages || []).map(m => {
+            const c = m && m.content;
+            if (typeof c === 'string') return c;
+            if (Array.isArray(c)) return c.map(p => (p && (p.text || p.content)) || '').join('\n');
+            return '';
+          }).join('\n');
+          const _roleFromText = (() => {
+            if (_msgText.includes('You are Blue Lead')) return 'blue_lead';
+            if (_msgText.includes('You are Red Lead')) return 'red_lead';
+            if (_msgText.includes('You are Blue Purple')) return 'blue_purple';
+            if (_msgText.includes('You are Red Purple')) return 'red_purple';
+            const m = /\bcrew_e[1-4]_[01]\b/.exec(_msgText);
+            return m ? m[0] : '';
+          })();
+          const _role = (process.env.HME_TEAM_ROLE || _roleFromText || '').toLowerCase();
           const _roleTier = (() => {
             if (['driver', 'blue_lead', 'red_lead', 'team_lead'].includes(_role)) return 'E5';
             if (['blue_purple', 'red_purple', 'team_purple'].includes(_role)) return 'E4';
