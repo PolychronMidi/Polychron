@@ -292,8 +292,7 @@ def cmd_show(args):
     order += sorted([k for k in agents if k not in order])
     for role in order:
         a = agents.get(role)
-        if not a:
-            continue
+        if not a: continue
         pct = float(a.get("ctx_used_pct", 0) or 0)
         la = a.get("last_active", "")[11:19] if a.get("last_active") else "?"
         task = (a.get("task") or "")[:40]
