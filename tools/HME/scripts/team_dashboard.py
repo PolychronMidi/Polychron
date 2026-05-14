@@ -266,10 +266,8 @@ def cmd_heartbeat(args):
         a = data["agents"][role]
         a["last_active"] = _now()
         info = _ctx_info(role, a.get("sid", ""), a.get("tier", "E3"), a.get("forked_at"))
-        a["ctx_used_pct"] = info["pct"]
-        a["ctx_available"] = info["window"]
-        a["model"] = info.get("model", "")
-        a["sid"] = info["sid"]
+        a["ctx_used_pct"] = info["pct"]; a["ctx_available"] = info["window"]
+        a["model"] = info.get("model", ""); a["sid"] = info["sid"]
     _save(data)
 def cmd_unregister(args):
     data = _load(); data.get("agents", {}).pop(args.role, None)
