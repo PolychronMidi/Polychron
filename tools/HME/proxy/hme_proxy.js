@@ -530,9 +530,7 @@ function handleRequest(clientReq, clientRes) {
         // Read swap model chain from config/models.json E5 tier.
         // Falls back through ranked models when primary rate-limits.
         try {
-          const _cfgPath = require('path').resolve(__dirname, '..', '..', '..', 'config', 'models.json');
-          const _raw = require('fs').readFileSync(_cfgPath, 'utf8');
-          const _cfg = JSON.parse(_raw.replace(/^\s*\/\/.*$/gm, '').replace(/[ \t]+\/\/.*$/gm, ''));
+          const _cfg = require('./shared').loadModelsJson();
           // Build chain: toprank first, then E5 models by cost_order -> tier_score
           const _top = (_cfg.manually_toprank && _cfg.manually_toprank.E5) || [];
           const _tm = (_cfg.tiers && _cfg.tiers.E5 && _cfg.tiers.E5.models) || [];

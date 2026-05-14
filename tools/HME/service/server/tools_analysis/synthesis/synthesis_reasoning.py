@@ -247,12 +247,9 @@ def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
     Chain ordered free first (including cascade), then subscription, then
     usage; each group by tier_score desc. Returns None if config unreadable
     or tier empty. Caller determines allow_subagent from chain contents."""
-    import json as _json, os as _os, re as _re
-    _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
+    from . import _load_models_json as _lmj
     try:
-        with open(_cfg_path) as _f:
-            _raw = _f.read()
-        _cfg = _json.loads(_re.sub(r'^\s*//.*$|[ \t]+//.*$', '', _raw, flags=_re.MULTILINE))
+        _cfg = _lmj()
     except Exception:
         return None
     _models = (_cfg.get("tiers", {}).get(tier, {}).get("models", []) or [])
@@ -275,12 +272,9 @@ def _resolve_mode_legacy_chain_from_registry(mode: str, tier: str) -> tuple[tupl
     """Resolve MODE=1..4 (chain, allow_subagent) from config/models.json
     legacy_chains block. Empty arrays = cascade fallthrough (None).
     allow_subagent: True iff any model in chain starts with 'claude-'."""
-    import json as _json, os as _os, re as _re
-    _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
+    from . import _load_models_json as _lmj
     try:
-        with open(_cfg_path) as _f:
-            _raw = _f.read()
-        _cfg = _json.loads(_re.sub(r'^\s*//.*$|[ \t]+//.*$', '', _raw, flags=_re.MULTILINE))
+        _cfg = _lmj()
     except Exception:
         return None
     _legacy = _cfg.get("legacy_chains", {})
