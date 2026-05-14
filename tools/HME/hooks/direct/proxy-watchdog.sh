@@ -37,7 +37,7 @@ _WD_URL="http://127.0.0.1:${_WD_PORT}/health"
 _OR_PORT="${HME_OMNIROUTE_PORT:-20128}"
 _OR_URL="http://127.0.0.1:${_OR_PORT}/v1/models"
 _OR_DIR="$_WD_ROOT/tools/omniroute"
-if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ]; then
+if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
   if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
   if ! curl -sf --max-time 2 "$_OR_URL" >/dev/null 2>&1; then
     ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)

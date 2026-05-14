@@ -126,7 +126,7 @@ _sv_spawn_and_verify() {
   local _or_port="${HME_OMNIROUTE_PORT:-20128}"
   local _or_url="http://127.0.0.1:${_or_port}/v1/models"
   local _or_dir="$_SV_ROOT/tools/omniroute"
-  if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ]; then
+  if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
     if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
       if ! curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1; then
         _sv_log "OmniRoute down, starting on :${_or_port}..."
