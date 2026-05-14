@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2644,
-      "updated_ts": 1778726547.2892492
+      "max_id": 2647,
+      "updated_ts": 1778726557.6515932
     }
   },
   {
@@ -38,8 +38,8 @@
     "id": 2644,
     "text": "Summarize assumptions, risks, next action with evidence",
     "activeForm": "Summarizing assumptions, risks, next action with evidence",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
