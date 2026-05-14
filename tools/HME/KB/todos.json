@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2874,
-      "updated_ts": 1778745382.2876868
+      "max_id": 2877,
+      "updated_ts": 1778745420.053579
     }
   },
   {
-    "id": 2866,
-    "text": "Run required HME onboarding checks locally",
-    "activeForm": "Running required HME onboarding checks locally",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778745256.7253385,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2867,
-    "text": "Fix team dashboard context-window/model routing defects",
-    "activeForm": "Fixing team dashboard context-window/model routing defects",
+    "id": 2875,
+    "text": "Fix team dashboard dynamic context windows and remove bad inline noise",
+    "activeForm": "Fixing team dashboard context window source",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745256.725362,
+    "ts": 1778745420.053552,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2868,
-    "text": "Verify dashboard/config behavior and repo gates",
-    "activeForm": "Verifying dashboard/config behavior and repo gates",
+    "id": 2876,
+    "text": "Verify MODE=6 role model config",
+    "activeForm": "Verifying MODE=6 role model config",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745256.7253778,
+    "ts": 1778745420.0535662,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2877,
+    "text": "Run focused checks for changed HME files",
+    "activeForm": "Running focused checks for changed HME files",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778745420.0535765,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
