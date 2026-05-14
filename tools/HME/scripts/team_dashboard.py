@@ -181,7 +181,7 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
             raise RuntimeError(f"omniroute artifact missing session_id for {role}")
         matched.append(session_id)
     unique = sorted(set(matched))
-    if _looks_real_sid(sid) and sid not in unique:
+    if sid.count("-") == 4 and sid not in unique:
         raise RuntimeError(f"stored sid does not match role {role}: {sid}")
     if len(unique) > 1:
         raise RuntimeError(f"ambiguous omniroute sessions for {role}: {', '.join(unique)}")
