@@ -1,6 +1,6 @@
 'use strict';
 
-const AGENT_DESCRIPTION = `HME Agent routes subagents through E1-E5 effort tiers. Example: Agent({description:"audit parser", subagent_type:"E3", prompt:"Check parser edge cases."}). Legacy names like explorer still work and map to a tier. E1 tiny lookup/lint; E2 routine focused edit; E3 standard implementation or investigation; E4 deep multi-file design; E5 principal/system-critical review.`;
+const AGENT_DESCRIPTION = `HME Agent routes subagents through E1-E5 effort tiers. Example: Agent({description:"audit parser", subagent_type:"E3", prompt:"Check parser edge cases."}). Legacy names like explorer still work and tier-route. E1 lookup/lint; E2 focused edit; E3 standard implementation; E4 deep multi-file design; E5 principal/system-critical review.`;
 
 const AGENT_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
