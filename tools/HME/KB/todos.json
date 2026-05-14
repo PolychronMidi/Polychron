@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2854,
-      "updated_ts": 1778745092.3849614
+      "max_id": 2857,
+      "updated_ts": 1778745106.4054208
     }
   },
   {
     "id": 2852,
     "text": "Run HME onboarding/status commands and capture evidence",
     "activeForm": "Running HME onboarding/status commands and capturing evidence",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2853,
     "text": "Audit MODE=6 config/dashboard/handoff wiring",
     "activeForm": "Auditing MODE=6 config/dashboard/handoff wiring",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
