@@ -6,6 +6,7 @@ when agents fork, complete, or update context usage.
 
 Schema:
   updated_at: ISO timestamp of last write
+  mode: optional OVERDRIVE_MODE snapshot
   agents: { role_name -> { role, team, tier, sid, ctx_used_pct, ctx_available,
              last_active, status, task, forked_at } }
 
