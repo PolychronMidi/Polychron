@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2912,
-      "updated_ts": 1778745819.028201
+      "max_id": 2916,
+      "updated_ts": 1778745869.6117287
     }
   },
   {
     "id": 2909,
     "text": "Inspect current HME MODE=6 config/dashboard/handoff state",
-    "activeForm": "Inspecting HME MODE=6 config/dashboard/handoff state",
-    "status": "in_progress",
-    "done": false,
+    "activeForm": "Inspecting current HME MODE=6 config/dashboard/handoff state",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -21,15 +21,15 @@
     "tier": "E3"
   },
   {
-    "id": 2910,
-    "text": "Apply missing local fixes without subagents",
-    "activeForm": "Applying missing local fixes without subagents",
-    "status": "pending",
+    "id": 2914,
+    "text": "Fix broken team dashboard context-window handling locally",
+    "activeForm": "Fixing broken team dashboard context-window handling locally",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745819.0281794,
+    "ts": 1778745869.6117039,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
