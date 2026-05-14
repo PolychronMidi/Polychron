@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2627,
-      "updated_ts": 1778726395.609883
+      "max_id": 2630,
+      "updated_ts": 1778726408.3410378
     }
   },
   {
     "id": 2625,
     "text": "Locate HME onboarding/team/compression artifacts",
     "activeForm": "Locating HME onboarding/team/compression artifacts",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2626,
     "text": "Read relevant docs and IPC state read-only",
     "activeForm": "Reading relevant docs and IPC state read-only",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
