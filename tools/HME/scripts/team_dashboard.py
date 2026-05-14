@@ -70,13 +70,11 @@ def _model_windows() -> dict[str, int]:
   _MODEL_WINDOWS = windows
  return _MODEL_WINDOWS
 def _model_ctx_window(model: str, tier: str) -> int:
- if not model:
-  raise RuntimeError(f"omniroute row missing model for tier={tier}")
+ if not model: raise RuntimeError(f"omniroute row missing model for tier={tier}")
  name = model.split("/", 1)[1] if model.startswith("codex/") else model
  windows = _model_windows()
  for key in (model, name):
-  if key in windows:
-   return windows[key]
+  if key in windows: return windows[key]
  raise RuntimeError(f"context window unknown for model={model} tier={tier}")
 def _role_model(role: str, tier: str, observed: str) -> str:
  cfg = _model_cfg(); spec = cfg.get("team_role_models", {}).get(_role_key(role)) or {}
