@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2815,
-      "updated_ts": 1778735007.622069
+      "max_id": 2820,
+      "updated_ts": 1778735179.142566
     }
   },
   {
-    "id": 2808,
-    "text": "Inspect team dashboard ctx_used_pct values and producer code",
-    "activeForm": "Inspecting team dashboard ctx_used_pct values and producer code",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778734987.8422942,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2809,
-    "text": "Trace ctx_used_pct data source and fallback behavior",
-    "activeForm": "Tracing ctx_used_pct data source and fallback behavior",
+    "id": 2816,
+    "text": "Remove incorrect Mode 6 estimate patch before proceeding",
+    "activeForm": "Removing incorrect Mode 6 estimate patch before proceeding",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778734987.8423092,
+    "ts": 1778735179.1425188,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2813,
-    "text": "Patch team dashboard to mark Mode 6 ctx as estimated instead of fake precise telemetry",
-    "activeForm": "Patching team dashboard to mark Mode 6 ctx as estimated instead of fake precise telemetry",
+    "id": 2817,
+    "text": "Find OmniRoute context telemetry endpoint or local source",
+    "activeForm": "Finding OmniRoute context telemetry endpoint or local source",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778735007.6220472,
+    "ts": 1778735179.1425338,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2818,
+    "text": "Wire team dashboard ctx_used_pct to OmniRoute actual value",
+    "activeForm": "Wiring team dashboard ctx_used_pct to OmniRoute actual value",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778735179.142544,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
@@ -63,15 +63,15 @@
     "tier": "E3"
   },
   {
-    "id": 2810,
-    "text": "Report root cause with evidence and fix path",
-    "activeForm": "Reporting root cause with evidence and fix path",
+    "id": 2820,
+    "text": "Report root cause with evidence and fix",
+    "activeForm": "Reporting root cause with evidence and fix",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778734987.8423193,
+    "ts": 1778735179.1425636,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
