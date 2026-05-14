@@ -116,6 +116,9 @@ def _user_text(body: dict) -> str:
  return "\n".join(chunks)
 def _looks_real_sid(sid: str) -> bool:
  return len(sid) == 36 and sid.count("-") == 4 and all(c in "0123456789abcdef-" for c in sid.lower())
+
+def _role_label(role: str) -> str:
+ return role.replace("_", " ").title()
 def _role_names(body: dict) -> list[str]:
  if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
   return []
