@@ -258,7 +258,6 @@ function _resolveModelCtx(modelId) {
 function _stripStaleToolResults(payload) {
   if (!payload || !Array.isArray(payload.messages)) return;
   const msgs = payload.messages;
-  // Count user messages containing tool_results from the end
   let userWithToolResults = 0;
   for (let i = msgs.length - 1; i >= 0; i--) {
     const m = msgs[i];
@@ -269,13 +268,7 @@ function _stripStaleToolResults(payload) {
     if (!hasToolResult) continue;
     userWithToolResults++;
     if (userWithToolResults > 3) {
-      // Replace tool_result blocks in this (older) message with compact placeholder
-      for (const b of content) {
-        if (b && b.type === 'tool_result') {
-          b.content = '(tool output elided by hme-proxy: older than 3 turns)';
-          b.is_error = false;
-        }
-      }
+      m.content = content.filter(b => !b || b.type !== 'tool_result');
     }
   }
 }
