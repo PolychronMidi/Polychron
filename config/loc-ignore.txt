@@ -193,4 +193,7 @@ tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py
 # synthesis_reasoning.py: tier-aware dispatcher with OVERDRIVE_MODE=0..5 dispatcher dict + provider cascade walker + offline-mode + last-source telemetry. Shared _last_source / _RANKINGS / env-refresh; splitting would reimplement routing.
 # rationale: intent=lifecycle-cohesion; revisit-when=structural-refactor; decided=2026-05-11
 tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py
-
+# team_dashboard.py: single CLI owns JSON schema, display, heartbeat, and
+# OmniRoute ctx lookup. Splitting would add state-writer import coupling.
+# rationale: intent=team-ipc-dashboard; revisit-when=subcommands>=8; decided=2026-05-14
+tools/HME/scripts/team_dashboard.py
