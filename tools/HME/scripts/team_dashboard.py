@@ -131,6 +131,13 @@ def _looks_real_sid(sid: str) -> bool:
 
 def _role_label(role: str) -> str:
  return role.replace("_", " ").title()
+def _role_key(role: str) -> str:
+ if role == "driver": return "driver"
+ if role in ("blue_lead", "red_lead"): return "team_lead"
+ if role in ("blue_purple", "red_purple"): return "team_purple"
+ if role.startswith("crew_"): return "stage_crew"
+ return role
+
 def _role_names(body: dict) -> list[str]:
  if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
   return []
