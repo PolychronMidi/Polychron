@@ -259,16 +259,25 @@ function _stripStaleToolResults(payload) {
   if (!payload || !Array.isArray(payload.messages)) return;
   const msgs = payload.messages;
   let userWithToolResults = 0;
+  const strippedIds = new Set();
   for (let i = msgs.length - 1; i >= 0; i--) {
     const m = msgs[i];
     if (!m || m.role !== 'user') continue;
     const content = m.content;
     if (!Array.isArray(content)) continue;
-    const hasToolResult = content.some(b => b && b.type === 'tool_result');
-    if (!hasToolResult) continue;
+    const toolResults = content.filter(b => b && b.type === 'tool_result');
+    if (!toolResults.length) continue;
     userWithToolResults++;
     if (userWithToolResults > 3) {
+      for (const b of toolResults) strippedIds.add(b.tool_use_id);
       m.content = content.filter(b => !b || b.type !== 'tool_result');
+    }
+  }
+  // Strip orphaned tool_use blocks from assistant messages
+  if (strippedIds.size > 0) {
+    for (const m of msgs) {
+      if (!m || m.role !== 'assistant' || !Array.isArray(m.content)) continue;
+      m.content = m.content.filter(b => !b || b.type !== 'tool_use' || !strippedIds.has(b.id));
     }
   }
 }
