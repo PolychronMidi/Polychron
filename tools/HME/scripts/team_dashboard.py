@@ -171,29 +171,23 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
     except sqlite3.Error as exc:
         raise RuntimeError("omniroute context query failed") from exc
     current_sid = _current_session_id()
-    matched = []
-    owners = {}
+    matches = {}
     for row in rows:
         body = _artifact_body(row["artifact_relpath"] or "")
         session_id = _metadata_session_id(body)
-        role_hits = [r for r in ROLES if _role_matches(r, body, current_sid)]
-        if role_hits and not session_id:
-            raise RuntimeError(f"omniroute artifact missing session_id for {role}")
-        if role_hits:
-            owners.setdefault(session_id, set()).update(role_hits)
-        if role in role_hits:
-            matched.append(session_id)
-    unique = sorted(set(matched))
+        hits = [r for r in ROLES if _role_matches(r, body, current_sid)]
+        if not hits: continue
+        if not session_id: raise RuntimeError(f"omniroute artifact missing session_id for {role}")
+        matches.setdefault(session_id, set()).update(hits)
+    unique = sorted(s for s, hits in matches.items() if role in hits)
     if sid.count("-") == 4 and sid not in unique:
         raise RuntimeError(f"stored sid does not match role {role}: {sid}")
     if len(unique) > 1:
         raise RuntimeError(f"ambiguous omniroute sessions for {role}: {', '.join(unique)}")
-    if unique:
-        peers = sorted(owners.get(unique[0], set()) - {role})
-        if peers:
-            raise RuntimeError(f"session {unique[0]} matches multiple roles for {role}: {', '.join(peers)}")
-        return _latest_session_ctx(rows, unique[0], tier)
-    return None
+    if not unique: return None
+    peers = sorted(matches[unique[0]] - {role})
+    if peers: raise RuntimeError(f"session {unique[0]} matches multiple roles for {role}: {', '.join(peers)}")
+    return _latest_session_ctx(rows, unique[0], tier)
 
 
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
