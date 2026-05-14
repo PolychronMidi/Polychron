@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2751,
-      "updated_ts": 1778729490.305965
+      "max_id": 2754,
+      "updated_ts": 1778729558.1927748
     }
   },
   {
     "id": 2749,
     "text": "Trace OVERDRIVE_VIA_SUBAGENT=0 effect under MODE=6",
     "activeForm": "Tracing OVERDRIVE_VIA_SUBAGENT=0 effect under MODE=6",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2750,
     "text": "Fix misleading env comment if MODE=6 routes through OmniRoute",
     "activeForm": "Fixing misleading env comment if MODE=6 routes through OmniRoute",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,8 +38,8 @@
     "id": 2751,
     "text": "Verify direct API not used for MODE=6 registry models",
     "activeForm": "Verifying direct API not used for MODE=6 registry models",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
