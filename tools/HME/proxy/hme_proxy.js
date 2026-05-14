@@ -1477,6 +1477,7 @@ if (_mode4WasStreaming) {
               'Stop hook feedback:',
               'Stop hook blocking error from command:',
               'AUTO-COMPLETENESS',
+              'EXHAUST PROTOCOL',
               'PreToolUse:',
               'PostToolUse:',
             ];
@@ -1519,6 +1520,7 @@ if (_mode4WasStreaming) {
               'Stop hook feedback:',
               'Stop hook blocking error from command:',
               'AUTO-COMPLETENESS',
+              'EXHAUST PROTOCOL',
               'PreToolUse:',
               'PostToolUse:',
             ];
