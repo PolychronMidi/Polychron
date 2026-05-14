@@ -1,19 +1,15 @@
 'use strict';
 
-const AGENT_DESCRIPTION = `Agent routes subagents through E1-E5 effort tiers. Example: Agent({description:"audit parser", subagent_type:"E3", prompt:"Check parser edge cases."}). Legacy names like explorer still work and tier-route. E1 lookup/lint; E2 focused edit; E3 standard implementation; E4 deep multi-file design; E5 principal/system-critical review.`;
+const AGENT_DESCRIPTION = `Run a subagent. Example: Agent level=3 prompt="Audit parser edge cases." Use level 1-5: 1 tiny, 2 focused, 3 standard, 4 deep, 5 principal.`;
 
 const AGENT_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',
   properties: {
-    description: { description: 'Short task label.', type: 'string' },
-    prompt: { description: 'Focused task for the HME-routed agent.', type: 'string' },
-    subagent_type: {
-      description: 'Effort tier E1-E5; legacy names like explorer are tier-routed.',
-      type: 'string',
-    },
+    level: { description: 'Effort level 1-5.', type: 'integer', minimum: 1, maximum: 5 },
+    prompt: { description: 'Focused task for the agent.', type: 'string' },
   },
-  required: ['description', 'prompt'],
+  required: ['level', 'prompt'],
   additionalProperties: false,
 };
 
