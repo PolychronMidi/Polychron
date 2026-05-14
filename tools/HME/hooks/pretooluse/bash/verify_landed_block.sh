@@ -56,6 +56,39 @@ PYEOF
 )
 
 if [ -n "$_VLB_HIT" ]; then
-  _emit_block "BLOCKED: verify-landed antipattern -- Bash reads $_VLB_HIT which was Edit/Written this turn. The Edit tool already returned 'updated successfully' as explicit confirmation; re-grepping is context-burn. Trust the success affordance. Override: HME_VERIFY_LANDED_OK=1."
+  _VLB_MSG="verify-landed antipattern -- Bash reads $_VLB_HIT which was Edit/Written this turn. The Edit tool already returned 'updated successfully' as explicit confirmation; re-grepping is context-burn. Trust the success affordance. Override: HME_VERIFY_LANDED_OK=1."
+  if ! _VLB_COUNT=$(_VLB_FILE="${PROJECT_ROOT:-}/tmp/hme-verify-landed-grace.tsv" _VLB_HIT="$_VLB_HIT" python3 - <<'PYEOF' 2>/dev/null
+import os, time
+path = os.environ.get("_VLB_FILE", "")
+hit = os.environ.get("_VLB_HIT", "")
+now = int(time.time())
+cutoff = now - 180
+rows = []
+if path and os.path.isfile(path):
+    with open(path) as f:
+        for line in f:
+            parts = line.rstrip("\n").split("\t", 1)
+            if len(parts) == 2 and parts[0].isdigit() and int(parts[0]) >= cutoff:
+                rows.append((int(parts[0]), parts[1]))
+rows.append((now, hit))
+os.makedirs(os.path.dirname(path), exist_ok=True)
+tmp = f"{path}.{os.getpid()}.tmp"
+with open(tmp, "w") as f:
+    for ts, label in rows:
+        f.write(f"{ts}\t{label}\n")
+os.replace(tmp, path)
+print(len(rows))
+PYEOF
+); then
+    _VLB_COUNT=3
+  fi
+  if [ "$_VLB_COUNT" -le 1 ]; then
+    return 0 2>/dev/null || exit 0
+  fi
+  if [ "$_VLB_COUNT" -eq 2 ]; then
+    _emit_enrich_allow "WARNING: $_VLB_MSG Next verify-landed violation within 3 minutes will block."
+    exit 0
+  fi
+  _emit_block "BLOCKED: $_VLB_MSG"
   exit 2
 fi
