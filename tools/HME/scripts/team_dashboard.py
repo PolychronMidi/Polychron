@@ -125,6 +125,48 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
  if window <= 0: raise RuntimeError(f"buddy context window invalid for {role} sid={sid}")
  pct = round(min(100.0, max(0.0, float(ctx["used_pct"]))), 1)
  return {"pct": pct, "window": window, "sid": sid}
+def _empty_dashboard() -> dict:
+ mode = os.environ.get("OVERDRIVE_MODE")
+ data = {"updated_at": _now(), "agents": {}}
+ if mode:
+  try:
+   data["mode"] = int(mode)
+  except ValueError:
+   data["mode"] = mode
+ return data
+
+
+def _normalize(data: dict) -> dict:
+ data.setdefault("agents", {})
+ if "mode" not in data:
+  mode = os.environ.get("OVERDRIVE_MODE")
+  if mode:
+   try:
+    data["mode"] = int(mode)
+   except ValueError:
+    data["mode"] = mode
+ data.pop("stage_crew", None)
+ return data
+
+
+def _load() -> dict:
+ if DASHBOARD.is_file():
+  try:
+   return _normalize(json.loads(DASHBOARD.read_text()))
+  except (json.JSONDecodeError, OSError):
+   pass
+ return _empty_dashboard()
+
+
+def _save(data: dict) -> None:
+ data = _normalize(data)
+ data["updated_at"] = _now()
+ DASHBOARD.parent.mkdir(parents=True, exist_ok=True)
+ tmp = Path(str(DASHBOARD) + f".{os.getpid()}.tmp")
+ tmp.write_text(json.dumps(data, indent=2))
+ tmp.rename(DASHBOARD)
+
+
 def cmd_register(args):
     data = _load()
     role = args.role
