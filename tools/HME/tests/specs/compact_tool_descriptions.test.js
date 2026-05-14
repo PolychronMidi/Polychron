@@ -23,12 +23,16 @@ test('compact_tool_descriptions rewrites verbose tool descriptions only', () => 
   ] };
   assert.equal(run(payload), true);
   assert.match(payload.tools[0].description, /^Read a file by absolute path/);
-  assert.match(payload.tools[1].description, /^Launch a subagent or fork/);
+  assert.match(payload.tools[1].description, /^HME Agent routes subagents through E1-E5 effort tiers/);
+  assert.match(payload.tools[1].description, /Legacy names like explorer still work/);
   assert.match(payload.tools[2].description, /^Run a bash command/);
   assert.match(payload.tools[3].description, /^Maintain a session task list/);
   assert.match(payload.tools[4].description, /^Fetch and summarize a public URL/);
   assert.match(payload.tools[5].description, /^Search the web/);
   assert.equal(payload.tools[6].description, 'keep me');
+  assert.deepEqual(Object.keys(payload.tools[1].input_schema.properties), ['description', 'prompt', 'subagent_type']);
+  assert.deepEqual(payload.tools[1].input_schema.required, ['description', 'prompt']);
+  assert.equal(payload.tools[1].input_schema.additionalProperties, false);
   assert.ok(payload.tools[0].description.length < 220);
   assert.ok(payload.tools[1].description.length < 360);
   assert.ok(payload.tools[2].description.length < 320);
