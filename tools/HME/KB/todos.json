@@ -2,34 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2949,
-      "updated_ts": 1778748851.5564466
+      "max_id": 2951,
+      "updated_ts": 1778750781.9283814
     }
   },
   {
-    "id": 2948,
-    "text": "Patch team dashboard context tracking to require real session IDs",
-    "activeForm": "Patching dashboard context tracking",
+    "id": 2950,
+    "text": "Fix work-check hook failures blocking false closures and success spam",
+    "activeForm": "Fixing work-check hook failures blocking false closures and success spam",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778748851.5564291,
+    "ts": 1778750781.9283626,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2949,
-    "text": "Verify no placeholder SIDs/fallbacks and compile changed code",
-    "activeForm": "Verifying dashboard patch",
+    "id": 2951,
+    "text": "Verify detectors catch prior bad reply shapes",
+    "activeForm": "Verifying detectors catch prior bad reply shapes",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778748851.556444,
+    "ts": 1778750781.9283788,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
