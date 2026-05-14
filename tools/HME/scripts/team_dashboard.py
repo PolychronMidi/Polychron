@@ -110,13 +110,14 @@ def _user_text(body: dict) -> str:
  return "\n".join(chunks)
 def _looks_real_sid(sid: str) -> bool:
  return len(sid) == 36 and sid.count("-") == 4 and all(c in "0123456789abcdef-" for c in sid.lower())
-def _role_identity(role: str) -> str:
+def _role_identity(role: str, parent_sid: str) -> str:
+ root = Path.home() / ".claude" / "projects" / str(PROJECT).replace("/", "-") / parent_sid / "subagents"
  rows = []
- for p in (Path.home() / ".claude" / "projects" / "-home-jah-Polychron" / "7992e911-8138-4ca3-9b34-6b6c69dc03d6" / "subagents").glob("agent-*.jsonl"):
+ for p in root.glob("agent-*.jsonl"):
   try: first = json.loads(p.open(errors="ignore").readline())
   except (OSError, json.JSONDecodeError): continue
   if _role_names({"messages": [first.get("message", {})]}) == [role]: rows.append((first.get("timestamp", ""), first.get("agentId", "")))
- if not rows: raise RuntimeError(f"subagent identity unavailable for {role}")
+ if not rows: raise RuntimeError(f"subagent identity unavailable for {role} parent_sid={parent_sid}")
  return max(rows)[1]
 def _role_key(role: str) -> str:
  if role in ("blue_lead", "red_lead"): return "team_lead"
