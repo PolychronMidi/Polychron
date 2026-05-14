@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3029,
-      "updated_ts": 1778782658.3861816
+      "max_id": 3032,
+      "updated_ts": 1778783048.4232628
     }
   },
   {
-    "id": 3027,
-    "text": "Remove deprecated buddy/consult/handoff CLI surface and registry entries",
-    "activeForm": "Removing deprecated buddy/consult/handoff CLI surface and registry entries",
+    "id": 3030,
+    "text": "Audit remaining tracked buddy/consult/senior references and classify generic dispatch separately",
+    "activeForm": "Auditing remaining tracked buddy/consult/senior references and classifying generic dispatch separately",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778782658.386154,
+    "ts": 1778783048.4232347,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 3028,
-    "text": "Remove buddy/senior consult hooks, detectors, scripts, docs, and ownership references",
-    "activeForm": "Removing buddy/senior consult hooks, detectors, scripts, docs, and ownership references",
+    "id": 3031,
+    "text": "Remove deprecated registry, hook, detector, doc, state-owner references without touching generic dispatch infrastructure",
+    "activeForm": "Removing deprecated registry, hook, detector, doc, state-owner references without touching generic dispatch infrastructure",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778782658.3861685,
+    "ts": 1778783048.4232497,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 3029,
-    "text": "Run focused audits/tests and report only verified state",
-    "activeForm": "Running focused audits/tests and reporting only verified state",
+    "id": 3032,
+    "text": "Run focused grep/tests and report verified dangling-reference state",
+    "activeForm": "Running focused grep/tests and reporting verified dangling-reference state",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778782658.3861794,
+    "ts": 1778783048.4232602,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
