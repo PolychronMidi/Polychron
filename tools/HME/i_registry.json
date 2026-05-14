@@ -1,5 +1,5 @@
 {
-  "_comment": "Metadata registry for the i/* command surface. Loaded by i/help and any future tab-completion / cross-discovery tooling. Adding a new command: drop the script in i/, register it here, done. Schema per command: {description, usage?, examples?, category, modes?}. Fields beyond description are optional \u2014 i/help degrades gracefully when missing.",
+  "_comment": "Metadata registry for the i/* command surface. Loaded by i/help and any future tab-completion / cross-discovery tooling. Adding a new command: drop the script in i/, register it here, done. Schema per command: {description, usage?, examples?, category, modes?}. Fields beyond description are optional  i/help degrades gracefully when missing.",
   "commands": {
     "review": {
       "description": "Post-change audit: KB constraints, boundary rules, doc drift, review verdicts.",
@@ -262,7 +262,7 @@
       "safe_no_args": true
     },
     "policies": {
-      "description": "Unified hook-time policy registry \u2014 list/show/enable/disable/reset/paths/eval.",
+      "description": "Unified hook-time policy registry  list/show/enable/disable/reset/paths/eval.",
       "category": "policy-config",
       "usage": "i/policies <list|all|summary|show|enable|disable|reset|paths|eval> [args] [--scope=local|project|global]",
       "modes": [
@@ -298,7 +298,7 @@
       "category": "meta"
     },
     "sensitivity": {
-      "description": "Metaprofile attribution aggregator \u2014 per-profile score distribution, per-(profile, sectionType) breakdown, and ranking by mean score.",
+      "description": "Metaprofile attribution aggregator  per-profile score distribution, per-(profile, sectionType) breakdown, and ranking by mean score.",
       "category": "diagnostic",
       "usage": "i/sensitivity",
       "examples": [
@@ -307,7 +307,7 @@
       "safe_no_args": true
     },
     "buddy": {
-      "description": "DEPRECATED \u2014 alias for i/dispatch. Use i/dispatch for new code. Preserved so existing callers + transcripts keep working.",
+      "description": "DEPRECATED  alias for i/dispatch. Use i/dispatch for new code. Preserved so existing callers + transcripts keep working.",
       "category": "orchestration",
       "usage": "i/buddy <status|enqueue|drain|clean|chain> [key=value ...]  (forwards to i/dispatch)",
       "examples": [
