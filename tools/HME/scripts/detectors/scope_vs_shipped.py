@@ -99,9 +99,14 @@ def _emit_stats(verdict: str, detail: str) -> None:
 
 
 def _turn_invoked_archive_now(events: list) -> bool:
-    """True if this turn invoked `i/todo action=archive_now` or `action=clear`. The devlog write IS proof-of-shipped; counting it as scope-not-tracked is a false positive."""
+    """True if this turn invoked the hidden HME todo archive/clear bridge.
+    The devlog write IS proof-of-shipped; counting it as scope-not-tracked
+    is a false positive."""
     import re as _re
-    archive_pat = _re.compile(r"\b(action=archive_now|action=clear)\b")
+    archive_pat = _re.compile(
+        r"\bhme_todo\b.*\b(action=archive_now|action=clear)\b|"
+        r"\b(action=archive_now|action=clear)\b.*\bhme_todo\b"
+    )
     for ev in events:
         for tu in iter_tool_uses(ev):
             if tu.get("name") != "Bash":

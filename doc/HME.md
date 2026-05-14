@@ -4,7 +4,7 @@
 
 ## What HME is
 
-11 public `i/` commands plus native Read/Edit/Grep/Glob enrichment, a self-coherence verifier substrate that scores HCI on 0-100, lifecycle hooks that automate the evolution loop, and a local-LLM subagent pipeline (Explore + Plan modes with a domain-fine-tuned QLoRA arbiter). No layer is optional.
+10 public `i/` commands plus native Read/Edit/Grep/Glob/TodoWrite enrichment, a self-coherence verifier substrate that scores HCI on 0-100, lifecycle hooks that automate the evolution loop, and a local-LLM subagent pipeline (Explore + Plan modes with a domain-fine-tuned QLoRA arbiter). No layer is optional.
 
 ## The Five Layers
 

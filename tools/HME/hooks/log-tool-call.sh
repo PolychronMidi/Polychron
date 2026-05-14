@@ -70,7 +70,7 @@ elif [[ "$TOOL_NAME" == "Bash" ]]; then
   # Previously matched any whitespace/slash prefix, which caused false
   # positives like `grep i/review foo.txt` (a grep arg, not an invocation)
   # to be treated as HME tool calls, wrongly resetting the non-HME streak.
-  if echo "$TOOL_INPUT" | grep -qE '(^|[;|&`(]|&&|\|\||\b(bash|sh|exec|time)[[:space:]]+)[[:space:]]*i/(review|learn|trace|evolve|status|todo|hme|audit|why|policies)\b|scripts/hme-cli\.js'; then
+  if echo "$TOOL_INPUT" | grep -qE '(^|[;|&`(]|&&|\|\||\b(bash|sh|exec|time)[[:space:]]+)[[:space:]]*i/(review|learn|trace|evolve|status|hme|audit|why|policies)\b|scripts/hme-cli\.js'; then
     _IS_HME_CALL=1
     # Extract the tool name from the matched invocation (not from any other
     # i/X substring that might appear as an arg elsewhere in the command).

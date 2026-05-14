@@ -76,8 +76,8 @@
     "subs": [
       {
         "id": 2791,
-        "text": "boot check (i/hme-admin action=selftest)",
-        "activeForm": "boot check (i/hme-admin action=selftest)",
+        "text": "boot check (i/hme admin action=selftest)",
+        "activeForm": "boot check (i/hme admin action=selftest)",
         "status": "completed",
         "done": true,
         "critical": false,

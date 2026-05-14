@@ -23,6 +23,10 @@ case "${1:-}" in
     echo "i/hme: explicit HME read is retired; use the native Read tool. Read/Edit results are already HME-enriched." >&2
     exit 2
     ;;
+  todo|hme_todo)
+    echo "i/hme: explicit HME todo is retired; use native TodoWrite. TodoWrite calls are HME-merged automatically." >&2
+    exit 2
+    ;;
 esac
 
 exec node "$_HME_CLI" "$@"

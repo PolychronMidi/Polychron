@@ -61,38 +61,6 @@
         "i/why \"what caused the HCI drop yesterday\" --deep"
       ]
     },
-    "todo": {
-      "description": "Hierarchical todo store plus SPEC/TODO bridge and KB devlog archive on set completion.",
-      "category": "review-discipline",
-      "usage": "i/todo <action> [text=...] [todo_id=N] [parent_id=N] [tier=easy|medium|hard] [critical=true]",
-      "modes": [
-        "list",
-        "add",
-        "done",
-        "show",
-        "update"
-      ],
-      "actions": [
-        "list",
-        "add",
-        "done",
-        "undo",
-        "remove",
-        "clear",
-        "critical",
-        "ingest_from_spec",
-        "promote_to_spec",
-        "close_with_spec_update",
-        "phase_complete"
-      ],
-      "examples": [
-        "i/todo list",
-        "i/todo add text=\"refactor X\" tier=hard",
-        "i/todo done todo_id=42",
-        "i/todo ingest_from_spec",
-        "i/todo phase_complete todo_id=2 text=\"Phase 2 complete: <summary>\""
-      ]
-    },
     "audit": {
       "description": "Umbrella for explicit audit/proof utilities: tiered sweeps, blast radius, parallel detection, sensitivity, invariant proofs, and isolated command-surface stress tests.",
       "category": "review-discipline",

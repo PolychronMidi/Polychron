@@ -19,8 +19,8 @@
       "primer": "i/hme admin action=reload"
     },
     "hme_todo": {
-      "i": "i/todo action=<ACTION>",
-      "primer": "i/todo action=add text=... parent_id=... critical=... on_done=..."
+      "i": "TodoWrite",
+      "primer": "TodoWrite todos=[...]"
     },
     "evolve": {
       "i": "i/evolve focus=<FOCUS>",
@@ -47,8 +47,8 @@
       "primer": "i/status mode=hme"
     },
     "agent": {
-      "i": "i/dispatch enqueue ...",
-      "primer": "i/dispatch enqueue ..."
+      "i": "Agent",
+      "primer": "Agent prompt=..."
     },
     "edit": {
       "i": "Edit",

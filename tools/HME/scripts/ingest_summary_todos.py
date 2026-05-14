@@ -102,7 +102,7 @@ if added:
     rp = os.path.join(PROJECT, "tmp", "hme-auto-todos.reminder")
     lines = ["", "[HME auto-todo ingest]",
              f"  {len(added)} commitment item(s) from your last turn added to todo list.",
-             "  Run `i/todo list source=auto_*` to review, `i/todo cancel <id>` to dismiss."]
+             "  They will surface through native TodoWrite on the next todo update."]
     for i, item in enumerate(added, 1):
         lines.append(f"  {i}. {item[:120]}")
     try:

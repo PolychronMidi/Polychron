@@ -156,7 +156,7 @@ def _prune_done_todos_universal(meta: dict, todos: list) -> int:
     than waiting another N days from the resolve-now timestamp.
 
     Mutates `todos` in place; returns count pruned. Safe to call on
-    every i/todo invocation: cheap (single pass over todos list) and
+    every internal todo invocation: cheap (single pass over todos list) and
     idempotent (no items to prune -> no-op)."""
     now = time.time()
     keep = []
@@ -463,5 +463,4 @@ def _expire_stale_lifesavers(meta: dict, todos: list) -> int:
             t["resolved_reason"] = "stale"
             expired += 1
     return expired
-
 

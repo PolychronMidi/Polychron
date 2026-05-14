@@ -1,9 +1,9 @@
 """SPEC.md / TODO.md / devlog lifecycle bridge -- connects ephemeral todo state
-to durable handoff documentation. Surface (via i/todo dispatcher actions):
+to durable handoff documentation. Surface (via hidden hme_todo actions):
 ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
 Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
-entry is via the i/todo command surface. todo.py re-exports the public symbols.
+entry is via the hidden hme_todo surface. todo.py re-exports the public symbols.
 See doc/templates/SPEC.md Phase 0 for the workflow this bridge implements.
 """
 import json
@@ -37,7 +37,7 @@ from server.tools_analysis.todo_spec_ingest import (  # noqa: F401
 )
 
 
-# SPEC/TODO bridge -- connects ephemeral i/todo state to durable
+# SPEC/TODO bridge -- connects ephemeral HME todo state to durable
 # doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
 
 
@@ -105,7 +105,7 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
     in doc/templates/SPEC.md to `[x]`, append a Just-shipped entry to doc/templates/TODO.md.
 
     Match strategy: pick the open SPEC item whose normalized text
-    shares the longest common prefix with the i/todo entry's normalized
+    shares the longest common prefix with the HME todo entry's normalized
     text, requiring at least 30 chars of common prefix to fire (avoids
     false positives where two items share a generic preamble like
     "Add"). TODO.md Next-up entries are often shortened versions of
@@ -156,7 +156,7 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
     # Append to TODO.md Just shipped at the FIRST entry slot (newest-first).
     # Skip past HTML comment blocks (`<!-- ... -->`) so the insertion
     # lands in real content space, not inside the template stub.
-    shipped = f"- {text_root} -- by i/todo #{entry.get('id')} at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
+    shipped = f"- {text_root} -- by HME todo #{entry.get('id')} at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
     if os.path.exists(_todo_md_file()):
         with open(_todo_md_file(), encoding="utf-8") as f:
             md = f.read()

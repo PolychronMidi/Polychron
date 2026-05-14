@@ -37,7 +37,7 @@ The `hookSpecificOutput` mechanism gives four response modes:
 
 - **Correct** (`allow` + `updatedInput`): fix input parameters, let the call proceed (e.g. strip `timeout` from Bash).
 - **Enrich** (`allow` + `systemMessage`): let the call proceed, inject extra context (e.g. KB titles on Read of a briefed module).
-- **Redirect** (`deny` + `systemMessage`): deny the tool, tell the agent which to use instead, with the original data pre-formatted (e.g. `TodoWrite` → `i/todo`).
+- **Redirect** (`deny` + `systemMessage`): deny the tool, tell the agent which to use instead, with the original data pre-formatted.
 - **Hard block** (`exit 2`): reject and force retry. Reserved for cases where no safe correction exists.
 
 ### Hard-block categories
@@ -172,5 +172,5 @@ The original enforcement pattern was hard-block (`exit 2`): reject and force a r
 
 - **Correct** -- fixable parameters (timeout stripping). Zero turns wasted.
 - **Enrich** -- augmentable tools (Read on a project file with KB entries). Tool proceeds, agent gets bonus context without a separate HME call.
-- **Redirect** -- replaceable tools (TodoWrite → `i/todo`). One turn to switch, but `systemMessage` pre-formats the data.
+- **Redirect** -- replaceable tools. One turn to switch, but `systemMessage` pre-formats the data. TodoWrite is now corrected/enriched in place instead of redirected.
 - **Hard block** -- when no safe alternative exists (deleting `run.lock`, silent error suppression, empty catch blocks).

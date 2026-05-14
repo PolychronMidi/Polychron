@@ -27,7 +27,7 @@
 
 ## The Public Tool Surface -- Complete Reference
 
-Six agent-callable MCP tools route every public capability: `evolve`, `review`, `learn`, `trace`, `hme_admin`, and `hme_todo` (hierarchical todo). Internal helpers (`search_code`, `find_callers`, `module_intel`, `before_editing`, etc.) are called BY these tools -- agents never invoke them directly. The `read` tool exists as a hidden utility auto-chained into the Edit hook.
+Five agent-callable HME tools route explicit public capability: `evolve`, `review`, `learn`, `trace`, and `hme_admin`. Native `Read`, `Edit`, `Grep`, `Glob`, and `TodoWrite` are enriched automatically by proxy hooks; internal helpers (`search_code`, `find_callers`, `module_intel`, `before_editing`, the todo bridge, etc.) are called BY these paths -- agents never invoke them directly.
 
 ### 1. `evolve(focus)` -- "What should I work on next?"
 
@@ -150,4 +150,3 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 | `decision` | 17 | Calibration anchors, threshold choices, confirmed rounds | "R80 LEGENDARY: complexity triple-bridge" |
 | `pattern` | 15 | Anti-patterns, proven patterns, evolution recipes | "antagonism bridge: couple BOTH sides of antagonist pair" |
 | `bugfix` | 9 | Root causes, fixes, prevention rules | "perceptual OOM: force CPU when llama.cpp warm contexts resident" |
-

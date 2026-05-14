@@ -1,9 +1,9 @@
 """SPEC.md / TODO.md / devlog lifecycle bridge -- connects ephemeral todo state
-to durable handoff documentation. Surface (via i/todo dispatcher actions):
+to durable handoff documentation. Surface (via hidden hme_todo actions):
 ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
 Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
-entry is via the i/todo command surface. todo.py re-exports the public symbols.
+entry is via the hidden hme_todo surface. todo.py re-exports the public symbols.
 See doc/templates/SPEC.md Phase 0 for the workflow this bridge implements.
 """
 import json
@@ -34,7 +34,7 @@ from server.tools_analysis.todo import (
 )
 
 
-# SPEC/TODO bridge -- connects ephemeral i/todo state to durable
+# SPEC/TODO bridge -- connects ephemeral HME todo state to durable
 # doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
 
 
@@ -281,11 +281,11 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
     fresh_preamble = [
         "# Polychron Active SPEC",
         "",
-        "> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; the title resets to \"Polychron Active SPEC\" automatically when `i/todo clear` (auto on full-set complete) or `i/todo archive_now text=\"<slug>\"` (force) archives the set.",
+        "> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; the title resets to \"Polychron Active SPEC\" automatically when the hidden HME todo archive bridge closes the set.",
         ">",
         "> Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](../HME.md), [doc/ARCHITECTURE.md](../ARCHITECTURE.md), [README.md](../../README.md), and [CLAUDE.md](../../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.",
         ">",
-        "> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles -- run `i/todo clear` (auto-archives if complete) or `i/todo archive_now text=\"<slug>\"` (force). The tools own the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.",
+        "> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles. The hidden HME todo archive bridge owns the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.",
         "",
         f"_Previous set ({prev_set_name}) archived {prev_ts} to {rel_devlog}._",
         "",
@@ -362,7 +362,7 @@ def _reset_todo_to_fresh_slate() -> None:
         "## Next up (queued for next cycle)\n\n"
         "<!-- One line per queued item:\n"
         "  - [<difficulty>] <description>. Reason: <source> -->\n\n"
-        "(empty -- populate from the new set's SPEC Phase 0 via `i/todo ingest_from_spec`)\n\n"
+        "(empty -- populated from the new set's SPEC Phase 0 by the HME todo bridge)\n\n"
         "---\n\n"
         "When this Next up is empty AND every `- [ ]` in [doc/templates/SPEC.md](SPEC.md) has been "
         "flipped to `[x]`, the dev cycle exits with `[no-work] <reason>`. See SPEC.md "
@@ -388,7 +388,7 @@ def _archive_just_shipped_overflow(trimmed_entries: list[str]) -> str:
         body.append("# In-flight just-shipped overflow")
         body.append("")
         body.append("> Trimmed from doc/templates/TODO.md \"Just shipped\" rolling-10 window mid-set. "
-                    "Cleared when the current set is archived via `i/todo archive_set`.")
+                    "Cleared when the current set is archived by the HME todo bridge.")
         body.append("")
     body.append(f"<!-- trimmed {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} -->")
     body.extend(trimmed_entries)

@@ -1,9 +1,9 @@
 """SPEC.md / TODO.md / devlog lifecycle bridge -- connects ephemeral todo state
-to durable handoff documentation. Surface (via i/todo dispatcher actions):
+to durable handoff documentation. Surface (via hidden hme_todo actions):
 ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
 Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
-entry is via the i/todo command surface. todo.py re-exports the public symbols.
+entry is via the hidden hme_todo surface. todo.py re-exports the public symbols.
 See doc/templates/SPEC.md Phase 0 for the workflow this bridge implements.
 """
 import json
@@ -34,7 +34,7 @@ from server.tools_analysis.todo import (
 )
 
 
-# SPEC/TODO bridge -- connects ephemeral i/todo state to durable
+# SPEC/TODO bridge -- connects ephemeral HME todo state to durable
 # doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
 
 
@@ -89,8 +89,8 @@ def _read_section(md_text: str, header: str) -> list[str]:
 
 
 def _ingest_from_spec(meta: dict, todos: list, phase: int | str = 0) -> list[dict]:
-    """Materialize SPEC/TODO entries as i/todo entries (source='spec', tier=<label>).
-    Skips entries whose text already matches an OPEN i/todo entry (universal dedup).
+    """Materialize SPEC/TODO entries as HME todo entries (source='spec', tier=<label>).
+    Skips entries whose text already matches an OPEN HME todo entry (universal dedup).
 
     `phase=0` (default): read doc/templates/TODO.md "Next up" section (legacy path).
     `phase=N` or `phase="latest"`: read open `- [ ]` items from doc/templates/SPEC.md
@@ -191,11 +191,11 @@ def _read_phase_block(phase: int | str) -> list[str]:
 
 
 def _promote_to_spec(entry: dict) -> str:
-    """Append an i/todo entry to doc/templates/TODO.md's Next up section. Returns
+    """Append an HME todo entry to doc/templates/TODO.md's Next up section. Returns
     the appended line for caller display."""
     tier = _normalize_tier(entry.get("tier", "medium"))
     text = entry.get("text", "").strip()
-    line = f"- [{tier}] {text}. Reason: i/todo #{entry.get('id')} promoted at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
+    line = f"- [{tier}] {text}. Reason: HME todo #{entry.get('id')} promoted at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
     if not os.path.exists(_todo_md_file()):
         logger.warning(f"promote_to_spec: {_todo_md_file()} missing -- creating")
         with open(_todo_md_file(), "w", encoding="utf-8") as f:
@@ -228,7 +228,7 @@ def _normalize_for_match(s: str) -> str:
     strip backticks/asterisks/quotes, collapse whitespace, drop trailing
     period. SPEC.md items and TODO.md Next-up entries can be hand-edited
     differently between the two docs (e.g. one has backticks around
-    `i/todo` and the other doesn't), so a strict equality match misses
+    tool names and the other doesn't), so a strict equality match misses
     legitimately-paired items. This normalization is the same shape as
     the lifesaver dedup normalizer -- strip noise before comparing.
     """
@@ -253,4 +253,3 @@ def _common_prefix_len(a: str, b: str) -> int:
     while i < n and a[i] == b[i]:
         i += 1
     return i
-

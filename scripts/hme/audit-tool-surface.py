@@ -51,20 +51,12 @@ DEVLOG = PROJECT_ROOT / "tools" / "HME" / "KB" / "devlog"
 # unless its registry entry has `safe_no_args: true`.
 SAFE_NO_ARGS_ALLOWLIST = {
     "help",            # pure stdout, no subprocess cascade
-    "buddy",           # deprecated alias -- exec to dispatch (light)
-    "dispatch",        # status path is filesystem-only read
-    "chain",           # usage line only
     "policies",        # static config read
     "todo",            # local JSON read
-    "pattern",         # local JSON read
     "why",             # static metric file read (now lists IDs on no-args)
-    "audit-tools",     # circular self-call is harmless usage line
 }
 
-# Aliases / deprecated entries / self -- skip outright. `audit-tools`
-# self-probes would recurse (the auditor probing itself probes itself
-# probing itself), bounded by the cgroup but wasteful.
-SKIP_TOOLS = {"buddy", "audit-tools"}
+SKIP_TOOLS = set()
 
 
 def _systemd_run_available() -> bool:
@@ -190,7 +182,7 @@ def _has_substantive_content(text: str) -> bool:
     than just whitespace + a usage line: multi-line output, list
     markers, or > 100 chars of non-trivial content. Catches tools
     whose canonical no-args behavior IS the useful action (e.g.
-    `i/dispatch status`, `i/help` index, `i/policies list`).
+    `i/help` index, `i/status` brief, `i/policies list`).
     """
     stripped = text.strip()
     if len(stripped) < 100:
@@ -274,7 +266,7 @@ def _rate_tool(name: str, entry: dict) -> dict:
         return score
     # Probe 1: no-args. 2s timeout + cgroup isolation -- allowlisted
     # tools should respond within ms (usage-line or canonical default
-    # action like `dispatch status`).
+    # action like `status`).
     no_args = _run([str(bin_path)], timeout=2.0)
     combined = (no_args["stdout"] + "\n" + no_args["stderr"])
     # Rubric: a tool is well-behaved on no-args if EITHER it shows a

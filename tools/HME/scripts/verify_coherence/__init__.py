@@ -89,8 +89,7 @@ from .subagent import (  # noqa: F401
     SubagentModeVerifier, SubagentPassthroughVerifier,
     SubagentGuardVerifier, SubagentBackendsVerifier,
 )
-from .runtime_behavior import (  # noqa: F401, includes BuddyPrimaryHealthVerifier
-    BuddyPrimaryHealthVerifier,
+from .runtime_behavior import (  # noqa: F401
     TransientErrorFilterVerifier, ContextBudgetVerifier,
     WarmContextFreshnessVerifier, PlanOutputValidityVerifier,
 )
@@ -173,5 +172,4 @@ REGISTRY = [
     ToolResponseLatencyVerifier(),
     TrajectoryTrendVerifier(),
     FeedbackGraphVerifier(),
-    BuddyPrimaryHealthVerifier(),
 ]

@@ -18,7 +18,7 @@
 <!-- One line per queued item:
   - [<difficulty>] <description>. Reason: <source> -->
 
-(empty -- populate from the new set's SPEC Phase 0 via `i/todo ingest_from_spec`)
+(empty -- populated from the new set's SPEC Phase 0 by the HME todo bridge)
 
 ---
 

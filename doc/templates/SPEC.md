@@ -1,10 +1,10 @@
 # Polychron Active SPEC
 
-> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; the title resets to "Polychron Active SPEC" automatically when `i/todo clear` (auto on full-set complete) or `i/todo archive_now text="<slug>"` (force) archives the set.
+> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/templates/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; the title resets to "Polychron Active SPEC" automatically when the hidden HME todo archive bridge closes the set.
 >
 > Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](../HME.md), [doc/ARCHITECTURE.md](../ARCHITECTURE.md), [README.md](../../README.md), and [CLAUDE.md](../../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.
 >
-> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles -- run `i/todo clear` (auto-archives if complete) or `i/todo archive_now text="<slug>"` (force). The tools own the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.
+> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../../tools/HME/KB/devlog/). DO NOT manually edit SPEC.md / TODO.md to reset between cycles. The hidden HME todo archive bridge owns the reset; manual edits race the auto-gen logic in tools/HME/service/server/tools_analysis/todo_spec_archive.py.
 
 _Previous set (MODE=5 design-pattern consolidation (worthiness P/C/S/E = 3/2/3/3)) archived 2026-05-12T232916Z to tools/HME/KB/devlog/2026-05-12T232916Z-mode-5-design-pattern-consolidation-wort.md._
 
@@ -58,7 +58,7 @@ Classify every stop-side detector by contract type and add enough metadata that 
 Per skill-set's chain-driver / chain-runner / supervisor jurisdiction discipline. Each loop has an explicit NEVER list -- actions outside its jurisdiction. Violations are framework bugs, not edge cases.
 
 **Co-buddy (the workers -- `claude --resume <sid>`):**
-- NEVER edit `doc/SPEC.md` or `doc/TODO.md` directly. Updates flow through `i/todo close_with_spec_update` (atomic flip+ship) or `i/todo promote_to_spec` (queue addition).
+- NEVER edit `doc/SPEC.md` or `doc/TODO.md` directly. Updates flow through the HME todo/SPEC bridge or same-commit SPEC/TODO edits when explicitly assigned.
 - NEVER make git commits. Autocommit-direct is the only writer.
 - NEVER decide which item to pick. The dispatcher picks; the buddy executes.
 - NEVER edit other buddies' processing/ files. Atomic-mv claim semantics own each task; cross-buddy peeking is a race.
@@ -88,8 +88,8 @@ Per skill-set's chain-driver / chain-runner / supervisor jurisdiction discipline
 
 ### How this file evolves
 
-- A skill closes an item by flipping `- [ ]` -> `- [x]` in the same commit as the code change. Use `i/todo close_with_spec_update target=<id>` to do this atomically (also appends to `doc/TODO.md` Just shipped).
-- When all items in a phase are checked, append a "completed" block via `i/todo phase_complete phase=<N> text="<1-paragraph result + bulleted file citations + test-count delta>"`. The completion paragraph is meaningful content authored by the closer -- not auto-generated.
+- A skill closes an item by flipping `- [ ]` -> `- [x]` in the same commit as the code change, with the HME todo/SPEC bridge mirroring durable state.
+- When all items in a phase are checked, append a meaningful "completed" block: one paragraph of result plus bulleted file citations and test-count delta.
 - New work surfaced mid-cycle goes to `doc/TODO.md`'s "Next up", not directly here. The next cycle decides whether it merits a new spec phase or was actually a follow-up to the current one.
 
 ### Worthiness gate (before adding a Phase)
@@ -111,11 +111,7 @@ Diverges deliberately from skill-set's roll-forward design. Their model leaves c
 
 **Trigger:** when ALL phases in `doc/SPEC.md` have zero open `- [ ]` items AND every phase carries its `_Phase N complete_` sentinel paragraph, the set is archive-eligible.
 
-**To run the archive (DO NOT manually edit SPEC.md / TODO.md to reset; the tools own the reset):**
-```
-i/todo clear text="<set-slug>"            # auto-archives IF complete; mid-set just drops done entries
-i/todo archive_now text="<set-slug>"      # force-archive regardless of phase state (use when set isn't formally complete but you need a snapshot)
-```
+**Archive rule:** do not manually reset SPEC.md / TODO.md. The hidden HME todo archive bridge owns set snapshots and fresh-slate resets.
 
 Both invoke `_archive_set` in `tools/HME/service/server/tools_analysis/todo_spec_archive.py`, which performs the full flow atomically:
 
@@ -125,7 +121,7 @@ Both invoke `_archive_set` in `tools/HME/service/server/tools_analysis/todo_spec
 4. Auto-fires `learning_extract.py extract` to populate KB/learnings.jsonl with patterns from the just-snapshotted devlog
 5. Preamble (Goal / Architecture) and trailing sections (Glossary, Three-loop NEVER lists, Worthiness gate, Difficulty labels, Empty-queue bail) are preserved across the reset since they're stable across sets
 
-**Mid-set:** if the set isn't complete (any open `[ ]` items remaining), `i/todo clear` just removes completed i/todo entries -- no archive, no SPEC reset. The `clear` output surfaces what's still blocking archive.
+**Mid-set:** if the set isn't complete (any open `[ ]` items remaining), completed HME todo entries can be pruned without archiving -- no SPEC reset. The archive bridge surfaces what's still blocking archive.
 
 The active doc/ directory thus stays lean; deeper history lives in the devlog and `git log`. Searching past sets: `grep -r "<keyword>" tools/HME/KB/devlog/` or any KB query that includes the devlog directory.
 

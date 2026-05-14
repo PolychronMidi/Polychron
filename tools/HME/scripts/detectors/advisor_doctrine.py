@@ -66,7 +66,7 @@ _POST_DELIVER_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 _CONSULT_INVOKE_RE = re.compile(
-    r"\bi/consult\b|\bAdvisor\b\s*\(|"
+    r"\bAdvisor\b\s*\(|"
     r"buddy_handoff(_consult)?\.py.*\bconsult\b",
     re.IGNORECASE,
 )

@@ -207,21 +207,10 @@ def _mark_status(entry: dict, status: str) -> None:
 
 def _format_todos(todos: list) -> str:
     if not todos:
-        # Empty state: surface available actions so the user has
-        # discoverability instead of bare "No todos." dead-end.
         return (
             "No todos.\n\n"
-            "Available actions:\n"
-            "  i/todo action=add text=\"...\" [tier=E1|E2|E3|E4|E5] [critical=true]\n"
-            "  i/todo action=list                       -- list all\n"
-            "  i/todo action=critical                   -- list open critical only\n"
-            "  i/todo action=done todo_id=N             -- mark #N done\n"
-            "  i/todo action=clear                      -- drop completed (auto-archives full sets)\n"
-            "  i/todo action=archive_now [text=\"...\"]    -- force-archive current SPEC+TODO regardless of phase state\n"
-            "  i/todo action=ingest_from_spec           -- pull doc/templates/TODO.md Next-up\n"
-            "  i/todo action=close_with_spec_update todo_id=N\n"
-            "  i/todo action=phase_complete todo_id=N text=\"...\"\n"
-            "\nSee i/help todo for full registry entry."
+            "Use native TodoWrite for session tasks. HME merges persistent "
+            "critical, onboarding, and SPEC/TODO bridge items automatically."
         )
     lines = []
     for t in todos:
@@ -345,18 +334,18 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         to fresh-slate templates. Pass text="<set-name>" to label the
         archive filename slug. Mid-set, clear keeps original behavior.
     action='critical': list only critical open items (used by turn-start hook).
-    action='ingest_from_spec': materialize SPEC/TODO entries as i/todo entries
+    action='ingest_from_spec': materialize SPEC/TODO entries as HME todo entries
         (source='spec', tier=<label>). Default reads doc/templates/TODO.md
         "Next up". Pass text="N" or todo_id=N to instead read open `- [ ]`
         items from doc/templates/SPEC.md Phase N (spec-kit-style auto-tasks
         from Phase). Pass text="latest" to ingest the highest-numbered Phase.
-        Dedup against existing open i/todo entries.
-    action='promote_to_spec': move ephemeral i/todo #todo_id into doc/templates/TODO.md
+        Dedup against existing open HME todo entries.
+    action='promote_to_spec': move ephemeral HME todo #todo_id into doc/templates/TODO.md
         "Next up" with a Reason: cite. Promotes one-off operational state
         into the durable cross-cycle continuity queue.
     action='close_with_spec_update': atomically flip the matching `- [ ] [tier]
         <text>` in doc/templates/SPEC.md to `[x]` (longest-common-prefix match), append
-        to doc/templates/TODO.md "Just shipped" (rolling-10 trim), mark i/todo #todo_id
+        to doc/templates/TODO.md "Just shipped" (rolling-10 trim), mark HME todo #todo_id
         done. Surfaces phase-completion notice when the flip closes the last
         open item in a phase block.
     action='phase_complete': append a `_Phase N complete_` sentinel paragraph
@@ -399,8 +388,8 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             if done_count >= 15:
                 rendered = (
                     f"<system-reminder>\n"
-                    f"i/todo store has {done_count} done entries pending cleanup. "
-                    f"Run `i/todo clear` to drop them -- or wait for the auto-prune "
+                    f"HME todo store has {done_count} done entries pending cleanup. "
+                    f"Use native TodoWrite normally; auto-prune will drop them after the "
                     f"horizon ({_DONE_TODO_PRUNE_AFTER_SECONDS // 86400}d for native, "
                     f"{_LIFESAVER_PRUNE_AFTER_SECONDS // 86400}d for lifesaver).\n"
                     f"</system-reminder>\n\n{rendered}"
@@ -540,11 +529,11 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             # (all `[ ]` flipped to `[x]` AND every phase has its
             # `_Phase N complete_` sentinel), `clear` snapshots the
             # full SPEC + TODO state to a timestamped KB devlog file,
-            # clears completed i/todo entries, and resets SPEC.md +
+            # clears completed HME todo entries, and resets SPEC.md +
             # TODO.md to a fresh-slate template ready for the next set.
             #
             # Mid-set (any open `[ ]` items remaining): `clear` just
-            # removes completed i/todo entries (the original behavior).
+            # removes completed HME todo entries (the original behavior).
             # No archive happens because the set isn't done.
             #
             # The archive is "built into" clear -- one action, one
@@ -595,7 +584,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             src = (f"SPEC.md Phase {phase_arg}" if phase_arg != 0
                    else "doc/templates/TODO.md Next up")
             if not ingested:
-                return f"No new entries from {src} (all already in i/todo).\n"
+                return f"No new entries from {src} (all already in the HME todo store).\n"
             lines = [f"  + #{e['id']} [{e['tier']}] {e['text'][:80]}" for e in ingested]
             return f"Ingested {len(ingested)} entries from {src}:\n" + "\n".join(lines)
 
@@ -617,7 +606,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 return f"Error: #{todo_id} not found."
             target = sub or main
             spec_flipped, shipped_line = _close_with_spec_update(target)
-            # Mark done in i/todo
+            # Mark done in the HME todo store.
             _mark_status(target, "completed")
             if sub is not None and _check_main_done(main):
                 _mark_status(main, "completed")
@@ -628,7 +617,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             # Phase-completion detection: if this flip closed the last
             # `[ ]` in any Phase block, surface that to the caller so a
             # caller can append the completion-ritual paragraph
-            # via `i/todo phase_complete phase=N summary=\"...\"`.
+            # via the hidden phase_complete action.
             phase_complete_msg = ""
             if spec_flipped and os.path.exists(_spec_file()):
                 with open(_spec_file(), encoding="utf-8") as f:
@@ -638,7 +627,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                     headers = "\n  ".join(c["header"] for c in completed)
                     phase_complete_msg = (
                         f"\n\n[DONE] Phase complete (no remaining `[ ]` items):\n  {headers}\n"
-                        f"Run `i/todo phase_complete phase=<N> summary=\"...\"` to append "
+                        f"Use the hidden phase_complete action to append "
                         f"the completion paragraph (1-paragraph result + bulleted file "
                         f"citations + test-count delta)."
                     )
@@ -693,7 +682,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             tail = ""
             if redetect["complete"]:
                 tail = (
-                    f"\n\n[ARCHIVE] All phases now complete -- next `i/todo clear` will archive "
+                    f"\n\n[ARCHIVE] All phases now complete -- next hidden clear action will archive "
                     f"the set to KB devlog and reset SPEC/TODO to fresh slate."
                 )
             return f"Phase {phase_n} marked complete in {_spec_file()}.{tail}\n"

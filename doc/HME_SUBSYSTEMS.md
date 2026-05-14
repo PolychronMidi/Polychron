@@ -397,7 +397,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_grep.sh` | PreToolUse | Grep | Surface live KB relevance via shim (titles only); multiline exempt |
 | `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement; **correct** timeout via `updatedInput` (strips timeout silently, command proceeds) |
-| `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Silent capture** -- writes tasks directly to HME todo store (todos.json), blocks native TodoWrite with no further action required |
+| `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Correct/enrich in place** -- merges native tasks with the HME todo store and returns `updatedInput`; native TodoWrite still runs |
 | `pretooluse_hme_primer.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `i/<hme-tool>`) | **Enrich** -- inject `templates/ONBOARDING.md` once per session via `systemMessage` on first HME tool call; appends mandatory boot check directive (run `i/hme admin action=selftest` + `i/evolve focus=invariants`); clears flag so it only fires once |
 | `pretooluse_check_pipeline.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `i/status`) | **Redirect** -- deny repeated status calls (polling anti-pattern); pipeline status surfaces automatically via posttooluse hook |
 | `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents -> route to local llama.cpp agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on llama.cpp unreachable or empty answer |
@@ -405,7 +405,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers (verdict + wall time in header) + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main`; **emit `pipeline_run`** activity event with verdict/wall/hci |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
 | `posttooluse_read_kb.sh` | PostToolUse | Read | Silent KB enrichment after file reads of project source files; reset streak |
-| `posttooluse_todowrite.sh` | PostToolUse | TodoWrite | Mirror completed onboarding steps back to the HME todo store so the sidebar stays in sync with agent-visible todos |
+| `posttooluse_todowrite.sh` | PostToolUse | TodoWrite | Mirror high-priority native todos back to the HME todo store so critical items persist across turns |
 | `pretooluse_toolsearch.sh` | PreToolUse | ToolSearch | Guard against tool-search polling; enrich with KB tool-surface context for the search query |
 | `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog >= 3/5 files; **emit `file_written`** + **split into `coherence_violation` (lazy) vs `productive_incoherence` (exploratory)** using the KB staleness index |
 | `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |

@@ -14,7 +14,7 @@ Schema (every line):
       "criteria_failed": <int>,   # done with [DEFERRED-VERIFY] or unverified
       "doctrine_fired": {
           "live_probe":           <bool>,  # >=1 ISC marked done with verification entry
-          "advisor":              <bool>,  # i/consult invoked this turn
+          "advisor":              <bool>,  # legacy advisor invoked this turn
           "cato":                 <bool>,  # cross-vendor audit invoked (E4/E5 only)
           "conflict":             <bool>,  # advisor re-called after conflict
           "thinking_floor_met":   <bool>,  # tier thinking floor satisfied (E2+)

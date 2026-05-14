@@ -8,7 +8,7 @@ Self-evolving algorithmic composition. A ~500-file JavaScript engine produces MI
 - This primer -- the **behavior**. What you do in your first session, in what order, with what redirects. Injected once per session by `pretooluse_hme_primer.sh` on your first HME tool call.
 - [HME.md](../HME.md) -- the **reference**. Full HME narrative, tool surface, Phase 1-6 subsystem detail. Read on demand when the primer points you at something specific.
 
-**Buddy continuity (`BUDDY_HANDOFF=1`).** When this paradigm is on, your session inherits the prior session's buddy as the active **primary** via `runtime/hme/buddy-primary.sid` (the legacy `runtime/hme/buddy.sid` pointer is auto-mirrored at SessionStart). Reasoning calls (i/review reflection, OVERDRIVE cascades, suggest_evolution) flow through that primary's accumulated context instead of a cold-spawn. The primary is NOT a "senior" -- seniors are *retired* primaries that have crossed `BUDDY_RETIRE_PCT` (90% ctx) and moved to `tmp/hme-buddy-seniors/`. Treat the inherited primary as a peer (consult them, push back on their suggestions, give them your fresh-eye observations) -- not a subordinate or oracle. Run `i/handoff status` to see the active primary + retired senior pool with their context bars; use `i/consult sid=<sid> question="..."` for problems where the buddy's depth would unlock the answer.
+**Continuity.** The old buddy/consult/handoff command surface is retired. Session continuity now comes from the proxy-enriched native tools, status views, KB retrieval, and onboarding state. For context health, use `i/status` or `i/status team summary`; do not call the removed handoff or consult wrappers.
 
 If you see a rule claim here that contradicts CLAUDE.md, CLAUDE.md wins -- this primer should not be restating rules, only describing behavior.
 
@@ -106,22 +106,21 @@ i/learn query=...                          KB search
 i/learn action=health                    KB staleness check
 i/hme admin action=index                 reindex after batch changes
 i/hme admin action=reload                hot-reload tool modules
-i/todo action=add text=... parent_id=... critical=... on_done=...
-                                         hierarchical extension of TodoWrite (subs, critical,
-                                         on_done triggers 'reindex'/'learn'/'commit')
+TodoWrite                                native task list; HME merges persistent critical,
+                                         onboarding, and SPEC/TODO bridge items automatically
 ```
 
 (Run `i/help` for the full wrapper surface and `i/help <name>` for usage.
 
 ## Todo system
 
-Native `TodoWrite` works as usual. The HME layer adds the following transparently:
+Native `TodoWrite` is the public todo surface. The HME layer adds the following transparently:
 
-- **Subtodos + auto-completion.** Use `hme_todo(action='add', parent_id=N, text='...')` to add a sub under #N. A main todo is marked done only when all its subs are done; marking the last sub done auto-completes the parent. The native view shows subs as indented rows (`  + text`).
+- **Subtodos + auto-completion.** Internal HME todo entries can carry subtodos; the native view shows them as indented rows (`  + text`).
 - **Critical flag.** Pass `critical=True` on add. Critical items surface at every turn start via `userpromptsubmit.sh` until resolved. LIFESAVER alerts auto-append as critical.
 - **on_done triggers.** Pass `on_done='reindex'|'learn'|'commit'` to fire a lifecycle hook when the item is marked done. `reindex` runs `hme_admin(action='index')` in the background. `learn` queues a reminder to call `learn()` at the next turn. `commit` flags a commit nudge in the nexus.
 - **Onboarding walkthrough appears in your native todo list.** The current step is always marked `in_progress`, completed steps are marked done, upcoming steps are pending. You don't need to manage it -- hooks do.
-- **Cross-session persistence.** Open items from the previous session surface at `SessionStart` with a diff view. Completed items live in the store history until `clear` is called.
+- **Cross-session persistence.** Open items from the previous session surface at `SessionStart` with a diff view. Completed items live in the store history until auto-pruned or archived.
 - **Live mermaid graph.** The store writes a live rendering to [output/metrics/todo-graph.md](../../output/metrics/todo-graph.md) on every change. Use this to see the work tree as a diagram.
 
 ## Rules and boundaries -- authoritative source

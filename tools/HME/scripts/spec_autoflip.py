@@ -3,7 +3,7 @@
 
 PostToolUse hook on Edit/Write to doc/templates/SPEC.md. Diffs against git HEAD
 to find checkbox flips this turn, appends each to TODO.md "Just shipped",
-trims to the rolling-10 cap. Matching i/todo entries are marked done by text
+trims to the rolling-10 cap. Matching HME todo entries are marked done by text
 prefix when text overlap >= 30 chars (mirrors close_with_spec_update logic).
 
 Idempotent + safe-on-error: any exception falls through to no-op.
