@@ -72,7 +72,7 @@ def _load() -> dict:
         try:
             return _normalize(json.loads(DASHBOARD.read_text()))
         except (json.JSONDecodeError, OSError):
-            pass  # silent-ok: malformed/missing dashboard resets to empty
+            pass
     return _empty_dashboard()
 
 
