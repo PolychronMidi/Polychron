@@ -58,6 +58,8 @@ export default [
       'tools/HME/activity/**',
       'tools/HME/warm-context-cache/**',
       'tools/**/node_modules/**',
+      '.claude/**',
+      '**/.claude/**',
       'tools/HME/proxy/mcp_server/**',
       'tools/HME/proxy/middleware/**',
       'tools/HME/proxy/supervisor/**',
