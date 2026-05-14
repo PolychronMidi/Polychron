@@ -348,7 +348,10 @@ def _resolve_mode6_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     except Exception:
         return _resolve_mode5_entry(role_tier)
     ids = set(base)
-    front = [m for m in cfg.get("team_role_models", {}).get(_role_key(role), []) if m in ids]
+    role_models = cfg.get("team_role_models", {}).get(_role_key(role), [])
+    if isinstance(role_models, dict):
+        role_models = role_models.get(role_tier, [])
+    front = [m for m in role_models if m in ids]
     if not front and role in ("driver", "blue_lead", "red_lead", "team_lead"):
         front = [m for m in cfg.get("manually_toprank", {}).get(role_tier, []) if m in ids]
     chain = tuple(front + [m for m in base if m not in front])
