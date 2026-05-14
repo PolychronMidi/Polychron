@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2860,
-      "updated_ts": 1778745146.0719383
+      "max_id": 2863,
+      "updated_ts": 1778745175.3309648
     }
   },
   {
-    "id": 2858,
-    "text": "Fix team dashboard syntax and dynamic context lookup",
-    "activeForm": "Fixing team dashboard syntax and dynamic context lookup",
+    "id": 2861,
+    "text": "Repair team_dashboard.py syntax and context-window source",
+    "activeForm": "Repairing team_dashboard.py syntax and context-window source",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745146.0719023,
+    "ts": 1778745175.3309376,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2859,
-    "text": "Verify MODE=6 role model config",
-    "activeForm": "Verifying MODE=6 role model config",
+    "id": 2862,
+    "text": "Run HME validation commands locally",
+    "activeForm": "Running HME validation commands locally",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745146.0719209,
+    "ts": 1778745175.3309522,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2860,
-    "text": "Run HME selftest/status/evolve and team dashboard checks",
-    "activeForm": "Running HME selftest/status/evolve and team dashboard checks",
+    "id": 2863,
+    "text": "Report concise evidence",
+    "activeForm": "Reporting concise evidence",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778745146.071935,
+    "ts": 1778745175.3309624,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
