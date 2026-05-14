@@ -677,10 +677,11 @@ function handleRequest(clientReq, clientRes) {
         if (!_OMNIROUTE_OFF) {
           // OmniRoute path (default). No per-request compression overrides --
           // let the dashboard combo's compression settings do their job.
-          _lastPayloadBytes = JSON.stringify(payload).length;
           _stripStaleToolResults(payload);
           _stripClaudeIdentity(payload);
           payload.model = `${_omniProvider}/${_swapModel}`;
+          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+          _lastPayloadBytes = outBody.length;
           clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${_OMNIROUTE_PORT}`;
           delete clientReq.headers['authorization'];
           delete clientReq.headers['x-api-key'];
