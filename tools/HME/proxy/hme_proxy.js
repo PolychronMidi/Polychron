@@ -263,8 +263,7 @@ function _injectContextHeader(headers, swapModel) {
 }
 
 // Strip tool_result blocks older than 7 turns to prevent context bloat.
-// stripping them
-// before sending ensures the payload never exceeds the model's hard limit.
+
 function _stripStaleToolResults(payload) {
   if (!payload || !Array.isArray(payload.messages)) return;
   const msgs = payload.messages;
