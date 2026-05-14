@@ -98,6 +98,42 @@ print(json.dumps(entries))
   }
 });
 
+test('overdrive mode=6: driver uses team_role_models explicit chain', () => {
+  const result = _runPython({ OVERDRIVE_MODE: '6', HME_TEAM_ROLE: 'driver' }, `
+from server.tools_analysis.synthesis import synthesis_reasoning as sr
+import json
+entry = sr._resolve_mode6_entry('E3')
+chain, allow_sub = entry
+print(json.dumps({"chain": list(chain), "allow_subagent": allow_sub}))
+`);
+  if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+  const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+  assert.deepStrictEqual(parsed.chain, ['gpt-5.5-xhigh']);
+  assert.strictEqual(parsed.allow_subagent, false);
+});
+
+test('overdrive mode=6: purple and crew roles fall back to their tier rankings', () => {
+  const purple = _runPython({ OVERDRIVE_MODE: '6', HME_TEAM_ROLE: 'blue_purple' }, `
+from server.tools_analysis.synthesis import synthesis_reasoning as sr
+import json
+chain, allow_sub = sr._resolve_mode6_entry('E3')
+print(json.dumps({"chain": list(chain), "allow_subagent": allow_sub}))
+`);
+  if (purple.status !== 0) throw new Error(`python failed: ${purple.stderr}`);
+  const p = JSON.parse(purple.stdout.trim().split('\n').pop());
+  assert.deepStrictEqual(p.chain, EXPECTED_CHAINS.E4);
+
+  const crew = _runPython({ OVERDRIVE_MODE: '6', HME_TEAM_ROLE: 'crew_e2_1' }, `
+from server.tools_analysis.synthesis import synthesis_reasoning as sr
+import json
+chain, allow_sub = sr._resolve_mode6_entry('E5')
+print(json.dumps({"chain": list(chain), "allow_subagent": allow_sub}))
+`);
+  if (crew.status !== 0) throw new Error(`python failed: ${crew.stderr}`);
+  const c = JSON.parse(crew.stdout.trim().split('\n').pop());
+  assert.deepStrictEqual(c.chain, EXPECTED_CHAINS.E2);
+});
+
 test('overdrive mode=5: tier=E5 dispatches via registry chain + forces direct API', () => {
   const result = _runPython({ OVERDRIVE_MODE: '5', OVERDRIVE_VIA_SUBAGENT: '0' }, `
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
