@@ -2,34 +2,62 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2989,
-      "updated_ts": 1778775168.2562284
+      "max_id": 2993,
+      "updated_ts": 1778776401.7591832
     }
   },
   {
-    "id": 2988,
-    "text": "Fix proxy role precedence so MODE=6 prompt role beats inherited HME_TEAM_ROLE",
-    "activeForm": "Fixing proxy role precedence so MODE=6 prompt role beats inherited HME_TEAM_ROLE",
+    "id": 2990,
+    "text": "Reduce team dashboard script below LOC limit without dropping fail-fast role/model logic",
+    "activeForm": "Reducing team dashboard LOC while preserving fail-fast role/model logic",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778775168.2562103,
+    "ts": 1778776401.7591467,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2989,
-    "text": "Verify dashboard role model attribution and stale shared-model state",
-    "activeForm": "Verifying dashboard role model attribution and stale shared-model state",
+    "id": 2991,
+    "text": "Refresh every dashboard role with current heartbeat/register logic",
+    "activeForm": "Refreshing every dashboard role with current heartbeat/register logic",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778775168.2562258,
+    "ts": 1778776401.7591622,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2992,
+    "text": "Verify role-appropriate dashboard models and expose remaining SID collapse separately",
+    "activeForm": "Verifying role-appropriate dashboard models and remaining SID collapse",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778776401.7591727,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2993,
+    "text": "Check MODE=6 proxy role inference typo/precedence if needed",
+    "activeForm": "Checking MODE=6 proxy role inference typo/precedence if needed",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778776401.7591808,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
