@@ -2,48 +2,34 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2633,
-      "updated_ts": 1778726461.3338299
+      "max_id": 2635,
+      "updated_ts": 1778726488.5087335
     }
   },
   {
-    "id": 2625,
-    "text": "Locate HME onboarding/team/compression artifacts",
-    "activeForm": "Locating HME onboarding/team/compression artifacts",
+    "id": 2634,
+    "text": "Inspect HME onboarding/team/compression/model routing flow read-only",
+    "activeForm": "Inspecting HME flow read-only",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778726395.6098554,
+    "ts": 1778726488.5087109,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2626,
-    "text": "Read relevant docs and IPC state read-only",
-    "activeForm": "Reading relevant docs and IPC state read-only",
-    "status": "in_progress",
-    "done": false,
+    "id": 2635,
+    "text": "Identify adversarial assumptions and concise defenses",
+    "activeForm": "Identifying adversarial assumptions and concise defenses",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778726395.6098707,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2627,
-    "text": "Summarize assumptions, risks, next action with evidence",
-    "activeForm": "Summarizing assumptions, risks, next action with evidence",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778726395.609881,
+    "ts": 1778726488.5087297,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
