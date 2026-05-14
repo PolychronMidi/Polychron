@@ -2,20 +2,26 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
 function fresh(projectRoot) {
   process.env.PROJECT_ROOT = projectRoot;
-  const roots = [path.resolve(__dirname, '..', '..', 'proxy'), path.resolve(__dirname, '..', '..', 'policies')];
+  const roots = [
+    path.resolve(__dirname, '..', '..', 'event_kernel'),
+    path.resolve(__dirname, '..', '..', 'hooks'),
+    path.resolve(__dirname, '..', '..', 'proxy'),
+    path.resolve(__dirname, '..', '..', 'policies'),
+  ];
   for (const k of Object.keys(require.cache)) {
     if (roots.some((r) => k.startsWith(r))) delete require.cache[k];
   }
 }
 
 function sandbox(prefix = 'hme-hooks-') {
-  const root = fs.mkdtempSync(path.join(os.homedir(), prefix));
   const repo = path.resolve(__dirname, '..', '..', '..', '..');
+  const base = path.join(repo, 'output', 'test-sandboxes');
+  fs.mkdirSync(base, { recursive: true });
+  const root = fs.mkdtempSync(path.join(base, prefix));
   for (const d of ['src', 'tmp', 'log', 'output/metrics']) fs.mkdirSync(path.join(root, d), { recursive: true });
   for (const d of ['tools', 'scripts', 'config']) fs.symlinkSync(path.join(repo, d), path.join(root, d));
   fresh(root);
@@ -24,7 +30,7 @@ function sandbox(prefix = 'hme-hooks-') {
 
 async function dispatch(root, event, payload) {
   fresh(root);
-  const bridge = require('../../proxy/hook_bridge');
+  const bridge = require('../../event_kernel/dispatcher');
   return bridge.dispatchEvent(event, JSON.stringify(payload || {}));
 }
 

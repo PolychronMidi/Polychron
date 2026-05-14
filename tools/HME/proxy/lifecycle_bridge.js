@@ -1,5 +1,5 @@
 'use strict';
-// Lifecycle bridge: two delivery paths for Claude Code hooks
+// Lifecycle HTTP adapter: two proxy-side delivery paths into the event kernel
 // (SessionStart/UserPromptSubmit/Stop):
 //   1. Forwarder POST to /hme/lifecycle?event=... (handleLifecycleRoute).
 //   2. Inline fallback (runInlineFallback) when forwarder not reaching us.
@@ -8,7 +8,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const hookBridge = require('./hook_bridge');
+const eventKernel = require('../event_kernel/dispatcher');
 const { PROJECT_ROOT } = require('./shared');
 
 const _lifecycleSeen = { SessionStart: 0, UserPromptSubmit: 0, Stop: 0 };
@@ -67,7 +67,7 @@ function lifecycleInactive(event) {
  */
 async function runInlineFallback(event, stdinJson) {
   try {
-    const r = await hookBridge.dispatchEvent(event, stdinJson);
+    const r = await eventKernel.dispatchEvent(event, stdinJson);
     if (r.stderr && r.stderr.length > 0) {
       process.stderr.write(`inline ${event} stderr:\n${r.stderr}\n`);
     }
@@ -111,7 +111,7 @@ function handleLifecycleRoute(clientReq, clientRes) {
     let _dispatchErr = null;
     let _result = null;
     try {
-      _result = await hookBridge.dispatchEvent(event, stdin);
+      _result = await eventKernel.dispatchEvent(event, stdin);
       json(200, _result);
     } catch (err) {
       _dispatchErr = err;

@@ -114,7 +114,6 @@ def main(argv: list[str]) -> int:
         f"TDD GATE: new implementation file {fp.relative_to(project_root)} has no "
         f"corresponding test. Iron Law: write the failing test first, then the impl. "
         f"Expected one of: {', '.join(expected[:3])}. "
-        f"Override per CLAUDE.md/CONSTITUTION.md or run with HME_TDD_GATE=0 (shadow)."
     )
     if not enabled:
         sys.stderr.write(f"[tdd_gate shadow] {msg}\n")

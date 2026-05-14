@@ -5,7 +5,7 @@
  * middleware pipeline to a tool-result event without needing the
  * long-running proxy daemon.
  *
- * Architectural intent (mirrors hook_bridge / stop_chain): make the
+ * Architectural intent (mirrors event_kernel / stop_chain): make the
  * pipeline a callable utility, not a proxy-internal coupling. Other
  * components (direct_dispatch, test harnesses, sanitization helpers,
  * future agent-side tools) can shell out to this CLI to get the same

@@ -60,6 +60,8 @@ Exit `0` = clean, `1` = violation.
 - `hme_dispatcher.js` -- HME continuation loop
 - `messages.js` -- boilerplate strip + semantic redundancy strip
 - `context.js` -- status + jurisdiction context builders
+- `../event_kernel/` -- canonical hook/lifecycle dispatcher used by proxy-up
+  and direct fallback paths
 
 ## Related
 

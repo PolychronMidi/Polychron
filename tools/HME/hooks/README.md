@@ -29,7 +29,7 @@ Use `_emit_block "reason"` + `exit 2` only for rules the agent MUST NOT violate 
 
 ## Dispatch tree
 
-`.claude/settings.json` registers `bash _proxy_bridge.sh <Event>` for every Claude Code lifecycle event. The bridge POSTs the hook stdin to `http://127.0.0.1:9099/hme/lifecycle?event=<Event>` and relays the JSON response back. If the proxy is unreachable, it falls through to `direct_dispatch.sh <Event>` which runs the equivalent bash chain with no daemon (degraded enrichment, full safety semantics).
+`.claude/settings.json` registers `bash _proxy_bridge.sh <Event>` for every Claude Code lifecycle event. The bridge POSTs the hook stdin to `http://127.0.0.1:9099/hme/lifecycle?event=<Event>` and relays the JSON response back. If the proxy is unreachable, it falls through to `direct_dispatch.sh <Event>`, which calls the same event-kernel dispatcher through `event_kernel/cli.js`.
 
 ```text
 Claude Code event
@@ -37,9 +37,9 @@ Claude Code event
        v
 bash _proxy_bridge.sh <Event>
        |
-       +--- proxy alive? ---> POST /hme/lifecycle ---> proxy/lifecycle_bridge.js dispatchEvent ---> hook scripts below
+       +--- proxy alive? ---> POST /hme/lifecycle ---> proxy/lifecycle_bridge.js ---> event_kernel/dispatcher.js
        |
-       \--- proxy down? ----> direct_dispatch.sh <Event> ---> hook scripts below (no middleware/primer)
+       \--- proxy down? ----> direct_dispatch.sh <Event> ---> event_kernel/cli.js ---> event_kernel/dispatcher.js
 ```
 
 ### Event -> scripts (proxy-up path; same scripts run on direct fallback)
@@ -56,7 +56,7 @@ bash _proxy_bridge.sh <Event>
 
 ### Direct-mode fallback (proxy down)
 
-`direct_dispatch.sh` mirrors the routing of `proxy/hook_bridge.js` but skips middleware (memory_redirect, edit_context, secret_sanitizer, dominance_response_rewriter, bash_enrichment, etc.) and the HME-tool primer. Bash-side gates (run.lock, secret detection, blackbox guards, polling counters) all still fire; only the proxy-only enrichments are degraded.
+`direct_dispatch.sh` owns no Event -> script routing. It resolves `PROJECT_ROOT` and calls `event_kernel/cli.js`, so proxy-up and proxy-down modes use the same dispatcher and policy order. Proxy HTTP middleware still does not run while the daemon is down, but hook routing, JS policies, bash gates, the HME-tool primer, and Stop-chain semantics stay aligned.
 
 ### Helpers
 

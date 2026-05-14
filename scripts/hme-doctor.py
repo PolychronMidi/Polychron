@@ -42,7 +42,7 @@ def main():
     missing = model_limits_ok()
     ok &= check('model_limits', not missing, f'missing={len(missing)}', 'scripts/sync-omniroute-model-limits.py')
     report = subprocess.run(['node', str(ROOT/'tools/HME/hooks/hook_report.js'), '--json'], text=True, capture_output=True)
-    ok &= check('hook_report', report.returncode == 0, 'log/hme-hook-exec.jsonl', 'check hook_bridge')
+    ok &= check('hook_report', report.returncode == 0, 'log/hme-hook-exec.jsonl', 'check event kernel')
     if ok:
         (ROOT/'tmp/hme-doctor.ok').write_text(str(int(time.time())))
     else:

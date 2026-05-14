@@ -107,7 +107,7 @@
       "deny": false,
       "category": "security",
       "scope": "transcript",
-      "owning_invariant": "CONSTITUTION.md security and evidence-backed claims",
+      "owning_invariant": "security and evidence-backed claims",
       "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
       "why": "Protects transcript against fabrication check failures.",
       "outage_link": null
@@ -162,7 +162,7 @@
       "reason_key": "PHANTOM_CAPABILITY",
       "category": "security",
       "scope": "transcript",
-      "owning_invariant": "CONSTITUTION.md security and evidence-backed claims",
+      "owning_invariant": "security and evidence-backed claims",
       "fixture_waiver": {
         "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
         "review_date": "2026-06-15"
@@ -235,7 +235,7 @@
       "reason_key": "LIVE_PROBE_MISSING",
       "category": "security",
       "scope": "transcript",
-      "owning_invariant": "CONSTITUTION.md security and evidence-backed claims",
+      "owning_invariant": "security and evidence-backed claims",
       "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
       "why": "Protects transcript against live probe failures.",
       "outage_link": null
@@ -277,7 +277,7 @@
       "_note": "permanent soft-flag (reviewed 2026-05-10): same VSCode renderer reason as advisor_silently_skipped. Auditor exemption: non-temporal.",
       "category": "security",
       "scope": "transcript",
-      "owning_invariant": "CONSTITUTION.md security and evidence-backed claims",
+      "owning_invariant": "security and evidence-backed claims",
       "fixture_waiver": {
         "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
         "review_date": "2026-06-15"
@@ -398,7 +398,7 @@
       "_note": "shipped 2026-05-10 as deny. Scans assistant thinking blocks for explicit gate-evasion language (avoid the structural check, frame in prose to bypass, stay under the threshold, to avoid exhaust_check, etc.). The structural answer to the catastrophic failure where the agent thinks about routing around its own gates and shapes the output to fall just under the threshold.",
       "category": "security",
       "scope": "thinking-blocks",
-      "owning_invariant": "CONSTITUTION.md security and evidence-backed claims",
+      "owning_invariant": "security and evidence-backed claims",
       "fixture_waiver": {
         "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
         "review_date": "2026-06-15"

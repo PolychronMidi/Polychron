@@ -57,8 +57,8 @@ The MCP server, proxy, and hooks all read/write a shared substrate: KB (LanceDB)
 
 ## The four enforcement layers (and where to look when one fires)
 
-- **Hooks** (bash) -- `_proxy_bridge.sh` dispatches to `pretooluse_*.sh` / `posttooluse_*.sh`. Fires every Tool call. Inspect via `tools/HME/hooks/` and `i/why mode=block`.
-- **Policies** (JS) -- `tools/HME/policies/builtin/*.js`. Fires every Tool call (proxy-side). Inspect via `i/policies list`, `show`, `disable`.
+- **Hooks** (bash) -- `_proxy_bridge.sh` adapts Claude Code events into `tools/HME/event_kernel/dispatcher.js`, which dispatches to `pretooluse_*.sh` / `posttooluse_*.sh`. Fires every Tool call. Inspect via `tools/HME/hooks/` and `i/why mode=block`.
+- **Policies** (JS) -- `tools/HME/policies/builtin/*.js`. Fires every Tool call through the event kernel. Inspect via `i/policies list`, `show`, `disable`.
 - **HCI verifiers** (py) -- 67 verifiers in `tools/HME/scripts/verify_coherence/`. Fires every pipeline run + on-demand. Inspect via `i/hme admin action=selftest` (subtag column reveals "what kind of broken").
 - **ESLint rules** -- `scripts/eslint-rules/`. Fires `npm run main` lint phase. Inspect via `npm run lint`.
 

@@ -93,9 +93,9 @@ const middleware = require('./middleware/index');
 const _loadedMiddleware = middleware.loadAll();
 console.log(`loaded middleware: ${_loadedMiddleware.join(', ')}`);
 
-// Lifecycle hook bridge: all Claude Code lifecycle events funnel through
-// hooks/_proxy_bridge.sh -> /hme/lifecycle. Implementation in
-// lifecycle_bridge.js (SessionStart fires inline at module-require time).
+// Lifecycle hook adapter: Claude Code events funnel through
+// hooks/_proxy_bridge.sh -> /hme/lifecycle -> event_kernel/dispatcher.js.
+// lifecycle_bridge.js owns HTTP transport/dedup only; routing is not proxy-owned.
 const {
   recordLifecycleHit: _recordLifecycleHit,
   lifecycleInactive: _lifecycleInactive,

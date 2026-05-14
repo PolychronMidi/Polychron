@@ -96,7 +96,7 @@ See `examples/example-custom-policy.js` for a working template.
 - **Stop**: `stop_chain/index.js` consults the registry for enable/
   disable per policy. Stop chain policies live in `stop_chain/policies/`
   for now; the registry's Stop entries are wrappers that delegate.
-- **PreToolUse / PostToolUse**: `hook_bridge.js` runs unified-registry
+- **PreToolUse / PostToolUse**: `event_kernel/dispatcher.js` runs unified-registry
   policies first; first-deny short-circuits the bash chain. Bash gates
   remain as defense-in-depth (especially under proxy-down direct-mode).
 - **Middleware**: not yet wired through the unified registry; current
@@ -110,7 +110,8 @@ exist as JS policies in this registry AND as bash logic in
 `hooks/pretooluse/pretooluse_write.sh`. The duplication is intentional:
 
 - Proxy up: JS runs first; if it denies, bash chain is skipped.
-- Proxy down (direct-mode): only bash runs (registry isn't reachable).
+- Proxy down (direct-mode): the same event-kernel dispatcher runs JS first,
+  then falls through to bash gates when allowed.
 
 The wart: `i/policies disable <name>` only disables the JS version.
 The bash version still fires. To fully disable a duplicated rule,

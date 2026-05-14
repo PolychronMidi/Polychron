@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 'use strict';
 const assert = require('assert');
-const hook = require('../tools/HME/proxy/hook_bridge');
+const hook = require('../tools/HME/event_kernel/dispatcher');
+const compat = require('../tools/HME/proxy/hook_bridge');
 (async () => {
+  assert.strictEqual(compat.dispatchEvent, hook.dispatchEvent);
   let r = await hook.dispatchEvent('NoSuchEvent', '{}');
   assert.equal(r.exit_code, 0);
   assert.match(r.stderr, /unknown event/);

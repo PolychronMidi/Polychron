@@ -30,11 +30,11 @@ const REGRESSIONS = [
       'so any re-introduced stripping rewriter cannot activate.',
   },
   {
-    file: 'tools/HME/proxy/hook_bridge.js',
+    file: 'tools/HME/event_kernel/dispatcher.js',
     badPattern: /rewriter\.rewriteStopOutput\s*\(/,
-    name: 'hook_bridge-calls-rewriteStopOutput',
+    name: 'event-kernel-calls-rewriteStopOutput',
     history:
-      'hook_bridge.js must NOT invoke any rewriteStopOutput-style mangler ' +
+      'event_kernel/dispatcher.js must NOT invoke any rewriteStopOutput-style mangler ' +
       'on Stop result. Any call site here re-enables the dominance class.',
   },
 ];

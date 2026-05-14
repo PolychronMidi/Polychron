@@ -64,8 +64,7 @@
         "tools/HME/hooks/*.sh",
         "tools/HME/hooks/lifecycle/*.sh",
         "tools/HME/hooks/pretooluse/*.sh",
-        "tools/HME/hooks/posttooluse/*.sh",
-        "tools/HME/hooks/direct/*.sh"
+        "tools/HME/hooks/posttooluse/*.sh"
       ],
       "exclude": [
         "_*.sh"
@@ -74,7 +73,7 @@
     },
     {
       "id": "hooks-registered",
-      "description": "Every TOP-LEVEL hook script (the ones the proxy dispatcher calls directly) must be referenced in tools/HME/proxy/hook_bridge.js. Sub-dispatched scripts (posttooluse_addknowledge.sh, posttooluse_hme_*.sh, posttooluse_write.sh, posttooluse_agent.sh, pretooluse_check_pipeline.sh) are invoked from within other hooks based on CMD contents, not dispatched directly -- they're excluded from this check and verified separately by the scripts that call them.",
+      "description": "Every TOP-LEVEL hook script (the ones the event-kernel dispatcher calls directly) must be referenced in tools/HME/event_kernel/dispatcher.js. Adapter scripts and sub-dispatched scripts (posttooluse_addknowledge.sh, posttooluse_hme_*.sh, posttooluse_write.sh, posttooluse_agent.sh, pretooluse_check_pipeline.sh) are invoked outside this routing table -- they're excluded from this check and verified separately by their callers.",
       "type": "files_referenced",
       "glob": [
         "tools/HME/hooks/*.sh",
@@ -85,6 +84,7 @@
       ],
       "exclude": [
         "_*.sh",
+        "direct_dispatch.sh",
         "statusline.sh",
         "posttooluse_addknowledge.sh",
         "posttooluse_agent.sh",
@@ -93,7 +93,7 @@
         "posttooluse_write.sh",
         "pretooluse_check_pipeline.sh"
       ],
-      "reference_file": "tools/HME/proxy/hook_bridge.js",
+      "reference_file": "tools/HME/event_kernel/dispatcher.js",
       "severity": "error"
     },
     {

@@ -110,7 +110,7 @@ if [ -z "$RESP" ]; then
 
   _PB_DIRECT_DISPATCH="$_PB_ROOT/tools/HME/hooks/direct_dispatch.sh"
   if [ -n "$_PB_ROOT" ] && [ -x "$_PB_DIRECT_DISPATCH" ]; then
-    # rationale: direct-mode dispatch mirrors hook_bridge; proxy is accelerator, not SPOC
+    # rationale: direct-mode dispatch uses the same event kernel; proxy is accelerator, not SPOC
     _PB_DIRECT_ERR=$(mktemp 2>/dev/null || echo "/tmp/direct_${EVENT}_$$.err")
     _PB_DIRECT_STDOUT=$(printf '%s' "$BODY" | bash "$_PB_DIRECT_DISPATCH" "$EVENT" 2>"$_PB_DIRECT_ERR")
     _PB_DIRECT_RC=$?
