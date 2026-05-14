@@ -1,25 +1,5 @@
 #!/usr/bin/env python3
-"""Detect premature stop / dismissive text-only final turn.
-
-Looks at the LAST assistant message. Prints:
-  - "DISMISSIVE" if the text contains phrases like "no response requested",
-    "nothing to do", "all done", etc.
-  - "TEXT_ONLY_SHORT" if there are no tool_use blocks and the combined text
-    is < 200 characters.
-  - "ok" otherwise.
-
-EXEMPTION: when the user's most recent prompt is an explicit invitation to
-a short confirmation response (AUTO-COMPLETENESS round-2 "say so plainly
-and the turn will end", "confirm and stop", any direct yes/no question),
-TEXT_ONLY_SHORT does NOT fire -- a short confirmation is the correct
-response shape, and forcing the agent to pad with tool calls or long
-prose IS the antipattern this codebase's behavioral discipline rejects.
-The DISMISSIVE classifier is unchanged -- those phrases ("nothing to do",
-"all done") are dismissive regardless of prompt context.
-
-Usage: stop_work.py <transcript_path>
-Output: "DISMISSIVE" | "TEXT_ONLY_SHORT" | "ok"
-"""
+"""Detect dismissive or too-short final assistant turns."""
 from __future__ import annotations
 
 import re
@@ -51,9 +31,6 @@ SHORT_CONFIRM_INVITATION_PATTERNS = (
 
 
 def _last_user_text(events: list) -> str:
-    """Extract the last user message's text. Mirrors the helper in
-    exhaust_check.py -- both detectors need the same user-prompt
-    introspection to apply context-aware exemptions."""
     last_u = None
     for ev in events:
         if is_user(ev):
@@ -96,8 +73,6 @@ def main() -> int:
         print("ok")
         return 0
     events = load_full_turn_with_user(sys.argv[1])
-    # Find last assistant event from the loaded list (full turn including
-    # the user message at index 0).
     last_a = None
     for ev in events:
         t = ev.get("type")
@@ -116,14 +91,7 @@ def main() -> int:
         if isinstance(b, dict) and b.get("type") == "text"
     ]
     raw_text = " ".join(text_parts).strip()
-    # Strip quoted / code-fenced spans before phrase matching -- same
-    # discipline as exhaust_check.py. Without this, a response that
-    # describes a regex / quotes user prompt / shows code containing a
-    # dismissive-phrase fragment (e.g. "All done" appearing inside a
-    # regex example like `^(Nothing missed|...|All done|...)$`)
-    # false-positives as a dismissive declaration. The patterns we
-    # actually want to catch are bare phrases in the agent's own prose,
-    # not quoted strings inside example/code/reference content.
+    # Ignore quoted/code spans before matching agent prose.
     stripped = re.sub(r"```.*?```", " ", raw_text, flags=re.DOTALL)
     stripped = re.sub(r"`[^`\n]*`", " ", stripped)
     stripped = re.sub(r'"[^"\n]*"', " ", stripped)
@@ -136,18 +104,11 @@ def main() -> int:
         print("DISMISSIVE")
         return 0
     if not has_tool_use and len(full_text) < 200:
-        # Exemption: short response to a short-confirmation invitation.
         user_text = _last_user_text(events)
         if _is_short_confirm_invitation(user_text):
             print("ok")
             return 0
-        # Exemption: minimal ack ("ok", "done", etc.) when the prior user
-        # message was itself a stop-hook deny payload. The doctrine
-        # cascade -- detector fires -> agent emits "ok" -> stop_work
-        # fires on "ok" -> repeat -- has no exit otherwise. The
-        # accumulated chain produces a violation against any output
-        # shape; the agent literally cannot emit nothing. Recognize that
-        # an ack of a deny is the structural equivalent of silence.
+        # Allow minimal ack only for hook-deny loops.
         if user_text and any(m in user_text for m in (
             "Stop hook feedback:", "Stop hook blocking error from command:",
             "AUTO-COMPLETENESS",
