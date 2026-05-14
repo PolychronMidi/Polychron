@@ -134,6 +134,9 @@ def main() -> int:
     stripped = re.sub(r'"[^"\n]*"', " ", stripped)
     stripped = re.sub(r"'[^'\n]*'", " ", stripped)
     full_text = stripped.lower().strip()
+    if SUCCESS_ONLY.match(raw_text):
+        print("DISMISSIVE")
+        return 0
     if any(d in full_text for d in DISMISSIVE_PHRASES):
         print("DISMISSIVE")
         return 0
