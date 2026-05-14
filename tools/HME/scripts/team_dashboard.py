@@ -48,15 +48,40 @@ DEFAULT_CTX = {"E5": 200000, "E4": 128000, "E3": 64000, "E2": 32000, "E1": 16000
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+def _empty_dashboard() -> dict:
+    mode = os.environ.get("OVERDRIVE_MODE")
+    data = {"updated_at": _now(), "agents": {}}
+    if mode:
+        try:
+            data["mode"] = int(mode)
+        except ValueError:
+            data["mode"] = mode
+    return data
+
+
+def _normalize(data: dict) -> dict:
+    data.setdefault("agents", {})
+    mode = os.environ.get("OVERDRIVE_MODE")
+    if mode and "mode" not in data:
+        try:
+            data["mode"] = int(mode)
+        except ValueError:
+            data["mode"] = mode
+    data.pop("stage_crew", None)
+    return data
+
+
 def _load() -> dict:
     if DASHBOARD.is_file():
         try:
-            return json.loads(DASHBOARD.read_text())
+            return _normalize(json.loads(DASHBOARD.read_text()))
         except (json.JSONDecodeError, OSError):
             pass  # silent-ok: malformed/missing dashboard resets to empty
-    return {"updated_at": _now(), "agents": {}}
+    return _empty_dashboard()
+
 
 def _save(data: dict) -> None:
+    data = _normalize(data)
     data["updated_at"] = _now()
     DASHBOARD.parent.mkdir(parents=True, exist_ok=True)
     tmp = Path(str(DASHBOARD) + f".{os.getpid()}.tmp")
