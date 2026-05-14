@@ -268,16 +268,7 @@ def main() -> int:
             ),
         }}))
         return 0
-    desc = str(tool_input.get("description") or "Agent task")
-    prompt = str(tool_input.get("prompt") or "")
-    updated = dict(tool_input)
-    updated["description"] = f"{target} routed: {desc}"[:200]
-    updated["prompt"] = (
-        f"MODE=6 team-routed task. You are {target}.\n"
-        f"Register/heartbeat via i/team if not present. Do not fork further subagents.\n\n"
-        f"Original task:\n{prompt}"
-    )
-    updated["subagent_type"] = "general-purpose"
+    updated = _native_input(tool_input, target)
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": "allow",
