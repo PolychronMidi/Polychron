@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2977,
-      "updated_ts": 1778773201.829561
+      "max_id": 2980,
+      "updated_ts": 1778773260.905042
     }
   },
   {
     "id": 2975,
     "text": "Fix proxy MODE=6 model mutation so OmniRoute receives role-selected model",
     "activeForm": "Fixing proxy MODE=6 model mutation so OmniRoute receives role-selected model",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,8 +24,8 @@
     "id": 2976,
     "text": "Verify role chains via focused proxy/unit tests",
     "activeForm": "Verifying role chains via focused proxy/unit tests",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -38,7 +38,7 @@
     "id": 2977,
     "text": "Check dashboard model output after routing fix",
     "activeForm": "Checking dashboard model output after routing fix",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
