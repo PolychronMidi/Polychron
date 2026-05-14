@@ -2,48 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3032,
-      "updated_ts": 1778783048.4232628
+      "max_id": 3035,
+      "updated_ts": 1778783650.04163
     }
   },
   {
-    "id": 3030,
-    "text": "Audit remaining tracked buddy/consult/senior references and classify generic dispatch separately",
-    "activeForm": "Auditing remaining tracked buddy/consult/senior references and classifying generic dispatch separately",
+    "id": 3033,
+    "text": "Locate proxy tool-call normalization path for Edit inputs",
+    "activeForm": "Locating proxy tool-call normalization path for Edit inputs",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778783048.4232347,
+    "ts": 1778783650.0416024,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 3031,
-    "text": "Remove deprecated registry, hook, detector, doc, state-owner references without touching generic dispatch infrastructure",
-    "activeForm": "Removing deprecated registry, hook, detector, doc, state-owner references without touching generic dispatch infrastructure",
+    "id": 3034,
+    "text": "Add middleware guard that supplies empty new_string for explicit Edit deletions",
+    "activeForm": "Adding middleware guard that supplies empty new_string for explicit Edit deletions",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778783048.4232497,
+    "ts": 1778783650.041617,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 3032,
-    "text": "Run focused grep/tests and report verified dangling-reference state",
-    "activeForm": "Running focused grep/tests and reporting verified dangling-reference state",
+    "id": 3035,
+    "text": "Add focused test coverage and run relevant proxy tests",
+    "activeForm": "Adding focused test coverage and running relevant proxy tests",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778783048.4232602,
+    "ts": 1778783650.0416276,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
