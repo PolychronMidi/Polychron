@@ -94,6 +94,7 @@
   },
 
 
+// manually_toprank and team_role_models both fall back to ranking_rules if models here are either blank or unavailable.
 
   "manually_toprank": {
     "E5": [
@@ -105,12 +106,12 @@
     "E1": []
   },
   "team_role_models": {
-  "driver":  [
+  "driver":  [ // default to manually_toprank e5 if not set
     "gpt-5.5-xhigh"
   ],
-  "team_lead": [],
-  "team_purple": [],
-  "stage_crew": []
+  "team_lead": [], // default to manually_toprank e5 if not set
+  "team_purple": [], // default to manually_toprank e4 if not set
+  "stage_crew": [] // default to 2 each of best ranking_rules ranked e1,e2,e3,e4
   },
   "tiers": {
     "E5": {
