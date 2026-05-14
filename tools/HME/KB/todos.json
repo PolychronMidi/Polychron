@@ -2,34 +2,48 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2982,
-      "updated_ts": 1778773765.3702304
+      "max_id": 2985,
+      "updated_ts": 1778774271.6728427
     }
   },
   {
-    "id": 2981,
-    "text": "Add 3-minute grace window to verify-landed hook blocks",
-    "activeForm": "Adding 3-minute grace window to verify-landed hook blocks",
+    "id": 2983,
+    "text": "Fix MODE=6 proxy role detection so old all-role history cannot force one model",
+    "activeForm": "Fixing MODE=6 proxy role detection",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778773765.3702104,
+    "ts": 1778774271.6728141,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
   },
   {
-    "id": 2982,
-    "text": "Verify hook behavior with focused local checks",
-    "activeForm": "Verifying hook behavior with focused local checks",
+    "id": 2984,
+    "text": "Refresh dashboard role model fields from intended role routing instead of stale single SID rows",
+    "activeForm": "Refreshing dashboard role model fields",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778773765.3702273,
+    "ts": 1778774271.6728294,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2985,
+    "text": "Verify routing and dashboard evidence without claiming stale success",
+    "activeForm": "Verifying routing and dashboard evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778774271.6728404,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
