@@ -123,11 +123,7 @@ def _role_names(body: dict) -> list[str]:
 def _role_matches(role: str, body: dict, current_sid: str) -> bool:
  if role == "driver":
   return _metadata_session_id(body) == current_sid
- names = _role_names(body)
- if len(names) > 1 and role in names:
-  sid = _metadata_session_id(body) or "?"
-  raise RuntimeError(f"session {sid} matches multiple roles: {', '.join(names)}")
- return names == [role]
+ return _role_names(body) == [role]
 def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict | None:
  if not OMNI_DB.is_file():
   raise RuntimeError(f"omniroute db missing: {OMNI_DB}")
