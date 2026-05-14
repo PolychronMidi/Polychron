@@ -207,10 +207,8 @@ def _normalize(data: dict) -> dict:
  if "mode" not in data:
   mode = os.environ.get("OVERDRIVE_MODE")
   if mode:
-   try:
-    data["mode"] = int(mode)
-   except ValueError:
-    data["mode"] = mode
+   try: data["mode"] = int(mode)
+   except ValueError: data["mode"] = mode
  data.pop("stage_crew", None)
  return data
 def _load() -> dict:
