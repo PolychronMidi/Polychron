@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # i/team -- team IPC coordination dashboard
 # Usage: i/team [show|register|update|heartbeat|unregister|summary] ...
-# Translate key=value args to --key value for the update subcommand.
+# Translate key=value args to --key value. Underscores become hyphens.
 _ARGS=()
 for _a in "$@"; do
   if [[ "$_a" == *"="* ]] && [[ "$_a" != --* ]]; then
     _k="${_a%%=*}"
+    _k="${_k//_/-}"
     _v="${_a#*=}"
     _ARGS+=("--${_k}" "$_v")
   else
