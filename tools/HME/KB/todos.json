@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2708,
-      "updated_ts": 1778727872.7900476
+      "max_id": 2716,
+      "updated_ts": 1778728011.85762
     }
   },
   {
@@ -91,29 +91,15 @@
     "tier": "E3"
   },
   {
-    "id": 2697,
-    "text": "Fix pipeline lint scope regression from subagent worktrees",
-    "activeForm": "Fixing pipeline lint scope regression from subagent worktrees",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1778727828.3450954,
-    "parent_id": 0,
-    "subs": [],
-    "tier": "E3"
-  },
-  {
-    "id": 2698,
-    "text": "Rerun onboarding pipeline and capture verdict",
-    "activeForm": "Rerunning onboarding pipeline and capturing verdict",
+    "id": 2715,
+    "text": "Cancel heavy pipeline per user; verify onboarding status",
+    "activeForm": "Canceling heavy pipeline per user and verifying onboarding status",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778727828.3451033,
+    "ts": 1778728011.8576095,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
