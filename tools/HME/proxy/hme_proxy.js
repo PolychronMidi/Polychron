@@ -626,7 +626,10 @@ function handleRequest(clientReq, clientRes) {
             _ranked.push(..._tm.filter(m => m.cost === _c).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
           }
           let _front = [];
-          if (_odMode === '6' && _roleKey) _front = ((_cfg.team_role_models && _cfg.team_role_models[_roleKey]) || []);
+          if (_odMode === '6' && _roleKey) {
+            _front = ((_cfg.team_role_models && _cfg.team_role_models[_roleKey]) || []);
+            if (!Array.isArray(_front)) _front = _front[_tier] || [];
+          }
           if (_front.length === 0) _front = (_cfg.manually_toprank && _cfg.manually_toprank[_tier]) || [];
           const _frontSet = new Set(_front);
           _swapChain.push(..._front.map(id => _tm.find(m => m.id === id)).filter(Boolean));
