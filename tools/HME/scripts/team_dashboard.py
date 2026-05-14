@@ -104,21 +104,45 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
 def _looks_real_sid(sid: str) -> bool:
  return len(sid) == 36 and sid.count("-") == 4 and all(c in "0123456789abcdef-" for c in sid.lower())
 
+def _jsonc(text: str) -> dict:
+ out = []
+ in_str = esc = False
+ for i, c in enumerate(text):
+  if c == '"' and not esc:
+   in_str = not in_str
+  if not in_str and c == '/' and i + 1 < len(text) and text[i + 1] == '/':
+   out.append('
+'); esc = False; continue
+  if not in_str or not out or out[-1] == '
+':
+   out.append(c)
+  esc = c == '\' and not esc
+ return json.loads(''.join(out))
+
+def _tier_window(value) -> int | None:
+ if isinstance(value, dict):
+  return int(value.get('context_window') or value.get('ctx_window') or value.get('context') or 0) or None
+ if isinstance(value, int):
+  return value
+ return None
+
 def _model_ctx_window(model: str, tier: str) -> int:
  if not model:
   raise RuntimeError(f"omniroute row missing model for tier={tier}")
  path = PROJECT / "config" / "models.json"
  try:
-  tiers = json.loads("\n".join(l for l in path.read_text().splitlines() if not l.lstrip().startswith(("#", "//")))).get("tiers", {})
+  cfg = _jsonc(path.read_text())
  except (OSError, json.JSONDecodeError) as exc:
   raise RuntimeError(f"model config unavailable: {path}") from exc
- for data in tiers.values():
-  for m in data.get("models", []):
-   mid = m.get("id"); keys = (mid, f"{m.get('provider')}/{mid}" if m.get("provider") else "")
-   if model in keys and (m.get("context_length") or m.get("max_context")):
-    return int(m.get("context_length") or m.get("max_context"))
+ for section in ("models", "ranking_rules", "manually_toprank"):
+  val = cfg.get(section, {}).get(model) if isinstance(cfg.get(section), dict) else None
+  win = _tier_window(val)
+  if win:
+   return win
+ win = _tier_window(cfg.get("tiers", {}).get(tier) if isinstance(cfg.get("tiers"), dict) else None)
+ if win:
+  return win
  raise RuntimeError(f"context window unknown for model={model} tier={tier}")
-
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
  model = row["requested_model"] or row["model"] or ""
  window = _model_ctx_window(model, tier)
