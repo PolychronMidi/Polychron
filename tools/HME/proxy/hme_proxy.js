@@ -280,6 +280,17 @@ function _stripStaleToolResults(payload) {
   }
 }
 
+// Strip the Claude Code identity sentence from the system prompt array
+// when routing to non-Anthropic models.
+function _stripClaudeIdentity(payload) {
+  if (!payload || !Array.isArray(payload.system)) return;
+  payload.system = payload.system.filter(block => {
+    if (!block || block.type !== 'text') return true;
+    const t = block.text || '';
+    return !t.startsWith('You are Claude Code');
+  });
+}
+
 function _shrinkForPassthrough(payload) {
   if (process.env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
   if (!payload || !Array.isArray(payload.messages)) return 0;
