@@ -18,7 +18,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   if [ -s "$_DET_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
     _DET_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
     while IFS= read -r _det_line; do
-      [ -n "$_det_line" ] && echo "[$_DET_TS] [stop_detectors:run_all] python3 failed (all 9 detectors fail OPEN): $_det_line" \
+      [ -n "$_det_line" ] && echo "[$_DET_TS] [stop_detectors:run_all] detector stderr: $_det_line" \
         >> "$PROJECT_ROOT/log/hme-errors.log"
     done < "$_DET_PY_ERR"
   fi
