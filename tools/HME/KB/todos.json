@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2802,
-      "updated_ts": 1778734770.845566
+      "max_id": 2807,
+      "updated_ts": 1778734851.7388234
     }
   },
   {
@@ -52,8 +52,8 @@
     "id": 2788,
     "text": "Verify with tests or focused repro",
     "activeForm": "Verifying with tests or focused repro",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -66,7 +66,7 @@
     "id": 2789,
     "text": "Report root cause with evidence and fix",
     "activeForm": "Reporting root cause with evidence and fix",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
