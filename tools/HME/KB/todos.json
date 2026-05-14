@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 2784,
-      "updated_ts": 1778734206.6461847
+      "max_id": 2789,
+      "updated_ts": 1778734331.797076
     }
   },
   {
     "id": 2782,
     "text": "Locate stop-hook emission path and session-start injection source",
     "activeForm": "Locating stop-hook emission path and session-start injection source",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 2783,
     "text": "Identify why repeated feedback reaches prompt",
     "activeForm": "Identifying why repeated feedback reaches prompt",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -35,15 +35,43 @@
     "tier": "E3"
   },
   {
-    "id": 2784,
-    "text": "Report root cause with evidence and likely fix path",
-    "activeForm": "Reporting root cause with evidence and likely fix path",
+    "id": 2787,
+    "text": "Patch proxy stripping so compacted stop-hook sentinels do not reach prompts",
+    "activeForm": "Patching proxy stripping so compacted stop-hook sentinels do not reach prompts",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1778734206.6461823,
+    "ts": 1778734331.7970567,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2788,
+    "text": "Verify with tests or focused repro",
+    "activeForm": "Verifying with tests or focused repro",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778734331.7970655,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3"
+  },
+  {
+    "id": 2789,
+    "text": "Report root cause with evidence and fix",
+    "activeForm": "Reporting root cause with evidence and fix",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1778734331.797074,
     "parent_id": 0,
     "subs": [],
     "tier": "E3"
