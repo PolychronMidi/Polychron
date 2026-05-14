@@ -121,7 +121,9 @@ def _resolve_model_meta(model_id: str) -> dict:
     try:
         _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
         with open(_cfg_path) as _f:
-            _cfg = _json.load(_f)
+            _raw = _f.read()
+        import re
+        _cfg = _json.loads(re.sub(r'^\s*//.*$|[ \t]+//.*$', '', _raw, flags=re.MULTILINE))
         for _tier in _cfg.get("tiers", {}).values():
             for _m in _tier.get("models", []):
                 if _m.get("id") == model_id:
