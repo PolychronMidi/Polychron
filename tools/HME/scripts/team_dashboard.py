@@ -68,15 +68,17 @@ def _model_windows() -> dict[str, int]:
    raise RuntimeError(f"model config unavailable: {path}") from exc
   except (json.JSONDecodeError, RuntimeError) as exc:
    raise RuntimeError(f"model config invalid: {path}") from exc
-  windows = {}
-  for tier in cfg.get("model_tiers", {}).values():
-   for model in tier.get("models", []):
-    mid = model.get("id")
-    win = model.get("max_context") or model.get("context_length")
-    if mid and win:
-     windows[str(mid)] = int(win)
-  if not windows:
-   raise RuntimeError(f"model config has no context windows: {path}")
+  keys = ("max_context", "context_length", "context_window", "ctx_window")
+  def scan(node):
+   if isinstance(node, dict):
+    mid = node.get("id") or node.get("model") or node.get("name")
+    win = next((node.get(k) for k in keys if node.get(k)), None)
+    if mid and win: windows[str(mid)] = int(win)
+    for value in node.values(): scan(value)
+   elif isinstance(node, list):
+    for value in node: scan(value)
+  windows = {}; scan(cfg)
+  if not windows: raise RuntimeError(f"model config has no context windows: {path}")
   _MODEL_WINDOWS = windows
  return _MODEL_WINDOWS
 def _model_ctx_window(model: str, tier: str) -> int:
