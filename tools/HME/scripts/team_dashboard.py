@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Team IPC dashboard for MODE=6 agent health."""
 from __future__ import annotations
-import argparse, json, os, sqlite3, sys
+import argparse, json, os, re, sqlite3, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -139,11 +139,38 @@ def _model_windows() -> dict[str, int]:
     return MODEL_WINDOWS
 
 
+def _model_windows() -> dict[str, int]:
+ global _MODEL_WINDOWS
+ if _MODEL_WINDOWS is not None:
+  return _MODEL_WINDOWS
+ try:
+  raw = CONFIG.read_text()
+ except OSError as exc:
+  raise RuntimeError(f"model config missing: {CONFIG}") from exc
+ wins = {}
+ for m in re.finditer(r'{[^{}]*"id"\s*:\s*"([^"]+)"[^{}]*}', raw, re.S):
+  block, mid = m.group(0), m.group(1)
+  w = re.search(r'"context_length"\s*:\s*(\d+)', block) or re.search(r'"max_context"\s*:\s*(\d+)', block)
+  if not w:
+   raise RuntimeError(f"model config missing context window for {mid}")
+  wins[mid] = int(w.group(1))
+  provider = re.search(r'"provider"\s*:\s*"([^"]+)"', block)
+  if provider:
+   wins[f"{provider.group(1)}/{mid}"] = wins[mid]
+ if not wins:
+  raise RuntimeError(f"model config has no model windows: {CONFIG}")
+ _MODEL_WINDOWS = wins
+ return wins
+
+
 def _model_ctx_window(model: str, tier: str) -> int:
-    try:
-        return _model_windows()[model.split("/", 1)[-1]]
-    except KeyError as exc:
-        raise RuntimeError(f"context window unknown for model={model} tier={tier}") from exc
+ if not model:
+  raise RuntimeError(f"omniroute row missing model for tier={tier}")
+ wins = _model_windows()
+ for key in (model, model.split("/", 1)[-1]):
+  if key in wins:
+   return wins[key]
+ raise RuntimeError(f"context window unknown for model={model} tier={tier}")
 
 
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
@@ -299,7 +326,7 @@ def cmd_summary(args):
     data = _load()
     agents = data.get("agents", {})
     active = sum(1 for a in agents.values() if a.get("status") not in ("idle", "retired", "done"))
-    high_ctx = sum(1 for a in agents.values() if a.get("ctx_used_pct", 0) >= 85)
+    high_ctx = sum(1 for a in agents.values() if float(a.get("ctx_used_pct", 0)) >= 85)
     idle_s = 0
     stale = 0
     unknown_ctx = 0
