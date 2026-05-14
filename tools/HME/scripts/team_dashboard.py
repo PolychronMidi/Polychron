@@ -45,7 +45,6 @@ ROLES = {
     "crew_e1_1":    {"team": "crew",     "tier": "E1"},
 }
 
-DEFAULT_CTX = {# WHAT THE FUCK IS THIS FAGGOTRY, USE THE DYNAMIC MAX WE ALREADY HAVE SET FOR EACH MODEL "E5": 200000, "E4": 128000, "E3": 64000, "E2": 32000, "E1": 16000}
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
 
 ROLE_NEEDLES = {
