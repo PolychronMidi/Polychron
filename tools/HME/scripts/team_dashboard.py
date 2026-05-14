@@ -64,7 +64,6 @@ def _artifact_body(relpath: str) -> dict:
  except (OSError, json.JSONDecodeError, TypeError):
   return {}
 
-
 def _metadata_session_id(body: dict) -> str:
  meta = body.get("metadata") if isinstance(body, dict) else {}
  user_id = meta.get("user_id") if isinstance(meta, dict) else None
@@ -73,13 +72,11 @@ def _metadata_session_id(body: dict) -> str:
  except (json.JSONDecodeError, TypeError):
   return ""
 
-
 def _current_session_id() -> str:
  try:
   return Path((PROJECT / "tmp" / "hme-transcript-path.txt").read_text().strip()).stem
  except OSError:
   return ""
-
 
 def _user_text(body: dict) -> str:
  chunks = []
@@ -93,7 +90,6 @@ def _user_text(body: dict) -> str:
    chunks.extend(str(b.get("text") or b.get("content") or "") for b in parts if isinstance(b, dict))
  return "\n".join(chunks)
 
-
 def _role_matches(role: str, body: dict, current_sid: str) -> bool:
  if role == "driver":
   return _metadata_session_id(body) == current_sid
@@ -105,6 +101,8 @@ def _role_matches(role: str, body: dict, current_sid: str) -> bool:
  matches = [r for r, needles in ROLE_NEEDLES.items() if any(n in text for n in needles)]
  return matches == [role]
 
+def _looks_real_sid(sid: str) -> bool:
+ return len(sid) == 36 and sid.count("-") == 4 and all(c in "0123456789abcdef-" for c in sid.lower())
 
 def _model_ctx_window(model: str, tier: str) -> int:
  if not model:
@@ -121,14 +119,12 @@ def _model_ctx_window(model: str, tier: str) -> int:
     return int(m.get("context_length") or m.get("max_context"))
  raise RuntimeError(f"context window unknown for model={model} tier={tier}")
 
-
 def _row_ctx(row: sqlite3.Row, tier: str, session_id: str) -> dict:
  model = row["requested_model"] or row["model"] or ""
  window = _model_ctx_window(model, tier)
  used = float(row["tokens_in"] or 0)
  pct = round(min(100.0, max(0.0, used / max(1, window) * 100)), 1)
  return {"pct": pct, "window": window, "timestamp": row["timestamp"], "sid": session_id}
-
 
 def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict | None:
  if not OMNI_DB.is_file():
@@ -156,7 +152,6 @@ def _omniroute_ctx(role: str, sid: str, tier: str, forked_at: str | None = None)
   return _row_ctx(row, tier, session_id)
  return None
 
-
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
  if os.environ.get("OVERDRIVE_MODE") == "6":
   ctx = _omniroute_ctx(role, sid, tier, forked_at)
@@ -177,7 +172,6 @@ def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> d
 def _now() -> str:
  return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-
 def _empty_dashboard() -> dict:
  mode = os.environ.get("OVERDRIVE_MODE")
  data = {"updated_at": _now(), "agents": {}}
@@ -187,7 +181,6 @@ def _empty_dashboard() -> dict:
   except ValueError:
    data["mode"] = mode
  return data
-
 
 def _normalize(data: dict) -> dict:
  data.setdefault("agents", {})
@@ -201,7 +194,6 @@ def _normalize(data: dict) -> dict:
  data.pop("stage_crew", None)
  return data
 
-
 def _load() -> dict:
  if DASHBOARD.is_file():
   try:
@@ -210,7 +202,6 @@ def _load() -> dict:
    pass
  return _empty_dashboard()
 
-
 def _save(data: dict) -> None:
  data = _normalize(data)
  data["updated_at"] = _now()
@@ -218,7 +209,6 @@ def _save(data: dict) -> None:
  tmp = Path(str(DASHBOARD) + f".{os.getpid()}.tmp")
  tmp.write_text(json.dumps(data, indent=2))
  tmp.rename(DASHBOARD)
-
 
 def cmd_register(args):
     data = _load()
@@ -273,7 +263,7 @@ def cmd_unregister(args):
     _save(data)
     print(f"team_dashboard: {args.role} unregistered")
 def _bar(pct: float, width: int = 10) -> str:
-    filled = round(pct / 100 * width)
+    filled = round(float(pct) / 100 * width)
     return "#" * filled + "-" * (width - filled)
 def cmd_show(args):
     data = _load()
