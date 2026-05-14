@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3015,
-      "updated_ts": 1778781933.1826093
+      "max_id": 3019,
+      "updated_ts": 1778782069.287561
     }
   },
   {
     "id": 3012,
     "text": "Inventory buddy consult senior files and references",
     "activeForm": "Inventorying buddy consult senior files and references",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -24,7 +24,7 @@
     "id": 3013,
     "text": "Delete deprecated buddy consult senior entrypoints and docs",
     "activeForm": "Deleting deprecated buddy consult senior entrypoints and docs",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
