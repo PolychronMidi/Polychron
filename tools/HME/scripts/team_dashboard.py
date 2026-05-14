@@ -52,7 +52,6 @@ def _model_cfg() -> dict:
   except OSError as exc: raise RuntimeError(f"model config unavailable: {path}") from exc
   except (json.JSONDecodeError, RuntimeError) as exc: raise RuntimeError(f"model config invalid: {path}") from exc
  return _MODEL_CFG
-
 def _model_windows() -> dict[str, int]:
  global _MODEL_WINDOWS
  if _MODEL_WINDOWS is None:
@@ -87,7 +86,6 @@ def _role_model(role: str, tier: str, observed: str) -> str:
  ranked = sorted(models, key=lambda m: (order.index(m.get("cost")) if m.get("cost") in order else len(order), -float(m.get("tier_score", 0))))
  if not ranked: raise RuntimeError(f"no configured role model for {role} tier={tier}")
  return ranked[0].get("id") or observed
-
 def _row_ctx(role: str, row: sqlite3.Row, tier: str, session_id: str) -> dict:
  model = _role_model(role, tier, row["requested_model"] or row["model"] or "")
  window = _model_ctx_window(model, tier)
@@ -125,7 +123,6 @@ def _role_key(role: str) -> str:
  if role in ("blue_purple", "red_purple"): return "team_purple"
  if role.startswith("crew_"): return "stage_crew"
  return role
-
 def _role_names(body: dict) -> list[str]:
  if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
   return []
