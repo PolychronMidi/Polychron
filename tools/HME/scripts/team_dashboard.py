@@ -312,8 +312,7 @@ def cmd_summary(args):
             dt = datetime.fromisoformat(la.replace("Z", "+00:00"))
             idle = (now - dt).total_seconds()
             idle_s = max(idle_s, idle)
-            if idle > 900 and a.get("status") not in ("idle", "retired", "done"):
-                stale += 1
+            if idle > 900 and a.get("status") not in ("idle", "retired", "done"): stale += 1
         except (ValueError, TypeError):
             stale += 1
     print(f"team={len(agents)} active={active} high_ctx={high_ctx} stale={stale} unknown_ctx={unknown_ctx} max_idle_s={int(idle_s)}")
