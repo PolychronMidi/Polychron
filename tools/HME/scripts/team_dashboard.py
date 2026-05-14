@@ -17,7 +17,6 @@ ROLE_NEEDLES = {
     **{f"crew_e{tier}_{idx}": (f"crew_e{tier}_{idx}",) for tier in range(4, 0, -1) for idx in range(2)},
 }
 OMNI_DB = Path(os.environ.get("OMNIROUTE_DB", Path.home() / ".omniroute" / "storage.sqlite"))
-TRANSCRIPTS = Path.home() / ".claude" / "projects" / "-home-jah-Polychron"
 _MODEL_CFG: dict | None = None
 _MODEL_WINDOWS: dict[str, int] | None = None
 def _jsonc_load(text: str) -> dict:
