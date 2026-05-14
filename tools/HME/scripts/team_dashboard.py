@@ -72,7 +72,7 @@ def _model_windows() -> dict[str, int]:
    elif isinstance(node, list):
     for value in node: scan(value)
   windows = {}; scan(cfg)
-  if not windows: raise RuntimeError(f"model config has no context windows: {path}")
+  if not windows: raise RuntimeError(f"model config has no context_length/max_context: {path}")
   _MODEL_WINDOWS = windows
  return _MODEL_WINDOWS
 def _model_ctx_window(model: str, tier: str) -> int:
