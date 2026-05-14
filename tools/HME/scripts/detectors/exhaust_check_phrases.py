@@ -128,6 +128,8 @@ _EXHAUST_LOCAL_PHRASES = (
     "content-publishing-shaped",
     "content publishing shaped",
     "content-creation-shaped",
+    "next work only",
+    "completion only",
 )
 
 DEFERRAL_PHRASES = _SHARED_DEFERRAL + _EXHAUST_LOCAL_PHRASES
