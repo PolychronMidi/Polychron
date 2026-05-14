@@ -44,12 +44,22 @@
     "E1": []
   },
   "team_role_models": {
-  "driver":  [ // default to manually_toprank e5 if not set
+  "driver": [ // default to manually_toprank e5 if not set
     "gpt-5.5-xhigh"
   ],
-  "team_lead": [], // default to manually_toprank e5 if not set
-  "team_purple": [], // default to manually_toprank e4 if not set
-  "stage_crew": [] // default to 2 each of best ranking_rules ranked e1,e2,e3,e4
+  "team_lead": [ // default to manually_toprank e5 if not set
+    "gpt-5.5-xhigh"
+  ],
+  "team_purple": [ // default to manually_toprank e4 if not set
+    "mistral-large-latest",
+    "gemini-2.5-pro"
+  ],
+  "stage_crew": { // 2 best ranking_rules per tier
+    "E4": ["mistral-large-latest", "gemini-2.5-pro"],
+    "E3": ["gpt-4o-mini", "deepseek-v4-flash"],
+    "E2": ["gemini-2.0-flash", "gpt-4o-mini"],
+    "E1": ["gemini-2.5-flash-lite", "big-pickle"]
+  }
   },
   "tiers": {
     "E5": {
