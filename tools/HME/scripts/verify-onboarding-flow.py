@@ -98,7 +98,7 @@ def main() -> int:
     # Copy Python source into tmp_project so relative paths resolve.
     import re
     import shutil
-    static_files = ["tools/HME/service/hme_env.py", "tools/HME/service/paths.py", "CLAUDE.md"]
+    static_files = ["tools/HME/service/hme_env.py", "tools/HME/service/paths.py", "AGENTS.md"]
     entry_points = [
         "tools/HME/service/server/onboarding_chain.py",
         "tools/HME/service/server/tools_analysis/todo.py",

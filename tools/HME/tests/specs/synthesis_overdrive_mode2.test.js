@@ -17,7 +17,7 @@ function _runPython(envOverrides, body) {
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'config'), { recursive: true });
-  fs.writeFileSync(path.join(sandbox, 'CLAUDE.md'), '# sandbox\n');
+  fs.writeFileSync(path.join(sandbox, 'AGENTS.md'), '# sandbox\n');
   fs.copyFileSync(path.join(REPO, 'config', 'models.json'), path.join(sandbox, 'config', 'models.json'));
   // Build .env from real one with selective overrides
   let env = fs.readFileSync(path.join(REPO, '.env'), 'utf8');

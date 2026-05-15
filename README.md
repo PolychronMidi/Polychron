@@ -12,7 +12,7 @@ Development has two interleaving domains:
 - **HME substrate:** `tools/HME/`, documented from [doc/HME.md](doc/HME.md) into
   [doc/hme_full.md](doc/hme_full.md).
 
-[CLAUDE.md](CLAUDE.md) is the concise operational rule file loaded by agents.
+[AGENTS.md](AGENTS.md) is the concise operational rule file loaded by agents.
 Mechanical rules belong in lint, hooks, validators, and HME policies.
 
 ## Quick Start
@@ -49,7 +49,7 @@ node lab/run.js sketch-name
 Read progressively:
 
 1. [README.md](README.md) - project orientation.
-2. [CLAUDE.md](CLAUDE.md) - agent rules and hard workflow discipline.
+2. [AGENTS.md](AGENTS.md) - agent rules and hard workflow discipline.
 3. [doc/SRC.md](doc/SRC.md) - concise composition-engine rules.
 4. [doc/HME.md](doc/HME.md) - concise HME rules and workflow.
 5. [doc/src_full.md](doc/src_full.md) - detailed composition architecture.

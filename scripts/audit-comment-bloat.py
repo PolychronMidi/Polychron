@@ -6,7 +6,7 @@ consecutive lines whose stripped content starts with `#` (py/sh) or `//`
 (js/ts), or a `/* ... */` block (js/ts).
 
 Why: long inline-comment blocks are DDoC spam shape -- they pad context
-without earning the cost. The rule matches CLAUDE.md "Inline comments
+without earning the cost. The rule matches AGENTS.md "Inline comments
 single-line and terse" -- 1-2 lines is the natural ceiling for a
 correctly-written explanation; anything longer belongs in doc/.
 

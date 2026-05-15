@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """H16: Memetic drift detection.
 
-Parses CLAUDE.md and extracts imperative rules (sentences starting with
+Parses AGENTS.md and extracts imperative rules (sentences starting with
 "Never", "Always", "Must", etc.) and short imperatives. Then checks
 log/hme-errors.log and git log for evidence that any rule has been violated
 recently. Rules that are frequently violated are either too buried (need
@@ -10,7 +10,7 @@ to move up) or poorly worded (need to be rewritten).
 Output: metrics/hme-memetic-drift.json -- per-rule violation counts and a
 recommendation to adjust document structure.
 
-The goal is to make CLAUDE.md adapt to what agents actually read, not what
+The goal is to make AGENTS.md adapt to what agents actually read, not what
 humans think agents read.
 
 Usage:
@@ -28,7 +28,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", "metrics")
-_CLAUDE_MD = os.path.join(_PROJECT, "CLAUDE.md")
+_CLAUDE_MD = os.path.join(_PROJECT, "AGENTS.md")
 _OUTPUT = os.path.join(METRICS_DIR, "hme-memetic-drift.json")
 
 # Violation signals -- phrases in error log or commit messages that indicate
@@ -48,7 +48,7 @@ _VIOLATION_SIGNALS = {
 
 
 def _extract_rules() -> list:
-    """Extract imperative lines from CLAUDE.md. Each rule gets its line
+    """Extract imperative lines from AGENTS.md. Each rule gets its line
     number (for reorder suggestions) and the sentence text."""
     if not os.path.isfile(_CLAUDE_MD):
         return []
@@ -132,7 +132,7 @@ def main(argv: list) -> int:
     with open(_OUTPUT, "w") as f:
         json.dump(data, f, indent=2)
     print(f"Memetic drift report: {_OUTPUT}")
-    print(f"  CLAUDE.md rules parsed: {data['claude_md_rule_count']}")
+    print(f"  AGENTS.md rules parsed: {data['claude_md_rule_count']}")
     violated = sum(1 for v in data["violation_counts"].values() if v > 0)
     print(f"  rules with violation evidence: {violated}")
     if data["reorder_suggestions"]:

@@ -463,7 +463,7 @@ function main() {
     'build-dashboard.py',              // interactive plotly dashboard
     'chain-snapshot.py',               // pre-compact session snapshot
     'emit-hci-signal.py',              // HCI -> composition-layer signal
-    'memetic-drift.py',                // CLAUDE.md rule violation scan
+    'memetic-drift.py',                // AGENTS.md rule violation scan
   ];
   var bgEnv = Object.assign({}, process.env, {
     PROJECT_ROOT: path.join(__dirname, '..', '..'),

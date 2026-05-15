@@ -25,7 +25,7 @@ def _resolve_project_root() -> str | None:
         return root
     here = Path(__file__).resolve()
     for parent in [here.parent, *here.parents]:
-        if (parent / "CLAUDE.md").exists() and (parent / ".env").exists():
+        if (parent / "AGENTS.md").exists() and (parent / ".env").exists():
             return str(parent)
     return None
 

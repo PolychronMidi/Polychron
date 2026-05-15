@@ -170,7 +170,7 @@ function pollingDecision(cmd, root) {
 
 function feedbackKbSpam(cmd) {
   return /i\/learn\b/.test(cmd) && /title=(['\"])?Feedback:/i.test(cmd)
-    ? deny('BLOCKED: KB titles starting with Feedback: are agent self-notes and spam the KB. Put durable behavioral rules in CLAUDE.md or rephrase as project knowledge.')
+    ? deny('BLOCKED: KB titles starting with Feedback: are agent self-notes and spam the KB. Put durable behavioral rules in AGENTS.md or rephrase as project knowledge.')
     : null;
 }
 
