@@ -14,6 +14,7 @@ if _service_root not in sys.path:
     sys.path.insert(0, _service_root)
 from paths import todo_store_file as _todo_store_file  # noqa: E402
 from .todo_sources import VALID_TODO_SOURCES, validate_source  # noqa: E402
+from .todo_state_guard import record_store_state  # noqa: E402
 
 STORE_LOCK = threading.RLock()
 VALID_STATUSES = ("pending", "in_progress", "completed")
@@ -66,10 +67,12 @@ def load_store(path: str | None = None) -> tuple[list[dict], dict, list[dict]]:
         meta = raw[0]["_meta"]
         todos = raw[1:]
         meta["max_id"] = max(int(meta.get("max_id", 0)), max_seen_id(todos))
+        record_store_state(meta, todos)
         return raw, meta, todos
     todos = raw if isinstance(raw, list) else []
     meta = {"max_id": max_seen_id(todos), "updated_ts": time.time()}
     header = {"id": 0, "_meta": meta}
+    record_store_state(meta, todos)
     return [header] + todos, meta, todos
 
 
@@ -89,6 +92,7 @@ def save_store(raw: list[dict], meta: dict, path: str | None = None) -> None:
         json.dump(raw, f, indent=2)
         f.write("\n")
     os.replace(tmp, store_path)
+    record_store_state(meta, body)
 
 
 def save_todos(meta: dict, todos: list[dict], path: str | None = None) -> None:

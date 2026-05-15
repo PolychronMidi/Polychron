@@ -35,6 +35,7 @@ from .status_modes_hci import (  # noqa: F401
     _mode_hci_by_subtag, _mode_hci_diff, _mode_race_stats,
 )
 from .status_modes_kb import _mode_learn_suggestions  # noqa: F401
+from .status_modes_codex import _mode_codex_proxy  # noqa: F401
 
 logger = logging.getLogger("HME")
 
@@ -60,6 +61,8 @@ _STATUS_MODES: dict[str, callable] = {
     "multi_axis_band": _mode_multi_axis_band,
     "tool-latency": _mode_tool_latency,
     "tool_latency": _mode_tool_latency,
+    "codex-proxy": _mode_codex_proxy,
+    "codex_proxy": _mode_codex_proxy,
     "staleness": lambda: _staleness_report(),
     "coherence": lambda: _coherence_report(),
     "blindspots": _mode_blindspots,

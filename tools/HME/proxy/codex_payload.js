@@ -5,6 +5,7 @@ const path = require('path');
 
 const HOOK_SUCCESS_RE = /^\s*(SessionStart|UserPromptSubmit|PreToolUse|PostToolUse|Notification|Stop|SubagentStop|PreCompact|PostCompact|PermissionRequest) hook \((completed|skipped)\)\s*$/;
 const WRAPPER_AUTOCORRECT_RE = /^\s*warning:\s*i\/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT\s*$/;
+const STOP_REREAD_RE = /^\s*STOP\. Re-read CLAUDE\.md and the user prompt\./;
 const EMPTY_TEXT_TYPES = new Set(['input_text', 'output_text', 'text']);
 
 function jsonBytes(value) {
@@ -130,10 +131,19 @@ function cleanText(text, opts, stats) {
   if (!opts.stripSuccessHookNoise) return text;
   const lines = String(text).split(/\r?\n/);
   const kept = [];
+  let sawStopReread = false;
   for (const line of lines) {
-    if (HOOK_SUCCESS_RE.test(line) || WRAPPER_AUTOCORRECT_RE.test(line)) {
+    let category = '';
+    if (HOOK_SUCCESS_RE.test(line)) category = 'hook_success_lines';
+    else if (WRAPPER_AUTOCORRECT_RE.test(line)) category = 'autocorrect_lines';
+    else if (STOP_REREAD_RE.test(line)) {
+      if (sawStopReread) category = 'duplicate_stop_blocks';
+      sawStopReread = true;
+    }
+    if (category) {
       stats.removed_lines++;
       stats.removed_bytes += byteLen(line) + 1;
+      stats.categories[category] = (stats.categories[category] || 0) + 1;
       continue;
     }
     kept.push(line);
@@ -159,6 +169,7 @@ function cleanValue(value, opts, stats, protectedUserText = false) {
       const cleaned = cleanValue(item, opts, stats, protectedUserText);
       if (opts.dropEmptyTextItems && !protectedUserText && isEmptyTextItem(cleaned)) {
         stats.dropped_empty_text_items++;
+        stats.categories.empty_text_items++;
         continue;
       }
       next.push(cleaned);
@@ -173,7 +184,18 @@ function cleanValue(value, opts, stats, protectedUserText = false) {
 
 function cleanPayload(body, cfg) {
   const opts = cleanupOptions(cfg);
-  const stats = { enabled: opts.enabled, removed_lines: 0, removed_bytes: 0, dropped_empty_text_items: 0 };
+  const stats = {
+    enabled: opts.enabled,
+    removed_lines: 0,
+    removed_bytes: 0,
+    dropped_empty_text_items: 0,
+    categories: {
+      hook_success_lines: 0,
+      autocorrect_lines: 0,
+      duplicate_stop_blocks: 0,
+      empty_text_items: 0,
+    },
+  };
   if (!opts.enabled) return { body, cleanup: stats };
   return { body: cleanValue(body, opts, stats, false), cleanup: stats };
 }

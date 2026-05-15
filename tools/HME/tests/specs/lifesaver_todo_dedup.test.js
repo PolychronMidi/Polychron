@@ -205,6 +205,75 @@ print(json.dumps({
   });
 });
 
+test('unified TODO bidirectional contract: native and TODO.md converge through store', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import merge_native_todowrite, _load_todos
+from server.tools_analysis.todo_md_sync import open_task_pairs, ingest_open_items
+import json, os
+merge_native_todowrite([{"content": "native contract item", "activeForm": "doing native contract item", "status": "pending"}])
+todo_path = os.path.join("${sandbox}", "doc", "templates", "TODO.md")
+todo_md = open(todo_path).read()
+todo_md = todo_md.replace("## Done", "- [ ] [E4] markdown contract item\\n\\n## Done")
+open(todo_path, "w").write(todo_md)
+ingested = ingest_open_items(open_task_pairs(open(todo_path).read()))
+merge_native_todowrite([{"content": "native contract item", "activeForm": "done native contract item", "status": "completed"}])
+meta, todos = _load_todos()
+todo_md = open(todo_path).read()
+native = next(t for t in todos if t.get("text") == "native contract item")
+markdown = next(t for t in todos if t.get("text") == "markdown contract item")
+print(json.dumps({
+  "ingested": ingested,
+  "native_done": native.get("done") is True,
+  "markdown_source": markdown.get("source"),
+  "todo_has_native_done": "- [x] [E3] native contract item" in todo_md,
+  "todo_has_markdown": "markdown contract item" in todo_md,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr || result.stdout}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.ingested, 1, 'TODO.md open item flows into todos.json');
+    assert.strictEqual(parsed.native_done, true, 'native completion flows back into store');
+    assert.strictEqual(parsed.markdown_source, 'todo_md');
+    assert.strictEqual(parsed.todo_has_native_done, true, 'completed native item renders in TODO.md');
+    assert.strictEqual(parsed.todo_has_markdown, true, 'TODO.md-origin item remains rendered');
+  });
+});
+
+test('TODO state guard auto-reconciles TODO.md and detects store rollback', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+from server.tools_analysis.todo_state_guard import check_todo_md_sync
+import json, os, time
+hme_todo(action="add", text="guard item one")
+hme_todo(action="add", text="guard item two")
+todo_path = os.path.join("${sandbox}", "doc", "templates", "TODO.md")
+open(todo_path, "w").write("# TODO\\n\\n## Now\\n\\n(empty)\\n")
+repair = check_todo_md_sync(write=True)
+store_path = os.path.join("${sandbox}", "tools", "HME", "KB", "todos.json")
+raw = json.load(open(store_path))
+raw[0]["_meta"]["max_id"] = 1
+raw[0]["_meta"]["updated_ts"] = 1
+raw[:] = raw[:2]
+open(store_path, "w").write(json.dumps(raw))
+_load_todos()
+log_path = os.path.join("${sandbox}", "log", "hme-errors.log")
+log = open(log_path).read() if os.path.exists(log_path) else ""
+print(json.dumps({
+  "repair_changed": repair.get("changed"),
+  "todo_restored": "guard item one" in open(todo_path).read(),
+  "rollback_logged": "TODO STATE WENT BACKWARD" in log,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr || result.stdout}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.repair_changed, true, 'guard repairs TODO.md from store render');
+    assert.strictEqual(parsed.todo_restored, true, 'TODO.md repair restored canonical task');
+    assert.strictEqual(parsed.rollback_logged, true, 'store rollback surfaces in hme-errors');
+  });
+});
+
 test('Codex update_plan syncs into todos.json and TODO.md', () => {
   _withSandboxedTodoStore((sandbox) => {
     const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');

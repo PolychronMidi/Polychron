@@ -2,8 +2,8 @@
 # Weighted tool-type streak tracking. Weight guide:
 #   Read=5 (0.5x), Edit/Write=10 (1x), Bash=15 (1.5x), Grep=20 (2x)
 # Thresholds: warn at 50, block at 70 (equivalent to 5/7 raw calls at 1x).
-_STREAK_FILE="/tmp/hme-non-hme-streak.score"
-_STREAK_LAST_UNLOCK="/tmp/hme-non-hme-streak.last_unlock"
+_STREAK_LEGACY_FILE="/tmp/hme-non-hme-streak.score"
+_STREAK_LEGACY_LAST_UNLOCK="/tmp/hme-non-hme-streak.last_unlock"
 # Raw-tool streak thresholds. Base defaults (50/70) correspond to "raw-tool
 _STREAK_WARN=$((50 + ${HME_STREAK_BLOCK_BUMP:-0}))
 _STREAK_BLOCK=$((70 + ${HME_STREAK_BLOCK_BUMP:-0}))
@@ -11,22 +11,24 @@ _STREAK_BLOCK=$((70 + ${HME_STREAK_BLOCK_BUMP:-0}))
 _streak_tick() {
   local weight="${1:-10}"
   local score
-  score=$(_safe_int "$(cat "$_STREAK_FILE" 2>/dev/null)")
+  score=$(_streak_score)
   score=$((score + weight))
-  echo "$score" > "$_STREAK_FILE"
+  _streak_write score "$score"
 }
 
 _streak_check() {
-  local score
-  score=$(_safe_int "$(cat "$_STREAK_FILE" 2>/dev/null)")
+  local score last_info last_key
+  score=$(_streak_score)
   if [ "$score" -ge "$_STREAK_BLOCK" ]; then
     local unlock_key last_unlock
     unlock_key="$(_streak_unlock_key "${CMD:-}")"
-    last_unlock="$(cat "$_STREAK_LAST_UNLOCK" 2>/dev/null || true)"
+    last_info="$(_streak_read last_unlock)"
+    last_key="${last_info#*$'\t'}"
     if [ -n "$unlock_key" ]; then
-      if [ -n "$last_unlock" ] && [ "$unlock_key" = "$last_unlock" ]; then
-        local repeat_msg
-        repeat_msg="BLOCKED: Raw tool streak unlock loop detected. The same HME command (\`${unlock_key}\`) was the previous unlock command; use native Read/Edit/Todo sync or a different HME diagnostic instead of repeating the same reset."
+      if _streak_same_unlock_class "$unlock_key" "$last_info"; then
+        local repeat_msg prev
+        prev="${last_key:-$last_info}"
+        repeat_msg="BLOCKED: Raw tool streak unlock loop detected. Previous unlock: \`${prev}\`; requested: \`${unlock_key}\`. Use native Read/Edit/Todo sync, a different HME diagnostic class, or stop if done."
         jq -n --arg reason "$repeat_msg" \
           '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
         return 1
@@ -34,7 +36,7 @@ _streak_check() {
       return 0
     fi
     local msg
-    msg="BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: Bash=15, Edit=10, Read=5, Grep=20). Reset now: run \`i/review mode=forget\` or use native Read on the target; HME tools clear the counter and add KB context."
+    msg="BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: Bash=15, Edit=10, Read=5, Grep=20). Do not loop on reset commands. Preferred exits: use native Read/Edit/TodoWrite, run a different HME diagnostic than the previous unlock${last_key:+ (${last_key})}, or stop if done."
     jq -n --arg reason "$msg" \
       '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
     return 1
@@ -43,6 +45,105 @@ _streak_check() {
     echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK} (~${_sc_rem} Edit calls until block). Prefer HME tools and native Read; Read/Edit are KB-enriched." >&2
   fi
   return 0
+}
+
+_streak_hme_precheck() {
+  local cmd="${1:-}" unlock_key last_info last_key score
+  unlock_key="$(_streak_unlock_key "$cmd")"
+  [ -n "$unlock_key" ] || return 2
+  score=$(_streak_score)
+  last_info="$(_streak_read last_unlock)"
+  last_key="${last_info#*$'\t'}"
+  if [ "$score" -ge "$_STREAK_BLOCK" ] && _streak_same_unlock_class "$unlock_key" "$last_info"; then
+    local repeat_msg prev
+    prev="${last_key:-$last_info}"
+    repeat_msg="BLOCKED: Raw tool streak unlock loop detected. Previous unlock: \`${prev}\`; requested: \`${unlock_key}\`. Use native Read/Edit/Todo sync, a different HME diagnostic class, or stop if done."
+    jq -n --arg reason "$repeat_msg" \
+      '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
+    return 1
+  fi
+  if [ "$score" -ge "$_STREAK_BLOCK" ]; then
+    _streak_record_unlock "$unlock_key"
+  fi
+  _streak_write score 0
+  return 0
+}
+
+_streak_scope_file() {
+  local kind="${1:-score}" sid safe dir
+  sid="${SESSION_ID:-}"
+  if [ -z "$sid" ] && [ -n "${INPUT:-}" ]; then
+    sid="$(_safe_jq "$INPUT" '.session_id' '')"
+  fi
+  [ -n "$sid" ] || sid="no-session"
+  safe=$(printf '%s' "$sid" | tr -c 'A-Za-z0-9_.-' '_' | cut -c1-120)
+  if [ -n "${PROJECT_ROOT:-}" ]; then
+    dir="$PROJECT_ROOT/tmp/hme-streak"
+  else
+    dir="/tmp/hme-streak"
+  fi
+  mkdir -p "$dir" 2>/dev/null || true
+  printf '%s/%s.%s\n' "$dir" "$safe" "$kind"
+}
+
+_streak_read() {
+  local kind="${1:-score}" scoped legacy
+  scoped="$(_streak_scope_file "$kind")"
+  legacy="$_STREAK_LEGACY_FILE"
+  [ "$kind" = "last_unlock" ] && legacy="$_STREAK_LEGACY_LAST_UNLOCK"
+  if [ -f "$scoped" ]; then cat "$scoped" 2>/dev/null || true; return; fi
+  cat "$legacy" 2>/dev/null || true
+}
+
+_streak_write() {
+  local kind="${1:-score}" value="${2:-}" scoped
+  scoped="$(_streak_scope_file "$kind")"
+  printf '%s\n' "$value" > "$scoped"
+}
+
+_streak_score() {
+  _safe_int "$(_streak_read score)"
+}
+
+_streak_record_unlock() {
+  local key="$1" cls
+  cls="$(_streak_unlock_class "$key")"
+  _streak_write last_unlock "${cls}"$'\t'"${key}"
+}
+
+_streak_same_unlock_class() {
+  local key="$1" last="$2" cls last_cls
+  [ -n "$key" ] && [ -n "$last" ] || return 1
+  cls="$(_streak_unlock_class "$key")"
+  last_cls="${last%%$'\t'*}"
+  if [ "$last_cls" = "$last" ]; then last_cls="$(_streak_unlock_class "$last")"; fi
+  [ -n "$cls" ] && [ "$cls" = "$last_cls" ]
+}
+
+_streak_unlock_class() {
+  local key="$1" tool rest
+  tool="${key%% *}"
+  rest=" ${key#"$tool"} "
+  case "$tool" in
+    i/review)
+      if printf '%s' "$rest" | grep -qE '(^|[[:space:]])(--[[:space:]]+)?(mode=)?forget([[:space:]]|$)'; then
+        echo "review-reset"
+      elif printf '%s' "$rest" | grep -qE '(^|[[:space:]])(mode=)?digest([[:space:]]|$)'; then
+        echo "review-digest"
+      else
+        echo "review"
+      fi
+      ;;
+    i/status) echo "status" ;;
+    i/learn) echo "learn" ;;
+    i/trace) echo "trace" ;;
+    i/evolve) echo "evolve" ;;
+    i/hme) echo "hme-admin" ;;
+    i/audit) echo "audit" ;;
+    i/why) echo "why" ;;
+    i/policies) echo "policies" ;;
+    *) echo "$tool" ;;
+  esac
 }
 
 _streak_unlock_key() {
@@ -77,6 +178,8 @@ for i, tok in enumerate(tokens):
     for arg in tokens[start:]:
         if arg in {";", "&", "|", "||", "&&", "(", ")"}:
             break
+        if arg == "--":
+            continue
         args.append(arg)
     print(" ".join([norm] + args))
     break
@@ -85,10 +188,10 @@ PY
 
 _streak_reset() {
   local score unlock_key
-  score=$(_safe_int "$(cat "$_STREAK_FILE" 2>/dev/null)")
+  score=$(_streak_score)
   unlock_key="$(_streak_unlock_key "${1:-${CMD:-}}")"
   if [ "$score" -ge "$_STREAK_BLOCK" ] && [ -n "$unlock_key" ]; then
-    echo "$unlock_key" > "$_STREAK_LAST_UNLOCK"
+    _streak_record_unlock "$unlock_key"
   fi
-  echo 0 > "$_STREAK_FILE"
+  _streak_write score 0
 }

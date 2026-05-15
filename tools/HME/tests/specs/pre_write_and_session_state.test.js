@@ -119,38 +119,34 @@ test('synthetic PreToolUse Bash raw-streak block is deny, not hook failure', asy
 
 test('raw-streak unlock blocks repeated same i command', async () => {
   const root = _withSandbox('hme-hook-bash-streak-repeat-');
-  const streak = '/tmp/hme-non-hme-streak.score';
-  const last = '/tmp/hme-non-hme-streak.last_unlock';
-  const previous = fs.existsSync(streak) ? fs.readFileSync(streak, 'utf8') : null;
-  const previousLast = fs.existsSync(last) ? fs.readFileSync(last, 'utf8') : null;
+  const dir = path.join(root, 'tmp', 'hme-streak');
+  const streak = path.join(dir, 's3c.score');
+  const last = path.join(dir, 's3c.last_unlock');
+  fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(streak, '70');
-  fs.writeFileSync(last, 'i/review mode=forget');
+  fs.writeFileSync(last, 'review-reset\ti/review mode=forget');
   try {
     const res = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
       session_id: 's3c',
-      tool_input: { command: `${root}/i/review mode=forget` },
+      tool_input: { command: `${root}/i/review -- mode=forget` },
     });
     assert.strictEqual(res.exit_code, 0);
     assert.match(res.stdout, /"permissionDecision":\s*"deny"/);
     assert.match(res.stdout, /unlock loop detected/);
   } finally {
-    if (previous === null) fs.rmSync(streak, { force: true });
-    else fs.writeFileSync(streak, previous);
-    if (previousLast === null) fs.rmSync(last, { force: true });
-    else fs.writeFileSync(last, previousLast);
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
 test('raw-streak unlock allows a different i command', async () => {
   const root = _withSandbox('hme-hook-bash-streak-different-');
-  const streak = '/tmp/hme-non-hme-streak.score';
-  const last = '/tmp/hme-non-hme-streak.last_unlock';
-  const previous = fs.existsSync(streak) ? fs.readFileSync(streak, 'utf8') : null;
-  const previousLast = fs.existsSync(last) ? fs.readFileSync(last, 'utf8') : null;
+  const dir = path.join(root, 'tmp', 'hme-streak');
+  const streak = path.join(dir, 's3d.score');
+  const last = path.join(dir, 's3d.last_unlock');
+  fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(streak, '70');
-  fs.writeFileSync(last, 'i/review mode=forget');
+  fs.writeFileSync(last, 'review-reset\ti/review mode=forget');
   try {
     const res = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
@@ -159,11 +155,32 @@ test('raw-streak unlock allows a different i command', async () => {
     });
     assert.strictEqual(res.exit_code, 0);
     assert.doesNotMatch(res.stdout, /unlock loop detected/);
+    assert.strictEqual(fs.readFileSync(streak, 'utf8').trim(), '0');
   } finally {
-    if (previous === null) fs.rmSync(streak, { force: true });
-    else fs.writeFileSync(streak, previous);
-    if (previousLast === null) fs.rmSync(last, { force: true });
-    else fs.writeFileSync(last, previousLast);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('raw-streak scores are scoped by session id', async () => {
+  const root = _withSandbox('hme-hook-bash-streak-session-');
+  const dir = path.join(root, 'tmp', 'hme-streak');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'session-A.score'), '70');
+  try {
+    const allowed = await dispatch(root, 'PreToolUse', {
+      tool_name: 'Bash',
+      session_id: 'session-B',
+      tool_input: { command: 'git status --short' },
+    });
+    assert.strictEqual(allowed.exit_code, 0);
+    assert.doesNotMatch(allowed.stdout, /Raw tool streak/);
+    const denied = await dispatch(root, 'PreToolUse', {
+      tool_name: 'Bash',
+      session_id: 'session-A',
+      tool_input: { command: 'git status --short' },
+    });
+    assert.match(denied.stdout, /Raw tool streak/);
+  } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });

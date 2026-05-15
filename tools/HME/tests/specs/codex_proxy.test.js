@@ -6,7 +6,7 @@ const fs = require('fs');
 const http = require('http');
 const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
 const { applyRequestTransform } = require('../../proxy/codex_payload');
@@ -110,6 +110,13 @@ test('Codex payload transform logs shape and strips successful hook autocorrect 
               'keep signal',
             ].join('\n'),
           },
+          {
+            type: 'input_text',
+            text: [
+              'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked?',
+              'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked?',
+            ].join('\n'),
+          },
           { type: 'input_text', text: '   ' },
         ],
       },
@@ -136,13 +143,54 @@ test('Codex payload transform logs shape and strips successful hook autocorrect 
   assert.doesNotMatch(systemText, /PreToolUse hook \(completed\)/);
   assert.doesNotMatch(systemText, /wrapper path auto-corrected/);
   assert.match(systemText, /keep signal/);
+  assert.match(result.body.input[0].content[1].text, /STOP\. Re-read/);
+  assert.strictEqual((result.body.input[0].content[1].text.match(/STOP\. Re-read/g) || []).length, 1);
   assert.match(userText, /PreToolUse hook \(completed\)/);
-  assert.strictEqual(result.body.input[0].content.length, 1);
-  assert.strictEqual(result.cleanup.removed_lines, 2);
+  assert.strictEqual(result.body.input[0].content.length, 2);
+  assert.strictEqual(result.cleanup.removed_lines, 3);
   assert.strictEqual(result.cleanup.dropped_empty_text_items, 1);
+  assert.strictEqual(result.cleanup.categories.hook_success_lines, 1);
+  assert.strictEqual(result.cleanup.categories.autocorrect_lines, 1);
+  assert.strictEqual(result.cleanup.categories.duplicate_stop_blocks, 1);
+  assert.strictEqual(result.cleanup.categories.empty_text_items, 1);
   assert.strictEqual(result.payload_log.target, 'codex-responses-log-only');
   assert.strictEqual(result.payload_log.after.model, 'gpt-5.5');
   assert.deepStrictEqual(events, []);
+});
+
+test('Codex proxy status mode renders payload deltas without prompt text', () => {
+  const sandbox = withSandbox();
+  const eventsPath = path.join(sandbox, 'runtime', 'hme', 'codex-proxy-events.jsonl');
+  fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
+  fs.writeFileSync(eventsPath, `${JSON.stringify({
+    ts: '2026-05-15T19:00:00.000Z',
+    kind: 'request',
+    transformed: true,
+    before: { model: 'gpt-5.5', body_bytes: 200, instruction_bytes: 4, text_bytes: 99, tool_count: 2 },
+    after: { model: 'gpt-5.5', body_bytes: 150, instruction_bytes: 4, text_bytes: 49, tool_count: 2 },
+    cleanup: { removed_bytes: 50, categories: { hook_success_lines: 1, autocorrect_lines: 1 } },
+  })}\n`);
+  const script = `
+import importlib.util, sys, types
+server = types.ModuleType("server")
+server.context = types.SimpleNamespace(PROJECT_ROOT="${sandbox}")
+sys.modules["server"] = server
+sys.modules["server.context"] = server.context
+spec = importlib.util.spec_from_file_location("status_modes_codex", "${path.join(repoRoot, 'tools', 'HME', 'service', 'server', 'tools_analysis', 'status_unified', 'status_modes_codex.py')}")
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+print(mod._mode_codex_proxy())
+`;
+  const res = spawnSync('python3', ['-c', script], { encoding: 'utf8' });
+  try {
+    assert.strictEqual(res.status, 0, res.stderr);
+    assert.match(res.stdout, /Codex proxy payload visibility/);
+    assert.match(res.stdout, /200->150 \(-50\)/);
+    assert.match(res.stdout, /hook_success_lines=1/);
+    assert.doesNotMatch(res.stdout, /secret/i);
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
 });
 
 test('Codex Responses proxy syncs streamed update_plan calls into TODO.md', async () => {

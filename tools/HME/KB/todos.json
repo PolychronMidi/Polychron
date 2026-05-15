@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3117,
-      "updated_ts": 1778872468.5794759,
-      "codex_plan_synced_ts": 1778872468.5794592,
+      "max_id": 3123,
+      "updated_ts": 1778873368.586376,
+      "codex_plan_synced_ts": 1778873368.5863574,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T19:14:13.204Z"
+      "codex_plan_ts": "2026-05-15T19:29:26.154Z"
     }
   },
   {
@@ -1164,5 +1164,101 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T19:14:13.204Z"
+  },
+  {
+    "id": 3118,
+    "text": "Inspect current streak, TODO sync, status, and Codex proxy surfaces",
+    "activeForm": "Inspect current streak, TODO sync, status, and Codex proxy surfaces",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872738.582196,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:29:26.154Z"
+  },
+  {
+    "id": 3119,
+    "text": "Implement raw-streak v2: session-scoped files, unlock classes, smarter denial",
+    "activeForm": "Implement raw-streak v2: session-scoped files, unlock classes, smarter denial",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872738.5822003,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:29:26.154Z"
+  },
+  {
+    "id": 3120,
+    "text": "Implement deeper TODO sync state protection and bidirectional contract tests",
+    "activeForm": "Implement deeper TODO sync state protection and bidirectional contract tests",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872738.5822039,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:29:26.154Z"
+  },
+  {
+    "id": 3121,
+    "text": "Add Codex proxy dashboard plus cleanup category counters",
+    "activeForm": "Add Codex proxy dashboard plus cleanup category counters",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872738.5822065,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:29:26.154Z"
+  },
+  {
+    "id": 3122,
+    "text": "Add hook output budget invariant/tests",
+    "activeForm": "Add hook output budget invariant/tests",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872738.5822093,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:29:26.154Z"
+  },
+  {
+    "id": 3123,
+    "text": "Run focused verification and commit coherent batch",
+    "activeForm": "Run focused verification and commit coherent batch",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872738.5822115,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:29:26.154Z"
   }
 ]

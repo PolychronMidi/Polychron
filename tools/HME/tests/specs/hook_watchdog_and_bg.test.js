@@ -142,3 +142,25 @@ test('i-wrapper cwd auto-correct is silent on success', () => {
   const parsed = JSON.parse(res.stdout);
   assert.match(parsed.hookSpecificOutput.updatedInput.command, /\/i\/status$/);
 });
+
+test('successful PreToolUse Bash no-op emits no hook budget output', () => {
+  const root = sandbox('hme-hook-budget-');
+  const res = spawnSync('bash', ['tools/HME/hooks/pretooluse/pretooluse_bash.sh'], {
+    cwd: REPO,
+    input: JSON.stringify({
+      session_id: 'hook-budget-success',
+      tool_input: { command: 'true' },
+    }),
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      PROJECT_ROOT: root,
+      HME_STREAK_BLOCK_BUMP: '1000',
+      PATH: path.join(root, 'bin') + path.delimiter + ORIGINAL_PATH,
+    },
+  });
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.strictEqual(res.stdout, '');
+  assert.doesNotMatch(res.stderr, /hook \(completed\)|systemMessage/);
+  fs.rmSync(root, { recursive: true, force: true });
+});

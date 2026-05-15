@@ -1,3 +1,8 @@
+_streak_hme_precheck "$CMD"
+_HME_PRECHECK_RC=$?
+if [ "$_HME_PRECHECK_RC" -eq 0 ]; then return 0 2>/dev/null || exit 0; fi
+if [ "$_HME_PRECHECK_RC" -eq 1 ]; then exit 0; fi
+
 _streak_tick 15
 if ! _streak_check; then exit 0; fi
 # Redirect: repeated polling of background task output files (3rd+ check).
