@@ -3,7 +3,6 @@
 const {
   PROJECT_ROOT,
   allow,
-  fs,
   httpGetOk,
   httpPostJson,
   path,
