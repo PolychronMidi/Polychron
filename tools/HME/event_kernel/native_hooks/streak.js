@@ -17,10 +17,7 @@ function streakTick(weight) {
   fs.writeFileSync(file, String(score));
   const { warn, block } = thresholds();
   if (score >= block) {
-    return {
-      ok: false,
-      message: `BLOCKED: Raw tool streak ${score}/${block} (cost: Bash=15, Edit=10, Grep=20; native Read resets).\n  Reset now: run \`i/review mode=forget\` or use native Read on the target.`,
-    };
+    return { ok: false, message: blockMessage(score, block) };
   }
   if (score >= warn) {
     return { ok: true, message: reminderMessage(score, block) };
