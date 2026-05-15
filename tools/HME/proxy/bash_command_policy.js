@@ -158,7 +158,7 @@ function evaluateBashInput(input = {}, opts = {}) {
   }
   if (/^npm run snapshot\b/.test(trimmed)) {
     let verdict = 'unknown';
-    try { verdict = JSON.parse(fs.readFileSync(path.join(root, 'output/metrics/fingerprint-comparison.json'), 'utf8')).verdict || 'unknown'; } catch (_e) {}
+    try { verdict = JSON.parse(fs.readFileSync(path.join(root, 'output/metrics/fingerprint-comparison.json'), 'utf8')).verdict || 'unknown'; } catch (_e) { /* silent-ok: missing fingerprint file denies snapshot. */ }
     if (verdict !== 'STABLE') return deny(`SNAPSHOT GATE: fingerprint verdict is ${verdict}, not STABLE. Diagnose or rerun until STABLE, then snapshot.`);
   }
   if (/^(npm run (main|snapshot)|node lab\/run)/.test(trimmed)) {
