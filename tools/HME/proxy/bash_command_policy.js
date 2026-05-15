@@ -142,6 +142,38 @@ function evaluateLogFirst(cmd, root) {
   return deny(`BLOCKED: log/${target} is current and no code changed since. Read the existing log instead of re-running. Override with ': force-rerun;' if truly needed.`);
 }
 
+function verifyLanded(cmd, root) {
+  if (process.env.HME_VERIFY_LANDED_OK === '1') return null;
+  const file = path.join(root, 'tmp/hme-turn-edits.txt');
+  let edited = [];
+  try { edited = fs.readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean); }
+  catch (_e) { return null; /* silent-ok: no turn edit state yet. */ }
+  if (!edited.length) return null;
+  const tokens = shellWords(cmd);
+  if (tokens.some((t) => ['python', 'python3', 'node', 'bash', 'sh', 'pytest', 'ruby', 'perl', 'go', 'deno'].includes(path.basename(t)))) return null;
+  if (tokens.some((t) => path.basename(t) === 'git' || t.startsWith('/tmp/'))) return null;
+  const verbs = new Set(['grep', 'egrep', 'fgrep', 'rg', 'ag', 'ack', 'cat', 'head', 'tail', 'less', 'more', 'bat', 'batcat', 'wc', 'awk', 'sed']);
+  if (!tokens.some((t) => verbs.has(path.basename(t)))) return null;
+  const hit = tokens.map((t) => path.basename(t).replace(/\.[^.]*$/, '')).find((b) => edited.includes(b));
+  return hit ? deny(`BLOCKED: verify-landed antipattern -- Bash reads ${hit} which was Edit/Written this turn. Trust the Edit success affordance; do not re-grep just to verify landing.`) : null;
+}
+
+function pollingDecision(cmd, root) {
+  if (!/(tail|cat|head|grep|wc|ls).*\/tmp\/(claude.*\.log|.*\.output)|\bnvidia-smi\b.*query|ps\s+-[aef]+.*\|\s*grep/.test(cmd)) return null;
+  const file = path.join(root, 'tmp/hme-task-poll-count');
+  let n = 0;
+  try { n = Number(fs.readFileSync(file, 'utf8').trim()) || 0; } catch (_e) { /* silent-ok: absent counter starts at zero. */ }
+  n += 1;
+  try { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, String(n)); } catch (_e) { /* silent-ok: counter is advisory. */ }
+  return n > 2 ? deny(`BLOCKED: repeated background-status polling #${n}. Wait for completion notification or do independent work.`) : null;
+}
+
+function feedbackKbSpam(cmd) {
+  return /i\/learn\b/.test(cmd) && /title=(['\"])?Feedback:/i.test(cmd)
+    ? deny('BLOCKED: KB titles starting with Feedback: are agent self-notes and spam the KB. Put durable behavioral rules in CLAUDE.md or rephrase as project knowledge.')
+    : null;
+}
+
 function evaluateBashInput(input = {}, opts = {}) {
   const root = opts.projectRoot || PROJECT_ROOT;
   const next = { ...input };
