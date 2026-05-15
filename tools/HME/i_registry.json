@@ -234,24 +234,6 @@
         "i/hme admin action=index"
       ],
       "safe_no_args": true
-    },
-    "read": {
-      "description": "Codex fallback structured Read shim; emits synthetic Read hook/middleware events when native Read is unavailable.",
-      "category": "diagnostic",
-      "usage": "i/read <file>|file=<file> [offset=N] [limit=N] | i/read --json < payload.json",
-      "examples": [
-        "i/read file=doc/HME.md limit=80",
-        "i/read src/main.js offset=120 limit=80"
-      ]
-    },
-    "edit": {
-      "description": "Codex fallback structured Edit shim; emits synthetic Edit hook/middleware events when native Edit is unavailable.",
-      "category": "review-discipline",
-      "usage": "i/edit file=<file> old=<text>|old_file=<path> new=<text>|new_file=<path> | i/edit --json < payload.json",
-      "examples": [
-        "i/edit file=doc/example.md old=before new=after",
-        "i/edit --json < /tmp/edit.json"
-      ]
     }
   },
   "scripts": []

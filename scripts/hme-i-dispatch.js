@@ -241,7 +241,5 @@ if (command === 'trace') dispatchTrace(args);
 if (command === 'review') dispatchReview(args);
 if (command === 'hme') dispatchHme(args);
 if (command === 'policies') run('node', [path.join(ROOT, 'tools/HME/policies/cli.js'), ...args]);
-if (command === 'read') run('node', [path.join(ROOT, 'tools/HME/scripts/codex_structured_tool.js'), 'read', ...args]);
-if (command === 'edit') run('node', [path.join(ROOT, 'tools/HME/scripts/codex_structured_tool.js'), 'edit', ...args]);
 if (command === 'help') dispatchHelp(args);
 hmeCli(command, args);

@@ -149,8 +149,8 @@ _streak_unlock_class() {
       fi
       ;;
     i/status) echo "status" ;;
-    i/read) echo "structured-read" ;;
-    i/edit) echo "structured-edit" ;;
+    codex/read) echo "structured-read" ;;
+    codex/edit) echo "structured-edit" ;;
     i/learn) echo "learn" ;;
     i/trace) echo "trace" ;;
     i/evolve) echo "evolve" ;;
@@ -168,7 +168,7 @@ _streak_unlock_key() {
   PROJECT_ROOT="${PROJECT_ROOT:-}" python3 - "$cmd" <<'PY' 2>/dev/null || true
 import os, shlex, sys
 cmd = (sys.argv[1] or "").strip().splitlines()[0]
-tools = {"review", "learn", "trace", "evolve", "status", "hme", "audit", "why", "policies", "read", "edit"}
+tools = {"review", "learn", "trace", "evolve", "status", "hme", "audit", "why", "policies"}
 try:
     lex = shlex.shlex(cmd, posix=True, punctuation_chars=";&|()")
     lex.whitespace_split = True
@@ -187,6 +187,11 @@ for i, tok in enumerate(tokens):
         tool = tokens[i + 1] if i + 1 < len(tokens) else ""
         if tool in tools:
             norm = f"i/{tool}"
+            start = i + 2
+    elif base == "codex_structured_tool.js" or tok.endswith("tools/HME/scripts/codex_structured_tool.js"):
+        action = tokens[i + 1] if i + 1 < len(tokens) else ""
+        if action in {"read", "edit"}:
+            norm = f"codex/{action}"
             start = i + 2
     if not norm:
         continue

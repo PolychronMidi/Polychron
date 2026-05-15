@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3188,
-      "updated_ts": 1778883418.6527617,
-      "codex_plan_synced_ts": 1778883418.6527293,
+      "max_id": 3191,
+      "updated_ts": 1778883628.6528587,
+      "codex_plan_synced_ts": 1778883628.6528227,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T22:16:49.146Z"
+      "codex_plan_ts": "2026-05-15T22:20:17.882Z"
     }
   },
   {
@@ -2320,5 +2320,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T22:16:49.146Z"
+  },
+  {
+    "id": 3189,
+    "text": "Remove public i/read and i/edit shims/docs",
+    "activeForm": "Remove public i/read and i/edit shims/docs",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778883618.306001,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T22:20:17.882Z"
+  },
+  {
+    "id": 3190,
+    "text": "Keep internal structured fallback without public i surface",
+    "activeForm": "Keep internal structured fallback without public i surface",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778883618.3060067,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T22:20:17.882Z"
+  },
+  {
+    "id": 3191,
+    "text": "Update tests and verify clean",
+    "activeForm": "Update tests and verify clean",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778883618.3060107,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T22:20:17.882Z"
   }
 ]

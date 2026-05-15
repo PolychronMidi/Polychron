@@ -132,7 +132,7 @@ test('Codex structured read/edit shims route synthetic native events', () => {
     HME_SESSION_ID: 'shim-read',
     PATH: path.join(root, 'bin') + path.delimiter + originalPath,
   };
-  const read = spawnSync('node', [path.join(repoRoot, 'scripts', 'hme-i-dispatch.js'), 'read', `file=${file}`, 'limit=5'], { env, encoding: 'utf8' });
+  const read = spawnSync('node', [path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_structured_tool.js'), 'read', `file=${file}`, 'limit=5'], { env, encoding: 'utf8' });
   assert.equal(read.status, 0, read.stderr);
   assert.match(read.stdout, /const x = 1/);
   assert.equal(fs.readFileSync(path.join(root, 'tmp', 'hme-streak', 'shim-read.score'), 'utf8').trim(), '0');
@@ -140,7 +140,7 @@ test('Codex structured read/edit shims route synthetic native events', () => {
   fs.writeFileSync(path.join(root, 'tmp', 'hme-streak', 'shim-edit.score'), '55');
   const editEnv = { ...env, HME_SESSION_ID: 'shim-edit' };
   const edit = spawnSync('node', [
-    path.join(repoRoot, 'scripts', 'hme-i-dispatch.js'), 'edit',
+    path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_structured_tool.js'), 'edit',
     `file=${file}`,
     'old=const x = 1;\n',
     'new=const x = 2;\n',
@@ -152,10 +152,12 @@ test('Codex structured read/edit shims route synthetic native events', () => {
   assert.equal(fs.readFileSync(path.join(root, 'tmp', 'hme-streak', 'shim-edit.score'), 'utf8').trim(), '0');
   const nexus = fs.readFileSync(path.join(root, 'tmp', 'hme-nexus.state'), 'utf8');
   assert.match(nexus, /EDIT:/);
+  assert.equal(fs.existsSync(path.join(repoRoot, 'i', 'read')), false);
+  assert.equal(fs.existsSync(path.join(repoRoot, 'i', 'edit')), false);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('Codex Bash hook treats i/read and i/edit as structured exits', async () => {
+test('Codex Bash hook treats internal structured bridge as structured exit', async () => {
   const root = sandbox('codex-structured-bash-');
   fs.mkdirSync(path.join(root, 'tmp', 'hme-streak'), { recursive: true });
   fs.writeFileSync(path.join(root, 'tmp', 'hme-streak', 'codex-Bash.score'), '70');
@@ -164,7 +166,7 @@ test('Codex Bash hook treats i/read and i/edit as structured exits', async () =>
     cwd: root,
     _hme_host: 'codex',
     tool_name: 'Bash',
-    tool_input: { command: 'i/edit file=src/x.js old=a new=b' },
+    tool_input: { command: 'node tools/HME/scripts/codex_structured_tool.js edit file=src/x.js old=a new=b' },
     session_id: 'codex-Bash',
   }));
   assert.equal(res.exit_code, 0);

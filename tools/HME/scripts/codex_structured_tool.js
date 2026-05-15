@@ -12,9 +12,9 @@ const SESSION = process.env.HME_SESSION_ID || process.env.CODEX_SESSION_ID || 'c
 function usage() {
   console.error([
     'usage:',
-    '  i/read <file>|file=<file> [offset=N] [limit=N]',
-    '  i/edit file=<file> old=<text>|old_file=<path> new=<text>|new_file=<path>',
-    '  i/edit --json < {"file_path":"...","old_string":"...","new_string":"..."}',
+    '  codex_structured_tool.js read <file>|file=<file> [offset=N] [limit=N]',
+    '  codex_structured_tool.js edit file=<file> old=<text>|old_file=<path> new=<text>|new_file=<path>',
+    '  codex_structured_tool.js edit --json < {"file_path":"...","old_string":"...","new_string":"..."}',
   ].join('\n'));
   process.exit(2);
 }
