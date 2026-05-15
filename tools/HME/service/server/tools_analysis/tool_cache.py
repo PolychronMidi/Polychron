@@ -1,7 +1,7 @@
 """Shared TTL cache for cross-tool KB search and caller scan results.
 
 Prevents redundant llama.cpp/RAG work when the same module or query is accessed
-by multiple tools within a short window (e.g. read(before) -> review(forget)).
+by multiple tools within a short window (e.g. pre-edit briefing -> review(forget)).
 
 Keys are independent of file mtime -- the TTL handles expiry.
 workflow.py's mtime-keyed caches remain authoritative for synthesis results;

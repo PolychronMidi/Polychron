@@ -305,11 +305,12 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
              parent_id: int = 0, critical: bool = False, on_done: str = "",
              status: str = "pending", fmt: str = "text",
              tier: str = "E3") -> str:
-    """Hierarchical todo list (HME extension to native TodoWrite).
+    """Hierarchical todo store behind native TodoWrite.
 
-    Use this when you need features the native TodoWrite lacks: sub-todos with
-    parent auto-completion, critical/priority flags, lifecycle side-effects
-    via on_done triggers, cross-session persistence, or the SPEC.md/TODO.md
+    Native TodoWrite is the public surface. This hidden handler keeps the
+    HME-only features native TodoWrite lacks: sub-todos with parent
+    auto-completion, critical/priority flags, lifecycle side-effects via
+    on_done triggers, cross-session persistence, and the SPEC.md/TODO.md
     bridge actions (see doc/templates/SPEC.md Phase 0).
 
     action='list': show all todos. fmt='mermaid' renders as a graph diagram.

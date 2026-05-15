@@ -60,6 +60,12 @@ Templates and long-form theory remain in [doc/templates/](doc/templates/) and
 
 ## Diagnostics
 
+Hook/autocommit wiring:
+
+```bash
+scripts/hme-doctor.py --hooks
+```
+
 Generated artifacts live in `output/metrics/`:
 
 - `trace-summary.json` - beat, signal, regime, coupling, and trust summary.

@@ -44,6 +44,7 @@ file's listed events and FAILs if they drift.
 - **`semantic_redundancy_stripped`** -- proxy removed redundant sentences from a tool result before display.
 - **`boilerplate_stripped`** -- proxy removed boilerplate prefixes from tool output.
 - **`secret_sanitized`** -- `secret_sanitizer.js` redacted credential patterns from tool output.
+- **`skill_reminder_stripped`** -- `strip_skill_reminder.js` removed repeated skill reminders or compacted low-signal Stop-hook feedback from a proxied request.
 - **`memory_redirect`** -- middleware redirected a memory-directory write attempt.
 - **`nexus_cleared`** -- NEXUS state file reset (typically session start).
 - **`dir_context`** -- `dir_context.js` middleware injected directory-intent context.

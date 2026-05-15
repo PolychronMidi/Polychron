@@ -1,7 +1,9 @@
 # Resolve project root: $CLAUDE_PROJECT_DIR, then walk up for .env+.git.
 # No host-specific hardcoded fallback (removed for portability).
 _HME_PROJECT_ROOT=""
-if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -f "$CLAUDE_PROJECT_DIR/.env" ]; then
+if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/src" ]; then
+  _HME_PROJECT_ROOT="$(cd "$PROJECT_ROOT" 2>/dev/null && pwd)"
+elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -f "$CLAUDE_PROJECT_DIR/.env" ]; then
   _HME_PROJECT_ROOT="$CLAUDE_PROJECT_DIR"
 fi
 if [ -z "$_HME_PROJECT_ROOT" ]; then
@@ -18,9 +20,12 @@ fi
 # and the walk-up strategy failed, the invocation environment is
 # fundamentally broken; fail loud rather than guess a path.
 _HME_ENV_FILE="$_HME_PROJECT_ROOT/.env"
+if [ -n "$_HME_PROJECT_ROOT" ]; then
+  export PROJECT_ROOT="$_HME_PROJECT_ROOT"
+fi
 if [ -n "$_HME_PROJECT_ROOT" ] && [ -f "$_HME_ENV_FILE" ]; then
   set -a; source "$_HME_ENV_FILE"; set +a
-else
+elif [ -z "$_HME_PROJECT_ROOT" ]; then
   echo "WARNING: _safety.sh cannot resolve project root (tried CLAUDE_PROJECT_DIR, walk-up, hardcoded fallback) -- hooks will run without PROJECT_ROOT/HME_* env vars" >&2
 fi
 

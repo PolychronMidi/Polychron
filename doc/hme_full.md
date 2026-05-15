@@ -59,6 +59,11 @@ Claude Code, Codex, shell execution, and future agent CLIs.
 Native handlers live in `tools/HME/event_kernel/native_hooks/`. Remaining shell
 behavior stays behind the dispatcher or Stop-chain policy adapter until ported.
 
+Claude Code hook registration is manifest-driven. Edit
+`tools/HME/hooks/hooks.json`, then run `scripts/sync-claude-settings.py` to
+materialize live `~/.claude/settings.json`; `scripts/audit-claude-settings.py`
+fails if live settings drift from that manifest.
+
 ## Hook Portability Rules
 
 - Do not add event routing tables to adapters.

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Legacy advisor-call detector.
+"""Retired advisor-doctrine detector.
 
-PAI v6.3.0 doctrine: on Extended+ effort (E2+) tasks, the advisor MUST be
-consulted at:
+Historical PAI v6.3.0 doctrine: on Extended+ effort (E2+) tasks, the
+advisor had to leave a record at:
   (1) before committing to an approach (after PLAN, before BUILD)
   (2) when stuck or diverging (after two failed attempts)
   (3) once after a durable deliverable (before phase: complete)
@@ -23,8 +23,8 @@ This detector fires post-turn. Inputs:
 
 Verdicts:
   ok                              tier < E2 OR all required calls present
-  advisor_missing_pre_build       phase signal "BUILD" without prior consult
-  advisor_missing_post_deliver    phase signal "complete" without final consult
+  advisor_missing_pre_build       phase signal "BUILD" without prior advisor record
+  advisor_missing_post_deliver    phase signal "complete" without final advisor record
   advisor_conflict_cap_exceeded   third re-call on same conflict
   advisor_silently_skipped        E4/E5 turn with no advisor call AND no
                                   rescue clause justifying solo
@@ -65,11 +65,7 @@ _POST_DELIVER_RE = re.compile(
     r"\bdurable deliverable\b",
     re.IGNORECASE | re.MULTILINE,
 )
-_CONSULT_INVOKE_RE = re.compile(
-    r"\bAdvisor\b\s*\(|"
-    r"buddy_handoff(_consult)?\.py.*\bconsult\b",
-    re.IGNORECASE,
-)
+_ADVISOR_INVOKE_RE = re.compile(r"\bAdvisor\b\s*\(", re.IGNORECASE)
 
 # Solo-rationale rescue.
 _SOLO_RES = (
@@ -86,8 +82,8 @@ DECLARED_VERDICTS = {
 }
 
 
-def _legacy_consult_available() -> bool:
-    return (_PROJECT / "i" / "consult").is_file()
+def _legacy_advisor_available() -> bool:
+    return False
 
 
 def _last_assistant_text(events: list) -> str:
@@ -136,7 +132,7 @@ def _solo_rescue(text: str) -> bool:
     return any(pat.search(text) for pat in _SOLO_RES)
 
 
-def _consult_invocations(events: list) -> int:
+def _advisor_invocations(events: list) -> int:
     """Count this turn's legacy advisor Bash invocations."""
     count = 0
     for ev in events:
@@ -144,7 +140,7 @@ def _consult_invocations(events: list) -> int:
             if tu["name"] != "Bash":
                 continue
             cmd = tu["input"].get("command", "") or ""
-            if _CONSULT_INVOKE_RE.search(cmd):
+            if _ADVISOR_INVOKE_RE.search(cmd):
                 count += 1
     return count
 
@@ -234,13 +230,13 @@ def main() -> int:
         # Doctrine only fires at E2+.
         print("ok")
         return 0
-    if not os.environ.get("ADVISOR_DOCTRINE_TIER") and not _legacy_consult_available():
+    if not os.environ.get("ADVISOR_DOCTRINE_TIER") and not _legacy_advisor_available():
         print("ok")
         return 0
 
     events = _load_current_turn(sys.argv[1])
     text = _last_assistant_text(events)
-    n_consults = _consult_invocations(events)
+    n_advisor_records = _advisor_invocations(events)
     n_work = _substantive_work_count(events)
     text_lower = text.lower()
 
@@ -252,21 +248,21 @@ def main() -> int:
         print("advisor_conflict_cap_exceeded")
         return 0
 
-    # Rule 2 (1): pre-BUILD commitment requires a consult.
-    if _PRE_BUILD_RE.search(text) and n_consults == 0:
+    # Rule 2 (1): pre-BUILD commitment required an advisor record.
+    if _PRE_BUILD_RE.search(text) and n_advisor_records == 0:
         if not _solo_rescue(text) and not implicit_solo:
             print("advisor_missing_pre_build")
             return 0
 
-    # Rule 2 (3): post-durable-deliverable consult before phase: complete.
-    if _POST_DELIVER_RE.search(text) and n_consults == 0:
+    # Rule 2 (3): post-durable-deliverable advisor record before phase: complete.
+    if _POST_DELIVER_RE.search(text) and n_advisor_records == 0:
         if not _solo_rescue(text) and not implicit_solo:
             print("advisor_missing_post_deliver")
             return 0
 
     # E4/E5 floor: silently skipping advisor on Deep/Comprehensive work
     # warrants a flag even when no explicit phase markers fired.
-    if (tier in ("E4", "E5") and n_consults == 0
+    if (tier in ("E4", "E5") and n_advisor_records == 0
             and not _solo_rescue(text) and not implicit_solo):
         print("advisor_silently_skipped")
         return 0

@@ -44,8 +44,8 @@ def _run_all():
 
     # Case 2: legitimate thinking about doing the work fires no match.
     ev2 = make_event(thinking_text=(
-        "The user wants the buddy log capture done. Let me find the spawn block "
-        "in buddy_init.sh and replace the >/dev/null with append-to-log."
+        "The user wants the proxy log capture done. Let me find the spawn block "
+        "in proxy-supervisor.sh and replace the >/dev/null with append-to-log."
     ))
     extracted2 = ei._extract_thinking_text([ev2])
     matched2 = [p for p in ei.EVASION_INTENT_PHRASES if p in extracted2[0].lower()]

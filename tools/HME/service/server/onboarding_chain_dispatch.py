@@ -8,7 +8,7 @@ Linear state machine with silent prerequisite auto-chaining:
 
     boot            fresh session -- waiting for selftest
     selftest_ok     selftest passed -- waiting for evolve(focus='design')
-    targeted        target picked -- waiting for read(target, mode='before')
+    targeted        target picked -- waiting for HME pre-edit briefing
     briefed         KB briefing absorbed -- waiting for Edit(s) on target
     edited          Edit done -- waiting for review(mode='forget')
     reviewed        review clean -- waiting for npm run main
@@ -176,7 +176,7 @@ def _advance(tool: str, args: dict, output: str, s: str) -> None:
     """State transition table. Each branch only advances FORWARD."""
     idx = step_index(s)
 
-    # hme_admin(action='selftest') passes -> selftest_ok
+    # admin selftest passes -> selftest_ok
     if tool == "hme_admin" and args.get("action") == "selftest":
         if idx <= step_index("selftest_ok") and _selftest_clean(output):
             set_state("selftest_ok")
@@ -196,8 +196,8 @@ def _advance(tool: str, args: dict, output: str, s: str) -> None:
                 set_state("targeted")
                 return
 
-    # read(mode='before') on a module -> captures target if missing (the hook
-    # auto-chains read() into Edit, so this is a passive capture, not a state
+    # Internal pre-edit briefing on a module captures target if missing (the hook
+    # auto-chains the briefing into Edit, so this is a passive capture, not a state
     # transition). State advances on Edit, not on read.
     if tool == "read" and args.get("mode") == "before":
         tgt = args.get("target", "") or ""

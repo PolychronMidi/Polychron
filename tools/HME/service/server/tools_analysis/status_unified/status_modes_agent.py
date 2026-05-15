@@ -237,7 +237,7 @@ def _mode_agent_loop():
         fwrites = sum(1 for e in events if e.get("event") == "file_written")
         out.append(f"  total tool calls:      -  (proxy tool_call instrumentation degraded; see note)")
         out.append(f"  file writes (proxy):   {fwrites}  (via fs_watcher)")
-        out.append(f"  briefs recorded:       {brief_rec}  (KB consultations)")
+        out.append(f"  briefs recorded:       {brief_rec}  (KB briefings)")
     out.append(f"  auto-brief injected:   {brief_inj}")
 
     # Inter-tool gap (median pause between consecutive tool_call events)
@@ -263,4 +263,3 @@ def _mode_agent_loop():
     out.append("  i/status timeline window=1h    full chronological view")
     out.append("  i/why mode=hook                broader hook-firing detail")
     return "\n".join(out)
-

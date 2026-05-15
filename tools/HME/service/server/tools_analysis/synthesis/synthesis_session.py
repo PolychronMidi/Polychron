@@ -24,7 +24,7 @@ def _session_state_path() -> str | None:
         return _SESSION_STATE_FILE
     root = getattr(ctx, "PROJECT_ROOT", "")
     if root:
-        _SESSION_STATE_FILE = os.path.join(root, "tools", "HME", "session-state.json")
+        _SESSION_STATE_FILE = os.path.join(root, "runtime", "hme", "session-state.json")
         return _SESSION_STATE_FILE
     return None
 
@@ -60,6 +60,7 @@ def _save_session_state():
         logger.warning("session state save SKIPPED -- no path (PROJECT_ROOT not set?)")
         return
     try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as f:
             json.dump({
                 "narrative": _session_narrative,

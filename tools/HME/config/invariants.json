@@ -451,6 +451,13 @@
       "severity": "error"
     },
     {
+      "id": "public-surface-coherent",
+      "description": "The public HME surface has one source of truth: i/ wrappers match i_registry.json, retired wrappers stay gone, tool-invocations.json maps internal names to current public forms, and doc/ top-level stays limited to HME.md/SRC.md plus full-detail companions.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/audit-public-surface.py --quiet 2>&1",
+      "severity": "error"
+    },
+    {
       "id": "hooks-json-points-to-event-kernel-adapter",
       "description": "hooks.json must route every Claude event through event_kernel/claude_adapter.js -- the single adapter for proxy-up and direct fallback dispatch",
       "type": "pattern_in_file",

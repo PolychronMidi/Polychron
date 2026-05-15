@@ -52,7 +52,6 @@ DEVLOG = PROJECT_ROOT / "tools" / "HME" / "KB" / "devlog"
 SAFE_NO_ARGS_ALLOWLIST = {
     "help",            # pure stdout, no subprocess cascade
     "policies",        # static config read
-    "todo",            # local JSON read
     "why",             # static metric file read (now lists IDs on no-args)
 }
 

@@ -139,7 +139,7 @@ if (violations.length > 0) {
   }
   console.log(`  Full report: metrics/hme-violations.json`);
   console.log(
-    '  FATAL: HME coherence hooks were bypassed. Call read(target=..., mode="before") before edits.',
+    '  FATAL: HME coherence hooks were bypassed. Use native Read/Edit; pre-edit HME briefing must be recorded before edits.',
   );
   process.exit(1);
 }

@@ -79,6 +79,18 @@ function mtimeCache({ ttlMs = 0 } = {}) {
   };
 }
 
+function projectPathSegments(filePath, root = PROJECT_ROOT) {
+  if (!filePath || !root) return [];
+  const rel = path.relative(path.resolve(root), path.resolve(String(filePath)));
+  if (!rel || rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel)) return [];
+  return rel.split(path.sep).filter(Boolean);
+}
+
+function hasMisplacedRootOnlyDir(filePath, names, root = PROJECT_ROOT) {
+  const wanted = new Set(names);
+  return projectPathSegments(filePath, root).some((part, idx) => idx > 0 && wanted.has(part));
+}
+
 // Single loader for config/models.json (JSONC with // comments). Every
 // caller routes through this so comment-stripping lives in one place.
 function loadModelsJson() {
@@ -87,4 +99,15 @@ function loadModelsJson() {
   return JSON.parse(raw.replace(/^\s*\/\/.*$/gm, '').replace(/[ \t]+\/\/.*$/gm, ''));
 }
 
-module.exports = { emit, shortHash, sessionKey, PROJECT_ROOT, EMIT_PY, RUNTIME_DIR, mtimeCache, loadModelsJson };
+module.exports = {
+  emit,
+  shortHash,
+  sessionKey,
+  PROJECT_ROOT,
+  EMIT_PY,
+  RUNTIME_DIR,
+  mtimeCache,
+  projectPathSegments,
+  hasMisplacedRootOnlyDir,
+  loadModelsJson,
+};

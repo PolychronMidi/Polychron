@@ -176,8 +176,11 @@ _ac_do_commit() {
     exec 9>&-
     return 0
   fi
-  # clean tree after failure = transient lock race
-  if git -C "$_AC_ROOT" diff --quiet 2>/dev/null; then
+  # Clean worktree + clean index after failure = transient lock race.
+  # This must check --cached too: `git add -A` can leave all changes staged,
+  # making `git diff --quiet` alone look clean even though no commit landed.
+  if git -C "$_AC_ROOT" diff --quiet 2>/dev/null \
+    && git -C "$_AC_ROOT" diff --cached --quiet 2>/dev/null; then
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
     exec 9>&-

@@ -24,7 +24,7 @@ done
 cd "$SCRIPT_DIR"
 
 # Source project .env for credentials
-PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
+PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 PROJECT_ENV="${PROJECT_ROOT}/.env"
 if [ -f "$PROJECT_ENV" ]; then
   set -a
@@ -39,23 +39,31 @@ if [ -d "$HOME/.nvm/versions/node" ]; then
   _NVM_NODE=$(ls -d "$HOME/.nvm/versions/node/v24"*/bin/node 2>/dev/null | sort -V | tail -1)
   [ -n "$_NVM_NODE" ] && [ -x "$_NVM_NODE" ] && _NODE_BIN="$_NVM_NODE"
 fi
-export PATH="$PATH:$(dirname "$_NODE_BIN")"
+export PATH="$(dirname "$_NODE_BIN"):$PATH"
 
 # Check if already running
 if curl -sf --max-time 1 "http://127.0.0.1:${PORT}/v1/models" > /dev/null 2>&1; then
   echo "[omniroute] already running on :${PORT}"
 else
   echo "[omniroute] starting on :${PORT}..."
-  HME_OMNIROUTE_PORT="$PORT" \
-    node_modules/.bin/omniroute --no-open --port "$PORT" &
-  ORPID=$!
-  echo "[omniroute] pid=${ORPID}"
-
   if [ "$FOREGROUND" -eq 1 ]; then
-    wait "$ORPID"
+    HME_OMNIROUTE_PORT="$PORT" \
+      node_modules/.bin/omniroute --no-open --port "$PORT"
     exit $?
   fi
 
+  mkdir -p "${PROJECT_ROOT}/log"
+  if command -v setsid >/dev/null 2>&1; then
+    HME_OMNIROUTE_PORT="$PORT" \
+      setsid node_modules/.bin/omniroute --no-open --port "$PORT" \
+        > "${PROJECT_ROOT}/log/omniroute.out" 2>&1 < /dev/null &
+  else
+    HME_OMNIROUTE_PORT="$PORT" \
+      nohup node_modules/.bin/omniroute --no-open --port "$PORT" \
+        > "${PROJECT_ROOT}/log/omniroute.out" 2>&1 < /dev/null &
+  fi
+  ORPID=$!
+  echo "[omniroute] pid=${ORPID}"
   disown 2>/dev/null || true
 
   # Wait for health

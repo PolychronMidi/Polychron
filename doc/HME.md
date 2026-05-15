@@ -52,6 +52,12 @@ the behavior deliberately.
 5. Persist confirmed learning with `i/learn`.
 6. Run `i/hme admin action=selftest` after HME substrate changes.
 
+If hooks, statusline, or autocommit look stale, run:
+
+```bash
+scripts/hme-doctor.py --hooks
+```
+
 ## Hard Style
 
 - Single source of truth first. If a string, route, rule, or tool invocation is

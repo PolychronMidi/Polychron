@@ -45,8 +45,8 @@ _VERDICT_ALIASES = {
     "ABANDON_CHECK": "abandon_check",
     "AGENT_FOR_KB": "abandon_check",
     "TEXT_ONLY_SHORT": "DISMISSIVE",
-    "consult-debt": "consult-debt",
-    "consult-thin": "consult-debt",
+    "advisor-debt": "advisor-debt",
+    "advisor-thin": "advisor-debt",
     "fabrication": "fabrication_check",
     "idle": None,
     "minimal_format_violation": "summary_missing",
@@ -359,7 +359,7 @@ _CASES = [
      ],
      "phantom_paraphrase"),
 
-    # advisor_doctrine -- Rule 2 missing pre-BUILD consult at E3+. Tier is
+    # advisor_doctrine -- Rule 2 missing pre-BUILD advisor record at E3+. Tier is
     # forced via ADVISOR_DOCTRINE_TIER env so the fixture is deterministic
     # regardless of mode-classifier.jsonl state on disk.
     ("advisor_doctrine", "missing-pre-build-fires",
@@ -396,7 +396,7 @@ _CASES = [
 
     # advisor_doctrine -- implicit-solo rescue: a turn with >= 3
     # substantive Edit/Write tool calls is implementing a decision, not
-    # crystallizing one. No fresh consult required.
+    # crystallizing one. No fresh advisor record required.
     ("advisor_doctrine", "implicit-solo-via-many-edits",
      [
          _user_msg("wire up the new detector across the chain"),

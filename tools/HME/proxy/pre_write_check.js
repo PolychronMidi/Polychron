@@ -5,7 +5,7 @@ const registry = require('../policies/registry');
 const config = require('../policies/config');
 const stateClient = require('./session_state_client');
 const { normalize } = require('./hook_envelope');
-const { PROJECT_ROOT } = require('./shared');
+const { PROJECT_ROOT, hasMisplacedRootOnlyDir } = require('./shared');
 
 function _permission(decision, reason = '', context = '') {
   return { permissionDecision: decision, reason, contextualRules: context ? [context] : [] };
@@ -46,7 +46,7 @@ function _shellParityDecision(payload) {
   );
   if (d) return d;
 
-  d = _denyIf(/\/(log|tmp)\//.test(file) && !(file.startsWith(`${PROJECT_ROOT}/log/`) || file.startsWith(`${PROJECT_ROOT}/tmp/`)),
+  d = _denyIf(hasMisplacedRootOnlyDir(file, ['log', 'tmp']),
     `BLOCKED: log/ and tmp/ only exist at project root. Do not ${writeVerb.toLowerCase()} files inside subdirectory variants. Route output through $PROJECT_ROOT/{log,tmp}/.`);
   if (d) return d;
 

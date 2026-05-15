@@ -116,9 +116,16 @@ class OnboardingChainImportVerifier(Verifier):
                 tree = ast.parse(f.read())
         except SyntaxError as e:
             return _result(FAIL, 0.0, f"syntax error: {e}")
-        # Check for top-level statements that would block import
+        # Check for top-level statements that would block import. Ignore the
+        # module docstring: it documents decorator order and is not executable.
         risky_patterns = ("FastMCP(", "mcp.tool(", "ensure_ready_sync(")
         for node in tree.body:
+            if (
+                isinstance(node, ast.Expr)
+                and isinstance(getattr(node, "value", None), ast.Constant)
+                and isinstance(node.value.value, str)
+            ):
+                continue
             if isinstance(node, ast.Expr):
                 src_snippet = ast.unparse(node) if hasattr(ast, 'unparse') else ""
                 for pat in risky_patterns:
@@ -132,5 +139,4 @@ class OnboardingChainImportVerifier(Verifier):
 
 
 # Registry
-
 

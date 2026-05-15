@@ -162,6 +162,7 @@ echo -e "Onboarding: $ONB_STEP$MSG" >&2
 
 # Surface carried-over todos; log carry-over loader failures loudly.
 _SS_CARRY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_carry_err_$$")
+set +e
 CARRIED=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>"$_SS_CARRY_ERR"
 from server.tools_analysis.todo import list_carried_over
 items = list_carried_over()
@@ -178,6 +179,7 @@ if items:
 PYEOF
 )
 _SS_CARRY_RC=$?
+set -e
 if [ "$_SS_CARRY_RC" -ne 0 ] && [ -s "$_SS_CARRY_ERR" ] && [ -d "$PROJECT/log" ]; then
   _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
   while IFS= read -r _ss_line; do
@@ -262,8 +264,10 @@ if [ -f "$TRAJ_SCRIPT" ]; then
     done
   fi
   _SS_TRAJ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_traj_err_$$")
+  set +e
   TRAJ_LINE=$(PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" --summary 2>"$_SS_TRAJ_ERR")
   _SS_TRAJ_RC=$?
+  set -e
   if [ "$_SS_TRAJ_RC" -ne 0 ] && [ -s "$_SS_TRAJ_ERR" ] && [ -d "$PROJECT/log" ]; then
     _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
     while IFS= read -r _ss_line; do
@@ -279,8 +283,10 @@ fi
 CALIB_SCRIPT="$PROJECT/tools/HME/activity/streak_calibrator.py"
 if [ -f "$CALIB_SCRIPT" ]; then
   _SS_CALIB_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_calib_err_$$")
+  set +e
   CALIB_JSON=$(PROJECT_ROOT="$PROJECT" python3 "$CALIB_SCRIPT" 2>"$_SS_CALIB_ERR")
   _SS_CALIB_RC=$?
+  set -e
   if [ "$_SS_CALIB_RC" -ne 0 ] && [ -s "$_SS_CALIB_ERR" ] && [ -d "$PROJECT/log" ]; then
     _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
     while IFS= read -r _ss_line; do

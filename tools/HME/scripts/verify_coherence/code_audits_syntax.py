@@ -145,7 +145,6 @@ except Exception:  # silent-ok: config optional, hardcoded fallback below
         "tools/HME/tests/specs/migrated_policies.test.js",
         "tools/HME/tests/specs/migrated_policies_round2.test.js",
         "tools/HME/tests/specs/metaprofile_next_level.test.js",
-        "tools/HME/tests/specs/buddy_dispatcher.test.js",
         "tools/HME/tests/specs/rhythm_flair.test.js",
         "tools/csv_maestro/py_midicsv/midi_converters.py",
         "tools/HME/skills/ISA/TEMPLATE.md",
@@ -243,5 +242,4 @@ class StalePathRenameVerifier(Verifier):
         return _result(FAIL, score,
                        f"{len(violations)} stale path reference(s)",
                        violations[:10])
-
 

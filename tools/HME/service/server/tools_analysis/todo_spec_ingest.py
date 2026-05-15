@@ -1,5 +1,5 @@
 """SPEC.md / TODO.md / devlog lifecycle bridge -- connects ephemeral todo state
-to durable handoff documentation. Surface (via hidden hme_todo actions):
+to durable active-initiative documentation. Surface (via hidden hme_todo actions):
 ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
 Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
@@ -35,7 +35,7 @@ from server.tools_analysis.todo import (
 
 
 # SPEC/TODO bridge -- connects ephemeral HME todo state to durable
-# doc/templates/SPEC.md + doc/templates/TODO.md handoff docs. See doc/templates/SPEC.md Phase 0.
+# doc/templates/SPEC.md + doc/templates/TODO.md active docs. See doc/templates/SPEC.md Phase 0.
 
 
 # _spec_file() moved to paths.spec_file() -- lazy resolution for hot-reload

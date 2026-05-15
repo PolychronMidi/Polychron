@@ -58,13 +58,11 @@ class StateFileOwnershipVerifier(Verifier):
 
 
 class ClaudeSettingsJsonVerifier(Verifier):
-    """Validates ~/.claude/settings.json parses as JSON + every hook command
-    path resolves. Catches the exact bug class that silently disabled every
-    PreToolUse/PostToolUse/Stop hook for 40+ minutes this session: a single
-    trailing comma made Claude Code discard the whole hook config. Symptoms
-    (NEXUS stopped tracking, auto-completeness stopped firing, thinking mode
-    stopped engaging) are far removed from the cause; a static verifier
-    catches it in seconds."""
+    """Validates ~/.claude/settings.json parses as JSON, every hook command
+    path resolves, and Claude lifecycle/tool hooks route through the event
+    kernel adapter. This catches both syntax breaks and stale wrapper drift:
+    either one silently disconnects PreToolUse/PostToolUse/Stop behavior from
+    the active implementation."""
     name = "claude-settings-json"
     category = "code"
     subtag = "interface-contract"
@@ -81,7 +79,7 @@ class ClaudeSettingsJsonVerifier(Verifier):
             return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
         count = payload.get("violation_count", 0)
         if count == 0:
-            return _result(PASS, 1.0, f"{payload.get('settings_path')}: valid + resolvable")
+            return _result(PASS, 1.0, f"{payload.get('settings_path')}: valid + event-kernel routed")
         return _result(FAIL, 0.0,
                        f"{count} issue(s) in {payload.get('settings_path')}",
                        payload.get("violations", [])[:10])
@@ -365,4 +363,3 @@ class ActivityEventsDocSyncVerifier(Verifier):
         # code_only only: WARN, partial credit.
         score = max(0.5, 1.0 - len(code_only) / 20.0)
         return _result(WARN, score, f"{len(code_only)} undocumented event(s)", details)
-

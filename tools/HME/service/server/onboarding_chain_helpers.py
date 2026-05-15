@@ -8,7 +8,7 @@ Linear state machine with silent prerequisite auto-chaining:
 
     boot            fresh session -- waiting for selftest
     selftest_ok     selftest passed -- waiting for evolve(focus='design')
-    targeted        target picked -- waiting for read(target, mode='before')
+    targeted        target picked -- waiting for HME pre-edit briefing
     briefed         KB briefing absorbed -- waiting for Edit(s) on target
     edited          Edit done -- waiting for review(mode='forget')
     reviewed        review clean -- waiting for npm run main

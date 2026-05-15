@@ -59,6 +59,7 @@ function _ctxStub(sandbox, transcriptPath) {
     deny: (reason) => { denied.value = reason; return { decision: 'deny', reason }; },
     allow: () => { allowed.value = true; return { decision: 'allow', message: null }; },
     instruct: (m) => ({ decision: 'instruct', message: m }),
+    shared: {},
     _denied: denied,
     _allowed: allowed,
   };
@@ -145,5 +146,5 @@ test('work_checks: advisor_silently_skipped verdict denies with advisor reason',
     const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
     const result = await policy.run(_ctxStub(sandbox, transcript));
     assert.strictEqual(result.decision, 'deny');
-    assert.ok(result.reason.includes('ADVISOR DOCTRINE (E4/E5 floor)'));
+    assert.ok(result.reason.includes('ADVISOR DOCTRINE (legacy E4/E5 floor)'));
   }));

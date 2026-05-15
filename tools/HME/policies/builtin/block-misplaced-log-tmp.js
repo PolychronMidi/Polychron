@@ -1,4 +1,5 @@
 'use strict';
+const { PROJECT_ROOT, hasMisplacedRootOnlyDir } = require('../../proxy/shared');
 /**
  * Block writes to misplaced log/ or tmp/ subdirectories. log/ and tmp/
  * exist ONLY at the project root; nested variants under src/ or
@@ -16,11 +17,8 @@ module.exports = {
   params: {},
   async fn(ctx) {
     const fp = (ctx.toolInput && ctx.toolInput.file_path) || '';
-    const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
-    // Match anything containing /log/ or /tmp/ that isn't anchored at projectRoot.
-    if (!/\/(log|tmp)\//.test(fp)) return ctx.allow();
-    const expected = new RegExp('^' + projectRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/(log|tmp)/');
-    if (expected.test(fp)) return ctx.allow();
+    const projectRoot = process.env.PROJECT_ROOT || PROJECT_ROOT;
+    if (!hasMisplacedRootOnlyDir(fp, ['log', 'tmp'], projectRoot)) return ctx.allow();
     return ctx.deny(
       `BLOCKED: log/ and tmp/ only exist at the project root (${projectRoot}/{log,tmp}/). Do not write files inside subdirectory variants. Path: ${fp}`
     );

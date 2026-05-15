@@ -16,7 +16,7 @@ def main(argv: list[str]) -> int:
         return 0
 
     total = 0
-    consulted = 0
+    reviewed = 0
     by_file: Counter[str] = Counter()
     recent: list[dict] = []
     with open(log, encoding="utf-8") as f:
@@ -29,13 +29,13 @@ def main(argv: list[str]) -> int:
             except json.JSONDecodeError:
                 continue
             total += 1
-            if row.get("consulted"):
-                consulted += 1
+            if row.get("reviewed") or row.get("consulted"):
+                reviewed += 1
             by_file[row.get("file", "?")] += 1
             recent.append(row)
 
-    rate = (consulted / total * 100.0) if total else 0.0
-    print(f"decision-audit: {total} architectural edit(s) total, {consulted} with legacy advisor record ({rate:.1f}%)")
+    rate = (reviewed / total * 100.0) if total else 0.0
+    print(f"decision-audit: {total} architectural edit(s) total, {reviewed} with review record ({rate:.1f}%)")
     print()
     print("most-touched architectural files:")
     for path, count in by_file.most_common(5):
@@ -43,7 +43,7 @@ def main(argv: list[str]) -> int:
     print()
     print("most recent (last 10):")
     for row in recent[-10:]:
-        flag = "C" if row.get("consulted") else " "
+        flag = "R" if (row.get("reviewed") or row.get("consulted")) else " "
         print(f"  [{flag}] {row.get('ts', '?')}  {row.get('file', '?')}")
     return 0
 

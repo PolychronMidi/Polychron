@@ -125,14 +125,14 @@ def _hme_validate_golden() -> str:
 
     golden = [
         {
-            "name": "read(before) src module",
+            "name": "pre-edit briefing src module",
             "call": lambda: _call(_read, target="harmonicIntervalGuard", mode="before"),
             "expect": ["KB Constraints", "Structure"],
             "reject": ["Error:", "Traceback"],
             "min_lines": 10,
         },
         {
-            "name": "read(before) HME module",
+            "name": "pre-edit briefing HME module",
             "call": lambda: _call(_read, target="coupling_bridges", mode="before"),
             "expect": ["HME Internal Context", "RELOADABLE"],
             "reject": ["Error:", "Traceback"],

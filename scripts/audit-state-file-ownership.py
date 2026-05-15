@@ -46,7 +46,6 @@ SKIP_DIRS = ("__pycache__", "node_modules", ".git", "out", "dist")
 # a fallback if the parse fails.
 KNOWN_PATHS = (
     "runtime/hme/thread.sid",
-    "tmp/hme-buddy-call-count",
     "runtime/hme/proxy-supervisor.pid",
     "tmp/hme-proxy-maintenance.flag",
     "tmp/hme-universal-pulse.heartbeat",

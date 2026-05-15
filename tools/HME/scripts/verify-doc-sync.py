@@ -17,6 +17,7 @@ Usage:
     python3 tools/HME/scripts/verify-doc-sync.py --fix  # print suggested sed replacements
 """
 import ast
+import json
 import os
 import re
 import sys
@@ -36,55 +37,77 @@ _DOC_FILES_EXTRA = [
     os.path.join(_PROJECT, "CLAUDE.md"),
 ]
 
+
+def _load_invocations() -> dict:
+    path = os.path.join(_PROJECT, "tools", "HME", "config", "tool-invocations.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"tools": {}, "actions": {}}
+
+
+_INVOCATIONS = _load_invocations()
+
+
+def _tool_form(name: str, fallback: str) -> str:
+    entry = _INVOCATIONS.get("tools", {}).get(name, {})
+    return entry.get("i") or entry.get("primer") or fallback
+
+
+def _action_form(action: str) -> str:
+    return _INVOCATIONS.get("actions", {}).get(action, f"i/hme admin action={action}")
+
+
 # Old tool names that no longer exist as agent-callable and their replacements.
 # When adding new tools, update this map so legacy refs continue to get caught.
 _LEGACY_MAP = {
     # Search / KB
-    "search_knowledge":  "learn(query=...)",
-    "add_knowledge":     "learn(title=, content=)",
-    "remove_knowledge":  "learn(remove=id)",
-    "compact_knowledge": "learn(action='compact')",
-    "export_knowledge":  "learn(action='export')",
-    "list_knowledge":    "learn(action='list')",
-    "knowledge_graph":   "learn(action='graph')",
-    "memory_dream":      "learn(action='dream')",
-    "kb_health":         "learn(action='health')",
+    "search_knowledge":  "i/learn query=...",
+    "add_knowledge":     "i/learn title=... content=...",
+    "remove_knowledge":  "i/learn action=remove",
+    "compact_knowledge": "i/learn action=compact",
+    "export_knowledge":  "i/learn action=export",
+    "list_knowledge":    "i/learn action=list",
+    "knowledge_graph":   "i/learn action=graph",
+    "memory_dream":      "i/learn action=dream",
+    "kb_health":         "i/learn action=health",
     # Search (generic)
-    "find(query":        "learn(query=...) or trace(target)",
-    "search_code(":      "learn(query=...)",
-    "find_callers(":     "trace(target)",
-    "file_intel(":       "read(target) [hidden; use Read tool]",
-    "file_lines(":       "read(target:start-end) [hidden]",
-    "get_function_body(": "read(functionName) [hidden]",
-    "module_intel(":     "read(target, mode='story') [hidden]",
+    "find(query":        "i/learn query=... or i/trace target=...",
+    "search_code(":      "i/learn query=...",
+    "find_callers(":     "i/trace target=...",
+    "file_intel(":       "native Read (HME-enriched)",
+    "file_lines(":       "native Read (line ranges)",
+    "get_function_body(": "native Read plus Grep",
+    "module_intel(":     "native Read (HME-enriched)",
     # Workflow
     "before_editing(":   "Edit (briefing auto-chains)",
-    "what_did_i_forget": "review(mode='forget')",
-    "convention_check":  "review(mode='convention')",
-    "symbol_audit":      "review(mode='symbols')",
-    "doc_sync":          "review(mode='docs')",
-    "pipeline_digest":   "review(mode='digest')",
-    "regime_report":     "review(mode='regime')",
-    "trust_report":      "review(mode='trust')",
-    "section_compare":   "review(mode='sections')",
-    "audio_analyze":     "review(mode='audio')",
-    "codebase_health":   "review(mode='health')",
+    "what_did_i_forget": _tool_form("review", "i/review mode=<MODE>").replace("<MODE>", "forget"),
+    "convention_check":  _tool_form("review", "i/review mode=<MODE>").replace("<MODE>", "convention"),
+    "symbol_audit":      _tool_form("review", "i/review mode=<MODE>").replace("<MODE>", "symbols"),
+    "doc_sync":          _tool_form("review", "i/review mode=<MODE>").replace("<MODE>", "docs"),
+    "pipeline_digest":   _tool_form("review", "i/review mode=<MODE>").replace("<MODE>", "digest"),
+    "regime_report":     _tool_form("review", "i/review mode=<MODE>").replace("<MODE>", "regime"),
+    "trust_report":      _tool_form("review", "i/review mode=<MODE>").replace("<MODE>", "trust"),
+    "section_compare":   _tool_form("review", "i/review mode=<MODE>").replace("<MODE>", "sections"),
+    "audio_analyze":     _tool_form("review", "i/review mode=<MODE>").replace("<MODE>", "audio"),
+    "codebase_health":   _tool_form("review", "i/review mode=<MODE>").replace("<MODE>", "health"),
     # Evolution planning
-    "suggest_evolution": "evolve(focus='pipeline')",
-    "coupling_intel":    "evolve(focus='coupling')",
-    "design_bridges":    "evolve(focus='design')",
-    "forge_bridges":     "evolve(focus='forge')",
-    "kb_seed":           "evolve(focus='seed')",
-    "check_invariants":  "evolve(focus='invariants')",
-    "blast_radius":      "evolve(focus='blast', query=...)",
+    "suggest_evolution": "i/evolve focus=pipeline",
+    "coupling_intel":    "i/evolve focus=coupling",
+    "design_bridges":    "i/evolve focus=design",
+    "forge_bridges":     "i/evolve focus=forge",
+    "kb_seed":           "i/evolve focus=seed",
+    "check_invariants":  "i/evolve focus=invariants",
+    "blast_radius":      "i/evolve focus=blast query=...",
     # Admin
-    "hme_selftest":      "hme_admin(action='selftest')",
-    "hme_hot_reload":    "hme_admin(action='reload')",
-    "index_codebase":    "hme_admin(action='index')",
-    "clear_index":       "hme_admin(action='clear_index')",
-    "hme_introspect":    "hme_admin(action='introspect')",
+    "hme_selftest":      _action_form("selftest"),
+    "hme_hot_reload":    _action_form("reload"),
+    "index_codebase":    _action_form("index"),
+    "clear_index":       _action_form("clear_index"),
+    "hme_introspect":    _action_form("introspect"),
     # Todo
-    "todo(action":       "hme_todo(action=...) [hidden MCP utility]",
+    "todo(action":       _tool_form("hme_todo", "TodoWrite"),
 }
 
 # Contexts where legacy names are FINE to appear (implementation refs, hook files, etc.)
@@ -148,10 +171,9 @@ def _line_is_allowed(line: str) -> bool:
     lo = line.lower()
     if any(ctx in lo for ctx in _ALLOW_CONTEXTS):
         return True
-    # Allow if line mentions a dispatching tool name -- the legacy word is
-    # likely being described as a sub-action under that dispatcher, e.g.,
-    # `hme_admin(action) | selftest / reload / index / clear_index / ...`
-    if any(dispatcher in line for dispatcher in ("hme_admin(", "review(mode", "learn(action", "evolve(focus")):
+    # Allow if line mentions a dispatching public wrapper -- the legacy word is
+    # likely being described as a sub-action under that dispatcher.
+    if any(dispatcher in line for dispatcher in ("i/hme admin", "i/review", "i/learn", "i/evolve")):
         return True
     return False
 

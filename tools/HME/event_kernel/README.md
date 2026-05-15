@@ -40,3 +40,8 @@ root resolution, and fail-loud behavior.
 
 Native tool handlers live under `native_hooks/`; shell hooks remain behind the
 dispatcher or Stop-chain policy adapter until their behavior is ported.
+
+Claude Code settings are also manifest-driven: edit
+`tools/HME/hooks/hooks.json`, then run `scripts/sync-claude-settings.py`.
+`scripts/audit-claude-settings.py` compares live `~/.claude/settings.json`
+against that manifest.

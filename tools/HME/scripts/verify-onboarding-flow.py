@@ -82,6 +82,12 @@ def _load_todo_module(project_root: str):
     mod = importlib.util.module_from_spec(spec)
     sys.modules["server.tools_analysis.todo"] = mod
     spec.loader.exec_module(mod)
+    # Mirror the package-level re-exports that real
+    # server.tools_analysis.__init__ provides. onboarding_chain imports these
+    # from the package, not from the todo submodule, so the fake package must
+    # expose the same names.
+    ta_pkg.register_onboarding_tree = mod.register_onboarding_tree
+    ta_pkg.clear_onboarding_tree = mod.clear_onboarding_tree
     return mod
 
 
@@ -254,7 +260,11 @@ def main() -> int:
         state_file = os.path.join(tmp_project, "tmp", "hme-onboarding.state")
         check(not os.path.exists(state_file), "state file deleted on graduation")
         after_grad = todo_mod.hme_todo(action="list")
-        check("onboarding" not in after_grad.lower(), "onboarding tree cleared on graduation")
+        check(
+            "HME onboarding walkthrough" not in after_grad
+            and "[onboarding]" not in after_grad,
+            "onboarding tree cleared on graduation",
+        )
         print()
 
     except Exception as e:

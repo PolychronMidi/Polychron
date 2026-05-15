@@ -178,22 +178,12 @@ def _current_session_id() -> str:
   raise RuntimeError(f"current session path empty: {path}")
  return Path(value).stem
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
- if os.environ.get("OVERDRIVE_MODE") == "6":
-  ctx = _omniroute_ctx(role, sid, tier, forked_at)
-  if not ctx:
-   raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")
-  return {"pct": ctx["pct"], "window": ctx["window"], "sid": ctx["sid"], "model": ctx["model"]}
- try:
-  from buddy_dispatch_status import _buddy_context_used # noqa: E402
- except ImportError as exc:
-  raise RuntimeError("buddy context provider unavailable") from exc
- ctx = _buddy_context_used(sid)
- if not ctx or "used_pct" not in ctx or "ctx_window" not in ctx:
-  raise RuntimeError(f"buddy context unavailable for {role} sid={sid}")
- window = int(ctx["ctx_window"])
- if window <= 0: raise RuntimeError(f"buddy context window invalid for {role} sid={sid}")
- pct = round(min(100.0, max(0.0, float(ctx["used_pct"]))), 1)
- return {"pct": pct, "window": window, "sid": sid}
+ if os.environ.get("OVERDRIVE_MODE") != "6":
+  raise RuntimeError("team dashboard context requires OVERDRIVE_MODE=6")
+ ctx = _omniroute_ctx(role, sid, tier, forked_at)
+ if not ctx:
+  raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")
+ return {"pct": ctx["pct"], "window": ctx["window"], "sid": ctx["sid"], "model": ctx["model"]}
 def _now() -> str:
  return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 def _empty_dashboard() -> dict:

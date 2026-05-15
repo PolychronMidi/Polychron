@@ -140,15 +140,15 @@ _PROBES = {
         # (advisor_doctrine fixtures: missing-pre-build-fires,
         # solo-rescue-suppresses).
         ("solo-rescue-rationale", None),
-        ("call-i-consult", None),
+        ("advisor-record", None),
         ("escalate-tier", None),
     ],
     "ADVISOR_MISSING_POST_DELIVER": [
-        ("post-deliver-consult", None),
+        ("post-deliver-advisor-record", None),
         ("solo-rationale-skip", None),
     ],
     "ADVISOR_SILENTLY_SKIPPED": [
-        ("e4-with-consult", None),
+        ("e4-with-advisor-record", None),
         ("e4-solo-rationale", None),
     ],
     "SUMMARY_MISSING": [

@@ -116,11 +116,8 @@ class AtomicStateWritesVerifier(Verifier):
             r'feedback_graph\.json|adaptive-state\.json)"?'
         )
         same_line_mv_re = re.compile(r'\bmv\s+\S+\s+\S+')
-        # Files we explicitly skip (this verifier itself, the helper module).
-        sh_skip = {
-            os.path.join(_PROJECT, "tools", "HME", "scripts",
-                         "buddy_dispatcher.py"),
-        }
+        # Files we explicitly skip (reserved for verifier-owned helpers).
+        sh_skip = set()
         sh_roots = [
             os.path.join(_PROJECT, "tools", "HME", "hooks"),
             os.path.join(_PROJECT, "scripts"),
@@ -164,7 +161,6 @@ class AtomicStateWritesVerifier(Verifier):
         return _result(FAIL, score,
                        f"{len(violations)} non-atomic state-file write(s)",
                        violations[:10])
-
 
 
 

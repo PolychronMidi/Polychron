@@ -2,10 +2,14 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+
+const ORIGINAL_PATH = process.env.PATH || '';
 
 function fresh(projectRoot) {
   process.env.PROJECT_ROOT = projectRoot;
+  process.env.PATH = path.join(projectRoot, 'bin') + path.delimiter + ORIGINAL_PATH;
   const roots = [
     path.resolve(__dirname, '..', '..', 'event_kernel'),
     path.resolve(__dirname, '..', '..', 'hooks'),
@@ -17,13 +21,22 @@ function fresh(projectRoot) {
   }
 }
 
-function sandbox(prefix = 'hme-hooks-') {
+function _withSandbox(prefix = 'hme-hooks-') {
   const repo = path.resolve(__dirname, '..', '..', '..', '..');
-  const base = path.join(repo, 'output', 'test-sandboxes');
+  const base = path.join(os.tmpdir(), 'hme-test-sandboxes');
   fs.mkdirSync(base, { recursive: true });
   const root = fs.mkdtempSync(path.join(base, prefix));
-  for (const d of ['src', 'tmp', 'log', 'output/metrics']) fs.mkdirSync(path.join(root, d), { recursive: true });
+  for (const d of ['src', 'tmp', 'log', 'output/metrics', '.git', 'bin']) fs.mkdirSync(path.join(root, d), { recursive: true });
   for (const d of ['tools', 'scripts', 'config']) fs.symlinkSync(path.join(repo, d), path.join(root, d));
+  fs.writeFileSync(path.join(root, 'README.md'), 'test sandbox\n');
+  const fakeGit = path.join(root, 'bin', 'git');
+  fs.writeFileSync(fakeGit, [
+    '#!/usr/bin/env bash',
+    'if [ "$1" = "-C" ]; then shift 2; fi',
+    'case "$1" in add|commit|diff|status) exit 0 ;; *) exit 0 ;; esac',
+    '',
+  ].join('\n'));
+  fs.chmodSync(fakeGit, 0o755);
   fresh(root);
   return root;
 }
@@ -35,7 +48,7 @@ async function dispatch(root, event, payload) {
 }
 
 test('pre-write check centralizes deny decision for credential writes', async () => {
-  const root = sandbox('hme-pre-write-');
+  const root = _withSandbox('hme-pre-write-');
   const { preWriteCheck } = require('../../proxy/pre_write_check');
   const decision = await preWriteCheck(JSON.stringify({
     tool_name: 'Write',
@@ -48,7 +61,7 @@ test('pre-write check centralizes deny decision for credential writes', async ()
 });
 
 test('session state records structured verification evidence', () => {
-  const root = sandbox('hme-session-state-');
+  const root = _withSandbox('hme-session-state-');
   const state = require('../../proxy/session_state');
   state.recordVerificationEvidence({ command: 'node --test x', exit_code: 0, excerpt: 'pass', artifact: 'x' });
   const recent = state.recentVerificationEvidence(60_000);
@@ -60,7 +73,7 @@ test('session state records structured verification evidence', () => {
 
 
 test('synthetic PreToolUse Edit denies stub content', async () => {
-  const root = sandbox('hme-hook-edit-');
+  const root = _withSandbox('hme-hook-edit-');
   const res = await dispatch(root, 'PreToolUse', {
     tool_name: 'Edit',
     session_id: 's2',
@@ -72,7 +85,7 @@ test('synthetic PreToolUse Edit denies stub content', async () => {
 });
 
 test('synthetic PreToolUse Bash no-ops on harmless command', async () => {
-  const root = sandbox('hme-hook-bash-');
+  const root = _withSandbox('hme-hook-bash-');
   const res = await dispatch(root, 'PreToolUse', {
     tool_name: 'Bash',
     session_id: 's3',
@@ -84,7 +97,7 @@ test('synthetic PreToolUse Bash no-ops on harmless command', async () => {
 });
 
 test('synthetic PostToolUse Bash records verification evidence', async () => {
-  const root = sandbox('hme-hook-post-bash-');
+  const root = _withSandbox('hme-hook-post-bash-');
   const res = await dispatch(root, 'PostToolUse', {
     tool_name: 'Bash',
     session_id: 's4',
@@ -98,7 +111,7 @@ test('synthetic PostToolUse Bash records verification evidence', async () => {
 });
 
 test('synthetic Stop chain policy returns decision shape', async () => {
-  const root = sandbox('hme-hook-stop-');
+  const root = _withSandbox('hme-hook-stop-');
   const res = await dispatch(root, 'Stop', { session_id: 's5' });
   assert.strictEqual(res.exit_code, 0);
   assert.strictEqual(typeof res.stdout, 'string');
@@ -106,7 +119,7 @@ test('synthetic Stop chain policy returns decision shape', async () => {
 });
 
 test('synthetic SessionStart returns lifecycle shape', async () => {
-  const root = sandbox('hme-hook-session-');
+  const root = _withSandbox('hme-hook-session-');
   const res = await dispatch(root, 'SessionStart', { session_id: 's6' });
   assert.strictEqual(res.exit_code, 0);
   assert.strictEqual(typeof res.stderr, 'string');
@@ -114,7 +127,7 @@ test('synthetic SessionStart returns lifecycle shape', async () => {
 });
 
 test('synthetic PostCompact returns lifecycle shape', async () => {
-  const root = sandbox('hme-hook-postcompact-');
+  const root = _withSandbox('hme-hook-postcompact-');
   const res = await dispatch(root, 'PostCompact', { session_id: 's7' });
   assert.strictEqual(res.exit_code, 0);
   assert.strictEqual(typeof res.stdout, 'string');
@@ -141,7 +154,7 @@ test('hook envelope normalizes JSON string tool_input', () => {
 });
 
 test('session-state client uses filesystem path before HTTP fallback', async () => {
-  const root = sandbox('hme-state-client-');
+  const root = _withSandbox('hme-state-client-');
   const client = require('../../proxy/session_state_client');
   await client.call('verification-evidence', 's9', { command: 'probe', exit_code: 0, excerpt: 'ok' });
   const state = require('../../proxy/session_state').readState('s9');

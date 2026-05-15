@@ -160,7 +160,7 @@ def _audit_silent_injections(events: list[dict]) -> dict:
             "follow_rate": round(rate, 3),
             "recommendation": (
                 "proxy jurisdiction injections are being ignored -- the Evolver "
-                "sees the context but doesn't deepen with read(mode='before'). "
+                "sees the context but doesn't deepen with a pre-edit briefing. "
                 "Consider making the injection more explicit or adding a "
                 "block-until-read gate for high-stakes zones."
             ),

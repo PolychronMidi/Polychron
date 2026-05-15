@@ -59,11 +59,15 @@ if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
 fi
 
 # Block edits to misplaced log/, metrics/, or tmp/ directories
-if echo "$FILE" | grep -qE '/(log|tmp)/'; then
-  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/(log|tmp)/'; then
-    _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not edit files inside subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
-    exit 2
-  fi
+if [ -n "${PROJECT_ROOT:-}" ] && [ "${FILE#"$PROJECT_ROOT"/}" != "$FILE" ]; then
+  _REL_FILE="${FILE#"$PROJECT_ROOT"/}"
+  case "$_REL_FILE" in
+    log/*|tmp/*) ;;
+    */log/*|*/tmp/*)
+      _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not edit files inside subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
+      exit 2
+      ;;
+  esac
 fi
 if echo "$FILE" | grep -qE '/metrics/'; then
   if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/output/metrics/'; then
@@ -99,15 +103,15 @@ if [ -n "$FILE" ] && [ -x "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate
     exit 2
   fi
 fi
-# Architectural-decision audit. Legacy consult fields are retained so
-# existing decision-audit readers can still parse historical rows.
+# Architectural-decision audit. The retired `consulted` field is retained
+# for historical readers; new rows use `reviewed`.
 case "$FILE" in
   *CLAUDE.md|*doc/templates/SPEC.md|*.claude/agents/*.md|*tools/HME/scripts/detectors/*.py|*tools/HME/proxy/stop_chain/policies/*.js)
     _DA_LOG="$PROJECT_ROOT/output/metrics/decision-audit.jsonl"
     mkdir -p "$(dirname "$_DA_LOG")" 2>/dev/null
     _DA_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-    printf '{"ts":"%s","file":"%s","consulted":%s,"skip_reason":"%s"}\n' \
-      "$_DA_TS" "$FILE" false "" >> "$_DA_LOG" 2>/dev/null || true
+    printf '{"ts":"%s","file":"%s","reviewed":%s,"consulted":%s,"skip_reason":"%s"}\n' \
+      "$_DA_TS" "$FILE" false false "" >> "$_DA_LOG" 2>/dev/null || true
     ;;
 esac
 

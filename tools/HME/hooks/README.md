@@ -33,6 +33,11 @@ Use `_emit_block "reason"` + `exit 2` only for rules the agent MUST NOT violate 
 
 ## Dispatch tree
 
+`hooks.json` is the source of truth for live Claude Code hook registration.
+Run `scripts/sync-claude-settings.py` to materialize it into
+`~/.claude/settings.json`; `scripts/audit-claude-settings.py` fails if live
+settings drift from this manifest.
+
 `.claude/settings.json` registers `node event_kernel/claude_adapter.js <Event>` for every Claude Code lifecycle event. The adapter POSTs the hook stdin to `http://127.0.0.1:9099/hme/lifecycle?event=<Event>` and relays the JSON response back. If the proxy is unreachable, it calls the same event-kernel dispatcher directly.
 
 Subprocess transfer uses filesystem IPC under `runtime/hme/event-ipc/`; hook

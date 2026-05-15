@@ -8,7 +8,7 @@ Linear state machine with silent prerequisite auto-chaining:
 
     boot            fresh session -- waiting for selftest
     selftest_ok     selftest passed -- waiting for evolve(focus='design')
-    targeted        target picked -- waiting for read(target, mode='before')
+    targeted        target picked -- waiting for HME pre-edit briefing
     briefed         KB briefing absorbed -- waiting for Edit(s) on target
     edited          Edit done -- waiting for review(mode='forget')
     reviewed        review clean -- waiting for npm run main
@@ -29,7 +29,7 @@ Design rules:
     Write; for HME tools the chain decider is the authority.
 
 Auto-chaining (one rule):
-  When state == boot AND any HME tool other than hme_admin(action='selftest')
+  When state == boot AND any HME tool other than admin selftest
   is called, the handler runs selftest in-process first, prepends its output
   to the tool result, and advances to selftest_ok if zero failures. Other
   transitions describe natural workflow order; silent auto-chaining for
@@ -62,7 +62,7 @@ Graduation:
 Failure modes:
   state file missing mid-session  -> treated as graduated (permissive)
   Python import fails             -> shell hooks still gate via raw cat
-  agent picks bad target          -> read() errors; state stays targeted
+  agent picks bad target          -> briefing errors; state stays targeted
   agent edits outside /src/       -> no block; gates only fire for /src/
   selftest fails at boot          -> output prepended; state stays boot
   user interrupts mid-loop        -> state persists; nexus reminder next turn

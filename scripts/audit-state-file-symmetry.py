@@ -7,8 +7,8 @@ this class were caught manually during the runtime/hme/ migration:
 
   - `_autocommit.sh` wrote `hme-heartbeat-autocommit.ts` while
     `check-heartbeat-freshness.js` read `heartbeat-autocommit.ts`.
-  - `buddy_spawn.py` wrote `tmp/hme-buddy-primary.{floor,effort_floor}`
-    while `buddy_init.sh` read `runtime/hme/buddy-primary.{floor,...}`.
+  - A retired subagent router wrote one namespace while its status reader
+    read another.
 
 Approach: scan non-comment lines for path basenames in `runtime/hme/<name>`
 and `tmp/hme-<name>` shapes (handles shell interpolation, Path/path.join

@@ -26,11 +26,15 @@ fi
 
 # Block writes to misplaced log/, metrics/, or tmp/ directories.
 # JS counterparts: block-misplaced-log-tmp + block-misplaced-metrics.
-if _policy_enabled block-misplaced-log-tmp && echo "$FILE" | grep -qE '/(log|tmp)/'; then
-  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/(log|tmp)/'; then
-    _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not write files inside subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
-    exit 2
-  fi
+if _policy_enabled block-misplaced-log-tmp && [ -n "${PROJECT_ROOT:-}" ] && [ "${FILE#"$PROJECT_ROOT"/}" != "$FILE" ]; then
+  _REL_FILE="${FILE#"$PROJECT_ROOT"/}"
+  case "$_REL_FILE" in
+    log/*|tmp/*) ;;
+    */log/*|*/tmp/*)
+      _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not write files inside subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
+      exit 2
+      ;;
+  esac
 fi
 if _policy_enabled block-misplaced-metrics && echo "$FILE" | grep -qE '/metrics/'; then
   if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/output/metrics/'; then
