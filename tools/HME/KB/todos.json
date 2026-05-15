@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3144,
-      "updated_ts": 1778876188.607351,
-      "codex_plan_synced_ts": 1778876188.6073277,
+      "max_id": 3147,
+      "updated_ts": 1778876788.6105063,
+      "codex_plan_synced_ts": 1778876788.610483,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T20:16:25.390Z"
+      "codex_plan_ts": "2026-05-15T20:26:22.946Z"
     }
   },
   {
@@ -1594,8 +1594,8 @@
     "id": 3144,
     "text": "Run focused checks and report evidence",
     "activeForm": "Run focused checks and report evidence",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1604,6 +1604,54 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:16:25.390Z"
+    "codex_plan_ts": "2026-05-15T20:26:22.946Z"
+  },
+  {
+    "id": 3145,
+    "text": "Inspect current Claude Code OmniRoute routing and tests",
+    "activeForm": "Inspect current Claude Code OmniRoute routing and tests",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778876783.3894677,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:26:22.946Z"
+  },
+  {
+    "id": 3146,
+    "text": "Add target-format selection for cx/gpt/openai-responses targets",
+    "activeForm": "Add target-format selection for cx/gpt/openai-responses targets",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778876783.3894737,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:26:22.946Z"
+  },
+  {
+    "id": 3147,
+    "text": "Add regression tests for chat vs responses target selection",
+    "activeForm": "Add regression tests for chat vs responses target selection",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778876783.3894777,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:26:22.946Z"
   }
 ]
