@@ -208,6 +208,24 @@ _startup_done: threading.Event | None = None
 _startup_error: Exception | None = None
 
 
+def bootstrap_project_root_from_env() -> str:
+    """Populate PROJECT_ROOT/PROJECT_DB for direct-script imports."""
+    global PROJECT_ROOT, PROJECT_DB
+    if PROJECT_ROOT:
+        return PROJECT_ROOT
+    root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or ""
+    if not root:
+        try:
+            from hme_env import ENV
+            root = ENV.require("PROJECT_ROOT")
+        except Exception:
+            root = ""
+    if root:
+        PROJECT_ROOT = root
+        PROJECT_DB = PROJECT_DB or os.path.join(root, "tools", "HME", "KB")
+    return PROJECT_ROOT
+
+
 def _fmt_startup_error(err: Exception) -> str:
     """Format startup error with type, message, and traceback origin."""
     import traceback

@@ -10,7 +10,7 @@ Schema (authoritative -- all producers use _write_todo_entry to create items):
       "status": str,                       "pending"|"in_progress"|"completed"
       "done": bool,                        mirror of status == "completed"
       "critical": bool,                    surfaces in userpromptsubmit at turn start
-      "source": str,                       "native"|"lifesaver"|"hme_todo"|"onboarding"
+      "source": str,                       "native"|"lifesaver"|"hme_todo"|"todo_md"
       "on_done": str,                      optional lifecycle trigger (see ON_DONE_DISPATCH)
       "ts": float,                         creation timestamp (epoch seconds)
       "parent_id": int,                    id of parent main todo (0 = top-level)
@@ -23,7 +23,8 @@ The store also carries a metadata header at key "_meta":
 Refactor split (2026-05-01): bolt-on integrations now live in sibling modules,
 with todo.py keeping the core CRUD + dispatcher + on_done triggers and re-exporting
 their public symbols so existing callers don't change.
-  todo_lifesaver.py    -- lifesaver-error registration, dedup, caps, pruning, onboarding
+  todo_store.py        -- canonical todos.json load/save
+  todo_lifesaver.py    -- lifesaver-error registration, dedup, caps, pruning
   todo_native_merge.py -- native TodoWrite payload merge
   todo_markdown_ingest.py -- TODO.md ingest/promote helpers
   todo_archive.py         -- TODO.md/devlog archive lifecycle
@@ -33,9 +34,7 @@ Main todos are done only when all their subs are done. Marking a parent done
 while subs are open raises a refusal message that names the blocking subs.
 Completing the last open sub auto-completes the parent.
 """
-import json
 import os
-import re
 import sys
 import time
 import logging
@@ -47,15 +46,15 @@ if _mcp_root not in sys.path:
 from hme_env import ENV  # noqa: E402
 
 from server import context as ctx
+if hasattr(ctx, "bootstrap_project_root_from_env"):
+    ctx.bootstrap_project_root_from_env()
 from server.onboarding_chain import chained
 from . import _track
 from .synthesis_session import append_session_narrative
+from .todo_store import load_store as _store_load, save_todos as _store_save_todos
 
 logger = logging.getLogger("HME")
 
-_TODO_FILE = os.path.join(
-    ENV.require("PROJECT_ROOT"), "tools", "HME", "KB", "todos.json"
-)
 _GRAPH_FILE = os.path.join(
     ENV.require("PROJECT_ROOT"), "output", "metrics", "todo-graph.md"
 )
@@ -66,38 +65,8 @@ _todo_lock = threading.RLock()
 # taking (entry_dict) and returning a short status string for the caller.
 ON_DONE_DISPATCH: dict = {}
 
-def _default_meta() -> dict:
-    return {"max_id": 0, "updated_ts": time.time()}
-
-
-def _load_raw() -> list:
-    try:
-        with open(_TODO_FILE, encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
-
-def _split_meta(raw: list) -> tuple[dict, list]:
-    """Separate the metadata header from the todo list. Creates one if missing."""
-    if raw and isinstance(raw[0], dict) and raw[0].get("id") == 0 and "_meta" in raw[0]:
-        return raw[0]["_meta"], raw[1:]
-    # Legacy file (no header) -- synthesize meta from existing entries
-    meta = _default_meta()
-    if raw:
-        max_id = 0
-        for t in raw:
-            if isinstance(t, dict):
-                max_id = max(max_id, int(t.get("id", 0)))
-                for s in t.get("subs", []):
-                    if isinstance(s, dict):
-                        max_id = max(max_id, int(s.get("id", 0)))
-        meta["max_id"] = max_id
-    return meta, raw
-
-
 def _load_todos() -> tuple[dict, list]:
-    meta, todos = _split_meta(_load_raw())
+    _raw, meta, todos = _store_load()
     # In-memory normalize: legacy easy/medium/hard -> E1-E5 via _normalize_tier.
     for t in todos:
         if isinstance(t, dict):
@@ -109,12 +78,7 @@ def _load_todos() -> tuple[dict, list]:
 
 
 def _save_todos(meta: dict, todos: list):
-    meta["updated_ts"] = time.time()
-    os.makedirs(os.path.dirname(_TODO_FILE), exist_ok=True)
-    header = {"id": 0, "_meta": meta}
-    with open(_TODO_FILE, "w", encoding="utf-8") as f:
-        json.dump([header] + todos, f, indent=2)
-        f.write("\n")
+    _store_save_todos(meta, todos)
     try:
         _write_graph_file(todos)
     except Exception as e:
@@ -154,13 +118,13 @@ def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
                       source: str = "hme_todo", on_done: str = "",
                       parent_id: int = 0, tier: str = "E3") -> dict:
     """Canonical entry constructor -- every producer goes through this to ensure
-    schema stability across LIFESAVER, native mirror, hme_todo, and onboarding.
+    schema stability across LIFESAVER, native mirror, hme_todo, and TODO.md.
 
     `tier` is one of E1..E5 (canonical) or legacy easy/medium/hard (translated
     on read via _normalize_tier: easy->E2, medium->E3, hard->E4). Defaults
     to E3 so legacy/unlabeled items still sort sensibly.
     """
-    # Single-writer invariant: only tools_analysis.todo may write the store.
+    # Single-writer invariant: JSON persistence goes through todo_store.py.
     try:
         from server.lifecycle_writers import assert_writer
         assert_writer("hme-todo-store", __file__)
@@ -217,7 +181,7 @@ def _format_todos(todos: list) -> str:
         return (
             "No todos.\n\n"
             "Use native TodoWrite for session tasks. HME merges persistent "
-            "critical, onboarding, and TODO.md items automatically."
+            "critical and TODO.md items automatically."
         )
     lines = []
     for t in todos:
@@ -290,7 +254,6 @@ from .todo_lifesaver import (  # noqa: F401, E402
     _prune_done_todos_universal, _prune_done_lifesavers,
     register_todo_from_lifesaver, resolve_lifesaver_todos,
     list_critical, list_carried_over,
-    register_onboarding_tree, clear_onboarding_tree,
     _expire_stale_lifesavers,
 )
 from .todo_native_merge import merge_native_todowrite  # noqa: F401, E402
@@ -306,9 +269,6 @@ from .todo_archive import (  # noqa: F401, E402
 )
 from .todo_close import (  # noqa: F401, E402
     _detect_todo_complete, _close_with_todo_update,
-)
-from .todo_md_sync import (  # noqa: E402
-    repair_todo_md_from_store,
 )
 
 @ctx.mcp.tool(meta={"hidden": True})
@@ -342,7 +302,6 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
     action='promote_to_todo': keeps #todo_id visible in TODO.md.
     action='close_with_todo_update': marks #todo_id done and flips the matching
         TODO.md task line if present.
-    action='repair_markdown': regenerate TODO.md from tools/HME/KB/todos.json.
 
     Changes to this store propagate back to native TodoWrite via the
     native TodoWrite merge -- items appear in the agent's native view
@@ -590,13 +549,8 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 note = f" (flipped TODO.md item: {todo_flipped[:80]})"
             return f"Closed #{todo_id}{note}\nShipped: {shipped_line}\n"
 
-        if action == "repair_markdown":
-            result = repair_todo_md_from_store()
-            state = "changed" if result["changed"] else "already synced"
-            return f"TODO.md repair {state}: {result['path']} ({result['todo_count']} top-level todo(s)).\n"
-
         return ("Unknown action. Use: list, add, done, undo, remove, clear, archive_now, critical, "
-                "ingest_from_todo, promote_to_todo, close_with_todo_update, repair_markdown.")
+                "ingest_from_todo, promote_to_todo, close_with_todo_update.")
 
 
 

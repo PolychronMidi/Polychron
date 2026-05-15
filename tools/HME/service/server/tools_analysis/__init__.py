@@ -148,7 +148,6 @@ local_think = _local_think
 
 # Coordinator entry points used by external bootstrappers
 from .todo import (  # noqa: E402, F401
-    register_onboarding_tree, clear_onboarding_tree,
     register_todo_from_lifesaver, resolve_lifesaver_todos,
 )
 

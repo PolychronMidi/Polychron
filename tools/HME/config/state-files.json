@@ -265,6 +265,22 @@
       "repair": "run scripts/hme-doctor.py"
     },
     {
+      "path": "tools/HME/config/todo-archive-index.json",
+      "owner": "tools/HME/service/server/tools_analysis/todo_archive.py",
+      "readers": [
+        "tools/HME/scripts/verify_coherence/todo_tools.py",
+        "humans"
+      ],
+      "writers": [
+        "tools/HME/service/server/tools_analysis/todo_archive.py"
+      ],
+      "retention": "append-only metadata for local TODO archives",
+      "generated": true,
+      "committed": true,
+      "schema": "JSON object with archives[] records: archived, set_name, archive_path, task_count, done_count, todo_count",
+      "repair": "python3 tools/HME/scripts/todo_repair.py --check"
+    },
+    {
       "path": "tools/HME/KB/*.lance",
       "owner": "worker KB indexer",
       "readers": [
@@ -306,15 +322,14 @@
     },
     {
       "path": "tools/HME/KB/todos.json",
-      "coordination": "canonical machine todo store; TODO.md is the rendered human surface",
+      "coordination": "canonical machine todo store; TODO.md is the rendered human surface; all JSON writes go through todo_store.py",
       "writers": [
-        "tools/HME/service/server/tools_analysis/todo.py",
-        "tools/HME/service/server/tools_analysis/todo_md_sync.py",
-        "tools/HME/scripts/todo_autoflip.py"
+        "tools/HME/service/server/tools_analysis/todo_store.py"
       ],
       "owner": "HME todo store",
       "readers": [
         "native TodoWrite replacement",
+        "tools/HME/service/server/tools_analysis/todo_store.py",
         "tools/HME/service/server/tools_analysis/todo_md_sync.py",
         "tools/HME/scripts/todo_repair.py",
         "tools/HME/service/server/tools_analysis/todo_archive.py"

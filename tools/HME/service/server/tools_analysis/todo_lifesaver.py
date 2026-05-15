@@ -1,10 +1,8 @@
-"""Lifesaver-todo bridge -- registration, dedup, caps, pruning, onboarding tree.
+"""Lifesaver-todo bridge -- registration, dedup, caps, and pruning.
 
 Extracted from todo.py (was lines 285-715). External API: register_todo_from_lifesaver,
-resolve_lifesaver_todos, list_critical, list_carried_over, register_onboarding_tree,
-clear_onboarding_tree. todo.py re-exports these so existing callers don't change.
+resolve_lifesaver_todos, list_critical, list_carried_over.
 """
-import json
 import os
 import re
 import sys
@@ -14,18 +12,12 @@ import logging
 _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
-from hme_env import ENV  # noqa: E402
-
-from server import context as ctx
-from server.tools_analysis import _track
 
 logger = logging.getLogger("HME")
 
 # Pull persistence + entry primitives from the parent module. todo.py loads
 from server.tools_analysis.todo import (
-    _load_todos, _save_todos, _write_todo_entry, _allocate_id,
-    _find_main, _find_any, _check_main_done, _mark_status,
-    _todo_lock,
+    _load_todos, _save_todos, _write_todo_entry, _check_main_done, _todo_lock,
 )
 
 
@@ -36,7 +28,7 @@ _LIFESAVER_MAX_OPEN = int(os.environ.get("HME_LIFESAVER_TODO_MAX_OPEN", "20"))
 _LIFESAVER_TTL_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_TTL_SEC", str(24 * 3600)))
 # Prune-after: how long a DONE lifesaver entry stays in the store before
 _LIFESAVER_PRUNE_AFTER_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_PRUNE_SEC", str(3 * 24 * 3600)))
-# Prune-after for non-lifesaver done todos (native, hme_todo, onboarding, spec).
+# Prune-after for non-lifesaver done todos (native, hme_todo, todo_md).
 _DONE_TODO_PRUNE_AFTER_SECONDS = int(os.environ.get("HME_DONE_TODO_PRUNE_SEC", str(7 * 24 * 3600)))
 
 
@@ -121,9 +113,8 @@ def _enforce_lifesaver_caps(meta: dict, todos: list) -> int:
 
 def _prune_done_todos_universal(meta: dict, todos: list) -> int:
     """Prune done todos of ALL sources past their respective prune
-    horizons. Was previously lifesaver-only, leaving native/hme_todo/
-    onboarding/spec done entries to accumulate forever (the user's
-    "done todos stacking up" complaint).
+    horizons. Was previously lifesaver-only, leaving native/hme_todo/todo_md
+    done entries to accumulate forever.
 
     Per-source horizons:
       - lifesaver:  3 days  (HME_LIFESAVER_TODO_PRUNE_SEC)
@@ -341,66 +332,6 @@ def list_carried_over() -> list:
     return out
 
 
-def register_onboarding_tree(steps: list) -> int:
-    """Create or update the onboarding walkthrough tree as a main todo with
-    one sub per step. Called by onboarding_chain.py when the walkthrough
-    initializes or advances. Returns the parent id.
-
-    steps: list of (text, status) tuples -- e.g., [("boot check", "completed"),
-           ("pick target", "in_progress"), ("brief", "pending"), ...]
-
-    On update, existing sub IDs are reused by matching on the step text, so
-    repeated transitions don't churn the max_id counter.
-    """
-    with _todo_lock:
-        meta, todos = _load_todos()
-        existing = next(
-            (t for t in todos if t.get("source") == "onboarding" and t.get("parent_id", 0) == 0),
-            None,
-        )
-        if existing is None:
-            parent = _write_todo_entry(
-                meta, text="HME onboarding walkthrough",
-                status="in_progress", source="onboarding",
-            )
-            parent["subs"] = []
-            todos.append(parent)
-            prior_subs_by_text = {}
-        else:
-            parent = existing
-            prior_subs_by_text = {s["text"]: s for s in parent.get("subs", [])}
-            parent["subs"] = []
-
-        for text, status in steps:
-            prior = prior_subs_by_text.get(text)
-            if prior is not None:
-                prior["status"] = status
-                prior["done"] = status == "completed"
-                parent["subs"].append(prior)
-            else:
-                sub = _write_todo_entry(
-                    meta, text=text, status=status, source="onboarding",
-                    parent_id=parent["id"],
-                )
-                parent["subs"].append(sub)
-
-        if _check_main_done(parent):
-            _mark_status(parent, "completed")
-        else:
-            in_progress_sub = any(s.get("status") == "in_progress" for s in parent["subs"])
-            _mark_status(parent, "in_progress" if in_progress_sub else "pending")
-        _save_todos(meta, todos)
-        return parent["id"]
-
-
-def clear_onboarding_tree() -> None:
-    """Remove the onboarding parent and all its subs. Called on graduation."""
-    with _todo_lock:
-        meta, todos = _load_todos()
-        todos = [t for t in todos if t.get("source") != "onboarding"]
-        _save_todos(meta, todos)
-
-
 # Lifesaver-critical items that haven't been touched in this many seconds
 _LIFESAVER_STALE_SECONDS = 6 * 3600
 
@@ -418,8 +349,8 @@ def _expire_stale_lifesavers(meta: dict, todos: list) -> int:
                 and t.get("status") == "pending"
                 and float(t.get("ts", 0)) < cutoff):
             t["status"] = "completed"
+            t["done"] = True
             t["resolved_ts"] = time.time()
             t["resolved_reason"] = "stale"
             expired += 1
     return expired
-

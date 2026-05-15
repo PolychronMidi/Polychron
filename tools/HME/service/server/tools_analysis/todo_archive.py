@@ -9,7 +9,11 @@ _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from hme_env import ENV  # noqa: E402
-from paths import todo_file as _todo_md_file, kb_devlog_dir as _devlog_dir  # noqa: E402
+from paths import (  # noqa: E402
+    todo_file as _todo_md_file,
+    kb_devlog_dir as _devlog_dir,
+    todo_archive_index_file as _archive_index_file,
+)
 from .todo_md_sync import completion_state, write_blank_todo_md  # noqa: E402
 
 ARCHIVE_REQUIRED_SECTIONS = ("## TODO snapshot", "## todos.json snapshot")
@@ -86,6 +90,38 @@ def validate_archive_text(text: str) -> list[str]:
     return errors
 
 
+def _record_archive_index(devlog_path: str, set_name: str, ts: str,
+                          todo_md: str, todos: list) -> None:
+    path = _archive_index_file()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    try:
+        with open(path, encoding="utf-8") as f:
+            index = json.load(f)
+    except FileNotFoundError:
+        index = {"archives": []}
+    if not isinstance(index, dict) or not isinstance(index.get("archives"), list):
+        raise RuntimeError(f"{path} has invalid archive index schema")
+    state = completion_state(todo_md)
+    rel_path = os.path.relpath(devlog_path, ENV.require("PROJECT_ROOT"))
+    record = {
+        "archived": ts,
+        "set_name": set_name,
+        "archive_path": rel_path,
+        "task_count": state["total"],
+        "done_count": state["total"] - state["open"],
+        "todo_count": len(todos),
+    }
+    index["archives"] = [
+        item for item in index["archives"]
+        if item.get("archive_path") != rel_path
+    ] + [record]
+    tmp = f"{path}.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(index, f, indent=2, sort_keys=True)
+        f.write("\n")
+    os.replace(tmp, path)
+
+
 def _archive_set(set_name: str = "", force: bool = False) -> dict:
     """Archive TODO.md plus todos.json, then reset TODO.md."""
     detection = _detect_complete_set()
@@ -118,6 +154,7 @@ def _archive_set(set_name: str = "", force: bool = False) -> dict:
         }
     with open(devlog_path, "w", encoding="utf-8") as f:
         f.write(devlog_content)
+    _record_archive_index(devlog_path, set_name, ts, todo_md, todos)
     _reset_todo_to_fresh_slate()
     # Auto-fire learning extraction on the new devlog so KB/learnings.jsonl
     # accumulates each cycle's patterns without a human running i/learn learnings.

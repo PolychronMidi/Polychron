@@ -81,10 +81,9 @@ Adding a new gate for an external tool:
   3. Matching posttooluse_*.sh advances via _onb_advance_to
 
 Native TodoWrite integration:
-  set_state writes the state file AND register_onboarding_tree(steps) in
-  todo.py. event_kernel/native_hooks/todo.js merges the HME tree into the agent's
-  native list via updatedInput, preserving sub IDs across transitions.
-  On graduation, clear_onboarding_tree() removes the parent + subs.
+  Onboarding state stays in tmp/hme-onboarding.state and status output.
+  Native TodoWrite remains a task surface; walkthrough steps are not mirrored
+  into persistent TODO storage.
 
 NOT enforced:
   * Cross-session graduation persistence (matches LLM amnesia)
@@ -143,17 +142,6 @@ STEP_LABELS = {
     "graduated":   "graduated -- blocks relax",
 }
 
-# Ordered step list for the todo tree mirror -- index matches STATES order
-STEP_SHORT = [
-    f"boot check ({_action_form('selftest')})",
-    f"pick evolution target ({_i_form('evolve', primer=True)})",
-    "edit target module (KB briefing auto-chains)",
-    f"audit changes ({_i_form('review', primer=True)})",
-    "run pipeline (Bash: npm run main)",
-    "await pipeline verdict",
-    f"persist learning ({_i_form('learn', primer=True)})",
-]
-
 _PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 # Flat per-field state files -- kept separate (not merged into JSON) so shell
 _STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
@@ -178,11 +166,7 @@ def state() -> str:
 
 
 def set_state(s: str) -> None:
-    """Write new state. Deletes file on 'graduated'. Never raises.
-
-    Also mirrors the new state into the HME todo tree so the walkthrough is
-    visible in the agent's native todo view (E4 integration).
-    """
+    """Write new state. Deletes file on 'graduated'. Never raises."""
     try:
         from server.lifecycle_writers import assert_writer
         assert_writer("onboarding-state", __file__)
@@ -198,47 +182,12 @@ def set_state(s: str) -> None:
                     os.remove(f)
                 except FileNotFoundError:  # silent-ok: graduation-state file cleanup; missing file = already graduated
                     pass
-            _mirror_to_todo_tree_graduated()
             return
         os.makedirs(os.path.dirname(_STATE_FILE), exist_ok=True)
         with open(_STATE_FILE, "w") as f:
             f.write(s)
-        _mirror_to_todo_tree(s)
     except Exception as e:
         logger.warning(f"onboarding: state write failed: {e}")
-
-
-def _mirror_to_todo_tree(current_state: str) -> None:
-    """Project the current state onto the HME todo tree as a parent with subs
-    per step. Called on every state transition. Soft-fails if the todo module
-    can't be loaded (e.g., during early server bootstrap)."""
-    try:
-        from server.tools_analysis import register_onboarding_tree
-    except Exception as _err:
-        logger.debug(f"unnamed-except onboarding_chain.py:133: {type(_err).__name__}: {_err}")
-        return
-    cur_idx = step_index(current_state)
-    steps = []
-    for i, short in enumerate(STEP_SHORT):
-        if i < cur_idx:
-            status = "completed"
-        elif i == cur_idx:
-            status = "in_progress"
-        else:
-            status = "pending"
-        steps.append((short, status))
-    try:
-        register_onboarding_tree(steps)
-    except Exception as e:
-        logger.warning(f"onboarding: todo tree mirror failed: {e}")
-
-
-def _mirror_to_todo_tree_graduated() -> None:
-    try:
-        from server.tools_analysis import clear_onboarding_tree
-        clear_onboarding_tree()
-    except (ImportError, AttributeError) as _clr_err:
-        logger.debug(f"onboarding: clear_onboarding_tree unavailable: {_clr_err}")
 
 
 def target() -> str:

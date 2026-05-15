@@ -83,6 +83,7 @@ from .onboarding import (  # noqa: F401
 )
 from .todo_tools import (  # noqa: F401
     TodoStoreSchemaVerifier, TodoMarkdownSyncVerifier, TodoArchiveContractVerifier,
+    TodoOnboardingDecoupledVerifier,
     ToolSurfaceCoverageVerifier, TodoMergeHookConsistencyVerifier,
 )
 from .meta_observers import (  # noqa: F401
@@ -159,6 +160,7 @@ REGISTRY = [
     OnboardingChainImportVerifier(),
     TodoStoreSchemaVerifier(),
     TodoMarkdownSyncVerifier(),
+    TodoOnboardingDecoupledVerifier(),
     TodoArchiveContractVerifier(),
     ReloadableModuleSyncVerifier(),
     HookRegistrationVerifier(),

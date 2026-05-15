@@ -54,6 +54,10 @@ def kb_devlog_dir() -> str:
     return os.path.join(project_root(), "tools", "HME", "KB", "devlog")
 
 
+def todo_archive_index_file() -> str:
+    return os.path.join(project_root(), "tools", "HME", "config", "todo-archive-index.json")
+
+
 def errors_log() -> str:
     return os.path.join(project_root(), "log", "hme-errors.log")
 

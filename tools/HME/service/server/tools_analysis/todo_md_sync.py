@@ -4,14 +4,13 @@ from __future__ import annotations
 import os
 import re
 import sys
-import json
 import time
-from pathlib import Path
 
 _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
-from paths import todo_file as _todo_md_file, todo_store_file as _todo_store_file  # noqa: E402
+from paths import todo_file as _todo_md_file  # noqa: E402
+from .todo_store import flat_entries, load_store, save_store  # noqa: E402
 
 TASK_RE = re.compile(
     r"^(?P<indent>\s*)-\s+\[(?P<mark>[ xX])\]\s+\[(?P<tier>E[1-5]|easy|medium|hard)\]\s+(?P<text>.+?)\s*$",
@@ -272,61 +271,6 @@ def mark_matching_done(entry: dict) -> tuple[str, str]:
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + ("\n" if md.endswith("\n") else ""))
     return m.group("text").strip(), lines[idx]
-
-
-def _default_store() -> list[dict]:
-    return [{"id": 0, "_meta": {"max_id": 0, "updated_ts": time.time()}}]
-
-
-def _max_seen_id(todos: list[dict]) -> int:
-    max_id = 0
-    for entry in todos:
-        if not isinstance(entry, dict):
-            continue
-        max_id = max(max_id, int(entry.get("id", 0)))
-        for sub in entry.get("subs", []):
-            if isinstance(sub, dict):
-                max_id = max(max_id, int(sub.get("id", 0)))
-    return max_id
-
-
-def load_store(path: str | None = None) -> tuple[list[dict], dict, list[dict]]:
-    store_path = Path(path or _todo_store_file())
-    if not store_path.is_file():
-        raw = _default_store()
-    else:
-        with open(store_path, encoding="utf-8") as f:
-            raw = json.load(f)
-    if raw and isinstance(raw[0], dict) and raw[0].get("id") == 0 and "_meta" in raw[0]:
-        meta = raw[0]["_meta"]
-        todos = raw[1:]
-        meta["max_id"] = max(int(meta.get("max_id", 0)), _max_seen_id(todos))
-        return raw, meta, todos
-    todos = raw if isinstance(raw, list) else []
-    meta = {"max_id": _max_seen_id(todos), "updated_ts": time.time()}
-    header = {"id": 0, "_meta": meta}
-    return [header] + todos, meta, todos
-
-
-def save_store(raw: list[dict], meta: dict, path: str | None = None) -> None:
-    meta["updated_ts"] = time.time()
-    store_path = Path(path or _todo_store_file())
-    store_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = store_path.with_suffix(store_path.suffix + ".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(raw, f, indent=2)
-        f.write("\n")
-    os.replace(tmp, store_path)
-
-
-def flat_entries(todos: list[dict]) -> list[dict]:
-    out: list[dict] = []
-    for entry in todos:
-        if not isinstance(entry, dict):
-            continue
-        out.append(entry)
-        out.extend(s for s in entry.get("subs", []) if isinstance(s, dict))
-    return out
 
 
 def matches_todo_text(left: str, right: str) -> bool:

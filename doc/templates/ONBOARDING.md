@@ -106,8 +106,8 @@ i/learn query=...                          KB search
 i/learn action=health                    KB staleness check
 i/hme admin action=index                 reindex after batch changes
 i/hme admin action=reload                hot-reload tool modules
-TodoWrite                                native task list; HME merges persistent critical,
-                                         onboarding, and TODO.md items automatically
+TodoWrite                                native task list; HME merges persistent critical
+                                         and TODO.md items automatically
 ```
 
 (Run `i/help` for the full wrapper surface and `i/help <name>` for usage.
@@ -119,7 +119,7 @@ Native `TodoWrite` is the public todo surface. The HME layer adds the following 
 - **Subtodos + auto-completion.** Internal HME todo entries can carry subtodos; the native view shows them as indented rows (`  + text`).
 - **Critical flag.** Pass `critical=True` on add. Critical items surface at every turn start via `userpromptsubmit.sh` until resolved. LIFESAVER alerts auto-append as critical.
 - **on_done triggers.** Pass `on_done='reindex'|'learn'|'commit'` to fire a lifecycle hook when the item is marked done. `reindex` runs `i/hme admin action=index` in the background. `learn` queues a reminder to call `i/learn` at the next turn. `commit` flags a commit nudge in the nexus.
-- **Onboarding walkthrough appears in your native todo list.** The current step is always marked `in_progress`, completed steps are marked done, upcoming steps are pending. You don't need to manage it -- hooks do.
+- **Onboarding stays separate.** The current walkthrough step appears in status output, not as persistent tasks.
 - **Cross-session persistence.** Open items from the previous session surface at `SessionStart` with a diff view. Completed items live in the store history until auto-pruned or archived.
 - **Live mermaid graph.** The store writes a live rendering to [output/metrics/todo-graph.md](../../output/metrics/todo-graph.md) on every change. Use this to see the work tree as a diagram.
 

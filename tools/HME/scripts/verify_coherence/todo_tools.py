@@ -87,7 +87,8 @@ class TodoMarkdownSyncVerifier(Verifier):
                 failures.append(f"{os.path.relpath(hook, _PROJECT)} not wired to TODO autoflip")
         try:
             sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
-            from server.tools_analysis.todo_md_sync import load_store, render_todo_md, section_headers, TODO_SECTIONS
+            from server.tools_analysis.todo_store import load_store
+            from server.tools_analysis.todo_md_sync import render_todo_md, section_headers, TODO_SECTIONS
             _raw, _meta, todos = load_store()
             current = open(todo_md, encoding="utf-8").read() if os.path.isfile(todo_md) else ""
             if tuple(section_headers(current)) != TODO_SECTIONS:
@@ -103,6 +104,50 @@ class TodoMarkdownSyncVerifier(Verifier):
         return _result(PASS, 1.0, "TODO.md is canonical, synced, and hook-wired")
 
 
+class TodoOnboardingDecoupledVerifier(Verifier):
+    """Onboarding state must not create persistent TODO/TodoWrite entries."""
+    name = "todo-onboarding-decoupled"
+    category = "state"
+    subtag = "interface-contract"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        failures: list[str] = []
+        store = os.path.join(_PROJECT, "tools", "HME", "KB", "todos.json")
+        if os.path.isfile(store):
+            try:
+                sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
+                from server.tools_analysis.todo_store import flat_entries, load_store
+                _raw, _meta, todos = load_store(store)
+                for entry in flat_entries(todos):
+                    text = str(entry.get("text", ""))
+                    if entry.get("source") == "onboarding" or "HME onboarding walkthrough" in text:
+                        failures.append(f"stale onboarding todo #{entry.get('id')}: {text[:80]}")
+            except Exception as e:
+                failures.append(f"store check errored: {e}")
+        code_checks = [
+            ("tools/HME/service/server/onboarding_chain.py", "register_onboarding_tree"),
+            ("tools/HME/service/server/onboarding_chain.py", "clear_onboarding_tree"),
+            ("tools/HME/service/server/tools_analysis/todo_native_merge.py", "[HME onboarding]"),
+            ("tools/HME/service/server/tools_analysis/todo_native_merge.py", '"spec"'),
+            ("tools/HME/hooks/helpers/_todo_merge.py", "[HME onboarding]"),
+        ]
+        for rel, needle in code_checks:
+            path = os.path.join(_PROJECT, rel)
+            try:
+                text = open(path, encoding="utf-8").read()
+            except OSError as e:
+                failures.append(f"{rel} unreadable: {e}")
+                continue
+            if needle in text:
+                failures.append(f"{rel} still references {needle!r}")
+        if failures:
+            return _result(FAIL, 0.0,
+                           f"{len(failures)} onboarding/TODO coupling issue(s)",
+                           failures[:12])
+        return _result(PASS, 1.0, "onboarding state is separate from persistent TODO storage")
+
+
 class TodoArchiveContractVerifier(Verifier):
     """TODO-era devlogs should keep their documented archive shape."""
     name = "todo-archive-contract"
@@ -113,8 +158,28 @@ class TodoArchiveContractVerifier(Verifier):
 
     def run(self) -> VerdictResult:
         devlog = os.path.join(_PROJECT, "tools", "HME", "KB", "devlog")
+        index_path = os.path.join(_PROJECT, "tools", "HME", "config", "todo-archive-index.json")
+        index_failures: list[str] = []
+        try:
+            with open(index_path, encoding="utf-8") as f:
+                index = json.load(f)
+            archives = index.get("archives")
+            if not isinstance(archives, list):
+                index_failures.append("archives must be a list")
+            else:
+                for i, item in enumerate(archives):
+                    if not isinstance(item, dict):
+                        index_failures.append(f"archives[{i}] is not an object")
+                        continue
+                    for key in ("archived", "set_name", "archive_path", "task_count", "done_count", "todo_count"):
+                        if key not in item:
+                            index_failures.append(f"archives[{i}] missing {key}")
+        except Exception as e:
+            index_failures.append(f"archive index unreadable: {e}")
         if not os.path.isdir(devlog):
-            return _result(SKIP, 1.0, "no devlog directory")
+            if index_failures:
+                return _result(FAIL, 0.0, "TODO archive index invalid", index_failures)
+            return _result(PASS, 1.0, "archive index valid; no local devlog directory")
         try:
             sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
             from server.tools_analysis.todo_archive import validate_archive_text
@@ -141,6 +206,8 @@ class TodoArchiveContractVerifier(Verifier):
             errors = validate_archive_text(text)
             if errors:
                 failures.append(f"{name}: {', '.join(errors)}")
+        if index_failures:
+            failures.extend(index_failures)
         if failures:
             return _result(FAIL, 0.0, f"{len(failures)} TODO archive contract violation(s)", failures[:10])
         suffix = f"; {legacy} legacy TODO archive(s) skipped" if legacy else ""

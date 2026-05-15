@@ -26,10 +26,8 @@ _TODO_PY = os.path.join(_PROJECT, "tools", "HME", "service", "server", "tools_an
 # Prefixes the hook adds when returning merged items back to native TodoWrite.
 _ECHO_PREFIXES = (
     "[CRITICAL] ",
-    "[HME onboarding] ",
     "[LIFESAVER] ",
     "  + ",
-    "  + [HME] ",
 )
 
 

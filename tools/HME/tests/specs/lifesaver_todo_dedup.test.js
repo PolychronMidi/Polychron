@@ -221,11 +221,15 @@ spec_exists = os.path.exists(os.path.join("${sandbox}", "doc", "templates", "SPE
 todo_md = open(os.path.join("${sandbox}", "doc", "templates", "TODO.md")).read()
 devlog_dir = os.path.join("${sandbox}", "tools", "HME", "KB", "devlog")
 devlog_files = sorted(os.listdir(devlog_dir)) if os.path.exists(devlog_dir) else []
+index_path = os.path.join("${sandbox}", "tools", "HME", "config", "todo-archive-index.json")
+index = json.load(open(index_path)) if os.path.exists(index_path) else {"archives": []}
 print(json.dumps({
   "detected_complete": detection["complete"],
   "archive_message_present": "[ARCHIVE] Set archived" in out,
   "devlog_count": len(devlog_files),
   "devlog_filename_pattern": all("test-set-name" in f for f in devlog_files) if devlog_files else False,
+  "index_count": len(index.get("archives", [])),
+  "index_path_recorded": bool(devlog_files and index.get("archives") and index["archives"][0].get("archive_path", "").endswith(devlog_files[0])),
   "spec_absent": not spec_exists,
   "todo_reset_to_fresh": todo_md.startswith("# TODO") and "## Next" in todo_md and "(empty)" in todo_md,
 }))
@@ -236,8 +240,75 @@ print(json.dumps({
     assert.strictEqual(parsed.archive_message_present, true, 'clear must surface archive message');
     assert.strictEqual(parsed.devlog_count, 1, 'one devlog file must be produced');
     assert.strictEqual(parsed.devlog_filename_pattern, true, 'devlog filename must include slug');
+    assert.strictEqual(parsed.index_count, 1, 'archive index records the devlog');
+    assert.strictEqual(parsed.index_path_recorded, true, 'archive index points at the devlog');
     assert.strictEqual(parsed.spec_absent, true, 'SPEC.md is not recreated');
     assert.strictEqual(parsed.todo_reset_to_fresh, true, 'fresh TODO has empty notepad sections');
+  });
+});
+
+test('onboarding: state transitions do not mirror into persistent TODO storage', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.onboarding_chain import set_state
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json
+set_state("boot")
+set_state("selftest_ok")
+set_state("targeted")
+_meta, todos = _load_todos()
+view = hme_todo(action="list")
+print(json.dumps({
+  "onboarding_entries": [
+    t.get("text") for t in todos
+    if t.get("source") == "onboarding" or "HME onboarding walkthrough" in t.get("text", "")
+  ],
+  "view_task_only": "HME onboarding walkthrough" not in view and "[onboarding]" not in view,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.deepStrictEqual(parsed.onboarding_entries, [], 'onboarding must not create persistent TODO entries');
+    assert.strictEqual(parsed.view_task_only, true, 'native TODO view remains task-only');
+  });
+});
+
+test('todo lifecycle smoke: add, close, archive, and reset in sandbox', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json, os
+for tier, text in [("E2", "smoke item one"), ("E3", "smoke item two"), ("E4", "smoke item three")]:
+    hme_todo(action="add", text=text, tier=tier)
+_meta, todos = _load_todos()
+ids = [t["id"] for t in todos]
+for tid in ids:
+    hme_todo(action="close_with_todo_update", todo_id=tid)
+out = hme_todo(action="clear", text="todo lifecycle smoke")
+_meta, todos = _load_todos()
+todo_path = os.path.join("${sandbox}", "doc", "templates", "TODO.md")
+todo_md = open(todo_path).read()
+devlog_dir = os.path.join("${sandbox}", "tools", "HME", "KB", "devlog")
+devlog_files = sorted(os.listdir(devlog_dir)) if os.path.exists(devlog_dir) else []
+index_path = os.path.join("${sandbox}", "tools", "HME", "config", "todo-archive-index.json")
+index = json.load(open(index_path)) if os.path.exists(index_path) else {"archives": []}
+print(json.dumps({
+  "archive_message": "[ARCHIVE] Set archived" in out,
+  "store_empty": todos == [],
+  "todo_blank": "## Next" in todo_md and "smoke item" not in todo_md,
+  "devlog_count": len(devlog_files),
+  "index_count": len(index.get("archives", [])),
+  "spec_absent": not os.path.exists(os.path.join("${sandbox}", "doc", "templates", "SPEC.md")),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.archive_message, true, 'complete set archives on clear');
+    assert.strictEqual(parsed.store_empty, true, 'completed todos are removed after archive clear');
+    assert.strictEqual(parsed.todo_blank, true, 'TODO.md resets to the blank notepad');
+    assert.strictEqual(parsed.devlog_count, 1, 'one devlog archive is created');
+    assert.strictEqual(parsed.index_count, 1, 'archive index records the archive');
+    assert.strictEqual(parsed.spec_absent, true, 'SPEC.md is not recreated');
   });
 });
 

@@ -22,6 +22,8 @@ def _session_state_path() -> str | None:
     global _SESSION_STATE_FILE
     if _SESSION_STATE_FILE:
         return _SESSION_STATE_FILE
+    if not getattr(ctx, "PROJECT_ROOT", "") and hasattr(ctx, "bootstrap_project_root_from_env"):
+        ctx.bootstrap_project_root_from_env()
     root = getattr(ctx, "PROJECT_ROOT", "")
     if root:
         _SESSION_STATE_FILE = os.path.join(root, "runtime", "hme", "session-state.json")

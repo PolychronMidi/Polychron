@@ -2,7 +2,7 @@
 """Onboarding flow dry-run verifier.
 
 Simulates a full HME onboarding walkthrough in an ISOLATED state file,
-verifies each state transition fires, the todo tree mirrors correctly,
+verifies each state transition fires, onboarding stays out of the TODO store,
 and graduation clears state. Catches integration bugs in the chain decider
 before real agents hit them.
 
@@ -10,9 +10,9 @@ Tests:
     1. Fresh boot state is created.
     2. Each forward transition advances state + updates step label.
     3. Backward transitions are refused.
-    4. The todo tree mirror preserves sub IDs across transitions.
+    4. Onboarding state does not create persistent TODO entries.
     5. chain_exit correctly parses HME_TARGET and HME_REVIEW_VERDICT markers.
-    6. Graduation deletes the state file and clears the onboarding tree.
+    6. Graduation deletes the state file.
 
 Exit codes:
     0 -- all tests pass
@@ -57,7 +57,7 @@ def _load_onboarding_chain():
 
 
 def _load_todo_module(project_root: str):
-    """Load todo.py standalone so register_onboarding_tree works under mirror."""
+    """Load todo.py standalone so the verifier can inspect the TODO store."""
     class _FakeMCP:
         @staticmethod
         def tool(**_kw):
@@ -82,9 +82,6 @@ def _load_todo_module(project_root: str):
     mod = importlib.util.module_from_spec(spec)
     sys.modules["server.tools_analysis.todo"] = mod
     spec.loader.exec_module(mod)
-    # Mirror the package-level re-exports that real
-    ta_pkg.register_onboarding_tree = mod.register_onboarding_tree
-    ta_pkg.clear_onboarding_tree = mod.clear_onboarding_tree
     return mod
 
 
@@ -194,22 +191,20 @@ def main() -> int:
         check(onb.state() == "reviewed", "state stays at reviewed after refusal")
         print()
 
-        # Test 4: todo tree mirror preserves IDs
-        print("## Test 4: todo tree ID stability")
-        # Reset state and walk through (triggers mirror)
+        # Test 4: onboarding stays out of persistent todos
+        print("## Test 4: onboarding/TODO decoupling")
         onb.set_state("boot")
-        initial_list = todo_mod.hme_todo(action="list")
-        initial_ids = [l for l in initial_list.splitlines() if l.strip().startswith("[")]
         onb.set_state("selftest_ok")
         onb.set_state("targeted")
+        _meta, todos = todo_mod._load_todos()
+        onboarding_entries = [
+            t for t in todos
+            if t.get("source") == "onboarding" or "HME onboarding walkthrough" in t.get("text", "")
+        ]
+        check(not onboarding_entries, "state transitions do not write onboarding TODO entries")
         after = todo_mod.hme_todo(action="list")
-        after_lines = after.splitlines()
-        check(len(after_lines) > 3, "tree has entries after transitions")
-        # Check that IDs don't blow up (should be < 20 after 3 transitions)
-        import re
-        ids = [int(m.group(1)) for m in re.finditer(r'#(\d+)', after)]
-        if ids:
-            check(max(ids) < 20, f"max id < 20 after 3 transitions (got {max(ids)})")
+        check("HME onboarding walkthrough" not in after and "[onboarding]" not in after,
+              "native TODO view remains task-only")
         print()
 
         # Test 5: marker parsing
@@ -241,11 +236,8 @@ def main() -> int:
         state_file = os.path.join(tmp_project, "tmp", "hme-onboarding.state")
         check(not os.path.exists(state_file), "state file deleted on graduation")
         after_grad = todo_mod.hme_todo(action="list")
-        check(
-            "HME onboarding walkthrough" not in after_grad
-            and "[onboarding]" not in after_grad,
-            "onboarding tree cleared on graduation",
-        )
+        check("HME onboarding walkthrough" not in after_grad and "[onboarding]" not in after_grad,
+              "graduation leaves TODO store task-only")
         print()
 
     except Exception as e:

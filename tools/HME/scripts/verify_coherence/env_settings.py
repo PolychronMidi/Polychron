@@ -107,7 +107,8 @@ class OAuthTokenExpiryVerifier(Verifier):
     before it happens.
 
     Thresholds:
-      - expired / absent      -> FAIL (overdrive is dead)
+      - OVERDRIVE_MODE=5/6    -> PASS (Anthropic-free path; token irrelevant)
+      - expired / absent      -> WARN (Claude fallback unavailable until refresh)
       - <1h remaining         -> WARN (refresh soon)
       - >=1h remaining         -> PASS
 
@@ -120,6 +121,20 @@ class OAuthTokenExpiryVerifier(Verifier):
 
     def run(self) -> VerdictResult:
         import time
+        overdrive_mode = os.environ.get("OVERDRIVE_MODE", "")
+        if not overdrive_mode:
+            env_path = os.path.join(_PROJECT, ".env")
+            try:
+                with open(env_path) as f:
+                    for line in f:
+                        if line.startswith("OVERDRIVE_MODE="):
+                            overdrive_mode = line.split("=", 1)[1].strip()
+                            break
+            except OSError:
+                overdrive_mode = ""
+        if overdrive_mode in {"5", "6"}:
+            return _result(PASS, 1.0,
+                           f"OVERDRIVE_MODE={overdrive_mode} is Anthropic-free; OAuth token freshness is not gating")
         path = os.path.expanduser("~/.claude/.credentials.json")
         if not os.path.isfile(path):
             return _result(SKIP, 1.0,
@@ -140,8 +155,8 @@ class OAuthTokenExpiryVerifier(Verifier):
         remaining_ms = expires_at - now_ms
         remaining_h = remaining_ms / 3_600_000
         if remaining_h <= 0:
-            return _result(FAIL, 0.0,
-                           f"OAuth token expired {-remaining_h:.1f}h ago -- overdrive dead",
+            return _result(WARN, 0.5,
+                           f"OAuth token expired {-remaining_h:.1f}h ago -- Claude fallback unavailable",
                            ["start Claude Code to trigger token refresh"])
         if remaining_h < 1:
             return _result(WARN, 0.5,
@@ -277,4 +292,3 @@ class EnvLoadVerifier(Verifier):
                            issues)
         return _result(PASS, 1.0,
                        f".env loads cleanly ({len(declared)} keys)")
-
