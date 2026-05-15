@@ -3,36 +3,39 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
 const primer = path.join(repoRoot, 'tools', 'HME', 'hooks', 'pretooluse', 'pretooluse_hme_primer.sh');
 
-function sandbox() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-primer-test-'));
-  fs.mkdirSync(path.join(dir, 'tmp'), { recursive: true });
-  fs.mkdirSync(path.join(dir, '.git'), { recursive: true });
-  fs.mkdirSync(path.join(dir, 'tools', 'HME'), { recursive: true });
-  fs.mkdirSync(path.join(dir, 'src'), { recursive: true });
-  return dir;
-}
-
-function runPrimer(root) {
+function runPrimer() {
   return spawnSync('bash', [primer], {
     cwd: repoRoot,
     input: JSON.stringify({ tool_name: 'Bash', tool_input: { command: './i/status' } }),
-    env: { ...process.env, PROJECT_ROOT: root, HME_PRIMER_REPEAT_WINDOW_SEC: '43200' },
+    env: { ...process.env, PROJECT_ROOT: repoRoot, HME_PRIMER_REPEAT_WINDOW_SEC: '43200' },
     encoding: 'utf8',
   });
 }
 
+function save(file) {
+  return fs.existsSync(file) ? fs.readFileSync(file) : null;
+}
+
+function restore(file, value) {
+  if (value === null) fs.rmSync(file, { force: true });
+  else fs.writeFileSync(file, value);
+}
+
 test('HME primer hook emits compact context and suppresses restart duplicates', () => {
-  const root = sandbox();
+  const flag = path.join(repoRoot, 'tmp', 'hme-primer-needed.flag');
+  const sent = path.join(repoRoot, 'tmp', 'hme-primer-emitted.ts');
+  const oldFlag = save(flag);
+  const oldSent = save(sent);
   try {
-    fs.writeFileSync(path.join(root, 'tmp', 'hme-primer-needed.flag'), '');
-    const first = runPrimer(root);
+    fs.writeFileSync(flag, '');
+    fs.rmSync(sent, { force: true });
+    const first = runPrimer();
     assert.strictEqual(first.status, 0, first.stderr);
     assert.notStrictEqual(first.stdout, '', `empty primer stdout; stderr=${first.stderr}`);
     assert.ok(first.stdout.length < 900, `primer output too large: ${first.stdout.length}`);
@@ -43,11 +46,12 @@ test('HME primer hook emits compact context and suppresses restart duplicates', 
     assert.doesNotMatch(ctx, /# Agent Primer|How the walkthrough works|Phase 1-6 HME infrastructure/);
     assert.strictEqual(Object.hasOwn(payload, 'systemMessage'), false);
 
-    fs.writeFileSync(path.join(root, 'tmp', 'hme-primer-needed.flag'), '');
-    const second = runPrimer(root);
+    fs.writeFileSync(flag, '');
+    const second = runPrimer();
     assert.strictEqual(second.status, 0, second.stderr);
     assert.strictEqual(second.stdout, '');
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    restore(flag, oldFlag);
+    restore(sent, oldSent);
   }
 });
