@@ -19,7 +19,7 @@ function streakTick(weight) {
   if (score >= block) {
     return {
       ok: false,
-      message: `BLOCKED: Raw tool streak ${score}/${block} (cost: Bash=15, Edit=10, Read=5, Grep=20).\n  Reset now: run \`i/review mode=forget\` or use native Read on the target.`,
+      message: `BLOCKED: Raw tool streak ${score}/${block} (cost: Bash=15, Edit=10, Grep=20; native Read resets).\n  Reset now: run \`i/review mode=forget\` or use native Read on the target.`,
     };
   }
   if (score >= warn) {
