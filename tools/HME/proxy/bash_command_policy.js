@@ -198,10 +198,12 @@ function evaluateBashInput(input = {}, opts = {}) {
     if (/\s&\s*$/.test(cmd)) return deny('BLOCKED: Do NOT use & with run_in_background=true; remove the shell background operator.');
   }
   const reader = readerGuard(cmd, root); if (reader) return reader;
+  const landed = verifyLanded(cmd, root); if (landed) return landed;
+  const feedback = feedbackKbSpam(cmd); if (feedback) return feedback;
   const lf = evaluateLogFirst(cmd, root); if (lf) return lf;
   if (new RegExp(`(tail|cat|head|grep).*(r4[0-9]+_run|run\\.log|pipeline\\.log)|\\b${LOCK_NAME.replace('.', '\\.')}\\b`).test(cmd)) return deny(`BLOCKED: polling pipeline logs/${LOCK_NAME} is an antipattern. Run i/status, then continue other work.`);
   if (/sleep.*(tail|cat|head|grep|\.output)/.test(cmd)) return allow(next, 'sleep+check detected. Background tasks notify on completion; avoid polling loops.', timeoutChanged);
-  if (/\bnvidia-smi\b.*query|ps\s+-[aef]+.*\|\s*grep/.test(cmd)) return deny('BLOCKED: repeated background-status polling. Wait for completion notification or do independent work.');
+  const polling = pollingDecision(cmd, root); if (polling) return polling;
   if (!/git commit/.test(cmd)) {
     const stripped = cmd.replace(/'[^']*'|"[^"]*"|`[^`]*`/g, ' ');
     if (/catch\s*(\([^)]*\))?\s*\{\s*\}|\.catch\(\s*(function\s*\(\)|\([^)]*\)\s*=>)\s*\{\s*\}\)|(\btsc\b|\bnpm run\b|\bnode scripts\/|\beslint\b\s)[^|;&]*2>\/dev\/null/.test(stripped)) return deny('FAIL FAST VIOLATION -- silent error suppression detected. Errors must bubble or be explicitly logged.');
