@@ -5,6 +5,7 @@ const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const path = require('path');
+const { spawnFileInput } = require('../event_kernel/fs_ipc');
 const { loadJsonc } = require('./config_loader');
 const proxyAutocommit = require('./middleware/21_proxy_autocommit');
 const { readAutocommitFailure, touchLifesaverHeartbeat } = require('./lifesaver_alerts');
@@ -19,6 +20,8 @@ const CONFIG_PATH = process.env.HME_CODEX_PROXY_CONFIG
   || path.join(PROJECT_ROOT, 'tools', 'HME', 'config', 'codex-proxy.json');
 const PLAN_SYNC = process.env.HME_CODEX_PLAN_SYNC_SCRIPT
   || path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'codex_plan_sync.py');
+const OMNI_VISIBILITY = process.env.HME_CODEX_OMNI_VISIBILITY_SCRIPT
+  || path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'omniroute_codex_visibility.py');
 const EVENT_LOG = path.join(RUNTIME_DIR, 'codex-proxy-events.jsonl');
 const DEFAULT_UPSTREAM = 'https://chatgpt.com/backend-api/codex/responses';
 const UPSTREAM_URL = process.env.HME_CODEX_UPSTREAM_URL || DEFAULT_UPSTREAM;
@@ -151,9 +154,59 @@ function upstreamHeaders(req, bodyBytes) {
   return headers;
 }
 
-function forwardResponses(req, res, body, bodyBytes, source) {
+function logOmniVisibility(payload) {
+  if (process.env.HME_CODEX_OMNI_VISIBILITY === '0') return;
+  if (!fs.existsSync(OMNI_VISIBILITY)) return;
+  spawnFileInput('python3', [OMNI_VISIBILITY, '--json'], {
+    input: JSON.stringify(payload),
+    timeoutMs: 10_000,
+    cwd: PROJECT_ROOT,
+    env: {
+      PROJECT_ROOT,
+      OMNIROUTE_DB: process.env.OMNIROUTE_DB || '',
+      OMNIROUTE_HOME: process.env.OMNIROUTE_HOME || '',
+    },
+    label: 'codex-omniroute-visibility',
+  }).then((result) => {
+    if (result.exit_code !== 0) {
+      record({
+        kind: 'omniroute-visibility-failed',
+        stderr: (result.stderr || '').slice(0, 1000),
+        stdout: (result.stdout || '').slice(0, 1000),
+      });
+    }
+  });
+}
+
+function responseUsage(parsed) {
+  const usage = parsed && typeof parsed === 'object' ? parsed.usage : null;
+  if (!usage || typeof usage !== 'object') return {};
+  return {
+    tokens_in: Number(usage.input_tokens || usage.prompt_tokens || 0),
+    tokens_out: Number(usage.output_tokens || usage.completion_tokens || 0),
+  };
+}
+
+function forwardResponses(req, res, body, bodyBytes, source, visibility) {
   const upstream = new URL(UPSTREAM_URL);
   const client = upstream.protocol === 'http:' ? http : https;
+  const started = Date.now();
+  let visibilityDone = false;
+  function finishVisibility(status, errorSummary = '', parsed = null) {
+    if (visibilityDone) return;
+    visibilityDone = true;
+    logOmniVisibility({
+      ...visibility,
+      id: `codex_proxy_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      timestamp: nowIso(),
+      method: 'POST',
+      request_path: req.url,
+      status,
+      duration_ms: Date.now() - started,
+      error_summary: errorSummary,
+      ...responseUsage(parsed),
+    });
+  }
   const options = {
     method: 'POST',
     hostname: upstream.hostname,
@@ -174,6 +227,7 @@ function forwardResponses(req, res, body, bodyBytes, source) {
       upstreamRes.on('end', () => {
         scanner.finish();
         res.end();
+        finishVisibility(upstreamRes.statusCode || 502);
       });
       return;
     }
@@ -187,10 +241,12 @@ function forwardResponses(req, res, body, bodyBytes, source) {
       const parsed = safeJson(full);
       if (parsed && typeof parsed === 'object') planScanner.scanObjectForPlan(parsed, source);
       res.end();
+      finishVisibility(upstreamRes.statusCode || 502, '', parsed);
     });
   });
   upstreamReq.on('error', (err) => {
     record({ kind: 'upstream-error', message: err.message });
+    finishVisibility(502, err.message);
     if (!res.headersSent) {
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
@@ -244,7 +300,15 @@ async function handleResponses(req, res) {
     payload_log: payloadLog,
     transformed: lifesaver.injected || JSON.stringify(before) !== JSON.stringify(after),
   });
-  forwardResponses(req, res, transformed, Buffer.from(JSON.stringify(transformed)), source);
+  forwardResponses(req, res, transformed, Buffer.from(JSON.stringify(transformed)), source, {
+    source,
+    upstream: UPSTREAM_URL,
+    model: after.model || before.model || '',
+    before,
+    after,
+    cleanup,
+    transformed: lifesaver.injected || JSON.stringify(before) !== JSON.stringify(after),
+  });
 }
 
 function handleRequest(req, res) {

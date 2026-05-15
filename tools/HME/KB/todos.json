@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3123,
-      "updated_ts": 1778873368.586376,
-      "codex_plan_synced_ts": 1778873368.5863574,
+      "max_id": 3126,
+      "updated_ts": 1778873993.583076,
+      "codex_plan_synced_ts": 1778873993.5830534,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T19:29:26.154Z"
+      "codex_plan_ts": "2026-05-15T19:39:37.906Z"
     }
   },
   {
@@ -1260,5 +1260,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T19:29:26.154Z"
+  },
+  {
+    "id": 3124,
+    "text": "Inspect OmniRoute logging/storage and current Codex proxy upstream path",
+    "activeForm": "Inspect OmniRoute logging/storage and current Codex proxy upstream path",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778873668.5870154,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:39:37.906Z"
+  },
+  {
+    "id": 3125,
+    "text": "Add Codex proxy OmniRoute visibility bridge without changing model routing",
+    "activeForm": "Add Codex proxy OmniRoute visibility bridge without changing model routing",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778873668.58702,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:39:37.906Z"
+  },
+  {
+    "id": 3126,
+    "text": "Verify with focused tests and explain expected dashboard behavior",
+    "activeForm": "Verify with focused tests and explain expected dashboard behavior",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778873668.587024,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:39:37.906Z"
   }
 ]

@@ -86,6 +86,31 @@ function withSandbox() {
   return sandbox;
 }
 
+function createOmniDb(dbPath) {
+  const script = `
+import sqlite3
+con = sqlite3.connect("${dbPath}")
+con.execute("""create table call_logs (
+  id text primary key, timestamp text, method text, path text, status integer,
+  model text, requested_model text, provider text, account text,
+  duration integer, tokens_in integer, tokens_out integer,
+  request_type text, source_format text, target_format text,
+  api_key_name text, detail_state text, artifact_relpath text,
+  artifact_size_bytes integer, artifact_sha256 text, has_request_body integer,
+  has_response_body integer, request_summary text, error_summary text
+)""")
+con.execute("""create table usage_history (
+  id integer primary key autoincrement, provider text, model text,
+  tokens_input integer, tokens_output integer, status text, success integer,
+  latency_ms integer, timestamp text
+)""")
+con.commit()
+con.close()
+`;
+  const res = spawnSync('python3', ['-c', script], { encoding: 'utf8' });
+  assert.strictEqual(res.status, 0, res.stderr);
+}
+
 test('Codex payload transform logs shape and strips successful hook autocorrect noise', () => {
   const events = [];
   const cfg = {
@@ -189,6 +214,75 @@ print(mod._mode_codex_proxy())
     assert.match(res.stdout, /hook_success_lines=1/);
     assert.doesNotMatch(res.stdout, /secret/i);
   } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
+test('Codex proxy mirrors visibility rows into OmniRoute dashboard DB', async () => {
+  const sandbox = withSandbox();
+  const omniHome = path.join(sandbox, '.omniroute');
+  const omniDb = path.join(omniHome, 'storage.sqlite');
+  fs.mkdirSync(omniHome, { recursive: true });
+  createOmniDb(omniDb);
+  const proxyPort = await freePort();
+  const upstream = http.createServer((req, res) => {
+    req.resume();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ id: 'resp_test', usage: { input_tokens: 7, output_tokens: 3 }, output: [] }));
+  });
+  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      PROJECT_ROOT: sandbox,
+      PYTHONPATH: path.join(repoRoot, 'tools', 'HME', 'service'),
+      HME_CODEX_PROXY_PORT: String(proxyPort),
+      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
+      HME_CODEX_PROXY_CONFIG: path.join(repoRoot, 'tools', 'HME', 'config', 'codex-proxy.json'),
+      HME_CODEX_OMNI_VISIBILITY_SCRIPT: path.join(repoRoot, 'tools', 'HME', 'scripts', 'omniroute_codex_visibility.py'),
+      HME_CODEX_PROXY_AUTOCOMMIT: '0',
+      OMNIROUTE_HOME: omniHome,
+      OMNIROUTE_DB: omniDb,
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
+  try {
+    await waitFor(() => new Promise((resolve) => {
+      const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    }));
+    const response = await requestJson(proxyPort, '/v1/responses', {
+      model: 'gpt-5.5',
+      instructions: 'test',
+      tools: [],
+      stream: false,
+    });
+    assert.strictEqual(response.status, 200);
+    await waitFor(() => {
+      const res = spawnSync('python3', ['-c', `
+import sqlite3, json
+con = sqlite3.connect("${omniDb}")
+row = con.execute("select provider, model, path, status, tokens_in, tokens_out, artifact_relpath from call_logs order by timestamp desc limit 1").fetchone()
+print(json.dumps(row))
+`], { encoding: 'utf8' });
+      if (res.status !== 0) return false;
+      const row = JSON.parse(res.stdout.trim());
+      return row && row[0] === 'codex-proxy' && row[1] === 'gpt-5.5' && row[2] === '/v1/responses' && row[3] === 200;
+    }, 10000);
+  } catch (err) {
+    err.message = `${err.message}\nproxy stderr:\n${stderr}`;
+    throw err;
+  } finally {
+    child.kill('SIGTERM');
+    upstream.close();
     fs.rmSync(sandbox, { recursive: true, force: true });
   }
 });
