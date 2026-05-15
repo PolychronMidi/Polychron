@@ -26,10 +26,7 @@ moduleLifecycle.declare({
     const layerNumerator = LM.activeLayer && LM.layers[LM.activeLayer] ? LM.layers[LM.activeLayer].numerator : 4;
 
     // 14. E1-E5 Evolutions orchestration
-    // E1: Hotspot monopoly relief
-    // Audit: 4.0x coefficient with no health gate could amplify above safe levels
-    // under stress. Scale coefficient by e18Scale (health+exceedance awareness).
-    // At full health (e18Scale=1.0): 4.0x max (calibrated). Stressed: 2.0x max.
+    // E1: Hotspot monopoly relief; scale 2x-4x by health/exceedance.
     const monopoly = health.getPairMonopoly();
     if (monopoly) {
       const e1Coefficient = 2.0 + 2.0 * S.e18ScaleEma; // 2.0x stressed -> 4.0x healthy (ramped)
@@ -73,11 +70,7 @@ moduleLifecycle.declare({
       }
     }
 
-    // E5: Phase fatigue escalation
-    // Audit: 2.5x max uncapped continuous escalation, no health gate. When system
-    // is stressed, aggressive phase exemption competes with other controllers.
-    // Health-gate the max: 2.5x when healthy, 1.5x when stressed. This preserves
-    // the escalation mechanism but prevents runaway amplification under load.
+    // E5: Phase fatigue escalation; health-gated to avoid runaway correction.
     if (state.phaseFloor && state.phaseFloor.shareEma < (state.phaseFloor.collapseThreshold ?? 0.05)) {
       // Health gate: only accumulate fatigue when system is stable enough to act on it.
       // Stressed systems (healthEma <= 0.75) skip accumulation -- the E5 escalation
@@ -115,23 +108,13 @@ moduleLifecycle.declare({
       ST.rateMultipliers.e6CoherentTightening = 1.0;
     }
 
-    // E13 feedback-loop break: track long-run coherent share. When coherent has
-    // been dominant over many beats (shareEma > 0.38), ease E13's coherent ceiling
-    // toward the evolving level (0.70) to avoid locking the system into a positive
-    // feedback loop (more coherent -> more sparse suppression -> less evolving ->
-    // more coherent). Interpolates: at 0.38 share = full 0.55 ceiling; at 0.55+
-    // share = relaxed 0.70 ceiling. Attenuation-only on the suppression depth.
+    // E13 feedback break: relax the coherent ceiling as coherent share dominates.
     {
       const isCoherent = currentRegime === 'coherent' ? 1 : 0;
       S.coherentShareEma += (isCoherent - S.coherentShareEma) * 0.03; // ~33 tick window (~825 beats)
     }
 
-    // E7: Trust axis rebalancing via entropyRegulator boost
-    // Audit: 5.0x coefficient amplifying when trust is low, no health gate.
-    // Under stress, aggressive trust rebalancing can overshoot. Scale coefficient
-    // by e18Scale: 3.5x when healthy (full correction), 2.0x when stressed.
-    // R52: Reduced from 5.0x/2.5x -- full-health 5.0x was over-driving trust coupling
-    // into flicker-trust exceedance (127 beats, +210% vs baseline) on long runs.
+    // E7: Trust rebalancing; capped below old 5x path that over-drove coupling.
     let trustShare = 0;
     {
       const axisEnergyShare = pipelineCouplingManager.getAxisEnergyShare();
@@ -146,12 +129,7 @@ moduleLifecycle.declare({
     }
 
 
-    // E12: Section-level tension floor relaxation. During section resolution
-    // phase (sectionProgress > 0.80), gradually lower the tension arch floor
-    // to allow genuine inter-section breathing. Separate from E10 (phrase
-    // troughs) -- this operates at the section boundary scale.
-    // Uses a slow EMA ramp to avoid the coupling discontinuities that
-    // killed the E10 arch floor drop attempt. Max drop 0.15 at full resolution.
+    // E12: Section-boundary floor relaxation; slow EMA avoids E10 discontinuity.
     {
       const sectionPhase = harmonicContext.getField('sectionPhase');
       let sectionProgress = 0;
@@ -171,25 +149,11 @@ moduleLifecycle.declare({
       }
     }
 
-    // E18: Health-gated evolution scaling. Scale E9/E11/E13 intervention
-    // strength by current system health. Healthy (healthEma > 0.7) = full
-    // strength; degraded (healthEma < 0.7) = automatically reduced.
-    // Range: 0.5x (very unhealthy) to 1.0x (healthy = full original strength).
-    // ATTENUATION ONLY -- never amplifies above 1.0. The 1.2x amplification
-    // in earlier versions (R34-R36) raised the exceedance floor from 22->49+
-    // by over-breathing during healthy passages (E9 relax 1.6x vs calibrated 1.5x,
-    // E11 ceiling 0.46x vs calibrated 0.55x). Self-healing must only reduce
-    // interventions when stressed, never strengthen them above calibrated values.
-    // Also factor in exceedance trend: high exceedance (> 0.4) reduces further.
-    // NOTE: e18Scale computed early (before step 14) in tick() -- passed in here.
+    // E18: Health-gated scaling is attenuation-only; never amplify calibrated values.
+    // Exceedance trend lowers intervention strength further.
 
-    // E19: HyperMeta crossModulation suppression. Multiplier on crossModulation
-    // during E11 sparse windows (<1.0 = suppress, 1.0 = neutral).
-    // Uses multiplier semantics so getRateMultiplier's 1.0 default is safe.
-    // R32 bug: was additive offset stored as 0, but getRateMultiplier returned
-    // 1.0 default, causing +1.0 crossMod boost on every note -- note explosion.
-    // Now stored as true multiplier: 1.0 neutral, ~0.87x at max suppression.
-    // Positive boost REFUTED (R32). Suppression-only, tied to E11 windows.
+    // E19: CrossModulation multiplier during E11; suppression-only after R32.
+    // Store true multiplier so default 1.0 is neutral.
     {
       const e11Active = (ST.rateMultipliers.e11SparseWindow) > 0;
       const e11Ceiling = ST.rateMultipliers.e11DensityCeilingOverride;
@@ -207,12 +171,8 @@ moduleLifecycle.declare({
       }
     }
 
-    // E20: MicroUnit attenuator score bias. During E11 sparse windows, lower
-    // the crossModulation score used to rank note pairs in the voice cap.
-    // Lower scores = more aggressive pruning when voice cap is under pressure.
-    // Works in concert with E19 (gate) and E11 (ceiling): triple-layer sparse.
-    // Suppression-only: boost direction refuted with E19 (R32 note explosion).
-    // Bounded: 0.75 minimum (never more than 25% score reduction).
+    // E20: During E11 sparse windows, bias crossMod scores down for pruning.
+    // Suppression-only, bounded to at most 25% score reduction.
     {
       const e11Active = (ST.rateMultipliers.e11SparseWindow) > 0;
       const e11Ceiling = ST.rateMultipliers.e11DensityCeilingOverride;
@@ -230,11 +190,7 @@ moduleLifecycle.declare({
       }
     }
 
-    // E21 flicker amplitude suppression: scales flickerHotspotTrim ceiling
-    // by exceedance via quadratic onset (overage^2 * 2.5, floor 0.80).
-    // Fast EMA blend normalized 0.05-0.15 -> [0,1] weighted 0.35x (early-warn,
-    // not dominant). Smoothing-alpha-reduction approach refuted (caused note
-    // explosion via variance floor pathway).
+    // E21: Exceedance quadratically caps flicker amplitude; floor remains 0.80.
     {
       const e21SlowOverage = m.max(0, S.exceedanceTrendEma - 0.30);
       // Rescale fast to slow range: fastExcNormalized is 0-0.35, slow is 0-1.0
@@ -244,18 +200,8 @@ moduleLifecycle.declare({
       ST.rateMultipliers.e21FlickerAmplitudeCap = clamp(1.0 - e21ExceedanceOverage * e21ExceedanceOverage * 2.5, 0.80, 1.0);
     }
 
-    // E23: Rest probability scaling under exceedance. When system is stressed
-    // (exceedance elevated), gently increase rest probability to naturally
-    // decompress density. This creates breathing room without conductor
-    // ceiling changes -- a composition-level pressure valve.
-    // Multiplier on rest base: 1.0 neutral, up to 1.4x when exceedance high.
-    // Proportional correction: quadratic onset so small overages (exceedance 0.2-0.4)
-    // produce negligible boost, and only sustained high exceedance (> 0.5) triggers
-    // meaningful rest pressure. Prevents continuous mild suppression during normal
-    // stochastic variance that sits just above the 0.2 threshold.
-    // boost = overage^2 * 5.0, max 0.4 added (cap at 1.4x).
-    // Fast EMA blend: same normalization as E21. fastNorm mapped to [0,1] over
-    // energy range 0.05-0.15, weighted 0.35x before comparing to slow threshold.
+    // E23: Sustained exceedance raises rest probability as a pressure valve.
+    // Quadratic onset avoids suppressing normal stochastic variance.
     {
       const e23SlowOverage = m.max(0, S.exceedanceTrendEma - 0.2);
       const e23FastRescaled = ST.FAST_EMA_WEIGHT > 0 ? S.fastExcNormalized / ST.FAST_EMA_WEIGHT : 0;
@@ -264,13 +210,8 @@ moduleLifecycle.declare({
       ST.rateMultipliers.e23RestPressureBoost = clamp(1.0 + e23ExceedanceOverage * e23ExceedanceOverage * 5.0, 1.0, 1.4);
     }
 
-    // REFUTED R15: E15 continuous sculpting -> coherent 47.5%, exceedance 90+ (non-stationary signal)
-    // E9: Density breathing windows. At phrase boundaries, temporarily
-    // reduce density smoothing and widen the density floor/ceiling gap,
-    // letting the raw target signal through with less EMA filtering.
-    // This creates structural breathing room at phrase transitions.
-    // Acts on conductor config pathway, not on pair ceilings (avoids E6).
-    // E18: strength scaled by e18Scale (health * exceedance-awareness).
+    // E9: Phrase-boundary density breathing via smoothing relax and bounds widening.
+    // Acts on conductor config, not pair ceilings; E15 continuous sculpting was refuted.
     {
       let phraseIdx = -1;
       phraseIdx = /** @type {number} */ (timeStream.getPosition('phrase'));
@@ -295,13 +236,8 @@ moduleLifecycle.declare({
       }
     }
 
-    // E10: Tension release cycle. Break the flat-density -> tension-boost
-    // feedback loop. When density is flat and we are at a phrase trough,
-    // suppress the tension bias, allowing genuine tension dips.
-    // Acts on tension bias pathway, not ceilings.
-    // NOTE: arch floor drop removed after R2 showed tension-flicker
-    // exceedance -- abrupt floor changes create coupling discontinuities.
-    // Only the tension bias suppression remains (gentler pathway).
+    // E10: Phrase-trough tension release breaks flat-density -> tension-boost loops.
+    // Arch floor drop stayed disabled after R2 discontinuity exceedance.
     {
       let phraseProgress = 0;
       phraseProgress = clamp(/** @type {number} */ (timeStream.compoundProgress("phrase")), 0, 1);
@@ -314,12 +250,8 @@ moduleLifecycle.declare({
       })();
       if (inPhraseTrough && densityWaveFlat) {
         S.e10ReleaseCooldown = m.max(2, m.min(5, m.round(layerNumerator * 0.4)));
-        // Tension suppression: < 1.0 tells densityWaveAnalyzer to suppress
-        // its tension boost instead of amplifying.
-        // E18: suppression depth health-scaled. 0.7 base at neutral health.
-        // Unhealthy (scale 0.5): suppress less (0.85) -- tension stays higher
-        // which keeps system stable. Healthy (scale 1.0): full calibrated 0.70.
-        // Attenuation only -- cap at 1.0, never suppress more than calibrated 0.70.
+        // Tension suppression is health-scaled: stressed systems suppress less.
+        // Attenuation only, never deeper than calibrated 0.70.
         ST.rateMultipliers.e10TensionSuppress = clamp(1.0 - 0.3 * e18Scale, 0.70, 0.85);
       } else if (S.e10ReleaseCooldown > 0) {
         S.e10ReleaseCooldown--;
@@ -330,14 +262,8 @@ moduleLifecycle.declare({
       ST.rateMultipliers.e10ArchFloorDrop = 0;
     }
 
-    // E11: Structural sparse windows. At phrase boundaries, emit a sparse
-    // window signal that forces multi-beat low-density passages. This
-    // creates perceptible breathing that single-beat rests cannot achieve.
-    // Acts on rest sync probability and density ceiling, not pair ceilings.
-    // E13: Regime-aware sparse windows. Exploring regime gets NO suppression
-    // (chaos lives there). Coherent gets stronger suppression (breathing
-    // needed there most). Evolving gets moderate. This recovers exploring
-    // share lost in E11 while concentrating breathing in coherent passages.
+    // E11: Phrase-boundary sparse windows create multi-beat breathing.
+    // Regime-aware: exploring unsuppressed, coherent strongest, evolving moderate.
     {
       let phraseIdx = -1;
       phraseIdx = /** @type {number} */ (timeStream.getPosition('phrase'));
@@ -350,14 +276,8 @@ moduleLifecycle.declare({
       if (atPhraseEnd || atPhraseStart) {
         S.e11SparseCountdown = m.max(1, m.min(4, m.round(layerNumerator * 0.3)));
         ST.rateMultipliers.e11SparseWindow = 1.0;
-        // E13: Regime-scaled ceiling suppression and rest boost.
-        // exploring = no suppression, coherent = strongest, evolving = moderate.
-        // E18: ceiling suppression depth health-scaled (less suppression when stressed).
-        // For ceiling: base suppression (1.0 - baseVal) scaled, then re-expressed as override.
-        // For rest: boost above 1.0 health-scaled.
-        // E13 feedback-loop break: when coherent share is above threshold,
-        // ease the coherent ceiling to break the suppress->stagnate cycle.
-        // Threshold lowered to 0.15 so it fires in realistic session lengths.
+        // Regime-scaled ceiling/rest boost, health-scaled by E18.
+        // Coherent share eases its ceiling to break suppress->stagnate loops.
         const e13CoherentCeilingBase = currentRegime === 'coherent'
           ? clamp(0.55 + clamp((S.coherentShareEma - 0.15) / 0.25, 0, 1) * 0.07, 0.55, 0.62)
           : 0.55;

@@ -81,12 +81,7 @@ moduleLifecycle.declare({
     const lateSectionSplit = clamp((sectionProgress - 0.55) / 0.45, 0, 1);
     const midSectionPocket = m.sin(clamp((sectionProgress - 0.18) / 0.64, 0, 1) * m.PI);
     const resolutionRelease = 1 - lateSectionSplit * (0.06 + phaseEstablished * 0.10);
-    // Regime-aware resolution suppression. When exploring dominates,
-    // the tension arc already decays due to diffuse exploring output. Applying
-    // full endRelease on top creates the front-loaded collapse seen in R64.
-    // Scale the endRelease suppression by (1 - exploringDominance) so it's
-    // weaker when exploring is already doing the suppression work. This is a
-    // structural feedback from the regime classifier, not a constant tweak.
+    // Regime-aware resolution suppression avoids front-loaded collapse in exploration.
     const currentRegime = dynamics && dynamics.regime ? dynamics.regime : '';
     globalConductorExploringEma = globalConductorExploringEma * 0.98 + (currentRegime === 'exploring' ? 1 : 0) * 0.02;
     const exploringDominance = clamp((globalConductorExploringEma - 0.50) / 0.25, 0, 0.6);
@@ -147,12 +142,7 @@ moduleLifecycle.declare({
     const densityRecoverySupport = phaseRecoveryPressure * 0.03 * (1 - clamp(hotspotContainmentPressure * 0.75, 0, 0.75));
     const densityHotspotTrim = 1 - hotspotContainmentPressure * 0.08;
     const phaseProtectionTrim = 1 - clamp(phaseRecoveryPressure * 0.10 + trustSharePressure * 0.11 + densityTrustPressure * 0.06 + flickerTrustPressure * 0.05, 0, 0.22);
-    // Harmonic excursion-density coupling. When the harmonic
-    // journey ventures to distant keys (high excursion), thin density to
-    // create exposed, adventurous passages. Near home key, density stays
-    // full. This couples harmonic motion to textural density, producing
-    // structural musical variety between sections with different keys.
-    // Range: [0.96, 1.0] -- gentle 4% thinning at max excursion (6).
+    // Harmonic excursion thins density up to 4% for exposed distant-key passages.
     const excursionDensityScale = 1.0 - clamp(V.optionalFinite(Number(excursion), 0), 0, 6) / 6 * 0.04;
     // Harmonic excursion tension coupling. When the harmonic
     // journey ventures far from home (high excursion), boost tension to
@@ -164,12 +154,7 @@ moduleLifecycle.declare({
       0, 1
     );
     const baseSmooth = clamp(V.optionalFinite(Number(conductorConfig.getDensitySmoothing()), 0.2), 0, 1);
-    // E9: Reduce density smoothing at phrase boundaries (boundary breathing).
-    // E15: Continuous phrase-position sculpting of smoothing (within-phrase contour).
-    // E17: Tighten smoothing at section openings for sharper density peak.
-    // Combined: effective smoothing = base / (e9 * e15) * e17_tighten
-    // E9: Reduce density smoothing at phrase boundaries (boundary breathing).
-    // E15 was refuted -- continuous smoothing variation caused instability.
+    // E9 relaxes smoothing at phrase boundaries; E15 sculpting was refuted.
     const e9SmoothRelax = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e9DensitySmoothingRelax'));
     const smooth = clamp(baseSmooth / e9SmoothRelax, 0.05, 1);
     currentDensity = clamp(safeCurrentDensity * (1 - smooth) + targetDensity * smooth, 0, 1);
@@ -194,30 +179,13 @@ moduleLifecycle.declare({
     const flickerVarianceInject = rollingFlickerStd < FLICKER_VARIANCE_FLOOR_STD
       ? rf(-FLICKER_VARIANCE_INJECT, FLICKER_VARIANCE_INJECT)
       : 0;
-    // Decoupling: flicker base blends compositeIntensity with harmonicRhythm
-    // and a slow independent carrier. This reduces lockstep coupling between
-    // density/tension and flicker while preserving macro energy following.
-    // Regime-dependent carrier frequency. The fixed carrier frequency
-    // (0.0017) creates a persistent density-flicker correlation pattern
-    // because both density and flicker follow the same harmonic+intensity
-    // blend. By shifting the carrier frequency during exploring/evolving
-    // regimes, the flicker oscillation phase diverges from the density
-    // signal's rhythm, structurally reducing density-flicker coupling
-    // during non-coherent passages.
+    // Decouple flicker from density/tension with a slow independent carrier.
     const densitySeed = Number(beatStartTime);
-    // Replace frequency shift with phase offset to break
-    // density-flicker correlation. Frequency shifts increased
-    // carrier rate during exploring/evolving, which accidentally aligned
-    // with density signal rhythm -> density-flicker monopoly (34/41).
-    // Phase offset decorrelates without creating new frequency alignment.
+    // Phase offset decorrelates without creating a new frequency alignment.
     const carrierPhaseOffset = currentRegime === 'exploring' ? m.PI / 3
       : currentRegime === 'evolving' ? m.PI / 2
       : 0;
-    // Tension-responsive flicker counter-phase. When
-    // composite intensity is high (> 0.55), apply additional phase offset
-    // to decorrelate tension and flicker. R86 used PI*0.4 which overshot
-    // (pearsonR crashed to -0.4586, anti-correlation). Reduced to PI*0.15
-    // to target near-zero decorrelation instead of counter-motion.
+    // High intensity adds mild counter-phase; PI*0.15 avoids anti-correlation.
     const tensionFlickerCounterPhase = clamp((compositeIntensity - 0.55) / 0.25, 0, 1) * m.PI * 0.15;
     const flickerCarrier = 0.5 + 0.5 * m.sin(densitySeed * 0.0017 + harmonicRhythm * m.PI + carrierPhaseOffset + tensionFlickerCounterPhase);
     // FlickerBase compositeIntensity deweighting.
@@ -241,11 +209,7 @@ moduleLifecycle.declare({
     const flickerShare = V.optionalFinite(axisShares && axisShares.flicker, 0);
     const flickerAxisPressure = clamp((flickerShare - 0.16) / 0.10, 0, 1);
     const phaseSafeTrim = 1 - phaseEstablished * flickerAxisPressure * 0.18 - hotspotContainmentPressure * 0.12;
-    // When correlation is positive (co-moving), attenuate the additive flicker;
-    // when negative or zero, pass through fully. Range: [0.5, 1.0].
-    // E14: During E9 phrase-boundary breathing windows, further attenuate the
-    // additive flicker to prevent flicker from tracking density swings and
-    // creating tension-flicker coupling spikes (the hotspot pattern from R22-R23).
+    // Attenuate additive flicker when it co-moves with density, especially in E9.
     const e9Active = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e9DensitySmoothingRelax'));
     const e14FlickerDamp = e9Active > 1.05 ? clamp(1.0 - (e9Active - 1.0) * 0.4, 0.55, 1.0) : 1.0;
     const dfDecorrelScale = clamp((1.0 - m.max(0, globalConductorDfCorrEma) * 0.5) * phaseSafeTrim * e14FlickerDamp, 0.40, 1.0);
@@ -292,10 +256,7 @@ moduleLifecycle.declare({
     // Small smoothing factor (0.25) reduces beat-to-beat reversals.
     const tensionAttr = conductorIntelligence.collectTensionBiasWithAttribution();
     const registryTensionBias = tensionAttr.product;
-    // Tension arch enforcement: macro-progress-aware floor producing
-    // ascending->peaked->descending shape (peak at p=0.6, descending slope
-    // 0.14 to sustain S2/S3). Activates only when raw tension would collapse;
-    // max boost 0.15. Phrase-trough arch floor drop disabled.
+    // Macro tension arch: peak near p=0.6, activate only against collapse.
     const macroProgress = clamp((sectionIndex + sectionProgress) / m.max(totalSections, 1), 0, 1);
     const e10ArchDrop = /** @type {number} */ (hyperMetaManager.getRateMultiplier("e10ArchFloorDrop"));
     // E12: Section-level tension floor relaxation during resolution phase.
@@ -304,12 +265,7 @@ moduleLifecycle.declare({
     const tensionArchTarget = (macroProgress < 0.6
       ? 0.40 + macroProgress * 0.40
       : 0.64 - (macroProgress - 0.6) * 0.14) - e10ArchDrop - e12FloorDrop;
-    // Density-tension decorrelation. pearsonR surged to 0.6742
-    // in R87 because both density and tension share compositeIntensity
-    // as a common driver. Shift tension toward harmonicTension (key/modal
-    // contributions) from 0.45->0.55, reducing resolved.composite weight
-    // from 0.55->0.45. This makes tension more harmonically driven,
-    // decorrelating it from density's intensity-driven behavior.
+    // Shift tension toward harmonic context to decorrelate from density intensity.
     const rawTensionBase = (Number(resolved.composite) * 0.45 + Number(harmonicTension) * 0.55) * registryTensionBias * tensionLateLift * excursionTensionScale;
     // Section-boundary tension breathing. Brief 5% dip in the first
     // 5% of each section (after S0) creates audible section articulation
@@ -323,15 +279,7 @@ moduleLifecycle.declare({
     const tensionArchBoost = rawTensionBase * sectionBoundaryTensionDip < tensionArchTarget
       ? clamp((tensionArchTarget - rawTensionBase * sectionBoundaryTensionDip) * 0.5, 0, 0.20)
       : 0;
-    // Regime-responsive tension warmth. Evolving regime gets a gentle
-    // tension floor lift (+0.04) to differentiate it sonically from exploring.
-    // Coherent stays neutral. This adds musical character differentiation at
-    // the tension signal level rather than just stutter/density.
-    // Exploring gets negative tension warmth (-0.02) for wider
-    // dramatic range. This creates 0.06 total contrast between evolving
-    // (+0.04) and exploring (-0.02), making regime transitions audible
-    // at the tension signal level. Tension axis share is 0.133 (below fair
-    // share 0.167) -- wider signal range produces more coupling activity.
+    // Regime tension warmth gives evolving/coherent/exploring audible contrast.
     const regimeTensionWarmth = currentRegime === 'evolving' ? 0.04
       : currentRegime === 'coherent' ? 0.02
       : currentRegime === 'exploring' ? -0.02
@@ -342,7 +290,7 @@ moduleLifecycle.declare({
     // tension release. Small dip (max 0.05) to avoid coupling discontinuities.
     const e11Sparse = /** @type {number} */ (hyperMetaManager.getRateMultiplier("e11SparseWindow"));
     const e11CeilOvr = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e11DensityCeilingOverride'));
-    // Only dip tension when ceiling is actually suppressed (not during exploring, where override=1.0)
+    // Only dip tension when ceiling is suppressed, not during exploring.
     const e16TensionDip = e11Sparse > 0 && e11CeilOvr < 0.95
       ? clamp((1.0 - e11CeilOvr) * 0.08, 0, 0.03)
       : 0;
@@ -359,14 +307,7 @@ moduleLifecycle.declare({
     let playOut = resolved.playProb;
     let stutterOut = resolved.stutterProb;
 
-    // Regime-responsive stutter shaping. During coherent regime,
-    // reduce stutter for cleaner rhythmic structure. During exploring,
-    // boost stutter for more chaotic textural variety. This creates audible
-    // regime contrast without touching constants -- the regime classifier's
-    // output drives the behavior structurally.
-    // Added evolving regime -- boost stutter 1.15x for percussive
-    // rhythmic interest during transitional passages, further differentiating
-    // the three active regimes sonically.
+    // Regime-responsive stutter: cleaner coherent, more chaotic exploring/evolving.
     if (currentRegime === 'coherent') {
       stutterOut = clamp(stutterOut * 0.88, 0, 1);
     } else if (currentRegime === 'exploring') {
@@ -375,16 +316,8 @@ moduleLifecycle.declare({
       stutterOut = clamp(stutterOut * 1.15, 0, 1);
     }
 
-    // Regime-responsive play probability. Play probability was the
-    // same across regimes, so note emission density was uniform. Exploring
-    // gets a small boost (more notes in sparse-density passages = contrast);
-    // evolving gets a small reduction (selective, intentional emission during
-    // transitions). This feeds back into densityVariance through per-regime
-    // note count differentiation.
-    // Exploring boost 1.06->1.10. L1 notes -36% vs original baseline.
-    // With exploring at 31% of beats, a stronger boost targets the highest-
-    // density-deficit regime. Combined with density mean recovery (0.545),
-    // this helps close the note output gap.
+    // Regime-responsive play probability differentiates note density by regime.
+    // Exploring gets the stronger recovery boost for its density deficit.
     if (currentRegime === 'exploring') {
       playOut = clamp(playOut * 1.10, 0, 1);
     } else if (currentRegime === 'evolving') {

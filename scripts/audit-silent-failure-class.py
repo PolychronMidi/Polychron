@@ -45,6 +45,14 @@ SH_SWALLOW = re.compile(r"\|\|\s*true\b|\|\|\s*:\b|2>/dev/null\s*$")
 # Tokens that mark a catch as intentionally silent.
 SILENT_OK = re.compile(r"silent-ok\b|silent-except\b")
 
+# Broad catches that visibly report the failure are not silent. Keep this
+# conservative: only logging calls and standard verifier/result accumulators.
+PY_SURFACED = re.compile(
+    r"\b(?:logger|logging)\.(?:debug|info|warning|error|exception|critical)\b"
+    r"|print\s*\("
+    r"|\b(?:results|checks|issues|violations|failures|warnings|errors|details)\.append\s*\("
+)
+
 
 def _scan_python(path: Path) -> list[tuple[int, str]]:
     issues = []
@@ -55,13 +63,13 @@ def _scan_python(path: Path) -> list[tuple[int, str]]:
     for i, line in enumerate(lines, 1):
         if not PYTHON_SWALLOW.match(line):
             continue
-        # Look at the next 3 lines -- a `pass` or empty body without a
-        # silent-ok marker on the except line, body, or comment block
-        # within 5 lines is a candidate.
+        # Look ahead for handled bodies; otherwise require a nearby silent-ok.
         body = lines[i:i + 5]
         body_text = "\n".join(body)
         if "raise" in body_text or "return" in body_text and "default" not in body_text.lower():
             continue  # explicit re-raise / explicit return = handled
+        if PY_SURFACED.search(body_text):
+            continue
         context = "\n".join(lines[max(0, i - 3):i + 5])
         if SILENT_OK.search(context):
             continue
@@ -80,7 +88,8 @@ def _scan_js(path: Path) -> list[tuple[int, str]]:
             continue
         body = lines[i:i + 5]
         body_text = "\n".join(body)
-        if "throw" in body_text or "ctx.warn" in body_text or "console.error" in body_text:
+        if ("throw" in body_text or "ctx.warn" in body_text or
+                "console.error" in body_text or "console.warn" in body_text):
             continue
         context = "\n".join(lines[max(0, i - 3):i + 5])
         if SILENT_OK.search(context):
@@ -95,17 +104,7 @@ def _scan_sh(path: Path) -> list[tuple[int, str]]:
         lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
     except OSError:
         return issues
-    # Idiomatic 2>/dev/null patterns that aren't a safety concern: directory
-    # bookkeeping (mkdir -p), liveness probes (kill -0), best-effort helpers
-    # (rm -f, sed -n, cat for default fallback, date for timestamp, disown),
-    # logger appends (>> log), source guards. These are the noise that made
-    # the broad audit non-actionable.
-    # Note: `\|\|\s*echo` was deliberately DROPPED from BENIGN after peer
-    # review caught that `cat FILE 2>/dev/null || echo 0` is the exact
-    # safety-belt-as-default pattern the audit exists to surface -- a
-    # transient read failure converts silently to the default value.
-    # If a specific site is truly benign, it should carry an explicit
-    # `silent-ok: <reason>` annotation, not be silently suppressed here.
+    # Keep BENIGN narrow; `|| echo` defaults still need site-specific silent-ok.
     BENIGN = re.compile(
         r"\b(mkdir\s+-p|kill\s+-0|rm\s+-f|sed\s+-n|disown|source\s+|cat\s+\"\$"
         r"|date\s+-u|>>\s*[\"']?[\w/.-]+\.log|\|\|\s*true)\b"

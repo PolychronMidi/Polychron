@@ -99,13 +99,7 @@ moduleLifecycle.declare({
 
     let entropy = 0.5;
     try {
-      // R92 E2: Regime-responsive entropy sample window. Fixed 1.0s window
-      // creates uniform entropy behavior across regimes, correlating with
-      // tension (pearsonR 0.3794, TE exceedance 10 beats). Coherent uses
-      // narrower 0.7s window (fewer notes, more volatile entropy that
-      // decorrelates from slow-changing tension), exploring uses wider 1.3s
-      // (smoother, contrasting behavior). Creates regime-specific entropy
-      // dynamics that break the TE coupling lock.
+      // Regime-responsive entropy windows decorrelate entropy from slow tension.
       const entropyRegime = regimeClassifier.getRegime();
       const entropyWindow = entropyRegime === 'exploring' ? 1.3
         : entropyRegime === 'coherent' ? 0.7
@@ -179,36 +173,15 @@ moduleLifecycle.declare({
         // preserving harmonic contribution to phase axis share.
         const harmonicDampen = 1.0 - flickerDeflection * 0.22;
         const adjHarmonic = 0.20 * harmonicDampen;
-        // R83 E1: Redistribute section weight to measure for phase independence.
-        // Phase share declined 3 rounds (0.169->0.126->0.120) because the
-        // section component (weight 0.40) correlates with density/tension via
-        // section arches. Measure progress oscillates much faster, creating
-        // high-frequency phase variation independent of section-level signals.
-        // Section 0.40->0.32, Measure 0.15->0.23. Slack redistribution also
-        // favors measure (0.45) over section (0.30) when harmonic dampens.
+        // Shift phase weight from section to measure for faster independent variation.
         const adjSection = 0.32 + (0.20 - adjHarmonic) * 0.30;
         const adjPhrase = 0.25 + (0.20 - adjHarmonic) * 0.25;
         const adjMeasure = 0.23 + (0.20 - adjHarmonic) * 0.45;
-        // R84 E1: Phase independent oscillator. Phase share has declined
-        // for 4 rounds (0.169->0.126->0.120->0.1137) because all phase
-        // components (section/phrase/measure/harmonic) share causal inputs
-        // with density/tension, creating structural correlation that
-        // consumes phase energy (density-phase pearsonR=-0.5039). This LFO
-        // uses absolute beat time at a frequency (0.00073) with no harmonic
-        // relationship to section/phrase/measure periods, giving phase an
-        // independent variance source. Weight: 8% taken from section/phrase.
-        // Dual-frequency LFO: 0.00073 (~72 beats) + 0.00031 (~200 beats),
-        // blended 60/40 -- quasi-periodic, resists alignment with any single
-        // structural frequency.
+        // Independent dual-frequency phase LFO resists alignment with structure.
         const phaseLfoFast = 0.5 + 0.5 * m.sin(Number(beatStartTime) * 0.00073);
         const phaseLfoSlow = 0.5 + 0.5 * m.sin(Number(beatStartTime) * 0.00031);
         const phaseLfo = phaseLfoFast * 0.6 + phaseLfoSlow * 0.4;
-        // R87 E2: Phase LFO regime-responsive amplitude. Phase axis
-        // share declined 0.1561->0.116 (lowest axis). During exploring/
-        // evolving, phase needs more independent variance to compete
-        // with density/tension/flicker axes that have regime-dependent
-        // biases. Boost LFO weight: exploring 0.12, evolving 0.10,
-        // coherent 0.08 (unchanged baseline).
+        // Regime-responsive LFO weight gives phase more variance outside coherent.
         const phaseRegime = regimeClassifier.getRegime();
         const lfoWeight = phaseRegime === 'exploring' ? 0.12
           : phaseRegime === 'evolving' ? 0.10
@@ -222,10 +195,7 @@ moduleLifecycle.declare({
       console.warn('Acceptable warning: systemDynamicsProfilerHelpers: phase sampling failed:', e && e.message ? e.message : e);
     }
 
-    // Stale-phase dither applied BEFORE staleness detection so the
-    // perturbation is visible to the change detector. This resets the
-    // stale counter, keeping phase-pair coupling paths warm even when
-    // normalizedProgress('section') steps only at section boundaries.
+    // Apply stale-phase dither before staleness detection so coupling paths stay warm.
     if (state.phaseStaleBeats > 5 && state.lastPhaseSignalValid) {
       const phaseAmplitude = 0.002 + clamp((state.phaseStaleBeats - 5) / 60, 0, 1) * 0.005;
       phase = clamp(phase + ((state.phaseStaleBeats % 2 === 0) ? phaseAmplitude : -phaseAmplitude), 0, 1);
@@ -244,53 +214,26 @@ moduleLifecycle.declare({
       state.phaseStaleBeats++;
     }
 
-    // R83 E2: Trust signal variance boost. Trust axis share has been
-    // persistently below fair share (0.140-0.152) because avgTrust changes
-    // slowly (trust scores use slow EMAs). Amplifying the trust velocity
-    // (beat-to-beat change) creates more responsive trust coupling dynamics
-    // without changing the underlying trust system behavior.
+    // Amplify trust velocity to give slow trust EMAs usable coupling energy.
     const trustDelta = avgTrust - V.optionalFinite(state.lastAvgTrust, avgTrust);
     state.lastAvgTrust = avgTrust;
-    // R86 E3: Regime-responsive trust velocity amplification. During
-    // exploring, trust varies more dynamically (modules activated/deactivated
-    // as layer roles shift). During coherent, trust stabilizes.
-    // Use higher amplification in exploring (5.0x) and evolving (4.0x)
-    // to boost trust-axis coupling energy, and lower in coherent (2.5x->3.5x)
-    // to prevent trust from inflating coupling during stable passages.
-    // R83 E2 used flat 3.5x; trust axis fell to 0.1404 (lowest, falling).
-    // R91 E1: Coherent trustVelAmp 2.5->3.5. Trust collapsed 0.1736->0.0866
-    // in R90 because coherent (58.5%) dominates and 2.5x was too low.
-    // Same pattern as phase recovery (R90 E5: 2.0->3.0 recovered phase +43%).
+    // Regime-responsive trust velocity: higher outside coherent, 3.5x in coherent.
     const currentRegime = regimeClassifier.getRegime();
     const trustVelAmp = currentRegime === 'exploring' ? 5.0
       : currentRegime === 'evolving' ? 4.0
       : 3.5;
     const enhancedTrust = clamp(avgTrust + trustDelta * trustVelAmp, 0, 1);
 
-    // R88 E1: Phase velocity amplification. Phase axis has chronically
-    // declined (0.1561->0.116->0.1096 across R85-R87) despite LFO
-    // adjustments. The core problem is that phase signal changes slowly
-    // (section/phrase-based components). Like trust velocity amplification
-    // (R83 E2), amplify phase beat-to-beat deltas to create more coupling
-    // energy. This is the same pattern that saved trust axis.
+    // Phase velocity amplification gives slow section/phrase signals coupling energy.
     const phaseDelta = phase - V.optionalFinite(state.lastPhaseSampleForVelAmp, phase);
     state.lastPhaseSampleForVelAmp = phase;
-    // R90 E5: Coherent phaseVelAmp 2.0->3.0. Phase declined again
-    // (0.155->0.1156) in R89 despite R88 additions, because coherent
-    // regime dominates (57.8%) and 2.0x amplification is too low
-    // relative to exploring 4.0x / evolving 3.5x.
+    // Coherent phase amplification stays lower than exploring/evolving but not inert.
     const phaseVelAmp = currentRegime === 'exploring' ? 4.0
       : currentRegime === 'evolving' ? 3.5
       : 3.0;
     const enhancedPhase = clamp(phase + phaseDelta * phaseVelAmp, 0, 1);
 
-    // R92 E1: Entropy velocity amplification. Entropy axis declined
-    // 0.1674->0.1451 (below fair share) because entropy samples from
-    // real note data and changes slowly relative to density/tension/flicker
-    // which are driven by conductor signals. Same pattern that saved
-    // trust (R83 E2: +31%) and phase (R88 E1: +43%). Amplify beat-to-beat
-    // entropy deltas to create more coupling energy. Lower amplification
-    // than trust/phase since entropy has more natural variance from note data.
+    // Entropy velocity amplification helps note-derived entropy compete with signals.
     const entropyDelta = entropy - V.optionalFinite(state.lastEntropySample, entropy);
     state.lastEntropySample = entropy;
     // R1 E3: Entropy velAmp boost. Entropy share collapsed 0.189->0.129

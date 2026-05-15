@@ -6,24 +6,11 @@
 
 channelStateField = (() => {
   const V = validator.create('channelStateField');
-  // R35 set depth to 16; R36 tried 48 to make slower writers visible; R37
-  // rollup showed meanContention dropped 0.084 -> 0.046 because each slot's
-  // 48-entry window filled with more setBalanceAndFX entries (which writes
-  // ~50 CCs per invocation), shrinking weaker writers' share of the window
-  // even as their absolute write count grew. Reverted to 16 so the stat
-  // reflects recent contention honestly. regimePan's sub-beat firing gives
-  // it real visibility at depth=16 without needing the depth expansion.
+  // Depth 16 preserves recent contention; depth 48 hid weaker writers.
   const HISTORY_DEPTH = 16;
   const LAYERS = ['L1', 'L2'];
 
-  // CC number -> param name. Unmapped CCs are ignored by observeControl.
-  // R49 audit: the R47 expansion covered every rfx-emitted CC, but 11 of
-  // those CCs (5, 65, 67, 68, 69, 70, 72, 73, 92, 94, 95) are inert in
-  // fluidsynth + SGM-v2.01 soundfont -- no audible output. Tracking them
-  // polluted meanCooperation with single-writer rfx-random auto-correlation
-  // patterns (values of -0.68 to -0.75) that saturated CIM's coordination
-  // bias at its +0.06 cap without reflecting any real musical dynamics.
-  // Pruned to the 8 CCs that fluidsynth + SGM actually respond to.
+  // Track only CCs that fluidsynth + SGM audibly respond to.
   const CC_TO_PARAM = {
     1:  'mod',        // modulation wheel -- GM1 universal
     7:  'fade',       // channel volume -- GM1 universal
@@ -86,15 +73,7 @@ channelStateField = (() => {
     return ch ? (ch.get(param) ?? null) : null;
   };
 
-  // Inferred direction of recent writes on a slot (-1 descending, 0 flat /
-  // insufficient data, +1 ascending). Used by regime writers' cooperation
-  // mode: when enabled, the writer can read this and push in the same
-  // direction to create synergy rather than antagonism.
-  //
-  // R40 diagnostic: fieldByParam showed fade = +0.416 (cooperation), filter
-  // = -0.794 (deep antagonism). Fade writers share a temporal direction
-  // (stutterFade dip-recover envelope); filter writers don't. This helper
-  // lets any regime writer opt in to cooperation via substrate awareness.
+  // Infer recent slot direction so writers can cooperate instead of antagonize.
   const recentTrend = (channel, param, opts = {}) => {
     const slot = read(channel, param, opts);
     if (!slot) return 0;
@@ -135,12 +114,7 @@ channelStateField = (() => {
     return out;
   };
 
-  // Per-slot field statistics. variance = collision density over the
-  // history window; writerCount = distinct writers in window; cooperation
-  // in [-1, 1] measures directional agreement (+1 consecutive writes
-  // push same direction = cooperation; -1 always reverse = antagonism);
-  // contention = writerCount / historyLength (1.0 = every write from
-  // a different source).
+  // Per-slot stats: variance, writer count, directional cooperation, contention.
   const _computeSlotStats = (slot) => {
     const h = slot.history;
     if (h.length < 2) return { variance: 0, writerCount: h.length, cooperation: 0, contention: 0 };
@@ -208,22 +182,9 @@ channelStateField = (() => {
     };
   };
 
-  // CIS widening/deepening (R39+)
-  //
-  // The scalar meanCooperation gives CIM one number for the whole field.
-  // Real synergy has structure: different layers can cooperate differently,
-  // different params (pan vs fade vs filter) have different cooperation
-  // regimes, and the distribution across slots matters as much as the mean
-  // (a mean of 0 from [+1, -1, +1, -1] is very different from [0, 0, 0, 0]).
-  //
-  // These extended accessors give CIM the full trajectory from deep
-  // antagonism through independence to synergy.
+  // CIS widening/deepening: expose structured cooperation, not only one mean.
 
-  // Synergy buckets [-1..+1]: deep_antagonism / antagonism / independence
-  // / cooperation / synergy at +/-0.4 and +/-0.1 thresholds. Multi-writer
-  // synergy bucket stays near-zero structurally (writers have different
-  // value centers; cooperation-mode aligns direction but not center).
-  // Single-writer slots populate via auto-correlation (split in getRollupByParam).
+  // Synergy buckets split deep antagonism through synergy at +/-0.4 and +/-0.1.
   const _bucket = (coop) => {
     if (coop <= -0.4) return 'deep_antagonism';
     if (coop <= -0.1) return 'antagonism';
@@ -236,10 +197,7 @@ channelStateField = (() => {
     deep_antagonism: 0, antagonism: 0, independence: 0, cooperation: 0, synergy: 0
   });
 
-  // Per-layer rollup: same shape as getRollup() but computed per layer so
-  // L1 vs L2 cooperation can be compared. Reveals whether the two
-  // polyrhythmic layers are independent or entangled in their emission
-  // ecology.
+  // Per-layer rollup compares whether L1/L2 are independent or entangled.
   const _computeLayerRollup = (layer) => {
     let slotCount = 0, coopSum = 0, contSum = 0, varSum = 0, writeTotal = 0;
     const writerTotals = {};
@@ -271,16 +229,7 @@ channelStateField = (() => {
     L2: _computeLayerRollup('L2'),
   });
 
-  // Per-param rollup: cooperation/contention aggregated by param name
-  // across every (layer, channel) that has that param. Answers questions
-  // like "is pan dimension in synergy while filter is in antagonism?"
-  // R46 forensic finding: the flat per-param aggregate conflated two
-  // very different things -- (a) cross-writer dynamics on multi-writer
-  // slots and (b) auto-correlation patterns on single-writer slots. fade
-  // aggregate read +0.471 for 29 single-writer slots and -0.429 on the
-  // 1 multi-writer slot, but the aggregate metric hid that. This split
-  // reports multiWriter separately so cross-module cooperation can't be
-  // confused with single-writer value-sequence auto-correlation.
+  // Per-param rollup separates multi-writer dynamics from single-writer autocorrelation.
   const getRollupByParam = () => {
     /** @type {Record<string, {totCoop:number,totCont:number,totVar:number,totN:number,mwCoop:number,mwCont:number,mwVar:number,mwN:number,swCoop:number,swN:number,writers:Set<string>}>} */
     const byParam = {};
@@ -338,13 +287,7 @@ channelStateField = (() => {
     return out;
   };
 
-  // Synergy spectrum: histogram of slots binned by cooperation value.
-  // Separates single-writer slots (where "cooperation" just reflects value
-  // auto-correlation) from multi-writer slots (where cooperation or
-  // antagonism is a real cross-module phenomenon). True synergy requires
-  // >= 2 distinct writers AND alignment >= +0.5; true antagonism requires
-  // >= 2 writers AND alignment <= -0.5. Single-writer high-cooperation is
-  // just one voice moving smoothly; not the physics we're measuring.
+  // Synergy spectrum bins cooperation while separating single vs multi-writer slots.
   const getSynergySpectrum = () => {
     const globalBins = _emptyBins();
     const multiWriterBins = _emptyBins();
@@ -391,18 +334,8 @@ channelStateField = (() => {
     };
   };
 
-  // Cross-param correlation: for each (layer, channel) that has >=2 param
-  // slots with writerCount>=2, compute the cooperation correlation between
-  // each PAIR of params. Answers structural questions:
-  //   - Does pan antagonism on channel X track with filter antagonism on
-  //     channel X? (writers fighting on same slots vs orthogonal)
-  //   - Which channels have dimensions in DIFFERENT cooperation regimes?
-  //
-  // Returns pairs sorted by |correlation|, up to N entries. Each entry is
-  //   { layer, channel, paramA, paramB, coopA, coopB, correlation }
-  // where correlation is the product of the two cooperation signs weighted
-  // by their magnitudes -- a simple similarity measure without needing
-  // time-aligned slot histories.
+  // Cross-param correlation compares cooperation regimes across param pairs.
+  // Uses signed magnitude product, avoiding time-aligned history requirements.
   const getCrossParamCorrelations = (limit = 20) => {
     const pairs = [];
     for (const layer of LAYERS) {

@@ -54,8 +54,8 @@ moduleLifecycle.declare({
     }
 
     const dynamicPenaltyCap = 0.08 + clamp((state.coherentShareEma - 0.60) * 1.0, 0, 0.20);
-    // Rate starts at 0 when coherent share is at target, grows proportionally as it overshoots.
-    // Removed hardcoded 0.003 floor that made adaptation ineffective (prior range [0.003, 0.007]).
+    // Penalty starts at target share and grows only as coherent overshoots.
+    // Removed ineffective hardcoded 0.003 floor.
     const dynamicPenaltyRate = clamp((state.coherentShareEma - config.REGIME_TARGET_COHERENT_HI) * 0.016, 0, 0.008);
     let coherentDurationPenalty = 0;
     if (state.lastRegime === 'coherent' && coherentElapsedSec > config.COHERENT_DUR_PENALTY_SEC) {
@@ -137,47 +137,28 @@ moduleLifecycle.declare({
       opportunityGap
     };
 
-    // R65 E1: Distribution-adaptive highDimVelStreak. Track running EMA of
-    // effectiveDim and its standard deviation. Set threshold relative to the
-    // observed distribution instead of static 2.8. Gate the streak entirely
-    // when exploring already dominates (rawExploringShare > 0.40).
-    // Regime-adaptive EMA alphas: faster during exploring (more dynamic signal variance),
-    // slower during coherent (stability reduces noise sensitivity).
+    // Adaptive highDimVelStreak: threshold follows observed dim distribution.
+    // EMA alphas are regime-aware; disabled when exploring already dominates.
     const dimAlpha = state.lastRegime === 'exploring' ? 0.05 : state.lastRegime === 'coherent' ? 0.02 : 0.03;
     const velAlpha = state.lastRegime === 'exploring' ? 0.06 : state.lastRegime === 'coherent' ? 0.02 : 0.04;
     state.dimEma = state.dimEma * (1 - dimAlpha) + effectiveDim * dimAlpha;
     state.dimStdEma = state.dimStdEma * (1 - dimAlpha) + m.abs(effectiveDim - state.dimEma) * dimAlpha;
-    // R79 E1: Track velocity distribution for adaptive evolving ceiling.
-    // Instead of hardcoded 0.090 ceiling (whack-a-mole since R68), derive
-    // from the actual velocity EMA + stddev. The enriched phase signal (R67)
-    // raised velocity to 0.11-0.21, making fixed ceilings obsolete.
+    // Track velocity distribution so evolving ceilings follow actual velocity.
     state.velocityEma = state.velocityEma * (1 - velAlpha) + avgVelocity * velAlpha;
     state.velocityStdEma = state.velocityStdEma * (1 - velAlpha) + m.abs(avgVelocity - state.velocityEma) * velAlpha;
     const highDimStreakEnabled = rawExploringShare < 0.40;
     const highDimThreshold = state.dimEma + state.dimStdEma * 1.5 + exploringSharePressure * 0.3;
-    // R72 E2: Raise base from 14 to 18. With evolving at 11.9% (R71),
-    // the exploring velocity shortcut fires too aggressively, capturing
-    // beats that should go through evolving classification paths.
-    // At 18, evolving paths get 4 more beats of opportunity per streak.
+    // Base streak 18 gives evolving paths more opportunity before exploring wins.
     const highDimStreakLimit = 18 + m.round(exploringSharePressure * 8);
     if (highDimStreakEnabled && effectiveDim > highDimThreshold && avgVelocity > 0.012) state.highDimVelStreak++;
     else state.highDimVelStreak = m.max(0, state.highDimVelStreak - 1);
 
     if (state.highDimVelStreak >= highDimStreakLimit && state.lastRegime !== 'coherent') return 'exploring';
 
-    // R79 E4: Section-position-aware evolving entry. Mid-composition
-    // sections (S1-S3) get a velocity ceiling boost for the cadence monopoly
-    // path, making evolving transitions more likely during the musically
-    // interesting core. S0/S4 keep original thresholds since evolving
-    // during warmup or resolution is less valuable.
+    // Mid-composition sections get a small evolving-entry velocity boost.
     const sectionIndexForRegime = sectionIndex;
     const midSectionBoost = (sectionIndexForRegime >= 1 && sectionIndexForRegime <= 3) ? 0.015 : 0;
-    // R2 E3: Tension-aware evolving sustain. When tension bias product
-    // is elevated (from R1 E2 tension dir 1.3), curvature rises and
-    // accelerates coherent entry. Counter this by widening the evolving
-    // velocity ceiling when tension is high, so evolving can persist
-    // despite stronger tension-driven curvature. Uses the actual tension
-    // signal rather than a hardcoded constant.
+    // High tension widens evolving sustain to resist premature coherent entry.
     // Inner fn guarantees finite; `|| 0.5` was a redundant fallback that also
     // silently rewrote legitimate 0 tension readings to 0.5.
     const tensionBiasProduct = V.optionalFinite(conductorState.getField('tension'), 0.5);
@@ -191,19 +172,16 @@ moduleLifecycle.declare({
       return 'evolving';
     }
 
-    // R65 E3: Adaptive coherent entry relaxation. When coherent is repeatedly
-    // blocked (coupling just below threshold), progressively relax the entry
-    // margin so coherent can eventually break through the coupling barrier.
+    // Adaptive coherent entry relaxes when coupling repeatedly stalls near threshold.
     const coherentGapToEntry = couplingStrength - (coherentThreshold + coherentEntryMargin);
     if (coherentGapToEntry > -0.06 && coherentGapToEntry < 0 && avgVelocity > velThreshold && effectiveDim <= coherentDimMax) {
       state.coherentBlockStreak++;
     } else if (state.lastRegime === 'coherent' || coherentGapToEntry >= 0) {
-      // Decay rather than instant reset: prevents rapid re-accumulation after a brief coherent pass
+      // Decay prevents rapid re-accumulation after a brief coherent pass.
       state.coherentBlockStreak = m.max(0, state.coherentBlockStreak - 2);
     }
     const coherentBlockRelax = clamp(state.coherentBlockStreak * 0.004, 0, 0.04);
-    // Enforce minimum dead band: exit window must exceed effective entry margin by at least 0.02.
-    // Prevents oscillation when blockRelax widens the entry band close to the exit band.
+    // Minimum dead band prevents blockRelax from causing entry/exit oscillation.
     const coherentExitWindow = m.max(coherentExitWindowBase, coherentEntryMargin + coherentBlockRelax + 0.02);
 
     if (couplingStrength > coherentThreshold + coherentEntryMargin - coherentBlockRelax && avgVelocity > velThreshold && effectiveDim <= coherentDimMax) return 'coherent';
@@ -219,19 +197,10 @@ moduleLifecycle.declare({
       return 'evolving';
     }
 
-    // R81 E1: Moved adaptiveVelCeiling before self-sustain so both paths
-    // (self-sustain and crossover) can use the same adaptive ceiling.
-    // R47: Removed -0.5*std bias. Post-R67 velocity distribution sits at 0.11-0.21,
-    // so EMA - 0.5*std ~0.11 -- many beats have velocity just above this, blocking
-    // evolving crossover. Using EMA directly lifts the ceiling to the median velocity,
-    // allowing beats near the distribution center to qualify for evolving crossover.
+    // Shared adaptive velocity ceiling uses EMA directly for crossover/self-sustain.
     const adaptiveVelCeiling = m.max(0.090, state.velocityEma);
 
-    // R99 E3: Widen evolving self-sustain coupling band when evolving is starved.
-    // evolvingDeficit already widens the upper bound; now also lower the coupling
-    // floor and raise the dim tolerance proportional to deficit. This makes the
-    // self-sustain window genuinely wider (not just upper-shifted) when evolving
-    // share falls below 14%.
+    // Starved evolving widens self-sustain on both floor and ceiling.
     if (state.lastRegime === 'evolving' &&
         avgVelocity > evolvingEntryVelMin &&
         avgVelocity < adaptiveVelCeiling + 0.010 + evolvingRecoveryBoost * 0.006 &&
@@ -241,21 +210,12 @@ moduleLifecycle.declare({
       return 'evolving';
     }
 
-    // exploring->evolving crossover evaluated FIRST so beats with moderate
-    // coupling+velocity coming from exploring promote correctly (otherwise
-    // the generic high-dim/low-coupling exploring check catches everything).
-    // Self-limiting: requires lastRegime=exploring; evolvingRecoveryBoost
-    // disengages as rawEvolvingShare approaches 0.05. Critical boost graduated:
-    // full 0.020 below rawEvolvingShare 0.02, linear taper to 0 at 0.04.
+    // Evaluate exploring->evolving crossover before generic exploring capture.
+    // Recovery boost tapers off as raw evolving share normalizes.
     const evolvingCriticalBoost = rawEvolvingShare < 0.04
       ? 0.020 * clamp((0.04 - rawEvolvingShare) / 0.02, 0, 1)
       : 0;
-    // R82 E2 / R89 E2: Minimum exploring dwell before crossover.
-    // R74 E6: Adaptive dwell - instead of fixed 3, scale with evolvingDeficit.
-    // When evolving is healthy (deficit ~0), dwell stays at 3. When severely
-    // starved (deficit=1, evolving < 14%), dwell drops to 1. This is a
-    // structural self-correcting mechanism: as evolving recovers, the dwell
-    // automatically tightens back to prevent exploring collapse.
+    // Adaptive dwell shortens when evolving is starved.
     const crossoverMinDwellSec = m.max(0.83, config.CROSSOVER_MIN_DWELL_SEC - evolvingDeficit * 1.66);
     if (state.lastRegime === 'exploring' && exploringElapsedSec >= crossoverMinDwellSec && avgVelocity > 0.007 && avgVelocity < adaptiveVelCeiling + opportunityPressure * 0.012 + exploringSharePressure * 0.010 + evolvingRecoveryBoost * 0.035 + evolvingCriticalBoost && effectiveDim > 1.4 - exploringSharePressure * 0.10 - evolvingRecoveryBoost * 0.25 && couplingStrength > 0.07 + evolvingDeficit * 0.012 - opportunityPressure * 0.012 - exploringSharePressure * 0.014 - evolvingRecoveryBoost * 0.025) return 'evolving';
 
