@@ -2,7 +2,7 @@
 
 const HOOK_SUCCESS_RE = /^\s*(SessionStart|UserPromptSubmit|PreToolUse|PostToolUse|Notification|Stop|SubagentStop|PreCompact|PostCompact|PermissionRequest) hook \((completed|skipped)\)\s*$/;
 const WRAPPER_AUTOCORRECT_RE = /^\s*warning:\s*i\/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT\s*$/;
-const DUP_STOP_RE = /^\s*STOP\. Re-read CLAUDE\.md and the user prompt\./;
+const DUP_STOP_RE = /^\s*STOP\. Re-read (?:AGENTS|CLAUDE)\.md and the user prompt\./;
 const DUP_CHANNEL_RE = /^\s*(warning|feedback):\s*(BLOCKED: Raw tool streak[\s\S]*)$/;
 
 function stripHookNoiseText(text, stats = {}) {
