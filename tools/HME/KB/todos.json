@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3109,
-      "updated_ts": 1778871958.5777903,
-      "codex_plan_synced_ts": 1778871958.5777745,
+      "max_id": 3113,
+      "updated_ts": 1778872048.579825,
+      "codex_plan_synced_ts": 1778872048.579808,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T19:05:45.470Z"
+      "codex_plan_ts": "2026-05-15T19:07:20.937Z"
     }
   },
   {
@@ -970,8 +970,8 @@
     "id": 3106,
     "text": "Restore unified TODO sync state from native plan instead of reverting it",
     "activeForm": "Restore unified TODO sync state from native plan instead of reverting it",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -980,14 +980,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:05:45.470Z"
+    "codex_plan_ts": "2026-05-15T19:05:45.470Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3107,
     "text": "Add policy/test blocking git checkout/restore of TODO sync files",
     "activeForm": "Add policy/test blocking git checkout/restore of TODO sync files",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -996,14 +997,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:05:45.470Z"
+    "codex_plan_ts": "2026-05-15T19:05:45.470Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3108,
     "text": "Finish Codex proxy logging/cleanup changes with TODO state kept synced",
     "activeForm": "Finish Codex proxy logging/cleanup changes with TODO state kept synced",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1012,14 +1014,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:05:45.470Z"
+    "codex_plan_ts": "2026-05-15T19:05:45.470Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3109,
     "text": "Run focused tests and commit coherent changes",
     "activeForm": "Run focused tests and commit coherent changes",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1028,6 +1031,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:05:45.470Z"
+    "codex_plan_ts": "2026-05-15T19:05:45.470Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3110,
+    "text": "Stop i/review spam and use native plan/TODO sync normally",
+    "activeForm": "Stop i/review spam and use native plan/TODO sync normally",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872048.579674,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:07:20.937Z"
+  },
+  {
+    "id": 3111,
+    "text": "Keep TODO.md/todos.json as intentional unified task state, not discardable noise",
+    "activeForm": "Keep TODO.md/todos.json as intentional unified task state, not discardable noise",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872048.5796788,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:07:20.937Z"
+  },
+  {
+    "id": 3112,
+    "text": "Add guard against git checkout/restore of unified TODO state",
+    "activeForm": "Add guard against git checkout/restore of unified TODO state",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872048.5796824,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:07:20.937Z"
+  },
+  {
+    "id": 3113,
+    "text": "Finish focused verification without review-loop spam",
+    "activeForm": "Finish focused verification without review-loop spam",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872048.579685,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:07:20.937Z"
   }
 ]

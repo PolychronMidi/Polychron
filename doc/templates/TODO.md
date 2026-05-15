@@ -4,13 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Restore unified TODO sync state from native plan instead of reverting it
+- [ ] [E3] Keep TODO.md/todos.json as intentional unified task state, not discardable noise
 
 ## Next
 
-- [ ] [E3] Add policy/test blocking git checkout/restore of TODO sync files
-- [ ] [E3] Finish Codex proxy logging/cleanup changes with TODO state kept synced
-- [ ] [E3] Run focused tests and commit coherent changes
+- [ ] [E3] Add guard against git checkout/restore of unified TODO state
+- [ ] [E3] Finish focused verification without review-loop spam
 
 ## Done
 
