@@ -11,16 +11,23 @@ function stripHookNoiseText(text, stats = {}) {
   let sawStop = false;
   let lastRawBlock = '';
   for (const line of lines) {
-    let drop = false;
-    if (HOOK_SUCCESS_RE.test(line) || WRAPPER_AUTOCORRECT_RE.test(line)) drop = true;
-    if (!drop && DUP_STOP_RE.test(line)) { drop = sawStop; sawStop = true; }
+    let category = '';
+    if (HOOK_SUCCESS_RE.test(line)) category = 'hook_success_lines';
+    else if (WRAPPER_AUTOCORRECT_RE.test(line)) category = 'autocorrect_lines';
+    else if (DUP_STOP_RE.test(line)) { category = sawStop ? 'duplicate_stop_blocks' : ''; sawStop = true; }
     const m = line.match(DUP_CHANNEL_RE);
-    if (!drop && m) {
+    if (!category && m) {
       const payload = m[2];
-      drop = payload === lastRawBlock;
+      category = payload === lastRawBlock ? 'duplicate_raw_tool_blocks' : '';
       lastRawBlock = payload;
     }
-    if (drop) { stats.stripped = (stats.stripped || 0) + 1; continue; }
+    if (category) {
+      stats.stripped = (stats.stripped || 0) + 1;
+      stats.removed_bytes = (stats.removed_bytes || 0) + Buffer.byteLength(line) + 1;
+      stats.categories = stats.categories || {};
+      stats.categories[category] = (stats.categories[category] || 0) + 1;
+      continue;
+    }
     kept.push(line);
   }
   return kept.join('\n');

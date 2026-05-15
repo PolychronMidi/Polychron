@@ -242,11 +242,17 @@ function applyRequestTransform(body, deps) {
     });
   }
   const logOpts = payloadLogOptions(cfg);
+  const cleanupStats = { ...cleaned.cleanup };
+  cleanupStats.removed_lines += hookNoiseStats.stripped || 0;
+  cleanupStats.removed_bytes += hookNoiseStats.removed_bytes || 0;
+  for (const [k, v] of Object.entries(hookNoiseStats.categories || {})) {
+    cleanupStats.categories[k] = (cleanupStats.categories[k] || 0) + v;
+  }
   return {
     body: transformed,
     before,
     after,
-    cleanup: { ...cleaned.cleanup, bridge_calls: bridgeNormalized.stats.call_rewrites, bridge_text: bridgeNormalized.stats.text_rewrites, native_tools_added: nativeTools.stats.added, hook_noise_lines: hookNoiseStats.stripped || 0, i_commands: iCommandStats.command_rewrites, i_text: iCommandStats.text_rewrites },
+    cleanup: { ...cleanupStats, bridge_calls: bridgeNormalized.stats.call_rewrites, bridge_text: bridgeNormalized.stats.text_rewrites, native_tools_added: nativeTools.stats.added, hook_noise_lines: hookNoiseStats.stripped || 0, i_commands: iCommandStats.command_rewrites, i_text: iCommandStats.text_rewrites },
     payload_log: logOpts.enabled ? {
       target: 'codex-responses-log-only',
       before: requestStats(body, logOpts.previewChars),
