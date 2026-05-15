@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Update updater default to all section levels
+(empty)
 
 ## Next
 
-- [ ] [E3] Regenerate *_full.md indexes
-- [ ] [E3] Verify links cover every heading
-- [ ] [E3] Report exact correction
+(empty)
 
 ## Done
 
