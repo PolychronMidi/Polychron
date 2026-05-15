@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3070,
-      "updated_ts": 1778865958.5467446,
-      "codex_plan_synced_ts": 1778865958.546737,
+      "updated_ts": 1778866018.5478902,
+      "codex_plan_synced_ts": 1778866018.5478823,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-      "codex_plan_ts": "2026-05-15T17:19:39.789Z"
+      "codex_plan_ts": "2026-05-15T17:26:30.576Z"
     }
   },
   {
@@ -318,14 +318,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-    "codex_plan_ts": "2026-05-15T17:19:39.789Z"
+    "codex_plan_ts": "2026-05-15T17:26:30.576Z"
   },
   {
     "id": 3067,
     "text": "Explain why alerts were missed",
     "activeForm": "Explain why alerts were missed",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -334,7 +334,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-    "codex_plan_ts": "2026-05-15T17:19:39.789Z",
+    "codex_plan_ts": "2026-05-15T17:26:30.576Z",
     "resolved_ts": 1778865946.911745,
     "resolved_reason": "completed-after-hook-scope-stack-check"
   },
@@ -359,8 +359,8 @@
     "id": 3069,
     "text": "Patch false hook-failure and alert bridge",
     "activeForm": "Patch false hook-failure and alert bridge",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -369,7 +369,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-    "codex_plan_ts": "2026-05-15T17:19:39.789Z",
+    "codex_plan_ts": "2026-05-15T17:26:30.576Z",
     "resolved_ts": 1778865946.911745,
     "resolved_reason": "completed-after-hook-scope-stack-check"
   },
@@ -377,8 +377,8 @@
     "id": 3070,
     "text": "Verify post-restart state and tests",
     "activeForm": "Verify post-restart state and tests",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -387,7 +387,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-    "codex_plan_ts": "2026-05-15T17:19:39.789Z",
+    "codex_plan_ts": "2026-05-15T17:26:30.576Z",
     "resolved_ts": 1778865946.911745,
     "resolved_reason": "completed-after-hook-scope-stack-check"
   }

@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Patch false hook-failure and alert bridge
+(empty)
 
 ## Next
 
-- [ ] [E3] Explain why alerts were missed
-- [ ] [E3] Verify post-restart state and tests
+(empty)
 
 ## Done
 
