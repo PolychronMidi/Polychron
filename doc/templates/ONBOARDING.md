@@ -5,7 +5,7 @@ Self-evolving algorithmic composition. A ~500-file JavaScript engine produces MI
 **Where this primer sits in the agent's context surface.** Three documents share the load, and they are not redundant:
 
 - [CLAUDE.md](../../CLAUDE.md) -- the **rules**. Load order, firewalls, hypermeta-first discipline, hard rules. Loaded into every prompt. Authoritative.
-- This primer -- the **behavior**. What you do in your first session, in what order, with what redirects. Injected once per session by `pretooluse_hme_primer.sh` on your first HME tool call.
+- This primer -- the **behavior**. What you do in your first session, in what order, with what redirects. The hook emits only a compact pointer to this file on first HME tool use; it does not paste this whole document into context.
 - [HME.md](../HME.md) -- the **reference**. Short HME orientation that links into the full substrate reference. Read on demand when the primer points you at something specific.
 
 **Continuity.** Session continuity comes from proxy-enriched native tools, status views, KB retrieval, and onboarding state. For context health, use `i/status state` or `i/status timeline`.
