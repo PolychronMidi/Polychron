@@ -5,8 +5,22 @@
 _STREAK_LEGACY_FILE="/tmp/hme-non-hme-streak.score"
 _STREAK_LEGACY_LAST_UNLOCK="/tmp/hme-non-hme-streak.last_unlock"
 # Raw-tool streak thresholds. Base defaults (50/70) correspond to "raw-tool
-_STREAK_WARN=$((50 + ${HME_STREAK_BLOCK_BUMP:-0}))
-_STREAK_BLOCK=$((70 + ${HME_STREAK_BLOCK_BUMP:-0}))
+_STREAK_POLICY_FILE="${PROJECT_ROOT:-}/tools/HME/config/raw-streak.json"
+_streak_policy_value() {
+  local expr="$1" fallback="$2"
+  if [ -f "$_STREAK_POLICY_FILE" ]; then
+    jq -r "$expr // \"$fallback\"" "$_STREAK_POLICY_FILE" 2>/dev/null || printf '%s\n' "$fallback"
+  else
+    printf '%s\n' "$fallback"
+  fi
+}
+_STREAK_WARN_BASE="$(_streak_policy_value '.warn_score' '50')"
+_STREAK_BLOCK_BASE="$(_streak_policy_value '.block_score' '70')"
+_STREAK_COST_SUMMARY="$(_streak_policy_value '.cost_summary' 'Bash=15, Edit=10, Grep=20; native Read resets')"
+_STREAK_PREFERRED_EXIT="$(_streak_policy_value '.preferred_exit' 'use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done')"
+_STREAK_REMINDER="$(_streak_policy_value '.reminder' 'Prefer HME tools; native Read resets and Read/Edit are KB-enriched.')"
+_STREAK_WARN=$((_STREAK_WARN_BASE + ${HME_STREAK_BLOCK_BUMP:-0}))
+_STREAK_BLOCK=$((_STREAK_BLOCK_BASE + ${HME_STREAK_BLOCK_BUMP:-0}))
 
 _streak_tick() {
   local weight="${1:-10}"
@@ -28,7 +42,7 @@ _streak_check() {
       if _streak_same_unlock_class "$unlock_key" "$last_info"; then
         local repeat_msg prev
         prev="${last_key:-$last_info}"
-        repeat_msg="BLOCKED: Raw tool streak unlock loop detected. Previous unlock: \`${prev}\`; requested: \`${unlock_key}\`. Use native Read/Edit/Todo sync, a different HME diagnostic class, or stop if done."
+        repeat_msg="BLOCKED: Raw tool streak unlock loop detected. Previous unlock: \`${prev}\`; requested: \`${unlock_key}\`. ${_STREAK_PREFERRED_EXIT}."
         jq -n --arg reason "$repeat_msg" \
           '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
         return 1
@@ -36,13 +50,13 @@ _streak_check() {
       return 0
     fi
     local msg
-    msg="BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: Bash=15, Edit=10, Grep=20; native Read resets). Do not loop on reset commands. Preferred exits: use native Read/Edit/TodoWrite, run a different HME diagnostic than the previous unlock${last_key:+ (${last_key})}, or stop if done."
+    msg="BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: ${_STREAK_COST_SUMMARY}). Do not loop on reset commands. Preferred exits: ${_STREAK_PREFERRED_EXIT}${last_key:+ (${last_key})}."
     jq -n --arg reason "$msg" \
       '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
     return 1
   elif [ "$score" -ge "$_STREAK_WARN" ]; then
     local _sc_rem=$(( (_STREAK_BLOCK - score + 9) / 10 ))
-    echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK} (~${_sc_rem} Edit calls until block). Prefer HME tools; native Read resets and Read/Edit are KB-enriched." >&2
+    echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK} (~${_sc_rem} Edit calls until block). ${_STREAK_REMINDER}" >&2
   fi
   return 0
 }
@@ -57,7 +71,7 @@ _streak_hme_precheck() {
   if [ "$score" -ge "$_STREAK_BLOCK" ] && _streak_same_unlock_class "$unlock_key" "$last_info"; then
     local repeat_msg prev
     prev="${last_key:-$last_info}"
-    repeat_msg="BLOCKED: Raw tool streak unlock loop detected. Previous unlock: \`${prev}\`; requested: \`${unlock_key}\`. Use native Read/Edit/Todo sync, a different HME diagnostic class, or stop if done."
+    repeat_msg="BLOCKED: Raw tool streak unlock loop detected. Previous unlock: \`${prev}\`; requested: \`${unlock_key}\`. ${_STREAK_PREFERRED_EXIT}."
     jq -n --arg reason "$repeat_msg" \
       '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
     return 1

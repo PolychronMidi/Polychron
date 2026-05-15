@@ -126,7 +126,11 @@ if [ -f "$FILE" ]; then
 fi
 
 # A successful native Read is the intended context-refresh exit from raw-tool streak.
+_STREAK_BEFORE=$(_streak_score)
 _streak_reset
+if [ "$_STREAK_BEFORE" -gt 0 ] 2>/dev/null; then
+  _signal_emit raw_streak_reset pretooluse_read session "{\"score_before\":${_STREAK_BEFORE}}"
+fi
 # Bounded-reads vow: counts consecutive Read/Grep/Glob; warns/blocks at HME_READ_BUDGET.
 if [ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ]; then
   PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" || exit 2

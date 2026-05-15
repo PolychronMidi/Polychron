@@ -1,0 +1,13 @@
+{
+  "warn_score": 50,
+  "block_score": 70,
+  "costs": {
+    "Bash": 15,
+    "Edit": 10,
+    "Grep": 20
+  },
+  "reset_tools": ["Read"],
+  "cost_summary": "Bash=15, Edit=10, Grep=20; native Read resets",
+  "preferred_exit": "use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done",
+  "reminder": "Prefer HME tools; native Read resets and Read/Edit are KB-enriched."
+}

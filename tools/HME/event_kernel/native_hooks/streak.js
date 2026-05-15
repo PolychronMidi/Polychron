@@ -7,6 +7,7 @@ const {
   path,
   runPython,
 } = require('./common');
+const { thresholds, blockMessage, reminderMessage } = require('./raw_streak_policy');
 
 function streakTick(weight) {
   const file = '/tmp/hme-non-hme-streak.score';
@@ -14,8 +15,7 @@ function streakTick(weight) {
   try { score = Number(fs.readFileSync(file, 'utf8').trim()) || 0; } catch (_e) { /* missing */ }
   score += weight;
   fs.writeFileSync(file, String(score));
-  const block = 70 + (Number(process.env.HME_STREAK_BLOCK_BUMP || 0) || 0);
-  const warn = 50 + (Number(process.env.HME_STREAK_BLOCK_BUMP || 0) || 0);
+  const { warn, block } = thresholds();
   if (score >= block) {
     return {
       ok: false,
@@ -23,7 +23,7 @@ function streakTick(weight) {
     };
   }
   if (score >= warn) {
-    return { ok: true, message: `REMINDER: Raw tool streak ${score}/${block}. Prefer HME tools; native Read resets and Read/Edit are KB-enriched.` };
+    return { ok: true, message: reminderMessage(score, block) };
   }
   return { ok: true, message: '' };
 }
