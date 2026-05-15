@@ -4,13 +4,13 @@ Self-evolving algorithmic composition. A ~500-file JavaScript engine produces MI
 
 **Where this primer sits in the agent's context surface.** Three documents share the load, and they are not redundant:
 
-- [CLAUDE.md](../../CLAUDE.md) -- the **rules**. Load order, firewalls, hypermeta-first discipline, hard rules. Loaded into every prompt. Authoritative.
+- [AGENTS.md](../../AGENTS.md) -- the **rules**. Load order, firewalls, hypermeta-first discipline, hard rules. Loaded into every prompt. Authoritative.
 - This primer -- the **behavior**. What you do in your first session, in what order, with what redirects. The hook emits only a compact pointer to this file on first HME tool use; it does not paste this whole document into context.
 - [HME.md](../HME.md) -- the **reference**. Short HME orientation that links into the full substrate reference. Read on demand when the primer points you at something specific.
 
 **Continuity.** Session continuity comes from proxy-enriched native tools, status views, KB retrieval, and onboarding state. For context health, use `i/status state` or `i/status timeline`.
 
-If you see a rule claim here that contradicts CLAUDE.md, CLAUDE.md wins -- this primer should not be restating rules, only describing behavior.
+If you see a rule claim here that contradicts AGENTS.md, AGENTS.md wins -- this primer should not be restating rules, only describing behavior.
 
 ## How the walkthrough works
 
@@ -127,7 +127,7 @@ pulse as a fallback scanner. The HME layer adds the following transparently:
 
 ## Rules and boundaries -- authoritative source
 
-[CLAUDE.md](../../CLAUDE.md) is loaded in every prompt -- the single source of truth for coding rules, load order, architectural firewalls, hypermeta-first discipline, and hard rules. Treat its rules as always-on constraints. The walkthrough section above surfaces the three onboarding-critical rules (LIFESAVER no-dilution, no psychopathic polling, one tool call per step) -- the rest live in CLAUDE.md.
+[AGENTS.md](../../AGENTS.md) is loaded in every prompt -- the single source of truth for coding rules, load order, architectural firewalls, hypermeta-first discipline, and hard rules. Treat its rules as always-on constraints. The walkthrough section above surfaces the three onboarding-critical rules (LIFESAVER no-dilution, no psychopathic polling, one tool call per step) -- the rest live in AGENTS.md.
 
 ## Phase 1-6 HME infrastructure
 
@@ -212,7 +212,7 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 
 ## Reference (as needed)
 
-- [CLAUDE.md](../../CLAUDE.md) -- authoritative rule set, loaded every prompt. Read first on any new session where the walkthrough does not answer the question.
+- [AGENTS.md](../../AGENTS.md) -- authoritative rule set, loaded every prompt. Read first on any new session where the walkthrough does not answer the question.
 - [doc/HME.md](../HME.md) -- short HME orientation. Read this before deeper substrate detail.
 - [tools/HME/service/server/onboarding_chain.py](../../tools/HME/service/server/onboarding_chain.py) -- chain decider source + design spec (decorator wiring, gate hooks, failure modes, "adding new steps" recipe). The state machine itself is documented above in this primer.
 - [doc/hme_full.md](../hme_full.md) -- HME internals, tool surface, event kernel, state registry, LIFESAVER, and self-coherence.

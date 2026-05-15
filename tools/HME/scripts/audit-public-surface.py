@@ -37,7 +37,7 @@ def _load_json(path: Path) -> dict:
 
 
 def _doc_files() -> list[Path]:
-    out = [PROJECT / "README.md", PROJECT / "CLAUDE.md"]
+    out = [PROJECT / "README.md", PROJECT / "AGENTS.md"]
     doc = PROJECT / "doc"
     if doc.is_dir():
         out.extend(sorted(p for p in doc.rglob("*.md") if "devlog" not in p.parts))

@@ -3,7 +3,7 @@
 // read their section at boot; each call passes its own per-key fallback.
 // Missing file -> empty config (first-run or fresh-clone case; callers supply
 // defaults). Malformed JSON -> throw (corruption is not a graceful-degradation
-// case per CLAUDE.md P2).
+// case per AGENTS.md P2).
 
 moduleLifecycle.declare({
   name: 'controllerConfig',

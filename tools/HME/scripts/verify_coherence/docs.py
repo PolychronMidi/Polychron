@@ -87,7 +87,7 @@ class DocCoreLayoutVerifier(Verifier):
     def run(self) -> VerdictResult:
         required = [
             "README.md",
-            "CLAUDE.md",
+            "AGENTS.md",
             "doc/HME.md",
             "doc/SRC.md",
             "doc/hme_full.md",
@@ -98,7 +98,7 @@ class DocCoreLayoutVerifier(Verifier):
         for rel in ("HME.md", "SRC.md", "doc/hme.md", "doc/src.md"):
             if os.path.exists(os.path.join(_PROJECT, rel)):
                 issues.append(f"unexpected duplicate doc path: {rel}")
-        for rel in ("README.md", "CLAUDE.md"):
+        for rel in ("README.md", "AGENTS.md"):
             path = os.path.join(_PROJECT, rel)
             if not os.path.isfile(path):
                 continue
@@ -159,4 +159,3 @@ class DocstringPresenceVerifier(Verifier):
 
 
 # Verifiers -- CODE category
-

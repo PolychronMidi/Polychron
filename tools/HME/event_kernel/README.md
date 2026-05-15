@@ -63,6 +63,6 @@ Codex's live `~/.codex/models_cache.json` and points `model_catalog_json` at
 the generated file. HME replaces `base_instructions` and
 `model_messages.instructions_template` with
 `doc/templates/canonical-system-prompt.md`, replaces
-`personality_pragmatic` with `CLAUDE.md`, and sets model catalog
+`personality_pragmatic` with `AGENTS.md`, and sets model catalog
 `context_window`/`max_context_window` plus root `model_context_window` to
 `1050000`.

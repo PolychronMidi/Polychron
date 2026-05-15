@@ -73,7 +73,7 @@ reports that they need review, open `/hooks` once in the interactive CLI; the
 catalog replaces Codex model `base_instructions` and
 `model_messages.instructions_template` with
 `doc/templates/canonical-system-prompt.md`, replaces
-`personality_pragmatic` with `CLAUDE.md`, and sets every model
+`personality_pragmatic` with `AGENTS.md`, and sets every model
 `context_window`/`max_context_window` to `1050000`.
 
 ## Hard Style
@@ -93,6 +93,6 @@ catalog replaces Codex model `base_instructions` and
 ## Fast Links
 
 - Project orientation: [README.md](../README.md)
-- Agent rules: [CLAUDE.md](../CLAUDE.md)
+- Agent rules: [AGENTS.md](../AGENTS.md)
 - Full HME reference: [hme_full.md](hme_full.md)
 - Composition reference: [SRC.md](SRC.md)

@@ -45,7 +45,7 @@ def constitution_report() -> str:
         f"{meta.get('source_ground_truth', 0)} ground-truth entries",
         "",
         "Positive affirmations of what Polychron IS (not what it can't be --",
-        "CLAUDE.md covers prohibitions).",
+        "AGENTS.md covers prohibitions).",
         "",
     ]
     # Group by kind

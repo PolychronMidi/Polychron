@@ -158,11 +158,11 @@ def _trigrams(text: str) -> set:
 
 
 def _load_claude_md_rules() -> list:
-    """Extract imperative bullet points from CLAUDE.md as individual rules.
-    We match against each rule separately so shared vocabulary in CLAUDE.md
+    """Extract imperative bullet points from AGENTS.md as individual rules.
+    We match against each rule separately so shared vocabulary in AGENTS.md
     doesn't cause false positives -- only actual near-duplication trips the check.
     """
-    path = os.path.join(PROJECT, "CLAUDE.md")
+    path = os.path.join(PROJECT, "AGENTS.md")
     try:
         with open(path, encoding="utf-8") as f:
             text = f.read()
@@ -184,7 +184,7 @@ def _load_claude_md_rules() -> list:
 
 
 def _claude_overlap(rule: str, claude_rules: list) -> float:
-    """Max trigram Jaccard between this rule and any CLAUDE.md bullet."""
+    """Max trigram Jaccard between this rule and any AGENTS.md bullet."""
     rt = _trigrams(rule)
     if not rt:
         return 0.0
@@ -224,7 +224,7 @@ def _validate(rel_dir: str, data: dict, claude_rules: list) -> tuple[list, list]
             overlap = _claude_overlap(r, claude_rules)
             if overlap >= TRIGRAM_OVERLAP_THRESHOLD:
                 preview = r[:70] + ("..." if len(r) > 70 else "")
-                warnings.append(f"rule[{i}] {overlap:.0%} trigram overlap with a CLAUDE.md rule -- may be redundant: {preview!r}")
+                warnings.append(f"rule[{i}] {overlap:.0%} trigram overlap with a AGENTS.md rule -- may be redundant: {preview!r}")
     intro = data.get("intro", "")
     if not intro:
         errors.append("intro is empty -- put a normal README description above the HME-DIR-INTENT block")

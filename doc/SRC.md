@@ -27,6 +27,6 @@ design primitives.
 ## Fast Links
 
 - Project orientation: [README.md](../README.md)
-- Agent rules: [CLAUDE.md](../CLAUDE.md)
+- Agent rules: [AGENTS.md](../AGENTS.md)
 - Full engine reference: [src_full.md](src_full.md)
 - HME reference: [HME.md](HME.md)

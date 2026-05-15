@@ -17,7 +17,7 @@ CODEX_MODELS_CACHE_JSON = CODEX_HOME / "models_cache.json"
 HOOKS_JSON = PROJECT_ROOT / "tools" / "HME" / "hooks" / "codex_hooks.json"
 LIVE_HOOKS_JSON = CODEX_HOME / "hooks.json"
 CANONICAL_SYSTEM_PROMPT = PROJECT_ROOT / "doc" / "templates" / "canonical-system-prompt.md"
-CLAUDE_MD = PROJECT_ROOT / "CLAUDE.md"
+CLAUDE_MD = PROJECT_ROOT / "AGENTS.md"
 MODEL_CATALOG_JSON = PROJECT_ROOT / "runtime" / "hme" / "codex-model-catalog.json"
 PROJECT_ROOT_VAR = "${HME_PROJECT_ROOT}"
 PROVIDER_ID = "hme_codex"
@@ -235,7 +235,7 @@ def expected_model_catalog(
     catalog = {"models": models}
 
     canonical = _required_text(canonical_path, "canonical system prompt")
-    claude = _required_text(claude_path, "CLAUDE.md")
+    claude = _required_text(claude_path, "AGENTS.md")
     stats = {
         "models": len(models),
         "base_instructions": 0,

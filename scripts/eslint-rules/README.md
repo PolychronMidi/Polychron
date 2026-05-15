@@ -1,6 +1,6 @@
 # ESLint rules
 
-Custom ESLint rules that enforce the architectural invariants from `CLAUDE.md` at lint time. Every rule here has a specific local reason -- most exist because we were burned by the exact antipattern they now block. Rules are registered in `index.js` and referenced as `local/<rule-name>` from `.eslintrc.js`.
+Custom ESLint rules that enforce the architectural invariants from `AGENTS.md` at lint time. Every rule here has a specific local reason -- most exist because we were burned by the exact antipattern they now block. Rules are registered in `index.js` and referenced as `local/<rule-name>` from `.eslintrc.js`.
 
 Each rule follows the standard ESLint rule shape: `meta` (docs, type, schema) + `create(context)` returning a visitor. Keep rules focused -- one rule = one invariant. Rules that try to do two things end up catching neither well.
 

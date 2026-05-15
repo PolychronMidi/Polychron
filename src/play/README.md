@@ -4,7 +4,7 @@ The composition engine -- beat pipeline, layer alternation, note emission, and t
 
 `feedbackGraphContract.js` declares all registered feedback loops and firewall ports for this subsystem. Any new feedback loop added to `play/` must be registered there; check-hypermeta-jurisdiction.js validates this on every run.
 
-`setBinaural` is called from `grandFinale` post-loop walk only -- never from `processBeat` or any per-beat handler. This is an absolute rule (see CLAUDE.md). The alpha range 8-12Hz is fixed.
+`setBinaural` is called from `grandFinale` post-loop walk only -- never from `processBeat` or any per-beat handler. This is an absolute rule (see AGENTS.md). The alpha range 8-12Hz is fixed.
 
 **`emitPickCrossLayerRecord` and `emitPickTextureEmit` load before `playNotesEmitPick`** -- the pick emission chain has a strict initialization order in `index.js`.
 
