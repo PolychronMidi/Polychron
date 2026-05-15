@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Find Codex/Claude payload text normalization points
+(empty)
 
 ## Next
 
-- [ ] [E3] Add proxy sanitizer for internal bridge command text
-- [ ] [E3] Verify with focused tests
+(empty)
 
 ## Done
 
