@@ -2,10 +2,8 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME SessionStart orientation; MUST RUN BEFORE userpromptsubmit.
 cat > /dev/null  # consume stdin
-
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HOOKS_DIR/../helpers/_nexus.sh"
-
 PROJECT="$PROJECT_ROOT"
 
 # Failfast: verify all hook scripts are executable before any run.
@@ -26,10 +24,10 @@ if [[ "${#BROKEN_HOOKS[@]}" -gt 0 ]]; then
   echo "[ALERT] LIFESAVER: ${#BROKEN_HOOKS[@]} hook(s) not executable: ${BROKEN_HOOKS[*]} -- logged to hme-errors.log" >&2
 fi
 
-# Capture previous session's pending items BEFORE state reset
+# Capture previous session's pending items before state reset.
 PREV_PENDING=$(_nexus_pending)
 
-# Reset session state for fresh session
+# Reset session state for fresh session.
 mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-tab.txt"
 > "${PROJECT}/tmp/hme-nexus.state"
@@ -60,8 +58,6 @@ if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
   fi
 fi
 
-# llama-server cold boot moved to tools/HME/launcher/polychron-launch.sh so
-
 # Persist HME env vars for the session
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   echo "export HME_ACTIVE=1" >> "$CLAUDE_ENV_FILE"
@@ -85,9 +81,7 @@ if [ -s "$_SS_CURL_ERR" ] && ! grep -qiE 'connect|refused|timed out|timeout' "$_
 fi
 rm -f "$_SS_CURL_ERR" 2>/dev/null
 if [ -n "$HEALTH_JSON" ]; then
-  # Write JSON to a temp file and have python read it -- both `<<PYEOF` and
-  # piped stdin together are ambiguous (heredoc wins, stdin gets the script
-  # text instead of the payload). Temp-file dance is the reliable form.
+  # Temp file avoids heredoc/stdin ambiguity.
   _HEALTH_TMP=$(mktemp -t hme-health.XXXXXX)
   printf '%s' "$HEALTH_JSON" > "$_HEALTH_TMP"
   RECENT_ERRORS=$(HME_HEALTH_FILE="$_HEALTH_TMP" python3 -c "
@@ -124,7 +118,6 @@ fi
 
 # Build orientation message
 MSG=""
-
 # Pipeline verdict + wall time
 PS="${METRICS_DIR:-$PROJECT/output/metrics}/pipeline-summary.json"
 if [ -f "$PS" ]; then
@@ -182,7 +175,7 @@ rm -f "$_SS_CARRY_ERR" 2>/dev/null
 # Surface doc/templates/TODO.md in-flight continuity state.
 _TODO_MD="$PROJECT/doc/templates/TODO.md"
 if [ -f "$_TODO_MD" ]; then
-  IN_FLIGHT=$(sed -n '/^## In flight/,/^## /p' "$_TODO_MD" | grep -E '^\s*-\s+\[' | head -10)
+  IN_FLIGHT=$(sed -n '/^## In flight/,/^## /p' "$_TODO_MD" | grep -E '^\s*-\s+\[' | head -10 || true)
   if [ -n "$IN_FLIGHT" ]; then
     echo "" >&2
     echo "doc/templates/TODO.md In flight:" >&2
@@ -206,8 +199,7 @@ HOLO_SCRIPT="$PROJECT/tools/HME/scripts/snapshot-holograph.py"
 if [ -f "$HOLO_SCRIPT" ]; then
   SESSION_HOLO="$PROJECT/tmp/hme-session-start.holograph.json"
   : > "$PROJECT/log/hme-bg-snapshot-holograph.err"
-  # Atomic write: temp file + mv on the same filesystem. Without this,
-  # two concurrent session starts (or restarts within the same second)
+  # Atomic write: temp file + same-filesystem mv.
   (
     SESSION_HOLO_TMP="${SESSION_HOLO}.$$.tmp"
     PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout \
@@ -217,8 +209,7 @@ if [ -f "$HOLO_SCRIPT" ]; then
   ) &
 fi
 
-# Refresh the tool-effectiveness analysis in the background. Reads log/hme.log
-# and writes metrics/hme-tool-effectiveness.json, which the LifesaverRate
+# Refresh tool-effectiveness analysis in the background.
 EFF_SCRIPT="$PROJECT/tools/HME/scripts/analyze-tool-effectiveness.py"
 EFF_PID=""
 if [ -f "$EFF_SCRIPT" ]; then
@@ -348,7 +339,7 @@ _LE="$PROJECT_ROOT/tools/HME/scripts/learning_extract.py"
 _TODO_FILE="$PROJECT_ROOT/doc/templates/TODO.md"
 if [ -x "$_LE" ] && [ -f "$_TODO_FILE" ]; then
   _TODO_TITLE=$(grep -E "^[[:space:]]*-[[:space:]]+\\[[[:space:]]\\][[:space:]]+\\[(E[1-5]|easy|medium|hard)\\]" "$_TODO_FILE" | head -1 \
-    | sed -E 's/^[[:space:]]*-[[:space:]]+\[[[:space:]]\][[:space:]]+\[(E[1-5]|easy|medium|hard)\][[:space:]]+//' | tr -d '[:cntrl:]' | xargs)
+    | sed -E 's/^[[:space:]]*-[[:space:]]+\[[[:space:]]\][[:space:]]+\[(E[1-5]|easy|medium|hard)\][[:space:]]+//' | tr -d '[:cntrl:]' | xargs || true)
   if [ -n "$_TODO_TITLE" ]; then
     _FIRST_KW=$(echo "$_TODO_TITLE" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) if(length($i)>=4){print $i; exit}}')
     if [ -n "$_FIRST_KW" ]; then
@@ -356,5 +347,4 @@ if [ -x "$_LE" ] && [ -f "$_TODO_FILE" ]; then
     fi
   fi
 fi
-
 exit 0
