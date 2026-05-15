@@ -197,6 +197,8 @@ test('Codex proxy status mode renders payload deltas without prompt text', () =>
   })}\n`);
   const script = `
 import importlib.util, sys, types
+import os
+os.environ["HME_CODEX_ROUTE_SMOKE_ACTIVE"] = "0"
 server = types.ModuleType("server")
 server.context = types.SimpleNamespace(PROJECT_ROOT="${sandbox}")
 sys.modules["server"] = server
@@ -239,6 +241,8 @@ test('Codex route status mode renders route smoke without prompt text', () => {
   })}\n`);
   const script = `
 import importlib.util, sys, types
+import os
+os.environ["HME_CODEX_ROUTE_SMOKE_ACTIVE"] = "0"
 server = types.ModuleType("server")
 server.context = types.SimpleNamespace(PROJECT_ROOT="${sandbox}")
 sys.modules["server"] = server

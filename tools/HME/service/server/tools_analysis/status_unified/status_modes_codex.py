@@ -128,6 +128,25 @@ def _omniroute_logs(limit: int = 40) -> tuple[list[dict], str]:
         return [], f"{type(exc).__name__}: {exc}"
 
 
+
+def _probe_claude_route() -> tuple[str, str]:
+    if os.environ.get("HME_CODEX_ROUTE_SMOKE_ACTIVE") == "0":
+        return "skipped", "disabled by HME_CODEX_ROUTE_SMOKE_ACTIVE=0"
+    port = _service_port("omniroute", 20128)
+    model = os.environ.get("HME_CODEX_ROUTE_SMOKE_MODEL", "cx/gpt-5.5-low")
+    body = {
+        "model": model,
+        "max_tokens": 1,
+        "stream": False,
+        "messages": [{"role": "user", "content": "Reply OK."}],
+    }
+    data, err = _json_url(f"http://127.0.0.1:{port}/v1/messages", timeout=20.0, data=body)
+    if err:
+        return "error", err
+    if isinstance(data, dict) and data.get("type") == "message":
+        return "ok", model
+    return "warn", "unexpected response shape"
+
 def _fmt_health(name: str, data: dict | None, err: str) -> str:
     if not isinstance(data, dict):
         return f"{name}: DOWN ({err or 'no response'})"
@@ -158,6 +177,7 @@ def _mode_codex_route() -> str:
     req, resp = _latest_codex_pair(events)
     proxy, proxy_err = _health("proxy", 9099)
     codex, codex_err = _health("codex_proxy", 9102)
+    probe_status, probe_detail = _probe_claude_route()
     logs, logs_err = _omniroute_logs()
     codex_calls = [c for c in logs if c.get("provider") == "codex" or "codex/" in str(c.get("requestedModel"))]
     direct = next((c for c in codex_calls if c.get("path") == "/v1/responses"), None)
@@ -165,6 +185,9 @@ def _mode_codex_route() -> str:
     direct_ok = bool(direct and direct.get("sourceFormat") == "openai-responses"
                      and direct.get("targetFormat") == "openai-responses"
                      and 200 <= int(direct.get("status") or 0) < 300)
+    claude_ok = bool(claude and claude.get("sourceFormat") == "claude"
+                     and claude.get("targetFormat") == "openai-responses"
+                     and 200 <= int(claude.get("status") or 0) < 300)
     out = ["# Codex route smoke", ""]
     out.append(_fmt_health("proxy", proxy, proxy_err))
     out.append(_fmt_health("codex_proxy", codex, codex_err))
@@ -183,11 +206,12 @@ def _mode_codex_route() -> str:
         )
     else:
         out.append("codex_proxy latest response: missing")
+    out.append(f"omniroute claude probe: {probe_status} ({probe_detail})")
     out.append("omniroute direct: " + _fmt_call(direct))
     out.append("omniroute claude: " + _fmt_call(claude))
     if logs_err:
         out.append(f"omniroute logs: unavailable ({logs_err})")
-    verdict = "PASS" if direct_ok else "WARN"
+    verdict = "PASS" if direct_ok and (claude_ok or probe_status == "skipped") else "WARN"
     if claude is None:
         out.append("note: no recent Claude /v1/messages -> Codex call in OmniRoute logs")
     out.append("")
