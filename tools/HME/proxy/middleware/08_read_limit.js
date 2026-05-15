@@ -69,6 +69,5 @@ function onToolResult(toolResult, toolUse, sessionId) {
 
 module.exports = {
   name: 'read_limit',
-  priority: 8,
   onToolResult,
 };
