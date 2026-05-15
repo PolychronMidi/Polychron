@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Find new TODO item
+(empty)
 
 ## Next
 
-- [ ] [E3] Run focused verification
-- [ ] [E3] Implement codex-route smoke
-- [ ] [E3] Tick completed TODO
+(empty)
 
 ## Done
 
