@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3168,
-      "updated_ts": 1778879758.6109147,
-      "codex_plan_synced_ts": 1778879758.6108868,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T21:15:57.771Z"
+      "max_id": 3172,
+      "updated_ts": 1778880307.9499068,
+      "codex_plan_synced_ts": 1778880307.949878,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T21:25:07.528Z"
     }
   },
   {
@@ -1996,5 +1996,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T21:15:57.771Z"
+  },
+  {
+    "id": 3169,
+    "text": "Inspect full-doc heading patterns",
+    "activeForm": "Inspect full-doc heading patterns",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880307.9496336,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:25:07.528Z"
+  },
+  {
+    "id": 3170,
+    "text": "Add doc/infra updater script",
+    "activeForm": "Add doc/infra updater script",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880307.9496384,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:25:07.528Z"
+  },
+  {
+    "id": 3171,
+    "text": "Run updater and inspect diffs",
+    "activeForm": "Run updater and inspect diffs",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880307.9496417,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:25:07.528Z"
+  },
+  {
+    "id": 3172,
+    "text": "Add/execute focused verification",
+    "activeForm": "Add/execute focused verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880307.949644,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:25:07.528Z"
   }
 ]

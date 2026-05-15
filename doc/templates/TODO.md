@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect full-doc heading patterns
 
 ## Next
 
-(empty)
+- [ ] [E3] Add doc/infra updater script
+- [ ] [E3] Run updater and inspect diffs
+- [ ] [E3] Add/execute focused verification
 
 ## Done
 
