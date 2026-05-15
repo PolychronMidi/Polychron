@@ -115,24 +115,6 @@ function lockDeletion(cmd) {
   return null;
 }
 
-function logFirst(cmd, root = PROJECT_ROOT) {
-  const trimmed = cmd.trim();
-  const target = (trimmed === 'npm run lint' || trimmed === 'npm run lint:raw') ? 'lint.log' : (trimmed === 'npm run tc' ? 'tc.log' : '');
-  if (!target) return null;
-  const log = path.join(root, 'log', target);
-  if (!fs.existsSync(log)) return null;
-  const mtime = fs.statSync(log).mtimeMs;
-  for (const dir of ['src', 'tools/HME']) {
-    const base = path.join(root, dir);
-    if (!fs.existsSync(base)) continue;
-    const stack = [base];
-    while (stack.length) for (const ent of fs.readdirSync(stack.pop(), { withFileTypes: true })) {
-      const fp = path.join(base, path.relative(base, fp || base));
-    }
-  }
-  return deny(`BLOCKED: log/${target} is current. Read the existing log instead of re-running. Override with ': force-rerun;' if truly needed.`);
-}
-
 function codeChangedAfter(root, mtime) {
   for (const dir of ['src', 'tools/HME']) {
     const base = path.join(root, dir);
