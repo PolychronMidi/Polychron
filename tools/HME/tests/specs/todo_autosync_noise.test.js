@@ -47,7 +47,7 @@ function ctx() {
 }
 
 test('todo_status_filter suppresses only unified-todo git status dirtiness', () => withProject(() => {
-  const mod = require('../../proxy/middleware/26_todo_status_filter');
+  const mod = require('../../proxy/middleware/25_todo_status_filter');
   const toolUse = { name: 'Bash', input: { command: 'git status --short' } };
   const toolResult = { content: ' M doc/templates/TODO.md\n M tools/HME/KB/todos.json\n' };
   const c = ctx();
@@ -58,7 +58,7 @@ test('todo_status_filter suppresses only unified-todo git status dirtiness', () 
 }));
 
 test('todo_status_filter keeps real non-todo status output visible', () => withProject(() => {
-  const mod = require('../../proxy/middleware/26_todo_status_filter');
+  const mod = require('../../proxy/middleware/25_todo_status_filter');
   const toolUse = { name: 'Bash', input: { command: 'git status --short' } };
   const content = ' M doc/templates/TODO.md\n M src/main.js\n';
   const toolResult = { content };
@@ -71,7 +71,7 @@ test('todo_status_filter keeps real non-todo status output visible', () => withP
 test('todo_status_filter keeps todo status visible when sync failed', () => withProject((root) => {
   fs.mkdirSync(path.join(root, 'runtime', 'hme'), { recursive: true });
   fs.writeFileSync(path.join(root, 'runtime', 'hme', 'todo-sync.fail'), 'sync failed\n');
-  const mod = require('../../proxy/middleware/26_todo_status_filter');
+  const mod = require('../../proxy/middleware/25_todo_status_filter');
   const toolUse = { name: 'Bash', input: { command: 'git status --short' } };
   const content = ' M doc/templates/TODO.md\n';
   const toolResult = { content };

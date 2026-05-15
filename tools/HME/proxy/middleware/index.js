@@ -487,7 +487,7 @@ function loadAll() {
   // Sort by numeric prefix when present, else alphabetical (after numbered).
   const ordered = allFiles.slice().sort((a, b) => {
     const ma = /^(\d+)_/.exec(a); const mb = /^(\d+)_/.exec(b);
-    if (ma && mb) return parseInt(ma[1], 10) - parseInt(mb[1], 10);
+    if (ma && mb) return (parseInt(ma[1], 10) - parseInt(mb[1], 10)) || a.localeCompare(b);
     if (ma && !mb) return -1;
     if (!ma && mb) return 1;
     return a.localeCompare(b);
