@@ -34,18 +34,12 @@ function loadConfig() {
   try {
     _config = loadJsonc(CONFIG_PATH);
   } catch (err) {
-    _config = {
-      todo_sync: { enabled: true },
-      request_transform: {},
-      _load_error: err.message,
-    };
+    _config = { todo_sync: { enabled: true }, request_transform: {}, _load_error: err.message };
   }
   return _config;
 }
 
-function nowIso() {
-  return new Date().toISOString();
-}
+function nowIso() { return new Date().toISOString(); }
 
 function safeJson(value) {
   try { return JSON.parse(value || '{}'); } catch (_e) { return {}; }
@@ -67,13 +61,7 @@ function record(row) {
   appendJsonl(EVENT_LOG, event);
 }
 
-const planScanner = createPlanScanner({
-  loadConfig,
-  record,
-  nowIso,
-  planSync: PLAN_SYNC,
-  projectRoot: PROJECT_ROOT,
-});
+const planScanner = createPlanScanner({ loadConfig, record, nowIso, planSync: PLAN_SYNC, projectRoot: PROJECT_ROOT });
 
 function parseCodexMetadata(req) {
   const raw = req.headers['x-codex-turn-metadata'];
@@ -127,21 +115,14 @@ function runCodexAutocommit() {
 
 function appendInstructions(body, note) {
   const current = typeof body.instructions === 'string' ? body.instructions : '';
-  return {
-    ...body,
-    instructions: current ? `${current}\n\n${note}` : note,
-  };
+  return { ...body, instructions: current ? `${current}\n\n${note}` : note };
 }
 
 function injectCodexLifesaver(body) {
   touchLifesaverHeartbeat(PROJECT_ROOT);
   const failure = readAutocommitFailure(PROJECT_ROOT);
   if (!failure) return { body, injected: false };
-  return {
-    body: appendInstructions(body, `[lifesaver inject from codex proxy]\n${failure.banner}`),
-    injected: true,
-    flag: failure.flagPath,
-  };
+  return { body: appendInstructions(body, `[lifesaver inject from codex proxy]\n${failure.banner}`), injected: true, flag: failure.flagPath };
 }
 
 function upstreamHeaders(req, bodyBytes, target) {
@@ -286,12 +267,7 @@ async function handleResponses(req, res) {
     return;
   }
   const meta = parseCodexMetadata(req);
-  const source = {
-    session_id: meta.session_id || '',
-    thread_id: meta.thread_id || '',
-    turn_id: meta.turn_id || '',
-    originator: req.headers.originator || '',
-  };
+  const source = { session_id: meta.session_id || '', thread_id: meta.thread_id || '', turn_id: meta.turn_id || '', originator: req.headers.originator || '' };
   const autocommit = runCodexAutocommit();
   const lifesaver = injectCodexLifesaver(body);
   const { body: transformed, before, after, cleanup, payload_log: payloadLog } = applyRequestTransform(lifesaver.body, {
@@ -329,15 +305,7 @@ async function handleResponses(req, res) {
 function handleRequest(req, res) {
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'ok',
-      component: 'hme-codex-proxy',
-      version: PROXY_VERSION,
-      port: PORT,
-      upstream: UPSTREAM_URL,
-      route: targetSummary(targetChain({ model: 'health' }, UPSTREAM_URL, loadConfig)),
-      config: CONFIG_PATH,
-    }));
+    res.end(JSON.stringify({ status: 'ok', component: 'hme-codex-proxy', version: PROXY_VERSION, port: PORT, upstream: UPSTREAM_URL, route: targetSummary(targetChain({ model: 'health' }, UPSTREAM_URL, loadConfig)), config: CONFIG_PATH }));
     return;
   }
   if (req.url === '/hme/codex/metrics') {
