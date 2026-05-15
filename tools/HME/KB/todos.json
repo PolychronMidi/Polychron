@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3155,
-      "updated_ts": 1778878168.6164122,
-      "codex_plan_synced_ts": 1778878168.6163864,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T20:48:59.820Z"
+      "max_id": 3158,
+      "updated_ts": 1778878619.9266188,
+      "codex_plan_synced_ts": 1778878619.9265924,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T20:56:59.466Z"
     }
   },
   {
@@ -1785,5 +1785,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T20:48:59.820Z"
+  },
+  {
+    "id": 3156,
+    "text": "Check proxy/Codex live state",
+    "activeForm": "Check proxy/Codex live state",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778878619.926364,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:56:59.466Z"
+  },
+  {
+    "id": 3157,
+    "text": "Confirm hook duplicate/read-reset behavior",
+    "activeForm": "Confirm hook duplicate/read-reset behavior",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778878619.9263704,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:56:59.466Z"
+  },
+  {
+    "id": 3158,
+    "text": "Recommend next hardening steps",
+    "activeForm": "Recommend next hardening steps",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778878619.9263744,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:56:59.466Z"
   }
 ]

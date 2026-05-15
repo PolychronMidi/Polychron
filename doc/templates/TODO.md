@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Check proxy/Codex live state
 
 ## Next
 
-(empty)
+- [ ] [E3] Confirm hook duplicate/read-reset behavior
+- [ ] [E3] Recommend next hardening steps
 
 ## Done
 
