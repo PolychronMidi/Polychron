@@ -4,11 +4,14 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect Codex response/tool-call shapes and existing request transform
 
 ## Next
 
-(empty)
+- [ ] [E3] Add Read/Edit tool schema injection in Codex request transform
+- [ ] [E3] Translate outbound Read/Edit calls to exec_command bridge for client execution
+- [ ] [E3] Add targeted tests for request schema and stream/nonstream response rewrite
+- [ ] [E3] Run verification and report exact evidence
 
 ## Done
 
