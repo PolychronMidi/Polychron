@@ -4,14 +4,14 @@
 
 ## Now
 
-- [ ] [E3] Inspect current Codex proxy/OmniRoute logging path and uncommitted changes
+- [ ] [E3] Inspect OmniRoute CLI/API abstraction, not raw DB rows
 
 ## Next
 
-- [ ] [E3] Fix visibility logging so Codex requests appear in OmniRoute without operator ritual
-- [ ] [E3] Remove/de-advertise manual TODO sync surface already in progress, preserving automatic sync
 - [ ] [E3] Add focused regressions and run targeted checks
 - [ ] [E3] Commit completed changes with evidence
+- [ ] [E3] Route Codex proxy visibility through OmniRoute-native translation/logging
+- [ ] [E3] Remove manual DB visibility shim and manual TODO sync surface
 
 ## Done
 

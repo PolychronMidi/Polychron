@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3135,
-      "updated_ts": 1778874448.6008744,
-      "codex_plan_synced_ts": 1778874448.60085,
+      "max_id": 3138,
+      "updated_ts": 1778874598.5947125,
+      "codex_plan_synced_ts": 1778874598.5946906,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T19:47:03.412Z"
+      "codex_plan_ts": "2026-05-15T19:49:34.083Z"
     }
   },
   {
@@ -1380,8 +1380,8 @@
     "id": 3131,
     "text": "Inspect current Codex proxy/OmniRoute logging path and uncommitted changes",
     "activeForm": "Inspect current Codex proxy/OmniRoute logging path and uncommitted changes",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1390,14 +1390,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:47:03.412Z"
+    "codex_plan_ts": "2026-05-15T19:47:03.412Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3132,
     "text": "Fix visibility logging so Codex requests appear in OmniRoute without operator ritual",
     "activeForm": "Fix visibility logging so Codex requests appear in OmniRoute without operator ritual",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1406,14 +1407,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:47:03.412Z"
+    "codex_plan_ts": "2026-05-15T19:47:03.412Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3133,
     "text": "Remove/de-advertise manual TODO sync surface already in progress, preserving automatic sync",
     "activeForm": "Remove/de-advertise manual TODO sync surface already in progress, preserving automatic sync",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1422,7 +1424,8 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:47:03.412Z"
+    "codex_plan_ts": "2026-05-15T19:47:03.412Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3134,
@@ -1438,7 +1441,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:47:03.412Z"
+    "codex_plan_ts": "2026-05-15T19:49:34.083Z"
   },
   {
     "id": 3135,
@@ -1454,6 +1457,54 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:47:03.412Z"
+    "codex_plan_ts": "2026-05-15T19:49:34.083Z"
+  },
+  {
+    "id": 3136,
+    "text": "Inspect OmniRoute CLI/API abstraction, not raw DB rows",
+    "activeForm": "Inspect OmniRoute CLI/API abstraction, not raw DB rows",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874598.5945046,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:49:34.083Z"
+  },
+  {
+    "id": 3137,
+    "text": "Route Codex proxy visibility through OmniRoute-native translation/logging",
+    "activeForm": "Route Codex proxy visibility through OmniRoute-native translation/logging",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874598.5945091,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:49:34.083Z"
+  },
+  {
+    "id": 3138,
+    "text": "Remove manual DB visibility shim and manual TODO sync surface",
+    "activeForm": "Remove manual DB visibility shim and manual TODO sync surface",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874598.5945127,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:49:34.083Z"
   }
 ]
