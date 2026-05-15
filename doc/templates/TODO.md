@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect current i/ rewrite and proxy cleanup paths
+(empty)
 
 ## Next
 
-- [ ] [E3] Implement shared proxy i-command normalizer for Claude/Codex
-- [ ] [E3] Remove/silence hook rewrite noise and add tests
+(empty)
 
 ## Done
 
