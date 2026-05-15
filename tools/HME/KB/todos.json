@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3113,
-      "updated_ts": 1778872048.579825,
-      "codex_plan_synced_ts": 1778872048.579808,
+      "max_id": 3117,
+      "updated_ts": 1778872468.5794759,
+      "codex_plan_synced_ts": 1778872468.5794592,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T19:07:20.937Z"
+      "codex_plan_ts": "2026-05-15T19:14:13.204Z"
     }
   },
   {
@@ -1054,8 +1054,8 @@
     "id": 3111,
     "text": "Keep TODO.md/todos.json as intentional unified task state, not discardable noise",
     "activeForm": "Keep TODO.md/todos.json as intentional unified task state, not discardable noise",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1064,14 +1064,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:07:20.937Z"
+    "codex_plan_ts": "2026-05-15T19:07:20.937Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3112,
     "text": "Add guard against git checkout/restore of unified TODO state",
     "activeForm": "Add guard against git checkout/restore of unified TODO state",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1080,14 +1081,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:07:20.937Z"
+    "codex_plan_ts": "2026-05-15T19:07:20.937Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3113,
     "text": "Finish focused verification without review-loop spam",
     "activeForm": "Finish focused verification without review-loop spam",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1096,6 +1098,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:07:20.937Z"
+    "codex_plan_ts": "2026-05-15T19:07:20.937Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3114,
+    "text": "Locate raw-tool-streak unlock logic and existing tests",
+    "activeForm": "Locate raw-tool-streak unlock logic and existing tests",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872198.5732913,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:14:13.204Z"
+  },
+  {
+    "id": 3115,
+    "text": "Harden unlock so repeated same i/ command is blocked",
+    "activeForm": "Harden unlock so repeated same i/ command is blocked",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872198.5732954,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:14:13.204Z"
+  },
+  {
+    "id": 3116,
+    "text": "Finish TODO-state guard and prior Codex proxy work integration",
+    "activeForm": "Finish TODO-state guard and prior Codex proxy work integration",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872198.5732987,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:14:13.204Z"
+  },
+  {
+    "id": 3117,
+    "text": "Run focused verification and report evidence",
+    "activeForm": "Run focused verification and report evidence",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778872198.573301,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:14:13.204Z"
   }
 ]

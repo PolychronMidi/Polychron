@@ -26,6 +26,7 @@ if [ -s "$_LTC_JQ_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/lo
 fi
 rm -f "$_LTC_JQ_ERR" 2>/dev/null
 TOOL_RESULT=$(_safe_jq "$HOOK_DATA" '.tool_response' '' | head -c 500)
+TOOL_CMD=$(_safe_jq "$HOOK_DATA" '.tool_input.command' '')
 FILE_PATH=$(_safe_jq "$HOOK_DATA" '.tool_input.file_path' '')
 CWD=$(_safe_jq "$HOOK_DATA" '.cwd' '')
 SESSION_ID=$(_safe_jq "$HOOK_DATA" '.session_id' '')
@@ -54,19 +55,18 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _HME_TOOL="${TOOL_NAME#mcp__HME__}"
 elif [[ "$TOOL_NAME" == "Bash" ]]; then
   # Match i/<tool> ONLY when it appears in an invocation position -- start of
-  if echo "$TOOL_INPUT" | grep -qE '(^|[;|&`(]|&&|\|\||\b(bash|sh|exec|time)[[:space:]]+)[[:space:]]*i/(review|learn|trace|evolve|status|hme|audit|why|policies)\b|scripts/hme-cli\.js'; then
+  if [ -n "$(_streak_unlock_key "$TOOL_CMD")" ]; then
     _IS_HME_CALL=1
     # Extract the tool name from the matched invocation (not from any other
     # i/X substring that might appear as an arg elsewhere in the command).
-    _HME_TOOL=$(echo "$TOOL_INPUT" | grep -oE '(^|[;|&`(]|&&|\|\||\b(bash|sh|exec|time)[[:space:]]+)[[:space:]]*i/[a-z_-]+' \
-                | head -1 | grep -oE 'i/[a-z_-]+' | cut -d/ -f2)
+    _HME_TOOL=$(_streak_unlock_key "$TOOL_CMD" | awk '{print $1}' | cut -d/ -f2)
   fi
 fi
 
 # LIFESAVER FAIL-scan + hme.log ERROR watermark moved to proxy middleware
 # (mcp_fail_scan.js + hme_log_watermark.js). Shell hook keeps only streak reset.
 if [ "$_IS_HME_CALL" = "1" ]; then
-  _streak_reset
+  _streak_reset "$TOOL_CMD"
 fi
 
 # LIFESAVER threshold: warn when HME synthesis exceeds expected duration

@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Keep TODO.md/todos.json as intentional unified task state, not discardable noise
+(empty)
 
 ## Next
 
-- [ ] [E3] Add guard against git checkout/restore of unified TODO state
-- [ ] [E3] Finish focused verification without review-loop spam
+(empty)
 
 ## Done
 
