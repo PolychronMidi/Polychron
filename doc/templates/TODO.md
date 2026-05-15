@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect current generator and path mentions
 
 ## Next
 
-(empty)
+- [ ] [E3] Implement multiline nav and path autolinks
+- [ ] [E3] Regenerate full docs
+- [ ] [E3] Verify nav/path links
 
 ## Done
 

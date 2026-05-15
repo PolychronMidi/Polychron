@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3176,
-      "updated_ts": 1778880718.609998,
-      "codex_plan_synced_ts": 1778880718.609969,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T21:31:51.242Z"
+      "max_id": 3180,
+      "updated_ts": 1778880904.2787197,
+      "codex_plan_synced_ts": 1778880904.2786894,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T21:35:03.858Z"
     }
   },
   {
@@ -2124,5 +2124,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T21:31:51.242Z"
+  },
+  {
+    "id": 3177,
+    "text": "Inspect current generator and path mentions",
+    "activeForm": "Inspect current generator and path mentions",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880904.2784395,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:35:03.858Z"
+  },
+  {
+    "id": 3178,
+    "text": "Implement multiline nav and path autolinks",
+    "activeForm": "Implement multiline nav and path autolinks",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880904.2784445,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:35:03.858Z"
+  },
+  {
+    "id": 3179,
+    "text": "Regenerate full docs",
+    "activeForm": "Regenerate full docs",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880904.2784479,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:35:03.858Z"
+  },
+  {
+    "id": 3180,
+    "text": "Verify nav/path links",
+    "activeForm": "Verify nav/path links",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880904.27845,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:35:03.858Z"
   }
 ]
