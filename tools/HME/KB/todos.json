@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3147,
-      "updated_ts": 1778876788.6105063,
-      "codex_plan_synced_ts": 1778876788.610483,
+      "max_id": 3151,
+      "updated_ts": 1778877208.616557,
+      "codex_plan_synced_ts": 1778877208.6165318,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T20:26:22.946Z"
+      "codex_plan_ts": "2026-05-15T20:33:26.441Z"
     }
   },
   {
@@ -1594,8 +1594,8 @@
     "id": 3144,
     "text": "Run focused checks and report evidence",
     "activeForm": "Run focused checks and report evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1604,14 +1604,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:26:22.946Z"
+    "codex_plan_ts": "2026-05-15T20:26:22.946Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3145,
     "text": "Inspect current Claude Code OmniRoute routing and tests",
     "activeForm": "Inspect current Claude Code OmniRoute routing and tests",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1620,14 +1621,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:26:22.946Z"
+    "codex_plan_ts": "2026-05-15T20:26:22.946Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3146,
     "text": "Add target-format selection for cx/gpt/openai-responses targets",
     "activeForm": "Add target-format selection for cx/gpt/openai-responses targets",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1636,14 +1638,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:26:22.946Z"
+    "codex_plan_ts": "2026-05-15T20:26:22.946Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3147,
     "text": "Add regression tests for chat vs responses target selection",
     "activeForm": "Add regression tests for chat vs responses target selection",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1652,6 +1655,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:26:22.946Z"
+    "codex_plan_ts": "2026-05-15T20:26:22.946Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3148,
+    "text": "Inspect current routing/config",
+    "activeForm": "Inspect current routing/config",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778877206.8652272,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:33:26.441Z"
+  },
+  {
+    "id": 3149,
+    "text": "Implement responses-target routing signal",
+    "activeForm": "Implement responses-target routing signal",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778877206.8652325,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:33:26.441Z"
+  },
+  {
+    "id": 3150,
+    "text": "Add focused regression coverage",
+    "activeForm": "Add focused regression coverage",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778877206.865236,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:33:26.441Z"
+  },
+  {
+    "id": 3151,
+    "text": "Run focused verification",
+    "activeForm": "Run focused verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778877206.865238,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:33:26.441Z"
   }
 ]

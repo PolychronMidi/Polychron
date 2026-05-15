@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Inspect current Claude Code OmniRoute routing and tests
+- [ ] [E3] Inspect current routing/config
 
 ## Next
 
-- [ ] [E3] Run focused checks and report evidence
-- [ ] [E3] Add target-format selection for cx/gpt/openai-responses targets
-- [ ] [E3] Add regression tests for chat vs responses target selection
+- [ ] [E3] Implement responses-target routing signal
+- [ ] [E3] Add focused regression coverage
+- [ ] [E3] Run focused verification
 
 ## Done
 
