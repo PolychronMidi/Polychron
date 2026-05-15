@@ -4,6 +4,12 @@ Detailed reference for `src/`, distilled from the former per-topic docs. Keep
 this as the single source of truth for composition architecture, tuning
 context, subsystem responsibilities, and design primitives.
 
+<!-- doc-infra-nav:start -->
+## Navigation
+
+[Engine Model](#engine-model) · [Subsystem Map](#subsystem-map) · [Conductor Pipeline](#conductor-pipeline) · [Layer Isolation](#layer-isolation) · [Boundaries](#boundaries) · [Module Registry](#module-registry) · [Key Systems](#key-systems) · [Tuning Context](#tuning-context) · [Machine Anchors](#machine-anchors) · [Calibration Anchors](#calibration-anchors) · [Diagnostics](#diagnostics)
+<!-- doc-infra-nav:end -->
+
 ## Engine Model
 
 Polychron generates MIDI through two polyrhythmic layers. Each layer is
