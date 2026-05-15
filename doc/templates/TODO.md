@@ -4,12 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Inspect current proxy/SSE paths for remaining visible i/ or bridge gaps
+- [ ] [E3] Check current Codex/proxy tool exposure and health
 
 ## Next
 
-- [ ] [E3] Patch missing normalization without hook noise
-- [ ] [E3] Run targeted tests and syntax checks with evidence
+- [ ] [E3] Run a minimal read/edit bridge verification
+- [ ] [E3] Patch failure if native-looking Read/Edit still fails
+- [ ] [E3] Report evidence and exact remaining gap
 
 ## Done
 

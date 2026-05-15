@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3203,
-      "updated_ts": 1778885068.656658,
-      "codex_plan_synced_ts": 1778885068.6566231,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T22:44:18.375Z"
+      "max_id": 3207,
+      "updated_ts": 1778885260.4694088,
+      "codex_plan_synced_ts": 1778885260.4693732,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T22:47:40.048Z"
     }
   },
   {
@@ -2520,8 +2520,8 @@
     "id": 3201,
     "text": "Inspect current proxy/SSE paths for remaining visible i/ or bridge gaps",
     "activeForm": "Inspect current proxy/SSE paths for remaining visible i/ or bridge gaps",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2530,14 +2530,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T22:44:18.375Z"
+    "codex_plan_ts": "2026-05-15T22:44:18.375Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3202,
     "text": "Patch missing normalization without hook noise",
     "activeForm": "Patch missing normalization without hook noise",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2546,14 +2547,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T22:44:18.375Z"
+    "codex_plan_ts": "2026-05-15T22:44:18.375Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3203,
     "text": "Run targeted tests and syntax checks with evidence",
     "activeForm": "Run targeted tests and syntax checks with evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2562,6 +2564,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T22:44:18.375Z"
+    "codex_plan_ts": "2026-05-15T22:44:18.375Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3204,
+    "text": "Check current Codex/proxy tool exposure and health",
+    "activeForm": "Check current Codex/proxy tool exposure and health",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778885260.4690647,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T22:47:40.048Z"
+  },
+  {
+    "id": 3205,
+    "text": "Run a minimal read/edit bridge verification",
+    "activeForm": "Run a minimal read/edit bridge verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778885260.4690702,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T22:47:40.048Z"
+  },
+  {
+    "id": 3206,
+    "text": "Patch failure if native-looking Read/Edit still fails",
+    "activeForm": "Patch failure if native-looking Read/Edit still fails",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778885260.469074,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T22:47:40.048Z"
+  },
+  {
+    "id": 3207,
+    "text": "Report evidence and exact remaining gap",
+    "activeForm": "Report evidence and exact remaining gap",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778885260.4690776,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T22:47:40.048Z"
   }
 ]
