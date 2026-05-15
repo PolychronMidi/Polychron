@@ -23,6 +23,9 @@ measured evolution loop.
 - `i/` wrappers: deliberate HME commands.
 - Native Read/Edit/Grep/Glob/TodoWrite: enriched or replaced by proxy
   middleware where appropriate.
+- Codex `update_plan`: synced into the same TODO store by `codex_proxy` while
+  Responses events stream; universal pulse remains the fallback session-log
+  scanner; admin action `todo_sync_codex` is the manual path.
 - Proxy middleware: transforms inference and native-tool results.
 - Event kernel: portable routing for lifecycle and tool events.
 - Hooks: host-specific adapters and remaining shell lifecycle stages.
@@ -42,6 +45,27 @@ Claude Code event
      -> dispatcher directly when proxy is down
   -> event_kernel/dispatcher.js
      -> native JS handlers, shell stages, or Stop policies
+```
+
+```text
+Codex event
+  -> event_kernel/codex_adapter.js
+     -> proxy /hme/lifecycle when proxy is up
+     -> dispatcher directly when proxy is down
+  -> event_kernel/dispatcher.js
+     -> native JS handlers, shell stages, PermissionRequest policy, or Stop policies
+```
+
+Codex inference traffic can also route through the peer Responses proxy:
+
+```text
+Codex CLI
+  -> http://127.0.0.1:<codex_proxy>/v1/responses
+  -> tools/HME/proxy/codex_proxy.js
+     -> observes prompt/tool shape
+     -> applies config-driven request transforms from codex-proxy.json
+     -> syncs streamed update_plan calls into TODO.md
+     -> forwards the native Responses stream upstream
 ```
 
 The kernel returns:
@@ -64,6 +88,35 @@ Claude Code hook registration is manifest-driven. Edit
 materialize live `~/.claude/settings.json`; `scripts/audit-claude-settings.py`
 fails if live settings drift from that manifest.
 
+Codex hook and provider registration is manifest-driven as well. Edit
+`tools/HME/hooks/codex_hooks.json`, then run `scripts/sync-codex-settings.py`
+to materialize `~/.codex/hooks.json`, enable `features.hooks`, and route the
+Responses provider through the `codex_proxy` service-registry port.
+`scripts/audit-codex-settings.py` checks for drift. Codex requires review for
+non-managed user hooks, so `/hooks` may need a one-time trust action before the
+Codex hook adapter runs; the provider proxy still intercepts non-interactive
+Codex traffic without that trust step.
+
+The same sync script owns Codex's model-catalog replacement. It reads
+`~/.codex/models_cache.json`, writes the generated
+`runtime/hme/codex-model-catalog.json`, and sets these root config keys:
+
+```toml
+model_catalog_json = "/home/jah/Polychron/runtime/hme/codex-model-catalog.json"
+model_context_window = 1050000
+```
+
+The generated catalog keeps Codex's current model list and capability metadata
+but replaces model prompt text with HME sources:
+
+- `base_instructions` -> `doc/templates/canonical-system-prompt.md`
+- `model_messages.instructions_template` -> `doc/templates/canonical-system-prompt.md`
+- `model_messages.instructions_variables.personality_pragmatic` -> `CLAUDE.md`
+- `context_window` and `max_context_window` -> `1050000`
+
+`~/.codex/models_cache.json` stays Codex-owned generated state; HME never edits
+it directly.
+
 ## Hook Portability Rules
 
 - Do not add event routing tables to adapters.
@@ -78,7 +131,7 @@ fails if live settings drift from that manifest.
 
 Keep `i/` commands for explicit actions:
 
-- `i/hme admin action=selftest|health|reload|index|clear_index|warm`
+- `i/hme admin action=selftest|health|reload|index|clear_index|warm|todo_status|todo_validate|todo_repair|todo_archive|todo_sync_codex`
 - `i/review mode=forget|docs|health|convention`
 - `i/learn query=...`
 - `i/learn title=... content=... category=pattern`
@@ -242,12 +295,19 @@ The registry lives in `tools/HME/config/state-files.json` and is parsed by
 readers, writers, retention, generated/committed status, schema, and repair
 command. Update that JSON before adding a shared state writer.
 
-Single-owner state includes supervisor PID files, heartbeat files, onboarding
-state, middleware dedup state, team dashboard state, agent job directories,
-activity metrics, prediction logs, and KB indexes. Multi-writer state must
-declare every writer plus a coordination strategy. The main multi-writer files
-are `log/hme-errors.log`, `tmp/hme-nexus.state`, `tmp/hme-tab.txt`,
-`tmp/hme-errors.turnstart`, and `tmp/hme-errors.lastread`.
+<!-- BEGIN GENERATED STATE REGISTRY -->
+- Registered state paths: 31 (24 single-owner, 7 multi-writer).
+- Generated state: 31; committed state: 3.
+- Repair commands and reader/writer ownership live in `tools/HME/config/state-files.json`.
+- Multi-writer paths:
+  - `doc/templates/TODO.md` -- 5 writer(s): tools/HME/service/server/tools_analysis/todo_md_sync.py, tools/HME/service/server/tools_analysis/todo_archive.py, tools/HME/scripts/todo_autoflip.py (+2 more)
+  - `log/hme-errors.log` -- 28 writer(s): tools/HME/activity/universal_pulse.py, tools/HME/proxy/middleware/20_hme_log_watermark.js, tools/HME/proxy/middleware/19_mcp_fail_scan.js (+25 more)
+  - `tmp/hme-errors.lastread` -- 2 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh, tools/HME/hooks/lifecycle/stop/lifesaver.sh
+  - `tmp/hme-errors.turnstart` -- 1 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh
+  - `tmp/hme-nexus.state` -- 5 writer(s): tools/HME/proxy/middleware/index.js, tools/HME/hooks/posttooluse/posttooluse_hme_review.sh, tools/HME/hooks/lifecycle/stop/nexus_audit.sh (+2 more)
+  - `tmp/hme-tab.txt` -- 4 writer(s): tools/HME/hooks/posttooluse/posttooluse_write.sh, tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh, tools/HME/hooks/lifecycle/sessionstart.sh (+1 more)
+  - `tools/HME/KB/todos.json` -- 2 writer(s): tools/HME/service/server/tools_analysis/todo_store.py, tools/HME/scripts/codex_plan_sync.py
+<!-- END GENERATED STATE REGISTRY -->
 
 The standard coordination patterns are append-only line writes, atomic rename
 for replacements, and narrow bounded rewrites where unavoidable. New state
@@ -264,9 +324,8 @@ without a declared owner is a coherence failure.
 - Agent jobs: `runtime/hme/agent-jobs/<role>/<job_id>/` contains
   `request.json`, `status.json`, `output.txt`, `stderr.txt`, and
   `events.jsonl`.
-- Compatibility layers: `tools/HME/config/compatibility-layers.json`; every
-  bridge/shim/wrapper file needs an owner, reason, and executable expiry
-  policy.
+- Adapter boundaries: `tools/HME/config/adapter-boundaries.json`; bridge/shim/wrapper
+  filenames are allowed only for real adapters, generators, or domain terms.
 
 ## Testing
 Useful HME checks:

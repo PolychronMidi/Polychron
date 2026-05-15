@@ -179,12 +179,12 @@ def _emit_subagent_task(question, grep_hits, kb, activity):
     import time as _time
 
     queue_dir = os.path.join(PROJECT_ROOT, "tmp", "hme-subagent-queue")
-    bridge_present = os.path.isfile(os.path.join(
-        PROJECT_ROOT, "tools", "HME", "proxy", "middleware", "subagent_bridge.js"
+    capture_present = os.path.isfile(os.path.join(
+        PROJECT_ROOT, "tools", "HME", "proxy", "middleware", "13_agent_jobs.js"
     ))
-    if not bridge_present:
+    if not capture_present:
         print()
-        print("# --deep skipped: subagent_bridge.js not present at expected path.")
+        print("# --deep skipped: 13_agent_jobs.js not present at expected path.")
         print("  Tier 3 requires the proxy middleware to be active.")
         return
 
@@ -233,7 +233,7 @@ def _emit_subagent_task(question, grep_hits, kb, activity):
     print("# --deep: subagent task queued.")
     print(f"  req_id={req_id}  queue=tmp/hme-subagent-queue/{req_id}.json")
     print()
-    print("# Sentinel for subagent_bridge.js (the agent fires Agent on next turn):")
+    print("# Sentinel for agent-job capture (the agent fires Agent on next turn):")
     print(f"  [[HME_AGENT_TASK req_id={req_id} "
           f"prompt_file=tmp/hme-subagent-queue/{req_id}.json "
           f"subagent_type=general-purpose]]")

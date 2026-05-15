@@ -38,7 +38,6 @@ import os
 import sys
 import time
 import logging
-import threading
 
 _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _mcp_root not in sys.path:
@@ -51,14 +50,20 @@ if hasattr(ctx, "bootstrap_project_root_from_env"):
 from server.onboarding_chain import chained
 from . import _track
 from .synthesis_session import append_session_narrative
-from .todo_store import load_store as _store_load, save_todos as _store_save_todos
+from .todo_sources import validate_source
+from .todo_store import (
+    STORE_LOCK as _todo_lock,
+    VALID_STATUSES,
+    normalize_tier as _normalize_tier,
+    load_store as _store_load,
+    save_todos as _store_save_todos,
+)
 
 logger = logging.getLogger("HME")
 
 _GRAPH_FILE = os.path.join(
     ENV.require("PROJECT_ROOT"), "output", "metrics", "todo-graph.md"
 )
-_todo_lock = threading.RLock()
 
 # Lifecycle triggers the on_done field may reference. Arbitrary shell is NOT
 # allowed -- only entries in this dispatch table fire. Each value is a callable
@@ -95,24 +100,6 @@ def _allocate_id(meta: dict) -> int:
     return meta["max_id"]
 
 
-_VALID_TIERS = ("E1", "E2", "E3", "E4", "E5")
-# Legacy easy/medium/hard auto-translate on read.
-_LEGACY_TIER_MAP = {"easy": "E2", "medium": "E3", "hard": "E4"}
-
-
-def _normalize_tier(tier: str) -> str:
-    """Coerce to E1..E5. Legacy easy/medium/hard translate (easy->E2,
-    medium->E3, hard->E4). Unknown/empty -> E3 (graceful default)."""
-    t = (tier or "").strip()
-    upper = t.upper()
-    if upper in _VALID_TIERS:
-        return upper
-    legacy = _LEGACY_TIER_MAP.get(t.lower())
-    if legacy:
-        return legacy
-    return "E3"
-
-
 def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
                       active_form: str = "", critical: bool = False,
                       source: str = "hme_todo", on_done: str = "",
@@ -130,6 +117,9 @@ def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
         assert_writer("hme-todo-store", __file__)
     except ImportError:  # silent-ok: lifecycle_writers optional outside full HME tree
         pass
+    if status not in VALID_STATUSES:
+        raise ValueError(f"invalid todo status {status!r}; expected one of {VALID_STATUSES}")
+    source = validate_source(source)
     return {
         "id": _allocate_id(meta),
         "text": text.strip(),
@@ -294,7 +284,6 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
     action='undo': unmark #todo_id as done (also clears parent if it was auto-
         completed).
     action='remove': remove #todo_id (main or sub).
-    action='archive_now': force-archive current TODO.md state to KB devlog.
     action='clear': remove completed main todos. When TODO.md has task lines and
         all are `[x]`, clear auto-archives TODO.md + todos.json and resets TODO.md.
     action='critical': list only critical open items (used by turn-start hook).
@@ -466,14 +455,6 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                         return f"Removed sub #{todo_id} from #{t['id']}\n\n{_render(todos)}"
             return f"Error: #{todo_id} not found."
 
-        if action == "archive_now":
-            # Force-archive: bypass _detect_complete_set() trigger.
-            archive_result = _archive_set(set_name=text, force=True)
-            if archive_result["ok"]:
-                return (f"[ARCHIVE-NOW] Set archived to KB devlog:\n  {archive_result['devlog_path']}\n"
-                        f"doc/templates/TODO.md reset to fresh slate.")
-            return f"[!] Archive refused: {archive_result.get('message', 'unknown error')}"
-
         if action == "clear":
             detection = _detect_complete_set()
             archive_msg = ""
@@ -549,7 +530,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 note = f" (flipped TODO.md item: {todo_flipped[:80]})"
             return f"Closed #{todo_id}{note}\nShipped: {shipped_line}\n"
 
-        return ("Unknown action. Use: list, add, done, undo, remove, clear, archive_now, critical, "
+        return ("Unknown action. Use: list, add, done, undo, remove, clear, critical, "
                 "ingest_from_todo, promote_to_todo, close_with_todo_update.")
 
 

@@ -78,7 +78,7 @@ function _runStatus(mode) {
 test('i/status mode=agent-loop renders Horizon IV view', () => {
   const r = _runStatus('agent-loop');
   assert.strictEqual(r.status, 0);
-  assert.match(r.stdout, /Agent loop|No activity/);
+  assert.match(r.stdout, /Agent loop|No activity|No agent-loop telemetry/);
 });
 
 test('i/status mode=band-tuning renders Horizon IX view', () => {
@@ -703,10 +703,10 @@ test('compute-coherence-budget consumes V->IX band-tightening proposal', () => {
   }
 });
 
-test('subagent_bridge captures Agent result + writes to tmp/hme-subagent-results/', () => {
+test('agent_jobs captures Agent result + writes to tmp/hme-subagent-results/', () => {
   // End-to-end Tier-3 round-trip: simulate the proxy delivering an
   // Agent tool_result whose description carries the HME_AGENT_TASK
-  // sentinel. The bridge must capture the text, write the result file,
+  // sentinel. Agent-job capture must write the result file,
   // emit the captured event. We bypass the proxy daemon by invoking
   // the middleware directly with a synthetic toolUse + toolResult.
   const fs = require('node:fs');
@@ -719,7 +719,7 @@ test('subagent_bridge captures Agent result + writes to tmp/hme-subagent-results
       delete require.cache[key];
     }
   }
-  const bridge = require(path.join(PROJECT_ROOT, 'tools/HME/proxy/middleware/13_subagent_bridge.js'));
+  const agentJobs = require(path.join(PROJECT_ROOT, 'tools/HME/proxy/middleware/13_agent_jobs.js'));
   // Generate a unique req_id so we don't collide with any real run
   const reqId = `test_${Date.now().toString(16).slice(-12)}`.replace(/[^a-f0-9]/g, 'a').slice(0, 12).padEnd(12, 'b');
   const queueDir = path.join(PROJECT_ROOT, 'tmp', 'hme-subagent-queue');
@@ -741,17 +741,15 @@ test('subagent_bridge captures Agent result + writes to tmp/hme-subagent-results
     warn: () => {},
   };
   try {
-    bridge.onToolResult({ toolUse, toolResult, ctx });
-    // The bridge must have written the result file
-    assert.ok(fs.existsSync(resultPath), 'subagent_bridge did not write result file');
+    agentJobs.onToolResult({ toolUse, toolResult, ctx });
+    assert.ok(fs.existsSync(resultPath), 'agent_jobs did not write result file');
     const body = JSON.parse(fs.readFileSync(resultPath, 'utf8'));
     assert.strictEqual(body.req_id, reqId);
     assert.strictEqual(body.text, 'simulated agent reply text');
     assert.strictEqual(body.empty, false);
     assert.ok(typeof body.captured_at === 'number');
-    // The bridge must have emitted the captured event
-    const cap = emitted.find(e => e.event === 'subagent_bridge_result_captured');
-    assert.ok(cap, 'subagent_bridge did not emit result-captured event');
+    const cap = emitted.find(e => e.event === 'agent_jobs_result_captured');
+    assert.ok(cap, 'agent_jobs did not emit result-captured event');
     assert.strictEqual(cap.req_id, reqId);
     // Queue entry must be moved to done/
     const donePath = path.join(queueDir, 'done', `${reqId}.json`);

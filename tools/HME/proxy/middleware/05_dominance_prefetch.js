@@ -19,7 +19,7 @@
  * process lifetime.
  *
  * Does NOT duplicate OVERDRIVE_VIA_SUBAGENT. Those sentinels route
- * through the subagent bridge separately. This is for cheap HTTP
+ * through agent-job capture separately. This is for cheap HTTP
  * calls to the local HME worker -- single-digit-ms
  * priming of KB briefs, symbol lookups, dir summaries.
  */

@@ -57,12 +57,11 @@ if [ -f "$ERROR_LOG" ]; then
     echo "$TOTAL" > "$WATERMARK"
     echo "$TOTAL" > "$TURNSTART"
     if [ -n "$AGENT_ERRORS" ]; then
-      # Soften: emit additionalContext (visible) instead of decision:block.
       jq -n \
         --arg errors "$AGENT_ERRORS" \
         --arg self "$SELF_ERRORS" \
-        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[ALERT] LIFESAVER -- AGENT-ORIGIN ERRORS FIRED THIS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor):\n" + $self + "]" else "" end) + "\n\nDiagnose root cause, implement fix, verify. Acknowledging without fixing is a CRITICAL VIOLATION.")}}'
-      _stderr_verdict "WARN: lifesaver $((TOTAL - TURN_START_LINE))err (additionalContext)"
+        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[ALERT] LIFESAVER -- AGENT-ORIGIN ERRORS FIRED THIS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor):\n" + $self + "]" else "" end) + "\n\nDiagnose root cause, implement fix, verify. Acknowledging without fixing is a CRITICAL VIOLATION.")},"decision":"block","reason":"LIFESAVER: AGENT-ORIGIN ERRORS FIRED THIS TURN"}'
+      _stderr_verdict "FAIL: lifesaver $((TOTAL - TURN_START_LINE))err"
       exit 0
     elif [ -n "$SELF_ERRORS" ]; then
       # Self-origin only -- surface as observation, do not block. The
@@ -96,12 +95,11 @@ if [ -f "$ERROR_LOG" ]; then
     UNFIXED_SELF=$(printf '%s\n%s\n' "$UNFIXED_SELF_BY_TAG" "$UNFIXED_SELF_BY_SEV" | grep -v '^$' | sort -u || true)
     echo "$TURN_START_LINE" > "$WATERMARK"
     if [ -n "$UNFIXED_AGENT" ]; then
-      # Same softening as new-errors branch: additionalContext, not block.
       jq -n \
         --arg errors "$UNFIXED_AGENT" \
         --arg self "$UNFIXED_SELF" \
-        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[ALERT] LIFESAVER -- UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin:\n" + $self + "]" else "" end) + "\n\nFix them now. Acknowledging without fixing is a CRITICAL VIOLATION.")}}'
-      _stderr_verdict "WARN: lifesaver prior-turn (additionalContext)"
+        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[ALERT] LIFESAVER -- UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin:\n" + $self + "]" else "" end) + "\n\nFix them now. Acknowledging without fixing is a CRITICAL VIOLATION.")},"decision":"block","reason":"LIFESAVER: UNADDRESSED ERRORS FROM PREVIOUS TURN"}'
+      _stderr_verdict "FAIL: lifesaver prior-turn"
       exit 0
     elif [ -n "$UNFIXED_SELF" ]; then
       # Self-origin observations only -- surface as additionalContext, don't block.

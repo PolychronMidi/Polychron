@@ -58,8 +58,8 @@ Reference for events emitted to `output/metrics/hme-activity.jsonl` (`activity`)
 
 ## Subagent / supervisor lifecycle
 
-- **`subagent_bridge_result_captured`** [activity] -- The subagent bridge captured a non-empty Agent result for a queued HME task.
-- **`subagent_bridge_empty_result`** [activity] -- The subagent bridge captured an empty Agent result for a queued HME task.
+- **`agent_jobs_result_captured`** [activity] -- Agent-job capture wrote a non-empty Agent result for a queued HME task.
+- **`agent_jobs_empty_result`** [activity] -- Agent-job capture wrote an empty Agent result for a queued HME task.
 - **`subagent_clean_gate_ok`** [activity] -- The subagent clean gate passed its advisory checks for files mentioned by an Agent result.
 - **`subagent_clean_gate_failed`** [activity] -- The subagent clean gate found advisory check failures for files mentioned by an Agent result.
 - **`adhoc_spawn`** [activity] -- The supervisor spawned an ad-hoc child process.

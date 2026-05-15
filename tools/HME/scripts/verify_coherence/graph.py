@@ -38,32 +38,29 @@ class FeedbackGraphVerifier(Verifier):
 
 
 class ReloadableModuleSyncVerifier(Verifier):
-    """Every module in RELOADABLE list in evolution_selftest.py actually exists."""
+    """Every module in the reload registry actually exists."""
     name = "reloadable-sync"
     category = "state"
     subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        selftest = os.path.join(_SERVER_DIR, "tools_analysis", "evolution_selftest.py")
-        if not os.path.isfile(selftest):
-            return _result(SKIP, 1.0, "no selftest file")
         try:
-            with open(selftest) as f:
-                src = f.read()
-            m = re.search(r'RELOADABLE\s*=\s*\[(.*?)\]', src, re.DOTALL)
-            if not m:
-                return _result(ERROR, 0.0, "could not find RELOADABLE list")
-            declared = re.findall(r'"([^"]+)"', m.group(1))
+            sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
+            from server.tools_analysis.evolution.evolution_selftest.reload_registry import (
+                all_reload_targets,
+                candidate_files,
+            )
+            declared = all_reload_targets()
         except Exception as e:
-            return _result(ERROR, 0.0, f"parse error: {e}")
-        ta_dir = os.path.join(_SERVER_DIR, "tools_analysis")
-        missing = [name for name in declared
-                   if not os.path.isfile(os.path.join(ta_dir, f"{name}.py"))]
+            return _result(ERROR, 0.0, f"reload registry import failed: {e}")
+        missing = [
+            name for name in declared
+            if not any(path.is_file() for path in candidate_files(_PROJECT, name))
+        ]
         if not missing:
-            return _result(PASS, 1.0, f"{len(declared)}/{len(declared)} modules exist")
+            return _result(PASS, 1.0, f"{len(declared)}/{len(declared)} reload targets resolve")
         score = 1.0 - len(missing) / len(declared)
-        return _result(FAIL, score, f"{len(missing)}/{len(declared)} reloadable modules missing",
+        return _result(FAIL, score, f"{len(missing)}/{len(declared)} reload targets missing",
                        missing)
-
 

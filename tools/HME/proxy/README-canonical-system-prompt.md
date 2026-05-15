@@ -6,6 +6,11 @@ replaces Claude Code's default when `HME_REPLACE_SYSTEM_PROMPT=1` in
 restructure their default at will and our content still ships verbatim,
 no regex anchors to drift.
 
+Codex uses the same file through a generated model catalog. Run
+`scripts/sync-codex-settings.py` to regenerate
+`runtime/hme/codex-model-catalog.json` from `~/.codex/models_cache.json` and
+point Codex's `model_catalog_json` at the generated catalog.
+
 Mechanism: [`tools/HME/proxy/middleware/01_replace_system.js`](middleware/01_replace_system.js).
 mtime-cached, so edits to the canonical file take effect on the next
 proxy-routed request after save (no proxy restart needed).

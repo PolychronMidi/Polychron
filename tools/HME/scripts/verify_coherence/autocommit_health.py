@@ -43,6 +43,7 @@ class AutocommitHealthVerifier(Verifier):
         fail_flag = os.path.join(state_dir, "autocommit.fail")
         counter_file = os.path.join(state_dir, "autocommit.counter")
         last_ok_file = os.path.join(state_dir, "autocommit.last-success")
+        heartbeat_file = os.path.join(state_dir, "heartbeat-autocommit.ts")
 
         issues = []
 
@@ -93,6 +94,29 @@ class AutocommitHealthVerifier(Verifier):
                     age_h = (datetime.datetime.now(datetime.timezone.utc) - ts).total_seconds() / 3600
                     if age_h > 48:
                         issues.append(f"last successful autocommit {age_h:.0f}h ago (>48h)")
+
+        # 4. Active dirty worktree + stale heartbeat means the request/hook
+        # path stopped running even if no sticky fail flag was left behind.
+        try:
+            dirty = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=_PROJECT,
+                text=True,
+                capture_output=True,
+                timeout=5,
+            )
+            worktree_dirty = dirty.returncode != 0 or bool(dirty.stdout.strip())
+        except Exception:
+            worktree_dirty = True
+        if worktree_dirty:
+            max_age = float(os.environ.get("HME_AUTOCOMMIT_ACTIVE_MAX_AGE_SEC", 6 * 60 * 60))
+            try:
+                age = time.time() - os.path.getmtime(heartbeat_file)
+            except OSError:
+                issues.append("autocommit heartbeat missing while worktree is dirty")
+            else:
+                if age > max_age:
+                    issues.append(f"autocommit heartbeat stale while worktree is dirty ({age/3600:.1f}h > {max_age/3600:.1f}h)")
 
         if not issues:
             return _result(PASS, 1.0, "autocommit operational")

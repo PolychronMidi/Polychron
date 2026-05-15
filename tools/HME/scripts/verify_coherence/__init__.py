@@ -69,7 +69,7 @@ from .code_audits import (  # noqa: F401
     HardcodedToolInvocationVerifier, StalePathRenameVerifier,
     ConjugateChannelVerifier, AgentLoopQualityVerifier,
     CommentBloatVerifier,
-    CompatibilityLayerExpiryVerifier,
+    AdapterBoundaryRegistryVerifier,
     ToolMetadataFactoryVerifier,
     GeneratedISurfaceVerifier,
     MarkdownLinkIntegrityVerifier,
@@ -83,7 +83,7 @@ from .onboarding import (  # noqa: F401
 )
 from .todo_tools import (  # noqa: F401
     TodoStoreSchemaVerifier, TodoMarkdownSyncVerifier, TodoArchiveContractVerifier,
-    TodoOnboardingDecoupledVerifier,
+    TodoOnboardingDecoupledVerifier, TodoCodexPlanSyncVerifier,
     ToolSurfaceCoverageVerifier, TodoMergeHookConsistencyVerifier,
 )
 from .meta_observers import (  # noqa: F401
@@ -98,13 +98,13 @@ from .subagent import (  # noqa: F401
 from .runtime_behavior import (  # noqa: F401
     TransientErrorFilterVerifier, ContextBudgetVerifier,
     WarmContextFreshnessVerifier, PlanOutputValidityVerifier,
-    ServiceRegistryVerifier,
+    ServiceRegistryVerifier, ExplicitListTrackingRuleVerifier,
 )
 from .runtime_perf import (  # noqa: F401
     HookLatencyVerifier, GitCommitTestCoverageVerifier, ToolResponseLatencyVerifier,
 )
 from .runtime_safety import (  # noqa: F401
-    LifesaverIntegrityVerifier, TrajectoryTrendVerifier,
+    LifesaverIntegrityVerifier, LifesaverHeartbeatVerifier, TrajectoryTrendVerifier,
 )
 from .graph import (  # noqa: F401
     FeedbackGraphVerifier, ReloadableModuleSyncVerifier,
@@ -145,7 +145,7 @@ REGISTRY = [
     ClaudeSettingsJsonVerifier(),
     InterControllerCoherenceVerifier(),
     ProxyMiddlewareRegistryVerifier(),
-    CompatibilityLayerExpiryVerifier(),
+    AdapterBoundaryRegistryVerifier(),
     ToolMetadataFactoryVerifier(),
     GeneratedISurfaceVerifier(),
     DocstringPresenceVerifier(),
@@ -160,6 +160,7 @@ REGISTRY = [
     OnboardingChainImportVerifier(),
     TodoStoreSchemaVerifier(),
     TodoMarkdownSyncVerifier(),
+    TodoCodexPlanSyncVerifier(),
     TodoOnboardingDecoupledVerifier(),
     TodoArchiveContractVerifier(),
     ReloadableModuleSyncVerifier(),
@@ -174,6 +175,7 @@ REGISTRY = [
     SubagentGuardVerifier(),
     SubagentBackendsVerifier(),
     ServiceRegistryVerifier(),
+    ExplicitListTrackingRuleVerifier(),
     WarmContextFreshnessVerifier(),
     HookLatencyVerifier(),
     PlanOutputValidityVerifier(),
@@ -183,6 +185,7 @@ REGISTRY = [
     ContextBudgetVerifier(),
     PredictiveHCIVerifier(),
     LifesaverIntegrityVerifier(),
+    LifesaverHeartbeatVerifier(),
     LifesaverRateVerifier(),
     MetaObserverCoherenceVerifier(),
     ToolResponseLatencyVerifier(),

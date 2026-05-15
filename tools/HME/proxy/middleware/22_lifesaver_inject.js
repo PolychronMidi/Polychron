@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { readAutocommitFailure, touchLifesaverHeartbeat } = require('../lifesaver_alerts');
 
 const ERR_LOG = 'log/hme-errors.log';
 const WATERMARK = 'runtime/hme/errors-lastread.proxy';
@@ -44,18 +45,45 @@ function _rotateIfNeeded(errLogPath, wmPath, totalLines, lines) {
   }
 }
 
-// Once-per-process boot seed: jump watermark to EOF on first request so a
+// Once-per-process boot seed for historical error-log entries.
 let _startupSeeded = false;
+
+function _appendToLastUser(payload, note) {
+  const lastUser = [...payload.messages].reverse().find(
+    (m) => m && m.role === 'user'
+  );
+  if (!lastUser) return false;
+  if (typeof lastUser.content === 'string') {
+    lastUser.content = lastUser.content + note;
+  } else if (Array.isArray(lastUser.content)) {
+    lastUser.content.push({ type: 'text', text: note });
+  } else {
+    lastUser.content = [{ type: 'text', text: note }];
+  }
+  return true;
+}
 
 module.exports = {
   name: 'lifesaver_inject',
 
   onRequest({ payload, ctx }) {
-    // LEAN_MODE: emergency kill-switch when usage budget is being
+    // LEAN_MODE: emergency kill-switch when usage budget is constrained.
     if (process.env.HME_PROXY_LEAN_MODE === '1') return;
     // Only fire on real Anthropic message requests. Payloads without
     // messages (health probes, etc.) get skipped.
     if (!payload || !Array.isArray(payload.messages)) return;
+    touchLifesaverHeartbeat(ctx.PROJECT_ROOT);
+
+    const acFailure = readAutocommitFailure(ctx.PROJECT_ROOT);
+    if (acFailure && _appendToLastUser(
+      payload,
+      `\n\n[lifesaver inject from proxy]\n${acFailure.banner}\n`,
+    )) {
+      ctx.markDirty();
+      console.warn(
+        `Acceptable warning: [middleware] lifesaver_inject: injected autocommit fail flag (${acFailure.flagPath})`
+      );
+    }
 
     const errLogPath = path.join(ctx.PROJECT_ROOT, ERR_LOG);
     const wmPath = path.join(ctx.PROJECT_ROOT, WATERMARK);
@@ -137,18 +165,7 @@ module.exports = {
 
     // Append to LAST USER MESSAGE (not payload.system) -- mutating
     // system invalidates the prompt-cache prefix every turn.
-    const lastUser = [...payload.messages].reverse().find(
-      (m) => m && m.role === 'user'
-    );
-    if (lastUser) {
-      const note = `\n\n[lifesaver inject from proxy]\n${banner}\n`;
-      if (typeof lastUser.content === 'string') {
-        lastUser.content = lastUser.content + note;
-      } else if (Array.isArray(lastUser.content)) {
-        lastUser.content.push({ type: 'text', text: note });
-      } else {
-        lastUser.content = [{ type: 'text', text: note }];
-      }
+    if (_appendToLastUser(payload, `\n\n[lifesaver inject from proxy]\n${banner}\n`)) {
       ctx.markDirty();
     }
 

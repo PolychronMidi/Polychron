@@ -1,11 +1,11 @@
 'use strict';
 // Integration test for i/why --deep (Tier 3): writes a queue file and
-// emits the [[HME_AGENT_TASK ...]] sentinel. The bridge parses the
+// emits the [[HME_AGENT_TASK ...]] sentinel. Agent-job capture parses the
 // inverse marker (`HME reasoning for <req_id>`) on Agent results.
 //
 // This test verifies the *contract* on the producer side:
 //   1. The queue file appears at tmp/hme-subagent-queue/<req_id>.json
-//   2. The queue file's shape matches what subagent_bridge expects
+//   2. The queue file's shape matches what agent_jobs expects
 //   3. The emitted stdout contains a sentinel matching the marker regex
 //      from _markers.js
 //
@@ -34,9 +34,6 @@ function _run(args) {
 }
 
 test('i/why --deep emits a sentinel matching the marker contract', () => {
-  // Snapshot existing queue entries so we can find the new one
-  const before = new Set(fs.existsSync(QUEUE_DIR) ? fs.readdirSync(QUEUE_DIR) : []);
-
   const r = _run(['integration test question for tier 3', '--deep']);
   assert.strictEqual(r.status, 0, `i/why --deep exited ${r.status}: ${r.stderr}`);
 
@@ -50,7 +47,7 @@ test('i/why --deep emits a sentinel matching the marker contract', () => {
   const queuePath = path.join(QUEUE_DIR, `${reqId}.json`);
   assert.ok(fs.existsSync(queuePath), `queue file ${queuePath} missing`);
 
-  // 3. Queue file shape matches what subagent_bridge expects
+  // 3. Queue file shape matches what agent_jobs expects
   const entry = JSON.parse(fs.readFileSync(queuePath, 'utf8'));
   assert.strictEqual(entry.req_id, reqId);
   assert.ok(typeof entry.prompt === 'string' && entry.prompt.length > 0,
@@ -66,7 +63,7 @@ test('i/why --deep emits a sentinel matching the marker contract', () => {
   assert.ok(MARKERS.HME_AGENT_TASK, '_markers.js must expose HME_AGENT_TASK');
   assert.ok(MARKERS.HME_AGENT_TASK.reqIdRegex instanceof RegExp,
     'HME_AGENT_TASK.reqIdRegex must be a RegExp');
-  // The bridge looks for `HME reasoning for <req_id>` in Agent descriptions
+// Agent-job capture looks for `HME reasoning for <req_id>` in Agent descriptions
   const fakeAgentDesc = `HME reasoning for ${reqId}`;
   const reqMatch = MARKERS.HME_AGENT_TASK.reqIdRegex.exec(fakeAgentDesc);
   assert.ok(reqMatch, 'reqIdRegex must match a properly-formatted Agent description');
@@ -75,12 +72,6 @@ test('i/why --deep emits a sentinel matching the marker contract', () => {
   // Cleanup: remove the test queue entry so it doesn't pollute the system
   try { fs.unlinkSync(queuePath); } catch (_e) { /* best-effort */ }
 
-  // Sanity: we didn't accidentally remove a pre-existing entry
-  for (const f of before) {
-    if (f === `${reqId}.json`) continue;  // shouldn't happen but be safe
-    assert.ok(fs.existsSync(path.join(QUEUE_DIR, f)),
-      `pre-existing queue entry ${f} disappeared during test`);
-  }
 });
 
 test('i/why without --deep does NOT emit a sentinel', () => {

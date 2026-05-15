@@ -8,7 +8,7 @@
  * test pinning the two together. Examples surfaced during the review:
  *
  *   - synthesis_reasoning emits `[[HME_AGENT_TASK req_id=<hex>...]]`,
- *     subagent_bridge.js parses `HME reasoning for ([a-f0-9]{12,})` --
+ *     13_agent_jobs.js parses `HME reasoning for ([a-f0-9]{12,})` --
  *     two files, no shared constant, recently broken once already.
  *
  *   - context_budget.js regex-matches `[HME dir:`, `[HME:edit]`,
@@ -30,11 +30,11 @@
  */
 
 const MARKERS = {
-  // Subagent dispatch sentinel -- synthesis_reasoning.py emits, the agent
+  // Agent-job dispatch sentinel -- synthesis_reasoning.py emits, the agent
   HME_AGENT_TASK: {
     producer: 'tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py',
     consumers: [
-      'tools/HME/proxy/middleware/13_subagent_bridge.js',
+      'tools/HME/proxy/middleware/13_agent_jobs.js',
       'tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py',
     ],
     sentinel: '[[HME_AGENT_TASK req_id=<hex12+> prompt_file=tmp/hme-subagent-queue/<reqId>.json subagent_type=<type>...]]',

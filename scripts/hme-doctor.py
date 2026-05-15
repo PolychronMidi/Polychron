@@ -20,6 +20,11 @@ from service_registry import (  # noqa: E402
     service_enabled,
     service_url,
 )
+from state_registry import (  # noqa: E402
+    iter_entries,
+    repair_command_issues,
+    unregistered_state_candidates,
+)
 
 ERR = ROOT / 'log' / 'hme-errors.log'
 
@@ -33,6 +38,21 @@ def run_check(name, argv, detail='', fix=''):
     proc = subprocess.run(argv, cwd=ROOT, text=True, capture_output=True)
     out = (proc.stdout or proc.stderr or '').strip().splitlines()
     return check(name, proc.returncode == 0, out[-1] if out else detail, fix)
+
+
+def git_dirty():
+    proc = subprocess.run(['git', 'status', '--porcelain'], cwd=ROOT, text=True, capture_output=True)
+    if proc.returncode != 0:
+        return True
+    return bool(proc.stdout.strip())
+
+
+def freshness_check(name, file_path, max_age_sec, fix):
+    try:
+        age = time.time() - file_path.stat().st_mtime
+    except FileNotFoundError:
+        return check(name, False, f'{file_path} missing', fix)
+    return check(name, age < max_age_sec, f'age={age:.0f}s max={max_age_sec}s', fix)
 
 
 def http_ok(url):
@@ -80,6 +100,20 @@ def service_checks():
     return ok
 
 
+def state_registry_check():
+    try:
+        entries = iter_entries(ROOT)
+        repair_issues = repair_command_issues(ROOT)
+        candidates = unregistered_state_candidates(ROOT)
+    except Exception as e:
+        return check('state_registry', False, str(e), 'fix tools/HME/config/state-files.json')
+    detail = f'registered={len(entries)} unregistered_candidates={len(candidates)}'
+    if repair_issues:
+        return check('state_registry', False, detail + f' repair_issues={len(repair_issues)}',
+                     'fix repair commands in tools/HME/config/state-files.json')
+    return check('state_registry', True, detail, 'register new shared state files when promoted')
+
+
 def hooks_doctor():
     ok = True
     ok &= run_check(
@@ -91,6 +125,16 @@ def hooks_doctor():
         'claude_settings_audit',
         [sys.executable, str(ROOT / 'scripts/audit-claude-settings.py')],
         fix='scripts/sync-claude-settings.py',
+    )
+    ok &= run_check(
+        'codex_settings_sync',
+        [sys.executable, str(ROOT / 'scripts/sync-codex-settings.py'), '--check'],
+        fix='scripts/sync-codex-settings.py',
+    )
+    ok &= run_check(
+        'codex_settings_audit',
+        [sys.executable, str(ROOT / 'scripts/audit-codex-settings.py')],
+        fix='scripts/sync-codex-settings.py',
     )
     ok &= run_check(
         'event_kernel_dispatch',
@@ -142,6 +186,22 @@ def hooks_doctor():
         f'fail_flag={fail_flag.exists()} counter={counter_value}',
         'let a real UserPromptSubmit autocommit succeed, or inspect runtime/hme/autocommit.fail',
     )
+    active_max_age = int(os.environ.get('HME_DOCTOR_ACTIVE_HOOK_MAX_AGE_SEC', str(6 * 60 * 60)))
+    if git_dirty():
+        ok &= freshness_check(
+            'autocommit_heartbeat',
+            ROOT / 'runtime' / 'hme' / 'heartbeat-autocommit.ts',
+            active_max_age,
+            'run a real Claude/Codex request through the proxy; inspect autocommit fail channels if stale',
+        )
+    else:
+        ok &= check('autocommit_heartbeat', True, 'clean tree; freshness not required')
+    ok &= freshness_check(
+        'lifesaver_heartbeat',
+        ROOT / 'runtime' / 'hme' / 'heartbeat-lifesaver.ts',
+        active_max_age,
+        'run a real Claude/Codex request through the proxy; lifesaver must heartbeat from hook or proxy path',
+    )
     return ok
 
 
@@ -155,6 +215,7 @@ def main():
 
     ok = True
     ok &= service_checks()
+    ok &= state_registry_check()
     or_ok, or_detail = verify_omniroute()
     ok &= check('omniroute_max_reasoning', or_ok, or_detail, 'scripts/configure-omniroute-max-reasoning.py')
     missing = model_limits_ok()

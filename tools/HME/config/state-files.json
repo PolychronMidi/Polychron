@@ -34,6 +34,86 @@
       "repair": "run scripts/hme-doctor.py"
     },
     {
+      "path": "runtime/hme/codex-proxy.pid",
+      "owner": "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
+      "readers": [
+        "shell ops",
+        "monitoring"
+      ],
+      "writers": [
+        "tools/HME/hooks/direct/codex-proxy-supervisor.sh"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined pid file",
+      "repair": "tools/HME/hooks/direct/codex-proxy-supervisor.sh start"
+    },
+    {
+      "path": "runtime/hme/codex-proxy-events.jsonl",
+      "owner": "tools/HME/proxy/codex_proxy.js",
+      "readers": [
+        "tools/HME/proxy/codex_proxy.js",
+        "operators"
+      ],
+      "writers": [
+        "tools/HME/proxy/codex_proxy.js"
+      ],
+      "retention": "append-only local event trace; rotate manually if it grows beyond debug usefulness",
+      "generated": true,
+      "committed": false,
+      "schema": "JSONL rows with ts, kind, request stats, TODO sync result, or upstream error",
+      "repair": "tools/HME/hooks/direct/codex-proxy-supervisor.sh start"
+    },
+    {
+      "path": "runtime/hme/codex-model-catalog.json",
+      "owner": "tools/HME/scripts/codex_settings.py",
+      "readers": [
+        "Codex CLI",
+        "scripts/audit-codex-settings.py"
+      ],
+      "writers": [
+        "scripts/sync-codex-settings.py"
+      ],
+      "retention": "generated from ~/.codex/models_cache.json plus HME prompt/context replacements; regenerate after Codex model catalog refreshes",
+      "generated": true,
+      "committed": false,
+      "schema": "Codex model catalog JSON with HME-replaced base_instructions, model_messages.instructions_template, personality_pragmatic, context_window, and max_context_window",
+      "repair": "scripts/sync-codex-settings.py"
+    },
+    {
+      "path": "log/hme-codex-proxy.out",
+      "owner": "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
+      "readers": [
+        "operators",
+        "scripts/hme-doctor.py"
+      ],
+      "writers": [
+        "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
+        "tools/HME/proxy/codex_proxy.js"
+      ],
+      "retention": "local service log; rotate manually",
+      "generated": true,
+      "committed": false,
+      "schema": "plain text",
+      "repair": "tools/HME/hooks/direct/codex-proxy-supervisor.sh start"
+    },
+    {
+      "path": "log/hme-codex-proxy.log",
+      "owner": "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
+      "readers": [
+        "operators"
+      ],
+      "writers": [
+        "tools/HME/hooks/direct/codex-proxy-supervisor.sh"
+      ],
+      "retention": "local supervisor log; rotate manually",
+      "generated": true,
+      "committed": false,
+      "schema": "plain text",
+      "repair": "tools/HME/hooks/direct/codex-proxy-supervisor.sh start"
+    },
+    {
       "path": "runtime/hme/team-dashboard.json",
       "owner": "tools/HME/scripts/team_dashboard.py",
       "readers": [
@@ -299,17 +379,19 @@
   "multi_writer": [
     {
       "path": "doc/templates/TODO.md",
-      "coordination": "rendered from tools/HME/KB/todos.json; direct human edits are ingested by todo_autoflip.py",
+      "coordination": "rendered from tools/HME/KB/todos.json; direct human edits are ingested by todo_autoflip.py; Codex update_plan syncs through codex_plan_sync.py",
       "writers": [
         "tools/HME/service/server/tools_analysis/todo_md_sync.py",
         "tools/HME/service/server/tools_analysis/todo_archive.py",
         "tools/HME/scripts/todo_autoflip.py",
-        "tools/HME/scripts/todo_repair.py"
+        "tools/HME/scripts/todo_repair.py",
+        "tools/HME/scripts/codex_plan_sync.py"
       ],
       "owner": "HME todo store",
       "readers": [
         "humans",
         "native TodoWrite replacement",
+        "Codex update_plan sync",
         "scope_vs_shipped.py",
         "parallel_detect.py",
         "sessionstart.sh"
@@ -322,13 +404,15 @@
     },
     {
       "path": "tools/HME/KB/todos.json",
-      "coordination": "canonical machine todo store; TODO.md is the rendered human surface; all JSON writes go through todo_store.py",
+      "coordination": "canonical machine todo store; TODO.md is the rendered human surface; native TodoWrite and Codex update_plan converge here; all JSON writes go through todo_store.py",
       "writers": [
-        "tools/HME/service/server/tools_analysis/todo_store.py"
+        "tools/HME/service/server/tools_analysis/todo_store.py",
+        "tools/HME/scripts/codex_plan_sync.py"
       ],
       "owner": "HME todo store",
       "readers": [
         "native TodoWrite replacement",
+        "Codex update_plan sync",
         "tools/HME/service/server/tools_analysis/todo_store.py",
         "tools/HME/service/server/tools_analysis/todo_md_sync.py",
         "tools/HME/scripts/todo_repair.py",

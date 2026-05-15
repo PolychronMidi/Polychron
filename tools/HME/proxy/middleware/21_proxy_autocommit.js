@@ -11,6 +11,7 @@ const STATE_DIR = path.join('runtime', 'hme');
 const FAIL_FLAG_REL = path.join(STATE_DIR, 'autocommit.fail');
 const COUNTER_REL = path.join(STATE_DIR, 'autocommit.counter');
 const LAST_SUCCESS_REL = path.join(STATE_DIR, 'autocommit.last-success');
+const HEARTBEAT_REL = path.join(STATE_DIR, 'heartbeat-autocommit.ts');
 // Same lock file _autocommit.sh uses; serializes JS+bash autocommit callers.
 const LOCK_REL = path.join(STATE_DIR, 'autocommit.lock');
 
@@ -25,7 +26,7 @@ function _ts() {
 // Write to four independent channels on any failure. Every channel is
 function _recordFailure(root, caller, reason) {
   const ts = _ts();
-  // Channel A: sticky fail flag under tmp/. Overwrite -- latest wins.
+  // Channel A: sticky fail flag. Overwrite -- latest wins.
   try {
     fs.mkdirSync(path.join(root, STATE_DIR), { recursive: true });
     fs.writeFileSync(path.join(root, FAIL_FLAG_REL),
@@ -66,6 +67,7 @@ function _recordSuccess(root) {
     fs.mkdirSync(path.join(root, STATE_DIR), { recursive: true });
     fs.writeFileSync(path.join(root, COUNTER_REL), '0');
     fs.writeFileSync(path.join(root, LAST_SUCCESS_REL), _ts());
+    fs.writeFileSync(path.join(root, HEARTBEAT_REL), String(Math.floor(Date.now() / 1000)));
     const flag = path.join(root, FAIL_FLAG_REL);
     if (fs.existsSync(flag)) fs.unlinkSync(flag);
   } catch (_) { /* best-effort */ }

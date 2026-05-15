@@ -1,0 +1,29 @@
+{
+  "rules": [
+    {
+      "id": "todo-onboarding-decoupled",
+      "paths": [
+        "tools/HME/service/server/onboarding_chain.py",
+        "tools/HME/service/server/tools_analysis/todo_native_merge.py",
+        "tools/HME/hooks/helpers/_todo_merge.py"
+      ],
+      "forbidden": [
+        "register_onboarding_tree",
+        "clear_onboarding_tree",
+        "[HME onboarding]"
+      ]
+    },
+    {
+      "id": "todo-spec-source-retired",
+      "paths": [
+        "tools/HME/service/server/tools_analysis/todo_native_merge.py",
+        "tools/HME/service/server/tools_analysis/todo_lifesaver.py"
+      ],
+      "forbidden": [
+        "\"spec\"",
+        "'spec'",
+        "onboarding/spec"
+      ]
+    }
+  ]
+}

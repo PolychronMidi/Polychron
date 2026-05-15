@@ -142,7 +142,7 @@ test('synthetic autocommit direct fallback script exists', () => {
 
 
 test('hook envelope normalizes JSON string tool_input', () => {
-  const { normalize } = require('../../proxy/hook_envelope');
+  const { normalize } = require('../../event_kernel/envelope');
   const env = normalize(JSON.stringify({
     session_id: 's8',
     tool_name: 'Write',

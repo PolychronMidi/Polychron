@@ -1,10 +1,15 @@
 {
   "archives": [
     {
+      "archive_id": "2026-05-15T135506Z-buddy-cleanup-todo-system-live-check",
       "archive_path": "tools/HME/KB/devlog/2026-05-15T135506Z-buddy-cleanup-todo-system-live-check.md",
       "archived": "2026-05-15T135506Z",
+      "content_sha256": "30b808f39c94f24a1930205182638b92485c587bfd27d087a6d1d49425c15dd0",
       "done_count": 4,
+      "git_commit": "3be8c50c9",
+      "hci_score": 99.8,
       "set_name": "buddy-cleanup-todo-system-live-check",
+      "store_max_id": 3047,
       "task_count": 4,
       "todo_count": 4
     }

@@ -1,0 +1,48 @@
+{
+  "description": "HyperMeta Ecstasy Codex hooks -- all supported Codex lifecycle/tool events route through node event_kernel/codex_adapter.js, then into the shared HME event kernel. This file is the source of truth for scripts/sync-codex-settings.py.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [{"type": "command", "command": "node ${HME_PROJECT_ROOT}/tools/HME/event_kernel/codex_adapter.js SessionStart", "timeout": 15}]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [{"type": "command", "command": "node ${HME_PROJECT_ROOT}/tools/HME/event_kernel/codex_adapter.js UserPromptSubmit", "timeout": 15}]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "node ${HME_PROJECT_ROOT}/tools/HME/event_kernel/codex_adapter.js PreToolUse", "timeout": 15}]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "node ${HME_PROJECT_ROOT}/tools/HME/event_kernel/codex_adapter.js PermissionRequest", "timeout": 15}]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [{"type": "command", "command": "node ${HME_PROJECT_ROOT}/tools/HME/event_kernel/codex_adapter.js PostToolUse", "timeout": 15}]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [{"type": "command", "command": "node ${HME_PROJECT_ROOT}/tools/HME/event_kernel/codex_adapter.js PreCompact", "timeout": 15}]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [{"type": "command", "command": "node ${HME_PROJECT_ROOT}/tools/HME/event_kernel/codex_adapter.js PostCompact", "timeout": 15}]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [{"type": "command", "command": "node ${HME_PROJECT_ROOT}/tools/HME/event_kernel/codex_adapter.js Stop", "timeout": 60}]
+      }
+    ]
+  }
+}

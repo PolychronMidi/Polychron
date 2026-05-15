@@ -8,7 +8,7 @@ import sys
 
 from server import context as ctx
 from ... import _track
-from ._shared import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_FIRST_RELOADABLE, ROOT_RELOADABLE
+from ._shared import all_reload_targets, module_candidates
 
 logger = logging.getLogger("HME")
 
@@ -27,7 +27,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
     from server import tool_registry
 
     if not modules or modules.strip().lower() == "all":
-        targets = ROOT_FIRST_RELOADABLE + RELOADABLE + TOP_LEVEL_RELOADABLE + ROOT_RELOADABLE
+        targets = all_reload_targets()
     else:
         targets = [m.strip() for m in modules.split(",") if m.strip()]
 
@@ -48,37 +48,26 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
 
     results = []
     for name in targets:
-        if name in ROOT_FIRST_RELOADABLE or name in ROOT_RELOADABLE:
-            full = name
-        elif name in TOP_LEVEL_RELOADABLE:
-            full = f"server.{name}"
-        else:
-            full = f"server.tools_analysis.{name}"
-        mod = sys.modules.get(full)
-        # Subpackage fallback: modules moved to synthesis/, evolution/, coupling/
-        if mod is None:
-            for subpkg in ("synthesis", "evolution", "coupling"):
-                mod = sys.modules.get(f"server.tools_analysis.{subpkg}.{name}")
-                if mod:
-                    break
+        candidates = module_candidates(name)
+        full = candidates[0]
+        mod = None
+        for candidate in candidates:
+            mod = sys.modules.get(candidate)
+            if mod is not None:
+                full = candidate
+                break
         if mod is None:
             try:
-                if name in ROOT_FIRST_RELOADABLE or name in ROOT_RELOADABLE:
-                    mod = importlib.import_module(name)
-                elif name in TOP_LEVEL_RELOADABLE:
-                    mod = importlib.import_module(f".{name}", "server")
-                else:
+                last_error: Exception | None = None
+                for candidate in candidates:
                     try:
-                        mod = importlib.import_module(f".{name}", "server.tools_analysis")
-                    except (ImportError, ModuleNotFoundError):
-                        for subpkg in ("synthesis", "evolution", "coupling"):
-                            try:
-                                mod = importlib.import_module(f".{name}", f"server.tools_analysis.{subpkg}")
-                                break
-                            except (ImportError, ModuleNotFoundError):
-                                continue
-                        else:
-                            raise
+                        mod = importlib.import_module(candidate)
+                        full = candidate
+                        break
+                    except (ImportError, ModuleNotFoundError) as e:
+                        last_error = e
+                if mod is None:
+                    raise last_error or ModuleNotFoundError(name)
                 actual_full = getattr(mod, "__name__", full)
                 tools_new = _tools_owned_by(actual_full)
                 results.append(f"  NEW {name}: {len(tools_new)} tools loaded")

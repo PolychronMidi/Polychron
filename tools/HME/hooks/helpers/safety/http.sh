@@ -1,4 +1,4 @@
-# HME HTTP shim helpers
+# HME HTTP helpers
 
 _hme_enrich() {
   local module="$1" top_k="${2:-3}"
@@ -20,7 +20,6 @@ _hme_kb_titles() {
   _safe_jq "$json" '.kb[]?.title // empty' '' | head -"$max" | sed 's/^/    /'
 }
 
-# Activity bridge emit helper
 _emit_activity() {
   local event="$1"; shift
   python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \

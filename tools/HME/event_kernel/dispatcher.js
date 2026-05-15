@@ -8,14 +8,15 @@
  *
  * Current adapters:
  *   - Claude Code hooks: event_kernel/claude_adapter.js -> /hme/lifecycle -> this file
- *   - Proxy-down direct mode: event_kernel/claude_adapter.js -> this file
- *   - Compatibility imports: proxy/hook_bridge.js re-exports this module
+ *   - Codex hooks: event_kernel/codex_adapter.js -> /hme/lifecycle -> this file
+ *   - Proxy-down direct mode: host adapter -> this file
  *
  * Dispatch surface:
  *   SessionStart      -> sessionstart.sh
  *   UserPromptSubmit  -> userpromptsubmit.sh
  *   Stop              -> proxy stop_chain
  *   PreToolUse        -> routed by tool_name to native handlers or shell hooks
+ *   PermissionRequest -> shared policy gate for Codex approval prompts
  *   PostToolUse       -> log-tool-call.sh + native handlers or shell hooks
  *   PreCompact        -> precompact.sh
  *   PostCompact       -> postcompact.sh
@@ -284,6 +285,11 @@ async function dispatchEvent(eventName, stdinJson) {
       }
       if (scripts.length === 0) return { stdout: '', stderr: ' ', exit_code: 0 };
       return runChain(scripts, empty, 30_000, 'PreToolUse');
+    }
+    case 'PermissionRequest': {
+      const tool = _toolName(empty);
+      const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
+      return unifiedRes && unifiedRes.stdout ? unifiedRes : { stdout: '', stderr: ' ', exit_code: 0 };
     }
     case 'PostToolUse': {
       await _recordPostToolEvidence(empty);

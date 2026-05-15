@@ -106,15 +106,18 @@ i/learn query=...                          KB search
 i/learn action=health                    KB staleness check
 i/hme admin action=index                 reindex after batch changes
 i/hme admin action=reload                hot-reload tool modules
-TodoWrite                                native task list; HME merges persistent critical
-                                         and TODO.md items automatically
+i/hme admin action=todo_sync_codex       manual Codex update_plan -> TODO.md sync
+TodoWrite                                Claude native task list; HME merges persistent
+                                         critical and TODO.md items automatically
 ```
 
 (Run `i/help` for the full wrapper surface and `i/help <name>` for usage.
 
 ## Todo system
 
-Native `TodoWrite` is the public todo surface. The HME layer adds the following transparently:
+Claude's native `TodoWrite` is the public todo surface. Codex uses `update_plan`,
+which universal pulse syncs into TODO.md; `i/hme admin action=todo_sync_codex`
+is the manual operator path. The HME layer adds the following transparently:
 
 - **Subtodos + auto-completion.** Internal HME todo entries can carry subtodos; the native view shows them as indented rows (`  + text`).
 - **Critical flag.** Pass `critical=True` on add. Critical items surface at every turn start via `userpromptsubmit.sh` until resolved. LIFESAVER alerts auto-append as critical.

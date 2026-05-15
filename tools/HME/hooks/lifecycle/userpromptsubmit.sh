@@ -34,38 +34,13 @@ python3 "$PROJECT_ROOT/tools/HME/scripts/stale_state_sweep.py" >/dev/null 2>&1 |
 # Auto-commit snapshot via _autocommit.sh (4-channel failsafe, sticky fail
 # flag, attempt counter). Don't die on return code; LIFESAVER surfaces failures.
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_autocommit.sh"
-_ac_do_commit userpromptsubmit.sh || true
 
-# Reset the psychopathic-polling counter at turn start -- the counter
-rm -f /tmp/polychron-task-poll-count 2>/dev/null
-rm -f /tmp/hme-chain-snapshot-fired 2>/dev/null
-
-# user-correction capture channel.
-_CORRECTION_FILE="${PROJECT_ROOT}/tmp/hme-user-corrections.jsonl"
-if [ -n "$PROMPT" ]; then
-  _IS_CORRECTION=0
-  # Case-insensitive grep for correction language
-  if echo "$PROMPT" | grep -qiE '\b(actually|instead|don.?t|no,|not quite|reverse|revert|rollback|wrong|incorrect|fix this|that.?s wrong|stop|cancel|undo)\b'; then
-    _IS_CORRECTION=1
-  fi
-  if [ "$_IS_CORRECTION" -eq 1 ]; then
-    mkdir -p "$(dirname "$_CORRECTION_FILE")"
-    python3 -c "
-import json, sys, time
-entry = {
-    'ts': int(time.time()),
-    'ts_human': time.strftime('%Y-%m-%d %H:%M:%S'),
-    'prompt_preview': sys.argv[1][:500],
-}
-with open('$_CORRECTION_FILE', 'a') as f:
-    f.write(json.dumps(entry) + '\n')
-" "$PROMPT" 2>/dev/null || true  # silent-ok: optional fallback path.
-  fi
-fi
-
-# LIFESAVER autocommit fail-flag check (unconditional, runs FIRST).
-_AC_FLAG_CHECK="${_AC_FAIL_FLAG:-${PROJECT_ROOT}/runtime/hme/autocommit.fail}"
-if [ -f "$_AC_FLAG_CHECK" ]; then
+_AC_LIFESAVER_EMITTED=0
+_emit_autocommit_lifesaver_if_needed() {
+  [ "$_AC_LIFESAVER_EMITTED" -eq 0 ] || return 0
+  _AC_FLAG_CHECK="${_AC_FAIL_FLAG:-${PROJECT_ROOT}/runtime/hme/autocommit.fail}"
+  [ -f "$_AC_FLAG_CHECK" ] || return 0
+  _AC_LIFESAVER_EMITTED=1
   _AC_FLAG_BODY=$(cat "$_AC_FLAG_CHECK" 2>/dev/null)
   _AC_BANNER="[ALERT] LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE
 
@@ -93,6 +68,37 @@ payload = {
 }
 print(json.dumps(payload))
 " <<< "$_AC_BANNER"
+}
+
+_emit_autocommit_lifesaver_if_needed
+_ac_do_commit userpromptsubmit.sh || true
+_emit_autocommit_lifesaver_if_needed
+
+# Reset the psychopathic-polling counter at turn start -- the counter
+rm -f /tmp/polychron-task-poll-count 2>/dev/null
+rm -f /tmp/hme-chain-snapshot-fired 2>/dev/null
+
+# user-correction capture channel.
+_CORRECTION_FILE="${PROJECT_ROOT}/tmp/hme-user-corrections.jsonl"
+if [ -n "$PROMPT" ]; then
+  _IS_CORRECTION=0
+  # Case-insensitive grep for correction language
+  if echo "$PROMPT" | grep -qiE '\b(actually|instead|don.?t|no,|not quite|reverse|revert|rollback|wrong|incorrect|fix this|that.?s wrong|stop|cancel|undo)\b'; then
+    _IS_CORRECTION=1
+  fi
+  if [ "$_IS_CORRECTION" -eq 1 ]; then
+    mkdir -p "$(dirname "$_CORRECTION_FILE")"
+    python3 -c "
+import json, sys, time
+entry = {
+    'ts': int(time.time()),
+    'ts_human': time.strftime('%Y-%m-%d %H:%M:%S'),
+    'prompt_preview': sys.argv[1][:500],
+}
+with open('$_CORRECTION_FILE', 'a') as f:
+    f.write(json.dumps(entry) + '\n')
+" "$PROMPT" 2>/dev/null || true  # silent-ok: optional fallback path.
+  fi
 fi
 
 # LIFESAVER error-log monitor: surfaces hme-errors.log new lines as
@@ -160,6 +166,7 @@ fi
 # HME critical todos: surface unresolved critical+open items at turn start.
 # FAIL-LOUD: python stderr -> hme-errors.log so import failures don't go silent.
 _UPS_CRIT_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ups_crit_err_$$")  # silent-ok: optional fallback path.
+set +e
 CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>"$_UPS_CRIT_ERR"
 from server.tools_analysis.todo import list_critical
 items = list_critical()
@@ -171,6 +178,7 @@ if items:
 PYEOF
 )
 _UPS_CRIT_RC=$?
+set -e
 if [ "$_UPS_CRIT_RC" -ne 0 ] && [ -s "$_UPS_CRIT_ERR" ] && [ -d "$PROJECT/log" ]; then
   _UPS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
   while IFS= read -r _ups_line; do

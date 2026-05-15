@@ -280,21 +280,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     except Exception as _dir_err:
         logger.debug(f"agent_direct path errored: {type(_dir_err).__name__}: {_dir_err}")
 
-    """OVERDRIVE_VIA_SUBAGENT path -- queue the prompt for Claude to dispatch
-    via its own Agent tool rather than hitting api.anthropic.com directly.
-
-    Writes prompt + system to tmp/hme-subagent-queue/<uuid>.json. Returns a
-    sentinel string that appears in the reasoning output; the proxy
-    middleware `subagent_bridge.js` scans for the sentinel in outgoing
-    API requests and injects an instruction into the system message telling
-    Claude to invoke Agent(...) with the queued prompt. Agent runs inside
-    Claude Code's session-budget path, NOT the per-minute raw-API RPM
-    bucket that OVERDRIVE's direct calls hit. The user confirmed session
-    budget has headroom when RPM is exhausted.
-
-    Returns (sentinel, 'overdrive/subagent') -- the sentinel IS the
-    synthesis result from HME's perspective; Claude will fulfill it on
-    its next turn."""
+    """OVERDRIVE_VIA_SUBAGENT path: queue the prompt for an Agent tool call."""
     import json as _json
     import os as _os
     import uuid as _uuid

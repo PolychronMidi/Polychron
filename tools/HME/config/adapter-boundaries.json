@@ -1,0 +1,29 @@
+{
+  "_doc": "Only real adapter/domain boundary names live here. Pure forwarders are deleted.",
+  "boundaries": [
+    {
+      "path": "scripts/generate-i-shims.js",
+      "kind": "generator",
+      "owner": "i-surface",
+      "reason": "Generates public i/ command files from tools/HME/i_registry.json."
+    },
+    {
+      "path": "tools/HME/proxy/lifecycle_bridge.js",
+      "kind": "adapter-boundary",
+      "owner": "event-kernel",
+      "reason": "Proxy lifecycle HTTP events enter the portable event kernel here."
+    },
+    {
+      "path": "tools/HME/service/server/tools_analysis/coupling/coupling_bridges.py",
+      "kind": "domain-module",
+      "owner": "coupling-analysis",
+      "reason": "Bridge is the domain concept analyzed by this module."
+    },
+    {
+      "path": "tools/HME/service/server/tools_analysis/coupling/coupling_design_bridges.py",
+      "kind": "domain-module",
+      "owner": "coupling-analysis",
+      "reason": "Bridge is the domain concept analyzed by this module."
+    }
+  ]
+}

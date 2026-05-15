@@ -39,21 +39,37 @@ class StateFileOwnershipVerifier(Verifier):
     weight = 1.5
 
     def run(self) -> VerdictResult:
+        sys.path.insert(0, _SCRIPTS_DIR)
+        issues: list[str] = []
+        try:
+            from state_registry import repair_command_issues
+            repair_issues = repair_command_issues()
+            issues.extend(repair_issues)
+        except Exception as e:
+            issues.append(f"state registry helper failed: {e}")
+        render_script = os.path.join(_SCRIPTS_DIR, "render-state-registry-docs.py")
+        if os.path.isfile(render_script):
+            rc_doc, out_doc, err_doc = _run_subprocess([render_script, "--check"])
+            if rc_doc != 0:
+                issues.append(out_doc.strip() or err_doc.strip() or "state registry docs stale")
+        else:
+            issues.append("missing render-state-registry-docs.py")
         script = os.path.join(_PROJECT, "scripts", "audit-state-file-ownership.py")
         if not os.path.isfile(script):
-            return _result(SKIP, 1.0, "audit script not found", [script])
+            return _result(SKIP, 1.0, "audit script not found", [script, *issues])
         rc, out, err = _run_subprocess([script])
-        if rc == 0:
+        if rc == 0 and not issues:
             return _result(PASS, 1.0,
                            out.splitlines()[-1] if out else "all writers declared")
-        # Drift detected -- failed verifier. Surface the drift lines.
         drift_lines = [l for l in out.splitlines()
-                       if "drift" in l or " -- writer not declared" in l
+                       if ("drift" in l and not l.startswith("no drift"))
+                       or " -- writer not declared" in l
                        or "writes detected but not in registry" in l]
+        details = drift_lines[:15] + issues[:15]
         return _result(FAIL,
-                       max(0.0, 1.0 - 0.1 * len(drift_lines)),
-                       f"{len(drift_lines)} undeclared writer(s) of shared state",
-                       drift_lines[:15])
+                       max(0.0, 1.0 - 0.1 * len(details)),
+                       f"{len(drift_lines)} undeclared writer(s), {len(issues)} registry issue(s)",
+                       details)
 
 
 
@@ -227,81 +243,40 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
                        issues[:10])
 
 
-class CompatibilityLayerExpiryVerifier(Verifier):
-    """Files named bridge/shim/wrapper must have executable expiry policy."""
-    name = "compatibility-layer-expiry"
+class AdapterBoundaryRegistryVerifier(Verifier):
+    """Bridge/shim/wrapper filenames must be real adapter/domain boundaries."""
+    name = "adapter-boundary-registry"
     category = "code"
     subtag = "interface-contract"
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        registry_path = os.path.join(_PROJECT, "tools", "HME", "config", "compatibility-layers.json")
+        old_registry = os.path.join(_PROJECT, "tools", "HME", "config", "compatibility-layers.json")
+        registry_path = os.path.join(_PROJECT, "tools", "HME", "config", "adapter-boundaries.json")
         try:
             with open(registry_path) as f:
                 data = json.load(f)
         except Exception as e:
-            return _result(FAIL, 0.0, f"compatibility registry unreadable: {e}")
-        entries = data.get("layers", [])
+            return _result(FAIL, 0.0, f"adapter boundary registry unreadable: {e}")
+        entries = data.get("boundaries", [])
         registered = {str(e.get("path", "")) for e in entries if isinstance(e, dict)}
         issues = []
-        registry_rel = os.path.relpath(registry_path, _PROJECT)
-
-        def _scan_refs(pattern: str, excluded: set[str]) -> list[str]:
-            refs = []
-            rx = re.compile(pattern)
-            for root in (os.path.join(_PROJECT, "tools", "HME"),
-                         os.path.join(_PROJECT, "scripts"),
-                         os.path.join(_PROJECT, "doc")):
-                for dirpath, dirnames, filenames in os.walk(root):
-                    dirnames[:] = [d for d in dirnames if d not in ("__pycache__", "node_modules", ".git")]
-                    for fname in filenames:
-                        rel = os.path.relpath(os.path.join(dirpath, fname), _PROJECT)
-                        if rel in excluded or fname.endswith((".pyc", ".pyo")):
-                            continue
-                        try:
-                            with open(os.path.join(_PROJECT, rel), encoding="utf-8", errors="ignore") as f:
-                                for lineno, line in enumerate(f, 1):
-                                    if rx.search(line):
-                                        refs.append(f"{rel}:{lineno}")
-                                        break
-                        except OSError:
-                            # silent-ok: unreadable files cannot be expiry refs.
-                            continue
-            return refs
+        if os.path.exists(old_registry):
+            issues.append("compatibility-layers.json still exists; delete compatibility layers or declare adapter boundaries")
 
         for entry in entries:
             if not isinstance(entry, dict):
                 issues.append("registry entry is not an object")
                 continue
-            for field in ("path", "kind", "owner", "reason", "expires"):
+            for field in ("path", "kind", "owner", "reason"):
                 if not str(entry.get(field, "")).strip():
                     issues.append(f"{entry.get('path', '?')}: missing {field}")
-            expires = entry.get("expires")
             path = str(entry.get("path", ""))
-            if not isinstance(expires, dict):
-                issues.append(f"{path}: expires must be an object with kind")
+            if not os.path.exists(os.path.join(_PROJECT, path)):
+                issues.append(f"{path}: registered boundary path missing")
                 continue
-            kind = expires.get("kind")
-            if kind not in ("never", "zero_refs", "date", "replacement_ready"):
-                issues.append(f"{path}: unknown expires.kind={kind!r}")
-            if kind == "never" and not str(expires.get("reason", "")).strip():
-                issues.append(f"{path}: expires.kind=never needs reason")
-            if kind == "replacement_ready":
-                repl = str(expires.get("replacement", ""))
-                if not repl:
-                    issues.append(f"{path}: replacement_ready missing replacement")
-                elif not os.path.exists(os.path.join(_PROJECT, repl)):
-                    issues.append(f"{path}: replacement missing: {repl}")
-                if not str(expires.get("delete_when", "")).strip():
-                    issues.append(f"{path}: replacement_ready missing delete_when")
-            if kind == "zero_refs":
-                scan = str(expires.get("scan", ""))
-                if not scan:
-                    issues.append(f"{path}: zero_refs missing scan")
-                else:
-                    refs = _scan_refs(scan, {path, registry_rel})
-                    if not refs:
-                        issues.append(f"{path}: expiry condition met; delete this layer")
+            if entry.get("kind") not in ("adapter-boundary", "domain-module", "generator"):
+                issues.append(f"{path}: unknown boundary kind={entry.get('kind')!r}")
         for root in (os.path.join(_PROJECT, "tools", "HME"), os.path.join(_PROJECT, "scripts")):
             for dirpath, dirnames, filenames in os.walk(root):
                 dirnames[:] = [d for d in dirnames if d not in ("__pycache__", "node_modules", ".git")]
@@ -315,10 +290,10 @@ class CompatibilityLayerExpiryVerifier(Verifier):
                     if fname.endswith((".pyc", ".pyo")):
                         continue
                     if rel not in registered:
-                        issues.append(f"{rel}: missing compatibility expiry registry entry")
+                        issues.append(f"{rel}: bridge/shim/wrapper filename must be a declared adapter/domain boundary or be renamed")
         if issues:
-            return _result(FAIL, 0.0, f"{len(issues)} compatibility layer issue(s)", issues[:12])
-        return _result(PASS, 1.0, f"{len(entries)} compatibility layers have executable expiry policy")
+            return _result(FAIL, 0.0, f"{len(issues)} adapter boundary issue(s)", issues[:12])
+        return _result(PASS, 1.0, f"{len(entries)} adapter/domain boundary names declared; no compatibility registry remains")
 
 
 class ToolMetadataFactoryVerifier(Verifier):

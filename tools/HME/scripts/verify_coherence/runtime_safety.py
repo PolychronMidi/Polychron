@@ -101,6 +101,32 @@ class LifesaverIntegrityVerifier(Verifier):
         )
 
 
+class LifesaverHeartbeatVerifier(Verifier):
+    name = "lifesaver-heartbeat"
+    category = "runtime"
+    subtag = "structural-integrity"
+    weight = 5.0
+
+    def run(self) -> VerdictResult:
+        heartbeat = os.path.join(_PROJECT, "runtime", "hme", "heartbeat-lifesaver.ts")
+        max_age = float(os.environ.get("HME_LIFESAVER_ACTIVE_MAX_AGE_SEC", 6 * 60 * 60))
+        try:
+            age = time.time() - os.path.getmtime(heartbeat)
+        except OSError:
+            return _result(
+                FAIL, 0.0,
+                "lifesaver heartbeat missing",
+                ["run a real Claude/Codex request through the proxy; hook/proxy lifesaver route must update runtime/hme/heartbeat-lifesaver.ts"],
+            )
+        if age > max_age:
+            return _result(
+                FAIL, 0.0,
+                f"lifesaver heartbeat stale ({age/3600:.1f}h > {max_age/3600:.1f}h)",
+                ["Stop hooks or proxy lifesaver injection are not reaching the canonical lifesaver route"],
+            )
+        return _result(PASS, 1.0, f"lifesaver heartbeat fresh ({age:.0f}s)")
+
+
 class TrajectoryTrendVerifier(Verifier):
     """Reads metrics/hme-trajectory.json and scores the HCI trend direction.
     A prolonged downward trend or a predicted drift below threshold 80 is a
@@ -151,5 +177,4 @@ class TrajectoryTrendVerifier(Verifier):
                 f"HCI flat-ish downward ({slope:.2f}/day) -- monitor",
             )
         return _result(PASS, 1.0, f"HCI trend {direction} ({slope:+.2f}/day)")
-
 

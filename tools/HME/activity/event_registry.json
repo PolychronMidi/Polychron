@@ -275,18 +275,18 @@
       "summary": "The upstream began streaming and then failed or closed prematurely."
     },
     {
-      "name": "subagent_bridge_result_captured",
+      "name": "agent_jobs_result_captured",
       "category": "Subagent / supervisor lifecycle",
       "streams": ["activity"],
       "groups": ["subagent"],
-      "summary": "The subagent bridge captured a non-empty Agent result for a queued HME task."
+      "summary": "Agent-job capture wrote a non-empty Agent result for a queued HME task."
     },
     {
-      "name": "subagent_bridge_empty_result",
+      "name": "agent_jobs_empty_result",
       "category": "Subagent / supervisor lifecycle",
       "streams": ["activity"],
       "groups": ["subagent"],
-      "summary": "The subagent bridge captured an empty Agent result for a queued HME task."
+      "summary": "Agent-job capture wrote an empty Agent result for a queued HME task."
     },
     {
       "name": "subagent_clean_gate_ok",

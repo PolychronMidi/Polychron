@@ -4,7 +4,7 @@ const path = require('path');
 const registry = require('../policies/registry');
 const config = require('../policies/config');
 const stateClient = require('./session_state_client');
-const { normalize } = require('./hook_envelope');
+const { normalize } = require('../event_kernel/envelope');
 const { PROJECT_ROOT } = require('./shared');
 const {
   isMisplacedRootOnlyDir,

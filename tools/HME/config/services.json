@@ -37,6 +37,24 @@
       "fix": "restart HME proxy; it supervises worker.py"
     },
     {
+      "id": "codex_proxy",
+      "kind": "http",
+      "description": "OpenAI Responses-compatible Codex proxy and TODO/update_plan bridge",
+      "env_port": "HME_CODEX_PROXY_PORT",
+      "default_port": 9102,
+      "host": "127.0.0.1",
+      "health_path": "/health",
+      "required": false,
+      "pid_label": "codex_proxy",
+      "stop_group": "codex_proxy",
+      "timeout_sec": 3,
+      "start": ["tools/HME/hooks/direct/codex-proxy-supervisor.sh", "start"],
+      "pid_file": "runtime/hme/codex-proxy.pid",
+      "process_patterns": ["codex_proxy.js"],
+      "log_file": "log/hme-codex-proxy.out",
+      "fix": "tools/HME/hooks/direct/codex-proxy-supervisor.sh start"
+    },
+    {
       "id": "llamacpp_daemon",
       "kind": "http",
       "description": "Local llama.cpp daemon",

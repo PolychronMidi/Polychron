@@ -29,6 +29,7 @@ test('indexing-mode: concurrent calls coalesce instead of erroring', () => {
 import sys, threading, time
 sys.path.insert(0, '${path.dirname(daemonModule)}')
 sys.path.insert(0, '${path.join(repoRoot, 'tools/HME/service')}')
+sys.path.insert(0, '${path.join(repoRoot, 'tools/HME/scripts')}')
 
 # Stub the env + logger so the module imports clean without a real daemon.
 class _StubENV:

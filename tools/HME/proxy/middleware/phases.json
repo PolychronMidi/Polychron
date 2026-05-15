@@ -19,7 +19,7 @@
     {
       "id": "route",
       "range": [13, 13],
-      "description": "Filesystem-backed subagent result bridge"
+      "description": "Filesystem-backed agent job result capture"
     },
     {
       "id": "observe",

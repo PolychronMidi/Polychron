@@ -429,9 +429,8 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     OVERDRIVE_MODE=1 in .env short-circuits this walk and calls Claude Opus
     with max extended thinking instead. On any failure of the overdrive path
     we fall through to the normal cascade so an API blip doesn't block work.
-    OVERDRIVE_VIA_SUBAGENT=1 additionally routes the Claude calls through a
-    Claude-Code Agent subagent (via proxy's subagent_bridge middleware)
-    instead of hitting api.anthropic.com directly -- moves reasoning cost
+    OVERDRIVE_VIA_SUBAGENT=1 additionally routes Claude calls through an
+    Agent job captured by proxy middleware instead of hitting api.anthropic.com directly -- moves reasoning cost
     off raw per-minute RPM onto session-budget, which has far more headroom.
     """
     import time as _time

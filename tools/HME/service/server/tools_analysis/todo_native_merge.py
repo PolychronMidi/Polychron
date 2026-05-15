@@ -18,21 +18,19 @@ from server.tools_analysis.todo import (
     _load_todos, _save_todos, _write_todo_entry, _todo_lock,
 )
 from server.tools_analysis.todo_lifesaver import (
-    _LIFESAVER_STALE_SECONDS, _MAX_CRITICAL_IN_MERGE,
-    _expire_stale_lifesavers, _enforce_lifesaver_caps,
-    _prune_done_todos_universal,
+    _MAX_CRITICAL_IN_MERGE,
+    _expire_stale_lifesavers,
 )
-
-PRESERVED_HME_SOURCES = ("lifesaver", "hme_todo", "todo_md")
-SOURCE_PREFIXES = {
-    "lifesaver": "[LIFESAVER] ",
-}
+from server.tools_analysis.todo_sources import (
+    PRESERVED_NATIVE_MERGE_SOURCES,
+    source_prefix,
+)
 
 
 def merge_native_todowrite(incoming: list) -> list:
     """E3: merge an incoming native TodoWrite payload with the HME store.
 
-    Preserves HME-only items (lifesaver, hme_todo, todo_md) that native
+    Preserves registry-declared HME-only items that native
     TodoWrite doesn't know about and returns a MERGED list that becomes the
     updatedInput for the real TodoWrite call. Result is ordered:
       1. critical items first (lifesaver, etc.) -- capped at _MAX_CRITICAL_IN_MERGE
@@ -84,7 +82,7 @@ def merge_native_todowrite(incoming: list) -> list:
             if t["text"] in native_texts:
                 continue
             src = t.get("source", "")
-            if src in PRESERVED_HME_SOURCES:
+            if src in PRESERVED_NATIVE_MERGE_SOURCES:
                 new_store.append(t)
 
         _save_todos(meta, new_store)
@@ -113,7 +111,7 @@ def merge_native_todowrite(incoming: list) -> list:
             if is_critical:
                 prefix = "[CRITICAL] "
             else:
-                prefix = SOURCE_PREFIXES.get(t.get("source", ""), "")
+                prefix = source_prefix(t.get("source", ""))
             flat.append({
                 "content": prefix + t["text"],
                 "activeForm": t.get("activeForm") or (prefix + t["text"]),

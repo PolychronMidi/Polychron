@@ -3,6 +3,10 @@
   "interval_sec": 30,
   "miss_streak_alert": 3,
   "cooldown_sec": 600,
+  "codex_plan_sync": {
+    "enabled": true,
+    "min_interval_sec": 30
+  },
   "http_probe_services": ["proxy", "worker", "llamacpp_daemon", "omniroute"],
   "process_probes": [
     {

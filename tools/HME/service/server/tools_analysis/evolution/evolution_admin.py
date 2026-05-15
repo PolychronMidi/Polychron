@@ -1,5 +1,6 @@
 """HME administration -- selftest, hot-reload, introspection, antipattern enforcement."""
 import os
+import sys
 import re
 import logging
 import subprocess
@@ -33,8 +34,8 @@ def hme_admin(action: str = "selftest", modules: str = "",
     to a hook script (antipattern=, hook_target= one of: pretooluse_bash/edit/read/grep/write,
     posttooluse_bash, stop, userpromptsubmit).
     action='both': reload then selftest.
-    action='todo_status'|'todo_validate'|'todo_repair': inspect, validate, or repair
-    the hidden TODO store/TODO.md mirror.
+    action='todo_status'|'todo_validate'|'todo_repair'|'todo_archive'|'todo_sync_codex': inspect,
+    validate, repair, force-archive, or sync Codex update_plan into the TODO store.
     Use after structural changes to HME tool files."""
     _track("hme_admin")
     from ..synthesis_session import append_session_narrative
@@ -102,19 +103,20 @@ def hme_admin(action: str = "selftest", modules: str = "",
             parts.append(_health())
         except Exception as e:
             parts.append(f"health summary error: {type(e).__name__}: {e}")
-    if action in ("todo_status", "todo_validate", "todo_repair"):
-        parts.append(_hme_todo_admin(action))
+    if action in ("todo_status", "todo_validate", "todo_repair", "todo_archive", "todo_sync_codex"):
+        parts.append(_hme_todo_admin(action, modules))
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', 'todo_status', 'todo_validate', 'todo_repair', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', 'todo_status', 'todo_validate', 'todo_repair', 'todo_archive', 'todo_sync_codex', or 'both'."
     return "\n\n".join(parts)
 
 
-def _hme_todo_admin(action: str) -> str:
+def _hme_todo_admin(action: str, set_name: str = "") -> str:
     from collections import Counter
     import json as _json
     from paths import todo_archive_index_file as _archive_index_file
     from ..todo_md_sync import repair_todo_md_from_store
-    from ..todo_store import flat_entries, load_store, save_todos
+    from ..todo_archive import _archive_set
+    from ..todo_store import flat_entries, load_store, repair_store, save_todos, validate_store
 
     _raw, meta, todos = load_store()
     entries = flat_entries(todos)
@@ -135,7 +137,10 @@ def _hme_todo_admin(action: str) -> str:
             if not isinstance(item, dict):
                 missing.append(f"archives[{i}] is not an object")
                 continue
-            for key in ("archived", "set_name", "archive_path", "task_count", "done_count", "todo_count"):
+            for key in (
+                "archive_id", "archived", "set_name", "archive_path",
+                "task_count", "done_count", "todo_count", "content_sha256",
+            ):
                 if key not in item:
                     missing.append(f"archives[{i}] missing {key}")
         last = archives[-1].get("archive_path") if archives else "none"
@@ -166,6 +171,7 @@ def _hme_todo_admin(action: str) -> str:
         except Exception as e:
             archive_status, archive_issues = f"unreadable: {type(e).__name__}: {e}", [str(e)]
         issues = []
+        issues.extend(validate_store())
         if result["changed"]:
             issues.append("TODO.md differs from todos.json render")
         if stale_onboarding:
@@ -176,9 +182,11 @@ def _hme_todo_admin(action: str) -> str:
         return f"TODO validation PASS\nArchive index: {archive_status}"
 
     if action == "todo_repair":
-        removed = 0
+        store_repair = repair_store()
         if stale_onboarding:
+            _raw, meta, todos = load_store()
             stale_ids = {id(e) for e in stale_onboarding}
+            removed = 0
             cleaned = []
             for t in todos:
                 if id(t) in stale_ids:
@@ -191,12 +199,47 @@ def _hme_todo_admin(action: str) -> str:
                     t["subs"] = kept_subs
                 cleaned.append(t)
             save_todos(meta, cleaned)
+        else:
+            removed = 0
         result = repair_todo_md_from_store()
         state = "changed" if result["changed"] else "already synced"
         return (
             "TODO repair complete\n"
+            f"- store normalized: {store_repair['changed']} ({store_repair['entry_count']} entries, {store_repair['removed']} retired/invalid removed)\n"
             f"- stale onboarding mirrors removed: {removed}\n"
             f"- TODO.md: {state} ({result['todo_count']} top-level todo(s))"
+        )
+
+    if action == "todo_archive":
+        archive_result = _archive_set(set_name=set_name, force=True)
+        if archive_result["ok"]:
+            return (
+                "TODO archive complete\n"
+                f"- devlog: {archive_result['devlog_path']}\n"
+                "- TODO.md reset to fresh slate"
+            )
+        return f"TODO archive refused: {archive_result.get('message', 'unknown error')}"
+
+    if action == "todo_sync_codex":
+        from paths import project_root as _project_root
+        scripts_dir = os.path.join(_project_root(), "tools", "HME", "scripts")
+        if scripts_dir and scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        try:
+            from codex_plan_sync import sync_latest_codex_plan
+            result = sync_latest_codex_plan(dry_run=("dry" in (set_name or "").lower()))
+        except Exception as e:
+            return f"Codex plan TODO sync failed: {type(e).__name__}: {e}"
+        if not result.get("ok"):
+            return f"Codex plan TODO sync skipped: {result.get('message', 'unknown reason')}"
+        suffix = " (dry run)" if result.get("dry_run") else ""
+        return (
+            f"Codex plan TODO sync complete{suffix}\n"
+            f"- items: {result['items']}\n"
+            f"- added: {result['added']}\n"
+            f"- updated: {result['updated']}\n"
+            f"- superseded: {result['superseded']}\n"
+            f"- source: {result['session_file']}"
         )
     return f"Unknown TODO admin action: {action}"
 

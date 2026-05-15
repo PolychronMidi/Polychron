@@ -22,7 +22,7 @@ from .code_audits_state import (  # noqa: F401
     ClaudeSettingsJsonVerifier,
     HumanDeferredAuditVerifier,
     ProxyMiddlewareRegistryVerifier,
-    CompatibilityLayerExpiryVerifier,
+    AdapterBoundaryRegistryVerifier,
     ToolMetadataFactoryVerifier,
     GeneratedISurfaceVerifier,
     InterControllerCoherenceVerifier,

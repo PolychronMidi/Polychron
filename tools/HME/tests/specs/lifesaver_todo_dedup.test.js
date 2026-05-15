@@ -16,12 +16,13 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-function _runPython(sandbox, body) {
+function _runPython(sandbox, body, extraEnv = {}) {
   const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
   const env = {
     ...process.env,
     PROJECT_ROOT: sandbox,
     PYTHONPATH: path.join(repoRoot, 'tools', 'HME', 'service'),
+    ...extraEnv,
   };
   const result = spawnSync('python3', ['-c', body], { env, encoding: 'utf8' });
   return result;
@@ -201,6 +202,108 @@ print(json.dumps({
     assert.strictEqual(parsed.hme_only_preserved, true, 'HME-only item survives native merge and returned payload');
     assert.strictEqual(parsed.todo_has_done_native, true, 'TODO.md renders completed native item in Done');
     assert.strictEqual(parsed.todo_has_hme_next, true, 'TODO.md renders HME-only item in Next');
+  });
+});
+
+test('Codex update_plan syncs into todos.json and TODO.md', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+    const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-codex-home-'));
+    const sessionDir = path.join(codexHome, 'sessions', '2026', '05', '15');
+    fs.mkdirSync(sessionDir, { recursive: true });
+    const sessionFile = path.join(sessionDir, 'rollout-test.jsonl');
+    const updateArgs = JSON.stringify({
+      explanation: `workspace ${sandbox}`,
+      plan: [
+        { step: 'Bridge Codex plans', status: 'in_progress' },
+        { step: 'Verify TODO sync', status: 'pending' },
+      ],
+    });
+    fs.writeFileSync(sessionFile, `${JSON.stringify({
+      timestamp: '2026-05-15T15:00:00.000Z',
+      type: 'response_item',
+      payload: {
+        type: 'function_call',
+        name: 'update_plan',
+        arguments: updateArgs,
+        call_id: 'call_test',
+      },
+    })}\n`);
+    try {
+      const env = {
+        ...process.env,
+        PROJECT_ROOT: sandbox,
+        CODEX_HOME: codexHome,
+        PYTHONPATH: path.join(repoRoot, 'tools', 'HME', 'service'),
+      };
+      const result = spawnSync(
+        'python3',
+        [path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_plan_sync.py'), 'sync', '--json'],
+        { env, encoding: 'utf8' },
+      );
+      if (result.status !== 0) throw new Error(`codex sync failed: ${result.stderr || result.stdout}`);
+      const store = JSON.parse(fs.readFileSync(path.join(sandbox, 'tools', 'HME', 'KB', 'todos.json'), 'utf8'));
+      const todos = store.slice(1);
+      const todoMd = fs.readFileSync(path.join(sandbox, 'doc', 'templates', 'TODO.md'), 'utf8');
+      assert.deepStrictEqual(todos.map((t) => t.source), ['codex_plan', 'codex_plan']);
+      assert.strictEqual(todos[0].status, 'in_progress');
+      assert.strictEqual(todos[1].status, 'pending');
+      assert.match(todoMd, /## Now[\s\S]*Bridge Codex plans/);
+      assert.match(todoMd, /## Next[\s\S]*Verify TODO sync/);
+      assert.doesNotMatch(todoMd, /Native TodoWrite syncs this file/);
+    } finally {
+      try { fs.rmSync(codexHome, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
+    }
+  });
+});
+
+test('universal pulse keeps Codex update_plan synced automatically', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+    const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-codex-home-'));
+    const sessionDir = path.join(codexHome, 'sessions', '2026', '05', '15');
+    fs.mkdirSync(sessionDir, { recursive: true });
+    const sessionFile = path.join(sessionDir, 'rollout-pulse-test.jsonl');
+    const updateArgs = JSON.stringify({
+      explanation: `workspace ${sandbox}`,
+      plan: [{ step: 'Pulse syncs Codex plan', status: 'in_progress' }],
+    });
+    fs.writeFileSync(sessionFile, `${JSON.stringify({
+      timestamp: '2026-05-15T15:30:00.000Z',
+      type: 'response_item',
+      payload: {
+        type: 'function_call',
+        name: 'update_plan',
+        arguments: updateArgs,
+        call_id: 'call_pulse_test',
+      },
+    })}\n`);
+    try {
+      const pythonPath = [
+        path.join(repoRoot, 'tools', 'HME', 'service'),
+        path.join(repoRoot, 'tools', 'HME', 'activity'),
+        path.join(repoRoot, 'tools', 'HME', 'scripts'),
+      ].join(path.delimiter);
+      const result = _runPython(sandbox, `
+from universal_pulse import _StreakTracker
+from universal_pulse_tick import _tick
+import json, os
+tracker = _StreakTracker(1, 600)
+ok, bad = _tick({"codex_plan_sync": {"enabled": True, "min_interval_sec": 0}}, tracker)
+todo_md = open(os.path.join("${sandbox}", "doc", "templates", "TODO.md")).read()
+print(json.dumps({
+  "ok": ok,
+  "bad": bad,
+  "synced": "Pulse syncs Codex plan" in todo_md,
+}))
+`, { CODEX_HOME: codexHome, PYTHONPATH: pythonPath });
+      if (result.status !== 0) throw new Error(`pulse sync failed: ${result.stderr || result.stdout}`);
+      const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+      assert.strictEqual(parsed.bad, 0, 'pulse sync must not report a bad target');
+      assert.strictEqual(parsed.synced, true, 'pulse must sync Codex plans into TODO.md');
+    } finally {
+      try { fs.rmSync(codexHome, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
+    }
   });
 });
 
@@ -437,5 +540,32 @@ print(json.dumps({
     const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
     assert.strictEqual(parsed.ttl_resolved, 1, 'stale entry must be auto-resolved by TTL sweep');
     assert.strictEqual(parsed.open, 1, 'only the fresh entry stays open');
+  });
+});
+
+test('direct hidden-tool imports initialize context and TODO state cleanly', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'config'), { recursive: true });
+    fs.writeFileSync(
+      path.join(sandbox, 'tools', 'HME', 'config', 'todo-archive-index.json'),
+      JSON.stringify({ archives: [] }),
+    );
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo
+from server.tools_analysis.evolution.evolution_admin import hme_admin
+import json
+todo = hme_todo(action="list")
+hme_admin(action="todo_repair")
+validation = hme_admin(action="todo_validate")
+print(json.dumps({
+  "todo_ok": "No todos" in todo,
+  "validate_ok": "TODO validation PASS" in validation,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    assert.doesNotMatch(result.stderr, /PROJECT_ROOT not set|SKIPPED -- no path/);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.todo_ok, true, 'direct hme_todo import returns the empty store');
+    assert.strictEqual(parsed.validate_ok, true, 'direct hme_admin import validates the TODO store');
   });
 });

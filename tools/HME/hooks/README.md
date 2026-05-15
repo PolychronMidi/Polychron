@@ -1,7 +1,7 @@
 # HME hooks
 
-Claude Code lifecycle hooks registered in `hooks.json`. Claude Code calls the
-event-kernel adapter; the kernel routes to native handlers or the remaining
+Claude Code and Codex lifecycle hooks both route through the event-kernel
+adapter for their host. The kernel routes to native handlers or the remaining
 shell stages. Every remaining shell hook sources `helpers/_safety.sh` first for
 the standard emit/block/streak/latency machinery.
 
@@ -38,7 +38,20 @@ Run `scripts/sync-claude-settings.py` to materialize it into
 `~/.claude/settings.json`; `scripts/audit-claude-settings.py` fails if live
 settings drift from this manifest.
 
+`codex_hooks.json` is the source of truth for live Codex hook registration.
+Run `scripts/sync-codex-settings.py` to materialize it into
+`~/.codex/hooks.json` and route Codex Responses traffic through the
+`codex_proxy` service. `scripts/audit-codex-settings.py` fails if the hooks or
+provider config drift. Codex user hooks are non-managed hooks; if Codex reports
+that hooks need review, approve them once from `/hooks` in the interactive CLI.
+The `hme_codex` provider proxy is active independently of that hook review.
+
 `.claude/settings.json` registers `node event_kernel/claude_adapter.js <Event>` for every Claude Code lifecycle event. The adapter POSTs hook stdin to the proxy lifecycle URL derived from `tools/HME/config/services.json` and relays the JSON response back. If the proxy is unreachable, it calls the same event-kernel dispatcher directly.
+
+`.codex/hooks.json` registers `node event_kernel/codex_adapter.js <Event>` for
+every supported Codex lifecycle/tool event. The Codex adapter uses the same
+`/hme/lifecycle` bridge and same direct fallback, then strips or translates
+Claude-only fields such as `updatedInput` before returning output to Codex.
 
 Proxy health is bundle health: `services.json` marks `worker` as a required
 child of `proxy`, so watchdogs and doctors treat proxy-up/worker-down as
@@ -58,6 +71,17 @@ node event_kernel/claude_adapter.js <Event>
        \--- proxy down? ----> event_kernel/dispatcher.js
 ```
 
+```text
+Codex event
+       |
+       v
+node event_kernel/codex_adapter.js <Event>
+       |
+       +--- proxy alive? ---> POST /hme/lifecycle ---> proxy/lifecycle_bridge.js ---> event_kernel/dispatcher.js
+       |
+       \--- proxy down? ----> event_kernel/dispatcher.js
+```
+
 ### Event -> scripts (proxy-up path; same scripts run on direct fallback)
 
 | Event | Scripts fired | Notes |
@@ -65,6 +89,7 @@ node event_kernel/claude_adapter.js <Event>
 | `SessionStart` | `lifecycle/sessionstart.sh` | Session orientation, state reset, worker/proxy health surface. |
 | `UserPromptSubmit` | `lifecycle/userpromptsubmit.sh` | Stale-state sweep, lifesaver scan, autocommit. |
 | `PreToolUse` | `event_kernel/native_hooks/*` or `pretooluse/pretooluse_<tool>.sh` | Native first where ported; remaining shell gates can deny via `_emit_block` + exit 2. |
+| `PermissionRequest` | JS policy registry | Codex approval prompts reuse the same deny policies where possible. |
 | `PostToolUse` | `log-tool-call.sh` + native handlers or `posttooluse/posttooluse_<tool>.sh` | Universal logging, NEXUS state, activity emission, knowledge add. |
 | `PreCompact` | `lifecycle/precompact.sh` | Flush KB, snapshot. |
 | `PostCompact` | `lifecycle/postcompact.sh` | Reload KB. |

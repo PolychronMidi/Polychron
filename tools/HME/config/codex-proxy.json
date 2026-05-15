@@ -1,0 +1,13 @@
+{
+  "_doc": "Codex Responses proxy policy. The proxy is the Codex peer of the Claude Anthropic proxy: it preserves Codex's native request shape, observes prompt/tool size, can apply table-driven request shaping, and syncs update_plan calls into the HME TODO store.",
+  "todo_sync": {
+    "enabled": true
+  },
+  "request_transform": {
+    "instruction_append_file": "",
+    "extra_instructions": "",
+    "disabled_tools": [],
+    "max_instruction_bytes_warn": 60000,
+    "max_tool_count_warn": 80
+  }
+}

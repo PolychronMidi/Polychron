@@ -10,7 +10,7 @@ _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from paths import todo_file as _todo_md_file  # noqa: E402
-from .todo_store import flat_entries, load_store, save_store  # noqa: E402
+from .todo_store import flat_entries, load_store, mutate_store, normalize_tier  # noqa: E402
 
 TASK_RE = re.compile(
     r"^(?P<indent>\s*)-\s+\[(?P<mark>[ xX])\]\s+\[(?P<tier>E[1-5]|easy|medium|hard)\]\s+(?P<text>.+?)\s*$",
@@ -28,15 +28,7 @@ SECTION_ALIASES = {
     "later": ("Later", "Deferred to next cycle", "Deferred / out of scope"),
 }
 
-_LEGACY_TIER_MAP = {"easy": "E2", "medium": "E3", "hard": "E4"}
 TODO_SECTIONS = ("Now", "Next", "Done", "Later")
-
-
-def normalize_tier(tier: str | None) -> str:
-    t = (tier or "").strip()
-    if t.upper() in {"E1", "E2", "E3", "E4", "E5"}:
-        return t.upper()
-    return _LEGACY_TIER_MAP.get(t.lower(), "E3")
 
 
 def normalize_for_match(text: str) -> str:
@@ -136,7 +128,7 @@ def render_todo_md(todos: list, previous_md: str | None = None, done_limit: int 
     parts = [
         "# TODO",
         "",
-        "> Pocket notepad. Native TodoWrite syncs this file. Use `[E1]`-`[E5]` on task lines.",
+        "> Pocket notepad. TodoWrite and Codex plan sync write this file. Use `[E1]`-`[E5]` on task lines.",
         "",
         *_section("Now", now),
         *_section("Next", next_up),
@@ -286,50 +278,52 @@ def matches_todo_text(left: str, right: str) -> bool:
 def mark_store_done_by_texts(items: list[str], *, store_path: str | None = None) -> int:
     if not items:
         return 0
-    raw, meta, todos = load_store(store_path)
-    changed = 0
-    for entry in flat_entries(todos):
-        if entry.get("done") or entry.get("status") == "completed":
-            continue
-        if any(matches_todo_text(item, entry.get("text", "")) for item in items):
-            entry["status"] = "completed"
-            entry["done"] = True
-            changed += 1
-    if changed:
-        save_store(raw, meta, store_path)
-    return changed
+
+    def _mark(_meta: dict, todos: list[dict], _raw: list[dict]) -> tuple[bool, int]:
+        changed = 0
+        for entry in flat_entries(todos):
+            if entry.get("done") or entry.get("status") == "completed":
+                continue
+            if any(matches_todo_text(item, entry.get("text", "")) for item in items):
+                entry["status"] = "completed"
+                entry["done"] = True
+                changed += 1
+        return bool(changed), changed
+
+    return int(mutate_store(_mark, store_path))
 
 
 def ingest_open_items(items: list[tuple[str, str]], *, store_path: str | None = None) -> int:
     if not items:
         return 0
-    raw, meta, todos = load_store(store_path)
-    open_existing = [
-        entry for entry in flat_entries(todos)
-        if not entry.get("done") and entry.get("status") != "completed"
-    ]
-    added = 0
-    for tier, text in items:
-        if any(matches_todo_text(text, entry.get("text", "")) for entry in open_existing):
-            continue
-        meta["max_id"] = int(meta.get("max_id", 0)) + 1
-        entry = {
-            "id": meta["max_id"],
-            "text": text,
-            "activeForm": text,
-            "status": "pending",
-            "done": False,
-            "critical": False,
-            "source": "todo_md",
-            "on_done": "",
-            "ts": time.time(),
-            "parent_id": 0,
-            "subs": [],
-            "tier": normalize_tier(tier),
-        }
-        raw.append(entry)
-        open_existing.append(entry)
-        added += 1
-    if added:
-        save_store(raw, meta, store_path)
-    return added
+
+    def _ingest(meta: dict, todos: list[dict], _raw: list[dict]) -> tuple[bool, int]:
+        open_existing = [
+            entry for entry in flat_entries(todos)
+            if not entry.get("done") and entry.get("status") != "completed"
+        ]
+        added = 0
+        for tier, text in items:
+            if any(matches_todo_text(text, entry.get("text", "")) for entry in open_existing):
+                continue
+            meta["max_id"] = int(meta.get("max_id", 0)) + 1
+            entry = {
+                "id": meta["max_id"],
+                "text": text,
+                "activeForm": text,
+                "status": "pending",
+                "done": False,
+                "critical": False,
+                "source": "todo_md",
+                "on_done": "",
+                "ts": time.time(),
+                "parent_id": 0,
+                "subs": [],
+                "tier": normalize_tier(tier),
+            }
+            todos.append(entry)
+            open_existing.append(entry)
+            added += 1
+        return bool(added), added
+
+    return int(mutate_store(_ingest, store_path))

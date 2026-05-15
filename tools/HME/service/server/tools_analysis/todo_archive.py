@@ -1,7 +1,9 @@
 """TODO.md/devlog lifecycle for hidden hme_todo actions."""
 import json
+import hashlib
 import os
 import re
+import subprocess
 import sys
 import time
 
@@ -90,8 +92,45 @@ def validate_archive_text(text: str) -> list[str]:
     return errors
 
 
+def _current_git_commit() -> str:
+    try:
+        proc = subprocess.run(
+            ["git", "-C", ENV.require("PROJECT_ROOT"), "rev-parse", "--short", "HEAD"],
+            text=True,
+            capture_output=True,
+            timeout=3,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError, subprocess.TimeoutExpired):
+        return "unknown"
+    return proc.stdout.strip() if proc.returncode == 0 and proc.stdout.strip() else "unknown"
+
+
+def _current_hci_score() -> float | None:
+    path = os.path.join(
+        ENV.require("PROJECT_ROOT"),
+        "output", "metrics", "hci-verifier-snapshot.json",
+    )
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+    for key in ("hci", "score", "overall_score"):
+        value = data.get(key)
+        if isinstance(value, (int, float)):
+            return float(value)
+    summary = data.get("summary")
+    if isinstance(summary, dict):
+        value = summary.get("hci") or summary.get("score")
+        if isinstance(value, (int, float)):
+            return float(value)
+    return None
+
+
 def _record_archive_index(devlog_path: str, set_name: str, ts: str,
-                          todo_md: str, todos: list) -> None:
+                          todo_md: str, todos: list, meta: dict,
+                          devlog_content: str) -> None:
     path = _archive_index_file()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
@@ -103,13 +142,19 @@ def _record_archive_index(devlog_path: str, set_name: str, ts: str,
         raise RuntimeError(f"{path} has invalid archive index schema")
     state = completion_state(todo_md)
     rel_path = os.path.relpath(devlog_path, ENV.require("PROJECT_ROOT"))
+    archive_id = f"{ts}-{_slugify(set_name)}"
     record = {
+        "archive_id": archive_id,
         "archived": ts,
         "set_name": set_name,
         "archive_path": rel_path,
         "task_count": state["total"],
         "done_count": state["total"] - state["open"],
         "todo_count": len(todos),
+        "store_max_id": int(meta.get("max_id", 0) or 0),
+        "content_sha256": hashlib.sha256(devlog_content.encode("utf-8")).hexdigest(),
+        "git_commit": _current_git_commit(),
+        "hci_score": _current_hci_score(),
     }
     index["archives"] = [
         item for item in index["archives"]
@@ -154,7 +199,7 @@ def _archive_set(set_name: str = "", force: bool = False) -> dict:
         }
     with open(devlog_path, "w", encoding="utf-8") as f:
         f.write(devlog_content)
-    _record_archive_index(devlog_path, set_name, ts, todo_md, todos)
+    _record_archive_index(devlog_path, set_name, ts, todo_md, todos, meta, devlog_content)
     _reset_todo_to_fresh_slate()
     # Auto-fire learning extraction on the new devlog so KB/learnings.jsonl
     # accumulates each cycle's patterns without a human running i/learn learnings.
