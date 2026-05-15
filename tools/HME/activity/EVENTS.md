@@ -1,99 +1,110 @@
-# HME Activity Events
+# HME Telemetry Events
 
-Reference for event names emitted into `output/metrics/hme-activity.jsonl`.
-Each entry: emitter -> meaning -> triggers HME consumes for.
+Generated from `event_registry.json`; edit the registry, then run:
 
-Add a new event: emit it via `tools/HME/activity/emit.py --event=<name>` (Python/shell)
-or `ctx.emit({event: '<name>', ...})` (JS proxy middleware), then add a one-line entry below.
+```bash
+python3 tools/HME/activity/render_events_doc.py
+```
 
-A verifier (`activity-events-doc-sync`) compares the live emit-call set against this
-file's listed events and FAILs if they drift.
+Reference for events emitted to `output/metrics/hme-activity.jsonl` (`activity`) and `output/metrics/hme-signals.jsonl` (`signal`).
 
 ## File-system / edit lifecycle
 
-- **`file_written`** -- fs_watcher detected a write under an allow-listed path. Powers the read-coverage / activity-window calculation.
-- **`file_watcher_filtered`** -- a write was suppressed (ignore_dirs, ignore_exts, noise suffix). Used to debug "why didn't my edit show up."
-- **`brief_recorded`** -- native Read/Edit enrichment recorded a target brief before editing it. Drops the file's "needs-brief" flag in NEXUS state.
-- **`auto_brief_injected`** -- pretooluse_edit hook chained the KB briefing automatically. Counterpart to manual `brief_recorded`.
-- **`edit_without_brief`** -- a `/src/` Edit fired without a prior brief. Surfaces as a soft warning in selftest.
-- **`kb_draft_written`** -- posttooluse_bash auto-wrote `tmp/hme-learn-draft.json` after a STABLE/EVOLVED pipeline verdict. Carries `caused_by: pipeline_verdict:<VERDICT>` (Horizon VII Tier-1.5).
+- **`file_written`** [activity] -- A watcher or proxy detected a write under an allow-listed path.
+- **`file_watcher_filtered`** [activity] -- A watcher write was suppressed by ignore directories, extensions, or noise suffixes.
+- **`brief_recorded`** [activity] -- Read/Edit enrichment recorded a target brief before editing it.
+- **`auto_brief_injected`** [activity] -- A pretooluse hook chained the KB briefing automatically.
+- **`edit_without_brief`** [activity] -- A src/ Edit fired without a prior brief.
+- **`kb_draft_written`** [activity] -- posttooluse_bash auto-wrote tmp/hme-learn-draft.json after a stable pipeline verdict.
+- **`productive_incoherence`** [activity] -- An edit intentionally entered uncovered territory while preserving traceability.
+- **`learn_suggested`** [activity] -- A hook suggested capturing novel findings into HME knowledge.
 
 ## KB / context
 
-- **`read_context`** -- `read_context.js` middleware enriched a Read tool result with KB titles.
-- **`memory_redirect_flagged_preemptive`** -- `memory_redirect.js` middleware caught a write to the deprecated `.claude/projects/*/memory/` path before the hook fired.
+- **`read_context`** [activity] -- Read context middleware enriched a Read result with KB titles.
+- **`memory_redirect_flagged_preemptive`** [activity] -- Memory redirect middleware caught a deprecated memory-path write before hook handling.
 
 ## Tool / proxy lifecycle
 
-- **`bash_error_surfaced`** -- `bash_enrichment.js` extracted an error snippet from a bash tool result.
-- **`bg_dominance_resolved`** -- `background_dominance.js` resolved a backgrounded `i/*` stub into its real output.
-- **`bg_dominance_timeout`** -- backgrounded resolution exceeded its wait window.
-- **`dominance_prefetch_fired`** -- `dominance_prefetch.js` warmed cache for a likely-next call.
-- **`web_tool_call`** -- agent invoked a WebSearch / WebFetch tool.
-- **`mcp_tool_call`** -- agent invoked an MCP tool.
-- **`tool_call`** -- generic tool-invocation marker (proxy bookkeeping).
-- **`hme_tool_result`** -- proxy received a result for an HME tool call.
-- **`hme_continuation`** -- proxy emitted a continuation step on a multi-step HME tool flow.
-- **`hme_continuation_complete`** -- multi-step continuation finished.
-- **`enricher_acted_upon`** -- `context_budget.js` middleware detected a downstream tool call that referenced an identifier injected by a prior enricher. Used for enricher effectiveness tracking.
-- **`enricher_fired`** -- any enricher middleware appended content to a tool result.
-- **`empty_tool_result_marked`** -- proxy tagged an empty tool result body as SUCCESS or FAIL.
-- **`status_inject`** -- `i/status` output was auto-injected as a system reminder.
-- **`jurisdiction_inject`** -- hypermeta jurisdiction warning injected into agent context.
-- **`neighborhood_enrichment`** -- `grep_glob_neighborhood.js` middleware appended sibling-file context.
-- **`semantic_redundancy_stripped`** -- proxy removed redundant sentences from a tool result before display.
-- **`boilerplate_stripped`** -- proxy removed boilerplate prefixes from tool output.
-- **`secret_sanitized`** -- `secret_sanitizer.js` redacted credential patterns from tool output.
-- **`skill_reminder_stripped`** -- `strip_skill_reminder.js` removed repeated skill reminders or compacted low-signal Stop-hook feedback from a proxied request.
-- **`memory_redirect`** -- middleware redirected a memory-directory write attempt.
-- **`nexus_cleared`** -- NEXUS state file reset (typically session start).
-- **`dir_context`** -- `dir_context.js` middleware injected directory-intent context.
-- **`edit_context`** -- `edit_context.js` middleware injected pre-edit KB context.
+- **`bash_error_surfaced`** [activity] -- Bash enrichment extracted an error snippet from a bash tool result.
+- **`bg_dominance_resolved`** [activity] -- Background dominance resolved a backgrounded i/* stub into real output.
+- **`bg_dominance_timeout`** [activity] -- Backgrounded resolution exceeded its wait window.
+- **`dominance_prefetch_fired`** [activity] -- Dominance prefetch warmed cache for a likely-next call.
+- **`web_tool_call`** [activity] -- The agent invoked a WebSearch or WebFetch tool.
+- **`mcp_tool_call`** [activity] -- The agent invoked an MCP tool.
+- **`tool_call`** [activity] -- Generic proxy bookkeeping marker for a completed tool invocation.
+- **`hme_tool_result`** [activity] -- The proxy received a result for an HME tool call.
+- **`hme_continuation`** [activity] -- The proxy emitted a continuation step on a multi-step HME tool flow.
+- **`hme_continuation_complete`** [activity] -- A multi-step HME continuation completed.
+- **`enricher_acted_upon`** [activity] -- A downstream tool call referenced an identifier injected by an enricher.
+- **`enricher_fired`** [activity] -- An enricher middleware appended content to a tool result.
+- **`empty_tool_result_marked`** [activity] -- The proxy tagged an empty tool result body as SUCCESS or FAIL.
+- **`status_inject`** [activity] -- i/status output was auto-injected as a system reminder.
+- **`jurisdiction_inject`** [activity] -- The proxy injected a hypermeta jurisdiction warning into agent context.
+- **`neighborhood_enrichment`** [activity] -- Grep/glob neighborhood middleware appended sibling-file context.
+- **`semantic_redundancy_stripped`** [activity] -- The proxy removed redundant sentences from a tool result before display.
+- **`boilerplate_stripped`** [activity] -- The proxy removed boilerplate prefixes from tool output.
+- **`secret_sanitized`** [activity] -- Secret sanitizer middleware redacted credential patterns from tool output.
+- **`skill_reminder_stripped`** [activity] -- The proxy removed repeated skill reminders or compacted low-signal Stop-hook feedback.
+- **`memory_redirect`** [activity] -- Middleware redirected a memory-directory write attempt.
+- **`nexus_cleared`** [activity] -- The NEXUS state file was reset, typically at session start.
+- **`dir_context`** [activity] -- Directory-context middleware injected directory-intent context.
+- **`edit_context`** [activity] -- Edit-context middleware injected pre-edit KB context.
+- **`cache_control_normalized`** [activity] -- The proxy promoted short cache_control TTLs to avoid upstream ordering failures.
+- **`inference_call`** [activity] -- A local-inference subprocess was invoked.
+- **`upstream_error`** [activity] -- The proxy classified an upstream HTTP or SSE response as failed.
+- **`upstream_conn_error`** [activity] -- A TCP/TLS-level failure occurred before an upstream HTTP response.
+- **`upstream_midresponse_error`** [activity] -- The upstream began streaming and then failed or closed prematurely.
 
 ## Subagent / supervisor lifecycle
 
-- **`adhoc_spawn`** -- supervisor spawned an ad-hoc child process.
-- **`child_started`** -- supervised child process started successfully.
-- **`child_adopted`** -- supervisor adopted an existing child PID (e.g. after restart).
-- **`child_exited`** -- supervised child exited cleanly.
-- **`child_unhealthy`** -- child failed health check; restart pending.
-- **`child_hang_killed`** -- child killed for hanging past timeout.
-- **`child_force_killed`** -- SIGKILL after SIGTERM didn't resolve.
-- **`child_restarted`** -- supervisor restarted a failed child.
-- **`child_restart_limit`** -- child exceeded restart attempts; supervisor giving up.
-- **`mcp_hang_kill`** -- MCP server killed for hanging.
-- **`supervisor_spawn_error`** -- supervisor failed to spawn a child.
-- **`proxy_emergency`** -- proxy hit an emergency state requiring intervention. Payload: `reason`, `source`, `backoff_ms`, `sequence`.
-- **`proxy_emergency_cleared`** -- emergency valve auto-cleared after backoff window elapsed; next request attempts the proxy path again. Payload: `source`, `backoff_ms`.
-- **`upstream_error`** -- proxy classified an upstream response as failed (4xx/5xx, SSE error event, etc.). Payload: `type`, `message`, `request_id`.
-- **`upstream_conn_error`** -- TCP/TLS-level failure reaching the upstream (no HTTP response). Payload: `error`, `host`.
-- **`upstream_midresponse_error`** -- upstream began streaming then errored (SSE event:error or premature close). Payload: `type`, `message`.
-- **`cache_control_normalized`** -- proxy promoted a 5m cache_control TTL to 1h to avoid the "1h after 5m" ordering 400. Payload: `count`.
-- **`inference_call`** -- local-inference subprocess invoked.
-- **`cascade_prediction_injected`** -- cascade prediction middleware injected a prediction snippet.
+- **`subagent_bridge_result_captured`** [activity] -- The subagent bridge captured a non-empty Agent result for a queued HME task.
+- **`subagent_bridge_empty_result`** [activity] -- The subagent bridge captured an empty Agent result for a queued HME task.
+- **`subagent_clean_gate_ok`** [activity] -- The subagent clean gate passed its advisory checks for files mentioned by an Agent result.
+- **`subagent_clean_gate_failed`** [activity] -- The subagent clean gate found advisory check failures for files mentioned by an Agent result.
+- **`adhoc_spawn`** [activity] -- The supervisor spawned an ad-hoc child process.
+- **`child_started`** [activity] -- A supervised child process started successfully.
+- **`child_adopted`** [activity] -- The supervisor adopted an existing child PID after restart or discovery.
+- **`child_exited`** [activity] -- A supervised child exited cleanly.
+- **`child_unhealthy`** [activity] -- A child failed health check and restart handling is pending.
+- **`child_hang_killed`** [activity] -- A child was killed for hanging past its timeout.
+- **`child_force_killed`** [activity] -- A child required SIGKILL after SIGTERM did not resolve it.
+- **`child_restarted`** [activity] -- The supervisor restarted a failed child.
+- **`child_restart_limit`** [activity] -- A child exceeded restart attempts and the supervisor stopped trying.
+- **`mcp_hang_kill`** [activity] -- An MCP server was killed for hanging.
+- **`supervisor_spawn_error`** [activity] -- The supervisor failed to spawn a child process.
+- **`proxy_emergency`** [activity] -- The proxy entered an emergency state requiring backoff or intervention.
+- **`proxy_emergency_cleared`** [activity] -- The emergency valve auto-cleared after the backoff window elapsed.
 
 ## Cascade / prediction
 
-- **`cascade_prediction_empty`** -- a cascade-prediction call returned no candidates.
-- **`coherence_violation`** -- read/edit pattern matched a known-incoherent shape.
+- **`cascade_prediction_empty`** [activity] -- A cascade-prediction call returned no candidates.
+- **`cascade_prediction_injected`** [activity] -- Cascade prediction middleware injected a prediction snippet.
+- **`coherence_violation`** [activity] -- A read/edit or autocommit pattern matched a known-incoherent shape.
 
 ## Drift / regression signals
 
-- **`hci_regression`** -- HCI score dropped by >=3 points round-over-round.
-- **`consensus_divergence`** -- two synthesis paths disagreed.
-- **`consensus_regression`** -- consensus score dropped round-over-round.
-- **`legendary_drift_preemptive`** -- drift detector caught a known-bad pattern before it landed.
-- **`harvester_ignored`** -- KB harvester rejected a candidate entry.
+- **`hci_regression`** [activity] -- HCI score dropped by the configured regression threshold round-over-round.
+- **`consensus_divergence`** [activity] -- Two synthesis paths disagreed beyond the configured threshold.
+- **`consensus_regression`** [activity] -- Consensus score dropped round-over-round.
+- **`legendary_drift_preemptive`** [activity] -- The drift detector caught a known-bad pattern before it landed.
+- **`harvester_ignored`** [activity] -- The KB harvester rejected a candidate entry.
 
 ## Pipeline / coherence
 
-- **`axis_rebalance_cost`** -- coherence axis rebalancer applied a cost adjustment.
-- **`axis_share_deviation`** -- coherence axis share moved outside the target band.
-- **`epoch_transition_auto_applied`** -- pipeline auto-applied an epoch transition.
-- **`review_complete`** -- `i/review` completed; verdict captured.
+- **`axis_rebalance_cost`** [activity] -- The coherence axis rebalancer applied a cost adjustment.
+- **`axis_share_deviation`** [activity] -- A coherence axis share moved outside the target band.
+- **`epoch_transition_auto_applied`** [activity] -- The pipeline auto-applied an epoch transition.
+- **`review_complete`** [activity] -- i/review completed and captured a verdict.
+- **`pipeline_start`** [activity] -- A pipeline run started.
+- **`pipeline_baseline_delta`** [activity] -- The pipeline recorded commit/file delta versus the previous run.
+- **`pipeline_run`** [activity] -- A pipeline run finished and recorded verdict, pass/fail, wall time, and HCI.
+- **`round_complete`** [activity] -- A pipeline round finished and closed the activity window for coherence calculations.
+- **`idle_round`** [activity] -- A coherence-score window contained no human or agent file-written activity.
+- **`pipeline_finished`** [signal] -- The posttooluse Bash hook observed pipeline completion.
 
 ## Round / session
 
-- **`round_complete`** -- emitted by the agent (or stop hook) at the end of a round; closes the activity window for coherence calculations. **Required** before reading `i/status mode=music_truth` to avoid contaminated scores.
-- **`state_advance`** -- onboarding state machine transitioned (recorded with `from`/`to` fields).
-- **`onboarding_init`** -- fresh session started; state initialized.
+- **`session_start`** [signal] -- The session-start lifecycle hook initialized a new session boundary.
+- **`turn_start`** [signal] -- The UserPromptSubmit lifecycle hook marked the start of a chat turn.
+- **`turn_complete`** [activity, signal] -- The Stop lifecycle hook marked the end of a chat turn.

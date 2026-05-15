@@ -70,6 +70,25 @@ def load_config_jsonc(rel_path: str):
     return load_jsonc(Path(_PROJECT) / rel_path)
 
 
+def telemetry_events() -> list[dict]:
+    import sys
+    activity_dir = os.path.join(_PROJECT, "tools", "HME", "activity")
+    if activity_dir not in sys.path:
+        sys.path.insert(0, activity_dir)
+    from event_registry import events  # noqa: WPS433
+    return events()
+
+
+def telemetry_event_names(*, stream: str | None = None,
+                          group: str | None = None) -> set[str]:
+    return {
+        event["name"]
+        for event in telemetry_events()
+        if (stream is None or stream in event["streams"])
+        and (group is None or group in event["groups"])
+    }
+
+
 def ignore_match(path: str, patterns: list[str] | tuple[str, ...]) -> bool:
     rel = path.replace("\\", "/")
     return any(fnmatch.fnmatch(rel, pat) for pat in patterns)

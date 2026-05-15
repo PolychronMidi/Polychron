@@ -15,14 +15,13 @@ from .. import (
 from ..synthesis_session import (
     append_session_narrative, get_session_narrative, get_think_history_context,
 )
+from .event_groups import activity_event_names
 
 logger = logging.getLogger("HME")
 
 
 def _mode_learn_suggestions():
-    """Surface `productive_incoherence` events -- modules the agent edited
-    with MISSING KB coverage. The event was already being emitted by
-    posttooluse_edit.sh but no consumer read it; this mode closes that loop.
+    """Surface registry-classified learn-suggestion events.
 
     Shows, per module: file path, module name, session, timestamp (latest
     first). Up to 20 entries from the last round. Agent can drive a
@@ -37,7 +36,6 @@ def _mode_learn_suggestions():
     )
     if not _os.path.isfile(activity_path):
         return "## Learn Suggestions\n  (no activity log yet)"
-    # Scan last 256KB for recency + productive_incoherence events
     try:
         size = _os.path.getsize(activity_path)
         read_from = max(0, size - 256 * 1024)
@@ -51,6 +49,8 @@ def _mode_learn_suggestions():
     events: list[dict] = []
     last_round_idx = -1
     all_lines = text.splitlines()
+    round_names = activity_event_names("round_boundary")
+    suggestion_names = activity_event_names("learn_suggestion")
     for i, line in enumerate(all_lines):
         if not line.strip():
             continue
@@ -58,12 +58,12 @@ def _mode_learn_suggestions():
             ev = _json.loads(line)
         except _json.JSONDecodeError:
             continue
-        if ev.get("event") == "round_complete":
+        if ev.get("event") in round_names:
             last_round_idx = i
-        if ev.get("event") == "productive_incoherence":
+        if ev.get("event") in suggestion_names:
             events.append(ev)
     if not events:
-        return "## Learn Suggestions\n  No productive_incoherence events this round -- every edit landed in KB-covered territory, or no edits this round."
+        return "## Learn Suggestions\n  No learn-suggestion events this round."
     # Dedup by (file, module); keep most recent timestamp per key.
     def _ts(ev: dict) -> float:
         t = ev.get("ts")
@@ -88,4 +88,3 @@ def _mode_learn_suggestions():
     lines.append("")
     lines.append("  Capture with: `learn(title='<concise>', content='<2-3 sentences>', category='architecture|pattern|decision')`")
     return "\n".join(lines)
-

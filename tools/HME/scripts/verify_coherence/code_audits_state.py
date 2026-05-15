@@ -13,6 +13,7 @@ from ._base import (
     Verifier, VerdictResult, _result, _run_subprocess,
     PASS, WARN, FAIL, SKIP, ERROR,
     _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    telemetry_event_names,
 )
 
 
@@ -478,9 +479,7 @@ class ShellHookAuditVerifier(Verifier):
                 )
         if count == 0:
             return _result(PASS, 1.0, "no shell-hook cache-trap violations", [])
-        # Each violation drops score by 0.2; floor at 0. Any violation at
-        # all is FAIL -- the bugs these rules catch are silent-disable
-        # class, not ergonomic nits.
+        # Cache-trap hits silently disable hooks, so any hit is a failure.
         score = max(0.0, 1.0 - 0.2 * count)
         return _result(FAIL, score,
                        f"{count} shell-hook violation(s) -- BASH_SOURCE cache-trap risk",
@@ -490,16 +489,11 @@ class ShellHookAuditVerifier(Verifier):
 
 
 class ActivityEventsDocSyncVerifier(Verifier):
-    """The event names in tools/HME/activity/EVENTS.md must match the
-    set actually emitted across hooks/middleware/python. Drift here means
-    the agent reading the activity log will hit names with no reference.
+    """Telemetry events must stay registry-first.
 
-    Live set: union of `--event=<name>` (shell/python) and
-    `event: '<name>'` (JS proxy middleware) across the repo.
-    Doc set: bullet entries `- **\\`<name>\\`**` in EVENTS.md.
-
-    FAIL if doc-only entries exist (stale references), WARN on
-    code-only entries (undocumented new event)."""
+    `event_registry.json` is the source. EVENTS.md is generated from it,
+    and live emitters may only use registered event names on the declared
+    activity/signal stream."""
     name = "activity-events-doc-sync"
     category = "doc"
     subtag = "drift-detection"
@@ -512,15 +506,22 @@ class ActivityEventsDocSyncVerifier(Verifier):
         with open(doc_path, encoding="utf-8") as f:
             doc_content = f.read()
         doc_events = set(re.findall(r"^-\s+\*\*`([a-z_]+)`\*\*", doc_content, re.MULTILINE))
+        registry_events = telemetry_event_names()
+        registry_activity = telemetry_event_names(stream="activity")
+        registry_signal = telemetry_event_names(stream="signal")
 
-        # Scan live emitters across hooks/, scripts/, tools/HME/.
         emit_re_a = re.compile(r"--event=([a-z_]+)")
         emit_re_b = re.compile(r"event:\s*['\"]([a-z_]+)['\"]")
         emit_re_c = re.compile(r"event=['\"]([a-z_]+)['\"]")
-        # Positional first-arg form (_emit_activity / emit_activity_event etc.).
-        # <EVENT> placeholder used so the regex doesn't self-match this comment.
         emit_re_d = re.compile(r"_?emit(?:_activity(?:_event)?)?\(\s*['\"]([a-z_]+)['\"]")
-        live = set()
+        emit_re_e = re.compile(r"emitActivity\(\s*['\"]([a-z_]+)['\"]")
+        emit_re_f = re.compile(r"_emit_activity\s+([a-z_]+)")
+        emit_re_g = re.compile(r"_signal_emit\s+([a-z_]+)")
+        emit_re_h = re.compile(
+            r"event:\s*[^,\n]*\?\s*['\"]([a-z_]+)['\"]\s*:\s*['\"]([a-z_]+)['\"]"
+        )
+        live_activity: set[str] = set()
+        live_signal: set[str] = set()
         scan_roots = [
             os.path.join(_PROJECT, "tools", "HME"),
             os.path.join(_PROJECT, "scripts"),
@@ -530,10 +531,7 @@ class ActivityEventsDocSyncVerifier(Verifier):
                 dirs[:] = [d for d in dirs if d not in {
                     ".git", "node_modules", "__pycache__", ".venv",
                     "venv", "dist", "build", "models",
-                    # Test fixtures often inject synthetic event names to
-                    # exercise emit / dispatch paths; excluding them
-                    # prevents the verifier from treating test scaffolding
-                    # as a documentation gap.
+                    # Test fixtures use synthetic events; do not registry-gate them.
                     "tests", "test", "specs",
                 }]
                 for fn in files:
@@ -545,35 +543,47 @@ class ActivityEventsDocSyncVerifier(Verifier):
                             txt = fp.read()
                     except (OSError, UnicodeDecodeError):
                         continue
-                    live |= set(emit_re_a.findall(txt))
-                    live |= set(emit_re_b.findall(txt))
-                    live |= set(emit_re_c.findall(txt))
-                    live |= set(emit_re_d.findall(txt))
+                    live_activity |= set(emit_re_a.findall(txt))
+                    live_activity |= set(emit_re_b.findall(txt))
+                    live_activity |= set(emit_re_c.findall(txt))
+                    live_activity |= set(emit_re_d.findall(txt))
+                    live_activity |= set(emit_re_e.findall(txt))
+                    live_activity |= set(emit_re_f.findall(txt))
+                    for first, second in emit_re_h.findall(txt):
+                        live_activity.add(first)
+                        live_activity.add(second)
+                    live_signal |= set(emit_re_g.findall(txt))
 
-        doc_only = sorted(doc_events - live)
-        code_only = sorted(live - doc_events)
+        live = live_activity | live_signal
+        doc_missing = sorted(registry_events - doc_events)
+        doc_extra = sorted(doc_events - registry_events)
+        unregistered = sorted(live - registry_events)
+        stream_mismatches = []
+        for event in sorted(live_activity & registry_events):
+            if event not in registry_activity:
+                stream_mismatches.append(f"{event}: emitted as activity, registry lacks activity")
+        for event in sorted(live_signal & registry_events):
+            if event not in registry_signal:
+                stream_mismatches.append(f"{event}: emitted as signal, registry lacks signal")
 
-        # Some doc events are agent/stop-hook emissions that may not
-        # appear in static scans (e.g. round_complete fired by external
-        # commands). Allowlist these so the verifier stays useful.
-        _DOC_ONLY_ALLOWLIST = {
-            "round_complete", "state_advance", "onboarding_init",
-        }
-        doc_only = [e for e in doc_only if e not in _DOC_ONLY_ALLOWLIST]
-
-        if not doc_only and not code_only:
+        if not doc_missing and not doc_extra and not unregistered and not stream_mismatches:
             return _result(PASS, 1.0,
-                           f"EVENTS.md matches {len(doc_events)} live event(s)")
+                           f"event registry covers {len(registry_events)} event(s); "
+                           f"live scan found {len(live)}")
 
         details = []
-        if doc_only:
-            details.append(f"doc-only ({len(doc_only)}): {', '.join(doc_only)}")
-        if code_only:
-            details.append(f"code-only ({len(code_only)}): {', '.join(code_only[:20])}"
-                           + ("..." if len(code_only) > 20 else ""))
-        if doc_only:
-            score = max(0.0, 1.0 - len(doc_only) / 10.0)
-            return _result(FAIL, score, f"{len(doc_only)} stale doc reference(s)", details)
-        # code_only only: WARN, partial credit.
-        score = max(0.5, 1.0 - len(code_only) / 20.0)
-        return _result(WARN, score, f"{len(code_only)} undocumented event(s)", details)
+        if doc_missing:
+            details.append(f"doc missing ({len(doc_missing)}): {', '.join(doc_missing)}")
+        if doc_extra:
+            details.append(f"doc extra ({len(doc_extra)}): {', '.join(doc_extra)}")
+        if stream_mismatches:
+            details.extend(stream_mismatches[:20])
+        if unregistered:
+            details.append(f"unregistered ({len(unregistered)}): {', '.join(unregistered[:20])}"
+                           + ("..." if len(unregistered) > 20 else ""))
+        if doc_missing or doc_extra or stream_mismatches:
+            score = max(0.0, 1.0 - (len(doc_missing) + len(doc_extra)
+                                    + len(stream_mismatches)) / 20.0)
+            return _result(FAIL, score, "event registry/doc stream drift", details)
+        score = max(0.5, 1.0 - len(unregistered) / 20.0)
+        return _result(WARN, score, f"{len(unregistered)} unregistered event(s)", details)

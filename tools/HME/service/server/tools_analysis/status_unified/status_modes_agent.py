@@ -15,6 +15,7 @@ from .. import (
 from ..synthesis_session import (
     append_session_narrative, get_session_narrative, get_think_history_context,
 )
+from .event_groups import activity_event_names
 
 logger = logging.getLogger("HME")
 
@@ -27,15 +28,8 @@ def _mode_activity():
 def _mode_tool_latency():
     """Horizon I expansion -- tool-cost preflighting.
 
-    Reads recent tool_call + inference_call events from the activity log
-    and computes per-tool latency distributions (p50/p95/p99). Surfaces
-    'this is what the next call probably costs' as a heads-up. Pairs
-    with `i/why mode=predict <file>` (which predicts verifier flips):  tool-form-ok
-    together they answer 'what will my next action cost AND change?'
-
-    Limitation: tool_call events are intermittent (proxy instrumentation
-    gap noted earlier); the inference_call signal is reliable. Falls
-    back to inference-call-based latency when tool_call is sparse.
+    Computes per-tool latency from registry-classified tool and inference
+    events. Pairs with `i/why mode=predict <file>` for cost/change context.  # tool-form-ok
     """
     import os as _os
     import json as _json
@@ -53,6 +47,8 @@ def _mode_tool_latency():
         return f"# i/status mode=tool-latency\nFailed to read: {e}"
 
     cutoff = _time.time() - 3600 * 6  # last 6h
+    tool_names = activity_event_names("agent_loop_tool")
+    inference_names = activity_event_names("inference")
     by_tool: dict[str, list[float]] = defaultdict(list)
     inf_ts: list[float] = []
     for ln in lines:
@@ -63,12 +59,12 @@ def _mode_tool_latency():
         if e.get("ts", 0) < cutoff:
             continue
         ev = e.get("event", "")
-        if ev == "tool_call":
+        if ev in tool_names:
             tool = e.get("tool", "?")
             # latency_ms isn't always present; if it is, use it
             if "latency_ms" in e:
                 by_tool[tool].append(float(e["latency_ms"]))
-        elif ev == "inference_call":
+        elif ev in inference_names:
             inf_ts.append(e.get("ts", 0))
 
     out = ["# Tool-cost preflighting  (last 6h)"]
@@ -88,9 +84,7 @@ def _mode_tool_latency():
             out.append(f"  {tool:18}  {len(s):>4}  {p50:>7.0f}  {p95:>7.0f}  {p99:>7.0f}  ms  {cold}{sample_caveat}")
         out.append("")
     else:
-        # Diagnostic: surface root-cause hypothesis and actionable
-        out.append("  (no tool_call events in window -- falling back to inference cadence)")
-        # Pin the regression's age: scan the FULL activity log for the
+        out.append("  (no generic tool-call events in window -- falling back to inference cadence)")
         last_tool_call_ts = None
         try:
             full_path = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
@@ -100,7 +94,7 @@ def _mode_tool_latency():
                         e = _json.loads(ln)
                     except ValueError:
                         continue
-                    if e.get("event") == "tool_call":
+                    if e.get("event") in tool_names:
                         ts = e.get("ts", 0)
                         if isinstance(ts, (int, float)) and (last_tool_call_ts is None or ts > last_tool_call_ts):
                             last_tool_call_ts = ts
@@ -116,9 +110,9 @@ def _mode_tool_latency():
             else:
                 age_str = f"{int(age_s/86400)}d ago"
             ts_iso = _dt.fromtimestamp(last_tool_call_ts).strftime("%Y-%m-%d %H:%M")
-            out.append(f"  last tool_call: {ts_iso} ({age_str}) -- regression extends back this far")
+            out.append(f"  last generic tool-call: {ts_iso} ({age_str})")
         else:
-            out.append("  last tool_call: NONE in entire log -- instrumentation never fired")
+            out.append("  last generic tool-call: NONE in entire log")
         out.append("")
         out.append("  Root-cause hypothesis: proxy daemon not routing tool_use/tool_result")
         out.append("  pairs through the middleware pipeline. activity_log.js loads cleanly")
@@ -151,12 +145,7 @@ def _mode_agent_loop():
 
     The agent (the LLM running the session) has been invisible to HME
     except as a stream of tool calls. This mode aggregates per-session
-    metrics from the activity log:
-      - tools-per-turn (loop tightness)
-      - brief-ratio (auto_brief_injected vs Edit count)
-      - error-surface rate (bash_error_surfaced / tool_call)
-      - average inter-tool gap (loop pace)
-      - turns observed in the last hour"""
+    metrics from registry-classified activity events."""
     import os as _os
     import json as _json
     import time as _time
@@ -184,10 +173,13 @@ def _mode_agent_loop():
     if not events:
         return "# i/status mode=agent-loop\nNo activity in last hour."
 
-    loop_names = {
-        "turn_start", "turn_complete", "tool_call", "inference_call",
-        "bash_error_surfaced", "brief_recorded", "auto_brief_injected",
-    }
+    loop_names = activity_event_names("agent_loop")
+    turn_names = activity_event_names("turn_marker")
+    tool_names = activity_event_names("agent_loop_tool")
+    inference_names = activity_event_names("inference")
+    manual_brief_names = activity_event_names("manual_brief")
+    auto_brief_names = activity_event_names("auto_brief")
+    error_names = activity_event_names("error_surface")
     loop_events = [e for e in events if e.get("event") in loop_names]
     if not loop_events:
         return (
@@ -206,14 +198,14 @@ def _mode_agent_loop():
     for e in loop_events:
         by_event[e.get("event", "?")] += 1
 
-    tool_calls = by_event.get("tool_call", 0)
-    inference_calls = by_event.get("inference_call", 0)
-    turns = by_event.get("turn_start", 0) + by_event.get("turn_complete", 0)
-    edits = sum(1 for e in loop_events if e.get("event") == "tool_call"
+    tool_calls = sum(by_event.get(name, 0) for name in tool_names)
+    inference_calls = sum(by_event.get(name, 0) for name in inference_names)
+    turns = sum(by_event.get(name, 0) for name in turn_names)
+    edits = sum(1 for e in loop_events if e.get("event") in tool_names
                 and e.get("tool") == "Edit")
-    brief_inj = by_event.get("auto_brief_injected", 0)
-    brief_rec = by_event.get("brief_recorded", 0)
-    bash_errs = by_event.get("bash_error_surfaced", 0)
+    brief_inj = sum(1 for e in loop_events if e.get("event") in auto_brief_names)
+    brief_rec = sum(1 for e in loop_events if e.get("event") in manual_brief_names)
+    bash_errs = sum(by_event.get(name, 0) for name in error_names)
 
     out = [f"# Agent loop (last hour, {len(loop_events)} loop events, {len(per_session)} session(s))"]
     out.append("")
@@ -230,14 +222,13 @@ def _mode_agent_loop():
         err_rate = bash_errs / tool_calls * 100
         out.append(f"  bash error rate:       {err_rate:.1f}%  ({bash_errs}/{tool_calls})")
     else:
-        # Known instrumentation gap: tool_call events emitted by the proxy
-        out.append(f"  total tool calls:      -  (proxy tool_call instrumentation degraded; see note)")
+        out.append(f"  total tool calls:      -  (generic tool-call instrumentation degraded; see note)")
         out.append(f"  briefs recorded:       {brief_rec}  (KB briefings)")
     out.append(f"  auto-brief injected:   {brief_inj}")
 
-    # Inter-tool gap (median pause between consecutive tool_call events)
+    # Inter-tool gap across generic tool-call events.
     tool_ts = sorted(e.get("ts", 0) for e in events
-                     if e.get("event") == "tool_call")
+                     if e.get("event") in tool_names)
     if len(tool_ts) >= 2:
         gaps = [tool_ts[i + 1] - tool_ts[i] for i in range(len(tool_ts) - 1)]
         gaps.sort()
@@ -245,10 +236,6 @@ def _mode_agent_loop():
         p90 = gaps[int(len(gaps) * 0.9)] if len(gaps) >= 10 else gaps[-1]
         out.append(f"  inter-tool gap:        median {median:.1f}s . p90 {p90:.1f}s")
 
-    # Stop-hook activity hints
-    stop_hits = sum(1 for e in events if e.get("event") in (
-        "bash_error_surfaced", "auto_brief_injected"
-    ))
     out.append("")
     out.append("# Loop quality signals:")
     out.append(f"  hook interventions:    {brief_inj + brief_rec} brief-related, {bash_errs} error-surfaced")

@@ -13,6 +13,7 @@ from ._base import (
     Verifier, VerdictResult, _result, _run_subprocess,
     PASS, WARN, FAIL, SKIP, ERROR,
     _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    telemetry_event_names,
 )
 from .code_audits_syntax import (  # noqa: F401
     _SPAM_RE, _SPAM_ALLOW, _SPAM_EXTS, _SPAM_SKIP_DIRS, _SPAM_SKIP_FILES,
@@ -176,10 +177,12 @@ class AgentLoopQualityVerifier(Verifier):
         if not events:
             return _result(SKIP, 1.0, "no activity in last hour")
 
-        loop_names = {
-            "turn_start", "turn_complete", "tool_call", "inference_call",
-            "bash_error_surfaced", "brief_recorded", "auto_brief_injected",
-        }
+        loop_names = telemetry_event_names(stream="activity", group="agent_loop")
+        turn_names = telemetry_event_names(stream="activity", group="turn_marker")
+        inference_names = telemetry_event_names(stream="activity", group="inference")
+        tool_names = telemetry_event_names(stream="activity", group="agent_loop_tool")
+        error_names = telemetry_event_names(stream="activity", group="error_surface")
+        brief_names = telemetry_event_names(stream="activity", group="briefing")
         loop_events = [e for e in events if e.get("event") in loop_names]
         if not loop_events:
             return _result(SKIP, 1.0,
@@ -187,12 +190,11 @@ class AgentLoopQualityVerifier(Verifier):
                            f"({len(events)} non-loop activity events)")
 
         turn_markers = sum(1 for e in loop_events
-                           if e.get("event") in ("turn_start", "turn_complete"))
-        infs = sum(1 for e in loop_events if e.get("event") == "inference_call")
-        tools = sum(1 for e in loop_events if e.get("event") == "tool_call")
-        bash_errs = sum(1 for e in loop_events if e.get("event") == "bash_error_surfaced")
-        briefs = sum(1 for e in loop_events
-                     if e.get("event") in ("brief_recorded", "auto_brief_injected"))
+                           if e.get("event") in turn_names)
+        infs = sum(1 for e in loop_events if e.get("event") in inference_names)
+        tools = sum(1 for e in loop_events if e.get("event") in tool_names)
+        bash_errs = sum(1 for e in loop_events if e.get("event") in error_names)
+        briefs = sum(1 for e in loop_events if e.get("event") in brief_names)
 
         denominator = max(infs, tools, 1)
         err_rate = bash_errs / denominator
