@@ -198,3 +198,9 @@ tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py
 # synthesis_reasoning.py: tier-aware dispatcher with OVERDRIVE_MODE=0..5 dispatcher dict + provider cascade walker + offline-mode + last-source telemetry. Shared _last_source / _RANKINGS / env-refresh; splitting would reimplement routing.
 # rationale: intent=lifecycle-cohesion; revisit-when=structural-refactor; decided=2026-05-11
 tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py
+# Full operational reference docs intentionally aggregate complete section maps.
+# The generated one-link-per-line navigation indexes are required for scanability
+# and would make arbitrary file splits less coherent.
+# rationale: intent=reference-catalog; revisit-when=full-docs-split; decided=2026-05-15
+doc/*_full.md
+
