@@ -121,6 +121,9 @@ function sanitizeHookSpecific(event, out) {
   delete hso.suppressOutput;
   delete hso.stopReason;
   if (!hso.hookEventName) hso.hookEventName = event;
+  if (event === 'PreToolUse' && hso.permissionDecision === 'deny') {
+    if (out.systemMessage === hso.permissionDecisionReason) delete out.systemMessage;
+  }
   if ((event === 'PreToolUse' || event === 'PostToolUse') && unsupportedCodexPreToolDecision(hso.permissionDecision)) {
     if (hso.permissionDecisionReason && !hso.additionalContext) hso.additionalContext = hso.permissionDecisionReason;
     delete hso.permissionDecision;
@@ -222,7 +225,11 @@ async function main() {
   finalRelay(event, result);
 }
 
-main().catch((err) => {
-  process.stderr.write(`[codex_adapter] crash: ${err.stack || err.message}\n`);
-  process.exit(0);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    process.stderr.write(`[codex_adapter] crash: ${err.stack || err.message}\n`);
+    process.exit(0);
+  });
+}
+
+module.exports = { sanitizeStdout, sanitizeHookSpecific, toPermissionRequestOutput };

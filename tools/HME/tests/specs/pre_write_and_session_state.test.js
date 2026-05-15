@@ -185,6 +185,30 @@ test('raw-streak scores are scoped by session id', async () => {
   }
 });
 
+
+test('synthetic PreToolUse Read resets raw-streak score', async () => {
+  const root = _withSandbox('hme-hook-read-streak-reset-');
+  const dir = path.join(root, 'tmp', 'hme-streak');
+  const streak = path.join(dir, 's-read-reset.score');
+  const target = path.join(root, 'src', 'x.js');
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, 'const x = 1;\n');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(streak, '70');
+  try {
+    const res = await dispatch(root, 'PreToolUse', {
+      tool_name: 'Read',
+      session_id: 's-read-reset',
+      tool_input: { file_path: target },
+    });
+    assert.strictEqual(res.exit_code, 0);
+    assert.doesNotMatch(res.stdout, /Raw tool streak/);
+    assert.strictEqual(fs.readFileSync(streak, 'utf8').trim(), '0');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('synthetic PostToolUse Bash records verification evidence', async () => {
   const root = _withSandbox('hme-hook-post-bash-');
   const res = await dispatch(root, 'PostToolUse', {

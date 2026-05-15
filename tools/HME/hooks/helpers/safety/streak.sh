@@ -36,13 +36,13 @@ _streak_check() {
       return 0
     fi
     local msg
-    msg="BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: Bash=15, Edit=10, Read=5, Grep=20). Do not loop on reset commands. Preferred exits: use native Read/Edit/TodoWrite, run a different HME diagnostic than the previous unlock${last_key:+ (${last_key})}, or stop if done."
+    msg="BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: Bash=15, Edit=10, Grep=20; native Read resets). Do not loop on reset commands. Preferred exits: use native Read/Edit/TodoWrite, run a different HME diagnostic than the previous unlock${last_key:+ (${last_key})}, or stop if done."
     jq -n --arg reason "$msg" \
       '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
     return 1
   elif [ "$score" -ge "$_STREAK_WARN" ]; then
     local _sc_rem=$(( (_STREAK_BLOCK - score + 9) / 10 ))
-    echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK} (~${_sc_rem} Edit calls until block). Prefer HME tools and native Read; Read/Edit are KB-enriched." >&2
+    echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK} (~${_sc_rem} Edit calls until block). Prefer HME tools; native Read resets and Read/Edit are KB-enriched." >&2
   fi
   return 0
 }

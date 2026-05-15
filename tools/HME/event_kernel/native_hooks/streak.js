@@ -23,7 +23,7 @@ function streakTick(weight) {
     };
   }
   if (score >= warn) {
-    return { ok: true, message: `REMINDER: Raw tool streak ${score}/${block}. Prefer HME tools and native Read; Read/Edit are KB-enriched.` };
+    return { ok: true, message: `REMINDER: Raw tool streak ${score}/${block}. Prefer HME tools; native Read resets and Read/Edit are KB-enriched.` };
   }
   return { ok: true, message: '' };
 }
