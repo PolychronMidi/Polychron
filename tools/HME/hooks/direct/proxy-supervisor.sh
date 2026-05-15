@@ -69,13 +69,9 @@ _SV_PROXY_SCRIPT="$_SV_ROOT/tools/HME/proxy/hme_proxy.js"
 _SV_POLL_INTERVAL=10
 _SV_MISS_THRESHOLD=3
 
-# Crash-loop detection. If the proxy fails to become healthy within
-# _SV_SPAWN_HEALTH_TIMEOUT seconds after a spawn attempt, we count that
-# as a consecutive failure. After _SV_CRASH_LOOP_THRESHOLD failures in a
-# row, back off exponentially AND fire a LIFESAVER alert to the error
-# log so the agent sees the loop rather than the supervisor silently
-# burning CPU on a broken proxy. Success resets the counter.
-_SV_SPAWN_HEALTH_TIMEOUT=8
+# Crash-loop detection. If the proxy bundle fails to become healthy after a
+# spawn attempt, count a failure. Repeated failures back off and alert.
+_SV_BUNDLE_HEALTH_TIMEOUT=30
 _SV_CRASH_LOOP_THRESHOLD=3
 _SV_BACKOFF_INITIAL=30    # seconds after first crash-loop detection
 _SV_BACKOFF_MAX=600       # cap at 10 minutes
@@ -100,6 +96,35 @@ _sv_is_maintenance_active() {
   [ "$start_epoch" -gt 0 ] && [ $((now - start_epoch)) -lt "$ttl" ]
 }
 
+_sv_bundle_health_issue() {
+  if ! curl -sf --max-time 3 "$_SV_URL" >/dev/null 2>&1; then
+    echo "proxy unreachable at $_SV_URL"
+    return 0
+  fi
+  local child_id child_url
+  while read -r child_id child_url; do
+    [ -n "$child_id" ] || continue
+    if ! curl -sf --max-time 3 "$child_url" >/dev/null 2>&1; then
+      echo "${child_id} unreachable at ${child_url}"
+      return 0
+    fi
+  done < <(_hme_required_supervised_urls proxy 2>/dev/null || true)
+}
+
+_sv_bundle_healthy() {
+  [ -z "$(_sv_bundle_health_issue)" ]
+}
+
+_sv_wait_bundle_healthy() {
+  local waited=0
+  while [ "$waited" -lt "$_SV_BUNDLE_HEALTH_TIMEOUT" ]; do
+    _sv_bundle_healthy && return 0
+    sleep 1
+    waited=$((waited + 1))
+  done
+  return 1
+}
+
 _sv_spawn_proxy() {
   if [ ! -f "$_SV_PROXY_SCRIPT" ]; then
     _sv_log "spawn aborted: $_SV_PROXY_SCRIPT missing"
@@ -121,11 +146,10 @@ _sv_spawn_proxy() {
 }
 
 _sv_spawn_and_verify() {
-  # Wrapper: ensure OmniRoute (if MODE=4), spawn the proxy, wait up
-  # to _SV_SPAWN_HEALTH_TIMEOUT seconds for /health to respond.
+  # Ensure OmniRoute when required, spawn proxy, wait for bundle health.
 
   # -- OmniRoute pre-flight (MODE=4/5 main-agent translator) --
-  local _or_port="$(_hme_service_port omniroute)"
+  local _or_port="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"
   local _or_url="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_or_port")"
   local _or_dir="$_SV_ROOT/tools/omniroute"
   if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
@@ -155,16 +179,21 @@ _sv_spawn_and_verify() {
     fi
   fi
 
-  _sv_spawn_proxy
-  local waited=0
-  while [ "$waited" -lt "$_SV_SPAWN_HEALTH_TIMEOUT" ]; do
-    if curl -sf --max-time 1 "$_SV_URL" >/dev/null 2>&1; then
+  if curl -sf --max-time 1 "$_SV_URL" >/dev/null 2>&1; then
+    if _sv_bundle_healthy; then
       return 0
     fi
-    sleep 1
-    waited=$((waited + 1))
-  done
-  return 1
+    local restart_script="$_SV_ROOT/tools/HME/launcher/polychron-proxy-restart.sh"
+    if [ -x "$restart_script" ]; then
+      _sv_log "proxy up but bundle unhealthy; running polychron-proxy-restart.sh"
+      PROJECT_ROOT="$_SV_ROOT" "$restart_script" >> "$_SV_LIFECYCLE_LOG" 2>&1
+      _sv_wait_bundle_healthy
+      return $?
+    fi
+  fi
+
+  _sv_spawn_proxy
+  _sv_wait_bundle_healthy
 }
 
 _sv_tail_proxy_log() {
@@ -284,7 +313,7 @@ _sv_loop() {
       continue
     fi
 
-    if curl -sf --max-time 3 "$_SV_URL" >/dev/null 2>&1; then
+    if _sv_bundle_healthy; then
       if [ "$misses" -gt 0 ]; then
         _sv_log "proxy healthy again after $misses miss(es)"
       fi
@@ -298,13 +327,13 @@ _sv_loop() {
         # planned window.
         misses=0
       elif [ "$misses" -ge "$_SV_MISS_THRESHOLD" ]; then
-        _sv_log "proxy down for $misses polls -- respawning"
+        _sv_log "proxy bundle unhealthy for $misses polls: $(_sv_bundle_health_issue)"
         if _sv_spawn_and_verify; then
           _sv_log "spawn verified healthy"
           consecutive_spawn_fails=0
         else
           consecutive_spawn_fails=$((consecutive_spawn_fails + 1))
-          _sv_log "spawn failed to become healthy within ${_SV_SPAWN_HEALTH_TIMEOUT}s (consecutive_fails=$consecutive_spawn_fails)"
+          _sv_log "spawn failed to become bundle-healthy within ${_SV_BUNDLE_HEALTH_TIMEOUT}s (consecutive_fails=$consecutive_spawn_fails)"
           if [ "$consecutive_spawn_fails" -ge "$_SV_CRASH_LOOP_THRESHOLD" ]; then
             _sv_fire_crashloop_lifesaver "$consecutive_spawn_fails"
             backoff_secs=$_SV_BACKOFF_INITIAL

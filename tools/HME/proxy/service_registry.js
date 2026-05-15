@@ -62,4 +62,49 @@ function serviceEnabled(id, env = process.env) {
   return Boolean(rule.env && Array.isArray(rule.in) && rule.in.map(String).includes(String(env[rule.env] || '')));
 }
 
-module.exports = { REGISTRY_PATH, services, service, servicePort, serviceHost, servicePath, serviceUrl, serviceEnabled };
+function servicePidLabel(id) {
+  const spec = service(id);
+  return spec.pid_label || spec.id;
+}
+
+function supervisedChildren(parentId, opts = {}) {
+  return services().filter((spec) => {
+    if (!spec || spec.supervised_by !== parentId) return false;
+    if (opts.requiredOnly && !spec.required) return false;
+    return serviceEnabled(spec.id, opts.env || process.env);
+  });
+}
+
+function bundleServices(parentId, opts = {}) {
+  return [service(parentId), ...supervisedChildren(parentId, opts)];
+}
+
+function bundleProcessPatterns(parentId) {
+  const out = [];
+  for (const spec of bundleServices(parentId)) {
+    for (const pat of spec.process_patterns || []) {
+      if (pat && !out.includes(pat)) out.push(pat);
+    }
+  }
+  return out;
+}
+
+function bundlePidLabels(parentId) {
+  return bundleServices(parentId).map((spec) => spec.pid_label || spec.id);
+}
+
+module.exports = {
+  REGISTRY_PATH,
+  services,
+  service,
+  servicePort,
+  serviceHost,
+  servicePath,
+  serviceUrl,
+  serviceEnabled,
+  servicePidLabel,
+  supervisedChildren,
+  bundleServices,
+  bundleProcessPatterns,
+  bundlePidLabels,
+};

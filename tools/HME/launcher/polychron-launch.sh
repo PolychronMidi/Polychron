@@ -53,6 +53,8 @@ PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
 source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true
 PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"
 PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
+PROXY_PID_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"
+OMNIROUTE_PID_LABEL="$(_hme_service_pid_label omniroute 2>/dev/null || printf '%s' omniroute)"
 PROXY_STARTUP_TIMEOUT="${HME_PROXY_STARTUP_TIMEOUT:-25}"
 
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
@@ -71,7 +73,7 @@ _port_healthy() {
 }
 
 # 0. OmniRoute (MODE=4/5 main-agent translator)
-_OMNIROUTE_PORT="$(_hme_service_port omniroute)"
+_OMNIROUTE_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"
 _OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
 _OD_START="${OVERDRIVE_MODE:-0}"
 if [ "$_OD_START" = "4" ] || [ "$_OD_START" = "5" ] || [ "$_OD_START" = "6" ]; then
@@ -86,7 +88,7 @@ if [ "$_OD_START" = "4" ] || [ "$_OD_START" = "5" ] || [ "$_OD_START" = "6" ]; t
         bash "$_OR_DIR/start.sh" --configure > "$PROJECT_ROOT/log/omniroute.out" 2>&1 &
       _ORPID=$!
       disown 2>/dev/null || true
-      _record_pid omniroute "$_ORPID"
+      _record_pid "$OMNIROUTE_PID_LABEL" "$_ORPID"
       _owaited=0
       while [ "$_owaited" -lt 30 ]; do
         _port_healthy "${_OMNIROUTE_URL}/v1/models" && break
@@ -117,7 +119,7 @@ else
       > "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 < /dev/null &
   _PROXY_PID=$!
   disown 2>/dev/null || true
-  _record_pid proxy "$_PROXY_PID"
+  _record_pid "$PROXY_PID_LABEL" "$_PROXY_PID"
 
   _waited=0
   while [ "$_waited" -lt "$PROXY_STARTUP_TIMEOUT" ]; do

@@ -16,7 +16,7 @@ from .evolution_selftest import hme_selftest, hme_hot_reload  # noqa: F401
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
+@ctx.mcp.tool(meta={"hidden": True})
 @chained("hme_admin")
 def hme_admin(action: str = "selftest", modules: str = "",
               antipattern: str = "", hook_target: str = "pretooluse_bash") -> str:

@@ -39,6 +39,7 @@ from ._base import (  # noqa: F401
 
 from .docs import (  # noqa: F401
     DocDriftVerifier, NumericClaimDriftVerifier, DocstringPresenceVerifier,
+    DocCoreLayoutVerifier,
 )
 from .env_settings import (  # noqa: F401
     SettingsJsonVerifier, OAuthTokenExpiryVerifier,
@@ -113,6 +114,7 @@ from .graph import (  # noqa: F401
 REGISTRY = [
     DocDriftVerifier(),
     NumericClaimDriftVerifier(),
+    DocCoreLayoutVerifier(),
     AutocommitHealthVerifier(),
     EnvLoadVerifier(),
     EnvTamperVerifier(),

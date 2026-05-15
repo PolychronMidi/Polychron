@@ -1,6 +1,6 @@
 # HME Inference Proxy
 
-The authoritative MITM proxy between Claude Code and the Anthropic API. Everything visible to the model passes through here -- this is where context-efficiency, cache-correctness, and HME enrichment all live. Ports and health URLs come from `tools/HME/config/services.json`; the proxy supervises the worker and `llamacpp_daemon` as ps-tree children via `supervisor/`.
+The authoritative MITM proxy between Claude Code and the Anthropic API. Everything visible to the model passes through here -- this is where context-efficiency, cache-correctness, and HME enrichment all live. Ports, health URLs, PID labels, logs, process patterns, and supervision edges come from `tools/HME/config/services.json`; the proxy supervises the worker and `llamacpp_daemon` as ps-tree children via `supervisor/`.
 
 ## Data flow
 

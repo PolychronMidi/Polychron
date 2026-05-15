@@ -40,6 +40,10 @@ settings drift from this manifest.
 
 `.claude/settings.json` registers `node event_kernel/claude_adapter.js <Event>` for every Claude Code lifecycle event. The adapter POSTs hook stdin to the proxy lifecycle URL derived from `tools/HME/config/services.json` and relays the JSON response back. If the proxy is unreachable, it calls the same event-kernel dispatcher directly.
 
+Proxy health is bundle health: `services.json` marks `worker` as a required
+child of `proxy`, so watchdogs and doctors treat proxy-up/worker-down as
+unhealthy and restart the proxy bundle rather than reporting partial success.
+
 Subprocess transfer uses filesystem IPC under `runtime/hme/event-ipc/`; hook
 payloads are written once and redirected into child processes from a file.
 

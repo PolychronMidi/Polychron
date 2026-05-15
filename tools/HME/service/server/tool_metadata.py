@@ -27,19 +27,20 @@ def _invocation_surface() -> dict[str, Any]:
 
 def tool_metadata(fn, raw: dict[str, Any] | None = None) -> dict[str, Any]:
     raw = dict(raw or {})
-    hidden = bool(raw.pop("hidden", False))
     invocations = _invocation_surface()
-    public = bool(raw.pop("public", not hidden))
     name = raw.pop("name", fn.__name__)
+    invocation = invocations.get(name, {})
+    hidden = bool(raw.pop("hidden", invocation.get("hidden", False)))
+    public = bool(raw.pop("public", invocation.get("public", not hidden)))
     return {
         "name": name,
         "mode": raw.pop("mode", "sync"),
         "public": public,
         "hidden": hidden,
         "docstring": inspect.getdoc(fn) or "",
-        "i_surface": raw.pop("i_surface", invocations.get(name, {}).get("i_surface", "")),
-        "permissions": raw.pop("permissions", invocations.get(name, {}).get("permissions", [])),
-        "lifecycle": raw.pop("lifecycle", raw.pop("status", "active")),
-        "tests": raw.pop("tests", invocations.get(name, {}).get("tests", [])),
+        "i_surface": raw.pop("i_surface", invocation.get("i_surface") or invocation.get("i", "")),
+        "permissions": raw.pop("permissions", invocation.get("permissions", [])),
+        "lifecycle": raw.pop("lifecycle", raw.pop("status", invocation.get("lifecycle", "active"))),
+        "tests": raw.pop("tests", invocation.get("tests", [])),
         **raw,
     }

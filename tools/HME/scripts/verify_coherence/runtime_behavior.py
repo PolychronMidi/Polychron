@@ -101,18 +101,43 @@ class ServiceRegistryVerifier(Verifier):
                 issues.append(f"duplicate service id: {sid}")
             seen.add(sid)
             if kind == "http":
-                for field in ("env_port", "default_port", "health_path"):
+                for field in ("env_port", "default_port", "health_path", "pid_label", "log_file"):
                     if field not in service:
                         issues.append(f"{sid}: missing {field}")
                 try:
                     service_url(service)
                 except Exception as e:
                     issues.append(f"{sid}: health URL failed: {e}")
+                if service.get("process_patterns") and not service.get("stop_group"):
+                    issues.append(f"{sid}: process_patterns require stop_group")
             elif kind == "heartbeat":
                 if not service.get("heartbeat_file"):
                     issues.append(f"{sid}: missing heartbeat_file")
+                if not service.get("pid_label"):
+                    issues.append(f"{sid}: missing pid_label")
             else:
                 issues.append(f"{sid}: unknown kind={kind!r}")
+            parent = service.get("supervised_by")
+            if parent and parent not in seen and parent not in {s.get("id") for s in services}:
+                issues.append(f"{sid}: supervised_by unknown service {parent!r}")
+            if parent == sid:
+                issues.append(f"{sid}: supervised_by cannot point to itself")
+        proxy_children = [s.get("id") for s in services if s.get("supervised_by") == "proxy"]
+        if "worker" not in proxy_children:
+            issues.append("proxy bundle missing supervised worker edge")
+        try:
+            from service_registry import required_supervised_urls, bundle_process_patterns, bundle_pid_labels
+            required_urls = required_supervised_urls("proxy")
+            if not any(child_id == "worker" for child_id, _url in required_urls):
+                issues.append("proxy required-supervised URLs do not include worker")
+            for expected in ("hme_proxy.js", "worker.py", "llamacpp_daemon"):
+                if expected not in bundle_process_patterns("proxy"):
+                    issues.append(f"proxy bundle process patterns missing {expected}")
+            for expected in ("proxy", "worker", "llamacpp_daemon"):
+                if expected not in bundle_pid_labels("proxy"):
+                    issues.append(f"proxy bundle PID labels missing {expected}")
+        except Exception as e:
+            issues.append(f"proxy bundle helper failed: {e}")
         pulse_path = os.path.join(_PROJECT, "tools", "HME", "config", "universal_pulse.json")
         try:
             with open(pulse_path) as f:
@@ -131,9 +156,26 @@ class ServiceRegistryVerifier(Verifier):
         ):
             if not os.path.isfile(os.path.join(_PROJECT, rel)):
                 issues.append(f"missing service registry consumer helper: {rel}")
+        for rel, needles in {
+            "tools/HME/hooks/direct/proxy-supervisor.sh": (
+                "_hme_required_supervised_urls", "_sv_bundle_healthy",
+            ),
+            "tools/HME/launcher/polychron-proxy-restart.sh": (
+                "_hme_bundle_process_patterns", "_hme_bundle_pid_labels",
+            ),
+        }.items():
+            path = os.path.join(_PROJECT, rel)
+            try:
+                src = open(path, encoding="utf-8").read()
+            except OSError:
+                issues.append(f"missing service registry consumer: {rel}")
+                continue
+            for needle in needles:
+                if needle not in src:
+                    issues.append(f"{rel}: missing registry-owned {needle}")
         if issues:
             return _result(FAIL, max(0.0, 1.0 - 0.1 * len(issues)), f"{len(issues)} service registry issue(s)", issues[:12])
-        return _result(PASS, 1.0, f"{len(services)} services registered; pulse probes derive from services.json")
+        return _result(PASS, 1.0, f"{len(services)} services registered; proxy bundle derives from services.json")
 
 
 class ContextBudgetVerifier(Verifier):

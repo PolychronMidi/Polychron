@@ -256,14 +256,17 @@ without a declared owner is a coherence failure.
 ## Registries
 
 - Services: `tools/HME/config/services.json`; Python, JS, and shell helpers
-  derive ports, health URLs, process patterns, and starts from it.
+  derive ports, health URLs, supervision edges, PID labels, process patterns,
+  logs, and starts from it.
 - `i/` surface: `tools/HME/i_registry.json`; `scripts/generate-i-shims.js`
-  generates the public shims, and `scripts/hme-i-dispatch.js` owns behavior.
+  generates/checks the public shims, and `scripts/hme-i-dispatch.js` owns
+  behavior.
 - Agent jobs: `runtime/hme/agent-jobs/<role>/<job_id>/` contains
   `request.json`, `status.json`, `output.txt`, `stderr.txt`, and
   `events.jsonl`.
 - Compatibility layers: `tools/HME/config/compatibility-layers.json`; every
-  bridge/shim/wrapper file needs an owner, reason, and expiry rule.
+  bridge/shim/wrapper file needs an owner, reason, and executable expiry
+  policy.
 
 ## Testing
 Useful HME checks:

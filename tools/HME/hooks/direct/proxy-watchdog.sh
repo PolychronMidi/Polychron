@@ -36,7 +36,7 @@ _WD_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/hea
 # -- OmniRoute health-check + respawn (MODE=4/5 main-agent translator) --
 # Session resume doesn't go through polychron-launch.sh, so the watchdog
 # must ensure OmniRoute is running before attempting proxy spawn.
-_OR_PORT="$(_hme_service_port omniroute)"
+_OR_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"
 _OR_URL="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_OR_PORT")"
 _OR_DIR="$_WD_ROOT/tools/omniroute"
 if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
@@ -71,8 +71,21 @@ if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${
   fi
 fi
 
-# Probe: if proxy already healthy, exit silent.
+# Probe: if the whole proxy-owned bundle is healthy, exit silent. A proxy
+# that responds while a required child is down still needs a bundle restart.
 if curl -sf --max-time 2 "$_WD_URL" >/dev/null 2>&1; then
+  if _hme_bundle_health proxy >/dev/null 2>&1; then
+    exit 0
+  fi
+  ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+  _issue="$(_hme_bundle_health proxy 2>&1 || true)"
+  echo "[$ts] [proxy-watchdog] proxy bundle unhealthy: ${_issue}" \
+    >> "$_WD_ROOT/log/hme-errors.log"
+  if [ -x "$_WD_ROOT/tools/HME/launcher/polychron-proxy-restart.sh" ]; then
+    setsid nohup "$_WD_ROOT/tools/HME/launcher/polychron-proxy-restart.sh" \
+      >> "$_WD_ROOT/log/hme-proxy-lifecycle.log" 2>&1 < /dev/null &
+    disown 2>/dev/null || true
+  fi
   exit 0
 fi
 

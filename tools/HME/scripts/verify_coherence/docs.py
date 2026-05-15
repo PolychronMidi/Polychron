@@ -77,6 +77,39 @@ class NumericClaimDriftVerifier(Verifier):
                        examples)
 
 
+class DocCoreLayoutVerifier(Verifier):
+    """Core orientation docs must keep the progressive-layout contract."""
+    name = "doc-core-layout"
+    category = "doc"
+    subtag = "interface-contract"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        required = [
+            "README.md",
+            "CLAUDE.md",
+            "doc/HME.md",
+            "doc/SRC.md",
+            "doc/hme_full.md",
+            "doc/src_full.md",
+        ]
+        issues = [f"missing {rel}" for rel in required
+                  if not os.path.isfile(os.path.join(_PROJECT, rel))]
+        for rel in ("HME.md", "SRC.md", "doc/hme.md", "doc/src.md"):
+            if os.path.exists(os.path.join(_PROJECT, rel)):
+                issues.append(f"unexpected duplicate doc path: {rel}")
+        for rel in ("README.md", "CLAUDE.md"):
+            path = os.path.join(_PROJECT, rel)
+            if not os.path.isfile(path):
+                continue
+            text = open(path, encoding="utf-8").read()
+            if re.search(r"\]\((?:\./)?(?:HME|SRC)\.md(?:#[^)]+)?\)", text):
+                issues.append(f"{rel}: links root HME.md/SRC.md instead of doc/HME.md or doc/SRC.md")
+        if issues:
+            return _result(FAIL, 0.0, f"{len(issues)} doc layout issue(s)", issues)
+        return _result(PASS, 1.0, "core docs use README/CLAUDE + concise/full doc layout")
+
+
 class DocstringPresenceVerifier(Verifier):
     """Every @ctx.mcp.tool() function has a non-empty docstring."""
     name = "tool-docstrings"
@@ -125,5 +158,4 @@ class DocstringPresenceVerifier(Verifier):
 
 
 # Verifiers -- CODE category
-
 

@@ -6,56 +6,68 @@
       "kind": "generator",
       "owner": "i-surface",
       "reason": "Generates the public i/ shim files from i_registry.json.",
-      "expires": "none while i/ surface is generated"
+      "expires": {"kind": "never", "reason": "i/ surface is intentionally generated"}
     },
     {
       "path": "tools/HME/proxy/hook_bridge.js",
       "kind": "adapter-boundary",
       "owner": "event_kernel",
       "reason": "Claude/Codex hook bridge into the portable event kernel.",
-      "expires": "none while external hook CLIs call this boundary"
+      "expires": {"kind": "never", "reason": "external hook CLIs call this adapter boundary"}
     },
     {
       "path": "tools/HME/proxy/lifecycle_bridge.js",
       "kind": "adapter-boundary",
       "owner": "event_kernel",
       "reason": "Lifecycle adapter boundary for portable hook dispatch.",
-      "expires": "none while proxy lifecycle events enter here"
+      "expires": {"kind": "never", "reason": "proxy lifecycle events enter here"}
     },
     {
       "path": "tools/HME/proxy/middleware/13_subagent_bridge.js",
       "kind": "adapter-boundary",
       "owner": "agent-jobs",
       "reason": "Middleware adapter for filesystem-backed subagent result pickup.",
-      "expires": "replace when all agents write the canonical agent-job contract directly"
+      "expires": {
+        "kind": "replacement_ready",
+        "replacement": "tools/HME/scripts/agent_jobs.py",
+        "delete_when": "all agent launchers write request.json/status.json/output.txt/stderr.txt/events.jsonl directly"
+      }
     },
     {
       "path": "tools/HME/hooks/helpers/safety/http_shim.sh",
       "kind": "legacy-name",
       "owner": "hooks",
       "reason": "Sourced helper keeps old safety include stable while worker absorbs shim endpoints.",
-      "expires": "delete after no hook sources this file"
+      "expires": {
+        "kind": "zero_refs",
+        "scan": "http_shim\\.sh",
+        "delete_when": "no hook sources this legacy helper name"
+      }
     },
     {
       "path": "tools/HME/service/server/tools_analysis/todo_spec_bridge.py",
       "kind": "legacy-name",
       "owner": "todo-native-merge",
       "reason": "Historical import path while TodoWrite replacement settles.",
-      "expires": "delete after import scan has zero todo_spec_bridge references"
+      "expires": {
+        "kind": "zero_refs",
+        "scan": "todo_spec_bridge",
+        "delete_when": "import scan has zero todo_spec_bridge references"
+      }
     },
     {
       "path": "tools/HME/service/server/tools_analysis/coupling/coupling_bridges.py",
       "kind": "domain-module",
       "owner": "coupling-analysis",
       "reason": "Bridge is a domain concept here, not a compatibility layer.",
-      "expires": "none"
+      "expires": {"kind": "never", "reason": "domain concept, not compatibility"}
     },
     {
       "path": "tools/HME/service/server/tools_analysis/coupling/coupling_design_bridges.py",
       "kind": "domain-module",
       "owner": "coupling-analysis",
       "reason": "Bridge is a domain concept here, not a compatibility layer.",
-      "expires": "none"
+      "expires": {"kind": "never", "reason": "domain concept, not compatibility"}
     }
   ]
 }

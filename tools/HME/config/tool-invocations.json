@@ -8,7 +8,10 @@
   "tools": {
     "hme_admin": {
       "i": "i/hme admin action=<ACTION>",
-      "primer": "i/hme admin action=selftest"
+      "primer": "i/hme admin action=selftest",
+      "public": false,
+      "hidden": true,
+      "lifecycle": "internal-dispatcher"
     },
     "hme_selftest": {
       "i": "i/hme admin action=selftest",

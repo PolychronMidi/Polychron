@@ -34,29 +34,30 @@ _port_healthy() {
   curl -sf --max-time 1 "$1" > /dev/null 2>&1
 }
 
-# 1. Stop the proxy bundle. Pattern-target only the bundle: NOT
-#    "llama-server" (the model servers) and NOT "code"/electron.
-#
-# llamacpp_daemon != llama-server -- the daemon is the proxy-side
-# supervisor; the llama-server processes on :8080/:8081 are the model
-# servers and stay up.
+mapfile -t _PROXY_BUNDLE_PATTERNS < <(_hme_bundle_process_patterns proxy 2>/dev/null || true)
+if [ "${#_PROXY_BUNDLE_PATTERNS[@]}" -eq 0 ]; then
+  _PROXY_BUNDLE_PATTERNS=("hme_proxy.js" "worker.py" "llamacpp_daemon")
+fi
+mapfile -t _PROXY_BUNDLE_PID_LABELS < <(_hme_bundle_pid_labels proxy 2>/dev/null || true)
+if [ "${#_PROXY_BUNDLE_PID_LABELS[@]}" -eq 0 ]; then
+  _PROXY_BUNDLE_PID_LABELS=("proxy" "worker" "llamacpp_daemon")
+fi
 
-_PROXY_BUNDLE_PATTERNS=(
-  "hme_proxy.js"
-  "worker.py"
-  "llamacpp_daemon"
-)
+_label_in_proxy_bundle() {
+  local q="$1"
+  local label
+  for label in "${_PROXY_BUNDLE_PID_LABELS[@]}"; do
+    [ "$q" = "$label" ] && return 0
+  done
+  return 1
+}
 
 # Prefer PID-targeted SIGTERM via the launcher's PID file when present --
 # pkill by pattern can match across user sessions on shared hosts.
 declare -a _proxy_pids=()
 if [ -f "$PID_FILE" ]; then
   while IFS='=' read -r label pid; do
-    case "$label" in
-      proxy|worker|llamacpp_daemon)
-        [ -n "$pid" ] && _proxy_pids+=("$label:$pid")
-        ;;
-    esac
+    _label_in_proxy_bundle "$label" && [ -n "$pid" ] && _proxy_pids+=("$label:$pid")
   done < "$PID_FILE"
 fi
 
@@ -148,7 +149,11 @@ fi
 # shutdown script still finds them later.
 if [ -f "$PID_FILE" ]; then
   _tmp_pid_file="${PID_FILE}.tmp.$$"
-  awk -F= '$1 != "proxy" && $1 != "worker" && $1 != "llamacpp_daemon" { print }' \
+  _drop_re=""
+  for label in "${_PROXY_BUNDLE_PID_LABELS[@]}"; do
+    _drop_re="${_drop_re}${_drop_re:+|}${label}"
+  done
+  awk -F= -v re="^(${_drop_re})$" '$1 !~ re { print }' \
     "$PID_FILE" > "$_tmp_pid_file"
   mv "$_tmp_pid_file" "$PID_FILE"
 fi
@@ -167,8 +172,9 @@ disown 2>/dev/null || true
 
 # 7. Append the new proxy PID to the PID file so the next full-stack
 # shutdown finds it.
-echo "proxy=${_PROXY_PID}" >> "$PID_FILE"
-echo "[proxy-restart] started proxy (pid ${_PROXY_PID})" >&2
+_PROXY_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"
+echo "${_PROXY_LABEL}=${_PROXY_PID}" >> "$PID_FILE"
+echo "[proxy-restart] started ${_PROXY_LABEL} (pid ${_PROXY_PID})" >&2
 
 # 8. Health-gate. Same timeout the launcher uses.
 _waited=0

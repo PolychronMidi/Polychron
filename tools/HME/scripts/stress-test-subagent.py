@@ -29,7 +29,15 @@ import time
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_AGENT = os.path.join(_PROJECT, "tools", "HME", "mcp", "agent_local.py")
+_SERVICE_ROOT = os.path.join(_PROJECT, "tools", "HME", "service")
+_AGENT_CMD = ["python3", "-m", "agent_local"]
+
+
+def _agent_env() -> dict:
+    env = {**os.environ, "PROJECT_ROOT": _PROJECT}
+    old = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = _SERVICE_ROOT if not old else f"{_SERVICE_ROOT}:{old}"
+    return env
 
 # Stress test battery
 # Each case targets a specific failure mode observed in the wild.
@@ -96,10 +104,10 @@ def run_case(case: dict, timeout_mult: float = 1.0) -> dict:
     payload = json.dumps({"prompt": case["prompt"], "mode": case["mode"]})
     try:
         proc = subprocess.run(
-            ["python3", _AGENT, "--stdin", "--json", "--project", _PROJECT],
+            [*_AGENT_CMD, "--stdin", "--json", "--project", _PROJECT],
             input=payload, capture_output=True, text=True,
             timeout=int(case["timeout_s"] * timeout_mult),
-            env={**os.environ, "PROJECT_ROOT": _PROJECT},
+            env=_agent_env(),
         )
     except subprocess.TimeoutExpired:
         return {

@@ -107,7 +107,7 @@ class DecoratorOrderVerifier(Verifier):
 
 
 class HookRegistrationVerifier(Verifier):
-    """Every matcher in hooks.json points to a real .sh file."""
+    """hooks.json must route every event through the portable event kernel."""
     name = "hook-registration"
     category = "coverage"
     subtag = "structural-integrity"
@@ -120,25 +120,52 @@ class HookRegistrationVerifier(Verifier):
                 data = json.load(f)
         except Exception as e:
             return _result(FAIL, 0.0, f"hooks.json invalid: {e}")
-        missing = []
+        hooks = data.get("hooks", {})
+        required = {
+            "SessionStart", "PreToolUse", "PostToolUse", "UserPromptSubmit",
+            "PreCompact", "PostCompact", "Stop", "StatusLine",
+        }
+        issues = []
+        missing_events = sorted(required - set(hooks))
+        if missing_events:
+            issues.append(f"missing hook event(s): {missing_events}")
+        adapter = os.path.join(_PROJECT, "tools", "HME", "event_kernel", "claude_adapter.js")
+        statusline = os.path.join(_PROJECT, "tools", "HME", "event_kernel", "statusline.js")
+        if not os.path.isfile(adapter):
+            issues.append("missing event_kernel/claude_adapter.js")
+        if not os.path.isfile(statusline):
+            issues.append("missing event_kernel/statusline.js")
         total = 0
-        for _event_name, entries in data.get("hooks", {}).items():
+        for event in sorted(required & set(hooks)):
+            entries = hooks.get(event)
+            if not isinstance(entries, list) or not entries:
+                issues.append(f"{event}: no hook entries")
+                continue
             for entry in entries:
                 for hook in entry.get("hooks", []):
-                    cmd = hook.get("command", "")
-                    m = re.search(r'(?:CLAUDE_PLUGIN_ROOT|hooks)/(\w+\.sh)', cmd)
-                    if m:
-                        total += 1
-                        script = os.path.join(_HOOKS_DIR, m.group(1))
-                        if not os.path.isfile(script):
-                            missing.append(m.group(1))
+                    total += 1
+                    cmd = str(hook.get("command", ""))
+                    timeout = hook.get("timeout")
+                    if hook.get("type") != "command":
+                        issues.append(f"{event}: hook type must be command")
+                    if not isinstance(timeout, int) or timeout <= 0:
+                        issues.append(f"{event}: timeout must be positive integer")
+                    if event == "StatusLine":
+                        if "event_kernel/statusline.js" not in cmd:
+                            issues.append("StatusLine: must route through event_kernel/statusline.js")
+                    else:
+                        if "event_kernel/claude_adapter.js" not in cmd:
+                            issues.append(f"{event}: must route through event_kernel/claude_adapter.js")
+                        if event not in cmd:
+                            issues.append(f"{event}: adapter command missing event argument")
+                    if re.search(r"tools/HME/hooks/.+\.sh|/hooks/.+\.sh", cmd):
+                        issues.append(f"{event}: direct shell hook command is not portable")
         if total == 0:
-            return _result(SKIP, 1.0, "no hook registrations found")
-        if not missing:
-            return _result(PASS, 1.0, f"{total}/{total} hook registrations resolve")
-        score = 1.0 - len(missing) / total
-        return _result(FAIL, score, f"{len(missing)}/{total} hooks reference missing files",
-                       missing)
+            issues.append("no command hooks registered")
+        if not issues:
+            return _result(PASS, 1.0, f"{len(required)} event-kernel hook registrations resolve")
+        score = max(0.0, 1.0 - len(issues) / max(1, len(required)))
+        return _result(FAIL, score, f"{len(issues)} hook registration issue(s)", issues[:12])
 
 
 class HookMatcherValidityVerifier(Verifier):
