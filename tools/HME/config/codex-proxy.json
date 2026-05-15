@@ -8,6 +8,15 @@
     "extra_instructions": "",
     "disabled_tools": [],
     "max_instruction_bytes_warn": 60000,
-    "max_tool_count_warn": 80
+    "max_tool_count_warn": 80,
+    "cleanup": {
+      "enabled": true,
+      "strip_success_hook_noise": true,
+      "drop_empty_text_items": true
+    },
+    "payload_log": {
+      "enabled": true,
+      "preview_chars": 0
+    }
   }
 }

@@ -9,6 +9,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+const { applyRequestTransform } = require('../../proxy/codex_payload');
 
 function freePort() {
   return new Promise((resolve, reject) => {
@@ -84,6 +85,65 @@ function withSandbox() {
   );
   return sandbox;
 }
+
+test('Codex payload transform logs shape and strips successful hook autocorrect noise', () => {
+  const events = [];
+  const cfg = {
+    request_transform: {
+      cleanup: { enabled: true },
+      payload_log: { enabled: true, preview_chars: 80 },
+      disabled_tools: [],
+    },
+  };
+  const input = {
+    model: 'gpt-5.5',
+    instructions: 'test',
+    input: [
+      {
+        role: 'system',
+        content: [
+          {
+            type: 'input_text',
+            text: [
+              'PreToolUse hook (completed)',
+              '  warning: i/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT',
+              'keep signal',
+            ].join('\n'),
+          },
+          { type: 'input_text', text: '   ' },
+        ],
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'input_text',
+            text: 'User quote stays: PreToolUse hook (completed)',
+          },
+        ],
+      },
+    ],
+    tools: [{ type: 'function', name: 'update_plan' }],
+    stream: true,
+  };
+  const result = applyRequestTransform(input, {
+    loadConfig: () => cfg,
+    record: (row) => events.push(row),
+    projectRoot: repoRoot,
+  });
+  const systemText = result.body.input[0].content[0].text;
+  const userText = result.body.input[1].content[0].text;
+  assert.doesNotMatch(systemText, /PreToolUse hook \(completed\)/);
+  assert.doesNotMatch(systemText, /wrapper path auto-corrected/);
+  assert.match(systemText, /keep signal/);
+  assert.match(userText, /PreToolUse hook \(completed\)/);
+  assert.strictEqual(result.body.input[0].content.length, 1);
+  assert.strictEqual(result.cleanup.removed_lines, 2);
+  assert.strictEqual(result.cleanup.dropped_empty_text_items, 1);
+  assert.strictEqual(result.payload_log.target, 'codex-responses-log-only');
+  assert.strictEqual(result.payload_log.after.model, 'gpt-5.5');
+  assert.deepStrictEqual(events, []);
+});
 
 test('Codex Responses proxy syncs streamed update_plan calls into TODO.md', async () => {
   const sandbox = withSandbox();

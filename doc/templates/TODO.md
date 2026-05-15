@@ -4,15 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Fix wrapper smoke misplaced-dir failure
+- [ ] [E3] Run focused tests/smoke and commit changes if clean
 
 ## Next
 
-- [ ] [E3] Run targeted verification
-- [ ] [E3] Fix worker transport socket hangups
-- [ ] [E3] Fix review verdict hook fail=1 branch
-- [ ] [E3] Trace Claude Code OmniRoute translation path
-- [ ] [E3] Design/apply Codex proxy translation logging path
+(empty)
 
 ## Done
 

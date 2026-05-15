@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3101,
-      "updated_ts": 1778869678.5643954,
-      "codex_plan_synced_ts": 1778869678.5643814,
+      "max_id": 3105,
+      "updated_ts": 1778871898.582765,
+      "codex_plan_synced_ts": 1778871898.5827498,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+      "codex_plan_ts": "2026-05-15T19:04:23.694Z"
     }
   },
   {
@@ -787,8 +787,8 @@
     "id": 3095,
     "text": "Run targeted verification",
     "activeForm": "Run targeted verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -797,7 +797,8 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3096,
@@ -819,8 +820,8 @@
     "id": 3097,
     "text": "Fix wrapper smoke misplaced-dir failure",
     "activeForm": "Fix wrapper smoke misplaced-dir failure",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -829,14 +830,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3098,
     "text": "Fix worker transport socket hangups",
     "activeForm": "Fix worker transport socket hangups",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -845,14 +847,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3099,
     "text": "Fix review verdict hook fail=1 branch",
     "activeForm": "Fix review verdict hook fail=1 branch",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -861,14 +864,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3100,
     "text": "Trace Claude Code OmniRoute translation path",
     "activeForm": "Trace Claude Code OmniRoute translation path",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -877,14 +881,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3101,
     "text": "Design/apply Codex proxy translation logging path",
     "activeForm": "Design/apply Codex proxy translation logging path",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -893,6 +898,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3102,
+    "text": "Verify and finalize the three smoke fixes already made",
+    "activeForm": "Verify and finalize the three smoke fixes already made",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778871898.5826368,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:04:23.694Z"
+  },
+  {
+    "id": 3103,
+    "text": "Trace Claude OmniRoute translation path and Codex proxy request/response flow",
+    "activeForm": "Trace Claude OmniRoute translation path and Codex proxy request/response flow",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778871898.5826414,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:04:23.694Z"
+  },
+  {
+    "id": 3104,
+    "text": "Implement Codex proxy logging/cleanup without provider routing",
+    "activeForm": "Implement Codex proxy logging/cleanup without provider routing",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778871898.5826445,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:04:23.694Z"
+  },
+  {
+    "id": 3105,
+    "text": "Run focused tests/smoke and commit changes if clean",
+    "activeForm": "Run focused tests/smoke and commit changes if clean",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778871898.582647,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:04:23.694Z"
   }
 ]
