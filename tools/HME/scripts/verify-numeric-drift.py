@@ -39,7 +39,7 @@ _DOC_ROOTS = [
 ]
 _DOC_FILES_EXTRA = [
     os.path.join(_PROJECT, "README.md"),
-    os.path.join(_PROJECT, "AGENTS.md"),
+    os.path.join(_PROJECT, "CLAUDE.md"),
 ]
 _SKIP_DIRS = {"node_modules", ".git", "metrics", "output"}
 

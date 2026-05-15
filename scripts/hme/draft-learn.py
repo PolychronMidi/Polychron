@@ -91,7 +91,7 @@ def main() -> int:
     }
     out_path = args.out if os.path.isabs(args.out) else os.path.join(PROJECT_ROOT, args.out)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    # Atomic write per AGENTS.md guidance.
+    # Atomic write per CLAUDE.md guidance.
     tmp_path = out_path + ".tmp"
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(draft, f, indent=2)

@@ -20,7 +20,7 @@ Polychron's HME collapses that divide, not by simulating any of the above, but b
 
 HME -- *Hypermeta Ecstasy*, "master executive for hypermeta evolutionary intelligence" -- is described in its own documentation as "the cognitive substrate that makes self-evolving composition possible -- not a code search tool but an evolutionary nervous system." The name matters. This is not a retrieval utility that got a grand marketing coat; it is a substrate claim.
 
-The five-layer executive: an MCP server behind explicit `i/` commands (`i/evolve`, `i/review`, `i/learn`, `i/trace`, `i/hme admin`) plus proxy-enriched native tools; a AGENTS.md that encodes rules, boundaries, and hard constraints; lifecycle hooks enforcing workflow automatically; and an evolution loop grounded in metrics and KB learning. On top of this substrate sits an observability and governance architecture surfaced through `i/status mode=...` branches.
+The five-layer executive: an MCP server behind explicit `i/` commands (`i/evolve`, `i/review`, `i/learn`, `i/trace`, `i/hme admin`) plus proxy-enriched native tools; a CLAUDE.md that encodes rules, boundaries, and hard constraints; lifecycle hooks enforcing workflow automatically; and an evolution loop grounded in metrics and KB learning. On top of this substrate sits an observability and governance architecture surfaced through `i/status mode=...` branches.
 
 The companion operational material now lives in `hme_full.md`: HME used to be a tool that helps Polychron evolve; it is becoming the same kind of organism Polychron is, evolving by the same rules, monitored by the same instruments, and coupled to Polychron's evolution as a co-equal subsystem.
 
@@ -32,7 +32,7 @@ The HME Coherence Index is a 0-100 score computed by `verify-coherence.py` from 
 
 Compare this to SOC-13. Antonovsky's scale asks a human being thirteen Likert questions about their own experienced comprehensibility, manageability, and meaningfulness. It is retrospective, self-report, once-per-administration. It is one of the best-validated instruments in the salutogenic literature -- and it cannot tell you anything about what coherence is doing in a system at 3 a.m. on a Tuesday between beats 1204 and 1205.
 
-HCI can. It runs on every pipeline invocation. It drills into per-category and per-verifier scores. The `doc` category asks whether documentation matches code reality, whether AGENTS.md rules are silently violated. The `code` category asks whether source files can actually run, whether decorator order is correct, whether the TodoWrite hook is non-blocking. The `state` category asks whether runtime state machines are internally consistent -- onboarding flow integrity, todo store schema, reloadable sync. The `coverage` category asks whether every declared interface points to a real implementation, whether subagents are routed correctly. The `runtime` category asks whether live services are responsive, whether alerts are honest, whether the detector is drifting. The `topology` category asks whether cross-boundary structures are declared.
+HCI can. It runs on every pipeline invocation. It drills into per-category and per-verifier scores. The `doc` category asks whether documentation matches code reality, whether CLAUDE.md rules are silently violated. The `code` category asks whether source files can actually run, whether decorator order is correct, whether the TodoWrite hook is non-blocking. The `state` category asks whether runtime state machines are internally consistent -- onboarding flow integrity, todo store schema, reloadable sync. The `coverage` category asks whether every declared interface points to a real implementation, whether subagents are routed correctly. The `runtime` category asks whether live services are responsive, whether alerts are honest, whether the detector is drifting. The `topology` category asks whether cross-boundary structures are declared.
 
 Every verifier is an *implicit assumption that could silently fail* lifted into *an explicit, scored measurement the system can observe in itself*. That last phrase is drawn straight from the document's stated principle: "Every implicit assumption about HME's correctness should become an explicit, scored measurement that the system can observe in itself."
 
@@ -147,7 +147,7 @@ That is a move no human self-report instrument can make. It requires an external
 
 The distinction the document draws is psychologically precise:
 
-> AGENTS.md says what Polychron *can't be* (prohibitions). `output/metrics/hme-constitution.json` says what Polychron *fundamentally IS* (positive affirmations).
+> CLAUDE.md says what Polychron *can't be* (prohibitions). `output/metrics/hme-constitution.json` says what Polychron *fundamentally IS* (positive affirmations).
 
 `derive-constitution.py` extracts constitutional claims from three evidence sources: structural (every feedback loop and firewall port in `feedback_graph.json` is an architectural invariant at confidence 1.0), methodological (crystallized patterns with at least four rounds and three members become standing fixtures, confidence scaling with evidence breadth), and musical (human ground truth entries with compelling or moving sentiment, grouped by section and moment type). Every claim carries an evidence trail: rounds, pattern IDs, ground-truth IDs. First run produced 37 claims.
 
@@ -155,7 +155,7 @@ The closing line: "The distinction between rules and identity is the one that al
 
 Clinical and developmental psychology has understood for a long time that identity organized primarily around prohibitions -- *I am not my parent, I am not my ex, I am not the kind of person who would do that* -- is defensive and brittle. Identity organized around affirmations -- *I am the kind of person who, given the chance, tends to do this, and here is the evidence* -- is generative and resilient. Erik Erikson, Viktor Frankl, and more recently Dan McAdams's work on the narrative identity literature all converge on this. The prohibition-self is a bordered thing. The affirmation-self is a shape.
 
-Most systems that try to govern themselves do so almost entirely through prohibitions: linters, type checkers, hooks, CI rules. HME has all of those, concentrated in AGENTS.md and the hook stack. But it also has a second, separate file -- derived empirically from evidence, updated every pipeline run -- that positively describes what the system *is*. And the document says plainly why: without that, the system can only prevent drift, never affirm a direction.
+Most systems that try to govern themselves do so almost entirely through prohibitions: linters, type checkers, hooks, CI rules. HME has all of those, concentrated in CLAUDE.md and the hook stack. But it also has a second, separate file -- derived empirically from evidence, updated every pipeline run -- that positively describes what the system *is*. And the document says plainly why: without that, the system can only prevent drift, never affirm a direction.
 
 ## XI. Musical ground truth, and the grounding anchor
 
@@ -203,7 +203,7 @@ Epistemic humility was a Socratic virtue and a desideratum of rational psycholog
 
 Projection was a psychoanalytic construct. HME's musical correlation verifier catches it structurally: if the system's self-assessment has decoupled from its actual outputs, FATAL warning.
 
-Generative versus prohibitive identity was a theoretical distinction in developmental psychology. HME has two separate files, AGENTS.md and `hme-constitution.json`, implementing the distinction at the level of system governance.
+Generative versus prohibitive identity was a theoretical distinction in developmental psychology. HME has two separate files, CLAUDE.md and `hme-constitution.json`, implementing the distinction at the level of system governance.
 
 The recursive self-observation problem is a perennial philosophical impasse. HME declares itself open at the top and builds for the recursion rather than against it.
 

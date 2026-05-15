@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Core-principles audit -- survey how well src/ actually follows the five
-core principles AGENTS.md declares.
+core principles CLAUDE.md declares.
 
 The ESLint rules in scripts/eslint-rules/ enforce specific corners of each
 principle at lint time (requires-outside-index, fallback bans, validator
@@ -8,7 +8,7 @@ stamping, etc.). What ESLint does not do is survey the whole codebase and
 say which principle has structural slack vs. which is airtight. This is
 that survey.
 
-Principles audited (numbered to match AGENTS.md):
+Principles audited (numbered to match CLAUDE.md):
   P1 -- Globals via side-effect require() in index.js
         Cross-check: every .js under a subsystem with its own index.js
         must be either required from that index.js or declared helper/
@@ -24,7 +24,7 @@ Principles audited (numbered to match AGENTS.md):
         subsubsystem should have at most one *Manager.js file. Multiple
         managers at the same level without clearly disjoint scopes is a
         smell.
-  P5 -- Coherent files (AGENTS.md target: 150-350 LOC; 350 is the
+  P5 -- Coherent files (CLAUDE.md target: 150-350 LOC; 350 is the
         upper bound, files exceeding it are CRITICAL).
         Thresholds loaded from tools/HME/config/project-rules.json
         (defaults: WARN >250, CRITICAL >350). Files matched by
@@ -66,7 +66,7 @@ def _load_loc_thresholds():
         return 250, 350  # safe defaults if config missing/malformed
 _LOC_WARN, _LOC_CRITICAL = _load_loc_thresholds()
 
-# Load order for subsystems (from AGENTS.md). Extra subsystems present in
+# Load order for subsystems (from CLAUDE.md). Extra subsystems present in
 # src/ but not in this list get ordered last alphabetically.
 _LOAD_ORDER = [
     "utils", "conductor", "rhythm", "time",

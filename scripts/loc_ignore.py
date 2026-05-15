@@ -1,5 +1,5 @@
 """Shared loader for config/loc-ignore.txt -- gitignore-style patterns
-that exempt files from the LOC target declared in AGENTS.md.
+that exempt files from the LOC target declared in CLAUDE.md.
 
 Single source of truth for LOC exemptions. Consumed by:
   - scripts/audit-core-principles.py (P5 audit)

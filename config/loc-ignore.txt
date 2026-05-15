@@ -1,5 +1,5 @@
 # Files / glob patterns exempt from the LOC target declared in
-# AGENTS.md `Universal Principles`. Syntax: gitignore-style — one pattern
+# CLAUDE.md `Universal Principles`. Syntax: gitignore-style — one pattern
 # per line, comments start with `#`, leading `!` negates a prior match,
 # trailing `/` means directory.
 #
@@ -203,3 +203,4 @@ tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py
 # and would make arbitrary file splits less coherent.
 # rationale: intent=reference-catalog; revisit-when=full-docs-split; decided=2026-05-15
 doc/*_full.md
+

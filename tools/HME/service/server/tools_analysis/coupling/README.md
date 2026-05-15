@@ -2,7 +2,7 @@
 
 Coupling-matrix analytics. Reads `systemDynamicsProfiler.getSnapshot().couplingMatrix` and derivative signals; produces pair-level pressure, gain, and antagonism reports that feed review + trace modes.
 
-Per the AGENTS.md coupling matrix firewall, this directory is one of the approved readers. Modules outside this dir that need coupling awareness must register a bias via `conductorIntelligence` -- they do NOT read the matrix directly. The firewall is enforced by ESLint rule `local/no-direct-coupling-matrix-read`.
+Per the CLAUDE.md coupling matrix firewall, this directory is one of the approved readers. Modules outside this dir that need coupling awareness must register a bias via `conductorIntelligence` -- they do NOT read the matrix directly. The firewall is enforced by ESLint rule `local/no-direct-coupling-matrix-read`.
 
 <!-- HME-DIR-INTENT
 rules:

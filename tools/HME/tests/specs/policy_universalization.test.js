@@ -38,11 +38,11 @@ test('hook noise stripper removes duplicate hook/status spam', () => {
   const text = stripHookNoiseText([
     'PreToolUse hook (completed)',
     '  warning: i/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT',
-    'STOP. Re-read AGENTS.md and the user prompt. Did you do ALL the work asked?',
-    'STOP. Re-read AGENTS.md and the user prompt. Did you do ALL the work asked?',
+    'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked?',
+    'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked?',
     'signal',
   ].join('\n'), stats);
-  assert.equal(text, 'STOP. Re-read AGENTS.md and the user prompt. Did you do ALL the work asked?\nsignal');
+  assert.equal(text, 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked?\nsignal');
   assert.equal(stats.stripped, 3);
 });
 

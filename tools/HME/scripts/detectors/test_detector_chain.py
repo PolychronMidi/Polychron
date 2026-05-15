@@ -120,14 +120,14 @@ def _assistant_tool_use(name: str, tool_input: dict) -> dict:
 
 def _resolve_project_root() -> str:
     """Resolve PROJECT_ROOT: env first, then walk up from this script
-    looking for the AGENTS.md+.env pair (same heuristic the detectors
+    looking for the CLAUDE.md+.env pair (same heuristic the detectors
     use). Returns "" only if neither path works."""
     env_root = os.environ.get("PROJECT_ROOT", "")
     if env_root:
         return env_root
     here = Path(__file__).resolve()
     for parent in [here.parent, *here.parents]:
-        if (parent / "AGENTS.md").exists() and (parent / ".env").exists():
+        if (parent / "CLAUDE.md").exists() and (parent / ".env").exists():
             os.environ["PROJECT_ROOT"] = str(parent)  # propagate to subprocesses
             return str(parent)
     return ""

@@ -24,7 +24,7 @@ from .code_audits_syntax import (  # noqa: F401
 
 class CorePrinciplesAuditVerifier(Verifier):
     """Delegates to scripts/audit-core-principles.py, which surveys src/
-    against the five core principles declared in AGENTS.md. FAILs only on
+    against the five core principles declared in CLAUDE.md. FAILs only on
     CRITICAL-level violations -- files exceeding 400 LOC or subsystems with
     >=1 .js file but no index.js. WARN-level findings (files over the 200-
     line soft target but under 400) are informational; the 200-line target
@@ -328,7 +328,7 @@ class MarkdownLinkIntegrityVerifier(Verifier):
 
 
 class CommentBloatVerifier(Verifier):
-    """Comment-block length discipline. AGENTS.md: "Inline comments
+    """Comment-block length discipline. CLAUDE.md: "Inline comments
     single-line and terse. Elaboration goes in doc/." 3+ consecutive
     comment lines = WARN; 5+ = FAIL.
 

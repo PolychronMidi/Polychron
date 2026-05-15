@@ -322,19 +322,19 @@ def _adversarial_stress() -> str:
     except Exception as e:
         results.append(("globals.d.ts: readable", False, str(e)))
 
-    # Probe 22: AGENTS.md is current and references key enforcement systems
-    claude_path = os.path.join(ctx.PROJECT_ROOT, "AGENTS.md")
+    # Probe 22: CLAUDE.md is current and references key enforcement systems
+    claude_path = os.path.join(ctx.PROJECT_ROOT, "CLAUDE.md")
     try:
         with open(claude_path, encoding="utf-8") as f:
             claude_md = f.read()
         enforcement_refs = ["crossLayerEmissionGateway", "trustSystems.names",
                             "feedbackRegistry", "L0_CHANNELS"]
         missing_refs = [r for r in enforcement_refs if r not in claude_md]
-        results.append((f"AGENTS.md: {len(enforcement_refs)} enforcement system references",
+        results.append((f"CLAUDE.md: {len(enforcement_refs)} enforcement system references",
                         len(missing_refs) == 0,
                         f"missing: {', '.join(missing_refs)}" if missing_refs else ""))
     except Exception as e:
-        results.append(("AGENTS.md: readable", False, str(e)))
+        results.append(("CLAUDE.md: readable", False, str(e)))
 
     # Probe 23: Infrastructure evolution -- scan ops + coherence for actionable trends (Layer 12)
     try:

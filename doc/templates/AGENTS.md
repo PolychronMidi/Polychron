@@ -4,7 +4,7 @@ This file must remain focused, concise, lean - docs and auto-enforcement handle 
 
 If something potentially auto-enforced would need to be mentioned here, it must be enforced better instead.
 
-- This file (AGENTS.md) -- *operational* rules: workflow style, LOC/comment discipline, plan-execution shape, mode-specific composition vs HME guidance. Changes via normal commit.
+- This file (CLAUDE.md) -- *operational* rules: workflow style, LOC/comment discipline, plan-execution shape, mode-specific composition vs HME guidance. Changes via normal commit.
 
 Polychron development has two interleaving modes; mode-specific rules live in companion files:
 - **Composition** (`src/`) -- [doc/SRC.md](doc/SRC.md)

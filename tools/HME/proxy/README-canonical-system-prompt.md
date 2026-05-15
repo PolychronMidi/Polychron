@@ -18,10 +18,10 @@ proxy-routed request after save (no proxy restart needed).
 ## What's in the canonical (and why)
 
 15 lines / ~1.8KB -- down 93% from Claude Code's ~28KB default block 2.
-Only content that the system-prompt layer can do (because AGENTS.md and
+Only content that the system-prompt layer can do (because CLAUDE.md and
 HME hooks can't):
 
-1. Identity statement + pointer to AGENTS.md and HME hooks as the
+1. Identity statement + pointer to CLAUDE.md and HME hooks as the
    authority for project-specific behavior
 2. Two `IMPORTANT:` security directives -- refusal-policy text from
    Anthropic that triggers refusals during reasoning, not just shaping
@@ -37,7 +37,7 @@ HME hooks can't):
 
 Everything else (style, code conventions, refactor discipline, comment
 policy, end-of-turn discipline, system-reminder priority, plan
-adherence, Hypermeta workflow, etc.) is owned by `AGENTS.md` (auto-loaded
+adherence, Hypermeta workflow, etc.) is owned by `CLAUDE.md` (auto-loaded
 into context) and HME's hook layer (proxy middleware + stop-chain
 detectors like `exhaust_check` and `psycho_stop`, plus the `trample_gate`
 proxy middleware for request-time interrupt-ack).
@@ -46,7 +46,7 @@ proxy middleware for request-time interrupt-ack).
 
 Edit `canonical-system-prompt.md` directly. Every byte goes verbatim to
 the model as the system prompt -- no comments, no markers, no header.
-Keep additions narrow: anything AGENTS.md or a hook can enforce belongs
+Keep additions narrow: anything CLAUDE.md or a hook can enforce belongs
 there, not here. The system prompt is reserved for things only the
 system prompt can do.
 

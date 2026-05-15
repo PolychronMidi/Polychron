@@ -84,7 +84,7 @@
       "doc/src_full.md (cross-layer changes)"
     ],
     "src/utils/": [
-      "AGENTS.md (new utility)"
+      "CLAUDE.md (new utility)"
     ],
     "src/time/": [
       "doc/src_full.md (timing changes)"

@@ -9,7 +9,7 @@ const PATTERN_STASH_THEN_CHECKOUT = /\bgit\s+stash\b[^&;|]*?[&;|]+\s*git\s+check
 const TODO_STATE_PATHS = ['doc/templates/TODO.md', 'tools/HME/KB/todos.json'];
 
 const REASON =
-  'BLOCKED: this `git checkout` pattern can clobber the working tree (including freshly-popped stashes). For prior-state inspection use `git show <ref> -- <path>` (read-only stdout) or `git worktree add /tmp/x <ref>` (isolated). See doc/HME.md or AGENTS.md.';
+  'BLOCKED: this `git checkout` pattern can clobber the working tree (including freshly-popped stashes). For prior-state inspection use `git show <ref> -- <path>` (read-only stdout) or `git worktree add /tmp/x <ref>` (isolated). See doc/HME.md or CLAUDE.md.';
 const TODO_REASON =
   'BLOCKED: TODO.md and todos.json are unified task state; use native plan/update_plan/TODO.md sync surfaces instead.';
 

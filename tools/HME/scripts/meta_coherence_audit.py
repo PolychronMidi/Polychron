@@ -49,10 +49,10 @@ from pathlib import Path
 def _require_project_root() -> Path:
     root = os.environ.get("PROJECT_ROOT")
     if not root:
-        # Walk up from this script looking for AGENTS.md + .env sentinels.
+        # Walk up from this script looking for CLAUDE.md + .env sentinels.
         here = Path(__file__).resolve()
         for parent in [here.parent, *here.parents]:
-            if (parent / "AGENTS.md").exists() and (parent / ".env").exists():
+            if (parent / "CLAUDE.md").exists() and (parent / ".env").exists():
                 return parent
         raise RuntimeError("Cannot resolve PROJECT_ROOT. Set env or invoke with project-root sentinels.")
     return Path(root)
