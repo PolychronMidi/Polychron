@@ -38,6 +38,7 @@ const {
 } = require('./upstream');
 const { shouldInject, buildStatusContext, consumeStatusContext, buildJurisdictionContext, injectIntoSystem, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
 const { normalizeICommands, stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
+const { stripHookNoiseInValue } = require('./hook_noise_text');
 const { servicePort } = require('./service_registry');
 const {
   omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat,
@@ -771,12 +772,15 @@ function handleRequest(clientReq, clientRes) {
           if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
         }
         const iw = normalizeICommands(payload);
+        const hns = {};
+        const hn = stripHookNoiseInValue(payload, hns);
+        if (hn && hn !== payload) { for (const k of Object.keys(payload)) delete payload[k]; Object.assign(payload, hn); }
         const b = stripBoilerplate(payload);
         const s = stripSemanticRedundancy(payload);
         const r = _stripHmePrefixOutgoing(payload);
         const n = await _injectHmeTools(payload);
         _sanitizePayload(payload);
-        if (iw > 0 || b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
+        if (iw > 0 || hns.stripped > 0 || b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
       }
 
       let scan = null;
