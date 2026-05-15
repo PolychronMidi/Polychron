@@ -9,7 +9,7 @@ const { stripHookNoiseInValue } = require('./hook_noise_text');
 
 const HOOK_SUCCESS_RE = /^\s*(SessionStart|UserPromptSubmit|PreToolUse|PostToolUse|Notification|Stop|SubagentStop|PreCompact|PostCompact|PermissionRequest) hook \((completed|skipped)\)\s*$/;
 const WRAPPER_AUTOCORRECT_RE = /^\s*warning:\s*i\/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT\s*$/;
-const STOP_REREAD_RE = /^\s*STOP\. Re-read CLAUDE\.md and the user prompt\./;
+const STOP_REREAD_RE = /^\s*STOP\. Re-read (?:AGENTS|CLAUDE)\.md and the user prompt\./;
 const EMPTY_TEXT_TYPES = new Set(['input_text', 'output_text', 'text']);
 
 function jsonBytes(value) {
