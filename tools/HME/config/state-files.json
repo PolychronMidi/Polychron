@@ -82,6 +82,42 @@
       "repair": "scripts/sync-codex-settings.py"
     },
     {
+      "path": "runtime/hme/hook-watchdog-state.json",
+      "owner": "tools/HME/event_kernel/hook_watchdog.js",
+      "readers": [
+        "tools/HME/event_kernel/hook_watchdog.js",
+        "tools/HME/hooks/lifecycle/userpromptsubmit.sh"
+      ],
+      "writers": [
+        "tools/HME/event_kernel/claude_adapter.js",
+        "tools/HME/event_kernel/codex_adapter.js",
+        "tools/HME/event_kernel/hook_watchdog.js"
+      ],
+      "retention": "pruned to recent hook invocations by owner",
+      "generated": true,
+      "committed": false,
+      "schema": "JSON object with invocations, latest SessionStart, success, and alerted maps",
+      "repair": "remove file; next lifecycle adapter invocation recreates it"
+    },
+    {
+      "path": "runtime/hme/hook-watchdog.jsonl",
+      "owner": "tools/HME/event_kernel/hook_watchdog.js",
+      "readers": [
+        "operators",
+        "tests"
+      ],
+      "writers": [
+        "tools/HME/event_kernel/claude_adapter.js",
+        "tools/HME/event_kernel/codex_adapter.js",
+        "tools/HME/event_kernel/hook_watchdog.js"
+      ],
+      "retention": "append-only local lifecycle trace; rotate manually if it grows beyond debug usefulness",
+      "generated": true,
+      "committed": false,
+      "schema": "JSONL rows with phase, id, event, session_id, pid, deadlines, duration, and exit_code",
+      "repair": "remove file; next lifecycle adapter invocation recreates it"
+    },
+    {
       "path": "log/hme-codex-proxy.out",
       "owner": "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
       "readers": [
@@ -455,7 +491,9 @@
         "tools/HME/hooks/pretooluse/bash/reader_guards.sh",
         "tools/HME/hooks/pretooluse/bash/cwd_rewrite.sh",
         "tools/HME/hooks/pretooluse/bash/blackbox_guards.sh",
-        "tools/HME/telemetry/index.js"
+        "tools/HME/telemetry/index.js",
+        "tools/HME/hooks/helpers/safety/latency.sh",
+        "tools/HME/event_kernel/hook_watchdog.js"
       ],
       "owner": "multi-writer append contract",
       "readers": [

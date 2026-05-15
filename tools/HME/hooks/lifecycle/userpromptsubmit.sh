@@ -4,6 +4,13 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 INPUT=$(cat)
 PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 
+_WATCHDOG_ALERT=$(printf '%s' "$INPUT" \
+  | PROJECT_ROOT="$PROJECT_ROOT" node "$PROJECT_ROOT/tools/HME/event_kernel/hook_watchdog.js" userprompt-alert 2>/dev/null || true)
+if [ -n "$_WATCHDOG_ALERT" ]; then
+  echo "LIFESAVER -- lifecycle watchdog detected a SessionStart failure." >&2
+  printf '%s\n' "$_WATCHDOG_ALERT" >&2
+fi
+
 # Reset per-turn trackers (turn-edits + brief dedup) consumed by pretooluse_edit/write.
 if [ -n "${PROJECT_ROOT:-}" ]; then
   rm -f "${PROJECT_ROOT}/tmp/hme-turn-edits.txt" \

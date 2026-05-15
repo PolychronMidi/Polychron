@@ -15,6 +15,7 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const { dispatchEvent } = require('./dispatcher');
+const watchdog = require('./hook_watchdog');
 const { nudgeSupervisors } = require('./supervisors');
 
 const LOOP_EVENTS = new Set(['Stop', 'UserPromptSubmit', 'SessionStart', 'PreCompact', 'PostCompact']);
@@ -193,6 +194,7 @@ async function main() {
   nudgeSupervisors(root);
 
   const body = addClaudeFields(event, root, await readStdin());
+  const watch = watchdog.begin(root, event, body, { host: 'claude' });
   let result = await postLifecycle(port, event, body);
   if (!result) {
     await new Promise((r) => setTimeout(r, 500));
@@ -203,7 +205,9 @@ async function main() {
   if (!result) {
     if (maintenanceActive(root)) {
       append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [claude-adapter] proxy unreachable during maintenance (event=${event})`);
-      finalRelay(event, { stdout: '', stderr: ' ', exit_code: 0 });
+      result = { stdout: '', stderr: ' ', exit_code: 0 };
+      watchdog.end(watch, result);
+      finalRelay(event, result);
       return;
     }
     append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [claude-adapter] ${event} direct fallback (proxy down)`);
@@ -224,6 +228,7 @@ async function main() {
     }
   }
 
+  watchdog.end(watch, result);
   finalRelay(event, result);
 }
 

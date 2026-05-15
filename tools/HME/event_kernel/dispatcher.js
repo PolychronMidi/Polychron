@@ -145,7 +145,7 @@ function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') 
     input: stdinJson,
     timeoutMs,
     label: `${eventName}-${path.basename(scriptPath)}`,
-    env: { PROJECT_ROOT },
+    env: { PROJECT_ROOT, HME_HOOK_EVENT: eventName },
   }).then((result) => _finishHook(eventName, scriptPath, startedAt, {
     stdout: result.stdout,
     stderr: result.stderr,

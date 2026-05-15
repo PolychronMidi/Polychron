@@ -15,6 +15,7 @@ source "${_HME_SAFETY_DIR}/project_root.sh"
 source "${_HME_HELPERS_DIR}/_signals.sh"
 source "${_HME_HELPERS_DIR}/hook_ledger.sh"
 source "${_HME_HELPERS_DIR}/service_registry.sh"
+source "${_HME_HELPERS_DIR}/bg.sh"
 
 # 3) Capture hook identity from caller at TOP LEVEL so BASH_SOURCE[1] refers
 # to the hook script that sourced _safety.sh (not a sub-helper).

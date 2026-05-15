@@ -182,6 +182,11 @@ tools/HME/proxy/supervisor/index.js
 # rationale: intent=declarative-config; revisit-when=invariants>=300; decided=2026-05-11
 tools/HME/config/invariants.json
 
+# state-files.json: declarative ownership registry; splitting would hide the
+# single-writer/multi-writer map that audits consume as one catalogue.
+# rationale: intent=declarative-config; revisit-when=registry>=100; decided=2026-05-15
+tools/HME/config/state-files.json
+
 # watcher.py: single-watchdog Observer + filter cascade + debounce timer + reindex dispatch share `_changed_files`, `_timer`, `_last_reindex`, `_consecutive_failures` lock-guarded state. Splitting filter from dispatch from reindex requires either funneling shared state through 3+ module boundaries or refactoring to a class. Module-level state-coupled lifecycle.
 # rationale: intent=lifecycle-cohesion; revisit-when=structural-refactor; decided=2026-05-11
 tools/HME/service/watcher.py

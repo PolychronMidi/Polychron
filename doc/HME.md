@@ -84,6 +84,8 @@ catalog replaces Codex model `base_instructions` and
   best-effort behavior.
 - Hooks are host adapters, not business logic. Shared behavior belongs in the
   event kernel, proxy middleware, policies, or service modules.
+- Hook background work must detach stdio via `_hme_bg*`; lifecycle adapter
+  starts/ends are mirrored by `event_kernel/hook_watchdog.js`.
 - Filesystem state must have an owner. Update
   [state-files.json](../tools/HME/config/state-files.json) before adding a
   shared state writer.

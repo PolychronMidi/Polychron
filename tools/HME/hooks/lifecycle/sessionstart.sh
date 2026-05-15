@@ -34,8 +34,10 @@ mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-primer-needed.flag"
 
 # Refresh adaptive config and coherence health on every session start.
-(python3 "${PROJECT}/tools/HME/scripts/adapt-from-activity.py" || true) >/dev/null 2>&1 &
-(python3 "${PROJECT}/tools/HME/scripts/verify-coherence-registry.py" || true) >/dev/null 2>&1 &
+_hme_bg_timeout 20 adapt-from-activity "$PROJECT/log/hme-bg-adapt-from-activity.err" \
+  python3 "${PROJECT}/tools/HME/scripts/adapt-from-activity.py"
+_hme_bg_timeout 30 verify-coherence-registry "$PROJECT/log/hme-bg-verify-coherence-registry.err" \
+  python3 "${PROJECT}/tools/HME/scripts/verify-coherence-registry.py"
 
 _signal_emit session_start sessionstart session '{}'
 
@@ -188,8 +190,8 @@ _LANCE_DEL="$PROJECT/tools/HME/KB/code_chunks.lance/_deletions"
 if [ -d "$_LANCE_DEL" ]; then
   _DEL_COUNT=$(ls -1 "$_LANCE_DEL" 2>/dev/null | wc -l)  # silent-ok: optional fallback path.
   if [ "$_DEL_COUNT" -gt 50 ]; then
-    PROJECT_ROOT="$PROJECT" python3 "$PROJECT/scripts/compact-lance-tables.py" \
-      > "$PROJECT/log/hme-lance-compact.log" 2>&1 &
+    _hme_bg_timeout 60 compact-lance "$PROJECT/log/hme-lance-compact.log" \
+      env PROJECT_ROOT="$PROJECT" python3 "$PROJECT/scripts/compact-lance-tables.py"
   fi
 fi
 
@@ -198,50 +200,35 @@ mkdir -p "$PROJECT/log" 2>/dev/null
 HOLO_SCRIPT="$PROJECT/tools/HME/scripts/snapshot-holograph.py"
 if [ -f "$HOLO_SCRIPT" ]; then
   SESSION_HOLO="$PROJECT/tmp/hme-session-start.holograph.json"
-  : > "$PROJECT/log/hme-bg-snapshot-holograph.err"
-  # Atomic write: temp file + same-filesystem mv.
-  (
-    SESSION_HOLO_TMP="${SESSION_HOLO}.$$.tmp"
-    PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout \
-      > "$SESSION_HOLO_TMP" 2>"$PROJECT/log/hme-bg-snapshot-holograph.err" \
-      && mv "$SESSION_HOLO_TMP" "$SESSION_HOLO" \
-      || rm -f "$SESSION_HOLO_TMP"
-  ) >/dev/null 2>>"$PROJECT/log/hme-bg-snapshot-holograph.err" &
+  SNAP_LOG="$PROJECT/log/hme-bg-snapshot-holograph.err"
+  : > "$SNAP_LOG"
+  export PROJECT SESSION_HOLO HOLO_SCRIPT SNAP_LOG
+  _hme_bg_shell_timeout 25 snapshot-holograph "$SNAP_LOG" '
+    tmp="${SESSION_HOLO}.$$.tmp"
+    PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout >"$tmp" 2>>"$SNAP_LOG" \
+      && mv "$tmp" "$SESSION_HOLO" || rm -f "$tmp"
+  '
 fi
 
 # Refresh tool-effectiveness analysis in the background.
 EFF_SCRIPT="$PROJECT/tools/HME/scripts/analyze-tool-effectiveness.py"
-EFF_PID=""
 if [ -f "$EFF_SCRIPT" ]; then
-  : > "$PROJECT/log/hme-bg-analyze-tool-effectiveness.err"
-  PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT" \
-    > /dev/null 2>"$PROJECT/log/hme-bg-analyze-tool-effectiveness.err" &
-  EFF_PID=$!
+  _hme_bg_timeout 20 analyze-tool-effectiveness "$PROJECT/log/hme-bg-analyze-tool-effectiveness.err" \
+    env PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT"
 fi
 
 # Update HCI trajectory in the background for time-series analysis.
 TRAJ_SCRIPT="$PROJECT/tools/HME/scripts/analyze-hci-trajectory.py"
-TRAJ_PID=""
 if [ -f "$TRAJ_SCRIPT" ]; then
-  : > "$PROJECT/log/hme-bg-analyze-hci-trajectory.err"
-  PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" \
-    > /dev/null 2>"$PROJECT/log/hme-bg-analyze-hci-trajectory.err" &
-  TRAJ_PID=$!
+  _hme_bg_timeout 20 analyze-hci-trajectory "$PROJECT/log/hme-bg-analyze-hci-trajectory.err" \
+    env PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT"
 fi
 
 # Surface the current HCI trajectory summary so agents see the health arc.
 if [ -f "$TRAJ_SCRIPT" ]; then
-  if [ -n "$TRAJ_PID" ]; then
-    # Poll-wait for up to 5s. `wait -t` isn't portable across bash versions;
-    # kill after deadline to unblock if the background job has truly hung.
-    for _i in 1 2 3 4 5; do
-      kill -0 "$TRAJ_PID" 2>/dev/null || break
-      sleep 1
-    done
-  fi
   _SS_TRAJ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_traj_err_$$")  # silent-ok: optional fallback path.
   set +e
-  TRAJ_LINE=$(PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" --summary 2>"$_SS_TRAJ_ERR")
+  TRAJ_LINE=$(PROJECT_ROOT="$PROJECT" timeout 10s python3 "$TRAJ_SCRIPT" --summary 2>"$_SS_TRAJ_ERR")
   _SS_TRAJ_RC=$?
   set -e
   if [ "$_SS_TRAJ_RC" -ne 0 ] && [ -s "$_SS_TRAJ_ERR" ] && [ -d "$PROJECT/log" ]; then

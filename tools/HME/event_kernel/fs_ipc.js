@@ -74,6 +74,7 @@ function spawnFileInput(command, args = [], opts = {}) {
     try {
       child = spawn('bash', ['-lc', 'exec "$@" < "$HME_IPC_STDIN"', 'hme-ipc', command, ...args], {
         cwd: opts.cwd || PROJECT_ROOT,
+        detached: true,
         stdio: ['ignore', 'pipe', 'pipe'],
         env: { ...process.env, PROJECT_ROOT, ...ipc.env, ...(opts.env || {}) },
       });
@@ -87,13 +88,21 @@ function spawnFileInput(command, args = [], opts = {}) {
     let stdout = '';
     let stderr = '';
     let finished = false;
+    let timedOut = false;
     const timeoutMs = opts.timeoutMs || 30_000;
+    const killGroup = (signal) => {
+      try { process.kill(-child.pid, signal); }
+      catch (_e) {
+        try { child.kill(signal); } catch (_e2) { /* best effort */ }
+      }
+    };
     const timer = setTimeout(() => {
       if (finished) return;
-      finished = true;
-      try { child.kill('SIGTERM'); } catch (_e) { /* best effort */ }
-      ipc.cleanup();
-      resolve({ stdout, stderr: `${stderr}\n[fs_ipc] timeout after ${timeoutMs}ms: ${command}`, exit_code: -1, signal: 'SIGTERM', error: null });
+      timedOut = true;
+      killGroup('SIGTERM');
+      setTimeout(() => {
+        if (!finished) killGroup('SIGKILL');
+      }, 500).unref();
     }, timeoutMs);
 
     child.stdout.on('data', (chunk) => { stdout += chunk.toString('utf8'); });
@@ -110,6 +119,10 @@ function spawnFileInput(command, args = [], opts = {}) {
       finished = true;
       clearTimeout(timer);
       ipc.cleanup();
+      if (timedOut) {
+        resolve({ stdout, stderr: `${stderr}\n[fs_ipc] timeout after ${timeoutMs}ms: ${command}`, exit_code: -1, signal: signal || 'SIGTERM', error: null });
+        return;
+      }
       resolve({ stdout, stderr, exit_code: code ?? 0, signal: signal || null, error: null });
     });
   });
