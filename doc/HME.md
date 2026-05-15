@@ -25,8 +25,9 @@ rules, RAG stack, local LLM notes, and testing runbook.
 ## Current Command Surface
 
 Use native Read/Edit/Grep/Glob/TodoWrite first; proxy middleware enriches or
-replaces those where HME needs to participate. Claude `TodoWrite` and Codex
-`update_plan` both sync into `doc/templates/TODO.md`; the Codex path runs
+replaces those where HME needs to participate. If a Codex host does not expose
+native Read/Edit, use `i/read` or `i/edit`; they emit synthetic native events.
+Claude `TodoWrite` and Codex `update_plan` both sync into `doc/templates/TODO.md`; the Codex path runs
 through the `codex_proxy` Responses service when configured, with universal
 pulse as the fallback scanner. There is no manual Codex TODO sync command in
 normal operation; failures belong in proxy/pulse repair, not operator ritual. Use `i/`
