@@ -1,6 +1,8 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const { execFileSync } = require('child_process');
 const registry = require('../policies/registry');
 const config = require('../policies/config');
 const stateClient = require('./session_state_client');
@@ -37,6 +39,81 @@ function _denyIf(condition, reason) {
   return condition ? _permission('deny', reason) : null;
 }
 
+
+function _commentBloatDecision(file, content, writeVerb) {
+  const fp = String(file || '').toLowerCase();
+  const prefixes = /\.(js|ts|jsx|tsx|mjs|cjs)$/.test(fp) ? ['//'] : /\.(py|sh|bash|yaml|yml|toml)$/.test(fp) ? ['#'] : [];
+  if (!prefixes.length) return null;
+  const threshold = Number(process.env.COMMENT_BLOAT_WARN || 3);
+  const longLine = Number(process.env.COMMENT_BLOAT_LONG_LINE || 90);
+  const annotations = ['# rationale:', '# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// rationale:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa'];
+  let run = 0;
+  for (const line of String(content || '').split('\n')) {
+    const t = line.trimStart();
+    if (prefixes.some((p) => t.startsWith(p)) && !t.startsWith('#!')) {
+      if (line.length >= longLine) return _permission('deny', `BLOCKED: ${writeVerb} content contains a comment line of ${line.length} chars (>= ${longLine}). Long rationale belongs in doc/.`);
+      if (!annotations.some((a) => t.startsWith(a))) {
+        run += 1;
+        if (run >= threshold) return _permission('deny', `BLOCKED: ${writeVerb} content contains a ${run}-line consecutive inline-comment block. Trim to <=2 lines OR move prose into doc/.`);
+      } else run = 0;
+    } else run = 0;
+  }
+  return null;
+}
+
+function _runTddGate(file) {
+  if (!file) return null;
+  const script = path.join(PROJECT_ROOT, 'tools/HME/scripts/tdd_test_first_gate.py');
+  if (!fs.existsSync(script)) return null;
+  try { execFileSync('python3', [script, '--file', file], { cwd: PROJECT_ROOT, env: { ...process.env, PROJECT_ROOT }, encoding: 'utf8', stdio: 'pipe' }); }
+  catch (err) { return _permission('deny', String(err.stderr || err.stdout || err.message || 'TDD test-first gate failed').slice(0, 800)); }
+  return null;
+}
+
+function _decisionAudit(file) {
+  if (!/(CLAUDE\.md|doc\/templates\/TODO\.md|\.claude\/agents\/.*\.md|tools\/HME\/scripts\/detectors\/.*\.py|tools\/HME\/proxy\/stop_chain\/policies\/.*\.js)$/.test(file || '')) return;
+  try {
+    const log = path.join(PROJECT_ROOT, 'output/metrics/decision-audit.jsonl');
+    fs.mkdirSync(path.dirname(log), { recursive: true });
+    fs.appendFileSync(log, JSON.stringify({ ts: new Date().toISOString(), file, reviewed: false, consulted: false, skip_reason: '' }) + '\n');
+  } catch (_err) { /* silent-ok: optional audit sink. */ }
+}
+
+function _backgroundWarningDecision(file, content) {
+  if (!String(file || '').includes('tools/HME/service/server')) return null;
+  if (/logger\.warning\(.*\b(background|warm.*fail|warm.*error|onnx.*failed|VRAM TIGHT|lazy warm)\b/.test(content || '')) {
+    return _permission('deny', 'BLOCKED: Expected background failure logged as WARNING -- use logger.info. Only critical failures should be WARNING in HME server.');
+  }
+  return null;
+}
+
+function _moduleName(file) { return path.basename(String(file || '')).replace(/\.[^.]*$/, ''); }
+function _workerValidate(moduleName, timeoutMs = 600) {
+  return new Promise((resolve) => {
+    if (!moduleName) return resolve(null);
+    const port = process.env.HME_WORKER_PORT || '9098';
+    const body = JSON.stringify({ query: moduleName });
+    const req = http.request({ hostname: '127.0.0.1', port, path: '/validate', method: 'POST', timeout: timeoutMs, headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch (_err) { resolve(null); } });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.write(body);
+    req.end();
+  });
+}
+
+async function _kbBugfixDecision(file, content, writeVerb) {
+  if (!String(file || '').includes('/Polychron/src/') || String(content || '').length <= 20) return null;
+  const data = await _workerValidate(_moduleName(file));
+  const blocks = Array.isArray(data && data.blocks) ? data.blocks : [];
+  const hit = blocks.find((b) => typeof b.score === 'number' && b.score >= 0.6);
+  if (!hit) return null;
+  return _permission('deny', `BLOCKED: KB has a bugfix entry "${String(hit.title || '').slice(0, 120)}" strongly matching this module. Review with learn(query='${_moduleName(file)}') before ${writeVerb.toLowerCase()}ing.`);
+}
+
 function _shellParityDecision(payload) {
   const input = payload.tool_input || {};
   const file = input.file_path || '';
@@ -62,6 +139,17 @@ function _shellParityDecision(payload) {
 
   d = _denyIf(/^(id_rsa|id_ed25519|id_ecdsa|id_dsa)(\.pub)?$|\.(pem|key|pfx|p12|jks)$|^credentials(\.json)?$|^service[-_]account.*\.json$|^\.npmrc$|^\.pypirc$|^\.netrc$/i.test(base),
     `BLOCKED: writing to a credential filename (${base}). Polychron does not store keys, certs, or auth tokens in the repo. If this is a test fixture, name it with a non-credential prefix (e.g. fixture-*.pem); if it's an accidental real key, do NOT proceed.`);
+  if (d) return d;
+
+  _decisionAudit(file);
+
+  d = _runTddGate(file);
+  if (d) return d;
+
+  d = _commentBloatDecision(file, content, writeVerb);
+  if (d) return d;
+
+  d = _backgroundWarningDecision(file, content);
   if (d) return d;
 
   const rootInContent = PROJECT_ROOT && content.includes(PROJECT_ROOT);
@@ -128,6 +216,11 @@ async function preWriteCheck(stdinJson) {
     if (shellDecision.permissionDecision !== 'allow') {
       await stateClient.call('write', payload.session_id || '', { payload, decision: shellDecision });
       return shellDecision;
+    }
+    const kbDecision = await _kbBugfixDecision((payload.tool_input || {}).file_path || '', _content(payload), tool === 'Write' ? 'Write' : 'Edit');
+    if (kbDecision) {
+      await stateClient.call('write', payload.session_id || '', { payload, decision: kbDecision });
+      return kbDecision;
     }
     if (instructs.length) shellDecision.contextualRules.push(...instructs.map((i) => i.message));
     await stateClient.call('write', payload.session_id || '', { payload, decision: shellDecision });
