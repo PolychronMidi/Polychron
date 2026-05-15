@@ -124,6 +124,13 @@ class ServiceRegistryVerifier(Verifier):
                 issues.append("universal_pulse.json still hardcodes http_probes; use http_probe_services")
         except Exception as e:
             issues.append(f"universal_pulse.json invalid/unreadable: {e}")
+        for rel in (
+            "tools/HME/proxy/service_registry.js",
+            "tools/HME/proxy/config_loader.js",
+            "tools/HME/hooks/helpers/service_registry.sh",
+        ):
+            if not os.path.isfile(os.path.join(_PROJECT, rel)):
+                issues.append(f"missing service registry consumer helper: {rel}")
         if issues:
             return _result(FAIL, max(0.0, 1.0 - 0.1 * len(issues)), f"{len(issues)} service registry issue(s)", issues[:12])
         return _result(PASS, 1.0, f"{len(services)} services registered; pulse probes derive from services.json")

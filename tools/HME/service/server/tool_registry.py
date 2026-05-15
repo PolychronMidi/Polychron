@@ -15,6 +15,11 @@ import time
 import types
 import typing
 
+try:
+    from .tool_metadata import tool_metadata
+except ImportError:
+    from tool_metadata import tool_metadata
+
 logger = logging.getLogger("HME")
 
 # name -> {"fn": wrapped callable, "schema": JSON schema dict}
@@ -107,9 +112,10 @@ class Registry:
     into the module-level `_TOOLS` dict instead of into FastMCP."""
 
     def tool(self, **kwargs):
-        meta = kwargs.get("meta") or {}
-        hidden = bool(meta.get("hidden"))
+        raw_meta = kwargs.get("meta") or {}
         def wrapper(fn):
+            metadata = tool_metadata(fn, raw_meta)
+            hidden = bool(metadata.get("hidden"))
             @functools.wraps(fn)
             def logged(*args, **kwargs):
                 # Reset non-HME streak marker (matches _LoggingMCP behavior).
@@ -155,7 +161,9 @@ class Registry:
                     logger.error(f"ERR  {name} [{elapsed:.1f}s] {e}\n{_tb.format_exc()}")
                     raise
 
-            _TOOLS[fn.__name__] = {"fn": logged, "schema": _schema_for(fn), "hidden": hidden}
+            schema = _schema_for(fn)
+            schema["x_hme_metadata"] = metadata
+            _TOOLS[fn.__name__] = {"fn": logged, "schema": schema, "hidden": hidden, "metadata": metadata}
             return logged
         return wrapper
 
@@ -212,3 +220,7 @@ def list_schemas() -> list:
 
 def names() -> list:
     return list(_TOOLS.keys())
+
+
+def list_metadata() -> list[dict]:
+    return [entry["metadata"] for entry in _TOOLS.values()]

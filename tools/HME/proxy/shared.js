@@ -3,6 +3,7 @@
 
 const { spawn } = require('child_process');
 const path = require('path');
+const { loadJsonc } = require('./config_loader');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
 const EMIT_PY = path.join(PROJECT_ROOT, 'tools/HME/activity/emit.py');
@@ -91,12 +92,8 @@ function hasMisplacedRootOnlyDir(filePath, names, root = PROJECT_ROOT) {
   return projectPathSegments(filePath, root).some((part, idx) => idx > 0 && wanted.has(part));
 }
 
-// Single loader for config/models.json (JSONC with // comments). Every
-// caller routes through this so comment-stripping lives in one place.
 function loadModelsJson() {
-  const raw = require('fs').readFileSync(
-    require('path').resolve(PROJECT_ROOT, 'config', 'models.json'), 'utf8');
-  return JSON.parse(raw.replace(/^\s*\/\/.*$/gm, '').replace(/[ \t]+\/\/.*$/gm, ''));
+  return loadJsonc(path.resolve(PROJECT_ROOT, 'config', 'models.json'));
 }
 
 module.exports = {

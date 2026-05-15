@@ -15,12 +15,22 @@ import json
 import logging
 import os
 import subprocess
+import sys
 import time
 import urllib.request
 
 from hme_env import ENV
 
 logger = logging.getLogger("HME")
+
+
+def _service_registry(project_root: str):
+    scripts_dir = os.path.join(project_root, "tools", "HME", "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from service_registry import service_map, service_url  # noqa: WPS433
+    services = service_map()
+    return service_url(services["llamacpp_daemon"]), service_url(services["worker"])
 
 
 def _fmt_uptime(started_ts: float) -> str:
@@ -124,10 +134,11 @@ def _probe_versions(project_root: str) -> tuple[str, list[str]]:
             canonical = json.load(f)
     except Exception as e:
         return f"  versions: canonical file unreadable ({e})", []
+    daemon_health, worker_health = _service_registry(project_root)
     live = {}
     for name, url in [
-        ("daemon", "http://127.0.0.1:7735/version"),
-        ("worker", "http://127.0.0.1:9098/version"),
+        ("daemon", daemon_health.replace("/health", "/version")),
+        ("worker", worker_health.replace("/health", "/version")),
     ]:
         try:
             with urllib.request.urlopen(url, timeout=2) as r:
@@ -151,7 +162,7 @@ def _probe_versions(project_root: str) -> tuple[str, list[str]]:
 def health() -> str:
     """Operator health summary. One call, all signals."""
     project_root = ENV.optional("PROJECT_ROOT", "") or os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     )
     lines: list[str] = ["## HME Health Summary", ""]
 
@@ -197,9 +208,10 @@ def health() -> str:
 
     # Ports / endpoints
     lines.append("### Endpoints")
+    daemon_health, worker_health = _service_registry(project_root)
     for name, url in [
-        ("daemon  ", "http://127.0.0.1:7735/health"),
-        ("worker  ", "http://127.0.0.1:9098/health"),
+        ("daemon  ", daemon_health),
+        ("worker  ", worker_health),
         ("arbiter ", "http://127.0.0.1:8080/health"),
         ("coder   ", "http://127.0.0.1:8081/health"),
     ]:

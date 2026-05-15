@@ -1,6 +1,6 @@
 # HME Inference Proxy
 
-The authoritative MITM proxy between Claude Code and the Anthropic API. Everything visible to the model passes through here -- this is where context-efficiency, cache-correctness, and HME enrichment all live. Runs on port 9099; supervises the worker (MCP server at 9098) and `llamacpp_daemon` (7735) as ps-tree children via `supervisor/`. A single `pkill -P <proxy-pid>` tears the whole stack down.
+The authoritative MITM proxy between Claude Code and the Anthropic API. Everything visible to the model passes through here -- this is where context-efficiency, cache-correctness, and HME enrichment all live. Ports and health URLs come from `tools/HME/config/services.json`; the proxy supervises the worker and `llamacpp_daemon` as ps-tree children via `supervisor/`.
 
 ## Data flow
 
@@ -24,7 +24,7 @@ Native tool_uses stream through unchanged. HME turns buffer (streaming lost) bec
 node tools/HME/proxy/hme_proxy.js
 
 # Point Claude Code at it
-export ANTHROPIC_BASE_URL=http://127.0.0.1:9099
+export ANTHROPIC_BASE_URL=http://127.0.0.1:${HME_PROXY_PORT:-9099}
 claude
 ```
 
@@ -32,9 +32,9 @@ claude
 
 | Var | Default | Purpose |
 -
-| `HME_PROXY_PORT` | `9099` | Listen port |
-| `HME_MCP_PORT` | `9098` | Internal worker port |
-| `HME_LLAMACPP_DAEMON_PORT` | `7735` | Local-model daemon port |
+| `HME_PROXY_PORT` | services.json | Listen port |
+| `HME_WORKER_PORT` | services.json | Internal worker port |
+| `HME_LLAMACPP_DAEMON_PORT` | services.json | Local-model daemon port |
 | `HME_PROXY_UPSTREAM_HOST` | `api.anthropic.com` | Upstream host |
 | `HME_PROXY_UPSTREAM_PORT` | `443` | Upstream port |
 | `HME_PROXY_UPSTREAM_TLS` | `1` | `0` for plain HTTP (tests) |
@@ -67,7 +67,7 @@ Exit `0` = clean, `1` = violation.
 
 - `tools/HME/activity/emit.py` -- event emitter (proxy calls this fire-and-forget)
 - `tools/HME/service/worker.py` -- Python worker serving `/tool/*`, `/enrich`, `/validate`
-- `tools/HME/service/llamacpp_daemon.py` -- local-model daemon
+- `tools/HME/service/llamacpp_daemon/` -- local-model daemon package
 - `scripts/pipeline/validators/check-hme-coherence.js` -- pipeline gate reading the activity stream
 
 <!-- HME-DIR-INTENT

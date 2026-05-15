@@ -45,7 +45,9 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 )
 _CORPUS = os.path.join(_PROJECT, "tools", "models", "training", "hme-arbiter-corpus.jsonl")
 _CONFIG = os.path.join(_PROJECT, "tools", "models", "training", "hme-arbiter-finetune.yaml")
-_SHIM_URL = "http://127.0.0.1:9098/rag"
+sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "scripts"))
+from service_registry import service_map, service_url  # noqa: E402
+_SHIM_URL = service_url(service_map()["worker"]).replace("/health", "/rag")
 
 
 def _query(method: str, **kwargs) -> list:
@@ -58,7 +60,7 @@ def _query(method: str, **kwargs) -> list:
         with urllib.request.urlopen(req, timeout=10) as resp:
             return json.loads(resp.read()).get("result", []) or []
     except Exception as e:
-        sys.stderr.write(f"shim error: {e}\n")
+        sys.stderr.write(f"worker rag error: {e}\n")
         return []
 
 

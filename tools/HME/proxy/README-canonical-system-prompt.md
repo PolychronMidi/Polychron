@@ -53,7 +53,7 @@ canonical:
 1. `HME_DUMP_SYSTEM_PROMPT=1` in `.env`
 2. Restart proxy
 3. Fire any request through the proxy (e.g.,
-   `ANTHROPIC_BASE_URL=http://127.0.0.1:9099 claude -p "ping"`)
+   `ANTHROPIC_BASE_URL=http://127.0.0.1:${HME_PROXY_PORT:-9099} claude -p "ping"`)
 4. Inspect `tmp/claude-system-prompt.txt` (system block only) AND
    `tmp/claude-full-payload.json` (full request: system + tools + params)
 5. Restore `HME_DUMP_SYSTEM_PROMPT=0`

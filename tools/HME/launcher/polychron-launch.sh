@@ -50,7 +50,8 @@ else
 fi
 
 PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
-PROXY_PORT="${HME_PROXY_PORT:-9099}"
+source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true
+PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"
 PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
 PROXY_STARTUP_TIMEOUT="${HME_PROXY_STARTUP_TIMEOUT:-25}"
 
@@ -70,7 +71,7 @@ _port_healthy() {
 }
 
 # 0. OmniRoute (MODE=4/5 main-agent translator)
-_OMNIROUTE_PORT="${HME_OMNIROUTE_PORT:-20128}"
+_OMNIROUTE_PORT="$(_hme_service_port omniroute)"
 _OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
 _OD_START="${OVERDRIVE_MODE:-0}"
 if [ "$_OD_START" = "4" ] || [ "$_OD_START" = "5" ] || [ "$_OD_START" = "6" ]; then
@@ -181,7 +182,8 @@ echo "[launch] health check..." >&2
 _proxy_status=$(curl -sf --max-time 3 "${PROXY_URL}/health" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "unreachable")
 echo "[launch]   proxy  -> ${_proxy_status}" >&2
 
-_worker_status=$(curl -sf --max-time 3 "http://127.0.0.1:9098/health" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'), d.get('phase',''))" 2>/dev/null || echo "starting...")
+_worker_url="$(_hme_service_url worker 2>/dev/null || printf 'http://127.0.0.1:%s/health' "${HME_WORKER_PORT:-9098}")"
+_worker_status=$(curl -sf --max-time 3 "$_worker_url" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'), d.get('phase',''))" 2>/dev/null || echo "starting...")
 echo "[launch]   worker -> ${_worker_status}" >&2
 
 if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ]; then

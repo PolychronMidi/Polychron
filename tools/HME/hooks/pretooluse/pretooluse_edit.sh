@@ -2,8 +2,7 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true
-# PreToolUse: Edit -- ellipsis-stub block (true pre-execution reject) + onboarding
-# warn. Activity emission, BRIEF check, and KB enrichment moved to proxy middleware.
+# PreToolUse: Edit -- canonical JS pre-write policy + local onboarding/KB side effects.
 INPUT=$(cat)
 _DECISION_ERR="${PROJECT_ROOT:+$PROJECT_ROOT/tmp/}hme-prewrite-check.$$.err"
 [ -n "${PROJECT_ROOT:-}" ] || _DECISION_ERR="/tmp/hme-prewrite-check.$$.err"
@@ -55,36 +54,6 @@ PYEOF
   fi
 fi
 # Recording deferred to AFTER blocking gates -- see end of file.
-
-# Mid-pipeline src edit block. JS counterpart: block-mid-pipeline-write.
-if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
-  _emit_block "ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT edit src/ code mid-pipeline -- the pipeline's behavior is being measured against the code state at launch. Wait for completion; use HME tools (i/learn, i/review, i/trace) or edit tooling/docs in the meantime."
-  exit 2
-fi
-
-# Block edits to the auto-memory directory (parity with pretooluse_write.sh).
-# Memories are deprecated; HME KB (i/learn) is canonical.
-if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
-  _emit_block "BLOCKED: The .claude/projects memory directory is deprecated. Use HME KB instead: i/learn title=\"...\" content=\"...\" category=\"feedback\". Memories that point at behavioral rules belong in CLAUDE.md, not memory/."
-  exit 2
-fi
-
-if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
-  _emit_block "BLOCKED: Edit new_string contains comment-ellipsis stub placeholder. Use the ACTUAL replacement content -- no stubs."
-  exit 2
-fi
-
-# Hardcoded-project-root guard: rejects host-specific path baked into
-# source. Use $PROJECT_ROOT / $CLAUDE_PROJECT_DIR / walk-up. Matches
-# against LIVE PROJECT_ROOT to avoid false-positive on other clones.
-if [ -n "${PROJECT_ROOT:-}" ] \
-   && echo "$NEW_STRING" | grep -qF "$PROJECT_ROOT" \
-   && echo "$FILE" | grep -qE '\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$' \
-   && ! echo "$NEW_STRING" | grep -qE '"PROJECT_ROOT":[^,}]*"'"$PROJECT_ROOT"'"' \
-   && ! echo "$FILE" | grep -qE '(/\.env(\.[a-z]+)?$|/README(\.[a-z]+)?$|/CLAUDE\.md$|/tools/HME/KB/devlog/|/doc/[^/]+\.md$|/doc/archive/)'; then
-  _emit_block "BLOCKED: Edit new_string contains hardcoded project root '$PROJECT_ROOT'. Use \$PROJECT_ROOT (already set by .env via _safety.sh) or \$CLAUDE_PROJECT_DIR (Claude Code env var) -- never a host-specific path. The .env file itself is the only legitimate place for the literal path; it's checked-in but each clone overrides it. Exempt files: README, CLAUDE.md, devlog snapshots."
-  exit 2
-fi
 
 # Bounded-reads vow: reset counter on edit ATTEMPT (TDD-blocked attempts still
 # break the read streak; counter should reflect "agent tried to act").
@@ -149,70 +118,7 @@ for ln in content.split('\n'):
   fi
 fi
 
-# CONSTITUTION rule 3: naked except:pass without silent-ok annotation.
-if echo "$FILE" | grep -qE '\.py$'; then
-  _SILENT_OK_HIT=$(NEW_STRING="$NEW_STRING" _safe_py3 "
-import os, re
-content = os.environ.get('NEW_STRING', '')
-pat = re.compile(r'except[^:\n]*:\s*\n[ \t]*pass\b', re.MULTILINE)
-for m in pat.finditer(content):
-    window = content[max(0, m.start()-200):m.end()+200]
-    if 'silent-ok' in window:
-        continue
-    print('1')
-    break
-" "")
-  if [ -n "$_SILENT_OK_HIT" ]; then
-    _emit_block "BLOCKED: Edit new_string contains naked 'except: pass' without '# silent-ok: <reason>' annotation. CONSTITUTION rule 3 (Errors propagate / fail-fast): errors that are genuinely safe to discard get an inline '# silent-ok: <reason>' comment naming WHY. Either annotate or propagate."
-    exit 2
-  fi
-fi
-
-# Block 4+ identical non-word, non-whitespace, non-paren/bracket characters
-# in a row (visual-decoration spam). JS counterpart: block-character-spam.
-if _policy_enabled block-character-spam; then
-  _SPAM_HIT=$(NEW_STRING="$NEW_STRING" _safe_py3 "
-import os, re
-content = os.environ.get('NEW_STRING', '')
-PAT = re.compile(r'([^\w\s()\[\]{}])\1{3,}')
-for i, line in enumerate(content.split('\n'), 1):
-    if 'spam-ok' in line: continue
-    m = PAT.search(line)
-    if m:
-        print(f'line {i}: {m.group(1)!r}x{len(m.group(0))}')
-        break
-" "")
-  if [ -n "$_SPAM_HIT" ]; then
-    _emit_block "BLOCKED: Edit new_string contains a run of 4+ identical decoration characters ($_SPAM_HIT). Visual-decoration spam (runs of dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing) is banned. Use plain text; normalize markdown table separators to 3 dashes per cell; demote headings to depth <=3. Append the literal token spam-ok on a line to opt out where genuinely required."
-    exit 2
-  fi
-fi
-
-# Pre-save pattern lint -- block new_string before it lands if it introduces
-# forbidden patterns. Each block cites the rule + the fix, so the message
-# alone is enough for the agent to correct the edit.
 if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
-  if echo "$NEW_STRING" | grep -qE '\bglobalThis\.|(^|[^a-zA-Z_])global\.[a-zA-Z_]'; then
-    _emit_block "BLOCKED: new_string uses global. or globalThis. -- 5 Core Principles #1 forbids these. Reference the global directly (declared in globals.d.ts)."
-    exit 2
-  fi
-  if echo "$NEW_STRING" | grep -qE '\|\|[[:space:]]*(0|\[\]|\{\})([^a-zA-Z0-9_]|$)'; then
-    _emit_block "BLOCKED: new_string uses || 0 / || [] / || {} fallback -- 5 Core Principles #2 requires fail-fast. Use validator.optionalFinite(val, fallback) or validator.create('Module') + required checks."
-    exit 2
-  fi
-  if echo "$NEW_STRING" | grep -qE '\.getSnapshot\(\)[[:space:]]*\.[[:space:]]*couplingMatrix'; then
-    _emit_block "BLOCKED: new_string reads .couplingMatrix off getSnapshot() -- forbidden outside coupling engine / meta-controllers (local/no-direct-coupling-matrix-read). Register a bias via conductorIntelligence instead."
-    exit 2
-  fi
-  if echo "$NEW_STRING" | grep -qE '\bconsole\.warn\b' && ! echo "$NEW_STRING" | grep -qE "console\.warn\([^)]*['\"]Acceptable warning:"; then
-    _emit_block "BLOCKED: console.warn without 'Acceptable warning:' prefix -- CLAUDE.md Code Style rule. Format: console.warn('Acceptable warning: <message>')."
-    exit 2
-  fi
-  if echo "$NEW_STRING" | grep -qE 'setBinaural\s*\(\s*([0-7](\.[0-9]+)?|1[3-9]|[2-9][0-9])\b'; then
-    _emit_block "BLOCKED: setBinaural called outside alpha range 8-12Hz -- Hard Rule (binaural is imperceptible neurostimulation only). Clamp to [8, 12]."
-    exit 2
-  fi
-
   # Semantic bugfix lookup -- ask the worker if this module has a known bugfix
   # in KB that scores high against the current edit intent. High-confidence
   # hits (score >= 0.6) block: the edit is likely re-introducing a past bug.
@@ -224,7 +130,7 @@ if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
     if [ ! -f "$CACHE" ]; then
       # 500ms timeout (was 2s, blew p95). Healthy worker fits; degraded
       # worker writes {} and skips the KB check this turn.
-      curl -s -m 0.5 -X POST "http://127.0.0.1:${HME_MCP_PORT:-9098}/validate" \
+      curl -s -m 0.5 -X POST "http://127.0.0.1:${_HME_HTTP_PORT}/validate" \
         -H 'Content-Type: application/json' \
         -d "{\"query\":\"$MODULE\"}" > "$CACHE" 2>/dev/null || echo '{}' > "$CACHE"
     fi
@@ -287,7 +193,7 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
       # time. Healthy /enrich is ~70ms so the new ceiling is 7x headroom.
       _kb_hits=$(curl -sf --max-time 0.5 -X POST -H 'Content-Type: application/json' \
         --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
-        "http://127.0.0.1:${HME_MCP_PORT:-9098}/enrich" 2>/dev/null \
+        "http://127.0.0.1:${_HME_HTTP_PORT}/enrich" 2>/dev/null \
         | python3 -c "
 import json, sys
 try:

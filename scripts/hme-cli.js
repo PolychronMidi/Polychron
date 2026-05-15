@@ -34,8 +34,8 @@
  * exit 1.
  *
  * Environment:
- *   HME_MCP_PORT  Worker port (default 9098)
- *   HME_CLI_HOST  Worker host (default 127.0.0.1)
+ *   HME_WORKER_PORT  Worker port
+ *   HME_CLI_HOST     Worker host override
  *   HME_CLI_TIMEOUT_MS  Per-request timeout (default 120000)
  */
 
@@ -45,6 +45,7 @@ const http = require('http');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const path = require('path');
+const { serviceHost, servicePort } = require('../tools/HME/proxy/service_registry');
 
 // Single source of truth: tools/HME/config/versions.json.
 // Bump that file when the wire protocol between cli/proxy/worker changes --
@@ -55,17 +56,8 @@ const CLI_VERSION = (() => {
   catch (_) { return 'unknown'; }
 })();
 
-function _envPort(name, def) {
-  const raw = process.env[name];
-  if (raw == null || raw === '') return def;
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n < 0 || n > 65535) {
-    throw new Error(`${name}="${raw}" is not a valid port (0-65535)`);
-  }
-  return n;
-}
-const HOST = process.env.HME_CLI_HOST || '127.0.0.1';
-const PORT = _envPort('HME_MCP_PORT', 9098);
+const HOST = process.env.HME_CLI_HOST || serviceHost('worker');
+const PORT = servicePort('worker');
 // Timeouts removed per request: handled at lower layers
 const TIMEOUT_MS = 0;
 
@@ -204,8 +196,7 @@ function _getVersion(host, port, timeoutMs) {
 }
 function getWorkerVersion(timeoutMs) { return _getVersion(HOST, PORT, timeoutMs); }
 function getProxyVersion(timeoutMs) {
-  const proxyPort = _envPort('HME_PROXY_PORT', 9099);
-  return _getVersion(HOST, proxyPort, timeoutMs);
+  return _getVersion(serviceHost('proxy'), servicePort('proxy'), timeoutMs);
 }
 
 /**
@@ -315,19 +306,19 @@ async function main() {
             res = { status: 200, body: { ok: true, result: directRes } };
           } else {
             console.error(`hme-cli: HTTP failed (${e.message}); queue path timed out after ${queueTimeoutMs}ms; direct-lance not available for ${tool}`);
-            console.error(`  worker: http://${HOST}:${PORT}  (HME_MCP_PORT=${PORT})`);
+            console.error(`  worker: http://${HOST}:${PORT}  (HME_WORKER_PORT=${PORT})`);
             console.error(`  is the worker process alive? \`ps -ef | grep worker.py\``);
             process.exit(1);
           }
         }
       } catch (qErr) {
         console.error(`hme-cli: HTTP failed (${e.message}); queue fallback errored: ${qErr.message}`);
-        console.error(`  worker: http://${HOST}:${PORT}  (HME_MCP_PORT=${PORT})`);
+        console.error(`  worker: http://${HOST}:${PORT}  (HME_WORKER_PORT=${PORT})`);
         process.exit(1);
       }
     } else {
       console.error(`hme-cli: request failed -- ${e.message}`);
-      console.error(`  worker: http://${HOST}:${PORT}  (HME_MCP_PORT=${PORT})`);
+      console.error(`  worker: http://${HOST}:${PORT}  (HME_WORKER_PORT=${PORT})`);
       console.error(`  is the proxy running? \`curl http://${HOST}:${PORT}/health\` should return status:ready`);
       process.exit(1);
     }

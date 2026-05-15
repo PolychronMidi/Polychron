@@ -9,47 +9,20 @@
 # this specific cache-trap pattern.
 source "${PROJECT_ROOT}/tools/HME/hooks/helpers/_policy_enabled.sh" 2>/dev/null || true
 
-# Block mkdir of misplaced log/, metrics/, or tmp/ directories.
-# JS counterparts: block-mkdir-misplaced-log-tmp + block-mkdir-misplaced-metrics.
-if _policy_enabled block-mkdir-misplaced-log-tmp && echo "$CMD" | grep -qE '\bmkdir\b'; then
-  _MISPLACED_LOG_TMP=$(CMD="$CMD" PROJECT_ROOT="${PROJECT_ROOT:-}" python3 - <<'PY'
-import os, shlex
-root = os.path.abspath(os.environ.get("PROJECT_ROOT") or "")
-cmd = os.environ.get("CMD") or ""
-try:
-    tokens = shlex.split(cmd, posix=True)
-except ValueError:
-    tokens = cmd.split()
-capture = False
-for token in tokens:
-    if token == "mkdir" or token.endswith("/mkdir"):
-        capture = True
-        continue
-    if not capture:
-        continue
-    if token in {"&&", "||", ";", "|"}:
-        capture = False
-        continue
-    if token.startswith("-"):
-        continue
-    target = token.replace("${PROJECT_ROOT}", root).replace("$PROJECT_ROOT", root)
-    full = target if os.path.isabs(target) else os.path.join(root, target)
-    rel = os.path.relpath(os.path.abspath(full), root)
-    if rel == ".." or rel.startswith(".." + os.sep):
-        continue
-    parts = [p for p in rel.split(os.sep) if p]
-    if any(part in {"log", "tmp"} for part in parts[1:]):
-        print("1")
-        break
-PY
-)
-  if [ -n "$_MISPLACED_LOG_TMP" ]; then
+# Block mkdir of misplaced log/, metrics/, or tmp/ directories via the
+# canonical JS path_policy module used by proxy policies.
+if echo "$CMD" | grep -qE '\bmkdir\b'; then
+  _MKDIR_VERDICT=$(CMD="$CMD" PROJECT_ROOT="${PROJECT_ROOT:-}" node -e "
+const p = require(process.env.PROJECT_ROOT + '/tools/HME/proxy/path_policy');
+const cmd = process.env.CMD || '';
+if (p.mkdirHasMisplacedRootOnlyDir(cmd, ['log', 'tmp'])) console.log('root-only');
+else if (p.mkdirHasMisplacedMetrics(cmd)) console.log('metrics');
+" 2>/dev/null || true)
+  if [ "$_MKDIR_VERDICT" = "root-only" ] && _policy_enabled block-mkdir-misplaced-log-tmp; then
     _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not mkdir subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
     exit 2
   fi
-fi
-if _policy_enabled block-mkdir-misplaced-metrics && echo "$CMD" | grep -qE '\bmkdir\b' && echo "$CMD" | grep -qE '/metrics($|/)'; then
-  if ! echo "$CMD" | grep -qE '"?'"${PROJECT_ROOT}"'/output/metrics'; then
+  if [ "$_MKDIR_VERDICT" = "metrics" ] && _policy_enabled block-mkdir-misplaced-metrics; then
     _emit_block "BLOCKED: metrics/ only exists at output/metrics/. Do not mkdir any other metrics/ directory."
     exit 2
   fi

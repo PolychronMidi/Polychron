@@ -25,11 +25,9 @@
 
 const http = require('http');
 const path = require('path');
+const { servicePort } = require('../service_registry');
 
-const WORKER_PORT = (() => {
-  const raw = Number(process.env.HME_MCP_PORT);
-  return Number.isInteger(raw) && raw >= 1 && raw <= 65535 ? raw : 9098;
-})();
+const WORKER_PORT = servicePort('worker');
 
 const MAX_PREDICTED_SHOWN = 6;
 const MAX_FOOTER_CHARS = 180;

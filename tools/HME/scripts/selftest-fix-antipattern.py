@@ -24,7 +24,9 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve()
 _PROJECT = _HERE.parent.parent.parent.parent  # .../Polychron
-WORKER_URL = os.environ.get("HME_WORKER_URL", "http://127.0.0.1:9098")
+sys.path.insert(0, str(_PROJECT / "tools" / "HME" / "scripts"))
+from service_registry import service_map, service_url  # noqa: E402
+WORKER_URL = os.environ.get("HME_WORKER_URL", service_url(service_map()["worker"]).removesuffix("/health"))
 
 
 def main() -> int:

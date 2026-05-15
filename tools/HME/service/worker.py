@@ -27,6 +27,8 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts"))
+
 # Shared thread pool for /validate. Threads can't be interrupted, so a
 # bounded pool + semaphore caps concurrent in-flight calls; overload cycles
 # can't accumulate. Sizing + acquire-timeout from config/timeouts.json
@@ -310,8 +312,9 @@ from worker_handler import _ThreadingServer, _Handler  # noqa: F401, E402
 
 def main():
     import argparse
+    from service_registry import service_map, service_port
     p = argparse.ArgumentParser(description="HME tool worker")
-    p.add_argument("--port", type=int, default=ENV.optional_int("HME_MCP_PORT", 9098))
+    p.add_argument("--port", type=int, default=service_port(service_map()["worker"]))
     p.add_argument("--host", default="127.0.0.1")
     args = p.parse_args()
 

@@ -11,7 +11,7 @@ import urllib.request
 import glob as _glob_mod
 
 from . import _base as _base_module  # live PROJECT_ROOT reads after run_agent mutation
-from ._base import _SHIM_PORT, _MAX_TOOL_OUTPUT
+from ._base import _WORKER_PORT, _MAX_TOOL_OUTPUT
 
 
 def _project_root() -> str:
@@ -141,7 +141,7 @@ def _exec_kb(query: str) -> str:
     try:
         payload = json.dumps({"engine": "project", "method": "search_knowledge",
                               "kwargs": {"query": query, "top_k": 8}}).encode()
-        req = urllib.request.Request(f"http://127.0.0.1:{_SHIM_PORT}/rag",
+        req = urllib.request.Request(f"http://127.0.0.1:{_WORKER_PORT}/rag",
                                     data=payload, headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             results = json.loads(resp.read()).get("result", [])
@@ -222,5 +222,4 @@ def _execute_tool(call: dict) -> str | None:
 
 
 _LEARNED_STOPWORDS: set = set()
-
 

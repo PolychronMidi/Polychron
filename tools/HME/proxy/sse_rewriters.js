@@ -16,7 +16,9 @@
 
 // Bash run_in_background -> /hme/spawn; avoids task-notification spam.
 
-const SPAWN_URL = 'http://127.0.0.1:9099/hme/spawn';
+const { serviceUrl } = require('./service_registry');
+
+const SPAWN_URL = serviceUrl('proxy', { path: '/hme/spawn' });
 const BASH_TOOL_NAMES = new Set(['Bash']);
 const READ_TOOL_NAMES = new Set(['Read']);
 

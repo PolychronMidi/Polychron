@@ -30,11 +30,13 @@ import urllib.request
 # Central .env loader -- fail-fast semantics.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hme_env import ENV  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "scripts"))
+from service_registry import service_map, service_port  # noqa: E402
 
 logger = logging.getLogger("HME.agent_local")
 
 PROJECT_ROOT = ENV.require("PROJECT_ROOT")
-_SHIM_PORT = ENV.require_int("HME_SHIM_PORT")
+_WORKER_PORT = service_port(service_map()["worker"])
 
 # Model config -- llama-server (OpenAI /v1/chat/completions) is the only backend.
 _ARBITER_MODEL = ENV.require("HME_ARBITER_MODEL")
@@ -61,5 +63,3 @@ _CODE_SIGNALS = {"function", "implementation", "code", "how does", "logic",
 _REASON_SIGNALS = {"why", "design", "architecture", "relationship", "trade-off",
                    "decision", "compare", "difference", "purpose", "motivation",
                    "when should", "pros and cons", "boundary", "constraint"}
-
-

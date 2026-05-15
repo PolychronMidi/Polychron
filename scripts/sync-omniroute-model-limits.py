@@ -87,9 +87,11 @@ def sync(path: Path, catalog: dict, dry_run: bool) -> int:
 
 
 def main() -> int:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools" / "HME" / "scripts"))
+    from service_registry import service_map, service_port
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", default="config/models.json")
-    ap.add_argument("--port", default=os.environ.get("HME_OMNIROUTE_PORT", "20128"))
+    ap.add_argument("--port", default=str(service_port(service_map()["omniroute"])))
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
     path = Path(args.models)

@@ -3,27 +3,10 @@
 
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
+const { servicePort } = require('../service_registry');
 
-function _envPort(name, def) {
-  const raw = process.env[name];
-  if (raw == null || raw === '') return def;
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n < 0 || n > 65535) {
-    throw new Error(`${name}="${raw}" is not a valid port (0-65535)`);
-  }
-  return n;
-}
-// Worker HTTP port (Python tools/HME/service/worker.py). Despite the
-// HME_MCP_PORT env-var name (kept for back-compat with .env files in the
-// wild), this is the WORKER's HTTP port -- NOT the MCP server's port.
-// The MCP server itself runs in-process inside the proxy on the proxy's
-// port (default 9099); see tools/HME/proxy/mcp_server/. Aliasing
-// `WORKER_PORT` as the canonical name; `MCP_PORT` and `SHIM_PORT` kept
-// as legacy aliases.
-const WORKER_PORT = _envPort('HME_MCP_PORT', 9098);
-const MCP_PORT = WORKER_PORT;   // legacy alias -- name is misleading
-const SHIM_PORT = WORKER_PORT;  // legacy alias
-const LLAMACPP_DAEMON_PORT = _envPort('HME_LLAMACPP_DAEMON_PORT', 7735);
+const WORKER_PORT = servicePort('worker');
+const LLAMACPP_DAEMON_PORT = servicePort('llamacpp_daemon');
 
 const PYTHONPATH = process.env.PYTHONPATH || '';
 const MCP_DIR = path.join(PROJECT_ROOT, 'tools/HME/service');
@@ -35,7 +18,7 @@ function mcpEnv() {
     PYTHONPATH: [MCP_DIR, PYTHONPATH].filter(Boolean).join(':'),
     HF_HUB_OFFLINE: '1',
     TRANSFORMERS_OFFLINE: '1',
-    HME_MCP_PORT: String(MCP_PORT),
+    HME_WORKER_PORT: String(WORKER_PORT),
     // Must be set BEFORE PyTorch's first cuda init or it's ignored.
     // expandable_segments avoids the fragmentation that turns a 5 GiB
     // fresh request into a 48 GiB allocation failure during reindex.
@@ -47,9 +30,9 @@ const CHILDREN = [
   {
     name: 'worker',
     cmd: 'python3',
-    args: [path.join(MCP_DIR, 'worker.py'), '--port', String(MCP_PORT)],
+    args: [path.join(MCP_DIR, 'worker.py'), '--port', String(WORKER_PORT)],
     env: mcpEnv,
-    healthUrl: `http://127.0.0.1:${MCP_PORT}/health`,
+    healthUrl: `http://127.0.0.1:${WORKER_PORT}/health`,
     startupMs: 25_000,   // worker loads RAG engines directly -- slower cold boot
     restartDelayMs: 2_000,
     maxRestarts: 20,
@@ -72,4 +55,4 @@ const CHILDREN = [
   },
 ];
 
-module.exports = { CHILDREN, WORKER_PORT, MCP_PORT, SHIM_PORT };
+module.exports = { CHILDREN, WORKER_PORT };

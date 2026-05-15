@@ -4,92 +4,280 @@
     {
       "path": "runtime/hme/proxy-supervisor.pid",
       "owner": "tools/HME/hooks/direct/proxy-supervisor.sh",
-      "readers": ["shell ops", "monitoring"]
+      "readers": [
+        "shell ops",
+        "monitoring"
+      ],
+      "writers": [
+        "tools/HME/hooks/direct/proxy-supervisor.sh"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "runtime/hme/universal-pulse-supervisor.pid",
       "owner": "tools/HME/hooks/direct/universal-pulse-supervisor.sh",
-      "readers": ["shell ops", "monitoring"]
+      "readers": [
+        "shell ops",
+        "monitoring"
+      ],
+      "writers": [
+        "tools/HME/hooks/direct/universal-pulse-supervisor.sh"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "runtime/hme/team-dashboard.json",
       "owner": "tools/HME/scripts/team_dashboard.py",
-      "readers": ["team_agent_router.py", "i/status team"]
+      "readers": [
+        "team_agent_router.py",
+        "i/status team"
+      ],
+      "writers": [
+        "tools/HME/scripts/team_dashboard.py"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "runtime/hme/agent-jobs/*",
       "owner": "tools/HME/scripts/agent_jobs.py",
-      "readers": ["scripts/hme/codex-agent-job.py", "team tools"]
+      "readers": [
+        "scripts/hme/codex-agent-job.py",
+        "team tools"
+      ],
+      "writers": [
+        "tools/HME/scripts/agent_jobs.py"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-proxy-maintenance.flag",
       "owner": "tools/HME/hooks/direct/proxy-maintenance.sh",
-      "readers": ["proxy-supervisor.sh", "universal_pulse.py"]
+      "readers": [
+        "proxy-supervisor.sh",
+        "universal_pulse.py"
+      ],
+      "writers": [
+        "tools/HME/hooks/direct/proxy-maintenance.sh"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-universal-pulse.heartbeat",
       "owner": "tools/HME/activity/universal_pulse.py",
-      "readers": ["scripts/hme-doctor.py", "service_registry.py"]
+      "readers": [
+        "scripts/hme-doctor.py",
+        "service_registry.py"
+      ],
+      "writers": [
+        "tools/HME/activity/universal_pulse.py"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-non-hme-streak.score",
       "owner": "tools/HME/hooks/helpers/_safety.sh",
-      "readers": ["tools/HME/hooks/helpers/_safety.sh"]
+      "readers": [
+        "tools/HME/hooks/helpers/_safety.sh"
+      ],
+      "writers": [
+        "tools/HME/hooks/helpers/_safety.sh"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-streak-warn.txt",
       "owner": "tools/HME/scripts/streak_calibrator.py",
-      "readers": ["tools/HME/hooks/helpers/_safety.sh"]
+      "readers": [
+        "tools/HME/hooks/helpers/_safety.sh"
+      ],
+      "writers": [
+        "tools/HME/scripts/streak_calibrator.py"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-onboarding.state",
       "owner": "tools/HME/hooks/helpers/_onboarding.sh",
-      "readers": ["onboarding hook chain", "status"]
+      "readers": [
+        "onboarding hook chain",
+        "status"
+      ],
+      "writers": [
+        "tools/HME/hooks/helpers/_onboarding.sh"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-log-errors.watermark",
       "owner": "tools/HME/proxy/middleware/20_hme_log_watermark.js",
-      "readers": ["tools/HME/proxy/middleware/20_hme_log_watermark.js"]
+      "readers": [
+        "tools/HME/proxy/middleware/20_hme_log_watermark.js"
+      ],
+      "writers": [
+        "tools/HME/proxy/middleware/20_hme_log_watermark.js"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-middleware-processed.jsonl",
       "owner": "tools/HME/proxy/middleware/index.js",
-      "readers": ["tools/HME/proxy/middleware/index.js"]
+      "readers": [
+        "tools/HME/proxy/middleware/index.js"
+      ],
+      "writers": [
+        "tools/HME/proxy/middleware/index.js"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "runtime/hme/supervisor-abandoned",
       "owner": "tools/HME/hooks/direct/proxy-supervisor.sh",
-      "readers": ["tools/HME/hooks/lifecycle/userpromptsubmit.sh"]
+      "readers": [
+        "tools/HME/hooks/lifecycle/userpromptsubmit.sh"
+      ],
+      "writers": [
+        "tools/HME/hooks/direct/proxy-supervisor.sh"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "output/metrics/detector-stats.jsonl",
       "owner": "each detector _emit_stats",
-      "readers": ["tools/HME/scripts/audit-detector-stats.py"]
+      "readers": [
+        "tools/HME/scripts/audit-detector-stats.py"
+      ],
+      "writers": [
+        "each detector _emit_stats"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "output/metrics/hme-predictions.jsonl",
       "owner": "tools/HME/service/server/tools_analysis/cascade_analysis.py",
-      "readers": ["prediction reconciler"]
+      "readers": [
+        "prediction reconciler"
+      ],
+      "writers": [
+        "tools/HME/service/server/tools_analysis/cascade_analysis.py"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "output/metrics/hme-enricher-efficacy.jsonl",
       "owner": "tools/HME/proxy/middleware/context_budget.js",
-      "readers": ["reports"]
+      "readers": [
+        "reports"
+      ],
+      "writers": [
+        "tools/HME/proxy/middleware/context_budget.js"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "output/metrics/hme-activity.jsonl",
       "owner": "tools/HME/activity/emit.py",
-      "readers": ["i/status", "reports"]
+      "readers": [
+        "i/status",
+        "reports"
+      ],
+      "writers": [
+        "tools/HME/activity/emit.py"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tools/HME/before-editing-cache.json",
       "owner": "worker pre-edit cache writer",
-      "readers": ["before-editing enrichment"]
+      "readers": [
+        "before-editing enrichment"
+      ],
+      "writers": [
+        "worker pre-edit cache writer"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tools/HME/KB/*.lance",
       "owner": "worker KB indexer",
-      "readers": ["knowledge search"]
+      "readers": [
+        "knowledge search"
+      ],
+      "writers": [
+        "worker KB indexer"
+      ],
+      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined",
+      "repair": "run scripts/hme-doctor.py"
     }
   ],
   "multi_writer": [
@@ -125,7 +313,16 @@
         "tools/HME/hooks/pretooluse/bash/cwd_rewrite.sh",
         "tools/HME/hooks/pretooluse/bash/blackbox_guards.sh",
         "tools/HME/telemetry/index.js"
-      ]
+      ],
+      "owner": "multi-writer append contract",
+      "readers": [
+        "diagnostics"
+      ],
+      "retention": "append-only single-line writes with recognizable source tags; bounded trimming only in universal_pulse.py",
+      "generated": true,
+      "committed": false,
+      "schema": "append-only text/jsonl unless coordination says otherwise",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-nexus.state",
@@ -136,7 +333,16 @@
         "tools/HME/hooks/lifecycle/stop/nexus_audit.sh",
         "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
         "tools/HME/hooks/lifecycle/sessionstart.sh"
-      ]
+      ],
+      "owner": "multi-writer append contract",
+      "readers": [
+        "diagnostics"
+      ],
+      "retention": "append-only writes plus bounded prune; rewrites must remain rare and auditable",
+      "generated": true,
+      "committed": false,
+      "schema": "append-only text/jsonl unless coordination says otherwise",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-tab.txt",
@@ -146,14 +352,32 @@
         "tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh",
         "tools/HME/hooks/lifecycle/sessionstart.sh",
         "tools/HME/hooks/helpers/_nexus.sh"
-      ]
+      ],
+      "owner": "multi-writer append contract",
+      "readers": [
+        "diagnostics"
+      ],
+      "retention": "append-only single-line writes with occasional bounded cleanup",
+      "generated": true,
+      "committed": false,
+      "schema": "append-only text/jsonl unless coordination says otherwise",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-errors.turnstart",
       "coordination": "single actor per event class; shared tmp across parallel sessions is unsupported",
       "writers": [
         "tools/HME/hooks/lifecycle/userpromptsubmit.sh"
-      ]
+      ],
+      "owner": "multi-writer append contract",
+      "readers": [
+        "diagnostics"
+      ],
+      "retention": "single actor per event class; shared tmp across parallel sessions is unsupported",
+      "generated": true,
+      "committed": false,
+      "schema": "append-only text/jsonl unless coordination says otherwise",
+      "repair": "run scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-errors.lastread",
@@ -161,7 +385,16 @@
       "writers": [
         "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
         "tools/HME/hooks/lifecycle/stop/lifesaver.sh"
-      ]
+      ],
+      "owner": "multi-writer append contract",
+      "readers": [
+        "diagnostics"
+      ],
+      "retention": "single actor per event class; shared tmp across parallel sessions is unsupported",
+      "generated": true,
+      "committed": false,
+      "schema": "append-only text/jsonl unless coordination says otherwise",
+      "repair": "run scripts/hme-doctor.py"
     }
   ]
 }

@@ -29,6 +29,8 @@ if [ -z "$_SV_ROOT" ]; then
   echo "[proxy-supervisor] cannot resolve project root (no PROJECT_ROOT, no CLAUDE_PROJECT_DIR, no .git found in walk-up); exiting" >&2
   exit 0
 fi
+PROJECT_ROOT="$_SV_ROOT"
+source "$_SV_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true
 
 # Absolute path to THIS script -- used by the `start` subcommand's
 # `source '$_SV_SELF' _loop` fork-to-daemon line. Was previously
@@ -57,8 +59,8 @@ if [ -f "$_SV_ROOT/.env" ]; then
   set +a
 fi
 
-_SV_PORT="${HME_PROXY_PORT:-9099}"
-_SV_URL="http://127.0.0.1:${_SV_PORT}/health"
+_SV_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"
+_SV_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_SV_PORT")"
 _SV_PID_FILE="$_SV_ROOT/runtime/hme/proxy-supervisor.pid"
 _SV_MAINT_FLAG="$_SV_ROOT/tmp/hme-proxy-maintenance.flag"
 _SV_LIFECYCLE_LOG="$_SV_ROOT/log/hme-proxy-lifecycle.log"
@@ -123,8 +125,8 @@ _sv_spawn_and_verify() {
   # to _SV_SPAWN_HEALTH_TIMEOUT seconds for /health to respond.
 
   # -- OmniRoute pre-flight (MODE=4/5 main-agent translator) --
-  local _or_port="${HME_OMNIROUTE_PORT:-20128}"
-  local _or_url="http://127.0.0.1:${_or_port}/v1/models"
+  local _or_port="$(_hme_service_port omniroute)"
+  local _or_url="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_or_port")"
   local _or_dir="$_SV_ROOT/tools/omniroute"
   if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
     if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then

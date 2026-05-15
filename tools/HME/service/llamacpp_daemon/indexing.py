@@ -23,6 +23,7 @@ import urllib.error
 import urllib.request
 
 from ._boot import ENV, logger
+from service_registry import service_map, service_port
 
 _indexing_mode_lock = threading.Lock()
 # Last-completed result, used to coalesce concurrent callers: when a
@@ -37,7 +38,7 @@ _last_result: dict = {}
 
 
 def _shim_post(endpoint: str, data: dict, timeout: float = 30) -> dict:
-    shim_port = ENV.optional_int("HME_SHIM_PORT", 9098)
+    shim_port = service_port(service_map()["worker"])
     url = f"http://127.0.0.1:{shim_port}{endpoint}"
     req = urllib.request.Request(
         url, data=json.dumps(data).encode(),

@@ -9,9 +9,9 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { PROJECT_ROOT } = require('../../shared');
+const { serviceUrl } = require('../../service_registry');
 
 const NEXUS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-nexus.state');
-const MCP_PORT = process.env.HME_MCP_PORT || '9098';
 
 function readState() {
   try { return fs.readFileSync(NEXUS_FILE, 'utf8'); }
@@ -61,7 +61,7 @@ async function fetchKbHints(timeoutMs = 10_000) {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), timeoutMs);
   try {
-    const res = await fetch(`http://127.0.0.1:${MCP_PORT}/audit`, {
+    const res = await fetch(serviceUrl('worker', { path: '/audit' }), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ changed_files: '' }),

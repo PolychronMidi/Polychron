@@ -27,15 +27,17 @@ if [ -z "$_WD_ROOT" ]; then
   echo "[proxy-watchdog] cannot resolve project root; exiting" >&2
   exit 0
 fi
+PROJECT_ROOT="$_WD_ROOT"
+source "$_WD_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true
 
-_WD_PORT="${HME_PROXY_PORT:-9099}"
-_WD_URL="http://127.0.0.1:${_WD_PORT}/health"
+_WD_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"
+_WD_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_WD_PORT")"
 
 # -- OmniRoute health-check + respawn (MODE=4/5 main-agent translator) --
 # Session resume doesn't go through polychron-launch.sh, so the watchdog
 # must ensure OmniRoute is running before attempting proxy spawn.
-_OR_PORT="${HME_OMNIROUTE_PORT:-20128}"
-_OR_URL="http://127.0.0.1:${_OR_PORT}/v1/models"
+_OR_PORT="$(_hme_service_port omniroute)"
+_OR_URL="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_OR_PORT")"
 _OR_DIR="$_WD_ROOT/tools/omniroute"
 if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
   if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then

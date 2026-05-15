@@ -9,7 +9,7 @@ import subprocess
 import urllib.request
 
 from ._base import (
-    ENV, _SHIM_PORT, _ARBITER_MODEL, _CODER_MODEL, _REASONER_MODEL,
+    ENV, _WORKER_PORT, _ARBITER_MODEL, _CODER_MODEL, _REASONER_MODEL,
     _LLAMACPP_ARBITER_URL, _LLAMACPP_CODER_URL,
     _ARBITER_PORT, _CODER_PORT, _REASONER_PORT,
     _ARBITER_TIMEOUT, _REASONER_TIMEOUT, _TOTAL_TIMEOUT,
@@ -233,7 +233,7 @@ def _get_rag_context(query: str) -> str:
     try:
         payload = json.dumps({"engine": "project", "method": "search_knowledge",
                               "kwargs": {"query": query, "top_k": 6}}).encode()
-        req = urllib.request.Request(f"http://127.0.0.1:{_SHIM_PORT}/rag",
+        req = urllib.request.Request(f"http://127.0.0.1:{_WORKER_PORT}/rag",
                                     data=payload, headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             kb = json.loads(resp.read()).get("result", [])
@@ -249,7 +249,7 @@ def _get_rag_context(query: str) -> str:
     try:
         payload = json.dumps({"engine": "project", "method": "search",
                               "kwargs": {"query": query, "top_k": 5}}).encode()
-        req = urllib.request.Request(f"http://127.0.0.1:{_SHIM_PORT}/rag",
+        req = urllib.request.Request(f"http://127.0.0.1:{_WORKER_PORT}/rag",
                                     data=payload, headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             code = json.loads(resp.read()).get("result", [])

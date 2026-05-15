@@ -14,6 +14,10 @@ PROJECT_ROOT = Path(
     or Path(__file__).resolve().parents[3]
 )
 REGISTRY_PATH = PROJECT_ROOT / "tools" / "HME" / "config" / "state-files.json"
+REQUIRED_ENTRY_FIELDS = {
+    "path", "owner", "readers", "writers", "retention", "generated",
+    "committed", "schema", "repair",
+}
 
 
 def load_state_registry(root: Path | None = None) -> dict[str, Any]:
@@ -23,6 +27,15 @@ def load_state_registry(root: Path | None = None) -> dict[str, Any]:
         raise ValueError(f"{path}: single_owner must be a list")
     if not isinstance(data.get("multi_writer", []), list):
         raise ValueError(f"{path}: multi_writer must be a list")
+    for section in ("single_owner", "multi_writer"):
+        for idx, entry in enumerate(data.get(section, [])):
+            missing = sorted(REQUIRED_ENTRY_FIELDS - set(entry))
+            if missing:
+                raise ValueError(f"{path}: {section}[{idx}] missing required fields: {', '.join(missing)}")
+            if not isinstance(entry.get("readers"), list) or not isinstance(entry.get("writers"), list):
+                raise ValueError(f"{path}: {section}[{idx}] readers/writers must be lists")
+            if not isinstance(entry.get("generated"), bool) or not isinstance(entry.get("committed"), bool):
+                raise ValueError(f"{path}: {section}[{idx}] generated/committed must be booleans")
     return data
 
 

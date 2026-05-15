@@ -158,8 +158,10 @@ def _kb_section() -> dict:
         payload = json.dumps({
             "engine": "project", "method": "list_knowledge", "kwargs": {},
         }).encode()
+        sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "scripts"))
+        from service_registry import service_map, service_url
         req = urllib.request.Request(
-            "http://127.0.0.1:9098/rag", data=payload,
+            service_url(service_map()["worker"]).replace("/health", "/rag"), data=payload,
             headers={"Content-Type": "application/json"},
         )
         with urllib.request.urlopen(req, timeout=5) as r:

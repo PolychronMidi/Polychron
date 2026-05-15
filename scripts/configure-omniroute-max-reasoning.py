@@ -3,6 +3,10 @@ import argparse
 import json
 import subprocess
 from omniroute_reasoning_config import ROOT, load_config, write_settings
+import sys
+
+sys.path.insert(0, str(ROOT / "tools" / "HME" / "scripts"))
+from service_registry import service_map, service_port  # noqa: E402
 
 ENDPOINTS = {
     'thinkingBudget': '/api/settings/thinking-budget',
@@ -33,7 +37,7 @@ def _put(port: str, path: str, body: dict, cookie_file: str) -> bool:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument('--port', default='20128')
+    ap.add_argument('--port', default=str(service_port(service_map()["omniroute"])))
     ap.add_argument('--password', default='polychron')
     ap.add_argument('--db-only', action='store_true')
     args = ap.parse_args()

@@ -1,7 +1,7 @@
 'use strict';
 /**
- * Shared low-level HTTP client to the Python worker (port WORKER_PORT,
- * default 9098). Single source of truth for socket setup, timeout
+ * Shared low-level HTTP client to the Python worker. Single source of
+ * truth for socket setup, timeout
  * handling, content-length headers, and JSON parsing -- used by both
  * `mcp_server/dispatcher.js` (throw-on-error semantics) and
  * `worker_client.js` (null-on-error semantics, with telemetry).

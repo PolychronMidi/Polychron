@@ -20,21 +20,15 @@
  *
  * Does NOT duplicate OVERDRIVE_VIA_SUBAGENT. Those sentinels route
  * through the subagent bridge separately. This is for cheap HTTP
- * calls to the local HME worker (localhost:9098) -- single-digit-ms
+ * calls to the local HME worker -- single-digit-ms
  * priming of KB briefs, symbol lookups, dir summaries.
  */
 
 const http = require('http');
+const { servicePort } = require('../service_registry');
 
 const DOMINANCE_ENABLED = process.env.HME_DOMINANCE === '1';
-// `||` treats '0' as truthy, so HME_MCP_PORT='0' would route http.request
-// to "any free port" -- every prefetch silently 404s. Accept only 1-65535,
-// fall back to 9098.
-const _PORT_RAW = process.env.HME_MCP_PORT;
-const _PORT_NUM = Number(_PORT_RAW);
-const WORKER_PORT = (Number.isInteger(_PORT_NUM) && _PORT_NUM >= 1 && _PORT_NUM <= 65535)
-  ? _PORT_NUM
-  : 9098;
+const WORKER_PORT = servicePort('worker');
 const CACHE_TTL_MS = 60_000;
 const MAX_CACHE_ENTRIES = 32;
 

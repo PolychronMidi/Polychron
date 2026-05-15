@@ -23,7 +23,7 @@
 
 const http = require('http');
 const path = require('path');
-const { SHIM_PORT } = require('../supervisor/children');
+const { WORKER_PORT } = require('../supervisor/children');
 
 const MEMORY_PATH_RE = /\/\.claude\/projects\/[^/]+\/memory\//;
 const BANNER = 'Memories feature is deprecated, replaced by HME KB.';
@@ -56,7 +56,7 @@ function _kbSearch(query) {
     const body = Buffer.from(JSON.stringify({ query, top_k: 5 }), 'utf8');
     const req = http.request({
       hostname: '127.0.0.1',
-      port: SHIM_PORT,
+      port: WORKER_PORT,
       path: '/enrich',
       method: 'POST',
       headers: { 'content-type': 'application/json', 'content-length': body.length },

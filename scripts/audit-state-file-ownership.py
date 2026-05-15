@@ -34,7 +34,7 @@ PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", "/home/jah/Polychron"))
 HME_SCRIPTS = PROJECT_ROOT / "tools" / "HME" / "scripts"
 sys.path.insert(0, str(HME_SCRIPTS))
 
-from state_registry import ownership_map  # noqa: E402
+from state_registry import load_state_registry, ownership_map  # noqa: E402
 
 REGISTRY_JSON = PROJECT_ROOT / "tools" / "HME" / "config" / "state-files.json"
 
@@ -111,6 +111,11 @@ def main() -> int:
     if not REGISTRY_JSON.exists():
         print(f"audit-state-file-ownership: registry missing at {REGISTRY_JSON}",
               file=sys.stderr)
+        return 2
+    try:
+        load_state_registry(PROJECT_ROOT)
+    except Exception as e:
+        print(f"audit-state-file-ownership: strict registry schema failed: {e}", file=sys.stderr)
         return 2
     registry = ownership_map(PROJECT_ROOT)
     if not registry:

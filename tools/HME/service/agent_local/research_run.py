@@ -10,7 +10,7 @@ import urllib.request
 
 from . import _base as _base_module  # for live PROJECT_ROOT reads after mutation
 from ._base import (
-    _SHIM_PORT, _TOTAL_TIMEOUT, _MAX_TOOL_OUTPUT, PROJECT_ROOT,  # noqa: F401
+    _WORKER_PORT, _TOTAL_TIMEOUT, _MAX_TOOL_OUTPUT, PROJECT_ROOT,  # noqa: F401
     _ARBITER_MODEL, _CODER_MODEL, _REASONER_MODEL,
     _ARBITER_PORT, _CODER_PORT, _REASONER_PORT,
     _ARBITER_TIMEOUT, _REASONER_TIMEOUT,

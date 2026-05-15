@@ -37,7 +37,8 @@ async function posttoolTodoWrite(stdinJson) {
   if (!Array.isArray(todos) || todos.length === 0) return allow();
   const high = todos.filter((t) => t && t.priority === 'high' && t.status !== 'completed');
   if (high.length === 0) return allow();
-  const port = Number(process.env.HME_MCP_PORT || 9098);
+  const { servicePort } = require('../../proxy/service_registry');
+  const port = servicePort('worker');
   if (!(await httpGetOk(port, '/health'))) return allow();
   await httpPostJson(port, '/hme/todo', { action: 'sync_native', todos: high });
   return allow();

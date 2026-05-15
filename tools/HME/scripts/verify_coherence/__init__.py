@@ -68,6 +68,9 @@ from .code_audits import (  # noqa: F401
     HardcodedToolInvocationVerifier, StalePathRenameVerifier,
     ConjugateChannelVerifier, AgentLoopQualityVerifier,
     CommentBloatVerifier,
+    CompatibilityLayerExpiryVerifier,
+    ToolMetadataFactoryVerifier,
+    GeneratedISurfaceVerifier,
     MarkdownLinkIntegrityVerifier,
 )
 from .autocommit_health import (  # noqa: F401
@@ -139,6 +142,9 @@ REGISTRY = [
     ClaudeSettingsJsonVerifier(),
     InterControllerCoherenceVerifier(),
     ProxyMiddlewareRegistryVerifier(),
+    CompatibilityLayerExpiryVerifier(),
+    ToolMetadataFactoryVerifier(),
+    GeneratedISurfaceVerifier(),
     DocstringPresenceVerifier(),
     PythonSyntaxVerifier(),
     ShellSyntaxVerifier(),

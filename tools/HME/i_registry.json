@@ -1,5 +1,7 @@
 {
-  "_comment": "Metadata registry for the public i/* command surface. Loaded by i/help and any future tab-completion / cross-discovery tooling. Keep this registry in one-to-one sync with executable files in i/. Internal helpers and retired aliases belong under scripts/, not i/.",
+  "_comment": "Metadata registry for the public i/* command surface. scripts/generate-i-shims.js generates the executable shims in i/ from this file; behavior lives in scripts/hme-i-dispatch.js. Internal helpers and retired aliases belong under scripts/, not i/.",
+  "generated_by": "scripts/generate-i-shims.js",
+  "dispatcher": "scripts/hme-i-dispatch.js",
   "commands": {
     "review": {
       "description": "Post-change audit: KB constraints, boundary rules, doc drift, review verdicts.",

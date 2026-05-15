@@ -217,6 +217,24 @@ function scanSpeculation(text) {
   return hits;
 }
 
+function isBroadCompletionPrompt(text) {
+  return /\b(do\s+all|all\s+fully|complete\s+fully|are\s+all\s+\d+|completion\s+for\s+the\s+\d+(st|nd|rd|th)\s+time)\b/i.test(text || '');
+}
+
+function scanIncompleteCompletionClaims(text) {
+  if (!text) return [];
+  const stripped = text.replace(/```[\s\S]*?```/g, ' ');
+  const re = /\b(partial|not\s+complete|not\s+done|remaining|still\s+needs?|todo|pending|scaffold|foundation|next\s+step|would\s+need)\b[^.!?\n]{0,120}/gi;
+  const out = [];
+  let m;
+  while ((m = re.exec(stripped)) !== null) {
+    const s = m[0].trim().replace(/\s+/g, ' ');
+    if (s) out.push(s);
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+
 function lastRealUserPrompt(transcriptPath) {
   if (!transcriptPath) return { text: '', turnIndex: 0 };
   let lines;
@@ -333,6 +351,21 @@ module.exports = {
 
     if (next === 1) {
       const lastAssistant = lastAssistantText(transcriptPath);
+      if (isBroadCompletionPrompt(lastUser)) {
+        const incomplete = scanIncompleteCompletionClaims(lastAssistant);
+        if (incomplete.length > 0) {
+          const enumerated = incomplete.map((s, i) => `  ${i + 1}. "${s}"`).join('\n');
+          armFpGate('BROAD_SCOPE_COMPLETION_DEBT');
+          return ctx.deny(
+            `${REASONS.COMPL_ROUND_1}\n\n` +
+            `BROAD-SCOPE COMPLETION DEBT: the user asked for comprehensive completion, ` +
+            `but the last response used incomplete-status language. Do not stop at a ` +
+            `status correction. Convert the broad request into explicit repo-verifiable ` +
+            `criteria, implement the remaining items, run verification, and only then ` +
+            `close.\n\n${enumerated}`
+          );
+        }
+      }
       const specs = scanSpeculation(lastAssistant);
       if (specs.length > 0) {
         const enumerated = specs.map((s, i) => `  ${i + 1}. "${s}"`).join('\n');

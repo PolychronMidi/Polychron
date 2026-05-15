@@ -21,6 +21,7 @@ if [ -f "$_ENV_FILE" ]; then
 fi
 
 PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
+source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
 
 _term_pid() {
@@ -50,14 +51,13 @@ fi
 
 # 2. Pattern-based SIGTERM sweep (catches anything not in PID file)
 
-_PATTERNS=(
-  "hme_proxy.js"
-  "worker.py"
-  "llamacpp_daemon"
-  "llama-server.*8080"
-  "llama-server.*8081"
-  "omniroute.*server-ws"
-)
+_PATTERNS=()
+for _svc in proxy worker llamacpp_daemon omniroute; do
+  while IFS= read -r _pat; do
+    [ -n "$_pat" ] && _PATTERNS+=("$_pat")
+  done < <(_hme_service_process_patterns "$_svc" 2>/dev/null || true)
+done
+_PATTERNS+=("llama-server.*8080" "llama-server.*8081")
 for pat in "${_PATTERNS[@]}"; do
   pkill -TERM -f "$pat" 2>/dev/null && echo "[shutdown] SIGTERM -> $pat" >&2 || true
 done

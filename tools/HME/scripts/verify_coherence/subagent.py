@@ -209,14 +209,17 @@ class SubagentBackendsVerifier(Verifier):
         except Exception:
             backends["llamacpp_arbiter"] = None
 
-        # 4. HME worker (port 9098 -- absorbs former shim role)
+        # 4. HME worker
         try:
             import urllib.request
-            req = urllib.request.Request("http://127.0.0.1:9098/health")
+            sys.path.insert(0, _SCRIPTS_DIR)
+            from service_registry import service_map, service_port, service_url
+            worker = service_map()["worker"]
+            req = urllib.request.Request(service_url(worker))
             with urllib.request.urlopen(req, timeout=2) as r:
-                backends["hme_worker"] = "9098" if r.status == 200 else None
+                backends["hme_worker"] = str(service_port(worker)) if r.status == 200 else None
         except Exception:
-            backends["hme_shim"] = None
+            backends["hme_worker"] = None
 
         missing = [k for k, v in backends.items() if v is None]
         score = 1.0 - len(missing) / len(backends)
@@ -273,11 +276,13 @@ class AgentJobContractVerifier(Verifier):
             return _result(ERROR, 0.0, f"agent_jobs.py unreadable: {e}")
         required = [
             'runtime" / "hme" / "agent-jobs',
-            "prompt.txt",
+            "request.json",
             "output.txt",
-            "stdout.jsonl",
+            "stderr.txt",
+            "events.jsonl",
             "status.json",
             "atomic_write_json",
+            "append_event",
         ]
         gaps = [needle for needle in required if needle not in src]
         if gaps:

@@ -29,7 +29,7 @@ cat > .mcp.json <<EOF
 {
   "mcpServers": {
     "hme": {
-      "transport": { "type": "sse", "url": "http://127.0.0.1:9099/mcp/sse" }
+      "transport": { "type": "sse", "url": "http://127.0.0.1:${HME_PROXY_PORT:-9099}/mcp/sse" }
     }
   }
 }
@@ -42,9 +42,9 @@ EOF
 The previous fastmcp-based path had persistent bugs (transport hangs,
 schema-cache desync, memory leaks under reload). The proxy-native
 re-implementation in this directory is the minimal-correct skeleton.
-HME's primary surface migrated to `i/<tool>` Bash wrappers because:
+HME's primary surface migrated to generated `i/<tool>` shims because:
 
-- Bash wrappers run inside the agent's session-budget (Max subscription),
+- the shims run inside the agent's session-budget (Max subscription),
   not raw API quota
 - No long-lived SSE stream to manage; each `i/<tool>` invocation is
   independent and can't desync

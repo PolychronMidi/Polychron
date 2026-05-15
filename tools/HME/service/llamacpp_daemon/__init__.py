@@ -1,6 +1,6 @@
 """llama.cpp persistence daemon -- supervisor, RAG router, health proxy.
 
-Runs on port 7735, writes PID to /tmp/hme-llamacpp-daemon.pid.
+Runs on the `llamacpp_daemon` service-registry port and writes PID to /tmp/hme-llamacpp-daemon.pid.
 
 Owns:
   1. llama-server supervisor -- spawn/adopt/restart arbiter + coder
@@ -16,7 +16,7 @@ Owns:
   4. Health aggregation -- GET /health returns combined supervisor +
      instance status. Used by the MCP shim startup probe.
 
-Usage: python3 -m llamacpp_daemon [--port 7735]
+Usage: python3 -m llamacpp_daemon [--port N]
 
 Package split R98 (was 1234-line llamacpp_daemon.py). Submodules:
   _boot.py              env + version + log rotation + TRAINING_LOCK

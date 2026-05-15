@@ -51,11 +51,8 @@ _signal_emit session_start sessionstart session '{}'
 source "$HOOKS_DIR/../helpers/_onboarding.sh"
 _onb_init
 
-# HME Proxy + Supervisor (:9099)
-# Proxy owns shim + MCP as supervised children. Starting the proxy is all
-# that.s needed -- the worker (9098) absorbs every former shim endpoint.
-# Claude Code connects via SSE: url = http://127.0.0.1:9099/mcp
-PROXY_PORT="${HME_PROXY_PORT:-9099}"
+# HME Proxy + Supervisor. Ports come from services.json through _safety.sh.
+PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"
 if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
   if ! curl -sf --max-time 1 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
     PROXY_SCRIPT="$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js"
@@ -79,7 +76,7 @@ if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
 fi
 
 # Worker health: surface recent_errors without delaying SessionStart.
-WORKER_PORT="${HME_SHIM_PORT:-9098}"
+WORKER_PORT="$_HME_HTTP_PORT"
 # Drop stale worker errors so resolved prior-session noise stays quiet.
 curl -sf --max-time 2 -X POST "http://127.0.0.1:${WORKER_PORT}/clear-errors" \
   -H 'Content-Type: application/json' \

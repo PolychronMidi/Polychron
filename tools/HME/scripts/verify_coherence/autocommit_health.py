@@ -1,4 +1,4 @@
-"""Autocommit and shim health verifiers."""
+"""Autocommit and worker health verifiers."""
 from __future__ import annotations
 
 import json
@@ -109,7 +109,7 @@ class AutocommitHealthVerifier(Verifier):
 
 
 class ShimHealthVerifier(Verifier):
-    name = "shim-health"
+    name = "worker-health"
     category = "runtime"
     subtag = "structural-integrity"
     weight = 1.0
@@ -117,12 +117,13 @@ class ShimHealthVerifier(Verifier):
     def run(self) -> VerdictResult:
         try:
             import urllib.request
-            req = urllib.request.Request("http://127.0.0.1:9098/health")
+            sys.path.insert(0, _SCRIPTS_DIR)
+            from service_registry import service_map, service_url
+            req = urllib.request.Request(service_url(service_map()["worker"]))
             with urllib.request.urlopen(req, timeout=2) as r:
                 if r.status == 200:
-                    return _result(PASS, 1.0, "shim /health responds 200")
-                return _result(WARN, 0.5, f"shim /health returned {r.status}")
+                    return _result(PASS, 1.0, "worker /health responds 200")
+                return _result(WARN, 0.5, f"worker /health returned {r.status}")
         except Exception as e:
-            return _result(WARN, 0.0, f"shim unreachable: {type(e).__name__}",
+            return _result(WARN, 0.0, f"worker unreachable: {type(e).__name__}",
                            [str(e)])
-

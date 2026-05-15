@@ -7,7 +7,7 @@ same PASS signal. This module provides a richer idiom:
     with probe_witness("daemon uniqueness") as w:
         pids = find_daemon_pids()
         w.observed("pid_count", len(pids))
-        w.observed("pid_bound_to_port", check_port_ownership(7735))
+        w.observed("pid_bound_to_port", check_port_ownership(configured_daemon_port))
         w.asserted(len(pids) == 1, positive_evidence="one daemon, bound to expected port")
         w.caveat("can't distinguish from 'daemon just restarted, old PID gone'")
 

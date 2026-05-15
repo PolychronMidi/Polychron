@@ -27,7 +27,7 @@ _brief_add "$MODULE" "posttooluse_read_kb"
 # unencoded module name on a python crash. Module names are typically
 # basename-safe but a python crash here points at environment breakage that
 # should surface.
-WORKER="${HME_SHIM_PORT:-9098}"
+WORKER="$_HME_HTTP_PORT"
 _PTRK_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ptrk_py_err_$$")
 _ENCODED=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$MODULE" 2>"$_PTRK_PY_ERR" || echo "$MODULE")
 if [ -s "$_PTRK_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then

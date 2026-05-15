@@ -26,7 +26,7 @@
 
 const http = require('http');
 const https = require('https');
-const { MCP_PORT } = require('./supervisor/children');
+const { WORKER_PORT } = require('./supervisor/children');
 const { emit } = require('./shared');
 
 //  Tool schema cache
@@ -50,7 +50,7 @@ function _request(opts, body) {
 
 async function fetchToolSchemas() {
   const { status, body } = await _request({
-    hostname: '127.0.0.1', port: MCP_PORT, path: '/tools/list', method: 'GET',
+    hostname: '127.0.0.1', port: WORKER_PORT, path: '/tools/list', method: 'GET',
     timeout: 3000,
   });
   if (status !== 200) throw new Error(`worker /tools/list returned ${status}`);
@@ -83,7 +83,7 @@ async function executeHmeTool(name, input, timeoutMs = 120_000) {
   const startedAt = Date.now();
   try {
     const { status, body: resBody } = await _request({
-      hostname: '127.0.0.1', port: MCP_PORT, path: `/tool/${encodeURIComponent(toolName)}`,
+      hostname: '127.0.0.1', port: WORKER_PORT, path: `/tool/${encodeURIComponent(toolName)}`,
       method: 'POST',
       headers: { 'content-type': 'application/json', 'content-length': body.length },
       timeout: timeoutMs,

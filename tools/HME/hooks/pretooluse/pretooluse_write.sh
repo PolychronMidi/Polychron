@@ -22,46 +22,6 @@ fi
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 CONTENT=$(_safe_jq "$INPUT" '.tool_input.content' '')
 
-# Mid-pipeline src edit block. JS counterpart: block-mid-pipeline-write.
-if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
-  _emit_block "ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT write src/ code mid-pipeline -- the pipeline's behavior is being measured against the code state at launch. Wait for completion; use HME tools or edit tooling/docs in the meantime."
-  exit 2
-fi
-
-# Block writes to the auto-memory directory -- HME KB is the canonical
-# place for cross-session knowledge. JS counterpart: block-memory-dir-writes.
-if _policy_enabled block-memory-dir-writes && echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
-  _emit_block "BLOCKED: The .claude/projects memory directory is deprecated. Use HME KB instead: i/learn title=\"...\" content=\"...\" category=\"feedback\". Memories that point at behavioral rules belong in CLAUDE.md, not memory/."
-  exit 2
-fi
-
-# Block writes to credential filenames. JS counterpart: block-secrets-write.
-_BASENAME="$(basename "$FILE" 2>/dev/null)"
-if _policy_enabled block-secrets-write && echo "$_BASENAME" | grep -qiE '^(id_rsa|id_ed25519|id_ecdsa|id_dsa)(\.pub)?$|\.(pem|key|pfx|p12|jks)$|^credentials(\.json)?$|^service[-_]account.*\.json$|^\.npmrc$|^\.pypirc$|^\.netrc$'; then
-  _emit_block "BLOCKED: writing to a credential filename ($_BASENAME). Polychron does not store keys, certs, or auth tokens in the repo. If this is a test fixture, name it with a non-credential prefix (e.g. fixture-*.pem); if it's an accidental real key, do NOT proceed."
-  exit 2
-fi
-
-# Hardcoded-project-root guard. Mirrors the Edit-side check in
-# pretooluse_edit.sh. The literal path-to-project string baked into
-# any non-.env / non-README source file is a portability bug --
-# resolve via $PROJECT_ROOT or $CLAUDE_PROJECT_DIR instead.
-if [ -n "${PROJECT_ROOT:-}" ] \
-   && echo "$CONTENT" | grep -qF "$PROJECT_ROOT" \
-   && echo "$FILE" | grep -qE '\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$' \
-   && ! echo "$CONTENT" | grep -qE '"PROJECT_ROOT":[^,}]*"'"$PROJECT_ROOT"'"' \
-   && ! echo "$FILE" | grep -qE '(/\.env(\.[a-z]+)?$|/README(\.[a-z]+)?$|/CLAUDE\.md$|/tools/HME/KB/devlog/|/doc/[^/]+\.md$|/doc/archive/)'; then
-  _emit_block "BLOCKED: Write content contains hardcoded project root '$PROJECT_ROOT'. Use \$PROJECT_ROOT (already set by .env via _safety.sh) or \$CLAUDE_PROJECT_DIR (Claude Code env var) -- never a host-specific path. The .env file itself is the only legitimate place for the literal path; it's checked-in but each clone overrides it. Exempt files: README, CLAUDE.md, devlog snapshots."
-  exit 2
-fi
-
-# Detect secret patterns in content (API keys, tokens, passwords).
-# JS counterpart: block-secret-content-pattern.
-if _policy_enabled block-secret-content-pattern && echo "$CONTENT" | grep -qE '(api[_-]?key|password|secret|token)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9+/]{20,}'; then
-  _emit_block "BLOCKED: Potential secret/credential detected in write content. Review before writing."
-  exit 2
-fi
-
 # Bounded-reads vow: reset counter on write ATTEMPT (TDD-blocked attempts count).
 [ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && \
   PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
@@ -95,38 +55,6 @@ for ln in content.split('\n'):
   fi
 fi
 
-# Block 4+ identical non-word, non-whitespace, non-paren/bracket characters
-# in a row (visual-decoration spam). JS counterpart: block-character-spam.
-if _policy_enabled block-character-spam; then
-  _SPAM_HIT=$(CONTENT="$CONTENT" _safe_py3 "
-import os, re
-content = os.environ.get('CONTENT', '')
-PAT = re.compile(r'([^\w\s()\[\]{}])\1{3,}')
-for i, line in enumerate(content.split('\n'), 1):
-    if 'spam-ok' in line: continue
-    m = PAT.search(line)
-    if m:
-        print(f'line {i}: {m.group(1)!r}x{len(m.group(0))}')
-        break
-" "")
-  if [ -n "$_SPAM_HIT" ]; then
-    _emit_block "BLOCKED: Write content contains a run of 4+ identical decoration characters ($_SPAM_HIT). Visual-decoration spam (runs of dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing) is banned. Use plain text; normalize markdown table separators to 3 dashes per cell; demote headings to depth <=3. Append the literal token spam-ok on a line to opt out where genuinely required."
-    exit 2
-  fi
-fi
-
-# Block stub/placeholder writes -- LLM-generated code with comment-ellipsis
-# elision patterns destroys files by replacing real content with placeholder
-# references. JS counterpart: block-comment-ellipsis-stub.
-if _policy_enabled block-comment-ellipsis-stub && echo "$CONTENT" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
-  _emit_block "BLOCKED: Write contains comment-ellipsis stub placeholder. This destroys files. Write the COMPLETE file content or use Edit for partial changes."
-  exit 2
-fi
-if _policy_enabled block-comment-ellipsis-stub && echo "$CONTENT" | grep -qE '\.\.\. rest of (file|implementation|code)'; then
-  _emit_block "BLOCKED: Write contains ellipsis-rest-of stub placeholder. Write complete content or use Edit."
-  exit 2
-fi
-
 if echo "$FILE" | grep -q 'lab/sketches.js'; then
   echo 'LAB RULES: Every postBoot() must create AUDIBLE behavior via real monkey-patching. No empty sketches. Do not use V (validator) -- use Number.isFinite directly. Do not use crossLayerHelpers -- use inline layer logic. Do not return values from void functions (playNotesEmitPick returns void).' >&2
 fi
@@ -145,7 +73,7 @@ if echo "$FILE" | grep -qE '/Polychron/src/'; then
   MODULE=$(_extract_module "$FILE")
   VAL_CACHE="/tmp/hme-write-validate-$(printf '%s' "$MODULE" | sha1sum | cut -c1-16).json"
   if [ ! -f "$VAL_CACHE" ]; then
-    curl -s -m 2 -X POST "http://127.0.0.1:${HME_MCP_PORT:-9098}/validate" \
+    curl -s -m 2 -X POST "http://127.0.0.1:${_HME_HTTP_PORT}/validate" \
       -H 'Content-Type: application/json' \
       -d "{\"query\":\"$MODULE\"}" > "$VAL_CACHE" 2>/dev/null || echo '{}' > "$VAL_CACHE"
   fi
@@ -211,7 +139,7 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
       # KB hits alone are still useful in that case.
       _kb_hits=$(curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \
         --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
-        "http://127.0.0.1:${HME_MCP_PORT:-9098}/enrich" 2>/dev/null \
+        "http://127.0.0.1:${_HME_HTTP_PORT}/enrich" 2>/dev/null \
         | python3 -c "
 import json, sys
 try:

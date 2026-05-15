@@ -7,12 +7,12 @@ than assumed healthy -- preventing false confidence from stale checks.
 Topology:
   MCP Server
     + RAG Proxy
-          + HTTP worker (9098) -- absorbs former shim role
+          + HTTP worker
                 + ProjectEngine
                 + GlobalEngine
                 + File Watcher
     + Startup Chain
-          + llama.cpp Daemon (7735)
+          + llama.cpp Daemon
                 + GPU0 Extractor (11434)
                 + GPU1 Reasoner  (11435)
                 + CPU Arbiter    (11436)
@@ -33,7 +33,9 @@ import logging
 _mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
+sys.path.insert(0, os.path.join(os.path.dirname(_mcp_root), "scripts"))
 from hme_env import ENV  # noqa: E402
+from service_registry import service_map, service_url  # noqa: E402
 
 logger = logging.getLogger("HME")
 
@@ -148,10 +150,12 @@ def _build_topology() -> dict:
     }
 
 
-def _check_shim(port: int = 9098) -> dict:
+def _check_shim(port: int | None = None) -> dict:
     t0 = time.time()
+    worker = service_map()["worker"]
+    url = service_url(worker) if port is None else f"http://127.0.0.1:{port}/health"
     try:
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/health")
+        req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=_HEALTH_TIMEOUT) as resp:
             data = json.loads(resp.read())
             response_ms = (time.time() - t0) * 1000
@@ -174,9 +178,11 @@ def _check_shim(port: int = 9098) -> dict:
         }
 
 
-def _check_daemon(port: int = 7735) -> dict:
+def _check_daemon(port: int | None = None) -> dict:
+    daemon = service_map()["llamacpp_daemon"]
+    url = service_url(daemon) if port is None else f"http://127.0.0.1:{port}/health"
     try:
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/health")
+        req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=_HEALTH_TIMEOUT) as resp:
             data = json.loads(resp.read())
             return {

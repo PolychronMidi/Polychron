@@ -30,6 +30,11 @@ def _project_root() -> str:
     )
 
 
+PROJECT_ROOT = _project_root()
+sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "scripts"))
+from service_registry import service_map, service_url  # noqa: E402
+
+
 def _http_health_ok(url: str, timeout: float = 1.5) -> bool:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as r:
@@ -48,11 +53,8 @@ def _check_supervisor_abandoned(path: str) -> tuple[str, str]:
         child = sent.get("child", "")
     except (OSError, ValueError):
         return "kept", "unparseable JSON"
-    healths = {
-        "worker": "http://127.0.0.1:9098/health",
-        "llamacpp_daemon": "http://127.0.0.1:7735/health",
-    }
-    url = healths.get(child)
+    services = service_map()
+    url = service_url(services[child]) if child in services else None
     if url and _http_health_ok(url):
         os.unlink(path)
         return "unlinked", f"{child} healthURL=200 (sentinel stale)"

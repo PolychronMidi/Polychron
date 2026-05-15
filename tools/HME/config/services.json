@@ -13,6 +13,7 @@
       "timeout_sec": 3,
       "start": ["tools/HME/hooks/direct/proxy-supervisor.sh", "start"],
       "pid_file": "runtime/hme/proxy-supervisor.pid",
+      "process_patterns": ["hme_proxy.js"],
       "log_file": "log/hme-proxy.out",
       "fix": "tools/HME/hooks/direct/proxy-supervisor.sh start"
     },
@@ -26,7 +27,8 @@
       "health_path": "/health",
       "required": true,
       "timeout_sec": 3,
-      "log_file": "log/hme-worker.log",
+      "process_patterns": ["worker.py"],
+      "log_file": "log/hme-worker.out",
       "fix": "restart HME proxy; it supervises worker.py"
     },
     {
@@ -39,6 +41,7 @@
       "health_path": "/health",
       "required": false,
       "timeout_sec": 3,
+      "process_patterns": ["llamacpp_daemon"],
       "fix": "enable/start local inference daemon when local synthesis is required"
     },
     {
@@ -58,6 +61,7 @@
         "unless_value": "1"
       },
       "start": ["tools/omniroute/start.sh"],
+      "process_patterns": ["omniroute.*server-ws"],
       "log_file": "log/omniroute.out",
       "fix": "tools/omniroute/start.sh"
     },

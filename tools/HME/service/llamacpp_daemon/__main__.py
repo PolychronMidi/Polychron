@@ -28,8 +28,9 @@ def _logged_thread(name: str, fn):
 
 
 def main():
+    from service_registry import service_map, service_port
     parser = argparse.ArgumentParser(description="HME llama.cpp persistence daemon")
-    parser.add_argument("--port", type=int, default=7735)
+    parser.add_argument("--port", type=int, default=service_port(service_map()["llamacpp_daemon"]))
     args = parser.parse_args()
 
     with open(PID_FILE, "w") as f:

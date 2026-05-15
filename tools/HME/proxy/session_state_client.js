@@ -1,9 +1,10 @@
 'use strict';
 const http = require('http');
 const sessionState = require('./session_state');
+const { servicePort } = require('./service_registry');
 
 function _http(method, path, body) {
-  const port = Number(process.env.HME_MCP_PORT || 9098);
+  const port = servicePort('worker');
   const payload = body ? JSON.stringify(body) : '';
   return new Promise((resolve, reject) => {
     const req = http.request({ host: '127.0.0.1', port, method, path, timeout: 250, headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } }, (res) => {

@@ -3,12 +3,11 @@
 The contract is intentionally boring:
 
 runtime/hme/agent-jobs/<role>/<job_id>/
-  prompt.txt
-  system.txt
-  output.txt
-  stdout.jsonl
-  stderr.txt
+  request.json
   status.json
+  output.txt
+  stderr.txt
+  events.jsonl
 
 Subagent launchers can change implementation details, but callers and
 dashboards should only rely on this directory shape.
@@ -75,22 +74,42 @@ def create_job(
     jid = new_job_id()
     path = job_dir(role, jid, root)
     path.mkdir(parents=True, exist_ok=False)
-    atomic_write_text(path / "prompt.txt", prompt)
-    atomic_write_text(path / "system.txt", system)
+    now = int(time.time())
+    atomic_write_json(path / "request.json", {
+        "job_id": jid,
+        "role": role,
+        "prompt": prompt,
+        "system": system,
+        "session_id": session_id,
+        "model": model,
+        "metadata": metadata or {},
+        "created_at": now,
+    })
     atomic_write_text(path / "output.txt", "")
-    atomic_write_text(path / "stdout.jsonl", "")
     atomic_write_text(path / "stderr.txt", "")
+    atomic_write_text(path / "events.jsonl", "")
     atomic_write_json(path / "status.json", {
         "job_id": jid,
         "role": role,
         "state": "queued",
-        "created_at": int(time.time()),
-        "updated_at": int(time.time()),
+        "created_at": now,
+        "updated_at": now,
         "session_id": session_id,
         "model": model,
         "metadata": metadata or {},
     })
     return path
+
+
+def read_request(path: Path) -> dict[str, Any]:
+    return json.loads((path / "request.json").read_text(encoding="utf-8"))
+
+
+def append_event(path: Path, event: dict[str, Any]) -> None:
+    payload = dict(event)
+    payload.setdefault("ts", int(time.time()))
+    with open(path / "events.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, sort_keys=True) + "\n")
 
 
 def read_status(path: Path) -> dict[str, Any]:

@@ -1,4 +1,4 @@
-"""Synthesis model dispatcher -- everything routes through OmniRoute (port 20128).
+"""Synthesis model dispatcher -- everything routes through OmniRoute.
 
 OmniRoute handles all provider-specific auth, compression, and Anthropic<->OpenAI
 translation. Models are resolved per-tier from config/models.json.
@@ -165,7 +165,14 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
         logger.info(f"OVERDRIVE {model_id} in cooldown -- skipping")
         return (None, True)
 
-    base_url = _os.environ.get("ANTHROPIC_BASE_URL", "http://127.0.0.1:9099").rstrip("/")
+    import sys as _sys
+    _project = _os.environ.get("PROJECT_ROOT") or _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", "..", "..", "..", ".."))
+    _scripts = _os.path.join(_project, "tools", "HME", "scripts")
+    if _scripts not in _sys.path:
+        _sys.path.insert(0, _scripts)
+    from service_registry import service_map as _service_map, service_url as _service_url
+    _services = _service_map()
+    base_url = _os.environ.get("ANTHROPIC_BASE_URL", _service_url(_services["proxy"]).removesuffix("/health")).rstrip("/")
 
     from . import synthesis_reasoning as _sr
     timeout_secs = _sr._overdrive_timeout()
@@ -201,7 +208,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
     # Everything goes through OmniRoute -- uniform compression, translation, auth.
     headers = {"Content-Type": "application/json", "anthropic-version": "2023-06-01"}
-    headers["X-HME-Upstream"] = f"http://127.0.0.1:{_os.environ.get('HME_OMNIROUTE_PORT', '20128')}"
+    headers["X-HME-Upstream"] = _service_url(_services["omniroute"]).removesuffix("/v1/models")
 
     try:
         request = _req.Request(
@@ -392,4 +399,3 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
     # Every model in the chain rate-limited or was in cooldown.
     logger.warning("OVERDRIVE: every model in chain rate-limited -- falling through to cascade")
     return None
-

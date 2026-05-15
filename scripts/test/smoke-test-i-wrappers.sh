@@ -115,7 +115,8 @@ fi
 
 # section 2: worker health
 _section "Worker health"
-HEALTH=$(curl -s --max-time 3 http://127.0.0.1:9098/health 2>&1 || echo "")
+WORKER_HEALTH=$(PROJECT_ROOT="$PROJECT_ROOT" python3 tools/HME/scripts/service_registry.py url worker)
+HEALTH=$(curl -s --max-time 3 "$WORKER_HEALTH" 2>&1 || echo "")
 if echo "$HEALTH" | grep -q '"ready": *true'; then
   _ok "worker /health reports ready"
 else

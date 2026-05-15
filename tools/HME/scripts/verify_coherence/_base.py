@@ -6,9 +6,11 @@ Imported by every category module and by __main__.
 from __future__ import annotations
 
 import dataclasses
+import fnmatch
 import os
 import subprocess
 import time
+from pathlib import Path
 
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
@@ -47,6 +49,51 @@ def _result(status: str, score: float, summary: str, details=None) -> VerdictRes
         status=status, score=max(0.0, min(1.0, score)),
         summary=summary, details=details or [],
     )
+
+
+def severity_for_status(status: str) -> int:
+    return {
+        PASS: 0,
+        SKIP: 0,
+        WARN: 1,
+        FAIL: 2,
+        ERROR: 3,
+    }.get(status, 2)
+
+
+def load_config_jsonc(rel_path: str):
+    import sys
+    scripts = os.path.join(_PROJECT, "tools", "HME", "scripts")
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    from jsonc import load_jsonc  # noqa: WPS433
+    return load_jsonc(Path(_PROJECT) / rel_path)
+
+
+def ignore_match(path: str, patterns: list[str] | tuple[str, ...]) -> bool:
+    rel = path.replace("\\", "/")
+    return any(fnmatch.fnmatch(rel, pat) for pat in patterns)
+
+
+def iter_project_files(
+    roots: list[str] | tuple[str, ...],
+    *,
+    suffixes: tuple[str, ...] = (),
+    ignore: tuple[str, ...] = ("**/__pycache__/**", "**/node_modules/**", "**/.git/**"),
+):
+    for root in roots:
+        base = Path(root)
+        if not base.exists():
+            continue
+        for p in base.rglob("*"):
+            if not p.is_file():
+                continue
+            rel = str(p.relative_to(_PROJECT)) if str(p).startswith(_PROJECT) else str(p)
+            if suffixes and p.suffix not in suffixes:
+                continue
+            if ignore_match(rel, ignore):
+                continue
+            yield p
 
 
 class Verifier:

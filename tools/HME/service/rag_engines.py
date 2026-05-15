@@ -19,6 +19,8 @@ if _tool_root not in sys.path:
     sys.path.insert(0, _tool_root)
 
 from hme_env import ENV  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(_tool_root), "scripts"))
+from service_registry import service_map, service_port, service_url  # noqa: E402
 
 logger = logging.getLogger("HME.http")
 
@@ -117,8 +119,11 @@ def _ensure_llamacpp_daemon():
     _daemon_pkg = os.path.join(_mcp_dir, "llamacpp_daemon")
     if not os.path.isdir(_daemon_pkg):
         return
+    daemon = service_map()["llamacpp_daemon"]
+    daemon_url = service_url(daemon)
+    daemon_port = service_port(daemon)
     try:
-        with _urlreq.urlopen(_urlreq.Request("http://127.0.0.1:7735/health"), timeout=1) as _r:
+        with _urlreq.urlopen(_urlreq.Request(daemon_url), timeout=1) as _r:
             if _r.status == 200:
                 return  # already running
     except Exception as _e:
@@ -128,12 +133,12 @@ def _ensure_llamacpp_daemon():
     env["PROJECT_ROOT"] = PROJECT_ROOT
     try:
         subprocess.Popen(
-            ["python3", "-m", "llamacpp_daemon"],
+            ["python3", "-m", "llamacpp_daemon", "--port", str(daemon_port)],
             cwd=_mcp_dir,
             env=env, start_new_session=True,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
-        logger.info("llamacpp daemon started (port 7735)")
+        logger.info(f"llamacpp daemon started (port {daemon_port})")
     except Exception as e:
         logger.warning(f"llamacpp daemon start failed: {e}")
 

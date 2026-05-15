@@ -169,6 +169,10 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
             if not isinstance(phases, list):
                 phase_issues.append("phases.json: phases must be a list")
                 phases = []
+            canonical = ["normalize", "strip", "enrich", "route", "observe", "commit"]
+            ids = [str(p.get("id")) for p in phases if isinstance(p, dict)]
+            if ids != canonical:
+                phase_issues.append(f"phases.json: ids must be {canonical}, got {ids}")
             for fname in files:
                 m = prefix_re.match(fname)
                 if not m:
@@ -218,6 +222,125 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
                        f"{len(load_failures)} load failure(s), "
                        f"{len(unprefixed)} unprefixed file(s)",
                        issues[:10])
+
+
+class CompatibilityLayerExpiryVerifier(Verifier):
+    """Files named bridge/shim/wrapper must have an explicit expiry contract."""
+    name = "compatibility-layer-expiry"
+    category = "code"
+    subtag = "interface-contract"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        registry_path = os.path.join(_PROJECT, "tools", "HME", "config", "compatibility-layers.json")
+        try:
+            with open(registry_path) as f:
+                data = json.load(f)
+        except Exception as e:
+            return _result(FAIL, 0.0, f"compatibility registry unreadable: {e}")
+        entries = data.get("layers", [])
+        registered = {str(e.get("path", "")) for e in entries if isinstance(e, dict)}
+        issues = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                issues.append("registry entry is not an object")
+                continue
+            for field in ("path", "kind", "owner", "reason", "expires"):
+                if not str(entry.get(field, "")).strip():
+                    issues.append(f"{entry.get('path', '?')}: missing {field}")
+        for root in (os.path.join(_PROJECT, "tools", "HME"), os.path.join(_PROJECT, "scripts")):
+            for dirpath, dirnames, filenames in os.walk(root):
+                dirnames[:] = [d for d in dirnames if d not in ("__pycache__", "node_modules", ".git")]
+                for fname in filenames:
+                    rel = os.path.relpath(os.path.join(dirpath, fname), _PROJECT)
+                    if "/tests/" in rel or rel.startswith("scripts/test/"):
+                        continue
+                    low = fname.lower()
+                    if not any(x in low for x in ("bridge", "shim", "wrapper")):
+                        continue
+                    if fname.endswith((".pyc", ".pyo")):
+                        continue
+                    if rel not in registered:
+                        issues.append(f"{rel}: missing compatibility expiry registry entry")
+        if issues:
+            return _result(FAIL, 0.0, f"{len(issues)} compatibility layer issue(s)", issues[:12])
+        return _result(PASS, 1.0, f"{len(entries)} compatibility layers have explicit expiry contracts")
+
+
+class ToolMetadataFactoryVerifier(Verifier):
+    """HME server tools must register through the canonical metadata factory."""
+    name = "tool-metadata-factory"
+    category = "code"
+    subtag = "interface-contract"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        factory = os.path.join(_PROJECT, "tools", "HME", "service", "server", "tool_metadata.py")
+        registry = os.path.join(_PROJECT, "tools", "HME", "service", "server", "tool_registry.py")
+        issues = []
+        for p in (factory, registry):
+            if not os.path.isfile(p):
+                issues.append(f"missing {os.path.relpath(p, _PROJECT)}")
+        if issues:
+            return _result(FAIL, 0.0, "tool metadata factory missing", issues)
+        try:
+            with open(registry) as f:
+                src = f.read()
+            with open(factory) as f:
+                fac = f.read()
+        except OSError as e:
+            return _result(ERROR, 0.0, f"tool metadata files unreadable: {e}")
+        for needle in ("tool_metadata(fn", "x_hme_metadata", "list_metadata"):
+            if needle not in src:
+                issues.append(f"tool_registry.py missing {needle}")
+        for field in ("i_surface", "permissions", "lifecycle", "tests", "docstring"):
+            if field not in fac:
+                issues.append(f"tool_metadata.py missing {field}")
+        if issues:
+            return _result(FAIL, 0.0, f"{len(issues)} tool metadata issue(s)", issues)
+        return _result(PASS, 1.0, "tool metadata factory feeds tool schemas and registry metadata")
+
+
+class GeneratedISurfaceVerifier(Verifier):
+    """The public i/ command files must be generated from i_registry.json."""
+    name = "generated-i-surface"
+    category = "code"
+    subtag = "interface-contract"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        reg_path = os.path.join(_PROJECT, "tools", "HME", "i_registry.json")
+        dispatcher = os.path.join(_PROJECT, "scripts", "hme-i-dispatch.js")
+        generator = os.path.join(_PROJECT, "scripts", "generate-i-shims.js")
+        try:
+            with open(reg_path) as f:
+                reg = json.load(f)
+        except Exception as e:
+            return _result(FAIL, 0.0, f"i registry unreadable: {e}")
+        issues = []
+        if reg.get("generated_by") != "scripts/generate-i-shims.js":
+            issues.append("i_registry.json missing generated_by=scripts/generate-i-shims.js")
+        for p in (dispatcher, generator):
+            if not os.path.isfile(p):
+                issues.append(f"missing {os.path.relpath(p, _PROJECT)}")
+        commands = sorted((reg.get("commands") or {}).keys())
+        i_dir = os.path.join(_PROJECT, "i")
+        files = sorted(f for f in os.listdir(i_dir) if os.path.isfile(os.path.join(i_dir, f)) and not f.startswith("."))
+        if files != commands:
+            issues.append(f"i/ files differ from registry: files={files}, registry={commands}")
+        for name in commands:
+            p = os.path.join(i_dir, name)
+            try:
+                with open(p) as f:
+                    body = f.read()
+            except OSError as e:
+                issues.append(f"i/{name} unreadable: {e}")
+                continue
+            if "generated by scripts/generate-i-shims.js" not in body or f'"{name}" "$@"' not in body:
+                issues.append(f"i/{name} is not a generated shim")
+        if issues:
+            return _result(FAIL, 0.0, f"{len(issues)} generated i-surface issue(s)", issues[:12])
+        return _result(PASS, 1.0, f"{len(commands)} i/ shims generated from i_registry.json")
 
 
 

@@ -15,7 +15,7 @@ PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().pare
 HME_SCRIPTS = PROJECT_ROOT / "tools" / "HME" / "scripts"
 sys.path.insert(0, str(HME_SCRIPTS))
 
-from agent_jobs import create_job, latest_job, read_status, update_status  # noqa: E402
+from agent_jobs import append_event, create_job, latest_job, read_status, update_status  # noqa: E402
 
 
 _SESSION_KEYS = {"session_id", "sessionId", "conversation_id", "conversationId", "thread_id", "threadId"}
@@ -47,9 +47,9 @@ def _walk_json(value):
             yield from _walk_json(item)
 
 
-def _extract_session_id(stdout_jsonl: Path) -> str:
+def _extract_session_id(events_jsonl: Path) -> str:
     try:
-        for line in stdout_jsonl.read_text(encoding="utf-8", errors="replace").splitlines():
+        for line in events_jsonl.read_text(encoding="utf-8", errors="replace").splitlines():
             try:
                 payload = json.loads(line)
             except json.JSONDecodeError:
@@ -92,27 +92,31 @@ def cmd_run(args: argparse.Namespace) -> int:
         model=args.model or "",
         metadata={"launcher": "codex-agent-job"},
     )
-    stdout_path = job / "stdout.jsonl"
+    events_path = job / "events.jsonl"
     stderr_path = job / "stderr.txt"
     cmd = _codex_cmd(args, job)
     update_status(job, "running", command=cmd)
+    append_event(job, {"event": "started", "command": cmd})
     env = {**os.environ, "PROJECT_ROOT": str(PROJECT_ROOT)}
-    with open(stdout_path, "w", encoding="utf-8") as out, open(stderr_path, "w", encoding="utf-8") as err:
+    with open(events_path, "a", encoding="utf-8") as out, open(stderr_path, "w", encoding="utf-8") as err:
         try:
             proc = subprocess.run(cmd, input=runtime_prompt, text=True, stdout=out, stderr=err, env=env, timeout=args.timeout or None)
         except subprocess.TimeoutExpired as exc:
             err.write(f"codex-agent-job timeout after {exc.timeout}s\n")
             update_status(job, "failed", error="timeout", returncode=124)
+            append_event(job, {"event": "failed", "error": "timeout", "returncode": 124})
             print(job)
             return 124
         except FileNotFoundError as exc:
             err.write(f"codex CLI not found: {exc}\n")
             update_status(job, "failed", error="codex_not_found", returncode=127)
+            append_event(job, {"event": "failed", "error": "codex_not_found", "returncode": 127})
             print(job)
             return 127
-    sid = args.session_id or _extract_session_id(stdout_path)
+    sid = args.session_id or _extract_session_id(events_path)
     state = "complete" if proc.returncode == 0 else "failed"
     update_status(job, state, returncode=proc.returncode, session_id=sid)
+    append_event(job, {"event": state, "returncode": proc.returncode, "session_id": sid})
     print(job)
     return proc.returncode
 

@@ -147,10 +147,8 @@ ${NEW_ERRORS}"
       _sent_child=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('child',''))" \
         "$PROJECT/runtime/hme/supervisor-abandoned" 2>/dev/null)
       _healthy=0
-      case "$_sent_child" in
-        worker) curl -s -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:9098/health 2>/dev/null | grep -q '^200$' && _healthy=1 ;;
-        llamacpp_daemon) curl -s -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:7735/health 2>/dev/null | grep -q '^200$' && _healthy=1 ;;
-      esac
+      _sent_url="$(_hme_service_url "$_sent_child" 2>/dev/null || true)"
+      [ -n "$_sent_url" ] && curl -s -m 2 -o /dev/null -w '%{http_code}' "$_sent_url" 2>/dev/null | grep -q '^200$' && _healthy=1
       if [ "$_healthy" = "1" ]; then
         rm -f "$PROJECT/runtime/hme/supervisor-abandoned" 2>/dev/null
       else

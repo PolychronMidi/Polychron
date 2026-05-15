@@ -6,14 +6,13 @@
  *   - Forwards Claude Code -> Anthropic, stripping boilerplate and injecting
  *     jurisdiction context / session status.
  *   - Owns the MCP server and shim as supervised child processes. Claude Code
- *     connects via SSE: ANTHROPIC_BASE_URL=http://127.0.0.1:9099, MCP URL
- *     http://127.0.0.1:9099/mcp. A single pkill -P <pid> kills the whole tree.
+ *     connects via SSE through the proxy's configured service URL.
  *   - Routes /mcp/* to the supervised MCP HTTP server with per-call timeout
  *     and hang-kill so a stuck tool call never blocks indefinitely.
  *
  * Env:
- *   HME_PROXY_PORT            default 9099
- *   HME_MCP_PORT              default 9098  (internal MCP HTTP server port)
+ *   HME_PROXY_PORT            proxy service port override
+ *   HME_WORKER_PORT           worker service port override
  *   HME_PROXY_UPSTREAM_HOST   default api.anthropic.com
  *   HME_PROXY_UPSTREAM_PORT   default 443
  *   HME_PROXY_UPSTREAM_TLS    default 1 (set to 0 for plain http upstream)
@@ -39,6 +38,7 @@ const {
 } = require('./upstream');
 const { shouldInject, buildStatusContext, consumeStatusContext, buildJurisdictionContext, injectIntoSystem, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
+const { servicePort } = require('./service_registry');
 
 // Self-load .env via shared helper; parent shell may not have sourced it.
 (() => {
@@ -72,17 +72,9 @@ const PROXY_GIT_SHA = (() => {
 })();
 const PROXY_STARTED_AT = new Date().toISOString();
 
-const PORT = (() => {
-  const raw = process.env.HME_PROXY_PORT;
-  if (raw == null || raw === '') return 9099;
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n < 0 || n > 65535) {
-    throw new Error(`HME_PROXY_PORT="${raw}" is not a valid port (0-65535)`);
-  }
-  return n;
-})();
+const PORT = servicePort('proxy');
 const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
-const { MCP_PORT } = require('./supervisor/children');
+const { WORKER_PORT } = require('./supervisor/children');
 
 //  MCP protocol + supervisor status
 const { status: supervisorStatus } = require('./supervisor/index');
@@ -563,7 +555,7 @@ function handleRequest(clientReq, clientRes) {
     let _swapModel = 'deepseek-v4-pro';
     let _omniProvider = 'opencode-go';
 
-    const _OMNIROUTE_PORT = process.env.HME_OMNIROUTE_PORT || '20128';
+    const _OMNIROUTE_PORT = String(servicePort('omniroute'));
     const _OMNIROUTE_OFF = process.env.HME_OMNIROUTE_OFF === '1';
     const _odMode = process.env.OVERDRIVE_MODE || '0';
 
@@ -1386,7 +1378,7 @@ if (_mode4WasStreaming) {
                 const _rRes = await new Promise((resolve, reject) => {
                   const _rr = require('http').request({
                     hostname: '127.0.0.1',
-                    port: parseInt(process.env.HME_OMNIROUTE_PORT || '20128', 10),
+                    port: servicePort('omniroute'),
                     path: '/v1/messages',
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'content-length': String(_rbody.length) },
@@ -1849,7 +1841,7 @@ if (process.argv.includes('--test')) {
     const scheme = DEFAULT_UPSTREAM_TLS ? 'https' : 'http';
     console.log(`hme-proxy listening on http://127.0.0.1:${PORT}`);
     console.log(`  Anthropic upstream: ${scheme}://${DEFAULT_UPSTREAM_HOST}:${DEFAULT_UPSTREAM_PORT}`);
-    console.log(`  MCP upstream: http://127.0.0.1:${MCP_PORT} (supervised, /mcp/* routed here)`);
+    console.log(`  worker upstream: http://127.0.0.1:${WORKER_PORT} (supervised, /mcp/* routed here)`);
     if (!SUPERVISE) console.log('  supervision: disabled (HME_PROXY_SUPERVISE=0)');
   });
   server.on('error', (err) => {

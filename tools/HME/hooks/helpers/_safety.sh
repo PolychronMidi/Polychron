@@ -16,6 +16,7 @@ source "${_HME_SAFETY_DIR}/project_root.sh"
 # shellcheck disable=SC1091
 source "${_HME_HELPERS_DIR}/_signals.sh"
 source "${_HME_HELPERS_DIR}/hook_ledger.sh"
+source "${_HME_HELPERS_DIR}/service_registry.sh"
 
 # 3) Capture hook identity from caller at TOP LEVEL so BASH_SOURCE[1] refers
 # to the hook script that sourced _safety.sh (not a sub-helper).
@@ -26,7 +27,7 @@ _HME_HOOK_EXIT_CODE=0
 _HME_HOOK_VERDICT=""
 
 # 4) Tunable constants -- set before any sub-file references them.
-_HME_HTTP_PORT=9098
+_HME_HTTP_PORT="$(_hme_service_port worker)"
 _HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 

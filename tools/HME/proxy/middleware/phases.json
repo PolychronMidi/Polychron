@@ -1,5 +1,5 @@
 {
-  "_doc": "Middleware phase registry. File prefixes still define order; this file names the ranges so audits/docs do not invent parallel ordering stories.",
+  "_doc": "Middleware phase registry. File prefixes still define order; this file names the canonical phase ranges so audits/docs do not invent parallel ordering stories.",
   "phases": [
     {
       "id": "normalize",
@@ -7,29 +7,29 @@
       "description": "Request normalization, system replacement, tool surface shaping"
     },
     {
-      "id": "context",
-      "range": [5, 12],
-      "description": "Context enrichment, read/search neighborhoods, dominance prefetch"
+      "id": "strip",
+      "range": [5, 6],
+      "description": "Early noise removal, cheap prefetch, and payload sanitization"
     },
     {
-      "id": "agent-ipc",
+      "id": "enrich",
+      "range": [7, 12],
+      "description": "Read/search/context enrichment and dominance follow-through"
+    },
+    {
+      "id": "route",
       "range": [13, 13],
       "description": "Filesystem-backed subagent result bridge"
     },
     {
-      "id": "result-enrichment",
-      "range": [14, 18],
-      "description": "Tool-result enrichment, nexus tracking, activity logging"
+      "id": "observe",
+      "range": [14, 20],
+      "description": "Tool-result enrichment, nexus tracking, activity/error observation"
     },
     {
-      "id": "fault-surfacing",
-      "range": [19, 22],
-      "description": "MCP failure scan, autocommit, lifesaver surfacing"
-    },
-    {
-      "id": "gates",
-      "range": [23, 27],
-      "description": "False-positive gates, dumps, trample/empty-result hygiene"
+      "id": "commit",
+      "range": [21, 27],
+      "description": "Autocommit, lifesaver surfacing, false-positive gates, dumps, and result hygiene"
     }
   ]
 }

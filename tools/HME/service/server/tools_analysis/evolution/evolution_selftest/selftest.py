@@ -705,9 +705,13 @@ def hme_selftest(verbose: bool = False) -> str:
         versions_path = os.path.join(_project_root, "tools", "HME", "config", "versions.json")
         with open(versions_path) as _vf:
             canonical = _json_vc.load(_vf)
+        import sys as _sys_vc
+        _sys_vc.path.insert(0, os.path.join(_project_root, "tools", "HME", "scripts"))
+        from service_registry import service_map as _service_map, service_url as _service_url
+        _services = _service_map()
         probes = [
-            ("daemon", "http://127.0.0.1:7735/version"),
-            ("worker", "http://127.0.0.1:9098/version"),
+            ("daemon", _service_url(_services["llamacpp_daemon"]).replace("/health", "/version")),
+            ("worker", _service_url(_services["worker"]).replace("/health", "/version")),
         ]
         observed = {}
         for name, url in probes:

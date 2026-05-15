@@ -35,7 +35,9 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 )
 METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", "metrics")
 _OUTPUT = os.path.join(METRICS_DIR, "hme-global-kb-promotions.json")
-_SHIM_URL = "http://127.0.0.1:9098/rag"
+sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "scripts"))
+from service_registry import service_map, service_url  # noqa: E402
+_SHIM_URL = service_url(service_map()["worker"]).replace("/health", "/rag")
 
 # Project-specific terms -- presence indicates domain-bound entry
 _DOMAIN_TERMS = {

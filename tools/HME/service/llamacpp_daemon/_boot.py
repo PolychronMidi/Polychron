@@ -15,6 +15,7 @@ import sys
 # hme_env.py lives in tools/HME/service/, so any entry into the package needs
 # that directory on sys.path.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "scripts"))
 from hme_env import ENV  # noqa: E402
 
 logging.basicConfig(level=logging.WARNING, format="%(asctime)s [%(levelname)s] %(message)s")

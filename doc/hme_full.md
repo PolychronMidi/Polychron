@@ -216,8 +216,8 @@ ss -tlnp
 nvidia-smi --query-compute-apps=pid,process_name,used_gpu_memory --format=csv
 ```
 
-If the RAG engine grows too large, restart the HME shim process and let the MCP
-host relaunch it on the next tool call.
+If the RAG engine grows too large, restart the HME proxy bundle; the proxy
+supervises the worker and relaunches it from the service registry.
 
 ## Evolution Loop
 
@@ -237,10 +237,10 @@ iteration count or done signal is reached.
 
 ## State Ownership Registry
 
-The registry lives in
-`tools/HME/config/state-files.json` and is parsed by
-`scripts/audit-state-file-ownership.py`. Update that JSON before adding a
-shared state writer. Docs summarize the rule; the JSON is authoritative.
+The registry lives in `tools/HME/config/state-files.json` and is parsed by
+`scripts/audit-state-file-ownership.py`. Each entry declares path, owner,
+readers, writers, retention, generated/committed status, schema, and repair
+command. Update that JSON before adding a shared state writer.
 
 Single-owner state includes supervisor PID files, heartbeat files, onboarding
 state, middleware dedup state, team dashboard state, agent job directories,
@@ -252,6 +252,18 @@ are `log/hme-errors.log`, `tmp/hme-nexus.state`, `tmp/hme-tab.txt`,
 The standard coordination patterns are append-only line writes, atomic rename
 for replacements, and narrow bounded rewrites where unavoidable. New state
 without a declared owner is a coherence failure.
+
+## Registries
+
+- Services: `tools/HME/config/services.json`; Python, JS, and shell helpers
+  derive ports, health URLs, process patterns, and starts from it.
+- `i/` surface: `tools/HME/i_registry.json`; `scripts/generate-i-shims.js`
+  generates the public shims, and `scripts/hme-i-dispatch.js` owns behavior.
+- Agent jobs: `runtime/hme/agent-jobs/<role>/<job_id>/` contains
+  `request.json`, `status.json`, `output.txt`, `stderr.txt`, and
+  `events.jsonl`.
+- Compatibility layers: `tools/HME/config/compatibility-layers.json`; every
+  bridge/shim/wrapper file needs an owner, reason, and expiry rule.
 
 ## Testing
 Useful HME checks:
