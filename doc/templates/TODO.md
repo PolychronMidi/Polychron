@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Locate raw streak hook paths
+(empty)
 
 ## Next
 
-- [ ] [E3] Find duplicate warning/feedback source
-- [ ] [E3] Check Codex Read accounting
-- [ ] [E3] Patch and verify focused tests
+(empty)
 
 ## Done
 
