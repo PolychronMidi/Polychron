@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3151,
-      "updated_ts": 1778877748.6213758,
-      "codex_plan_synced_ts": 1778877748.6213512,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T20:42:19.968Z"
+      "max_id": 3155,
+      "updated_ts": 1778877859.5465155,
+      "codex_plan_synced_ts": 1778877859.54649,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T20:44:19.101Z"
     }
   },
   {
@@ -1721,5 +1721,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T20:42:19.968Z"
+  },
+  {
+    "id": 3152,
+    "text": "Locate raw streak hook paths",
+    "activeForm": "Locate raw streak hook paths",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778877859.5462718,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:44:19.101Z"
+  },
+  {
+    "id": 3153,
+    "text": "Find duplicate warning/feedback source",
+    "activeForm": "Find duplicate warning/feedback source",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778877859.5462768,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:44:19.101Z"
+  },
+  {
+    "id": 3154,
+    "text": "Check Codex Read accounting",
+    "activeForm": "Check Codex Read accounting",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778877859.5462801,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:44:19.101Z"
+  },
+  {
+    "id": 3155,
+    "text": "Patch and verify focused tests",
+    "activeForm": "Patch and verify focused tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778877859.5462828,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:44:19.101Z"
   }
 ]
