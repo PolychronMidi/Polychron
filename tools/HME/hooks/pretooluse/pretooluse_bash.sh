@@ -8,8 +8,14 @@ source "${_HME_HELPERS_DIR}/_onboarding.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
+_POLICY_OUT=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const p=require(process.env.PROJECT_ROOT + '/tools/HME/proxy/bash_command_policy'); const raw=JSON.parse(fs.readFileSync(0,'utf8')||'{}'); const out=p.toHookResponse(p.evaluateBashInput(raw.tool_input||{}, {projectRoot:process.env.PROJECT_ROOT})); if(out) process.stdout.write(out);" 2>/dev/null || true)
+if [ -n "$_POLICY_OUT" ]; then
+  printf '%s\n' "$_POLICY_OUT"
+  exit 0
+fi
+
 # Defense-in-depth: wrap each source in `set +u +e` so a stray unbound-var
-for _part in hme_dispatch cwd_rewrite intent_rewrite gates blackbox_guards reader_guards verify_landed_block polling_redirects log_first kb_spam snapshot_gate pipeline_antiwait failfast polling_counter; do
+for _part in hme_dispatch kb_spam verify_landed_block polling_counter; do
   set +u +e
   source "${SCRIPT_DIR}/bash/${_part}.sh"
   _rc=$?
