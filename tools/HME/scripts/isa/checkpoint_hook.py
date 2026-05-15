@@ -108,9 +108,6 @@ def _create_checkpoint_commit(repo: Path, slug: str, isc_ids: list[str],
             check=True, capture_output=True, timeout=15,
         )
         # --no-verify is intentional here: pre-commit hooks live elsewhere
-        # and this checkpoint is a metadata commit. Skipping protects against
-        # checkpoint failure cascading from unrelated hook breakage. The
-        # main commit pipeline still runs full hook validation.
         sha = subprocess.run(
             ["git", "-C", str(repo), "rev-parse", "--short", "HEAD"],
             check=True, capture_output=True, text=True, timeout=5,

@@ -41,6 +41,7 @@ PYTHON_SWALLOW = re.compile(
 )
 JS_SWALLOW = re.compile(r"^\s*}\s*catch\s*\(\s*\w+\s*\)\s*\{\s*$")
 SH_SWALLOW = re.compile(r"\|\|\s*true\b|\|\|\s*:\b|2>/dev/null\s*$")
+HEREDOC_START = re.compile(r"<<-?\s*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?")
 
 # Tokens that mark a catch as intentionally silent.
 SILENT_OK = re.compile(r"silent-ok\b|silent-except\b")
@@ -104,19 +105,34 @@ def _scan_sh(path: Path) -> list[tuple[int, str]]:
         lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
     except OSError:
         return issues
+    blocked = set()
+    delimiter = None
+    for n, raw in enumerate(lines, 1):
+        if delimiter:
+            blocked.add(n)
+            if raw.strip() == delimiter:
+                delimiter = None
+            continue
+        match = HEREDOC_START.search(raw)
+        if match:
+            delimiter = match.group(1)
     # Keep BENIGN narrow; `|| echo` defaults still need site-specific silent-ok.
     BENIGN = re.compile(
         r"\b(mkdir\s+-p|kill\s+-0|rm\s+-f|sed\s+-n|disown|source\s+|cat\s+\"\$"
         r"|date\s+-u|>>\s*[\"']?[\w/.-]+\.log|\|\|\s*true)\b"
     )
     for i, line in enumerate(lines, 1):
+        if i in blocked:
+            continue
+        if line.lstrip().startswith("#"):
+            continue
         if "2>/dev/null" not in line:
             continue
         if BENIGN.search(line):
             continue
         # Allow if the same line or surrounding has silent-ok or _safe_*
         # helpers (which are themselves audited).
-        context = "\n".join(lines[max(0, i - 2):i + 1])
+        context = "\n".join(lines[max(0, i - 4):i + 3])
         if SILENT_OK.search(context) or "_safe_" in line:
             continue
         issues.append((i, line.strip()[:120]))

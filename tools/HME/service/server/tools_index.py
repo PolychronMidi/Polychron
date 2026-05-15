@@ -116,9 +116,6 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
         return f"Error: directory not found: {target}"
 
     # Main-tree reindex via daemon indexing-mode (same path as clear_index):
-    # suspend coder -> migrate embedders to cuda:1 -> _index_main with no
-    # contention -> migrate back to cuda:0 -> resume coder. Lib engines stay
-    # on the thread-pool path (CPU / shared GPU0, no coder contention).
     try:
         from indexing_mode import request_full_reindex
         main_result = request_full_reindex()
@@ -132,11 +129,6 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
         )
     if main_result.get("coalesced"):
         # An overlapping reindex finished while we waited -- its result
-        # IS our result, no second pass needed. Surface at info-level
-        # so the agent knows their request was honored without spurious
-        # error framing. If `total_files` is missing on the coalesced
-        # result the in-flight pass returned an unexpected shape and
-        # the next branch handles it normally.
         if "total_files" in main_result:
             return (
                 f"[main] files={main_result['total_files']} "
@@ -165,6 +157,7 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
         try:
             r = future.result()
         except Exception as e:
+            # silent-ok: optional fallback path.
             lines.append(f"[{lib_name}] Error: {type(e).__name__}: {e}")
             continue
         _, lib_result = r
@@ -225,12 +218,10 @@ def clear_index() -> str:
         from indexing_mode import request_full_reindex
         result = request_full_reindex()
     except Exception as e:
+        # silent-ok: optional fallback path.
         return f"clear_index error: daemon request failed: {e}"
     if result.get("error"):
         # Surface daemon errors explicitly -- do NOT fall back to default device.
-        # A half-full GPU (arbiter or other models still loaded) would OOM
-        # on a raw _index_main call. The daemon is the only sanctioned path:
-        # fix the daemon/log-diagnosed issue and retry.
         return (
             f"clear_index error: daemon refused indexing-mode: {result['error']}\n"
             f"Check log/hme-llamacpp_daemon.out for traceback. The daemon "

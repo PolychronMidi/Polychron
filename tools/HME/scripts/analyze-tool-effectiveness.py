@@ -51,10 +51,6 @@ _LIFESAVER_PAT = re.compile(r"LIFESAVER QUEUED")
 _COHERENCE_PAT = re.compile(r"Meta-observer L14: (\w+)")
 
 # Recency windows for scoring. The HCI verifiers score based on how RECENT
-# the health signals are -- a LIFESAVER fire 10 minutes ago is strong evidence
-# that HME is currently unhealthy; a fire from 20 hours ago is weak evidence
-# that the system WAS unhealthy. Multiple buckets let the verifier
-# distinguish acute current problems from historical residue.
 _RECENT_WINDOW_S = 86400  # 24 hours (outer window)
 _ACUTE_WINDOW_S = 3600    # 1 hour (strong current signal)
 _MEDIUM_WINDOW_S = 21600  # 6 hours (medium current signal)
@@ -226,8 +222,6 @@ def compute_effectiveness() -> dict:
             tool_invocation_totals[tool_name] += n
 
     # Dead-hook detection: hooks registered but never seen fired.
-    # A hook matcher is "alive" if EITHER a matching INFO tool: or INFO hook:
-    # event appears in the log. Both signals count toward liveness.
     registered = _registered_hook_scripts()
     seen_matchers = set(hook_totals.keys()) | set(tool_invocation_totals.keys())
     native_matchers = {m for m in registered if not m.startswith("mcp__HME__") and m and m != "*"}

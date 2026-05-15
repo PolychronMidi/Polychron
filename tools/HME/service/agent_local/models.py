@@ -211,9 +211,6 @@ def _call_synthesizer(prompt: str, system: str = "", max_tokens: int = 4096,
             )
             if cascade_out:
                 # Prefer the fine-grained source the dispatcher now exposes
-                # -- distinguishes 'overdrive/opus' from '<provider>/<model>'
-                # slots. Falls back to the generic cascade/<profile> label
-                # when last_source() isn't implemented (older module).
                 try:
                     src = _cascade_mod.last_source() or f"cascade/{profile}"
                 except AttributeError:

@@ -24,10 +24,6 @@ from .synthesis_llamacpp import (  # noqa: F401
 logger = logging.getLogger("HME")
 
 # English prose + language-keyword stop-words used by extract_diff_symbols
-# to drop plain lowercase regex hits that have no identifier structure.
-# Without this filter, docstring prose words ("the / its / own / across /
-# whether / why") and Python keywords ("import / not / from") were landing
-# in the "Allowed symbols" whitelist and polluting the reviewer prompt.
 _PROSE_AND_KEYWORD_STOPWORDS = frozenset({
     # articles, conjunctions, prepositions, pronouns
     "the", "and", "but", "for", "nor", "yet", "not", "its", "our", "out",
@@ -44,13 +40,6 @@ _PROSE_AND_KEYWORD_STOPWORDS = frozenset({
     "either", "neither", "some", "many", "most", "much", "few", "fewer",
     "none", "just", "also", "only", "such", "very", "quite",
     # generic verbs/adjectives commonly in docstrings -- pruned hard
-    # after peer-review iter 118 caught that the prior list dropped
-    # legitimate identifiers (`context`, `state`, `model`, `file`,
-    # `system`, etc. all appear as parameter / attribute names in
-    # this codebase). Conservative principle: false-positives in the
-    # whitelist are tolerable; false-negatives (real identifiers
-    # dropped) starve the post-filter and let prose through. Keep
-    # only words that are pure docstring filler -- never identifiers.
     "actually", "awareness", "checkpoints", "coherence",
     "counterfactual", "effectiveness", "entanglement",
     "extrospective", "interventions", "outcomes", "outward",
@@ -163,8 +152,6 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         return (_COOLDOWN_REFUSED, []) if return_context else None
 
     # "parallel" = two threads hitting different GPUs simultaneously. Treated like
-    # interactive (no yielding, uses interactive timeout) but does NOT set the
-    # interactive preemption flag (which would block the sibling parallel thread).
     if priority == "background":
         _background_yield()
     elif priority == "interactive":
@@ -284,6 +271,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             return (text, result.get("context", []))
         return text
     except Exception as e:
+        # silent-ok: optional fallback path.
         if priority == "interactive":
             _interactive_event.clear()
         _err_str = str(e).lower()
@@ -361,10 +349,6 @@ def _local_chat(messages: list[dict], model: str | None = None,
 
 
 # Race-mode threshold. Requests asking for <= RACE_MAX_TOKENS tokens are
-# short enough that the local reasoner can answer them in <= ~2s on a warm
-# GPU, while the cloud cascade adds >=10s of slot-walking latency. For
-# short requests we RACE both -- fire them in parallel and take whichever
-# returns first. Long requests keep the cloud-first path for quality.
 
 
 # Re-exports -- race + output utilities moved to siblings.

@@ -1,4 +1,3 @@
-// ESLint: inside `moduleLifecycle.declare({ init: (deps) => {...} })`, ban
 // bare references to OTHER declared modules -- must flow through deps (or
 // be aliased `const X = deps.X` at init top). Warn (not error) for incremental
 // migration. Allow-listed globals (validator, controllerConfig, etc.) when
@@ -58,16 +57,12 @@ module.exports = {
     // Track lazyDeps: declared in the manifest's lazyDeps array.
     const lazyDeps = new Set();
     // Track manifest's own provides -- self-references (the module accessing
-    // its own globally-bound API from inside init body callbacks) are not
-    // a DI violation; you can't add a module to its own deps. Skip these.
     const ownProvides = new Set();
     // Track init function nesting depth.
     let inInitDepth = 0;
     let initFnNode = null;
 
     function isInitArrow(node) {
-      // Looking for: { key: 'init', value: ArrowFunctionExpression(deps => ...) }
-      // inside an ObjectExpression that's the argument of moduleLifecycle.declare(...)
       const parent = node.parent;
       if (!parent || parent.type !== 'Property' || parent.key.name !== 'init') return false;
       const obj = parent.parent;
@@ -150,12 +145,7 @@ module.exports = {
         // bare-identifier references to declared modules).
         const parent = node.parent;
         if (parent && parent.type === 'MemberExpression' && parent.property === node) return;
-        // Skip property keys like `{ metaProfiles: ... }` and ObjectPatterns.
         if (parent && parent.type === 'Property' && parent.key === node) return;
-        // Skip the manifest's own `name`/`provides` strings (literal-typed) -- those are not Identifier nodes anyway.
-        // Skip references inside the manifest object itself (deps array, provides array, etc.).
-        // The init-arrow gate handles this -- only fire inside init body.
-        // Skip references in argument positions that might pass through to deps.
         context.report({
           node,
           message: `Bare reference to declared module "${name}" inside init() body. Use deps.${name} or alias via "const ${name} = deps.${name};" at init top.`,

@@ -86,7 +86,7 @@ conductorProfileDefault = () => ({
   },
   journeyBoldness: 1.0,
   // R9 E4: Raised from 0.18 to 0.25 to admit more phase pairs past variance gate,
-  // reducing varianceGatedRate and improving telemetry health score (0.328->target 0.40+)
+  // reducing varianceGatedRate and improving telemetry health toward target.
   phaseVarianceGateScale: 0.25,
   emission: {
     noiseProfile: 'subtle',

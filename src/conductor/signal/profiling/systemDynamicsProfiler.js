@@ -12,7 +12,7 @@ moduleLifecycle.declare({
   const N_DIMS = DIM_NAMES.length;
   const N_COMPOSITIONAL_DIMS = 4;
   const WINDOW = 32;
-  // R5 E5: Reduced from 6 to 4 to accelerate phase warmup and bring phase pairs online sooner
+  // Reduced from 6 to 4 to accelerate phase warmup and bring phase pairs online sooner
   const MIN_WINDOW_DEFAULT = 4;
   const PHASE_COUPLING_PAIRS = ['density-phase', 'tension-phase', 'flicker-phase', 'entropy-phase'];
   const PHASE_STALE_PAIR_THRESHOLD = 8; // R33 E3: 12->8 faster phase stale detection for more responsive phase engagement
@@ -71,10 +71,7 @@ moduleLifecycle.declare({
     const warmupActive = systemDynamicsProfilerState.lastSnapshot.warmupTicksRemaining > 0;
     const phaseUnavailable = systemDynamicsProfilerState.lastSnapshot.phaseCouplingAvailablePairs === 0;
     const phaseStale = systemDynamicsProfilerState.lastSnapshot.phaseStaleBeats >= PHASE_STALE_PAIR_THRESHOLD;
-    //  Phase freshness escalation. Force re-analysis when phase goes
-    // stale beyond 8 beats to keep phase coupling data flowing. This is
-    // more aggressive than PHASE_STALE_PAIR_THRESHOLD (12) and catches
-    // staleness earlier before it becomes entrenched.
+    // Phase freshness escalation. Force re-analysis when phase goes
     const phaseFreshnessEscalation = systemDynamicsProfilerState.phaseStaleBeats >= PHASE_FRESHNESS_ESCALATION && systemDynamicsProfilerState.phaseStaleBeats < PHASE_STALE_PAIR_THRESHOLD;
     const sparsePhaseCoverage = systemDynamicsProfilerState.lastSnapshot.phaseCouplingCoverage < 0.5;
     const snapshotStale = beatDelta >= analysisSettings.snapshotReuseBeats;

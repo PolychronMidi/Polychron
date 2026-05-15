@@ -56,7 +56,7 @@ module.exports = {
   params: {},
   async fn(ctx) {
     const ti = ctx.toolInput || {};
-    // Write: { content }. Edit: { new_string }. MultiEdit: { edits: [{new_string, ...}] }.
+    // Write/Edit/MultiEdit expose text in different tool_input fields.
     let payload = ti.content || ti.new_string || '';
     if (!payload && Array.isArray(ti.edits)) {
       payload = ti.edits.map((e) => (e && e.new_string) || '').join('\n');

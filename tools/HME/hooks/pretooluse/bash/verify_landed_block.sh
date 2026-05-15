@@ -1,14 +1,14 @@
 # Block verify-the-edit-landed Bash patterns. Edit tool already returns
 # "updated successfully"; re-grepping is context-burn. Override: HME_VERIFY_LANDED_OK=1.
 if [ "${HME_VERIFY_LANDED_OK:-0}" = "1" ]; then
-  return 0 2>/dev/null || exit 0
+  return 0 2>/dev/null || exit 0  # silent-ok: optional fallback path.
 fi
 
 _VLB_TURN_EDITS="${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt"
-[ -s "$_VLB_TURN_EDITS" ] || { return 0 2>/dev/null || exit 0; }
-[ -n "${CMD:-}" ] || { return 0 2>/dev/null || exit 0; }
+[ -s "$_VLB_TURN_EDITS" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
+[ -n "${CMD:-}" ] || { return 0 2>/dev/null || exit 0; }  # silent-ok: optional fallback path.
 
-_VLB_HIT=$(_VLB_CMD="$CMD" _VLB_FILE="$_VLB_TURN_EDITS" python3 - <<'PYEOF' 2>/dev/null
+_VLB_HIT=$(_VLB_CMD="$CMD" _VLB_FILE="$_VLB_TURN_EDITS" python3 - <<'PYEOF' 2>/dev/null  # silent-ok: optional fallback path.
 import os, shlex
 cmd = os.environ.get("_VLB_CMD", "")
 edits_file = os.environ.get("_VLB_FILE", "")
@@ -57,7 +57,7 @@ PYEOF
 
 if [ -n "$_VLB_HIT" ]; then
   _VLB_MSG="verify-landed antipattern -- Bash reads $_VLB_HIT which was Edit/Written this turn. The Edit tool already returned 'updated successfully' as explicit confirmation; re-grepping is context-burn. Trust the success affordance. Override: HME_VERIFY_LANDED_OK=1."
-  if ! _VLB_COUNT=$(_VLB_FILE="${PROJECT_ROOT:-}/tmp/hme-verify-landed-grace.tsv" _VLB_HIT="$_VLB_HIT" python3 - <<'PYEOF' 2>/dev/null
+  if ! _VLB_COUNT=$(_VLB_FILE="${PROJECT_ROOT:-}/tmp/hme-verify-landed-grace.tsv" _VLB_HIT="$_VLB_HIT" python3 - <<'PYEOF' 2>/dev/null  # silent-ok: optional fallback path.
 import os, time
 path = os.environ.get("_VLB_FILE", "")
 hit = os.environ.get("_VLB_HIT", "")
@@ -83,7 +83,7 @@ PYEOF
     _VLB_COUNT=3
   fi
   if [ "$_VLB_COUNT" -le 1 ]; then
-    return 0 2>/dev/null || exit 0
+    return 0 2>/dev/null || exit 0  # silent-ok: optional fallback path.
   fi
   if [ "$_VLB_COUNT" -eq 2 ]; then
     _emit_enrich_allow "WARNING: $_VLB_MSG Next verify-landed violation within 3 minutes will block."

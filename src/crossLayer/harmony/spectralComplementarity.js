@@ -16,9 +16,7 @@ moduleLifecycle.declare({
   const CHANNEL = 'spectral';
   const REGISTER_BINS = 4; // bass(0-35), low-mid(36-59), high-mid(60-83), treble(84-108)
   const WINDOW_NOTES = 30; // rolling window size
-  // R10 E4: Raised from 0.4 to 0.55 for stronger spectral gap filling.
-  // Wider register separation between layers enriches harmonic texture by
-  // ensuring combined output covers bass-to-treble more completely.
+  // Raised from 0.4 to 0.55 for stronger spectral gap filling.
   const NUDGE_STRENGTH = 0.55; // max probability of register nudge
   let cimScale = 0.5;
 
@@ -119,15 +117,10 @@ moduleLifecycle.declare({
       return { midi, nudged: false, targetBin: -1 };
     }
     // Lab R4+R5: reduce nudge when dissonance is desired so pitch corrections
-    // don't normalize intentionally dissonant output. R5 raised scaling from
-    // 0.7 to 0.95: sketch showed full bypass still sounds good, so near-zero
-    // nudging at high dissonance is correct.
     const intentDissonance = sectionIntentCurves.getLastIntent()
       ? V.optionalFinite(sectionIntentCurves.getLastIntent().dissonanceTarget, 0)
       : 0;
     // Melodic coupling: contourShape modulates register gap-filling aggressiveness.
-    // Rising contour -> amplify nudge (build spreads across registers).
-    // Falling contour -> soften nudge (spectrum thins as phrases descend).
     const melodicCtxSC = emergentMelodicEngine.getContext();
     const contourNudgeScale = melodicCtxSC
       ? (melodicCtxSC.contourShape === 'rising' ? 1.15 : melodicCtxSC.contourShape === 'falling' ? 0.82 : 1.0)

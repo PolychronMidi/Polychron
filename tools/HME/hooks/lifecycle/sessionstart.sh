@@ -9,9 +9,6 @@ source "$HOOKS_DIR/../helpers/_nexus.sh"
 PROJECT="$PROJECT_ROOT"
 
 # Failfast: verify all hook scripts are executable before any run.
-# Derive the project-relative path of HOOKS_DIR so the chmod hint points
-# at the actual file location, not a hardcoded `tools/HME/hooks/` (which
-# is wrong when HOOKS_DIR resolves to lifecycle/, pretooluse/, etc.).
 ERROR_LOG="${PROJECT}/log/hme-errors.log"
 HOOKS_DIR_REL="${HOOKS_DIR#${PROJECT}/}"
 BROKEN_HOOKS=()
@@ -39,9 +36,6 @@ mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-primer-needed.flag"
 
 # Refresh adaptive config and coherence health on every session start.
-# Both are fast (no network, no worker), non-blocking on failure, and
-# ensure subsequent hooks see current-state exports instead of stale
-# values from the previous session.
 (python3 "${PROJECT}/tools/HME/scripts/adapt-from-activity.py" >/dev/null 2>&1 || true) &
 (python3 "${PROJECT}/tools/HME/scripts/verify-coherence-registry.py" >/dev/null 2>&1 || true) &
 
@@ -52,7 +46,7 @@ source "$HOOKS_DIR/../helpers/_onboarding.sh"
 _onb_init
 
 # HME Proxy + Supervisor. Ports come from services.json through _safety.sh.
-PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"
+PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
 if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
   if ! curl -sf --max-time 1 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
     PROXY_SCRIPT="$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js"
@@ -67,8 +61,6 @@ if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
 fi
 
 # llama-server cold boot moved to tools/HME/launcher/polychron-launch.sh so
-# inference is ready before Claude Code opens a session. Hot-supervision during
-# a session stays in server/llamacpp_supervisor.py.
 
 # Persist HME env vars for the session
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
@@ -82,7 +74,7 @@ curl -sf --max-time 2 -X POST "http://127.0.0.1:${WORKER_PORT}/clear-errors" \
   -H 'Content-Type: application/json' \
   -d '{"older_than_ms":1800000}' >/dev/null 2>&1 || true
 # Log unexpected health-curl stderr; worker-start connection failures are normal.
-_SS_CURL_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_curl_err_$$")
+_SS_CURL_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_curl_err_$$")  # silent-ok: optional fallback path.
 HEALTH_JSON=$(curl -sf --max-time 1 "http://127.0.0.1:${WORKER_PORT}/health" 2>"$_SS_CURL_ERR" || echo "")
 if [ -s "$_SS_CURL_ERR" ] && ! grep -qiE 'connect|refused|timed out|timeout' "$_SS_CURL_ERR"; then
   _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
@@ -201,7 +193,7 @@ fi
 # Compact large Lance deletion queues in the background.
 _LANCE_DEL="$PROJECT/tools/HME/KB/code_chunks.lance/_deletions"
 if [ -d "$_LANCE_DEL" ]; then
-  _DEL_COUNT=$(ls -1 "$_LANCE_DEL" 2>/dev/null | wc -l)
+  _DEL_COUNT=$(ls -1 "$_LANCE_DEL" 2>/dev/null | wc -l)  # silent-ok: optional fallback path.
   if [ "$_DEL_COUNT" -gt 50 ]; then
     PROJECT_ROOT="$PROJECT" python3 "$PROJECT/scripts/compact-lance-tables.py" \
       > "$PROJECT/log/hme-lance-compact.log" 2>&1 &
@@ -237,8 +229,6 @@ if [ -f "$EFF_SCRIPT" ]; then
 fi
 
 # Update HCI trajectory in the background for time-series analysis.
-# The --summary call below reads this script's output file; wait on the
-# refresh before summarizing so we never print a previous-session trajectory.
 TRAJ_SCRIPT="$PROJECT/tools/HME/scripts/analyze-hci-trajectory.py"
 TRAJ_PID=""
 if [ -f "$TRAJ_SCRIPT" ]; then
@@ -249,8 +239,6 @@ if [ -f "$TRAJ_SCRIPT" ]; then
 fi
 
 # Surface the current HCI trajectory summary so agents see the health arc.
-# Wait for the refresh job (bounded by a short timeout -- analyze-hci-trajectory
-# typically completes in <3s; if it's stuck we'd rather show stale than hang).
 if [ -f "$TRAJ_SCRIPT" ]; then
   if [ -n "$TRAJ_PID" ]; then
     # Poll-wait for up to 5s. `wait -t` isn't portable across bash versions;
@@ -260,7 +248,7 @@ if [ -f "$TRAJ_SCRIPT" ]; then
       sleep 1
     done
   fi
-  _SS_TRAJ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_traj_err_$$")
+  _SS_TRAJ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_traj_err_$$")  # silent-ok: optional fallback path.
   set +e
   TRAJ_LINE=$(PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" --summary 2>"$_SS_TRAJ_ERR")
   _SS_TRAJ_RC=$?
@@ -279,7 +267,7 @@ fi
 # Antagonism bridge: surface observe-only streak threshold recommendations.
 CALIB_SCRIPT="$PROJECT/tools/HME/activity/streak_calibrator.py"
 if [ -f "$CALIB_SCRIPT" ]; then
-  _SS_CALIB_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_calib_err_$$")
+  _SS_CALIB_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_calib_err_$$")  # silent-ok: optional fallback path.
   set +e
   CALIB_JSON=$(PROJECT_ROOT="$PROJECT" python3 "$CALIB_SCRIPT" 2>"$_SS_CALIB_ERR")
   _SS_CALIB_RC=$?
@@ -303,7 +291,7 @@ vel = d.get('resolution_velocity', 0.5)
 n   = d.get('history_samples', 0)
 if rec is not None and rec != cur and n >= 5:
     print(f\"Streak calibrator: recommends HME_STREAK_WARN={rec} (current={cur}, resolution_velocity={vel:.2f}, n={n})\")
-" 2>/dev/null || true)
+" 2>/dev/null || true)  # silent-ok: optional fallback path.
     [ -n "$CALIB_LINE" ] && echo "$CALIB_LINE" >&2
   fi
 fi
@@ -314,7 +302,7 @@ if [ -n "$PREV_PENDING" ]; then
 fi
 
 # Substrate pre-turn briefing from precomputed metrics only.
-SUBSTRATE_BRIEF=$(python3 - <<'PY' 2>/dev/null || true
+SUBSTRATE_BRIEF=$(python3 - <<'PY' 2>/dev/null || true  # silent-ok: optional fallback path.
 import json, os
 root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or "."
 metrics_dir = os.environ.get("METRICS_DIR", os.path.join(root, "output", "metrics"))
@@ -340,7 +328,7 @@ PY
 # Stale-soft-warn auditor: surface promotion-review candidates.
 _SOFT_AUDIT="$PROJECT_ROOT/tools/HME/scripts/detectors/audit_stale_soft_warns.py"
 if [ -x "$_SOFT_AUDIT" ]; then
-  _SOFT_OUT=$(PROJECT_ROOT="$PROJECT_ROOT" python3 "$_SOFT_AUDIT" 2>/dev/null || true)
+  _SOFT_OUT=$(PROJECT_ROOT="$PROJECT_ROOT" python3 "$_SOFT_AUDIT" 2>/dev/null || true)  # silent-ok: optional fallback path.
   case "$_SOFT_OUT" in
     *"need review"*) echo "$_SOFT_OUT" >&2 ;;
   esac
@@ -349,7 +337,7 @@ fi
 # Fork-watchdog: surface silently-dropped completion notifications (recent only).
 _FORK_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/fork_watchdog.py"
 if [ -x "$_FORK_WATCHDOG" ]; then
-  _FW_OUT=$(PROJECT_ROOT="$PROJECT_ROOT" python3 "$_FORK_WATCHDOG" 2>/dev/null || true)
+  _FW_OUT=$(PROJECT_ROOT="$PROJECT_ROOT" python3 "$_FORK_WATCHDOG" 2>/dev/null || true)  # silent-ok: optional fallback path.
   case "$_FW_OUT" in
     *"notification not delivered"*|*"may be stuck"*) echo "$_FW_OUT" >&2 ;;
   esac
@@ -364,7 +352,7 @@ if [ -x "$_LE" ] && [ -f "$_SPEC_FILE" ]; then
   if [ -n "$_LATEST_PHASE_TITLE" ]; then
     _FIRST_KW=$(echo "$_LATEST_PHASE_TITLE" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) if(length($i)>=4){print $i; exit}}')
     if [ -n "$_FIRST_KW" ]; then
-      PROJECT_ROOT="$PROJECT_ROOT" python3 "$_LE" surface --keyword "$_FIRST_KW" --top 3 2>/dev/null >&2 || true
+      PROJECT_ROOT="$PROJECT_ROOT" python3 "$_LE" surface --keyword "$_FIRST_KW" --top 3 2>/dev/null >&2 || true  # silent-ok: optional fallback path.
     fi
   fi
 fi

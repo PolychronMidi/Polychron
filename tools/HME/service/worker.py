@@ -30,9 +30,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts"))
 
 # Shared thread pool for /validate. Threads can't be interrupted, so a
-# bounded pool + semaphore caps concurrent in-flight calls; overload cycles
-# can't accumulate. Sizing + acquire-timeout from config/timeouts.json
-# (single source of truth shared with proxy/worker_client.js).
 def _load_timeouts() -> dict:
     import json as _j
     _p = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -64,8 +61,6 @@ def _bounded_validate(query: str) -> dict:
         _VALIDATE_SEMAPHORE.release()
 
 # Single source of truth: tools/HME/config/versions.json.
-# Bump that file to move the three components (cli/proxy/worker) together.
-# A mismatch surfaces via `hme-cli --version`.
 def _load_versions() -> dict:
     import json as _j
     _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "versions.json")
@@ -91,8 +86,6 @@ from hme_env import ENV  # noqa: E402
 ENV.load()
 
 # Rotate log files before we start writing to them. Without this,
-# hme.log / worker.out / daemon.out grow unbounded (hundreds of MB
-# observed in real sessions). Safe-to-call-always, never raises.
 try:
     from log_rotation import rotate_on_boot as _rotate_logs
     _rotate_logs(ENV.require("PROJECT_ROOT"))
@@ -135,8 +128,6 @@ logger = logging.getLogger("HME")
 logger.setLevel(logging.INFO)
 
 # PROJECT_ROOT MUST be set by the proxy supervisor. Falling back to os.getcwd()
-# silently creates duplicate log/ directories wherever the worker was spawned
-# from (e.g. tools/HME/log/, tools/HME/service/log/) -- fragmenting telemetry.
 PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 if not os.path.isdir(os.path.join(PROJECT_ROOT, "src")):
     raise RuntimeError(
@@ -249,8 +240,6 @@ threading.Thread(target=_background_load, daemon=True, name="HME-worker-startup"
 
 
 # Phase-B watchdog: GIL-resistant brute timeout. Dedicated thread polls
-# _active_tools q5s and SIGTERMs os.getpid() on overrun (supervisor
-# respawns). Thread.join(timeout) starves under GIL contention.
 _active_tools: dict = {}
 _active_tools_lock = threading.Lock()
 
@@ -323,8 +312,6 @@ def main():
     print(f"HME worker listening on http://{args.host}:{args.port}", flush=True)
 
     # Filesystem-IPC queue watcher -- accepts jobs via tmp/hme-worker-queue/
-    # in parallel with HTTP. Decouples callers from worker liveness;
-    # gracefully degrades on timeout. Daemon thread, idempotent start.
     try:
         import worker_queue
         worker_queue.start()

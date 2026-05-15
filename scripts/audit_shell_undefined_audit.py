@@ -42,12 +42,6 @@ import sys
 from pathlib import Path
 
 # Helpers (_strip_*, _find_refs, _load_env_vars, _transitive_defs) and
-# constants (_SAFETY_SH, _DISPATCHER_FOR) live in the partner module
-# audit_shell_undefined_vars.py, which imports US at its bottom for
-# re-export of main/audit_file/_dispatcher_defs. A top-level back-import
-# here would cycle. _vars() resolves the partner at call time -- by then
-# the parent has fully loaded under either its module name (when imported)
-# or __main__ (when invoked as a script).
 def _vars():
     mod = sys.modules.get("audit_shell_undefined_vars")
     if mod is not None and hasattr(mod, "_load_env_vars"):
@@ -64,11 +58,6 @@ HOOKS_DIR = REPO_ROOT / "tools" / "HME" / "hooks"
 ENV_FILE = REPO_ROOT / ".env"
 
 # Additional shell-script trees that run under the same `set -u` risk
-# class as hooks/. Launcher scripts, proxy test scripts, and one-shot
-# setup scripts all use the same bash + may also use `set -euo pipefail`
-# -- an undefined variable there crashes the same way and is equally
-# undetected until runtime. Scope expanded April 2026 after observing
-# that the _AC_PROJECT-class bug isn't hooks-specific.
 EXTRA_SCAN_DIRS = [
     REPO_ROOT / "tools" / "HME" / "launcher",
     REPO_ROOT / "tools" / "HME" / "proxy",   # test-proxy*.sh etc.
@@ -117,12 +106,6 @@ _GETOPTS_RE     = re.compile(r"\bgetopts\s+\S+\s+([A-Za-z_][A-Za-z0-9_]*)")
 _FUNC_PARAM_RE  = re.compile(r'"\$\{?([1-9])\}?"|"\$([@*])"')  # positional -- always defined
 
 # Variable REFERENCES. Captures:
-#   $VAR
-#   ${VAR}
-#   ${VAR:-default}  -- flagged as SAFE (default)
-#   ${VAR:+value}    -- flagged as SAFE (conditional)
-#   ${VAR:?err}      -- flagged as SAFE (explicit-error)
-#   ${VAR%pattern}   -- flagged as SAFE (expansion that doesn't crash under set -u if var is set)
 _REF_RE = re.compile(
     r"""(?x)
     \$
@@ -146,10 +129,6 @@ _SOURCE_RE = re.compile(
 )
 
 # Heredoc body extraction -- skip var references inside `<<EOF`/`<<-EOF` bodies
-# because those are payloads to other interpreters (python/jq/etc.), not the
-# shell's own expansions. Bash only expands heredoc contents when the tag is
-# unquoted; skip both cases conservatively to avoid false positives from
-# Python/jq programs that reference `$VAR` as part of their own syntax.
 _HEREDOC_RE = re.compile(
     r'<<-?\s*([\'"]?)(\w+)\1\s*\n(.*?)(?=^\s*\2\s*$)',
     re.DOTALL | re.MULTILINE,
@@ -166,8 +145,6 @@ def _dispatcher_defs(path: Path, env_vars: set[str]) -> set[str]:
     v = _vars()
     parent = path.parent
     # JS-side dispatchers (e.g. proxy/stop_chain/shell_policy.js) set env
-    # vars in their bash -c preamble before sourcing each sub-file. Those
-    # vars are in scope for the sub-file but invisible to a pure shell walk.
     js_vars = getattr(v, "_JS_DISPATCHER_VARS", {}).get(parent, set())
     dispatcher = v._DISPATCHER_FOR.get(parent)
     if not dispatcher or not dispatcher.is_file():

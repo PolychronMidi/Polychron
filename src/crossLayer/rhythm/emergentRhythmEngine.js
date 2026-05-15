@@ -76,14 +76,11 @@ moduleLifecycle.declare({
 
   function buildGrid() {
     if (V.optionalFinite(beatStartTime) === undefined || V.optionalFinite(spBeat) === undefined) return null;
-    // Per-beat cache: getRhythm calls biasRhythmWeights 4x per beat (beat/div/subdiv/subsubdiv)
     if (beatStartTime === cachedBeatTime && cachedResult) return cachedResult;
     cachedBeatTime = beatStartTime;
 
     const regime = regimeClassifier.getRegime();
     const baseWindow = regime === 'exploring' ? 3 : regime === 'coherent' ? 1.5 : 2;
-    // Melodic coupling: tessituraLoad narrows the quantization window at register extremes.
-    // Tight tessiture focus = focus on immediate rhythmic events; comfortable = wider context.
     const melodicCtxERE = emergentMelodicEngine.getContext();
     const tessLoad = melodicCtxERE ? V.optionalFinite(melodicCtxERE.tessituraLoad, 0) : 0;
     const windowBeats = baseWindow * (1.0 - tessLoad * 0.25); // [base ... 0.75*base at extreme]

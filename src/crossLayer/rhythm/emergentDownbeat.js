@@ -43,8 +43,6 @@ moduleLifecycle.declare({
   function detect(absoluteSeconds, signals) {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     // Melodic coupling: freshnessEma scales minimum interval between downbeats.
-    // Fresh territory -> space out downbeats (let novel moments breathe uninterrupted).
-    // Stale/familiar territory -> allow more frequent downbeats to punctuate monotony.
     const melodicCtxED = emergentMelodicEngine.getContext();
     const freshnessEma = melodicCtxED ? V.optionalFinite(melodicCtxED.freshnessEma, 0.5) : 0.5;
     const melodicInterval = MIN_DOWNBEAT_INTERVAL_SEC * (0.7 + freshnessEma * 0.6); // [0.7s fresh ... 1.3s stale]
@@ -59,18 +57,17 @@ moduleLifecycle.declare({
     if (signals.phaseLock) { score += 0.15; signalCount++; }
     const recentTransition = L0.getLast(L0_CHANNELS.regimeTransition, { since: absoluteSeconds - 2, windowSeconds: 2 });
     if (recentTransition) { score += 0.25; signalCount++; }
-    // R50: emergent rhythm grid density feeds back as a downbeat signal (completing the loop)
+    // emergent rhythm grid density feeds back as a downbeat signal (completing the loop)
     const emergentEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     if (emergentEntry && Number.isFinite(emergentEntry.density) && emergentEntry.density > 0.15) {
       score += clamp(emergentEntry.density * 0.2, 0, 0.15);
       signalCount++;
     }
-    // R71: biasStrength > 0.3 indicates strong rhythmic structure -> amplify downbeat score.
+    // biasStrength > 0.3 indicates strong rhythmic structure -> amplify downbeat score.
     if (emergentEntry && Number.isFinite(emergentEntry.biasStrength) && emergentEntry.biasStrength > 0.3) {
       score += clamp(emergentEntry.biasStrength * 0.10, 0, 0.08);
     }
 
-    // convergenceTarget modulates detection threshold - more downbeats during climactic sections
     const intent = sectionIntentCurves.getLastIntent();
     const ct = V.optionalFinite(intent.convergenceTarget, 0.5);
     const scoreThreshold = 0.4 - ct * 0.1;
@@ -153,7 +150,6 @@ moduleLifecycle.declare({
     const mult = TEMPO_MULT_OPTIONS[ri(TEMPO_MULT_OPTIONS.length - 1)];
     const interval = spBeat / mult;
     // Half the time, swap to the other layer for the rapid accents
-    // CIM: coordinated = less swapping (layers accent together), independent = more swapping
     const swapProb = TEMPO_MULT_LAYER_SWAP_PROB * (1.5 - cimScale);
     const swapLayer = rf() < swapProb;
     const targetLayer = swapLayer ? crossLayerHelpers.getOtherLayer(layer) : layer;

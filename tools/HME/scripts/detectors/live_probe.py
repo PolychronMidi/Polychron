@@ -74,8 +74,6 @@ def main() -> int:
         return 0
 
     # Test override: when set, mirror exactly. Same pattern as
-    # ADVISOR_DOCTRINE_TIER / SUMMARY_FORMAT_TIER -- lets fixtures
-    # exercise the deny path without writing a real ISA on disk.
     forced = os.environ.get("LIVE_PROBE_FORCE")
     if forced:
         print(forced)

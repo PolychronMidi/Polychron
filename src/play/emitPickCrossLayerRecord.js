@@ -1,4 +1,3 @@
-// emitPickCrossLayerRecord.js - Record primary source note into cross-layer tracking systems.
 // Extracted from playNotesEmitPick to keep the emission orchestrator focused.
 
 const V = validator.create('emitPickCrossLayerRecord');
@@ -61,12 +60,9 @@ emitPickCrossLayerRecord = function(ctx) {
   entropyRegulator.recordSample(noteToEmit, texVel, activeLayerName);
 
   // Record cross-layer interval for harmonic guard tracking.
-  // Use pre-computed otherMidi from harmonicIntervalGuard.nudgePitch() when available,
-  // avoiding a redundant L0.getLastNote() query.
   if (Number.isFinite(harmonicOtherMidi) && harmonicOtherMidi > 0) {
     harmonicIntervalGuard.recordCrossInterval(noteToEmit, harmonicOtherMidi, timeInSeconds);
   } else if (harmonicOtherMidi === -1) {
-    // harmonicOtherMidi === -1 means nudgePitch found no other-layer note; skip query entirely
   } else {
     // Fallback: query L0 directly (should not normally occur)
     const otherLayerForGuard = crossLayerHelpers.getOtherLayer(activeLayerName);

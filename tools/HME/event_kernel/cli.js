@@ -23,6 +23,7 @@ function _denyReason(stdout) {
       || ''
     );
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return '';
   }
 }
@@ -43,8 +44,6 @@ async function main() {
   let stderr = result.stderr || '';
 
   // Claude Code's hook protocol is most reliable when a deny is also carried
-  // as exit 2 + stderr. The kernel stays protocol-neutral; this adapter does
-  // the host-specific translation.
   if ((eventName === 'PreToolUse' || eventName === 'Stop') && exitCode === 0) {
     const reason = _denyReason(result.stdout || '');
     if (reason) {

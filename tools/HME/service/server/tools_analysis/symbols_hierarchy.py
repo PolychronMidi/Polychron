@@ -61,7 +61,6 @@ def type_hierarchy(type_name: str = "") -> str:
                 parts.append(f"  <- {child} (implements)")
         return "\n".join(parts)
 
-    # CommonJS IIFE project fallback: build dependency graph from globals.d.ts + require chains
     import re as _re
     import glob as _glob_mod
 
@@ -151,7 +150,6 @@ def type_hierarchy(type_name: str = "") -> str:
             hlp_str = f" + {hlp}" if hlp else " (no helpers file)"
             parts.append(f"  {mgr}{hlp_str} [{users} dependents]")
 
-    # De-facto managers by caller count: modules with >2x the subsystem median -- architectural hubs
     # regardless of filename convention.
     defacto = []
     for js_file in _glob_mod.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", "*.js"), recursive=True):
@@ -164,7 +162,6 @@ def type_hierarchy(type_name: str = "") -> str:
         n_users = len(rev_graph.get(basename, set()))
         defacto.append((basename, subsystem, n_users))
     # Compute per-subsystem median -- exclude single-use helpers (<=1 caller) and
-    # known helper-naming patterns so the median represents real module usage distribution.
     import statistics as _stats
     _helper_suffixes = ('Helpers', 'Config', 'Data', 'Values', 'Priors', 'Profiles', 'Scorers', 'Analyzers')
     sub_users: dict[str, list] = {}

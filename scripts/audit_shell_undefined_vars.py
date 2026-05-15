@@ -47,11 +47,6 @@ HOOKS_DIR = REPO_ROOT / "tools" / "HME" / "hooks"
 ENV_FILE = REPO_ROOT / ".env"
 
 # Additional shell-script trees that run under the same `set -u` risk
-# class as hooks/. Launcher scripts, proxy test scripts, and one-shot
-# setup scripts all use the same bash + may also use `set -euo pipefail`
-# -- an undefined variable there crashes the same way and is equally
-# undetected until runtime. Scope expanded April 2026 after observing
-# that the _AC_PROJECT-class bug isn't hooks-specific.
 EXTRA_SCAN_DIRS = [
     REPO_ROOT / "tools" / "HME" / "launcher",
     REPO_ROOT / "tools" / "HME" / "proxy",   # test-proxy*.sh etc.
@@ -100,12 +95,6 @@ _GETOPTS_RE     = re.compile(r"\bgetopts\s+\S+\s+([A-Za-z_][A-Za-z0-9_]*)")
 _FUNC_PARAM_RE  = re.compile(r'"\$\{?([1-9])\}?"|"\$([@*])"')  # positional -- always defined
 
 # Variable REFERENCES. Captures:
-#   $VAR
-#   ${VAR}
-#   ${VAR:-default}  -- flagged as SAFE (default)
-#   ${VAR:+value}    -- flagged as SAFE (conditional)
-#   ${VAR:?err}      -- flagged as SAFE (explicit-error)
-#   ${VAR%pattern}   -- flagged as SAFE (expansion that doesn't crash under set -u if var is set)
 _REF_RE = re.compile(
     r"""(?x)
     \$
@@ -129,10 +118,6 @@ _SOURCE_RE = re.compile(
 )
 
 # Heredoc body extraction -- skip var references inside `<<EOF`/`<<-EOF` bodies
-# because those are payloads to other interpreters (python/jq/etc.), not the
-# shell's own expansions. Bash only expands heredoc contents when the tag is
-# unquoted; skip both cases conservatively to avoid false positives from
-# Python/jq programs that reference `$VAR` as part of their own syntax.
 _HEREDOC_RE = re.compile(
     r'<<-?\s*([\'"]?)(\w+)\1\s*\n(.*?)(?=^\s*\2\s*$)',
     re.DOTALL | re.MULTILINE,
@@ -315,9 +300,6 @@ def _find_refs(text: str, defs: set[str], env_vars: set[str]) -> list[tuple[int,
     violations: list[tuple[int, str, str]] = []
     known = defs | env_vars | _BUILTIN_VARS
     # `jq --arg NAME value 'jq-script-using-$NAME'` declares jq-script-scope
-    # vars. The `$NAME` lives inside a single-quoted bash string, so bash
-    # doesn't expand it -- but our regex flags it. Harvest declared names
-    # so they're treated as known. Same for --argjson (typed) and --slurpfile.
     for jm in re.finditer(r"--(?:arg|argjson|slurpfile)\s+([A-Za-z_][A-Za-z0-9_]*)\b", text):
         known = known | {jm.group(1)}
     for m in _REF_RE.finditer(text):
@@ -342,9 +324,6 @@ def _find_refs(text: str, defs: set[str], env_vars: set[str]) -> list[tuple[int,
 _SAFETY_SH = HOOKS_DIR / "helpers" / "_safety.sh"
 
 # Dispatcher -> sub-file-dir map. Sub-files in these dirs are SOURCED BY
-# their dispatcher, so they inherit the dispatcher's defs plus anything the
-# dispatcher itself sources. Without this, every `$INPUT`, `$CMD`,
-# `$POLL_COUNT`, `$_STOP_DIR`, etc. in sub-files looks undefined.
 _DISPATCHER_FOR = {
     HOOKS_DIR / "helpers" / "safety":      _SAFETY_SH,
     HOOKS_DIR / "lifecycle" / "stop":      _SAFETY_SH,
@@ -352,9 +331,6 @@ _DISPATCHER_FOR = {
 }
 
 # Vars set by JS-side dispatcher wrappers BEFORE sourcing a sub-file.
-# proxy/stop_chain/shell_policy.js's wrapper template assigns these env
-# vars in the bash -c preamble -- they're definitionally in scope for
-# every stop-stage script but invisible to a pure shell-script walk.
 _JS_DISPATCHER_VARS = {
     HOOKS_DIR / "lifecycle" / "stop": {
         "PROJECT", "_HME_HELPERS_DIR", "_STOP_DIR", "_DETECTORS_DIR",

@@ -54,9 +54,6 @@ moduleLifecycle.declare({
 
 
     // E4: Section-aware tension floor protection
-    // Audit: 2.5x max amplifying with no health gate. When stressed, aggressive
-    // tension amplification can overshoot. Scale max by e18Scale: 2.5x healthy,
-    // down to 1.75x when stressed. Base 1.5x always preserved (minimum protection).
     {
       let secProg = 0;
       secProg = clamp(/** @type {number} */ (timeStream.compoundProgress("section")), 0, 1);
@@ -73,8 +70,6 @@ moduleLifecycle.declare({
     // E5: Phase fatigue escalation; health-gated to avoid runaway correction.
     if (state.phaseFloor && state.phaseFloor.shareEma < (state.phaseFloor.collapseThreshold ?? 0.05)) {
       // Health gate: only accumulate fatigue when system is stable enough to act on it.
-      // Stressed systems (healthEma <= 0.75) skip accumulation -- the E5 escalation
-      // would compete with other controllers and overshoot during recovery.
       if (S.healthEma > ST.HEALTH_GATE_E5_ACCUM) {
         S.phaseFatigueBeats = m.min(S.phaseFatigueBeats + ST.ORCHESTRATE_INTERVAL, ST.PHASE_FATIGUE_MAX);
       }
@@ -94,9 +89,6 @@ moduleLifecycle.declare({
     if (currentRegime === 'coherent') {
       S.coherentRegimeBeats += ST.ORCHESTRATE_INTERVAL;
       // Dynamic threshold: stressed systems (unhealthy) tolerate longer coherent
-      // dwells before tightening (threshold rises toward 70). Healthy systems
-      // tighten sooner (threshold stays at 30). Prevents aggressive tightening
-      // from compounding instability during recovery.
       const dwellThreshold = 30 + (1.0 - S.healthEma) * 40;
       if (S.coherentRegimeBeats > dwellThreshold) {
         const dwellExcess = S.coherentRegimeBeats - dwellThreshold;
@@ -137,8 +129,6 @@ moduleLifecycle.declare({
       const inResolution = sectionPhase === 'resolution' && sectionProgress > 0.80;
       if (inResolution) {
         // Ramp floor drop slowly via EMA -- avoids discontinuity spikes.
-        // E18: scale max drop by health (0.5x when unhealthy, 1.0x at nominal).
-        // Attenuation only -- cap at 1.0, never amplify above calibrated 0.15 max.
         const targetDrop = clamp((sectionProgress - 0.80) / 0.20 * 0.15 * e18Scale, 0, 0.15);
         ST.rateMultipliers.e12TensionFloorDrop =
           (ST.rateMultipliers.e12TensionFloorDrop) * 0.75 + targetDrop * 0.25;
@@ -221,8 +211,6 @@ moduleLifecycle.declare({
       }
       if (S.e9BreathingCountdown > 0) {
         // Smoothing relax: 1.0 = normal, >1.0 = reduce smoothing coefficient
-        // downstream: effective smoothing = base / e9DensitySmoothingRelax
-        // E18: health+exceedance-scaled so stressed system gets less relax
         ST.rateMultipliers.e9DensitySmoothingRelax = 1.0 + 0.5 * e18Scale;
         // Swing boost: widen density bounds temporarily
         ST.rateMultipliers.e9DensitySwingBoost = 1.0 + 0.2 * e18Scale;
@@ -288,9 +276,6 @@ moduleLifecycle.declare({
           : currentRegime === 'coherent' ? 2.5
           : 1.6; // evolving
         // E18: interpolate ceiling toward 1.0 when unhealthy (less suppression).
-        // Attenuation only: e18Scale max 1.0, so ceiling never goes below base.
-        // At e18Scale=1.0 (healthy): ceiling = exactly baseCeiling (calibrated).
-        // At e18Scale<1.0 (stressed): ceiling eases toward 1.0 (less suppression).
         const e13CeilingScale = e13BaseCeiling < 1.0
           ? clamp(1.0 - (1.0 - e13BaseCeiling) * e18Scale, e13BaseCeiling, 1.0)
           : 1.0;

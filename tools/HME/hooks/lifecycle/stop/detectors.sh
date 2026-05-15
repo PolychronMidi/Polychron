@@ -8,12 +8,9 @@
 INPUT="${INPUT:?detectors.sh requires INPUT from dispatcher (Stop payload)}"
 TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
 # Detector init / parse-case / persist-block all generated from registry.json
-# via emit_detectors_sh.py. Adding a detector = one entry in registry.json;
-# no manual bash sync needed (the silent-disable bug class is gone).
-eval "$(python3 "${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR}}/tools/HME/scripts/detectors/emit_detectors_sh.py" 2>/dev/null)"
+eval "$(python3 "${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR}}/tools/HME/scripts/detectors/emit_detectors_sh.py" 2>/dev/null)"  # silent-ok: optional fallback path.
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  # run_all.py emits `name=verdict`; stderr bridged to hme-errors.log so a crash can't silently disable detectors.
-  _DET_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_det_py_err_$$")
+  _DET_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_det_py_err_$$")  # silent-ok: optional fallback path.
   _RUN_ALL_OUT=$(timeout 3 python3 "$_DETECTORS_DIR/run_all.py" "$TRANSCRIPT_PATH" 2>"$_DET_PY_ERR" || true)
   if [ -s "$_DET_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
     _DET_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)

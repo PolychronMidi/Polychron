@@ -72,8 +72,6 @@ _DEFAULT_ROOTS = [
 _SKIP_DIRS = {"__pycache__", ".git", "node_modules", "csv_maestro", "venv", ".venv"}
 
 # Loop / tuple-unpack short names that are almost always tuple destructuring;
-# silencing them avoids a noisy long tail without losing real signal because
-# real bugs we care about are underscored module-level names.
 _COMMON_LOOP_VARS = set("a b c d e f g h i j k l m n p q r s t u v w x y z".split())
 _COMMON_LOOP_VARS.update([
     "args", "kwargs", "val", "value", "key", "name", "path", "file", "line",
@@ -143,8 +141,6 @@ def _audit_file(path: str) -> list:
         return [{"path": path, "error": f"{type(e).__name__}: {e}"}]
 
     # File-level suppression -- for partner-script "shared closure between
-    # two .py files" patterns where one file legitimately references names
-    # bound on the other module, see scripts/audit_shell_undefined_audit.py.
     if _IGNORE_FILE_MARKER in src:
         return []
 

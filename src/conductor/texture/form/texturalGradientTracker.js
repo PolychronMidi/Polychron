@@ -64,9 +64,6 @@ moduleLifecycle.declare({
     // stable - narrow flicker for consistency (continuous ramp, no step)
     let flickerMod = 1;
     // R93 E4 REVERTED (R94 E2): Regime-responsive flickerMod contributed
-    // to regime collapse (exploring 41.1%->17.7%) by double-reducing flicker
-    // during exploring (combined with regimeReactiveDamping E1). Gradient
-    // tracker's natural flickerMod behavior is already well-calibrated.
     if (absGradient > 0.15) {
       flickerMod = clamp(1 + absGradient * 0.3, 1, 1.15);
     } else if (absGradient < 0.03) {
@@ -91,14 +88,7 @@ moduleLifecycle.declare({
     return getGradientSignal().flickerMod;
   }
 
-  // R25 E4: Tension bias from textural gradient. When texture is thickening
-  // (positive gradient), boost tension -- building energy accompanies
-  // growing density. When thinning (negative gradient), reduce tension --
-  // resolving texture calls for tension release. Creates natural coupling
-  // between textural motion and harmonic tension.
-  // R26 E2: Narrowed dead zone from +/-0.08 to +/-0.03 -- R25 showed tension
-  // stuck at 1.0 while flicker pathway (0.9624) was active. Most gradients
-  // fall within +/-0.08, so the original thresholds were too wide.
+  // Tension bias from textural gradient. When texture is thickening
   /**
    * Get tension multiplier from textural gradient direction.
    * @returns {number}

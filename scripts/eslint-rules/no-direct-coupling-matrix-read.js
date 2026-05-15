@@ -13,7 +13,6 @@ module.exports = {
   create(context) {
     const filename = context.getFilename().replace(/\\/g, '/');
 
-    // Legitimate paths: coupling engine, profiler, meta-controllers, diagnostics, pipeline plumbing
     const EXEMPT_PATHS = [
       'src/conductor/signal/balancing/',
       'src/conductor/signal/profiling/',

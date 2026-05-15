@@ -70,9 +70,6 @@ def _log_prediction(target_module: str, affected_modules: list[str], injected: b
             f.write(_json.dumps(record, separators=(",", ":")) + "\n")
     except OSError as _cascade_err:
         # Silently losing cascade records breaks the entire prediction-
-        # accuracy validation loop (downstream scripts read this file to
-        # score cascade predictions). LIFESAVER so degraded observability
-        # isn't discoverable only via "why are our cascade metrics flat?"
         logger.error(f"cascade record append FAILED: {type(_cascade_err).__name__}: {_cascade_err}")
         try:
             from server import context as _ctx
@@ -109,9 +106,6 @@ def _load_dep_graph() -> dict:
     if not os.path.exists(path):
         _CACHE["dep"] = {"nodes": {}, "edges": []}
         # Record a sentinel mtime for missing-file so the next call's
-        # mtime check serves the cached empty rather than re-stat-ing.
-        # 0.0 is unique vs any real mtime (real mtimes are positive
-        # epoch seconds).
         _CACHE["dep:_mtime"] = 0.0
         return _CACHE["dep"]
     try:
@@ -120,11 +114,6 @@ def _load_dep_graph() -> dict:
         _CACHE["dep:_mtime"] = os.path.getmtime(path)
     except (OSError, json.JSONDecodeError):
         # Peer-review iter 125: prior code didn't set the mtime cache
-        # key on parse failure, so every subsequent call re-read AND
-        # re-parsed AND re-failed forever -- repeated CPU + IO on every
-        # invocation while serving the same cached empty. Now: cache
-        # both data AND the corrupting file's mtime, so we re-attempt
-        # only when the file is actually rewritten.
         data = {"nodes": {}, "edges": []}
         try:
             _CACHE["dep:_mtime"] = os.path.getmtime(path)
@@ -278,8 +267,6 @@ def cascade_report(target: str, depth: int = 3) -> str:
         by_hop.setdefault(hop, []).append((node, via))
 
     # Phase 3.4: log this prediction so post-pipeline can reconcile. Use
-    # module stems (not full paths) to match how fingerprint-comparison
-    # reports changed trust systems / modules.
     affected_stems: list[str] = []
     for _hop, node, _via in forward:
         s = os.path.splitext(os.path.basename(node))[0]

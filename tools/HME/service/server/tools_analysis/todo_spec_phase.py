@@ -25,8 +25,6 @@ from server.tools_analysis import _track
 logger = logging.getLogger("HME")
 
 # Pull persistence + entry primitives from the parent module. todo.py loads
-# its core definitions BEFORE re-exporting from this sibling, so this
-# import resolves without a cycle.
 from server.tools_analysis.todo import (
     _load_todos, _save_todos, _write_todo_entry, _allocate_id,
     _find_main, _find_any, _check_main_done, _mark_status,
@@ -38,19 +36,9 @@ from server.tools_analysis.todo_spec_ingest import (  # noqa: F401
 
 
 # SPEC/TODO bridge -- connects ephemeral HME todo state to durable
-# doc/templates/SPEC.md + doc/templates/TODO.md active docs. See doc/templates/SPEC.md Phase 0.
 
 
 # _spec_file() moved to paths.spec_file() -- lazy resolution for hot-reload
-# _todo_md_file() moved to paths.todo_file()
-# Archive lives under KB as the "devlog" arm -- searchable through the
-# same substrate as other knowledge entries, decoupled from the active
-# doc/ directory so completed work doesn't tax agents reading the spec.
-# Each archive event writes ONE timestamped file containing the
-# just-completed set of phases (no monthly rotation; the archive trigger
-# IS set-completion).
-# _devlog_dir() moved to paths.kb_devlog_dir()
-# Matches a Next-up entry. Accepts E1-E5 or legacy easy/medium/hard.
 _NEXT_UP_RE = re.compile(
     r"^\s*-\s+\[(E[1-5]|easy|medium|hard)\]\s+(.+?)(?:\s+Reason:\s+(.+?))?\s*$",
     re.IGNORECASE,
@@ -154,8 +142,6 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
             with open(_spec_file(), "w", encoding="utf-8") as f:
                 f.write("\n".join(spec_lines) + ("\n" if spec_md.endswith("\n") else ""))
     # Append to TODO.md Just shipped at the FIRST entry slot (newest-first).
-    # Skip past HTML comment blocks (`<!-- ... -->`) so the insertion
-    # lands in real content space, not inside the template stub.
     shipped = f"- {text_root} -- by HME todo #{entry.get('id')} at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
     if os.path.exists(_todo_md_file()):
         with open(_todo_md_file(), encoding="utf-8") as f:
@@ -208,8 +194,6 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
                 out.append(shipped)
             new_md = "\n".join(out)
             # Apply rolling-window trim AFTER the new entry lands so the
-            # newest entry always survives. Trim count is the difference
-            # between count-before and the configured limit.
             trimmed_md, _trim_n = _trim_just_shipped(new_md)
             with open(_todo_md_file(), "w", encoding="utf-8") as f:
                 f.write(trimmed_md)

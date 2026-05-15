@@ -188,6 +188,7 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
         except FileNotFoundError:
             phase_issues.append("phases.json missing")
         except Exception as e:
+            # silent-ok: optional fallback path.
             phase_issues.append(f"phases.json invalid: {type(e).__name__}: {e}")
         # Require() each middleware in a fresh Node subprocess to confirm load.
         import subprocess as _sp_mr
@@ -204,6 +205,7 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
                     msg = (rc.stderr or rc.stdout or "").strip().splitlines()
                     load_failures.append(f"{fname}: {msg[-1] if msg else 'rc=' + str(rc.returncode)}")
             except Exception as _e:
+                # silent-ok: optional fallback path.
                 load_failures.append(f"{fname}: {type(_e).__name__}: {_e}")
         issues = []
         if load_failures:

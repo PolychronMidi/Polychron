@@ -11,8 +11,6 @@ _HME_SAFETY_DIR="${_HME_HELPERS_DIR}/safety"
 source "${_HME_SAFETY_DIR}/project_root.sh"
 
 # 2) Unified signal bus. Every hook that emits events calls _signal_emit;
-# status + diagnostics tail the bus instead of reconstructing state from
-# multiple tmp/ files.
 # shellcheck disable=SC1091
 source "${_HME_HELPERS_DIR}/_signals.sh"
 source "${_HME_HELPERS_DIR}/hook_ledger.sh"
@@ -32,8 +30,6 @@ _HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 
 # 5) Function library
-# misc_safe must load before curl.sh (provides _safe_int) and any caller
-# of _safe_jq / _safe_int / _lifesaver_bg / _safe_py3.
 source "${_HME_SAFETY_DIR}/latency.sh"
 source "${_HME_SAFETY_DIR}/misc_safe.sh"
 source "${_HME_SAFETY_DIR}/curl.sh"

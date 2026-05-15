@@ -2,8 +2,6 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
 # PostToolUse: Read -- silent KB brief injection for src/ and tools/HME/ files.
-# Native Read is the public surface; this hook records the HME brief.
-# Only runs for tracked paths; exits 0 silently for everything else.
 
 INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
@@ -18,17 +16,11 @@ MODULE=$(basename "$FILE" | sed 's/\.[^.]*$//')
 [ -z "$MODULE" ] && exit 0
 
 # Mark BRIEF synchronously so pretooluse_edit.sh sees it this turn.
-# _brief_add (vs raw _nexus_add) also emits a brief_recorded activity event
-# so downstream can see which emission path fired.
 _brief_add "$MODULE" "posttooluse_read_kb"
 
 # Fire KB brief async -- inject context into next response without blocking.
-# FAIL-LOUD: was `2>/dev/null || echo $MODULE` which silently fell back to
-# unencoded module name on a python crash. Module names are typically
-# basename-safe but a python crash here points at environment breakage that
-# should surface.
 WORKER="$_HME_HTTP_PORT"
-_PTRK_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ptrk_py_err_$$")
+_PTRK_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ptrk_py_err_$$")  # silent-ok: optional fallback path.
 _ENCODED=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$MODULE" 2>"$_PTRK_PY_ERR" || echo "$MODULE")
 if [ -s "$_PTRK_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
   _PTRK_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)

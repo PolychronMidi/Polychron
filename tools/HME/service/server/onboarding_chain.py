@@ -104,9 +104,6 @@ if _mcp_root not in sys.path:
 from hme_env import ENV  # noqa: E402
 
 # Pull canonical i/<wrapper> + action= forms from the single source of
-# truth. Fallback keeps server bootable if the helper module is missing.
-# _mcp_root is tools/HME/service; helpers live at tools/HME/scripts
-# (one dirname up from _mcp_root, then "scripts").
 try:
     _scripts_dir = os.path.join(
         os.path.dirname(_mcp_root), "scripts"
@@ -159,8 +156,6 @@ STEP_SHORT = [
 
 _PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 # Flat per-field state files -- kept separate (not merged into JSON) so shell
-# helpers can read them via `cat` without pulling in `jq` or Python. The
-# tradeoff: two files instead of one, but much simpler hook code.
 _STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
 _TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
 

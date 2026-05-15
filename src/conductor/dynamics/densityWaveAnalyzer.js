@@ -111,11 +111,7 @@ moduleLifecycle.declare({
     return 1.0;
   }
 
-  // R25 E3: Tension bias from density wave patterns. When density is flat
-  // (no oscillation), boost tension to inject contrast from a different
-  // axis. When density is actively waving, sustain mild tension push.
-  // Creates cross-domain energy compensation: flat density -> tension picks
-  // up the slack; active density -> tension stays neutral.
+  // Tension bias from density wave patterns. When density is flat
   /**
    * Get tension multiplier from density wave amplitude.
    * @returns {number}
@@ -123,9 +119,6 @@ moduleLifecycle.declare({
   function getTensionBias() {
     const profile = getWaveProfile();
     // E10: When hyperMetaManager signals tension suppression during phrase
-    // troughs, reduce or invert the flat-density tension boost. This breaks
-    // the vicious cycle where flat density -> tension boost -> more energy
-    // consumption -> homeostasis suppresses gain -> flatter density.
     const e10Suppress = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e10TensionSuppress'));
     if (profile.isFlat) {
       // Normal: 1.06. With e10Suppress=0.6: 1.0 + 0.06*0.6 = 1.036
@@ -136,20 +129,12 @@ moduleLifecycle.declare({
     return 1.0;
   }
 
-  // R39 E3: Density bias from density wave patterns. When density is flat,
-  // boost density to recover coupling headroom. When density is actively
-  // waving, leave it alone. Addresses density axis starvation (0.094 share
-  // in R38, below floor) by adding a self-correcting density push.
+  // Density bias from density wave patterns. When density is flat,
   /**
    * Get density multiplier from density wave amplitude.
    * @returns {number}
    */
-  // R74 E5: Alternating flat-density push. When density is flat, instead
-  // of a constant 1.06 boost (which raises mean without creating variance),
-  // alternate between boost (1.06) and cut (0.97) on a phrase-driven
-  // cycle. This structural mechanism creates variance by injecting
-  // oscillation when the density signal lacks it. When density is already
-  // waving, the cut path engages to deepen troughs.
+  // Alternating flat-density push. When density is flat, instead
   function getDensityBias() {
     const profile = getWaveProfile();
     if (profile.isFlat) {

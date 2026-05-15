@@ -1,5 +1,4 @@
 // regimeDispatch.js - Regime-conditional value dispatch.
-// Replaces verbose ternary chains: regime === 'coherent' ? X : regime === 'exploring' ? Y : Z
 // Used in 9+ files across conductor, crossLayer, rhythm subsystems.
 
 /**

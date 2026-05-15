@@ -8,13 +8,8 @@ if echo "$TRIMMED_CMD" | grep -qE '^(npm run (main|snapshot)|node lab/run)'; the
     exit 2
   fi
   # Emit pipeline_start to activity bridge. Extract session_id from INPUT --
-  # SESSION_ID was previously referenced unset, which under `set -u` would
-  # have crashed the hook at pipeline launch; caught by audit_shell_undefined_vars.
   _SESSION_ID_PIPE=$(_safe_jq "$INPUT" '.session_id' 'unknown')
   _emit_activity pipeline_start --session="$_SESSION_ID_PIPE"
-  # Block double-backgrounding: run_in_background=true AND & in command = premature exit code 0.
-  # The & makes the shell return immediately, firing a false "completed" notification while npm still runs.
-  # This is the root cause of check_pipeline polling loops.
   if echo "$CMD" | grep -qE '[[:space:]]&[[:space:]]*$|[[:space:]]&$'; then
     _emit_block "BLOCKED: Do NOT use & with run_in_background=true -- double-backgrounding fires a false exit-code-0 notification while npm is still running, which causes check_pipeline polling loops. Remove the & from the command."
     exit 2

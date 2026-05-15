@@ -6,15 +6,12 @@
 # Stop lifesaver scan.
 
 # Returns:
-#   0 + JSON with hookSpecificOutput.additionalContext if new errors found
-#   0 with no output if no new errors (passthrough)
-#   Note: never blocks/fails the tool call; only ADDS context.
 _hme_check_errors_inline() {
   local PROJECT="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}"
   local ERROR_LOG="$PROJECT/log/hme-errors.log"
   local INLINE_WATERMARK="$PROJECT/tmp/hme-errors.inline-watermark"
   # Heartbeat -- proves this helper actually ran.
-  date +%s > "$PROJECT/runtime/hme/heartbeat-inline-check.ts" 2>/dev/null || true
+  date +%s > "$PROJECT/runtime/hme/heartbeat-inline-check.ts" 2>/dev/null || true  # silent-ok: optional fallback path.
 
   if [ ! -f "$ERROR_LOG" ]; then
     # Genuinely no log file yet (fresh repo) is a passthrough; an
@@ -24,8 +21,6 @@ _hme_check_errors_inline() {
 
   local TOTAL WATERMARK
   # Don't suppress wc/cat stderr -- if reading fails (permission, missing
-  # parent dir), the caller routes our stderr to errors.log
-  # so the failure is visible. Use -f tests + explicit zero defaults.
   TOTAL=$(wc -l < "$ERROR_LOG" | tr -d ' \t')
   TOTAL=${TOTAL:-0}
   if [ -f "$INLINE_WATERMARK" ]; then
@@ -39,14 +34,8 @@ _hme_check_errors_inline() {
   [ "$TOTAL" -le "$WATERMARK" ] && return 0
 
   # Severity-based classifier (mirrors lifesaver.sh).
-  # CANARY lines are alert-chain self-test markers; they're neither
-  # agent-errors nor observations -- consume silently (advancing the
-  # watermark past them is enough to prove this helper ran).
   local _OBS_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
   # Self-origin source tags -- same list as lifesaver.sh _SELF_TAG_RE.
-  # Lines tagged with these writers are observation-only regardless of
-  # severity word (worker daemons, supervisors, llamacpp invariants --
-  # operator/supervisor concerns, not agent code issues).
   local _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
   local _CANARY_RE='\[CANARY-'
   local NEW_RAW AGENT_ERRORS SELF_ERRORS CANARY_LINES
@@ -64,21 +53,15 @@ _hme_check_errors_inline() {
   _SELF_BY_SEV=$(printf '%s\n' "$_REMAINING" | /usr/bin/grep -E "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
   SELF_ERRORS=$(printf '%s\n%s\n' "$_SELF_BY_TAG" "$_SELF_BY_SEV" | /usr/bin/grep -v '^$' | sort -u || true)
   # Mark each consumed canary in the pending tracker so the Stop-hook
-  # watchdog knows the inline-check actually saw it. Strip the "CANARY-"
-  # prefix to match the bare ID format the producer (canary.sh) writes
-  # to the pending tracker -- consumed-vs-pending must use IDENTICAL ID
-  # forms or the watchdog reports false-positive stale alarms.
   if [ -n "$CANARY_LINES" ]; then
     while IFS= read -r line; do
       local cid
       cid=$(printf '%s' "$line" | /usr/bin/grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1 | sed 's/^CANARY-//')
-      [ -n "$cid" ] && echo "$cid|consumed-by-inline|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null
+      [ -n "$cid" ] && echo "$cid|consumed-by-inline|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null  # silent-ok: optional fallback path.
     done <<< "$CANARY_LINES"
   fi
 
   # Advance watermark BEFORE emitting, so a downstream crash doesn't cause
-  # the same lines to surface repeatedly. Failure to update watermark IS
-  # itself a silent-fail vector -- check exit code.
   if ! echo "$TOTAL" > "$INLINE_WATERMARK"; then
     echo "_check_errors_inline: failed to update watermark at $INLINE_WATERMARK" >&2
     return 1
@@ -98,9 +81,6 @@ These fired during the just-completed tool call. Diagnose and fix BEFORE the nex
 ${SELF_ERRORS}]"
     fi
     # additionalContext lands in the next turn's context. Silent on stdout
-    # for non-output-accepting events, but PostToolUse accepts this shape.
-    # No stderr suppression on jq -- if jq is missing or fails, the adapter
-    # routes our stderr to errors.log so the failure surfaces.
     if ! jq -n \
       --arg banner "$BANNER" \
       '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":$banner},"systemMessage":$banner}'; then

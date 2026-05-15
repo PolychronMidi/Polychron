@@ -58,11 +58,6 @@ def _scale_signature(name: str, fan_outs: list[int]) -> dict:
         "gini": _gini(s),
     }
     # Horizon X maturity -- synthetic ablation. Recompute Gini after
-    # removing the strongest element. Tensegrity hypothesis predicts the
-    # distribution stays concentrated (load redistributes among the
-    # remaining nodes) rather than collapsing to uniform. Gini_no_max
-    # >= 0.30 = redundancy present at this scale; < 0.30 = the strongest
-    # element WAS the structure, not a hub-among-many.
     if len(s) >= 3:
         ablated = s[:-1]
         sig["gini_no_max"] = _gini(ablated)
@@ -187,11 +182,6 @@ def _measure_l0_channels() -> dict:
     files_per_chan: dict[str, set[str]] = {chan: set() for chan in channels}
     chan_set = set(channels)
     # Output format: file:line:matched-text. -o emits ONLY the matched
-    # substring on the third field; with the alternation we have, the
-    # match_field IS one of the channel names verbatim. Exact-match
-    # against the channel set -- earlier `chan in match_field` was buggy
-    # because `coherence` is a substring of `channel-coherence` (both
-    # declared), so the wrong channel won the loop.
     for ln in r.stdout.splitlines():
         parts = ln.split(":", 2)
         if len(parts) < 3:
@@ -325,11 +315,6 @@ def main(argv):
               f"{red:>11}  {shape:>17}")
     print()
     # Uniform-baseline contrast -- a synthetic uniform distribution of
-    # the same total count would have Gini ~= 0. By comparing actual
-    # measurements against this baseline we show the empirical signal
-    # isn't coincidence: if levels were uniformly random, ALL Ginis
-    # would cluster near 0. Instead they cluster near 0.4-0.5+ --
-    # that's load concentration, not noise.
     valid_ginis = [s["gini"] for s in scales if s["n"] > 0]
     if valid_ginis:
         avg_gini = sum(valid_ginis) / len(valid_ginis)

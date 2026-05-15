@@ -56,6 +56,7 @@ function _append(channel, line) {
     _ensureDir(file);
     fs.appendFileSync(file, line + '\n');
   } catch (err) {
+    // silent-ok: optional fallback path.
     process.stderr.write(`[telemetry] ${channel} write failed (suppressing further attempts): ${err.message}\n`);
     _failed.add(channel);
   }
@@ -80,8 +81,6 @@ function record(category, event, fields) {
   }
   if (category === 'error') {
     // hme-errors.log is line-oriented text (LIFESAVER text-scans it);
-    // emit a human-readable line plus a structured tail so downstream
-    // tools can parse either shape.
     const ts = (fields && fields.ts) || new Date().toISOString();
     const reason = (fields && (fields.reason || fields.message)) || event;
     const tail = JSON.stringify({ event, ...fields });

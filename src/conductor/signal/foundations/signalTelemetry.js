@@ -118,9 +118,6 @@ moduleLifecycle.declare({
   }
 
   // (conductorScopes manifest field replaces registerModule.)
-  // registerRecorder/registerStateProvider remain inline (no manifest-field
-  // counterparts that take inline-scope-defined functions; deps guarantee
-  // conductorIntelligence is bound here).
   conductorIntelligence.registerRecorder('signalTelemetry', record);
   conductorIntelligence.registerStateProvider('signalTelemetry', () => ({
     telemetryAnomalyDetected: anomalyDetected,

@@ -94,8 +94,6 @@ moduleLifecycle.declare({
         S.phaseBoostCeiling = clamp(S.phaseBoostCeiling + 1.0, 25.0, 40.0);
       }
       // Write to dedicated telemetry key so it doesn't overwrite the
-      // phase-share-derived value from updateRateMultipliers.
-      // The public getter takes max(varianceGateRelax, varianceGateRelaxTelemetry).
       ST.rateMultipliers.varianceGateRelaxTelemetry = m.max(
         ST.rateMultipliers.varianceGateRelaxTelemetry, 1.8);
       S.topologyCreativityMultiplier = m.max(S.topologyCreativityMultiplier, 1.15);

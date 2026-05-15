@@ -140,7 +140,6 @@ const setBalanceAndFXCLenBeforeFX = c.length;
 const absoluteSeconds = beatStartTime;
 const nextBalanceAndFXShiftMs = absoluteSeconds * 1000 + rf(2, 5) * 1000;
 if (rf() < .5*bpmRatio3 || absoluteSeconds * 1000 >= nextBalanceAndFXShiftMs || firstLoop < 1) { firstLoop = 1;
-  // Apply a limited change to balance offset: use rl() but cap per-iteration change to 4 ticks for stability
   const prevBal = balOffset;
   const balMin = Number(spatialCanvas.balOffset[0]);
   const balMax = Number(spatialCanvas.balOffset[1]);
@@ -218,10 +217,6 @@ return [
   ];  });
 
   // Cooperation post-pass: setBalanceAndFX is the dominant writer (~6x any
-  // regime writer) so 15% of its CC emissions get trend-aligned nudges
-  // (read substrate trend, replace the rfx-random with last-written +
-  // small bias) to enable multi-writer synergy. 8 CCs only -- the audible
-  // ones for fluidsynth+SGM-v2.01.
   const _COOP_PROB = 0.15;
   const _COOP_AMP = {
     1:  [3, 8],    // mod wheel
@@ -262,10 +257,6 @@ return [
   p(c,...setBalanceAndFXEvents);
 
   // -- Texture-reactive FX modulation (#5) - conductor-driven --
-  // When texture contrast intensity is high, boost reverb send (CC91),
-  // open filter cutoff (CC74), and spike delay send (CC94) so the spatial
-  // environment breathes with the texture system.
-  // FX depth and texture boost amplitude are scaled by the active conductor profile.
   const fxScale = conductorConfig.getFxMixScaling();
 
   if (drumTextureCoupler) {

@@ -21,20 +21,20 @@ if [ -f "$_ENV_FILE" ]; then
 fi
 
 PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
-source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true
+source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
 
 _term_pid() {
   local pid="$1" label="$2"
   if kill -0 "$pid" 2>/dev/null; then
-    kill -TERM "$pid" 2>/dev/null && echo "[shutdown] SIGTERM -> ${label} (${pid})" >&2
+    kill -TERM "$pid" 2>/dev/null && echo "[shutdown] SIGTERM -> ${label} (${pid})" >&2  # silent-ok: optional fallback path.
   fi
 }
 
 _kill_pid() {
   local pid="$1" label="$2"
   if kill -0 "$pid" 2>/dev/null; then
-    kill -KILL "$pid" 2>/dev/null && echo "[shutdown] SIGKILL -> ${label} (${pid})" >&2
+    kill -KILL "$pid" 2>/dev/null && echo "[shutdown] SIGKILL -> ${label} (${pid})" >&2  # silent-ok: optional fallback path.
   fi
 }
 
@@ -55,11 +55,11 @@ _PATTERNS=()
 for _svc in proxy worker llamacpp_daemon omniroute; do
   while IFS= read -r _pat; do
     [ -n "$_pat" ] && _PATTERNS+=("$_pat")
-  done < <(_hme_service_process_patterns "$_svc" 2>/dev/null || true)
+  done < <(_hme_service_process_patterns "$_svc" 2>/dev/null || true)  # silent-ok: optional fallback path.
 done
 _PATTERNS+=("llama-server.*8080" "llama-server.*8081")
 for pat in "${_PATTERNS[@]}"; do
-  pkill -TERM -f "$pat" 2>/dev/null && echo "[shutdown] SIGTERM -> $pat" >&2 || true
+  pkill -TERM -f "$pat" 2>/dev/null && echo "[shutdown] SIGTERM -> $pat" >&2 || true  # silent-ok: optional fallback path.
 done
 
 sleep 3
@@ -70,7 +70,7 @@ for label in "${!_TRACKED_PIDS[@]}"; do
   _kill_pid "${_TRACKED_PIDS[$label]}" "$label"
 done
 for pat in "${_PATTERNS[@]}"; do
-  pkill -KILL -f "$pat" 2>/dev/null && echo "[shutdown] SIGKILL -> $pat" >&2 || true
+  pkill -KILL -f "$pat" 2>/dev/null && echo "[shutdown] SIGKILL -> $pat" >&2 || true  # silent-ok: optional fallback path.
 done
 
 # 4. Cleanup
@@ -78,9 +78,6 @@ done
 [ -f "$PID_FILE" ] && rm -f "$PID_FILE" && echo "[shutdown] removed $PID_FILE" >&2
 
 # Clear emergency-valve persisted-trip flag so a fresh polychron-restart.sh
-# starts with a clean valve. Watchdog respawns DON'T go through this path
-# so the flag survives those, which is the intent: respawns inherit the
-# tripped state, deliberate restarts reset it.
 _VALVE_FLAG="$PROJECT_ROOT/tmp/hme-proxy-valve-tripped.flag"
 [ -f "$_VALVE_FLAG" ] && rm -f "$_VALVE_FLAG" && echo "[shutdown] removed $_VALVE_FLAG (valve state reset)" >&2
 # Clear the auto-recovery state file too -- same semantic: deliberate

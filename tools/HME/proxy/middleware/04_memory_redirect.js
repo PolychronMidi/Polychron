@@ -49,8 +49,6 @@ function _deriveQuery(input) {
 
 function _kbSearch(query) {
   // Shim's /enrich endpoint is a direct KB semantic search -- no onboarding
-  // chain, no auto-narration, just RAG hits. Cleaner output than going
-  // through the MCP /tool/learn path.
   return new Promise((resolve) => {
     if (!query || !query.trim()) { resolve('(no query derivable from tool input)'); return; }
     const body = Buffer.from(JSON.stringify({ query, top_k: 5 }), 'utf8');
@@ -67,7 +65,6 @@ function _kbSearch(query) {
       res.on('end', () => {
         try {
           const json = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-          // /enrich returns { kb_entries: [...], transcript: [...], ... }
           // Pull the KB entries into a compact formatted string.
           const entries = (json && json.kb_entries) || [];
           if (entries.length === 0) {
@@ -83,6 +80,7 @@ function _kbSearch(query) {
           }
           resolve(lines.join('\n'));
         } catch (err) {
+          // silent-ok: optional fallback path.
           resolve(`(KB parse error: ${err.message})`);
         }
       });
@@ -131,9 +129,6 @@ module.exports = {
         if (!TARGETED_TOOLS.has(block.name)) continue;
         if (!_isMemoryOp(block)) continue;
         // Mark with a flag so onToolResult knows to replace the
-        // tool_result. We can't mutate the tool_use directly (Anthropic
-        // has already dispatched it), but we CAN make sure the next
-        // tool_result gets hijacked.
         ctx.emit({ event: 'memory_redirect_flagged_preemptive', tool: block.name });
       }
     }

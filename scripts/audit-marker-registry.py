@@ -33,14 +33,12 @@ def _extract_marker_blocks(text: str) -> list[dict]:
     -- not a full JS parser, tuned to the specific shape of this file. If
     _markers.js is restructured meaningfully, this parser must be updated
     (and THIS verifier's own staleness is Pattern A in miniature)."""
-    # Find each top-level key in MARKERS: NAME: { ... },
     entries = []
     # crude split on top-level keys
     m_start = text.find("const MARKERS = {")
     if m_start < 0:
         return entries
     body = text[m_start:]
-    # match NAME: { ... }, -- brace matching via depth counter
     i = 0
     while i < len(body):
         km = re.match(r"\s+(\w+):\s*\{", body[i:])
@@ -133,8 +131,6 @@ def main() -> int:
 
         field_name, marker_str = marker_field
         # Choose a grep-friendly substring -- the first 8+ char run of
-        # non-meta literal chars from the marker. This avoids trying to
-        # match regex-meta characters as literals.
         literals = re.findall(r"[a-zA-Z0-9_.\-:\[\]/]{8,}", marker_str)
         needle = literals[0] if literals else marker_str
         checked += 1

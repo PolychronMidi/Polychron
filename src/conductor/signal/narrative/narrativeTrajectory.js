@@ -82,9 +82,7 @@ moduleLifecycle.declare({
       steerBias = 1.0;
     }
 
-    //  Tension tail sustain floor.
-    // Prevent the tension arc from collapsing in the final quarter of a section.
-    // When section progress exceeds 75%, ensure a minimum tension bias of 1.02.
+    // Tension tail sustain floor.
     const secProgress = timeStream.normalizedProgress('section');
     const s = timeStream.getPosition('section');
     const totalSections = timeStream.getBounds('section');
@@ -125,11 +123,7 @@ moduleLifecycle.declare({
       if (arcReheat > 0) {
         steerBias += arcReheat;
       }
-      // R74 E2: Section-route-aware back-half recovery. Mid-piece sections
-      // (where the tension arc should peak) get amplified recovery force.
-      // Edge sections (S0, final S) get base recovery. This creates a
-      // structural envelope that lifts Q3/Q4 tension in the compositional
-      // core without constant tweaking.
+      // Section-route-aware back-half recovery. Mid-piece sections
       const sectionRouteForRecovery = totalSections > 1 ? s / (totalSections - 1) : 0;
       const midPieceBoost = 1.0 + m.sin(clamp(sectionRouteForRecovery, 0, 1) * m.PI) * 0.8;
       const backHalfRecovery = secProgress > 0.52

@@ -68,10 +68,7 @@ moduleLifecycle.declare({
       adjustedTarget = baseTarget * reducedRelaxScale;
     }
 
-    // R73 E6: Reconciliation gap pressure. When telemetry p95 diverges from
-    // recent p95 by more than 0.15 (the gap observed in density-flicker 0.406),
-    // inject additional surface pressure to amplify decorrelation effort on
-    // the stale-window tail contribution.
+    // Reconciliation gap pressure. When telemetry p95 diverges from
     const recentP95 = V.optionalFinite(tailTelemetry.recentP95, 0);
     const reconciliationGap = m.max(0, p95 - recentP95 - 0.15);
     const gapPressure = flags.isTrustPair
@@ -103,11 +100,7 @@ moduleLifecycle.declare({
     const telemetrySevereRate = tailTelemetry.severeRate;
 
     let effectiveGain = ps.gain * axisGainScale * S.globalGainMultiplier;
-    // R63 E4 + R66 E2: Phase exemption from orchestrator. When the orchestrator
-    // detects a phase-coherent conflict (Contradiction 4), it emits phaseExemption > 1.
-    // To help phase RETAIN coupling energy, we REDUCE the decorrelation gain
-    // for phase pairs so they experience less tightening. This lets phase
-    // correlations persist longer, increasing phase axis energy share.
+    // Phase exemption from orchestrator. When the orchestrator
     if (dimA === 'phase' || dimB === 'phase') {
       const phaseExemption = /** @type {number} */ (hyperMetaManager.getRateMultiplier('phaseExemption'));
       if (phaseExemption > 1.0) {
@@ -168,10 +161,7 @@ moduleLifecycle.declare({
         : 0.15;
       effectiveGain *= m.max(tensionEntropyRelief, 1.0 - antiCorrDepth * 0.80);
     }
-    // R76 E1: Structural anti-correlation gain ceiling. When a pair's pearsonR
-    // is below -0.80 (strong structural anti-correlation, e.g. density-flicker
-    // r=-0.935), cap gain at 0.6x. Anti-correlated pairs represent structural
-    // signal -- excessive gain amplifies the lock rather than breaking it.
+    // Structural anti-correlation gain ceiling. When a pair's pearsonR
     if (corr < -0.80) {
       effectiveGain *= 0.6;
     }
@@ -181,24 +171,15 @@ moduleLifecycle.declare({
       const posCorrFloor = (sp.tailPressure > 0.50) ? 0.50 : 0.30;
       effectiveGain *= m.max(posCorrFloor, 1.0 - posCorrDepth * 0.55);
     }
-    // R78 E1: Strong positive co-evolution gain ceiling. When pearsonR > 0.80
-    // (e.g. tension-flicker r=0.829), the pair is structurally co-evolving.
-    // Cap gain at 0.7x to break the lock without eliminating the signal.
+    // Strong positive co-evolution gain ceiling. When pearsonR > 0.80
     if (corr > 0.80) {
       effectiveGain *= 0.7;
     }
     // R71-R88 + R97 E2: Pair gain ceiling via pairGainCeilingController (#15).
-    // Replaces hardcoded per-pair if/else ceiling chains with adaptive ceilings
-    // that self-calibrate from rolling p95 EMA and exceedance history.
-    // Feed current-beat telemetry to the controller for EMA updates.
     pairGainCeilingController.updatePair(key, p95, tailTelemetry.hotspotRate, telemetrySevereRate);
     const adaptiveCeiling = pairGainCeilingController.getInstantCeiling(key, p95, telemetrySevereRate, tailTelemetry.hotspotRate);
     effectiveGain = m.min(effectiveGain, adaptiveCeiling);
-    // R76 E5 + R79 E4: Flicker-trust adaptive target deceleration. When a
-    // pair has residual pressure (>0.50) and any upward target drift (>1.01),
-    // the decorrelation mechanism is over-investing. Cap effectiveGain at 1.0
-    // to prevent runaway target drift. Thresholds relaxed from 0.80/1.20
-    // after flicker-trust evaded the original gate (tailP 0.566, drift 1.02).
+    // Flicker-trust adaptive target deceleration. When a
     if (sp.tailPressure > 0.50 && ps.gain > 0) {
       const at = couplingState.getAdaptiveTarget(key);
       const driftRatio = at.baseline > 0 ? at.current / at.baseline : 1;
@@ -207,9 +188,6 @@ moduleLifecycle.declare({
       }
     }
     // R81-R94 + R97 E3: Section-0 warmup ramp via warmupRampController (#16).
-    // Adaptive per-pair ramps derived from historical S0 exceedance and
-    // section length. Pairs that spike during S0 get shorter ramps for
-    // faster decorrelation; stable pairs get longer ramps for stability.
     const warmupBeats = warmupRampController.getWarmupBeats(key);
     const gbc = couplingState.gateBeatCount;
     if (gbc < warmupBeats) {
@@ -217,20 +195,14 @@ moduleLifecycle.declare({
       // R2 E1: Tighter ceiling during warmup to reduce section-start exceedance
       const warmupCeiling = warmupRampController.getWarmupCeiling(key, gbc);
       // R5 E2 + R6 E1: Two-tier flicker warmup ceiling. density-flicker gets 0.50x
-      // (tightened from 0.60) to target persistent S0 exceedance; other flicker pairs 0.60x.
       const flickerMul = key === 'density-flicker' ? 0.50 : (key.indexOf('flicker') !== -1 ? 0.60 : 1.0);
       effectiveGain = m.min(effectiveGain, warmupCeiling * flickerMul);
       // Feed exceedance data back to the controller
       if (absCorr > target * 1.5) warmupRampController.recordS0Exceedance(key);
     }
-    // R80 E2: Universal high-gain safety cap. R79 flicker-trust hit
-    // effectiveGain 1.714 (budgetBoost 1.882). Cap all pairs at 1.2 to
-    // prevent runaway gain regardless of modifier chain outcome.
+    // Universal high-gain safety cap. R79 flicker-trust hit
     effectiveGain = m.min(effectiveGain, 1.2);
-    // R81 E4: Budget-ranked effectiveGain floor. When stacked ceilings
-    // zero a pair (density-flicker: anti-corr 0.6x + severe 0.08 = 0),
-    // budgetRank 1 priority is wasted on an inert pair. Preserve minimum
-    // feedback loop activity for budget-prioritized pairs.
+    // Budget-ranked effectiveGain floor. When stacked ceilings
     if (effectiveGain < 0.01 && S.budgetPriorityRank && S.budgetPriorityRank[key] !== undefined) {
       effectiveGain = 0.01;
     }

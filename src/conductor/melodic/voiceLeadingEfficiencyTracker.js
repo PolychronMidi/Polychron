@@ -104,15 +104,7 @@ moduleLifecycle.declare({
     return getEfficiencySignal().densityBias;
   }
 
-  // R22 E3: Tension bias from voice-leading efficiency.
-  // Smooth voice leading (high efficiency) sustains higher tension levels;
-  // choppy, large-displacement voice leading (low efficiency) calls for
-  // resolution - lower tension to give the texture room to settle.
-  // R25 E2: Graduated continuous ramp replaces binary thresholds.
-  // Old: eff < 0.25 -> 0.94, eff > 0.75 -> 1.06, else 1.0 (dead zone).
-  // New: linear ramp from 0.94 at eff=0 to 1.06 at eff=1.0. This
-  // eliminates the 0.25-0.75 dead zone where the module was neutral,
-  // ensuring every beat gets some voice-leading tension influence.
+  // Tension bias from voice-leading efficiency.
   /**
    * Get tension multiplier from voice-leading efficiency.
    * @returns {number}
@@ -125,10 +117,7 @@ moduleLifecycle.declare({
   conductorIntelligence.registerDensityBias('voiceLeadingEfficiencyTracker', () => voiceLeadingEfficiencyTracker.getDensityBias(), 0.9, 1.1);
   conductorIntelligence.registerTensionBias('voiceLeadingEfficiencyTracker', () => voiceLeadingEfficiencyTracker.getTensionBias(), 0.94, 1.06);
 
-  // R31 E3: Flicker modifier from voice-leading efficiency.
-  // Smooth voice leading (high efficiency) -> lower flicker (less rhythmic agitation).
-  // Choppy voice leading (low efficiency) -> higher flicker (more rhythmic energy).
-  // Continuous ramp: efficiency 0->1.05, efficiency 0.5->1.0, efficiency 1->0.95.
+  // Flicker modifier from voice-leading efficiency.
   function getFlickerModifier() {
     const s = getEfficiencySignal();
     return 1.05 - s.efficiency * 0.10;

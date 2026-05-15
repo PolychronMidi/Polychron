@@ -6,8 +6,6 @@ moduleLifecycle.declare({
   provides: ['axisEnergyEquilibratorPairAdjustments'],
   init: () => {
   // Axis-aware giniMult dampening: pairs touching N dominant axes get
-  // GINI_DAMPEN_N x giniMult excess (0:0.72, 1:0.75, 2:1.0). Protects
-  // non-dominant axes from over-tightening while dominant axis tightens fully.
   const GINI_DAMPEN_0 = 0.72;
   const GINI_DAMPEN_1 = 0.75;
 
@@ -66,7 +64,6 @@ moduleLifecycle.declare({
         ? (coherentPairEligible && (residualTailHot || rolling > config.HOTSPOT_RATIO * baseline) ? context.coherentHotspotScale : 0)
         : context.tightenScale;
 
-      // Cross-adjuster direction inhibit: skip if axis adjuster recently relaxed this pair
       const crossWindow = config.CROSS_INHIBIT_WINDOW || 6;
       if (state.pairLastRelaxBeat[pair] !== undefined && state.beatCount - state.pairLastRelaxBeat[pair] < crossWindow) continue;
 
@@ -92,10 +89,7 @@ moduleLifecycle.declare({
         )
           ? 1 + context.nonNudgeableTailPressure * (isEntropySurfacePair ? 0.70 : (isPhaseSurfacePair || isTrustSurfacePair ? 0.52 : 0.32))
           : 1.0;
-        // R19 E4: Axis-aware giniMult dampening. Only apply full giniMult
-        // excess to pairs involving the dominant axis. Non-dominant pairs
-        // get dampened giniMult to preserve their signal headroom (e.g.
-        // tension peaks when flicker is dominant).
+        // Axis-aware giniMult dampening. Only apply full giniMult
         const domAxes = getDominantAxes(context.shares);
         let pairGiniMult = context.giniMult;
         if (domAxes.length > 0 && pairGiniMult > 1.0) {
@@ -125,7 +119,6 @@ moduleLifecycle.declare({
           else state.coldspotSkipReasons.residual++;
           continue;
         }
-        // Proportional relax: deeper cold -> faster recovery, mirroring tighten's overshoot scaling.
         const undershoot = clamp((config.COLDSPOT_RATIO * baseline - rolling) / m.max(config.COLDSPOT_RATIO * baseline, 0.01), 0, 1);
         const nextBaseline = m.min(config.BASELINE_MAX, baseline + config.PAIR_RELAX_RATE * (1 + undershoot * 1.5));
         if (nextBaseline > baseline) {

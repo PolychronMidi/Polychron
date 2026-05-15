@@ -4,10 +4,6 @@
 # (`_stderr_verdict` / auto-summary-on-EXIT provided by _safety.sh.)
 
 # Fail-loud self-assignment: requires the dispatcher to have set INPUT
-# (Claude Code Stop payload via stdin). Self-assigning rather than just
-# `: "${INPUT:?...}"` because the static `shell-undefined-vars`
-# verifier looks for `VAR=` patterns; parameter-expansion-with-error
-# doesn't satisfy its regex even though the runtime semantics are equivalent.
 INPUT="${INPUT:?_preamble.sh requires INPUT from dispatcher (Claude Code Stop payload via stdin)}"
 
 # Resolve detectors via $PROJECT_ROOT (set by .env/_safety.sh) so the
@@ -15,18 +11,11 @@ INPUT="${INPUT:?_preamble.sh requires INPUT from dispatcher (Claude Code Stop pa
 _DETECTORS_DIR="${PROJECT_ROOT:-${CLAUDE_PROJECT_DIR:-}}/tools/HME/scripts/detectors"
 
 # Context meter: merge token counts into existing statusLine data
-# StatusLine writes authoritative used_pct/remaining_pct/size from the API.
-# Stop hook only adds input_tokens/output_tokens from the transcript -- never
-# overwrites used_pct (that would replace real API data with a fabricated estimate).
 _CTX_OUT="${HME_CTX_FILE:-/tmp/claude-context.json}"
 _CTX_TRANSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')
 if [[ -n "$_CTX_TRANSCRIPT" && -f "$_CTX_TRANSCRIPT" ]]; then
   # `|| true` is load-bearing: under set -e, a python crash here (e.g.
-  # context_meter.py ImportError under a stale module graph) would kill
-  # stop.sh with exit 2, bypassing all the actual lifecycle checks below.
-  # FAIL-LOUD: stderr now captured and bridged so a context_meter crash
-  # surfaces to next-turn LIFESAVER instead of vanishing.
-  _PRE_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pre_py_err_$$")
+  _PRE_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pre_py_err_$$")  # silent-ok: optional fallback path.
   python3 "$_DETECTORS_DIR/context_meter.py" "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>"$_PRE_PY_ERR" || true
   if [ -s "$_PRE_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
     _PRE_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)

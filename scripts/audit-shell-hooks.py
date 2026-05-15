@@ -44,8 +44,6 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 _HOOKS_DIR = os.path.join(_PROJECT, "tools", "HME", "hooks")
 
 # Forbidden path fragments that, if reached via BASH_SOURCE-relative
-# resolution, indicate the hook is trying to touch a repo-root artifact
-# via fragile path math instead of $PROJECT_ROOT-relative resolution.
 _REPO_ROOT_TARGETS = (
     "/.env",
     "/.git",
@@ -62,15 +60,9 @@ _REPO_ROOT_TARGETS = (
 )
 
 # BASH_SOURCE reference patterns. Either the canonical form or a variable
-# that was just assigned from it (a common alias we saw in _autocommit.sh:
-#   _AC_SELF="${BASH_SOURCE[0]}"
-#   _AC_ROOT="$(cd "$(dirname "$_AC_SELF")/../../../.." ...)"
 _BASH_SOURCE_RE = re.compile(r'\$\{BASH_SOURCE\[0\]\}|\$BASH_SOURCE\b|\$_\w*SELF\b')
 
 # Ascent counter: matches "../" runs. 2+ consecutive = leaves the
-# immediate directory, which is usually fine WITHIN hooks/ but not
-# safe for a BASH_SOURCE-relative expression that then touches a
-# repo-root target.
 _ASCENT_RE = re.compile(r'(?:\.\./){2,}')
 
 
@@ -88,8 +80,6 @@ def _scan_file(abs_path):
     findings = []
     lines = _file_lines(abs_path)
     # Track "SELF=BASH_SOURCE" aliases so a later use of $_SELF still
-    # counts. Simple approach: if any line declares _X_SELF from
-    # BASH_SOURCE, treat $_X_SELF in that file as equivalent.
     alias_vars = set()
     for ln in lines:
         m = re.search(r'(_\w+)="\$\{BASH_SOURCE\[0\]\}"', ln)

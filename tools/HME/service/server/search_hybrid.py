@@ -45,11 +45,6 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
     concise = response_format == "concise"
 
     # Hybrid search: semantic + keyword fusion
-    # Extract code identifiers from query (camelCase, snake_case, module names).
-    # Grep for them in parallel with semantic search. Files found by BOTH methods
-    # get a score boost. Keyword-only files are appended as fallback results.
-    # This is the llama.cpp-context-equivalent for search: two orthogonal retrieval
-    # strategies fused into a single result set for higher precision and recall.
     import re as _re_hybrid, subprocess as _sp_hybrid
     _HYBRID_STOPWORDS = {"where", "does", "which", "what", "when", "that", "this",
                          "with", "from", "have", "been", "into", "make", "more",
@@ -70,7 +65,6 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
     _logger_hybrid = _log_hybrid.getLogger("HME")
     for _ident in _identifiers:
         try:
-            # Use grep (always available) instead of rg (Claude Code wrapper, not a binary).
             _gr = _sp_hybrid.run(
                 ["grep", "-rl", "--include=*.js", _ident, _rg_scope],
                 capture_output=True, text=True, timeout=10
@@ -83,6 +77,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                 for _f in _matches:
                     _keyword_hits[_f] = _keyword_hits.get(_f, 0) + 1
         except Exception as _e:
+            # silent-ok: optional fallback path.
             _logger_hybrid.warning(f"hybrid grep failed for '{_ident}': {_e}")
     _logger_hybrid.info(f"search_code hybrid: identifiers={_identifiers}, hits={len(_keyword_hits)} files")
     if _keyword_hits:

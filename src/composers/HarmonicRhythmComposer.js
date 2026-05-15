@@ -1,4 +1,3 @@
-// Required via `src/composers/index.js` (aggregator that centralizes side-effect requires)
 const V = validator.create('HarmonicRhythmComposer');
 
 HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
@@ -60,8 +59,6 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
 
   getCurrentChord() {
     // -- Texture-responsive harmonic pacing (#5) --
-    // Sustained chord-burst activity - faster harmonic rhythm (reduce measuresPerChord)
-    // Sustained flurry activity - slower harmonic rhythm (hold chords longer)
     let effectiveMPC = this.measuresPerChord;
     const texMetrics = drumTextureCoupler.getMetrics();
     if (texMetrics.intensity > 0.3) {
@@ -201,7 +198,6 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
       candidateWeights: emphasizedWeights,
       // Register bias: higher during changes, lower at phrase end (cadence resolution)
       registerBias: this.HarmonicRhythmComposerIsChordChange ? 'higher' : (atPhraseEnd ? 'lower' : undefined),
-      // Voice count: increased during changes, potentially reduced at phrase end for clarity
       voiceCountMultiplier: this.HarmonicRhythmComposerIsChordChange ? 1.2 : (atPhraseEnd ? 0.9 : 1.0)
     };
   }

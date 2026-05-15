@@ -99,13 +99,7 @@ moduleLifecycle.declare({
     // Same direction = reinforcement, opposite = separation
     const sameDirection = (ourDelta >= 0 && otherDelta >= 0) || (ourDelta < 0 && otherDelta < 0);
 
-    // R71 E5: Section-progressive interference strength. In earlier sections,
-    // cross-layer velocity interference is gentler (boost 10%, separation 6%).
-    // As the piece progresses, interference strengthens (boost 20%, separation 12%),
-    // creating more dynamic cross-layer interplay and coupling texture in later
-    // sections (S1-S3 had zero exceedance in R70).
-    // R77 E4: Increase base from 0.10/0.06 to 0.13/0.08 for stronger cross-layer
-    // velocity interaction across all sections, improving dynamic range contrast.
+    // Section-progressive interference strength. In earlier sections,
     const sectionProg = totalSections > 1
       ? clamp(sectionIndex / (totalSections - 1), 0, 1)
       : 0.5;
@@ -119,29 +113,20 @@ moduleLifecycle.declare({
       : 1.0;
     const cimFactor = 0.4 + cimScale * 1.2;
     // Melodic coupling: tessituraLoad amplifies interference in extreme registers.
-    // High register extremity -> stronger velocity coordination between layers.
-    // Comfortable register -> normal interference level.
     const melodicCtxVI = emergentMelodicEngine.getContext();
     const tessituraLoad = melodicCtxVI ? V.optionalFinite(melodicCtxVI.tessituraLoad, 0) : 0;
     const melodicIntensityScale = 1.0 + tessituraLoad * 0.25; // [1.0 comfortable ... 1.25 extreme]
-    // R79 E3: freshnessEma coupling -- novel melodic intervals amplify interference strength.
-    // Fresh territory produces stronger dynamic contrast: reinforcement louder, separation softer.
+    // freshnessEma coupling -- novel melodic intervals amplify interference strength.
     const freshnessEmaVI = melodicCtxVI ? V.optionalFinite(melodicCtxVI.freshnessEma, 0.5) : 0.5;
     const freshnessIntensityScale = 1.0 + clamp(freshnessEmaVI - 0.40, 0, 0.60) * 0.25; // [1.0 familiar ... 1.15 novel]
-    // Rhythmic coupling: unexpected density surge sharpens velocity interference. Decline surprises soften it.
     const rhythmEntryVI = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const densitySurpriseVI = rhythmEntryVI && Number.isFinite(rhythmEntryVI.densitySurprise) ? rhythmEntryVI.densitySurprise : 1.0;
     const rhythmInterferenceMod = densitySurpriseVI > 1.1 ? 1.12 : densitySurpriseVI < 0.9 ? 0.92 : 1.0;
-    // R83 E1: ascendRatio bridge -- ascending melodic momentum amplifies velocity interference
-    // (stronger dynamic contrast during upward energy). Counterpart: harmonicIntervalGuard
-    // NARROWS deadband under same signal (harmony stabilizes during ascending momentum).
+    // ascendRatio bridge -- ascending melodic momentum amplifies velocity interference
     const ascendRatioVI = melodicCtxVI ? V.optionalFinite(melodicCtxVI.ascendRatio, 0.5) : 0.5;
     const ascendInterferenceScale = 1.0 + clamp((ascendRatioVI - 0.45) * 0.25, -0.05, 0.12);
-    // R86 E2: complexityEma antagonism bridge -- sustained rhythmic complexity amplifies velocity interference.
-    // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmony stabilizes while dynamics intensify).
     const complexityEmaVI = rhythmEntryVI && Number.isFinite(rhythmEntryVI.complexityEma) ? rhythmEntryVI.complexityEma : 0.5;
     const complexityEmaInterferenceScale = 1.0 + clamp((complexityEmaVI - 0.45) * 0.20, -0.04, 0.10);
-    // contourShape: rising arc = stronger velocity interference (dynamic contrast builds as energy climbs);
     // falling arc = softer interference (release phase convergences layers dynamically).
     const contourShapeVI = melodicCtxVI
       ? (melodicCtxVI.contourShape === 'rising' ? 1.07 : melodicCtxVI.contourShape === 'falling' ? 0.95 : 1.0)

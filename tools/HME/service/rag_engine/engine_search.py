@@ -14,12 +14,6 @@ from .utils import _bm25_search, _rrf_fuse, _sanitize
 logger = logging.getLogger(__name__)
 
 # Instruction prefixes for asymmetric (instruction-tuned) embedders.
-# bge-code-v1 requires a manual prefix per its model card -- its
-# config_sentence_transformers.json has empty prompts, so prompt_name=
-# kwarg is a no-op. Prefix the QUERY only; documents are indexed raw.
-# Swap both strings if you change model. Qwen3-Embedding-0.6B has a
-# built-in "query" prompt in its config -- we call encode(prompt_name=
-# "query") for the text model to trigger it automatically.
 _CODE_QUERY_PREFIX = ENV.optional(
     "RAG_CODE_QUERY_PREFIX",
     "Given Code or Text, retrieval relevant content\n",
@@ -89,9 +83,6 @@ class RAGEngineSearchMixin:
         _rerank_pool = fetch_k if _rerank_on else top_k
         fused = _rrf_fuse(sem_ranked, bm25_ranked)[:_rerank_pool]
 
-        # Filename-boost: if query contains a camelCase/PascalCase token that exactly matches
-        # a result's filename, that result should rank first. Handles "crossLayerClimaxEngine
-        # tick function" queries where the generic term ("tick") otherwise dominates chunk scoring.
         import re as _re
         query_tokens_lower = {t.lower() for t in _re.findall(r'[A-Za-z][a-z0-9]+(?:[A-Z][a-z0-9]+)+', query)
                                if len(t) >= 6}
@@ -100,14 +91,11 @@ class RAGEngineSearchMixin:
         for i in fused:
             r = sem_rows[i]
             # lance always includes _distance on vector-search rows; None
-            # indicates a schema bug, not a legitimate missing field. Use
-            # explicit None-check instead of silent `.get(_, default)`.
             _dist = r.get("_distance")
             sem_score = float(1.0 / (1.0 + (0.0 if _dist is None else _dist)))
             bm25_score = next((s for j, s in bm25_hits if j == i), 0.0)
             combined = 0.6 * sem_score + 0.4 * min(bm25_score / 10.0, 1.0)
             fname = os.path.basename(r["source"]).lower().replace(".js", "").replace(".ts", "").replace(".py", "")
-            # Exact filename match: score 1.5 (above any natural score ceiling of 1.0) -> ranks first
             if fname in query_tokens_lower:
                 combined = 1.5
             results.append({
@@ -122,23 +110,16 @@ class RAGEngineSearchMixin:
         results.sort(key=lambda x: -x["score"])
 
         # Cross-encoder rerank: BGE reranker scores (query, chunk) pairs directly
-        # instead of relying on bi-encoder similarity. Typically +5-15% retrieval
-        # quality. Runs on top of RRF, so the filename-boost (score=1.5) signal is
-        # preserved by blending rather than overwriting.
         if _rerank_on and len(results) > 1:
             try:
                 pairs = [(query, r["content"][:2000]) for r in results]
                 rerank_scores = [float(s) for s in self.reranker.predict(pairs, show_progress_bar=False)]
                 # Batch min-max normalization preserves relative ranking regardless
-                # of whether the reranker emits signed logits (bge-reranker, ~[-10,+10])
-                # or all-positive scores (mxbai-rerank-v2, ~[0,10]). Sigmoid would
-                # compress the latter into [0.5, 1.0] and flatten differentiation.
                 _smin = min(rerank_scores)
                 _smax = max(rerank_scores)
                 _span = (_smax - _smin) or 1.0
                 for r, s in zip(results, rerank_scores):
                     norm = (s - _smin) / _span
-                    # Blend: 70% reranker, 30% retrieval signal (keeps filename boost felt)
                     if r["score"] < 1.4:  # not a filename-boosted exact match
                         r["score"] = 0.7 * norm + 0.3 * r["score"]
                     else:
@@ -148,9 +129,6 @@ class RAGEngineSearchMixin:
                 logger.warning(f"Reranker failed, falling back to RRF score: {e}")
 
         # AST-aware symbol boost: if the query references a symbol name we have
-        # indexed, boost chunks from the defining file (+0.5) and co-located
-        # chunks in the same directory (+0.15). Uses the existing symbol table
-        # with zero additional inference cost.
         if self.symbol_table is not None:
             try:
                 _symbol_tokens = set()
@@ -179,8 +157,6 @@ class RAGEngineSearchMixin:
         results = results[:top_k]
 
         # Auto-KB enrichment: tag each result with relevant knowledge constraints
-        # Module-name embeddings are cached to avoid re-encoding the same module name
-        # for every search call (up to 30 per call without cache -> O(1) with cache).
         if self.knowledge_table is not None:
             for r in results:
                 module = os.path.basename(r["source"]).replace(".js", "").replace(".ts", "")
@@ -191,9 +167,6 @@ class RAGEngineSearchMixin:
                         self._module_embed_cache.set(module, cached_vec)
                     kb_hits = self.knowledge_table.search(cached_vec).limit(2).to_list()
                     # Filter by distance. 999 sentinel (arbitrary large value)
-                    # is only used as "definitely bigger than threshold"; the
-                    # real lance search rows always include _distance. Use
-                    # explicit None check instead of silent .get(_, default).
                     def _kb_keep(h):
                         d = h.get("_distance")
                         return d is not None and d < 1.2
@@ -263,7 +236,6 @@ class RAGEngineSearchMixin:
         packed = []
         used_tokens = 0
         for r in candidates:
-            # Prefer stored token_count (zero-cost), fall back to in-memory cache / BERT / estimate
             chunk_tokens = r.get("token_count") or self._count_tokens(r["content"])
             if used_tokens + chunk_tokens > max_tokens:
                 # Try to fit a truncated version if it's high relevance

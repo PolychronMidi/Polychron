@@ -62,23 +62,14 @@ moduleLifecycle.declare({
     else if (timeSince < 30) peakRecency = 'moderate';
 
     // Tension bias: continuous ramp based on time since last peak/trough.
-    // Peak: timeSince 0-8 - 0.92 (suppress), 8-25 - ramp 0.92-1.0, 25+ - ramp to 1.06.
-    // Trough: timeSince 0-5 - ramp 1.04-1.0.
     let tensionBias = 1;
     if (lastPeak.type === 'peak') {
-      // R17 E2: Extended post-peak suppression window 8->12. Creates
-      // longer tension valleys after peaks, improving dynamic contrast
-      // and reducing TF/TE exceedance in post-peak sections.
+      // Extended post-peak suppression window 8->12. Creates
       if (timeSince < 12) {
-        // R10 E1: Deeper post-peak suppression (0.88 vs 0.92) and stronger
-        // build ramp (1.12 vs 1.06). Creates more dramatic tension contrast
-        // between post-peak valleys and the buildup to the next climax.
+        // Deeper post-peak suppression (0.88 vs 0.92) and stronger
         tensionBias = 0.88 + clamp(timeSince / 12, 0, 1) * 0.06 + longFormBuildPressure * 0.015;
       } else {
         // Post-cooldown: ramp 0.94-1.08 over 12-40s
-        // R24 E2: Reduced ceiling 1.12->1.08 to create tension headroom.
-        // Product was capping at 1.4986 (from 1.5359); freeing 0.04 from
-        // this top contributor lets new tension pathways have effect.
         tensionBias = 0.94 + clamp((timeSince - 12) / 28, 0, 1) * 0.14 + longFormBuildPressure * 0.015;
       }
     } else {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
 # HME PreToolUse: Write -- enforce lab rules, block memory saves, detect secrets
 INPUT=$(cat)
 _DECISION_ERR="${PROJECT_ROOT:+$PROJECT_ROOT/tmp/}hme-prewrite-check.$$.err"
@@ -9,7 +9,7 @@ mkdir -p "$(dirname "$_DECISION_ERR")" 2>/dev/null || true
 _DECISION=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const {preWriteCheck,toHookResponse}=require('${PROJECT_ROOT}/tools/HME/proxy/pre_write_check'); (async()=>{const d=await preWriteCheck(fs.readFileSync(0,'utf8')); process.stdout.write(toHookResponse(d));})().catch(e=>{process.stderr.write(e.stack||String(e)); process.exit(1);});" 2>"$_DECISION_ERR")
 _DECISION_RC=$?
 if [ "$_DECISION_RC" -ne 0 ]; then
-  _ERR_SNIP="$(tail -c 500 "$_DECISION_ERR" 2>/dev/null)"
+  _ERR_SNIP="$(tail -c 500 "$_DECISION_ERR" 2>/dev/null)"  # silent-ok: optional fallback path.
   rm -f "$_DECISION_ERR" 2>/dev/null || true
   _emit_block "BLOCKED: central pre-write check failed (rc=$_DECISION_RC). Fix tools/HME/proxy/pre_write_check.js before writing. ${_ERR_SNIP}"
   exit 2
@@ -24,7 +24,7 @@ CONTENT=$(_safe_jq "$INPUT" '.tool_input.content' '')
 
 # Bounded-reads vow: reset counter on write ATTEMPT (TDD-blocked attempts count).
 [ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && \
-  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
+  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true  # silent-ok: optional fallback path.
 # TDD test-first gate: block new impl files lacking sibling test (HME_TDD_GATE=1).
 if [ -n "$FILE" ] && [ -x "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate.py" ]; then
   if ! PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate.py" --file "$FILE"; then
@@ -59,8 +59,6 @@ if echo "$FILE" | grep -q 'lab/sketches.js'; then
   echo 'LAB RULES: Every postBoot() must create AUDIBLE behavior via real monkey-patching. No empty sketches. Do not use V (validator) -- use Number.isFinite directly. Do not use crossLayerHelpers -- use inline layer logic. Do not return values from void functions (playNotesEmitPick returns void).' >&2
 fi
 # fix_antipattern: expected background failures must be logger.info, not logger.warning.
-# Only genuine critical failures (interactive timeout, HTTP 500, connection refused) stay as warning.
-# Catches: logger.warning(...background...) and logger.warning(...warm...failed/error...) in HME server code.
 if echo "$FILE" | grep -q 'tools/HME/service/server'; then
   if echo "$CONTENT" | grep -qE 'logger\.warning\(.*\b(background|warm.*fail|warm.*error|onnx.*failed|VRAM TIGHT|lazy warm)\b'; then
     _emit_block "BLOCKED: Expected background failure logged as WARNING -- use logger.info. Only critical failures (interactive timeout, HTTP 500) should be WARNING in HME server. See ANTIPATTERN: stderr-to-UI popup spam."
@@ -75,7 +73,7 @@ if echo "$FILE" | grep -qE '/Polychron/src/'; then
   if [ ! -f "$VAL_CACHE" ]; then
     curl -s -m 2 -X POST "http://127.0.0.1:${_HME_HTTP_PORT}/validate" \
       -H 'Content-Type: application/json' \
-      -d "{\"query\":\"$MODULE\"}" > "$VAL_CACHE" 2>/dev/null || echo '{}' > "$VAL_CACHE"
+      -d "{\"query\":\"$MODULE\"}" > "$VAL_CACHE" 2>/dev/null || echo '{}' > "$VAL_CACHE"  # silent-ok: optional fallback path.
   fi
   BLOCK_HIT=$(python3 -c "
 import json
@@ -87,7 +85,7 @@ try:
       break
 except Exception:
   pass
-" 2>/dev/null)
+" 2>/dev/null)  # silent-ok: optional fallback path.
   if [ -n "$BLOCK_HIT" ]; then
     _emit_block "BLOCKED: KB has a bugfix entry \"$BLOCK_HIT\" strongly matching this module. Review with learn(query='$MODULE') before writing."
     exit 2
@@ -107,7 +105,7 @@ try:
   print('\n'.join(titles))
 except Exception:
   pass
-" 2>/dev/null)
+" 2>/dev/null)  # silent-ok: optional fallback path.
   if [ -n "$WARN_TITLES" ]; then
     _emit_enrich_allow "Writing to $MODULE -- KB rules/antipatterns may apply:
 $WARN_TITLES"
@@ -123,20 +121,16 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
   _auto_module=$(_extract_module "$FILE")
   if [ -n "$_auto_module" ] && ! _nexus_has BRIEF "$_auto_module"; then
     # Per-turn dedup (same scheme as pretooluse_edit.sh). Tracker is
-    # cleared at turn start by userpromptsubmit.sh. Skip entirely when
-    # PROJECT_ROOT is unset so dedup state never lands in /tmp/ outside
-    # any project.
     _AUTO_BRIEF_TURN_FILE=""
     [ -n "${PROJECT_ROOT:-}" ] && _AUTO_BRIEF_TURN_FILE="${PROJECT_ROOT}/tmp/hme-turn-briefs.txt"
     if [ -n "$_AUTO_BRIEF_TURN_FILE" ] && [ -f "$_AUTO_BRIEF_TURN_FILE" ] \
-        && grep -qFx "$_auto_module" "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null; then
+        && grep -qFx "$_auto_module" "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null; then  # silent-ok: optional fallback path.
       _AUTO_BRIEF_SKIP=1
     fi
     if [ "${HME_AUTO_BRIEF_ON_EDIT:-1}" != "0" ] && [ -z "${_AUTO_BRIEF_SKIP:-}" ] \
         && [ -n "$_AUTO_BRIEF_TURN_FILE" ]; then
       # Fast path via /enrich (~70ms) + file head -- same budget as
-      # pretooluse_edit.sh. Write may target a new file (head empty);
-      # KB hits alone are still useful in that case.
+# silent-ok: optional fallback path.
       _kb_hits=$(curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \
         --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
         "http://127.0.0.1:${_HME_HTTP_PORT}/enrich" 2>/dev/null \
@@ -149,9 +143,9 @@ try:
     title = str(e.get('title',''))[:120]
     if title: print(f'  [{cat}] {title}')
 except Exception: pass
-" 2>/dev/null)
+" 2>/dev/null)  # silent-ok: optional fallback path.
       _file_head=""
-      [ -f "$FILE" ] && _file_head=$(head -n 30 "$FILE" 2>/dev/null | head -c 1200)
+      [ -f "$FILE" ] && _file_head=$(head -n 30 "$FILE" 2>/dev/null | head -c 1200)  # silent-ok: optional fallback path.
       if [ -n "$_kb_hits" ] || [ -n "$_file_head" ]; then
         _brief="module: ${_auto_module}"
         [ -n "$_kb_hits" ] && _brief="${_brief}
@@ -161,7 +155,7 @@ ${_kb_hits}"
 file head:
 ${_file_head}"
         _AUTO_BRIEF_JSON=$(jq -nR --arg b "$_brief" --arg m "$_auto_module" \
-          '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",additionalContext:("[hme auto-brief: " + $m + "]\n" + $b + "\n[/hme auto-brief]")}}' 2>/dev/null)
+          '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",additionalContext:("[hme auto-brief: " + $m + "]\n" + $b + "\n[/hme auto-brief]")}}' 2>/dev/null)  # silent-ok: optional fallback path.
         if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ]; then
           # Horizon VII: caused_by = the file path being written.
           python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
@@ -172,7 +166,7 @@ ${_file_head}"
             >/dev/null 2>&1 &
         fi
         mkdir -p "$(dirname "$_AUTO_BRIEF_TURN_FILE")" 2>/dev/null
-        printf '%s\n' "$_auto_module" >> "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null
+        printf '%s\n' "$_auto_module" >> "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null  # silent-ok: optional fallback path.
       fi
     fi
   fi

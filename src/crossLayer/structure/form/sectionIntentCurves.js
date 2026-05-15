@@ -82,15 +82,11 @@ moduleLifecycle.declare({
     const cb = sectionIntentCurvesHelpers.getSectionContrastBiases();
 
     // Melodic coupling: directionBias modulates dissonance asymmetry.
-    // Ascending contour (positive bias) pushes dissonance up -- building tension.
-    // Descending contour (negative bias) eases dissonance -- resolving.
     const melodicCtx = emergentMelodicEngine.getContext();
     const dirBias = melodicCtx ? V.optionalFinite(melodicCtx.directionBias, 0) : 0;
     const melodicDissonanceMod = dirBias * 0.06;
 
     // Rhythmic coupling: emergent rhythm density adjusts intent density floor.
-    // High rhythm density -> raise density floor (match rhythmic activity).
-    // Low rhythm density -> allow sparser texture (respect rhythmic space).
     const rhythmEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmDensity = rhythmEntry && Number.isFinite(rhythmEntry.density) ? rhythmEntry.density : 0.5;
     const rhythmDensityMod = clamp((rhythmDensity - 0.5) * 0.08, -0.04, 0.04);

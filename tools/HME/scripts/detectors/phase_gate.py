@@ -66,14 +66,9 @@ _PHASE_RE = re.compile(
 _BUILD_OR_EXECUTE = {"BUILD", "EXECUTE"}
 _EDIT_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
 # E5 only -- E3 (multi-file) and E4 (deep) are too routine to demand the
-# marker. The doctrine is for genuine PLAN-vs-BUILD articulation on
-# Comprehensive sweeps, not every edit-heavy turn.
 _TRIGGER_TIERS = {"E5"}
 
 # Open-ended prompt markers. A specific directive ("fix the broken refs",
-# "rename foo to bar") is itself the PLAN; demanding a phase marker on top
-# would be ceremony. Only fire when the user prompt is genuinely
-# exploratory / decision-required.
 _OPEN_ENDED_RES = (
     re.compile(r"\b(do all|anything missing|what.?s missing|push further|"
                r"keep going|next steps|design (the|a)|what should|"
@@ -160,9 +155,6 @@ def _edits_before_build_phase(events: list) -> bool:
 
 
 # Stop-hook deny payloads come through the transcript as user-shaped
-# messages. They contain language like "do ALL of it" / "anything missing"
-# that would false-fire the open-ended check. Skip events whose text
-# matches any of these markers when locating the real user prompt.
 _DENY_PAYLOAD_MARKERS = (
     "Stop hook feedback:",
     "Stop hook blocking error from command:",
@@ -232,8 +224,6 @@ def main() -> int:
     _append_transitions(phases)
 
     # Only fire on genuinely open-ended prompts where PLAN articulation
-    # matters. Specific user directives are themselves the plan -- demanding
-    # a separate marker would be ceremony.
     if _edits_before_build_phase(events) and _user_prompt_is_open_ended(events):
         print("phase_skipped")
         return 0

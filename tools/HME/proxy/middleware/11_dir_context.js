@@ -22,9 +22,6 @@ const MAX_RULES_INJECTED = 2;
 const MAX_FOOTER_CHARS = 180;
 
 // Mtime-only cache -- pure Pattern C fix. The previous 60s clock TTL was
-// the exact staleness-source removing Pattern C was supposed to eliminate;
-// mtimeCache with ttlMs=0 means "serve cached until the file actually
-// changes on disk." Peer-review (iter 103) caught the contradiction.
 const _intentCache = mtimeCache({ ttlMs: 0 });
 let _index = {};
 let _indexEmpty = true;
@@ -37,11 +34,6 @@ function _loadIndex(_projectRoot) {
     indexPair = _intentCache.get(INTENT_PATH, () => {
       if (!fs.existsSync(INTENT_PATH)) return { index: {}, empty: true };
       // Let parse/read errors PROPAGATE out of the loader -- mtimeCache
-      // will not store on throw. Prior behavior caught the error and
-      // cached the empty sentinel against the real mtime, which then
-      // served empty permanently (until next file rewrite bumped mtime)
-      // even after a transient permission-flap recovered. Now a read
-      // failure simply skips cache-store; the next call retries.
       const raw = fs.readFileSync(INTENT_PATH, 'utf8');
       const data = JSON.parse(raw);
       const dirs = (data && typeof data.dirs === 'object') ? data.dirs : {};
@@ -52,6 +44,7 @@ function _loadIndex(_projectRoot) {
       return { index, empty: Object.keys(index).length === 0 };
     });
   } catch (_loadErr) {
+    // silent-ok: optional fallback path.
     // Transient IO/parse failure: serve last-known state if we have
     // any, otherwise empty. Do not poison-cache.
     indexPair = _trackedPathsBuiltFrom || { index: {}, empty: true };

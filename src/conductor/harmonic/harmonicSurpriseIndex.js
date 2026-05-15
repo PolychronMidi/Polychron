@@ -80,11 +80,7 @@ moduleLifecycle.declare({
       return 1.2 - clamp(profile.surpriseIndex / 0.25, 0, 1) * 0.2;
     }
     if (profile.surpriseIndex > 0.65) {
-      // R7 E3: Fresh: 0.65-1.0 maps to 1.0-0.88. R74 E4: Reduce 0.12->0.05.
-      // With 5 harmonic key changes and rich modal journey, most beats are
-      // "fresh", broadly suppressing tension (end-of-run bias 0.9429).
-      // 5% reduction preserves tension during harmonic motion while still
-      // creating mild contrast.
+      // Fresh: 0.65-1.0 maps to 1.0-0.88. R74 E4: Reduce 0.12->0.05.
       return 1.0 - clamp((profile.surpriseIndex - 0.65) / 0.35, 0, 1) * 0.05;
     }
     return 1.0;

@@ -24,8 +24,6 @@ _PROJECT = os.environ["PROJECT_ROOT"]  # env-ok: set by _safety.sh from .env
 _TODO_PY = os.path.join(_PROJECT, "tools", "HME", "service", "server", "tools_analysis", "todo.py")
 
 # Prefixes the hook adds when returning merged items back to native TodoWrite.
-# When the agent echoes them on the next TodoWrite call, we strip them -- they
-# are not the agent's fresh intent, they're previous-round echoes.
 _ECHO_PREFIXES = (
     "[CRITICAL] ",
     "[HME onboarding] ",
@@ -90,6 +88,7 @@ def main() -> int:
     try:
         payload = json.loads(raw)
     except Exception:
+        # silent-ok: optional fallback path.
         payload = {}
 
     incoming = payload.get("tool_input", {}).get("todos", []) or []

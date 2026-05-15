@@ -80,12 +80,6 @@ moduleLifecycle.declare({
       return 1.0 + ramp * 0.35;
     }
     // Density-aware attenuation: when conductor density product is low,
-    // reduce onset suppression strength to avoid compounding the deficit.
-    // At density 0.85+ - full suppression; at density 0.40 - half suppression.
-    // Threshold raised (was 0.70) - at density 0.693 barely helped.
-    // Uses currentDensity global (previous beat's EMA value) instead of
-    // signalReader.density() - the latter re-enters collectDensityBias,
-    // causing infinite recursion since this getter is called from that pipeline.
     const conductorDensity = currentDensity;
     const attenuate = conductorDensity < 0.85
       ? clamp((conductorDensity - 0.40) / 0.45, 0.5, 1.0)

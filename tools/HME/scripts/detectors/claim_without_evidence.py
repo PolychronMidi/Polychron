@@ -36,8 +36,6 @@ from _transcript import (  # noqa: E402
 
 
 # Phrases that signal a completion claim. Anchored tightly to "subject +
-# success-verb" or "result-noun + state" shapes so legitimate uses of
-# the verbs in other contexts ("the code that lands here") don't fire.
 _CLAIM_PATTERNS = (
     # "tests pass", "build passes", "lint clean", "tests fire", etc.
     re.compile(r"\b(tests?|build|lint|fix|patch|migration|verifier|check|"
@@ -50,8 +48,6 @@ _CLAIM_PATTERNS = (
     re.compile(r"\ball\s+\d+\b[^.\n]{0,20}\b(passe?s?|fires?|land|landed|"
                r"works|verified|clean)\b", re.IGNORECASE),
     # "Live at git_sha X" / "Live in proxy <pid>" / "Now live" -- the
-    # restart-confirms-deploy shape. Even more dangerous because the
-    # health probe IS evidence; the claim should cite it.
     re.compile(r"\bLive\s+(at|in|on)\s+\S+", re.IGNORECASE),
     # "now (works|fires|lands|live|fixed|verified)" -- present-tense
     # state-change claim.
@@ -188,9 +184,6 @@ def main() -> int:
         return 0
 
     # The whole point: text claims completion BUT same-TURN tool_uses
-    # contain no evidence probe. If there's no claim, fine. If there IS
-    # a claim but ALSO evidence in the same turn, fine. Only the
-    # claim-without-evidence shape fires.
     text = _last_assistant_text(events)
     claim = _find_claim(text)
     if claim is None:

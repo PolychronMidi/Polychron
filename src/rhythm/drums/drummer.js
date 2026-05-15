@@ -39,9 +39,7 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
       [combined[i],combined[j]]=[combined[j],combined[i]];
     }
   }
-  // R99 E2: Regime-responsive drum stutter chance.
-  // Exploring benefits from higher stutter (rhythmic energy helps phase axis),
-  // coherent from lower stutter (stability, cleaner rhythms).
+  // Regime-responsive drum stutter chance.
   const drumSnap = systemDynamicsProfiler.getSnapshot();
   const drumRegime = drumSnap ? drumSnap.regime : 'exploring';
   const regimeStutterScale = drumRegime === 'exploring' ? 1.30
@@ -62,9 +60,6 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
   const sharedVelocityAnchor = clamp(m.round(90 + contextIntensity * 12 + (conductorContext.accent ? 3 : 0)), 84, 108);
 
   const adjustedOffsets = combined.map(({ offset }) => {
-    // Preserve large/offbeat integer offsets (e.g., 10 beats) rather than reducing them to
-    // their fractional part. For fractional offsets (0..1), allow jitter and wrap into [0,1).
-    // Preserve explicit zero offsets exactly
     if (offset === 0) return 0;
     if (m.abs(offset) >= 1) {
       if (rf() < .3) return offset;
@@ -75,9 +70,7 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
       return offset;
     } else {
       const adjusted = offset + (m.random() < 0.5 ? -offsetJitter * rf(.5, 1) : offsetJitter * rf(.5, 1));
-      // keep only the fractional component for sub-beat offsets but avoid returning exactly 0
       const fractional = adjusted - m.floor(adjusted);
-      // Never allow jitter to move a fractional offset *earlier* than the original offset - only allow equal or later adjustments
       return fractional === 0 ? offset : m.max(fractional, offset);
     }
   });
@@ -94,13 +87,10 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
         const [coupledMinVelocity, coupledMaxVelocity] = drummerCoupleVelocityRange(minVelocity, maxVelocity, sharedVelocityAnchor);
         const isFadeIn = rf() < 0.7;
         for (let i = 0; i < numStutters; i++) {
-          // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
-          // const tickVal = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0) + ((Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) + i * stutterDuration) * (Number.isFinite(Number(tpBeat)) ? Number(tpBeat) : 0);
           const timeInSeconds = beatStartTime + (useOffset + i * stutterDuration) * spBeat;
           let currentVelocity;
           if (isFadeIn) {
             const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1));
-            // Anchor stutter velocities to the drum's declared range and scale across [min,max]
             currentVelocity = clamp(m.min(coupledMaxVelocity, coupledMinVelocity + (coupledMaxVelocity - coupledMinVelocity) * fadeInMultiplier), 0, MIDI_MAX_VALUE);
           } else {
             const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1)));

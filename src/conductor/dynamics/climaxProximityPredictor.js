@@ -44,11 +44,7 @@ moduleLifecycle.declare({
     if (onsetProfile > 1.1) climaxSignal += 0.1;
     // High tension
     climaxSignal += currentTension * 0.25;
-    // R67 E3: Section-progress awareness. Add a section position component
-    // so climax prediction engages earlier in later sections (where musical
-    // peaks are more likely). This activates the density ramp (up to 1.3x)
-    // and tension ramp (up to 1.25x) that are currently dormant because
-    // proximity rarely exceeds 0.3. Section progress * 0.12 max contribution.
+    // Section-progress awareness. Add a section position component
     const sectionProg = clamp(timeStream.compoundProgress('section'), 0, 1);
     climaxSignal += sectionProg * 0.12;
 
@@ -85,11 +81,7 @@ moduleLifecycle.declare({
     const pred = predict();
     if (pred.premature) return 0.9;
     if (pred.phase === 'receding') {
-      // R68 E4: Moderate the pullback from R26 E4's deep values (0.36/0.18)
-      // back toward the original (0.24/0.12). R67 showed S4 tension
-      // collapsing to 0.35. The receding pullback over-suppresses density
-      // in late sections, which starves the tension signal chain.
-      // New min density: 0.88 (was 0.82).
+      // Moderate the pullback from R26 E4's deep values (0.36/0.18)
       return 1.0 - clamp((1.0 - pred.proximity) * 0.24, 0, 0.12);
     }
     // R27 E3: Boosted climax ceiling from 1.2 to 1.3 for more dramatic peaks
@@ -108,28 +100,14 @@ moduleLifecycle.declare({
   function getTensionBias() {
     const pred = predict();
     if (pred.premature) return 0.8;
-    // R17 E4: Post-climax tension receding. When energy is falling, pull
-    // tension back to create valleys after peaks. Previously only density
-    // had receding handling; tension stayed elevated after peaks, driving
-    // TF/TE exceedance (32+30 beats in R16).
-    // R32 E4: Reduce max pullback 0.10->0.06. R74 E3: Section-position-aware
-    // receding. In the back half of sections (Q3/Q4 territory), suppress
-    // the receding pullback so tension sustains through late passages.
-    // Multiple peaks per section compound the pullback, creating the
-    // Q3 0.765->0.643 collapse. Structural gating replaces constant tweaking.
+    // Post-climax tension receding. When energy is falling, pull
     if (pred.phase === 'receding') {
       const secProg = clamp(timeStream.compoundProgress('section'), 0, 1);
       const lateProtection = clamp((secProg - 0.50) / 0.30, 0, 1);
       const recedingMax = 0.06 * (1 - lateProtection * 0.75);
       return 1.0 - clamp((1.0 - pred.proximity) * 0.20, 0, recedingMax);
     }
-    // R9 E3: Lowered onset from 0.4 to 0.25 to engage tension boost 60%
-    // earlier in the buildup. Opening tension arc dropped 0.736 to 0.648 in
-    // R8. Earlier engagement creates steeper opening arcs by ramping tension
-    // bias during the building phase instead of waiting for approaching.
-    // R19 E3: Raised ceiling from 0.25 to 0.30 multiplier (max 1.30).
-    // Fills the gap between the 1.25 ceiling and 1.30 registration bound.
-    // Combined with E1 (higher building target) creates more dramatic peaks.
+    // Lowered onset from 0.4 to 0.25 to engage tension boost 60%
     if (pred.proximity <= 0.25) return 1.0;
     return 1.0 + clamp((pred.proximity - 0.25) / 0.75, 0, 1) * 0.30;
   }

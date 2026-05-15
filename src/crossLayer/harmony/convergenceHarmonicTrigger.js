@@ -42,15 +42,10 @@ moduleLifecycle.declare({
     if (absoluteSeconds - lastTriggerSec < MIN_TRIGGER_INTERVAL_SEC) return;
 
     // Higher rarity convergences are more likely to trigger harmonic changes.
-    // Rhythmic coupling: strong rhythmic bias at convergence -> more harmonic change triggers.
     const rhythmEntryRHT = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmBiasRHT = rhythmEntryRHT && Number.isFinite(rhythmEntryRHT.biasStrength) ? rhythmEntryRHT.biasStrength : 0;
-    // Melodic context used both for trigger probability (ascendRatio) and change type (directionBias).
     // Single call to emergentMelodicEngine.getContext() reused throughout onConvergence.
     const melodicCtxCHT = emergentMelodicEngine.getContext();
-    // R88 E3: ascendRatio antagonism bridge with verticalIntervalMonitor -- ascending melodic momentum
-    // boosts harmonic trigger probability (ascending motion naturally seeks harmonic resolution at convergence).
-    // Counterpart: verticalIntervalMonitor TIGHTENS collision penalty under same signal (harmonic assertiveness + discipline).
     const ascendRatioCHT = melodicCtxCHT ? V.optionalFinite(melodicCtxCHT.ascendRatio, 0.5) : 0.5;
     const ascendTriggerBoost = 1.0 + clamp((ascendRatioCHT - 0.45) * 0.25, -0.05, 0.12);
     const triggerChance = TRIGGER_PROBABILITY * (0.5 + rarity * 0.5) * (1.0 + rhythmBiasRHT * 0.25) * ascendTriggerBoost;
@@ -61,14 +56,9 @@ moduleLifecycle.declare({
     if (trustScore < 0.2) return; // too low trust to act
 
     // Determine change type based on cadence alignment state.
-    // Use pre-computed alignment from processBeat when available to avoid
-    // a redundant cadenceAlignment.applyAlignment call and inconsistent tension.
     let changeType = 'modal-color'; // default: add modal interchange color
     let bias = 0;
 
-    // Melodic coupling: directionBias primes the change type when no explicit alignment is available.
-    // Ascending melody at convergence -> dominant-push (amplify the build).
-    // Descending melody at convergence -> tonic-reaffirm (invite resolution).
     const dirBias = melodicCtxCHT ? V.optionalFinite(melodicCtxCHT.directionBias, 0) : 0;
 
     const alignment = (ev.alignment !== undefined) ? ev.alignment : null;
@@ -76,9 +66,6 @@ moduleLifecycle.declare({
       if (dirBias > 0.3) { changeType = 'dominant-push'; bias = clamp(dirBias, 0, 1); }
       else if (dirBias < -0.3) { changeType = 'tonic-reaffirm'; bias = clamp(-dirBias, 0, 1); }
     }
-    // Harmonic function coupling: when alignment absent and melodic direction is indeterminate,
-    // use current harmonic function to prime change type.
-    // D (dominant) at convergence -> resolve to tonic; T (tonic) -> push toward dominant.
     const hfEntryCHT = L0.getLast(L0_CHANNELS.harmonicFunction, { layer: 'both' });
     const hfnCHT = hfEntryCHT ? hfEntryCHT.fn : null;
     if (!alignment && hfnCHT && changeType === 'modal-color') {
@@ -98,7 +85,6 @@ moduleLifecycle.declare({
       }
     }
 
-    // Caller (processBeat) already confirmed convergence via convergenceDetector.wasRecent(300ms),
     // so a 500ms re-check is provably redundant. Skip it.
 
     lastTriggerSec = absoluteSeconds;
@@ -106,7 +92,6 @@ moduleLifecycle.declare({
 
     pendingChanges.push({ type: changeType, bias: clamp(bias, 0, 1), absoluteSeconds });
 
-    // No active listeners - emitted for eventCatalog completeness and future extensibility
     eventBus.emit(EVENTS.CONVERGENCE_HARMONIC_TRIGGER, {
       type: changeType,
       bias,

@@ -1,10 +1,8 @@
 // src/crossLayer/melody/emergentMelodicEngine.js
-// Synthesizes 6 conductor melodic tracker signals into melodic context, posted to L0 `emergentMelody`.
 // Three bias surfaces for downstream consumers:
 //   nudgeNoveltyWeight() -- harmonicIntervalGuard interval novelty scaling by freshness
 //   getMelodicWeights()  -- stutterVariants 12th signal dimension (melodic context)
 //   getContourAscendBias() -- alienArpeggio contour-aware pitch direction
-// Mirrors emergentRhythmEngine: per-beat cache, self-calibrating EMAs, L0 post, feedbackRegistry.
 
 moduleLifecycle.declare({
   name: 'emergentMelodicEngine',

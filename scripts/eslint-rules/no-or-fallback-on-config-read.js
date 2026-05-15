@@ -30,7 +30,6 @@ module.exports = {
       const obj = node.object;
       if (!obj) return false;
       if (obj.type === 'Identifier' && CONFIG_VAR_PATTERN.test(obj.name)) return true;
-      // `controllerConfig.getSection('...').foo || X` style -- treat
       // CallExpression to .getSection( as a config read site.
       if (obj.type === 'CallExpression'
           && obj.callee && obj.callee.type === 'MemberExpression'
@@ -51,9 +50,6 @@ module.exports = {
           || right.type === 'ObjectExpression';
         if (!isLiteral) return;
         // Skip if the right-hand side is `0` or `[]` or `{}` used as
-        // histogram-identity defaults in a counter-increment expression --
-        // let the conductor-histogram-uses-nullish rule handle those.
-        // Config reads with explicit literal defaults are the target.
         context.report({
           node,
           message: 'Config read with `||`/`??` fallback -- use `V.optionalFinite(val, default)` / `V.optionalType(val, kind, default)` so wrong types fail fast instead of silently coercing.',

@@ -165,16 +165,10 @@ MeasureComposer = class MeasureComposer {
    */
   enableVoiceLeading(scorerOrConfig) {
     // Accept either a VoiceLeadingScore instance or a configuration object.
-    // We validate more thoroughly than before to ensure the scorer has the
-    // additional method required by `voiceRegistry` and `VoiceManager`.
     const validateInstance = (obj) => {
       V.assertObject(obj, 'scorer');
       V.requireType(obj.selectNextNote, 'function', 'scorer.selectNextNote');
       // voiceRegistryScoreCandidate is added via prototype helpers in
-      // VoiceLeadingScore.js and is mandatory for multi-voice selection.  If
-      // a caller mistakenly passes a partial object (e.g. just a config) it
-      // will lack this method.  Validate here so we never cache an invalid
-      // scorer and subsequently spam warnings.
       if (!V.optionalType(obj.voiceRegistryScoreCandidate, 'function')) {
         throw new Error('enableVoiceLeading: candidate object is missing voiceRegistryScoreCandidate');
       }

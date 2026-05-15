@@ -60,7 +60,6 @@ def _scan_verifier_path_mentions() -> dict[str, set[str]]:
                 continue
             for t in targets:
                 # Match the directory string in source -- could appear as
-                # "tools/HME/...", "src/...", or via PROJECT_ROOT joins.
                 if re.search(rf'["\']{re.escape(t)}/', src):
                     mentions[t].add(f)
                 # PROJECT_ROOT-walking verifiers cover all dirs implicitly

@@ -26,12 +26,6 @@ logger = logging.getLogger("HME")
 
 
 # Pattern D fix (peer-review iter 131): the prior "is this warm cache
-# fresh" check compared `_warm_ctx_kb_ver.get(model)` against the
-# shared mutable attribute `ctx._kb_version`. The attribute had no
-# fencing, no monotonic-advance guarantee, and a `reload-engines` reset
-# to 0 silently re-keyed every cache as "fresh." Replace with a
-# file-mtime check against the actual KB Lance store so freshness is
-# anchored to filesystem truth rather than a process-local int.
 def _warm_ctx_fresh_p(model: str) -> bool:
     """True if model's warm cache is fresh against the KB stores on disk.
 
@@ -67,7 +61,6 @@ _incremental_update_lock = _threading.Lock()
 _MAX_INCREMENTAL_APPENDS = 8       # schedule GC re-prime after N incremental appends
 _GC_TOKEN_GROWTH_RATIO = 0.20      # or if token count grew > 20% above full-prime baseline
 
-# Batch debounce queue -- coalesces rapid-fire learn() calls into one llama.cpp round-trip (#3)
 _pending_entries: list = []
 _batch_timer = None
 _batch_lock = _threading.Lock()
@@ -177,16 +170,6 @@ def _flush_pending_entries():
         skipped_uninitialized = 0
         for model in _active_models:
             # Peer-review iter 122: only advance the KB marker for
-            # models that actually have a warm_ctx entry. Previous
-            # behavior advanced the marker for every active model
-            # regardless of whether priming had populated _warm_ctx[model]
-            # -- so a model that was never primed (or whose cache was
-            # evicted / never loaded from disk) now claimed to be at
-            # the new KB version despite holding no KV state. Downstream
-            # `warm_context_status` then reported "fresh at kb_ver=N"
-            # against an empty cache. Track skipped count separately so
-            # the priming pipeline can detect models that need a cold
-            # warm rather than silently treating them as live.
             if model not in _warm_ctx:
                 skipped_uninitialized += 1
                 continue

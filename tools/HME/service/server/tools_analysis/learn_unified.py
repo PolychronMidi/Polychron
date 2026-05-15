@@ -113,8 +113,6 @@ def learn(query: str = "", title: str = "", content: str = "",
         except Exception as e:
             return f"Embedding failed: {type(e).__name__}: {e}"
         # Walk all entries and rank by cosine similarity. list_knowledge_full
-        # strips the vector field, so use direct lance access -- gives us
-        # title + content + vector together in one pass without re-encoding.
         try:
             tbl = ctx.project_engine.knowledge_table
             if tbl is None:
@@ -139,6 +137,7 @@ def learn(query: str = "", title: str = "", content: str = "",
                 dot = sum(float(a) * float(b) for a, b in zip(cand_vec, vlist))
                 sim = dot / (cand_norm * v_norm)
             except Exception:
+                # silent-ok: optional fallback path.
                 continue
             ranked.append((sim, {
                 "id": str(row.get("id", "")),
@@ -244,8 +243,6 @@ def learn(query: str = "", title: str = "", content: str = "",
                     logger.warning(f"brief-recorded emit failed for {_token!r}: {type(_emit_err).__name__}: {_emit_err}")
         except ImportError as _brief_err:
             # read_unified is optional -- log at debug so planned
-            # environments without it don't spam but any regression
-            # (module vanished mid-session) is still visible.
             logger.debug(f"brief-recorded import unavailable: {_brief_err}")
         return _sk(search_term, top_k=top_k, category=search_cat)
 

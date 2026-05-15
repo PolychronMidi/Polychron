@@ -142,6 +142,7 @@ def _discover_actual_tools() -> set:
                 with open(path, encoding="utf-8") as f:
                     tree = ast.parse(f.read(), filename=path)
             except Exception:
+                # silent-ok: optional fallback path.
                 continue
             for node in ast.walk(tree):
                 if not isinstance(node, ast.FunctionDef):
@@ -197,9 +198,6 @@ def _scan_file(path: str) -> list:
             if not m:
                 continue
             # If the match is wrapped in quotes or backticks as a literal
-            # string token (e.g., "clear_index" or `add_knowledge`), it's a
-            # LITERAL name in a table cell or code fence -- not a callable ref.
-            # Check the character immediately before the match.
             start = m.start()
             before = line[start - 1] if start > 0 else ""
             if before in ('"', "'", "`"):
@@ -260,7 +258,6 @@ def _classify_env_call(node) -> tuple:
       os.environ['KEY']                         -> (subscript, not handled here)
     """
     func = node.func
-    # Method-call forms: root.attr(...)
     if isinstance(func, ast.Attribute):
         attr = func.attr
         # ENV.require* / ENV.optional*
@@ -272,13 +269,11 @@ def _classify_env_call(node) -> tuple:
             if attr in ("optional", "optional_int", "optional_float", "optional_bool"):
                 if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
                     return node.args[0].value, "optional"
-        # os.environ.get('KEY', ...) -- the attr is 'get', root is an Attribute (os.environ)
         if attr == "get" and isinstance(root, ast.Attribute):
             if (isinstance(root.value, ast.Name) and root.value.id == "os"
                     and root.attr == "environ"):
                 if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
                     return node.args[0].value, "optional"
-        # os.getenv('KEY', ...) -- func.attr is 'getenv', root is 'os'
         if attr == "getenv" and isinstance(root, ast.Name) and root.id == "os":
             if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
                 return node.args[0].value, "optional"
@@ -325,8 +320,6 @@ def _check_env_schema() -> list:
         issues.append((".env", f"ENV.require(`{k}`) has no matching .env entry -- will throw at boot"))
 
     # Docs backtick-mention HME_* token -> should be a real env key OR
-    # be referenced by code as optional. Unknown-everywhere tokens are stale
-    # doc references.
     import glob as _glob
     doc_pat = re.compile(r'`(HME_[A-Z0-9_]+)`')
     for doc_dir in _DOC_DIRS:

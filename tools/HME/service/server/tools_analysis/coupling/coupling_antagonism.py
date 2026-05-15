@@ -217,11 +217,6 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
     seen: set = set()
     antagonists: list = []
     # Load metaprofile-active.json once outside the loop. Two substrate-level
-    # signals are consumed:
-    #   - antagonismThreshold: per-profile correlation cutoff (stricter or looser)
-    #   - disableControllers: when 'antagonism_bridges' is listed, skip ALL
-    #     bridge proposals -- the active metaprofile (e.g. meditative) silences
-    #     the entire subsystem, not just damps it.
     _antag_thresh = -0.30
     _antag_disabled = False
     try:
@@ -253,7 +248,6 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
             title = (entry.get("title", "") or "").lower()
             content = (entry.get("content", "") or "").lower()
             text = title + " " + content
-            # Extract round number from title (e.g., "R85: ...")
             import re as _re_kb
             round_match = _re_kb.search(r'\bR(\d+)\b', entry.get("title", "") or "")
             round_label = f"R{round_match.group(1)}" if round_match else None
@@ -272,8 +266,6 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
         logger.debug(f'silent-except coupling_bridges.py:354: {type(_err1).__name__}: {_err1}')
 
     # Get latest round number for staleness computation.
-    # Prefer the activity bridge (live source); fall back to the journal
-    # archive only if the activity bridge has no round_complete events yet.
     _latest_round = 0
     try:
         from .. import _activity_latest_round, _journal_latest_archived_round

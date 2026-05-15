@@ -100,8 +100,6 @@ class ErrorLogVerifier(Verifier):
                     last = int(raw)
             except (OSError, ValueError, TypeError):
                 # Unreadable watermark, non-numeric content, or a bizarre
-                # non-string from a mocked read() -- treat as unset.
-                # Narrow catch so MemoryError / KeyboardInterrupt surface.
                 last = 0
         unread = max(0, len(lines) - last)
         if unread == 0:

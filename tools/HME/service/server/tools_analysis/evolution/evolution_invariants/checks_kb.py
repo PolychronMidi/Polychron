@@ -35,7 +35,6 @@ def _check_symbols_have_kb(inv: dict) -> tuple[bool, str]:
     )[:top_n]
     if not ranked:
         return True, "no modules meet min_callers threshold"
-    # Build a fast title-scan index from KB JSON files (avoids semantic search score threshold)
     kb_titles_lower: set[str] = set()
     kb_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "mcp", "rag_data", "project_knowledge")
     if os.path.isdir(kb_dir):
@@ -56,7 +55,6 @@ def _check_symbols_have_kb(inv: dict) -> tuple[bool, str]:
         # Primary: semantic search; fallback: title/content text scan
         hits = ctx.project_engine.search_knowledge(name, top_k=1)
         if not hits:
-            # Fallback: check if name appears as a word boundary in any KB entry title/content
             found = any(name_lower in text for text in kb_titles_lower)
             if not found:
                 uncovered.append(name)

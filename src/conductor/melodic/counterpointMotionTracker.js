@@ -1,4 +1,3 @@
-// src/conductor/counterpointMotionTracker.js - Inter-layer melodic motion classification.
 // Classifies note-pairs across L1/L2 as parallel, contrary, oblique, or similar motion.
 // Pure query API - composers use to favor underused motion types.
 
@@ -77,10 +76,6 @@ moduleLifecycle.declare({
       }
     }
     // Only dominant if >40% of total
-    // R21 E3: Lowered from 50% to 40%. At 50%, mixed motion almost always
-    // dominates, leaving tension and density biases permanently neutral.
-    // 40% activates biases when parallel or contrary motion is prevalent
-    // but not necessarily majority.
     if (maxCount / total < 0.4) dominant = 'mixed';
 
     return { parallel, contrary, oblique, similar, total, dominant };
@@ -116,10 +111,7 @@ moduleLifecycle.declare({
     return b.parallelBias < 1.0 ? 1.15 : (b.contraryBias < 1.0 ? 0.88 : 1.0);
   }, 0.88, 1.15);
 
-  // R20 E4: Counterpoint-aware density bias. Parallel motion lockstep
-  // reduces textural independence -- pull density back to create space.
-  // Contrary motion enriches counterpoint -- allow denser texture.
-  // Mixed motion is neutral. Range (0.93, 1.08).
+  // Counterpoint-aware density bias. Parallel motion lockstep
   conductorIntelligence.registerDensityBias('counterpointMotionTracker', () => {
     const b = counterpointMotionTracker.getMotionBias();
     return b.parallelBias < 1.0 ? 0.93 : (b.contraryBias < 1.0 ? 1.08 : 1.0);

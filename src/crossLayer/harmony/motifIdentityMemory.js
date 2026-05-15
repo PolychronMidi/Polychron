@@ -104,8 +104,6 @@ moduleLifecycle.declare({
       const transforms = /** @type {Array<'retrograde'|'inversion'|'augmentation'|'retrograde-inversion'>} */ (['retrograde', 'inversion', 'augmentation', 'retrograde-inversion']);
       transform = transforms[ri(0, 3)];
     }
-    // Melodic coupling: thematicDensity biases toward augmentation when themes are established.
-    // Strong thematic recall -> stretch the familiar; fresh territory -> let contour drive.
     const melodicCtxMIM = emergentMelodicEngine.getContext();
     const thematicDensity = melodicCtxMIM ? V.optionalFinite(melodicCtxMIM.thematicDensity, 0) : 0;
     if (!isSaturated && thematicDensity >= 1 && identity.confidence > 0.4) transform = 'augmentation';

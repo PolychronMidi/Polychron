@@ -83,8 +83,6 @@ def main() -> None:
 
         try:
             # Use low-level lance.dataset for reliable cleanup -- lancedb's
-            # optimize() requires the separate pylance package which may not
-            # be installed. lance.dataset.cleanup_old_versions() works without it.
             if _lance is not None:
                 from datetime import timedelta
                 ds = _lance.dataset(str(table_path))

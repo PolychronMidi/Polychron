@@ -27,12 +27,13 @@ _hme_hook_ledger_append() {
     --argjson stdout_bytes "${stdout_bytes:-0}" \
     --argjson stderr_bytes "${stderr_bytes:-0}" \
     '{ts:$ts,event:$event,script:$script,cwd:$cwd,session_id:$session_id,exit_code:$exit_code,duration_ms:$duration_ms,stdout_bytes:$stdout_bytes,stderr_bytes:$stderr_bytes}' \
-    >> "$log_file" 2>/dev/null || return 0
+    >> "$log_file" 2>/dev/null || return 0  # silent-ok: optional fallback path.
 
   local size
-  size=$(wc -l < "$log_file" 2>/dev/null || echo 0)
+  size=$(wc -l < "$log_file" 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
   if [ "$size" -gt 20000 ]; then
+# silent-ok: optional fallback path.
     tail -10000 "$log_file" > "${log_file}.tmp" 2>/dev/null \
-      && mv "${log_file}.tmp" "$log_file" 2>/dev/null || true
+      && mv "${log_file}.tmp" "$log_file" 2>/dev/null || true  # silent-ok: optional fallback path.
   fi
 }

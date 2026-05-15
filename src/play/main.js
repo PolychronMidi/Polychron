@@ -14,7 +14,6 @@ const { layer: L1 } = LM.register('L1', 'c1', {}, () => setTuningAndInstruments(
 const { layer: L2 } = LM.register('L2', 'c2', {}, () => setTuningAndInstruments());
 LM.register('L0', [], {});
 
-// Create composer context for explicit dependency passing (fail-fast: throw if managers missing)
 const composerCtx = {
   phraseArc: FactoryManager.getPhraseArcManager(),
   layerMgr: LM,
@@ -37,9 +36,7 @@ const composerCtx = {
     if (availableFamilies.length === 0) return null;
     const phase = mainBootstrap.requireNonEmptyString('conductorState.sectionPhase', conductorState.getField('sectionPhase'));
 
-    // Phase-based family affinity - centrally tunable via MAIN_LOOP_CONTROLS.phraseFamilyBias.phaseAffinity
     const preferred = boot.phaseAffinity[phase];
-    // Only bias if the preferred family exists; otherwise fall through to weighted random
     if (preferred && availableFamilies.includes(preferred)) {
       if (rf() < boot.phaseBiasLockProbability) return preferred;
     }
@@ -67,9 +64,7 @@ if (totalSections <= 0) {
 harmonicJourney.planJourney(totalSections, { startKey: 'random', startMode: 'random' });
 timeStream.setBounds('section', totalSections);
 
-// R71 E5: Trust velocity tracking across diagnostic snapshots.
-// Compares trust scores between consecutive snapshots to detect
-// rapid trust swings (e.g. stutterContagion -0.403 in one interval).
+// Trust velocity tracking across diagnostic snapshots.
 let mainPreviousSnapshotTrust = null;
 function mainComputeTrustVelocity(trustSnapshot) {
   const velocity = /** @type {Record<string, number>} */ ({});
@@ -86,9 +81,6 @@ function mainComputeTrustVelocity(trustSnapshot) {
   return velocity;
 }
 
-// Activate metaprofile (if configured). Set once per run, hot-switchable from lab postBoot().
-// null = no metaprofile. ACTIVE_META_PROFILE is a boot-validated global so no typeof guard needed.
-// The setActive() call persists to metrics/metaprofile-active.json -- authoritative record.
 if (ACTIVE_META_PROFILE) {
   metaProfiles.setActive(ACTIVE_META_PROFILE);
 }
@@ -120,15 +112,11 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   sectionBpmScale = activeSectionType && Number.isFinite(activeSectionType.bpmScale) ? activeSectionType.bpmScale : 1.0;
 
   // Per-section metaprofile rotation for spectral variety. Skipped when
-  // ACTIVE_META_PROFILE is pinned. Candidate set from each profile's
-  // sectionAffinity; dwell guard enforces minDwellSections between switches.
   if (!ACTIVE_META_PROFILE) {
     const sectionTypeKey = currentSectionType || 'exposition';
     const prevProfile = metaProfiles.getActiveName();
 
     // Step 1: reactive triggers. Profile whose triggers.enter matches the
-    // sysDyn snapshot pre-empts the affinity pick (highest priority wins,
-    // subject to dwell). Snapshot fields mirror getSnapshot() top-level keys.
     const sysDyn = systemDynamicsProfiler.getSnapshot();
     const trigSnapshot = {
       couplingStrength: sysDyn ? sysDyn.couplingStrength : 0,
@@ -144,9 +132,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     }
 
     // Step 2: section-affinity pool with nearest-neighbor preference.
-    // Falls back when no trigger fired. When a previous profile exists,
-    // prefer candidates that are similar in axis-vector space -- smoother
-    // sonic transitions than random pivots between distant profiles.
     if (!chosen) {
       let candidates = metaProfiles.bySection(sectionTypeKey);
       if (candidates.length === 0) candidates = ['tense', 'chaotic'];
@@ -211,18 +196,14 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   // Seed new section with attenuated state from previous section
   if (sectionIndex > 0) sectionMemory.seed();
 
-  // Phase-driven conductor profile: match the conductor's character to the structural moment
   conductorConfig.applyPhaseProfile();
 
   // Prepare pivot chord bridge for section transitions with key changes
   pivotChordBridge.prepareBridge(sectionIndex);
 
-  // Initialize each layer's section origin so layer-relative ticks are correct and explicit
   LM.setSectionStartAll();
 
   // Explicitly log a `section` marker for both layers so Section 1 is present
-  // for both `L1` and `L2` outputs. Restore `L1` as active for
-  // the phrase loop immediately after logging.
   LM.activate('L1', false);
   setUnitTiming('section');
   // Activate L2 without setting `isPoly` yet (L2 meter isn't known until later)
@@ -290,7 +271,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     playMotifs.resetLayerState(L1);
     LM.advance('L1', 'phrase');
 
-    // #7 Dynamic Role Swap: evaluate at phrase boundary (tension valley = natural swap point)
     const phraseTension = mainBootstrap.requireUnitInterval('conductorState.compositeIntensity', conductorState.getField('compositeIntensity'));
     const roleSwapResult = dynamicRoleSwap.evaluateSwap(beatStartTime, phraseTension);
     const rsp = MAIN_LOOP_CONTROLS.trustPayoffs.roleSwap;
@@ -317,9 +297,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     layerPass.runLayerPass('L2', phraseFamily, {}, { boot, composerCtx });
 
     // Flush trace after L2 pass to guarantee L2 entries are persisted.
-    // Without this, L2 entries remain in mainBuffer and can be lost if a later
-    // step throws before traceDrain.shutdown(). Also forces the trace file
-    // to contain L2 entries interleaved with L1 for diagnostic visibility.
     traceDrain.flush();
 
     // Clean layer state at phrase boundary to prevent state bleeding
@@ -340,9 +317,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   structuralFormTracker.recordSection(sectionIndex, sFamily, sKey, sMode, sEnergy);
 
   // Mid-run diagnostic snapshot at section boundary. Captures system
-  // state evolution that beat-level traces miss (effectiveDim recovery, trust
-  // convergence, gain multiplier trajectory). One snapshot per section gives
-  // 3-7 data points for the system's evolutionary arc.
   if (traceDrain.isEnabled()) {
     const mainDynSnap = systemDynamicsProfiler.getSnapshot();
     const mainHomeSnap = couplingHomeostasis.getState();
@@ -377,9 +351,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   }
 
   // Empirical-tuning attribution: log which metaprofile owned this section
-  // and the section's composite intensity as a coarse outcome score. JSONL
-  // append, no-op when no profile is active. Aggregator (separate script)
-  // computes per-profile mean scores + sensitivity in a later round.
   if (metaProfiles.getActiveName()) {
     metaProfiles.recordAttribution({
       section: sectionIndex,
@@ -404,9 +375,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
 // Run main only when invoked as the entry script
 if (require.main === module) {
-  // Concurrency guard: refuse to start when another pipeline owns the lock.
-  // Mirrors the writer in scripts/utils/run-with-log.js so direct `node
-  // src/play/main.js` invocations are gated the same as `npm run main`.
+  // Direct `node src/play/main.js` gets the same lock guard as `npm run main`.
   (function _refuseIfLocked() {
     // When spawned by run-with-log.js, the parent already holds the lock.
     if (process.env.RUN_WITH_LOG_OWNER) return;

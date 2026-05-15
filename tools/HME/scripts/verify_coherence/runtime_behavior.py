@@ -373,6 +373,7 @@ class PlanOutputValidityVerifier(Verifier):
                 with open(p) as f:
                     content = f.read()
             except Exception:
+                # silent-ok: optional fallback path.
                 continue
             checked += 1
             # Extract file path claims (look for typical code-path patterns)

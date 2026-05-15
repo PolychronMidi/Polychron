@@ -1,4 +1,3 @@
-// conductorDampening.js - Progressive deviation dampening engine for conductor pipelines.
 // Extracted from conductorIntelligence.js. Prevents coordinated crush (many modules
 // each pulling to 0.85-0.94) from accumulating catastrophic suppression.
 
@@ -13,8 +12,6 @@ moduleLifecycle.declare({
   const timeStream = deps.timeStream;
   const V = deps.validator.create('conductorDampening');
   // Base damping (0.6) calibrated for ~20 contributors.
-  // Smaller pipelines get proportionally less pass-through so each module's
-  // deviation is attenuated more, reducing volatility.
   const BASE_DEVIATION_DAMPING = 0.6;
   const REF_PIPELINE_SIZE = 20;
 
@@ -24,9 +21,6 @@ moduleLifecycle.declare({
   const conductorDampeningActiveCountByPipeline = new Map();
 
   // -- #3: Pipeline Product Centroid Controller (Hypermeta) --
-  // Tracks rolling product EMA per pipeline and applies slow centroid-
-  // correcting multiplier when products chronically drift from 1.0.
-  // Addresses the density product 0.666 problem without manual tuning.
   const _CENTROID_EMA = 0.05;               // ~20-beat horizon
   const _CENTROID_MAX_CORRECTION = 0.25;    // max 25% correction (raised R7 Evo 3)
   /** @type {Map<string, number>} */
@@ -35,9 +29,6 @@ moduleLifecycle.declare({
   const conductorDampeningLastCentroidCorrection = new Map();
 
   // -- #4: Flicker Range Elasticity Controller (Hypermeta) --
-  // Tracks 32-beat rolling flicker range and adjusts dampening base
-  // dynamically. Compressed range -> reduce dampening; excessive range
-  // -> increase dampening. Self-heals flicker range compression.
   const _FLICKER_RANGE_WINDOW = 32;
   let conductorDampeningTargetFlickerRange = 0.28; // R6 E2: 0.22->0.28 widen flicker elasticity target. Compressed threshold moves 0.132->0.168, triggering active range expansion earlier
   /** @type {number[]} */
@@ -45,16 +36,9 @@ moduleLifecycle.declare({
   let conductorDampeningFlickerDampeningBaseAdj = 0;
 
   // Progressive strength: as the running product diverges from 1.0,
-  // subsequent deviations in the same direction face stronger dampening.
-  // Deviations opposing the running product get lighter dampening to
-  // encourage self-correction.
   const PROGRESSIVE_STRENGTH = 0.50;
 
   // -- Adaptive clamp widening (self-healing) --
-  // Tracks per-contributor pinning via EMA. When a contributor is persistently
-  // pinned (EMA > threshold), the effective clamp is widened by up to
-  // MAX_WIDEN_FACTOR of the original range. This makes future modules
-  // self-healing - they never need manual range re-tuning.
   const PINNED_EMA_ALPHA = 0.08;       // slow EMA to detect sustained pinning
   const PINNED_WIDEN_THRESHOLD = 0.60;  // >60% pinned triggers widening
   const MAX_WIDEN_FACTOR = 0.15;        // max 15% range extension
@@ -69,9 +53,6 @@ moduleLifecycle.declare({
    */
   function scaledDamping(registryLength, pipelineName) {
     // Flicker pipeline gets lighter dampening (0.78) plus #4 elasticity adjustment
-    // R34 E1: 0.85->0.78 to reduce 57% crush factor under explosive profile
-    // Apply watchdog attenuation to elasticity adjustment so conflicting
-    // flicker controllers self-dampen instead of canceling each other out.
     const elasticityAdj = pipelineName === 'flicker'
       ? conductorDampeningFlickerDampeningBaseAdj * conductorMetaWatchdog.getAttenuation('flicker', 'elasticity')
       : 0;
@@ -106,10 +87,6 @@ moduleLifecycle.declare({
     if (m.abs(deviation) < 1e-6) return 1.0;
 
     // #8: Progressive strength auto-scaling - derive from active contributor
-    // count instead of hardcoded pipeline-specific multipliers. More active
-    // contributors need weaker per-contributor progressive dampening (they
-    // self-cancel via the product dynamics). Replaces the hardcoded 0.5x
-    // flicker special case with a general data-driven formula.
     const pipelineActiveCount = pipelineName ? V.optionalFinite(conductorDampeningActiveCountByPipeline.get(pipelineName), REF_PIPELINE_SIZE) : REF_PIPELINE_SIZE;
     let progStrength = PROGRESSIVE_STRENGTH * clamp(pipelineActiveCount / REF_PIPELINE_SIZE, 0.3, 1.5);
     const snap = systemDynamicsProfiler.getSnapshot();
@@ -255,10 +232,6 @@ moduleLifecycle.declare({
   function conductorDampeningApplyCentroidCorrection(product, pipelineName) {
     if (!pipelineName) return product;
     // Skip flicker axis entirely - centroid pull suppresses
-    // needed flicker variance and fights elasticity controller (#4).
-    // R64: Confirmed empirically - enabling centroid for flicker inflates
-    // the flicker product, expanding flicker axis energy share and
-    // catastrophically collapsing phase (0.1131 -> 0.0009).
     if (pipelineName === 'flicker') return product;
     const prev = V.optionalFinite(conductorDampeningCentroidEma.get(pipelineName), 1.0);
     const updated = prev * (1 - _CENTROID_EMA) + product * _CENTROID_EMA;

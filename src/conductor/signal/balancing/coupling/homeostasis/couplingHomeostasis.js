@@ -20,8 +20,6 @@ moduleLifecycle.declare({
   name: 'couplingHomeostasis',
   subsystem: 'conductor',
   // Init body uses homeostasis* sub-modules at top level. recorder /
-  // conductorScopes manifest fields handle the post-init registration
-  // that previously lived as conductorIntelligence.* calls inside init.
   deps: ['homeostasisState', 'homeostasisRefresh', 'homeostasisTick', 'homeostasisFloor'],
   lazyDeps: ['couplingHomeostasisSnapshot'],
   provides: ['couplingHomeostasis'],

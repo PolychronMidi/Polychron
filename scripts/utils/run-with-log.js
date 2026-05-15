@@ -23,7 +23,6 @@ if (!logFile || command.length === 0) {
 const fs = require('fs');
 const lockDir = 'tmp';
 const lockPath = require('path').join(lockDir, 'run.lock');
-// Support nested run-with-log invocations spawned from a root: they set RUN_WITH_LOG_OWNER to the root PID
 const owner = (() => {
   const raw = process.env.RUN_WITH_LOG_OWNER;
   if (!raw) return null;
@@ -37,13 +36,11 @@ let wroteLock = false;
 try {
   // Ensure lock directory exists
   fs.mkdirSync(lockDir, { recursive: true });
-  // If an owner is present and it's **not** us, skip lock handling (we're a nested child)
   if (!owner || owner === process.pid) {
     if (fs.existsSync(lockPath)) {
       try {
         const pid = Number(fs.readFileSync(lockPath, 'utf8').trim());
         if (pid && pid > 0) {
-          // If the existing PID equals our PID, it's a stale leftover from this process; remove and continue
           if (pid === process.pid) {
             try { fs.unlinkSync(lockPath); } catch (_e) { console.warn('run-with-log: failed to remove stale lock file (continuing):', _e && _e.stack ? _e.stack : _e); }
           } else {
@@ -106,14 +103,11 @@ function finalizeLog(exitText) {
 
 // Write initial progress marker
 writeToLog('');
-// Preserve and propagate RUN_WITH_LOG_OWNER so nested run-with-log invocations are recognized as children
 const childEnv = Object.assign({}, process.env);
 if (!childEnv.RUN_WITH_LOG_OWNER) childEnv.RUN_WITH_LOG_OWNER = String(owner || process.pid);
 const proc = spawn(command[0], command.slice(1), { shell: false, stdio: 'pipe', env: childEnv });
 
 // Persistent single-line spinner -- only active when stderr is a real TTY.
-// When stderr is redirected to a file the ANSI escape codes land as literal
-// characters (\x1b[2K, \r) producing spam lines in the log.
 const _IS_TTY = Boolean(process.stderr.isTTY);
 const _SPIN = ['|', '/', '-', '\\'];
 let _spinIdx = 0;

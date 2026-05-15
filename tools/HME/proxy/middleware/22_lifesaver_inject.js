@@ -14,7 +14,6 @@ const OBSERVATION_RE = /\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/;
 const SELF_TAG_RE = /^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker_client|worker:[^\]]+)\]/;
 
 function _isAgentActionable(line) {
-  // Strip the leading "[2026-... ] " timestamp before classifying so the
   // tag-anchored regex matches at line start.
   const body = line.replace(/^\[[0-9TZ:.\-]+\]\s*/, '');
   if (CANARY_RE.test(body)) return false;
@@ -24,8 +23,6 @@ function _isAgentActionable(line) {
 }
 
 // Mirrors helpers/safety/latency.sh rotation policy: when the log exceeds
-// MAX_LINES, keep the last KEEP_LINES. errors.log had no rotation before;
-// it grew unbounded and slowed every tail/scan call.
 const MAX_LINES = 10_000;
 const KEEP_LINES = 5_000;
 
@@ -40,6 +37,7 @@ function _rotateIfNeeded(errLogPath, wmPath, totalLines, lines) {
     const wmAdjust = -dropped;
     return { lines: kept, totalLines: KEEP_LINES, lastSeenAdjust: wmAdjust };
   } catch (_e) {
+    // silent-ok: optional fallback path.
     // Rotation is best-effort; if it fails we leave the file alone and
     // proceed with the unrotated view rather than blocking the inject.
     return { lines, totalLines, lastSeenAdjust: 0 };
@@ -47,8 +45,6 @@ function _rotateIfNeeded(errLogPath, wmPath, totalLines, lines) {
 }
 
 // Once-per-process boot seed: jump watermark to EOF on first request so a
-// proxy restart doesn't replay pre-restart errors (already surfaced or
-// already filtered the prior turn).
 let _startupSeeded = false;
 
 module.exports = {
@@ -56,9 +52,6 @@ module.exports = {
 
   onRequest({ payload, ctx }) {
     // LEAN_MODE: emergency kill-switch when usage budget is being
-    // hammered. Set HME_PROXY_LEAN_MODE=1 to skip all heavy middleware
-    // injections. Per-turn savings: this skip alone prevents reading
-    // the (potentially large) errors.log into the system prompt.
     if (process.env.HME_PROXY_LEAN_MODE === '1') return;
     // Only fire on real Anthropic message requests. Payloads without
     // messages (health probes, etc.) get skipped.
@@ -84,6 +77,7 @@ module.exports = {
     try {
       content = fs.readFileSync(errLogPath, 'utf8');
     } catch (_e) {
+      // silent-ok: optional fallback path.
       return; // no error log yet, nothing to alert
     }
     let lines = content.split('\n').filter(Boolean);

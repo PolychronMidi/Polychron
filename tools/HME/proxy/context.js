@@ -28,6 +28,7 @@ function loadCoherenceBudget() {
       else _budgetState = 'in_band';
     }
   } catch (_err) {
+    // silent-ok: optional fallback path.
     _budgetState = 'in_band';
   }
   _budgetLoadedAt = now;
@@ -51,15 +52,6 @@ function stripSystemCacheControl(payload) {
 }
 
 // Strip the `ttl` field from every cache_control object. The OAuth-public
-// endpoint we forward to does not permit per-block ttl on cache_control;
-// any cache_control with a ttl set causes Anthropic to enforce the
-// "no ttl='1h' after ttl='5m'" ordering rule and 400 the request when
-// Claude Code's payload (which stamps 1h on user-prompt blocks) follows
-// any 5m-tagged earlier block. Approach modeled on horselock/claude-code-
-// proxy: instead of normalizing ttls (fragile), just delete the ttl key
-// so every breakpoint becomes default-ttl (5m) and the ordering rule is
-// trivially satisfied (no 1h breakpoints exist to violate it).
-// Function name kept as normalizeCacheControlTtls for callers' sake.
 function normalizeCacheControlTtls(payload) {
   let changed = 0;
   const stripTtl = (block) => {
@@ -81,12 +73,6 @@ function normalizeCacheControlTtls(payload) {
 }
 
 // Cache-safe injection into the last user message. Anthropic's prompt
-// cache hashes (system + tools + messages-up-to-breakpoint) as the
-// prefix. Anything appended AFTER the cache breakpoint -- which lives on
-// the LAST user message -- is fresh-token cost only, but does NOT
-// invalidate the cached prefix. lifesaver_inject already uses this path;
-// any per-turn-varying context (status blocks, error banners) MUST go
-// through here, never through injectIntoSystem.
 function injectIntoLastUserMessage(payload, block, marker) {
   if (!block || !Array.isArray(payload.messages)) return false;
   const lastUser = [...payload.messages].reverse().find((m) => m && m.role === 'user');

@@ -41,7 +41,6 @@ function loadBootOrder() {
 
 function getSubsystem(relPath) {
   const parts = relPath.replace(/\\/g, '/').split('/');
-  // src/<subsystem>/...
   if (parts[0] === 'src' && parts.length >= 2) return parts[1];
   return 'root';
 }
@@ -61,9 +60,6 @@ function buildProviderMap(bootOrder) {
 // -Scan a JS file for global references (consumption) -
 
 // We look for all identifiers that match known globals, excluding:
-// - Lines that are assignments at column 0 (those are PROVIDERS, not consumers)
-// - String literals and comments
-// - Property access chains (obj.prop should not match 'prop')
 
 function findConsumedGlobals(filePath, knownGlobals) {
   const src = fs.readFileSync(filePath, 'utf8');

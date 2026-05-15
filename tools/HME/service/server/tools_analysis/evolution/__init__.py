@@ -207,8 +207,6 @@ def kb_seed(top_n: int = 15) -> str:
                 + "\n\n".join(source_snippets)
             )
             # KB entries become long-lived architectural documentation. Write
-            # quality (clear sentences, accurate constraint statements) matters
-            # more than throughput. Escalate to OVERDRIVE cascade.
             result = _reasoning_think(prompt, max_tokens=384)
             if result:
                 from ..synthesis.synthesis_inference import compress_for_claude

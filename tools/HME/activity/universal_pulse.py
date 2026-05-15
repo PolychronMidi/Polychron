@@ -197,9 +197,6 @@ def _maintenance_active() -> bool:
 
 
 # Remember when maintenance flag was most recently seen active, so we can
-# grant a grace period after it clears (torch checkpoint loading during a
-# fresh worker boot pegs CPU for 60-90s, which legitimately spikes
-# process-CPU but isn't a GIL hang).
 _last_maintenance_seen: dict = {"ts": 0.0}
 
 
@@ -255,9 +252,6 @@ def _ps_cpu_instant(cmd_pattern: str) -> float:
                     best = pcpu
         return best
     # Single call: `ps` reports CPU% as cpu-time / wall-time since process
-    # start by default. That's fine for sustained-saturation detection --
-    # a thread that has been at 99% for 48 minutes will be near 99% in
-    # this reading too. Rolling-buffer math below filters transient spikes.
     return _snapshot()
 
 

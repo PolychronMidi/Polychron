@@ -11,10 +11,6 @@ rhythmValues = (function() {
   function swingOffset(beatIndex, amount) {
     V.requireFinite(amount, 'swingOffset.amount');
     // amount 0..1, returns a signed offset in fractions of a beat.
-    // Foundation: alternating odd/even swing direction at amount/2.
-    // Touches of flair: ~10% of calls add a small jitter on top so the
-    // swing doesn't sound perfectly mechanical. Jitter magnitude is
-    // bounded to amount/4 so it never inverts the swing direction.
     const base = ((beatIndex % 2) === 1) ? amount * 0.5 : -amount * 0.5;
     return rf() < 0.10 ? base + rf(-amount * 0.25, amount * 0.25) : base;
   }

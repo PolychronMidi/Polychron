@@ -1,4 +1,3 @@
-// src/conductor/rhythmicComplexityGradient.js - Tracks rhythmic subdivision complexity over time.
 // Detects whether the piece is building toward denser subdivisions or simplifying.
 // Pure query API - advises rhythm pattern tier selection and subdivision depth bias.
 
@@ -75,15 +74,7 @@ moduleLifecycle.declare({
     samples.length = 0;
   }
 
-  // R26 E4: Tension bias from rhythmic complexity gradient. Building
-  // rhythmic complexity naturally accompanies rising tension (more
-  // subdivisions = more energy). Simplifying rhythm releases tension.
-  // Cross-domain rhythmic->harmonic coupling pathway.
-  // R28 E4: Weakened simplifying bias from 0.95 to 0.97. In R27, this
-  // module combined with chromaticSaturationMonitor (0.95) and
-  // intervalExpansionContractor (0.96) to over-dampen tension. Lighter
-  // simplifying influence preserves the pathway while reducing cumulative
-  // tension-down pressure.
+  // Tension bias from rhythmic complexity gradient. Building
   /**
    * Get tension multiplier from rhythmic complexity trajectory.
    * @returns {number}

@@ -168,9 +168,6 @@ def main() -> int:
     current = _capture_state()
 
     # R22 #4: ground-truth integration. Default assumption: legendary. If the
-    # user tagged a recent round with a non-legendary sentiment in
-    # hme-ground-truth.jsonl, mark the snapshot accordingly -- envelope
-    # computation excludes non-legendary snapshots from the baseline.
     gt_path = os.path.join(METRICS_DIR, "hme-ground-truth.jsonl")
     current["legendary_confirmed"] = True  # default
     try:
@@ -190,8 +187,6 @@ def main() -> int:
         f.write(json.dumps(current) + "\n")
 
     # Compute envelope from ALL snapshots including the one we just wrote.
-    # We include current so drift naturally starts at 0 on first round (no
-    # outlier vs a single-sample envelope). Real drift surfaces after 5+ rounds.
     snaps = _load_snapshots()
     if len(snaps) < MIN_SNAPSHOTS_FOR_ENVELOPE:
         result = {
@@ -210,12 +205,6 @@ def main() -> int:
         return 0
 
     # Exclude current snapshot from envelope so drift measures current against past.
-    # R22 #4: also exclude any snapshot explicitly marked non-legendary
-    # (legendary_confirmed=False). Default True for backfilled snapshots.
-    # R24 #3: also exclude snapshots where HCI < 95 (when HCI is recorded).
-    # Arc III's "legendary envelope" is specifically the TOP-TIER legendary
-    # distribution -- ramp-up rounds and rounds with verifier regressions
-    # shouldn't pollute the baseline.
     HCI_MIN = 95
     def _include(s):
         if s.get("legendary_confirmed", True) is False:
@@ -250,11 +239,6 @@ def main() -> int:
     print(msg)
 
     # Preemptive alert: emit activity event when drift exceeds threshold.
-    # R24 #9: epoch-transition detection. If drift stayed elevated for 3+
-    # consecutive rounds while verdict remained legendary, log an epoch
-    # transition. Marks a regime change -- future drift measurements can
-    # use per-epoch envelopes to avoid mixing fundamentally different
-    # composition eras.
     try:
         ts_path = os.path.join(METRICS_DIR, "hme-arc-timeseries.jsonl")
         ep_path = os.path.join(METRICS_DIR, "hme-epoch-transitions.jsonl")

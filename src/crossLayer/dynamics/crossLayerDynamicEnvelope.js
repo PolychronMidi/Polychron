@@ -45,11 +45,9 @@ moduleLifecycle.declare({
     const intent = sectionIntentCurves.getLastIntent();
     const densityTarget = V.optionalFinite(intent.densityTarget, 0.5);
 
-    // Get interaction trend via L0 (posted by interactionHeatMap.flushBeat); fall back to direct call on first beat
     const heatEntry = L0.getLast(L0_CHANNELS.interactionHeat);
     const trend = heatEntry ?? interactionHeatMap.getTrend();
 
-    // Check role swap via L0 channel (phrase-boundary stable, so getLast is equivalent to getIsSwapped)
     const swapped = L0.getLast(L0_CHANNELS.swapDecision)?.swapped ?? false;
 
     // Compute base envelope from phrase arc
@@ -77,15 +75,12 @@ moduleLifecycle.declare({
     // Modulate by interaction trend (hot system - slightly louder)
     targetScale += clamp(trend.slope, -0.5, 0.5) * 0.15;
 
-    // R92 E3: Regime-responsive envelope amplitude. Exploring passages
-    // benefit from wider dynamic swings (more dramatic crescendo/decrescendo),
-    // coherent passages from tighter, more unified dynamics. This creates
-    // distinct dynamic characters per regime without changing arc type.
+    // Regime-responsive envelope amplitude. Exploring passages
     const envelopeRegime = conductorSignalBridge.getSignals().regime || 'exploring';
     const regimeAmplitude = envelopeRegime === 'exploring' ? 1.20
       : envelopeRegime === 'coherent' ? 0.85
       : 1.0;
-    // R72: complexityEma coupling -- high sustained rhythmic complexity widens envelope arc.
+    // complexityEma coupling -- high sustained rhythmic complexity widens envelope arc.
     const rhythmEntryCLDE = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmComplexEmaCLDE = rhythmEntryCLDE && Number.isFinite(rhythmEntryCLDE.complexityEma) ? rhythmEntryCLDE.complexityEma : 0;
     // Scale the deviation from neutral (1.0) by regime amplitude * complexity expansion
@@ -138,8 +133,6 @@ moduleLifecycle.declare({
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
 
     // Melodic coupling: counterpoint motion biases arc type selection.
-    // Contrary motion -> complementary arcs (layers diverge dynamically).
-    // Similar motion -> parallel arcs (layers converge dynamically).
     const melodicCtxCLDE = emergentMelodicEngine.getContext();
     const cpBias = melodicCtxCLDE
       ? (melodicCtxCLDE.counterpoint === 'contrary' ? -0.12 : melodicCtxCLDE.counterpoint === 'similar' ? 0.12 : 0)
@@ -148,17 +141,12 @@ moduleLifecycle.declare({
 
     const regime = conductorSignalBridge.getSignals().regime || 'exploring';
 
-    // R2 E2: Phase-aware arc type bias. When phase axis is starved,
-    // bias toward complementary arcs which create cross-layer velocity
-    // interference that feeds phase coupling energy. This is a structural
-    // feedback loop: low phase share -> more complementary arcs -> more
-    // cross-layer contrast -> more phase coupling energy.
+    // Phase-aware arc type bias. When phase axis is starved,
     const phaseAxisShares = conductorSignalBridge.getSignals().axisEnergyShares;
     const phaseStarved = phaseAxisShares
       && typeof phaseAxisShares.phase === 'number'
       && phaseAxisShares.phase < 0.14;
 
-    // cimScale biases arc type: coordinated favors parallel, independent favors independent
     const parallelBias = cimScale * 0.3;
     const independentBias = (1 - cimScale) * 0.3;
 

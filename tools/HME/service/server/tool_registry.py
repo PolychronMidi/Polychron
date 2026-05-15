@@ -70,7 +70,6 @@ def _annotation_to_schema(ann) -> dict:
             return {"type": "object", "additionalProperties": _annotation_to_schema(args[1])}
         return {"type": "object"}
 
-    # tuple[T1, T2, ...] -- degrade to array (MCP tools rarely use tuples)
     if origin in (tuple, typing.Tuple):
         return {"type": "array"}
 
@@ -192,9 +191,6 @@ def call(name: str, args: dict):
         return fn(**(args or {}))
     except TypeError as e:
         # TypeError from kwargs-mismatch has a recognizable shape:
-        # "<name>() got an unexpected keyword argument 'X'"
-        # OR "<name>() missing 1 required positional argument: 'X'".
-        # Catch ONLY those -- re-raise other TypeErrors (real bugs).
         msg = str(e)
         if ("unexpected keyword argument" in msg
                 or "missing" in msg and "required" in msg

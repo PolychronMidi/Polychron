@@ -1,5 +1,4 @@
 // src/crossLayer/entropyRegulator.js - Cross-layer entropy regulation.
-// Measures combined entropy (pitch diversity * rhythmic irregularity * velocity variance)
 // of both layers. Defines a target entropy curve (low - high - low for tension arcs).
 // Nudges all cross-layer systems up or down to steer total entropy toward the target.
 // Acts as a meta-conductor for the cross-layer systems themselves.
@@ -31,9 +30,6 @@ moduleLifecycle.declare({
   const ARC_TARGET_RANGE = 0.7;
 
   // Target blending (arc vs intent)
-  // R75 E2: Raised arc weight 0.3->0.45 to strengthen structural entropy
-  // motion across the composition. The arc target drives entropy to follow
-  // the tension contour, creating correlated entropy-tension dynamics.
   const ARC_BLEND_WEIGHT = 0.45;
   const INTENT_BLEND_WEIGHT = 0.55;
 
@@ -97,8 +93,6 @@ moduleLifecycle.declare({
         totalVel += entropyMetrics.velocityVariance(vh);
       }
       // rhythmicIrregularity queries L0 which may throw
-      // during early beats or section transitions. Isolate per-layer so
-      // a failure in one layer doesn't abort the entire entropy measurement.
       try {
         const rhythmVal = entropyMetrics.rhythmicIrregularity(layer);
         totalRhythm += rhythmVal;
@@ -116,8 +110,6 @@ moduleLifecycle.declare({
     }
     if (count === 0) {
       // No note history yet (early beats after section reset).
-      // Still update lastRawEntropy so measureRawEntropy() doesn't
-      // return stale data from before the reset.
       lastRawEntropy = 0.5;
       smoothedEntropy = 0.5;
       return 0.5;
@@ -178,72 +170,42 @@ moduleLifecycle.declare({
       arcWeight = clamp(ARC_BLEND_WEIGHT + entropyContainment * 0.10 + edgePressure * 0.05, ARC_BLEND_WEIGHT, 0.48);
       intentWeight = 1 - arcWeight;
       targetTrim = entropyContainment * (0.02 + edgePressure * 0.03) * (0.25 + phaseProtection * 0.45);
-      // Xenolinguistic L4: self-narration modulates entropy. Crowded = less entropy, sparse = more.
       const narEntry = L0.getLast(L0_CHANNELS.selfNarration, { layer: 'both' });
       const narMod = narEntry && narEntry.narrative
         ? (narEntry.narrative.includes('crowded') ? -0.03 : narEntry.narrative.includes('sparse') ? 0.03 : 0) : 0;
       // Melodic coupling: register migration direction nudges entropy target.
-      // Ascending -> more entropy (exploring new register territory needs variety).
-      // Descending -> less entropy (settling into lower register invites consolidation).
       const melodicCtxER = emergentMelodicEngine.getContext();
       const melodicMod = melodicCtxER
         ? (melodicCtxER.registerMigrationDir === 'ascending' ? 0.02 : melodicCtxER.registerMigrationDir === 'descending' ? -0.02 : 0)
         : 0;
-      // tessituraLoad: extreme register positions warrant more pitch variety -> raise entropy.
       const tessLoad = melodicCtxER ? V.optionalFinite(melodicCtxER.tessituraLoad, 0) : 0;
       const tessEntropy = tessLoad * 0.025; // 0 neutral ... +0.025 extreme register
-      // R79 E1: freshnessEma antagonism bridge -- novel intervals signal uncharted territory -> raise entropy.
-      // Counterpart: climaxEngine SUPPRESSES climax on freshnessEma>0.60 (R78 E3).
-      // Together: fresh melody -> entropy UP + climax DOWN (constructive opposition on same signal).
       const freshnessEmaER = melodicCtxER ? V.optionalFinite(melodicCtxER.freshnessEma, 0.5) : 0.5;
       const freshnessMod = clamp((freshnessEmaER - 0.5) * 0.08, 0, 0.04); // 0 at 0.5 ... +0.04 at max novelty
-      // R79 E2: ascendRatio coupling -- ascending phrases signal exploratory territory -> more entropy.
-      // Descending phrases (settling) -> less entropy. More granular than ternary registerMigrationDir.
       const ascendRatioER = melodicCtxER ? V.optionalFinite(melodicCtxER.ascendRatio, 0.5) : 0.5;
       const ascendMod = clamp((ascendRatioER - 0.5) * 0.06, -0.03, 0.03); // ascending +0.03 ... descending -0.03
-      // R85 E1: intervalFreshness antagonism bridge -- novel intervals signal uncharted territory -> raise entropy.
-      // Counterpart: crossLayerSilhouette SHARPENS structural tracking under same signal (form holds while chaos expands).
       const intervalFreshnessER = melodicCtxER ? V.optionalFinite(melodicCtxER.intervalFreshness, 0.5) : 0.5;
       const intervalFreshnessMod = clamp((intervalFreshnessER - 0.45) * 0.07, -0.02, 0.04); // familiar -0.02 ... novel +0.04
-      // R73: emergentRhythm densitySurprise coupling -- unexpected rhythmic bursts spike entropy target.
       // Surprising rhythmic events should be more chaotic/entropic by nature.
       const rhythmEntryER = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
       const densitySurpriseER = rhythmEntryER && Number.isFinite(rhythmEntryER.densitySurprise) ? rhythmEntryER.densitySurprise : 0;
-      // R75: motifEcho coupling -- imitative counterpoint activity suppresses entropy target (fugue structure invites order).
       const motifEchoEntry = L0.getLast(L0_CHANNELS.motifEcho, { layer: 'both' });
       const motifEchoMod = motifEchoEntry ? (motifEchoEntry.delayBeats <= 2 ? -0.04 : -0.02) : 0;
-      // R76: climax-pressure antagonism bridge -- approaching climax suppresses entropy target.
-      // Constructive opposition: climax needs definition (low entropy), entropy needs space (high).
-      // Both sides coupled to entropy channel with opposing intent (r=-0.604 pair).
       const climaxEntryER = L0.getLast(L0_CHANNELS.climaxPressure, { layer: 'both' });
       const climaxMod = climaxEntryER && Number.isFinite(climaxEntryER.level)
         ? -clamp(climaxEntryER.level * 0.07, 0, 0.07) : 0;
-      // R77 E9: complexityEma fast-chaos bridge -- high rhythmic complexity EMA amplifies entropy target
       // (counterpart: crossLayerSilhouette slows tracking under same condition)
       const complexityEmaER = rhythmEntryER && Number.isFinite(rhythmEntryER.complexityEma) ? rhythmEntryER.complexityEma : 0;
       const complexityMod = clamp((complexityEmaER - 0.5) * 0.10, 0, 0.07);
-      // R78: phase-lock coupling -- repel mode (layers opposing) inherently raises entropy (counterpoint diversity),
       // lock mode (layers synchronized) creates coherent order (reduced entropy target).
       const phaseModeER = rhythmicPhaseLock.getMode();
       const phaseMod = phaseModeER === 'repel' ? 0.04 : phaseModeER === 'lock' ? -0.03 : 0;
-      // R88 E1: density antagonism bridge with temporalGravity -- high note density raises entropy target
-      // (dense textures generate pitch variety naturally; entropy should open up to match).
-      // Counterpart: temporalGravity STRENGTHENS pull under same signal (structure tightens while chaos expands).
       const densityER = clamp(V.optionalFinite(conductorSignalBridge.getSignals().density, 0.5), 0, 1);
       const densityEntMod = clamp((densityER - 0.5) * 0.06, -0.02, 0.04);
-      // R89 E2: complexity antagonism bridge with temporalGravity -- high per-beat complexity raises entropy target
-      // (complex rhythmic events open up pitch variety to match their structural richness).
-      // Counterpart: temporalGravity STRENGTHENS gravity wells under same signal (temporal anchor tightens while entropy expands).
       const complexityBeatER = rhythmEntryER && Number.isFinite(rhythmEntryER.complexity) ? rhythmEntryER.complexity : 0.5;
       const complexityBeatEntMod = clamp((complexityBeatER - 0.5) * 0.04, -0.02, 0.015);
-      // R90 E1: contourShape antagonism bridge with motifEcho (VIRGIN pair r=-0.503) -- rising contour raises entropy target
-      // (ascending arc = exploratory territory demands pitch variety).
-      // Counterpart: motifEcho REDUCES echo probability under same signal (rising motion looks forward, not backward).
       const contourShapeER = melodicCtxER ? melodicCtxER.contourShape : null;
       const contourShapeEntMod = contourShapeER === 'rising' ? 0.015 : contourShapeER === 'falling' ? -0.02 : 0;
-      // R92 E3: hotspots antagonism bridge with feedbackOscillator -- dense active grid slots suppress entropy target
-      // (rhythmic concentration brings order from density; entropy should follow the structural convergence).
-      // Counterpart: feedbackOscillator AMPLIFIES inject energy under same signal (grid concentration = richer cross-layer resonance).
       const hotspotsER = rhythmEntryER && Number.isFinite(rhythmEntryER.hotspots) ? rhythmEntryER.hotspots : 0;
       const hotspotsEntMod = -clamp(hotspotsER * 0.08, 0, 0.04);
       const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + freshnessMod + ascendMod + intervalFreshnessMod + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod + densityEntMod + complexityBeatEntMod + contourShapeEntMod + hotspotsEntMod;
@@ -313,7 +275,6 @@ moduleLifecycle.declare({
     noteHistory.clear();
     velHistory.clear();
     entropyRegulatorRegulationCtrl.reset();
-    // entropyRegulatorRhythmIrregErrors intentionally NOT reset - accumulates across run for diagnostic
   }
 
   /** @returns {number} total rhythmicIrregularity failures across the run */

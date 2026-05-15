@@ -51,10 +51,6 @@ tester.run('no-or-fallback-on-map-get', rule, {
       errors: 1,
     },
     // Method-chain on .get() result with || literal -- the LHS of the
-    // outer `||` here is a MemberExpression on a.get(x), not the
-    // CallExpression itself, so this rule (intentionally) doesn't fire.
-    // The behavior is documented; if we want to catch this shape later,
-    // it'd be a separate rule (e.g. no-or-fallback-on-map-get-chain).
   ],
 });
 

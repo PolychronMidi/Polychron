@@ -13,8 +13,6 @@ GPU1_MOUNT="/mnt/llamacpp-buffer-gpu1"
 MODELS_DIR="${HME_MODELS_DIR:-$HOME/models}"
 
 # Instance topology: which GGUF(s) each buffer mirrors.
-#   arbiter on GPU0 -> phi-4 + v6 LoRA
-#   coder   on GPU1 -> qwen3-coder-30b
 ARBITER_MODEL="${HME_ARBITER_GGUF:-$MODELS_DIR/phi-4-Q4_K_M.gguf}"
 CODER_MODEL="${HME_CODER_GGUF:-$MODELS_DIR/qwen3-coder-30b-Q4_K_M.gguf}"
 
@@ -23,7 +21,7 @@ case "${1:-status}" in
     echo "Creating ${BUFFER_SIZE} tmpfs buffers..."
     for mnt in "$GPU0_MOUNT" "$GPU1_MOUNT"; do
       mkdir -p "$mnt"
-      if mountpoint -q "$mnt" 2>/dev/null; then
+      if mountpoint -q "$mnt" 2>/dev/null; then  # silent-ok: optional fallback path.
         echo "  $mnt already mounted"
       else
         mount -t tmpfs -o size="$BUFFER_SIZE",noatime,mode=0755 tmpfs "$mnt"
@@ -36,7 +34,7 @@ case "${1:-status}" in
   warm)
     echo "Warming buffers with GGUF files..."
     # GPU0 (arbiter) -> phi-4 + v6 LoRA
-    if mountpoint -q "$GPU0_MOUNT" 2>/dev/null; then
+    if mountpoint -q "$GPU0_MOUNT" 2>/dev/null; then  # silent-ok: optional fallback path.
       for src in "$ARBITER_MODEL"; do
         if [ ! -f "$src" ]; then
           echo "  SKIP: source missing: $src"
@@ -66,7 +64,7 @@ case "${1:-status}" in
     fi
 
     # GPU1 (coder) -> qwen3-coder-30b
-    if mountpoint -q "$GPU1_MOUNT" 2>/dev/null; then
+    if mountpoint -q "$GPU1_MOUNT" 2>/dev/null; then  # silent-ok: optional fallback path.
       if [ -f "$CODER_MODEL" ]; then
         dst="$GPU1_MOUNT/$(basename "$CODER_MODEL")"
         if [ -f "$dst" ]; then
@@ -101,12 +99,12 @@ case "${1:-status}" in
   teardown)
     echo "Tearing down buffers..."
     for mnt in "$GPU0_MOUNT" "$GPU1_MOUNT"; do
-      if mountpoint -q "$mnt" 2>/dev/null; then
+      if mountpoint -q "$mnt" 2>/dev/null; then  # silent-ok: optional fallback path.
         umount "$mnt"
         echo "  $mnt unmounted"
       fi
       if [ -d "$mnt" ]; then
-        rmdir "$mnt" 2>/dev/null || true
+        rmdir "$mnt" 2>/dev/null || true  # silent-ok: optional fallback path.
       fi
     done
     echo "Done."
@@ -115,12 +113,12 @@ case "${1:-status}" in
   status)
     echo "llama.cpp buffer status:"
     for mnt in "$GPU0_MOUNT" "$GPU1_MOUNT"; do
-      if mountpoint -q "$mnt" 2>/dev/null; then
+      if mountpoint -q "$mnt" 2>/dev/null; then  # silent-ok: optional fallback path.
         used=$(df -h "$mnt" | tail -1 | awk '{print $3}')
         total=$(df -h "$mnt" | tail -1 | awk '{print $2}')
-        files=$(ls "$mnt" 2>/dev/null | wc -l)
+        files=$(ls "$mnt" 2>/dev/null | wc -l)  # silent-ok: optional fallback path.
         echo "  $mnt: MOUNTED (${used}/${total} used, $files files)"
-        ls -lh "$mnt" 2>/dev/null | tail -n +2 | awk '{printf "    %s %s\n", $5, $9}'
+        ls -lh "$mnt" 2>/dev/null | tail -n +2 | awk '{printf "    %s %s\n", $5, $9}'  # silent-ok: optional fallback path.
       else
         echo "  $mnt: NOT MOUNTED"
       fi

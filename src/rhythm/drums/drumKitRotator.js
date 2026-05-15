@@ -8,8 +8,6 @@ const V_kitRotator = validator.create('drumKitRotator');
 
 drumKitRotator = (() => {
   // L1 presets - kick1+kick3 is the foundational backbone in every preset.
-  // mixFill always leads with a foundational snare (snare1 or snare4).
-  // tailSnare/endAccent stay within the foundational snare set.
   const L1_PRESETS = [
     {
       kicks: ['kick1', 'kick3'],            kickOffs: [0, 0.5],
@@ -42,8 +40,6 @@ drumKitRotator = (() => {
   ];
 
   // L2 presets - kick2+kick5+kick7 is the foundational backbone. mixFill
-  // leads with a foundational L2 snare (snare2 or snare3). tailSnare in
-  // {snare2, snare3, snare7, snare8}.
   const L2_PRESETS = [
     {
       kicks: ['kick2', 'kick5', 'kick7'],   kickOffs: [0, 0.5, 0.25],
@@ -76,9 +72,6 @@ drumKitRotator = (() => {
   ];
 
   // Normal mode: per-phrase rotation. Flair mode: per-beat rotation for
-  // touches of rapid randomization. Both modes preserve the foundational
-  // dominant drums (every preset already anchors on kick1+kick3 / kick2+
-  // kick5+kick7), so flair only varies the supplementary slots.
   function presetIndex(layerOffset, flair) {
     V_kitRotator.requireFinite(sectionIndex, 'sectionIndex');
     V_kitRotator.requireFinite(phraseIndex, 'phraseIndex');

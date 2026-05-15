@@ -40,8 +40,6 @@ const CANONICAL_PATH = path.join(
 );
 
 // In-memory cache: avoid re-reading the file on every request. Invalidate
-// by mtime so edits to the canonical file take effect on the next
-// request after save (no proxy restart required).
 let _cachedMtime = 0;
 let _cachedContent = null;
 
@@ -50,6 +48,7 @@ function _loadCanonical() {
   try {
     stat = fs.statSync(CANONICAL_PATH);
   } catch (_e) {
+    // silent-ok: optional fallback path.
     _cachedMtime = 0;
     _cachedContent = null;
     return null;
@@ -68,6 +67,7 @@ function _loadCanonical() {
     _cachedContent = raw;
     return raw;
   } catch (_e) {
+    // silent-ok: optional fallback path.
     _cachedMtime = 0;
     _cachedContent = null;
     return null;
@@ -87,7 +87,6 @@ module.exports = {
     payload.system = [
       {
         type: 'text',
-        // mandatory Claude Code opening phrase - causes errors and cache issues without. can be stripped outbound from CC to non-Antropic models.
         text: "You are Claude Code, Anthropic's official CLI for Claude.",
       },
       {

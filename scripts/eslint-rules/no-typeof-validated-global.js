@@ -42,10 +42,8 @@ module.exports = {
     const filename = context.getFilename();
     const basename = pathMod.basename(filename || '');
 
-    // Exempt: mainBootstrap.js (where validation happens) and fullBootstrap.js (the list itself)
     if (basename === 'mainBootstrap.js' || basename === 'fullBootstrap.js') return {};
 
-    // Load the validated globals set from fullBootstrap.js at lint time (parse the array literal)
     if (!_cachedValidatedGlobals) {
       _cachedValidatedGlobals = _loadValidatedGlobals();
     }

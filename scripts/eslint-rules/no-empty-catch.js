@@ -60,8 +60,6 @@ module.exports = {
         }
 
         // Check if body contains ONLY comment-style code (no real statements)
-        // A block with statements means the catch does something.
-        // But we need to check if those statements are meaningful.
         const hasRealCode = body.body.some(stmt => {
           // throw statement -- rethrowing
           if (stmt.type === 'ThrowStatement') return true;

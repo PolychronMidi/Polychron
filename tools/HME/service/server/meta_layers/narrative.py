@@ -139,8 +139,6 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
                 parts.append(f"Environment stable ({disk}GB disk free, {rss}MB RSS).")
 
     # L18: counterfactual insight. Lazy import avoids circular-import risk
-    # with predictions.py (predictions imports nothing from narrative, but
-    # keeping this lazy lets either module load first without order concerns).
     from .predictions import _compute_effectiveness
     eff = _compute_effectiveness()
     if eff.get("total_interventions", 0) >= 3:

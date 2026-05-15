@@ -92,7 +92,6 @@ def think(about: str, context: str = "") -> str:
         lines = [f"  [{k['category']}] {k['title']}: {k['content'][:300]}" for k in kb_hits[:10]]
         kb_block = "Relevant KB patterns and constraints:\n" + "\n".join(lines)
 
-    # Detect meta-HME questions (about improving HME tools themselves, not the music src).
     # Route AWAY from coupling state injection -- inject HME doc summary instead.
     _about_lower = about.lower()
     _is_meta_hme = (
@@ -104,16 +103,12 @@ def think(about: str, context: str = "") -> str:
     )
 
     # Detect pipeline/ML/perceptual infrastructure questions -- about snapshot-run.js,
-    # train-verdict-predictor.js, perceptual-analysis.js, CLAP, EnCodec, verdict model.
-    # These need no coupling state injection (not about src/ module pairing) and no
-    # HME tool doc either -- they're about the pipeline scripts themselves.
     _is_pipeline_infra = any(t in _about_lower for t in [
         "verdict predictor", "verdict model", "clap", "encodec", "cb0", "cb1",
         "perceptual", "snapshot", "run-history", "train-verdict", "ml pipeline",
         "logistic", "perceptual-analysis", "snapshot-run",
     ])
 
-    # Auto-inject project state for evolution/coupling questions (NOT for meta-HME or pipeline questions)
     _EVOLUTION_TERMS = {"evolution", "evolve", "coupling", "antagonist", "bridge",
                         "ecstasy", "leverage", "cluster", "organism", "xenolinguistic",
                         "improve", "analysis", "insight", "exciting", "generative", "induce"}
@@ -141,7 +136,6 @@ def think(about: str, context: str = "") -> str:
     elif is_evolution_q:
         try:
             from .coupling import antagonism_leverage as _ant_leverage, dimension_gap_finder as _dim_gaps
-            # Use leverage data (concrete bridge recommendations with file paths, correlations,
             # and opposing-response recipes) instead of raw antagonist_map
             leverage_full = _ant_leverage(pair_limit=3)
             injected_state = "## Live Project State\n### Top 3 Antagonist Leverage Opportunities:\n"
@@ -164,7 +158,6 @@ def think(about: str, context: str = "") -> str:
             channel_block = topo[dead_start:dead_start + 800] if dead_start != -1 else topo[:600]
             injected_state = (injected_state or "") + "\n\n## L0 Dead-End Channels (no consumers -- prime harvest targets):\n" + channel_block
 
-            # Inject producer source for mentioned channels so model sees real L0.post field names
             src_root = os.path.join(ctx.PROJECT_ROOT, "src")
             l0_topo = _scan_l0_topology(src_root)
             mentioned_channels = [w for w in _re.findall(r'[a-zA-Z][a-zA-Z-]+', about) if w in l0_topo]
@@ -247,9 +240,6 @@ def think(about: str, context: str = "") -> str:
 
     if _is_meta_hme:
         # Meta-HME: single-stage reasoning (qwen3:30b-a3b) with HME doc+KB context.
-        # _two_stage_think falls back to single-stage anyway (no src/ paths in meta-HME context)
-        # so skip Stage 1 entirely -- faster and equally accurate for tool UX questions.
-        # Inject _THINK_SYSTEM so the model knows the alien music + HME domain from the start.
         local_answer = _reasoning_think(
             raw_context[:10000] + "\n\n" + prompt,
             max_tokens=4096,
@@ -261,9 +251,6 @@ def think(about: str, context: str = "") -> str:
             return f"# Think: {about} *(meta-hme)*\n\n{local_answer}"
     elif not is_evolution_q and not is_channel_q and not _is_pipeline_infra:
         # Route by complexity (heuristic, zero latency):
-        # >= 3 -> cascade (arbiter plan + source injection + coder + reasoner)
-        # == 2 -> enrich raw_context with live source, then parallel two-stage
-        # < 2 -> parallel two-stage with KB context only
         _complexity = _assess_complexity(about)
         if _complexity["complexity"] >= 3:
             logger.info(f"think: routing to cascade (complexity={_complexity['complexity']})")
@@ -286,9 +273,6 @@ def think(about: str, context: str = "") -> str:
 
     if not _is_meta_hme:
         # Code/evolution questions: parallel two-stage (GPU 0 + GPU 1 simultaneously)
-        # Pipeline infrastructure questions skip the crossLayer file list -- injecting
-        # src/ module paths causes the models to hallucinate crossLayer answers for
-        # questions that are actually about scripts/pipeline/*.js files.
         if not _is_pipeline_infra:
             if is_channel_q:
                 raw_context += (
@@ -311,9 +295,6 @@ def think(about: str, context: str = "") -> str:
                 "harmonicFunction posts {fn, chordRoot, keyRoot}, motifEcho posts {delayBeats, interval}."
             )
         # Parallel synthesis: GPU 0 (extract) + GPU 1 (analyze) run simultaneously,
-        # then GPU 1 produces final answer from merged brief. ~2x faster than sequential.
-        # max_tokens=1024: final answer is <=4 items -> caps chat stage at ~70s (vs 8192=546s).
-        # All processing from Stage 1 threads is preserved in the merged brief fallback.
         local_answer = _parallel_two_stage_think(raw_context, prompt, max_tokens=2048)
         if local_answer:
             local_answer = _ground_file_paths(local_answer)
@@ -321,7 +302,6 @@ def think(about: str, context: str = "") -> str:
             return f"# Think: {about} *(parallel-two-stage)*\n\n{local_answer}"
 
     # Template fallback (llama.cpp unavailable): minimal context, no injected_state echo
-    # Access _last_think_failure via module reference -- direct import gives stale value after mutation.
     from . import synthesis_llamacpp as _syn_mod
     _fallback_label = (
         "llama.cpp TIMEOUT -- queue may be stacked. Do NOT retry. Wait for queue to drain or restart llama.cpp."

@@ -11,8 +11,6 @@ from lang_registry import SUPPORTED_EXTENSIONS, SUPPORTED_FILENAMES, ext_to_lang
 logger = logging.getLogger(__name__)
 
 # Baseline fallback -- used only when HME_IGNORE_DIRS env var is absent.
-# "doc" and "hooks" intentionally NOT here -- HME indexes its own enforcement
-# hooks (tools/HME/hooks/) and project docs (doc/) for full self-awareness.
 _BUILTIN_IGNORE_DIRS = {
     "node_modules", ".git", "target", "dist", "build",
     "__pycache__", ".cache", "pkg", "wasm-pack-out",
@@ -102,8 +100,6 @@ def init_config(project_root: str):
     _config["ignore_dirs"] = _build_ignore_dirs(project_root)
     logger.info(f"ignore_dirs: {len(_config['ignore_dirs'])} entries (env+gitignore merged)")
     # RAG config migrated from .mcp.json -> tools/HME/config/rag.json (owned by HME,
-    # independent of Claude Code's MCP system). Schema is flat (no mcpServers.HME
-    # wrapper): ragIndexDirs, ragIgnoreDirs, ragIgnore, ragLibs, ragMaxFileSize.
     rag_path = os.path.join(project_root, "tools", "HME", "config", "rag.json")
     if not os.path.isfile(rag_path):
         logger.info("No tools/HME/config/rag.json found, using defaults")
@@ -135,8 +131,6 @@ def init_config(project_root: str):
         ]
         logger.info(f"ragLibs loaded: {libs}")
 
-    # ragIndexDirs: explicit allowlist of directories to index (relative to project root).
-    # When set, ONLY these directories are indexed -- no directory argument can override this.
     index_dirs = rag_cfg.get("ragIndexDirs")
     if index_dirs and isinstance(index_dirs, list):
         _config["rag_index_dirs"] = index_dirs
@@ -189,8 +183,6 @@ def walk_code_files(
     rag_ignore = _config["rag_ignore"]
 
     # When ragIndexDirs is configured, use it as a strict allowlist.
-    # Otherwise walk PROJECT_ROOT and rely on .gitignore + ragIgnore +
-    # HME_IGNORE_DIRS basename excludes for filtering.
     roots: list[Path] = []
     if _config["rag_index_dirs_abs"]:
         for d in _config["rag_index_dirs_abs"]:

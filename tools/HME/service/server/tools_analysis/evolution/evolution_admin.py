@@ -38,8 +38,6 @@ def hme_admin(action: str = "selftest", modules: str = "",
     from ..synthesis_session import append_session_narrative
     append_session_narrative("admin", f"hme_admin({action}): {modules or 'default'}")
     # Normalize common aliases. `restart` is the instinct-reach, but hot-reload
-    # is cheap enough that that's what users actually want -- no reason to make
-    # the wrong action name fail instead of quietly doing the right thing.
     if action == "restart":
         action = "reload"
 
@@ -48,15 +46,13 @@ def hme_admin(action: str = "selftest", modules: str = "",
         parts.append(hme_hot_reload(modules))
     if action in ("selftest", "both"):
         # `modules` is overloaded as the verbose-flag carrier for selftest
-        # since the action takes no other params -- keeps the tool surface
-        # small. Pass modules='verbose' to see all PASS lines; default
-        # trims them when any failure/warning is present.
         parts.append(hme_selftest(verbose=("verbose" in (modules or "").lower())))
     if action == "index":
         try:
             from tools_index import index_codebase as _index_codebase
             parts.append(_index_codebase())
         except Exception as e:
+            # silent-ok: optional fallback path.
             parts.append(f"index_codebase error: {e}")
     if action == "clear_index":
         try:

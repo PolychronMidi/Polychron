@@ -110,9 +110,6 @@ def _load_transcript() -> None:
                     malformed += 1
         if malformed:
             # Narrow to JSONDecodeError so real bugs (schema errors, etc.)
-            # still propagate. JSONL corruption = lost transcript history
-            # = lost session continuity. Fire a FAILFAST so the operator
-            # knows history is compromised -- not a quiet debug line.
             print(f"[HME FAILFAST] transcript load: {malformed} malformed JSONL lines DROPPED -- session history partial", file=sys.stderr, flush=True)
         with _transcript_lock:
             _transcript_entries = entries

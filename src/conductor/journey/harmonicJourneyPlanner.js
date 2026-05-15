@@ -29,23 +29,12 @@ moduleLifecycle.declare({
 
     let startMode = opts.startMode || 'random';
     if (startMode === 'random') {
-      // R2 E1: Regime-responsive mode brightness. Exploring favors darker modes
-      // (dorian, minor, phrygian) for drama; coherent favors brighter (major,
-      // mixolydian, ionian) for stability. Creates modal diversity organically
-      // from regime dynamics rather than post-hoc palette breaks.
+      // Regime-responsive mode brightness. Exploring favors darker modes
       const regimeSnap = systemDynamicsProfiler.getSnapshot();
       const currentRegime = regimeSnap ? regimeSnap.regime : 'exploring';
-      // R9 E4: Added locrian for maximum modal darkness during exploring.
-      // Locrian's diminished tonic creates extreme harmonic tension, enriching
-      // modal variety in exploring passages (previously 6 modes, now 7).
-      // R15 E4: Reduce minor bias (2/6->1/6), boost phrygian (1/6->2/6) for
-      // darker modal variety. R14 produced only major/minor despite diverse pools.
+      // Added locrian for maximum modal darkness during exploring.
       const DARK_POOL = ['minor', 'dorian', 'phrygian', 'aeolian', 'phrygian', 'locrian'];
-      // R5 E4: Deduplicate BRIGHT_POOL. 'ionian' is identical to 'major'
-      // (same scale), doubling major-quality probability (3/6 = 50%). Replace
-      // 'ionian' with 'dorian' for modal color variety during coherent regime.
-      // R15 E4: Reduce major bias (2/6->1/6), boost lydian (1/6->2/6) for
-      // brighter modal color. Lydian's #4 creates distinctive harmonic character.
+      // Deduplicate BRIGHT_POOL. 'ionian' is identical to 'major'
       const BRIGHT_POOL = ['major', 'mixolydian', 'dorian', 'lydian', 'lydian', 'mixolydian'];
       const modePool = currentRegime === 'exploring' ? DARK_POOL
         : currentRegime === 'coherent' ? BRIGHT_POOL

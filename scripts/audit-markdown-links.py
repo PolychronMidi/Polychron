@@ -32,8 +32,6 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 
 _LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 # `KB/devlog` holds frozen archive snapshots -- intentional historical
-# record, not editable. Skipping prevents broken-link noise from
-# legitimate historical references.
 _SKIP_DIRS = {"node_modules", ".git", "__pycache__", ".venv", "venv", "output", "devlog"}
 _SCAN_ROOTS = [
     os.path.join(_PROJECT, "doc"),

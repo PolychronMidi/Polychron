@@ -85,28 +85,16 @@ moduleLifecycle.declare({
     const intent = sectionIntentCurves.getLastIntent();
     const ct = V.optionalFinite(intent.convergenceTarget, 0.5);
     // Melodic coupling: directionBias shifts the phase threshold.
-    // Ascending contour (building) -> narrow window -> resist premature cadence.
-    // Descending contour (resolving) -> widen window -> welcome cadence.
     const melodicCtxPACW = emergentMelodicEngine.getContext();
     const dirBias = melodicCtxPACW ? V.optionalFinite(melodicCtxPACW.directionBias, 0) : 0;
-    // Rhythmic coupling: complex emergent rhythm creates natural cadence windows even with phase divergence.
     const rhythmEntryPACW = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmComplexityPACW = rhythmEntryPACW && Number.isFinite(rhythmEntryPACW.complexity) ? rhythmEntryPACW.complexity : 0;
-    // R82 E2: registerMigrationDir bridge -- ascending migration compresses cadence window
-    // (resist premature resolution while pitch center climbs). Counterpart: crossLayerSilhouette
-    // TIGHTENS form tracking under same signal (ascending = structural firmness + cadence resistance).
+    // registerMigrationDir bridge -- ascending migration compresses cadence window
     const registerMigDirPACW = melodicCtxPACW
       ? (melodicCtxPACW.registerMigrationDir === 'ascending' ? -0.05 : melodicCtxPACW.registerMigrationDir === 'descending' ? 0.04 : 0)
       : 0;
-    // R90 E3: freshnessEma antagonism bridge with harmonicIntervalGuard -- sustained melodic novelty
-    // compresses cadence window (novel territory = resolution deferred, don't rush to cadence).
-    // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmonic control tightens).
     const freshnessEmaPACW = melodicCtxPACW ? V.optionalFinite(melodicCtxPACW.freshnessEma, 0.5) : 0.5;
     const freshnessEmaPACWMod = clamp((freshnessEmaPACW - 0.45) * (-0.08), -0.04, 0.02); // novel->compress window
-    // R92 E1: contourShape antagonism bridge with harmonicIntervalGuard -- rising contour compresses
-    // cadence window (ascending phrase = defer resolution, sustain the climb). Falling opens window
-    // (descending phrase naturally resolves; let cadence land). Counterpart: harmonicIntervalGuard
-    // WIDENS deadband during rising and NARROWS during falling.
     const contourShapePACW = melodicCtxPACW ? melodicCtxPACW.contourShape : null;
     const contourShapePACWMod = contourShapePACW === 'rising' ? -0.03 : contourShapePACW === 'falling' ? 0.03 : 0;
     const phaseDiffThreshold = clamp(0.3 + ct * 0.15 - dirBias * 0.06 + rhythmComplexityPACW * 0.06 + registerMigDirPACW + freshnessEmaPACWMod + contourShapePACWMod, 0.15, 0.55);

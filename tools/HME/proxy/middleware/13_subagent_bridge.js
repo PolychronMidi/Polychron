@@ -43,8 +43,6 @@ module.exports = {
     if (!toolUse || toolUse.name !== 'Agent') return;
     const desc = (toolUse.input && toolUse.input.description) || '';
     // Use the central markers registry so producer (synthesis_reasoning.py
-    // emitting `HME reasoning for <reqId>`) and consumer (this regex) share
-    // a single source of truth. See _markers.js for cross-component refs.
     const { MARKERS } = require('./_markers');
     const match = MARKERS.HME_AGENT_TASK.reqIdRegex.exec(desc);
     if (!match) return;
@@ -56,10 +54,6 @@ module.exports = {
     const outPath = path.join(RESULTS_DIR, `${reqId}.json`);
     try {
       // Use 'wx' flag so a duplicate capture for the same reqId is
-      // rejected at the filesystem layer with EEXIST instead of
-      // silently clobbering the first result. Agent retries + regex
-      // false-positives were both caught by this before the anchor
-      // tightening above; defense-in-depth.
       fs.writeFileSync(outPath, JSON.stringify({
         req_id: reqId,
         text,
@@ -75,9 +69,6 @@ module.exports = {
       return;
     }
     // Move the queue entry to done/ for audit trail -- ALWAYS, even on
-    // empty-text captures. Previously an empty Agent reply early-returned
-    // before this rename, stranding the queue entry forever and making
-    // the caller poll indefinitely with no diagnostic.
     const queuePath = path.join(QUEUE_DIR, `${reqId}.json`);
     const donePath = path.join(DONE_DIR, `${reqId}.json`);
     try { _ensureDir(DONE_DIR); fs.renameSync(queuePath, donePath); } catch (_e) { /* silent-ok: queue entry may legitimately be absent (already moved by a duplicate capture, or the result was synthesized without a queue entry) -- the result file write at line 60 is the authoritative state */ }

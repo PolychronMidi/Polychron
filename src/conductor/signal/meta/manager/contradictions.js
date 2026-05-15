@@ -169,7 +169,6 @@ moduleLifecycle.declare({
     const e6Tightening = ST.rateMultipliers.e6CoherentTightening;
     const e11Ceiling = ST.rateMultipliers.e11DensityCeilingOverride;
     if (e6Tightening < 0.95 && e11Ceiling < 0.90) {
-      // Both tightening simultaneously - ease E11 ceiling to prevent compound suppression
       ST.rateMultipliers.e11DensityCeilingOverride = clamp(e11Ceiling + 0.10, e11Ceiling, 0.80);
       explainabilityBus.emit('hyper-meta-contradiction', 'both', {
         type: 'e6-e11-compound-tightening',

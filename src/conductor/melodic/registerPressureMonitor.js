@@ -1,4 +1,3 @@
-// src/conductor/registerPressureMonitor.js - Monitors pitch-register density across layers.
 // Queries L0 for pitch distribution across octave bands.
 // Pure query API - guides voice allocation to avoid register crowding.
 

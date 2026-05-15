@@ -115,33 +115,13 @@ def _tick(cfg, tracker):
                 )
 
     # Process-level CPU saturation -- each tick takes ONE instantaneous sample
-    # per tracked process and feeds a rolling buffer. Sustained saturation is
-    # declared when every sample within the saturation window is at/above
-    # threshold. This keeps the tick bounded (~1 ps call per process) while
-    # still catching the 48-min GIL-hang case at window resolution.
-    #
-    # Startup grace: during and up to grace_sec AFTER any maintenance flag,
-    # skip CPU saturation checks. Cold-boot legitimately spikes CPU while
-    # torch loads checkpoints / GPU warms up (60-90s typical). The grace
-    # window prevents false CRITICAL alerts during these known-costly phases.
-    # Real GIL hangs resume being caught as soon as the grace ends.
     _in_grace = _in_startup_grace(now)
     if _in_grace:
         # Clear any rolling-buffer samples collected during grace so a
-        # long startup doesn't leave saturated entries that would
-        # trigger alerts once grace ends.
         for pp in cfg.get("process_probes", []):
             _cpu_buf._samples.pop(pp.get("name", ""), None)
             tracker.record(f"cpu:{pp.get('name','')}", True, now)
     # Build a map of which process names have a CURRENTLY-FAILING http
-    # probe. Real GIL hang has both signals: CPU pegged AND /health
-    # unresponsive. Legitimate ML inference workload (sentence-transformers
-    # tokenizing on CPU while GPU does the heavy lift) pegs CPU at 200%+
-    # but /health returns instantly. The old check fired on the legitimate
-    # case, producing false-positive CRITICAL alerts every 90s during
-    # any sustained inference. Real hangs still fire because /health
-    # also fails when the GIL is held; the http_probes loop above already
-    # tracked that streak.
     _http_failing_now: set[str] = set()
     for probe in cfg.get("http_probes", []):
         name = probe["name"]
@@ -162,9 +142,6 @@ def _tick(cfg, tracker):
         _cpu_buf.record(name, pct, now, window_s * 2)
         saturated, avg = _cpu_buf.saturated(name, thresh, window_s, now)
         # Only alert when CPU saturation IS PAIRED WITH http-probe failure.
-        # CPU-saturated alone = legitimate inference workload.
-        # CPU-saturated AND /health failing = the GIL-starved hang this
-        # check exists to catch.
         is_real_hang = saturated and (name in _http_failing_now)
         key = f"cpu:{name}"
         alert = tracker.record(key, not is_real_hang, now)
@@ -183,9 +160,6 @@ def _tick(cfg, tracker):
         path = PROJECT_ROOT / ff["path"]
         max_stale = float(ff.get("max_stale_sec", 900))
         # Optional paired_path: only flag stale when the paired writer is
-        # FRESH but the target is stale. Both stale = idle session, not
-        # broken. Closes the false-positive class where idle-time gaps
-        # between turns generated spurious LIFESAVER alerts.
         paired_rel = ff.get("paired_path")
         paired_path = PROJECT_ROOT / paired_rel if paired_rel else None
         stale = True
@@ -219,12 +193,6 @@ def _tick(cfg, tracker):
             ok_count += 1
 
     # Hook-latency probes -- per-hook p95 grouped by hook name. The first
-    # iteration aggregated across ALL hooks which obscured which specific
-    # hook was slow (the alert named a random "sample_hook" that often
-    # wasn't the real offender -- e.g. reported pretooluse_bash at 50ms
-    # while the actual culprit was stop at 676ms). Now we compute p95
-    # per hook and fire per-hook alerts, each with an accurate name.
-    # Per-hook thresholds overridable via cfg[hook_thresholds][<hook>].
     for lp in cfg.get("hook_latency_probes", []):
         name = lp["name"]
         log_path = PROJECT_ROOT / lp["path"]

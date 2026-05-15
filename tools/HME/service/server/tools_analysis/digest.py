@@ -13,8 +13,6 @@ logger = logging.getLogger("HME")
 from . import _load_trace as _load_trace_impl  # shared helper
 
 # Files written by every pipeline run -- used to detect freshness.
-# pipeline.log is written LAST (the "Pipeline finished" line), so it detects completion
-# even when digest was called mid-run and already consumed the early metrics files.
 _METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(ctx.PROJECT_ROOT, "output", "metrics"))
 _PIPELINE_OUTPUT_FILES = [
     os.path.join(_METRICS_DIR, "trace.jsonl"),
@@ -69,8 +67,6 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     _track("pipeline_digest")
 
     # In-progress guard: reject if pipeline is still running.
-    # Partial output files written mid-pipeline pass the freshness check below,
-    # so this must come FIRST to prevent digesting incomplete data.
     status = check_pipeline()
     if "IN PROGRESS" in status:
         return (
@@ -326,11 +322,10 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
             out.append("## Musical Critique")
             out.append(_compose_critique())
         except Exception as e:
+            # silent-ok: optional fallback path.
             out.append(f"## Musical Critique\n*(unavailable: {e})*")
 
-    #  Inline evolution suggestions (default on)
-    # Cap total digest output at ~8000 chars (~2000 tokens) to limit Claude context spend.
-    # If budget remains after composition arc/delta, include evolution; else skip with note.
+    # Inline evolution suggestions (default on)
     _DIGEST_CHAR_CAP = 8000
     _current_len = sum(len(s) for s in out)
     if evolve:

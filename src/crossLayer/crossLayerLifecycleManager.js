@@ -3,8 +3,6 @@
 // here so they participate in scoped resets automatically.
 
 // timeStream registration as a declared module (full DI -- the registrant
-// itself is a declared module that depends on crossLayerRegistry and
-// timeStream, runs in topo order after both are bound).
 moduleLifecycle.declare({
   name: 'timeStreamCrosslayerRegistration',
   subsystem: 'crossLayer',

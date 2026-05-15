@@ -21,9 +21,6 @@ const path = require('path');
 const fs = require('fs');
 
 // Several specs (metaprofile fixtures, src/index DI graph) read
-// process.env.PROJECT_ROOT to locate config/. Anchor it to the repo root
-// derived from this file's path so the suite is hermetic -- no caller
-// needs to export PROJECT_ROOT manually.
 if (!process.env.PROJECT_ROOT) {
   process.env.PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 }
@@ -40,9 +37,6 @@ if (files.length === 0) {
 }
 
 // Tripwire against test-stub global pollution. Watches a known stub-prone
-// key list (full globalThis would catch ~500 src/index DI registrations).
-// Baseline captured AFTER src/utils load so real `validator` is in snapshot;
-// stubs that don't restore = fires.
 const _STUB_PRONE_KEYS = [
   'validator',
   'rf',

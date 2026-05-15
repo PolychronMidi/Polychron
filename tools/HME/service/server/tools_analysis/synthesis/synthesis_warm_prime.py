@@ -23,10 +23,6 @@ from ..warm_disk import (
 from ..warm_persona import _MAX_PERSONA_CHARS, _gpu_persona  # noqa: F401
 
 # synthesis_warm imports US at line 245 -- top-level back-import would
-# partial-load. Bodies that reference bare-name `_priming_in_progress` /
-# `_reprime_lock` / `_warm_ctx_fresh_p` resolve via the live module at
-# call time. Use module-attribute access in the function bodies below
-# rather than top-level rebinding.
 def _warm_ctx_fresh_p(model):
     from . import synthesis_warm as _sw; return _sw._warm_ctx_fresh_p(model)
 
@@ -34,12 +30,6 @@ logger = logging.getLogger("HME")
 
 
 # Pattern D fix (peer-review iter 131): the prior "is this warm cache
-# fresh" check compared `_warm_ctx_kb_ver.get(model)` against the
-# shared mutable attribute `ctx._kb_version`. The attribute had no
-# fencing, no monotonic-advance guarantee, and a `reload-engines` reset
-# to 0 silently re-keyed every cache as "fresh." Replace with a
-# file-mtime check against the actual KB Lance store so freshness is
-# anchored to filesystem truth rather than a process-local int.
 
 
 def _schedule_reprime_async(delay: float = 5.0):
@@ -75,8 +65,6 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
     kb_ver = getattr(ctx, "_kb_version", 0)
     if not force:
         # Pattern D: file-mtime check rather than kb_ver attribute
-        # equality. Catches drift the attribute can miss (engine
-        # reload, attribute reset).
         if _warm_ctx_fresh_p(model):
             logger.debug(f"warm ctx already fresh: {model} (kb_ver={kb_ver})")
             return True
@@ -110,9 +98,6 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
         logger.info(f"warm ctx priming CANCELLED: {model} -- {cause} ({len(persona)} char persona)")
         return False
     # A text response proves llama-server primed its cache_prompt KV.
-    # llama-server doesn't expose a context[] array, so we store an
-    # approximate token count derived from the persona length (~=4 chars/token).
-    # This keeps warm_context_status reporting honest.
     if text_result is not None:
         approx_tokens = max(1, len(persona) // 4)
         _warm_ctx[model] = [0] * approx_tokens
@@ -213,6 +198,7 @@ def _init_local_models() -> str:
                     )
                     failures += 1
         except Exception as e:
+            # silent-ok: optional fallback path.
             results[model] = f"FAILED: {type(e).__name__}: {e}"
             ctx.register_critical_failure(
                 f"model_init({model})",

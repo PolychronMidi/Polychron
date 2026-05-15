@@ -33,45 +33,30 @@ crossModulateRhythms = () => {
   (beatRhythm[beatIndex]<1?rf(.4,.5)*s:0) + (divRhythm[divIndex]<1?rf(.3,.4)*s:0) + (subdivRhythm[subdivIndex]<1?rf(.2,.3)*s:0);
 
   // Texture feedback (#2): texture contrast events inflate crossMod -
-  // wider dynamismEngine flicker - shifted textureBlender probabilities -
-  // self-modulating density wave that no single system controls
   const texIntensity = drumTextureCoupler.getIntensity();
   if (Number.isFinite(texIntensity) && texIntensity > 0) {
     crossModulation += texIntensity * rf(0.3, 0.8) * cmScale.textureBoostScale;
   }
 
   // R35 E5 -> R98 E1: Bell-curve cross-mod concentration at compositional midpoint.
-  // Replaces monotonic ramp with bell curve peaking at midpoint, concentrating
-  // rhythmic energy where tension arc should peak.
   const sectionProg = clamp(timeStream.compoundProgress('section'), 0, 1);
   // R99 E5 -> R1 E1: Boundary floor reduced 0.15->0.08. The 0.15 floor
-  // diluted bell-curve contrast, regressing tension arc peak -17% (0.846->0.703).
-  // 0.08 keeps light boundary energy without killing midpoint concentration.
   const midpointFocus = m.max(0.08, m.exp(-m.pow((sectionProg - 0.5) * 2.5, 2)));
   crossModulation += midpointFocus * rf(0.2, 0.6) * rs;
 
-  // R68 E3: Regime-responsive cross-modulation scaling.
-  // Coherent regimes get tighter rhythmic texture (less cross-mod variance).
-  // Evolving regimes get wilder rhythmic interaction (more cross-mod).
-  // This is the rhythm subsystem's first regime-aware behavior.
+  // Regime-responsive cross-modulation scaling.
   const profSnap = systemDynamicsProfiler.getSnapshot();
   if (profSnap && profSnap.regime) {
     if (profSnap.regime === 'coherent') {
       crossModulation *= 0.85;
     } else if (profSnap.regime === 'evolving') {
-      // R94 E5: Evolving cross-mod 1.20->1.30. Evolving starved at 7.5%.
-      // Stronger rhythmic contrast during evolving passages makes them
-      // more musically distinct, improving regime perceptibility.
+      // Evolving cross-mod 1.20->1.30. Evolving starved at 7.5%.
       crossModulation *= 1.30;
     } else if (profSnap.regime === 'exploring') {
-      // R89 E4: Exploring rhythmic cross-mod boost. Exploring is 36% of
-      // beats but had no rhythmic regime response. Mild boost increases
-      // polyrhythmic variety during exploratory passages.
+      // Exploring rhythmic cross-mod boost. Exploring is 36% of
       crossModulation *= 1.15;
     }
-    // R38: regime exit forecast -- velocity trend predicts transitions 4 beats early.
-    // Rising velocity in coherent = exit coming -> boost crossMod (anticipatory energy).
-    // Falling velocity in exploring = settlement approaching -> reduce crossMod.
+    // regime exit forecast -- velocity trend predicts transitions 4 beats early.
     const exitVelocity = typeof profSnap.velocity === 'number' ? profSnap.velocity : 0;
     if (profSnap.regime === 'coherent' && exitVelocity > 0.02) {
       crossModulation *= 1.0 + clamp(exitVelocity * 4, 0, 0.25);
@@ -80,11 +65,7 @@ crossModulateRhythms = () => {
     }
   }
 
-  // R41 E3: Phase coupling awareness. When phase coupling coverage is sparse,
-  // boost cross-modulation to increase polyrhythmic energy flowing to phase
-  // pairs. Phase is consistently the weakest axis (0.123-0.135 share). Richer
-  // cross-modulation creates more opportunities for inter-layer phase
-  // interactions to register as meaningful coupling events.
+  // Phase coupling awareness. When phase coupling coverage is sparse,
   if (profSnap && typeof profSnap.phaseCouplingCoverage === 'number') {
     const phaseCov = profSnap.phaseCouplingCoverage;
     if (phaseCov < 0.6) {
@@ -93,16 +74,12 @@ crossModulateRhythms = () => {
     }
   }
 
-  // R17 E3: Composition-progress rhythmic arc. Opening gets tighter
-  // texture, building/climax gets more complex, coda settles. Bell curve
-  // centered at 0.55 (slightly past midpoint) parallels the tension arch.
+  // Composition-progress rhythmic arc. Opening gets tighter
   const compositionProg = clamp(timeStream.compoundProgress('section'), 0, 1);
   const rhythmicArc = 0.92 + 0.18 * m.exp(-m.pow((compositionProg - 0.55) * 2.2, 2));
   crossModulation *= rhythmicArc;
 
   // R31 lab: harmonic-rhythm awareness. Fast chord changes = tighter crossMod,
-  // sustained harmony = looser. Relationship occasionally inverts (20% chance)
-  // for unpredictability, and scale is jittered via fuzzyClamp.
   {
     const harmEntry = L0.getLast(L0_CHANNELS.harmonic, { layer: 'both' });
     if (harmEntry && Number.isFinite(harmEntry.timestamp)) {
@@ -117,10 +94,7 @@ crossModulateRhythms = () => {
     }
   }
 
-  // R49: Rhythmic contagion port (firewall port #9).
-  // Reads emergentDownbeat + stutterContagion L0 channels to create rhythmic
-  // dancing around cross-layer events. Downbeat proximity -> micro-breathing
-  // (build->spike->dip). Stutter contagion -> boosted rhythmic variance.
+  // Rhythmic contagion port (firewall port #9).
   {
     let portContribution = 0;
     const recentDownbeat = L0.getLast(L0_CHANNELS.emergentDownbeat, { layer: 'both' });
@@ -158,10 +132,7 @@ crossModulateRhythms = () => {
     contagionContribution = portContribution;
   }
 
-  // R50: Emergent rhythm grid modulation. When emergentRhythmEngine detects
-  // dense cross-layer activity, its complexity shapes crossMod character:
-  // high complexity = looser (syncopated passages need room),
-  // high density + low complexity = tighter (driving passages want cohesion).
+  // Emergent rhythm grid modulation. When emergentRhythmEngine detects
   {
     const emergent = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     if (emergent && Number.isFinite(emergent.density) && emergent.density > 0.05) {
@@ -175,9 +146,7 @@ crossModulateRhythms = () => {
     }
   }
 
-  // R55: emergentMelody contour-rhythm coupling. Rising contour -> more cross-mod
-  // energy (layers diverging upward). Contrary counterpoint -> less cross-mod
-  // (preserve independence). Stale intervals -> slight boost (explore more).
+  // emergentMelody contour-rhythm coupling. Rising contour -> more cross-mod
   {
     const melody = L0.getLast(L0_CHANNELS.emergentMelody, { layer: 'both' });
     if (melody) {
@@ -192,16 +161,6 @@ crossModulateRhythms = () => {
   }
 
   // E19: HyperMeta crossModulation suppression. Multiplier on crossModulation
-  // during E11 sparse windows. 1.0 = neutral (default from getRateMultiplier),
-  // <1.0 = max suppression depth (from hyperMetaManager EMA ramp).
-  // Proportional correction: suppression scales with how far crossModulation
-  // exceeds a neutral midpoint (~4.0). Low crossMod = little or no suppression;
-  // high crossMod = full suppression depth applied. This prevents over-suppression
-  // on already-quiet beats while still reining in runaway values.
-  // suppressFraction: 0 at crossMod <= 4.0, 1.0 at crossMod >= 8.0.
-  // E19 is skipped during exploring: E13 gives exploring a 1.0 ceiling (no sparse
-  // suppression), so crossMod suppression here would be inconsistent. Also prevents
-  // EMA ramp tail from bleeding into exploring passages after a coherent sparse window.
   const e19Regime = (() => {
     const sn = systemDynamicsProfiler.getSnapshot();
     return sn ? sn.regime : '';

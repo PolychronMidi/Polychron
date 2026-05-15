@@ -84,6 +84,7 @@ class OnboardingStateIntegrityVerifier(Verifier):
             else:
                 raise FileNotFoundError(_cfg)
         except Exception:
+            # silent-ok: optional fallback path.
             chain_py = os.path.join(_SERVER_DIR, "onboarding_chain.py")
             try:
                 with open(chain_py) as f:

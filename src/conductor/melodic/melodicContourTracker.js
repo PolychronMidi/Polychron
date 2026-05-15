@@ -1,8 +1,5 @@
-// src/conductor/melodic/melodicContourTracker.js - Tracks pitch trajectory across recent notes.
 // Reads L0 to compute phrase-scale contour shape (rising/falling/arching/static).
-// Also provides melodic directionality analysis (ascending/descending bias) - merged from
 // MelodicDirectionalityTracker.
-// Pure query API - no events emitted; polled by globalConductor and motifTransformAdvisor.
 
 moduleLifecycle.declare({
   name: 'melodicContourTracker',
@@ -96,7 +93,6 @@ moduleLifecycle.declare({
     return melodicContourTrackerComputeContour(analysisHelpers.extractMidiArray(notes, 60));
   }
 
-  // Beat-level cache: getDirectionalitySignal is called 2x per beat (densityBias + stateProvider)
   const melodicContourTrackerDirCache = beatCache.create(() => melodicContourTrackerGetDirectionalitySignal());
 
   // Directionality analysis (merged from MelodicDirectionalityTracker)
@@ -162,11 +158,7 @@ moduleLifecycle.declare({
     currentContour = { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
   }
 
-  // R13 E4: Flicker bias from melodic contour direction. Ascending
-  // melodies inject flicker boost (1.06) -- upward motion pairs with
-  // timbral brightness. Descending melodies reduce flicker (0.96) --
-  // downward motion with timbral warmth/smoothness. Static melodies
-  // get mild boost (1.03) to prevent timbral monotony.
+  // Flicker bias from melodic contour direction. Ascending
   function getDirectionalityFlickerBias() {
     const sig = getDirectionalitySignal();
     if (sig.direction === 'ascending') return 1.06;

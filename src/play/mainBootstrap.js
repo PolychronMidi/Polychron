@@ -1,4 +1,3 @@
-// mainBootstrap.js - Bootstrap validation helpers and MAIN_LOOP_CONTROLS parsing for main.js
 
 moduleLifecycle.declare({
   name: 'mainBootstrap',
@@ -91,14 +90,10 @@ moduleLifecycle.declare({
   /** Verify all required globals exist before main loop starts. */
   function assertBootstrapGlobals() {
     // -- Phase 1: Verify every name in fullBootstrap.VALIDATED_GLOBALS exists --
-    // This is the ONE place typeof probes are legitimate - proving globals exist
-    // so that no other file needs to. The ESLint rule exempts this file.
     const validated = fullBootstrap.getValidatedGlobalsList();
     const missing = [];
     /* eslint-disable no-restricted-globals,no-restricted-syntax */
     for (const name of validated) {
-      // typeof is the only safe way to check existence of a potentially undeclared identifier
-      // eslint requires we use eval-free indirect access via globalThis for dynamic names
       if (typeof globalThis[name] === 'undefined') {
         missing.push(name);
       }
@@ -210,10 +205,6 @@ moduleLifecycle.declare({
     // -- Phase 4: Verify initializer methods --
     /** @type {[string, any][]} */
     // Legacy initializer-method check: only modules that still use the
-    // `name = (() => {...})()` IIFE + registerInitializer pattern need
-    // `.initialize()` on their API. Modules migrated to the registry
-    // handle init via moduleLifecycle (no exposed initialize method); they
-    // are verified by the registry topo-sort + assertBootstrapGlobals.
     const requiredInitializers = [
     ];
     requiredInitializers.forEach(([name, obj]) => {
@@ -224,10 +215,6 @@ moduleLifecycle.declare({
     beatPipelineDescriptor.assertTopologicalOrder();
 
     // -- Phase 6: moved to assertRegistryPopulation()
-    // Registry counts are now verified later in the boot sequence after
-    // conductorIntelligence.initialize() and cross-layer reset. The original
-    // checks were firing too early when modules register during initialization
-    // or under minimal/test builds. See assertRegistryPopulation() below.
   }
 
   /**

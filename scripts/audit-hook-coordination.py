@@ -140,7 +140,6 @@ def _detect_cycle(g: dict[str, set[str]]) -> list[str] | None:
         color[u] = GRAY
         for v in sorted(g.get(u, set())):
             if color[v] == GRAY:
-                # back-edge: reconstruct cycle u->...->v->u
                 cycle = [v, u]
                 p = parent[u]
                 while p and p != v:

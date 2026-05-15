@@ -56,8 +56,6 @@ def _is_indexable(abs_path: str) -> str | None:
             return f"exceeds max file size ({get_max_file_size()} bytes)"
     except OSError as _size_err:
         # File was path-valid but stat failed. Without size-check, a
-        # downstream read may pull a huge file into memory and OOM.
-        # Treat as an error and let the caller handle absence explicitly.
         logger.error(f"size probe FAILED for {abs_path} -- downstream read may OOM: {type(_size_err).__name__}: {_size_err}")
         return f"size probe failed: {type(_size_err).__name__}"
 
@@ -82,10 +80,6 @@ def _reindex_files(files: list[str]) -> dict:
     indexed = []
     skipped = []
     # Budget: generous caps for batched reindex calls using bge-code-v1 fp16,
-    # which is 10x slower per chunk than the previous jina-v2-base-code.
-    # Big conductor files (20-30KB with many chunks) need ~20-40s each;
-    # the old 15s cap was causing timeout spam during v7 migration.
-    # Callers set HTTP timeout >= RAG_REINDEX_BUDGET_S + a few seconds.
     import time as _time
     _budget = ENV.optional_int("RAG_REINDEX_BUDGET_S", 180)
     _per_file = ENV.optional_int("RAG_REINDEX_PER_FILE_CAP_S", 60)
@@ -102,14 +96,12 @@ def _reindex_files(files: list[str]) -> dict:
             if not abs_path.startswith(os.path.realpath(PROJECT_ROOT) + os.sep):
                 skipped.append(filepath)
                 continue
-            # Enforce file_walker indexing rules -- reject anything walk_code_files wouldn't find
             reject = _is_indexable(abs_path)
             if reject:
                 logger.info(f"reindex: rejected {filepath} ({reject})")
                 skipped.append(filepath)
                 continue
             if not os.path.exists(abs_path):
-                # Try finding file by basename under PROJECT_ROOT (handles wrong intermediate dirs)
                 basename = os.path.basename(abs_path)
                 found = None
                 _skip = {".git", "node_modules", "__pycache__", "venv", ".venv", "out", "lab"}
@@ -134,18 +126,11 @@ def _reindex_files(files: list[str]) -> dict:
                     skipped.append(filepath)
                     continue
             # Size gate: 128 KB default. Bigger than the old 32 KB so
-            # medium conductor files (20-30 KB) get indexed, but small
-            # enough to exclude the lone polyrhythmPairs.js outlier
-            # (371 KB, 5249 lines of table data).
             _size_gate = ENV.optional_int("RAG_REINDEX_SIZE_GATE_BYTES", 131072)
             if os.path.getsize(abs_path) > _size_gate:
                 skipped.append(filepath)
                 continue
             # Content gate: skip files with auto-generated markers at top.
-            # These are lookup tables / bootstrap code that pollute semantic
-            # search -- the embedder clusters them because they look similar
-            # to each other. Detect via "AUTO-GENERATED" or "GENERATED FILE
-            # - DO NOT EDIT" in the first 5 lines of the file.
             try:
                 with open(abs_path, encoding="utf-8", errors="ignore") as _af:
                     _header = "".join(_af.readline() for _ in range(5))
@@ -166,6 +151,7 @@ def _reindex_files(files: list[str]) -> dict:
                 _log_error("reindex", f"timeout indexing {filepath} ({per_file_timeout:.0f}s)")
                 skipped.append(filepath)
             except Exception as e:
+                # silent-ok: optional fallback path.
                 _log_error("reindex", f"index_file failed for {filepath}: {e}")
                 skipped.append(filepath)
     result = {"indexed": indexed, "count": len(indexed)}
@@ -225,7 +211,6 @@ def _validate(query: str) -> dict:
     if _project_engine is None:
         return {"warnings": [], "blocks": [], "error": "engines not ready"}
 
-    # Search for anti-patterns, bugfixes, and architectural constraints related to the query
     hits = _project_engine.search_knowledge(query, top_k=8)
 
     warnings = []

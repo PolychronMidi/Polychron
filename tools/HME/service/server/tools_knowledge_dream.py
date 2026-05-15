@@ -31,7 +31,6 @@ def memory_dream() -> str:
         for j in range(i + 1, len(rows)):
             sim = float(np.dot(vecs[i], vecs[j]) / (np.linalg.norm(vecs[i]) * np.linalg.norm(vecs[j]) + 1e-10))
             if sim > 0.35:
-                # Related-to links stored as tags in format "relation_type:entry_id" or bare "entry_id"
                 tags_i = rows[i].get("tags", [])
                 tags_j = rows[j].get("tags", [])
                 if isinstance(tags_i, str): tags_i = [tags_i]
@@ -55,10 +54,6 @@ def memory_dream() -> str:
         parts.append("")
 
     # Adaptive synthesis: run on a background thread with a hard timeout so
-    # the discoveries always return quickly even when the local coder model
-    # is unreachable. Previously the synchronous call blocked the entire
-    # dream output for the full 60s llama.cpp timeout when the coder was
-    # down -- users waited for a result that never came.
     if top_pairs:
         try:
             from server.tools_analysis import think_local_or_claude as _think_local_or_claude
@@ -74,9 +69,6 @@ def memory_dream() -> str:
                 "Are any of these connections surprising given the codebase design?"
             )
             # ThreadPoolExecutor.__exit__ blocks on shutdown(wait=True) even
-            # after our future timed out -- which defeats the entire purpose of
-            # the timeout. Submit then shut down immediately with wait=False
-            # so the hung future is abandoned cleanly.
             _ex = _cf.ThreadPoolExecutor(max_workers=1)
             _fut = _ex.submit(_think_local_or_claude, user_text)
             try:
@@ -105,8 +97,6 @@ def knowledge_graph(query: str) -> str:
     ctx.ensure_ready_sync()
     results = ctx.project_engine.search_knowledge(query, top_k=8)
     # Drop cross-encoder-clamped zero-score seeds: they're not meaningfully
-    # relevant to the query and only expand noise through spreading activation.
-    # Mirrors search_knowledge's min-score filter.
     results = [r for r in results
                if (_s := r.get("score")) is not None and _s > 0]
     if not results:
@@ -120,7 +110,6 @@ def knowledge_graph(query: str) -> str:
         if isinstance(tags, str):
             tags = [t.strip() for t in tags.split(",") if t.strip()]
         for tag in tags:
-            # Extract linked entry IDs from typed relationships (e.g., "caused_by:abc123")
             linked_id = tag.split(":")[-1] if ":" in tag else tag
             if len(linked_id) >= 8 and linked_id in all_entries and linked_id not in seen_ids:
                 activated.append(all_entries[linked_id])

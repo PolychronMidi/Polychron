@@ -61,7 +61,6 @@ moduleLifecycle.declare({
 
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       timeStream.setPosition('measure', measureIndex);
-      // No active listeners - emitted for eventCatalog completeness and future extensibility
       eventBus.emit(eventCatalog.names.MEASURE_BOUNDARY, { measureIndex, measuresPerPhrase, layer: layerId });
       measureCount++;
       selectLayerComposerForMeasure(layerId, phraseFamily, composerCtx);
@@ -78,9 +77,6 @@ moduleLifecycle.declare({
       const layerPassMeasureWallStart = Date.now();
 
       // Conductor update is expensive (~147 function calls). The EMA smoothing
-      // on density/tension/flicker means beat-to-beat resolution adds minimal
-      // information. Compute once per measure on beat 0 and reuse for the rest.
-      // Cross-layer modules in processBeat still modulate probabilities per beat.
       let measureConductorCtx = null;
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {

@@ -28,14 +28,7 @@ moduleLifecycle.declare({
     state.lastWarmupTicks = axisEnergyEquilibratorHelpers.getWarmupTicks(config.WARMUP_DEFAULT);
     if (state.beatCount < state.lastWarmupTicks) return null;
 
-    // R5 E1: Progressive giniMult. Continuous ramp replacing dead binary threshold.
-    // R7 E2: Steeper ramp (0.06/0.20 vs 0.08/0.25). Engages earlier and
-    // ramps faster to combat Gini regression (0.0906->0.112 in R6).
-    // R18 E1: Strengthened from 0.06/0.20/0.7 to 0.04/0.16/0.95. Density
-    // share surged to 0.213 (+31%) in R17 while entropy dropped to 0.123.
-    // Stronger giniMult makes axis equilibration ~2x faster at Gini 0.10,
-    // tightening dominant axes and relaxing suppressed ones more aggressively.
-    // At Gini 0.10: old 1.14, new 1.36. At Gini 0.15: old 1.31, new 1.65.
+    // Progressive giniMult. Continuous ramp replacing dead binary threshold.
     const giniMult = 1.0 + clamp((axisGini - 0.04) / 0.16, 0, 1) * 0.95;
     const homeostasisState = couplingHomeostasis.getState();
     const recoveryAxisHandOffPressure = V.optionalFinite(homeostasisState && homeostasisState.recoveryAxisHandOffPressure, 0);

@@ -34,9 +34,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
         exposition: 'default',
         development: 'default',
         climax: 'explosive',
-        // R71 E4: Reverted to atmospheric (was explosive in R70 E6).
-        // Tests R70 E4 phaseVarianceGateScale 0.12 and gives same-profile
-        // .prev comparison against R69 atmospheric.
+        // Reverted to atmospheric (was explosive in R70 E6).
         resolution: 'atmospheric',
         conclusion: 'atmospheric',
         coda: 'minimal'
@@ -171,11 +169,6 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
     }
 
     // Metaprofile/conductor pairing: when the active metaprofile expresses
-    // an explicit affinity / antipathy for conductor profiles, honor it.
-    // Affinity beats default phase mapping; antipathy redirects to a
-    // preferred fallback. metaProfiles is a boot-validated global -- this
-    // function only runs from main.js's section loop, post-boot, so direct
-    // reads are safe (no safePreBoot wrap needed).
     const _metaActive = metaProfiles.getActive();
     const _metaAff = _metaActive ? _metaActive.conductorAffinity : null;
     const metaPreferred = Array.isArray(_metaAff) && _metaAff.length > 0 ? _metaAff[0] : null;

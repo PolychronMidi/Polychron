@@ -51,10 +51,6 @@ def scan_file(path: Path) -> list[str]:
         return violations
     lines = text.splitlines()
     # Walk line-by-line looking for jq -n invocations that span one or more
-    # continuation lines (bash backslash-continuation or embedded `\n` in
-    # a single-line heredoc pattern). Terminate each block when we see a
-    # line that ENDS in `}'` / `}"` (the trailing jq JSON close) OR the
-    # statement appears complete on one line.
     i = 0
     while i < len(lines):
         ln = lines[i]

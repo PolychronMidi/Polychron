@@ -15,9 +15,7 @@ moduleLifecycle.declare({
   const timeStream = deps.timeStream;
   const V = deps.validator.create('articulationComplement');
   const WINDOW_SIZE = 16;
-  // R73 E4: Section-progressive contrast. Base 0.5 grows to 0.8 across
-  // sections via sectionRoute, creating stronger articulation contrast
-  // in mid/late sections for richer coupling texture variety.
+  // Section-progressive contrast. Base 0.5 grows to 0.8 across
   const CONTRAST_BASE = 0.5;
   const CONTRAST_GROWTH = 0.3;
 
@@ -88,17 +86,12 @@ moduleLifecycle.declare({
     const sectionRoute = sectionBounds > 1 ? sectionPos / (sectionBounds - 1) : 0;
     const contrastStrength = CONTRAST_BASE + m.sin(clamp(sectionRoute, 0, 1) * m.PI) * CONTRAST_GROWTH;
 
-    // R92 E4: Regime-responsive articulation contrast. Exploring passages
-    // benefit from stronger staccato/legato separation (more contrast = more
-    // textural variety and coupling dimension activity). Coherent passages
-    // get subtler contrast for unified articulation. Creates regime-specific
-    // articulation character that enriches coupling texture diversity.
+    // Regime-responsive articulation contrast. Exploring passages
     const artRegime = conductorSignalBridge.getSignals().regime || 'evolving';
     const regimeContrast = artRegime === 'exploring' ? 1.25
       : artRegime === 'coherent' ? 0.80
       : 1.0;
     const melodicCtxAC = emergentMelodicEngine.getContext();
-    // directionBias float (-1=descending->sharper, +1=ascending->softer): continuous layer under contourShape's categorical +/-15%.
     const melodicContrastScale = melodicCtxAC
       ? (melodicCtxAC.contourShape === 'rising' ? 1.15 : melodicCtxAC.contourShape === 'falling' ? 0.85 : 1.0)
       * (melodicCtxAC.counterpoint === 'contrary' ? 1.20 : 1.0)
@@ -111,7 +104,6 @@ moduleLifecycle.declare({
     const rhythmContrastMod = 1.0 + rhythmDensityAC * 0.15; // [1.0-1.15] dense->sharper
     const effectiveContrast = contrastStrength * regimeContrast * (1.5 - cimScale) * melodicContrastScale * rhythmContrastMod;
 
-    // Check role swap state via L0 channel (phrase-boundary stable, so getLast is equivalent to getIsSwapped)
     const swapped = L0.getLast(L0_CHANNELS.swapDecision)?.swapped ?? false;
 
     // Entropy-aware articulation: high entropy favors staccato for rhythmic clarity

@@ -32,6 +32,7 @@ function loadEnv(envPath, opts) {
     }
     return { loaded, skipped, error: null };
   } catch (e) {
+    // silent-ok: optional fallback path.
     return { loaded: 0, skipped: 0, error: e };
   }
 }

@@ -40,9 +40,6 @@ from .synthesis_inference import (  # noqa: F401
     _read_module_source, _local_chat, _local_think_with_system, _reasoning_think,
 )
 from .synthesis_cascade import synthesize, dual_gpu_consensus  # noqa: F401
-# Late-binding proxies: survive hot-reload of underlying modules without stale references.
-# _local_think and compress_for_claude live in synthesis_inference.py after the split;
-# synthesis_llamacpp now only holds model constants, URLs, locks, and the circuit breaker.
 from . import synthesis_inference as _so_inf
 from . import synthesis_llamacpp as _so
 
@@ -67,7 +64,6 @@ def extract_diff_symbols(*args, **kwargs):
     """Late-bound re-export of synthesis_inference.extract_diff_symbols."""
     return _so_inf.extract_diff_symbols(*args, **kwargs)
 # _last_think_failure is a mutable module-level sentinel in synthesis_llamacpp.
-# Must be read via module reference (not re-exported) to get the live value after mutation.
 from . import synthesis_llamacpp as _synthesis_llamacpp_mod  # noqa: F401
 from .synthesis_session import (  # noqa: F401
     store_think_history, get_think_history_context,

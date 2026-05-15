@@ -15,14 +15,7 @@ moduleLifecycle.declare({
   const hyperMetaManager = deps.hyperMetaManager;
   const V = deps.validator.create('restSynchronizer');
   const MIN_REST_INTERVAL_SEC = 0.8;
-  // R73 E5: Regime-responsive base rest probability. Coherent regime
-  // gets more shared rests (breathing room in unified sections),
-  // exploring gets fewer (keeping energy up). Creates density variance
-  // through structurally motivated rest placement.
-  // R74 E5: Moderated base 0.18->0.14 and coherent bonus 0.08->0.05.
-  // R73 showed 24% note count drop after rest sync introduction.
-  // The combined coherent rest probability was 0.26 -- too aggressive
-  // for a system that already has density regulation elsewhere.
+  // Regime-responsive base rest probability. Coherent regime
   const SHARED_REST_BASE = 0.20; // R62: raised from 0.14 for more micro-term atmospheric pockets
   const SHARED_REST_COHERENT_BONUS = 0.05;
   const SHARED_REST_EXPLORING_PENALTY = 0.06;
@@ -85,12 +78,7 @@ moduleLifecycle.declare({
     const regimeBonus = regime === 'coherent' ? SHARED_REST_COHERENT_BONUS
       : regime === 'exploring' ? -SHARED_REST_EXPLORING_PENALTY
       : 0;
-    // R93 E3: Conductor density interaction. Real-time conductor density
-    // (0.3-0.7 range) drives rest probability: higher density increases
-    // rest likelihood, creating natural breathing room in dense passages.
-    // This is a negative-feedback path: density -> rests -> effective density
-    // reduction. Contributes to density-trust decorrelation since rest
-    // events affect trust payoffs independently of flicker behavior.
+    // Conductor density interaction. Real-time conductor density
     const conductorSigs = conductorSignalBridge.getSignals();
     const conductorDensity = V.optionalFinite(conductorSigs.density, 1.0);
     // densityProduct is a multiplicative modifier centered around 1.0 (range ~0.5-1.8).
@@ -99,11 +87,7 @@ moduleLifecycle.declare({
     // E11: Boost rest probability during structural sparse windows
     const e11RestBoost = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e11RestBoost'));
     // E23: Rest pressure boost under exceedance. When system is stressed,
-    // gently increase rest probability to decompress density naturally.
-    // Multiplier on base probability only (not on urgency or phase bonus)
-    // to avoid compounding with other pressure signals.
     const e23RestBoost = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e23RestPressureBoost'));
-    // Coherence-aware rest boost: poor coherence (bias far from 1.0) increases rest value
     const coherenceEntry = L0.getLast(L0_CHANNELS.coherence, { layer: 'both' });
     const coherenceDeviation = coherenceEntry ? m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) : 0;
     const coherenceRestBoost = clamp(coherenceDeviation * 0.15, 0, 0.06);
@@ -117,23 +101,18 @@ moduleLifecycle.declare({
     const legatoSuppression = otherSustain > 0.7 ? -0.03 : 0;
     // CIM coordination scale: high = more shared rests, low = independent rest timing
     const cimScale = 0.5 + coordinationScale;
-    // Melodic-driven rest probability: falling contour + high thematic density -> atmospheric pockets
     const melodicCtxRest = emergentMelodicEngine.getContext();
     const melodicRestMult = melodicCtxRest
       ? (melodicCtxRest.contourShape === 'falling' ? 1.28 : melodicCtxRest.contourShape === 'rising' ? 0.80 : 1.0)
         * (1.0 + clamp(melodicCtxRest.thematicDensity, 0, 1) * 0.22)
       : 1.0;
-    // R77: ascendRatio antagonism bridge -- ascending energy suppresses synchronized breathing
     const ascendSuppressRS = melodicCtxRest && melodicCtxRest.ascendRatio > 0.55
       ? clamp((melodicCtxRest.ascendRatio - 0.55) * 0.22, 0, 0.10)
       : 0;
-    // R77 E10: hotspots suppress rest -- rhythmic burst moments defer coordinated breathing
+    // hotspots suppress rest -- rhythmic burst moments defer coordinated breathing
     const rhythmEntryRS = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const hotspotsRS = rhythmEntryRS && Array.isArray(rhythmEntryRS.hotspots) ? rhythmEntryRS.hotspots.length : 0;
     const hotspotRestSuppressRS = clamp(hotspotsRS / 16, 0, 1) * 0.08;
-    // R79 E5: densitySurprise antagonism bridge with stutterContagion -- surprising rhythmic events
-    // suppress synchronized rests (don't breathe during chaos bursts). Counterpart: stutterContagion
-    // amplifies contagion on same signal. Together: surprise = more chaos, no rest escape valve.
     const densitySurpriseRS = rhythmEntryRS && Number.isFinite(rhythmEntryRS.densitySurprise) ? rhythmEntryRS.densitySurprise : 1.0;
     const surpriseSuppressRS = densitySurpriseRS > 1.1 ? clamp((densitySurpriseRS - 1.0) * 0.08, 0, 0.06) : 0;
     const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost + harmonicRestBoost + legatoSuppression - ascendSuppressRS - hotspotRestSuppressRS - surpriseSuppressRS) * (1 + restUrgency) * e11RestBoost * cimScale * melodicRestMult;
@@ -172,8 +151,6 @@ moduleLifecycle.declare({
     const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
 
     // Lab R5: density-aware fill suppression. When conductor density is low
-    // (sparse/minimal contexts), complementary fill undermines intentional
-    // sparsity. Scale urgency by density so ultra-sparse textures stay sparse.
     const conductorSigs = conductorSignalBridge.getSignals();
     const density = V.optionalFinite(conductorSigs.density, 1.0);
     const densityGate = clamp(density, 0.15, 1.0);

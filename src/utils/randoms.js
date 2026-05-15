@@ -1,4 +1,3 @@
-// randoms.js - Random number generation utilities with inclusive ranges and weighted selections.
 //
 // Deterministic mode: pass --seed <N> on the CLI to replace m.random with
 // a seeded mulberry32 PRNG. Every run with the same seed produces identical output.

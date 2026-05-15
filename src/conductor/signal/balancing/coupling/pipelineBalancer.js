@@ -74,8 +74,6 @@ moduleLifecycle.declare({
   }
 
   // Tension homeostasis via closedLoopController
-  // When tension product diverges from neutral (1.0) by more than the deadband,
-  // nudge it back. Gain = TENSION_LIFT / 0.5 = 0.28 matches the original scaling.
   const pipelineBalancerTensionCtrl = closedLoopController.create({
     name: 'pipelineBalancer.tension',
     observe: () => signalReader.tension(),

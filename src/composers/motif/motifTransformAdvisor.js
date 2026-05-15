@@ -1,4 +1,3 @@
-// src/composers/motif/motifTransformAdvisor.js - Advises motifChain.mutate() on transforms.
 // Uses contour, coherence, section phase, and excursion to select contextually
 // appropriate motif transformations. Pure query API.
 
@@ -47,10 +46,7 @@ moduleLifecycle.declare({
         allowAugment = false;
         break;
       case 'development':
-        // R18 E3: Wider development exploration. Expanded transpose from
-        // [-7,7] to [-9,9] and rotate from [-3,3] to [-4,4] for more
-        // dramatic melodic variation during development phases. Added
-        // explicit augmentRange for rhythmic variety.
+        // Wider development exploration. Expanded transpose from
         transposeRange = [-9, 9];
         rotateRange = [-4, 4];
         allowAugment = true;

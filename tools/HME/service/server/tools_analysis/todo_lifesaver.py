@@ -22,8 +22,6 @@ from server.tools_analysis import _track
 logger = logging.getLogger("HME")
 
 # Pull persistence + entry primitives from the parent module. todo.py loads
-# its core definitions BEFORE re-exporting from this sibling, so this
-# import resolves without a cycle.
 from server.tools_analysis.todo import (
     _load_todos, _save_todos, _write_todo_entry, _allocate_id,
     _find_main, _find_any, _check_main_done, _mark_status,
@@ -34,25 +32,11 @@ from server.tools_analysis.todo import (
 
 
 # Lifesaver-todo store-protection knobs. Override via env if the defaults
-# need tuning per deployment. The defaults are conservative -- chosen to
-# keep the open-set under 20 entries and the youngest-stale entry under
-# 24h, which together prevent the runaway-monitor flood that put 35
-# zombie llamacpp_offload_invariant entries in the store before this
-# rule landed (see invariants.json: lifesaver-todo-dedup).
 _LIFESAVER_MAX_OPEN = int(os.environ.get("HME_LIFESAVER_TODO_MAX_OPEN", "20"))
 _LIFESAVER_TTL_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_TTL_SEC", str(24 * 3600)))
 # Prune-after: how long a DONE lifesaver entry stays in the store before
-# being deleted entirely. Once resolved, lifesaver entries have no
-# operational value -- they're not historical lessons (those are KB
-# entries / commits), they're just monitor-loop residue. Default 3 days
-# keeps recent context for debugging while preventing unbounded growth
-# of todos.json + todo-graph.md (the spam vector the user filed).
 _LIFESAVER_PRUNE_AFTER_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_PRUNE_SEC", str(3 * 24 * 3600)))
 # Prune-after for non-lifesaver done todos (native, hme_todo, onboarding, spec).
-# These are agent-/user-driven completions; once done they're history. Keep a
-# bit longer than lifesaver entries since they often have semantic value
-# (closed feature work) but eventually drop them so the store stays lean.
-# Default 7 days. Set HME_DONE_TODO_PRUNE_SEC=0 to disable auto-prune.
 _DONE_TODO_PRUNE_AFTER_SECONDS = int(os.environ.get("HME_DONE_TODO_PRUNE_SEC", str(7 * 24 * 3600)))
 
 
@@ -72,8 +56,6 @@ def _normalize_error_for_dedup(error: str) -> str:
     # Memory sizes: "17342 MB", "22049 MB", "228GB", "1.5 GiB"
     s = re.sub(r"\b\d+(?:\.\d+)?\s*(?:[KMGT]i?B|[KMGT]B)\b", "<SIZE>", s, flags=re.IGNORECASE)
     # Plain large numbers (>= 4 digits) -- covers retry counts, line numbers,
-    # raw byte values, port numbers, timestamps. Smaller numbers stay
-    # because they often distinguish error classes (e.g. HTTP 503 vs 500).
     s = re.sub(r"\b\d{4,}\b", "<NUM>", s)
     # Hex pointers / addresses
     s = re.sub(r"\b0x[0-9a-fA-F]+\b", "<HEX>", s)
@@ -107,9 +89,6 @@ def _enforce_lifesaver_caps(meta: dict, todos: list) -> int:
     now = time.time()
     resolved_count = 0
     # TTL pass. _check_main_done reads `t["done"]` (a mirror of
-    # status == "completed"); BOTH must be set in lockstep or the
-    # subsequent MAX_OPEN re-scan miscounts and resolves entries that
-    # the TTL pass already marked.
     for t in todos:
         if t.get("source") != "lifesaver" or _check_main_done(t):
             continue
@@ -211,11 +190,6 @@ def _prune_done_lifesavers(meta: dict, todos: list) -> int:
             and _check_main_done(t)
         ):
             # Use the EARLIER of (original ts, resolved_ts) as the prune
-            # reference. This makes retroactive cleanup work correctly:
-            # a batch sweep that just marked many old entries done sets
-            # resolved_ts=now, but their original ts (when the failure
-            # actually fired) may be weeks old -- those should prune
-            # immediately, not wait another 3 days.
             ts_orig = float(t.get("ts") or now)
             ts_resolved = float(t.get("resolved_ts") or now)
             ref_ts = min(ts_orig, ts_resolved)
@@ -272,9 +246,6 @@ def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITI
                 and not _check_main_done(existing)
             ):
                 # Prefer dedup_key match (set on entries written under this
-                # dedup regime). Fall back to recomputing the key from the
-                # existing entry's stored severity/source/text for legacy
-                # entries that predate the dedup_key field.
                 existing_key = existing.get("dedup_key")
                 if existing_key is None:
                     # Reconstruct: extract error portion past the
@@ -291,11 +262,6 @@ def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITI
                             break
                 if existing_key == dedup_key:
                     # Match -- increment recurrence and refresh ts. The TTL
-                    # check above ran on the SAVED ts, so a refresh here
-                    # legitimately keeps a chronically-recurring failure
-                    # surfaced as long as it keeps firing. A failure that
-                    # stops firing for 24h ages out via the TTL sweep on
-                    # the next register call.
                     existing["ts"] = time.time()
                     existing["recurrence_count"] = int(existing.get("recurrence_count", 1)) + 1
                     # Backfill dedup_key on legacy entries that lacked one.
@@ -436,16 +402,9 @@ def clear_onboarding_tree() -> None:
 
 
 # Lifesaver-critical items that haven't been touched in this many seconds
-# are considered stale and auto-resolved on the next merge. Rationale:
-# register_todo_from_lifesaver dedupes repeating errors, so a stale entry
-# means the source stopped recurring -- the agent isn't going to act on an
-# alert about a transient GPU OOM from 8 days ago. Without this cleanup,
-# every TodoWrite call re-surfaces a mountain of ancient CRITICAL items.
 _LIFESAVER_STALE_SECONDS = 6 * 3600
 
 # Hard cap on how many critical items render in the merged output. Anything
-# past this is collapsed into a single "+N older critical" summary. Prevents
-# a genuine storm of alerts from drowning the agent's real todos.
 _MAX_CRITICAL_IN_MERGE = 3
 
 

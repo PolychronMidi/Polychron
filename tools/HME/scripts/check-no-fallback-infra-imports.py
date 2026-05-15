@@ -14,6 +14,7 @@ Banned:
     try:
         from hme_env import ENV
     except Exception:
+        # silent-ok: optional fallback path.
         ENV = os.environ  # or any fallback
 
 Allowed:
@@ -32,16 +33,12 @@ from pathlib import Path
 
 
 # Modules whose import is load-bearing infrastructure. Wrapping their
-# import in try/except is banned. Extend this list as more infrastructure
-# modules become indispensable.
 INFRASTRUCTURE_MODULES = frozenset({
     "hme_env",
     "context",
 })
 
 # Submodule imports like `from .synthesis_config import ENV` are banned
-# when the imported NAME is one of these infrastructure-ish identifiers.
-# Catches the exact bug this session had.
 INFRASTRUCTURE_NAMES = frozenset({
     "ENV",
 })
@@ -101,8 +98,6 @@ def scan_file(path: Path) -> list[str]:
         if not catches:
             continue
         # Does any handler contain a "fallback-like" substitute (anything
-        # other than pure `raise` / `raise X` -- logging is fine as long
-        # as it still re-raises)?
         for h in node.handlers:
             reraises = False
             for stmt in ast.walk(h):

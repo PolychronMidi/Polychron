@@ -63,12 +63,7 @@ moduleLifecycle.declare({
    */
   function getChangeThresholdBias() {
     const diag = diagnoseEnergyMatch();
-    // R19 E2: Reversed stalling direction. When harmony stalls during
-    // high energy, the harmonic stasis creates anticipation and tension
-    // (repeated chords become insistent). Previous logic SUPPRESSED
-    // tension to 0.88 during stalls, which was the strongest single
-    // tension suppressor at end-of-run. Now: stalling -> boost 1.12,
-    // rushing -> dampen 0.93. Musically: static harmony at climax = tense.
+    // Reversed stalling direction. When harmony stalls during
     if (diag.mismatch > 0) {
       // Harmony rushing (too many changes for energy level): slight dampen
       return 1.0 - clamp(diag.mismatch / 0.8, 0, 1) * 0.07;

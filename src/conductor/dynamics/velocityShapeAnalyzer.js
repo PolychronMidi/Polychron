@@ -137,7 +137,6 @@ moduleLifecycle.declare({
     const shape = getVelocityShape(opts);
     const containmentPressure = velocityShapeAnalyzerGetContainmentPressure();
     if (shape.shape === 'terraced') {
-      // Ramp from 1.0 toward 0.92 based on punchiness (higher punchiness = more terraced)
       return 1.0 - clamp(shape.punchiness, 0, 1) * (0.08 + containmentPressure * 0.03);
     }
     if (shape.flat) {
@@ -158,10 +157,7 @@ moduleLifecycle.declare({
     return 1.0;
   }
 
-  // R10 E3: Register tension bias based on velocity trajectory. Crescendo
-  // shapes reinforce tension buildup; decrescendo shapes relax it. This
-  // creates coherent coupling between velocity trends and tension direction,
-  // making sections with rising velocity also get tension reinforcement.
+  // Register tension bias based on velocity trajectory. Crescendo
   function getTensionBias() {
     const shape = getVelocityShape();
     if (shape.shape === 'crescendo') {

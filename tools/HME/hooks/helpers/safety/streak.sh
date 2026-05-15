@@ -4,9 +4,6 @@
 # Thresholds: warn at 50, block at 70 (equivalent to 5/7 raw calls at 1x).
 _STREAK_FILE="/tmp/hme-non-hme-streak.score"
 # Raw-tool streak thresholds. Base defaults (50/70) correspond to "raw-tool
-# usage burning context without HME enrichment." The adaptation engine can
-# nudge the warn floor via HME_STREAK_BLOCK_BUMP to reward focused work
-# that's producing file_written events (see adaptation-rules.json).
 _STREAK_WARN=$((50 + ${HME_STREAK_BLOCK_BUMP:-0}))
 _STREAK_BLOCK=$((70 + ${HME_STREAK_BLOCK_BUMP:-0}))
 

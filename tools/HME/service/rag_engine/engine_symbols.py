@@ -48,7 +48,6 @@ class RAGEngineSymbolsMixin:
             rows = self.symbol_table.to_arrow().to_pylist()
             results = []
             name_lower = name.lower()
-            # Support dotted paths: "module.method" -> search for "method" in files matching "module"
             _module_filter = ""
             if "." in name_lower:
                 parts = name_lower.rsplit(".", 1)

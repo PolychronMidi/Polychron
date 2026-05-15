@@ -42,8 +42,6 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
     """
     if project_root:
         # Mutate at module level so tools.py's PROJECT_ROOT reads see the
-        # updated value. Direct rebinding of the local `PROJECT_ROOT` name
-        # imported from _base wouldn't propagate across submodules.
         _base_module.PROJECT_ROOT = project_root
     _mc = _MODE_CONFIGS()
     mode_cfg = _mc.get(mode, _mc["explore"])
@@ -71,10 +69,6 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
     arbiter_plan = None
 
     # Stage 1: Arbiter plans the research strategy
-    # The CPU 4b model takes 10-60s on amateur hardware. For most queries,
-    # _extract_search_terms + _infer_directories produces an equivalent plan
-    # in 0ms. The arbiter is only genuinely useful for Plan mode where
-    # architectural disambiguation matters. Skip it when the mode says so.
     skip_arbiter = mode_cfg.get("skip_arbiter", False)
     if not skip_arbiter:
         try:
@@ -100,9 +94,6 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
     grep_patterns = []
     glob_patterns = []
     # Always include directories inferred from the prompt as a baseline,
-    # then let the arbiter ADD to that set. Prevents the "arbiter failed ->
-    # default to src/ only" failure mode where audits targeting tools/HME/
-    # silently search the wrong place.
     inferred_dirs = _infer_directories(prompt)
     directories = list(inferred_dirs)
 
@@ -123,9 +114,6 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
                         directories.append(d)
         except (json.JSONDecodeError, AttributeError) as _plan_err:
             # Arbiter plan malformed -- we just lost its directory scope
-            # hints and will search the fallback set instead, which is
-            # often the wrong directories for the query. This is a real
-            # arbiter regression signal, not a benign miss.
             logger.error(f"arbiter plan parse FAILED -- search scope degraded to keyword fallback: {type(_plan_err).__name__}: {_plan_err}")
 
     # Fall back to keyword extraction if arbiter didn't produce useful terms
@@ -150,10 +138,6 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
         tools_used.append("KB(query)")
 
     # Grep with arbiter-planned patterns across inferred directories.
-    # Parallel: 6 patterns * 4 directories = 24 possible greps. I/O bound,
-    # thread-safe (subprocess), safe to parallelize. Typical saving: 5-10s
-    # per query on warm cache. ThreadPoolExecutor bounds at 8 concurrent so
-    # we don't blow out file descriptors.
     from concurrent.futures import ThreadPoolExecutor
     grep_tasks = []
     for pattern in grep_patterns[:6]:
@@ -169,6 +153,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
             try:
                 result = fut.result(timeout=15)
             except Exception:
+                # silent-ok: optional fallback path.
                 continue
             if not result.startswith("No matches") and not result.startswith("ERROR"):
                 key = f"{pattern} in {directory}"
@@ -176,9 +161,6 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
                 tools_used.append(f"GREP({pattern}, {directory})")
 
     # Iteration: if first pass returned NOTHING, broaden to the full project
-    # root and retry with the original patterns. Many audit questions target
-    # paths outside src/, and this second pass catches them even if the
-    # inferred-directories heuristic missed them.
     if not grep_results and grep_patterns:
         for pattern in grep_patterns[:6]:
             result = _exec_grep(pattern, ".")

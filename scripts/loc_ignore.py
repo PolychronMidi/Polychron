@@ -111,8 +111,6 @@ def load_with_rationale(
         line = raw.strip()
         if not line:
             # Blank line -- clears any pending rationale that wasn't paired
-            # to a pattern. Prevents rationale leakage between unrelated
-            # blocks.
             pending_rationale = {}
             continue
         if line.startswith("#"):

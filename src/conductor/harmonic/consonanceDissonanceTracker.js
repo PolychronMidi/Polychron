@@ -82,9 +82,7 @@ moduleLifecycle.declare({
     return 1.0;
   }
 
-  // R29 E3: Flicker modifier from dissonance ratio. High dissonance
-  // passages benefit from more rhythmic variety (complex harmonics
-  // call for complex rhythms). Bland consonance keeps rhythm stable.
+  // Flicker modifier from dissonance ratio. High dissonance
   /**
    * Get flicker multiplier from consonance/dissonance balance.
    * @returns {number}
@@ -100,9 +98,7 @@ moduleLifecycle.declare({
   conductorIntelligence.registerTensionBias('consonanceDissonanceTracker', () => consonanceDissonanceTracker.getTensionBias(), 0.80, 1.20);
   conductorIntelligence.registerFlickerModifier('consonanceDissonanceTracker', () => consonanceDissonanceTracker.getFlickerModifier(), 0.96, 1.06);
 
-  // R31 E4: Density bias from consonance quality. Dissonant passages
-  // benefit from thicker texture (more simultaneous notes to support
-  // complex harmonics). Bland consonance can thin out (less needed).
+  // Density bias from consonance quality. Dissonant passages
   function getDensityBias() {
     const profile = getConsonanceProfile();
     if (profile.harsh) return 1.04;

@@ -14,7 +14,7 @@ if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_R
 elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _MAINT_ROOT="$CLAUDE_PROJECT_DIR"
 else
-  _maint_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  _maint_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
   while [ -n "$_maint_try" ] && [ "$_maint_try" != "/" ]; do
     if [ -d "$_maint_try/.git" ] && [ -d "$_maint_try/src" ]; then
       _MAINT_ROOT="$_maint_try"
@@ -71,10 +71,10 @@ case "$_action" in
     fi
     _start=$(sed -n '1p' "$_MAINT_FLAG" 2>/dev/null)
     _ttl=$(sed -n '2p' "$_MAINT_FLAG" 2>/dev/null)
-    _start_epoch=$(date -d "$_start" +%s 2>/dev/null || echo 0)
+    _start_epoch=$(date -d "$_start" +%s 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
     _now=$(date +%s)
     _age=$((_now - _start_epoch))
-    if [ "$_age" -lt "$_ttl" ] 2>/dev/null; then
+    if [ "$_age" -lt "$_ttl" ] 2>/dev/null; then  # silent-ok: optional fallback path.
       echo "active  (started=$_start, ttl=${_ttl}s, age=${_age}s)"
     else
       echo "expired (started=$_start, ttl=${_ttl}s, age=${_age}s)"

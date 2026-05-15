@@ -1,4 +1,3 @@
-// src/conductor/accentPatternTracker.js - Tracks velocity accent patterns relative to metric position.
 // Detects accent ruts (always downbeat emphasis, or no accents at all).
 // Pure query API - biases velocity curves for variety.
 

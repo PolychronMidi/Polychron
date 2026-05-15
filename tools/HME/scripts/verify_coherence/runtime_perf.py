@@ -40,13 +40,6 @@ class HookLatencyVerifier(Verifier):
     weight = 1.0
 
     # Per-hook budget table. universal_pulse.json hook_thresholds is the
-    # single source of truth -- the runtime daemon and this verifier used
-    # to maintain independent _BUDGETS dicts that drifted (`stop` was
-    # 4000 here but 900 in universal_pulse.json -- same hook, two
-    # different verdicts depending on which monitor the user asked).
-    # Now we load from the same config file, falling back to a small
-    # static default set only if the config is unreadable. _DEFAULT_BUDGET
-    # stays as the catch-all for anything not in the config.
     _FALLBACK_BUDGETS = {
         "stop":             900,
         "sessionstart":    2500,
@@ -90,11 +83,6 @@ class HookLatencyVerifier(Verifier):
         if not os.path.isfile(log_path):
             return _result(SKIP, 1.0, "no hook latency log yet (first run)")
         # Match universal_pulse's rolling-window semantics. The previous
-        # all-time-p95 computation kept old slow samples (e.g. cold-cache
-        # eras, pre-fix degradation) influencing today's verdict for as
-        # long as the log retained them -- a perf bug the operator fixed
-        # 8 hours ago still showed up in p95 because rotation at 10k
-        # lines retains hours of history. 600s mirrors universal_pulse.
         _WINDOW_SEC = 600
         _cutoff_ts = time.time() - _WINDOW_SEC
         try:
@@ -183,6 +171,7 @@ class GitCommitTestCoverageVerifier(Verifier):
                 )
                 files = [f for f in rc.stdout.splitlines() if f.strip()]
             except Exception:
+                # silent-ok: optional fallback path.
                 continue
             has_test = any(
                 ("verify-" in f or "test-" in f or "_test." in f
@@ -246,6 +235,7 @@ class ToolResponseLatencyVerifier(Verifier):
                 with open(history_file) as hf:
                     history = json.load(hf)
         except Exception:
+            # silent-ok: optional fallback path.
             history = []
 
         # Record the current reading (persist after scoring so the FIRST run
@@ -259,9 +249,6 @@ class ToolResponseLatencyVerifier(Verifier):
                 json.dump(new_history, hf)
         except (OSError, TypeError):
             # Unwritable tmp/ (OSError) or unserializable entry
-            # (TypeError) -- history persistence is best-effort; the
-            # current run's score doesn't depend on it. Narrow catch so
-            # unexpected errors propagate.
             pass
 
         # Score based on history
@@ -277,9 +264,6 @@ class ToolResponseLatencyVerifier(Verifier):
         p75 = prior_values[int(len(prior_values) * 0.75)]
 
         # Regression scoring: how much WORSE is current vs historical median?
-        # 0-1.5x median: PASS
-        # 1.5-3x median: WARN
-        # >3x median or >3x p75: FAIL
         ratio_med = ema_ms / median if median > 0 else 1.0
         ratio_p75 = ema_ms / p75 if p75 > 0 else 1.0
         details = [

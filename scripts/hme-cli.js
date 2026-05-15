@@ -48,8 +48,6 @@ const path = require('path');
 const { serviceHost, servicePort } = require('../tools/HME/proxy/service_registry');
 
 // Single source of truth: tools/HME/config/versions.json.
-// Bump that file when the wire protocol between cli/proxy/worker changes --
-// all three components read from it so they can't silently drift apart.
 const _VERSIONS_PATH = path.resolve(__dirname, '..', 'tools', 'HME', 'config', 'versions.json');
 const CLI_VERSION = (() => {
   try { return JSON.parse(fs.readFileSync(_VERSIONS_PATH, 'utf8')).cli; }
@@ -68,9 +66,6 @@ function parseArgs(argv) {
     const a = argv[i];
 
     // Bare `--` is a POSIX arg separator, not a flag. Skip silently -- some
-    // callers (e.g. habits from npm-run-script days) pass it before the real
-    // args: `i/review -- mode=forget`. Without this, `--` would be parsed as
-    // --<empty-key> and crash the worker.
     if (a === '--') { i += 1; continue; }
 
     // --key=value  or  --key  (boolean)  or  --key value
@@ -116,12 +111,6 @@ function coerce(v) {
   if ((v.startsWith('[') && v.endsWith(']')) || (v.startsWith('{') && v.endsWith('}'))) {
     try { return JSON.parse(v); } catch { /* fall through */ }
     // Shorthand for arrays: `tags=[a,b,c]` should parse as a list of
-    // bare strings. JSON.parse refuses (unquoted values), but the
-    // intent is obvious from the bracket+comma syntax. Without this
-    // shortcut, the Python side iterates the raw string `[a,b,c]`
-    // character-by-character -- recording `subtag: "r"` instead of
-    // `subtag: "structural-integrity"`. Real bug surfaced in ground-
-    // truth tagging. Bracket-only -- leave object syntax to JSON.
     if (v.startsWith('[') && v.endsWith(']')) {
       const inner = v.slice(1, -1).trim();
       if (inner === '') return [];
@@ -137,13 +126,6 @@ function postTool(name, args) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify(args);
     // Client-side wall-clock timeout. Historical default was NONE, which
-    // allowed a deadlocked worker to silently hang this CLI process
-    // (and its wrapper `i/review`) indefinitely. HME_CLI_TIMEOUT_MS makes
-    // the timeout configurable; default 150s covers typical review /
-    // agent latency on warm GPUs with headroom, while staying shorter
-    // than the outer `timeout 180` on the i/review shell wrapper so the
-    // HTTP abort happens first and produces a clean error message rather
-    // than the shell-level SIGTERM's blank exit=124.
     const timeoutMs = Number(process.env.HME_CLI_TIMEOUT_MS) || 150_000;
     const req = http.request({
       host: HOST,
@@ -283,10 +265,6 @@ async function main() {
     res = await postTool(tool, args);
   } catch (e) {
     // HTTP failed -- fall back to filesystem-IPC queue. The queue path
-    // doesn't require the worker's HTTP server to be responsive, only
-    // the worker process to be alive enough to drain the queue (a
-    // CPU-saturated or GIL-hung worker can still eventually drain when
-    // load lets up). Set HME_CLI_DISABLE_QUEUE=1 to opt out.
     if (process.env.HME_CLI_DISABLE_QUEUE !== '1') {
       try {
         const wq = require(path.join(__dirname, '..', 'tools/HME/proxy/worker_queue'));
@@ -297,9 +275,6 @@ async function main() {
           res = { status: queueRes.ok ? 200 : 500, body: queueRes };
         } else {
           // Queue timed out -> try direct-lance fallback for read-only KB tools.
-          // This is the third tier: HTTP -> queue -> direct-lance. Direct-lance
-          // covers list_knowledge / knowledge_count / knowledge_lookup_id
-          // without needing the worker process at all.
           const directRes = await _tryDirectLance(tool, args);
           if (directRes !== null) {
             console.error(`hme-cli: HTTP+queue failed; direct-lance fallback succeeded for read-only ${tool}`);

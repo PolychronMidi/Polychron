@@ -62,7 +62,6 @@ module.exports = {
       },
 
       'Program:exit'() {
-        // If file only uses closedLoopController.create(), that auto-registers -- no error.
         // Only flag files with raw feedback loop access that lack registration.
         if (hasRawLoopCreation && !hasFeedbackRegister && !hasControllerCreate) {
           for (const node of rawLoopNodes) {

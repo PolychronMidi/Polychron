@@ -67,9 +67,6 @@ from .archaeology import (  # noqa: F401
 
 
 # Back-compat proxy: meta_observer.py sets `meta_layers._ms = X`. With the
-# package split, that would only bind a package attribute; submodule
-# functions read `_shared._ms`. Intercept the assignment and forward
-# to _shared so both paths see the same value.
 import sys as _sys
 
 
@@ -84,8 +81,6 @@ def __getattr__(name):
 
 
 # Explicit setter for external state assignment. Prefer this over the
-# implicit `meta_layers._ms = X` pattern, which now requires __setattr__
-# on the module object (not natively supported without sys.modules hacks).
 def set_ms(ms) -> None:
     """Called by meta_observer.start() to wire up MetaState."""
     _shared._ms = ms

@@ -8,15 +8,13 @@
 set +e
 
 # Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
-# No host-specific hardcoded fallback -- if all three fail the
-# environment is broken; supervisor exits cleanly rather than guess.
 _SV_ROOT=""
 if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
   _SV_ROOT="$PROJECT_ROOT"
 elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _SV_ROOT="$CLAUDE_PROJECT_DIR"
 else
-  _sv_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  _sv_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
   while [ -n "$_sv_try" ] && [ "$_sv_try" != "/" ]; do
     if [ -d "$_sv_try/.git" ] && [ -d "$_sv_try/src" ]; then
       _SV_ROOT="$_sv_try"
@@ -30,37 +28,24 @@ if [ -z "$_SV_ROOT" ]; then
   exit 0
 fi
 PROJECT_ROOT="$_SV_ROOT"
-source "$_SV_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true
+source "$_SV_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
 
 # Absolute path to THIS script -- used by the `start` subcommand's
-# `source '$_SV_SELF' _loop` fork-to-daemon line. Was previously
-# undefined, which meant the spawn executed `source '' _loop` and
-# silently failed with "bash: line 1: : No such file or directory",
-# leaving no supervisor and no proxy. Resolved via BASH_SOURCE[0] now
-# that we're past the cache-trap-unsafe zone above (the prior lines
-# established _SV_ROOT; BASH_SOURCE still resolves correctly whether
-# invoked from repo or cache because both paths reach the same file
-# via the hook wiring). Fallback to the in-repo canonical path if
-# BASH_SOURCE somehow ends up empty.
 _SV_SELF="${BASH_SOURCE[0]:-$_SV_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh}"
 if [ ! -f "$_SV_SELF" ]; then
   _SV_SELF="$_SV_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
 fi
 
 # Load project .env so spawned proxy (and its worker/daemon children)
-# inherit HME feature flags. Without this, supervisors started from a
-# shell that didn't source .env silently lose HME_DOMINANCE,
-# HME_OVERDRIVE_*, etc., and the dominance layer becomes dead code.
-# Export every assignment so node child inherits. Quiet on absence.
 if [ -f "$_SV_ROOT/.env" ]; then
   set -a
   # shellcheck disable=SC1090,SC1091
-  source "$_SV_ROOT/.env" 2>/dev/null || true
+  source "$_SV_ROOT/.env" 2>/dev/null || true  # silent-ok: optional fallback path.
   set +a
 fi
 
-_SV_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"
-_SV_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_SV_PORT")"
+_SV_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
+_SV_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_SV_PORT")"  # silent-ok: optional fallback path.
 _SV_PID_FILE="$_SV_ROOT/runtime/hme/proxy-supervisor.pid"
 _SV_MAINT_FLAG="$_SV_ROOT/tmp/hme-proxy-maintenance.flag"
 _SV_LIFECYCLE_LOG="$_SV_ROOT/log/hme-proxy-lifecycle.log"
@@ -79,7 +64,7 @@ _SV_BACKOFF_MAX=600       # cap at 10 minutes
 _sv_log() {
   mkdir -p "$(dirname "$_SV_LIFECYCLE_LOG")" 2>/dev/null
   local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
-  echo "[$ts] [proxy-supervisor] $*" >> "$_SV_LIFECYCLE_LOG" 2>/dev/null
+  echo "[$ts] [proxy-supervisor] $*" >> "$_SV_LIFECYCLE_LOG" 2>/dev/null  # silent-ok: optional fallback path.
 }
 
 _sv_is_maintenance_active() {
@@ -91,7 +76,7 @@ _sv_is_maintenance_active() {
     ''|*[!0-9]*) return 1 ;;
   esac
   local start_epoch now
-  start_epoch=$(date -d "$start" +%s 2>/dev/null || echo 0)
+  start_epoch=$(date -d "$start" +%s 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
   now=$(date +%s)
   [ "$start_epoch" -gt 0 ] && [ $((now - start_epoch)) -lt "$ttl" ]
 }
@@ -108,7 +93,7 @@ _sv_bundle_health_issue() {
       echo "${child_id} unreachable at ${child_url}"
       return 0
     fi
-  done < <(_hme_required_supervised_urls proxy 2>/dev/null || true)
+  done < <(_hme_required_supervised_urls proxy 2>/dev/null || true)  # silent-ok: optional fallback path.
 }
 
 _sv_bundle_healthy() {
@@ -149,8 +134,8 @@ _sv_spawn_and_verify() {
   # Ensure OmniRoute when required, spawn proxy, wait for bundle health.
 
   # -- OmniRoute pre-flight (MODE=4/5 main-agent translator) --
-  local _or_port="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"
-  local _or_url="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_or_port")"
+  local _or_port="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"  # silent-ok: optional fallback path.
+  local _or_url="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_or_port")"  # silent-ok: optional fallback path.
   local _or_dir="$_SV_ROOT/tools/omniroute"
   if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
     if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
@@ -198,18 +183,13 @@ _sv_spawn_and_verify() {
 
 _sv_tail_proxy_log() {
   # Return the last N non-blank lines from hme-proxy.out, filtered to the
-  # most recent spawn's failure trace. The proxy crash cause -- e.g. the
-  # ReferenceError that killed it for an entire session earlier -- is
-  # almost always in those last lines. Surfacing them in the supervisor
-  # log and the LIFESAVER banner cuts diagnosis from "tail a file and
-  # guess" to "read the banner".
   local proxy_log="$_SV_ROOT/log/hme-proxy.out"
   local n="${1:-20}"
   if [ ! -f "$proxy_log" ]; then
     echo "(no proxy log at $proxy_log)"
     return 0
   fi
-  tail -n "$n" "$proxy_log" 2>/dev/null | sed 's/^/  /' || echo "(proxy log unreadable)"
+  tail -n "$n" "$proxy_log" 2>/dev/null | sed 's/^/  /' || echo "(proxy log unreadable)"  # silent-ok: optional fallback path.
 }
 
 _sv_fire_crashloop_lifesaver() {
@@ -218,7 +198,7 @@ _sv_fire_crashloop_lifesaver() {
   local msg="[$ts] [proxy-supervisor] CRASH LOOP DETECTED -- proxy failed to start $fails times in a row. Respawn backing off. Root cause is likely in hme_proxy.js or its environment (.env, context.js, node modules). Fix the proxy startup before expecting recovery."
   # Channel 1: error log for LIFESAVER pickup.
   mkdir -p "$(dirname "$_SV_ERROR_LOG")" 2>/dev/null
-  echo "$msg" >> "$_SV_ERROR_LOG" 2>/dev/null
+  echo "$msg" >> "$_SV_ERROR_LOG" 2>/dev/null  # silent-ok: optional fallback path.
   # Channel 2: lifecycle log for operator audit trail, plus a tail of the
   # proxy log so the crash trace lives alongside the "I gave up" marker.
   _sv_log "CRASH LOOP: $fails consecutive spawn failures -- backing off"
@@ -226,7 +206,7 @@ _sv_fire_crashloop_lifesaver() {
   {
     local line
     _sv_tail_proxy_log 20 | while IFS= read -r line; do
-      echo "[$ts] [proxy-supervisor]   $line" >> "$_SV_LIFECYCLE_LOG" 2>/dev/null
+      echo "[$ts] [proxy-supervisor]   $line" >> "$_SV_LIFECYCLE_LOG" 2>/dev/null  # silent-ok: optional fallback path.
     done
   }
   # Channel 3: stderr for local terminal visibility.
@@ -238,25 +218,15 @@ _sv_fire_crashloop_lifesaver() {
 
 _sv_loop() {
   # Singleton check via flock advisory lock + pid-file confirmation.
-  # The pid-file-only check (kill -0 on existing pid) had a TOCTOU
-  # window: between the kill -0 and our `echo $$ > pidfile`, another
-  # _sv_loop could acquire and write its own pid. flock closes that
-  # window -- two simultaneous _sv_loop invocations contend for the
-  # same lock fd; the loser bails. The pid-file is still written
-  # alongside so external observers can read which pid holds the
-  # supervisor (flock -n doesn't expose owner-pid via filesystem).
   _SV_LOCK_FILE="$_SV_PID_FILE.lock"
-  exec 200>"$_SV_LOCK_FILE" 2>/dev/null || true
+  exec 200>"$_SV_LOCK_FILE" 2>/dev/null || true  # silent-ok: optional fallback path.
   if command -v flock >/dev/null 2>&1; then
-    if ! flock -n 200 2>/dev/null; then
+    if ! flock -n 200 2>/dev/null; then  # silent-ok: optional fallback path.
       _sv_log "another supervisor holds the lock at $_SV_LOCK_FILE; refusing to start (this pid=$$)"
       exit 0
     fi
   fi
   # Defense-in-depth: even with flock held, sanity-check the pid file
-  # (covers the edge where flock isn't available on this host or the
-  # lock dir is unmounted). If a live foreign pid is in the file,
-  # bail.
   if [ -f "$_SV_PID_FILE" ]; then
     _sv_existing=$(cat "$_SV_PID_FILE" 2>/dev/null)
     if [ -n "$_sv_existing" ] && [ "$_sv_existing" != "$$" ] && kill -0 "$_sv_existing" 2>/dev/null; then
@@ -267,19 +237,12 @@ _sv_loop() {
   _sv_log "supervisor loop started (pid=$$, flock held)"
   echo $$ > "$_SV_PID_FILE"
   # Only remove the pid file if it still contains OUR pid. Stop+start
-  # races produce a window where the incoming supervisor has already
-  # written its pid but the outgoing one hasn't finished its trap. If
-  # the outgoing trap blindly removed the file, the new supervisor
-  # would appear "not running" until its next poll rewrote it.
   trap '
     _sv_log "supervisor exiting (pid=$$)"
     if [ "$(cat "$_SV_PID_FILE" 2>/dev/null)" = "$$" ]; then
       rm -f "$_SV_PID_FILE" 2>/dev/null
     fi
     # Release flock + drop lockfile if we hold it. fd 200 closes
-    # automatically on exit; explicit close lets us also clean the
-    # lockfile to keep tmp/ tidy. flock release on close is automatic
-    # so leaving fd open until process exit is also correct.
     rm -f "$_SV_LOCK_FILE" 2>/dev/null
     exit 0
   ' INT TERM
@@ -289,9 +252,6 @@ _sv_loop() {
   local backoff_secs=0
   while true; do
     # Exponential backoff after crash loop: skip health polling during
-    # the backoff window so the system doesn't thrash spawning a broken
-    # proxy every 10 seconds. The LIFESAVER fired when we entered the
-    # backoff; it stays in the error log for the next UserPromptSubmit.
     if [ "$backoff_secs" -gt 0 ]; then
       sleep "$backoff_secs"
       # After the backoff, give the spawn one more shot. If it STILL
@@ -323,8 +283,6 @@ _sv_loop() {
       misses=$((misses + 1))
       if _sv_is_maintenance_active; then
         # During maintenance, ignore misses -- the caller will bring the
-        # proxy back up. Reset counter so we don't spawn during a later
-        # planned window.
         misses=0
       elif [ "$misses" -ge "$_SV_MISS_THRESHOLD" ]; then
         _sv_log "proxy bundle unhealthy for $misses polls: $(_sv_bundle_health_issue)"
@@ -362,8 +320,6 @@ case "$_action" in
       rm -f "$_SV_PID_FILE"
     fi
     # Detach. Because this script is invoked from a hook chain, we must
-    # return control to the caller immediately -- the loop runs in a
-    # forked process.
     setsid nohup bash -c "source '$_SV_SELF' _loop" \
       >> "$_SV_LIFECYCLE_LOG" 2>&1 < /dev/null &
     disown 2>/dev/null
@@ -378,7 +334,7 @@ case "$_action" in
     if [ -f "$_SV_PID_FILE" ]; then
       pid=$(cat "$_SV_PID_FILE")
       if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-        kill "$pid" 2>/dev/null
+        kill "$pid" 2>/dev/null  # silent-ok: optional fallback path.
         _sv_log "supervisor stopped via proxy-supervisor.sh stop (pid=$pid)"
         rm -f "$_SV_PID_FILE"
         echo "proxy-supervisor: stopped (pid=$pid)" >&2

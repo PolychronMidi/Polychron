@@ -116,7 +116,6 @@ def extract_symbols(file_path: str, content: str = "") -> list[dict]:
                         "file": file_path, "language": lang,
                     })
 
-        # JS IIFE globals: `name = (() => { ... })()`
         if lang == "javascript":
             for kind, pat in JS_IIFE_PATTERNS.items():
                 for m in pat.finditer(content):
@@ -322,10 +321,6 @@ def extract_symbols(file_path: str, content: str = "") -> list[dict]:
 
 
 # Worker-lifetime cache keyed by (file-count, sum-of-mtimes). Same
-# signature approach as find_callers -- cheap to compute, changes whenever
-# any code file is touched. Before this cache, module_story called
-# collect_all_symbols once per invocation and walked ~819 files +
-# ran extract_symbols on every one (tens of seconds for large projects).
 _ALL_SYMBOLS_CACHE: dict = {}
 
 def collect_all_symbols(project_root: str) -> list[dict]:

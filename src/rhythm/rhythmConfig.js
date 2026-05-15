@@ -1,4 +1,3 @@
-// rhythmConfig.js - simple named rhythm profiles (delegate to RHYTHM_PROFILES in src/conductor/config.js)
 
 rhythmConfig = (function() {
   const V = validator.create('rhythmConfig');

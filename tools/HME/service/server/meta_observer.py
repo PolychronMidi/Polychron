@@ -75,9 +75,6 @@ def start(project_root: str) -> None:
     os.makedirs(os.path.dirname(_ms.narrative_file), exist_ok=True)
 
     # Wire shared state into meta_layers BEFORE calling any layer functions.
-    # Post-R100 split: direct `meta_layers._ms = _ms` only sets the package
-    # attribute; submodule functions read `_shared._ms`. set_ms() forwards
-    # the assignment into _shared so every submodule sees the live value.
     meta_layers.set_ms(_ms)
 
     gap = meta_layers._detect_observation_gap()
@@ -170,9 +167,6 @@ def _meta_loop() -> None:
     global _last_intent_ts, _last_archaeology_ts, _last_kb_confidence_ts
     _alert_last_logged: dict[str, float] = {}
     # Crashloop detection: track a rolling window of exception fingerprints.
-    # If the SAME error repeats _CRASHLOOP_THRESHOLD times in a row, the
-    # loop is stuck -- escalate to CRITICAL LIFESAVER and kill the thread
-    # so it stops spamming hme.log and so an operator knows to look.
     _CRASHLOOP_WINDOW = 5
     _CRASHLOOP_THRESHOLD = 3
     _exc_history: list[str] = []
@@ -191,7 +185,6 @@ def _meta_loop() -> None:
             if cycle % max(1, _MONITOR_CHECK_INTERVAL // _HEARTBEAT_INTERVAL) == 0:
                 monitor_status = meta_layers._check_monitor_alive()
 
-            # L14: temporal correlation (every 2 minutes) -- includes L23 multi-timescale update
             if cycle % max(1, 120 // _HEARTBEAT_INTERVAL) == 0:
                 history = meta_layers._load_coherence_history()
                 _last_correlations = meta_layers._correlate(history)
@@ -203,7 +196,6 @@ def _meta_loop() -> None:
                             logger.warning(f"Meta-observer L14: {atype} -- {alert['message']}")
                             _alert_last_logged[atype] = now
 
-            # L15: narrative synthesis + L24 anticipatory lookahead + Linfinf ceiling check
             if now - _last_narration_ts >= _NARRATION_INTERVAL and _last_correlations:
                 if not monitor_status:
                     monitor_status = meta_layers._check_monitor_alive()
@@ -237,7 +229,6 @@ def _meta_loop() -> None:
                 meta_layers._classify_intent()
                 _last_intent_ts = now
 
-            # Linf: synthesis self-model + L22 causal attribution + L27 composition correlation
             if now - _last_synthesis_pattern_ts >= _SYNTHESIS_PATTERN_INTERVAL:
                 meta_layers._detect_synthesis_patterns()
                 attrib = meta_layers._causal_attribution()
@@ -274,10 +265,6 @@ def _meta_loop() -> None:
                     logger.debug(f"operational_state.write_session_document: {type(_err7).__name__}: {_err7}")
 
             # Periodic log rotation (every 30 minutes). Boot rotation
-            # alone is insufficient for long-lived workers -- a worker
-            # running for a week will accumulate hundreds of MB of logs
-            # without this. rotate_on_boot is safe-to-call-always and
-            # only actually trims when a policy cap is exceeded.
             if cycle % max(1, 1800 // _HEARTBEAT_INTERVAL) == 0:
                 try:
                     import log_rotation

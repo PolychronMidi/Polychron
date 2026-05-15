@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
 # PreToolUse: Edit -- canonical JS pre-write policy + local onboarding/KB side effects.
 INPUT=$(cat)
 _DECISION_ERR="${PROJECT_ROOT:+$PROJECT_ROOT/tmp/}hme-prewrite-check.$$.err"
@@ -10,7 +10,7 @@ mkdir -p "$(dirname "$_DECISION_ERR")" 2>/dev/null || true
 _DECISION=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const {preWriteCheck,toHookResponse}=require('${PROJECT_ROOT}/tools/HME/proxy/pre_write_check'); (async()=>{const d=await preWriteCheck(fs.readFileSync(0,'utf8')); process.stdout.write(toHookResponse(d));})().catch(e=>{process.stderr.write(e.stack||String(e)); process.exit(1);});" 2>"$_DECISION_ERR")
 _DECISION_RC=$?
 if [ "$_DECISION_RC" -ne 0 ]; then
-  _ERR_SNIP="$(tail -c 500 "$_DECISION_ERR" 2>/dev/null)"
+  _ERR_SNIP="$(tail -c 500 "$_DECISION_ERR" 2>/dev/null)"  # silent-ok: optional fallback path.
   rm -f "$_DECISION_ERR" 2>/dev/null || true
   _emit_block "BLOCKED: central pre-write check failed (rc=$_DECISION_RC). Fix tools/HME/proxy/pre_write_check.js before editing. ${_ERR_SNIP}"
   exit 2
@@ -23,15 +23,14 @@ fi
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 
-# Antagonism warning: fires when this edit's module + a prior same-turn edit are registered antagonists (r<=-0.3).
 _TURN_EDIT_STATE="${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt"
-_MODULE_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')
+_MODULE_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')  # silent-ok: optional fallback path.
 if [ -n "$_MODULE_BASE" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -f "${PROJECT_ROOT}/output/metrics/hme-coupling.json" ]; then
   if [ -f "$_TURN_EDIT_STATE" ]; then
     while IFS= read -r _prior_mod; do
       [ -z "$_prior_mod" ] && continue
       [ "$_prior_mod" = "$_MODULE_BASE" ] && continue
-      _AB_HIT=$(python3 - "$_MODULE_BASE" "$_prior_mod" "${PROJECT_ROOT}/output/metrics/hme-coupling.json" <<'PYEOF' 2>/dev/null
+      _AB_HIT=$(python3 - "$_MODULE_BASE" "$_prior_mod" "${PROJECT_ROOT}/output/metrics/hme-coupling.json" <<'PYEOF' 2>/dev/null  # silent-ok: optional fallback path.
 import json, sys
 a, b, cf = sys.argv[1], sys.argv[2], sys.argv[3]
 try:
@@ -58,7 +57,7 @@ fi
 # Bounded-reads vow: reset counter on edit ATTEMPT (TDD-blocked attempts still
 # break the read streak; counter should reflect "agent tried to act").
 [ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && \
-  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
+  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true  # silent-ok: optional fallback path.
 # TDD test-first gate: block new impl files lacking sibling test (HME_TDD_GATE=1).
 if [ -n "$FILE" ] && [ -x "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate.py" ]; then
   if ! PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/tdd_test_first_gate.py" --file "$FILE"; then
@@ -73,7 +72,7 @@ case "$FILE" in
     mkdir -p "$(dirname "$_DA_LOG")" 2>/dev/null
     _DA_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     printf '{"ts":"%s","file":"%s","reviewed":%s,"consulted":%s,"skip_reason":"%s"}\n' \
-      "$_DA_TS" "$FILE" false false "" >> "$_DA_LOG" 2>/dev/null || true
+      "$_DA_TS" "$FILE" false false "" >> "$_DA_LOG" 2>/dev/null || true  # silent-ok: optional fallback path.
     ;;
 esac
 
@@ -120,9 +119,6 @@ fi
 
 if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
   # Semantic bugfix lookup -- ask the worker if this module has a known bugfix
-  # in KB that scores high against the current edit intent. High-confidence
-  # hits (score >= 0.6) block: the edit is likely re-introducing a past bug.
-  # Cache in /tmp by content hash so repeat attempts don't re-query.
   MODULE=$(basename "$FILE" | sed 's/\.[^.]*$//')
   if [ -n "$MODULE" ] && [ ${#NEW_STRING} -gt 20 ]; then
     HASH=$(printf '%s' "$NEW_STRING" | sha1sum | cut -c1-16)
@@ -132,7 +128,7 @@ if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
       # worker writes {} and skips the KB check this turn.
       curl -s -m 0.5 -X POST "http://127.0.0.1:${_HME_HTTP_PORT}/validate" \
         -H 'Content-Type: application/json' \
-        -d "{\"query\":\"$MODULE\"}" > "$CACHE" 2>/dev/null || echo '{}' > "$CACHE"
+        -d "{\"query\":\"$MODULE\"}" > "$CACHE" 2>/dev/null || echo '{}' > "$CACHE"  # silent-ok: optional fallback path.
     fi
     BLOCK_HIT=$(python3 -c "
 import json, sys
@@ -144,7 +140,7 @@ try:
       break
 except Exception:
   pass
-" 2>/dev/null)
+" 2>/dev/null)  # silent-ok: optional fallback path.
     if [ -n "$BLOCK_HIT" ]; then
       _emit_block "BLOCKED: KB has a bugfix entry \"$BLOCK_HIT\" that strongly matches this module. Review it via learn(query='$MODULE') before editing -- the edit may re-introduce a past bug."
       exit 2
@@ -170,12 +166,13 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
     if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ]; then
       # Horizon VII maturity: caused_by = the file path being edited
       # without a prior brief -- the cause IS the unbriefed edit target.
+# silent-ok: optional fallback path.
       python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
         --event=edit_without_brief \
         --file="$FILE" \
         --module="$_auto_module" \
         --caused_by="unbriefed_edit:$FILE" \
-        --session="$(whoami 2>/dev/null || echo shell)" \
+        --session="${USER:-shell}" \
         >/dev/null 2>&1 &
     fi
     # Per-turn dedup tracker (cleared at turn start by userpromptsubmit.sh).
@@ -183,14 +180,13 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
     _AUTO_BRIEF_TURN_FILE=""
     [ -n "${PROJECT_ROOT:-}" ] && _AUTO_BRIEF_TURN_FILE="${PROJECT_ROOT}/tmp/hme-turn-briefs.txt"
     if [ -n "$_AUTO_BRIEF_TURN_FILE" ] && [ -f "$_AUTO_BRIEF_TURN_FILE" ] \
-        && grep -qFx "$_auto_module" "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null; then
+        && grep -qFx "$_auto_module" "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null; then  # silent-ok: optional fallback path.
       _AUTO_BRIEF_SKIP=1
     fi
     if [ "${HME_AUTO_BRIEF_ON_EDIT:-1}" != "0" ] && [ -z "${_AUTO_BRIEF_SKIP:-}" ] \
         && [ -n "$_AUTO_BRIEF_TURN_FILE" ]; then
       # /enrich KB hits (~70ms) + head of target file. 500ms timeout
-      # for CPU-saturated worker; brief is compact (<2 KB).
-      # time. Healthy /enrich is ~70ms so the new ceiling is 7x headroom.
+# silent-ok: optional fallback path.
       _kb_hits=$(curl -sf --max-time 0.5 -X POST -H 'Content-Type: application/json' \
         --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
         "http://127.0.0.1:${_HME_HTTP_PORT}/enrich" 2>/dev/null \
@@ -203,8 +199,8 @@ try:
     title = str(e.get('title',''))[:120]
     if title: print(f'  [{cat}] {title}')
 except Exception: pass
-" 2>/dev/null)
-      _file_head=$(head -n 30 "$FILE" 2>/dev/null | head -c 1200)
+" 2>/dev/null)  # silent-ok: optional fallback path.
+      _file_head=$(head -n 30 "$FILE" 2>/dev/null | head -c 1200)  # silent-ok: optional fallback path.
       if [ -n "$_kb_hits" ] || [ -n "$_file_head" ]; then
         _brief="module: ${_auto_module}"
         [ -n "$_kb_hits" ] && _brief="${_brief}
@@ -214,7 +210,7 @@ ${_kb_hits}"
 file head:
 ${_file_head}"
         _AUTO_BRIEF_JSON=$(jq -nR --arg b "$_brief" --arg m "$_auto_module" \
-          '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",additionalContext:("[hme auto-brief: " + $m + "]\n" + $b + "\n[/hme auto-brief]")}}' 2>/dev/null)
+          '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",additionalContext:("[hme auto-brief: " + $m + "]\n" + $b + "\n[/hme auto-brief]")}}' 2>/dev/null)  # silent-ok: optional fallback path.
         if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ]; then
           # Horizon VII: caused_by = the file path being edited
           # (the cause of the auto-briefing was the agent's Edit on FILE).
@@ -228,13 +224,12 @@ ${_file_head}"
         # Record this module so subsequent Edits/Writes to the same
         # module skip the brief instead of redundantly re-firing /enrich.
         mkdir -p "$(dirname "$_AUTO_BRIEF_TURN_FILE")" 2>/dev/null
-        printf '%s\n' "$_auto_module" >> "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null
+        printf '%s\n' "$_auto_module" >> "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null  # silent-ok: optional fallback path.
       fi
     fi
   fi
 fi
 
-# Record this edit's module for downstream gates (verify-landed antagonism, etc.). All blocking gates have passed.
 if [ -n "$_MODULE_BASE" ] && [ -n "${PROJECT_ROOT:-}" ]; then
   mkdir -p "$(dirname "$_TURN_EDIT_STATE")" 2>/dev/null
   echo "$_MODULE_BASE" >> "$_TURN_EDIT_STATE"

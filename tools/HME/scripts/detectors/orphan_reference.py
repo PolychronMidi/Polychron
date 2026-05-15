@@ -35,7 +35,6 @@ def _last_user_idx(events: list[dict]) -> int:
 
 
 def _collect_deleted_files(events: list[dict], project_root: str) -> list[str]:
-    # Skip throwaway dirs (per runtime/hme/INVENTORY.md): /tmp/, /var/tmp/, project tmp/, runtime/, output/metrics/. Short-stem substring matches from these produce false positives (e.g. _snap.md grep-matches 'snapshot'). Stem-length gate in _refs_remaining is the complementary cure.
     skip_prefixes = (
         "/tmp/", "/var/tmp/",
         os.path.join(project_root, "tmp") + os.sep,
@@ -68,7 +67,6 @@ def _collect_deleted_files(events: list[dict], project_root: str) -> list[str]:
 def _refs_remaining(project_root: str, deleted_path: str) -> list[str]:
     base = os.path.basename(deleted_path)
     stem = os.path.splitext(base)[0]
-    # Strip leading underscores before measuring length; "_eit" / "_snap" etc. are scratch-file naming conventions, the underscores carry no semantic weight for reference-tracking purposes. Require >=6 chars of substantive stem to avoid substring matches against common identifiers.
     bare = stem.lstrip("_")
     if not bare or len(bare) < 6:
         return []

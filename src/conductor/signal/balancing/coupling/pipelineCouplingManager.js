@@ -64,7 +64,6 @@ moduleLifecycle.declare({
     }
 
     const setup = couplingRefreshSetup.run(snap);
-    // Cache raw |r| per pair so getCouplingPressures() never needs snap.couplingMatrix directly
     const rawAbsVals = /** @type {Record<string, number>} */ ({});
     const matrixKeys = Object.keys(setup.matrix);
     for (let k = 0; k < matrixKeys.length; k++) {
@@ -124,10 +123,7 @@ moduleLifecycle.declare({
           key, absCorr, tailTelemetry.p95, tailTelemetry, target0, setup, flags);
         const target = sp.adjustedTarget;
 
-        // R85 E1: Non-nudgeable pairs always skip nudging. The R82-R84
-        // conditional engagement experiment is removed -- entropy-trust
-        // rawRollingAbsCorr (0.285) operates within its structural target
-        // (0.30), ratio 0.95x. The 6.0x threshold was never reachable.
+        // Non-nudgeable pairs always skip nudging. The R82-R84
         if (flags.isNonNudgeablePair) {
           couplingGainEscalation.handleNonNudgeable(key, ps, absCorr, flags.isEntropyPair, setup.dynTelemetryWindow);
           continue;

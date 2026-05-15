@@ -61,8 +61,6 @@ DELEGATION_CAPABILITIES = (
 )
 
 # Phantom-detection signal phrases -- patterns that LOOK like declared
-# capabilities but are NOT in the closed list. Used by the detector to
-# flag suspect labels in agent text.
 PHANTOM_PATTERNS = (
     "decomposition",
     "edge-case enumeration",

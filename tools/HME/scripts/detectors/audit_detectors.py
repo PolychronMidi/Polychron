@@ -116,10 +116,6 @@ def _summarize(events: list[dict], window: int) -> dict:
         rec_rescue = _rate(rec_b, "ok-rescue")
 
         # Drift = recent-window fire rate minus all-time fire rate. Positive
-        # means the detector is firing more lately; negative means less.
-        # Interpret with care: codebase improvement and detector decay both
-        # produce negative drift; the signal is "something changed", not
-        # "something broke".
         drift = rec_fire - all_fire
         out[det] = {
             "total_events": n_total,
@@ -136,8 +132,6 @@ def _summarize(events: list[dict], window: int) -> dict:
 
 
 # Probe corpus lives in _audit_corpus_probes.py (data-only). Splitting it
-# out keeps this file under the 350-LOC critical threshold and lets future
-# probes land without touching the runner.
 sys.path.insert(0, str(_HERE))
 from _audit_corpus_probes import CORPUS as _CORPUS  # noqa: E402
 
@@ -164,12 +158,6 @@ def _run_corpus_probe(detector: str, user_msg: str, assistant_text: str,
 
     sys.path.insert(0, str(_HERE))
     # fabrication_check (and any future detector with the same hardening)
-    # rejects transcript paths outside ~/.claude/projects/ or
-    # PROJECT_ROOT/tmp/. The corpus harness writes probes to
-    # PROJECT_ROOT/tmp/, so PROJECT_ROOT must be set even when the
-    # caller invoked us with no env. Without this, fabrication_check
-    # silently returns 'ok' for every probe and the corpus reports
-    # misleading "100% pass" coverage.
     if not os.environ.get("PROJECT_ROOT"):
         os.environ["PROJECT_ROOT"] = str(_PROJECT)
     mod = importlib.import_module(detector)

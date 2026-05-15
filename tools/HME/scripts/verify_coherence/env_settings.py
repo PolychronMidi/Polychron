@@ -234,10 +234,6 @@ class EnvLoadVerifier(Verifier):
                             f"silent failure class"])
 
         # Parse the .env file manually -- no `source` subshell, no shell
-        # injection surface. KEY=VALUE per line, comments start with #,
-        # blank lines ignored. Quoted values are accepted but the quotes
-        # are not stripped (verifier is checking for the KEY's presence,
-        # not value fidelity).
         declared = {}
         unparseable = []
         try:
@@ -269,8 +265,6 @@ class EnvLoadVerifier(Verifier):
                 issues.append(f"required key missing: {key}")
 
         # PROJECT_ROOT must reference the actual project root. The literal
-        # string might use ${VAR} expansion; accept that but compare the
-        # unquoted value's expected head.
         declared_root = declared.get("PROJECT_ROOT", "").strip('"').strip("'")
         if declared_root and declared_root != _PROJECT:
             issues.append(

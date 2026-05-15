@@ -357,8 +357,6 @@ def capture_audit_state() -> dict:
         ["python3", os.path.join(detectors, "test_detector_chain.py")])
 
     # Boil down to a coupling-friendly numeric panel -- one scalar per axis,
-    # so future cross-dimensional analysis (Rung 2) has a vector to work
-    # against without re-running the audits each time.
     panel = {}
     if isinstance(out.get("loc"), dict) and "critical" in out["loc"]:
         panel["loc_critical"] = len(out["loc"].get("critical", []))

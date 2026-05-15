@@ -142,7 +142,6 @@ def drama_map(top_n: int = 5) -> str:
                 break
         out.append("")
 
-    #  Density contrast pairs: find atmospheric valley (<=2 notes) within 10 beats of dense peak (>=6 notes)
     # Filter out warmup beats (S0 first 8 beats) and zero-tension beats (section silence)
     contrast_pairs: list[tuple[float, int, int]] = []
     for i in range(len(beats)):
@@ -177,7 +176,6 @@ def drama_map(top_n: int = 5) -> str:
             out.append(f"  +{contrast}n  dense={b_peak['bk']}({b_peak['notes']}n,t={b_peak['tension']:.2f}) {direction}{gap}b valley={b_valley['bk']}({b_valley['notes']}n,t={b_valley['tension']:.2f})")
         out.append("")
 
-    #  Dramatic Arc synthesis: one-sentence summary of what makes this composition compelling
     try:
         from .synthesis import _two_stage_think
         sec_count = max((b["sec"] for b in beats), default=0) + 1

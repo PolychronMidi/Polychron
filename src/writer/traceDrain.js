@@ -14,7 +14,6 @@ moduleLifecycle.declare({
   const FLUSH_INTERVAL = 50; // flush every N records to reduce sync I/O calls
   let traceDrainRecordCount = 0;
 
-  // Per-beat note accumulator: collects emitted note data between playNotes and traceDrain.record
   /** @type {Array<{pitch: number, velocity: number, channel: number}>} */
   let traceDrainPendingNotes = [];
   /** @type {Record<string, { totalMs: number, count: number, maxMs: number }>} */
@@ -272,9 +271,6 @@ moduleLifecycle.declare({
   }
 
   // Mid-run diagnostic snapshot. Emitted periodically to capture
-  // system state evolution beyond the beat-level trace window. The snapshot
-  // includes key metrics that often diverge between early-run and end-of-run
-  // (effectiveDim, trust scores, coupling means, gain multiplier, regime).
   let traceDrainSnapshotCount = 0;
 
   /**

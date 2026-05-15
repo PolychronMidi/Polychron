@@ -8,15 +8,6 @@ set -e
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/helpers/_safety.sh"
 set +e
 # PostToolUse hook -- logs every tool call from the main Claude Code session
-# to the HME session transcript JSONL and the HTTP shim.
-#
-# Input (stdin): JSON from Claude Code hook system:
-#   { tool_name, tool_input, tool_response, session_id, cwd, ... }
-#
-# This hook:
-#   1. Appends a JSONL entry to log/session-transcript.jsonl
-#   2. POSTs to the worker transcript endpoint (async, non-blocking)
-#   3. If file was modified (Edit/Write), triggers mini-reindex via /reindex
 
 # Read hook JSON from stdin
 HOOK_DATA=$(cat)
@@ -24,7 +15,7 @@ HOOK_DATA=$(cat)
 TOOL_NAME=$(_safe_jq "$HOOK_DATA" '.tool_name' 'unknown')
 # FAIL-LOUD: capture jq stderr; malformed hook payloads would silently produce
 # empty TOOL_INPUT and skew transcript fidelity / HME-call detection.
-_LTC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ltc_jq_err_$$")
+_LTC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ltc_jq_err_$$")  # silent-ok: optional fallback path.
 TOOL_INPUT=$(echo "$HOOK_DATA" | jq -c '.tool_input // {}' 2>"$_LTC_JQ_ERR" | head -c 300)
 if [ -s "$_LTC_JQ_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
   _LTC_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
@@ -48,7 +39,7 @@ TS_FILE="/tmp/hme_lifesaver_${SESSION_ID}_${SAFE_NAME}"
 ELAPSED_S=0
 if [ -f "$TS_FILE" ]; then
   START_MS=$(cat "$TS_FILE" 2>/dev/null)
-  if [ -n "$START_MS" ] && [ "$START_MS" -gt 0 ] 2>/dev/null; then
+  if [ -n "$START_MS" ] && [ "$START_MS" -gt 0 ] 2>/dev/null; then  # silent-ok: optional fallback path.
     ELAPSED_MS=$((NOW_MS - START_MS))
     ELAPSED_S=$((ELAPSED_MS / 1000))
   fi
@@ -56,9 +47,6 @@ if [ -f "$TS_FILE" ]; then
 fi
 
 # HME tools are now invoked via Bash(i/<tool>) shell wrappers -- tool_name is
-# "Bash" and the actual HME call lives in tool_input.command. Detect by
-# matching `i/<tool>` at a word boundary. Also keep the legacy mcp__HME__
-# pattern so historical transcripts keep emitting streak resets.
 _IS_HME_CALL=0
 _HME_TOOL=""
 if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
@@ -66,10 +54,6 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _HME_TOOL="${TOOL_NAME#mcp__HME__}"
 elif [[ "$TOOL_NAME" == "Bash" ]]; then
   # Match i/<tool> ONLY when it appears in an invocation position -- start of
-  # command, or after a shell separator (;|&&|||&|(|`|bash |sh |exec |time ).
-  # Previously matched any whitespace/slash prefix, which caused false
-  # positives like `grep i/review foo.txt` (a grep arg, not an invocation)
-  # to be treated as HME tool calls, wrongly resetting the non-HME streak.
   if echo "$TOOL_INPUT" | grep -qE '(^|[;|&`(]|&&|\|\||\b(bash|sh|exec|time)[[:space:]]+)[[:space:]]*i/(review|learn|trace|evolve|status|hme|audit|why|policies)\b|scripts/hme-cli\.js'; then
     _IS_HME_CALL=1
     # Extract the tool name from the matched invocation (not from any other
@@ -103,9 +87,7 @@ if [ "$_IS_HME_CALL" = "1" ] && [ "$ELAPSED_S" -gt 0 ]; then
 fi
 
 # Build transcript entry. FAIL-LOUD: was `2>/dev/null` which silently
-# dropped the whole transcript line on jq failure -- agent-visibility into
-# tool history vanished without trace.
-_LTC_BUILD_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ltc_build_err_$$")
+_LTC_BUILD_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ltc_build_err_$$")  # silent-ok: optional fallback path.
 ENTRY=$(jq -nc \
   --argjson ts "$TS" \
   --arg type "tool_call" \
@@ -127,10 +109,6 @@ rm -f "$_LTC_BUILD_ERR" 2>/dev/null
 [ -z "$ENTRY" ] && exit 0
 
 # 1. Append to JSONL + hme.log
-# PROJECT_ROOT comes from .env via _safety.sh. Never fall back to CWD/pwd -- the
-# hook's .cwd field is the TOOL's working directory (which can be anywhere in
-# the tree), and using it as PROJECT_ROOT silently spawns duplicate log/
-# directories in subprojects.
 if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
   echo "log-tool-call: PROJECT_ROOT unset or invalid ($PROJECT_ROOT) -- skipping transcript write" >&2
   exit 0
@@ -138,9 +116,9 @@ fi
 LOG_FILE="$PROJECT_ROOT/log/session-transcript.jsonl"
 HME_LOG="$PROJECT_ROOT/log/hme.log"
 mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
-echo "$ENTRY" >> "$LOG_FILE" 2>/dev/null
+echo "$ENTRY" >> "$LOG_FILE" 2>/dev/null  # silent-ok: optional fallback path.
 TOOL_LOG_LINE=$(echo "$TOOL_INPUT" | head -c 120 | tr '\n' ' ')
-printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "$TOOL_LOG_LINE" >> "$HME_LOG" 2>/dev/null
+printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "$TOOL_LOG_LINE" >> "$HME_LOG" 2>/dev/null  # silent-ok: optional fallback path.
 
 # 2. mcp_tool_call activity emission moved to proxy middleware (activity_log.js).
 

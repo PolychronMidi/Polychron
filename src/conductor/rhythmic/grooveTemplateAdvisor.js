@@ -54,10 +54,7 @@ moduleLifecycle.declare({
       avgDeviation,
       maxDeviation: maxDev,
       swingRatio,
-      // R24 E5: Widened bands from 0.05/0.30 to 0.08/0.22. Module dormant
-      // for 2+ rounds (tension always 1.0). Most algorithmic output falls
-      // between 5-30% deviation, so neither threshold triggers. Wider
-      // bands should activate the tension bias more frequently.
+      // Widened bands from 0.05/0.30 to 0.08/0.22. Module dormant
       rigid: avgDeviation < subdivDur * 0.08,
       loose: avgDeviation > subdivDur * 0.22
     };
@@ -89,8 +86,6 @@ moduleLifecycle.declare({
   function getVelocityHumanizeBias() {
     const profile = getGrooveProfile();
     // rigid: avgDeviation is very low - more humanization needed (bias up)
-    // loose: avgDeviation is very high - less humanization needed (bias down)
-    // Map avgDeviation 0-0.1 to bias 1.25-1.0, then 0.1-0.5 to 1.0-0.85
     if (profile.rigid) {
       // Already flagged as rigid - ramp: deviation 0-threshold maps to 1.25-1.0
       return 1.25;
@@ -101,15 +96,11 @@ moduleLifecycle.declare({
       return 0.90;
     }
     // In between: avgDeviation relative to subdivDur range.
-    // Use swingRatio as a proxy for how human the timing feels.
-    // Balanced swing (0.5) - 1.0; skewed - slight humanization
     const skew = m.abs(profile.swingRatio - 0.5) * 2; // 0-1: how asymmetric
     return 1.0 + clamp(skew, 0, 1) * 0.1;
   }
 
-  // R22 E4: Tension bias from groove feel. Rigid mechanical timing stunts
-  // musical momentum - reduce tension to encourage evolution. Loose human-like
-  // grooves carry natural forward motion - boost tension to build on that energy.
+  // Tension bias from groove feel. Rigid mechanical timing stunts
   /**
    * Get tension multiplier from groove rigidity.
    * @returns {number}

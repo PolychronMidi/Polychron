@@ -80,8 +80,6 @@ def audit_invariants_json(root: Path) -> list[dict]:
         if inv_type in ("pattern_in_file", "patterns_all_in_file", "pattern_count_gte",
                         "pattern_in_file_not", "file_exists", "json_valid", "symlink_valid"):
             # ~ expansion: invariants may reference dotfiles under $HOME
-            # (symlink-mcp/-skills target ~/.claude/...). Resolve relative to
-            # the real home, not the project root, for those.
             if path and path.startswith("~"):
                 full = Path(path).expanduser()
             else:
@@ -107,6 +105,7 @@ def audit_invariants_json(root: Path) -> list[dict]:
                             "detail": f"pattern never matches in {path}: {pattern[:80]}",
                         })
                 except Exception as e:
+                    # silent-ok: optional fallback path.
                     findings.append({
                         "source": "invariants.json",
                         "id": inv_id,
@@ -128,6 +127,7 @@ def audit_invariants_json(root: Path) -> list[dict]:
                                 "detail": f"pattern never matches in {path}: {p[:80]}",
                             })
                 except Exception as e:
+                    # silent-ok: optional fallback path.
                     findings.append({
                         "source": "invariants.json",
                         "id": inv_id,
@@ -151,8 +151,6 @@ def audit_tuning_extractors(root: Path) -> list[dict]:
         return [{"source": "check-tuning-invariants.js", "status": "MISSING",
                  "detail": str(validator)}]
     # Run in dry-extract mode: invoke the existing script and parse stderr/stdout
-    # for any "WARNING - could not extract" lines. Rather than adding a new flag,
-    # we invoke the production file so extractor drift surfaces here too.
     import subprocess
     try:
         rc = subprocess.run(
@@ -208,6 +206,7 @@ def audit_doc_sync(root: Path) -> list[dict]:
                 "detail": out.strip()[:400],
             })
     except Exception as e:
+        # silent-ok: optional fallback path.
         findings.append({
             "source": "health.py doc_sync_check",
             "status": "ERROR",
@@ -279,6 +278,7 @@ def audit_stress_probe_refs(root: Path) -> list[dict]:
                         "detail": f"{name}.py not found in {[str(d.name) for d in search_dirs]}",
                     })
     except Exception as e:
+        # silent-ok: optional fallback path.
         findings.append({
             "source": "evolution_selftest RELOADABLE",
             "status": "ERROR",
@@ -326,6 +326,7 @@ def main() -> int:
         try:
             all_findings.extend(fn(root))
         except Exception as e:
+            # silent-ok: optional fallback path.
             all_findings.append({
                 "source": label,
                 "status": "ERROR",

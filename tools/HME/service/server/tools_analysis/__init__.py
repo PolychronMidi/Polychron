@@ -46,10 +46,6 @@ def _alias_subpackage(subpkg_name, module_names):
         if mod:
             _sys.modules[f"{_PKG}.{name}"] = mod
     # Post-assertion: the subpackage itself must still resolve to a real
-    # package object with __path__ attached. If a future refactor
-    # accidentally re-introduces the name collision, we want to crash
-    # loudly at import time, not discover it later through mysterious
-    # importlib.reload() failures on every submodule.
     _pkg_entry = _sys.modules.get(f"{_PKG}.{subpkg_name}")
     if _pkg_entry is not None and not hasattr(_pkg_entry, "__path__"):
         raise RuntimeError(
@@ -63,7 +59,6 @@ def _alias_subpackage(subpkg_name, module_names):
 # Import order: subpackages first (subpackage __init__.py is the hub), then flat modules
 from . import tool_cache  # noqa: E402, F401
 
-# synthesis/ -- the subpackage __init__ IS the hub (was synthesis.py; inlined to fix reload).
 from . import synthesis  # noqa: E402, F401
 from .synthesis import synthesis_config  # noqa: E402, F401
 from .synthesis import synthesis_llamacpp  # noqa: E402, F401
@@ -147,18 +142,11 @@ from .synthesis import (  # noqa: E402, F401
 )
 
 # Public-named aliases. The leading-underscore originals stay valid for
-# in-package callers; these public names exist so external subsystems can
-# import without tripping the audit's private-import check (which treats
-# any leading-underscore name as internal regardless of __init__ surface).
-# The aliases are the SAME function -- both forms remain interchangeable.
 track = _track
 think_local_or_claude = _think_local_or_claude
 local_think = _local_think
 
 # Coordinator entry points used by external bootstrappers
-# (server/onboarding_chain.py, server/context.py, server/health_topology.py).
-# Re-exported here so callers reach through the tools_analysis hub instead
-# of the todo submodule directly.
 from .todo import (  # noqa: E402, F401
     register_onboarding_tree, clear_onboarding_tree,
     register_todo_from_lifesaver, resolve_lifesaver_todos,

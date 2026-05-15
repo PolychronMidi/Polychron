@@ -38,13 +38,11 @@ def find_anti_pattern(wrong_symbol: str, right_symbol: str, path: str = "", excl
         return "Error: right_symbol cannot be empty."
     wrong_results = _find_callers(wrong_symbol, ctx.PROJECT_ROOT)
     right_results = _find_callers(right_symbol, ctx.PROJECT_ROOT)
-    # Auto-exclude files that define/implement the right_symbol (the bridge, not a violation)
     right_base = right_symbol.split('.')[0] if '.' in right_symbol else right_symbol
     if path:
         wrong_results = [r for r in wrong_results if path in r.get('file', '')]
     if exclude_path:
         wrong_results = [r for r in wrong_results if exclude_path not in r.get('file', '')]
-    # Auto-exclude bridge definition files (file name contains the right_symbol base name)
     wrong_results = [r for r in wrong_results if right_base.lower() not in os.path.basename(r.get('file', '')).lower()]
     # Files using the wrong symbol
     wrong_files = set(r['file'] for r in wrong_results)

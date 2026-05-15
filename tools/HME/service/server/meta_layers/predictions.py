@@ -92,7 +92,6 @@ def _expire_predictions() -> None:
                 "auto_expired": True,
             }
             _write_counterfactual(pred)
-            # L29: expired predictions count toward Brier -- outcome_occurred=False (prevented)
             try:
                 from server import operational_state
                 predicted_prob = (pred["confidence"] if pred.get("confidence") is not None
@@ -113,8 +112,6 @@ def _write_counterfactual(pred: dict) -> None:
         _trim_counterfactuals_file()
     except OSError as _cf_err:
         # Counterfactual prediction data feeds Brier calibration scoring.
-        # Silent loss = falsely-healthy calibration. Surface via LIFESAVER
-        # so the next tool response flags the observability gap explicitly.
         logger.error(f"counterfactual append FAILED: {type(_cf_err).__name__}: {_cf_err}")
         try:
             from server import context as _ctx

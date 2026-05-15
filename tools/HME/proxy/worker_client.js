@@ -19,13 +19,9 @@
 const fs = require('fs');
 const path = require('path');
 // Route through the transport selector. /validate + /enrich aren't FS-eligible
-// (always HTTP) but the router keeps one decision point; opt-in via
-// `_fsEligible` in `_worker_transport.js`.
 const { workerRequest } = require('./_worker_transport');
 
 // Timeout SSoT: config/timeouts.json keeps client_ms aligned with the
-// worker's worker_deferred_sec graceful soft-deadline. Defaults match
-// the file (3500ms) so a missing/malformed config is non-fatal.
 function _loadTimeouts() {
   try {
     const cfgPath = path.join(__dirname, '..', 'config', 'timeouts.json');
@@ -43,12 +39,8 @@ const CACHE_CAP = 500;
 const _cache = new Map();
 
 // Rolling failure telemetry. After STREAK_WARN consecutive failures in a
-// window, every subsequent failure also writes one line to hme-errors.log so
-// the user-facing LIFESAVER pipeline picks it up.
 let _failStreak = 0;
 // Shared with _safe_curl in hooks/helpers/_safety.sh via HME_STREAK_WARN in .env.
-// Proxy is launched with .env vars set by sessionstart.sh, so the env var is
-// reliably present; fallback to 5 matches the bash-side default.
 const STREAK_WARN = parseInt(process.env.HME_STREAK_WARN || '5', 10);
 const _errLogPath = (() => {
   const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
@@ -92,9 +84,6 @@ function _cacheSet(key, value) {
 
 async function _post(reqPath, body, timeoutMs) {
   // Shared low-level HTTP plumbing in _worker_http.js. This wrapper
-  // owns the enrichment-specific failure semantics (null-on-error +
-  // rolling streak telemetry). transport vs HTTP-error vs JSON-parse
-  // failures all fold into a single _recordFailure call here.
   const { status, json, raw, error } = await workerRequest('POST', reqPath, body, timeoutMs);
   if (error) {
     _recordFailure(reqPath, `transport: ${error.message}`);
@@ -112,10 +101,6 @@ async function _post(reqPath, body, timeoutMs) {
   return json;
 }
 
-// query: string. Returns { warnings: [...], blocks: [...] } or null on failure.
-// Default from config/timeouts.json validate.client_ms (must exceed worker's
-// validate.worker_deferred_sec so the deferred payload lands instead of
-// timing out client-side + spamming BrokenPipe in the worker).
 async function validate(query, { timeoutMs = _VALIDATE_TIMEOUT_MS } = {}) {
   if (!query) return null;
   const key = `v:${query.slice(0, 200)}`;
@@ -126,7 +111,6 @@ async function validate(query, { timeoutMs = _VALIDATE_TIMEOUT_MS } = {}) {
   return result;
 }
 
-// query: string. topK: int. Returns { kb: [...], warm: string } or null on failure.
 async function enrich(query, topK = 3, { timeoutMs = _ENRICH_TIMEOUT_MS } = {}) {
   if (!query) return null;
   const key = `e:${topK}:${query.slice(0, 200)}`;

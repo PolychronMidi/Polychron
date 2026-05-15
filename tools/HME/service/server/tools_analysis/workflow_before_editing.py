@@ -24,8 +24,6 @@ from .synthesis_session import append_session_narrative
 from .tool_cache import cached_kb_search, cached_find_callers, _cache_set, _TTL_KB, _TTL_CALLERS
 
 # workflow.py imports US at line 106, so a top-level back-import would
-# cycle. Lazy resolution via thin shims that look up the live attributes
-# at call time, keeping the bare names usable inside our function bodies.
 def _build_edit_risks(*a, **kw):
     from . import workflow as _w; return _w._build_edit_risks(*a, **kw)
 def _hme_self_aware_context(*a, **kw):
@@ -42,8 +40,6 @@ def _get_kb_hits_cache():
 logger = logging.getLogger("HME")
 
 # Synthesis cache -- keyed (abs_path, mtime), eliminates repeated llama.cpp waits.
-# Persisted to disk so cache survives server restarts. Stale entries (mtime mismatch)
-# are silently dropped on load; valid entries are used immediately without re-synthesis.
 _SYNTHESIS_CACHE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "before-editing-cache.json"
@@ -122,9 +118,6 @@ def before_editing(file_path: str) -> str:
             _kb_fut = _pool.submit(ctx.project_engine.search_knowledge, module_name, limits["kb_entries"])
             _cal_fut = _pool.submit(_find_callers, module_name, ctx.PROJECT_ROOT)
             # Bounded waits: unbounded .result() would block forever if the
-            # lance query or the caller-scan hang (e.g. during GPU-busy
-            # indexing-mode contention). 30s is plenty for normal reads and
-            # a clean timeout for pathological ones.
             try:
                 kb_results = _kb_fut.result(timeout=30)
             except _cf.TimeoutError:
@@ -203,8 +196,6 @@ def before_editing(file_path: str) -> str:
         hme_ctx = _hme_self_aware_context(abs_path, _py_stem)
 
     # Assembly: constraint-first order
-    # Priority zone: constraints, warnings, bridges, edit risks (what will bite you)
-    # Reference zone: dependents, structure, signals, evolutionary potential, context, commits
 
     parts = [f"# Before Editing: {rel_path} (context: {budget})\n"]
 
@@ -254,11 +245,6 @@ def before_editing(file_path: str) -> str:
         logger.debug(f"parts.append: {type(_err4).__name__}: {_err4}")
 
     # P4. Edit Risks -- synthesized danger zones
-    # Moved behind HME_READ_VERBOSE=1 because this is an LLM-synthesized
-    # speculation about risks (not grounded in the session's intent) and
-    # frequently dumps pages of "maybe this could..." content unrelated to
-    # the actual edit. The KB Constraints + Warnings + Bridges above
-    # already cover real defects. Opt-in when deeply auditing a module.
     _verbose = os.environ.get("HME_READ_VERBOSE", "0") == "1"
     if synthesis and _verbose:
         parts.append(f"\n## Edit Risks *(adaptive)*")
@@ -266,10 +252,6 @@ def before_editing(file_path: str) -> str:
                                          hint=f"edit risks for {rel_path}"))
 
     # Reference zone -- dependents/structure/signals/evolutionary/musical/commits
-    # all gated behind HME_READ_VERBOSE=1. Default output keeps only the
-    # priority zone (KB constraints + warnings + HME internal context +
-    # antagonism bridges) which is ~15 lines vs the prior 80+. Agents that
-    # actually need the reference data opt in explicitly.
     if _verbose:
         caller_limit = limits["callers"]
         parts.append(f"\n## Dependents ({len(caller_files)} files)")

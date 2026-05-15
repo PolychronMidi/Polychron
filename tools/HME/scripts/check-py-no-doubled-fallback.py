@@ -59,10 +59,12 @@ def _check_boolop(node: ast.BoolOp) -> list[tuple[int, str]]:
             try:
                 default_repr = ast.unparse(v.args[1])
             except Exception:
+                # silent-ok: optional fallback path.
                 default_repr = "<default>"
             try:
                 primary_repr = ast.unparse(v)[:60]
             except Exception:
+                # silent-ok: optional fallback path.
                 primary_repr = ".get(...)"
             hits.append((
                 node.lineno,

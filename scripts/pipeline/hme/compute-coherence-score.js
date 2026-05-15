@@ -28,9 +28,6 @@ function readEvents() {
 }
 
 // Build an event-type index once per run so the multiple filter() passes
-// below (file_written, coherence_violation, productive_incoherence) don't
-// each walk the full event list. For a 6000-event stream this converts
-// four O(n) scans into one O(n) partition + three O(k) lookups.
 function indexByEvent(events) {
   const idx = new Map();
   for (const e of events) {
@@ -44,15 +41,6 @@ function indexByEvent(events) {
 
 function sliceToRound(events) {
   // Return the window between the two most recent PIPELINE-emitted
-  // round_complete events. Pipeline rounds carry a 'verdict' field;
-  // pre-rename markers (historical, no verdict field) don't -- those are excluded.
-  //
-  // ALWAYS use the most recent pair, even if empty. An empty window
-  // correctly signals "this round had no relevant writes" rather than
-  // searching backward through history for a window that did. Previous
-  // behavior walked old round pairs looking for writes, which pulled in
-  // prehistoric LanceDB noise when the current round was legitimately
-  // quiet.
   const MAX_FALLBACK_EVENTS = 2000;
   const rcIndices = [];
   for (let i = events.length - 1; i >= 0; i--) {
@@ -83,8 +71,6 @@ function sliceToRound(events) {
 
 function emitActivity(event, fields) {
   // Best-effort async event emission so compute-coherence-score can surface
-  // idle_round / empty-window signals without blocking. Uses emit.py's CLI
-  // surface, same as every other pipeline step.
   const { spawn } = require('child_process');
   const args = [path.join(ROOT, 'tools', 'HME', 'activity', 'emit.py'),
                 '--event=' + event];
@@ -107,9 +93,6 @@ function main() {
   const idx = indexByEvent(windowEvents);
 
   // Idle-round detection: a window with zero human/agent file_written events
-  // is not a meaningful coherence measurement. Emit idle_round so downstream
-  // analyzers can distinguish "no data" rounds from "0% coverage" rounds --
-  // they have very different meanings.
   const rawWrites_ = idx.get('file_written') || [];
   const humanWrites_ = rawWrites_.filter((e) => e.source === 'fs_watcher').length;
   if (humanWrites_ === 0) {
@@ -125,25 +108,12 @@ function main() {
   }
 
   // Component 1: read coverage -- only POST-MIGRATION human/agent writes
-  // count. Three exclusion criteria:
-  //   (a) source missing entirely -> pre-migration event, no source field
-  //       existed when the write was emitted. Can't judge its coherence.
-  //   (b) source=pipeline_script -> pipeline-mechanical edit (fix-non-ascii,
-  //       verify-boot-order --fix, formatters). Not human intent-bearing.
-  //   (c) source=fs_watcher -> the real signal: a human or agent edited a
-  //       file in the allow-listed source tree.
   const rawWrites = idx.get('file_written') || [];
   const writes = rawWrites.filter((e) => e.source === 'fs_watcher');
   const pipelineWrites = rawWrites.filter((e) => e.source === 'pipeline_script').length;
   const legacyWrites = rawWrites.filter((e) => !e.source).length;
   const writesWithPriorRead = writes.filter((e) => e.hme_read_prior === true).length;
   // Null readCoverage = "no measurable writes in window." The downstream
-  // reason field distinguishes why: no writes at all vs all-legacy vs
-  // all-pipeline.
-  // Low-sample-size floor: <5 human-intent writes means the read_coverage
-  // ratio swings wildly on single events. Flag as null-with-reason rather
-  // than computing a statistically meaningless score that would drag the
-  // musical correlation down. Set HME_COHERENCE_MIN_WRITES=1 to disable.
   const MIN_WRITES_FOR_SCORE = (() => {
     const raw = process.env.HME_COHERENCE_MIN_WRITES;
     if (raw == null || raw === '') return 5;
@@ -170,17 +140,6 @@ function main() {
   }
 
   // Component 2: violation penalty (lazy violations only).
-  // productive_incoherence events do NOT count here -- they feed the
-  // exploration bonus below.
-  //
-  // Filter: exclude coherence_violation events on MISSING-KB modules, for the
-  // same reason the staleness probe excludes MISSING (see below). A module
-  // with no KB entry at all is exploratory territory, not a workflow defect;
-  // counting it here would saturate boundary_score whenever the user touches
-  // tooling/config files. STALE or FRESH modules still count -- those are
-  // real "write without prior HME read" events the workflow is designed to
-  // catch. The staleness index is loaded below for Component 3; we
-  // pre-load it here so both components share a single read.
   const stalenessIdxEarly = loadJson(STALENESS);
   const _statusByModuleEarly = new Map();
   if (stalenessIdxEarly && Array.isArray(stalenessIdxEarly.modules)) {
@@ -207,8 +166,6 @@ function main() {
   const explorationBonus = 1 + Math.min(0.2, productiveCount * 0.05);
 
   // Staleness penalty: ratio of writes to STALE modules only (KB drifted).
-  // MISSING (no KB entry) is exploration -- rewarded via productive_incoherence,
-  // not penalized. FRESH = good. undef = excluded (config etc.).
   const stalenessIdx = loadJson(STALENESS);
   let stalenessPenalty = 1;
   let touchesOnStale = 0;
@@ -242,16 +199,9 @@ function main() {
       stalenessPenalty = 1 - penalizingTouches / nonMissingTouches;
     }
     // If EVERY touch was MISSING, stalenessPenalty stays at 1.0 --
-    // exploration isn't punished, and the productive_incoherence bonus
-    // (computed below) is where that behavior gets rewarded.
   }
 
   // When read_coverage is null (no measurable human/agent writes), emit
-  // score=null too rather than multiplying out a 0.5 fallback that looks
-  // like a real measurement. The downstream musical-correlation will
-  // skip null entries; the old fallback silently produced a synthetic
-  // 0.5 signal that polluted the correlation with noise indistinguishable
-  // from a real mediocre round.
   const baseScore = readCoverage !== null
     ? (readCoverage * violationPenalty * stalenessPenalty)
     : null;
@@ -260,8 +210,6 @@ function main() {
     : null;
 
   // Trend: diff against previous hme-coherence.json (if there's a backup)
-  // We don't have a snapshot system for this file yet -- use the existing
-  // report as "previous" by loading it before we overwrite.
   const prev = loadJson(OUT);
   const prevScore = prev && typeof prev.score === 'number' ? prev.score : null;
   const delta = (prevScore === null || score === null)
@@ -300,9 +248,6 @@ function main() {
         touches_on_fresh: touchesOnFresh,
         touches_with_index_info: touchesWithIndexInfo,
         // Distinguishes "no writes to evaluate" (staleness is vacuously
-        // clean) from "writes existed but none matched the index" (real
-        // coverage gap). Without this field, staleness_penalty=1.0 looked
-        // identical in both cases.
         evaluation_reason: writes.length === 0
           ? 'no_writes_to_evaluate'
           : (touchesWithIndexInfo === 0

@@ -30,9 +30,6 @@ def _mode_health():
 def _mode_coupling():
     from ..coupling import coupling_intel as _ci
     # Status surface uses the lighter `network` view (just topology -- the
-    # one sub-section users actually consume in a status check). The full
-    # 4-section view (network + antagonists + personalities + gaps) takes
-    # ~45s and belongs behind an explicit `i/hme coupling_intel mode=full`.
     return _budget_gate(_ci(mode="network"))
 
 def _mode_trust():
@@ -247,9 +244,6 @@ def _list_modes():
 
 def _mode_perceptual():
     # Status is a "quick look" surface -- reading the cached report from the
-    # last pipeline run is what users actually want, not triggering a fresh
-    # (multi-minute) EnCodec+CLAP inference pass. For a live re-run, call
-    # `audio_analyze(analysis='both')` directly via i/hme.
     cache_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "perceptual-report.json")
     if os.path.exists(cache_path):
         try:

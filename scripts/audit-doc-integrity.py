@@ -40,9 +40,6 @@ _DEFAULT_ROOTS = [
 _EXCLUDE_DIRS = {"node_modules", ".git", "output", "tmp",
                  "__pycache__", "venv", ".venv", "log", "logs",
                  # KB/devlog entries are timestamped frozen records of
-                 # past sessions; their references reflect the codebase
-                 # state AT WRITE TIME and naturally rot as files move.
-                 # The audit is for live cross-references in active docs.
                  "devlog"}
 
 # Markdown link: [text](target). target may include #anchor and trailing

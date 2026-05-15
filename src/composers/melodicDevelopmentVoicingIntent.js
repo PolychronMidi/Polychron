@@ -1,4 +1,3 @@
-// melodicDevelopmentVoicingIntent.js - Extracted helper for MelodicDevelopmentComposer voicing intent scoring.
 
 /**
  * Compute candidate weights for voicing intent based on base/developed note

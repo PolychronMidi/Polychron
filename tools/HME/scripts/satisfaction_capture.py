@@ -45,8 +45,6 @@ _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent)
 _OUT_FILE = _PROJECT / "output" / "metrics" / "satisfaction.jsonl"
 
 # Heuristic markers. Order: explicit number first, then strong signals,
-# then weak signals. The first matched bucket wins; never fall through
-# to null.
 _NUMERIC_RE = re.compile(
     r"\b(?:rate|rating|score)\s*[:=]?\s*(\d{1,2})\b|"
     r"^\s*(\d{1,2})\s*/\s*10\s*$|"
@@ -110,8 +108,6 @@ def _score_prompt(text: str) -> tuple[int, str]:
             return 2, f"strong_neg:{marker}"
     for marker in _CORRECTION_OPENERS:
         # Anchor to the prompt's HEAD so an in-sentence "actually" doesn't
-        # over-fire. "actually X" at character 0 is a correction signal;
-        # "I'd actually like to know X" 200 chars in is not.
         if low.startswith(marker) or low[:80].find(marker) >= 0:
             return 4, f"correction:{marker}"
 

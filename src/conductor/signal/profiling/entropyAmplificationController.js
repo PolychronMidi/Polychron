@@ -1,4 +1,3 @@
-// entropyAmplificationController.js - PI controller for entropy variance share targeting.
 // Adapts the entropy amplification factor so that entropy contributes ~25% of
 // compositional variance in the phase-space trajectory. Prevents entropy from
 // dominating or vanishing in the state space due to its inherently higher variance
@@ -26,8 +25,6 @@ moduleLifecycle.declare({
   const ADAPTIVE_ALPHA_SCALE = 0.08; // converge faster when error is large
 
   // Integral controller (for zero steady-state error)
-  // Regime-responsive: exploring drives harder convergence (entropy naturally
-  // volatile), coherent uses gentle correction (entropy share already constrained).
   const KI_BY_REGIME = { exploring: 0.08, evolving: 0.05, coherent: 0.03 };
   const KI_DEFAULT = 0.05;
   const INTEGRAL_CLAMP = 3.0; // anti-windup

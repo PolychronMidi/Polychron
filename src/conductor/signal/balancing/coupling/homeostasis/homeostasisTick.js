@@ -28,9 +28,7 @@ moduleLifecycle.declare({
 
     const tailRecoveryPressure = m.max(S.stickyTailPressure, S.densityFlickerTailPressure, S.tailRecoveryDrive);
     let nonNudgeableTailPressure = S.nonNudgeableTailPressure;
-    // R78 E5: Age non-nudgeable tail pressure. Persistent non-zero pressure
-    // (entropy-trust p95 0.896) drags budget without correction. Decay after
-    // 1 tick, floored at 85% of raw value (75 ticks to reach floor).
+    // Age non-nudgeable tail pressure. Persistent non-zero pressure
     if (nonNudgeableTailPressure > 0) {
       S.nonNudgeableTailIdleTicks = (S.nonNudgeableTailIdleTicks ?? 0) + 1;
       nonNudgeableTailPressure *= m.max(0.85, 1.0 - S.nonNudgeableTailIdleTicks * 0.002);
@@ -59,11 +57,6 @@ moduleLifecycle.declare({
       1
     );
     // R75 E2 + R76 E2 + R83 E4: Exponential decay to prevent chronic
-    // saturation. R83 E4: Decay increased 0.990->0.970 (R82 diagnostic
-    // showed saturation at beat 21/736, 97.3% of run at 0.98+). At 0.970,
-    // ~50% after 23 ticks of zero pressure, equilibrium ~0.75-0.85 range.
-    // R2 E4: Graduated decay -- accelerate above 0.90 to prevent saturation
-    // while preserving responsiveness in [0.70, 0.90] operating range.
     const handshakeDecay = S.tailRecoveryHandshake > 0.90
       ? 0.955  // faster decay above 0.90: ~13 ticks to drop from 0.97 to 0.90
       : 0.970;
@@ -76,11 +69,7 @@ moduleLifecycle.declare({
       0,
       1
     );
-    // R75 E1 + R76 E4: Tension-flicker dominant-pair suppression. Parallel
-    // to the density-flicker override above. R76 E4: warmup gate -- delay
-    // activation until tickCount > 40 to protect Q1 tension. The coupling
-    // matrix hasn't stabilized in the first ~40 beats, and early TF override
-    // was compressing section 0 tension (0.854->0.728 in R75).
+    // Tension-flicker dominant-pair suppression. Parallel
     const tfTailPressure = S.tailPressureByPair && typeof S.tailPressureByPair['tension-flicker'] === 'number'
       ? S.tailPressureByPair['tension-flicker'] : 0;
     S.tensionFlickerOverridePressure = S.tickCount > 40
@@ -123,10 +112,6 @@ moduleLifecycle.declare({
       S.tailRecoveryCap = m.max(S.tailRecoveryCap, clamp(0.65 - (S.stickyTailPressure - 0.50) * 0.20, 0.55, 0.65));
     }
     // R75 E3 REVERTED in R76 E1: Top-2 concentration pressure was refuted.
-    // Suppressing global multiplier based on concentration caused DF balloon
-    // (0->49 beats). Concentration response needs pair-specific targeting,
-    // not global compression. top2ConcentrationRatio still computed in
-    // homeostasisRefresh for diagnostics.
 
     if (S.refreshedThisTick) {
       S.refreshedThisTick = false;
@@ -147,11 +132,7 @@ moduleLifecycle.declare({
       if (S.densityFlickerClampPressure > 0.20) {
         targetMultiplier = m.min(targetMultiplier, 0.90 - S.densityFlickerClampPressure * 0.18);
       }
-      // R75 E1 + R76 E2: TF multiplier suppression. R76: Softened threshold
-      // 0.20->0.40 and coefficient 0.14->0.08 to reduce DF balloon effect.
-      // The original aggressiveness compressed global energy too much, pushing
-      // exceedance from TF to DF (0->49 beats). Lighter touch preserves the
-      // TF signal while leaving headroom for other pairs.
+      // TF multiplier suppression. R76: Softened threshold
       if (S.tensionFlickerOverridePressure > 0.40) {
         targetMultiplier = m.min(targetMultiplier, 0.94 - S.tensionFlickerOverridePressure * 0.08);
       }
@@ -201,9 +182,7 @@ moduleLifecycle.declare({
       }
     }
     if (applyBrake) {
-      // R75 E4: TF-aware brake scaling. DF has dedicated 0.76 brake via
-      // densityFlickerClampPressure. Add parallel TF path so TF exceedance
-      // gets proportional braking instead of the generic 0.85/0.80 fallback.
+      // TF-aware brake scaling. DF has dedicated 0.76 brake via
       const brakeScale = S.densityFlickerClampPressure > 0.35 ? 0.76
         : S.tensionFlickerOverridePressure > 0.25 ? 0.78
         : S.floorRecoveryTicksRemaining > 0 && tailRecoveryPressure > S.tailRecoveryTrigger

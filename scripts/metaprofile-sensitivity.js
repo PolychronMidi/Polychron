@@ -107,9 +107,6 @@ function aggregate(entries) {
     .sort((a, b) => profiles[b].score.mean - profiles[a].score.mean);
 
   // Coefficient of variation (std / |mean|) flags unstable profiles
-  // -- those whose outcome varies wildly relative to their average.
-  // Stable profile: cv < 0.15. Volatile: cv > 0.35. Below uses absolute
-  // mean to handle near-zero / negative score scales.
   const stability = {};
   for (const name of Object.keys(profiles)) {
     const s = profiles[name].score;

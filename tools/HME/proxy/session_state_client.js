@@ -37,6 +37,7 @@ async function call(action, sessionId = '', payload = {}) {
     if (action === 'read') return await _http('GET', `/hme/session/${sid}/state`);
     return await _http('POST', `/hme/session/${sid}/${action}`, payload);
   } catch (_e) {
+    // silent-ok: optional fallback path.
     if (action === 'read') return sessionState.readState(sessionId);
     if (action === 'phase') return sessionState.recordPhase(payload.phase, { ...payload.meta, session_id: sessionId });
     if (action === 'write') return sessionState.recordWrite(payload.payload || {}, payload.decision || {});

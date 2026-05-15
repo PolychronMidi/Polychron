@@ -75,11 +75,6 @@ def _score(entries: list[dict]) -> dict:
         if n < 20:
             continue
         # MVP predictability heuristic: rate at which duration falls in
-        # the dominant half-decade bucket (under-100ms, 100ms-1s, >1s).
-        # Hooks that always land in the same bucket have predictable
-        # latency -> candidate signal-redundant. This is a proxy -- real
-        # prediction accuracy requires verdict capture, which the
-        # next iteration of the stderr-capture stop-chain can provide.
         buckets = defaultdict(int)
         for r in rows:
             d = r.get("duration_ms", 0)

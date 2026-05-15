@@ -42,9 +42,6 @@ _audio_init_lock = threading.Lock()               # one-shot eager init gate
 _audio_init_done = False
 
 # Device selection -- read from central .env via ENV.require (fail-fast).
-# The hme_env module lives at tools/HME/service/hme_env.py; add the mcp dir to
-# sys.path so we can import it from server/tools_analysis/ without a
-# cross-package relative import.
 import sys as _sys_env
 _mcp_dir_env = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if _mcp_dir_env not in _sys_env.path:

@@ -50,8 +50,6 @@ def i_form(mcp_name: str, primer: bool = False, value: str = "") -> str:
     template = entry.get("primer" if primer else "i", f"i/{mcp_name}")
     if value:
         # Substitute the angle-bracket placeholder if present (e.g. <MODE>,
-        # <ACTION>, <FOCUS>, <TARGET>). Falls through to template if no
-        # placeholder -- caller gets the original string back.
         return re.sub(r"<[A-Z_]+>", value, template, count=1)
     return template
 

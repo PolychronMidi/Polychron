@@ -60,8 +60,6 @@ def trace(target: str = "", mode: str = "auto", section: int = -1, limit: int = 
         mode = _detect_trace_type(target)
 
     # Tool-layer BRIEF emission: tracing a module IS a read-prior signal.
-    # Not emitted for snapshot/round/cascade modes (those target beats/
-    # channels/ids, not modules). Only module-ish traces emit.
     if mode in ("module", "impact", "causal", "callers", "interaction"):
         try:
             from .read_unified import _emit_brief_recorded
@@ -119,8 +117,6 @@ def _detect_trace_type(target: str) -> str:
     if target in _KNOWN_CAMEL_CHANNELS:
         return "cascade"
     # camelCase starting with uppercase = likely a module (e.g. "crossLayerClimaxEngine")
-    # camelCase starting with lowercase but has uppercase = could be module or channel
-    # Heuristic: if it matches a JS module naming pattern (multi-word camel) -> module
     if re.search(r'[A-Z][a-z]', target[1:]) and len(target) > 15:
         return "module"  # long camelCase = almost always a module name
     # All lowercase, no hyphens -- check known channels

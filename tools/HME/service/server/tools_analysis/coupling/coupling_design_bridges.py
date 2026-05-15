@@ -307,7 +307,6 @@ def forge_bridges(top_n: int = 2) -> str:
                 sketch = "\n".join(sketch.split("\n")[:-1])
             sketch = sketch.strip()
 
-            # API validation: check that module.method references in sketch exist in symbol table
             import re as _re
             method_refs = _re.findall(r'\b(\w+)\.(\w+)\s*\(', sketch)
             unknown_refs = []
@@ -332,7 +331,6 @@ def forge_bridges(top_n: int = 2) -> str:
                 except Exception as _err4:
                     logger.debug(f'silent-except coupling_bridges.py:687: {type(_err4).__name__}: {_err4}')
 
-            # Re-prompt if too many unknown API calls -- inject valid symbol list as constraint
             if len(unknown_refs) > 2 and ctx.project_engine.symbol_table is not None:
                 api_constraints = []
                 for mod_name, methods in module_methods.items():

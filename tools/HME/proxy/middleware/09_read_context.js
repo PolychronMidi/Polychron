@@ -28,12 +28,6 @@ const MAX_CALLERS_SHOWN = 4;
 const CALLER_SCAN_DIRS = ['src', 'tools/HME'];
 
 // Per-file caller list cache. Persisted so a proxy restart doesn't cold-
-// start the cache and force re-scanning every file's call sites on the
-// first ~50 reads. Each lookup costs ~30-100ms (recursive grep across
-// src + tools/HME); warm-start saves that cost on bounce. Persistence
-// abstraction: see middleware/_persistent_map.js. Caches are perf-only,
-// not correctness-critical (mismatched cache -> fresh grep computes the
-// truth anyway).
 const PersistentMap = require('./_persistent_map');
 const _callerCache = new PersistentMap('tmp/hme-mw-cache-callers.jsonl', { cap: 5000 });
 
@@ -58,13 +52,7 @@ function _findCallers(projectRoot, filePath) {
     _callerCache.set(filePath, []);
     return [];
   }
-  // Match relative requires/imports ending in this basename. POSIX ERE for
-  // plain grep -- (require|from), optional whitespace + paren, a quote, any
-  // non-quote chars, /stem, closing quote, optional paren.
-  // Escape ERE meta in the stem before interpolation. Filenames with `.`,
-  // `|`, `+`, `[`, `]`, `(`, `)`, `*`, `?`, `^`, `$`, `\` would otherwise
-  // produce a malformed or over-broad regex (a stem like `a|b` matched
-  // every file containing `a` or `b`, swelling the caller list).
+  // Escape POSIX ERE metacharacters so stem scans stay basename-specific.
   const _ereEscape = (s) => String(s).replace(/[.\\+*?[\]^$(){}|]/g, '\\$&');
   const pattern = `(require|from)[[:space:]]*[(]?['"][^'"]*[/]${_ereEscape(stem)}['"][)]?`;
   const args = ['-rl', '-E', pattern, '--include=*.js', '--include=*.ts', '--include=*.tsx', '--include=*.mjs', '--include=*.cjs', '--', ...CALLER_SCAN_DIRS];
@@ -72,6 +60,7 @@ function _findCallers(projectRoot, filePath) {
   try {
     out = execFileSync('grep', args, { cwd: projectRoot, encoding: 'utf8', timeout: 3000, maxBuffer: 128 * 1024 });
   } catch (_e) {
+    // silent-ok: optional fallback path.
     // grep exits 1 on no matches; any error -> treat as no callers (silent)
     _callerCache.set(filePath, []);
     return [];

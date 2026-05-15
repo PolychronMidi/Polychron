@@ -1,4 +1,3 @@
-// src/conductor/conductorStateProviderRegistry.js - Sub-registry for state-field providers.
 // Each provider returns an object whose keys map directly to
 // conductorState.updateFromConductor() fields.
 

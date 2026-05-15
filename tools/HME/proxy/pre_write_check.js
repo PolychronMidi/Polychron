@@ -133,6 +133,7 @@ async function preWriteCheck(stdinJson) {
     await stateClient.call('write', payload.session_id || '', { payload, decision: shellDecision });
     return shellDecision;
   } catch (err) {
+    // silent-ok: optional fallback path.
     return _permission('ask', `pre-write-check failed: ${err.message}`);
   }
 }

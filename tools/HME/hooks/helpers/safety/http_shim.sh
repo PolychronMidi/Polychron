@@ -1,5 +1,4 @@
 # HME HTTP shim helpers
-# Consolidated KB enrichment and validation via the worker at localhost:9098 (absorbed the shim).
 
 _hme_enrich() {
   local module="$1" top_k="${2:-3}"
@@ -22,8 +21,6 @@ _hme_kb_titles() {
 }
 
 # Activity bridge emit helper
-# Shorthand for emitting to hme-activity.jsonl. Args are --key=value pairs.
-# Usage: _emit_activity file_written --session="$SID" --file="$F" --module="$M"
 _emit_activity() {
   local event="$1"; shift
   python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \

@@ -37,8 +37,6 @@ module.exports = {
     if (!payload || !Array.isArray(payload.tools)) return;
     const before = payload.tools.length;
     // Rescue cache_control from any dropped tool: Claude Code attaches the
-    // breakpoint to the LAST tool; stripping it loses cache hits and burns
-    // ITPM. Re-attach to the new last tool.
     let rescuedCC = null;
     const kept = payload.tools.filter((t) => {
       const name = t && typeof t.name === 'string' ? t.name : '';

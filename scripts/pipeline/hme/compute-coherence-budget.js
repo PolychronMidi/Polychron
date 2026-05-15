@@ -20,8 +20,6 @@ const PRIOR_BAND = [0.55, 0.85];
 const HISTORY_CAP = 60;
 
 // Sentiment -> scalar in [0, 1]. Ground truth dominates the outcome score
-// when present so that the proxy's "emergence suppressed" reflex can't
-// fire on a round the listener actually reports as transcendent.
 const SENTIMENT_WEIGHT = {
   transcendent: 1.0,
   compelling: 0.9,
@@ -36,7 +34,6 @@ const POSITIVE_SENTIMENTS = new Set(['transcendent', 'compelling', 'moving', 'su
 
 
 function loadGroundTruth() {
-  // Returns { byRound: { R92: {sentiment, moment_type, ts}, ... }, latest: {...}|null }
   if (!fs.existsSync(GROUND_TRUTH)) return { byRound: {}, latest: null };
   const byRound = {};
   let latest = null;
@@ -77,11 +74,6 @@ function groundTruthScalar(entry) {
 
 function musicalOutcomeScore(snapshot, groundTruth) {
   // Composite scalar in ~[0, 1.1].
-  //
-  // When ground truth exists for the snapshot's round, it DOMINATES
-  // (weight 0.6) because a listener's transcendent verdict is stronger
-  // signal than perceptual proxies. Without ground truth, fall back to
-  // the original EnCodec/CLAP/verdict composite.
   let score = 0;
   let weights = 0;
   const gtScalar = groundTruthScalar(groundTruth);
@@ -115,9 +107,6 @@ function quantile(sorted, q) {
 }
 
 // Match a musical-correlation snapshot to the ground-truth entry most
-// likely to describe it. Ground truth is emitted shortly AFTER the
-// pipeline run, so we pick the GT entry whose ts is the smallest
-// positive delta from the snapshot within a 6-hour window.
 function matchGroundTruthForSnapshot(snapshotTsIso, groundTruthLatestByTs) {
   const snapTs = Date.parse(snapshotTsIso) / 1000;
   if (!Number.isFinite(snapTs)) return null;
@@ -182,12 +171,7 @@ function main() {
     bandRounds = topN;
   }
 
-  // Horizon V->IX bidirectional coupling: if the conjugate-channel
-  // verifier wrote a tightening proposal (lost-quadrant FAIL fired
-  // on the previous round), narrow the band by the recommended delta.
-  // This is THE FIRST PLACE HME's signal changes composition behavior:
-  // a sustained "lost" quadrant on the architectural axis triggers
-  // the chaordic edge to contract for the next round.
+  // if the conjugate-channel
   let bandTighteningApplied = null;
   try {
     const tighteningPath = path.join(__dirname, '..', '..', '..', 'tmp', 'hme-band-tightening.json');
@@ -198,17 +182,9 @@ function main() {
       const writtenAt = Number(tighten.ts || 0);
       const writtenAgeS = (Date.now() / 1000) - writtenAt;
       // Apply only if the proposal is fresh (within the last 24h);
-      // older proposals are stale signal -- we'd be tightening based
-      // on long-past architectural state.
       if (writtenAgeS < 86400) {
         const delta = Number(tighten.band_delta || 0);
         // Bidirectional band adjustment:
-        //   delta < 0  -> narrow symmetrically (lost-quadrant tightening)
-        //   delta > 0  -> widen symmetrically (license-to-explore loosening,
-        //                fired when >=5 of 7 axes saturated)
-        // Symmetric formula: newLo = band[0] - delta/2, newHi = band[1] + delta/2.
-        // Negative delta: subtracting raises floor, adding lowers ceiling -> narrow.
-        // Positive delta: subtracting lowers floor, adding raises ceiling -> widen.
         const before = band.slice();
         const newLo = Math.max(0, band[0] - delta / 2);
         const newHi = Math.min(1, band[1] + delta / 2);
@@ -237,9 +213,6 @@ function main() {
     }
   } catch (err) {
     // Surface tightening-read failures so silent corruption doesn't
-    // mask architectural feedback. Throw -- fail-fast invariant. The
-    // tightening file is optional, so absence is fine; presence with
-    // bad content is a real bug to surface.
     throw new Error(`band-tightening read failed: ${err.message}`);
   }
 
@@ -267,8 +240,6 @@ function main() {
     state = 'ABOVE';
     if (currentGtPositive) {
       // Ground truth dominates: listener reports the round is good, so
-      // "emergence suppressed" is the wrong diagnosis. Maintain the
-      // current disciplined regime and flag the band for recalibration.
       prescription = (
         `CONFIRMED: coherence above prior band but ground truth = ` +
         `${currentGt.sentiment}/${currentGt.moment_type || 'unspecified'} ` +

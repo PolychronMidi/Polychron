@@ -91,6 +91,7 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
             with urllib.request.urlopen(req, timeout=wall_timeout) as resp:
                 result_box[0] = json.loads(resp.read())
         except Exception as e:
+            # silent-ok: optional fallback path.
             result_box[1] = f"{type(e).__name__}: {e}"
 
     t = threading.Thread(target=_worker, daemon=True)

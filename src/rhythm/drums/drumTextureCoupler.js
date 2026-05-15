@@ -1,4 +1,3 @@
-// src/rhythm/drumTextureCoupler.js - eventBus listener coupling texture contrast events to drum accenting
 // When textureBlender fires chord bursts or flurries, this listener accumulates
 // intensity and exposes it so drum patterns can accent in sympathy.
 
@@ -85,11 +84,7 @@ moduleLifecycle.declare({
    * Returns true when intensity crosses a rising threshold with jitter.
    * @returns {boolean}
    */
-  // R79 E3: Regime-aware accent threshold. In exploring regime, lower
-  // threshold (0.10-0.28) makes drums accent more readily in response to
-  // texture events -- punctuated, responsive rhythmic texture. In coherent
-  // regime, higher threshold (0.22-0.42) means only strong texture events
-  // trigger accents -- fewer but more impactful rhythmic punctuation.
+  // Regime-aware accent threshold. In exploring regime, lower
   function shouldAccent() {
     const intensity = getIntensity();
     const regime = regimeClassifier.getRegime();

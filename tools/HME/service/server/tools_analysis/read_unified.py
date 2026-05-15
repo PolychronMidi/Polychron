@@ -104,10 +104,6 @@ def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
         os.environ["HME_READ_FAST"] = "1"  # env-ok: transient per-call flag, not persistent config
 
     # Tool-layer BRIEF emission -- agent-independent. When native Read/Edit
-    # enrichment or an internal scripted read reaches this path, that IS a BRIEF.
-    # Emit from the tool itself so BRIEFs don't depend on hook substrate or
-    # proxy middleware being active. Stores both bare module AND abs path so
-    # downstream hme_read_prior matching works regardless of form.
     try:
         _emit_brief_recorded(target.strip(), source=f"hme_read_{mode}")
     except Exception as _brief_err:

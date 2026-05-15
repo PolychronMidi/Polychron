@@ -80,11 +80,7 @@ moduleLifecycle.declare({
 
     // Tail pressure computation
     const adaptiveSnapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
-    // R77 E1: Exceedance-outcome-adaptive tail threshold (#18). Track rolling
-    // aggregate hotspot rate. When exceedance is consistently low, raise the
-    // per-pair adaptiveHotThreshold to reduce false-positive tail pressure.
-    // Negative feedback loop: low exceedance -> higher threshold -> less
-    // compression -> more headroom -> exceedance rises -> tighter threshold.
+    // Exceedance-outcome-adaptive tail threshold (#18). Track rolling
     let totalHotspotRateSum = 0;
     for (let i = 0; i < TAIL_TRACKED_PAIRS.length; i++) {
       const ae = adaptiveSnapshot && adaptiveSnapshot[TAIL_TRACKED_PAIRS[i]];
@@ -112,9 +108,7 @@ moduleLifecycle.declare({
       const pairP95 = V.optionalFinite(adaptiveEntry && adaptiveEntry.p95AbsCorr, pairAbs);
       const hotspotRate = V.optionalFinite(adaptiveEntry && adaptiveEntry.hotspotRate, 0);
       const severeRate = V.optionalFinite(adaptiveEntry && adaptiveEntry.severeRate, 0);
-      // R77 E1 + R78 E1: Raise threshold when exceedance outcome is low.
-      // R78: Cap 0.88->0.84. The 0.88 cap was too permissive, allowing
-      // high-baseline pairs to escape tail pressure (DT 55-beat exceedance).
+      // Raise threshold when exceedance outcome is low.
       const adaptiveHotThreshold = clamp(m.max(0.54 + S.exceedanceRelaxOffset, targetAnchor + 0.26, baseline * 1.9), 0.54, 0.84);
       const overshootPressure = clamp((pairAbs - adaptiveHotThreshold) / 0.26, 0, 1);
       const persistentPressure = clamp((pairP95 - adaptiveHotThreshold) / 0.18, 0, 1);
@@ -146,9 +140,7 @@ moduleLifecycle.declare({
       if (nextTailPressure > TAIL_RANKED_THRESHOLD) rankedTailPairs.push({ pair, pressure: nextTailPressure });
     }
     rankedTailPairs.sort(function(a, b) { return b.pressure - a.pressure; });
-    // R75 E3: Top-2 pair concentration ratio. Gini (threshold 0.40) misses
-    // high top-2 concentration when many low-activity pairs dilute inequality.
-    // TF+DT held 50/64 exceedance beats (0.781 concentration) with Gini only 0.269.
+    // Top-2 pair concentration ratio. Gini (threshold 0.40) misses
     const top2TailSum = rankedTailPairs.length >= 2
       ? rankedTailPairs[0].pressure + rankedTailPairs[1].pressure
       : (rankedTailPairs.length === 1 ? rankedTailPairs[0].pressure : 0);
@@ -225,9 +217,7 @@ moduleLifecycle.declare({
     if (S.beatCount >= 8 && S.peakEnergyEma > 0.1) {
       S.energyBudget = S.peakEnergyEma * BUDGET_PEAK_RATIO;
     }
-    // R2 E2: Ceiling-aware budget relaxation. When pairGainCeilingController
-    // is actively managing multiple pairs, homeostasis can afford a higher
-    // budget since ceilings already prevent runaway coupling energy.
+    // Ceiling-aware budget relaxation. When pairGainCeilingController
     const ceilingSnap = pairGainCeilingController.getSnapshot();
     if (ceilingSnap) {
       const managedPairs = Object.keys(ceilingSnap).length;
@@ -249,10 +239,7 @@ moduleLifecycle.declare({
     if (snap.regime === 'exploring' && S.beatCount > 30) {
       S.energyBudget *= 1.15;
     }
-    // R3 E5: Coherent regime budget bonus. Currently only exploring gets
-    // relaxation (+15% x2), so coherent passages (50%+ of beats) are the
-    // tightest-budgeted regime despite needing rich coupling texture.
-    // Add modest +8% when coherent and coupling surface has no severe hotspots.
+    // Coherent regime budget bonus. Currently only exploring gets
     if (homeostasisRefreshDynSnap && homeostasisRefreshDynSnap.regime === 'coherent' &&
         S.beatCount > 50 && S.densityFlickerTailPressure < 0.80) {
       S.energyBudget *= 1.08;

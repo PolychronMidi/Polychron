@@ -52,12 +52,6 @@ function extractPerceptualSignals(p) {
 
 function pearson(xs, ys) {
   // Returns { r, degenerate } or { r: null } when undefined.
-  //
-  // Degenerate cases (r clamps to +/-1 as artifact, not signal):
-  //   - fewer than 3 points
-  //   - zero variance in either axis
-  //   - fewer than 3 distinct values in either axis (k-1 points coincide,
-  //     the k-th is an outlier -> any line fits perfectly, r=+/-1)
   const n = Math.min(xs.length, ys.length);
   if (n < 3) return { r: null, degenerate: true, reason: 'n<3' };
   const distinctX = new Set(xs).size;

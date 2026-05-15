@@ -30,7 +30,7 @@ if [[ -f "$LOOP_FILE" ]]; then
       TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
       DONE=false
       if [[ -n "$DONE_SIGNAL" && -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-        if grep -q "$DONE_SIGNAL" "$TRANSCRIPT_PATH" 2>/dev/null; then
+        if grep -q "$DONE_SIGNAL" "$TRANSCRIPT_PATH" 2>/dev/null; then  # silent-ok: optional fallback path.
           DONE=true
         fi
       fi

@@ -1,4 +1,3 @@
-// axisEnergyEquilibrator.js - Hypermeta controller facade for coupling-energy redistribution.
 
 moduleLifecycle.declare({
   name: 'axisEnergyEquilibrator',
@@ -74,18 +73,11 @@ moduleLifecycle.declare({
       perAxisAdj: {},
       perPairAdj: {},
       // Legacy override instrumentation. Counts how many times each
-      // SpecialCaps legacy override actually changes a pair baseline.
-      // Candidate-for-removal overrides showing 0 fires across many rounds
-      // are data-driven migration candidates. Ids match LEGACY_OVERRIDES
-      // in scripts/pipeline/validators/check-hypermeta-jurisdiction.js.
       perLegacyOverride: {
         'tension-floor-0.15': 0,
         'trust-floor-0.14': 0,
       },
       // Entry counts: condition was true (e.g. tensionSmoothed < 0.15) but
-      // baseline may not have changed (cooldown, non-nudgeable, already at max).
-      // entries >> fires means the override is checked often but action blocked
-      // -- useful signal for tuning cooldowns or understanding override efficacy.
       perLegacyOverrideEntries: {
         'tension-floor-0.15': 0,
         'trust-floor-0.14': 0,

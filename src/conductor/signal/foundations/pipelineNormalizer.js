@@ -13,8 +13,6 @@ moduleLifecycle.declare({
   const V = deps.validator.create('pipelineNormalizer');
 
   // Soft-envelope boundaries per pipeline, calibrated from observed products.
-  // softMin/softMax: compression onset thresholds (passthrough zone).
-  // range: compression depth; hard floor = softMin - range, hard ceiling = softMax + range.
   const BOUNDS = {
     density: { softMin: 0.50, softMax: 1.50, range: 0.22 },  // R27 E4: Widened softMax from 1.40 and range from 0.20 to allow more density dynamic range
     tension: { softMin: 0.65, softMax: 1.60, range: 0.25 },  // Hypermeta evolution: Widen tension compression envelope to restore dynamic range (avg 0.8684, max 0.9999 indicates over-compression)
@@ -91,9 +89,6 @@ moduleLifecycle.declare({
     for (const [pipeline, s] of Object.entries(pipelineNormalizerState)) {
       const b = BOUNDS[pipeline];
       // Pre-first-beat: rates are undefined-by-nature; report 0 explicitly
-      // rather than divide-by-zero-guarded with `|| 1` (which would falsely
-      // return rate=0 via 0/1 anyway, but obscures intent and reads as a
-      // fail-fast violation under CLAUDE.md scan).
       const lowRate = s.beats > 0 ? s.compressedLow / s.beats : 0;
       const highRate = s.beats > 0 ? s.compressedHigh / s.beats : 0;
       result[pipeline] = {

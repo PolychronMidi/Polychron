@@ -160,9 +160,6 @@ def _check_same_commit_determinism(inv: dict) -> tuple[bool, str]:
     hist = corr.get("history") or []
 
     # Build {tree_hash_or_sha: [values]}
-    # tree_hash is preferred -- it's stable across auto-commits that don't change
-    # file content, so two same-source-tree runs can be compared. Falls back to
-    # SHA extracted from round_id for older history entries that lack tree_hash.
     by_sha: dict = {}
     for h in hist:
         tree = h.get("tree_hash")
@@ -252,8 +249,6 @@ def _check_activity_field_sanity(inv: dict) -> tuple[bool, str]:
         if e.get("event") != event_name:
             continue
         # Skip legacy events missing schema-extension fields (e.g. pre-R09
-        # events without 'source'). Without this, adding a new field causes
-        # retroactive invariant failures on all historical events.
         if require_fields and any(not e.get(rf) for rf in require_fields):
             continue
         val = e.get(field)

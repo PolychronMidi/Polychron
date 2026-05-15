@@ -147,8 +147,6 @@ moduleLifecycle.declare({
       const sampledSectionProgress = timeStream.normalizedProgress('section');
       if (typeof sampledSectionProgress === 'number' && Number.isFinite(sampledSectionProgress)) {
         // Compound phase signal: blend section/phrase/measure progress + sine
-        // harmonic (rebalanced for beat-level phase variance and inter-dim
-        // coupling opportunity).
         const sectionPart = sampledSectionProgress;
         let phrasePart = 0;
         {
@@ -166,8 +164,6 @@ moduleLifecycle.declare({
         }
         const harmonicPart = 0.5 + 0.5 * m.sin(sampledSectionProgress * m.PI * 2);
         // Flicker-aware phase decorrelation: when snap.flickerProduct
-        // deflects >0.05 from neutral, dampen the harmonic component that
-        // creates flicker-phase co-movement.
         const flickerDeflection = clamp((m.abs(snap.flickerProduct - 1.0) - 0.05) / 0.10, 0, 1);
         // 22% dampening: balances flicker-phase anti-correlation vs
         // preserving harmonic contribution to phase axis share.

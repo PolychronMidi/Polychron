@@ -52,6 +52,7 @@ function _scanHookPolicies() {
       status: config.isEnabled(p.name, p.defaultEnabled) ? 'on' : 'off',
     }));
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return [];
   }
 }

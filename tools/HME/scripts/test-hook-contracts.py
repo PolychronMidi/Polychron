@@ -69,8 +69,6 @@ def _run_hook(tool_response: str) -> tuple[str, str, int]:
         env = dict(os.environ)
         env["PROJECT_ROOT"] = str(PROJECT_ROOT)  # hook needs real PROJECT_ROOT for _safety.sh
         # tmp/ inside a temp project root is what _nexus.sh writes to -- but the
-        # hook sources helpers that assume PROJECT_ROOT has the real src/
-        # structure. Keep PROJECT_ROOT real; we just verify stdout+stderr.
         result = subprocess.run(
             ["bash", str(HOOK)],
             input=payload,

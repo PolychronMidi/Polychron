@@ -47,8 +47,6 @@ _EFFECTIVENESS = os.path.join(METRICS_DIR, "hme-tool-effectiveness.json")
 _OUTPUT = os.path.join(METRICS_DIR, "hme-coupling.json")
 
 # Tools we consider "HME surface" -- both the public HME tools and the hooks
-# that dispatch on native tool calls. Any tool co-occurring with these is a
-# candidate for coupling analysis.
 _HME_PUBLIC_TOOLS = {"evolve", "review", "learn", "trace", "hme_admin"}
 
 
@@ -185,8 +183,6 @@ def build_matrix() -> dict:
         }
 
     # Antagonist bridge detection: pairs with high individual frequency but
-    # low co-occurrence. If A appears in 50% of sessions and B appears in 50%
-    # but they never co-occur, that's an under-coupled pair worth examining.
     bridges = []
     for a, b in itertools.combinations(nodes, 2):
         fa = tool_freq[a] / total_sessions

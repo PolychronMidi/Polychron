@@ -1,4 +1,3 @@
-// playDrums.js - Drum pattern generation based on beat rhythm, beat index, and phrase structure
 const V = validator.create('playDrums2');
 
 playDrums2 = function playDrums2() {

@@ -148,8 +148,6 @@ VoiceManager = class VoiceManager {
     const voiceHistory = this.voiceHistoryByLayer.get(layerId);
 
     // If we have a scorer and multiple voices, use joint selection
-    // stash into an any-typed local so we can null/undef it without TypeScript
-    // complaining, and also inspect dynamic members safely.
     /** @type {any} */ const actualScorer = scorer;
     // validate scorer before attempting joint optimization
     if (actualScorer && !this.V.optionalType(actualScorer.voiceRegistryScoreCandidate, 'function')) {

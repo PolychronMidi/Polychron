@@ -89,8 +89,6 @@ def _dispatch(endpoint: str, body: dict) -> dict:
 
         if endpoint == "tool":
             # Generic i/* tool dispatch via tool_call. Same protocol as
-            # /tool/<name> HTTP -- body shape: {name, args}. Returns
-            # {ok: bool, result?: any, error?: str}.
             tool_name = body.get("name", "")
             tool_args = body.get("args", {}) or {}
             if not tool_name:

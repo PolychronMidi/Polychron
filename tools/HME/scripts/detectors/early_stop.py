@@ -72,8 +72,6 @@ OPEN_ENDED_PROMPTS = (
     "fully pull",
     "capstone",
     # Expanded 2026-04-23 after the catastrophic-failure debut: the
-    # detector stopped me in the very turn that built it. These are the
-    # prompts that were active in that session and should now match.
     "go bigger",
     "tackle them",
     "tackle all",
@@ -157,9 +155,6 @@ ENUMERATION_PHRASES = (
     "honest list",
     "genuinely low-leverage",
     # Expanded 2026-04-23 from the catastrophic-failure debut turn. The
-    # final text of that turn used these exact phrases without them
-    # triggering the detector -- they are now load-bearing members of
-    # the list.
     "pick any to spin",
     "queue next",
     "the next time",
@@ -186,10 +181,6 @@ ENUMERATION_PHRASES = (
     "nice-to-have",
     "nice to have",
     # Expanded 2026-04-23 (round 2). The closing of the prior turn used
-    # "Round complete... two minor UX gaps left as-is" -- explicit
-    # enumeration-with-deferral that the detector missed because none of
-    # those exact phrasings were members. Adding the smoking-gun closures
-    # plus the "minor"/"small"/"polish" minimizers that pair with them.
     "round complete",
     "left as-is",
     "left as is",
@@ -227,9 +218,6 @@ def _is_assistant(event: dict) -> bool:
 
 
 # Stop-hook deny payloads ride into the transcript as user-shaped events.
-# Their text contains "do all" / "anything missing" / "push further" --
-# the same language the open-ended-prompt check matches. Skip them when
-# locating the real user prompt for this turn.
 _HOOK_DENY_MARKERS = (
     "Stop hook feedback:",
     "Stop hook blocking error from command:",
@@ -351,11 +339,6 @@ def main() -> int:
         return 0
 
     # Signal 2: does the final assistant text show enumerate-but-didnt-execute?
-    # Strip code-fenced / backticked / quoted spans before phrase-
-    # matching -- same discipline stop_work + exhaust_check + psycho_stop
-    # + fabrication_check apply. A response that DESCRIBES enumerated
-    # remaining items (in a regex example or quoted block) shouldn't
-    # false-fire as if the agent left work undone in their own prose.
     from _text_strip import strip_quoted
     final_text = strip_quoted(_last_assistant_text(events)).lower()
     if not final_text:

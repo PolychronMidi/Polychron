@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME UserPromptSubmit: clears per-turn state, emits turn_start, autocommit + LIFESAVER + satisfaction. COORDINATES WITH: precompact, sessionstart.
 # MUST RUN BEFORE: stop
 INPUT=$(cat)
 PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
@@ -8,13 +7,12 @@ PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 # Reset per-turn trackers (turn-edits + brief dedup) consumed by pretooluse_edit/write.
 if [ -n "${PROJECT_ROOT:-}" ]; then
   rm -f "${PROJECT_ROOT}/tmp/hme-turn-edits.txt" \
-        "${PROJECT_ROOT}/tmp/hme-turn-briefs.txt" 2>/dev/null || true
+        "${PROJECT_ROOT}/tmp/hme-turn-briefs.txt" 2>/dev/null || true  # silent-ok: optional fallback path.
 fi
 
-# Snapshot SPEC.md at turn start so scope_vs_shipped can diff against pre-autocommit state. Without this snapshot, autocommit syncs HEAD <-> working tree during the turn and the detector sees empty diff -> falsely fires scope-not-tracked.
 if [ -n "${PROJECT_ROOT:-}" ] && [ -f "${PROJECT_ROOT}/doc/templates/SPEC.md" ]; then
   mkdir -p "${PROJECT_ROOT}/tmp" 2>/dev/null
-  cp "${PROJECT_ROOT}/doc/templates/SPEC.md" "${PROJECT_ROOT}/tmp/spec-turn-start.md" 2>/dev/null || true
+  cp "${PROJECT_ROOT}/doc/templates/SPEC.md" "${PROJECT_ROOT}/tmp/spec-turn-start.md" 2>/dev/null || true  # silent-ok: optional fallback path.
 fi
 
 _signal_emit turn_start userpromptsubmit turn '{}'
@@ -22,10 +20,9 @@ _signal_emit turn_start userpromptsubmit turn '{}'
 # SatisfactionCapture: score the prompt 1-10 -> output/metrics/satisfaction.jsonl
 # (neutral=5, never null). Best-effort; never blocks the turn.
 if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
-  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true
+  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true  # silent-ok: optional fallback path.
 fi
 
-# Tier classification per turn -- writes a fresh mode-classifier.jsonl line so summary_format / phase_gate / advisor_doctrine's age-gate doesn't return None on every turn. Without this, classification was driven by 9-day-old test fixtures (the gap that necessitated the age-gate band-aid).
 if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
   PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/tier_classifier.py" --prompt "$PROMPT" --json >/dev/null 2>&1 || true
 fi
@@ -40,15 +37,10 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_autocommit.sh"
 _ac_do_commit userpromptsubmit.sh || true
 
 # Reset the psychopathic-polling counter at turn start -- the counter
-# accumulates within a turn and would never reset without this. The
-# pretooluse_bash hook reads and increments it; this hook resets it.
 rm -f /tmp/polychron-task-poll-count 2>/dev/null
 rm -f /tmp/hme-chain-snapshot-fired 2>/dev/null
 
-# H-compact optimization #6: user-correction capture channel.
-# The user's corrections carry the deepest signal in a session. Grep the
-# prompt for correction phrases and persist to hme-user-corrections.jsonl so
-# chain-snapshot can preserve them verbatim across compaction.
+# user-correction capture channel.
 _CORRECTION_FILE="${PROJECT_ROOT}/tmp/hme-user-corrections.jsonl"
 if [ -n "$PROMPT" ]; then
   _IS_CORRECTION=0
@@ -67,13 +59,11 @@ entry = {
 }
 with open('$_CORRECTION_FILE', 'a') as f:
     f.write(json.dumps(entry) + '\n')
-" "$PROMPT" 2>/dev/null || true
+" "$PROMPT" 2>/dev/null || true  # silent-ok: optional fallback path.
   fi
 fi
 
 # LIFESAVER autocommit fail-flag check (unconditional, runs FIRST).
-# Sticky flag is independent of hme-errors.log so .env/log-dir/stderr-drop
-# failures still surface. Banner fires every UserPromptSubmit until cleared.
 _AC_FLAG_CHECK="${_AC_FAIL_FLAG:-${PROJECT_ROOT}/runtime/hme/autocommit.fail}"
 if [ -f "$_AC_FLAG_CHECK" ]; then
   _AC_FLAG_BODY=$(cat "$_AC_FLAG_CHECK" 2>/dev/null)
@@ -115,7 +105,7 @@ TURNSTART="$PROJECT/runtime/hme/errors-turnstart"
 mkdir -p "$PROJECT/tmp"
 
 if [ -f "$ERROR_LOG" ]; then
-  TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null || echo 0)
+  TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
   LAST=0
   [ -f "$WATERMARK" ] && LAST=$(cat "$WATERMARK" 2>/dev/null || echo 0)
 
@@ -129,26 +119,21 @@ if [ -f "$ERROR_LOG" ]; then
       | grep -vE '\[CANARY-canary-[0-9]+-[0-9]+\] alert-chain self-test injection|\[proxy-watchdog\] proxy respawned' \
       | sort -u)
     # Stop hook is the ONLY gate that advances watermark (else unfixed errors
-    # vanish on TOTAL==TURNSTART). Emit to BOTH stderr + stdout-as-additionalContext
-    # because the Claude adapter can drop stderr-only output.
     echo "" >&2
     echo "LIFESAVER -- unresolved errors in hme-errors.log:" >&2
     echo "$NEW_ERRORS" >&2
     BANNER="LIFESAVER -- unresolved errors in hme-errors.log, fix root-cause before proceeding:
 ${NEW_ERRORS}"
     # Block ONLY if the supervisor-abandoned sentinel currently exists
-    # (live catastrophic state, not historical log entry). Otherwise
-    # allow-with-context so the LIFESAVER is surfaced without blocking
-    # what may be a harmless continuation prompt.
     export BLOCK="false"
     if [ -f "$PROJECT/runtime/hme/supervisor-abandoned" ]; then
       # Cross-check: if the named child is healthy NOW, sentinel is stale.
       # Unlink it and proceed without blocking.
       _sent_child=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('child',''))" \
-        "$PROJECT/runtime/hme/supervisor-abandoned" 2>/dev/null)
+        "$PROJECT/runtime/hme/supervisor-abandoned" 2>/dev/null)  # silent-ok: optional fallback path.
       _healthy=0
-      _sent_url="$(_hme_service_url "$_sent_child" 2>/dev/null || true)"
-      [ -n "$_sent_url" ] && curl -s -m 2 -o /dev/null -w '%{http_code}' "$_sent_url" 2>/dev/null | grep -q '^200$' && _healthy=1
+      _sent_url="$(_hme_service_url "$_sent_child" 2>/dev/null || true)"  # silent-ok: optional fallback path.
+      [ -n "$_sent_url" ] && curl -s -m 2 -o /dev/null -w '%{http_code}' "$_sent_url" 2>/dev/null | grep -q '^200$' && _healthy=1  # silent-ok: optional fallback path.
       if [ "$_healthy" = "1" ]; then
         rm -f "$PROJECT/runtime/hme/supervisor-abandoned" 2>/dev/null
       else
@@ -174,7 +159,7 @@ fi
 
 # HME critical todos: surface unresolved critical+open items at turn start.
 # FAIL-LOUD: python stderr -> hme-errors.log so import failures don't go silent.
-_UPS_CRIT_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ups_crit_err_$$")
+_UPS_CRIT_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ups_crit_err_$$")  # silent-ok: optional fallback path.
 CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>"$_UPS_CRIT_ERR"
 from server.tools_analysis.todo import list_critical
 items = list_critical()
@@ -233,7 +218,7 @@ fi
 
 # High bash call streak from prior turn (poll counter left behind)
 if [ -z "$OVERRIDE_REMINDER" ] && [ -f "/tmp/polychron-bash-call-count" ]; then
-  _BASH_CT=$(cat /tmp/polychron-bash-call-count 2>/dev/null || echo 0)
+  _BASH_CT=$(cat /tmp/polychron-bash-call-count 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
   if [ "$_BASH_CT" -gt 8 ]; then
     OVERRIDE_REMINDER="Prior turn had $_BASH_CT+ bash calls -- prefer an Explore agent for multi-file research."
   fi
@@ -244,8 +229,6 @@ if [ -n "$OVERRIDE_REMINDER" ]; then
 fi
 
 # R30 #2: auto-append ground-truth when user message contains
-# "listening verdict: legendary/stable/drifted/broken". Stops manual
-# jsonl appending for every legendary round.
 PROMPT_BODY=$(_safe_jq "$INPUT" '.prompt' '')
 if [[ -n "$PROMPT_BODY" ]]; then
   VERDICT=""
@@ -256,7 +239,7 @@ if [[ -n "$PROMPT_BODY" ]]; then
   fi
   if [[ -n "$VERDICT" ]]; then
     GT_FILE="${METRICS_DIR}/hme-ground-truth.jsonl"
-    SHA=$(cd "$PROJECT_ROOT" && git rev-parse --short HEAD 2>/dev/null || echo unknown)
+    SHA=$(cd "$PROJECT_ROOT" && git rev-parse --short HEAD 2>/dev/null || echo unknown)  # silent-ok: optional fallback path.
     TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     # Dedupe: skip if the last entry already has this SHA + same verdict
     LAST_SHA_VERDICT=""
@@ -266,7 +249,7 @@ import sys, json
 try:
     d = json.loads(sys.stdin.read())
     print(f\"{d.get('sha')}|{','.join(d.get('tags') or [])}\")
-except Exception: pass" 2>/dev/null || echo "")
+except Exception: pass" 2>/dev/null || echo "")  # silent-ok: optional fallback path.
     fi
     if [[ "$LAST_SHA_VERDICT" != "$SHA|$VERDICT" ]]; then
       echo "{\"ts\":\"$TS\",\"sha\":\"$SHA\",\"tags\":[\"$VERDICT\"],\"source\":\"userpromptsubmit_auto\",\"note\":\"Auto-captured from user prompt\"}" >> "$GT_FILE"
@@ -274,9 +257,8 @@ except Exception: pass" 2>/dev/null || echo "")
   fi
 fi
 
-# Project-stack tag: surface detected language + test runner so subagents skip per-call inference.
 _PD="$PROJECT_ROOT/tools/HME/scripts/project_detect.py"
-[ -x "$_PD" ] && PROJECT_ROOT="$PROJECT_ROOT" python3 "$_PD" --tag 2>/dev/null >&2 || true
+[ -x "$_PD" ] && PROJECT_ROOT="$PROJECT_ROOT" python3 "$_PD" --tag 2>/dev/null >&2 || true  # silent-ok: optional fallback path.
 
 # inject auto-todo reminders from last turn's ingest
 _AUTO_TODO_REMINDER="$PROJECT_ROOT/tmp/hme-auto-todos.reminder"

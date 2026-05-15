@@ -16,7 +16,7 @@ _ONB_PY="${_ONB_PROJECT}/tools/HME/service/server/onboarding_chain.py"
 # Canonical states sourced from tools/HME/config/onboarding_states.json.
 _ONB_STATES_JSON="${_ONB_PROJECT}/tools/HME/config/onboarding_states.json"
 if [ -f "$_ONB_STATES_JSON" ] && command -v python3 >/dev/null 2>&1; then
-  _ONB_STATES=($(python3 -c "import json; print(' '.join(json.load(open('$_ONB_STATES_JSON'))['states']))" 2>/dev/null))
+  _ONB_STATES=($(python3 -c "import json; print(' '.join(json.load(open('$_ONB_STATES_JSON'))['states']))" 2>/dev/null))  # silent-ok: optional fallback path.
 fi
 if [ "${#_ONB_STATES[@]}" -eq 0 ]; then
   _ONB_STATES=(boot selftest_ok targeted edited reviewed piped verified graduated)

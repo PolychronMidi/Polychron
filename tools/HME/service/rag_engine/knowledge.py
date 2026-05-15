@@ -47,9 +47,6 @@ class RAGKnowledgeMixin:
     def _try_open_knowledge_table(self):
         try:
             tbl = self.db.open_table("knowledge")
-            # Dimension safety: verify the table's vector dimension matches current model.
-            # If mismatched (model change), export text data to JSONL backup before proceeding.
-            # This prevents silent data loss from mode="overwrite" on next add_knowledge().
             try:
                 sample = tbl.head(1).to_pydict()
                 if sample and 'vector' in sample and sample['vector']:
@@ -78,10 +75,10 @@ class RAGKnowledgeMixin:
                 pass  # empty table or read error -- proceed normally
             self.knowledge_table = tbl
         except Exception:
+            # silent-ok: optional fallback path.
             self.knowledge_table = None
 
     def add_knowledge(self, title: str, content: str, category: str = "general", tags: list[str] | None = None, related_to: str = "", relation_type: str = "") -> dict:
-        # Prediction error gating: check if this knowledge is redundant, contradictory, or novel
         prediction_action = "store"  # default: novel -> store
         superseded_id = None
         if self.knowledge_table is not None:
@@ -109,7 +106,6 @@ class RAGKnowledgeMixin:
                         except Exception as _e:
                             logger.debug(f"knowledge merge: delete {ex['id']} failed ({type(_e).__name__}: {_e})")
                         if not deleted:
-                            # Delete failed -- don't proceed with merge to avoid duplicates
                             prediction_action = "store"
                             superseded_id = None
                             break
@@ -118,7 +114,6 @@ class RAGKnowledgeMixin:
                         category = ex["category"]
                         break
                     elif similarity > 0.78 and category == ex.get("category", ""):
-                        # Moderately similar + same category -> supersede only if titles share keywords
                         import re as _re
                         def _title_tokens(t: str) -> set:
                             return {w.lower() for w in _re.findall(r'[a-zA-Z]{4,}', t)
@@ -126,7 +121,6 @@ class RAGKnowledgeMixin:
                         new_tokens = _title_tokens(title)
                         old_tokens = _title_tokens(ex.get("title", ""))
                         if not (new_tokens & old_tokens):
-                            # No shared title keywords -- different modules, don't supersede
                             break
                         superseded_candidate = ex["id"]
                         deleted = False
@@ -136,7 +130,6 @@ class RAGKnowledgeMixin:
                         except Exception as _e:
                             logger.debug(f"knowledge supersede: delete {ex['id']} failed ({type(_e).__name__}: {_e})")
                         if not deleted:
-                            # Delete failed -- don't supersede to avoid losing the original
                             break
                         prediction_action = "supersede"
                         superseded_id = superseded_candidate
@@ -215,9 +208,6 @@ class RAGKnowledgeMixin:
         # Cross-encoder reranking for knowledge (prose queries benefit most)
         reranked = _cross_encode_rerank(query, candidates, text_key=lambda r: f"{r['title']} {r['content']}")
 
-        # FSRS-6 inspired spaced repetition: entries decay based on access patterns, not just age.
-        # Frequently retrieved entries stay strong; rarely accessed entries fade faster.
-        # retrieval_strength = base_decay * access_boost
         now = time.time()
         results = []
         for r, score in reranked:
@@ -297,13 +287,7 @@ class RAGKnowledgeMixin:
             rows.sort(key=lambda r: r.get("timestamp", 0), reverse=True)
             out = []
             for r in rows:
-                # R33: graceful per-row decoding. Previously one bad row
-                # (missing column, unexpected None) would raise and the
-                # outer bare `except Exception: return []` would swallow
-                # it, making the entire KB invisible to `i/learn list`
-                # while `i/learn search` worked fine (vector path, different
-                # column access). Silent degradation of the KB's own
-                # inventory endpoint for an unknown period.
+                # graceful per-row decoding. Previously one bad row
                 try:
                     tags_raw = r.get("tags", "")
                     out.append({
@@ -365,7 +349,6 @@ class RAGKnowledgeMixin:
                     continue
                 sim = float(np.dot(normalized[i], normalized[j]))
                 if sim >= similarity_threshold:
-                    # Remove the older entry; on equal timestamps, remove i (keep the later-indexed j)
                     ts_i = rows[i].get("timestamp", 0)
                     ts_j = rows[j].get("timestamp", 0)
                     older = i if ts_i <= ts_j else j

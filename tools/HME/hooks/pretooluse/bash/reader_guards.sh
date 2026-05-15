@@ -5,9 +5,7 @@
 GUARD_CFG="${PROJECT_ROOT}/tools/HME/config/context-guards.json"
 if [ -f "$GUARD_CFG" ] && echo "$CMD" | grep -qE '\b(cat|head|tail|less|more|batcat|bat|diff|sed|awk|xxd|od|git)\b'; then
   # FAIL-LOUD: was `2>/dev/null` + bare `except: sys.exit(0)` which fail-OPENed
-  # the bash-reader gate on every python crash. Now stderr captured so
-  # corrupted config / python crash surfaces to errors.log.
-  _BRG_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_brg_py_err_$$")
+  _BRG_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_brg_py_err_$$")  # silent-ok: optional fallback path.
   BASH_HIT=$(python3 - "$CMD" "$GUARD_CFG" <<'PYEOF' 2>"$_BRG_PY_ERR"
 import json, os, shlex, sys
 cmd, cfg = sys.argv[1], sys.argv[2]
@@ -121,7 +119,7 @@ while i < len(tokens):
                     used_pagination = True
                     j += 2
                     continue
-                # -nN style (e.g. tail -n50); only head/tail treat numeric tails as pagination
+                # -nN style (e.g. tail -n50); only head/tail treat numeric tails as pa...
                 if t[1:].isdigit() and cmd_name in ("head", "tail"):
                     used_pagination = True
                 j += 1

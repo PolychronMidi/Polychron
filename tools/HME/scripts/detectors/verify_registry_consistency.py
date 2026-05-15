@@ -88,9 +88,6 @@ def main() -> int:
     with open(sh_path) as f:
         sh = f.read()
     # detectors.sh now sources emit_detectors_sh.py via eval; verify the
-    # source line is present + the helper functions are called. The bash
-    # blocks themselves are generated, so per-bash_var line search is
-    # obsolete.
     eval_re = re.compile(r'eval\s+"\$\(\s*python3\s+[^)]*emit_detectors_sh\.py')
     parse_call_re = re.compile(r'_detector_parse_case\s+')
     persist_call_re = re.compile(r'_detector_emit_persist\s*>\s*')

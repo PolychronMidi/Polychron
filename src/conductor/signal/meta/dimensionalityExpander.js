@@ -38,9 +38,6 @@ moduleLifecycle.declare({
   const COUPLING_THRESHOLD = 0.30;
 
   // Dead-axis detection: if a compositional axis contributes less than
-  // this fraction of total variance, inject perturbation to revive it.
-  // With 4 axes, uniform distribution = 0.25 each; 0.05 means < 20% of
-  // fair share. Catches ANY dead nudgeable axis automatically.
   const DEAD_AXIS_THRESHOLD = 0.05;
   const DEAD_AXIS_PERTURBATION = 0.12; // raised (was 0.08) - Run 11: flicker at 3.6% below threshold but nudge too small to produce measurable effect
   // Minimum beats between dead-axis nudge applications. Prevents continuous nudging
@@ -48,9 +45,6 @@ moduleLifecycle.declare({
   const DEAD_AXIS_MIN_GAP = 8;
 
   // Dominant-axis suppression: mirror of dead-axis detection. If a
-  // nudgeable axis exceeds this fraction of total variance, dampen it
-  // to restore balance. Without this, a single axis can absorb >50% of
-  // variance while overall dimensionality looks healthy (effDim > 2.2).
   const DOMINANT_AXIS_THRESHOLD = 0.35; // lowered (was 0.50) - Run 14: flicker at 39.2% above 25% fair share but below 50% threshold; 0.35 = 1.4* fair share triggers suppression
   const DOMINANT_AXIS_DAMPENING = 0.12;
   const DOMINANT_MIN_NUDGE = 0.02; // floor so threshold boundary produces meaningful force
@@ -129,9 +123,6 @@ moduleLifecycle.declare({
     dimensionalityExpanderUrgency = dimensionalityExpanderComputeUrgency(snap.effectiveDimensionality);
 
     // Variance balance (runs EVERY beat, independent of urgency)
-    // Dead-axis revival + dominant-axis suppression. These fire even when
-    // effectiveDimensionality looks healthy (e.g., 3.09) because individual
-    // axis imbalance is invisible to overall dimensionality.
     let varD = 0;
     let varT = 0;
     let varF = 0;
@@ -140,9 +131,6 @@ moduleLifecycle.declare({
       for (let i = 0; i < VARIANCE_AXES.length; i++) {
         if (varRatios[i] < DEAD_AXIS_THRESHOLD) {
           // Dead axis: persistent upward bias to displace equilibrium.
-          // Oscillating nudge was killed by EMA smoothing (averaged to ~0).
-          // Gap fills: only fire when gap counter has expired (prevent continuous
-          // nudging before axis has had time to respond to previous perturbation).
           if (axisNudgeGaps[i] > 0) {
             axisNudgeGaps[i]--;
           } else {
@@ -155,7 +143,6 @@ moduleLifecycle.declare({
           }
         } else if (varRatios[i] > DOMINANT_AXIS_THRESHOLD) {
           axisNudgeGaps[i] = 0; // reset gap when axis is no longer dead
-          // Dominant axis: dampen toward fair share (floor prevents paper-wall threshold)
           const excess = varRatios[i] - DOMINANT_AXIS_THRESHOLD;
           const nudge = -m.max(DOMINANT_AXIS_DAMPENING * excess, DOMINANT_MIN_NUDGE);
           if (VARIANCE_AXES[i] === 'density') varD = nudge;

@@ -70,9 +70,6 @@ def brief():
         lines.append(f"{n_actions} action(s) queued:")
         for a in (na.get("actions") or [])[:5]:
             # DEFERRED_BEYOND_EXPECTED previously appeared without explanation.
-            # It means the action has been in the queue longer than its
-            # declared expected-resolution window -- surfaces as a nudge to
-            # either act on it or formally retire the recommendation.
             beyond = " [OVERDUE]" if a.get("deferred_beyond_expected") else ""
             lines.append(f"  [p{a.get('priority')}] {a.get('id')}{beyond}")
         lines.append("  Act: `i/evolve` to see focus options, or `i/why <invariant-id>` for context.")

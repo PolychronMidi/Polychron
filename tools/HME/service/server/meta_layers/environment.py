@@ -160,9 +160,6 @@ def _checkpoint_entanglement() -> None:
                 state["thermo_entropy"] = ops.get("thermo_entropy_ema")
         except (OSError, json.JSONDecodeError) as _ops_err:
             # ops-file read failure means L28/L29/L34 signals (prediction
-            # calibration, thermo efficiency, Brier score) drop from the
-            # state snapshot. Surface via LIFESAVER so the agent sees
-            # "observability partial" banner and knows why the reports went blank.
             logger.error(f"ops file read FAILED: {type(_ops_err).__name__}: {_ops_err}")
             try:
                 from server import context as _ctx
@@ -175,9 +172,6 @@ def _checkpoint_entanglement() -> None:
                 logger.debug(f"LIFESAVER register failed: {_life_err}")
 
         # Last narrative (the system's own interpretation). Lazy imports
-        # from sibling submodules -- explicit cross-submodule imports here
-        # would create a circular graph when every module initializes at
-        # the same time.
         from .narrative import _read_last_narrative
         from .predictions import _compute_effectiveness
         last_narr = _read_last_narrative()

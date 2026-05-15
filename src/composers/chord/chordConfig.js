@@ -1,4 +1,3 @@
-// chordConfig.js - named voicing/progression profiles (delegates to src/conductor/config.js)
 
 chordConfig = (function() {
   function getProfile(name) {

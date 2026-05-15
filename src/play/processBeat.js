@@ -1,4 +1,3 @@
-// processBeat.js - Shared per-beat body for L1 and L2, extracted from main.js to eliminate duplication.
 const V_processBeat = validator.create('processBeat');
 const PROFILE = process.argv.includes('--trace');
 const STAGE_NAMES = ['beat-setup','intent','entropy','phase','climax','envelope','silhouette','rest','complement','tension-cadence','negotiation','probability-adjust','emission','post-beat'];
@@ -71,7 +70,6 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   if (PROFILE) marks[4] = process.hrtime.bigint();
   crossLayerClimaxEngine.tick(absoluteSeconds);
   const clClimaxMods = crossLayerClimaxEngine.getModifiers(layer);
-  // Stash climax modifiers for playNotesEmitPick (avoids re-calling getModifiers per pick)
   setClimaxMods(clClimaxMods);
 
   // -- [stage: envelope] --
@@ -118,7 +116,6 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   });
   playProb = clNegotiation.playProb;
   stutterProb = clNegotiation.stutterProb;
-  // negotiationEngine.apply already incorporates entropyScale - do not re-apply via regulate()
 
   // -- [stage: probability-adjust] -
   if (PROFILE) marks[11] = process.hrtime.bigint();
@@ -128,7 +125,6 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   if (clRest.shouldRest && !crossLayerClimaxEngine.isApproaching()) { playProb = 0; stutterProb = 0; }
   if (clComplementRest.shouldFill) playProb = clamp(playProb * (1 + clComplementRest.fillUrgency * 0.3), 0, 1);
 
-  // Apply breathing adjustment before beat-level notes so all granularity levels use the same probabilities
   const clBreathing = interactionHeatMap.getBreathingRecommendation();
   if (clBreathing.recommendation === 'decrease') {
     playProb = clamp(playProb * 0.96, 0, 1);
@@ -138,11 +134,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
     stutterProb = clamp(stutterProb * 1.04, 0, 1);
   }
 
-  // R41 E4: Regime-responsive stutter probability modulation.
-  // Coherent regime: tighter stutter (less random), evolving: wilder.
-  // Stutter had no direct regime awareness -- regime influenced only
-  // indirectly through negotiationEngine. Direct modulation creates
-  // more distinct dynamic character per regime.
+  // Regime-responsive stutter probability modulation.
   const beatRegime = conductorSignalBridge.getSignals().regime;
   if (beatRegime) {
     // R42 E3: Relax coherent multiplier 0.92->0.96. R41 note count
@@ -164,8 +156,6 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   coherenceMonitor.flushToL0();
 
   // Per-beat homeostasis multiplier update. Coupling data is analysed
-  // per-measure in the recorder pipeline; the multiplier is smoothed per-beat
-  // here for responsive energy governance (~418 ticks/run vs ~78 recorder calls).
   couplingHomeostasis.tick();
 
   crossLayerBeatRecord({

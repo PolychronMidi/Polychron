@@ -157,7 +157,6 @@ motifSpreader = {
       const idx = baseIndex + i;
       motifChain.clearTransforms();
       motifChain.setActive(parentMotif);
-      // Separate ranges: rotate uses small position offsets; transpose uses wider pitch shifts
       if (rf() > 0.15) motifChain.mutate({ transposeRange: [-m.max(3, count * 2), m.max(3, count * 2)], rotateRange: [-m.max(1, count), m.max(1, count)] });
       let derived;
       try { derived = motifChain.apply(); } catch { derived = parentMotif; }
@@ -179,8 +178,6 @@ motifSpreader = {
     }
 
     // Sibling palette enforcement at planning time: constrain total unique PCs
-    // across all child buckets to the sibling limit for this unit level.
-    // Each child can still freely pick from the constrained palette at runtime.
     const sibLimit = layer.motifSpreaderSiblingVoiceLimits && layer.motifSpreaderSiblingVoiceLimits[unit];
     if (typeof sibLimit === 'number' && sibLimit > 0) {
       // Collect PC frequency across all generated buckets

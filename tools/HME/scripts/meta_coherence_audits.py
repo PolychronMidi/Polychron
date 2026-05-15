@@ -74,7 +74,6 @@ def audit_detector_phrases(root: Path) -> list[dict]:
     det_dir = root / "tools" / "HME" / "scripts" / "detectors"
     if not det_dir.is_dir():
         return findings
-    # Corpus: transcript files under ~/.claude/projects/<project>/...
     # We only sample if the dir is present; otherwise skip (coverage optional).
     transcripts_root = Path.home() / ".claude" / "projects"
     corpus: str = ""
@@ -85,12 +84,14 @@ def audit_detector_phrases(root: Path) -> list[dict]:
             try:
                 candidates.append(p)
             except Exception as _e:
+                # silent-ok: optional fallback path.
                 continue
         candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
         for p in candidates[:50]:
             try:
                 corpus += "\n" + p.read_text(errors="ignore")[:200_000]
             except Exception as _e:
+                # silent-ok: optional fallback path.
                 continue
     corpus_lower = corpus.lower()
 
@@ -98,13 +99,13 @@ def audit_detector_phrases(root: Path) -> list[dict]:
         try:
             text = det_file.read_text()
         except Exception as e:
+            # silent-ok: optional fallback path.
             findings.append({
                 "source": f"detectors/{det_file.name}",
                 "status": "ERROR",
                 "detail": f"read failed: {type(e).__name__}: {e}",
             })
             continue
-        # Extract tuple-valued phrase lists like FOO_PHRASES = ( ... )
         for m in re.finditer(
             r'^([A-Z][A-Z_]+(?:PHRASES|KEYWORDS|MARKERS|WORDS|SIGNATURES|TAGS))\s*=\s*\((.*?)\)',
             text, flags=re.MULTILINE | re.DOTALL,
@@ -170,6 +171,7 @@ def audit_hme_log_errors(root: Path) -> list[dict]:
         try:
             ts = _dt.datetime.strptime(tsm.group(1), "%Y-%m-%d %H:%M:%S").timestamp()
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         if now - ts <= 600:  # 10 minutes
             msg = em.group(1).strip()[:100]
@@ -213,6 +215,7 @@ def audit_hook_sources(root: Path) -> list[dict]:
         try:
             text = hook.read_text(errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         for lineno, line in enumerate(text.splitlines(), 1):
             m = source_re.match(line)
@@ -220,10 +223,6 @@ def audit_hook_sources(root: Path) -> list[dict]:
                 continue
             raw = m.group(1)
             # Skip obvious variable-only paths (e.g. "$HOOKS_DIR/_nexus.sh")
-            # that can't be statically resolved without evaluating the
-            # script. The dynamic-dirname form we CAN resolve is the
-            # common one we keep rewriting:
-            # `$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/path`.
             resolved: Path | None = None
             m_dyn = re.match(
                 r'\$\(\s*cd\s+"\$\(\s*dirname\s+"\$\{BASH_SOURCE\[0\]\}"\s*\)"\s*&&\s*pwd\s*\)/(.+)',
@@ -234,11 +233,6 @@ def audit_hook_sources(root: Path) -> list[dict]:
                 sub_path = m_dyn.group(1)
                 resolved = (hook.parent / sub_path).resolve(strict=False)
             elif m_script_dir:
-                # `$SCRIPT_DIR/...` -- SCRIPT_DIR is almost always set to the
-                # dir of BASH_SOURCE[0] via `$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)`.
-                # Treat the hook's own dir as the anchor. Catches the exact
-                # class of bug where `$SCRIPT_DIR/_nexus.sh` resolves into
-                # `posttooluse/_nexus.sh` but the file lives in `helpers/`.
                 sub_path = m_script_dir.group(1)
                 resolved = (hook.parent / sub_path).resolve(strict=False)
             elif raw.startswith("/"):
@@ -259,8 +253,6 @@ def audit_hook_sources(root: Path) -> list[dict]:
 
 
 # (H) Module-load smoke test -- catches NameError/ImportError in module
-#     top-level code OR in any function body that references a missing
-#     global (shutil, subprocess, ENV) before a daemon discovers it
 
 
 def audit_module_imports(root: Path) -> list[dict]:
@@ -299,6 +291,7 @@ def audit_module_imports(root: Path) -> list[dict]:
             })
             continue
         except Exception:
+            # silent-ok: optional fallback path.
             continue
 
         # Collect all bound names at module scope: imports, def, class, assign.
@@ -317,12 +310,6 @@ def audit_module_imports(root: Path) -> list[dict]:
                 module_names.add(node.target.id)
 
         # Walk module-level statements (not deep into nested scopes; function
-        # bodies get their own pass). A real undefined-name check requires
-        # scope-aware analysis we don't want to reimplement here -- so this
-        # check is intentionally conservative: it ONLY flags Name-loads at
-        # MODULE scope that aren't bound anywhere in the module, and skips
-        # comprehension internals (Python 3 gives comprehensions their own
-        # scope so `{v: k for k, v in d.items()}` binds k/v locally).
         comprehension_types = (_ast.ListComp, _ast.SetComp, _ast.DictComp, _ast.GeneratorExp)
         for stmt in tree.body:
             if isinstance(stmt, (_ast.Import, _ast.ImportFrom, _ast.FunctionDef,

@@ -1,4 +1,3 @@
-// individual profile sources must run before utilities that depend on the accumulated global
 require('./measureProfiles');
 require('./scaleProfiles');
 require('./chordsProfiles');

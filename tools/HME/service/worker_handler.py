@@ -28,12 +28,6 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 # `logger` and `ENV` were referenced as bare module globals in the original
-# split -- they're cheap module-level resolves with no circular-import risk
-# (hme_env is leaf-level, logging is stdlib), so import them at top.
-# worker.py-side state (_sp, _startup_done, WORKER_VERSION, CLI_COMPAT_VERSION,
-# names, list_schemas, _bounded_validate, _active_tool_register / _unregister)
-# is resolved lazily inside method bodies because worker.py imports US for
-# _Handler -- a top-level back-import would cycle.
 logger = logging.getLogger("HME")
 _tool_root = os.path.dirname(os.path.abspath(__file__))
 if _tool_root not in sys.path:
@@ -41,13 +35,6 @@ if _tool_root not in sys.path:
 from hme_env import ENV  # noqa: E402
 
 # Shared thread pool for /validate requests. Previous implementation
-# spawned a fresh ThreadPoolExecutor per request with cancel_futures=True,
-# but Python threads can't be interrupted -- on timeout, the running
-# _validate kept executing past the 3s deadline and leaked an engine-
-# bound thread. With a bounded shared pool + semaphore, concurrent
-# validates are capped, so overload cycles can't accumulate runaway
-# workers. Pool size deliberately small; the validate path is inference-
-# bound and serialization is fine.
 _VALIDATE_POOL_SIZE = 2
 _VALIDATE_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
     max_workers=_VALIDATE_POOL_SIZE, thread_name_prefix="hme-validate")
@@ -151,9 +138,6 @@ class _Handler(BaseHTTPRequestHandler):
     # POST dispatch
     def _read_body(self):
         # Explicit None-check for Content-Length instead of the old
-        # truthy-falsy-fallback idiom -- matches the fail-fast style the
-        # rest of the codebase uses and passes the Python-bug probe in
-        # workflow_audit.
         _cl = self.headers.get("Content-Length")
         length = int(_cl) if _cl is not None else 0
         raw = self.rfile.read(length).decode("utf-8") if length else ""
@@ -163,9 +147,6 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _post_tool(self, name: str, args: dict):
         # Lazy imports -- these symbols live on the worker module (which
-        # imports US for _Handler), so a top-level import would cycle.
-        # Resolving at call time also matches the "lazy import in hot path"
-        # comment that surrounds _post_validate / _post_audit.
         from worker_post_handlers import post_tool
         from server.tool_registry import call as tool_call
         from worker import _active_tool_register, _active_tool_unregister

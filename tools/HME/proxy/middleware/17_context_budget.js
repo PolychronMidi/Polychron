@@ -41,9 +41,6 @@ const ENRICHER_MARKERS = {
 };
 
 // Extractors that return the identifiers each enricher injected. Looked
-// up in the tool_result text after the enricher's marker matched.
-// Identifiers are strings the agent might subsequently reference in a
-// tool_use input -- file paths, module/function names, KB titles.
 const IDENTIFIER_EXTRACTORS = {
   // dir name from `[HME dir:<name>]`
   'dir_context': (text) => {
@@ -100,8 +97,6 @@ const IDENTIFIER_EXTRACTORS = {
 };
 
 // Pending-injection map: tool_use_id -> { fired_enrichers, identifiers }.
-// Populated when a tool_result lands; consumed when the NEXT tool_use's
-// input contains any of the recorded identifiers.
 const _pending = new Map();
 const _MAX_PENDING_AGE_MS = 5 * 60_000; // 5 min -- older entries pruned
 

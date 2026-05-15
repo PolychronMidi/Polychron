@@ -5,7 +5,6 @@
 // Doubled fallbacks are either dead code (the outer fallback can never fire)
 // or, worse, silently rewrite legitimate 0/false/empty values to the outer
 // fallback. This class of bug was behind the regimeClassifierClassification
-// tension-gating incident where `safePreBoot.call(..., 0.5) || 0.5` converted
 // every real 0 tension reading to 0.5, skewing regime transition logic.
 //
 // Fix guidance reported in the message -- use the inner value directly, or

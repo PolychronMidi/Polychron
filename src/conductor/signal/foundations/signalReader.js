@@ -8,10 +8,6 @@ moduleLifecycle.declare({
   name: 'signalReader',
   subsystem: 'conductor',
   // Full-DI deps: conductorIntelligence + explainabilityBus are aliased
-  // as locals below so query methods reference deps.X via the local name.
-  // conductorIntelligence is itself a registerInitializer-pool module
-  // (loaded at IIFE time before signalReader.declare runs), so the
-  // dependency resolves eagerly without deferral.
   deps: ['validator', 'conductorIntelligence', 'explainabilityBus'],
   provides: ['signalReader'],
   init: (deps) => {

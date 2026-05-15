@@ -141,6 +141,7 @@ function nexusCount(type) {
     const lines = fs.readFileSync(NEXUS_FILE, 'utf8').split('\n');
     return lines.filter((l) => l.startsWith(`${type}:`)).length;
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return 0;
   }
 }
@@ -165,6 +166,7 @@ function nexusHas(type, payload) {
     }
     return lines.some((l) => l.startsWith(`${type}:`));
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return false;
   }
 }

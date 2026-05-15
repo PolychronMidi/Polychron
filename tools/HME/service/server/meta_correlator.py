@@ -84,10 +84,6 @@ def correlate(
             })
 
     # Ops cross-reference -- distinguish protocol-level reconnects (benign,
-    # expected behavior of MCP stdio transport) from real crash loops. The
-    # MCP protocol itself may cycle the server process several times per
-    # day as a normal part of session handshaking. Restarts ALONE are not a
-    # problem. Restarts alongside ACTUAL crashes or failed recoveries ARE.
     restarts = ops.get("restarts_today", 0)
     shim_crashes = ops.get("shim_crashes_today", 0)
     recovery_attempts = ops.get("recovery_attempts_today", 0)

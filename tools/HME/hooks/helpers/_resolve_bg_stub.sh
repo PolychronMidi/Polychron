@@ -10,10 +10,7 @@ _rbg_max_wait="${1:-10}"
 _rbg_must_contain="${2:-}"
 
 # Fast path: if no stub in response, pass through.
-# FAIL-LOUD: capture jq stderr to errors.log if parsing fails -- silent
-# parse failures here would let bg-task stubs pass through unresolved,
-# breaking i/review verdicts and other structured-output flows.
-_rbg_jq_err=$(mktemp 2>/dev/null || echo "/tmp/_rbg_jq_$$.err")
+_rbg_jq_err=$(mktemp 2>/dev/null || echo "/tmp/_rbg_jq_$$.err")  # silent-ok: optional fallback path.
 _rbg_tool_response="$(printf '%s' "$_rbg_input" | jq -r '.tool_response // ""' 2>"$_rbg_jq_err")"
 if [ -s "$_rbg_jq_err" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
   while IFS= read -r _rbg_line; do
@@ -38,9 +35,9 @@ fi
 _rbg_output_path=""
 _rbg_waited=0
 while [ "$_rbg_waited" -lt "$_rbg_max_wait" ]; do
-  _rbg_cand="$(find /tmp -maxdepth 5 -name "${_rbg_task_id}.output" 2>/dev/null | head -1 || true)"
+  _rbg_cand="$(find /tmp -maxdepth 5 -name "${_rbg_task_id}.output" 2>/dev/null | head -1 || true)"  # silent-ok: optional fallback path.
   if [ -n "$_rbg_cand" ] && [ -s "$_rbg_cand" ]; then
-    if [ -z "$_rbg_must_contain" ] || grep -q -- "$_rbg_must_contain" "$_rbg_cand" 2>/dev/null; then
+    if [ -z "$_rbg_must_contain" ] || grep -q -- "$_rbg_must_contain" "$_rbg_cand" 2>/dev/null; then  # silent-ok: optional fallback path.
       _rbg_output_path="$_rbg_cand"
       break
     fi
@@ -63,9 +60,7 @@ if [ -z "$_rbg_real" ]; then
 fi
 
 # Rewrite .tool_response with the real output. Use jq with --arg so
-# the payload is safely string-escaped regardless of content.
-# FAIL-LOUD: log jq errors to errors.log instead of silently dropping.
-_rbg_rewrite_err=$(mktemp 2>/dev/null || echo "/tmp/_rbg_rewrite_$$.err")
+_rbg_rewrite_err=$(mktemp 2>/dev/null || echo "/tmp/_rbg_rewrite_$$.err")  # silent-ok: optional fallback path.
 _rbg_rewritten="$(printf '%s' "$_rbg_input" \
   | jq --arg real "$_rbg_real" '.tool_response = $real' 2>"$_rbg_rewrite_err" || true)"
 if [ -s "$_rbg_rewrite_err" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then

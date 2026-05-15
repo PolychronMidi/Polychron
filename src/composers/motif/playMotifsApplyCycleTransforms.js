@@ -1,4 +1,3 @@
-// playMotifsApplyCycleTransforms.js - cycle tracking and transform application for playMotifs
 
 playMotifsApplyCycleTransforms = function playMotifsApplyCycleTransforms(layer, bucket, playedGroupIndices, cycleTracker, cloneEntryFn) {
   for (const [groupId, indices] of playedGroupIndices) {

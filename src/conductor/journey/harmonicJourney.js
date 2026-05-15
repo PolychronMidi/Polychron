@@ -116,7 +116,7 @@ moduleLifecycle.declare({
       move: stop.move, distance: stop.distance, spectralBrightness
     });
 
-    // R37: harmonic journey self-assessment -- evaluate previous section's move effectiveness
+    // harmonic journey self-assessment -- evaluate previous section's move effectiveness
     if (sectionIndex > 0) {
       const prevMem = sectionMemory.getPrevious();
       const prevStop = getStop(sectionIndex - 1);

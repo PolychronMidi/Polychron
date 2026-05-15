@@ -38,8 +38,6 @@ moduleLifecycle.declare({
   const INTENT_WEIGHT = 0.25;
 
   // Climax modifiers
-  // R22: Play boost 0.35->0.12 -- climax intensity through velocity/register, not
-  // more notes. +35% playProb compounded with already-dense Q3 causing aural overload.
   const MAX_PLAY_BOOST = 0.12;
   const MAX_VELOCITY_BOOST = 0.25;
   const MAX_REGISTER_WIDEN = 6;
@@ -47,39 +45,25 @@ moduleLifecycle.declare({
   // R22: Entropy boost 0.4->0.22 -- coherent climax should be focused, not frenzied.
   // Peak target: 0.5+0.22*0.85=0.69 (was 0.84).
   const ENTROPY_BOOST = 0.22;
-  // R94 E3: Regime-responsive climax entropy scaling. During exploring,
-  // climax approach injects more entropy variance (boosting entropy axis
-  // share which collapsed 0.193->0.114 in R93). During coherent, reduce
-  // entropy injection to preserve unified texture. Regime multiplier
-  // scales the ENTROPY_BOOST: exploring 1.35x (0.54), coherent 0.85x (0.34).
+  // Regime-responsive climax entropy scaling. During exploring,
   const CLIMAX_ENTROPY_REGIME_SCALE = { exploring: 1.35, evolving: 1.20, coherent: 0.85 };
 
   let smoothedClimax = 0;
   let peakReached = false;
   let climaxCount = 0;
   let climaxPlayAllowance = 1;
-  // R23 E2: Density-aware playProb -- when already dense, climax adds velocity/register, not notes.
   let lastDensity = 0.5;
 
   // R31 lab: voice-independence-feedback. Tracks whether voices achieve their
-  // independence target and compensates with register spread when they don't.
-  // R39: per-layer state to prevent L1/L2 bleed
   const observedIndependenceByLayer = { L1: 0.5, L2: 0.5 };
   // R38: trust velocity anticipation state (per-layer)
   const lastMotifTrustByLayer = { L1: 1.0, L2: 1.0 };
   const lastStutterTrustByLayer = { L1: 1.0, L2: 1.0 };
 
-  // R28 E1: Density-pressure homeostasis. Self-regulating accumulator builds
-  // pressure when output density is sustained high during climax, reducing
-  // play/entropy boost proportionally. Same architecture as cadenceAlignment
-  // tension-accumulation (R25 E1). Prevents aural crowding at peaks without
-  // static tension gates. Regime-aware: coherent gets more relief (needs less
-  // chaos at peaks), exploring gets none (preserve searching energy).
+  // Density-pressure homeostasis. Self-regulating accumulator builds
   const DENSITY_SATURATION_BEATS = 40;
   const DENSITY_HIGH_THRESHOLD = 0.62;
   // exploring gets relief too -- unlike tension-accumulation where exploring's 0.80
-  // threshold was correctly calibrated (R79 E2), density crowding is worst in exploring
-  // at high tension because all four climax dimensions stack up simultaneously.
   const DENSITY_PRESSURE_RELIEF = { exploring: 0.15, evolving: 0.12, coherent: 0.20 };
   let densityPressureAccum = 0;
 
@@ -126,7 +110,6 @@ moduleLifecycle.declare({
         level: smoothedClimax, densityPressure: densityPressureAccum / DENSITY_SATURATION_BEATS
       });
     }
-    // Blend compositeIntensity with elevated density/tension products for richer peak detection
     const densityPressure = clamp((sigs.density - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
     const tensionPressure = clamp((sigs.tension - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
     const conductorIntensity = clamp((sigs.compositeIntensity * COMPOSITE_WEIGHT + densityPressure * DENSITY_PRESSURE_WEIGHT + tensionPressure * TENSION_PRESSURE_WEIGHT) * earlySectionDamp, 0, 1);
@@ -146,45 +129,24 @@ moduleLifecycle.declare({
     const entropyEntryClx = L0.getLast(L0_CHANNELS.entropy, { layer: 'both' });
     const entropyDampClx = entropyEntryClx && Number.isFinite(entropyEntryClx.smoothed)
       ? clamp((entropyEntryClx.smoothed - 0.55) * 0.22, 0, 0.10) : 0;
-    // R78: freshnessEma suppression -- fresh melodic territory generates its own tension; climax piling on
-    // top creates aural overload. Novel intervals demand attentive listening: climax backs off.
     const melodicCtxClx = emergentMelodicEngine.getContext();
     const freshnessEmaClx = melodicCtxClx ? V.optionalFinite(melodicCtxClx.freshnessEma, 0.5) : 0.5;
     const freshnessDampClx = clamp((freshnessEmaClx - 0.60) * 0.20, 0, 0.08);
 
-    // R80 E2: complexity antagonism bridge with harmonicIntervalGuard -- high rhythmic complexity
-    // accelerates climax build (complex texture = compositional density -> amplify structural arc).
-    // Counterpart: HIG NARROWS deadband at same complexity (E1). Together: harmony stabilizes
-    // while structural arc intensifies -- complexity is the shared currency.
     const rhythmEntryClx = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const complexityClx = rhythmEntryClx && Number.isFinite(rhythmEntryClx.complexity) ? rhythmEntryClx.complexity : 0.5;
     const complexityClimaxBoost = clamp((complexityClx - 0.45) * 0.10, 0, 0.06);
-    // R81 E2: complexityEma antagonism bridge with dynamicRoleSwap -- sustained high complexity
-    // suppresses climax approach (memory of long-term complexity creates its own structural tension;
-    // climax backs off rather than pile more energy into an already-complex texture).
-    // Counterpart: dynamicRoleSwap INCREASES swap frequency at same complexityEma (E1).
+    // complexityEma antagonism bridge with dynamicRoleSwap -- sustained high complexity
     const complexityEmaClx = rhythmEntryClx && Number.isFinite(rhythmEntryClx.complexityEma) ? rhythmEntryClx.complexityEma : 0.5;
     const complexityEmaDampClx = clamp((complexityEmaClx - 0.55) * 0.12, 0, 0.07);
-    // R85 E3: densitySurprise antagonism bridge -- surprise rhythmic events back off climax approach.
-    // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmony stabilizes while arc defers).
     const densitySurpriseDampClx = clamp(rhythmEntryClx && Number.isFinite(rhythmEntryClx.densitySurprise) ? rhythmEntryClx.densitySurprise * 0.09 : 0, 0, 0.06);
-    // R86 E3: thematicDensity antagonism bridge -- rich thematic development accelerates climax approach.
-    // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmony stabilizes while structural arc intensifies).
     const thematicDensityCCE = melodicCtxClx ? V.optionalFinite(melodicCtxClx.thematicDensity, 0) : 0;
     const thematicClimaxBoost = clamp(thematicDensityCCE * 0.08, 0, 0.05);
-    // R87 E1: registerMigrationDir antagonism bridge with grooveTransfer -- ascending pitch center
-    // accelerates climax build (register climbing toward expressive peak fuels structural arc).
-    // Counterpart: grooveTransfer REDUCES transfer under same signal (rhythm stabilizes while arc climbs).
     const registerDirClx = melodicCtxClx ? melodicCtxClx.registerMigrationDir : null;
     const registerClimaxBoost = registerDirClx === 'ascending' ? 0.03 : registerDirClx === 'descending' ? -0.03 : 0;
-    // R90 E2: tessituraLoad antagonism bridge with grooveTransfer -- extreme register pressure accelerates climax approach
-    // (extreme register = composition pushing toward structural peak, both vertically and structurally).
-    // Counterpart: grooveTransfer REDUCES transfer under same signal (rhythmic independence at extreme register).
     const tessituraLoadCCE = melodicCtxClx ? V.optionalFinite(melodicCtxClx.tessituraLoad, 0) : 0;
     const tessituraClimaxBoost = clamp(tessituraLoadCCE * 0.05, 0, 0.03);
-    // R47 E2: ascendRatio antagonism bridge with crossLayerSilhouette -- ascending melodic
-    // intervals accelerate climax approach (melody climbing toward structural peak).
-    // Counterpart: crossLayerSilhouette TIGHTENS structural tracking under same signal (form braces for landing).
+    // ascendRatio antagonism bridge with crossLayerSilhouette -- ascending melodic
     const ascendRatioCCE = melodicCtxClx ? V.optionalFinite(melodicCtxClx.ascendRatio, 0.5) : 0.5;
     const ascendClimaxBoost = clamp((ascendRatioCCE - 0.50) * 0.10, -0.03, 0.05);
     // Composite climax signal (R40-R90 bridges + R47: ascendRatio)
@@ -218,14 +180,9 @@ moduleLifecycle.declare({
     const climaxRegime = bridgeSignals.regime || 'evolving';
     const entropyRegimeScale = V.optionalFinite(CLIMAX_ENTROPY_REGIME_SCALE[climaxRegime], 1.0);
 
-    // R32: Unified density suppression with total-impact budget.
-    // Three independent mechanisms (R23 density-aware, R28 homeostasis, R30a vel-inverse)
-    // were stacking without coordination, compound-suppressing climax intensity below the
-    // coupling pressure threshold needed for coherent formation. Now they share a budget:
-    // total suppression capped at MAX_DENSITY_SUPPRESSION to preserve climax energy.
+    // Unified density suppression with total-impact budget.
     const MAX_DENSITY_SUPPRESSION = 0.45;
     const densityScale = clamp((lastDensity - 0.55) / 0.35, 0, 1);
-    // Xenolinguistic L1: modal color awareness. Vanilla harmony = widen register to seek color tones.
     const modalProfile = modalColorTracker.getModalProfile();
     const colorRegisterBias = modalProfile && modalProfile.vanilla ? 2 : modalProfile && modalProfile.colorful ? -1 : 0;
     const dpRelief = V.optionalFinite(DENSITY_PRESSURE_RELIEF[climaxRegime], 0.12);
@@ -273,8 +230,6 @@ moduleLifecycle.declare({
     const dimRegisterBias = effDim < 2.5 ? clamp((2.5 - effDim) / 1.5, 0, 1) * 4 : effDim > 4.0 ? clamp((effDim - 4.0) / 2.0, 0, 1) * -2 : 0;
     const dimVelScale = effDim < 2.5 ? 1.0 + clamp((2.5 - effDim) / 1.5, 0, 1) * 0.15 : 1.0;
     // Melodic coupling: directionBias steers register spread at climax.
-    // Ascending direction -> widen register (building energy needs space);
-    // descending -> compress (falling motion consolidates range).
     const melodicCtxCCE = emergentMelodicEngine.getContext();
     const dirBias = melodicCtxCCE ? V.optionalFinite(melodicCtxCCE.directionBias, 0) : 0;
     const melodicRegBias = dirBias * 2.5; // [-2.5 descending ... +2.5 ascending]

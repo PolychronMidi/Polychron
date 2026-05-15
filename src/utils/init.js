@@ -3,8 +3,6 @@
 METRICS_DIR = process.env.METRICS_DIR || (process.cwd() + '/output/metrics');
 
 // Timing and counter variables (documented inline for brevity)
-// composer profile globals for bootstrap ordering
-// created unconditionally here; profile source modules will populate them later
 COMPOSER_TYPE_PROFILE_SOURCES = {};
 COMPOSER_POOL_SELECTION_STRATEGY = null;
 selectComposerPoolOrFail = null;
@@ -59,8 +57,6 @@ velocity=99;
 MIDI_MAX_VALUE=127;
 
 // Shared runtime voice-budget tracker (reset per-layer per-unit)
-// - Tracks how many 'picks' (voices) may still be emitted this unit for each layer
-// - Stored per-layer to prevent first-layer / first-unit dominance; legacy globals kept for compatibility
 remainingVoiceSlotsByLayer = {};
 lastVoiceBudgetKeyByLayer = {};
 // Backwards-compatible globals (kept for any remaining call sites)

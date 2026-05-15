@@ -40,8 +40,6 @@ module.exports = {
     const rel = _relPath(fp, ctx.PROJECT_ROOT);
 
     // Semantic validate -- module stem is the query; /validate returns
-    // bugfix/antipattern hits if the KB has relevant entries. Surface as
-    // warning, title-only. Fires for every Edit/Write/NotebookEdit.
     const stem = path.basename(fp, path.extname(fp));
     const semanticLines = [];
     const semantic = await validate(stem);
@@ -68,10 +66,6 @@ module.exports = {
     if (locks.length === 0 && semanticLines.length === 0) return;
 
     // Detect whether the edit directly touches any of the locked keys.
-    // Coerce to string defensively -- a malformed agent payload (or a
-    // future tool variant) could deliver an array/object here, which
-    // would make `String.prototype.includes` throw and the whole
-    // onToolResult would silently reject.
     const oldStr = String((toolUse.input && toolUse.input.old_string) ?? '');
     const newStr = String((toolUse.input && (toolUse.input.new_string ?? toolUse.input.content)) ?? '');
     const touched = locks.filter((l) => {
@@ -83,11 +77,6 @@ module.exports = {
 
     const footerLines = [];
     // Peer-review iter 133: only surface when the edit ACTUALLY touches
-    // a locked key. The previous unconditional `locks.length > 0` branch
-    // emitted `bias-bounds: ...` on every edit to a file that merely
-    // contains locked params, even when the edit didn't graze them --
-    // pure noise the agent already had via CLAUDE.md's static rule.
-    // The `bias-touch` variant (touched > 0) is the actionable case.
     if (touched.length > 0) {
       const shown = touched.slice(0, 3).map((l) => `${l.key}=[${l.lo},${l.hi}]`).join(' ');
       const tail = touched.length > 3 ? ` +${touched.length - 3}` : '';

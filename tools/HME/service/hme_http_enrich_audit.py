@@ -41,9 +41,6 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     t0 = _time.monotonic()
 
     # Stage 1: Skip arbiter triage in HTTP shim
-    # The user clicked Enrich explicitly -- always run all modes.
-    # Arbiter triage is reserved for the MCP tool path (where warm KV context
-    # makes it fast); in the shim the thinking model is cold and unreliable.
     triage = {"kb": True, "structural": True, "contextual": True, "raw": "explicit"}
 
     # Stage 2: Context assembly (instant, no model)

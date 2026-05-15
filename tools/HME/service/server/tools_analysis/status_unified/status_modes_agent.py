@@ -83,24 +83,14 @@ def _mode_tool_latency():
             p95 = s[int(len(s) * 0.95)]
             p99 = s[int(len(s) * 0.99)]
             # Cold-start indicator (Horizon I asymptote): if max >= 3* p50,
-            # this tool has cold-start behavior -- first call after idle
-            # is much slower. Heads-up to the agent: budget extra time
-            # for the first invocation.
             cold = "yes" if (s[-1] >= p50 * 3 and len(s) >= 5) else " no"
             sample_caveat = " (n<10; noisy)" if len(s) < 10 else ""
             out.append(f"  {tool:18}  {len(s):>4}  {p50:>7.0f}  {p95:>7.0f}  {p99:>7.0f}  ms  {cold}{sample_caveat}")
         out.append("")
     else:
         # Diagnostic: surface root-cause hypothesis and actionable
-        # remediation path. The proxy middleware activity_log.js DOES
-        # emit `event=tool_call` in onToolResult -- but that pipeline
-        # is dispatched by the proxy daemon, not the in-process server.
-        # If tool_call events stop, the daemon's tool_use/tool_result
-        # routing has broken (or the daemon isn't running).
         out.append("  (no tool_call events in window -- falling back to inference cadence)")
         # Pin the regression's age: scan the FULL activity log for the
-        # most recent tool_call event so the operator knows when it
-        # last fired (and how far back the regression extends).
         last_tool_call_ts = None
         try:
             full_path = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
@@ -230,10 +220,6 @@ def _mode_agent_loop():
         out.append(f"  bash error rate:       {err_rate:.1f}%  ({bash_errs}/{tool_calls})")
     else:
         # Known instrumentation gap: tool_call events emitted by the proxy
-        # middleware activity_log.js are intermittent -- fs_watcher catches
-        # file_written but tool_call hits aren't reliably appearing in the
-        # log. Surface the gap rather than silently report zero, and use
-        # file_written + brief_recorded as proxy signals for agent activity.
         fwrites = sum(1 for e in events if e.get("event") == "file_written")
         out.append(f"  total tool calls:      -  (proxy tool_call instrumentation degraded; see note)")
         out.append(f"  file writes (proxy):   {fwrites}  (via fs_watcher)")

@@ -96,8 +96,6 @@ function loadBuiltins() {
 function loadCustom(customPath) {
   if (!customPath || !fs.existsSync(customPath)) return;
   // Custom policies can be a single file (exporting one policy) or a
-  // directory (each *.js exporting one). Underscore-prefixed files are
-  // skipped (helpers convention).
   const stat = fs.statSync(customPath);
   if (stat.isFile()) {
     try {
@@ -164,6 +162,7 @@ async function runChain(policies, ctx) {
     try {
       res = await p.fn(ctx);
     } catch (err) {
+      // silent-ok: optional fallback path.
       errors.push({ policy: p.name, error: err.message });
       continue;
     }

@@ -42,6 +42,7 @@ def _safe(fn, default=None):
     try:
         return fn()
     except Exception as e:
+        # silent-ok: optional fallback path.
         return {"_error": f"{type(e).__name__}: {e}", "_default": default}
 
 
@@ -72,8 +73,6 @@ def _run_diff(prior_path: str) -> int:
         prior = json.loads(text)
     except json.JSONDecodeError:
         # Self-heal: a non-atomic prior write may have left two JSON objects
-        # concatenated. Decode the first, log a self-origin WARN, and
-        # atomically rewrite the file with just the first valid object.
         try:
             prior, end = json.JSONDecoder().raw_decode(text)
         except json.JSONDecodeError:

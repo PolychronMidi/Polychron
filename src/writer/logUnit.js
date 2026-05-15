@@ -1,4 +1,3 @@
-// logUnit.js - Logs timing markers with context awareness, writing to active buffer (c = c1 or c2) for proper file separation.
 
 const V = validator.create('logUnit');
 

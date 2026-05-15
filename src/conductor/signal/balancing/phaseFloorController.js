@@ -16,10 +16,7 @@ moduleLifecycle.declare({
   const _SHARE_EMA_ALPHA = 0.06;
   const _VOLATILITY_EMA_ALPHA = 0.04;
   const _COHERENT_STREAK_EMA_ALPHA = 0.03;
-  // R22 E5: 0.05->0.08. Phase at 0.1334, below fair share (0.167).
-  // Faster recovery tracking makes the phase floor controller more responsive
-  // to phase deficit, reducing the lag between boost application and success
-  // measurement. Helps break the chronic mid-suppression pattern.
+  // 0.05->0.08. Phase at 0.1334, below fair share (0.167).
   const _RECOVERY_EMA_ALPHA = 0.08;
 
   let phaseFloorControllerShareEma = 0.1667; // starts at FAIR_SHARE
@@ -54,8 +51,6 @@ moduleLifecycle.declare({
   function getLowShareThreshold() {
     const fairShare = 1.0 / 6.0;
     // Adaptive low-share threshold; rises with persistent phase deficit.
-    // Anchored at fairShare*0.85 floor + clamped 0.02..0.16 to avoid
-    // shareEma-decay self-blinding (threshold tracks declining share down).
     const persistentLowSharePressure = clamp((0.12 - phaseFloorControllerShareEma) / 0.12, 0, 1);
     return clamp(
       m.max(getCollapseThreshold() + 0.010, phaseFloorControllerShareEma * 0.45, 0.04 + persistentLowSharePressure * 0.030, fairShare * 0.85),
@@ -100,22 +95,13 @@ moduleLifecycle.declare({
   function computeBoosts(share, phaseLowShareStreak, phaseCollapseStreak) {
     const fairShare = 1.0 / 6.0;
     const deficitRatio = clamp((fairShare - share) / fairShare, 0, 1);
-    // R17 E1: Raised persistent threshold 0.05->0.10 and severe threshold
-    // 0.06->0.12. Phase at 0.101 gave zero contribution from both terms
-    // (both below their thresholds). Wider detection catches moderate
-    // deficit (8-12% share range) and strengthens the boost formula.
-    // R23 E5: 0.10->0.13. R73 E5: 0.13->0.14. Phase at 0.130 gives
-    // zero pressure at 0.13. Raising to 0.14 detects the current deficit
-    // (pressure ~0.07 at shareEma=0.13), enabling earlier boost activation.
+    // Raised persistent threshold 0.05->0.10 and severe threshold
     const persistentLowSharePressure = clamp((0.14 - phaseFloorControllerShareEma) / 0.14, 0, 1);
     const severeLowSharePressure = clamp((0.12 - share) / 0.12, 0, 1);
-    // Recovery success dampens boost (if previous boosts recovered phase, be less aggressive)
     // Recovery failure amplifies boost (if previous boosts didn't work, push harder)
     const recoveryFactor = clamp(2.2 - phaseFloorControllerRecoverySuccessEma * 1.5 + persistentLowSharePressure * 0.55, 1.0, 2.6);
 
     // E4 (R100): Phase-aware boost scaling from orchestrator system phase
-    // When oscillating, dampen boosts to avoid amplifying instability
-    // When stabilized, reduce boost urgency since system is healthy
     const systemPhase = hyperMetaManager.getSystemPhase();
     const phaseScaling = systemPhase === 'oscillating' ? 0.6
       : systemPhase === 'stabilized' ? 0.85
@@ -146,8 +132,6 @@ moduleLifecycle.declare({
       phaseFloorBoost = clamp(14.0 + deficitRatio * 10.0 * recoveryFactor * phaseScaling, 14.0, boostCeiling);
     }
 
-    // Anti-overshoot memory: if phase was recently above 115% of fair share, dampen boost
-    // to avoid re-triggering overshoot. Bypass retraction during genuine collapse (share < collapseThreshold).
     const phaseRetractionMult = share < getCollapseThreshold() ? 1.0
       : clamp(1.0 - phaseFloorControllerHighShareStreak * 0.025, 0.7, 1.0);
 
@@ -218,7 +202,6 @@ moduleLifecycle.declare({
       phaseFloorControllerCurrentCoherentStreak = 0;
     }
 
-    // Track recovery success: only attribute recovery if it happens within N beats of boost
     phaseFloorControllerBeatsSinceBoost++;
     if (phaseFloorControllerLastBoostApplied > 1.0 && phaseFloorControllerBeatsSinceBoost <= RECOVERY_ATTRIBUTION_WINDOW) {
       if (share > getLowShareThreshold()) {

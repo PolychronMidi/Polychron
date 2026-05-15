@@ -43,9 +43,6 @@ moduleLifecycle.declare({
     if (!Number.isInteger(ratio1) || ratio1 <= 0 || !Number.isInteger(ratio2) || ratio2 <= 0) {
       throw new Error(`phaseLockedRhythmGenerator.initializePolyrhythmCoupling: ratios must be positive integers (got ${ratio1}, ${ratio2})`);
     }
-    // Phase offset based on ratio: layer2 offset = (ratio1 / (ratio1 + ratio2)) * pattern_length
-    // This is computed dynamically per pattern to maintain polyrhythmic coherence
-    // Store coupling metadata for reference
     phases.set(`phaseLockedRhythmGeneratorCoupling:${layer1}:${layer2}`, { ratio1, ratio2 });
   }
 
@@ -93,7 +90,6 @@ moduleLifecycle.declare({
         const ratio1 = meta && Number.isFinite(Number(meta.ratio1)) ? Number(meta.ratio1) : null;
         const ratio2 = meta && Number.isFinite(Number(meta.ratio2)) ? Number(meta.ratio2) : null;
         if (ratio1 && ratio2) {
-          // if activeLayer is layer2 use ratio1 contribution; if activeLayer is layer1 invert
           offset = (activeLayer === layer2)
             ? m.round((ratio1 / (ratio1 + ratio2)) * length)
             : m.round((ratio2 / (ratio1 + ratio2)) * length);
@@ -103,8 +99,6 @@ moduleLifecycle.declare({
     }
 
     // Texture-driven phase drift (#9)
-    // Chord bursts - advance phase (layers drift apart - polyrhythmic tension)
-    // Flurries - negative drift (layers re-align - convergence)
     const texMetrics = drumTextureCoupler.getMetrics();
     let textureDrift = 0;
     if (texMetrics.intensity > 0.2) {
@@ -139,11 +133,7 @@ moduleLifecycle.declare({
       const densityFlickerPressure = clamp((V.optionalFinite(couplingPressures['density-flicker'], 0) - 0.74) / 0.18, 0, 1);
       const densityTrustPressure = clamp((V.optionalFinite(couplingPressures['density-trust'], 0) - 0.72) / 0.18, 0, 1);
       const flickerTrustPressure = clamp((V.optionalFinite(couplingPressures['flicker-trust'], 0) - 0.74) / 0.18, 0, 1);
-      // R8 E4: Lowered FP containment threshold from 0.72 to 0.45 and widened
-      // divisor from 0.16 to 0.25. FP correlation was the only persistent
-      // increasing correlation (R6: 0.421, R7: 0.473) with no containment
-      // activating until 0.72. The new threshold begins gentle containment at
-      // FP > 0.45, graduating to full pressure at 0.70.
+      // Lowered FP containment threshold from 0.72 to 0.45 and widened
       const flickerPhasePressure = clamp((V.optionalFinite(couplingPressures['flicker-phase'], 0) - 0.45) / 0.25, 0, 1);
       const phaseRecoveryCredit = clamp((phaseShare - 0.09) / 0.05, 0, 1);
       const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'
@@ -194,7 +184,6 @@ moduleLifecycle.declare({
 
     V.assertArray(rotated, 'rotated');
 
-    // Note: same pattern can legitimately be used at different lengths for different metrical levels
     // Phase tracking per (patternName, length) tuple allows this
 
     // Record generation for history

@@ -719,6 +719,7 @@ def hme_selftest(verbose: bool = False) -> str:
                 with _url.urlopen(url, timeout=2) as _r:
                     observed[name] = _json_vc.loads(_r.read()).get("version", "?")
             except Exception as _vprobe:
+                # silent-ok: optional fallback path.
                 observed[name] = f"unreachable({type(_vprobe).__name__})"
         mismatches = []
         for name in ("daemon", "worker"):

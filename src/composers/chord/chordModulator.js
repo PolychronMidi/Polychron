@@ -1,4 +1,3 @@
-// chordModulator.js - adapter to apply voicing/velocity adjustments to chord note objects
 
 chordModulator = (function() {
   function apply(chordNotes, options = {}) {

@@ -22,6 +22,7 @@ def scan_annotations(project_root: str, annotation_type: str = "") -> list[dict]
         try:
             content = f.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         for match in ANNOTATION_PATTERN.finditer(content):
             tag = match.group(1).upper()

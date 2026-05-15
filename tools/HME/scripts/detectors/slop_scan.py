@@ -42,7 +42,6 @@ _IDENTITY_LEAK_RE = re.compile(
 )
 
 # Bare TODO/FIXME requires `:` or `(` after to distinguish deferred-work markers
-# from identifiers (`_TODO_FILE`) and prose ("TODO Next-up"). Issue-link escape via lookaheads.
 _BARE_TODO_RE = re.compile(
     r"(^|[^A-Za-z0-9_])(TODO|FIXME|XXX|HACK)\s*[:(]"
     r"(?![^\n]*\(#?[A-Z]*-?\d+\))"
@@ -50,7 +49,6 @@ _BARE_TODO_RE = re.compile(
 )
 
 # Quality claims that demand evidence (per CONSTITUTION rule 5). Require an
-# intensifier for "fast" -- bare "fast" matches fail-fast / fast-reconvergence (CS terms).
 _CLAIM_RE = re.compile(
     r"\b(production[- ]?ready|battle[- ]?tested|"
     r"(blazing|lightning|super)[- ]?fast|highly scalable|enterprise[- ]?grade|"

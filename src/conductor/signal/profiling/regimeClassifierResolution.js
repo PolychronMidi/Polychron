@@ -72,7 +72,6 @@ moduleLifecycle.declare({
       ? ((V.optionalFinite(state.runResolvedRegimeCounts.evolving, 0)) / state.runBeatCount)
       : 0;
     const evolvingDeficit = clamp((config.REGIME_TARGET_EVOLVING_LO - evolvingShare) / config.REGIME_TARGET_EVOLVING_LO, 0, 1);
-    // Chronic forcing mitigation: if forced breaks are frequent, ease classification thresholds
     const forcedBreakPressure = state.forcedBreakCount > 3 ? clamp((state.forcedBreakCount - 3) * 0.02, 0, 0.08) : 0;
     const coherentOvershare = clamp((state.runCoherentShare - config.REGIME_TARGET_COHERENT_HI - forcedBreakPressure) / 0.18, 0, 1);
     const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
@@ -110,15 +109,9 @@ moduleLifecycle.declare({
 
     if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && exploringElapsedSec >= config.EXPLORING_MAX_DWELL_SEC) {
       const exploringForcedWindow = clamp(6 + m.floor(evolvingDeficit * 6), 6, 12);
-      // If evolving is well-represented, break toward coherent; otherwise recover evolving.
-      // R46: Lowered threshold 0.18->0.12. At 0.18, priority ~0.044 (25% evolving,
-      // deficit 0.074) meant all forced breaks went to coherent, creating a bipolar
-      // exploring<->coherent cycle that excluded evolving. 0.12 allows breaks to evolving
-      // when deficit is meaningful (target 0.32, actual 25% -> priority 0.131 > 0.12).
       const exploringRecoveryRegime = evolvingRecoveryPriority > 0.12 ? 'evolving' : 'coherent';
       forceRegimeTransition(exploringRecoveryRegime, 'exploring-max-dwell', exploringForcedWindow);
     }
-    // R46: evolvingDeficit penalty 0.06->0.08 (stronger monopoly suppression when evolving underrepresented)
     const exploringMonopolyThreshold = clamp((shortFormPressure > 0 ? 0.66 : 0.72) - trustSharePressure * 0.04 - evolvingDeficit * 0.08 - phaseWeakness * 0.03 + phaseRecoveryCredit * 0.01 - (phaseStableRecoveryWindow ? 0.03 * phaseStableRecoveryStrength : 0), 0.54, 0.72);
     const exploringMonopolyMinDwellSec = shortFormPressure > 0
       ? m.max(config.EXPLORING_MONOPOLY_FLOOR_SEC, config.EXPLORING_MAX_DWELL_SEC * (0.45 - evolvingDeficit * 0.08))
@@ -128,24 +121,12 @@ moduleLifecycle.declare({
     }
 
     // R68 E5 / R70 E2 / R72 E2: Evolving starvation injector.
-    // R71 showed evolving re-collapsed to 2.5% in a 950-beat run despite
-    // threshold raise to 0.04. Three improvements:
-    // 1) Threshold raised 0.04->0.06 to keep injector active longer
-    // 2) Window widened 3->5 beats for more impactful evolving blocks
-    // 3) Now fires from coherent blocks too (not just exploring), since
-    //    coherent dominated at 62% in R71 -- most beats never saw exploring
-    // R74 E1: Lowered coherent threshold 20->15 beats. Evolving dropped
-    // to 4.7% (from 7.9%) because coherent dominates at 55% and the
-    // old 20-beat threshold rarely triggers. 15 beats allows more
-    // frequent injection from shorter coherent runs.
     if (state.forcedRegimeBeatsRemaining <= 0
         && (state.lastRegime === 'exploring' || state.lastRegime === 'coherent')
         && evolvingShare < 0.06 && evolvingDeficit > 0.50
         && ((state.lastRegime === 'exploring' && exploringElapsedSec >= config.STARVATION_EXPLORING_SEC)
             || (state.lastRegime === 'coherent' && coherentElapsedSec >= config.STARVATION_COHERENT_SEC))) {
-      // R76 E2: Exploring trigger 12->8 beats. Wider injection from
-      // exploring since exploring surged to 52.9% in R75 but evolving
-      // only gets forced injection, not organic classification.
+      // Exploring trigger 12->8 beats. Wider injection from
       forceRegimeTransition('evolving', 'evolving-starvation-inject', 6,
         state.lastRegime === 'exploring' ? state.exploringBeats : state.coherentBeats, tickId);
     }
@@ -222,17 +203,12 @@ moduleLifecycle.declare({
       }
     }
 
-    // R86 E2: Post-forced cooldown enforcement. If the forced break just
-    // ended (cooldown > 0) and the regime would return to coherent,
-    // override to exploring. This prevents immediate coherent re-entry
-    // that creates 44-break-44 superruns reducing transition variety.
+    // Post-forced cooldown enforcement. If the forced break just
     if (postForcedCooldownActive && resolvedRegime === 'coherent') {
       resolvedRegime = 'exploring';
     }
 
     if (state.forcedRegimeBeatsRemaining <= 0 && resolvedRegime === 'coherent') {
-      // Fresh coherent entry: use 0 elapsed, not time-since-init (coherentStartSec inits to 0,
-      // causing the dwell check to fire immediately if first coherent beat is after HARD_CAP_SEC).
       if (state.coherentBeats === 0) state.coherentStartSec = beatStartTime;
       const effectiveCoherentElapsedSec = beatStartTime - state.coherentStartSec;
       const projectedRunCoherentBeats = state.runLastResolvedRegime === 'coherent' ? state.runCoherentBeats + beatSpan : beatSpan;
@@ -242,7 +218,6 @@ moduleLifecycle.declare({
         const phaseCollapsePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
         coherentMaxDwellSec = m.max(config.COHERENT_FLOOR_HIGH_SEC, coherentMaxDwellSec * (1 - phaseCollapsePressure * 0.35));
       } else if (phaseShare > lowPhaseThreshold + 0.04) {
-        // Phase healthy -- symmetric recovery: slightly extend coherent dwell to balance asymmetric suppression.
         const phaseHealthBonus = clamp((phaseShare - (lowPhaseThreshold + 0.04)) / 0.08, 0, 1);
         coherentMaxDwellSec = m.min(config.COHERENT_HARD_CAP_SEC, coherentMaxDwellSec * (1 + phaseHealthBonus * 0.12));
       }

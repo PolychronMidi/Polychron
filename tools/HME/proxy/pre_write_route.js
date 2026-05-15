@@ -14,6 +14,7 @@ function handlePreWriteCheckRoute(clientReq, clientRes) {
       const stdin = Buffer.concat(chunks).toString('utf8') || '{}';
       json(200, await preWriteCheck(stdin));
     } catch (err) {
+      // silent-ok: optional fallback path.
       json(500, { permissionDecision: 'ask', reason: `pre-write-check route failed: ${err.message}`, contextualRules: [] });
     }
   });

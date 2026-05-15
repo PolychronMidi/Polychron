@@ -143,21 +143,9 @@ def _mode_band_tuning():
         out.append(f"                `{_gt_hint} tags=[flat]` when one occurs --")
         out.append(f"                even one negative verdict starts the calibration)")
     # Persist the proposal to tmp/hme-band-proposal.json so downstream
-    # code (coherence-budget consumer, future self-tuner) can read it
-    # without re-deriving. Establishes the data hand-off without forcing
-    # composition behavior change yet.
-    # Per-axis proposals (Horizon IX * II asymptote-deepening): for each
-    # subtag, find rounds whose snapshot had high score in that subtag at
-    # the time of the verdict, propose a band per axis. Today we have one
-    # ground-truth axis (overall HCI) but the persisted shape allows
-    # per-axis adoption when subtag-aware verdicts arrive. The shape is
-    # right; the data is the lagging indicator.
     proposal_path = _os.path.join(_root, "tmp", "hme-band-proposal.json")
     per_axis: dict[str, list[float]] = {}
     # Read the snapshot to get current per-subtag scores; use them as
-    # the "current observed" anchor. Per-axis proposed bounds aren't
-    # learnable until we have per-axis verdicts -- until then, the
-    # aggregate proposed_band is the best signal per axis.
     snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
     if _os.path.isfile(snap_path):
         try:
@@ -191,9 +179,6 @@ def _mode_band_tuning():
         "sentiments": {sent: len(vals) for sent, vals in buckets.items()},
         "per_axis": {
             # For each subtag: current observed_median (from snapshot) AND
-            # the proposed_band learned from per-axis verdicts when present.
-            # Horizon IX * II compounding: subtag-tagged verdicts produce
-            # axis-specific bands; absent that data, falls back to aggregate.
             subtag: {
                 "observed_median": (sorted(scores)[len(scores) // 2] if scores else 0.0),
                 "n_verifiers": len(scores),

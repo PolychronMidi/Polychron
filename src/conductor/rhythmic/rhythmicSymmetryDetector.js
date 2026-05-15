@@ -1,4 +1,3 @@
-// src/conductor/rhythmicSymmetryDetector.js - Palindromic / augmentation / diminution patterns.
 // Scans recent onset patterns for structural symmetry (palindromes,
 // proportional augmentation/diminution). Signals emerging symmetry
 // vs. when asymmetry should keep things fresh.

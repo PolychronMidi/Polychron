@@ -16,7 +16,6 @@ module.exports = {
   create(context) {
     return {
       ReturnStatement(node) {
-        // Only target bare returns (no explicit argument). If an explicit value is returned (including null), consider that intentional.
         if (node.argument) return;
 
         const parent = node.parent;
@@ -29,15 +28,12 @@ module.exports = {
           const prev = parent.body[i];
           if (!prev) continue;
           if (prev.type === 'ExpressionStatement' && prev.expression && prev.expression.type === 'CallExpression') {
-            // If previous statement is any call (console or otherwise), treat as explicit action and allow early return
             allowed = true; break;
           }
           if (prev.type === 'ThrowStatement') { allowed = true; break; }
-          // stop scanning if we hit another non-empty statement that is not a harmless assignment
           if (prev.type !== 'EmptyStatement' && prev.type !== 'ExpressionStatement') break;
         }
 
-        // Fallback: if we couldn't find an immediate call before the return, scan the enclosing function body for any prior console call
         if (!allowed) {
           const source = context.getSourceCode();
           let fn = node.parent;

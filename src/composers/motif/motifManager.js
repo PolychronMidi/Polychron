@@ -84,8 +84,6 @@ class MotifManagerClass {
     const parentBucket = (layer.beatMotifs && Array.isArray(layer.beatMotifs[absBeat]))
       ? layer.beatMotifs[absBeat] : null;
     // -- Texture-guided div motif variation (#10) --
-    // During bursts: derive from parent (coherent harmonic content)
-    // During flurries: weaken parent derivation (independent scalar motion)
     let effectiveParentBucket = parentBucket;
     if (drumTextureCoupler) {
       const texMetrics = drumTextureCoupler.getMetrics();

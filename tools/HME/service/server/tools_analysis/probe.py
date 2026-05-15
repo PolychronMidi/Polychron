@@ -132,8 +132,6 @@ def generate_probes(max_candidates: int = 5) -> dict:
     accuracy_ema = _cascade_accuracy_estimate()
 
     # Score candidates: higher score = better probe target
-    # Score = intersection_count * (2 if trust is NONE/LOW else 1)
-    #                         * (2 if accuracy_ema < 0.5 or unknown else 1)
     scored: list[dict] = []
     for m in intersections:
         stem = m["module"]

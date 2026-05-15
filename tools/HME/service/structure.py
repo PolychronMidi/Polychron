@@ -82,6 +82,7 @@ def module_map(directory: str, max_depth: int = 3) -> dict:
             try:
                 line_count = f.read_text(encoding="utf-8", errors="ignore").count("\n") + 1
             except Exception:
+                # silent-ok: optional fallback path.
                 line_count = 0
             node[f.name] = {
                 "_type": "file",

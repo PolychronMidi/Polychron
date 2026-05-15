@@ -88,10 +88,7 @@ getChannelCoherence = function(ch, profile, noiseBase, voiceId, time) {
 
   // 5. Noise-shaped velocity with bias (noise profile from conductor)
   const onVelBase = applyNoiseToVelocity(noiseBase, voiceId, time, channelCoherenceEmissionNoiseProfile);
-  // R71 E4: Regime-responsive velocity dynamic range. Exploring and evolving
-  // regimes get wider velocity variance (1.06x / 1.10x) to create more
-  // timbral contrast, while coherent stays neutral. First play-subsystem
-  // regime awareness -- directly affects the sonic character of each regime.
+  // Regime-responsive velocity dynamic range. Exploring and evolving
   const profSnap = systemDynamicsProfiler.getSnapshot();
   const regimeVelScale = profSnap.regime === 'evolving' ? 1.10
     : profSnap.regime === 'exploring' ? 1.06

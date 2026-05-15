@@ -23,8 +23,6 @@ def codebase_health() -> str:
     """Full codebase health sweep: architectural violations, dead code, convention checks, symbol importance, and doc sync. Replaces 5 separate health tools."""
     from file_walker import walk_code_files, get_project_root, init_config
     # Defensive self-heal: if a reload left file_walker without an initialized
-    # project_root, walk_code_files yields nothing and the report is falsely
-    # "ALL CLEAN (0 files)". Reinitialize from ctx before walking.
     if not get_project_root() and ctx.PROJECT_ROOT:
         init_config(ctx.PROJECT_ROOT)
     issues_by_severity = {"CRITICAL": [], "WARN": [], "NOTE": []}
@@ -53,7 +51,6 @@ def codebase_health() -> str:
         for dry in DRY_PATTERNS:
             if dry["pattern"] in content and "crossLayerHelpers" not in rel:
                 issues_by_severity["WARN"].append(f"{rel}: {dry['message']}")
-        # Coupling firewall -- driven by project-rules.json (COUPLING_MATRIX_EXEMPT/LEGACY_PATHS)
         if ".couplingMatrix" in content:
             if not any(a in rel for a in COUPLING_MATRIX_EXEMPT_PATHS):
                 if any(l in rel for l in COUPLING_MATRIX_LEGACY_PATHS):
@@ -208,13 +205,6 @@ def doc_sync_check(doc_path: str = "") -> str:
     # Check tool count claim
     count_match = re.search(r'(\d+)\s+(?:MCP\s+)?tools', doc_content)
     # Recursively scan all .py files under server/ for @ctx.mcp.tool decorators.
-    # Two separate exclusion lists:
-    #   - _COUNT_EXCLUDED: skip these when counting agent-facing tools. The
-    #     documented "6 tools" surface doesn't include passthrus, status
-    #     dispatcher, hme_todo, or a docstring false-positive in onboarding_chain.
-    #   - None for name-check: we still need every file's def names so the
-    #     identifier scan at the bottom can resolve `hme_todo` etc. that the
-    #     doc legitimately references.
     _COUNT_EXCLUDED = {
         "tools_passthru.py", "status_unified.py", "todo.py", "onboarding_chain.py",
     }
@@ -256,7 +246,6 @@ def doc_sync_check(doc_path: str = "") -> str:
     server_fns = set(re.findall(r'def (\w+)\(', server_content))
     # Also collect parameter names to avoid false positives
     param_names = set(re.findall(r'(\w+)\s*[:=]', server_content))
-    # Read project-rules.json fresh at call time (module-level KNOWN_NON_TOOL_IDENTIFIERS is cached at import)
     try:
         import json as _json
         _rules_path = os.path.join(ctx.PROJECT_ROOT, "tools/HME/config/project-rules.json")

@@ -24,7 +24,6 @@ voiceModulator = (function() {
     // Voice spread params from conductorConfig (profile-driven)
     const vsCfg = conductorConfig.getVoiceSpreadScaling();
     const baseSpread = Number.isFinite(Number(options && options.spread)) ? Number(options.spread) : vsCfg.spread;
-    // directionBias: ascending melody -> wider spread (open voicing); descending -> tighter (close voicing)
     const melodicEntry = L0.getLast(L0_CHANNELS.emergentMelody);
     const dirBias = melodicEntry ? V.optionalFinite(melodicEntry.directionBias, 0) : 0;
     const spread = baseSpread * clamp(1.0 + dirBias * 0.08, 0.92, 1.08);

@@ -35,8 +35,11 @@ Output JSON shape:
 from __future__ import annotations
 
 import json
+import io
 import os
+import re
 import sys
+import tokenize
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from loc_ignore import load_patterns, is_exempt  # noqa: E402
@@ -56,17 +59,24 @@ WARN_LINES = int(os.environ.get("COMMENT_BLOAT_WARN", "3"))
 FAIL_LINES = int(os.environ.get("COMMENT_BLOAT_FAIL", "5"))
 LONG_LINE_CHARS = int(os.environ.get("COMMENT_BLOAT_LONG_LINE", "90"))
 # File-top header exemption: every file gets ONE comment block at the
-# top of the file (after any shebang) up to TOP_EXEMPT_MAX lines that
-# does NOT count toward warn/fail thresholds. Header docs are legitimate.
 TOP_EXEMPT_MAX = 30
 
 # Annotation-shaped comments aren't prose; don't count toward block length.
 _ANNOTATION_PREFIXES = (
     "# silent-ok:", "# FIXME:", "# noqa",
     "# pylint:", "# pyright:", "# type:",
+    "# shellcheck", "# ruff:", "# fmt:", "# isort:", "# mypy:",
     "// silent-ok:", "// FIXME:",
-    "// eslint-", "// noqa",
+    "// eslint-", "// @ts-", "// prettier-ignore", "// noqa",
 )
+
+_DIRECTIVE_PREFIXES = (
+    "# noqa", "# pylint:", "# pyright:", "# type:",
+    "# shellcheck", "# ruff:", "# fmt:", "# isort:", "# mypy:",
+    "// eslint-", "// @ts-", "// prettier-ignore", "// noqa",
+)
+
+_HEREDOC_START = re.compile(r"<<-?\s*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?")
 
 
 def _is_comment_line(stripped: str, ext: str) -> bool:
@@ -85,6 +95,10 @@ def _is_annotation(stripped: str) -> bool:
     return any(stripped.startswith(p) for p in _ANNOTATION_PREFIXES)
 
 
+def _is_directive(stripped: str) -> bool:
+    return any(stripped.startswith(p) for p in _DIRECTIVE_PREFIXES)
+
+
 def _is_top_directive(stripped: str, ext: str) -> bool:
     # Lines that may legitimately precede the top-of-file doc block
     # without disqualifying the TOP_EXEMPT_MAX exemption.
@@ -93,6 +107,58 @@ def _is_top_directive(stripped: str, ext: str) -> bool:
     if ext in (".js", ".ts") and stripped in ("'use strict';", '"use strict";'):
         return True
     return False
+
+
+def _python_full_line_comments(lines: list[str]) -> set[int] | None:
+    comments = set()
+    try:
+        stream = io.StringIO("".join(lines)).readline
+        for tok in tokenize.generate_tokens(stream):
+            if tok.type != tokenize.COMMENT:
+                continue
+            if tok.line[:tok.start[1]].strip():
+                continue
+            comments.add(tok.start[0])
+    except tokenize.TokenError:
+        return None
+    return comments
+
+
+def _shell_heredoc_lines(lines: list[str]) -> set[int]:
+    blocked = set()
+    delimiter = None
+    for i, raw in enumerate(lines, 1):
+        if delimiter:
+            blocked.add(i)
+            if raw.strip() == delimiter:
+                delimiter = None
+            continue
+        match = _HEREDOC_START.search(raw)
+        if match:
+            delimiter = match.group(1)
+    return blocked
+
+
+def _comment_scan_sets(lines: list[str], ext: str) -> tuple[set[int] | None, set[int]]:
+    if ext == ".py":
+        return _python_full_line_comments(lines), set()
+    if ext in (".sh", ".bash"):
+        return None, _shell_heredoc_lines(lines)
+    return None, set()
+
+
+def _is_scannable_comment(
+    line_no: int,
+    stripped: str,
+    ext: str,
+    allowed_lines: set[int] | None,
+    blocked_lines: set[int],
+) -> bool:
+    if line_no in blocked_lines:
+        return False
+    if allowed_lines is not None and line_no not in allowed_lines:
+        return False
+    return _is_comment_line(stripped, ext)
 
 
 def _scan_file(path: str, ext: str) -> list:
@@ -105,13 +171,14 @@ def _scan_file(path: str, ext: str) -> list:
             lines = f.readlines()
     except OSError:
         return findings
+    allowed_lines, blocked_lines = _comment_scan_sets(lines, ext)
     block_start = None
     block_len = 0
     seen_first_block = False
     seen_non_blank_non_comment = False
     for i, raw in enumerate(lines, 1):
         s = raw.strip()
-        if _is_comment_line(s, ext) and not _is_annotation(s):
+        if _is_scannable_comment(i, s, ext, allowed_lines, blocked_lines) and not _is_annotation(s):
             if block_start is None:
                 block_start = i
                 block_len = 1
@@ -123,7 +190,7 @@ def _scan_file(path: str, ext: str) -> list:
                 if not top_exempt:
                     findings.append({"line": block_start, "block_len": block_len})
                 seen_first_block = True
-            if s and not _is_comment_line(s, ext) and not _is_top_directive(s, ext):
+            if s and not _is_scannable_comment(i, s, ext, allowed_lines, blocked_lines) and not _is_top_directive(s, ext):
                 seen_non_blank_non_comment = True
             block_start = None
             block_len = 0
@@ -142,9 +209,13 @@ def _scan_long_comment_lines(path: str, ext: str) -> list:
             lines = f.readlines()
     except OSError:
         return findings
+    allowed_lines, blocked_lines = _comment_scan_sets(lines, ext)
     for i, raw in enumerate(lines, 1):
         line_no_nl = raw.rstrip("\n")
-        if not _is_comment_line(line_no_nl.strip(), ext):
+        stripped = line_no_nl.strip()
+        if not _is_scannable_comment(i, stripped, ext, allowed_lines, blocked_lines):
+            continue
+        if _is_directive(stripped):
             continue
         if len(line_no_nl) >= LONG_LINE_CHARS:
             findings.append({"line": i, "line_len": len(line_no_nl)})
@@ -175,7 +246,6 @@ def main(argv: list) -> int:
     warn_findings = []
     fail_findings = []
     long_line_findings = []
-    # --files <p1> <p2> ...  scope the scan to specified files only.
     explicit = []
     if "--files" in argv:
         idx = argv.index("--files")

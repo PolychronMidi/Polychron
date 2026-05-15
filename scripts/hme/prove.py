@@ -71,8 +71,6 @@ def _walk(root, rel_glob=None):
 
 def _match_glob(rel, glob):
     # Support recursive ** by converting to fnmatch double-star semantics.
-    # fnmatch doesn't grok **; emulate by stripping the last `/**` and
-    # matching prefix.
     if glob.endswith('/**'):
         prefix = glob[:-3]
         return rel.startswith(prefix.rstrip('/') + '/') or rel == prefix.rstrip('/')
@@ -105,7 +103,6 @@ def _scan_hits(root, pattern, ignore_comments=True):
 def _invariant_sole_writer(root, args):
     target = args.get('target') or _die("sole-writer: missing target=")
     allowed = args.get('allowed') or _die("sole-writer: missing allowed=")
-    # Match `target = ...` or `target.x = ...` at assignment position.
     # Exclude comparisons (==, ===, !=).
     pat = rf'(?<![=!<>])\b{re.escape(target)}\s*(?:\.\w+\s*)?=\s*(?!=)'
     hits = _scan_hits(root, pat)
@@ -175,8 +172,6 @@ INVARIANTS = {
 def main(argv):
     if len(argv) < 2:
         # Multi-line self-documentation so the user sees usage + valid
-        # invariants + a concrete invocation example. Bare usage line
-        # alone is too thin (no way to know what `<invariant>` should be).
         msg = (
             f"usage: prove.py <invariant> <key=val>...\n"
             f"  available invariants: {sorted(INVARIANTS)}\n"

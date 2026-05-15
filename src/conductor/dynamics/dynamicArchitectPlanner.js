@@ -17,7 +17,6 @@ moduleLifecycle.declare({
   let pieceStartTime = -1;
   let estimatedPieceDuration = 180; // default 3 min estimate
 
-  // Beat-level cache: getDynamicPlanSignal is called 2x per beat (tensionBias + stateProvider)
   const dynamicArchitectPlannerPlanCache = beatCache.create(() => dynamicArchitectPlannerGetDynamicPlanSignal());
 
   /** Windowed average intensity from recent snapshots. */
@@ -85,30 +84,13 @@ moduleLifecycle.declare({
     }
     if (position < 0.7) {
       // Building: 0.50 - 0.95 (climax region)
-      // R19 E1: Raised peak from 0.85 to 0.95.
-      // R20 E1: Building floor raised 0.45->0.50 to match opening target.
-      // R29 E4: Building floor 0.50->0.52 to match opening ramp endpoint.
       return 0.52 + (position - 0.20) / 0.50 * 0.43;
     }
     if (position < 0.85) {
-      // R16 E2: Descent target 0.45->0.55 for sustained late-section tension.
-      // R19 E1: Descent starts from 0.95 (was 0.85) to match raised peak.
-      // R30 E5: Descent floor 0.55->0.58 for sustaining Q4 tension.
-      // R32 E2: Revert descent floor 0.58->0.55. Q3/Q4 regressed 2 rounds
-      // since R30 E5 (Q3: 0.799->0.656->0.602, Q4: 0.599->0.496->0.450).
+      // Descent target 0.45->0.55 for sustained late-section tension.
       return 0.95 - (position - 0.7) / 0.15 * 0.40;
     }
-    // R16 E2: Coda floor 0.20->0.30. Prevents extreme tail-off while
-    // maintaining resolution character with more sustained energy.
-    // R26 E3: Coda floor 0.30->0.22. Q4 dropped 0.659->0.527 (-0.132)
-    // but Q3 also dragged 0.803->0.637 -- too aggressive.
-    // R27 E1: Partial revert to 0.26. Keeps improved contrast over old
-    // 0.30 while restoring descent arc quality. Range 0.55->0.29.
-    // R30 E5: Coda start 0.55->0.58 to match new descent floor.
-    // R32 E2: Revert coda start 0.58->0.55 to match reverted descent floor.
-    // R35 E4: Coda floor 0.26->0.30. Q4 at 0.585 still weakest quartile.
-    // R36 E2: Revert to 0.26. R35 Q4 regressed 0.585->0.485 despite higher
-    // floor -- DT gain cap overwhelmed. Restore original coda dynamics.
+    // Coda floor 0.20->0.30. Prevents extreme tail-off while
     return 0.55 - (position - 0.85) / 0.15 * 0.29;
   }
 

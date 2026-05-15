@@ -51,17 +51,9 @@ module.exports = {
     }
 
     // Also detect review invocations via the Bash wrapper (i/review). The
-    // old MCP tool HME_review no longer exists -- the current agent path is
-    // Bash(`i/review mode=forget`) which dispatches via scripts/hme-cli.js.
-    // Without this, nexus would never see review events and stop.sh would
-    // block indefinitely after each edit.
     if (name === 'Bash') {
       const cmd = String(input.command || '');
       // Anchor to a real-invocation context (start, after `;` `&` `|` or
-      // whitespace, optional `./` prefix, then `i/review`, then a word
-      // boundary). The previous `\bi\/review\b` matched literal mentions
-      // inside echo / grep / git log strings, clearing the EDIT NEXUS as
-      // if a real review ran and hiding genuinely unreviewed edits.
       if (/(?:^|[;&|\s])(?:\.\/)?i\/review(?:\s|$)/.test(cmd)) {
         const count = ctx.nexusCount('EDIT');
         ctx.nexusClearType('EDIT');

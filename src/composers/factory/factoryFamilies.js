@@ -53,17 +53,8 @@ factoryFamilies = {
       const trendBias = (prevSection && prevSection.trend && TREND_FAMILY_BIAS[prevSection.trend])
         ? (TREND_FAMILY_BIAS[prevSection.trend][familyName] ?? 1.0) : 1.0;
       // Preserve explicit 0-weights (family disabled) instead of collapsing
-      // them to 1 via `|| 1` -- Number.isFinite catches undefined/NaN from
-      // a missing key but keeps a legitimate 0 intact.
       const _biased = Number(biasedWeights[familyName]);
       // Metaprofile composer-family bias: substrate-level move that pushes
-      // metaprofiles past pure decoration. Layer-aware -- when the active
-      // profile declares layerVariants: { L1: 'a', L2: 'b' }, the L1 and L2
-      // composer pools get DIFFERENT family weights, drawn from each
-      // variant's composerFamilies. LM and metaProfiles are boot-validated
-      // globals available unconditionally by the time the factory resolves
-      // composers (called from the composition loop, post-boot), so direct
-      // reads are safe -- no safePreBoot wrap needed.
       const _metaFamilyWeight = metaProfiles.getComposerFamilyWeightForLayer(familyName, LM.activeLayer);
       const profileMultiplier = (Number.isFinite(_biased) ? _biased : 1) * trendBias * _metaFamilyWeight;
       normalized[familyName] = {

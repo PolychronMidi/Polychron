@@ -6,9 +6,6 @@ moduleLifecycle.declare({
   name: 'cadenceAdvisor',
   subsystem: 'conductor',
   // eventBus is needed at init time for the HARMONIC_CHANGE subscription;
-  // listed in deps so the registry defers until eventBus is loaded. The
-  // remaining cross-subsystem references (LM, L0, harmonicContext,
-  // FactoryManager) live inside method bodies that run post-boot.
   deps: ['L0', 'eventBus', 'validator'],
   lazyDeps: ['harmonicContext'],
   provides: ['cadenceAdvisor'],

@@ -27,7 +27,6 @@ moduleLifecycle.declare({
     const bin = beatIndex % BINS;
     const avgCount = totalSamples / BINS;
     const binScore = histogram[bin] / m.max(1, avgCount);
-    // Melodic coupling: falling contour at a historical convergence point = natural cadence -> amplify.
     // Rising contour = momentum building -> moderate the convergence pull.
     const melodicCtxCM = emergentMelodicEngine.getContext();
     const contourBoost = melodicCtxCM

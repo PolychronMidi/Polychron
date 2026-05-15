@@ -183,7 +183,6 @@ def _check_files_mtime_window(inv: dict) -> tuple[bool, str]:
 
 
 # Re-exports from sibling cluster modules -- preserves the import surface
-# in dispatch.py (`from .checks import _check_kb_freshness, ...`).
 from .checks_kb import (  # noqa: F401, E402
     _check_symbols_have_kb, _is_regex, _check_kb_freshness,
     _check_kb_content_no_pattern,

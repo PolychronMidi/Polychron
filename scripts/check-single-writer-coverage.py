@@ -24,12 +24,6 @@ import sys
 
 
 # Pattern: (domain, glob-of-source-files-that-are-legitimate-owners,
-#           AST-match-predicate-describing-a-mutation-call)
-#
-# The predicate receives an ast.Call and returns True if this call looks
-# like a mutation of the protected domain. We rely on substring checks
-# against node source text; imperfect but zero-dependency and good enough
-# to catch the "forgot to gate" class of mistake.
 
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _MCP_ROOT = os.path.join(_PROJECT_ROOT, "tools", "HME", "mcp")
@@ -79,11 +73,6 @@ def _scan_file(path: str, checks: list[tuple[str, str, callable]]) -> list[str]:
     rel = os.path.relpath(path, _PROJECT_ROOT)
     for domain, owner_stem, predicate in checks:
         # Core invariant: only the OWNER module may contain mutations for
-        # this domain. Within the owner, we trust its internal organization
-        # (not every private helper needs its own assert_writer -- the
-        # module's public entry points are already gated and the existence
-        # of the module-level `from server.lifecycle_writers import`
-        # confirms the contract is acknowledged).
         is_owner = owner_stem + ".py" == os.path.basename(path)
         if is_owner:
             continue

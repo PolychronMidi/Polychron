@@ -107,8 +107,6 @@ def record_ground_truth(
         f.write(json.dumps(record, separators=(",", ":")) + "\n")
 
     # 2) Mirror into the KB with a dedicated tag. The `learn_unified.add`
-    #    path wants (title, content, category, tags). Use the add path to
-    #    get embedding + full KB integration.
     kb_title = f"[GROUND TRUTH {round_tag or '?'} {section_n}] {moment_n} / {sentiment_n}"
     kb_content = (
         f"Human feedback on {section_n} ({moment_n}): {sentiment_n}.\n"
@@ -188,10 +186,6 @@ def ground_truth_report() -> str:
         "",
     ]
     # Distribution by sentiment / moment type. Records stored from
-    # malformed CLI calls have stub values like "c" or "[" -- bucketing
-    # those as "(unparsed)" stops the distribution from looking like
-    # legitimate sentiments. Recognized vocabulary lives in the help
-    # text; anything outside it is suspect input.
     from collections import Counter
     _RECOGNIZED_SENTIMENTS = {
         "compelling", "flat", "surprising", "legendary", "transcendent",

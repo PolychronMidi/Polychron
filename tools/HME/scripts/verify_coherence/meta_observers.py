@@ -115,9 +115,6 @@ class PredictiveHCIVerifier(Verifier):
                 )
             except (subprocess.SubprocessError, OSError):
                 # Subprocess failed (timeout, missing interpreter, etc.)
-                # -- forecast data stays as-is; the next SKIP branch
-                # handles absence. Narrow catch so unexpected errors
-                # propagate visibly.
                 pass
         if not os.path.isfile(forecast_path):
             return _result(SKIP, 1.0, "no forecast data")

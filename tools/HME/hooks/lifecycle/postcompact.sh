@@ -1,13 +1,5 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME PostCompact: re-surface pending KB anchors, tracked note files, and session orientation
-#
-# MUST RUN AFTER: precompact
-# COORDINATES WITH: sessionstart
-#
-# Reads precompact's snapshot to reconstruct post-compaction continuity;
-# overlaps in concern with sessionstart but fires on a different lifecycle
-# event (compaction vs. fresh session).
 cat > /dev/null  # consume stdin
 
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,19 +8,19 @@ source "$HOOKS_DIR/../helpers/_onboarding.sh"
 
 PROJECT="$PROJECT_ROOT"
 HME_LOG="$PROJECT/log/hme.log"
-printf '%s INFO compact: POST-COMPACT event triggered\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" >> "$HME_LOG" 2>/dev/null
+printf '%s INFO compact: POST-COMPACT event triggered\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" >> "$HME_LOG" 2>/dev/null  # silent-ok: optional fallback path.
 TAB="$PROJECT/tmp/hme-tab.txt"
 PARTS=()
 
 if [[ -f "$TAB" && -s "$TAB" ]]; then
-  KB_LINES=$(grep '^KB:' "$TAB" 2>/dev/null)
+  KB_LINES=$(grep '^KB:' "$TAB" 2>/dev/null)  # silent-ok: optional fallback path.
   if [[ -n "$KB_LINES" ]]; then
     PARTS+=("POST-COMPACT: pending KB anchors still unsaved:")
     PARTS+=("$KB_LINES")
     PARTS+=("")
   fi
 
-  FILE_LINES=$(grep '^FILE:' "$TAB" 2>/dev/null)
+  FILE_LINES=$(grep '^FILE:' "$TAB" 2>/dev/null)  # silent-ok: optional fallback path.
   if [[ -n "$FILE_LINES" ]]; then
     PARTS+=("Tracked note files from this session:")
     PARTS+=("$FILE_LINES")
@@ -39,16 +31,13 @@ if [[ ${#PARTS[@]} -gt 0 ]]; then
   printf '%s\n' "${PARTS[@]}" >&2
 fi
 
-# Log post-compact event. The statusline meter hasn't fired yet with the new (reset) context value,
-# so used_pct here is still the pre-compact reading -- the delta between this and the next
-# statusline update shows how much context was freed.
 CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
 LOG="$PROJECT/output/metrics/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
   # FAIL-LOUD: same rationale as precompact.sh -- corrupted statusline JSON
   # would silently produce all-null calibration rows.
-  _PC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_jq_err_$$")
+  _PC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_jq_err_$$")  # silent-ok: optional fallback path.
   USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>"$_PC_JQ_ERR" || echo "null")
   REM=$(jq -r '.remaining_pct // "null"' "$CTX_FILE" 2>>"$_PC_JQ_ERR" || echo "null")
   if [ -s "$_PC_JQ_ERR" ] && [ -d "$PROJECT/log" ]; then
@@ -78,14 +67,12 @@ if [ -f "$PS" ]; then
 fi
 CHANGED=$(_safe_int "$(git -C "$PROJECT" diff --name-only 2>/dev/null | wc -l)")
 [ "$CHANGED" -gt 0 ] && ORIENT="$ORIENT\n  Uncommitted: $CHANGED file(s)"
-LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)
+LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)  # silent-ok: optional fallback path.
 [ -n "$LAST_COMMIT" ] && ORIENT="$ORIENT\n  Last commit: $LAST_COMMIT"
 PENDING=$(_nexus_pending)
 [ -n "$PENDING" ] && ORIENT="$ORIENT\n  Pending:$PENDING"
 
 # F2: Re-prime the onboarding walkthrough after compaction. If state is mid-
-# walkthrough, the agent lost conversational memory of WHY they're in that
-# state -- reinject the current step + target so they can resume cleanly.
 if ! _onb_is_graduated; then
   ONB_STEP="$(_onb_step_label)"
   ONB_TARGET="$(_onb_target)"
@@ -95,25 +82,14 @@ fi
 
 echo -e "[PostCompact] Context compacted. Session state:$ORIENT" >&2
 
-# H-compact optimization #11 + #7: hydrate the new window from the latest
-# chain link. This is the REAL purpose of the chain system -- the new
-# conversation wakes up with structured session state from the link, not
-# from scratch. Dumps the link YAML to stderr so Claude sees it as part
-# of post-compaction context.
+# hydrate the new window from the latest
 LATEST_LINK="${METRICS_DIR:-$PROJECT/output/metrics}/chain-history/latest.yaml"
 if [ -f "$LATEST_LINK" ]; then
   echo "" >&2
   echo "=== CHAIN LINK HYDRATION (PostCompact) ===" >&2
   echo "  Loading state from: $(readlink -f "$LATEST_LINK")" >&2
   # FAIL-LOUD: was `2>/dev/null >&2` which silenced ImportError / SyntaxError
-  # / KeyError. The script's own try/except only covers the file-load; any
-  # other crash silently swallowed the entire hydration. Now stderr is
-  # captured and bridged to errors.log; stdout still goes to >&2 as banner.
-  # Redirection ORDER matters: bash processes left-to-right, so do `>&2`
-  # FIRST (fd1 -> original stderr) then `2>"$_POSTC_PY_ERR"` (fd2 -> file).
-  # The reverse order makes fd1 follow fd2 into the file and silently logs
-  # every banner line as "python3 failed:".
-  _POSTC_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_py_err_$$")
+  _POSTC_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_py_err_$$")  # silent-ok: optional fallback path.
   python3 <<'PYEOF' >&2 2>"$_POSTC_PY_ERR"
 import json, os
 project = os.environ["PROJECT_ROOT"]

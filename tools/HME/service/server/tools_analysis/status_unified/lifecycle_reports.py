@@ -123,9 +123,6 @@ def _evolution_priority_report() -> str:
         if not priorities:
             return "# Evolution Priorities\n\nNo priorities generated.\n"
         # Compute staleness of the report -- the underlying file only
-        # regenerates on pipeline runs. Without a freshness indicator the
-        # user can't tell whether w=0.65 reflects the current session
-        # or a snapshot from 8 hours ago.
         ts_str = data["meta"].get("timestamp", "")
         stale_note = ""
         try:

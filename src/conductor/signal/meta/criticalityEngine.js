@@ -38,8 +38,6 @@ moduleLifecycle.declare({
   const THRESHOLD_MAX  = 1.20;
   const ADAPT_RATE     = 0.02;     // threshold adaptation speed
   // 0.92->0.96. Engine just activated in (was dormant at 1.0).
-  // Gentler snap (4% vs 8%) moderates the newly-active engine while
-  // tension arc recovers from Q3 0.765->0.643 regression.
   const SNAP_STRENGTH  = 0.96;     // how hard avalanche snaps to neutral
   const RECOVERY_BEATS = 3;        // beats of neutral bias after avalanche
 
@@ -60,12 +58,6 @@ moduleLifecycle.declare({
 
   function criticalityEngineEnergy() {
     // The original neutral points (density=0.5, tension=1.0, flicker=0.5)
-    // assumed density/flicker products center at 0.5 and tension at 1.0. In
-    // practice, density product is ~0.6, tension product is ~0.98, flicker ~1.0.
-    // Tension offset (-0.387 avg) created a constant energy floor of ~0.15 per
-    // beat, inflating threshold and making the engine insensitive to actual
-    // deviations. Adjust neutral points to match actual signal ranges so the
-    // engine responds to genuine departures from equilibrium.
     const d = signalReader.density() - 0.6;
     const t = signalReader.tension() - 0.95;
     const f = signalReader.flicker() - 1.0;
@@ -86,15 +78,10 @@ moduleLifecycle.declare({
     tensionSnap = signalReader.tension();
     flickerSnap = signalReader.flicker();
 
-    // Health-aware effective threshold: worse health -> lower trigger -> more corrective avalanches.
-    // At healthEma=0.7 (nominal), scale=1.0 (unchanged). Stressed system (healthEma=0.35) -> scale=0.5 -> fires at half threshold.
     const critHealthEma = V.optionalFinite(hyperMetaManager.getSnapshot().healthEma, 0.7);
     const criticalityHealthScale = clamp(critHealthEma / 0.7, 0.5, 1.4);
 
     // Orchestrator-modulated snap: during emergence, reduce snap to let
-    // novel patterns express; during locked state, amplify to break stasis.
-    // E22 (snap softening under pressure) was refuted in R35 -- removing the
-    // stabilizing snap made exceedance worse (49->122). Engine unchanged.
     const critSnapScale = /** @type {number} */ (hyperMetaManager.getRateMultiplier('criticalitySnap'));
     const effectiveSnap = clamp(SNAP_STRENGTH + (1.0 - SNAP_STRENGTH) * (1.0 - critSnapScale), SNAP_STRENGTH, 1.0);
 
@@ -131,9 +118,6 @@ moduleLifecycle.declare({
   }
 
   // Per-signal bias: scale by pipeline health grade from signalHealthAnalyzer.
-  // Healthy pipelines get full avalanche damping; strained pipelines get reduced;
-  // stressed/critical pipelines (already struggling) get no further damping.
-  // Original binary gates preserved as first pass.
 
   /** @param {string} grade @returns {number} */
   function criticalityEngineHealthScale(grade) {
@@ -149,20 +133,14 @@ moduleLifecycle.declare({
   }
   function tensionBias() {
     // Section-position-aware bypass. In the back half of sections,
-    // skip tension bias entirely so the engine doesn't compound suppression
-    // in Q3/Q4 territory (Q3 collapsed 0.765->0.643). Front half keeps
-    // normal gating. This is a structural change to the controller chain.
     {
       const secProgForGate = clamp(timeStream.compoundProgress('section'), 0, 1);
       if (secProgForGate > 0.55) return 1.0;
     }
     // Orchestrator tension floor protection. When the manager detects
-    // S0 tension collapse risk, it emits a protection signal. Reduce
-    // avalanche damping on tension to let tension recover naturally.
     const tensionProtection = /** @type {number} */ (hyperMetaManager.getRateMultiplier('tensionFloorProtection'));
     const tensionHealth = signalHealthAnalyzer.getHealth().tension.grade;
     const scale = criticalityEngineHealthScale(tensionHealth);
-    // Centralized tension damping gate: bypass when EITHER orchestrator protection OR health crisis
     if (tensionProtection > 1.2 || scale === 0 || tensionSnap < 0.85) return 1.0;
     return 1.0 + (currentBias - 1.0) * scale;
   }

@@ -82,10 +82,6 @@ class _EnvLoader:
                 key = key.strip()
                 val = val.strip()
                 # Strip matched surrounding quotes but not partial ones.
-                # Quoted values preserve `#` literally; unquoted values treat
-                # ` #` (hash preceded by whitespace) as start of a line comment
-                # per dotenv convention -- otherwise `PORT=9098 # note` would
-                # silently propagate the comment into the numeric value.
                 if len(val) >= 2 and val[0] == val[-1] and val[0] in ("'", '"'):
                     val = val[1:-1]
                 else:
@@ -98,9 +94,6 @@ class _EnvLoader:
                     continue
                 parsed[key] = val
         # Variable expansion: replace ${VAR} references with previously
-        # defined values from this same .env file. Only forward references
-        # work (a key must be defined above its first ${} usage). Unknown
-        # vars are left as-is so they fail loud downstream.
         import re
         _var_re = re.compile(r'\$\{([A-Za-z_][A-Za-z0-9_]*)\}')
         for key in list(parsed):
@@ -116,8 +109,6 @@ class _EnvLoader:
         self._path = str(env_path)
         self._loaded = True
         # Push into os.environ so child processes (subprocess, llama-server,
-        # etc.) inherit the declared config. .env WINS over pre-existing
-        # shell exports -- the whole point is central truth.
         for key, val in parsed.items():
             os.environ[key] = val
 
@@ -167,9 +158,6 @@ class _EnvLoader:
         )
 
     # Optional accessors (explicit opt-in to a default)
-    #
-    # Use ONLY for truly optional knobs that don't need to be declared.
-    # Every use is a liability -- prefer `require` and add to .env.
 
     def optional(self, key: str, default: str) -> str:
         val = self._raw(key)

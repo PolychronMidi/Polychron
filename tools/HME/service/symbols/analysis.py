@@ -43,14 +43,6 @@ _STRING_CHAR = {'"', "'", '`'}
 
 
 # Two-tier cache: (1) a cached file-list snapshot keyed by lang_filter so
-# blast-radius BFS (which calls find_callers per-symbol per-layer) doesn't
-# re-walk the project tree for every symbol, (2) a per-symbol caller cache
-# keyed by (symbol, lang_filter, file_list_signature) so repeated calls for
-# the same symbol within one BFS pass are O(1).
-# Invalidation: the file_list_signature is the sorted-file-list count + sum
-# of mtimes -- a cheap proxy that changes whenever any code file is
-# added/removed/touched. This is worker-lifetime cache, cleared implicitly
-# on worker restart.
 _FILE_LIST_CACHE: dict = {}     # lang_filter -> (signature, [Path, ...])
 _CALLERS_CACHE: dict = {}       # (symbol, lang_filter, signature) -> [caller dict, ...]
 
@@ -100,14 +92,13 @@ def find_callers(symbol_name: str, project_root: str, lang_filter: str = "") -> 
     ]
 
     # Fast pre-filter: files that don't contain the symbol name literally
-    # can't possibly match any regex pattern above. Read bytes and check
-    # with `in` -- one scan per file, skips regex entirely for non-matches.
     symbol_bytes = symbol_name.encode("utf-8")
     callers = []
     for fpath in files:
         try:
             content_bytes = fpath.read_bytes()
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         if symbol_bytes not in content_bytes:
             continue
@@ -156,6 +147,7 @@ def get_type_hierarchy(project_root: str) -> dict:
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
 
         lang = ext_to_lang(fpath.suffix if fpath.suffix else fpath.name)

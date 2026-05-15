@@ -130,9 +130,6 @@ def _enumerate_unprovable_claims() -> list[dict]:
                 })
     except (OSError, json.JSONDecodeError) as _pat_err:
         # Synthesis-patterns read failure = quality-gate claim silently
-        # missing from the reflexivity report. Register as CRITICAL so
-        # the LIFESAVER banner surfaces observability loss on the very
-        # next tool response -- not left to be noticed via "report looks healthy."
         logger.error(f"synthesis_patterns read FAILED: {type(_pat_err).__name__}: {_pat_err}")
         try:
             from server import context as _ctx

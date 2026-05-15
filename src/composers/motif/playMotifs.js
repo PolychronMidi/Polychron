@@ -67,8 +67,6 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   const candidateNotes = playMotifsBuildCandidateNotes(unit, resolvedNote, composerValidPCs);
 
   // Per-unit VoiceManager: maintain separate voice histories per unit level
-  // so subdiv voice-leading doesn't pollute beat-level motion.
-  // Parent histories seed children for coherence at each new parent boundary.
   if (!layer.playMotifsVoiceManagers) layer.playMotifsVoiceManagers = {};
   if (!layer.playMotifsVoiceManagers[unit]) {
     layer.playMotifsVoiceManagers[unit] = new VoiceManager();
@@ -172,6 +170,5 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Clear sibling voice tracking
   layer.playMotifsSiblingVoicePCs = null;
   layer.playMotifsSiblingVoiceLimits = null;
-  // DO NOT reset playMotifsVoiceManagers here; they maintain voice leading continuity within a phrase
   // Sub-unit VMs are re-seeded from parent at each parent boundary automatically
 };

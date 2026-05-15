@@ -82,6 +82,7 @@ def _load_holographs() -> list:
             with open(path) as f:
                 data = json.load(f)
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         captured = data.get("captured_at", 0)
         hci = data.get("hci", {}).get("hci")

@@ -47,19 +47,11 @@ moduleLifecycle.declare({
       finalImpulseType = V.assertNonEmptyString(impulseTypeMaybe, 'impulseType');
     }
     // Xenolinguistic: articulation shapes feedback energy character.
-    // Staccato -> percussive impulses (higher energy, shorter). Legato -> sustained (lower, longer).
     const artEntry = L0.getLast(L0_CHANNELS.articulation, { layer });
     const artSustain = artEntry && Number.isFinite(artEntry.avgSustain) ? artEntry.avgSustain : 0.5;
     const artScale = artSustain > 0.7 ? 0.8 : artSustain < 0.3 ? 1.2 : 1.0;
-    // R50: emergent rhythm density amplifies feedback energy (rhythmic activity = richer feedback)
     const emergentEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const emergentScale = emergentEntry && Number.isFinite(emergentEntry.density) ? 1.0 + clamp(emergentEntry.density * 0.3, 0, 0.15) : 1.0;
-    // R57: melodic contour shapes feedback energy. Rising -> stronger resonance (ascending momentum).
-    // Contrary counterpoint -> dampened (layers diverging, don't force resonance).
-    // High thematic density -> slight boost (familiar material creates stronger feedback echo).
-    // R87 E2: registerMigrationDir antagonism bridge with convergenceDetector -- ascending pitch center
-    // amplifies feedback resonance (climbing register builds cross-layer dialogue energy).
-    // Counterpart: convergenceDetector NARROWS tolerance under same signal (ascending divergence makes rhythmic unison harder).
     const melodicCtxFO = emergentMelodicEngine.getContext();
     const melodicScaleFO = melodicCtxFO
       ? (melodicCtxFO.contourShape === 'rising' ? 1.12 : melodicCtxFO.contourShape === 'falling' ? 0.90 : 1.0)
@@ -67,19 +59,12 @@ moduleLifecycle.declare({
       * (1.0 + clamp(melodicCtxFO.thematicDensity, 0, 1) * 0.12)
       * (melodicCtxFO.registerMigrationDir === 'ascending' ? 1.10 : melodicCtxFO.registerMigrationDir === 'descending' ? 0.92 : 1.0)
       : 1.0;
-    // R77 E4: channel-coherence gate -- high cross-layer coherence dampens impulse (already synchronized)
     const ccEntry = L0.getLast(L0_CHANNELS.channelCoherence, { layer: 'both' });
     const ccDamp = ccEntry && Number.isFinite(ccEntry.coherence) && ccEntry.coherence > 0.70
       ? clamp((ccEntry.coherence - 0.70) * 0.30, 0, 0.09)
       : 0;
-    // R89 E3: biasStrength antagonism bridge with grooveTransfer -- confident rhythm pulse calms feedback energy
-    // (groove is established; cross-layer oscillation settles as shared pulse takes hold).
-    // Counterpart: grooveTransfer AMPLIFIES transfer rate under same signal (confident pulse = reliable groove = amplify).
     const biasStrengthFO = emergentEntry && Number.isFinite(emergentEntry.biasStrength) ? emergentEntry.biasStrength : 0;
     const biasScaleFO = 1.0 - clamp((biasStrengthFO - 0.30) * 0.20, 0, 0.09);
-    // R92 E3: hotspots antagonism bridge with entropyRegulator -- dense active grid slots amplify feedback depth
-    // (rhythmic concentration gives oscillation more signal to work with, deepening cross-layer resonance).
-    // Counterpart: entropyRegulator LOWERS entropy target under same signal (concentration brings order, not chaos).
     const hotspotsFO = emergentEntry && Number.isFinite(emergentEntry.hotspots) ? emergentEntry.hotspots : 0;
     const hotspotsScaleFO = 1.0 + clamp(hotspotsFO * 0.18, 0, 0.09);
     L0.post(CHANNEL, layer, absoluteSeconds, {
@@ -110,14 +95,11 @@ moduleLifecycle.declare({
     if (V.optionalFinite(incoming.energy) === undefined || incoming.energy < MIN_ENERGY) return null;
     if (incoming.roundTrip >= MAX_ROUND_TRIPS) return null;
 
-    // Modulate damping by entropy - high entropy means feedback should be stronger to create convergence
     const entropyEntry = L0.getLast(L0_CHANNELS.entropy, { layer: activeLayer });
     const entropyModulation = entropyEntry && Number.isFinite(entropyEntry.smoothed) ? clamp(1.0 + (entropyEntry.smoothed - 0.5) * 0.3, 0.85, 1.15) : 1.0;
     // CIM: coordinated = less damping (energy flows freely), independent = more
     const cimDamping = DAMPING * (1.3 - cimScale * 0.6);
-    // R41: regime-responsive feedback character. Coherent = longer feedback chains
-    // (less damping, energy sustains), exploring = shorter chains (more damping,
-    // energy dissipates quickly). Creates regime-specific cross-layer dialogue depth.
+    // regime-responsive feedback character. Coherent = longer feedback chains
     const fbRegime = regimeClassifier.getRegime();
     const regimeDamping = fbRegime === 'coherent' ? 0.90 : fbRegime === 'exploring' ? 1.15 : 1.0;
     const dampedEnergy = incoming.energy * cimDamping * entropyModulation * regimeDamping;
@@ -185,11 +167,6 @@ moduleLifecycle.declare({
       }
 
     // Energy decays with each round-trip - subtle micro-accents
-    // The receiving layer can use reaction.energy to modulate:
-    // - note velocity (boost by energy * 15%)
-    // - stutter probability (energy as probability multiplier)
-    // - pan width (wider stereo at higher energy)
-    // Pitch Memory: pitchBias is the complementary PC the receiver should favor
     return {
       applied: true,
       energy: reaction.energy,

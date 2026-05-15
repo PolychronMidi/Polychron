@@ -10,8 +10,6 @@
  */
 
 // Detection: pipe operator anywhere in command, RHS starts with sh/bash/
-// zsh/ksh/dash optionally prefixed with `.`, `sudo`, or `exec`. LHS verb
-// is curl/wget/fetch (the typical download-then-pipe pattern).
 const PIPE_TO_SHELL = /\b(?:curl|wget|fetch)\b[^|]*\|[\s]*(?:\.[\s]+|sudo[\s]+|exec[\s]+)?(?:sh|bash|zsh|ksh|dash)\b/;
 
 const REASON =

@@ -4,7 +4,6 @@ import re
 
 from _phrase_lists import ALL_DEFERRAL as _SHARED_DEFERRAL  # noqa: E402
 
-# Exhaust-specific phrases: the broader catalogue of deferral language not yet sorted into _phrase_lists.py's 4 narrow categories. Pure additions on top of _SHARED_DEFERRAL; no duplicate keys.
 _EXHAUST_LOCAL_PHRASES = (
     "noted not yet fixed",
     "noted, not yet fixed",
@@ -164,9 +163,6 @@ DEFERRAL_REGEXES = (
         r"\b(pass|review|look|investigation|run|follow-?up|round|session|diagnostic|sweep)\b",
         re.IGNORECASE,
     ),
-    # "Takes effect on next ..." / "requires a restart" handoffs -- the "I did
-    # my part, waiting on you" frame. Structural because the specific
-    # wording varies (next proxy restart / next reload / next session / etc.).
     re.compile(
         r"\b(takes|will take)\s+effect\s+(on|when|after)\b",
         re.IGNORECASE,
@@ -189,8 +185,6 @@ DEFERRAL_REGEXES = (
         re.IGNORECASE,
     ),
     # "Want me to" / "Should I" / "Would you like me to" -- punts decision
-    # to the user instead of executing under existing authority. Mirrors
-    # PSYCHOPATHIC-STOP's survey-and-ask pattern but caught at exhaust time.
     re.compile(
         r"\b(want|need)\s+me\s+to\b|"
         r"\bshould\s+I\b|"
@@ -228,8 +222,6 @@ DEFERRAL_REGEXES = (
         re.IGNORECASE,
     ),
     # "Subset" framing. "high-fit subset for X" / "subset that ships /
-    # covers / fits". When user asked for the full set, naming a subset
-    # is a punt.
     re.compile(
         r"\bsubset\b[^.\n]{0,40}\b("
         r"implement|cover|ship|land|fix|scope|fit|focus|priorit"

@@ -2,7 +2,6 @@
 // Replaces composer.getMeter() + getPolyrhythm() with a single table-driven pick.
 // First call in a section: picks a pair with length in [2, 3].
 // Subsequent calls: picks a pair within 10% of the previous pair's length.
-// Sets numerator/denominator (L1) and polyNumerator/polyDenominator/polyMeterRatio/measuresPerPhrase1/measuresPerPhrase2.
 
 moduleLifecycle.declare({
   name: 'getMeterPair',

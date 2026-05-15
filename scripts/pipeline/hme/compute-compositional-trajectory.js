@@ -15,14 +15,6 @@ const OUT = path.join(METRICS_DIR, 'hme-trajectory.json');
 const WINDOW = 20;
 const MIN_ROUNDS = 5;
 // Normalized slopes: we compute slope per round (x = round index). Thresholds
-// are tuned for each signal's approximate scale. EnCodec entropy is ~5-9,
-// complexity and clap tension are 0..1. Thresholds are small fractions of
-// the signal range per round.
-// R38-R39: original thresholds were miscalibrated to this engine's natural
-// variance. Observed slopes hover 0.0001-0.002 against a 0.005 threshold,
-// so every round lands PLATEAU even when clap_tension is consistently
-// climbing. Lowered to match real signal magnitudes in this engine's
-// composition space.
 const THRESHOLDS = {
   perceptual_complexity_avg: 0.001, // was 0.005
   clap_tension: 0.001,              // was 0.005
@@ -30,11 +22,6 @@ const THRESHOLDS = {
 };
 
 // Per-signal voting weight. clap_tension promoted to PRIMARY: it's the
-// only trajectory signal that tracks what the listener + design goal agree
-// on (dense / chaotic / polyrhythmic texture). perceptual_complexity and
-// encodec_entropy are EnCodec-based spectral metrics that don't respond
-// to this engine's CC-modulation-heavy interventions -- they become
-// diagnostics, not co-equal votes.
 const WEIGHTS = {
   perceptual_complexity_avg: 0.5,
   clap_tension: 2.0,
@@ -43,7 +30,6 @@ const WEIGHTS = {
 
 
 function linregress(ys) {
-  // Simple OLS: x = [0, 1, 2, ...]
   const n = ys.length;
   if (n < 2) return { slope: 0, intercept: ys[0] || 0, variance: 0 };
   const xs = ys.map((_, i) => i);

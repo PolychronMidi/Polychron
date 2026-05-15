@@ -32,8 +32,6 @@ const stopChain = require('./index');
 async function main() {
   let stdin = '';
   // Bound the stdin read so a stuck pipe can't hang the hook indefinitely.
-  // The Claude Code Stop hook payload is small (<10KB typically); 1MB is
-  // a generous ceiling matched to FailproofAI's published limit.
   const MAX_STDIN_BYTES = 1024 * 1024;
   for await (const chunk of process.stdin) {
     stdin += chunk;

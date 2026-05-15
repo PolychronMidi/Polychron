@@ -1,4 +1,3 @@
-// src/conductor/intervalExpansionContractor.js - Intervallic vocabulary expansion/contraction.
 // Tracks whether the range of interval sizes used is expanding (wider leaps
 // emerging) or contracting (tighter steps dominating) over time.
 // Density bias to allow expansion room or encourage consolidation.
@@ -18,7 +17,6 @@ moduleLifecycle.declare({
   /** @type {Array<{ avgInterval: number, maxInterval: number, time: number }>} */
   const intervalSnapshots = [];
 
-  // Beat-level cache: getExpansionSignal is called 2x per beat (densityBias + stateProvider)
   const intervalExpansionContractorCache = beatCache.create(() => intervalExpansionContractorGetExpansionSignal());
 
   /**
@@ -89,19 +87,14 @@ moduleLifecycle.declare({
     const avgIntervalTrend = recentAvg - olderAvg;
 
     let trend = 'stable';
-    // R27 E2: Narrowed thresholds from +/-1.5 to +/-0.8. R26 showed
-    // tension at 1.0 (stable intervals) because typical avgIntervalTrend
-    // rarely exceeds +/-1.5 in well-balanced compositions.
+    // Narrowed thresholds from +/-1.5 to +/-0.8. R26 showed
     if (avgIntervalTrend > 0.8) trend = 'expanding';
     else if (avgIntervalTrend < -0.8) trend = 'contracting';
 
     // Density bias: rapid expansion - slight reduction to give melodic room;
     // extreme contraction - slight increase to encourage variety
     let densityBias = 1;
-    // R6 E3: Widen density bias from 4% to 8%. Stronger response to
-    // intervallic trends creates more melodic diversity: wider leaps get
-    // more room, stepwise motion gets encouraged toward variety.
-    // R27 E2: Aligned density bias thresholds with narrowed trend thresholds.
+    // Widen density bias from 4% to 8%. Stronger response to
     if (avgIntervalTrend > 1.2) {
       densityBias = 0.92; // expanding fast - give room
     } else if (avgIntervalTrend < -1.2) {
@@ -124,11 +117,7 @@ moduleLifecycle.declare({
     intervalSnapshots.length = 0;
   }
 
-  // R26 E5: Tension bias from intervallic expansion/contraction. Expanding
-  // intervals (wider leaps appearing) correlate with rising dramatic
-  // intensity and should boost tension. Contracting intervals (tighter
-  // steps) signal settling/resolution and should relax tension. Creates
-  // cross-domain melodic->harmonic coupling.
+  // Tension bias from intervallic expansion/contraction. Expanding
   /**
    * Get tension multiplier from interval expansion trajectory.
    * @returns {number}

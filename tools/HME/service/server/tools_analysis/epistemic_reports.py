@@ -76,10 +76,6 @@ def music_truth_report() -> str:
         lines.append("")
         lines.append("## Rolling-window correlations (Pearson r)")
         # Split so non-degenerate correlations lead the list -- they're the
-        # scientifically meaningful ones. Degenerate pairs (too few distinct
-        # values in x or y, n<3, etc.) get collapsed to a summary at the
-        # bottom. Previously a 20-pair list was 17 degenerates drowning out
-        # 3 real correlations.
         computable = []
         degenerate_items = []
         for k, c in corr.items():
@@ -90,9 +86,6 @@ def music_truth_report() -> str:
         # Sort computable by |r| desc so strongest correlations lead.
         computable.sort(key=lambda kc: -abs(kc[1].get("r", 0) if isinstance(kc[1].get("r"), (int, float)) else 0))
         # Magnitude label: |r| < 0.2 = negligible, 0.2-0.4 = weak,
-        # 0.4-0.6 = moderate, 0.6-0.8 = strong, > 0.8 = very strong.
-        # Sign gets its own label because a strong negative correlation is
-        # substantively different from a strong positive one.
         def _r_tier(r_val: float) -> str:
             ar = abs(r_val)
             if ar < 0.20: base = "negligible"
@@ -206,10 +199,6 @@ def intention_gap_report() -> str:
         lines.append(f"  gap                    {gap * 100:.0f}%")
 
     # Explain "untrackable" -- previously users saw a high count with no idea
-    # what it meant. A todo is untrackable when its text doesn't mention any
-    # expected-artifact pattern the gap-computer knows how to verify
-    # (file paths, module names, git-log tokens, etc.). They're not failures;
-    # they're just outside the current telemetry's introspection range.
     n_untrackable = latest.get("untrackable", 0)
     n_total = latest.get("todos_total", 0)
     if n_untrackable and n_total:

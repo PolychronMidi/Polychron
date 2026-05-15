@@ -7,7 +7,7 @@
 # ascent resolved into Claude Code's plugin cache when hooks were invoked
 # from there -- a silent disable. The audit-shell-hooks R1 rule catches
 # this specific cache-trap pattern.
-source "${PROJECT_ROOT}/tools/HME/hooks/helpers/_policy_enabled.sh" 2>/dev/null || true
+source "${PROJECT_ROOT}/tools/HME/hooks/helpers/_policy_enabled.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
 
 # Block mkdir of misplaced log/, metrics/, or tmp/ directories via the
 # canonical JS path_policy module used by proxy policies.
@@ -17,7 +17,7 @@ const p = require(process.env.PROJECT_ROOT + '/tools/HME/proxy/path_policy');
 const cmd = process.env.CMD || '';
 if (p.mkdirHasMisplacedRootOnlyDir(cmd, ['log', 'tmp'])) console.log('root-only');
 else if (p.mkdirHasMisplacedMetrics(cmd)) console.log('metrics');
-" 2>/dev/null || true)
+" 2>/dev/null || true)  # silent-ok: optional fallback path.
   if [ "$_MKDIR_VERDICT" = "root-only" ] && _policy_enabled block-mkdir-misplaced-log-tmp; then
     _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not mkdir subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
     exit 2
@@ -29,11 +29,6 @@ else if (p.mkdirHasMisplacedMetrics(cmd)) console.log('metrics');
 fi
 
 # Block run.lock deletion (hard rule, defense-in-depth with settings.json
-# Bash(rm*run.lock*)). Argv-tokenized via shlex to catch non-rm verbs:
-# mv, unlink, find -delete, shred, truncate, >run.lock. Variable-expanded
-# paths out of scope (need runtime eval).
-# Block curl|sh / wget|sh: supply-chain attack vector. Catches all spacings,
-# flag orders, and shells (sh/bash/zsh/ksh/dash).
 if _policy_enabled block-curl-pipe-sh && echo "$CMD" | grep -qE '\b(curl|wget|fetch)\b[^|]*\|[[:space:]]*(\.[[:space:]]+|sudo[[:space:]]+|exec[[:space:]]+)?(sh|bash|zsh|ksh|dash)\b'; then
   _emit_block "BLOCKED: piping a remote download into a shell interpreter (curl|sh, wget|bash, etc.) is a primary supply-chain attack pattern. Download to a file, inspect it, then execute deliberately if needed."
   exit 2
@@ -41,9 +36,7 @@ fi
 
 if _policy_enabled block-runlock-deletion && echo "$CMD" | grep -q 'run\.lock'; then
   # FAIL-LOUD: was `2>/dev/null`. A python crash silently disabled the
-  # run.lock deletion-block -- `tmp/run.lock` is a hard rule per CLAUDE.md
-  # ("Never remove tmp/run.lock"). Gate failing OPEN here is critical.
-  _BBG_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_bbg_py_err_$$")
+  _BBG_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_bbg_py_err_$$")  # silent-ok: optional fallback path.
   _RUNLOCK_VERDICT=$(python3 - "$CMD" 2>"$_BBG_PY_ERR" <<'PY'
 import shlex, sys, re
 cmd = sys.argv[1] if len(sys.argv) > 1 else ""

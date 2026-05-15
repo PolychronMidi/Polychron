@@ -21,8 +21,6 @@ from server.tools_analysis import _track
 logger = logging.getLogger("HME")
 
 # Pull persistence + entry primitives from the parent module. todo.py loads
-# its core definitions BEFORE re-exporting from this sibling, so this
-# import resolves without a cycle.
 from server.tools_analysis.todo import (
     _load_todos, _save_todos, _write_todo_entry, _allocate_id,
     _find_main, _find_any, _check_main_done, _mark_status,
@@ -102,8 +100,6 @@ def merge_native_todowrite(incoming: list) -> list:
         _save_todos(meta, new_store)
 
         # Build the flattened list returned as updatedInput for native TodoWrite.
-        # Format: one entry per visible row. Subs are flattened with an indent
-        # prefix. Status flows from the underlying entry.
         flat = []
         # Order: critical first, onboarding next, then everything else
         def _sort_key(t):
@@ -115,9 +111,6 @@ def merge_native_todowrite(incoming: list) -> list:
 
         sorted_entries = sorted(new_store, key=_sort_key)
         # Cap critical items to _MAX_CRITICAL_IN_MERGE to avoid alert-flood
-        # drowning the agent's real todos. Completed crits are filtered out
-        # entirely (no value in re-surfacing resolved alerts), and overflow
-        # of pending crits collapses to one summary entry.
         critical_shown = 0
         critical_overflow = 0
         for t in sorted_entries:

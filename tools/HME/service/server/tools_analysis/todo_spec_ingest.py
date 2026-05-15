@@ -25,8 +25,6 @@ from server.tools_analysis import _track
 logger = logging.getLogger("HME")
 
 # Pull persistence + entry primitives from the parent module. todo.py loads
-# its core definitions BEFORE re-exporting from this sibling, so this
-# import resolves without a cycle.
 from server.tools_analysis.todo import (
     _load_todos, _save_todos, _write_todo_entry, _allocate_id,
     _find_main, _find_any, _check_main_done, _mark_status,
@@ -35,19 +33,9 @@ from server.tools_analysis.todo import (
 
 
 # SPEC/TODO bridge -- connects ephemeral HME todo state to durable
-# doc/templates/SPEC.md + doc/templates/TODO.md active docs. See doc/templates/SPEC.md Phase 0.
 
 
 # _spec_file() moved to paths.spec_file() -- lazy resolution for hot-reload
-# _todo_md_file() moved to paths.todo_file()
-# Archive lives under KB as the "devlog" arm -- searchable through the
-# same substrate as other knowledge entries, decoupled from the active
-# doc/ directory so completed work doesn't tax agents reading the spec.
-# Each archive event writes ONE timestamped file containing the
-# just-completed set of phases (no monthly rotation; the archive trigger
-# IS set-completion).
-# _devlog_dir() moved to paths.kb_devlog_dir()
-# Next-up entry: "- [tier] description. Reason: ...". Accepts E1-E5 or legacy easy/medium/hard.
 _NEXT_UP_RE = re.compile(
     r"^\s*-\s+\[(E[1-5]|easy|medium|hard)\]\s+(.+?)(?:\s+Reason:\s+(.+?))?\s*$",
     re.IGNORECASE,
@@ -117,7 +105,6 @@ def _ingest_from_spec(meta: dict, todos: list, phase: int | str = 0) -> list[dic
         if not s or s.startswith("<!--") or s.startswith("-->"):
             continue
         # Phase blocks use _SPEC_OPEN_RE shape (`- [ ] [tier] text`); TODO Next-up uses
-        # _NEXT_UP_RE shape (`- [tier] text. Reason: ...`). Try both.
         m_phase = _SPEC_OPEN_RE.match(line)
         if m_phase:
             tier_str = re.search(r"\[(E[1-5]|easy|medium|hard)\]",

@@ -1,5 +1,4 @@
 'use strict';
-// Supervised child specs: { name, cmd, args, env, healthUrl, startupMs, restartDelayMs, maxRestarts, callTimeoutMs }
 
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
@@ -20,8 +19,6 @@ function mcpEnv() {
     TRANSFORMERS_OFFLINE: '1',
     HME_WORKER_PORT: String(WORKER_PORT),
     // Must be set BEFORE PyTorch's first cuda init or it's ignored.
-    // expandable_segments avoids the fragmentation that turns a 5 GiB
-    // fresh request into a 48 GiB allocation failure during reindex.
     PYTORCH_CUDA_ALLOC_CONF: process.env.PYTORCH_CUDA_ALLOC_CONF || 'expandable_segments:True',
   };
 }
@@ -42,8 +39,6 @@ const CHILDREN = [
     name: 'llamacpp_daemon',
     cmd: 'python3',
     // Post-R98 split: the daemon is a package at mcp/llamacpp_daemon/.
-    // Invoke via -m so Python's import machinery picks up the package;
-    // cwd points at mcp/ so the relative module resolves.
     cwd: MCP_DIR,
     args: ['-m', 'llamacpp_daemon', '--port', String(LLAMACPP_DAEMON_PORT)],
     env: mcpEnv,

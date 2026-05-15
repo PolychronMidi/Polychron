@@ -55,8 +55,6 @@ def get_session_intent() -> str:
 
 
 
-# Tool output budgets -- per-tool char limits. Compound tools split budget across sub-reports.
-# These are generous enough to never lose actionable data, tight enough to prevent context bloat.
 BUDGET_TOOL = 5000       # single-mode tools (find, trace, review:digest, etc.)
 BUDGET_COMPOUND = 8000   # compound tools (review:full, status:all, evolve:all)
 BUDGET_SECTION = 2500    # per-section cap within compound tools
@@ -189,7 +187,6 @@ def _filter_kb_relevance(kb_results: list, module_name: str) -> list:
     """
     import re
     # Build search terms from camelCase fragments
-    # Full module name always searched; fragments only if specific enough (>5 chars, not generic)
     _generic_fragments = {"engine", "manager", "helper", "utils", "state", "config", "monitor", "controller"}
     terms = {module_name.lower()}
     fragments = re.findall(r'[A-Z]?[a-z]+', module_name)
@@ -201,7 +198,6 @@ def _filter_kb_relevance(kb_results: list, module_name: str) -> list:
     for entry in kb_results:
         haystack = (entry.get("title", "") + " " + entry.get("content", "")[:300]
                      + " " + " ".join(entry.get("tags", []) if isinstance(entry.get("tags"), list) else [str(entry.get("tags", ""))])).lower()
-        # Word-boundary match: "section" should match "section memory" but not "maxPerSection"
         if any(re.search(r'(?<![a-z])' + re.escape(term) + r'(?![a-z])', haystack) for term in terms):
             filtered.append(entry)
     return filtered  # no fallback -- irrelevant KB entries are worse than no entries
@@ -229,7 +225,6 @@ def _get_compositional_context(module_name: str) -> str:
         return _compositional_context_cache[cache_key]
 
     parts = []
-    # Build search terms: module name + camelCase fragments (specific enough to avoid noise)
     search_terms = {module_name.lower()}
     import re
     _generic = {"engine", "manager", "helper", "utils", "state", "config", "monitor", "controller"}
@@ -335,11 +330,6 @@ def _load_trace(trace_path: str) -> list[dict]:
 
 
 # Journal archive freshness
-# `output/metrics/journal.md` is a deprecated archive -- no new entries land
-# there. The activity bridge (`output/metrics/hme-activity.jsonl`) is the
-# live machine-readable per-round record. These helpers let journal-reading
-# tools annotate their output when the archive is staler than the activity
-# bridge so consumers don't mistake R<frozen> for the current round.
 def _journal_latest_archived_round() -> int | None:
     path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
     if not os.path.isfile(path):

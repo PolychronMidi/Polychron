@@ -65,8 +65,6 @@ class LayerManager {
     LM.layerComposers[name] = registeredComposer;
 
     // If a per-layer setup function was provided, call it with `c` set
-    // to the layer buffer so existing setup functions that rely on
-    // the active buffer continue to work.
     const prevC = c;
     try {
       c = buf;
@@ -106,7 +104,6 @@ class LayerManager {
       layer.measureComposer = layerComposer;
       composer = layerComposer;
     }
-    // Set active layer context in phaseLockedRhythmGenerator for layer-aware phase tracking
     if (phaseLockedRhythmGenerator) {
       phaseLockedRhythmGenerator.setActiveLayer(name);
     }
@@ -148,7 +145,6 @@ class LayerManager {
     }
   }
 
-  // Minimal helpers to initialize section origin for layers (keeps it tiny and explicit).
   static setSectionStartFor(name) {
     const layer = LayerManager.layers[name];
     V.requireDefined(layer, `layer "${name}"`);

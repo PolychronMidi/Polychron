@@ -49,7 +49,6 @@ moduleLifecycle.declare({
     const tempoEntry = L0.getLast(L0_CHANNELS.tickDuration, { layer: sctLayer });
     const bpmScale = tempoEntry && Number.isFinite(tempoEntry.bpmScale) ? tempoEntry.bpmScale : 1.0;
     // Rhythmic coupling: dense emergent rhythm = stickier contagion (lower decay).
-    // When the cross-layer rhythm grid is busy, stutter infection propagates more readily.
     const rhythmEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmDensity = rhythmEntry && Number.isFinite(rhythmEntry.density) ? rhythmEntry.density : 0;
     const rhythmDecayMod = 1.0 - rhythmDensity * 0.12; // [0.88-1.0] dense->sticky
@@ -108,39 +107,25 @@ moduleLifecycle.declare({
     const decayedIntensity = matchIntensity * decay;
     if (decayedIntensity < 0.05) return null;
 
-    // R58: melodic context gates contagion. High thematic density -> reduce (motif echo
-    // already provides rhythmic "infection"). Stale intervals -> boost (rhythmic novelty).
-    // Contrary counterpoint -> slight boost (opposing motion benefits from interruption).
+    // melodic context gates contagion. High thematic density -> reduce (motif echo
     const melodicCtxSC = emergentMelodicEngine.getContext();
-    // R77: ascendRatio bridge -- ascending melodic energy intensifies cross-layer stutter spread
     const melodicContagionScale = melodicCtxSC
       ? clamp(1.0 - melodicCtxSC.thematicDensity * 0.20
         + (melodicCtxSC.intervalFreshness < 0.40 ? 0.10 : 0)
         + (melodicCtxSC.counterpoint === 'contrary' ? 0.08 : 0)
         + (melodicCtxSC.ascendRatio > 0.55 ? (melodicCtxSC.ascendRatio - 0.55) * 0.30 : 0), 0.65, 1.35)
       : 1.0;
-    // R78: phase-lock coupling -- locked layers stutter together (synchronized burst = rhythmic unison),
     // repelling layers diverge (opposition should not cascade stutter across layers).
     const phaseModeContagion = rhythmicPhaseLock.getMode();
     const phaseContagionScale = phaseModeContagion === 'lock' ? 1.12 : phaseModeContagion === 'repel' ? 0.88 : 1.0;
-    // R79 E4: densitySurprise antagonism bridge with restSynchronizer -- surprising rhythmic events
-    // amplify contagion spread (chaos invites more chaos). Counterpart: restSynchronizer SUPPRESSES
-    // rests on same signal (surprise = no breathing room, both layers in contagion state).
     const rhythmEntrySC = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const densitySurpriseSC = rhythmEntrySC && Number.isFinite(rhythmEntrySC.densitySurprise) ? rhythmEntrySC.densitySurprise : 1.0;
     const surpriseContagionScale = densitySurpriseSC > 1.1 ? 1.0 + clamp((densitySurpriseSC - 1.0) * 0.12, 0, 0.10) : 1.0;
-    // R82 E4: tessituraLoad bridge -- extreme register amplifies stutter contagion
-    // (chaos diversifies at register extremes). Counterpart: harmonicIntervalGuard TIGHTENS
-    // harmonic control under same signal (structure anchors at extremes).
+    // tessituraLoad bridge -- extreme register amplifies stutter contagion
     const tessituraContagionSC = melodicCtxSC ? V.optionalFinite(melodicCtxSC.tessituraLoad, 0) : 0;
     const tessituraContagionScale = 1.0 + clamp(tessituraContagionSC * 0.15, 0, 0.12);
-    // R88 E2: complexityEma antagonism bridge with grooveTransfer -- sustained rhythmic complexity
-    // amplifies stutter contagion (complex texture propagates chaos more aggressively).
-    // Counterpart: grooveTransfer REDUCES transfer under same signal (groove stability anchors complexity).
     const complexityEmaSC = rhythmEntrySC && Number.isFinite(rhythmEntrySC.complexityEma) ? rhythmEntrySC.complexityEma : 0.5;
     const complexityContagionScale = 1.0 + clamp((complexityEmaSC - 0.45) * 0.20, -0.04, 0.10);
-    // contourShape: rising arc = stutter infection spreads harder (ascending energy amplifies chaos cascade);
-    // falling arc = contagion softens (descent = release phase, stutter settles rather than spreads).
     const contourContagionSC = melodicCtxSC
       ? (melodicCtxSC.contourShape === 'rising' ? 1.07 : melodicCtxSC.contourShape === 'falling' ? 0.93 : 1.0)
       : 1.0;

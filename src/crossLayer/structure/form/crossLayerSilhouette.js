@@ -45,7 +45,6 @@ moduleLifecycle.declare({
     // Register balance from spectralComplementarity (using active layer, not hardcoded)
     const spectralComplement = spectralComplementarity.analyzeComplement(layerForSpectral);
 
-    // Heat from interactionHeatMap via L0 (fallback to direct call on first beat before any flush)
     const heat = L0.getLast(L0_CHANNELS.interactionHeat)?.density ?? interactionHeatMap.getDensity();
 
     // Convergence intensity boosts dynamic reading
@@ -55,8 +54,6 @@ moduleLifecycle.declare({
     const rawDensity = clamp(heat, 0, 1);
     const rawRegister = clamp(spectralComplement.gapWeight, 0, 1);
     // Melodic coupling: contourShape amplifies or dampens the dynamic reading.
-    // Rising contour -> higher dynamic presence (silhouette tracks the build).
-    // Falling contour -> softer dynamic presence (silhouette tracks the descent).
     const melodicCtxCS = emergentMelodicEngine.getContext();
     const contourDynBoost = melodicCtxCS
       ? (melodicCtxCS.contourShape === 'rising' ? 0.12 : melodicCtxCS.contourShape === 'falling' ? -0.08 : 0)
@@ -64,43 +61,25 @@ moduleLifecycle.declare({
     const rawDynamic = clamp((convergenceRecent ? 0.7 : 0.4) + contourDynBoost, 0, 1);
     const rawEntropy = V.optionalFinite(entropyReg.currentEntropy, 0.5);
 
-    // Regime-responsive smoothing: faster tracking during exploring, more stable arcs during coherent
     const regime = conductorSignalBridge.getSignals().regime || 'evolving';
     const smoothing = SMOOTHING_REGIME[regime] !== undefined ? SMOOTHING_REGIME[regime] : 0.15;
-    // R73: emergentRhythm densitySurprise coupling -- unexpected rhythmic bursts sharpen silhouette tracking.
-    // Opposing response to entropyRegulator: same trigger, structure sharpens while entropy rises.
     const rhythmEntryCS = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const densitySurpriseCS = rhythmEntryCS && Number.isFinite(rhythmEntryCS.densitySurprise) ? rhythmEntryCS.densitySurprise : 0;
-    // R77 E9: complexityEma slow-form bridge -- sustained rhythmic complexity keeps form stable (inertia)
-    // Counterpart: entropyRegulator raises target under same condition (fast-chaos / slow-form coupling)
     const complexityEmaCS = rhythmEntryCS && Number.isFinite(rhythmEntryCS.complexityEma) ? rhythmEntryCS.complexityEma : 0;
     const complexityInertiaCS = clamp((complexityEmaCS - 0.5) * 0.20, 0, 0.10);
-    // R78: phase-lock coupling -- repel mode (layer opposition) demands sharper structural tracking;
-    // lock mode (sync) stabilizes the holistic arc (layers moving together need less correction).
     const phaseModeCSil = rhythmicPhaseLock.getMode();
     const phaseSmoothing = phaseModeCSil === 'repel' ? 0.88 : phaseModeCSil === 'lock' ? 1.10 : 1.0;
-    // R82 E1: registerMigrationDir bridge -- ascending register migration tightens silhouette form
-    // (structural tracking firms up as pitch center rises). Counterpart: phaseAwareCadenceWindow
-    // COMPRESSES cadence window under same signal (resist resolution during ascent).
     const registerMigFormCS = melodicCtxCS
       ? (melodicCtxCS.registerMigrationDir === 'ascending' ? 0.08 : melodicCtxCS.registerMigrationDir === 'descending' ? -0.05 : 0)
       : 0;
-    // R85 E1: intervalFreshness antagonism bridge -- novel intervals sharpen silhouette structural tracking.
-    // Counterpart: entropyRegulator RAISES entropy target under same signal (form tightens while chaos expands).
     const intervalFreshnessCS = melodicCtxCS ? V.optionalFinite(melodicCtxCS.intervalFreshness, 0.5) : 0.5;
     const intervalFreshnessNarrowCS = clamp((intervalFreshnessCS - 0.45) * 0.18, -0.03, 0.09);
-    // R47 E3: ascendRatio antagonism bridge with climaxEngine -- ascending melodic intervals
-    // tighten structural tracking (form braces for landing as melody climbs).
-    // Counterpart: climaxEngine ACCELERATES climax approach under same signal (chaos rides the climb).
+    // ascendRatio antagonism bridge with climaxEngine -- ascending melodic intervals
     const ascendRatioCS = melodicCtxCS ? V.optionalFinite(melodicCtxCS.ascendRatio, 0.5) : 0.5;
     const ascendFormTightenCS = clamp((ascendRatioCS - 0.50) * 0.16, -0.04, 0.08);
-    // R92 E1: tessituraLoad antagonism bridge with verticalIntervalMonitor -- crowded register
-    // loosens silhouette form tracking (wider structural tolerance gives register pressure room to breathe).
-    // Counterpart: verticalIntervalMonitor TIGHTENS collision penalty under same signal (harmonic discipline + form flexibility).
+    // tessituraLoad antagonism bridge with verticalIntervalMonitor -- crowded register
     const tessituraLoadCS = melodicCtxCS ? V.optionalFinite(melodicCtxCS.tessituraLoad, 0.5) : 0.5;
     const tessituraFormRelaxCS = clamp((tessituraLoadCS - 0.5) * 0.22, -0.05, 0.10);
-    // R92 E2: thematicDensity virgin coupling -- high thematic recurrence density tightens form tracking.
-    // Recognizable motivic patterns demand structural coherence; the silhouette firms up around recurring themes.
     const thematicDensityCS = melodicCtxCS ? V.optionalFinite(melodicCtxCS.thematicDensity, 0.5) : 0.5;
     const thematicFormTightenCS = clamp((thematicDensityCS - 0.5) * 0.14, -0.03, 0.07);
     const effectiveSmoothing = clamp(smoothing * (1 - densitySurpriseCS * 0.30) * (1 - complexityInertiaCS) * phaseSmoothing * (1 - registerMigFormCS) * (1 - intervalFreshnessNarrowCS) * (1 - ascendFormTightenCS) * (1 + tessituraFormRelaxCS) * (1 - thematicFormTightenCS), 0.05, 0.40);
@@ -135,15 +114,12 @@ moduleLifecycle.declare({
     const targetDensity = V.optionalFinite(intent.densityTarget, 0.5);
     const targetEntropy = V.optionalFinite(intent.entropyTarget, 0.5);
 
-    // Regime-responsive correction gain: weaker during exploring (allow drift), stronger during coherent (enforce balance)
     const regime = conductorSignalBridge.getSignals().regime || 'evolving';
     const gainScale = CORRECTION_GAIN_REGIME[regime] !== undefined ? CORRECTION_GAIN_REGIME[regime] : 1.0;
 
-    // Regime-responsive register target: wider register spread during exploring supports phase axis
     const REGISTER_TARGET_REGIME = { exploring: 0.40, evolving: 0.50, coherent: 0.55 };
     const registerTarget = REGISTER_TARGET_REGIME[regime] !== undefined ? REGISTER_TARGET_REGIME[regime] : 0.5;
 
-    // Regime-responsive dynamic target: higher dynamic contrast during exploring supports tension arc
     const DYNAMIC_TARGET_REGIME = { exploring: 0.70, evolving: 0.60, coherent: 0.55 };
     const dynamicTarget = DYNAMIC_TARGET_REGIME[regime] !== undefined ? DYNAMIC_TARGET_REGIME[regime] : 0.6;
 

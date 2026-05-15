@@ -64,14 +64,7 @@ moduleLifecycle.declare({
    * Throws if the global is missing - arc curves must be centralized in config.
    * @returns {Object.<string, {register:Function, density:Function, independence:Function, dynamism:Function}>}
    */
-  // R29 E1: regime-responsive independence modulation on top of profile values.
-  // Exploring: +0.10 (more contrapuntal searching), coherent: -0.08 (more unified).
-  // R47: Raised exploring 0.10->0.15. flicker-phase became dominant coupling pair
-  // in R46 (legendary). Amplifies contrapuntal searching during the 52.7% exploring
-  // phase -- more independent phrase arcs = richer xenolinguistic character.
-  // R48: exploring 0.15->0.20 (wider arc contrast -- 31% exploring needs stronger
-  // independence signal to maintain xenolinguistic quality at lower share).
-  // coherent -0.08->-0.10 (tighter unified feel, within KB-recommended ceiling).
+  // regime-responsive independence modulation on top of profile values.
   const INDEPENDENCE_REGIME_MOD = { exploring: 0.20, evolving: 0.0, coherent: -0.10 };
 
   function generateArcProfiles() {
@@ -89,10 +82,7 @@ moduleLifecycle.declare({
       'rise-fall': (pos) => V.optionalFinite(ind.riseFallOuter, 0.4) + (V.optionalFinite(ind.riseFallInner, 0.6) - V.optionalFinite(ind.riseFallOuter, 0.4)) * Number(pos),
       'build-resolve': (pos) => V.optionalFinite(ind.buildResolveOuter, 0.3) + (V.optionalFinite(ind.buildResolveInner, 0.8) - V.optionalFinite(ind.buildResolveOuter, 0.3)) * Number(pos)
     };
-    // R29 E1: wire dormant phraseBreath.dynamism config into arc curves.
-    // R62: added 0.20*sin(pos*4pi) micro-oscillation to arch/rise-fall/build-resolve (2 cycles/phrase)
-    // and doubled wave to sin(pos*4pi) for micro-term dense/atmospheric variation.
-    // Values may briefly exceed [0,1] -- dynamismEngine clamps before use.
+    // wire dormant phraseBreath.dynamism config into arc curves.
     const dynFns = {
       'arch': (pos) => V.optionalFinite(dyn.archBase, 0.5) + V.optionalFinite(dyn.archAmplitude, 0.40) * m.sin(Number(pos) * m.PI) + 0.20 * m.sin(Number(pos) * m.PI * 4),
       'wave': (pos) => V.optionalFinite(dyn.waveBase, 0.5) + V.optionalFinite(dyn.waveAmplitude, 0.5) * m.sin(Number(pos) * m.PI * 4),

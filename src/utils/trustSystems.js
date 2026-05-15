@@ -37,7 +37,6 @@ trustSystems = (() => {
     PHASE_AWARE_CADENCE_WINDOW: 'phaseAwareCadenceWindow'
   });
 
-  // -- Heat map system names (superset - includes non-trust systems tracked by interactionHeatMap) --
   const heatMapSystems = Object.freeze({
     STUTTER_CONTAGION: 'stutterContagion',
     CONVERGENCE: 'convergence',

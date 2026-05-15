@@ -28,7 +28,6 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
   assertGetRhythmDeps();
   V.assertNonEmptyString(level, 'level');
   V.requireFinite(length, 'length');
-  // Map subsubdiv to subdiv's level index so subsubdiv rhythm selection reuses subdiv candidates
   const levelIndex = (level === 'subsubdiv' ? 2 : ['beat','div','subdiv'].indexOf(level));
 
   if (method) {
@@ -47,20 +46,12 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     // Chain journey-boldness bias on top of FX+stutter bias
     let rhythmSource = journeyRhythmCoupler.biasRhythmWeights(stutterBiasedRhythmSource);
 
-    // Chain emergent cross-layer pattern bias (4th link): contagion+downbeat+feedback -> rhythm shape
     rhythmSource = emergentRhythmEngine.biasRhythmWeights(rhythmSource);
 
     // Apply rhythm history novelty penalty to discourage repetition
     rhythmSource = rhythmHistoryTracker.penalizeRepetition(rhythmSource);
 
-    // R69 E4: Regime-responsive rhythm novelty. During evolving, apply
-    // an extra novelty boost (double the penalty) to push rhythmic variety.
-    // During coherent, reduce the penalty (more repetition is OK for stability).
-    // R79 E2: Add exploring-specific variety boost. Exploring regime now also
-    // gets a novelty penalty pass, creating rhythmic diversity during exploratory
-    // passages. This untouched subsystem (since R69) now differentiates all 3
-    // active regimes rhythmically: evolving=double penalty, exploring=single
-    // extra penalty, coherent=baseline repetition allowed.
+    // Regime-responsive rhythm novelty. During evolving, apply
     const profSnap = systemDynamicsProfiler.getSnapshot();
     if (profSnap && (profSnap.regime === 'evolving' || profSnap.regime === 'exploring')) {
       rhythmSource = rhythmHistoryTracker.penalizeRepetition(rhythmSource);

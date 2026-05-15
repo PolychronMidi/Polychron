@@ -61,6 +61,7 @@ class DecoratorOrderVerifier(Verifier):
                     with open(path, encoding="utf-8") as fp:
                         tree = ast.parse(fp.read())
                 except Exception:
+                    # silent-ok: optional fallback path.
                     continue
                 for node in ast.walk(tree):
                     if not isinstance(node, ast.FunctionDef):
@@ -220,8 +221,6 @@ class HookMatcherValidityVerifier(Verifier):
         dispatched = set(re.findall(r'i/([a-z-]+)\b', posthook_src))
 
         # A wrapper with a posthook dispatch is "covered". A wrapper on the
-        # NO_POSTHOOK_OK list is "explicitly excluded". Anything else is
-        # silently uncovered.
         uncovered = [w for w in wrappers
                      if w not in dispatched and w not in self._NO_POSTHOOK_OK]
         # Conversely, any dispatch target that doesn't correspond to a

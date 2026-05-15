@@ -59,8 +59,6 @@ def _find_verifier_source(name: str) -> tuple[str, list[str]] | None:
             if class_start is None:
                 return (p, lines[max(0, line_idx - 5):line_idx + 25])
             # Find the END: scan forward from class_start until we hit
-            # either another top-level class/def OR run out of indented
-            # lines. This captures the whole verifier including run().
             class_end = len(lines)
             class_indent = len(lines[class_start]) - len(lines[class_start].lstrip())
             for i in range(class_start + 1, len(lines)):
@@ -74,10 +72,6 @@ def _find_verifier_source(name: str) -> tuple[str, list[str]] | None:
                     class_end = i
                     break
             # Cap at 100 lines so a verifier with a long run() doesn't
-            # flood the agent's context. The class header + docstring +
-            # decorators + run signature + first ~80 lines of run body
-            # is almost always enough to understand WHAT the verifier
-            # checks; the rest is detail.
             extracted = lines[class_start:class_end]
             if len(extracted) > 100:
                 extracted = extracted[:100] + [

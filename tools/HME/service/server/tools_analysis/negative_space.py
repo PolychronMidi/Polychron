@@ -85,11 +85,6 @@ def find_feedback_loop_near_misses() -> list[dict]:
         stem_to_path.setdefault(_module_stem(p), p)
 
     # Universality filter -- a module whose provided globals are imported
-    # by more than UNIVERSAL_THRESHOLD files is infrastructure, not a loop
-    # candidate. validator, clamps, index, l0Channels get filtered out
-    # this way without hand-maintained blacklists. Note: for a producer P,
-    # `out_by_from[P]` is the set of consumer files (direction reads as
-    # "P produces FOR x"), so producer fan-out == infrastructure scale.
     UNIVERSAL_THRESHOLD = 30
     universal_paths: set[str] = {
         p for p in nodes if len(out_by_from.get(p, set())) >= UNIVERSAL_THRESHOLD
@@ -112,8 +107,6 @@ def find_feedback_loop_near_misses() -> list[dict]:
         loop_paths = {stem_to_path[s] for s in loop_stems}
 
         # For each loop member, collect all files they depend on (out) and
-        # all files that depend on them (in). Near-miss candidates are
-        # files that touch >=threshold loop members but aren't in the loop.
         touch_count: dict[str, int] = defaultdict(int)
         for member in loop_paths:
             for neighbor in out_by_from.get(member, set()) | in_by_to.get(member, set()):
@@ -149,22 +142,13 @@ def find_co_consumed_pairs(min_shared: int = 5, max_results: int = 50) -> list[d
     _edges, out_by_from, in_by_to = _dep_graph_edges()
 
     # Universality filter -- same logic as above. Core utilities like
-    # validator / clamps / l0Channels get consumed by every file and
-    # would otherwise dominate the pair rankings.
     UNIVERSAL_THRESHOLD = 30
     universal_paths: set[str] = set()
     # We need to know in-degree which means counting how many files list
-    # each as a producer. out_by_from[A] = producers consumed by A, so
-    # invert once.
 
     # For each consumer, list the set of modules it consumes from. Then
-    # invert: for each pair (A, B) of modules, count how many consumers
-    # import BOTH. Finally, require that (A, B) has no direct producer->
-    # consumer edge between them.
 
     # Step 1: map producer -> set of consumers (already have out_by_from,
-    # where out_by_from[A] = {files A depends on}). Invert: for each
-    # consumer X, list the set of producers it pulls from.
     producers_by_consumer: dict[str, set[str]] = defaultdict(set)
     producer_consumer_count: dict[str, int] = defaultdict(int)
     for frm, tos in out_by_from.items():

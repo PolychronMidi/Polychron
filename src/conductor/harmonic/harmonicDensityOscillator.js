@@ -58,9 +58,6 @@ moduleLifecycle.declare({
       : 0;
 
     // Tension bias: continuous ramp based on alternation rate.
-    // High alternation (0.4-0.8) - ramp 1.0-1.03 (natural breathing)
-    // Low alternation (0-0.15) - ramp 1.08-1.0 (push for change)
-    // Mid range - neutral
     let tensionBias = 1;
     if (alternationRate < 0.15) {
       tensionBias = 1.08 - clamp(alternationRate / 0.15, 0, 1) * 0.08;
@@ -68,9 +65,7 @@ moduleLifecycle.declare({
       tensionBias = 1.0 + clamp((alternationRate - 0.4) / 0.4, 0, 1) * 0.03;
     }
 
-    // R35 E5: Density bias -- cross-domain pathway (harmonic->density).
-    // Stale harmony (low alternation) -> suppress density for contrast.
-    // Active breathing (high alternation) -> mild density boost.
+    // Density bias -- cross-domain pathway (harmonic->density).
     let densityBias = 1;
     if (alternationRate < 0.15) {
       densityBias = 0.96 + clamp(alternationRate / 0.15, 0, 1) * 0.04;

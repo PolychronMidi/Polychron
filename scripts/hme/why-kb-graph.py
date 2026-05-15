@@ -153,30 +153,19 @@ def main(argv):
             title_to_id[title] = kid
 
     # Entity-name index -- Horizon III maturity. Catches citations by
-    # architectural concept (camelCase/snake_case identifiers in titles
-    # that show up verbatim in other entries' content).
     entity_to_id = _build_entity_index(by_id)
 
     # Build edges: source-id -> set of target-ids. Combines three signals:
-    # 1. Tag-encoded references like `supersedes:abc123def456`. Sparse
-    #    today (~3 entries use them) but explicit and machine-trusted.
-    # 2. Exact-ID references in content (rare in this KB; absent in
-    #    current snapshot but the regex stays for future entries).
-    # 3. Title-substring matches (heuristic; 0 hits in current data --
-    #    confirms entries don't quote each other's titles verbatim).
     out_edges: dict[str, set[str]] = defaultdict(set)
     in_edges: dict[str, set[str]] = defaultdict(set)
     edge_kinds: dict[tuple[str, str], set[str]] = defaultdict(set)
     # Dangling edges: tag-encoded refs that point to entries no longer in
-    # the KB. Real signal -- when a `supersedes:` target is gone, the
-    # supersession-history is preserved on the surviving entry alone.
     dangling: list[tuple[str, str, str]] = []  # (source_id, kind, missing_target)
     tag_id_re = re.compile(r"(\w+):([a-f0-9]{12})\b")
     for kid, row in by_id.items():
         content = str(row.get("content", ""))
         title_self = str(row.get("title", ""))
         tags = str(row.get("tags", ""))
-        # Tag-encoded relations (supersedes, contradicts, derived_from, ...)
         for kind, target in tag_id_re.findall(tags.lower()):
             if target == kid.lower():
                 continue
@@ -197,10 +186,6 @@ def main(argv):
             in_edges[target].add(kid)
             edge_kinds[(kid, target)].add("title-quote")
         # Entity-name refs -- Horizon III maturity. The actual citation
-        # pattern in this KB: entries reference architectural concepts
-        # (module names, IIFE globals) that appear in other entries'
-        # titles. This unlocks the latent graph that title-substring
-        # matching missed.
         for target in _extract_entity_refs(content, entity_to_id, kid):
             out_edges[kid].add(target)
             in_edges[target].add(kid)
@@ -217,11 +202,6 @@ def main(argv):
     print(f"  entries with incoming citations:  {n_with_in}")
 
     # Honest finding: the KB's citation density is a real architectural
-    # signal. If almost everything is an orphan, that means new entries
-    # rarely cite earlier ones -- entries land as flat data points rather
-    # than woven into the existing graph. Future entries should use the
-    # `tags` field with `supersedes:<id>` / `contradicts:<id>` /
-    # `derived_from:<id>` to build the graph as it grows.
     if n_edges > 0:
         edge_kind_count: dict[str, int] = defaultdict(int)
         for kinds in edge_kinds.values():
@@ -256,8 +236,6 @@ def main(argv):
         print()
         print(f"## Orphans by category ({len(orphans)} of {n}):")
         # Sort by descending count (Horizon III asymptote: surface
-        # which categories have the most flat structure first -- those
-        # are the highest-leverage targets for citation densification).
         for cat, ids in sorted(by_cat.items(), key=lambda kv: -len(kv[1])):
             density_share = len(ids) / n * 100
             marker = "!" if density_share > 30 else " "

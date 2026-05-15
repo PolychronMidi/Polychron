@@ -89,7 +89,6 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   const baseMidiNote = m.round(Number(note));
   const isBass = profile === 'bass';
 
-  // Shared state for per-beat shift tracking (variety across channels) + optional selected-channel sets
   let localShared = shared;
   if (!localShared) localShared = { shifts: new Map(), global: {} };
   if (!localShared.shifts) localShared.shifts = new Map();
@@ -101,7 +100,6 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   if (globalState.stutterNotesLastBeatIndex !== currentBeatIndex) {
     localShared.shifts.clear();
     globalState.stutterNotesLastBeatIndex = currentBeatIndex;
-    // selection sets (reflection/bass) - limit stutter to a small random subset of mirror channels
     globalState.selectedReflectionChannels = new Set();
     globalState.selectedBassChannels = new Set();
   }
@@ -186,7 +184,6 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   const arcContour = Number.isFinite(phraseArcPos) ? m.sin(clamp(phraseArcPos, 0, 1) * m.PI) : 0.5;
   stutterVel = clamp(m.round(stutterVel * (0.7 + arcContour * 0.5)), 1, MIDI_MAX_VALUE);
 
-  // apply cross-mod velocity bias (from beatContext.mod - stutterConfig.fade.velocityScaleBias)
   if (velocityScaleBias && V.optionalType(velocityScaleBias, 'number') !== undefined) {
     stutterVel = clamp(m.round(stutterVel * (1 + velocityScaleBias)), 1, MIDI_MAX_VALUE);
   }
@@ -216,8 +213,6 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   }
 
   // Emit note events (no STUTTER_APPLIED here - consolidated event emitted
-  // once per variant invocation from scheduleStutterForUnit to prevent
-  // dense variants from causing disproportionate feedback accumulation)
   p(c, evOn);
   p(c, evOff);
   stutterMetrics.incEmitted(1, profile);

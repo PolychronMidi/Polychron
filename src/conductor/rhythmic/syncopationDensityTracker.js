@@ -85,11 +85,7 @@ moduleLifecycle.declare({
     const b = syncopationDensityTracker.getRhythmBias();
     return b.syncopationBias > 1.0 ? 1.12 : (b.syncopationBias < 1.0 ? 0.88 : 1.0);
   }, 0.88, 1.12);
-  // R13 E3: Flicker bias from syncopation. Syncopated passages (off-beat
-  // dominant) inject flicker variation (1.08) -- rhythmic displacement
-  // pairs with timbral excitement. Monotonous patterns (all on-beat)
-  // get flicker reduction (0.94) -- steady rhythm with simpler timbre.
-  // This couples rhythmic character to timbral texture.
+  // Flicker bias from syncopation. Syncopated passages (off-beat
   conductorIntelligence.registerFlickerModifier('syncopationDensityTracker', () => {
     const p = syncopationDensityTracker.getSyncopationProfile();
     if (p.excessive) return 1.08;
@@ -97,10 +93,7 @@ moduleLifecycle.declare({
     if (p.syncopationRatio > 0.40) return 1.0 + (p.syncopationRatio - 0.40) * 0.27;
     return 1.0;
   }, 0.92, 1.10);
-  // R33 E3: Tension bias from syncopation. Syncopated passages (off-beat
-  // dominant) create rhythmic tension via metric displacement. Monotonous
-  // (all on-beat) passages are metrically stable -> lower tension.
-  // New rhythmic->tension cross-domain pathway.
+  // Tension bias from syncopation. Syncopated passages (off-beat
   conductorIntelligence.registerTensionBias('syncopationDensityTracker', () => {
     const p = syncopationDensityTracker.getSyncopationProfile();
     if (p.excessive) return 1.06;

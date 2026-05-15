@@ -51,10 +51,6 @@ VoiceLeadingScore = class VoiceLeadingScore {
       maxLeap: config.maxLeapWeight ?? 0.9, // Penalize very large leaps
     };
     // install a bound alias for the routine used by voiceRegistry
-    // the method redirects to the internal scoring helper with the correct
-    // `this` binding so that external callers can treat it as a plain function
-    // without worrying about context loss (also satisfies the TypeScript
-    // interface).
     this.voiceRegistryScoreCandidate = this.VoiceLeadingScoreScoreCandidate.bind(this);
 
     // Dynamism: 0-1 scale controlling rule-breaking frequency (higher = more variation)
@@ -69,8 +65,6 @@ VoiceLeadingScore = class VoiceLeadingScore {
     };
 
     // Register bounds [min, max] in MIDI note numbers
-    // Lab R4: extended soprano to OCTAVE.max boundary so high-octave
-    // configs get proper voice leading instead of erratic motion
     const upperBound = m.min(127, (OCTAVE.max || 9) * 12 - 1);
     this.registers = {
       soprano: [60, m.max(84, upperBound)],

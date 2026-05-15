@@ -92,8 +92,6 @@ moduleLifecycle.declare({
     for (let a = 0; a < nDims; a++) {
       for (let b = a + 1; b < nDims; b++) {
         // Skip trust-phase: both are structurally monotonic within sections
-        // (trust ramps via EMA, phase = normalizedProgress). Their correlation
-        // is a mathematical artifact, not actionable, and inflates metrics.
         if ((dimNames[a] === 'trust' && dimNames[b] === 'phase') ||
             (dimNames[a] === 'phase' && dimNames[b] === 'trust')) continue;
         const key = dimNames[a] + '-' + dimNames[b];
@@ -108,9 +106,6 @@ moduleLifecycle.declare({
           varB += db * db;
         }
         // Variance gating: skip pairs where either dimension has near-zero
-        // variance (std < 0.005). Correlation is statistically meaningless
-        // and inflates coupling metrics, triggering aggressive nudges that
-        // further compress the flat signal (death spiral).
         const stdA = m.sqrt(varA / n);
         const stdB = m.sqrt(varB / n);
         if (stdA < gateThreshold || stdB < gateThreshold) {

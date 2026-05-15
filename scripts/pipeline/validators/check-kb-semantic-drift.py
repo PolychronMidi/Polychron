@@ -40,8 +40,6 @@ FEEDBACK_GRAPH = os.path.join(METRICS_DIR, "feedback_graph.json")
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
 
 # A drift is flagged when the structural signature differs by at least this
-# many components. 1 -> any single change triggers. Default 2 avoids
-# nickel-and-dime churn while still catching meaningful shifts.
 DRIFT_THRESHOLD = int(os.environ.get("HME_DRIFT_THRESHOLD", "2"))
 
 
@@ -134,8 +132,6 @@ def current_signature(module: str) -> dict:
     l0 = _l0_io(file_path)
 
     # A small content fingerprint -- first 8 hex chars of BLAKE2b over the
-    # file bytes. Not full content; just enough to detect "same structure,
-    # totally rewritten body".
     content_hash = ""
     try:
         with open(os.path.join(PROJECT_ROOT, file_path), "rb") as fb:

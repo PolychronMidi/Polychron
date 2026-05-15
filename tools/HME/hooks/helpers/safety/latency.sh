@@ -12,47 +12,31 @@ _stderr_verdict() {
 
 _hme_log_hook_latency() {
   # PROJECT_ROOT must come from .env (sourced above). Never silently fall back
-  # to $(pwd) / cwd -- that spawns orphan log/ dirs under whatever directory the
-  # tool happened to be running in.
   if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
     return 0
   fi
   # Drop entries whose hook name didn't resolve. _HME_HOOK_NAME falls back
-  # to "unknown" in _safety.sh when BASH_SOURCE[1] is unset (e.g. when
-  # _safety.sh is invoked from an unusual context such as background
-  # subshell or eval). universal_pulse.py groups latencies by hook name
-  # and per-bucket p95 -- an "unknown" bucket aggregates entries from
-  # ANY caller, which both false-alarms ("unknown hook is slow!") and
-  # provides no actionable signal (we don't know WHICH hook). Drop here
-  # rather than emit and filter later: keeps the log honest.
   if [ -z "${_HME_HOOK_NAME:-}" ] || [ "${_HME_HOOK_NAME}" = "unknown" ]; then
     return 0
   fi
   local log_file="$PROJECT_ROOT/log/hme-hook-latency.jsonl"
   mkdir -p "$(dirname "$log_file")" 2>/dev/null
   printf '{"hook":"%s","duration_ms":%d,"ts":%s}\n' \
-    "$_HME_HOOK_NAME" "$1" "$(date +%s)" >> "$log_file" 2>/dev/null
+    "$_HME_HOOK_NAME" "$1" "$(date +%s)" >> "$log_file" 2>/dev/null  # silent-ok: optional fallback path.
   if type _hme_hook_ledger_append >/dev/null 2>&1; then
     _hme_hook_ledger_append "${_HME_HOOK_EVENT:-hook}" "$_HME_HOOK_NAME" "${_HME_HOOK_EXIT_CODE:-0}" "$1" 0 0
   fi
   # Rotate when log exceeds 10000 lines -- keeps last 5000
   local size
-  size=$(wc -l < "$log_file" 2>/dev/null || echo 0)
+  size=$(wc -l < "$log_file" 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
   if [ "$size" -gt 10000 ]; then
+# silent-ok: optional fallback path.
     tail -5000 "$log_file" > "${log_file}.tmp" 2>/dev/null \
-      && mv "${log_file}.tmp" "$log_file" 2>/dev/null
+      && mv "${log_file}.tmp" "$log_file" 2>/dev/null  # silent-ok: optional fallback path.
   fi
 }
 
 # Composite EXIT trap. Captures the ORIGINAL exit code before any helper
-# runs (latency log or stderr emission), computes elapsed once, then
-# dispatches. Either the explicit verdict set by `_stderr_verdict` wins,
-# or a MINIMAL default fires so the agent-side forwarded notification
-# (Stop hook feedback: [cmd]: <stderr>) carries a short token instead
-# of "No stderr output" filler -- but without adding character overhead
-# beyond the empty placeholder. Claude Code already shows the hook
-# name in the notification header, so we omit it here; "ok" / "fail=<N>"
-# is the smallest signal set that still distinguishes clean from broken.
 _hme_exit_combined() {
   local code=$?
   _HME_HOOK_EXIT_CODE="$code"

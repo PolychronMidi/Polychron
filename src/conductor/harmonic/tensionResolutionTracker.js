@@ -90,10 +90,7 @@ moduleLifecycle.declare({
   }
 
   conductorIntelligence.registerTensionBias('tensionResolutionTracker', () => tensionResolutionTracker.getTensionBias(), 0.9, 1.25);
-  // R33 E4: Density bias from resolution patterns. Unresolved dissonance
-  // (low resolvedRatio) -> slightly denser texture to explore/resolve
-  // the harmonic tension. High resolution -> neutral. New harmonic->density
-  // cross-domain pathway.
+  // Density bias from resolution patterns. Unresolved dissonance
   conductorIntelligence.registerDensityBias('tensionResolutionTracker', () => {
     const p = tensionResolutionTracker.getResolutionProfile();
     if (p.danglingTension) return 1.04;

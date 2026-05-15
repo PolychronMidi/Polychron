@@ -21,7 +21,6 @@ module.exports = {
           return;
         }
 
-        // Allow calling/constructing Error subclasses (callee name ending in "Error"), otherwise report
         if (arg.type === 'NewExpression' || arg.type === 'CallExpression') {
           const callee = arg.callee;
           let name = null;

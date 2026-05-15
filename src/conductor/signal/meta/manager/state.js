@@ -15,10 +15,6 @@ moduleLifecycle.declare({
   const EFFECTIVENESS_EMA_ALPHA = 0.05;
   const INTERVENTION_BUDGET  = 0.60;
 
-  // FAST EMA CONSTANTS -- normalization for per-beat energy proxy (density+tension deviation^2).
-  // Energy range: ~0 (neutral) to ~0.15 (severe spike). Threshold at 0.05 = density ~0.67
-  // or tension ~0.88 (genuine departure from neutral). Span 0.10 maps spike range to [0,1].
-  // Weight 0.35 reserves fast lane for early warning; slow EMA drives sustained corrections.
   const FAST_EMA_ALPHA       = 0.22;   // ~4-beat time constant
   const FAST_EMA_THRESHOLD   = 0.05;   // energy floor before fast lane activates
   const FAST_EMA_SPAN        = 0.10;   // energy range mapped to [0,1]
@@ -102,12 +98,8 @@ moduleLifecycle.declare({
     // E18 instantaneous scale (computed once per tick, used by multiple evolutions)
     e18Scale:              1.0,
     // E13: Long-run coherent share tracker for feedback-loop break
-    // alpha=0.03 => ~33-tick window (~825 beats). Previous 0.015 was too slow;
-    // thresholds (0.38, 0.55) were unreachable in typical session lengths.
     coherentShareEma:      0.285,
     // Fast EMA: per-beat signal energy proxy, ~4-beat time constant.
-    // Tracks density+tension deviation from neutral every beat -- responds to
-    // transient spikes within 3-5 beats vs slow EMA's ~12-tick lag.
     fastExceedanceEma:     0,
     // Normalized fast EMA signal on slow EMA scale (computed once per tick)
     fastExcNormalized:     0,

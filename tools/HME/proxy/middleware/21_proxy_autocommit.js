@@ -23,8 +23,6 @@ function _ts() {
 }
 
 // Write to four independent channels on any failure. Every channel is
-// best-effort; we never throw from here because that would propagate
-// into the proxy request handler.
 function _recordFailure(root, caller, reason) {
   const ts = _ts();
   // Channel A: sticky fail flag under tmp/. Overwrite -- latest wins.
@@ -106,6 +104,7 @@ function _attemptCommit(root, caller) {
     dirty = execSync('git status --porcelain',
       { cwd: root, encoding: 'utf8', timeout: 3000 });
   } catch (err) {
+    // silent-ok: optional fallback path.
     _recordFailure(root, caller,
       `git status failed: ${String(err.message || err).slice(0, 300)}`);
     return;
@@ -135,6 +134,7 @@ function _attemptCommit(root, caller) {
     execSync(`flock -w 30 ${JSON.stringify(lockPath)} bash -c ${JSON.stringify(stageScript)}`,
       { cwd: root, timeout: 35000, shell: '/bin/bash' });
   } catch (err) {
+    // silent-ok: optional fallback path.
     _recordFailure(root, caller,
       `git add (flocked) failed: ${String(err.message || err).slice(0, 300)}`);
     return;

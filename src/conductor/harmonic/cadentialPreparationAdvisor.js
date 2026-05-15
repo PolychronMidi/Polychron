@@ -42,7 +42,6 @@ moduleLifecycle.declare({
       urgency = clamp((position - (1 - PREP_WINDOW)) / PREP_WINDOW, 0, 1);
     }
 
-    // Tension bias: approaching cadence - increase tension to create resolution expectation
     // But only if current tension is below the target for cadential preparation
     let tensionBias = 1;
     if (preparationActive) {

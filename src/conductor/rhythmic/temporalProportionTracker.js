@@ -1,4 +1,3 @@
-// src/conductor/temporalProportionTracker.js - Golden-ratio / Fibonacci proportions in durations.
 // Tracks phrase & section durations, evaluates how close their ratios come to
 // aesthetically pleasing proportions (phi ~= 1.618, sqrt(2), 2:3, etc.).
 // Pure query API - signals proportion quality and nudge suggestions.

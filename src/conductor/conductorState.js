@@ -79,8 +79,6 @@ moduleLifecycle.declare({
   }
 
   // Core pipeline fields consumed from data: compositeIntensity, harmonicRhythm,
-  // emissionRatio, playProb, stutterProb, phraseCtx. Registry stateProvider
-  // fields are bulk-merged into data but only read if explicitly destructured here.
   function updateFromConductor(data = {}) {
     V.assertObject(data, 'data');
 

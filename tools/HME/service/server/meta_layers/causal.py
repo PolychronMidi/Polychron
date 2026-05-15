@@ -248,7 +248,6 @@ def _update_kb_confidence() -> dict | None:
         if not hasattr(kb, 'list_knowledge_full'):
             return None
         all_entries = kb.list_knowledge_full()
-        # HME self-description entries are tagged 'hme-infrastructure', not category='self-coherence'
         entries = [e for e in all_entries if "hme-infrastructure" in (e.get("tags") or "")]
         if not entries:
             return None

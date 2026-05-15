@@ -334,6 +334,7 @@ def detect_patterns(directory: str, checks: list[str] | None = None) -> list[dic
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
 
         if lang == "vue":

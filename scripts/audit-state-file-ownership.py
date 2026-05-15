@@ -76,9 +76,6 @@ def _find_writers(path_substr: str) -> list[tuple[str, int]]:
                 continue
             for ln, line in enumerate(content.splitlines(), 1):
                 # Skip comment lines: the `>` redirect-write regex matches
-                # commented examples like `# FAIL->hme-errors.log`. Skip
-                # leading `#`, `//`, `*` (jsdoc cont). Doesn't catch block
-                # /* */ or """ but kills the dominant false-positive shape.
                 stripped = line.lstrip()
                 if stripped.startswith("#") or stripped.startswith("//") or stripped.startswith("*"):
                     continue
@@ -101,7 +98,6 @@ def _writer_matches_registry(writer_path: str, registered: set[str]) -> bool:
             continue
         if rs in wp or wp in rs:
             return True
-        # Allow tail-match (e.g. registered "lifesaver.sh" matches "tools/.../lifesaver.sh")
         if wp.endswith("/" + rs) or wp == rs:
             return True
     return False

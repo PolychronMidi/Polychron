@@ -14,9 +14,6 @@ logger = logging.getLogger("HME")
 
 
 # meta hidden=True: leading underscore says "internal helper", and the
-# function is invoked from review_unified.py:256 as a sub-section of the
-# unified `review` tool -- not as a standalone public tool. The dir
-# convention is "each unified dispatcher owns one public tool".
 @ctx.mcp.tool(meta={"hidden": True})
 @chained("review")
 
@@ -56,11 +53,6 @@ def _unified_evolution_recommender() -> str:
         logger.debug(f'silent-except review_unified.py:189: {type(_err5).__name__}: {_err5}')
 
     # 2. Cascade bypass detection (direct callers >> L0 consumers).
-    # Originally this called _count_direct_callers(prod) for each producer,
-    # and each call walked ~500 src files. With ~40 producers that's 20k
-    # file reads per evolve call = ~4s. Batch version reads each src file
-    # once and checks all producer names in a single pass -- ~500 reads
-    # total instead of 20k.
     try:
         import re as _re_bulk
         all_prods: set = set()
@@ -84,6 +76,7 @@ def _unified_evolution_recommender() -> str:
                         with open(fpath, encoding="utf-8", errors="ignore") as f:
                             content = f.read()
                     except Exception:
+                        # silent-ok: optional fallback path.
                         continue
                     for p, pat in prod_patterns.items():
                         if p == stem:

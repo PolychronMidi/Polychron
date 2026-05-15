@@ -1,6 +1,5 @@
 'use strict';
 // Auto-generates the manifest-derived section of src/types/globals.d.ts.
-// Scans every .js file under src/ for moduleLifecycle.declare({...}) calls,
 // extracts the `provides` array, and emits `declare var NAME: any;` lines
 // between two marker comments. Hand-edited declarations stay above the
 // start marker; manifest-derived ones live inside the markers.
@@ -32,10 +31,6 @@ function walk(dir, out) {
   }
 }
 
-// Pull every `provides: [...]` array from each manifest in a file. A file
-// can declare multiple manifests in principle; in practice it's one. The
-// regex tolerates whitespace + multiple names per array; `name:` field
-// is read for cross-validation but `provides` is the source of truth.
 function extractProvides(src) {
   const provides = new Set();
   const declareRe = /moduleLifecycle\.declare\(\{[^]*?provides:\s*\[([^\]]+)\][^]*?\}\);/g;

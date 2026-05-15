@@ -206,6 +206,7 @@ def get_dependency_graph(file_path: str, project_root: str) -> dict:
         try:
             f_content = f.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         for pat in IMPORT_PATTERNS.get(f_lang, []):
             for match in pat.finditer(f_content):
@@ -234,6 +235,7 @@ def find_orphan_files(project_root: str) -> dict:
         try:
             content = f.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         for pat in IMPORT_PATTERNS.get(lang, []):
             for match in pat.finditer(content):

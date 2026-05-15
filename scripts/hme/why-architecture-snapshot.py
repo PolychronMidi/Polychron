@@ -65,8 +65,6 @@ def main(argv):
     print()
     for label, wrapper, args in PANELS:
         # Use 3-dash dividers (4+ identical chars trigger the spam
-        # policy at any layer -- including this composite's stdout if
-        # captured to a log/doc downstream).
         print(f"--- {label} ---")
         print(_run_panel(wrapper, args))
         print()

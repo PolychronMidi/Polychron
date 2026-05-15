@@ -18,10 +18,6 @@ logger = logging.getLogger("HME")
 
 
 # meta hidden=True: this is dispatched through hme_admin(action='fix_antipattern')
-# (see evolution_admin.py:99-100). Exposing it as a separate public tool
-# duplicates the surface and breaks the "one public tool per dispatcher"
-# convention -- tool-surface-coverage flagged it as undocumented because
-# ONBOARDING/HME.md correctly only document the parent.
 @ctx.mcp.tool(meta={"hidden": True})
 @chained("hme_admin")
 
@@ -129,10 +125,6 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
         f"Write ONLY the bash snippet (no markdown fences). 5-15 lines maximum."
     )
     # Preflight: survey all synthesis backends so an actionable diagnostic
-    # names what's actually down. Two substrates:
-    #   (1) local llama-server instances (coder on GPU1, arbiter on GPU0)
-    #   (2) the ranked API cascade (synthesis_reasoning) -- gemini/groq/etc.
-    # "Reasoning" is NOT a local model -- it lives entirely on the API side.
     _health = _daemon_health_snapshot()
     _ready_local = _health.get("ready_aliases", [])
     try:
@@ -157,11 +149,6 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
         )
 
     # Fallback chain: try local coder first (fast on a warm GPU), then the
-    # ranked API reasoning cascade (better quality, free tier), then arbiter
-    # as last resort (always-on but weaker for synthesis). Each call is
-    # bounded by a 60s wall-clock timeout -- without it, an unreachable
-    # llama-server makes the whole chain hang for 32s * 3 attempts (~96s)
-    # per call, which is the "hangs at 20s" rating bug.
     import concurrent.futures as _cf
     def _bounded(fn, *args, **kwargs):
         _ex = _cf.ThreadPoolExecutor(max_workers=1)

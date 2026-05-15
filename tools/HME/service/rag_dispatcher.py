@@ -38,12 +38,6 @@ _lib_engines = {}
 
 
 # RAG routing: GPU vs CPU mirror
-# When the arbiter is actively processing a request on the shared GPU, we
-# route jina / bge-reranker work to the CPU mirrors to avoid contending for
-# compute. The llamacpp_daemon exposes /rag-route which answers "gpu" or
-# "cpu" based on its in-memory _arbiter_busy flag (set around every arbiter
-# request dispatch). We cache the last answer for 100 ms so bursty RAG calls
-# don't DoS the daemon with HTTP probes.
 _LLAMACPP_DAEMON_URL = ENV.require("HME_LLAMACPP_DAEMON_URL")
 _rag_route_cache = {"route": "gpu", "ts": 0.0}
 _rag_route_ttl_s = 0.1
@@ -89,10 +83,6 @@ class _RagDispatcher:
     """
 
     # GPU:CPU speed ratio for embedding on this hardware (M40 fp16 storage
-    # vs multi-core CPU). Only overflow to CPU when GPU queue is deeper
-    # than this -- sequential GPU is faster than parallel CPU until then.
-    # Measured empirically: M40 ~3x faster than Ryzen 7950X for bge-code
-    # fp16 encode batches. Tune via HME_RAG_GPU_CPU_RATIO in .env.
     _GPU_CPU_OVERFLOW_THRESHOLD = 3
 
     def __init__(
@@ -104,11 +94,6 @@ class _RagDispatcher:
         vram_manager=None,
     ):
         # Critical: when a managed_model is provided, DO NOT store the
-        # gpu_instance on self. The ManagedModel owns the single GPU
-        # reference so VramManager offload can actually release VRAM when
-        # it nulls ManagedModel.gpu_instance. Holding a duplicate pointer
-        # here would pin the torch module and silently defeat offload.
-        # This is enforced by the `no-direct-shared-model-encode` invariant.
         self._gpu = None if managed_model is not None else gpu_instance
         self._cpu = cpu_instance
         self._label = label
@@ -122,6 +107,7 @@ class _RagDispatcher:
             ratio = ENV.optional_int("HME_RAG_GPU_CPU_RATIO", self._GPU_CPU_OVERFLOW_THRESHOLD)
             self._overflow_threshold = max(1, ratio)
         except Exception:
+            # silent-ok: optional fallback path.
             self._overflow_threshold = self._GPU_CPU_OVERFLOW_THRESHOLD
 
     def _current_gpu(self):
@@ -179,9 +165,6 @@ class _RagDispatcher:
                             return gpu, self._release_gpu
                     elif self._gpu_waiting < self._overflow_threshold:
                         # GPU sem taken but queue isn't deep enough to
-                        # justify CPU overflow -- wait for GPU. Sequential
-                        # GPU is faster than parallel CPU until the queue
-                        # exceeds the speed ratio.
                         self._gpu_waiting += 1
                         try:
                             while True:
@@ -244,8 +227,6 @@ class _RagDispatcher:
 
     def __getattr__(self, name):
         # Delegate non-dispatch attributes (tokenizer, max_seq_length, etc.)
-        # to whichever instance exists. Prefer GPU when resident for config
-        # consistency, fall back to CPU when offloaded or GPU-less.
         mm = self.__dict__.get("_mm")
         gpu = mm.gpu_instance if mm is not None else self.__dict__.get("_gpu")
         inst = gpu if gpu is not None else self.__dict__.get("_cpu")

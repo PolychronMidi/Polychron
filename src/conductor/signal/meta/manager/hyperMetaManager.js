@@ -28,10 +28,6 @@ moduleLifecycle.declare({
   name: 'hyperMetaManager',
   subsystem: 'conductor',
   // Full-DI deps: aliases below let tick() and helpers use the dep names
-  // directly. The state/health/contra/topo/telem/evo helpers are sibling
-  // legacy globals from the same hyperMetaManager* family -- listing them
-  // here forces them to load before this module instantiates, which is
-  // already the case via the helpers-first pattern in the index files.
   deps: ['conductorIntelligence', 'explainabilityBus', 'hyperMetaManagerState', 'signalReader'],
   lazyDeps: ['correlationShuffler', 'hyperMetaManagerContradictions', 'hyperMetaManagerEvolutions', 'hyperMetaManagerHealth', 'hyperMetaManagerTelemetry', 'hyperMetaManagerTopology', 'reconvergenceAccelerator'],
   provides: ['hyperMetaManager'],
@@ -55,10 +51,6 @@ moduleLifecycle.declare({
     S.beatCount++;
 
     // Fast EMA: runs every beat, not just on orchestration ticks.
-    // Proxy signal = squared deviation of density+tension from their neutral points,
-    // same energy formula as criticalityEngine. Time constant ~4 beats.
-    // Used alongside the slow exceedanceTrendEma (~12-tick lag) to give
-    // the system early warning of transient spikes before they compound.
     {
       const fd = signalReader.density();
       const ft = signalReader.tension();
@@ -113,14 +105,9 @@ moduleLifecycle.declare({
     health.updateEffectiveness(healthBefore, S.healthEma, state);
 
     // 8. Correlation flips -- dampen on multi-axis oscillation.
-    // E24: Scale damping continuously by exceedance rather than binary >=2 trigger.
-    // Low exceedance: 1 flip = mild 0.97x, 2+ = 0.94x. High exceedance: same
-    // flip counts trigger stronger 0.90x / 0.82x dampening. Self-correcting.
     const corrFlips = health.detectCorrelationFlips(state);
     if (corrFlips >= 1) {
       // Fast EMA blend: normalize fast EMA to exceedanceTrendEma scale (0.35x weight).
-      // Correlation flips are short-lived -- early detection lets damping engage within
-      // the same episode rather than several ticks later.
       const e24FastRescaled = ST.FAST_EMA_WEIGHT > 0 ? S.fastExcNormalized / ST.FAST_EMA_WEIGHT : 0;
       const e24Exceedance = m.max(S.exceedanceTrendEma, e24FastRescaled);
       const e24ExceedanceWeight = clamp(1.0 + e24Exceedance * 1.5, 1.0, 2.5);
@@ -143,8 +130,6 @@ moduleLifecycle.declare({
     ST.rateMultipliers.global *= S.topologyCreativityMultiplier;
 
     // 12. Criticality engine awareness. During emergence, suppress
-    // avalanche snap strength to let novel patterns express. During
-    // locked state, amplify snap to help break crystallization.
     if (S.crossState === 'emergence') {
       ST.rateMultipliers.criticalitySnap = clamp(0.5 - S.emergenceStreak * 0.02, 0.25, 0.5);
     } else if (S.crossState === 'locked') {
@@ -156,8 +141,6 @@ moduleLifecycle.declare({
     }
 
     // 13. Dimensionality expander ceiling floor. During locked state,
-    // preserve minimum ceiling capacity for expander-driven nudges
-    // when dimensionality is collapsing.
     if (S.crossState === 'locked' && state.dimExpander && state.dimExpander.urgency > 0) {
       ST.rateMultipliers.dimExpanderCeilingFloor =
         clamp(0.06 + state.dimExpander.urgency * 0.04, 0.06, 0.10);
@@ -166,10 +149,6 @@ moduleLifecycle.declare({
     }
 
     // E18 scale -- computed once per tick, stored in S for use by all evolutions
-    // and by topologyIntelligence (which reads S directly). Eliminates duplication
-    // across E1/E4/E5/E7/E9/E11/E12/E13 and topology health gate.
-    // Attenuation only (max 1.0): never amplifies above calibrated values.
-    // Range: 0.5x (very unhealthy/high exceedance) to 1.0x (healthy = full strength).
     {
       const e18HealthScale = clamp(S.healthEma / ST.E18_HEALTH_NOMINAL, ST.E18_HEALTH_FLOOR, 1.0);
       const e18ExceedanceScale = clamp(
@@ -179,13 +158,9 @@ moduleLifecycle.declare({
     }
     const e18Scale = S.e18Scale; // local alias for readability throughout tick
     // Smoothed e18Scale for amplifying gates (E1/E4/E5/E7): exponential ramp prevents
-    // instant coefficient drops when health/exceedance fluctuates. Alpha 0.15 = ~6 tick
-    // time constant (~150 beats). Raw e18Scale used for E9/E11/E13 (brief pulses).
     S.e18ScaleEma += (e18Scale - S.e18ScaleEma) * 0.15;
 
     // Fast EMA normalized signal -- computed once per tick, stored in S.
-    // Maps fastExceedanceEma (energy scale) onto slow EMA scale for blending.
-    // Used by E21, E23, E24 -- single computation, no duplication.
     S.fastExcNormalized = clamp(
       (S.fastExceedanceEma - ST.FAST_EMA_THRESHOLD) / ST.FAST_EMA_SPAN, 0, 1) * ST.FAST_EMA_WEIGHT;
 

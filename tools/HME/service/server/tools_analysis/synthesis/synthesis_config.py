@@ -11,7 +11,6 @@ logger = logging.getLogger("HME")
 
 
 # These names are retained for import compatibility (callers import them by name).
-# All synthesis goes through llama.cpp -- see synthesis_llamacpp.py for _LOCAL_MODEL/_REASONING_MODEL.
 _THINK_MODEL = "llamacpp/qwen3-coder:30b"
 _DEEP_MODEL = "llamacpp/qwen3:30b-a3b"
 
@@ -79,14 +78,6 @@ _REVIEW_SYSTEM = (
     "Use a tier system: TIER-1 = confirmed bug or contract violation; "
     "skip TIER-2/TIER-3 entirely. "
     # The test for flagging is STRUCTURAL, not probabilistic: if you can
-    # quote a line AND state a specific divergence it creates, flag it.
-    # A prior iteration used a >=95%-confidence floor, but self-reported
-    # LM confidence is unmeasurable, and that framing pushed toward
-    # silence on exactly the subtle contract/promise divergences this
-    # reviewer exists to catch (peer-review iter 105 caught this as an
-    # asymmetric-reward problem: cheap to stay silent, costly to defend
-    # a 70-90% finding that's actually correct). Quote+divergence is a
-    # binary gate a reviewer CAN reliably answer.
     "Say 'no tier-1 issues' ONLY if no line in scope admits a quote + "
     "specific-divergence pair. Not because you feel uncertain -- "
     "uncertainty about whether a quoted divergence is a 'real bug' is "
@@ -98,9 +89,6 @@ _REVIEW_SYSTEM = (
 
 
 # Single ceiling for local model generation. qwen3-coder:30b fully GPU-resident
-# on the M40 can handle 8K output without VRAM pressure (context window is the
-# VRAM-bound constraint, not generation length). Tune this one value; the
-# budget tiers scale proportionally via _BUDGET_TOKEN_SCALE.
 _BUDGET_TOKEN_CEILING = 8192
 _BUDGET_TOKEN_SCALE = {"greedy": 1.0, "moderate": 0.5, "conservative": 0.25, "minimal": 1/32}
 _BUDGET_TOKENS = {k: max(64, int(_BUDGET_TOKEN_CEILING * s)) for k, s in _BUDGET_TOKEN_SCALE.items()}
@@ -143,7 +131,6 @@ _CHATML_ASST_RE = re.compile(
 _CHATML_TAG_RE = re.compile(r'<\|im_start\|>[\s\S]*?<\|im_end\|>')
 _NON_ASCII_RE = re.compile(r'[^\x00-\x7F]+')
 
-# Free-cascade providers (especially agent-fine-tuned models) sometimes hallucinate Claude-shaped tool-invocation markup in plain text responses. Synthesis consults are reasoning-only -- any tool-call shape in the output is fabrication that, if surfaced to the parent agent verbatim, looks like another agent acted (prompt-injection vector).
 _AGENT_ARTIFACT_RES = (
     re.compile(r'<function_calls>[\s\S]*?</function_calls>', re.IGNORECASE),
     re.compile(r'<invoke\b[\s\S]*?</invoke>', re.IGNORECASE),

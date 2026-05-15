@@ -44,9 +44,6 @@ function main() {
     }).toString().trim();
   } catch (_e) { /* optional */ }
   // Include perAxisAdj (per-axis adjustment counts) so round-over-round
-  // variance is visible. Trust axis has shown high variance (13 -> 25 -> 59)
-  // across recent rounds; tracking exposes whether that's healthy cadence
-  // vs controller instability.
   const record = {
     ts: new Date().toISOString(),
     sha: sha,
@@ -117,8 +114,6 @@ function main() {
     } catch (_e) { /* best-effort */ }
 
     // R15 #10: Wire sustained deviations (3+ consecutive rounds) to the
-    // hci-regression-alert so i/status surfaces composition-health drift
-    // even when HCI itself is stable.
     try {
       const histPath = path.join(METRICS_DIR, 'legacy-override-history.jsonl');
       const lines = fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean);

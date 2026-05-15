@@ -37,11 +37,9 @@ def _has_log_call(node: ast.ExceptHandler) -> bool:
     for stmt in node.body:
         if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call):
             func = stmt.value.func
-            # logger.debug(...) / logger.warning(...) / etc.
             if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
                 if func.value.id == "logger":
                     return True
-            # print(...) -- also surfaces, acceptable for diagnostic scripts
             if isinstance(func, ast.Name) and func.id == "print":
                 return True
         # Stop at return -- anything after is unreachable

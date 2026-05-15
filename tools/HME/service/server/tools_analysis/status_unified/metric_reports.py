@@ -94,8 +94,6 @@ def _coherence_report() -> str:
             return "N/A"
 
     # Headline line: when score is null (not enough data), show "N/A" without
-    # the "/100" suffix -- the slash implies a denominator that doesn't apply
-    # when the numerator is missing.
     delta_s = ""
     if isinstance(delta, (int, float)):
         sign = "+" if delta >= 0 else ""
@@ -109,8 +107,6 @@ def _coherence_report() -> str:
         if null_reason:
             headline += f"\nReason: {null_reason}"
     # Display labels use *_score (higher=better, 100=perfect) so the "penalty"
-    # word doesn't conflict with the header. Underlying JSON keys are kept as
-    # *_penalty for backward-compat with downstream parsers.
     _rcd = comps.get('read_coverage_detail') if isinstance(comps.get('read_coverage_detail'), dict) else {}
     _vd = comps.get('violation_detail') if isinstance(comps.get('violation_detail'), dict) else {}
     _sd = comps.get('staleness_detail') if isinstance(comps.get('staleness_detail'), dict) else {}

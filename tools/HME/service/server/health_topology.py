@@ -113,8 +113,6 @@ def _build_topology() -> dict:
     _record_shim_response_ms(shim.get("response_ms", _HEALTH_TIMEOUT * 1000))
 
     # Check local inference -- llama-server instances (arbiter + coder) replaced
-    # llamacpp in commit 0577c0f7. The old llamacpp/daemon checks probed dead ports
-    # and flooded LIFESAVER with coherence-below-threshold warnings.
     daemon = {"healthy": True, "note": "retired; llama-server is authoritative"}
     local_infer = _check_llamacpp_instances()
 
@@ -122,9 +120,6 @@ def _build_topology() -> dict:
     slowdown = _check_shim_slowdown()
 
     # Auto-resolve stale failures whose target is now healthy. Without this,
-    # a transient crash of e.g. the arbiter leaves a CRITICAL entry in the
-    # LIFESAVER queue forever, surfacing on every tool response even after
-    # the service recovered.
     _auto_resolve_stale_failures(shim=shim, llamacpp=local_infer)
 
     # L13-15: meta-observer status
@@ -243,8 +238,6 @@ def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
     if resolved_count:
         logger.info(f"auto-resolve: cleared {resolved_count} stale failure(s) on recovery")
         # Also sweep the mirrored todo store so the LIFESAVER todo entries
-        # don't remain as dangling [pending] items after the underlying
-        # component recovered.
         try:
             from server.tools_analysis import resolve_lifesaver_todos
             for src in resolved_sources:
@@ -273,8 +266,6 @@ def _check_llamacpp_instances() -> dict:
                     data = {}
                 status = data.get("status", "")
                 # llama-server returns {"status":"ok"} when serving, or
-                # {"error":{"code":503,"type":"unavailable_error","message":"Loading model"}}
-                # during model load. Treat "ok" as healthy; anything else as unhealthy.
                 healthy = (resp.status == 200 and status == "ok")
                 result[key] = {
                     "healthy": healthy,
@@ -283,6 +274,7 @@ def _check_llamacpp_instances() -> dict:
                     "response_ms": round((time.time() - t0) * 1000, 1),
                 }
         except Exception as e:
+            # silent-ok: optional fallback path.
             result[key] = {
                 "healthy": False,
                 "url": url,

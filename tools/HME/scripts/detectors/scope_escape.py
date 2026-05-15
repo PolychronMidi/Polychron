@@ -41,8 +41,6 @@ from _transcript import load_full_turn_with_user  # noqa: E402
 
 
 # Suppress when the agent CLAIMS to have fixed the same problem in the
-# same breath. Window: 120 chars after the escape phrase. The fabrication
-# detector handles the "claimed fix that didn't happen" case separately.
 RESCUE_RES = (
     re.compile(r"\b(and|but)\s+(i\s+)?(fixed|resolved|patched|repaired|addressed|cleaned\s+(it\s+)?up|handled\s+it)\b", re.IGNORECASE),
     re.compile(r"\b(now|already)\s+(fixed|resolved|patched|repaired|addressed|cleaned\s+up|handled)\b", re.IGNORECASE),
@@ -51,16 +49,11 @@ RESCUE_RES = (
 )
 
 # Backwards rescue: agent already wrote "Fixed X" / "Resolved Y" within
-# 80 chars BEFORE the escape phrase. Catches the past-tense form
-# ("Fixed pre-existing missing import in foo") that the forward window
-# can't see.
 RESCUE_BACKWARD_RES = (
     re.compile(r"\b(fixed|resolved|patched|repaired|addressed|cleaned\s+up|handled)\b[^.\n]{0,80}$", re.IGNORECASE),
 )
 
 # (b)-clause rescue: the SCOPE_ESCAPE deny message itself enumerates the
-# valid alternative -- "say so explicitly and explain why fixing is the
-# wrong move". Shared with exhaust_check / psycho_stop via _rescue_clauses.
 from _rescue_clauses import b_clause_within_window  # noqa: E402
 
 
@@ -177,11 +170,6 @@ def main() -> int:
         return 0
 
     # Implicit-solo / substantive-work rescue. A turn with >= 3 concrete
-    # code-changing tool calls is fixing things, not punting via labels.
-    # The "pre-existing" / "out of scope" phrases in legitimate completion
-    # narration ("the existing failures are pre-existing and unrelated")
-    # are observations, not deferrals, when the agent simultaneously did
-    # substantive work this turn. Mirrors advisor_doctrine + exhaust_check.
     n_work = _substantive_work_count(events)
     if n_work >= 3:
         _emit_stats("ok", f"implicit_solo_work_count={n_work}")
@@ -228,12 +216,6 @@ def main() -> int:
         return 0
 
     # Rescue (b)-clause: the deny message explicitly sanctions
-    # "say so explicitly and explain why fixing is the wrong move".
-    # When the agent does exactly that, the detector must NOT fire --
-    # otherwise the "valid alternative" the rule offers doesn't exist.
-    # Without this, every legitimate refusal-with-reason gets flagged
-    # the same as a lazy punt, and the agent learns to never refuse
-    # even when refusal is correct.
     if _rescue_b_clause(text, matched_pos):
         _emit_stats("ok", f"rescue_b_clause phrase={matched_phrase!r} pos={matched_pos}")
         print("ok")

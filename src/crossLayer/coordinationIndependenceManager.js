@@ -37,10 +37,7 @@ moduleLifecycle.declare({
   const _cimc = controllerConfig.getSection('coordinationIndependenceManager');
   const TICK_INTERVAL = V.optionalFinite(_cimc.tickInterval, 4);
   const MIN_DWELL_BEATS = V.optionalFinite(_cimc.minDwellBeats, 12);
-  // R26 E4: Per-pair stagger breaks simultaneous adjustment/evaluation so
-  // effectiveness tracks per-pair health attribution, not shared global delta.
-  // R26 listen: stagger=2 over-delayed high-index pairs (32 beat dwell for pair 10),
-  // blocking coherent formation. Reduced to 1 (max dwell 22, 10 beat spread).
+  // Per-pair stagger breaks simultaneous adjustment/evaluation so
   const PAIR_DWELL_STAGGER = 1;
   const SELF_INTERFERENCE_WINDOW = 3;
   const EFFECTIVENESS_ALPHA = V.optionalFinite(_cimc.effectivenessAlpha, 0.06);
@@ -58,9 +55,6 @@ moduleLifecycle.declare({
     drifting: 0.3, fragmented: 0.2, stagnant: 0.4
   };
   // Metaprofile phase axis: layerIndependence biases all targets additively.
-  // factor = active/default; factor>1 (more independent) -> negative bias
-  // (lower coordinate target); factor<1 -> positive bias (more coordinated).
-  // No active profile / disabled axis -> factor 1.0 -> bias 0 -> base unchanged.
   const _INDEPENDENCE_BIAS_MAGNITUDE = 0.25;
   function _getRegimeTarget(regime) {
     const base = _BASE_REGIME_TARGETS[regime];
@@ -70,7 +64,6 @@ moduleLifecycle.declare({
     return clamp(base + bias, 0.05, 0.95);
   }
 
-  // Topology targets: crystallized = break coordination, resonant = maintain, fluid = loosen
   const TOPOLOGY_TARGETS = {
     crystallized: 0.3, resonant: 0.6, fluid: 0.4
   };
@@ -101,7 +94,6 @@ moduleLifecycle.declare({
 
   for (let i = 0; i < MODULE_PAIRS.length; i++) initPair(MODULE_PAIRS[i]);
 
-  // Cross-run warm-start: restore terminal dial and effectiveness state from previous run
   try {
     const _cimFs = require('fs');
     const _cimPath = require('path').join(METRICS_DIR, 'adaptive-state.json');
@@ -127,7 +119,6 @@ moduleLifecycle.declare({
    */
   function computeTarget(pair, sigs) {
     const phase = sigs.sectionPhase || 'development';
-    // Xenolinguistic L2: regime superposition -- blend targets by probability instead of hard switch
     const rp = V.optionalType(sigs.regimeProb, 'object', { coherent: 0.33, exploring: 0.33, evolving: 0.34 });
     const phaseTarget = PHASE_TARGETS[phase];
     if (phaseTarget === undefined) throw new Error('coordinationIndependenceManager: unknown sectionPhase "' + phase + '"');
@@ -138,8 +129,6 @@ moduleLifecycle.declare({
     if (topoTarget === undefined) throw new Error('coordinationIndependenceManager: unknown topologyPhase "' + sigs.topologyPhase + '"');
 
     // Intent-aware: read actual interactionTarget from sectionIntentCurves
-    // which encodes trajectory learning, contrast bias, and phase position.
-    // Blends with the static phase target for a more nuanced dial.
     const lastIntent = sectionIntentCurves.getLastIntent();
     const intentInteraction = lastIntent ? clamp(V.optionalFinite(lastIntent.interactionTarget, 0.5), 0, 1) : 0.5;
 
@@ -149,7 +138,6 @@ moduleLifecycle.declare({
     // Density modulation: very low density = more independence (let things explore)
     const densityBias = sigs.density < 0.5 ? -0.1 : sigs.density > 1.5 ? 0.1 : 0;
 
-    // Xenolinguistic L4: read self-narration. System adapts coordination based on its own description.
     const narrationEntry = L0.getLast(L0_CHANNELS.selfNarration, { layer: 'both' });
     const narrativeBias = narrationEntry && narrationEntry.narrative
       ? (narrationEntry.narrative.includes('crowded') ? 0.1 : narrationEntry.narrative.includes('sparse') ? -0.1 : 0) : 0;
@@ -159,13 +147,9 @@ moduleLifecycle.declare({
     const rhythmMode = rhythmicComplementEngine.getMode();
     const canonBias = (rhythmMode === 'canon' && pair === 'stutterChannels-coordination') ? -0.15 : 0;
 
-    // Effectiveness modulation: if coordination worked well for this pair, bias toward it
     const effectBias = (effectiveness[pair] - 0.5) * 0.2;
 
     // Melodic coupling: counterpoint motion type biases coordination target.
-    // Scoped to harmonic/melodic pairs only -- applying globally was too aggressive
-    // (contrary is normal in polyphony; -0.08 across all 12 pairs halved note output).
-    // Similar motion -> mild coordination boost for the whole system.
     const melodicCtxCIM = emergentMelodicEngine.getContext();
     const isHarmonicPair = pair === 'harmonic-pitchCorrection' || pair === 'motif-echoIdentity';
     const counterpointBias = melodicCtxCIM
@@ -212,7 +196,6 @@ moduleLifecycle.declare({
     const healthEma = sigs.healthEma;
     const systemPhase = sigs.systemPhase;
 
-    // Self-interference detection: if health dropped since last change, revert toward neutral
     for (let i = 0; i < MODULE_PAIRS.length; i++) {
       const pair = MODULE_PAIRS[i];
       if (beatsSinceChange[pair] > 0 && beatsSinceChange[pair] <= SELF_INTERFERENCE_WINDOW) {
@@ -231,8 +214,6 @@ moduleLifecycle.declare({
     else if (regimeForOsc !== 'oscillating' && oscillationEnabled) { oscillationEnabled = false; }
 
     // Phase gating: adjust during stabilized (full speed) or converging (half speed).
-    // Only freeze during oscillating system phase (let hypermeta recover).
-    // Exception: if health is very low (<0.4), shuffle dials to break out.
     const canAdjust = systemPhase !== 'oscillating' || healthEma < 0.4;
     if (!canAdjust) { applyDials(); return; }
 
@@ -265,12 +246,6 @@ moduleLifecycle.declare({
     }
 
     // Normal operation: compute targets and ease dials toward them
-    // Substrate feedback: close the loop between channelStateField state and
-    // CIM dial targets. Deep antagonism in the emission ecology suggests
-    // coordination modules should push HARDER (raise dial targets); deep
-    // cooperation suggests the ecology is already tight and dials can relax.
-    // Small bias (+-0.06) so CIM's primary signals (phase/regime/topology/
-    // health) still dominate -- substrate just nudges the target.
     const substrateBias = _substrateCoordinationBias();
 
     // R26 E4: staggered dwell per pair for temporal separation
@@ -346,7 +321,6 @@ moduleLifecycle.declare({
     // Harmonic pitch correction: interval guard + collision avoidance
     const harmonicDial = dials['harmonic-pitchCorrection'];
     harmonicIntervalGuard.setCoordinationScale(harmonicDial);
-    // emergentMelodicEngine: noveltyWeight amplification scales with harmonic coordination
     emergentMelodicEngine.setCoordinationScale(harmonicDial);
     registerCollisionAvoider.setCoordinationScale(harmonicDial);
     verticalIntervalMonitor.setCoordinationScale(harmonicDial);
@@ -371,7 +345,6 @@ moduleLifecycle.declare({
     articulationComplement.setCoordinationScale(artTexDial);
     texturalMirror.setCoordinationScale(artTexDial);
 
-    // Motif echo: coordinated = more imitative counterpoint, independent = original material
     const motifDial = dials['motif-echoIdentity'];
     motifEcho.setCoordinationScale(motifDial);
 
@@ -403,15 +376,6 @@ moduleLifecycle.declare({
 
   function getSnapshot() {
     // channelStateField provides the fine-grained substrate CIM uses to
-    // see how independence manifests at the per-channel-per-param level
-    // (collision density, cooperation direction, contention locality).
-    // The dials are the coarse control surface; the field is the texture.
-    //
-    // R39+: widened/deepened CIS readout. Single scalar meanCooperation
-    // hides structure -- a field with deep antagonism on pan and full
-    // synergy on filter has the same mean as a featureless flatline.
-    // Per-layer + per-param + synergy-spectrum exposes the full trajectory
-    // from deep antagonism through independence to true synergy.
     return {
       dials: Object.assign({}, dials),
       targets: Object.assign({}, dialTargets),

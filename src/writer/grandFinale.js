@@ -44,8 +44,6 @@ grandFinale = () => {
   }
 
   // Write L0 audit dump. High-frequency per-note channels are summarized
-  // (count + first/last entry) to keep the file small; low-frequency channels
-  // are written in full for forensic inspection.
   try {
     const L0_SUMMARY_THRESHOLD = 1000;
     const l0Dump = {};
@@ -91,10 +89,6 @@ grandFinale = () => {
         rollupByParam: channelStateField.getRollupByParam(),
         spectrum: channelStateField.getSynergySpectrum(),
         // Full per-slot snapshot including raw write histories. Needed for
-        // forensic investigation of why specific slots show synergy vs
-        // antagonism (R40 investigation established fade cooperates /
-        // filter antagonizes but raw histories were unavailable). Cost:
-        // ~3KB per run at typical slot counts -- trivial for forensics.
         snapshot: channelStateField.getFieldSnapshot()
       }
     };
@@ -121,8 +115,6 @@ grandFinale = () => {
       lastRunPersonality: {
         narrative: lastNarration ? lastNarration.narrative : 'balanced evolving',
         // Use Number.isFinite to distinguish real 0 / unset / NaN. `|| 0`
-        // silently swallows NaN into 'stable', hiding upstream bugs in
-        // tension tracking (NaN means tension computation crashed).
         tensionTrajectory: Number.isFinite(tensionTraj)
           ? (tensionTraj > 0.1 ? 'rising' : tensionTraj < -0.1 ? 'falling' : 'stable')
           : 'unknown',

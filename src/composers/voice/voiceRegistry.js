@@ -16,7 +16,6 @@ voiceRegistry = function voiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
     return ['soprano', 'alto', 'tenor', 'bass'][idx] || 'soprano';
   };
 
-  // Voice spacing constraint: ensure minimum semitone distance between simultaneous notes
   const minSemitones = V.optionalFinite(Number(opts.minSemitones), 3);
 
   const isTooCloseToChosen = (candidate) => {

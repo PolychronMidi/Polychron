@@ -46,10 +46,6 @@ class RAGEngineIndexingMixin:
             return self._remove_file_from_index(file_key)
 
         # Defensive gate -- reject extensions that the language registry
-        # does not recognize. This prevents the watcher (or any direct
-        # caller) from feeding binary blobs or unsupported files into the
-        # embedder. A stray .gguf/.safetensors/.bin would otherwise get
-        # chunked as "text" and generate thousands of useless rows.
         from lang_registry import SUPPORTED_EXTENSIONS, SUPPORTED_FILENAMES
         _suffix = file_path.suffix
         if _suffix not in SUPPORTED_EXTENSIONS and file_path.name not in SUPPORTED_FILENAMES:
@@ -226,9 +222,6 @@ class RAGEngineIndexingMixin:
                 logger.warning(f"Failed to read {file_path}: {e}")
                 continue
             # Auto-generated file skip: lookup tables and bootstrap code
-            # (*priorsData.js, fullBootstrap.js, polyrhythmPairs.js, etc.)
-            # pollute semantic search because all chunks cluster together
-            # in embedding space. Detect via header marker in first 5 lines.
             _header = "\n".join(content.split("\n", 5)[:5]).upper()
             if "AUTO-GENERATED" in _header or "GENERATED FILE" in _header or "AUTO GENERATED" in _header or "DO NOT EDIT" in _header:
                 skipped_files += 1
@@ -242,14 +235,10 @@ class RAGEngineIndexingMixin:
             changed[file_key] = (content, file_path, content_hash, lang)
 
         # Phase 2: clear chunk hashes for ALL changed files before processing
-        # (prevents self-dedup where unchanged chunks in a modified file get
-        # incorrectly skipped because their hashes are already in _chunk_hashes)
         for fk in changed:
             self._chunk_hashes -= self._per_file_chunks.get(fk, set())
 
         # Phases 3+4: chunk, encode, and write in checkpoints of CHECKPOINT
-        # files. Each checkpoint embeds its batch, writes to the table, and
-        # saves hashes -- so a crash mid-run loses at most one checkpoint.
         CHECKPOINT = 5
         indexed_files = 0
         total_chunks_created = 0

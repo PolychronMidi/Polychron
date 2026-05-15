@@ -61,10 +61,6 @@ function _textOf(toolResult) {
 }
 
 // Extract file paths from a tool_result text. Handles:
-//   - Glob output: one path per line
-//   - Grep files_with_matches: one path per line
-//   - Grep content mode: "path:lineno:text" or "path-lineno-text"
-//   - Grep count mode: "path:N"
 function _extractPaths(text) {
   const paths = [];
   for (const raw of text.split('\n')) {
@@ -94,8 +90,6 @@ function _firstDocLine(filePath) {
       n = fs.readSync(fd, buf, 0, 600, 0);
     } finally {
       // Always close -- readSync can throw on raced symlinks / EIO and
-      // the previous code leaked the fd in that path. Across thousands
-      // of grep enrichments this exhausts the proxy's fd budget.
       try { fs.closeSync(fd); } catch (_) { /* silent-ok: close-after-read -- fd was successfully opened, so close is bookkeeping; the read result is already in `buf`. A close failure here (rare: ENOSPC on metadata update) can't corrupt the already-read buffer */ }
     }
     const head = buf.toString('utf8', 0, n);
@@ -191,9 +185,6 @@ module.exports = {
     if (!text) return;
 
     // Semantic firewall -- when the grep pattern is a bare symbol, check if KB
-    // has a high-signal architecture/bugfix/antipattern entry for it. This
-    // catches queries like `couplingMatrix` or `VALIDATED_GLOBALS` before
-    // the agent duplicates effort.
     const pattern = (toolUse.input && toolUse.input.pattern) || '';
     const firewallLines = [];
     if (name === 'Grep' && SYMBOL_LIKE_RE.test(pattern)) {

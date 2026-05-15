@@ -52,8 +52,6 @@ function main() {
   const percSignals  = extractPerceptualSignals(perceptual) || {};
 
   // HCI delta: round-over-round change in the HCI score. Non-null after the
-  // first round. Has real variance (unlike verdict_numeric which is always 1
-  // for STABLE runs), enabling meaningful correlation with coherence metrics.
   const prevHistory = Array.isArray(prev && prev.history) ? prev.history : [];
   const prevHci = prevHistory.length > 0
     ? (prevHistory[prevHistory.length - 1].hci ?? null) : null;
@@ -66,8 +64,6 @@ function main() {
   const hciDelta = (currentHci !== null && prevHci !== null) ? currentHci - prevHci : null;
 
   // HCI regression detection: two consecutive rounds with hci_delta < -2 emits
-  // an activity event. The 2-point threshold is intentionally loose -- a single
-  // noisy round shouldn't alert, but sustained decline should.
   const REGRESSION_THRESHOLD = -2;
   if (hciDelta !== null && hciDelta < REGRESSION_THRESHOLD) {
     const prevDelta = prevHistory.length > 0
@@ -115,11 +111,6 @@ function main() {
   const verdictNumeric = verdict ? (verdictMap[verdict] ?? 0.5) : null;
 
   // Round identity: git HEAD short-hash + sequence-for-this-sha. Two pipeline
-  // runs from the same commit produce r_abc_1 and r_abc_2, making "did my
-  // change improve metric Y" answerable -- without the sequence, two runs
-  // of the same code got different timestamped IDs, turning identity into
-  // timing noise. The sequence comes from counting prior history entries
-  // whose round_id starts with r_<sha>_.
   let roundId = null;
   let currentSha = null;
   let currentTreeHash = null;
@@ -131,8 +122,6 @@ function main() {
     if (sha) {
       currentSha = sha;
       // Tree hash: two runs from the same working tree (even different commits)
-      // produce identical tree hashes. Better for same-commit determinism check
-      // since auto-commits change the SHA but not the tree if files didn't change.
       try {
         currentTreeHash = execSync('git rev-parse HEAD^{tree}', {
           cwd: require('path').dirname(OUT) + '/..', stdio: ['ignore', 'pipe', 'ignore'],
@@ -162,18 +151,12 @@ function main() {
     hci: currentHci,
     hci_delta: hciDelta,
     // R16 #6: hci_normalized as verdict_numeric_v2. verdict_numeric collapses
-    // to 1.0 for all STABLE runs, making correlation degenerate. hci has real
-    // variance (94.7->95.1->96.4->96.5 across recent rounds) -- normalize to 0..1
-    // for the same role: "how well is composition doing" anchor.
     hci_normalized: typeof currentHci === 'number' ? currentHci / 100 : null,
     // R16 #3: drifted_dimension_count. STABLE=0, EVOLVED=1-2, DRIFTED=3+.
     // Even in all-STABLE sessions, dimension-level drift counts carry trend signal.
     drifted_dimension_count: (fingerprint && typeof fingerprint.driftedDimensions === 'number')
       ? fingerprint.driftedDimensions : null,
     // Per-axis adjustment totals: enables correlating "how much does each axis
-    // need re-balancing" against "does HME self-assess well" and "is the music
-    // actually good." High trust_adj_count correlated with low verdict_numeric
-    // would mean the trust floor is firing most when music degrades.
     trust_adj_count: _axisAdj('trust'),
     tension_adj_count: _axisAdj('tension'),
     entropy_adj_count: _axisAdj('entropy'),
@@ -226,8 +209,6 @@ function main() {
     ['hme_prediction_accuracy', 'perceptual_complexity_avg'],
     ['hme_prediction_accuracy', 'clap_tension'],
     // Per-axis adjustment counts vs outcome: reveal whether high adjustment
-    // volume correlates with better or worse music (negative = overrides fire
-    // most when composition struggles = system is reactive as designed).
     ['trust_adj_count', 'verdict_numeric'],
     ['tension_adj_count', 'verdict_numeric'],
     ['trust_adj_count', 'hci_delta'],
@@ -297,8 +278,6 @@ function main() {
     `strongest_r=${strongestCorrelation !== null ? strongestCorrelation.toFixed(2) : 'n/a'}`,
   );
   // #8 Progress metric: samples accumulated toward min_n activation of the
-  // coherence-tracks-musical-outcome invariant (needs min_n=10). Prints
-  // "progress=n/10" so watchers can see how close activation is.
   const activationKey = 'hme_coherence__verdict_numeric';
   const activationN = correlations[activationKey] ? correlations[activationKey].n : 0;
   bits.push(`activation=${activationN}/10`);

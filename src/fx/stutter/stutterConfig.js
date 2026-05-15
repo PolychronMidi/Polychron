@@ -12,7 +12,6 @@ const stutterConfigStutterStore = {
   profiles: Object.assign({}, STUTTER_PROFILES)
 };
 
-// Validation caches - these globals are static within a run, so re-validation is redundant.
 let stutterConfigCrossModValidated = false;
 let stutterConfigProfilesValidated = false;
 

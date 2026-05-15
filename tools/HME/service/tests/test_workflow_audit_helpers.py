@@ -84,9 +84,6 @@ class DiffLanguageDetectionContract(unittest.TestCase):
 
     def test_header_based_detection(self):
         # Source inspection -- a dynamic import of workflow_audit requires
-        # the full server context stack (which these tests don't set
-        # up). Instead verify the source contains the header-anchored
-        # tokens, since the nested function body is what we're pinning.
         src = Path(PROJECT_ROOT, "tools/HME/service/server/tools_analysis/workflow_audit.py").read_text()
         self.assertIn("+++ b/", src,
                       "_detect_languages must anchor to diff headers, not substring-scan")

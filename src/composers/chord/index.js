@@ -14,8 +14,6 @@ require('./ProgressionGenerator');
 require('./pivotChordBridge');
 
 // Register progression generator wrapper as a declared module so it
-// participates in the manifest registry (full DI: every registrant is a
-// declared module, no legacy registerInitializer wrappers).
 moduleLifecycle.declare({
   name: 'chordProgressionRegistration',
   subsystem: 'composers',

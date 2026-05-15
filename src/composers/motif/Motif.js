@@ -251,8 +251,6 @@ applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
 getScheduledNotes = (schedule = [], windowStart = 0, windowEnd = Infinity, max = 3) => {
   if (!Array.isArray(schedule) || schedule.length === 0) return [];
   // Allow a small slack so events that start slightly before the micro-unit
-  // (e.g., due to jitter) are still considered. Slack is based on the
-  // subdiv/subsubdiv tick lengths (use .1 as reasonable tolerance).
   const slack = m.max(1, m.round(spSubdiv * 0.1), m.round(spSubsubdiv * 0.1));
   const hits = schedule.filter(s => Number.isFinite(Number(s.startTime)) && s.startTime >= (windowStart - slack) && s.startTime < windowEnd);
   hits.sort((a, b) => a.startTime - b.startTime);

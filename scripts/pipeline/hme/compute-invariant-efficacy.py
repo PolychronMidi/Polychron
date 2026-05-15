@@ -94,8 +94,6 @@ def _efficacy_score(commits_citing: int, fail_streak: int, last_result: str,
     if fail_streak > 0 or last_result == "fail":
         return (0.1, "flappy")
     # R23 #8: distinguish structural (existence/validity checks that SHOULD
-    # never fire in healthy state -- schema asserts, registered/importable/valid
-    # checks) from truly-decorative (noise accumulation worth retiring).
     return (0.3, "decorative")
 
 
@@ -104,8 +102,6 @@ _STRUCTURAL_HINTS = (
     "exists", "valid", "registered", "importable", "present",
     "reachable", "schema", "config", "manifest", "has-",
     # R31 #10: structural guardrails discovered in decorative sample --
-    # these patterns are by-design rarely-firing invariants that preserve
-    # structural invariance, not noise to retire.
     "executable", "complete", "count", "points-to", "handlers",
     "snapshots", "not-excessive", "not-flappy", "detector",
     "no-duplicate", "no-raw", "not-chronically",

@@ -3,7 +3,6 @@ moduleLifecycle.declare({
   subsystem: 'rhythm',
   deps: ['eventBus', 'journeyRhythmCoupler', 'validator'],
   provides: ['conductorRegulationListener'],
-  // crossLayerScopes manifest field replaces the inline crossLayerRegistry.register call.
   crossLayerScopes: ['section'],
   init: (deps) => {
   const eventBus = deps.eventBus;

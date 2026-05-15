@@ -28,7 +28,6 @@ def diagnose_error(error_text: str) -> str:
     # Extract symbol/file references from error text
     import re
     file_refs = re.findall(r'((?:[\w./-]+/)+[\w.\-]+\.(?:js|ts|py)):?(\d+)?', error_text)
-    # Filter symbols: require camelCase (uppercase after lowercase) to avoid common English words
     symbol_refs = re.findall(r'\b([a-z]+[A-Z][a-zA-Z]{3,})\b', error_text)
     error_type = re.search(r'(TypeError|ReferenceError|Error|RangeError):\s*(.+?)(?:\n|$)', error_text)
     if error_type:
@@ -89,7 +88,6 @@ def diagnose_error(error_text: str) -> str:
         parts.append("\nNo specific diagnosis available. Try search_knowledge with key terms from the error.")
 
     # Adaptive thinking synthesis: root cause + fix steps, KB grounded via corpus.
-    # Two-stage pipeline: GPU0 extracts error facts from stack + KB, GPU1 reasons fix steps.
     kb_lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results[:5]]
     raw_context = (
         f"Error:\n{error_text[:800]}\n\n"
@@ -121,8 +119,6 @@ def diagnose_error(error_text: str) -> str:
             from .synthesis.synthesis_inference import compress_for_claude, ground_synthesis
             synthesis = compress_for_claude(synthesis, max_chars=800, hint="error fix steps")
             # Ground: drop any bullet citing paths/symbols not in the source
-            # (error_text + KB entries). Catches the same "correctly-cites-
-            # file, invents-symbol" hallucination class as what_did_i_forget.
             synthesis = ground_synthesis(synthesis, raw_context,
                                          log_label="diagnose_error")
     except Exception as _e:

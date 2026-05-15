@@ -107,10 +107,6 @@ def main() -> int:
             })
 
     # Arc V: blindspots -- subsystem coverage gaps. Lifted from observation-only
-    # status surface into the action queue so "we haven't touched this subsystem
-    # in N rounds" becomes a first-class proposal the agent can see + act on.
-    # Priority is between drift (2) and consensus (3): stronger than a dissenting
-    # voter, weaker than preemptive drift.
     bs = _load(os.path.join(METRICS_DIR, "hme-blindspots.json")) or {}
     for gap in (bs.get("dark_subsystems") or [])[:3]:
         sub = gap.get("subsystem") or gap.get("module") or gap.get("name")
@@ -165,9 +161,6 @@ def main() -> int:
         })
 
     # R24 #4 + R25 #5: track repeat-count across rounds. Only escalate once
-    # repeat-count exceeds the pattern's expected_defer_rounds. A decision-gate
-    # pattern with 3-round expected defer correctly waits 3 rounds without
-    # being labeled "ignored"; at round 4 it's genuinely deferred too long.
     prev = _load(os.path.join(METRICS_DIR, "hme-next-actions.json")) or {}
     prev_actions_by_id = {
         a.get("id"): a for a in (prev.get("actions") or []) if a.get("id")
@@ -204,8 +197,6 @@ def main() -> int:
             cwd=PROJECT_ROOT, timeout=5, text=True,
         )
         # R25 #5: harvester_ignored fires only for DEFERRED_BEYOND_EXPECTED
-        # actions (past their expected defer window) -- not actions correctly
-        # waiting per pattern-declared defer semantics.
         ignored = [a["id"] for a in actions
                    if a.get("deferred_beyond_expected")
                    and a["id"].lower() not in log_long.lower()]

@@ -27,12 +27,6 @@ from service_registry import service_map, service_port
 
 _indexing_mode_lock = threading.Lock()
 # Last-completed result, used to coalesce concurrent callers: when a
-# second invocation lands while the first is still running, the second
-# blocks on the lock and then returns the first's result with a
-# `coalesced=True` flag rather than triggering a redundant index pass
-# (or worse, erroring back to the caller). Edit-triggered + scheduled +
-# manual reindex requests are EXPECTED to overlap; coalescing is the
-# correct behavior, not an error.
 _last_result_lock = threading.Lock()
 _last_result: dict = {}
 
@@ -86,8 +80,6 @@ def run_indexing_mode() -> dict:
     the design, not an aberration."""
     if not _indexing_mode_lock.acquire(blocking=False):
         # Another caller already holds the lock -- wait for them, then
-        # return their result. logger.debug (not warning) so noise stays
-        # out of hme-errors.log.
         logger.debug("indexing-mode: coalescing into in-progress run")
         with _indexing_mode_lock:  # blocks until in-progress release
             with _last_result_lock:

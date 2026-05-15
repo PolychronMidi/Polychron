@@ -46,8 +46,6 @@ METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
 # Tools/HME subtrees ALSO count as project territory -- edits to them should
-# show up in the coherence score as FRESH/STALE/MISSING too. Previously
-# excluded, which made tools/HME/ writes always score touches_with_index_info=0.
 HME_DIRS = [
     os.path.join(PROJECT_ROOT, "tools", "HME", "mcp"),
     os.path.join(PROJECT_ROOT, "tools", "HME", "hooks"),

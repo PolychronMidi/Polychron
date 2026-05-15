@@ -49,8 +49,6 @@ def prediction_accuracy_report() -> str:
         return "\n".join(lines)
 
     # Show the last 10 rounds. Fixed-width text table matches the
-    # trust-leaderboard style; markdown pipe tables read worse in plain
-    # terminal output and the row-of-pipes-and-dashes is filler noise.
     lines.append("## Recent rounds")
     lines.append("")
     lines.append(f"  {'Round':<14}  {'Acc':>4}  {'EMA':>4}  {'Pred':>5}  {'Conf':>5}  {'Refu':>5}  {'Miss':>5}")

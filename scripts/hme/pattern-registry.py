@@ -54,16 +54,10 @@ def main(argv):
             print(f"    payload: {m.get('payload', '')[:120]}")
             print(f"    action: {m.get('action_summary', '')}")
         # When nothing matched, surface why instead of leaving the user
-        # staring at "0/N". Patterns are condition-gated; show the gate
-        # condition for each registered pattern so it's clear what would
-        # need to happen for a match.
         if n_matched == 0 and n_total > 0:
             print("\nNo patterns matched this round. Trigger conditions:")
             for _, p in _load_patterns():
                 pid = p.get("id", "?")
-                # Real pattern schema is `trigger: {kind, matches_when, ...}`
-                # -- prefer the human-readable `matches_when` line, fall
-                # back to `kind` or to the legacy fields.
                 trig_obj = p.get("trigger")
                 if isinstance(trig_obj, dict):
                     trig = trig_obj.get("matches_when") or trig_obj.get("kind") or ""

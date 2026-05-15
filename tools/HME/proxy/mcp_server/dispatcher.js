@@ -1,7 +1,6 @@
 'use strict';
 // Dispatches MCP tools/list and tools/call to the Python worker over plain HTTP.
 // Worker endpoints:
-//   GET  /tools/list       -> {"tools": [ {name, description, inputSchema}, ... ]}
 //   POST /tool/<name>      body = kwargs JSON -> {ok, result} | {ok:false, error}
 //   GET  /health           readiness probe
 //
@@ -11,9 +10,6 @@
 // content-block envelope formatting.
 
 // Use the transport router (not _worker_http directly) so this module
-// honors HME_WORKER_TRANSPORT and can route through the filesystem
-// queue when the user opts in. The MCP wire spec at the boundary is
-// untouched; this only affects how the proxy reaches the worker.
 const { workerRequest } = require('../_worker_transport');
 
 let _schemaCache = null;

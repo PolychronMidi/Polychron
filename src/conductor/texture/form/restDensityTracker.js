@@ -1,4 +1,3 @@
-// src/conductor/texture/restDensityTracker.js - Tracks rest-to-onset ratio across layers.
 // Flags over-saturation (wall of sound) or sparse deserts.
 // Also detects phrase breathing points - merged from PhraseBreathingAdvisor.
 // Pure query API - biases rhythm onset probability and phrase breathing.
@@ -154,8 +153,6 @@ moduleLifecycle.declare({
   }
 
   // Single combined registration: onset and breathing were separate registrations
-  // both pinned at 0.85 floor, giving 0.85^2 = 0.7225 from one module. Merged
-  // into a geometric mean so the module has one voice in the density product.
   conductorIntelligence.registerDensityBias('restDensityTracker', () => {
     const onset = restDensityTracker.getOnsetBias();
     const breathing = restDensityTracker.getBreathingDensityBias();

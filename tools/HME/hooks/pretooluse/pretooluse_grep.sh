@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # PreToolUse: Grep -- prevent content-mode grep from leaking guarded files.
-# files_with_matches / count modes are always safe (paths/numbers only); content
-# mode returns matching lines which can leak theory essay text, jsonl corpus
-# entries, etc. Block content-mode when the search path or any match would land
-# in a guarded directory.
 
 INPUT=$(cat)
 PATTERN=$(_safe_jq "$INPUT" '.tool_input.pattern' '')
@@ -30,9 +26,7 @@ if [ -n "$PROJECT_ROOT" ] && [[ "$REL" == "$PROJECT_ROOT"/* ]]; then
 fi
 
 # FAIL-LOUD: was `2>/dev/null` + bare `except: sys.exit(0)` which fail-OPENed
-# the content-mode guard on every python crash. Now stderr captured and
-# bridged so a corrupted config or python crash is visible.
-_PG_GATE_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pg_gate_err_$$")
+_PG_GATE_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pg_gate_err_$$")  # silent-ok: optional fallback path.
 HIT=$(python3 - "$REL" "$GLOB" "$CONFIG" <<'PYEOF' 2>"$_PG_GATE_ERR"
 import json, os, sys
 rel, glob, cfg = sys.argv[1], sys.argv[2], sys.argv[3]

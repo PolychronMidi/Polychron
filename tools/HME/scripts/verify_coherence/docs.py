@@ -130,6 +130,7 @@ class DocstringPresenceVerifier(Verifier):
                     with open(path, encoding="utf-8") as fp:
                         tree = ast.parse(fp.read())
                 except Exception:
+                    # silent-ok: optional fallback path.
                     continue
                 for node in ast.walk(tree):
                     if not isinstance(node, ast.FunctionDef):

@@ -26,34 +26,27 @@ moduleLifecycle.declare({
     [trustSystems.names.ENTROPY_REGULATOR]: { scoreFloor: 0.48, scorePenalty: 0.12, weightFloor: 1.20, weightPenalty: 0.26 },
   };
   const pairAwareHotspotPairs = {
-    // R43 E2: removed density-trust -- explosive profile intentionally saturates density,
-    // causing 66% false hotspot in S4. flicker-trust + tension-trust reflect coherenceMonitor's
-    // actual function (structural timing/harmonic coherence), not density load.
+    // removed density-trust -- explosive profile intentionally saturates density,
     [trustSystems.names.COHERENCE_MONITOR]: ['flicker-trust', 'tension-trust'],
     [trustSystems.names.PHASE_LOCK]: ['density-phase', 'flicker-phase', 'tension-phase', 'trust-phase'],
     [trustSystems.names.CADENCE_ALIGNMENT]: ['density-trust', 'tension-trust', 'density-phase'],
     // R44 E1: replace shared flicker-phase to break 38.9% uniform hotspot cluster.
     // stutterContagion spreads density-driven sync -> trust-phase captures timing lock.
     [trustSystems.names.STUTTER_CONTAGION]: ['flicker-trust', 'density-flicker', 'trust-phase'],
-    // feedbackOscillator oscillatory feedback = entropy-phase coupling, not flicker-phase.
     [trustSystems.names.FEEDBACK_OSCILLATOR]: ['tension-flicker', 'flicker-trust', 'entropy-phase'],
     [trustSystems.names.ENTROPY_REGULATOR]: ['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase'],
     [trustSystems.names.CONVERGENCE]: ['density-trust', 'tension-trust', 'density-phase', 'tension-phase'],
     [trustSystems.names.REST_SYNCHRONIZER]: ['density-trust', 'flicker-trust'],
     // Per-system pair assignments to prevent identical hotspot blocks.
-    // Each system measured against the coupling axes most relevant to its function.
-    // R45 E1: motif echo = density + entropic reduction through repetition, not tension-trust (same as cadenceAlignment).
     [trustSystems.names.MOTIF_ECHO]: ['density-trust', 'entropy-trust', 'density-phase'],
     [trustSystems.names.TEMPORAL_GRAVITY]: ['tension-phase', 'density-phase', 'tension-trust'],
     [trustSystems.names.HARMONIC_INTERVAL_GUARD]: ['tension-trust', 'density-trust', 'tension-entropy'],
-    // R45 E1: verticalIntervalMonitor measures voice spacing = phase-dependent register distribution, not density-trust.
     [trustSystems.names.CROSS_LAYER_SILHOUETTE]: ['density-trust', 'density-phase', 'density-entropy'],
     [trustSystems.names.ROLE_SWAP]: ['density-trust', 'tension-trust', 'flicker-trust'],
     [trustSystems.names.DYNAMIC_ENVELOPE]: ['tension-trust', 'density-trust', 'tension-flicker'],
-    // R45 E1: groove = rhythmic shimmer with entropic density flow. flicker-entropy captures groove shimmer quality.
     [trustSystems.names.GROOVE_TRANSFER]: ['density-phase', 'flicker-entropy', 'tension-phase'],
     [trustSystems.names.CLIMAX_ENGINE]: ['tension-trust', 'density-trust', 'tension-phase'],
-    // R45 E1: velocity interference = trust-weighted entropy pattern, not density-flicker.
+    // velocity interference = trust-weighted entropy pattern, not density-flicker.
     [trustSystems.names.VELOCITY_INTERFERENCE]: ['density-trust', 'tension-trust', 'entropy-trust'],
     // rhythmicComplement: fills sparse moments = entropy/phase when main layer is quiet
     [trustSystems.names.RHYTHMIC_COMPLEMENT]: ['density-entropy', 'density-phase', 'tension-entropy'],
@@ -62,12 +55,10 @@ moduleLifecycle.declare({
     [trustSystems.names.TEXTURAL_MIRROR]: ['density-trust', 'density-flicker', 'flicker-trust'],
     [trustSystems.names.VERTICAL_INTERVAL_MONITOR]: ['tension-trust', 'density-phase', 'tension-entropy'],
     [trustSystems.names.ARTICULATION_COMPLEMENT]: ['density-flicker', 'tension-flicker', 'flicker-trust'],
-    // R45 E1: harmonic convergence trigger = entropy-driven, not density-trust (same pairs as climaxEngine).
     [trustSystems.names.CONVERGENCE_HARMONIC_TRIGGER]: ['tension-trust', 'tension-phase', 'entropy-trust'],
     // R44 E1: polyrhythm prediction relates entropy to phase, not flicker-phase.
     [trustSystems.names.POLYRHYTHMIC_PHASE_PREDICTOR]: ['density-phase', 'entropy-phase', 'tension-phase'],
     [trustSystems.names.EMERGENT_DOWNBEAT]: ['density-phase', 'density-trust', 'tension-phase'],
-    // R45 E1: cadence window = inter-layer phase coordination, not tension-trust (same pairs as temporalGravity).
     [trustSystems.names.PHASE_AWARE_CADENCE_WINDOW]: ['tension-phase', 'density-phase', 'trust-phase'],
   };
   const pairAwarePairWeights = {
@@ -96,17 +87,11 @@ moduleLifecycle.declare({
     const signals = conductorSignalBridge.getSignals();
     const adaptiveSnapshot = signals.adaptiveTargetSnapshot || null;
     // Attenuate density-pair pressure when conductor intentionally suppresses density.
-    // Low densityProduct + high density-axis correlation = axes moving together (expected), not stressed.
     const densityProduct = V.optionalFinite(signals.density, 1.0);
     const densityAttenuation = clamp(densityProduct / 0.75, 0.5, 1.0);
-    // Attenuate flicker-pair pressure when flicker is subdued (e.g. smooth-tension coupling label).
-    // Analogous to density-attenuation: systems measured against flicker pairs should not be
-    // penalized when the composition intentionally reduces flicker activity.
     const flickerProduct = V.optionalFinite(signals.flicker, 1.0);
     const flickerAttenuation = clamp(flickerProduct / 0.75, 0.5, 1.0);
     // Discount hotspot pressure for semantically labeled "opposed" pairs.
-    // Creative anti-correlations (phase-opposed-flicker, smooth-tension, etc.) are structural
-    // features of the composition, not failures -- penalizing them suppresses valid patterns.
     const couplingLabels = /** @type {Record<string,string>|null} */ (signals.couplingLabels && typeof signals.couplingLabels === 'object' ? signals.couplingLabels : null);
 
     const hotspotPairs = [];

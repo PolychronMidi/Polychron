@@ -52,8 +52,6 @@ _MODE_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
 _ADVISOR_LOG = _PROJECT / "tmp" / "hme-advisor-conflicts.jsonl"
 
 # Phase markers in assistant text (PAI emits these; Polychron may emit a
-# subset). Detection is best-effort: if the agent doesn't emit the
-# markers, this detector falls back to soft signals (commitment verbs).
 _PRE_BUILD_RE = re.compile(
     r"={3,}\s*BUILD\s*={3,}|^\s*phase:\s*build\b|"
     r"\b(committing to (the )?approach|going with this approach)\b",
@@ -149,10 +147,6 @@ def _advisor_invocations(events: list) -> int:
 # Edit/Write/MultiEdit/NotebookEdit are unambiguous code changes.
 _WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
 
-# Bash commands that move bytes around -- python -c with open(...), sed,
-# awk, perl, mv, cp, rm, git apply, tee, redirection >, byte-level scripts.
-# A turn that ran one of these did substantive work even if no Edit tool
-# was invoked (common pattern: byte-level fixups via python -c or sed).
 _BASH_WORK_RE = re.compile(
     r"\b(?:sed\s|awk\s|perl\s+-i|python3?\s+-c\b.*?\bopen\s*\(|"
     r"git\s+(?:apply|commit|merge|rebase|cherry-pick)|"

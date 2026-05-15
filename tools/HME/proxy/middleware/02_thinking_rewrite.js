@@ -33,8 +33,6 @@ module.exports = {
     if (!ENABLED) return;
     if (!payload) return;
     // Only act when thinking is already configured (don't enable thinking
-    // on requests the client didn't intend to use it for -- changes
-    // billing + cache shape).
     if (!payload.thinking || typeof payload.thinking !== 'object') return;
     if (payload.thinking.display === DISPLAY) return;
     payload.thinking.display = DISPLAY;

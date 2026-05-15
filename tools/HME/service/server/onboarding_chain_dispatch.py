@@ -41,11 +41,6 @@ if _mcp_root not in sys.path:
 from hme_env import ENV  # noqa: E402
 
 # Sibling state-machine. Lazy module-attr access avoids the circular: when
-# onboarding_chain loads first it pulls re-exports from us at line 275, which
-# means dispatch is partially loaded by the time onboarding_chain finishes
-# defining its state functions. Top-level back-import at this point would
-# deadlock. Bare-name calls inside our function bodies resolve via these
-# thin shims, which look up the live attribute at call time.
 def state():
     from . import onboarding_chain as _oc; return _oc.state()
 def set_state(s):
@@ -62,9 +57,6 @@ def is_graduated():
     from . import onboarding_chain as _oc; return _oc.is_graduated()
 
 # Pull canonical i/<wrapper> + action= forms from the single source of
-# truth. Fallback keeps server bootable if the helper module is missing.
-# _mcp_root is tools/HME/service; helpers live at tools/HME/scripts
-# (one dirname up from _mcp_root, then "scripts").
 try:
     _scripts_dir = os.path.join(
         os.path.dirname(_mcp_root), "scripts"
@@ -115,8 +107,6 @@ STEP_SHORT = [
 
 _PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 # Flat per-field state files -- kept separate (not merged into JSON) so shell
-# helpers can read them via `cat` without pulling in `jq` or Python. The
-# tradeoff: two files instead of one, but much simpler hook code.
 _STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
 _TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
 
@@ -139,8 +129,6 @@ def chain_enter(tool: str, args: dict) -> Optional[str]:
         return None
 
     # Prerequisite rule: every HME tool except selftest auto-runs selftest
-    # when state is 'boot'. This is the single chaining rule -- everything
-    # else is state advancement, not prerequisite chaining.
     if s == "boot":
         needs_selftest = not (
             tool == "hme_admin" and args.get("action") == "selftest"
@@ -183,9 +171,6 @@ def _advance(tool: str, args: dict, output: str, s: str) -> None:
             return
 
     # evolve(focus=<target-picking>) -> targeted. Diagnostic foci
-    # (stress, invariants, coupling, loc, patterns) are forensic -- they
-    # don't pick a target, so they MUST NOT advance onboarding state.
-    # Advancing on them skips the "pick evolution target" step entirely.
     if tool == "evolve":
         focus = args.get("focus", "all")
         if focus in ("design", "forge", "curate"):
@@ -197,8 +182,6 @@ def _advance(tool: str, args: dict, output: str, s: str) -> None:
                 return
 
     # Internal pre-edit briefing on a module captures target if missing (the hook
-    # auto-chains the briefing into Edit, so this is a passive capture, not a state
-    # transition). State advances on Edit, not on read.
     if tool == "read" and args.get("mode") == "before":
         tgt = args.get("target", "") or ""
         if tgt and not target():

@@ -64,17 +64,11 @@ function main() {
   const sd = stdev(activeValues);
 
   // R25 #10: time-averaged per-voter metrics. Compute rolling mean + slope
-  // per voter across the last 5 timeseries rows (plus current round).
-  // Trajectory-aware consensus -- single-round outliers get damped; sustained
-  // outliers persist. Arc I v2.
   const voterTrajectories = {};
   try {
     const tsPath = path.join(METRICS_DIR, 'hme-arc-timeseries.jsonl');
     if (fs.existsSync(tsPath)) {
       // Timeseries doesn't carry per-voter scalars (just outlier_voters array).
-      // For trajectory, we'd need to either (a) re-emit per-voter scalars in
-      // timeseries, or (b) store running history in consensus JSON itself.
-      // Choose (b): per-voter history written into hme-consensus-history.jsonl.
       const histPath = path.join(METRICS_DIR, 'hme-consensus-history.jsonl');
       const prevLines = fs.existsSync(histPath)
         ? fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean)
@@ -119,12 +113,6 @@ function main() {
   else if (sd > DIVERGENCE_THRESHOLD / 2) divergenceLevel = 'moderate';
 
   // R29 #4: composition_reality_overrides_substrate_divergence.
-  // When the EXTERNAL ground truth (listening verdict = legendary) + HCI >= 95
-  // for 3+ consecutive rounds, internal substrate divergence is STRUCTURALLY
-  // INTERESTING but practically irrelevant. The substrate's disagreements
-  // about HOW composition is healthy don't override the USER saying it IS
-  // healthy. Override divergence level to "low" in this case; keep the raw
-  // stdev + outliers so investigation still surfaces the signal.
   let overrideApplied = false;
   try {
     const gtPath = path.join(METRICS_DIR, 'hme-ground-truth.jsonl');
@@ -203,9 +191,6 @@ function main() {
   } catch (_tse) { /* best-effort */ }
 
   // R23 #5: axis_cost_trend forecaster -- linear extrapolation from
-  // history. If voter has been declining, estimate rounds until it
-  // reaches -0.5 (significant negative). Tiny forecaster; writes to
-  // the consensus record.
   try {
     const tsPath = path.join(METRICS_DIR, 'hme-arc-timeseries.jsonl');
     if (fs.existsSync(tsPath)) {
@@ -233,8 +218,6 @@ function main() {
   } catch (_fe) { /* best-effort */ }
 
   // R23 #9: harvester action acted-on accounting. For each previous round's
-  // action ids in hme-next-actions.json, check whether the commit between
-  // now and that round mentions the id. If any do, increment "acted_on".
   try {
     const { execSync } = require('child_process');
     const naPath = path.join(METRICS_DIR, 'hme-next-actions.json');

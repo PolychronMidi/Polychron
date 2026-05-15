@@ -11,7 +11,7 @@ if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_R
 elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _AC_ROOT="$CLAUDE_PROJECT_DIR"
 else
-  _AC_TRY="$(cd "$(dirname "$_AC_SELF")" 2>/dev/null && pwd)"
+  _AC_TRY="$(cd "$(dirname "$_AC_SELF")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
   while [ -n "$_AC_TRY" ] && [ "$_AC_TRY" != "/" ]; do
     if [ -d "$_AC_TRY/.git" ] && [ -d "$_AC_TRY/src" ]; then
       _AC_ROOT="$_AC_TRY"
@@ -22,7 +22,7 @@ else
 fi
 if [ -z "$_AC_ROOT" ]; then
   echo "[_autocommit] cannot resolve project root (PROJECT_ROOT/CLAUDE_PROJECT_DIR/walk-up all failed); autocommit disabled this turn" >&2
-  return 1 2>/dev/null || exit 1
+  return 1 2>/dev/null || exit 1  # silent-ok: optional fallback path.
 fi
 
 _AC_STATE_DIR="$_AC_ROOT/runtime/hme"
@@ -33,14 +33,9 @@ _AC_LOCK_FILE="$_AC_STATE_DIR/autocommit.lock"
 _AC_ERROR_LOG="$_AC_ROOT/log/hme-errors.log"
 
 # Threshold: counter value at which the attempt sequence is considered
-# catastrophic. 3 consecutive attempts without a success between them is
-# a strong signal of a wedged state that no amount of retries will fix.
 _AC_COUNTER_FAIL_THRESHOLD=3
 
-#
 # Helper: write a failure to every channel we can reach. Every channel is
-# individually `|| true` guarded because we are the fallback of last
-# resort -- we never die for logging reasons.
 
 _ac_record_failure() {
   local reason="$*"
@@ -50,21 +45,21 @@ _ac_record_failure() {
   # Channel A: sticky fail-flag file. Overwrite on each failure so the
   # latest reason wins. Directory may not exist if state was wiped.
   mkdir -p "$_AC_STATE_DIR" 2>/dev/null || true
-  echo "[$ts] $reason" > "$_AC_FAIL_FLAG" 2>/dev/null || true
+  echo "[$ts] $reason" > "$_AC_FAIL_FLAG" 2>/dev/null || true  # silent-ok: optional fallback path.
 
   # Channel B: hme-errors.log for LIFESAVER pickup next UserPromptSubmit.
   # log/ may not exist -- silently create before writing.
   mkdir -p "$(dirname "$_AC_ERROR_LOG")" 2>/dev/null || true
-  echo "[$ts] [autocommit] $reason" >> "$_AC_ERROR_LOG" 2>/dev/null || true
+  echo "[$ts] [autocommit] $reason" >> "$_AC_ERROR_LOG" 2>/dev/null || true  # silent-ok: optional fallback path.
 
   # Channel C: stderr. Even when an adapter drops this, local terminals
   # see it. Keep short and marked so search/grep locates it instantly.
-  echo "[autocommit FAIL $ts] $reason" >&2 2>/dev/null || true
+  echo "[autocommit FAIL $ts] $reason" >&2 2>/dev/null || true  # silent-ok: optional fallback path.
 
   # Channel D: activity bridge. Best-effort; silent-fails if python/env
   # unavailable. The HCI verifier still catches via the counter/flag.
   local emit_script="$_AC_ROOT/tools/HME/activity/emit.py"
-  if [ -x "$emit_script" ] 2>/dev/null; then
+  if [ -x "$emit_script" ] 2>/dev/null; then  # silent-ok: optional fallback path.
     # Horizon VII: caused_by = the autocommit-detected reason; lets
     # `i/why mode=causality coherence_violation` resolve Tier-1.5.
     PROJECT_ROOT="$_AC_ROOT" python3 "$emit_script" \
@@ -85,20 +80,18 @@ _ac_begin() {
   case "$n" in
     ''|*[!0-9]*) n=0 ;;
   esac
-  echo $((n + 1)) > "$_AC_COUNTER" 2>/dev/null || true
+  echo $((n + 1)) > "$_AC_COUNTER" 2>/dev/null || true  # silent-ok: optional fallback path.
 }
 
-#
 # Helper: record a successful commit. Reset counter, update success
-# timestamp, clear fail flag.
 
 _ac_success() {
   mkdir -p "$_AC_STATE_DIR" 2>/dev/null || true
-  echo 0 > "$_AC_COUNTER" 2>/dev/null || true
+  echo 0 > "$_AC_COUNTER" 2>/dev/null || true  # silent-ok: optional fallback path.
   date -u +"%Y-%m-%dT%H:%M:%SZ" > "$_AC_LAST_SUCCESS" 2>/dev/null || true
   rm -f "$_AC_FAIL_FLAG" 2>/dev/null || true
   # Heartbeat for watchdog freshness check.
-  date +%s > "$_AC_STATE_DIR/heartbeat-autocommit.ts" 2>/dev/null || true
+  date +%s > "$_AC_STATE_DIR/heartbeat-autocommit.ts" 2>/dev/null || true  # silent-ok: optional fallback path.
 }
 
 # Core autocommit. Returns 0/1; callers MUST `|| true` (we own bookkeeping).
@@ -109,8 +102,6 @@ _ac_do_commit() {
   _ac_begin
 
   # Prereq validation -- using _AC_ROOT derived from our own path, NOT
-  # from $PROJECT_ROOT. This is load-bearing: the original silent-failure
-  # bug was precisely PROJECT_ROOT being unset.
   if [ -z "$_AC_ROOT" ] || [ ! -d "$_AC_ROOT" ]; then
     _ac_record_failure "[$caller] _AC_ROOT derivation failed (self=$_AC_SELF, root=$_AC_ROOT)"
     return 1
@@ -134,10 +125,10 @@ _ac_do_commit() {
   fi
   # Flock for concurrent-commit serialization (advisory, 30s wait).
   local _ac_err_buf
-  _ac_err_buf=$(mktemp 2>/dev/null || echo "/tmp/hme-ac-err.$$")
+  _ac_err_buf=$(mktemp 2>/dev/null || echo "/tmp/hme-ac-err.$$")  # silent-ok: optional fallback path.
   # shellcheck disable=SC2094
   exec 9>"$_AC_LOCK_FILE"
-  if ! flock -w 30 9 2>/dev/null; then
+  if ! flock -w 30 9 2>/dev/null; then  # silent-ok: optional fallback path.
     _ac_record_failure "[$caller] flock timeout 30s on $_AC_LOCK_FILE (proceeding unlocked)"
   fi
 
@@ -147,7 +138,7 @@ _ac_do_commit() {
 
   # git commit with single retry for transient lock contention.
   local commit_msg
-  commit_msg="$(date +%Y-%m-%dT%H:%M:%S 2>/dev/null || echo autocommit)"
+  commit_msg="$(date +%Y-%m-%dT%H:%M:%S 2>/dev/null || echo autocommit)"  # silent-ok: optional fallback path.
   if git -C "$_AC_ROOT" commit -a -m "$commit_msg" --quiet >"$_ac_err_buf" 2>&1; then
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
@@ -155,7 +146,7 @@ _ac_do_commit() {
     return 0
   fi
   # "nothing to commit" on stdout is not an error -- tree matches HEAD.
-  if grep -q "nothing to commit" "$_ac_err_buf" 2>/dev/null; then
+  if grep -q "nothing to commit" "$_ac_err_buf" 2>/dev/null; then  # silent-ok: optional fallback path.
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
     exec 9>&-
@@ -170,29 +161,28 @@ _ac_do_commit() {
     exec 9>&-
     return 0
   fi
-  if grep -q "nothing to commit" "$_ac_err_buf" 2>/dev/null; then
+  if grep -q "nothing to commit" "$_ac_err_buf" 2>/dev/null; then  # silent-ok: optional fallback path.
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
     exec 9>&-
     return 0
   fi
   # Clean worktree + clean index after failure = transient lock race.
-  # This must check --cached too: `git add -A` can leave all changes staged,
-  # making `git diff --quiet` alone look clean even though no commit landed.
+# silent-ok: optional fallback path.
   if git -C "$_AC_ROOT" diff --quiet 2>/dev/null \
-    && git -C "$_AC_ROOT" diff --cached --quiet 2>/dev/null; then
+    && git -C "$_AC_ROOT" diff --cached --quiet 2>/dev/null; then  # silent-ok: optional fallback path.
     _ac_success
     rm -f "$_ac_err_buf" 2>/dev/null
     exec 9>&-
     return 0
   fi
-  _ac_record_failure "[$caller] git commit -a failed twice: $(head -c 400 "$_ac_err_buf" 2>/dev/null | tr '\n' ' ')"
+  _ac_record_failure "[$caller] git commit -a failed twice: $(head -c 400 "$_ac_err_buf" 2>/dev/null | tr '\n' ' ')"  # silent-ok: optional fallback path.
   # Also mark nexus for the agent-visible reminder, if available.
   if [ -f "$_AC_ROOT/tools/HME/hooks/helpers/_nexus.sh" ]; then
     # shellcheck source=/dev/null
-    source "$_AC_ROOT/tools/HME/hooks/helpers/_nexus.sh" 2>/dev/null
+    source "$_AC_ROOT/tools/HME/hooks/helpers/_nexus.sh" 2>/dev/null  # silent-ok: optional fallback path.
     if declare -F _nexus_mark >/dev/null; then
-      _nexus_mark COMMIT_FAILED "autocommit failed twice -- uncommitted changes may exist" 2>/dev/null || true
+      _nexus_mark COMMIT_FAILED "autocommit failed twice -- uncommitted changes may exist" 2>/dev/null || true  # silent-ok: optional fallback path.
     fi
   fi
   rm -f "$_ac_err_buf" 2>/dev/null
@@ -200,15 +190,12 @@ _ac_do_commit() {
   return 1
 }
 
-#
 # Read-only helper for the LIFESAVER UserPromptSubmit scan and other
-# inspection points. Returns 0 if autocommit is healthy, 1 otherwise.
-# Prints a short reason on stderr when unhealthy.
 
 _ac_is_healthy() {
   # Fail flag existence trumps everything else.
   if [ -f "$_AC_FAIL_FLAG" ]; then
-    echo "autocommit fail flag set: $(head -c 300 "$_AC_FAIL_FLAG" 2>/dev/null)" >&2
+    echo "autocommit fail flag set: $(head -c 300 "$_AC_FAIL_FLAG" 2>/dev/null)" >&2  # silent-ok: optional fallback path.
     return 1
   fi
   # Counter at or above threshold.

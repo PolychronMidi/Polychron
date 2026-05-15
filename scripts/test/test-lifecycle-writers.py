@@ -55,8 +55,6 @@ def main() -> int:
     # --- Test 3: correct-caller does NOT raise ---
     correct_pairs = [
         # Post-R98 split: daemon is a package, supervisor passes the bare
-        # "llamacpp_daemon" identifier (not __file__, which would resolve
-        # to `supervisor.py` and not match the registered owner stem).
         ("llama-server",        "llamacpp_daemon"),
         ("embedders",           "/path/to/tools/HME/service/rag_engines.py"),
         ("kb",                  "/path/to/server/tools_knowledge.py"),

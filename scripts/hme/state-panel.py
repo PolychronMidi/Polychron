@@ -130,19 +130,12 @@ def main(argv):
             pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 7. HCI score with multi-timescale phase view. A single delta throws
-    # away signal: HCI can dip this turn while rising over the day. The
-    # multi-horizon view (1m, 1h, 1d, peak) reveals the actual phase
-    # coherence -- analogous to a piano chord vs a single tone.
     snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if snap:
         hci = snap.get("hci", "?")
         n = len(snap.get("verifiers", {})) or snap.get("verifier_count", "?")
         # Horizon II maturity -- confidence dimension on HCI line.
-        # Min raw score across all verifiers = "weakest link" reading.
-        # If HCI is 90 but min=0.30, the average obscures a fragile
-        # member; if HCI is 90 and min=0.85, the score is genuinely
-        # uniform-strong.
         scores = [info.get("score", 0) for info in snap.get("verifiers", {}).values()
                   if isinstance(info.get("score"), (int, float))]
         min_score = min(scores) if scores else None
@@ -198,9 +191,6 @@ def main(argv):
                 segments.append(peak_str)
                 out.append(f"                     {' . '.join(segments)}")
         # Always check for PASS->non-PASS verifier flips, even when the
-        # aggregate HCI hasn't dropped (a single FAIL can be offset by
-        # gains elsewhere; the flipped verifier still matters). Diff
-        # current vs .prev snapshot for direct causality.
         prev_snap = _read_json(
             os.path.join(PROJECT_ROOT, "output", "metrics",
                          "hci-verifier-snapshot.json.prev")
@@ -231,10 +221,6 @@ def main(argv):
             pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 8b. Agent-loop-quality verifier (Horizon IV asymptote-deepening).
-    # Read the latest snapshot's status for the agent-loop-quality
-    # verifier and surface inline. The verifier reads the activity log;
-    # exposing its verdict here means the agent's own loop-quality is
-    # visible alongside the state machines it operates within.
     snap2 = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                     "hci-verifier-snapshot.json"))
     if snap2:
@@ -246,9 +232,6 @@ def main(argv):
             out.append(f"  agent-loop {marker}      {status}  score={score:.2f}  (i/status mode=agent-loop for detail)")
 
     # 9. Last hot-reload -- auto-reload fires on .py edits under
-    # tools/HME/service/server/ but is otherwise silent. Surfacing it
-    # here means an agent can confirm "the code I just edited is
-    # loaded" without firing `i/hme admin action=reload` redundantly.
     reload_marker = os.path.join(PROJECT_ROOT, "tmp", "hme-last-reload.json")
     reload_info = _read_json(reload_marker)
     if reload_info:
@@ -265,8 +248,6 @@ def main(argv):
             pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 10. Pending KB draft -- visibility for the auto-suggest after
-    # STABLE/EVOLVED verdict. Without surfacing it, drafts written by
-    # posttooluse_bash sit unread.
     draft_path = os.path.join(PROJECT_ROOT, "tmp", "hme-learn-draft.json")
     if os.path.isfile(draft_path):
         try:

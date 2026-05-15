@@ -104,7 +104,6 @@ MotifComposer = class MotifComposer {
       length = this.length;
     }
 
-    // Prefer developFromComposer if provided in call, else fall back to instance-level composer
     let developer = null;
     if (optsAny.developFromComposer !== undefined) {
       if (!optsAny.developFromComposer) throw new Error('MotifComposer.generate: developFromComposer option must implement getNotes()');
@@ -154,7 +153,6 @@ MotifComposer = class MotifComposer {
     const seq = [];
     const lastNotes = [];
 
-    // If developer provides a note feed, cycle through its notes with octave normalization
     let devNotes = null;
     if (developer) {
       devNotes = developer.getNotes();
@@ -190,7 +188,6 @@ MotifComposer = class MotifComposer {
         if (seedMatch !== undefined) { chosen = seedMatch; seq.push({ note: chosen, duration: 1 }); lastNotes.push(chosen); continue; }
       }
 
-      // Prefer notes from developer feed when available, but constrain to scale candidates
       if (devNotes && devNotes.length > 0) {
         const n = devNotes[i % devNotes.length];
         const devNote = Number.isFinite(n && n.note) ? n.note : (Number.isFinite(n) ? n : 60);
@@ -221,7 +218,6 @@ MotifComposer = class MotifComposer {
             }
           }
           const voiceOpts = Object.assign({ register: 'soprano' }, intent || {});
-          // targetLayer should be an object (motifLayer preferred, otherwise measureComposer)
           let targetLayer;
           if (motifLayer && typeof motifLayer === 'object') {
             targetLayer = motifLayer;

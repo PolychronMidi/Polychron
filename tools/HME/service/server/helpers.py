@@ -72,8 +72,6 @@ def get_context_budget() -> str:
         remaining = 50
 
     # Session intent adjustment (soft signal -- safe to skip if session module
-    # isn't loaded yet, but we surface parse/attribute errors at debug so they
-    # don't silently persist).
     try:
         from tools_analysis import get_session_intent
         intent = get_session_intent()
@@ -85,11 +83,6 @@ def get_context_budget() -> str:
         logger.debug(f"session intent unavailable: {type(_intent_err).__name__}")
 
     # Scaling only kicks in below 25% remaining. Above that, greedy is correct:
-    # the 30B local model comfortably produces 8K output and Claude's
-    # auto-compact doesn't fire until ~5-15% remaining anyway, so throttling
-    # local synthesis at 75%/50% was cutting signal for no real reason.
-    # The tiered decay below is compressed into the bottom quartile where
-    # Claude's context is actually tight and compaction is imminent.
     if remaining > 25:
         return "greedy"
     elif remaining > 15:
@@ -116,7 +109,6 @@ def fmt_score(score) -> str:
         return "?"
     if score <= 0:
         return "0%"
-    # Sigmoid maps raw logits to [0,1]: logit 9 -> ~100%, logit 2 -> ~88%, logit 0.1 -> ~52%
     sig = 1.0 / (1.0 + math.exp(-float(score)))
     return f"{sig:.0%}"
 
@@ -129,7 +121,6 @@ def fmt_sim_score(score) -> str:
 
 
 def format_knowledge_results(results: list[dict], label: str, min_score: float = 0.01) -> list[str]:
-    # Filter out zero-score results -- these are negative cross-encoder scores clamped to 0,
     # meaning the entry is irrelevant to this query. Showing them is pure noise.
     results = [r for r in results if r.get("score", 0) >= min_score]
     if not results:

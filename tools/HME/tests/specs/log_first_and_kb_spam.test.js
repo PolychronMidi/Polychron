@@ -37,6 +37,7 @@ echo "EXIT_CODE=$?"
     const out = execFileSync('bash', ['-c', script], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     return { ok: true, out };
   } catch (e) {
+    // silent-ok: optional fallback path.
     return { ok: false, out: (e.stdout || '') + (e.stderr || ''), code: e.status };
   }
 }

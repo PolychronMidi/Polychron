@@ -66,9 +66,6 @@ moduleLifecycle.declare({
     const saturated = Boolean(attr.floored || attr.capped);
 
     // Width-aware crush threshold: wider pipelines naturally produce higher
-    // consensus ratios because more independent signals are likely to agree
-    // on direction. Base threshold 0.40 adjusts up by 1% per contributor
-    // beyond 10, capped at 0.58.
     const widthAdjust = m.max(0, (total - 10) * 0.01);
     const crushThreshold = m.min(0.58, 0.40 + widthAdjust);
 
@@ -176,9 +173,6 @@ moduleLifecycle.declare({
    */
   function getSummary() {
     const b = m.max(1, beatsSeen);
-    // Recompute trust from the final trust scores - the per-beat signalHealthAnalyzerLastHealth.trust
-    // can be stale because the recorder runs before crossLayerBeatRecord registers
-    // the current beat's outcomes.
     const freshTrust = signalHealthAnalyzerAnalyzeTrust();
     const freshOverall = signalHealthAnalyzerOverallGrade([
       signalHealthAnalyzerLastHealth.density.grade,

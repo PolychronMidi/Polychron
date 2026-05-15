@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME PostToolUse: Bash -- background file tracking + Evolver phase triggers + nexus state
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../helpers/_tab_helpers.sh"
 source "$SCRIPT_DIR/../helpers/_nexus.sh"
@@ -14,20 +13,10 @@ BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 [[ -n "$BG_FILE" ]] && _append_file_to_tab "$BG_FILE"
 
 # Background-stub resolution: if Bash auto-backgrounded this command, swap
-# the "Command running in background with ID: X" stub in .tool_response
-# for the real task-output content (short synchronous wait). Every
-# sub-hook dispatched below inherits the resolved INPUT, so review /
-# learn / review / etc. see real output instead of the stub. The proxy
-# middleware background_dominance.js handles the same resolution on the
-# API-stream side for the model -- two complementary layers.
 _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub.sh" 10 "" || true)
 [ -n "$_RESOLVED" ] && INPUT="$_RESOLVED"
 
 # Dispatch HME shell-command post-processors. These used to be triggered via
-# hooks.json matchers on mcp__HME__{learn,read,review} back when HME was an
-# MCP server; now HME tools run as Bash(i/<tool>) commands and the
-# dispatch happens here. Each handler reads stdin (the same hook JSON) and
-# returns additionalContext / systemMessage / permissionDecisionReason.
 if echo "$CMD" | grep -qE '(^|[[:space:]/])i/learn\b|scripts/hme-cli\.js learn\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_addknowledge.sh" || true
 fi
@@ -37,14 +26,9 @@ fi
 
 if echo "$CMD" | grep -q 'npm run main'; then
   _signal_emit pipeline_finished posttooluse_bash pipeline "{\"exit_code\":$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // 0' '0')}"
-  # ANTI-STOP: when the pipeline fails at lint/typecheck, diagnose and fix without pausing.
-  # Stopping after a failure -- asking, summarizing, or waiting -- is the psychopathic antipattern.
-  # Review warnings are NEVER ignorable: fix every one before proceeding.
   EXIT_CODE_CHECK=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
   if [ "$EXIT_CODE_CHECK" != "0" ]; then
     # Extract the first ERROR line from tool_response for the diagnose hint so
-    # the agent has a concrete query to paste into i/trace. Fall back to a
-    # generic hint if no error line is surfacable.
     _FIRST_ERR=$(_safe_jq "$INPUT" '.tool_response' '' \
       | grep -iE '^[^#]*(error|exception|failed|traceback):' \
       | head -1 | sed 's/^[[:space:]]*//' | cut -c1-180)
@@ -65,8 +49,6 @@ ANTIMSG
     _onb_advance_to piped
   fi
   # LIFESAVER: Scan pipeline summary for errors in non-fatal steps.
-  # These are real failures (Traceback, CUDA OOM, RuntimeError) that the
-  # pipeline continued past. They MUST be addressed -- not ignored.
   PROJECT="$PROJECT_ROOT"
   SUMMARY_FILE="$PROJECT/output/metrics/pipeline-summary.json"
   if [ -f "$SUMMARY_FILE" ]; then
@@ -102,11 +84,6 @@ ERRMSG
     fi
   fi
   # HCI computation + background analytics (snapshot-holograph, dashboard,
-  # chain-snapshot, tool-effectiveness, trajectory, coupling matrix,
-  # memetic-drift, verifier-coverage) now live in main-pipeline.js itself.
-  # That makes them agent-independent: shell, CI, cron, or any other agent
-  # running `npm run main` gets the same side-effects the hook-gated path
-  # used to provide. Hook only echoes the terminal summary now.
   PIPELINE_VERDICT=$(_safe_py3 "import json; print(json.load(open('$SUMMARY_FILE')).get('verdict','?'))" '?')
   PIPELINE_WALL=$(_safe_py3 "import json; d=json.load(open('$SUMMARY_FILE')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
   PIPELINE_HCI=$(_safe_py3 "import json; d=json.load(open('$SUMMARY_FILE')); print(d.get('hci','') or '')" '')
@@ -128,9 +105,6 @@ if echo "$CMD" | grep -q 'npm run main'; then
     VERDICT=$(_safe_py3 "import json; print(json.load(open('$FP')).get('verdict','UNKNOWN'))" "UNKNOWN")
     WALL_S=$(_safe_py3 "import json; d=json.load(open('$PROJECT/output/metrics/pipeline-summary.json')); print(int(d.get('wallTimeSeconds',0)))" "0")
     # pipeline_run + round_complete + HCI are all emitted by main-pipeline.js
-    # itself -- agent-independent observability. The hook no longer needs to
-    # re-emit. It still owns nexus + onboarding state advancement below
-    # because those are tied to Claude's Bash-tool invocation context.
     if [ "$PASSED" = "0" ]; then
       _nexus_mark PIPELINE "$VERDICT"
       _nexus_clear_type COMMIT
@@ -139,18 +113,13 @@ if echo "$CMD" | grep -q 'npm run main'; then
           _onb_advance_to verified
         fi
         # Auto-suggest a KB entry: write a draft to tmp/ that the agent
-        # can accept with `i/learn action=add accept_draft=true`. Keeps
-        # the KB growing as a side-effect of completed rounds without
-        # making the agent invent the wording from scratch.
         if [ -x "$PROJECT/scripts/hme/draft-learn.py" ]; then
           DRAFT_PATH="$PROJECT/tmp/hme-learn-draft.json"
           PROJECT_ROOT="$PROJECT" python3 "$PROJECT/scripts/hme/draft-learn.py" \
             --verdict="$VERDICT" --session="$SESSION_ID" --out="$DRAFT_PATH" \
             >/dev/null 2>&1 && \
             echo "[hme-learn] $VERDICT verdict -- KB draft written to tmp/hme-learn-draft.json. Accept with: i/learn action=add accept_draft=true" >&2
-          # Horizon VII instrumentation: emit kb_draft_written event with
-          # caused_by = the verdict that triggered the draft. Lets
-          # `i/why mode=causality kb_draft_written` resolve via Tier-1.5.
+          # emit kb_draft_written event with
           if [ -x "$PROJECT/tools/HME/activity/emit.py" ]; then
             PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/emit.py" \
               --event=kb_draft_written \
@@ -168,12 +137,6 @@ if echo "$CMD" | grep -q 'npm run main'; then
 fi
 
 # Nexus: track git commits made via the Bash tool.
-# (Auto-fire i/review on commit was MOVED to autocommit-direct.sh -- this
-# hook only fires when the user manually runs `git commit` via Bash, which
-# is rare. Autocommits go through autocommit-direct.sh, which now detects
-# HEAD movement post-commit and fires the same review autofire there. So
-# review reliably triggers on EVERY commit regardless of how it was made,
-# instead of the prior 3-day silent-skip.)
 if echo "$CMD" | grep -qE '^git commit'; then
   EXIT_CODE=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
   # Use _safe_jq (fail-loud) for tool_response extraction instead of raw jq

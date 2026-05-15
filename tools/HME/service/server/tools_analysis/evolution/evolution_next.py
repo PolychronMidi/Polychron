@@ -219,7 +219,6 @@ def evolution_momentum() -> str:
             logger.debug(f"out.append: {type(_err1).__name__}: {_err1}")
 
     #  4. Subsystem receptivity from journal
-    # Split into lines for +/-5-line window search (subsystem name and verdict rarely co-occur on same line)
     journal_lines = journal_text.splitlines()
     subsystem_counts: dict[str, dict[str, int]] = {}
     _VERDICT_PAT = _re.compile(r'\b(STABLE|EVOLVED|LEGENDARY|stable|evolved|legendary)\b')
@@ -278,7 +277,6 @@ def evolution_momentum() -> str:
             out.append("")
 
     result = "\n".join(out)
-    # Cap at 4000 chars (~1000 tokens) -- momentum is a strategic summary, not a data dump
     if len(result) > 4000:
         result = result[:4000] + f"\n*(truncated -- {len(result) - 4000} chars omitted for token budget)*"
     return result

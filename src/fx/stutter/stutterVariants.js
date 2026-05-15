@@ -122,9 +122,7 @@ moduleLifecycle.declare({
     lastBeat = beatIndex;
     patternStepIndex = 0;
 
-    // R18: pattern gating legendary across all profiles/regimes/densities.
-    // R19: uses full patterns.js selection. Activation scales with composite
-    // intensity - sparse passages get fewer patterns, climactic sections more.
+    // pattern gating legendary across all profiles/regimes/densities.
     const sigs = conductorSignalBridge.getSignals();
     const compositeIntensity = sigs ? clamp(V.optionalFinite(sigs.compositeIntensity, 0.5), 0, 1) : 0.5;
     const patternActivationProb = clamp(0.55 + compositeIntensity * 0.35, 0.45, 0.90);
@@ -198,9 +196,7 @@ moduleLifecycle.declare({
     const activeLayer = /** @type {string} */ (safePreBoot.call(() => LM.activeLayer, 'L1'));
     const artProfile = articulationComplement.getArticulationProfile(activeLayer);
 
-    // R21: harmonic journey distance biases variant character.
-    // Near home = subtle variants, far = dramatic
-    // R30 lab: continuous excursion from L0 harmonic channel for smoother gradient
+    // harmonic journey distance biases variant character.
     const JOURNEY_SUBTLE = { ghostStutter: 1.4, echoTrail: 1.3, harmonicShadow: 1.2, rhythmicGrid: 1.1 };
     const JOURNEY_DRAMATIC = { octaveCascade: 1.5, machineGun: 1.3, stutterSwarm: 1.4, directionalOscillation: 1.3, stutterTremolo: 1.2, convergenceBurst: 1.3, stereoScatter: 1.2 };
     const harmonicEntry = L0.getLast(L0_CHANNELS.harmonic, { layer: 'both' });
@@ -212,7 +208,7 @@ moduleLifecycle.declare({
     const PHRASE_BOUNDARY_WEIGHTS = { decayingBounce: 2.0, machineGun: 1.5, rhythmicGrid: 1.3 };
     const atPhraseBoundary = Number.isFinite(phraseProgress) && phraseProgress > 0.88;
 
-    // R24: stutter call-response - other layer's last variant biases this layer's selection
+    // stutter call-response - other layer's last variant biases this layer's selection
     const crLayer = /** @type {string} */ (safePreBoot.call(() => LM.activeLayer, 'L1'));
     const crOtherLayer = crossLayerHelpers.getOtherLayer(crLayer);
     const otherLastVariant = lastVariantPerLayer[crOtherLayer];
@@ -226,7 +222,6 @@ moduleLifecycle.declare({
     const entropyReversal = entropyDelta > 0.12;
     const ENTROPY_REVERSAL_WEIGHTS = { machineGun: 2.0, stutterSwarm: 1.8, octaveCascade: 1.6, stutterTremolo: 1.5 };
 
-    // R24: coupling label reactive stutter - system's self-description drives variant character
     const COUPLING_LABEL_WEIGHTS = {
       'rhythmic-shimmer': { stereoWidthModulation: 2.0, ghostStutter: 1.8, flickerStutter: 1.5 },
       'agitated-tension': { machineGun: 1.8, tensionStutter: 2.0, stutterTremolo: 1.5, alienArpeggio: 1.6 },
@@ -257,7 +252,6 @@ moduleLifecycle.declare({
     const emergentComplexity = emergentEntry && Number.isFinite(emergentEntry.complexity) ? emergentEntry.complexity : 0.5;
     const emergentActive = emergentDensity > 0.06;
 
-    // R54: melodic context (12th signal dimension) -- contour, freshness, tessiture, counterpoint
     const melodicWeights = /** @type {Record<string, number>} */ (emergentMelodicEngine.getMelodicWeights());
 
     // R25: self-balancing - inverse-frequency boost for underrepresented variants

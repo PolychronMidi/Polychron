@@ -27,9 +27,6 @@ from __future__ import annotations
 import re
 
 # (b)-clause rescue patterns. Bidirectional scan: justifications can
-# appear before the deferral phrase ("Not doing this is the right call ...
-# pre-existing complexity") OR after ("pre-existing -- duplicates the
-# existing audit"). Use _b_clause_window to scan both directions.
 B_CLAUSE_RES = (
     # explicit "not doing X is the right (call|move|thing|choice)"
     re.compile(
@@ -69,13 +66,11 @@ B_CLAUSE_RES = (
     ),
     # explicit "(b)-clause" / "(b)" label
     re.compile(r"\(b\)[\s-]*clause\b", re.IGNORECASE),
-    # "would (be|require) (a |an )?(unrelated|out-of-scope|breaking|destructive|risky|unsafe)"
     re.compile(
         r"\bwould\s+(be|require)\s+(an?\s+)?"
         r"(unrelated|out-of-scope|breaking|destructive|risky|unsafe)\b",
         re.IGNORECASE,
     ),
-    # "shouldn't (do|fix|touch|change|modify) [...] because"
     re.compile(
         r"\b(shouldn'?t|should\s+not|won'?t)\s+"
         r"(do|fix|touch|change|modify|implement)\s+(this|that|it)\b"

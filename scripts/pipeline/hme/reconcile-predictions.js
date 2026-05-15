@@ -31,10 +31,6 @@ function loadPredictions() {
 
 function extractShiftedModules() {
   // Use git diff to find actually-changed source modules this round.
-  // fingerprint-comparison.json tracks acoustic dimensions (pitchEntropy etc.),
-  // not code modules -- it can't tell us which JS modules were edited.
-  // Git diff gives us the ground truth: which src/ files changed in the last
-  // 2 commits (generate-predictions runs before the commit, so we look back 2).
   const { execSync } = require('child_process');
   const shifted = new Set();
   const toModule = (p) => {
@@ -70,15 +66,7 @@ function main() {
 
   const shifted = extractShiftedModules();
 
-  // R13: Only score predictions from THIS round. Previously every prediction
-  // in the jsonl (accumulated across 200-record truncation window = ~10 past
-  // rounds) was compared against current round's git diff, producing wildly
-  // over-weighted refuted counts. A prediction made 5 rounds ago for a
-  // different commit shouldn't score against this commit's changes.
-  //
-  // Current-round window: predictions whose ts is >= the most recent
-  // round_complete's ts in the activity log. Falls back to "last 30 minutes"
-  // if the activity log is unavailable (prevents accidental full-history scan).
+  // Only score predictions from THIS round. Previously every prediction
   const CURRENT_ROUND_WINDOW_MS = 30 * 60 * 1000;
   let windowStart = Date.now() - CURRENT_ROUND_WINDOW_MS;
   try {
@@ -92,9 +80,6 @@ function main() {
           const e = JSON.parse(line);
           if (e.event === 'round_complete' && e.verdict && e.ts) {
             // Prior round's round_complete marks the start of THIS round's window.
-            // Since this reconcile runs inside the new round but before that
-            // round_complete fires, the most recent verdict-bearing round_complete
-            // is the prior round's.
             windowStart = Number(e.ts) * 1000;
             break;
           }
@@ -151,17 +136,6 @@ function main() {
 
   const total = confirmed.length + refuted.length;
   // R17 #2: Accuracy vs recall trade-off -- intentional asymmetry.
-  //   accuracy (precision) = confirmed / (confirmed + refuted)
-  //   recall              = confirmed / shifted
-  // depth-1 predictions include ALL direct consumers of the edited file.
-  // Typically only a subset get edited in the same round, so `refuted` count
-  // stays moderate (4-15 per edit) while `recall` should hit 1.0 when the
-  // cascade direction is correct. Low recall = structural bug (fixed R14);
-  // low accuracy = normal over-prediction that reflects dependency breadth,
-  // NOT a cascade bug. Target: recall >= 0.8, accuracy >= 0.3.
-  // R15 #9: When no modules shifted this round, predictions can't be scored --
-  // refuted count is misleading (those predictions may be valid, just untested
-  // this round). Flag as skipped so metrics aren't polluted by untestable zeros.
   const shiftedCount = shifted.size;
   const skipped = shiftedCount === 0;
   const accuracy = skipped ? null : (total > 0 ? confirmed.length / total : null);
@@ -224,8 +198,6 @@ function main() {
   fs.writeFileSync(ACCURACY_OUT, JSON.stringify(updated, null, 2) + '\n');
 
   // Feed missed modules back as learning signal: append them to the predictions
-  // log tagged source=missed_prediction so future reconcile rounds can track
-  // whether the cascade model learns to predict these over time.
   if (missed.length > 0) {
     try {
       const missedRecord = JSON.stringify({
@@ -241,10 +213,6 @@ function main() {
   }
 
   // Truncate predictions log so the next round starts fresh. Cap at 50 lines
-  // -- previously 200 but with depth=1 producing ~2-5 records per round, that's
-  // 20-40 rounds of history. predictions-log-gap-bounded requires gap<100, so
-  // 50 keeps us well under (and still enough for debug traceback across a
-  // handful of rounds).
   const LOG_CAP = 50;
   try {
     const raw = fs.readFileSync(PREDICTIONS, 'utf8');

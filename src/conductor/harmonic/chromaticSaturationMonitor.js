@@ -33,8 +33,6 @@ moduleLifecycle.declare({
     const saturation = count / 12;
 
     // Density bias: under-saturated - encourage more variety (slight density boost),
-    // over-saturated - restrain (slight density reduction)
-    // Sweet spot around 5-8 pitch classes (typical diatonic range)
     let densityBias = 1;
     if (count <= 3) {
       densityBias = 1.08; // very narrow - nudge toward more notes
@@ -53,14 +51,7 @@ moduleLifecycle.declare({
     return getSaturationSignal().densityBias;
   }
 
-  // R27 E3: Tension bias from chromatic saturation. High chromatic
-  // saturation (>=10 PCs) signals harmonic adventurousness and should
-  // accompany elevated tension. Low saturation (<=2) signals tonal
-  // simplicity and reduced tension. Cross-domain harmonic->tension pathway.
-  // R28 E3: Raised low-PC threshold from <=3 to <=2. In R27, saturation at
-  // 0.95 (low) combined with rhythmicComplexityGradient (0.95) and
-  // intervalExpansionContractor (0.96) over-dampened tension. Narrowing to
-  // <=2 means only very sparse pitch material triggers tension reduction.
+  // Tension bias from chromatic saturation. High chromatic
   /**
    * Get tension multiplier from chromatic saturation level.
    * @returns {number}

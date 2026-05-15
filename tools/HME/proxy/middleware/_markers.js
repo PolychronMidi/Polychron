@@ -31,8 +31,6 @@
 
 const MARKERS = {
   // Subagent dispatch sentinel -- synthesis_reasoning.py emits, the agent
-  // (or i/thread send) executes, subagent_bridge.js captures the result
-  // when Agent path is used.
   HME_AGENT_TASK: {
     producer: 'tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py',
     consumers: [
@@ -44,8 +42,6 @@ const MARKERS = {
   },
 
   // Review verdict -- onboarding_chain.emit_review_verdict_marker writes
-  // an HTML-style comment that posttooluse_hme_review.sh greps to clear
-  // EDIT-NEXUS state. Drift in either side hangs the stop chain.
   HME_REVIEW_VERDICT: {
     producer: 'tools/HME/service/server/onboarding_chain.py',
     consumers: ['tools/HME/hooks/posttooluse/posttooluse_hme_review.sh'],
@@ -53,9 +49,6 @@ const MARKERS = {
   },
 
   // Footer markers added by enrichment middleware. context_budget.js
-  // tracks which fired by regex-matching these in tool result content.
-  // Full repo-relative paths are required so audit-marker-registry.py
-  // can grep-check the sentinel literal against each producer source.
   HME_DIR: {
     producer: 'tools/HME/proxy/middleware/11_dir_context.js',
     consumers: ['tools/HME/proxy/middleware/17_context_budget.js'],
@@ -95,13 +88,6 @@ const MARKERS = {
   },
 
   // Scaffolding-warning prefixes -- the "detect scaffolding-only warnings
-  // and treat verdict as clean" convention. Three sites use the same
-  // alternation `(HOOK CHANGE|DOC CHECK|SKIPPED|KB):`. Iter 120 peer-
-  // review noted that a single-needle registry entry would miss a drop
-  // (e.g. one site removes SKIPPED but the registry only checks for it).
-  // Per-term entries force the verifier to confirm ALL FOUR alternation
-  // members survive in ALL THREE sites -- drop one anywhere, verifier
-  // breaks.
   HME_SCAFFOLD_HOOK_CHANGE: {
     producer: 'tools/HME/service/server/tools_analysis/review_unified.py',
     consumers: [
@@ -128,9 +114,6 @@ const MARKERS = {
   },
 
   // Detector verdict names -- produced by run_all.py's per-detector
-  // printout, consumed by detectors.sh's case statement. Rename of
-  // any one side silently defaults downstream gates to "ok". Needle
-  // `psycho_stop=` uniquely identifies the verdict-print format.
   DETECTOR_VERDICTS: {
     producer: 'tools/HME/scripts/detectors/run_all.py',
     consumers: ['tools/HME/hooks/lifecycle/stop/detectors.sh'],
@@ -138,13 +121,6 @@ const MARKERS = {
   },
 
   // Self-origin error tags -- added per peer-review iter 130's
-  // observation that hme-errors.log mixes worker/daemon/supervisor
-  // failures with agent failures. lifesaver.sh now classifies by
-  // these tags to demote self-origin entries to reveal-register
-  // (no block). If a writer changes its tag without updating the
-  // classifier, the agent gets demand-register blocks for self-
-  // health issues again. Verifier checks each tag appears in BOTH
-  // its emitter and the lifesaver classifier.
   HME_SELFORIGIN_PULSE: {
     producer: 'tools/HME/activity/universal_pulse.py',
     consumers: ['tools/HME/hooks/lifecycle/stop/lifesaver.sh'],

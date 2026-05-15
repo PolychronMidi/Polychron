@@ -70,9 +70,6 @@ def status(mode: str = "all") -> str:
         logger.debug(f'silent-except status_unified next-actions: {type(_na_err).__name__}: {_na_err}')
 
     # Arc III: Legendary state drift -- preemptive detection from inverse
-    # reasoning. If current state drifted >2sigma from legendary envelope, the
-    # outliers name the exact dimensions that departed. Appears above pattern
-    # matches because drift is the signal patterns react to.
     try:
         import json as _json_drift
         _drift_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-legendary-drift.json")
@@ -105,8 +102,6 @@ def status(mode: str = "all") -> str:
         logger.debug(f'silent-except status_unified drift: {type(_drift_err).__name__}: {_drift_err}')
 
     # Arc II: Matched patterns -- the MOST actionable surface in status output.
-    # Each match names a specific action script. Sits at the top because if
-    # any pattern fires, THAT is what the next turn should address.
     try:
         import json as _json_pat
         _pat_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-pattern-matches.json")
@@ -127,9 +122,6 @@ def status(mode: str = "all") -> str:
         logger.debug(f'silent-except status_unified patterns: {type(_pat_err).__name__}: {_pat_err}')
 
     # Arc IV: Meta-measurement efficacy summary. Surfaces which invariants
-    # earn their place (cited in commits) vs which are decorative/flappy.
-    # Sits above consensus because it affects how we INTERPRET the consensus
-    # (low invariant efficacy = invariants voter is less trustworthy).
     try:
         import json as _json_eff
         _eff_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-invariant-efficacy.json")
@@ -176,8 +168,6 @@ def status(mode: str = "all") -> str:
         logger.debug(f'silent-except status_unified consensus: {type(_con_err).__name__}: {_con_err}')
 
     # R17 #9: Legacy-override retirement summary. One-line status: N active,
-    # N retired (with IDs + round), N keepers. Surfaces the data-driven migration
-    # state of the hypermeta allowlist at a glance.
     try:
         import json as _json_ret
         _retire_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "legacy-override-retirement-log.jsonl")
@@ -295,6 +285,7 @@ def status(mode: str = "all") -> str:
         pipeline = _cp()
         parts.append(f"## Pipeline\n  {pipeline}")
     except Exception as e:
+        # silent-ok: optional fallback path.
         parts.append(f"## Pipeline\n  Error: {e}")
 
     # System health (selftest)
@@ -303,6 +294,7 @@ def status(mode: str = "all") -> str:
         selftest = _st()
         parts.append(selftest)
     except Exception as e:
+        # silent-ok: optional fallback path.
         parts.append(f"## Self-Test\n  Error: {e}")
 
     # Auto-warm if stale contexts detected
@@ -361,6 +353,7 @@ def status(mode: str = "all") -> str:
             total = sum(t["daily_limit"] for t in g["tiers"])
             lines.append(f"    gemini:     {used:,}/{total:,} tok today across {len(g['tiers'])} tiers")
         except Exception as _qe:
+            # silent-ok: optional fallback path.
             lines.append(f"    gemini:     quota unavailable ({type(_qe).__name__})")
         try:
             from ..synthesis.synthesis_groq import get_quota_status as _grs
@@ -369,12 +362,14 @@ def status(mode: str = "all") -> str:
             total = sum(t["rpd_limit"] for t in gr["tiers"])
             lines.append(f"    groq:       {used}/{total} req today across {len(gr['tiers'])} tiers")
         except Exception as _qe:
+            # silent-ok: optional fallback path.
             lines.append(f"    groq:       quota unavailable ({type(_qe).__name__})")
         try:
             from ..synthesis.synthesis_openrouter import get_quota_status as _ors
             o = _ors()
             lines.append(f"    openrouter: {o['requests_today']}/{o['rpd_limit']} req today (shared)")
         except Exception as _qe:
+            # silent-ok: optional fallback path.
             lines.append(f"    openrouter: quota unavailable ({type(_qe).__name__})")
 
         if not any_up:

@@ -33,9 +33,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 
 # Load detector list from registry.json (single source of truth).
-# Dedup by bash_var: registry has multiple entries per detector module
-# (one per fires_when verdict), but run_all.py only needs to invoke each
-# python module once per turn -- the module prints whichever verdict applies.
 def _load_detectors():
     with open(os.path.join(os.path.dirname(__file__), "registry.json")) as f:
         reg = json.load(f)
@@ -47,8 +44,6 @@ def _load_detectors():
             continue
         seen_bash_vars.add(bv)
         # Use the bash_var lowercased as the verdict-line key so detectors.sh
-        # parses with `case "$_k" in <var_lower>) BV="$_v" ;;`. For poll_count
-        # / idle_after_bg this is the same as the python module name.
         verdict_key = bv.lower()
         out.append((verdict_key, d["module"]))
     return out

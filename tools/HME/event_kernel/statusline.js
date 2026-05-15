@@ -25,6 +25,7 @@ function latestClassifier(root) {
     const rec = JSON.parse(text);
     return ` | ${rec.mode || '?'}` + (rec.tier ? ` ${rec.tier}` : '');
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return '';
   }
 }
@@ -70,6 +71,7 @@ async function main() {
     const label = model.display_name || model.id || '';
     process.stdout.write(`ctx:${remainingPct}%${label ? ` | ${label}` : ''}${latestClassifier(root)}\n`);
   } catch (_e) {
+    // silent-ok: optional fallback path.
     process.stdout.write('ctx:?\n');
   }
 }

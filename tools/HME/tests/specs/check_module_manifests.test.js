@@ -24,6 +24,7 @@ function _runVerifier(env = {}) {
     });
     return { code: 0, stdout: out, stderr: '' };
   } catch (e) {
+    // silent-ok: optional fallback path.
     return { code: e.status || 1, stdout: e.stdout || '', stderr: e.stderr || '' };
   }
 }

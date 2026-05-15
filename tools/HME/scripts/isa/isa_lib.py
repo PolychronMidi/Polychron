@@ -44,8 +44,6 @@ SECTIONS = (
 )
 
 # Tier completeness gate -- which sections MUST be populated at each tier.
-# E1 is the fast lane; E5 requires the full surface. Drawn directly from
-# PAI v6.3.0; calibrated against Polychron's existing audit posture.
 TIER_REQUIRED = {
     "E1": {"Goal", "Criteria"},
     "E2": {"Problem", "Goal", "Criteria", "Test Strategy"},
@@ -57,11 +55,6 @@ TIER_REQUIRED = {
 
 _SECTION_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 # ISC status accepts three shapes:
-#   [ ] unverified
-#   [x] verified
-#   [DEFERRED-VERIFY:<task-id>] live probe genuinely impossible at execution
-#       time; the linked task carries the deferred verification claim
-# The status-capture group is widened accordingly.
 _ISC_RE = re.compile(
     r"^\s*-\s*\[(?P<status>[ x]|DEFERRED-VERIFY:[A-Za-z0-9._\-]+)\]\s*"
     r"(?P<id>ISC-[0-9]+(?:\.[0-9]+)?)"

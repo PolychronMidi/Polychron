@@ -164,7 +164,6 @@ def convention_check(file_path: str) -> str:
         for dr in CROSSLAYER_BOUNDARY_VIOLATIONS:
             if dr in content and "conductorSignalBridge" not in content:
                 issues.append(f"BOUNDARY: Uses '{dr}' without conductorSignalBridge. Route through bridge.")
-    # Coupling firewall: .couplingMatrix reads only allowed in coupling engine, meta-controllers, profiler, diagnostics, pipeline
     if ".couplingMatrix" in content:
         if not any(ap in rel_path for ap in COUPLING_MATRIX_EXEMPT_PATHS):
             if any(lp in rel_path for lp in COUPLING_MATRIX_LEGACY_PATHS):
@@ -184,7 +183,6 @@ def convention_check(file_path: str) -> str:
         stamp_match = _re.search(r"validator\.create\(['\"](\w+)['\"]\)", content)
         if stamp_match and stamp_match.group(1) != fname:
             issues.append(f"CONVENTION: Validator stamp '{stamp_match.group(1)}' doesn't match filename '{fname}'.")
-    # console.warn format -- must be 'Acceptable warning: ...'
     warn_matches = re.findall(r'console\.warn\(([^\)]+)\)', content)
     for wm in warn_matches:
         if "Acceptable warning:" not in wm:

@@ -64,8 +64,6 @@ class AutocommitHealthVerifier(Verifier):
                 issues.append(f"counter file unreadable: {e}")
             else:
                 # Empty-file and non-numeric content are separate real
-                # states, not the same "0". Treat empty as "never written"
-                # (benign, skip) and non-numeric as a hard parse error.
                 if not raw:
                     pass
                 else:
@@ -78,9 +76,6 @@ class AutocommitHealthVerifier(Verifier):
                             issues.append(f"attempt counter at {n} (>=3 attempts without success)")
 
         # 3. Last-success freshness -- if the repo has a .git and history
-        # of autocommits, the last-success file should not be far older
-        # than a day in active use. Missing entirely is tolerated (fresh
-        # clone, pre-first-commit state).
         if os.path.isfile(last_ok_file):
             try:
                 with open(last_ok_file) as f:

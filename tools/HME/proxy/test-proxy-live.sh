@@ -21,8 +21,8 @@ source "$PROJECT_ROOT/.env"
 set +a
 
 cleanup() {
-  [ -n "${PROXY_PID:-}" ] && kill "$PROXY_PID" 2>/dev/null || true
-  wait 2>/dev/null || true
+  [ -n "${PROXY_PID:-}" ] && kill "$PROXY_PID" 2>/dev/null || true  # silent-ok: optional fallback path.
+  wait 2>/dev/null || true  # silent-ok: optional fallback path.
 }
 trap cleanup EXIT
 
@@ -162,9 +162,6 @@ echo " Gemini "
 if [ -z "${GEMINI_API_KEY:-}" ]; then
   echo "  SKIP: no GEMINI_API_KEY"
 else
-  # Gemini uses a different URL structure: POST /v1beta/models/{model}:generateContent?key=...
-  # The proxy routes via X-HME-Upstream. We set upstream to the Gemini API root
-  # and put the full path in the request URL.
   TESTED=$((TESTED + 1))
   GEMINI_RESP=$(curl -s -w "\nHTTP_CODE:%{http_code}" --max-time 30 -X POST \
     "http://127.0.0.1:${PROXY_PORT}/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}" \

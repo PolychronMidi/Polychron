@@ -25,9 +25,6 @@ moduleLifecycle.declare({
   let warmupRampControllerBeatCount = 0;
 
   // Default warmup ranges per pair category
-  // R10 E2: density-flicker base 12->16, min 6->8 to extend S0 ceiling coverage.
-  // R9a proved shorter ramp backfires (exceedance 8->61). Longer ramp = more
-  // protective ceiling window. Keep max=24 to cap adaptive upper bound.
   const _WARMUP_DEFAULTS = {
     'density-flicker': { base: 16, min: 8, max: 24 },
     _default: { base: 30, min: 16, max: 48 }
@@ -68,17 +65,12 @@ moduleLifecycle.declare({
     const defaults = _WARMUP_DEFAULTS[pair] || _WARMUP_DEFAULTS._default;
 
     // Higher S0 exceedance history -> need SHORTER ramp (get decorrelation going)
-    // Lower S0 exceedance history -> can afford LONGER ramp (more stability)
-    // But very high exceedance -> need moderate ramp to avoid overwhelming
     const exceedancePressure = clamp(ps.s0ExceedanceEma * 5, 0, 1);
 
     // Section length scaling: shorter sections need shorter ramps
     const sectionScale = clamp(ps.sectionLengthEma / 80, 0.5, 1.5);
 
     // adaptive warmup: base +/- adjustment
-    // When exceedance is moderate (best zone for decorrelation): shorter ramp
-    // When exceedance is very high: moderate ramp (prevent oscillation)
-    // When exceedance is zero: longer ramp (no urgency, prioritize stability)
     let warmup;
     if (exceedancePressure > 0.7) {
       // Very high exceedance: moderate ramp
@@ -113,9 +105,6 @@ moduleLifecycle.declare({
       return snap && snap[pair] ? snap[pair] : null;
     })();
     // Fall back to hardcoded defaults if controller not ready
-    // R12 E3: Raised initial floor from 50% to 60% of baseCeiling for faster
-    // S0 coverage. density-flicker S0 p95 ~0.93 with 50%; 60% starts higher.
-    // R25 E3: Raised from 60% to 65%. S0 exceedance still 100% warmup-concentrated.
     const minC = profile ? clamp(profile.ceiling * 0.65, 0.03, 0.08) : 0.05;
     const maxC = profile ? profile.ceiling : 0.10;
     const t = ps.lastWarmupBeats > 0 ? sectionBeat / ps.lastWarmupBeats : 1;
@@ -162,8 +151,6 @@ moduleLifecycle.declare({
       ps.s0ExceedanceEma += (s0Rate - ps.s0ExceedanceEma) * _S0_EXCEEDANCE_EMA_ALPHA;
       ps.currentS0Exceedance = 0;
       // E5: Section length EMA initialization fix.
-      // First section uses high alpha (0.5) to snap to actual length instead
-      // of slowly converging from the arbitrary initial value of 60.
       if (warmupRampControllerCurrentSectionBeats > 0) {
         const isFirstSection = warmupRampControllerBeatCount <= warmupRampControllerCurrentSectionBeats + 1;
         const alpha = isFirstSection ? 0.5 : _SECTION_LENGTH_EMA_ALPHA;

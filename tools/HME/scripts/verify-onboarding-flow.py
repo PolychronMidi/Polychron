@@ -83,9 +83,6 @@ def _load_todo_module(project_root: str):
     sys.modules["server.tools_analysis.todo"] = mod
     spec.loader.exec_module(mod)
     # Mirror the package-level re-exports that real
-    # server.tools_analysis.__init__ provides. onboarding_chain imports these
-    # from the package, not from the todo submodule, so the fake package must
-    # expose the same names.
     ta_pkg.register_onboarding_tree = mod.register_onboarding_tree
     ta_pkg.clear_onboarding_tree = mod.clear_onboarding_tree
     return mod
@@ -102,14 +99,6 @@ def main() -> int:
     os.makedirs(os.path.join(tmp_project, "tmp"), exist_ok=True)
 
     # Copy Python source into tmp_project so relative paths resolve.
-    # Hardcoded lists kept lagging behind real-codebase additions
-    # (onboarding_chain.py grew a `from .onboarding_chain_dispatch`
-    # sibling import; that file in turn imported `_helpers`; todo.py
-    # later added a `_lifesaver` sibling -- each addition silently
-    # broke the verifier with "verifier produced no PASS/FAIL output").
-    # Now: seed with the two entry-point modules and walk relative
-    # `from .X import` references transitively, copying every sibling
-    # .py we find in the same directory.
     import re
     import shutil
     static_files = ["tools/HME/service/hme_env.py", "tools/HME/service/paths.py", "CLAUDE.md"]
@@ -146,9 +135,6 @@ def main() -> int:
         shutil.copy(src, dst)
 
     # Rewrite .env so PROJECT_ROOT points at the sandbox, not the real project.
-    # hme_env's loader overwrites os.environ with .env values, so a copied .env
-    # carrying the real PROJECT_ROOT would bleed real-project paths (todo store,
-    # state files) into the dry-run.
     real_env_path = os.path.join(real_project, ".env")
     sandbox_env_path = os.path.join(tmp_project, ".env")
     with open(real_env_path, encoding="utf-8") as _src_env:
@@ -227,11 +213,6 @@ def main() -> int:
         print()
 
         # Test 5: marker parsing
-        # Helpers moved out of onboarding_chain.py into
-        # onboarding_chain_helpers.py during the module split. Look them
-        # up via sys.modules since the verifier loads them transitively
-        # through the relative-import walker above. Falls back to the
-        # parent module for back-compat with any future re-export.
         print("## Test 5: structured marker parsing")
         _helpers = sys.modules.get("server.onboarding_chain_helpers", onb)
         _extract = getattr(_helpers, "_extract_target_from_evolve",

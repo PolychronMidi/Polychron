@@ -20,7 +20,6 @@ moduleLifecycle.declare({
   const snapshots = [];
   const MAX_SNAPSHOTS = 32;
 
-  // Beat-level cache: getVelocityProfile is called 2x per beat (getSpreadBias via flickerModifier + suggestDynamicShift)
   const dynamicRangeTrackerVelocityCache = beatCache.create(() => dynamicRangeTrackerGetVelocityProfile());
 
   /**
@@ -156,11 +155,7 @@ moduleLifecycle.declare({
     return { direction: 'maintain', magnitude: 0 };
   }
 
-  // R12 E3: Density bias from velocity spread. R13 E1: Moderated --
-  // original spread < 20, max 1.08 caused density inflation (0.155->0.218)
-  // which collapsed entropy (0.186->0.101) via density-entropy coupling.
-  // Narrowed trigger to spread < 12, reduced max to 1.04, added entropy-
-  // aware dampening: disabled entirely when entropy share < 0.14.
+  // Density bias from velocity spread. R13 E1: Moderated --
   function getDensityBias() {
     const profile = getVelocityProfile();
     if (profile.spread < 12) {
@@ -168,9 +163,7 @@ moduleLifecycle.declare({
       const entropyShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.entropy === 'number'
         ? axisEnergy.shares.entropy : 1.0 / 6.0;
       if (entropyShare < 0.14) return 1.0;
-      // R18 E4: Density-axis-aware guard. When density is the dominant
-      // axis (share > 0.18), disable boost to prevent further inflation.
-      // R17 saw density surge to 0.213 driving 4 increasing correlations.
+      // Density-axis-aware guard. When density is the dominant
       const densityShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.density === 'number'
         ? axisEnergy.shares.density : 1.0 / 6.0;
       if (densityShare > 0.18) return 1.0;
@@ -179,10 +172,7 @@ moduleLifecycle.declare({
     return 1.0;
   }
 
-  // R12 E4: Tension bias from contrast deficit. When dynamic range is wide
-  // globally but underutilized recently (contrast deficit), nudge tension
-  // up (1.06) to encourage dynamic exploration. When global range is narrow,
-  // mild tension boost (1.04) to push for expressiveness.
+  // Tension bias from contrast deficit. When dynamic range is wide
   function getTensionBias() {
     const contrast = getContrastProfile();
     if (contrast.contrastDeficit) return 1.06;

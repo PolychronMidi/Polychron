@@ -69,13 +69,9 @@ moduleLifecycle.declare({
         const isUndershootPartialBypass = !isEmergencyStarved && share < config.AXIS_UNDERSHOOT && (state.beatCount % 2 === 0);
         // Graduated coherentFreeze bypass prevents narrow duty-cycle phase collapse.
         const isCoherentFreezePartialBypass = !isEmergencyStarved && share < 0.18 && context.coherentColdspotFreeze;
-        // R7 E4: Phase coherent-freeze bypass. When phase share < 0.10 during
-        // coherent freeze, allow coldspot relaxation to prevent phase collapse.
-        // R6 saw 47 skipped relaxations (45 coherent-freeze), phase 16.1%->4.6%.
+        // Phase coherent-freeze bypass. When phase share < 0.10 during
         const isPhaseLowShareCoherentBypass = axis === 'phase' && share < 0.12 && context.coherentColdspotFreeze;
-        // R83 E2 + R97 E1: Phase collapse detection with adaptive thresholds
-        // from phaseFloorController (#14). Thresholds self-calibrate based on
-        // rolling phase volatility and coherent regime duration.
+        // Phase collapse detection with adaptive thresholds
         if (axis === 'phase') {
           const collapseThreshold = phaseFloorController.getCollapseThreshold();
           const lowShareThreshold = phaseFloorController.getLowShareThreshold();
@@ -177,9 +173,7 @@ moduleLifecycle.declare({
       state.perLegacyOverrideEntries['trust-floor-0.14']++;
       const trustDeficit = 0.14 - trustSmoothed;
       const trustFloorPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.trust || config.RELAX_RATE_REF);
-      // R3 E2: Trust floor rate 0.50 -> 1.2. Trust recovery was 5x slower
-      // than tension (0.50 vs 2.5). 1.2 gives trust meaningful recovery speed
-      // without overshooting phase (which is the reason R7 reduced from 1.05).
+      // Trust floor rate 0.50 -> 1.2. Trust recovery was 5x slower
       const trustFloorRate = m.min(0.03, config.AXIS_RELAX_RATE * 1.20 * trustFloorPairScale * clamp(trustDeficit / config.FAIR_SHARE, 0.5, 2.0));
       const trustFloorPairs = V.assertArray(config.axisToPairs.trust, "config.axisToPairs.trust");
       for (let i = 0; i < trustFloorPairs.length; i++) {

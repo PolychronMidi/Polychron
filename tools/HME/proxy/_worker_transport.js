@@ -31,9 +31,6 @@ const VALID_MODES = new Set(['http', 'hybrid']);
 const RESOLVED = VALID_MODES.has(MODE) ? MODE : 'http';
 
 // Endpoints the FS transport supports -- must match the set
-// `worker_queue.py:_dispatch` handles. In hybrid mode, ONLY these
-// route through FS; everything else (GET /tools/list, GET /health,
-// GET /version, GET /transcript, POST /reindex, etc.) stays on HTTP.
 function _fsEligible(method, reqPath) {
   if (method === 'POST' && reqPath.startsWith('/tool/')) return true;
   if (method === 'POST' && reqPath === '/enrich') return true;

@@ -1,5 +1,3 @@
-// getPolyrhythm.js - Select L2 meter alignment using the pre-computed POLYRHYTHM_PAIRS table.
-// Sets: polyNumerator, polyDenominator, polyMeterRatio, measuresPerPhrase1, measuresPerPhrase2.
 /**
  * Pick a valid L2 meter alignment for the current L1 meter from POLYRHYTHM_PAIRS.
  * Eliminates the retry loop - every entry in the table is pre-validated.

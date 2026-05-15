@@ -99,10 +99,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   crossModulateRhythms();
 
   // dynamismEngine is the single probability authority. When probs arrive from
-  // globalConductor they are already dynamismEngine-resolved; pass them through
-  // without re-modulating to prevent double-application of the same signals.
-  // Only invoke dynamismEngine directly for sub-beat units (div/subdiv/subsubdiv)
-  // that need per-unit pulse refinement.
   const needsPerUnitResolve = (unit !== 'beat');
   const resolveStartedAt = PLAY_NOTES_PROFILE ? process.hrtime.bigint() : 0n;
   const resolved = (needsPerUnitResolve)
@@ -113,9 +109,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   const resolvedStutterProb = V.requireFinite(Number(resolved.stutterProb), 'resolved.stutterProb');
 
   // -- textureBlender: per-unit contrast-blend mode
-  // Decides whether this unit emits normally, fires a percussive chord
-  // stab, or injects a rapid scalar flurry.  Oscillation-driven so the
-  // texture switching never settles into a predictable pattern.
   const textureComposite = V.requireFinite(Number(resolved.composite), 'resolved.composite');
   const textureStartedAt = PLAY_NOTES_PROFILE ? process.hrtime.bigint() : 0n;
   const textureMode = textureBlender.resolve(unit, textureComposite);

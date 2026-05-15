@@ -1,5 +1,4 @@
 // src/conductor/journey/harmonicJourneyPlannerStepBuilder.js
-// Extracted from harmonicJourneyPlanner: builds journey stops for sections 1..totalSections-1.
 
 moduleLifecycle.declare({
   name: 'harmonicJourneyPlannerStepBuilder',
@@ -104,10 +103,7 @@ moduleLifecycle.declare({
         }
       }
 
-      // R8 E3: Minimum harmonic distance guard. When a move produces a key
-      // within 2 semitones, retry with development-pool moves to push wider
-      // harmonic motion. Skip during resolution (return-home cadences are
-      // naturally close). Increases pitchEntropy and audible key contrast.
+      // Minimum harmonic distance guard. When a move produces a key
       const moveDistance = HJ.harmonicDistance(currentKey, nextKey);
       if (moveDistance < 3 && phase !== 'resolution' && steps.length > 0) {
         let appliedWiderKey = false;
@@ -182,9 +178,6 @@ moduleLifecycle.declare({
     }
 
     // Post-hoc tonic diversity check: ensure at least 2 distinct tonics.
-    // R35 E1: The key diversity guard (R34 E3) only retries from the same
-    // move pool, which often lands on the same tonic. This post-hoc check
-    // forces a transposition when all sections share one tonic.
     if (steps.length >= 2) {
       const tonics = new Set([originKey]);
       for (let i = 0; i < steps.length; i++) tonics.add(steps[i].key);
@@ -205,9 +198,6 @@ moduleLifecycle.declare({
     }
 
     // R71 E1 / R73 E3: Tonic max-repeat cap. R72 had 4 unique tonics
-    // with A repeated (S1 dorian, S2 major). Tightened from ceil(n/2)
-    // to ceil(n/3) to enforce stronger tonic diversity: for 5 stops,
-    // max 2 appearances of any tonic instead of 3.
     if (steps.length >= 3) {
       const totalStops = 1 + steps.length;
       const maxAllowed = m.max(1, m.ceil(totalStops / 3));
@@ -270,10 +260,7 @@ moduleLifecycle.declare({
       }
     }
 
-    // R74 E4: Extended repeat-escape to check S0->S1 transition too.
-    // Previously only compared steps[i] vs steps[i-1] starting at i=1,
-    // missing the origin-key to first-step adjacency. R73 had Db->Db
-    // for S0->S1, producing only 3 unique tonics across 5 sections.
+    // Extended repeat-escape to check S0->S1 transition too.
     if (steps.length >= 1) {
       for (let i = 0; i < steps.length; i++) {
         const prevKey = i > 0 ? steps[i - 1].key : originKey;
@@ -373,9 +360,7 @@ moduleLifecycle.declare({
       // R1 E5: Palette break at 2+ dominance (was 3). Only 2 modes
       // (major/minor) in R99. Earlier palette break injects modal variety sooner.
       if (dominantCount >= 2) {
-        // R90 E3: Fix lydian palette-break bias. Previously the catch-all
-        // fallback was always 'lydian', creating a strong lydian attractor.
-        // Now cycle through diverse contrast modes based on the dominant mode.
+        // Fix lydian palette-break bias. Previously the catch-all
         const PALETTE_BREAK_MAP = {
           dorian: 'mixolydian',
           major: 'minor',

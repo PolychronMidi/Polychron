@@ -30,9 +30,7 @@ moduleLifecycle.declare({
 
   let lastConvergenceSec = -Infinity;
   let totalConvergences = 0;
-  // R33: convergence momentum -- rapid convergences build momentum that lowers
-  // the effective interval (stickier detection). Self-regulating: momentum
-  // decays when convergences are sparse, builds when they cluster.
+  // convergence momentum -- rapid convergences build momentum that lowers
   let convergenceMomentum = 0;
   const MOMENTUM_BUILD = 0.25;
   const MOMENTUM_DECAY = 0.02;
@@ -69,7 +67,6 @@ moduleLifecycle.declare({
     // Modulate tolerance and interval by convergenceTarget from section intent
     const intent = sectionIntentCurves.getLastIntent();
     const ct = V.requireFinite(intent.convergenceTarget, 'intent.convergenceTarget');
-    // Read current entropy from L0 - high entropy environments benefit from convergence moments
     const entropyEntry = L0.getLast(L0_CHANNELS.entropy, { layer: activeLayer });
     const currentEntropy = V.optionalFinite(entropyEntry ? entropyEntry.smoothed : NaN, 0.5);
     const entropyBoost = clamp((currentEntropy - 0.5) * 0.4, 0, 0.2);
@@ -82,21 +79,12 @@ moduleLifecycle.declare({
     // R33: climax approach widens tolerance (pull layers together during peaks)
     const climaxEntry = L0.getLast(L0_CHANNELS.climaxPressure, { layer: 'both' });
     const climaxBoost = climaxEntry && Number.isFinite(climaxEntry.level) ? clamp(climaxEntry.level * 0.15, 0, 0.1) : 0;
-    // R74: tension channel coupling -- high harmonic tension from cadenceAlignment widens convergence tolerance (harmonic peaks invite rhythmic singularity).
     const tensionEntry = L0.getLast(L0_CHANNELS.tension, { layer: 'both' });
     const tensionBoost = tensionEntry && Number.isFinite(tensionEntry.tension) ? clamp((tensionEntry.tension - 0.5) * 0.2, 0, 0.1) : 0;
-    // R50: emergent rhythm density widens tolerance (rhythmic activity = natural convergence opportunity)
     const emergentEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const emergentBoost = emergentEntry && Number.isFinite(emergentEntry.density) ? clamp(emergentEntry.density * 0.2, 0, 0.12) : 0;
-    // R77 E3: chord mode -- minor tonality invites rhythmic convergence (harmonic tension craves resolution)
     const chordEntryCD = L0.getLast(L0_CHANNELS.chord, { layer: 'both' });
     const chordModeBoost = chordEntryCD && chordEntryCD.mode === 'minor' ? 0.06 : 0;
-    // R57: melodic contour modulates convergence tolerance. Rising -> widen (ascending together).
-    // Contrary counterpoint -> narrow (layers pulling apart, convergence harder).
-    // Stale intervals -> slight widen (fresh unison after staleness = dramatic).
-    // R87 E2: registerMigrationDir antagonism bridge with feedbackOscillator -- ascending pitch center
-    // narrows convergence tolerance (layers diverging upward are harder to synchronize in exact unison).
-    // Counterpart: feedbackOscillator AMPLIFIES injection energy under same signal (ascending builds dialogue).
     const melodicCtxCD = emergentMelodicEngine.getContext();
     const melodicBoostCD = melodicCtxCD
       ? clamp(
@@ -110,7 +98,7 @@ moduleLifecycle.declare({
     const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5 - transitionBoost * 0.3 - coherenceBoost * 0.2 - tensionBoost * 0.3);
 
     // R33: convergence momentum -- recent convergences make the next one easier
-    // R72: complexityEma coupling -- complex rhythms sustain convergence momentum longer.
+    // complexityEma coupling -- complex rhythms sustain convergence momentum longer.
     const rhythmComplexEmaCD = emergentEntry && Number.isFinite(emergentEntry.complexityEma) ? emergentEntry.complexityEma : 0;
     convergenceMomentum = m.max(0, convergenceMomentum - MOMENTUM_DECAY * (1.0 - rhythmComplexEmaCD * 0.30));
     const momentumScale = 1.0 - clamp(convergenceMomentum * 0.3, 0, 0.25);
@@ -172,7 +160,6 @@ moduleLifecycle.declare({
       const n = burstPC + (m.round(boundedCurrentMidi / 12) + oi) * 12;
       if (n >= lo && n <= hi) burstNotes.push(n);
     }
-    // Limit to BURST_VOICES and schedule via p(c,...)
     while (burstNotes.length > BURST_VOICES) burstNotes.splice(ri(burstNotes.length - 1), 1);
     const burstSustain = spBeat * rf(0.15, 0.5) * (0.5 + conv.rarity * 0.5);
     const primaryCh = (activeLayer === 'L1') ? cCH1 : cCH2;
@@ -183,7 +170,6 @@ moduleLifecycle.declare({
       crossLayerEmissionGateway.emit('convergenceDetector', c, { timeInSeconds: burstBaseTime + stagger + burstSustain, vals: [primaryCh, burstNotes[bi]] });
     }
 
-    // No active listeners - emitted for eventCatalog completeness and future extensibility
     eventBus.emit(EVENTS.CROSS_LAYER_CONVERGENCE, {
       layer: activeLayer,
       rarity: conv.rarity,

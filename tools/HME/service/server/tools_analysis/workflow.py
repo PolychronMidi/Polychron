@@ -26,8 +26,6 @@ from .tool_cache import cached_kb_search, cached_find_callers, _cache_set, _TTL_
 logger = logging.getLogger("HME")
 
 # Synthesis cache -- keyed (abs_path, mtime), eliminates repeated llama.cpp waits.
-# Persisted to disk so cache survives server restarts. Stale entries (mtime mismatch)
-# are silently dropped on load; valid entries are used immediately without re-synthesis.
 _SYNTHESIS_CACHE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "before-editing-cache.json"
@@ -90,11 +88,6 @@ def _get_before_editing_cache() -> dict:
     return ctx._before_editing_synthesis_cache
 
 # Caller cache -- keyed (abs_path, mtime); file change auto-invalidates.
-# Disk-backed via SQLite + in-RAM LRU. Replaces the in-process dict that
-# capped warm-pre-edit-cache to ~200 src/ files per session AND lost
-# everything across MCP restarts. With persistence, repeated warm calls
-# accumulate coverage of every file the project has, not just the most
-# recent 200.
 def _get_caller_cache():
     if not hasattr(ctx, "_caller_cache"):
         from . import _disk_cache
@@ -104,8 +97,6 @@ def _get_caller_cache():
     return ctx._caller_cache
 
 # KB hits cache -- keyed (module_name, kb_version); knowledge write
-# auto-invalidates via the kb_version component changing. Same
-# disk-backed treatment.
 def _get_kb_hits_cache():
     if not hasattr(ctx, "_kb_hits_cache"):
         from . import _disk_cache
@@ -125,9 +116,6 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     Interactive calls use two-stage pipeline (extract->reason) for better grounding.
     Background/warm-cache calls use single-stage to avoid competing with interactive work."""
     # Honor fast=true on read(): skip the 30-90s synthesis entirely when
-    # the caller set HME_READ_FAST=1. Previously the flag only gated the
-    # "Key Constraints" synthesis in reasoning.py, so native Read/Edit enrichment
-    # still took 62s here -- the flag was effectively a lie for this path.
     if os.environ.get("HME_READ_FAST") in ("1", "true", "yes"):
         return "(Edit Risks synthesis skipped -- HME_READ_FAST=1)"
     callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
@@ -142,8 +130,6 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     _session_ctx = get_session_narrative(max_entries=6, categories=["think", "find", "edit"])
 
     # Parallel two-stage for interactive calls with non-trivial context.
-    # GPU0 (extract) + GPU1 (analyze) run simultaneously, ~2x faster than sequential.
-    # Falls back to single-stage when there's nothing non-trivial to extract from.
     if priority == "interactive" and (caller_files or relevant_kb):
         from .synthesis_pipeline import _parallel_two_stage_think
         raw_context = (
@@ -165,7 +151,6 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
         if synthesis:
             return synthesis
 
-    # Single-stage fallback: leaf modules (0 callers, no KB), or background warm-cache calls.
     user_text = (
         (_session_ctx if _session_ctx else "")
         + f"File about to be edited: {rel_path}\n"
@@ -181,10 +166,6 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
         "- Format: '1. [risk] because [specific caller/constraint].'\n"
     )
     # Risk analysis = multi-hop reasoning about caller/constraint impact.
-    # Local reasoner's ceiling was the quality bottleneck here; escalate to
-    # OVERDRIVE cascade, which falls back to local if every cloud slot is
-    # exhausted. (The old `priority=` param was a local-scheduling hint --
-    # cloud latency is independent of GPU queue state, so we drop it.)
     synthesis = _reasoning_think(user_text, max_tokens=800,
                                  system=_THINK_SYSTEM)
     return synthesis
@@ -331,13 +312,9 @@ def _warm_pre_edit_cache_sync(
             _kb_cache[kb_key] = ctx.project_engine.search_knowledge(module_name, 8)
         warmed += 1
     # Tier 2: pre-synthesize Edit Risks for most recently modified files.
-    # Uses llama.cpp queue with low priority -- interactive calls (think, before_editing)
-    # pop to top of stack via llamacpp_priority_call().
     hot_files = sorted(js_files, key=lambda f: os.path.getmtime(f) if os.path.exists(f) else 0, reverse=True)[:synthesis_hot]
     synth_warmed = 0
     # Early-abort: skip entire synthesis tier if llama.cpp cooldown is active.
-    # Without this check, the sequential loop hammers _local_think for all hot_files
-    # and generates one REFUSED log per file in ~40ms -- pure noise.
     from .synthesis_llamacpp import _last_think_failure, _last_think_failure_ts, _TIMEOUT_COOLDOWN_S
     import time as _time_check
     if _last_think_failure == "timeout" and (_time_check.monotonic() - _last_think_failure_ts) < _TIMEOUT_COOLDOWN_S:
@@ -372,7 +349,6 @@ def _warm_pre_edit_cache_sync(
         except Exception as _err:
             logger.debug(f"unnamed-except workflow.py:573: {type(_err).__name__}: {_err}")
             symbols = None
-        # Mid-loop cooldown check: abort synthesis tier if timeout fired during this warm run
         from .synthesis_llamacpp import _last_think_failure as _ltf, _last_think_failure_ts as _ltf_ts
         if _ltf == "timeout" and (_time_check.monotonic() - _ltf_ts) < _TIMEOUT_COOLDOWN_S:
             logger.info(f"warm_pre_edit_cache: synthesis aborted mid-loop -- timeout fired. {synth_warmed} files warmed before abort.")

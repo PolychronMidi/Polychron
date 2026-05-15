@@ -77,16 +77,6 @@ def _parse_count(raw: str):
 
 
 # Alternation fragment matching either a digit string or an English number
-# word. Unnamed group; callers read match.group(1). Each pattern below is
-# expected to use this exactly once, so the number lives at group 1.
-# Longer compound words precede shorter ones so the alternation greedy-matches
-# "twenty-eight" rather than just "twenty".
-#
-# The lookbehind excludes matches immediately preceded by `.`, `-`, or a
-# digit -- so "weight-5.0 verifier" does not match as "0 verifier" and
-# "v3.14 dials" does not match as "14 dials". The leading \b still requires
-# a word boundary, but \b alone permits matches after `.` or `-` because
-# those are non-word characters.
 _NUM = (
     r"(?<![.\-\d])(\d+|"
     r"twenty-one|twenty-two|twenty-three|twenty-four|twenty-five|twenty-six|"
@@ -172,11 +162,6 @@ def count_eslint_rules():
 
 
 # -- Claims manifest. Each entry:
-#   name     -- identifier for reports.
-#   counter  -- callable returning the current integer value.
-#   patterns -- list of compiled regexes. Each must contain _NUM exactly once
-#              so match.group(1) yields the stated number.
-#   context  -- human-readable description of what the regexes match.
 
 CLAIMS = [
     {
@@ -279,13 +264,6 @@ def scan():
             text = f.read()
         for line_no, line in enumerate(text.splitlines(), start=1):
             # Line-level exemption. An author can mark a specific line as
-            # deliberately-imprecise by appending the HTML-comment marker
-            # `<!-- drift-exempt -->`. The whole line is then skipped.
-            # Useful in literary essays where a specific count is the
-            # current-snapshot anchor of an argument and the author
-            # accepts that it will drift. The marker is visible in the
-            # rendered output only to HTML readers; markdown renderers
-            # typically hide it.
             if "<!-- drift-exempt -->" in line:
                 continue
             for claim in CLAIMS:
@@ -334,11 +312,6 @@ def _print_report(drifts, filtered, scanned, truth, show_filtered):
                 print(f"    {d['file']}:{d['line']}  stated={d['stated']}")
                 print(f"      > {d['quote'][:140]}")
     # Filtered matches surface only when explicitly requested (--noisy).
-    # The default-summary noise of "N implausible match(es) filtered" was
-    # surfacing every pipeline run for false-positive prose hits like
-    # "one verifier added" -- the filter handled them correctly but the
-    # persistent message read as a problem. If the filter mis-fires,
-    # `--noisy` shows everything.
     if show_filtered == "verbose" and filtered:
         print(f"\n{len(filtered)} implausible match(es) filtered:")
         for d in filtered:

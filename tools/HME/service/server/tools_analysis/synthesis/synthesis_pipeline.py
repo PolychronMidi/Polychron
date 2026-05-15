@@ -182,8 +182,6 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
 
     if not frame or len(frame) < 40 or "src/" not in frame:
         # No-brief fallback: Stage 1 extraction failed, we're doing full
-        # synthesis from raw context. Answer quality is fully exposed --
-        # escalate to OVERDRIVE cascade.
         return _reasoning_think(raw_context[:6000] + "\n\n" + question,
                                 max_tokens=max_tokens, system=_THINK_SYSTEM)
 
@@ -207,8 +205,6 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
         "Format: FILE: path, FUNCTION: name, SIGNAL: field, EFFECT: one sentence. Max 4 items."
     )
     # Final synthesis stage -- user-facing answer. Escalate to OVERDRIVE; the
-    # brief and gap-fill stages have already bounded the context, so cloud
-    # latency is the only tradeoff and quality gain is substantial.
     return _reasoning_think(
         "/no_think Brief:\n\n" + frame + "\n\nContext:\n" + raw_context[:4000] +
         "\n\nQuestion: " + question + "\n\n" + _fmt,

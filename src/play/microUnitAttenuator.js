@@ -75,9 +75,6 @@ moduleLifecycle.declare({
         return;
       }
       // E20 attenuator score bias: e20AttenuatorBias<1.0 suppresses scores
-      // (voice cap cuts more) for sparse windows. Proportional via scoreFraction
-      // (0 at <=4.0, 1.0 at >=8.0) so quiet notes barely touched. Skipped
-      // during exploring (consistent with E13/E19).
       const e20Regime = (() => {
         const sn = systemDynamicsProfiler.getSnapshot();
         return sn ? sn.regime : '';

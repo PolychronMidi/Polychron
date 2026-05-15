@@ -35,10 +35,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = s
         coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, timeInSeconds), `stutterFX coherence key=${coherenceKey} channel=${channelToStutter}`);
       }
 
-      // R80 E3: Regime-aware stutter coherence weighting. In exploring regime,
-      // lower coherence weight (0.6x) -> more stochastic -> looser stutter texture
-      // with more rhythmic surprise. In coherent regime, higher coherence weight
-      // (1.3x) -> more deterministic -> tighter cross-layer stutter sync.
+      // Regime-aware stutter coherence weighting. In exploring regime,
       const cohRegime = regimeClassifier.getRegime();
       const cohScale = cohRegime === 'exploring' ? 0.6
         : cohRegime === 'coherent' ? 1.3

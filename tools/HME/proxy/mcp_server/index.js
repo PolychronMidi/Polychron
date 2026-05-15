@@ -102,11 +102,10 @@ async function _handleRpc(sessionId, msg) {
       try {
         result = await dispatcher.callTool(name, args || {}, timeoutMs);
       } catch (err) {
+        // silent-ok: optional fallback path.
         const elapsed = Date.now() - t0;
         if (/timeout/i.test(err.message) && elapsed >= timeoutMs - 500) {
           // Hang detected: worker didn't respond within the declared window.
-          // Signal supervisor + emit activity so the incident is visible in the
-          // activity bus and operator can see the correlation.
           try {
             const { killChild } = require('../supervisor/index');
             const { emit } = require('../shared');
@@ -126,6 +125,7 @@ async function _handleRpc(sessionId, msg) {
     if (method === 'prompts/list')   return jsonrpcResult(id, { prompts: [] });
     return jsonrpcError(id, -32601, `Method not found: ${method}`);
   } catch (err) {
+    // silent-ok: optional fallback path.
     logger.error(`RPC ${method} failed: ${err.message}`);
     return jsonrpcError(id, -32603, `Internal error: ${err.message}`);
   }
@@ -136,6 +136,7 @@ async function handleMessagesPost(req, res, sessionId) {
   try {
     msg = await _parseBody(req);
   } catch (err) {
+    // silent-ok: optional fallback path.
     res.writeHead(400, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ error: 'bad JSON body' }));
     return;

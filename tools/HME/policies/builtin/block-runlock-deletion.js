@@ -18,8 +18,6 @@ const LOCK_TOKEN = 'run.lock';
 const DELETION_VERBS = new Set(['rm', 'unlink', 'shred', 'truncate']);
 
 // Lightweight POSIX-shell argv tokenizer. Handles single quotes, double
-// quotes, and basic escaping. Falls back to whitespace split on parse
-// error. Comments not stripped (the bash version doesn't either).
 function _tokenize(cmd) {
   const out = [];
   let buf = '';

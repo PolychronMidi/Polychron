@@ -17,7 +17,7 @@ _ensure_tab() {
 _append_file_to_tab() {
   local file="$1"
   local tab; tab=$(_ensure_tab)
-  grep -qxF "FILE: $file" "$tab" 2>/dev/null || echo "FILE: $file" >> "$tab"
+  grep -qxF "FILE: $file" "$tab" 2>/dev/null || echo "FILE: $file" >> "$tab"  # silent-ok: optional fallback path.
 }
 
 _extract_bg_output_path() {
@@ -29,5 +29,5 @@ if isinstance(result, list):
     result = ' '.join(str(x.get('text','') if isinstance(x,dict) else x) for x in result)
 m = re.search(r'Output is being written to: (\S+)', str(result))
 print(m.group(1) if m else '')
-" 2>/dev/null
+" 2>/dev/null  # silent-ok: optional fallback path.
 }

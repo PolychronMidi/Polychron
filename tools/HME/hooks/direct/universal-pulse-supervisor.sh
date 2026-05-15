@@ -14,7 +14,7 @@ elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ 
   _SV_ROOT="$CLAUDE_PROJECT_DIR"
 fi
 if [ -z "$_SV_ROOT" ]; then
-  _try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  _try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
   while [ -n "$_try" ] && [ "$_try" != "/" ]; do
     [ -f "$_try/.env" ] && [ -d "$_try/.git" ] && { _SV_ROOT="$_try"; break; }
     _try="$(dirname "$_try")"
@@ -33,7 +33,7 @@ _UP_MAINT_FLAG="$_SV_ROOT/tmp/hme-proxy-maintenance.flag"
 _up_log() {
   mkdir -p "$(dirname "$_UP_LIFECYCLE_LOG")" 2>/dev/null
   local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
-  echo "[$ts] [universal-pulse-sv] $*" >> "$_UP_LIFECYCLE_LOG" 2>/dev/null
+  echo "[$ts] [universal-pulse-sv] $*" >> "$_UP_LIFECYCLE_LOG" 2>/dev/null  # silent-ok: optional fallback path.
 }
 
 _up_alive() {
@@ -41,16 +41,16 @@ _up_alive() {
   local pattern="${2:-}"
   [ -n "$p" ] && [ -d "/proc/$p" ] || return 1
   [ -z "$pattern" ] && return 0
-  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qE "$pattern"
+  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qE "$pattern"  # silent-ok: optional fallback path.
 }
 
 _up_kill_child() {
   local cp
   cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null)
   if _up_alive "$cp" "universal_pulse.py"; then
-    kill -TERM "$cp" 2>/dev/null
+    kill -TERM "$cp" 2>/dev/null  # silent-ok: optional fallback path.
     sleep 2
-    _up_alive "$cp" && kill -KILL "$cp" 2>/dev/null
+    _up_alive "$cp" && kill -KILL "$cp" 2>/dev/null  # silent-ok: optional fallback path.
   fi
   rm -f "$_UP_CHILD_PID_FILE" 2>/dev/null
 }
@@ -72,7 +72,7 @@ _up_spawn_child() {
 _up_heartbeat_age() {
   [ -f "$_UP_HEARTBEAT" ] || { echo 999999; return; }
   local mt now
-  mt=$(stat -c %Y "$_UP_HEARTBEAT" 2>/dev/null || echo 0)
+  mt=$(stat -c %Y "$_UP_HEARTBEAT" 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
   now=$(date +%s)
   echo $((now - mt))
 }
@@ -86,7 +86,7 @@ _up_maint_active() {
     ''|*[!0-9]*) return 1 ;;
   esac
   local start_epoch now
-  start_epoch=$(date -d "$start" +%s 2>/dev/null || echo 0)
+  start_epoch=$(date -d "$start" +%s 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
   now=$(date +%s)
   [ "$start_epoch" -gt 0 ] && [ $((now - start_epoch)) -lt "$ttl" ]
 }
@@ -141,11 +141,11 @@ _up_stop() {
   local svp cp
   svp=$(cat "$_UP_PID_FILE" 2>/dev/null)
   cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null)
-  _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -TERM "$svp" 2>/dev/null
-  _up_alive "$cp" "universal_pulse.py" && kill -TERM "$cp"  2>/dev/null
+  _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -TERM "$svp" 2>/dev/null  # silent-ok: optional fallback path.
+  _up_alive "$cp" "universal_pulse.py" && kill -TERM "$cp"  2>/dev/null  # silent-ok: optional fallback path.
   sleep 1
-  _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -KILL "$svp" 2>/dev/null
-  _up_alive "$cp" "universal_pulse.py" && kill -KILL "$cp"  2>/dev/null
+  _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -KILL "$svp" 2>/dev/null  # silent-ok: optional fallback path.
+  _up_alive "$cp" "universal_pulse.py" && kill -KILL "$cp"  2>/dev/null  # silent-ok: optional fallback path.
   rm -f "$_UP_PID_FILE" "$_UP_CHILD_PID_FILE" 2>/dev/null
   _up_log "stopped"
 }

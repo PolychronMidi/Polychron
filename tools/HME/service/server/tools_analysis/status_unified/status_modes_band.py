@@ -67,10 +67,6 @@ def _mode_multi_axis_band():
         )
 
     # Aggregate per subtag: weighted-score sum / weighted-max sum.
-    # Track raw scores too for the confidence column (Horizon II asymptote
-    # -- confidence dimension exposes whether high score is uniformly
-    # high vs barely-passing; a uniform-high subtag is genuinely strong,
-    # a barely-passing one is precarious).
     by_subtag: dict[str, list[tuple[float, float]]] = defaultdict(list)
     raw_scores_by_subtag: dict[str, list[float]] = defaultdict(list)
     for name, info in snap.get("verifiers", {}).items():
@@ -85,8 +81,6 @@ def _mode_multi_axis_band():
     LO, HI = 0.55, 0.85
 
     # Read persisted band proposal (Horizon IX * II compounding) -- if a
-    # band-tuning run wrote per-axis proposed bands, use them; otherwise
-    # fall back to the aggregate [LO, HI] for every axis.
     proposal_path = _os.path.join(_root, "tmp", "hme-band-proposal.json")
     per_axis_bands: dict[str, list[float]] = {}
     proposed_aggregate = None
@@ -128,17 +122,12 @@ def _mode_multi_axis_band():
         ax_band = per_axis_bands.get(subtag) or proposed_aggregate or [LO, HI]
         band_str = f"[{ax_band[0]:.2f}, {ax_band[1]:.2f}]"
         # Confidence: minimum raw score in the subtag. A subtag where
-        # every verifier scores 0.95 is genuinely strong; one where the
-        # mean is 0.85 but min is 0.42 has a fragile member dragging it.
         raw = raw_scores_by_subtag.get(subtag, [])
         min_raw = min(raw) if raw else 0.0
         out.append(f"  {marker} {subtag:22}  {n:>9}  {score:>5.2f}  {min_raw:>5.2f}  {state:>9}  {band_str:>14}")
 
     out.append("")
     # Conjugate-channel quadrant inline (Horizon V * II compounding):
-    # the multi-axis view is per-subtag; the conjugate quadrant is per-
-    # round (HCI * perceptual). Surface it as a one-liner so the agent
-    # sees both the multi-axis and the joint-coupling picture together.
     snap_v = snap.get("verifiers", {}).get("conjugate-channel")
     if snap_v:
         cur_status = snap_v.get("status", "?")
@@ -207,9 +196,6 @@ def _mode_conjugate():
                 "No rounds carry both hme_coherence + perceptual_complexity_avg.")
 
     # Quadrant thresholds -- data-driven medians since `hme_coherence`
-    # in musical-correlation history is on a different scale (0-1) than
-    # the verifier-snapshot HCI (0-100). Use the median of each axis
-    # over the joined rounds so quadrants always partition meaningfully.
     sorted_hci = sorted(r["hci"] for r in rounds)
     sorted_perc = sorted(r["perc"] for r in rounds)
     HCI_T = sorted_hci[len(sorted_hci) // 2]

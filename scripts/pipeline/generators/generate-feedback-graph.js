@@ -54,7 +54,6 @@ function scanSourceLoops() {
     const src = fs.readFileSync(filePath, 'utf8');
     const relPath = path.relative(SRC, filePath).replace(/\\/g, '/');
 
-    // feedbackRegistry.registerLoop('name', 'sourceDomain', 'targetDomain', ...)
     const regLoopRe = /feedbackRegistry\.registerLoop\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'/g;
     for (const match of src.matchAll(regLoopRe)) {
       loops.set(match[1], {
@@ -66,7 +65,6 @@ function scanSourceLoops() {
       });
     }
 
-    // closedLoopController.create({ name: '...', ... sourceDomain: '...', targetDomain: '...' })
     const clcRe = /closedLoopController\.create\(\s*\{([^}]*)\}/gs;
     for (const match of src.matchAll(clcRe)) {
       if (isInsideJSDoc(src, match.index)) continue;
@@ -125,8 +123,6 @@ function mergeLoops(existingLoops, sourceLoops) {
   for (const loop of existingLoops) {
     if (loop.conceptual) {
       // Conceptual loops have no source registration - preserve verbatim
-      // If a conceptual loop's module matches a source registration, mark handled
-      // to prevent duplicate scaffolding
       if (loop.module && sourceLoops.has(loop.module)) {
         handledSourceNames.add(loop.module);
       }

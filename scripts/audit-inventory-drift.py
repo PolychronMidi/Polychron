@@ -53,7 +53,6 @@ def _parse_inventory_files() -> set[str]:
         return set()
     text = INVENTORY.read_text(encoding="utf-8")
     files: set[str] = set()
-    # Match `| `name1`, `name2`, ... |` style rows.
     for line in text.splitlines():
         if not line.startswith("|"):
             continue

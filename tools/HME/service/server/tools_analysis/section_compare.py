@@ -159,7 +159,6 @@ def section_compare(section_a: int, section_b: int) -> str:
         for lbl in shared_sorted:
             parts_out.append(f"  = {_coupling_label_display(lbl)}")
 
-    # Narrative synthesis -- one sentence distilling what the listener hears at this transition
     from .synthesis import _two_stage_think
     from .trust_analysis import TRUST_MUSICAL_MEANING as _TMM
     top_winner = winners[0] if winners else None

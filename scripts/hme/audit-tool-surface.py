@@ -43,12 +43,6 @@ REGISTRY = PROJECT_ROOT / "tools" / "HME" / "i_registry.json"
 DEVLOG = PROJECT_ROOT / "tools" / "HME" / "KB" / "devlog"
 
 # Allowlist (NOT blocklist) of tools safe to probe with no-args.
-# Inverted from the prior blocklist after a probe pass cascaded into
-# verify-coherence.py + verify-doc-sync.py subprocesses that orphaned
-# past the 5s timeout (grandchildren survive subprocess.run timeout --
-# only the direct child is SIGTERMed). The accumulated memory pressure
-# crashed the host. New default: assume a tool is UNSAFE to probe
-# unless its registry entry has `safe_no_args: true`.
 SAFE_NO_ARGS_ALLOWLIST = {
     "help",            # pure stdout, no subprocess cascade
     "policies",        # static config read
@@ -129,8 +123,6 @@ def _run(cmd: list[str], timeout: float = 5.0) -> dict:
     timed_out = False
     try:
         # `timeout + 1` -- systemd-run's RuntimeMaxSec kills at timeout;
-        # we wait a little longer for the descendants + cgroup teardown
-        # to finalize before declaring our own timeout.
         stdout, stderr = proc.communicate(timeout=timeout + 2)
     except subprocess.TimeoutExpired:
         # Belt-and-suspenders: tell systemd to stop the scope. cgroup
@@ -190,8 +182,6 @@ def _has_substantive_content(text: str) -> bool:
     if len(lines) < 3:
         return False
     # 5+ lines of non-empty content is substantive regardless of marker
-    # shape. Catches tools whose output is indented action lists, JSON
-    # blocks, or other non-bullet shapes.
     if len(lines) >= 5:
         return True
     # Has list-shape markers (bullets, numbered, headers, indented
@@ -248,9 +238,6 @@ def _has_useful_error(text: str, rc: int) -> bool:
 def _rate_tool(name: str, entry: dict) -> dict:
     """Run the probe battery; return rating dict."""
     # Allowlist: only probe tools the registry explicitly opts in via
-    # `safe_no_args: true` OR that appear in SAFE_NO_ARGS_ALLOWLIST.
-    # Inverted from the prior blocklist -- see comment near
-    # SAFE_NO_ARGS_ALLOWLIST. New tools default to NOT probed.
     safe = entry.get("safe_no_args", name in SAFE_NO_ARGS_ALLOWLIST)
     score = {"name": name, "category": entry.get("category", ""),
              "checks": {}, "skipped": False, "score": 0, "max": 5}
@@ -264,16 +251,9 @@ def _rate_tool(name: str, entry: dict) -> dict:
         score["reason"] = "not in safe_no_args allowlist (opt in via registry)"
         return score
     # Probe 1: no-args. 2s timeout + cgroup isolation -- allowlisted
-    # tools should respond within ms (usage-line or canonical default
-    # action like `status`).
     no_args = _run([str(bin_path)], timeout=2.0)
     combined = (no_args["stdout"] + "\n" + no_args["stderr"])
     # Rubric: a tool is well-behaved on no-args if EITHER it shows a
-    # usage line + valid options (the "REQUIRES an arg" pattern) OR
-    # it produces substantive content (the "DEFAULTS to a useful
-    # action" pattern). Exit code is informational, not a fail
-    # condition -- both rc=0 (default-action tools) and rc=2 (usage-
-    # gate tools) are acceptable. Hangs ARE failures.
     has_usage = _has_usage_line(combined)
     has_examples = _has_examples_or_options(combined)
     has_content = _has_substantive_content(combined)
@@ -285,10 +265,6 @@ def _rate_tool(name: str, entry: dict) -> dict:
     # a chance to finish exiting before we add more load.
     time.sleep(0.1)
     # Probe 2: typo'd action. A tool is well-behaved on a typo'd
-    # action if EITHER it returns non-zero with a useful error OR
-    # it ignores the unknown arg and produces normal output (the
-    # latter is correct for tools that don't accept an action= arg
-    # at all -- passing garbage to i/help shouldn't error).
     typo = _run([str(bin_path), "action=garbage-mode-xyz"], timeout=2.0)
     typo_combined = (typo["stdout"] + "\n" + typo["stderr"])
     score["checks"]["handles_typo_gracefully"] = _has_useful_error(
@@ -311,8 +287,6 @@ def main() -> int:
             continue
         results.append(_rate_tool(name, entry))
         # Inter-tool cooldown so any descendant the prior tool spawned
-        # has a chance to fully exit before we move on. Belt to the
-        # process-group kill suspenders.
         time.sleep(0.2)
     # Render summary
     print(f"i/audit tools -- surface stress test ({len(results)} tools probed)")

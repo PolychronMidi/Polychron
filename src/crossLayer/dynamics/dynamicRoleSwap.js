@@ -21,7 +21,6 @@ moduleLifecycle.declare({
   const SWAP_DROUGHT_TRIGGER = 4;
   const MODERATE_TENSION_THRESHOLD = 0.62; // absolute floor for drought release
   const DROUGHT_SWAP_PROBABILITY = 0.55;
-  // Tension EMA: relative valley detection so thresholds track actual composition tension level
   const TENSION_EMA_ALPHA = 0.08;
   const TENSION_VALLEY_RELATIVE_DROP = 0.12; // inValley if tension < ema - this
   const DROUGHT_RELATIVE_DROP = 0.07; // drought release if tension < ema - this
@@ -57,9 +56,7 @@ moduleLifecycle.declare({
     if (!inValley && !droughtRelease) {
       return { swapped: false, swapCount };
     }
-    // R90 E4: Regime-responsive swap probability. Exploring passages benefit
-    // from more frequent layer swaps (richer cross-layer dynamic interplay),
-    // while coherent passages keep swaps rare to preserve musical stability.
+    // Regime-responsive swap probability. Exploring passages benefit
     const regime = regimeClassifier.getRegime();
     const regimeSwapScale = regime === 'exploring' ? 1.15
       : regime === 'coherent' ? 0.80
@@ -71,39 +68,25 @@ moduleLifecycle.declare({
     const feedbackCount = L0.count(L0_CHANNELS.feedbackLoop, { since: absoluteSeconds - 4, windowSeconds: 4 });
     const feedbackBoost = feedbackCount > 3 ? 0.1 : 0;
     // Melodic coupling: contourShape modulates swap gate.
-    // Falling contour -> natural role handoff moment -> amplify gate.
-    // Rising contour -> keep the build going with current roles -> suppress gate.
     const melodicCtxDRS = emergentMelodicEngine.getContext();
     const contourSwapBoost = melodicCtxDRS
       ? (melodicCtxDRS.contourShape === 'falling' ? 0.08 : melodicCtxDRS.contourShape === 'rising' ? -0.08 : 0)
       : 0;
-    // Rhythmic coupling: strong emergent rhythm structure (high biasStrength) = natural role exchange moment.
     const rhythmEntryDRS = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmBiasBoost = rhythmEntryDRS && Number.isFinite(rhythmEntryDRS.biasStrength) && rhythmEntryDRS.biasStrength > 0.4 ? 0.06 : 0;
-    // R75: registerMigrationDir antagonism bridge -- ascending pitch center = more frequent role swaps (dynamic reorganization as range expands).
+    // registerMigrationDir antagonism bridge -- ascending pitch center raises activity.
     const registerSwapBoostDRS = melodicCtxDRS ? (melodicCtxDRS.registerMigrationDir === 'ascending' ? 0.04 : melodicCtxDRS.registerMigrationDir === 'descending' ? -0.05 : 0) : 0;
-    // directionBias float (-1=descending, 0=neutral, +1=ascending): ascending suppresses swap (sustain the build), descending boosts (natural handoff).
-    // Complements contourSwapBoost (categorical) with a continuous granularity layer. Small effect: +/-0.03 max.
+    // directionBias adds a continuous complement to categorical contourSwapBoost.
     const directionBiasSwapBoost = melodicCtxDRS ? clamp(V.optionalFinite(melodicCtxDRS.directionBias, 0) * -0.06, -0.03, 0.03) : 0;
-    // R81 E1: complexityEma antagonism bridge with climaxEngine -- sustained high complexity
-    // lowers swap threshold (dynamics reorganize into new roles as long-term complexity accumulates).
-    // Counterpart: climaxEngine SUPPRESSES approach at same complexityEma (E2). Together:
-    // dynamics reshuffles while structural arc holds -- complexityEma is the shared currency.
+    // complexityEma antagonism bridge with climaxEngine -- sustained high complexity
     const complexityEmaDRS = rhythmEntryDRS && Number.isFinite(rhythmEntryDRS.complexityEma) ? rhythmEntryDRS.complexityEma : 0.5;
     const complexityEmaSwapBoost = clamp((complexityEmaDRS - 0.50) * 0.14, -0.05, 0.08);
-    // R84 E2: per-beat complexity bridge -- instantaneous complexity spikes lower swap gate
-    // (role swaps at complex beats, faster than complexityEma's slow memory).
-    // Counterpart: verticalIntervalMonitor RAISES collision penalty under same signal.
+    // per-beat complexity bridge -- instantaneous complexity spikes lower swap gate
     const complexityBeatDRS = rhythmEntryDRS && Number.isFinite(rhythmEntryDRS.complexity) ? rhythmEntryDRS.complexity : 0.5;
     const complexityBeatSwapBoost = clamp((complexityBeatDRS - 0.55) * 0.10, -0.03, 0.06);
-    // R85 E2: intervalFreshness antagonism bridge -- novel intervals trigger more dynamic role reshuffling.
-    // Counterpart: temporalGravity STRENGTHENS gravity wells under same signal (temporal pull tightens as roles shuffle).
     const intervalFreshnessSwapBoost = melodicCtxDRS
       ? clamp((V.optionalFinite(melodicCtxDRS.intervalFreshness, 0.5) - 0.45) * 0.10, -0.02, 0.05)
       : 0;
-    // R89 E1: freshnessEma antagonism bridge with verticalIntervalMonitor -- sustained melodic novelty
-    // amplifies role-swap frequency (novel melodic territory = dynamic reorganization needed).
-    // Counterpart: verticalIntervalMonitor REDUCES collision penalty under same signal (harmonic exploration endorsed).
     const freshnessEmaDRS = melodicCtxDRS ? V.optionalFinite(melodicCtxDRS.freshnessEma, 0.5) : 0.5;
     const freshnessEmaSwapBoost = clamp((freshnessEmaDRS - 0.45) * 0.08, -0.02, 0.035);
     const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost + feedbackBoost + contourSwapBoost + rhythmBiasBoost + registerSwapBoostDRS + directionBiasSwapBoost + complexityEmaSwapBoost + complexityBeatSwapBoost + intervalFreshnessSwapBoost + freshnessEmaSwapBoost, 0, 1);

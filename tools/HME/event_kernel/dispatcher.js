@@ -169,6 +169,7 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
     registry = require('../policies/registry');
     config = require('../policies/config');
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return null; // policies/ missing or broken -- skip silently, bash gates still run
   }
   try {
@@ -223,6 +224,7 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
     }
     return null;
   } catch (err) {
+    // silent-ok: optional fallback path.
     return { stdout: '', stderr: `[unified-policies] crash: ${err.message}\n`, exit_code: 0 };
   }
 }

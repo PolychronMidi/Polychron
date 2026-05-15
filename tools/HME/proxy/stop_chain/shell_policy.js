@@ -48,6 +48,7 @@ function defaultParseDecision(stdout, ctx) {
       return ctx.deny(parsed.reason || `(stage emitted block with no reason)`);
     }
   } catch (_e) {
+    // silent-ok: optional fallback path.
     // The stage emitted block-shaped JSON we couldn't parse cleanly. Try
     // greedy-extract the first JSON object that contains "decision":"block".
     const m = stdout.match(/\{[^{}]*"decision"\s*:\s*"block"[^{}]*\}/);
@@ -66,9 +67,6 @@ function defaultParseDecision(stdout, ctx) {
 
 function spawnStage(stageName, stdinJson, timeoutMs) {
   // PROJECT alias for PROJECT_ROOT (legacy; lifesaver.sh + post_hooks.sh
-  // depend on it; subprocess isolation breaks the inherited-from-parent path).
-  // _HME_HOOK_NAME set explicitly because `bash -c` has no BASH_SOURCE[1] so
-  // _safety.sh's basename fallback resolves to "unknown".
   const wrapper = `
 set +u +e
 PROJECT="${PROJECT_ROOT}"

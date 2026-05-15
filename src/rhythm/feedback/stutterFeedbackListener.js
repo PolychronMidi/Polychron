@@ -1,4 +1,3 @@
-// src/rhythm/stutterFeedbackListener.js - eventBus listener for stutter - Rhythm feedback loops
 // Mirrors FXFeedbackListener but accumulates stutter activity (CC + note) so
 // rhythm/dynamism systems can respond to stutter intensity.
 

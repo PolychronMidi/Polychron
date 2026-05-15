@@ -46,11 +46,6 @@ class LifesaverIntegrityVerifier(Verifier):
             os.path.join(_SERVER_DIR, "meta_observer.py"),
         ]
         # Patterns that would indicate LIFESAVER gating / dampening
-        # Note: _ALERT_LOG_COOLDOWN is an existing, intentional 30-min cooldown
-        # on Meta-observer L14 ALERT LOGGING -- not on LIFESAVER fires. That's
-        # allowed because it only throttles the log message, not the
-        # condition detection. But any NEW pattern matching "cooldown" near a
-        # register_critical_failure call is a violation.
         forbidden_near_fire = [
             r"cooldown.*register_critical_failure",
             r"_last_.*_alert.*register_critical_failure",

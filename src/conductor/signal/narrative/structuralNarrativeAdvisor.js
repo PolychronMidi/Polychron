@@ -45,7 +45,6 @@ moduleLifecycle.declare({
       const total  = familyHistory.length;
       const entropy = unique / m.max(total, 1);
 
-      // Bidirectional: low entropy (repetition) boosts density; high entropy (max variety) suppresses slightly
       varietyPressure = 1.04 + VARIETY_GAIN * (0.5 - entropy);
     }
   }

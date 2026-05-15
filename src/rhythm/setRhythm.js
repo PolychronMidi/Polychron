@@ -12,7 +12,6 @@ setRhythm = function setRhythm(level, ctx = null) {
   V.assertNonEmptyString(level, 'level');
   const random = (length, probOn) => { return _random(length, 1 - probOn); };
   // -- Texture-modulated onset density (#8) --
-  // Flurry activity - denser onsets (more notes), burst activity - sparser (give chords room)
   const texProbScale = (() => {
     const metrics = drumTextureCoupler.getMetrics();
     if (metrics.intensity > 0.15) {
@@ -22,17 +21,11 @@ setRhythm = function setRhythm(level, ctx = null) {
     return 1;
   })();
   // Per-phrase density-baseline rotation (analog of drum kit rotation):
-  // foundation densities (.4/.3/.3) stay as the average; this multiplier
-  // adds phrase-level character around the foundation. Hashed from
-  // sectionIndex+phraseIndex so the same phrase always lands on the same
-  // density factor; multipliers coprime with the 4-factor cycle.
   const PHRASE_DENSITY_FACTORS = [0.92, 1.00, 1.05, 1.10];
   const phraseDensityFactor = Number.isFinite(sectionIndex) && Number.isFinite(phraseIndex)
     ? PHRASE_DENSITY_FACTORS[(sectionIndex * 7 + phraseIndex * 3) % PHRASE_DENSITY_FACTORS.length]
     : 1.0;
   // Occasional flair: ~5% of calls add a wider one-shot density swing for
-  // touches of variety (the rhythm-side analog of drum flair). Bounded
-  // [.85, 1.20] so it never crashes the foundation density floor.
   const flairMult = rf() < 0.05 ? rf(0.85, 1.20) : 1.0;
   const dens = phraseDensityFactor * flairMult;
   switch (level) {

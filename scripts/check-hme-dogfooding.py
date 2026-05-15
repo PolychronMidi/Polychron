@@ -92,9 +92,6 @@ def _scan_file(path: str) -> list[str]:
             body_src = "\n".join(ast.unparse(b) for b in node.body)
             if node.name not in body_src:
                 # Exception bound but never used -- probably should just
-                # be `except Exception:` (no bind) or should log it.
-                # Skip this -- high false-positive rate, chase via the
-                # silent-swallow rule instead.
                 pass
 
     return violations

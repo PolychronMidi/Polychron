@@ -42,8 +42,6 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
 
     modes = [mode] if mode != "full" else ["digest", "regime", "trust"]
     # mode=full concatenates three subsections; emit explicit `# ` headers
-    # before each so they don't blur together. Single-mode calls don't need
-    # the header -- the subsection's own output is the whole response.
     _HEADERS = {
         "digest": "# Pipeline Digest",
         "regime": "# Regime Timeline",
@@ -58,6 +56,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             try:
                 result = _pd(evolve=True, critique=critique)
             except Exception as e:
+                # silent-ok: optional fallback path.
                 result = f"pipeline_digest error: {e}"
             # In 'full' mode, truncate verbose blocking messages to a single line
             if mode == "full" and ("BLOCKED" in result or "STOP POLLING" in result or "IN PROGRESS" in result):
@@ -73,9 +72,8 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             parts.append(_tr(system_a=system_a, system_b=system_b))
         elif m == "sections":
             if section_a < 0 or section_b < 0:
-                # tool-form-ok: multi-line usage doc; literal command strings are the contract
                 parts.append(
-                    "i/review mode=sections -- compare two sections side-by-side.\n\n"
+                    "i/review mode=sections -- compare two sections side-by-side.\n\n"  # tool-form-ok
                     "Usage: i/review mode=sections section_a=<N> section_b=<M>\n"
                     "  section_a, section_b: 0-indexed section numbers to compare.\n\n"
                     "Example: i/review mode=sections section_a=0 section_b=3"
@@ -85,17 +83,11 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                 parts.append(_sc(section_a, section_b))
         elif m == "audio":
             # Read the cached perceptual report (~0ms) instead of running
-            # EnCodec+CLAP inference fresh (~12s warm, 2m cold). This is
-            # the same path status mode=perceptual takes. Users wanting
-            # live re-inference call `i/hme audio_analyze` directly.
             from .status_unified import _mode_perceptual
             parts.append(_mode_perceptual())
         elif m == "composition":
             from .composition import composition_events as _ce
             # drama_finder inside composition_events does a 60s LLM
-            # "What the Listener Hears" call. Review is a snapshot surface,
-            # not a synthesis surface -- skip the narrative here. Users
-            # wanting it can call `i/hme drama_finder` directly.
             import os as _os
             _prev = _os.environ.get("HME_DRAMA_NO_SYNTHESIS")
             _os.environ["HME_DRAMA_NO_SYNTHESIS"] = "1"
@@ -121,7 +113,6 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     _cf = ",".join(f.strip() for f in _git.stdout.strip().splitlines() if f.strip())
                 except Exception as _err1:
                     logger.debug(f'silent-except review_unified.py:86: {type(_err1).__name__}: {_err1}')
-            # If still no files (e.g. auto-committed before review), read EDIT backlog from nexus
             if not _cf:
                 import os as _os
                 try:
@@ -160,12 +151,6 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                         verdict = "clean"
                     elif "warning" in lo:
                         # Parse the `## Warnings (N)` block and see if every
-                        # bullet is a SCAFFOLDING reminder (HOOK CHANGE, DOC
-                        # CHECK, SKIPPED, KB). workflow_audit's internal
-                        # _actionable filter already treats those as
-                        # non-defects; the verdict marker should honor the
-                        # same filter. Without this, every edit creates two
-                        # boilerplate reminders -> stop.sh blocks forever.
                         warnings_section = _re_vw.search(
                             r'^## Warnings \(\d+\)\s*\n((?:^[ \t]*-.*\n?)+)',
                             _wdif_out, _re_vw.MULTILINE,
@@ -176,17 +161,6 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                                 if ln.strip().startswith("-")
                             ]
                             # Single-space after ] to match the regex in
-                            # posttooluse_hme_review.sh and the tuple in
-                            # workflow_audit.py -- the three consumers of
-                            # this scaffold convention previously used
-                            # \s+ here, exact-string prefixes elsewhere,
-                            # which made a two-space producer emission
-                            # scaffold-only on THIS side but actionable
-                            # on the others. Peer-review iter 111.
-                            # "audit skipped" added -- same scaffolding
-                            # class, surfaces on file-move artifacts
-                            # where static audit references a path that
-                            # was renamed mid-session.
                             scaffold_re = _re_vw.compile(
                                 r'\] (HOOK CHANGE|DOC CHECK|SKIPPED|KB):'
                                 r'|audit skipped\s*[:\-]'
@@ -201,10 +175,6 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                                 verdict = "warnings"
                         else:
                             # `## Warnings (N)` regex missed but "warning" in
-                            # output: case (a) clean-shape header (no paren+digit)
-                            # vs (b) format drift. Discriminate by ANY
-                            # `^## Warnings` header presence -> clean; else
-                            # parse-failure -> "warnings" so hook re-runs.
                             if _re_vw.search(r'^##\s+Warnings\b', _wdif_out,
                                              _re_vw.MULTILINE):
                                 verdict = "clean"
@@ -224,9 +194,8 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     logger.debug(f'silent-except review_unified.py:123: {type(_err4).__name__}: {_err4}')
         elif m == "convention":
             if not file_path:
-                # tool-form-ok: multi-line usage doc; literal command strings are the contract
                 parts.append(
-                    "i/review mode=convention -- check a single file against project conventions.\n\n"
+                    "i/review mode=convention -- check a single file against project conventions.\n\n"  # tool-form-ok
                     "Usage: i/review mode=convention file_path=<relative/path.js>\n"
                     "  file_path: path relative to project root (e.g. src/utils/clamps.js).\n\n"
                     "Example: i/review mode=convention file_path=src/utils/clamps.js"
@@ -244,11 +213,6 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             parts.append(_unified_evolution_recommender())
         elif m == "partner":
             # Partner-review register -- complementary to 'forget' (forensic).
-            # Uses _PARTNER_SYSTEM instead of _REVIEW_SYSTEM. Reads the diff
-            # of changed files and produces a partner-letter (aesthetic /
-            # cultural / future-maintainer empathy) rather than tier-1 bug
-            # findings. The two registers don't compete -- partner output
-            # is intended for cultural feedback, not correctness.
             from .synthesis import _reasoning_think, _PARTNER_SYSTEM
             _cf = changed_files
             if not _cf:
@@ -291,6 +255,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                                            system=_PARTNER_SYSTEM)
                     parts.append("# Partner Review\n\n" + (_pr or "(no response)"))
                 except Exception as _pe:
+                    # silent-ok: optional fallback path.
                     parts.append(f"# Partner Review\n\nerror: {type(_pe).__name__}: {_pe}")
         else:
             parts.append(f"Unknown mode '{m}'. Use: digest, regime, trust, sections, audio, composition, health, forget, convention, symbols, docs, evolve, partner, full.")

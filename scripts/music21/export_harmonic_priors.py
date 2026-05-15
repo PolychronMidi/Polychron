@@ -325,7 +325,6 @@ def main() -> None:
         "minor": build_profile(counters["minor"], top_n=args.top),
     }
 
-    # Merge/scale pattern pools for dorian & mixolydian (pattern-based merge, not numeric interp)
     maj = data["major"]
     minp = data["minor"]
 

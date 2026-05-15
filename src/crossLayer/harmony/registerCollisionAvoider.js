@@ -43,12 +43,9 @@ moduleLifecycle.declare({
     const other = L0.findClosest(CHANNEL, absoluteSeconds, TIME_TOLERANCE_SEC, activeLayer);
     if (!other || V.optionalFinite(other.midi) === undefined) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
     // Melodic coupling: intervalFreshness scales collision tolerance.
-    // Fresh intervals -> wider tolerance (novel dissonances are expressive, let them through).
-    // Stale intervals -> tighter (muddy register collisions need harder avoidance).
     const melodicCtxRCA = emergentMelodicEngine.getContext();
     const intervalFreshness = melodicCtxRCA ? V.optionalFinite(melodicCtxRCA.intervalFreshness, 0.5) : 0.5;
     const freshnessAdjust = (intervalFreshness - 0.5) * 2; // [-1 stale ... +1 fresh]
-    // R77 E8: hotspots coupling -- dense rhythmic bursts widen collision tolerance (intentional cluster dissonance)
     const rhythmEntryRCA = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const hotspotsRCA = rhythmEntryRCA && Array.isArray(rhythmEntryRCA.hotspots) ? rhythmEntryRCA.hotspots.length : 0;
     const hotspotWidenRCA = clamp(hotspotsRCA / 16, 0, 1) * 2.0; // up to +2 semitones at max hotspot density
@@ -73,7 +70,6 @@ moduleLifecycle.declare({
     } else if (downClearsCollision) {
       candidate = downCandidate;
     } else {
-      // Neither direction fully clears - pick the one in a sparser bin, breaking ties by distance
       const hist = spectralComplementarity.getHistogram(activeLayer);
       const upBin = upCandidate < 36 ? 0 : upCandidate < 60 ? 1 : upCandidate < 84 ? 2 : 3;
       const downBin = downCandidate < 36 ? 0 : downCandidate < 60 ? 1 : downCandidate < 84 ? 2 : 3;

@@ -154,10 +154,6 @@ moduleLifecycle.declare({
     conductorMetaWatchdogBeatCounter++;
 
     // Read telemetry from explainabilityBus meta-dampening events to
-    // auto-populate correction records. This is passive - controllers
-    // can also call recordCorrection() directly for richer data.
-    // The centroid correction sign tells us the direction per pipeline.
-    // The flicker dampening adj sign tells us elasticity direction.
 
     if (conductorMetaWatchdogBeatCounter % _CHECK_INTERVAL === 0) {
       conductorMetaWatchdogAnalyze();

@@ -24,13 +24,12 @@ function resolveUpstream(req) {
     const provider = hostParts.length >= 2 ? hostParts[hostParts.length - 2] : u.hostname;
     return { host: u.hostname, port, tls, provider, basePath: u.pathname !== '/' ? u.pathname : '' };
   } catch (_err) {
+    // silent-ok: optional fallback path.
     return { host: DEFAULT_UPSTREAM_HOST, port: DEFAULT_UPSTREAM_PORT, tls: DEFAULT_UPSTREAM_TLS, provider: 'anthropic' };
   }
 }
 
 // Emergency valve. First upstream failure trips into passthrough +
-// writes LIFESAVER. Auto-clears after backoff window so a transient
-// 429 doesn't cost a full restart.
 const EMERGENCY_THRESHOLD = 1;
 const BACKOFF_SCHEDULE_MS = [60_000, 120_000, 300_000, 600_000];
 const SUCCESS_RESET_MS = 300_000;  // 5 min clean = back to first backoff

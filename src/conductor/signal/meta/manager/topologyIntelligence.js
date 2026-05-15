@@ -192,11 +192,6 @@ moduleLifecycle.declare({
       const streakBonus = clamp(S.emergenceStreak * 0.01, 0, 0.10);
       const attractorBonus = S.attractorStabilityBeats > 50 ? 0.05 : 0;
       // Audit: 1.12-1.30x fixed during emergence, no health gate.
-      // Scale emergence boost by system health: full 1.12-1.30x when healthy,
-      // down to 1.0-1.15x when stressed. Uses same e18Scale from hyperMetaManager
-      // but topology doesn't have direct access -- use S.healthEma and exceedanceTrendEma.
-      // Use S.e18Scale (computed once per tick in hyperMetaManager) -- avoids
-      // recomputing health+exceedance scale from the same inputs with the same formula.
       const rawBoost = 1.12 + streakBonus + attractorBonus; // 1.12 to 1.27
       // Scale the overage above 1.0 by health: stressed = less boost
       S.topologyCreativityMultiplier = clamp(1.0 + (rawBoost - 1.0) * S.e18Scale, 1.0, 1.30);
@@ -213,15 +208,11 @@ moduleLifecycle.declare({
 
   function updateInterventionBudgetScale() {
     if (S.crossState === 'emergence') {
-      // Health gate: only reduce budget when system is healthy enough to afford less intervention.
-      // Stressed system (healthEma <= HEALTH_GATE_TOPOLOGY) needs full budget -- skip decay.
       if (S.healthEma > ST.HEALTH_GATE_TOPOLOGY) {
         S.interventionBudgetScale = clamp(S.interventionBudgetScale * 0.97, 0.40, 1.0);
       }
     } else if (S.crossState === 'locked') {
       // Health gate: only amplify budget when exceedance is low.
-      // High exceedance (> 0.3) means system is already over-active -- amplifying
-      // further would worsen the situation.
       if (S.exceedanceTrendEma < 0.3) {
         S.interventionBudgetScale = clamp(S.interventionBudgetScale * 1.03, 0.40, 1.20);
       }

@@ -70,10 +70,7 @@ moduleLifecycle.declare({
       targetScale = 1.0 + (dynamicCoherentRelax - 1.0) * 0.40;
     }
 
-    // R66 E3: Phase-pair target scale increase. When phase share is low,
-    // RAISE the target for phase pairs so fewer of them exceed the threshold
-    // and trigger decorrelation. Higher target = less tightening = phase
-    // correlations persist longer = more phase axis energy.
+    // Phase-pair target scale increase. When phase share is low,
     const phaseFloorSnap = phaseFloorController.getSnapshot();
     const phaseShareEma = V.optionalFinite(phaseFloorSnap && phaseFloorSnap.shareEma, 0.1667);
     const phaseTargetScaleIncrease = phaseShareEma < 0.10 && targetScale > 0
@@ -83,7 +80,6 @@ moduleLifecycle.declare({
       ? targetScale * (1 + phaseTargetScaleIncrease * 0.4)
       : targetScale;
 
-    // Flicker product guard with hysteresis (safePreBoot guarantees a finite number via its fallback)
     const flickerProd = V.optionalFinite(signalReader.snapshot()?.flickerProduct, 1.0);
     if (S.flickerGuardState === 'normal' && flickerProd < 0.90) {
       S.flickerGuardState = 'guarding';

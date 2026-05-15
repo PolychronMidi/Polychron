@@ -23,7 +23,6 @@ moduleLifecycle.declare({
   /** @type {Array<{ bassPC: number, time: number }>} */
   const bassSamples = [];
 
-  // Beat-level cache: getPedalFieldSignal is called 2x per beat (tensionBias + stateProvider)
   const harmonicPedalFieldTrackerCache = beatCache.create(() => harmonicPedalFieldTrackerGetPedalFieldSignal());
 
   /**
@@ -78,13 +77,9 @@ moduleLifecycle.declare({
     const fieldStable = streak >= 4;
 
     // Continuous ramp based on pedalDuration and streak stability.
-    // Long pedal - increase tension to encourage harmonic movement;
-    // very unstable bass - decrease tension to allow settling.
     let tensionBias = 1;
     if (pedalDuration > 0) {
       // Pedal forming - ramp tension up: duration 0-12 maps to 1.0-1.15
-      // R21 E4: Faster ramp 20s->12s. Encourages harmonic motion sooner
-      // in pedal-heavy sections without increasing maximum bias.
       tensionBias = 1.0 + clamp(pedalDuration / 12, 0, 1) * 0.15;
     } else if (bassSamples.length >= 5) {
       // No pedal - ramp settling bias from streak instability

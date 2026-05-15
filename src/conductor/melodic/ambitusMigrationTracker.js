@@ -1,4 +1,3 @@
-// src/conductor/ambitusMigrationTracker.js - Pitch range (ambitus) expansion/contraction.
 // Tracks the overall pitch range used in recent material and its rate of change.
 // Biases toward range exploration when constrained or consolidation when overspread.
 // Pure query API - no side effects.
@@ -71,8 +70,6 @@ moduleLifecycle.declare({
     }
 
     // Density bias based on range health - continuous ramps
-    // Narrow range (0-12 semitones) - ramp 1.06-1.0
-    // Wide range (36-60 semitones) - ramp 1.0-0.94
     let densityBias = 1;
     if (amb.range < 12) {
       densityBias = 1.0 + (1 - clamp(amb.range / 12, 0, 1)) * 0.06;
@@ -111,11 +108,7 @@ moduleLifecycle.declare({
     rangeHistory.length = 0;
   }
 
-  // R13 E2: Flicker bias from ambitus migration. When pitch range is
-  // contracting (narrowing), inject flicker variation (up to 1.10) to
-  // compensate for melodic narrowness with timbral richness. When
-  // expanding, reduce flicker (down to 0.95) to let melodic variety
-  // speak without timbral clutter. Static range returns neutral.
+  // Flicker bias from ambitus migration. When pitch range is
   function getFlickerBias() {
     const signal = getAmbitusSignal();
     if (signal.trend === 'contracting') return 1.10;

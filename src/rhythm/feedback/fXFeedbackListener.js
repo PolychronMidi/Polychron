@@ -87,7 +87,6 @@ moduleLifecycle.declare({
     const intensity = getIntensity();
     const biased = {};
 
-    // Base complexity mapping (0 = simple, 1 = complex). Tweak these values to tune method affinities.
     const complexityMap = {
       random: 0.2,
       binary: 0.25,
@@ -101,16 +100,12 @@ moduleLifecycle.declare({
     };
 
     // Compute a per-method preference score in [0,1].
-    // - intensity === 1 => score === baseComplexity (favor complex methods)
-    // - intensity === 0 => score === 1 - baseComplexity (favor simple methods)
-    // - intensity === 0.5 => score === 0.5 (neutral)
     for (const [name, method] of Object.entries(rhythmMethodsObj)) {
       V.requireType(method, 'function', `method "${name}"`);
 
       const baseComplexity = (complexityMap[name] !== undefined) ? complexityMap[name] : 0.5;
       const score = clamp(baseComplexity * intensity + (1 - baseComplexity) * (1 - intensity), 0, 1);
 
-      // Attach non-enumerable metadata so callers can inspect bias without changing method behavior.
       Object.defineProperty(method, 'fXFeedbackListenerFxIntensityScore', {
         value: score,
         writable: true,
@@ -139,7 +134,6 @@ moduleLifecycle.declare({
     const intensity = getIntensity();
     const modified = {};
 
-    // Build a small map of method -> fXFeedbackListenerFxIntensityScore (defaults to 0.5 neutral)
     const methodScores = {};
     const allMethods = rhythmRegistry.getAll();
     const biasedMethods = biasRhythmMethods(allMethods);

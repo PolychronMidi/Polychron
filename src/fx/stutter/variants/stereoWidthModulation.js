@@ -29,8 +29,6 @@ moduleLifecycle.declare({
       const centerVal = 64;
 
       // Width modulation: sweep between baseline and further from center
-      // audibleLeft: sweep from sideBaseline toward 0 (further left)
-      // audibleRight: sweep from sideBaseline toward 127 (further right)
       const spreadAmount = m.round(m.abs(sideBaseline - centerVal) * width * rf(0.5, 1.0));
       const balTarget = audibleLeft
         ? clamp(sideBaseline - spreadAmount, 0, sideBaseline)

@@ -20,8 +20,7 @@ moduleLifecycle.declare({
         ? [1, 6, 10, 6, 1]
         : [5, 3, 8, 3, 5];
       const noteCount = ri(2, m.min(4, intervals.length - 1));
-      // Dissonant mode ascends more (reaching out), consonant mode descends more (settling)
-      // R54: melodic contour shape further modulates ascend bias via emergentMelodicEngine
+      // melodic contour shape further modulates ascend bias via emergentMelodicEngine
       const baseAscendBias = dissonance > 0.52 ? 0.68 : 0.42;
       const ascendBias = /** @type {number} */ (emergentMelodicEngine.getContourAscendBias(baseAscendBias));
       let currentNote = opts.note;

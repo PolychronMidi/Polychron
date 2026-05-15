@@ -12,12 +12,6 @@ if [ -f "$FLAG" ]; then
   rm -f "$FLAG"
 
   # H14: Agent fingerprint -- read the model ID from env if Claude Code sets
-  # it, else from the last assistant message in the transcript. Different
-  # agents get different walkthrough depth:
-  #   opus*    -> full walkthrough (context-rich)
-  #   sonnet*  -> medium walkthrough
-  #   haiku*   -> terse walkthrough (context-sensitive)
-  #   local*   -> KB-heavy walkthrough with coupling hints
   AGENT_FINGERPRINT="${CLAUDE_MODEL_ID:-unknown}"
   case "$AGENT_FINGERPRINT" in
     *opus*|claude-opus*)   AGENT_TIER="rich" ;;
@@ -34,16 +28,11 @@ if [ -f "$FLAG" ]; then
     CUR_STEP=$(_onb_step_label)
 
     # H6: surface coupling matrix data from prior sessions as an effectiveness
-    # hint. Reads metrics/hme-coupling.json and picks the top 3 tool pairs
-    # that historically led to clean sessions. This makes the dormant coupling
-    # data load-bearing -- agents see "these sequences tend to work."
     COUPLING_HINT=""
     COUPLING_FILE="${METRICS_DIR:-$PROJECT/output/metrics}/hme-coupling.json"
     if [ -f "$COUPLING_FILE" ]; then
       # FAIL-LOUD: was `2>/dev/null` + `except: pass`. Coupling-hint is
-      # informational, but a JSONDecodeError on the metrics file points at
-      # writer-side corruption that must surface.
-      _PHM_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_phm_py_err_$$")
+      _PHM_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_phm_py_err_$$")  # silent-ok: optional fallback path.
       COUPLING_HINT=$(python3 <<'PYEOF' 2>"$_PHM_PY_ERR"
 import json, os
 d = json.load(open(os.environ.get("METRICS_DIR", os.path.join(os.environ.get("PROJECT_ROOT","."), "output", "metrics")) + "/hme-coupling.json"))
@@ -73,9 +62,6 @@ PYEOF
     fi
     [ -n "$COUPLING_HINT" ] && COUPLING_HINT=$'\n\n'"$COUPLING_HINT"
     # Step indicator. The primer content above describes the full loop; this
-    # line just tells the agent where they currently are. For terse tier
-    # (haiku), add one sentence of loop summary in case the agent never reads
-    # the full primer. For rich/medium, the primer is enough.
     case "$AGENT_TIER" in
       terse)
         WALKTHROUGH="=== ONBOARDING -- current step: ${CUR_STEP} ===
@@ -89,9 +75,6 @@ The full walkthrough is in the primer above. Hooks advance state automatically; 
         ;;
     esac
     # additionalContext reaches Claude's next-turn context (the whole
-    # point of this primer); systemMessage also included so the user
-    # sees the transition in the terminal. systemMessage alone does NOT
-    # reach Claude -- that bug silently gutted the primer for ages.
     jq -n --arg content "$CONTENT" --arg walk "$WALKTHROUGH" --arg coupling "$COUPLING_HINT" \
       '{"hookSpecificOutput":{"permissionDecision":"allow","additionalContext":("=== AGENT PRIMER (once per session) ===\n" + $content + "\n=== END PRIMER ===\n\n" + $walk + $coupling)},"systemMessage":("=== AGENT PRIMER (once per session) ===\n" + $content + "\n=== END PRIMER ===\n\n" + $walk + $coupling)}'
     exit 0

@@ -33,7 +33,6 @@ def build_evolutionary_potential(module_name: str) -> list[str]:
         unused_r = [f for f in _ALL_RHYTHM  if f not in used_r]
 
         trust_alias = _FILE_TRUST_ALIASES.get(module_name, module_name)
-        # Use -0.20 threshold to surface weaker virgin pairs (e.g. r=-0.211) in module-specific view
         bridges = get_top_bridges(n=6, threshold=-0.20)
         def _is_this(name: str) -> bool:
             return (name == module_name or name == trust_alias
@@ -78,13 +77,6 @@ def module_story(module_name: str) -> str:
     limits = BUDGET_LIMITS[budget]
     parts = [f"# Module Story: {module_name} (context: {budget})\n"]
     # Definition -- FILE LOOKUP FIRST (cheap). Previously we ran
-    # collect_all_symbols() up-front, which walks ~1000 files and re-extracts
-    # symbols for each on every cache-miss (auto-commits invalidate mtime
-    # signatures constantly). That added 2-3 minutes per call on the
-    # 2026-04-23 measurement. If a file named <module_name>.js exists in
-    # src/, that's the definition -- no global scan needed. Only fall back
-    # to the symbol scan if the file-lookup miss AND a prefix-match search
-    # is needed.
     import glob as _glob
     matching = []
     candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", f"{module_name}.js"), recursive=True)
@@ -92,19 +84,15 @@ def module_story(module_name: str) -> str:
         matching = [{"name": module_name, "kind": "module", "file": candidates[0], "line": 1, "signature": ""}]
     if not matching:
         # Fall-back to full symbol scan -- rare path when the module's symbol
-        # name doesn't match any file basename (inner functions, renamed,
-        # etc). This is the slow branch but it's no longer on every call.
         syms = collect_all_symbols(ctx.PROJECT_ROOT)
         matching = [s for s in syms if s["name"] == module_name]
         if matching and len(matching) > 1:
-            # Prefer the file whose basename matches the module name (definition over call site)
             name_matched = [s for s in matching if os.path.basename(s["file"]).replace(".js", "") == module_name]
             if name_matched:
                 matching = name_matched
     else:
         syms = None  # only load if prefix-fallback needs it
     if not matching:
-        # Prefix match: find symbols whose name starts with the module name (inner functions)
         if syms is None:
             syms = collect_all_symbols(ctx.PROJECT_ROOT)
         prefix_matches = [s for s in syms if s["name"].startswith(module_name) and s["kind"] in ("function", "method")]
@@ -128,10 +116,6 @@ def module_story(module_name: str) -> str:
                 parts.append(f"    ... and {len(result['symbols']) - sym_limit} more")
         parts.append("")
     # Evolution history from KB -- filtered for actual relevance to this module.
-    # KB search + caller scan dominate the wall-clock on a cold worker
-    # (2-3 minutes observed). Under HME_READ_FAST, cap the search depth
-    # aggressively and skip the global KB lookup. The structural sections
-    # that follow are the high-signal parts of a story read anyway.
     _fast = os.environ.get("HME_READ_FAST") in ("1", "true", "yes")
     from . import _filter_kb_relevance
     kb_limit = 5 if _fast else (limits["kb_entries"] * 2)
@@ -151,8 +135,6 @@ def module_story(module_name: str) -> str:
     else:
         parts.append("## Evolution History: no KB entries mention this module\n")
     # Callers -- grep-like scan across ~1000 files, 20-30s on cold cache.
-    # Skip under HME_READ_FAST; the raw caller count is available via
-    # `i/trace mode=impact` for humans who want the detailed list.
     caller_files: list = []
     if _fast:
         parts.append("## Dependents -- SKIPPED (HME_READ_FAST=1; use `i/trace target=<name> mode=impact` for full caller list)")
@@ -175,7 +157,6 @@ def module_story(module_name: str) -> str:
             with open(matching[0]["file"], encoding="utf-8", errors="ignore") as _mf:
                 _src = _mf.read()
             _posts = sorted(set(_re.findall(r"L0\.post\('([^']+)'", _src)))
-            # Also catch variable-based channel names: const CHANNEL = 'name'; L0.post(CHANNEL, ...)
             _chan_vars = dict(_re.findall(r"const\s+(\w+)\s*=\s*'([^']+)'", _src))
             for _var, _ch in _chan_vars.items():
                 if _re.search(r"L0\.post\(" + _re.escape(_var) + r"\b", _src):
@@ -196,9 +177,6 @@ def module_story(module_name: str) -> str:
         parts.append(f"\n## Musical Impact (last run)")
         parts.append(comp)
     # Runtime trace summary -- what the module ACTUALLY DID
-    # Gate behind greedy budget AND NOT fast: trace_query calls synthesis
-    # model (300-600s on local model). Even in greedy mode, fast=true means
-    # the caller wants a snapshot, not a full synthesis run.
     _trace_result = None
     if budget == "greedy" and not _fast:
         try:
@@ -340,10 +318,6 @@ def module_story(module_name: str) -> str:
         "- Only reference behaviors visible in the code above. Do NOT speculate.\n"
     )
     # Adaptive synthesis is slow (45-115s depending on cascade). Allow the
-    # caller to skip it for fast reads -- HME_READ_FAST=1 returns everything
-    # except the synthesis section in ~seconds. The structural sections above
-    # (KB constraints, callers, interactions, evolutionary potential) are
-    # already complete without the LLM.
     if os.environ.get("HME_READ_FAST") in ("1", "true", "yes"):  # env-ok: read transient per-call flag set by read_unified
         parts.append(f"\n## Key Constraints *(adaptive)* -- SKIPPED (HME_READ_FAST=1)")
     else:

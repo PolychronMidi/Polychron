@@ -68,6 +68,7 @@ function newestJsonl(dir) {
       .sort((a, b) => b.m - a.m);
     return rows[0] ? rows[0].f : '';
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return '';
   }
 }
@@ -120,6 +121,7 @@ function maintenanceActive(root) {
     const start = Date.parse(started);
     return Number.isFinite(ttl) && Number.isFinite(start) && Date.now() - start < ttl * 1000;
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return false;
   }
 }
@@ -149,6 +151,7 @@ function denyReason(stdout) {
       || (parsed.hookSpecificOutput && parsed.hookSpecificOutput.permissionDecisionReason)
       || '';
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return '';
   }
 }

@@ -10,6 +10,7 @@ function _payloadCwd(stdinJson) {
     const payload = JSON.parse(stdinJson || '{}');
     return typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : process.cwd();
   } catch (_) {
+    // silent-ok: optional fallback path.
     return process.cwd();
   }
 }
@@ -27,6 +28,7 @@ function projectHasOwnHooks(eventName, cwd, projectRoot = PROJECT_ROOT) {
         const hooks = data.hooks && data.hooks[eventName];
         if (Array.isArray(hooks) && hooks.length > 0) return true;
       } catch (_) {
+        // silent-ok: optional fallback path.
         return false;
       }
     }

@@ -72,7 +72,6 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
         parts.append("## KB Constraints")
         for k in kb_hits:
             parts.append(f"  [{k['category']}] {k['title']}")
-    # L0 channel consumers: scan the module source for L0.post('channel') and find readers
     import re as _re
     source = _read_module_source(symbol_name, max_chars=10000)
     l0_consumers = []

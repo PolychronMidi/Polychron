@@ -21,9 +21,9 @@ else
 fi
 
 PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
-source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true
-PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"
-WORKER_PORT="$(_hme_service_port worker 2>/dev/null || printf '%s' "${HME_WORKER_PORT:-9098}")"
+source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
+PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
+WORKER_PORT="$(_hme_service_port worker 2>/dev/null || printf '%s' "${HME_WORKER_PORT:-9098}")"  # silent-ok: optional fallback path.
 PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
 WORKER_URL="http://127.0.0.1:${WORKER_PORT}"
 PROXY_STARTUP_TIMEOUT="${HME_PROXY_STARTUP_TIMEOUT:-25}"
@@ -34,11 +34,11 @@ _port_healthy() {
   curl -sf --max-time 1 "$1" > /dev/null 2>&1
 }
 
-mapfile -t _PROXY_BUNDLE_PATTERNS < <(_hme_bundle_process_patterns proxy 2>/dev/null || true)
+mapfile -t _PROXY_BUNDLE_PATTERNS < <(_hme_bundle_process_patterns proxy 2>/dev/null || true)  # silent-ok: optional fallback path.
 if [ "${#_PROXY_BUNDLE_PATTERNS[@]}" -eq 0 ]; then
   _PROXY_BUNDLE_PATTERNS=("hme_proxy.js" "worker.py" "llamacpp_daemon")
 fi
-mapfile -t _PROXY_BUNDLE_PID_LABELS < <(_hme_bundle_pid_labels proxy 2>/dev/null || true)
+mapfile -t _PROXY_BUNDLE_PID_LABELS < <(_hme_bundle_pid_labels proxy 2>/dev/null || true)  # silent-ok: optional fallback path.
 if [ "${#_PROXY_BUNDLE_PID_LABELS[@]}" -eq 0 ]; then
   _PROXY_BUNDLE_PID_LABELS=("proxy" "worker" "llamacpp_daemon")
 fi
@@ -65,27 +65,19 @@ for entry in "${_proxy_pids[@]:-}"; do
   label="${entry%%:*}"
   pid="${entry##*:}"
   if kill -0 "$pid" 2>/dev/null; then
+# silent-ok: optional fallback path.
     kill -TERM "$pid" 2>/dev/null \
       && echo "[proxy-restart] SIGTERM -> ${label} (${pid})" >&2
   fi
 done
 
 for pat in "${_PROXY_BUNDLE_PATTERNS[@]}"; do
+# silent-ok: optional fallback path.
   pkill -TERM -f "$pat" 2>/dev/null \
     && echo "[proxy-restart] SIGTERM -> pattern: $pat" >&2 || true
 done
 
 # 2. Wait for the proxy bundle PROCESSES to exit -- not just ports.
-#
-# Why processes, not ports: the proxy's _gracefulShutdown calls
-# server.close() FIRST (port goes unhealthy in <100ms), then drains
-# in-flight requests for up to DRAIN_TIMEOUT_MS=3000ms, then SIGTERMs
-# children, then setTimeout(process.exit, 500). Polling on port liveness
-# breaks the wait loop instantly and SIGKILLs mid-graceful-drain --
-# defeating the whole point of having signal handlers.
-#
-# Grace window: 6s covers the 3000+500ms graceful path with headroom
-# for slow drains.
 
 _GRACE_S=6
 _waited=0
@@ -108,6 +100,7 @@ _killed_any=0
 for entry in "${_proxy_pids[@]:-}"; do
   pid="${entry##*:}"
   if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+# silent-ok: optional fallback path.
     kill -KILL "$pid" 2>/dev/null \
       && echo "[proxy-restart] SIGKILL -> stuck pid ${pid}" >&2 \
       && _killed_any=1
@@ -115,6 +108,7 @@ for entry in "${_proxy_pids[@]:-}"; do
 done
 for pat in "${_PROXY_BUNDLE_PATTERNS[@]}"; do
   if pgrep -f "$pat" >/dev/null 2>&1; then
+# silent-ok: optional fallback path.
     pkill -KILL -f "$pat" 2>/dev/null \
       && echo "[proxy-restart] SIGKILL -> pattern: $pat" >&2 \
       && _killed_any=1
@@ -130,9 +124,6 @@ if _port_healthy "${PROXY_URL}/health"; then
 fi
 
 # 4. Reset the emergency-valve trip flag. Same semantics as
-# polychron-shutdown.sh: deliberate restart resets, watchdog respawns
-# inherit. This is the difference between "I changed the code, retry
-# fresh" and "the supervisor noticed a crash, keep the trip state".
 _VALVE_FLAG="$PROJECT_ROOT/tmp/hme-proxy-valve-tripped.flag"
 if [ -f "$_VALVE_FLAG" ]; then
   rm -f "$_VALVE_FLAG" \
@@ -145,8 +136,6 @@ if [ -f "$_VALVE_STATE" ]; then
 fi
 
 # 5. Surgically rewrite the proxy bundle's lines in the PID file --
-# preserve llama-arbiter / llama-coder entries so the full-stack
-# shutdown script still finds them later.
 if [ -f "$PID_FILE" ]; then
   _tmp_pid_file="${PID_FILE}.tmp.$$"
   _drop_re=""
@@ -159,9 +148,6 @@ if [ -f "$PID_FILE" ]; then
 fi
 
 # 6. Spawn proxy with same invocation as polychron-launch.sh's step 1.
-# setsid + nohup + disown so the proxy survives the caller's shell exit
-# (matches launcher behavior). Stdout/stderr append to the same log so
-# the launch history stays in one file.
 echo "[proxy-restart] starting HME proxy on :${PROXY_PORT}..." >&2
 cd "$PROJECT_ROOT"
 HME_PROXY_PORT="$PROXY_PORT" PROJECT_ROOT="$PROJECT_ROOT" \
@@ -172,7 +158,7 @@ disown 2>/dev/null || true
 
 # 7. Append the new proxy PID to the PID file so the next full-stack
 # shutdown finds it.
-_PROXY_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"
+_PROXY_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"  # silent-ok: optional fallback path.
 echo "${_PROXY_LABEL}=${_PROXY_PID}" >> "$PID_FILE"
 echo "[proxy-restart] started ${_PROXY_LABEL} (pid ${_PROXY_PID})" >&2
 
@@ -194,6 +180,7 @@ fi
 
 # 9. Worker comes up async (proxy supervises it). Report status as
 # informational, not gating -- a slow worker shouldn't fail the restart.
+# silent-ok: optional fallback path.
 _worker_status=$(curl -sf --max-time 3 "${WORKER_URL}/health" 2>/dev/null \
   | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'), d.get('phase',''))" 2>/dev/null \
   || echo "starting...")

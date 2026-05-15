@@ -45,8 +45,6 @@ _REASONER_MODEL = ENV.require("HME_REASONING_MODEL")
 _LLAMACPP_ARBITER_URL = ENV.require("HME_LLAMACPP_ARBITER_URL")
 _LLAMACPP_CODER_URL   = ENV.require("HME_LLAMACPP_CODER_URL")
 # Deprecated port constants -- kept only as placeholders for _route_model's
-# (model, port, label) tuple shape; not used for actual HTTP dispatch under
-# llama-server (which uses base URLs, not ports).
 _ARBITER_PORT  = 8080
 _CODER_PORT    = 8081
 _REASONER_PORT = 8081

@@ -43,14 +43,6 @@ _STRING_CHAR = {'"', "'", '`'}
 
 
 # Two-tier cache: (1) a cached file-list snapshot keyed by lang_filter so
-# blast-radius BFS (which calls find_callers per-symbol per-layer) doesn't
-# re-walk the project tree for every symbol, (2) a per-symbol caller cache
-# keyed by (symbol, lang_filter, file_list_signature) so repeated calls for
-# the same symbol within one BFS pass are O(1).
-# Invalidation: the file_list_signature is the sorted-file-list count + sum
-# of mtimes -- a cheap proxy that changes whenever any code file is
-# added/removed/touched. This is worker-lifetime cache, cleared implicitly
-# on worker restart.
 _FILE_LIST_CACHE: dict = {}     # lang_filter -> (signature, [Path, ...])
 _CALLERS_CACHE: dict = {}       # (symbol, lang_filter, signature) -> [caller dict, ...]
 
@@ -66,6 +58,7 @@ def find_dead_code(project_root: str, language: str = "") -> list[dict]:
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         in_trait = False
         brace_depth = 0
@@ -87,6 +80,7 @@ def find_dead_code(project_root: str, language: str = "") -> list[dict]:
         try:
             file_contents[str(fpath)] = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
 
     name_pattern_cache: dict[str, re.Pattern] = {}
@@ -121,9 +115,6 @@ def find_dead_code(project_root: str, language: str = "") -> list[dict]:
                     continue
         except (IndexError, AttributeError) as _export_err:
             # Narrowed from `Exception`: these are the only plausible
-            # failures in a slice-and-check. Anything else is a real bug
-            # we want to surface. Log at debug -- per-symbol skip here is
-            # expected for lines past EOF.
             logger.debug(f"export-detection skip for {sym_file}:{sym_line}: {type(_export_err).__name__}: {_export_err}")
 
         if name not in name_pattern_cache:
@@ -164,6 +155,7 @@ def preview_rename(old_name: str, new_name: str, project_root: str, language: st
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
 
         fstr = str(fpath)

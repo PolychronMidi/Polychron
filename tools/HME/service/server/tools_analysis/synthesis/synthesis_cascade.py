@@ -26,11 +26,6 @@ logger = logging.getLogger("HME")
 from hme_env import ENV  # noqa: E402
 
 # Adaptive multi-stage synthesis
-# synthesize() auto-detects complexity, injects context, routes to optimal
-# strategy, and quality-gates output. Strategies:
-#   direct (1):   route_model() -> single call (fast)
-#   enriched (2): source grounding + best model (balanced)
-#   cascade (3):  arbiter plan -> coder kickstart -> reasoner deep (thorough)
 
 _DEEP_SIGNALS = frozenset({
     "relationship", "interact", "coupling", "architectur",
@@ -211,8 +206,6 @@ def _inject_context(prompt: str) -> str:
             alerts.append(f"shim_crashes={_crashes}")
         _recovery = ops.get("recovery_success_rate_ema")
         # 0.0 recovery rate is worse than "unknown" -- must trigger alert,
-        # so we branch on `is not None` rather than `or 1.0` which would
-        # mask 0.0 as "healthy" and hide the alert.
         if _recovery is not None and _recovery < 0.8:
             alerts.append(f"recovery={_recovery:.0%}")
         if alerts:
@@ -290,7 +283,6 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
         result = _local_think(prompt, max_tokens=min(max_tokens, 4096), model=model,
                              system=_THINK_SYSTEM, priority=priority)
 
-    # Auto-escalate on failure: try reasoning tier (Gemini T1->T2->local) with enriched context -> cascade
     if not result and strategy != "cascade":
         enriched = _inject_context(prompt) if auto_context else prompt
         result = _reasoning_think(enriched, max_tokens=max_tokens,

@@ -53,8 +53,6 @@ def constitution_report() -> str:
     for c in claims:
         by_kind.setdefault(c.get("kind", "?"), []).append(c)
     # Musical first: constitutional identity is what Polychron IS.
-    # Structural claims come later -- they hold the identity in place but aren't
-    # the identity itself. See derive-constitution.py for the ordering rationale.
     for kind in ("musical", "methodological", "structural", "behavioral"):
         kc = by_kind.get(kind) or []
         if not kc:

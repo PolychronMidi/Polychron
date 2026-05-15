@@ -29,10 +29,6 @@ def _local_think(*a, **kw):
 logger = logging.getLogger("HME")
 
 # English prose + language-keyword stop-words used by extract_diff_symbols
-# to drop plain lowercase regex hits that have no identifier structure.
-# Without this filter, docstring prose words ("the / its / own / across /
-# whether / why") and Python keywords ("import / not / from") were landing
-# in the "Allowed symbols" whitelist and polluting the reviewer prompt.
 
 
 _RACE_MAX_TOKENS = 800
@@ -87,6 +83,7 @@ def _adaptive_cloud_delay() -> float:
         candidate = p50 + 0.5
         return max(_RACE_CLOUD_DELAY_MIN, min(_RACE_CLOUD_DELAY_MAX, candidate))
     except Exception:
+        # silent-ok: optional fallback path.
         return _RACE_CLOUD_DELAY_DEFAULT_SEC
 
 
@@ -197,6 +194,7 @@ def _race_local_vs_cloud(prompt: str, system: str, max_tokens: int,
         try:
             source, result = q.get(timeout=60.0)
         except Exception:
+            # silent-ok: optional fallback path.
             break
         if result:
             winner_source = source
@@ -237,8 +235,6 @@ def _emit_race_outcome(profile: str, max_tokens: int, winner: str | None,
             "winner": winner or "unknown",
             "had_result": had_result,
             # Presence-first then index -- avoids the .get-with-default pattern
-            # that hides a missing key as 0 (would be indistinguishable from
-            # a legitimate ~0ms latency).
             "local_ms": int(latencies["local"] * 1000) if "local" in latencies else None,
             "cloud_ms": int(latencies["cloud"] * 1000) if "cloud" in latencies else None,
         }

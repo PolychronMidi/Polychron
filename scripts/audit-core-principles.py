@@ -85,8 +85,6 @@ def _is_loc_exempt(rel_path):
 _SKIP_DIRS = {"node_modules", ".git", "__pycache__"}
 
 # Heuristic for detecting fail-fast anti-patterns that ESLint may have
-# missed (the rules have narrow scopes). These are health indicators, not
-# hard violations.
 _FAILFAST_PATTERNS = [
     re.compile(r"\|\|\s*0\b"),        # "|| 0" fallback
     re.compile(r"\|\|\s*\[\s*\]"),    # "|| []" fallback
@@ -169,8 +167,6 @@ def audit_subsystem(subsystem_dir):
     total_loc = sum(_loc(p) for p in all_files)
     sizes = [(p, _loc(p)) for p in all_files]
     # Separate data files from code files -- the 200-line rule is about code
-    # coherence, not about data-table size. Data files are tracked so the
-    # large ones are still visible to a reader.
     code_sizes = [(p, n) for p, n in sizes if not _is_loc_exempt(_rel(p))]
     data_files = [(_rel(p), n) for p, n in sizes if _is_loc_exempt(_rel(p))]
     oversize_warn = [(_rel(p), n) for p, n in code_sizes

@@ -29,7 +29,6 @@ const implementations = {
   metaFBM: (x, y, time) => metaRecursiveFBM(x + time * 0.05, y + time * 0.05, defaultSimplex, 0, ri(4, 8))
 };
 
-// Populate the naked-global `noiseGenerators` by mutating rather than conditionally reassigning
 noiseGenerators = {};
 Object.assign(noiseGenerators, implementations);
 if (NOISE_GENERATOR_REGISTRY) {
@@ -44,8 +43,6 @@ if (NOISE_GENERATOR_REGISTRY) {
 generatorKeys = Object.keys(noiseGenerators);
 
 // Get random generator name from registry - texture-biased (#6)
-// During chord bursts - smooth generators (simplex, sine, fbm, gaussian)
-// During flurries - chaotic generators (turbulence, ridged, worley, metaRecursive)
 randomNoiseGenerator = function() {
   if (drumTextureCoupler) {
     const texMetrics = drumTextureCoupler.getMetrics();

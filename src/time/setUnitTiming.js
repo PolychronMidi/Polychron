@@ -1,4 +1,3 @@
-// setUnitTiming.js - Calculate timing variables for each unit level based on the current musical context
 
 const V = validator.create('setUnitTiming');
 
@@ -21,7 +20,6 @@ setUnitTiming = (unitType) => {
     activeComposer = LM.getComposerFor(activeLayerName);
   }
 
-  // Use globals (not a legacy nested object) because `LM.activate()` already restored timing into globals in main.js
 
   switch (unitType) {
     case 'section':
@@ -70,8 +68,6 @@ setUnitTiming = (unitType) => {
       bpmRatio3 = 1 / trueBPM2;
 
       beatStartTime = measureStartTime + beatIndex * spBeat;
-      // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
-      // divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? m.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
       divsPerBeat = activeComposer.getDivisions();
 
       divRhythm = setRhythm('div', activeLayer);
@@ -125,7 +121,6 @@ setUnitTiming = (unitType) => {
       spParent = spDiv;
       unitsPerParent = subdivsPerDiv;
 
-      // Plan subsubdiv-level motifs derived from the current subdiv's subdivMotifs bucket
       { const setUnitTimingAbsDivIdx2 = Number(beatIndex) * Number(divsPerBeat) + Number(divIndex);
         const setUnitTimingAbsSubIdx = setUnitTimingAbsDivIdx2 * Number(subdivsPerDiv) + Number(subdivIndex);
         motifManager.planSubsubdivs(activeLayer, setUnitTimingAbsSubIdx, Number(subsubsPerSub)); }

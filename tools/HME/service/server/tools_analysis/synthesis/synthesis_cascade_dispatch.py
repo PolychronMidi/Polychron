@@ -26,11 +26,6 @@ logger = logging.getLogger("HME")
 from hme_env import ENV  # noqa: E402
 
 # Adaptive multi-stage synthesis
-# synthesize() auto-detects complexity, injects context, routes to optimal
-# strategy, and quality-gates output. Strategies:
-#   direct (1):   route_model() -> single call (fast)
-#   enriched (2): source grounding + best model (balanced)
-#   cascade (3):  arbiter plan -> coder kickstart -> reasoner deep (thorough)
 
 _DEEP_SIGNALS = frozenset({
     "relationship", "interact", "coupling", "architectur",
@@ -76,8 +71,6 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
     _pre_sources = re.findall(r'\[Source: \w+\]\n[\s\S]*?(?=\[Source:|\[Health:|\Z)', enriched_prompt)
     _pre_source_block = "\n".join(_pre_sources[:2])[:3000]
 
-    # Build arbiter module registry: fuzzy-find relevant modules so arbiter can name them.
-    # Lazy import -- synthesis_cascade imports US, so a top-level back-import would cycle.
     from .synthesis_cascade import _fuzzy_find_modules
     _registry_mods = _fuzzy_find_modules(prompt, max_results=12)
     _registry_hint = (
@@ -103,8 +96,6 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
         return _reasoning_think(enriched_prompt, max_tokens=max_tokens, system=_THINK_SYSTEM)
 
     # Source injection from arbiter plan: camelCase names validated against registry.
-    # Any name the arbiter hallucinated (not in _registry_mods) is silently dropped
-    # so hallucinated modules never propagate to the coder stage.
     _plan_modules_raw = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', plan)
     _registry_set = set(_registry_mods)
     _plan_modules = [m for m in _plan_modules_raw if m in _registry_set]
@@ -148,7 +139,6 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
             max_tokens=max_tokens, system=_THINK_SYSTEM, profile="coder",
         )
 
-    # Stage 3: Deep synthesis -- _reasoning_think cascades Gemini T1->T2->local automatically
     _synthesis_prompt = (
         f"Question: {prompt[:300]}\n\n"
         f"VERIFIED FACTS (trust these paths/names):\n{coder_out}\n\n"

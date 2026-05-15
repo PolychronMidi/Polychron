@@ -22,5 +22,3 @@
 scaleDegreeTranspose = function(noteOrMidi, scale = null, degreeOffset = 0, opts = {}) {
   return transposeByDegree(noteOrMidi, scale, degreeOffset, opts);
 };
-
-// alias `scaleDegreeTransposeAll` removed - use `scaleDegreeTranspose(...)` which accepts arrays.

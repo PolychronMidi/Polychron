@@ -36,10 +36,6 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     warnings = []
 
     # 1. dict.get(key, non-None-default) used in a context where a returned
-    # None would cause a TypeError -- i.e. arithmetic or comparison against a
-    # number. Display-only .get (f-string interpolation, print, return-value
-    # aggregation) is safe: None formats fine and doesn't raise.
-    # Heuristic: look for `.get(...,N) + X` / `X - .get(...,N)` / comparisons.
     null_sentinel = re.findall(
         r'\.get\(["\'][^"\']+["\'],\s*(?:0|time\.\w+\(\)|[0-9]+\.?[0-9]*)\)'
         r'\s*(?:[-+*/<>=]|[-+]=|!=)',
@@ -56,24 +52,10 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         )
 
     # 2. int()/float() conversion inside a try block that only catches OSError-family.
-    # ValueError from bad string conversion won't be caught.
-    #
-    # Implementation: walk every `try:` in the file, find its matching
-    # `except` (the FIRST one at the same indent -- NOT a later `except
-    # (...)` that belongs to a different try block), check whether that
-    # except is narrow and whether the try body does int()/float().
-    # Previously a regex that required parenthesized excepts would skip
-    # over bare `except Exception:` and match a `except (...)` from a
-    # completely unrelated try block further down the file, conflating
-    # their bodies and producing false positives.
     for try_match in re.finditer(r'^(\s*)try:\s*$', content, flags=re.MULTILINE):
         indent = try_match.group(1)
         start = try_match.end()
         # Find the FIRST except at exactly the same indent as the try:.
-        # Matching any except-clause form -- bare, `except Name`, `except
-        # Name as e`, `except (A, B)`, `except (A, B) as e`. The regex
-        # must reach the trailing colon so it cannot accidentally stop
-        # partway through a clause like `except Exception as e:`.
         except_re = re.compile(
             rf'^{re.escape(indent)}except([^\n:]*):\s*$',
             flags=re.MULTILINE,
@@ -85,9 +67,6 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         if not re.search(r'\bint\(|\bfloat\(', try_body):
             continue
         # exc_types = whatever is between `except` and `:`. Bare except
-        # leaves it empty; `except Exception as e` yields "Exception as e"
-        # (OSError/JSONDecodeError/ValueError/TypeError checks below still
-        # work on substring matches).
         exc_types = em.group(1).strip()
         has_os = "OSError" in exc_types or "JSONDecodeError" in exc_types
         has_value_or_type = "ValueError" in exc_types or "TypeError" in exc_types
@@ -108,7 +87,6 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
             "file will grow without bound over time."
         )
 
-    # 4. `.get(...) or X` idiom that masks legitimate zero/False values.
     zero_or = re.findall(r'\.get\([^)]+\)\s+or\s+(?:[0-9]+\.?[0-9]*|time\.\w+\(\))', content)
     if zero_or:
         warnings.append(
@@ -121,17 +99,14 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         )
 
     # 5. Bare variable reference that might be used outside the `if` guard defining it.
-    # Heuristic: variable assigned only inside `if len(...) >= N:` and referenced outside.
     guarded = re.findall(r'if\s+len\([^)]+\)\s*>=\s*(\d+):[^\n]*\n(?:[ \t]+[^\n]+\n)*[ \t]+(\w+)\s*=', content)
     for _threshold, var in guarded:
-        # Check if var appears after the block (simplified: appears more than once in file)
         if content.count(f"\n    {var}") + content.count(f"\n        {var}") > 1:
             warnings.append(
                 f"[{rel_path}] PYTHON: `{var}` assigned inside `if len() >= N` guard "
                 "-- verify it's not referenced where the guard is False (NameError risk)."
             )
 
-    # 6. time.time() - d.get(...) or reverse: arithmetic on potentially-None value.
     # If the key is absent or stored as None, the subtraction raises TypeError.
     none_arith = re.findall(
         r'time\.(?:time|monotonic)\(\)\s*[-+]\s*\w+\.get\('
@@ -156,7 +131,6 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         )
 
     # 8. Attribute access directly on .get() result without a None guard.
-    # Pattern: d.get('key').something -- raises AttributeError when key absent or value is None.
     none_attr = re.findall(r'\.get\(["\'][^"\']+["\']\)\.[a-zA-Z_]', content)
     if none_attr:
         warnings.append(
@@ -166,15 +140,6 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         )
 
     # 8b. Dispatcher-bypass: direct use of the `_shared_*` RAG model globals
-    # from call positions (`_shared_model.encode(...)`, etc.) is a load-bearing
-    # anti-pattern -- it bypasses the VramManager + _RagDispatcher, holds a
-    # strong GPU reference that blocks offload, and ignores the daemon's
-    # per-GPU busy flag. Callers must go through the dispatcher (either
-    # `engine.text_model` / `engine.code_model` / `engine.reranker`, or the
-    # `_text_model_router` / `_code_model_router` / `_reranker_router` locals
-    # in hme_http.py). The module-level definitions of the dispatchers
-    # themselves reference `_shared_*` -- that's the one legitimate site and
-    # it gets excluded by the regex below.
     _bypass_pattern = re.compile(
         r'(?<!_)_shared_(?:model|code_model|reranker)(?:_cpu)?'
         r'\s*\.\s*(?:encode|predict|get_sentence_embedding_dimension|__call__)\b'
@@ -191,11 +156,6 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         )
 
     # 9. Operator-swap evasion of the silent-fallback rule.
-    # Detect: the same `.get("k", N)` -> `.get("k") or N` (or the reverse)
-    # flipped in an uncommitted change. Swapping the operator does NOT
-    # address "no silent fallback" -- it's the same pattern in a different
-    # shape. Runs via `git diff HEAD -- <file>`, so it only fires when the
-    # evasion is in the current uncommitted delta.
     try:
         import subprocess as _sp
         _diff = _sp.run(

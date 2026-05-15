@@ -219,16 +219,12 @@ def main(argv: list) -> int:
     surfaces = {s: _public_surface(s) for s in subsystems}
 
     # Index search roots so we can resolve dotted module paths to files.
-    # Add `tools/HME/service/server` so `from server.tools_analysis.X import Y`
-    # resolves (the import relies on sys.path manipulation at runtime).
     search_roots = roots + [
         _PROJECT / "tools" / "HME" / "service" / "server",
     ]
 
     findings = []
     # Walk every Python file under the roots; for each cross-subsystem
-    # import, check whether the imported names are in the target's
-    # public surface.
     for root in roots:
         if not root.is_dir():
             continue
@@ -249,8 +245,6 @@ def main(argv: list) -> int:
                     for s in subsystems:
                         if _is_within(target_path, s):
                             # target is inside subsystem s; pick the
-                            # innermost matching subsystem so nested
-                            # subsystems get the correct boundary.
                             if target_subsystem is None or _is_within(s, target_subsystem):
                                 target_subsystem = s
                     if target_subsystem is None:
@@ -259,16 +253,9 @@ def main(argv: list) -> int:
                     if _is_within(fp, target_subsystem):
                         continue
                     # Flat-package: target subsystem opted out of strict
-                    # boundary checks. Anything inside it is implicitly
-                    # public; sibling and external access both allowed.
                     if target_subsystem in flat_packages:
                         continue
                     # Target IS a subsystem boundary. Two cases:
-                    # (a) `from <target_subsystem package> import name` -- name
-                    #     must be on the public surface.
-                    # (b) `from <target_subsystem>.<inner> import name` -- the
-                    #     caller is reaching past the public API directly,
-                    #     unconditionally a boundary violation.
                     target_pkg_name = ".".join(
                         target_subsystem.relative_to(_PROJECT).parts
                     )

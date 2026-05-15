@@ -22,19 +22,11 @@ moduleLifecycle.declare({
   const EVENTS = eventCatalog.names;
 
   // Tension-accumulation adaptive threshold (R23 E1, corrected R24/R25).
-  // postTension fires per-layer so ~2x per beat pair -- SATURATION_CALLS=60 = ~30 real beats.
-  // Relief is exploring=0 (R79 E2 calibrated 0.80 is correct, adding relief creates pump-dump
-  // oscillation), evolving=0.03, coherent=0.04 (floor 0.88 -- just enough micro-relief without
-  // crossing the sub-0.88 danger zone proven destructive in R19/R23/R24).
   const TENSION_SATURATION_CALLS = 60;
   const THRESHOLD_PRESSURE_RELIEF = { exploring: 0.0, evolving: 0.03, coherent: 0.04 };
   let tensionPressureAccum = 0;
 
-  // R79 E2: Regime-aware sync tolerance and resolution thresholds.
-  // In exploring regime, widen the sync window (400->550ms) to create more
-  // cross-layer cadence alignment opportunities -- harmonic "anchoring" during
-  // adventurous passages. In coherent regime, tighten (400->350ms) for precise
-  // alignment. This connects macro regime state to micro harmonic decisions.
+  // Regime-aware sync tolerance and resolution thresholds.
   function _getSyncTolerance() {
     const regime = regimeClassifier.getRegime();
     if (regime === 'exploring') return 550;
@@ -128,7 +120,6 @@ moduleLifecycle.declare({
     const intensityBoost = alignment.combinedTension;
     const supportScale = _getSupportScale(alignment.consensus);
 
-    // No active listeners - emitted for eventCatalog completeness and future extensibility
     eventBus.emit(EVENTS.CROSS_LAYER_CADENCE_ALIGN, {
       layer: activeLayer,
       combinedTension: alignment.combinedTension,
@@ -138,8 +129,6 @@ moduleLifecycle.declare({
     });
 
     // Tension-accumulation adaptive threshold. Base is regime-aware; pressure
-    // (sustained tension beats) reduces it. Relief is regime-capped to protect
-    // coherent stability floor (min ~0.89) while allowing more relief in exploring.
     const resolveThreshold = (function() {
       const reg = regimeClassifier.getRegime();
       const base = reg === 'exploring' ? 0.80 : reg === 'coherent' ? 0.92 : 0.88;
@@ -148,11 +137,8 @@ moduleLifecycle.declare({
       return base - pressure * relief;
     })();
     // Melodic coupling: ascendRatio shifts the resolve threshold.
-    // High ascendRatio (phrase building) -> raise threshold -> hold resolution.
-    // Low ascendRatio (phrase descending) -> lower threshold -> invite resolution.
     const melodicCtxCA = emergentMelodicEngine.getContext();
     const ascendRatio = melodicCtxCA ? V.optionalFinite(melodicCtxCA.ascendRatio, 0.5) : 0.5;
-    // Rhythmic coupling: strong rhythmic bias at cadence invites resolution (rhythm drives harmonic landing).
     const rhythmEntryCA = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmBiasCA = rhythmEntryCA && Number.isFinite(rhythmEntryCA.biasStrength) ? rhythmEntryCA.biasStrength : 0;
     const adjustedResolveThreshold = resolveThreshold + (ascendRatio - 0.5) * 0.04 - rhythmBiasCA * 0.03;

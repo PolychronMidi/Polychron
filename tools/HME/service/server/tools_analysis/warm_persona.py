@@ -13,9 +13,6 @@ from server import context as ctx
 logger = logging.getLogger("HME")
 
 # Hard cap on persona size (chars). 12K chars ~= 4K tokens -- keeps prompt eval under
-# ~30s on M40, so interactive cancellation (via socket timeout in _cancellable_urlopen)
-# limits worst-case llama.cpp queue wait to ~30s. Larger personas (50K) caused ~120s prompt
-# eval during which llama.cpp ignores client disconnect, blocking interactive requests.
 _MAX_PERSONA_CHARS = 12_000
 
 

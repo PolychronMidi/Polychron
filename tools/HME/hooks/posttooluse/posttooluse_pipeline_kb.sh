@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME PostToolUse: after pipeline run, extract trace-summary observations for KB auto-population
 # This runs AFTER posttooluse_bash.sh (which handles Evolver phase reminders)
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
@@ -10,8 +9,6 @@ echo "$CMD" | grep -q 'npm run main' || exit 0
 
 PROJECT="$PROJECT_ROOT"
 # All metrics live under output/metrics/ since the Apr 2026 bulk migration --
-# the previous `$PROJECT/metrics/...` path silently no-op'd on every
-# `npm run main` completion (file never existed at the old location).
 SUMMARY="${METRICS_DIR:-$PROJECT/output/metrics}/trace-summary.json"
 [ -f "$SUMMARY" ] || exit 0
 

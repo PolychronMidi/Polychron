@@ -67,9 +67,6 @@ def main(argv: list[str]) -> int:
         return 2
 
     # Trace-tree linkage (lesson from langsmith RunTree). Auto-link emissions
-    # into a hierarchical trace via env-var inheritance: subprocess chains
-    # automatically share trace_id; a child sets HME_PARENT_RUN_ID before
-    # spawning grandchildren to nest deeper. CLI flags override env.
     if "trace_id" not in fields:
         env_trace = os.environ.get("HME_TRACE_ID")
         fields["trace_id"] = env_trace if env_trace else str(uuid.uuid4())
@@ -89,9 +86,6 @@ def main(argv: list[str]) -> int:
         return 0
 
     # PROJECT_ROOT fallback: callers who don't source .env (manual
-    # invocations from agents) shouldn't KeyError -- derive from the
-    # script's own location (this file lives at
-    # <PROJECT_ROOT>/tools/HME/activity/emit.py). env-ok.
     project_root = os.environ.get("PROJECT_ROOT") or os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "..", "..")
     )

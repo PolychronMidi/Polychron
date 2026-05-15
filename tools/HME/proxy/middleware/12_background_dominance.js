@@ -40,25 +40,13 @@ const path = require('path');
 
 const BG_STUB_RE = /Command running in background with ID:\s*([a-zA-Z0-9]+)/;
 
-// Allowlist of command patterns whose real output we should resolve.
-// Kept intentionally narrow -- generic commands pass through unchanged.
-// Includes: `i/<tool>` (HME shell wrappers, with or without `./` prefix),
-// `npm run X` / `yarn X`, `make X`, `python3 scripts/*.py`, `node
-// scripts/*.js`, `bash scripts/*.sh`.
+// Commands whose real output is worth resolving from background stubs.
 const DOMINATE_CMD_RE = /(\.?\/?\bi\/\w+\b|\bnpm run \w+|\byarn (run )?\w+|\bmake \w+|\bpython3\s+\S*scripts\/\S+\.py\b|\bnode\s+\S*scripts\/\S+\.js\b|\bbash\s+\S*scripts\/\S+\.sh\b)/;
 
 // Env overrides exist for tests. Defaults match production expectations:
-// 60s is the empirical p99 for HME commands on warm GPUs, 1s poll is fine-
-// grained enough to catch short-running commands without thrashing the fs.
 const POLL_TIMEOUT_MS = Number(process.env.HME_BG_DOMINANCE_TIMEOUT_MS) || 60_000;
 const POLL_INTERVAL_MS = Number(process.env.HME_BG_DOMINANCE_POLL_MS) || 1_000;
 // Completion detection: require BOTH size-stable-across-reads AND mtime
-// quiescent (file hasn't been written to recently). Size-alone fires
-// false positives when the command is mid-inference and pauses output
-// for a few seconds; mtime-quiescent shuts that case down because any
-// incoming write bumps mtime forward. 3 reads + 2.5s mtime-quiescent
-// gives a 4-second floor on completion detection -- empirically the
-// shortest real HME command returns in ~5s so we don't miss completions.
 const STABLE_READS_REQUIRED = 3;
 const MTIME_QUIESCENT_MS = 2_500;
 
@@ -70,9 +58,6 @@ function _textOf(toolResult) {
 }
 
 function _findTaskOutput(taskId) {
-  // Output files live under /tmp/claude-<uid>/<path-encoded-project>/tasks/<taskId>.output.
-  // Walk /tmp/claude-* -> project subdir -> tasks/. Avoid shell-out; pure fs
-  // so the middleware stays self-contained.
   const base = '/tmp';
   let claudeDirs;
   try { claudeDirs = fs.readdirSync(base); } catch (_e) { return null; }
@@ -96,10 +81,6 @@ async function _sleep(ms) {
 }
 
 // Returns the completed output file path once writes have stabilized,
-// or null on timeout. Completion = size stable across STABLE_READS_REQUIRED
-// consecutive 1s polls AND file mtime is at least MTIME_QUIESCENT_MS old.
-// Size-alone false-positived on commands that pause mid-inference; mtime
-// guards that case because any downstream write bumps mtime forward.
 async function _awaitCompletion(taskId, timeoutMs) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -154,9 +135,6 @@ module.exports = {
     const filePath = await _awaitCompletion(taskId, POLL_TIMEOUT_MS);
     if (!filePath) {
       // Task still unfinished. Request a retry on the next turn rather
-      // than accepting the stub forever -- ctx.retryNextTurn removes the
-      // dedup for this tool_use.id so the middleware re-enters (bounded
-      // by MAX_RETRIES so a stuck task doesn't loop forever).
       const attempt = ctx.retryNextTurn(toolUse.id);
       const remaining = ctx.retriesRemaining(toolUse.id);
       ctx.appendToResult(
@@ -173,21 +151,14 @@ module.exports = {
     let realOutput;
     try {
       // Async read so the proxy event loop yields. Synchronous readFileSync
-      // here previously blocked every other in-flight inference response
-      // while reading multi-MB task outputs (i/status long-form, full
-      // reindex log, etc.).
       realOutput = await fs.promises.readFile(filePath, 'utf8');
     } catch (err) {
+      // silent-ok: optional fallback path.
       ctx.appendToResult(toolResult, `\n[hme bg-dominance] read failed: ${err.message}`);
       ctx.markDirty();
       return;
     }
     // Cap to a reasonable size. The stub carried no useful content, so
-    // replacing with the full real output (up to some cap) is the win.
-    // 32 KB total: keep HEAD (16 KB) for structured-output prefaces (JSON
-    // opening braces, YAML headers, markdown titles) AND TAIL (16 KB) for
-    // verdicts/markers/summaries that live at the end. Middle elision
-    // preserves both ends so parsers and markers both survive.
     const CAP = 32_000;
     const SIDE = 16_000;
     let payload = realOutput;

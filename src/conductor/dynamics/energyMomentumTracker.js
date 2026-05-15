@@ -14,11 +14,7 @@ moduleLifecycle.declare({
   /** @type {Array<{ time: number, energy: number }>} */
   const samples = [];
   const MAX_SAMPLES = 64;
-  // R24 E3: Rolling variance replaces walk-back plateau detection.
-  // Window of 16 samples (~8-16 seconds depending on beat rate).
-  // R25 E1: Variance threshold widened 0.0004->0.002 (std dev 0.045).
-  // Module dormant 4 consecutive rounds. Std dev 0.02 was too tight;
-  // at 0.045 the module should detect energy bands narrower than ~0.09.
+  // Rolling variance replaces walk-back plateau detection.
   const PLATEAU_WINDOW = 16;
   const PLATEAU_VARIANCE_THRESHOLD = 0.002;
   const STALE_SECONDS = 15;
@@ -53,13 +49,7 @@ moduleLifecycle.declare({
     for (let i = 0; i < samples.length; i++) energies.push(samples[i].energy);
     const { slope: momentum } = analysisHelpers.halfSplitSlope(energies);
 
-    // R24 E3: Rolling variance plateau detection. The old approach walked
-    // backward counting samples within PLATEAU_THRESHOLD of the latest
-    // value -- but energy is naturally noisy enough that consecutive
-    // samples rarely look "flat" even during true plateaus. Instead,
-    // compute the variance of the most recent PLATEAU_WINDOW samples.
-    // Low variance (< PLATEAU_VARIANCE_THRESHOLD) means the signal is
-    // stuck in a narrow band even if individual samples fluctuate.
+    // Rolling variance plateau detection. The old approach walked
     const windowSize = m.min(samples.length, PLATEAU_WINDOW);
     const windowStart = samples.length - windowSize;
     let sumE = 0;
@@ -138,16 +128,7 @@ moduleLifecycle.declare({
     return nudge;
   }
 
-  // R11 E3: Tension bias from energy momentum. When momentum is stale or
-  // plateaued, inject tension contrast -- stale gets stronger push (1.12)
-  // to break monotony, plateau gets mild push (1.06). Rising momentum
-  // sustains mild elevation (1.04). Falling/steady returns 1.0 (neutral).
-  // This creates a new tension signal pathway from a module that previously
-  // only contributed density bias -- diversifying the tension signal surface.
-  // R12 E2: Phase-aware dampening. When phase share is above fair share
-  // (0.167), reduce the tension nudge proportionally to decorrelate
-  // tension-phase (was 0.560 increasing in R11). Prevents tension from
-  // tracking phase-correlated activity patterns.
+  // Tension bias from energy momentum. When momentum is stale or
   function getTensionNudge() {
     const mom = getMomentum();
     let nudge = 1.0;

@@ -26,9 +26,6 @@ from typing import Iterable, Iterator
 
 
 # Per-process cache of parsed transcripts. run_all.py (the consolidated
-# detector runner) reads a multi-MB transcript once; every downstream
-# detector's load_turn_events() call returns the cached parse instead of
-# re-reading + re-JSON-parsing the same file. Matters for stop-hook p95.
 _PARSE_CACHE: dict[str, list[dict]] = {}
 
 
@@ -77,9 +74,6 @@ def _parse_all(transcript_path: str | Path) -> list[dict]:
         data = Path(transcript_path).read_text(encoding="utf-8", errors="ignore")
     except OSError as e:
         # Empty fallback is correct (no transcript = no events to scan),
-        # but a permissions error on a transcript that DOES exist looks
-        # identical to "no transcript" without this log line. Surface
-        # the cause to stderr so detector debugging has a thread to pull.
         import sys as _sys
         _sys.stderr.write(
             f"[_transcript._parse_all] read failed for {transcript_path!r}: "

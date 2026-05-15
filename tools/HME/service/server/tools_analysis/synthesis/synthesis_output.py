@@ -29,10 +29,6 @@ def _PROSE_AND_KEYWORD_STOPWORDS():
 logger = logging.getLogger("HME")
 
 # English prose + language-keyword stop-words used by extract_diff_symbols
-# to drop plain lowercase regex hits that have no identifier structure.
-# Without this filter, docstring prose words ("the / its / own / across /
-# whether / why") and Python keywords ("import / not / from") were landing
-# in the "Allowed symbols" whitelist and polluting the reviewer prompt.
 
 
 def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
@@ -200,15 +196,6 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
     has something to check against.
     """
     # Strip diff metadata BEFORE extraction so git noise doesn't pollute
-    # the whitelist. The noise that landed in production reviews:
-    #   - diff --git a/... b/...     (path headers with a/, b/ prefixes)
-    #   - index 7c169164..fdd82f1d   (SHA hashes leak through the digit filter)
-    #   - --- a/file / +++ b/file    (file markers)
-    #   - @@ -N,M +N,M @@            (hunk headers)
-    # Only lines that represent actual code changes (+/-) or filenames
-    # contribute tokens. Context lines (leading space) skipped too: they
-    # are prose-heavy (docstrings around the hunk) and not part of the
-    # change itself.
     import re as _re_sx
 
     def _strip_diff_noise(raw: str) -> str:
@@ -222,10 +209,6 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
             if ln.startswith(('+', '-')):
                 body = ln[1:]  # strip the +/- marker
                 # Drop comment lines -- they're prose-heavy and would
-                # pollute the whitelist with every English word in the
-                # author's explanation ("accept", "actual", "covers",
-                # "production", "reviews"...). Language-agnostic heuristic:
-                # a line whose first non-space chars are a comment prefix.
                 stripped = body.lstrip()
                 if stripped.startswith(('#', '//', '/*', '*', '--')):
                     continue
@@ -238,22 +221,13 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
         return set()
 
     # Regex-based fallback -- always produced, merged with arbiter output.
-    # Catches most identifiers without a model round-trip, so the filter
-    # keeps working even if the daemon is down.
     fallback: set[str] = set()
 
     def _looks_identifier(tok: str) -> bool:
         # Reject stop-words + language keywords (English prose,
-        # "import/the/why/across"). Accept plain lowercase single words
-        # too: `json`, `shutil`, `os`, `sys`, `threading` etc. are real
-        # module names. The stop-word list is the primary filter here;
-        # structural hints (underscore/dot/case/digit) are secondary.
         if tok.lower() in _PROSE_AND_KEYWORD_STOPWORDS():
             return False
         # Drop regex-fragment / metadata noise: anything containing
-        # obvious non-identifier characters is garbage from the source.
-        # `@` rejects git hunk markers like `@@`. Do NOT reject on `/` --
-        # real file paths (tools/HME/foo.py) must pass this filter.
         if any(c in tok for c in '\\[](){}<>^$|?*+=@'):
             return False
         # Drop pure-hex-looking git SHA fragments (7-40 hex chars, no
@@ -297,13 +271,12 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
     arbiter_ctx = None
     try:
         # Pattern D fix consolidated into synthesis_warm._warm_ctx_fresh_p
-        # (peer-review iter 131): file-mtime check against the KB Lance
-        # store rather than the ctx._kb_version shared mutable attribute.
         from .synthesis_warm import _warm_ctx, _warm_ctx_fresh_p
         arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
         if arbiter_ctx and _warm_ctx_fresh_p(_ARBITER_MODEL):
             payload["context"] = arbiter_ctx
     except Exception as _wmerr:
+        # silent-ok: optional fallback path.
         logging.getLogger("HME").debug(
             f"extract_diff_symbols: warm-ctx lookup skipped: {type(_wmerr).__name__}: {_wmerr}"
         )
@@ -326,10 +299,6 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
         if " " in tok:
             continue
         # Apply the same structural filter as the fallback path. Without
-        # this, the LLM arbiter was shoving `import`, `file`, `the`, `why`,
-        # git SHAs like `fdd82f1d`, regex fragments, and hunk markers into
-        # the whitelist -- all the junk the post-filter is supposed to
-        # reject for the reasoning model's output.
         if not _looks_identifier(tok):
             continue
         extracted.add(tok.lower())

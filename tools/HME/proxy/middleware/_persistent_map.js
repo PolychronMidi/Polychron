@@ -138,8 +138,6 @@ class PersistentMap {
     this._ensureLoaded();
     return this._map.delete(k);
     // Persistence: deletes are NOT recorded; relies on compaction to
-    // forget them. For caches this is fine (worst case: an old value
-    // resurrects on restart, then the next set() overwrites it).
   }
 }
 

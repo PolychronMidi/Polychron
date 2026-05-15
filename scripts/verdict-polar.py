@@ -36,8 +36,6 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # Canonical mapping: each bin -> (distance, direction) tuple.
-# distance in [0.0, 1.0]: 0 = baseline, 1 = maximally different.
-# direction in [-1.0, 1.0]: -1 = very unappealing, +1 = very appealing.
 VERDICT_POLAR = {
     "STABLE":    (0.2, 0.4),   # small movement, clearly appealing
     "EVOLVED":   (0.55, 0.7),  # meaningful move, strongly appealing

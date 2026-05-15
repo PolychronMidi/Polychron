@@ -83,11 +83,6 @@ class ConjugateChannelVerifier(Verifier):
         if not isinstance(latest.get("hme_coherence"), (int, float)) or \
            not isinstance(latest.get("perceptual_complexity_avg"), (int, float)):
             # SKIP path -- but DON'T let the streak-aware license signal go
-            # stale just because the quantitative signals are pending.
-            # If a ground-truth legendary streak exists, keep the band-
-            # widening proposal fresh based on streak alone (composition-
-            # aware fast feedback: listener verdicts update the license
-            # immediately, not waiting for the next pipeline correlation).
             try:
                 _streak = _count_legendary_streak(_PROJECT)
                 if _streak >= 2:
@@ -125,12 +120,6 @@ class ConjugateChannelVerifier(Verifier):
         cur_p = float(latest["perceptual_complexity_avg"])
         if cur_h < h_thr and cur_p < p_thr:
             # Bidirectional V-coupling (Horizon V asymptote): on lost-
-            # quadrant FAIL, write a band-tightening proposal so the
-            # NEXT round's coherence-budget consumer can opt to narrow
-            # the chaordic edge. Composition->HCI was the seed; this
-            # closes the HCI->composition direction. The marker file is
-            # advisory -- composition behavior remains driven by the
-            # configured band until a consumer explicitly reads this.
             try:
                 tightening = {
                     "ts": time.time(),
@@ -166,13 +155,6 @@ class ConjugateChannelVerifier(Verifier):
         except OSError:
             pass  # silent-ok: best-effort fs op
         # Otherwise: PASS, with quadrant label in summary.
-        # Plus check for the symmetric "license to explore" condition:
-        # when most subtags are ABOVE band (system over-coherent), write
-        # a band-LOOSENING marker so the next pipeline run gets a wider
-        # chaordic edge. Mirrors the tightening branch above. The
-        # composition consumer (compute-coherence-budget.js) reads the
-        # same file via tmp/hme-band-tightening.json convention and
-        # applies the delta. Pure logic enhancement, no constant tuning.
         try:
             snap_path = os.path.join(_PROJECT, "output", "metrics",
                                      "hci-verifier-snapshot.json")
@@ -195,17 +177,8 @@ class ConjugateChannelVerifier(Verifier):
                              if vals and (sum(vals) / len(vals)) > _HI)
                 _total = sum(1 for vals in _by_subtag.values() if vals)
                 # >= 5 of 7 axes saturated -> license-to-explore signal.
-                # Persist a loosening proposal mirroring the tightening
-                # one. Composition consumer applies opposite-sign delta.
-                # Streak-aware sizing (V * VIII * IX compounding): consecutive
-                # legendary ground-truth verdicts indicate the wider band
-                # is producing real composition wins, so the license should
-                # extend in both magnitude and duration. Without this, every
-                # legendary round would re-derive a 1-round license that
-                # expires before the next pipeline run inherits it.
                 if _total >= 6 and _above >= 5:
                     legendary_streak = _count_legendary_streak(_PROJECT)
-                    # Magnitude: +0.05 base, +0.025 per additional streak round, capped at +0.10
                     streak_delta = min(0.10, 0.05 + max(0, legendary_streak - 1) * 0.025)
                     # Duration: 1 round base, +1 per additional streak round, capped at 4
                     streak_expiry = min(4, 1 + max(0, legendary_streak - 1))
@@ -229,8 +202,6 @@ class ConjugateChannelVerifier(Verifier):
                     os.replace(loosen_tmp, loosen_path)
         except (OSError, ImportError, ValueError):
             # Loosening signal is advisory; absence of the marker is
-            # equivalent to "no exploration license." Don't fail the
-            # verifier on bookkeeping issues.
             pass
         if cur_h >= h_thr and cur_p >= p_thr:
             quad = "mature stability"

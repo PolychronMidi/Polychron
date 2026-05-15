@@ -61,9 +61,6 @@ class Supervisor:
         intentionally killed the process.
         """
         # Single-writer invariant: only llamacpp_daemon may spawn llama-server.
-        # Pass the package name explicitly -- __file__ would now resolve to
-        # `supervisor.py` (post-split), which doesn't match the registered
-        # owner stem "llamacpp_daemon" in lifecycle_writers._OWNERS.
         try:
             from server.lifecycle_writers import assert_writer
             assert_writer("llama-server", "llamacpp_daemon")

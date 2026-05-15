@@ -42,9 +42,6 @@ _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parent.parent.parent.parent)
 _TELEMETRY = (_PROJECT / "output" / "metrics" / "mode-classifier.jsonl")
 
-# Explicit tier override in user prompt -- `/e1` ... `/e5` (case-insensitive,
-# anywhere in the message). Per-PAI: explicit override forces ALGORITHM
-# mode at the named tier even if the classifier said MINIMAL/NATIVE.
 _TIER_OVERRIDE_RE = re.compile(r"(?i)\B/e([1-5])\b")
 
 # MINIMAL signals -- single-token acknowledgments, ratings, greetings.

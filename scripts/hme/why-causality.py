@@ -100,9 +100,6 @@ def main(argv):
             walk_chain = True
         elif a == "--root-cause" or a == "root_cause=true":
             # Root-cause shorthand: walks the chain to terminal, prints
-            # only the final leaf cause + traversal depth. Often what's
-            # actually wanted ("what was the ROOT trigger?") rather
-            # than the full chain.
             walk_chain = True
             root_cause_only = True
         elif a.startswith("depth="):
@@ -128,9 +125,6 @@ def main(argv):
         return 2
 
     # Tier-1: explicit caused_by from marker files (Horizon VII
-    # instrumentation). Hot-reload writes tmp/hme-last-reload.json with
-    # caused_by when triggered by fs_watcher. As more sites add explicit
-    # caused_by, expand this catalogue.
     marker_catalog = {
         "hot_reload": "tmp/hme-last-reload.json",
     }
@@ -170,10 +164,6 @@ def main(argv):
         return 1
 
     # Tier-1.5: explicit caused_by field on activity-log events themselves
-    # (Horizon VII asymptote -- any emit site can opt-in by including
-    # caused_by:<value> in the event payload). Scan for events of the
-    # target type that already carry the field; if found, show those
-    # explicit chains preferentially.
     all_events = []
     explicit_chain_events = []
     try:
@@ -190,9 +180,6 @@ def main(argv):
         pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # Recursive chain mode -- walks caused_by references through layered
-    # heuristic resolution. Bridges the Tier-1 (explicit caused_by) and
-    # Tier-2 (session adjacency) gap by trying to resolve each cause
-    # string to another event whose own caused_by can be followed.
     if walk_chain and explicit_chain_events and root_cause_only:
         # Root-cause shorthand -- walk silently, print only the leaf.
         latest = explicit_chain_events[-1]
@@ -243,9 +230,6 @@ def main(argv):
         current = latest
         depth = 0
         # Cycle detection: track (event, ts) tuples we've already visited.
-        # Layered heuristic resolution can match the same event twice if
-        # caused_by patterns happen to converge; without this guard we'd
-        # infinite-loop bounded only by chain_depth.
         seen: set[tuple[str, float]] = set()
         while current and depth < chain_depth:
             ts = current.get("ts", 0)
@@ -296,9 +280,6 @@ def main(argv):
         print()
 
     # Read all events; group by session for causal-window lookup. Events
-    # without a session field are common (proxy-internal events emitted
-    # outside an agent turn); group them under "no-session" rather than
-    # "?" so the output is more readable.
     by_session: dict[str, list[dict]] = defaultdict(list)
     with open(activity) as f:
         for ln in f:

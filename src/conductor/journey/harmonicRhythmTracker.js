@@ -2,9 +2,6 @@ moduleLifecycle.declare({
   name: 'harmonicRhythmTracker',
   subsystem: 'conductor',
   // eventBus + validator are legacy globals (still IIFE-loaded); listed in
-  // deps so the registry resolves them via namespace lookup. conductorScopes
-  // replaces the manual conductorIntelligence.registerModule call from the
-  // old initialize() function.
   deps: ['validator', 'eventBus'],
   provides: ['harmonicRhythmTracker'],
   conductorScopes: ['section'],

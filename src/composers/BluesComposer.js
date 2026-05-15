@@ -98,7 +98,6 @@ BluesComposer = class BluesComposer extends MeasureComposer {
       }
     }
 
-    // Ghost notes: quiet grace notes at low velocity (marked via BluesComposerGhost flag)
     const result = shaped.map(n => {
       const note = typeof n === 'number' ? n : (n && typeof n.note === 'number' ? n.note : null);
       BluesComposer.V.requireFinite(note, 'output note');

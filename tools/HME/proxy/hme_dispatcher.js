@@ -106,13 +106,12 @@ async function executeHmeTool(name, input, timeoutMs = 120_000) {
     const err = (json && json.error) || `worker returned status ${status}`;
     return `[HME tool error: ${err}]`;
   } catch (err) {
+    // silent-ok: optional fallback path.
     return `[HME transport error: ${err.message}]`;
   }
 }
 
-//  SSE parsing
-// Reconstructs a fully-assembled assistant message from a buffered SSE stream.
-// Returns { contentBlocks, usage, stopReason, raw }.
+// SSE parsing
 function parseSseResponse(bufferStr) {
   const events = [];
   for (const raw of bufferStr.split(/\r?\n\r?\n/)) {
@@ -292,6 +291,7 @@ function parseJsonResponse(text) {
     const contentBlocks = Array.isArray(d.content) ? d.content : [];
     return { contentBlocks, usage: d.usage, stopReason: d.stop_reason };
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return { contentBlocks: [], usage: null, stopReason: null };
   }
 }

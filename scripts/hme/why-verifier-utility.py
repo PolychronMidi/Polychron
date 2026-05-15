@@ -113,11 +113,7 @@ def main(argv):
         if len(always_pass) > cap:
             print(f"  (+{len(always_pass) - cap} more -- pass verbose=true to show)")
         print()
-        # Horizon VI maturity: persist auto-prune marker so downstream
-        # weight-computation can halve these verifiers' contribution to
-        # HCI without removing them from the registry. State hand-off
-        # via tmp/, atomic write, advisory only -- composition behavior
-        # remains unchanged until a consumer explicitly reads this.
+        # persist auto-prune marker so downstream
         try:
             import time as _time
             prune_path = os.path.join(PROJECT_ROOT, "tmp", "hme-verifier-prune.json")
@@ -190,9 +186,6 @@ def main(argv):
     print(f"  active stable: {active}")
     print()
     # Incident-correlation heuristic (Horizon VI asymptote): walk the
-    # KB for entries whose tags reference 'fix' or 'bugfix' AND mention
-    # a verifier name. Project to only columns we read (skips the
-    # 1024-d vector blob, ~half the lance read time).
     try:
         sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "service"))
         from direct_lance import _open_table  # type: ignore

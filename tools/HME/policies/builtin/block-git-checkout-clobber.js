@@ -8,11 +8,6 @@
  */
 
 // Pattern 1: `git checkout <ref> -- .` or `git checkout <ref> -- <broad-glob>`
-//   The `-- .` is the canonical clobber form. Also catches `--all` and
-//   bare `<ref> -- *`.
-// Pattern 2: `git checkout <ref>` immediately preceded by `git stash`
-//   on the same command line via `&&`, `;`, or `|`. The stash-and-
-//   checkout combo specifically risks losing the popped stash.
 const PATTERN_BROAD_CHECKOUT = /\bgit\s+checkout\s+\S+\s+--\s+(?:\.|\*|--all)(?=\s|$|[;&|])/;
 const PATTERN_STASH_THEN_CHECKOUT = /\bgit\s+stash\b[^&;|]*?[&;|]+\s*git\s+checkout\b/;
 

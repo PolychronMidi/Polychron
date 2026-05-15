@@ -25,8 +25,6 @@ moduleLifecycle.declare({
   const pairGainCeilingControllerPairState = {};
 
   // Configurable per-pair sensitivity profiles derived from the evolution history.
-  // Pairs that historically needed tighter ceilings get lower base ceilings.
-  // The ceiling adapts around this anchor, never straying too far.
   const _PAIR_PROFILES = {
     'density-flicker': { baseCeiling: 0.10, minCeiling: 0.04, maxCeiling: 0.25, p95Sensitivity: 0.82, exceedanceSensitivity: 0.04 },
     'tension-flicker': { baseCeiling: 0.10, minCeiling: 0.05, maxCeiling: 0.35, p95Sensitivity: 0.77, exceedanceSensitivity: 0.03 },
@@ -45,26 +43,16 @@ moduleLifecycle.declare({
   };
 
   // Metaprofile coupling strength scales all ceiling values via scaleFactor
-  // on the precomputed strength midpoint. Default midpoint 0.50 -> 1.0x;
-  // atmospheric (0.35) -> 0.70x; chaotic (0.85) -> 1.70x.
   function _couplingScale() {
     return metaProfiles.scaleFactor('coupling', 'midpoint');
   }
 
   // Substrate-level: when the active metaprofile lists this controller in
-  // disableControllers, we short-circuit further adaptation -- ceilings
-  // stay at their initial baseCeiling*scale baseline. Subtractive
-  // silencing, not just damping. Pair state is still seeded so downstream
-  // readers get a well-formed snapshot.
   function _isDisabled() {
     return metaProfiles.isControllerDisabled('pair_gain_ceiling');
   }
 
   // Metaprofile-prescribed coupling pairs: when the active profile declares
-  // couplingPairs, we boost the prescribed pairs' baseCeiling toward the
-  // upper end (lerp 50% to maxCeiling) so the topology hint produces
-  // observable preference, not just metadata. Pairs not listed remain at
-  // their _PAIR_PROFILES defaults.
   function _isPairPrescribed(pair) {
     const hint = metaProfiles.getCouplingPairsHint();
     if (!hint) return false;
@@ -81,9 +69,6 @@ moduleLifecycle.declare({
       const profile = _PAIR_PROFILES[pair];
       const scale = _couplingScale();
       // Topology hint: pairs the metaprofile prescribes start at a higher
-      // ceiling -- midway between baseCeiling*scale and maxCeiling*scale.
-      // Encodes the prescribed-pair preference without overriding the
-      // adaptive controller's exceedance / sensitivity logic.
       let initialCeiling = profile ? profile.baseCeiling * scale : 1.2;
       if (profile && _isPairPrescribed(pair)) {
         const upper = profile.maxCeiling * scale;
@@ -113,9 +98,6 @@ moduleLifecycle.declare({
     if (!profile) return; // only manage pairs with profiles
 
     // Substrate-level disable: when the active metaprofile lists this
-    // controller, freeze ceilings at their seeded baseline. Pair state
-    // stays well-formed so downstream readers see a coherent snapshot,
-    // but no adaptation happens.
     if (_isDisabled()) return;
 
     const ps = getPairState(pair);
@@ -155,8 +137,6 @@ moduleLifecycle.declare({
     }
 
     // Dimensionality expander ceiling floor: during locked topology with
-    // collapsing dimensionality, the orchestrator emits a minimum ceiling
-    // to preserve nudge capacity for the expander's perturbations.
     const dimFloor = /** @type {number} */ (hyperMetaManager.getRateMultiplier('dimExpanderCeilingFloor'));
     if (dimFloor > 0 && ps.ceiling < dimFloor) {
       ps.ceiling = dimFloor;

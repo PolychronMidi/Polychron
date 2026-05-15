@@ -5,7 +5,6 @@
 motifConfig = (function() {
   const UNIT_PROFILES = MOTIF_UNIT_PROFILES;
 
-  // Dynamic overrides store (cleared on section boundary if needed, but Conductor manages it)
   const OVERRIDES = {};
 
   function getProfile(name) {

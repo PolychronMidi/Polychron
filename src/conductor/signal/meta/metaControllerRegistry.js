@@ -1,4 +1,3 @@
-// metaControllerRegistry.js - Central manifest of all hypermeta self-calibrating controllers.
 // Provides a single inspectable registry of every meta-controller in the system,
 // replacing the scattered #1-#13 comment convention with a queryable data structure.
 //
@@ -212,10 +211,6 @@ moduleLifecycle.declare({
   ]);
 
   // Note: #7 has a companion sub-controller:
-  // "Tension Pin Relief Valve" in regimeReactiveDamping.js
-  // When tension bias pins at ceiling >10 consecutive beats, relaxes ceiling by
-  // 5% increments (up to 30% of base). Resets after 5 unpinned beats.
-  // Interacts with #2 (equilibrator also modifies tension) and #11 (watchdog sees tension corrections).
 
   /**
    * Get all registered meta-controllers.

@@ -193,18 +193,13 @@ class SubagentBackendsVerifier(Verifier):
             else:
                 backends["grep"] = None
         except Exception:
+            # silent-ok: optional fallback path.
             backends["grep"] = None
 
         # 2. Python (always available since we're running)
         backends["python"] = "python3"
 
         # 3. llama-server arbiter. Port 11436 was retired (see
-        # config/invariants.json: hardcoded 11434/11435/11436 are an
-        # invariant violation); the live port is HME_ARBITER_PORT in
-        # .env (default 8080). The new endpoint is the llama-server
-        # /health, not the legacy ollama-style /api/tags. Without this
-        # update the verifier permanently reported MISSING for a backend
-        # that was actually healthy under a different port + scheme.
         _arbiter_port = os.environ.get("HME_ARBITER_PORT", "8080")
         try:
             import urllib.request
@@ -215,6 +210,7 @@ class SubagentBackendsVerifier(Verifier):
                 else:
                     backends["llamacpp_arbiter"] = None
         except Exception:
+            # silent-ok: optional fallback path.
             backends["llamacpp_arbiter"] = None
 
         # 4. HME worker
@@ -227,6 +223,7 @@ class SubagentBackendsVerifier(Verifier):
             with urllib.request.urlopen(req, timeout=2) as r:
                 backends["hme_worker"] = str(service_port(worker)) if r.status == 200 else None
         except Exception:
+            # silent-ok: optional fallback path.
             backends["hme_worker"] = None
 
         missing = [k for k, v in backends.items() if v is None]

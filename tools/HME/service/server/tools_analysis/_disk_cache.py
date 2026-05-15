@@ -75,8 +75,6 @@ class DiskCache:
 
     def _connect(self) -> sqlite3.Connection:
         # check_same_thread=False + per-call connection so threads don't
-        # contend on a shared connection. SQLite serializes internally
-        # via file locks; WAL mode lets readers proceed during writes.
         conn = sqlite3.connect(self._db_path, timeout=5.0, check_same_thread=False)
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=NORMAL")
@@ -85,9 +83,6 @@ class DiskCache:
     @staticmethod
     def _serialize_key(key: Any) -> str:
         # Tuples in JSON become lists; round-trip won't be lossless for
-        # weird key shapes, but we never deserialize keys -- they're
-        # only ever serialized for storage lookup. repr fallback handles
-        # non-JSON-native types (paths, etc.) deterministically.
         try:
             return json.dumps(key, default=repr, sort_keys=True)
         except (TypeError, ValueError):

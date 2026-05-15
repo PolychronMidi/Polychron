@@ -1,5 +1,4 @@
 // src/crossLayer/pitchMemoryRecall.js - Long-term thematic pitch memory.
-// Remembers significant pitch patterns across sections (NOT reset at section boundaries).
 // When convergence, cadence, or downbeat events occur, recalls earlier material
 // for thematic unity. This is the only cross-layer module that persists across
 // sections by design - it's the long-term memory of the composition.
@@ -93,8 +92,7 @@ moduleLifecycle.declare({
 
     if (memories.length === 0) return null;
     if (absoluteSeconds - lastRecallSec < MIN_RECALL_INTERVAL_SEC) return null;
-    // R41: regime-responsive recall probability. Coherent = more recall (reinforce patterns),
-    // exploring = less recall (seek novelty). System's memory behavior adapts to its state.
+    // regime-responsive recall probability. Coherent = more recall (reinforce patterns),
     const recallRegime = regimeClassifier.getRegime();
     const recallScale = recallRegime === 'coherent' ? 1.4 : recallRegime === 'exploring' ? 0.6 : 1.0;
     // Melodic coupling: stale territory -> pull from memory to break repetition;

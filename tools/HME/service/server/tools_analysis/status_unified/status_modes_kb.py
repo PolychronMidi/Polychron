@@ -65,10 +65,6 @@ def _mode_learn_suggestions():
     if not events:
         return "## Learn Suggestions\n  No productive_incoherence events this round -- every edit landed in KB-covered territory, or no edits this round."
     # Dedup by (file, module); keep most recent timestamp per key.
-    # Activity events are emitted by tools/HME/activity/emit.py which always
-    # sets `ts` -- direct index is safe. Historic entries without ts are
-    # filtered earlier by `ev.get("event")` which returns a non-event mark
-    # for malformed lines.
     def _ts(ev: dict) -> float:
         t = ev.get("ts")
         return t if isinstance(t, (int, float)) else 0.0

@@ -86,8 +86,6 @@ class HardcodedToolInvocationVerifier(Verifier):
     weight = 1.5
 
     # All wrapper invocation shapes that have canonical helper coverage.
-    # Each entry is `i/<wrapper> <key>=<value>`. Bare `i/<wrapper>` calls
-    # without parameters aren't flagged -- those rarely drift on rename.
     _RE = re.compile(
         r'["\'`](?:i/hme\s+admin\s+action|i/(?:status|evolve|review|why|learn|trace)\s+(?:mode|focus|target|name|query))=[a-zA-Z_][\w-]*'
     )
@@ -117,9 +115,6 @@ class HardcodedToolInvocationVerifier(Verifier):
                             file_lines = fp.readlines()
                         for i, line in enumerate(file_lines, start=1):
                             # Opt-out: `tool-form-ok` on this line OR within
-                            # the previous 3 lines (covers `parts.append(\n
-                            # multi-line-string\n)` shapes where the comment
-                            # naturally lands above the call).
                             opt_out_window = "".join(
                                 file_lines[max(0, i - 4): i]
                             )
@@ -213,12 +208,6 @@ class AgentLoopQualityVerifier(Verifier):
                            f"({bash_errs} bash errors / {infs} inferences)")
 
         # Horizon IV maturity -- adaptive priming hook. Write a tier
-        # marker the proxy/hooks can read to scale context-injection
-        # aggressiveness. GREEN = healthy, reduce injection; YELLOW =
-        # turns thin, default injection; RED = error-rate elevated,
-        # increase injection. Advisory only -- consumer wiring lives
-        # in proxy middleware (any future reader can opt to scale
-        # behavior on this signal without touching the verifier).
         self._write_tier_marker("GREEN", "healthy loop")
         return _result(PASS, 1.0,
                        f"healthy: {turns} turns, {infs} inferences, "

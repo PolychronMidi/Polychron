@@ -13,8 +13,7 @@ PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/streak_calibrator.p
   > /dev/null 2>&1 &
 
 # Turn-closing audit trail
-# Summarize what changed this turn from nexus EDIT entries and emit to stderr
-# so it appears in the session log. Silent when nothing was edited.
+# silent-ok: optional fallback path.
 _EDIT_FILES=$(grep '^EDIT:' "${PROJECT_ROOT}/tmp/hme-nexus.state" 2>/dev/null \
   | sed 's/^EDIT:[0-9]*://' | sort -u)
 if [ -n "$_EDIT_FILES" ]; then

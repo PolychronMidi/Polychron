@@ -107,14 +107,6 @@ def main(argv):
     src_hashes = _verifier_source_hashes()
 
     # The timeseries `probes` field carries TWO kinds of entries:
-    #   1. HCI verifiers from verify_coherence/ -- kebab-case names,
-    #      mapped to source files this script can hash.
-    #   2. selftest probes from evolution_selftest/selftest.py -- names
-    #      like "15 tools registered" or "doc sync" with spaces; these
-    #      live in selftest.py as result-string parsing, not as classes.
-    # Distinguish them: an entry whose name is in src_hashes is an HCI
-    # verifier (the focus of this report). Selftest probes are reported
-    # in a separate bucket so the reader can tell them apart.
     frozen_hci, frozen_selftest = [], []
     for name, seq in status_sequence.items():
         if len(seq) < n_runs:

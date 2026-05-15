@@ -1,5 +1,4 @@
 // src/conductor/durationalContourTracker.js - Tracks note-duration trajectory over time.
-// Detects acceleration (durations getting shorter) or deceleration (durations getting longer).
 // Pure query API - biases duration envelope for intentional temporal shaping.
 
 moduleLifecycle.declare({
@@ -13,7 +12,6 @@ moduleLifecycle.declare({
   const V = deps.validator.create('durationalContourTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 
-  // Beat-level cache: getDurationBias is called 2x per beat (flickerModifier + stateProvider)
   const durationalContourTrackerBiasCache = beatCache.create(() => durationalContourTrackerGetDurationBias());
 
   /**
@@ -71,8 +69,6 @@ moduleLifecycle.declare({
   function durationalContourTrackerGetDurationBias(opts) {
     const contour = getDurationContour(opts);
     // Continuous ramp based on normalizedSlope magnitude.
-    // slope is normalized: negative = accelerating, positive = decelerating.
-    // Use slope to interpolate rather than boolean thresholds.
     const beatDur = beatGridHelpers.getBeatDuration();
     const normSlope = beatDur > 0 ? contour.slope / beatDur : 0;
     if (normSlope < -0.02) {
@@ -88,12 +84,7 @@ moduleLifecycle.declare({
     return { durationBias: 1.0, flickerMod: 1.0 };
   }
 
-  // R11 E4: Tension bias from durational contour. Accelerating notes
-  // (durations getting shorter) naturally build intensity -- complement
-  // with mild tension increase (up to 1.08). Decelerating notes signal
-  // release -- mild tension reduction (down to 0.94). This couples
-  // rhythmic momentum with harmonic tension for musically coherent
-  // trajectory shaping. A new tension channel from an untouched module.
+  // Tension bias from durational contour. Accelerating notes
   function getTensionBias() {
     const contour = getDurationContour();
     const beatDur = beatGridHelpers.getBeatDuration();

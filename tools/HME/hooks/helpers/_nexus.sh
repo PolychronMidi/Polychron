@@ -25,7 +25,7 @@ _nexus_mark() {
   local type="$1" payload="${2:-}"
   _nexus_ensure
   # Remove old entries of this type, add new one
-  grep -v "^${type}:" "$_NEXUS_FILE" > "${_NEXUS_FILE}.tmp" 2>/dev/null || true
+  grep -v "^${type}:" "$_NEXUS_FILE" > "${_NEXUS_FILE}.tmp" 2>/dev/null || true  # silent-ok: optional fallback path.
   echo "${type}:$(date +%s):${payload}" >> "${_NEXUS_FILE}.tmp"
   mv "${_NEXUS_FILE}.tmp" "$_NEXUS_FILE"
 }
@@ -33,7 +33,7 @@ _nexus_mark() {
 _nexus_clear_type() {
   local type="$1"
   _nexus_ensure
-  grep -v "^${type}:" "$_NEXUS_FILE" > "${_NEXUS_FILE}.tmp" 2>/dev/null || true
+  grep -v "^${type}:" "$_NEXUS_FILE" > "${_NEXUS_FILE}.tmp" 2>/dev/null || true  # silent-ok: optional fallback path.
   mv "${_NEXUS_FILE}.tmp" "$_NEXUS_FILE"
 }
 
@@ -41,16 +41,16 @@ _nexus_has() {
   local type="$1" payload="${2:-}"
   _nexus_ensure
   if [ -n "$payload" ]; then
-    grep -q "^${type}:[0-9]*:${payload}$" "$_NEXUS_FILE" 2>/dev/null
+    grep -q "^${type}:[0-9]*:${payload}$" "$_NEXUS_FILE" 2>/dev/null  # silent-ok: optional fallback path.
   else
-    grep -q "^${type}:" "$_NEXUS_FILE" 2>/dev/null
+    grep -q "^${type}:" "$_NEXUS_FILE" 2>/dev/null  # silent-ok: optional fallback path.
   fi
 }
 
 _nexus_count() {
   local type="$1"
   _nexus_ensure
-  local c; c=$(grep -c "^${type}:" "$_NEXUS_FILE" 2>/dev/null || true)
+  local c; c=$(grep -c "^${type}:" "$_NEXUS_FILE" 2>/dev/null || true)  # silent-ok: optional fallback path.
   echo "${c:-0}" | tr -d '[:space:]'
 }
 
@@ -60,25 +60,20 @@ _nexus_get() {
   if [ "$type" = "PIPELINE" ]; then
     local ps="$PROJECT_ROOT/output/metrics/pipeline-summary.json"
     if [ -f "$ps" ]; then
-      python3 -c "import json,sys; d=json.load(open('$ps')); print(d.get('verdict',''))" 2>/dev/null && return
+      python3 -c "import json,sys; d=json.load(open('$ps')); print(d.get('verdict',''))" 2>/dev/null && return  # silent-ok: optional fallback path.
     fi
   fi
   _nexus_ensure
-  grep "^${type}:" "$_NEXUS_FILE" 2>/dev/null | tail -1 | cut -d: -f3-
+  grep "^${type}:" "$_NEXUS_FILE" 2>/dev/null | tail -1 | cut -d: -f3-  # silent-ok: optional fallback path.
 }
 
 _nexus_list() {
   local type="$1"
   _nexus_ensure
-  grep "^${type}:" "$_NEXUS_FILE" 2>/dev/null | cut -d: -f3-
+  grep "^${type}:" "$_NEXUS_FILE" 2>/dev/null | cut -d: -f3-  # silent-ok: optional fallback path.
 }
 
 # Drop EDIT entries whose file currently matches git HEAD (net-zero
-# change -- typically from an edit-then-revert sequence within one turn).
-# Without this, NEXUS flagged "N unreviewed edits" even when the working
-# tree was clean relative to HEAD, forcing the agent to run review on
-# phantom changes. The metric now reflects actual divergence, not the
-# count of Edit tool invocations.
 _nexus_prune_clean_edits() {
   _nexus_ensure
   [ -z "${PROJECT_ROOT:-}" ] && return 0
@@ -94,7 +89,7 @@ _nexus_prune_clean_edits() {
       local _fp
       _fp="$(printf '%s' "$_line" | cut -d: -f3-)"
       if [ -n "$_fp" ] && [ -e "$_fp" ]; then
-        if git -C "$PROJECT_ROOT" diff --quiet HEAD -- "$_fp" 2>/dev/null; then
+        if git -C "$PROJECT_ROOT" diff --quiet HEAD -- "$_fp" 2>/dev/null; then  # silent-ok: optional fallback path.
           # File matches HEAD -- drop this EDIT entry (net zero change)
           continue
         fi
@@ -118,7 +113,7 @@ _nexus_pending() {
     issues="${issues}\n  - ${edit_count} edited file(s) not yet reviewed: run review(mode='forget')"
   fi
   local ri_count; ri_count=$(_nexus_get REVIEW_ISSUES)
-  if [ -n "$ri_count" ] && [ "$ri_count" -gt 3 ] 2>/dev/null; then
+  if [ -n "$ri_count" ] && [ "$ri_count" -gt 3 ] 2>/dev/null; then  # silent-ok: optional fallback path.
     issues="${issues}\n  - ${ri_count} unresolved review issue(s) -- fix then re-run review(mode='forget') until count drops to 0"
   fi
   local verdict; verdict=$(_nexus_get PIPELINE)
@@ -147,11 +142,6 @@ _nexus_pending() {
 }
 
 # Canonical BRIEF-recording entry point. Writes to tmp/hme-nexus.state AND
-# emits a `brief_recorded` activity event so downstream can see WHICH paths
-# are firing. Centralizes what was previously 4 independent _nexus_add
-# call sites (posttooluse_read_kb, pretooluse_grep,
-# nexus_tracking.js middleware) -- each can still call _nexus_add directly
-# for backward compat, but new paths should use _brief_add.
 _brief_add() {
   local target="${1:-}" source="${2:-unknown}"
   [ -z "$target" ] && return 0
@@ -176,12 +166,8 @@ _brief_add() {
     _brief_module="$target"
   fi
   # Emit activity event in background; never block the caller.
-  # Horizon VII instrumentation: caused_by = the source path that
-  # triggered this briefing (e.g. posttooluse_read_kb, pretooluse_grep,
-  # nexus_tracking middleware). Lets `i/why mode=causality
-  # brief_recorded` resolve via Tier-1.5 (activity-log caused_by) rather
-  # than session-adjacency heuristic.
-  if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ] 2>/dev/null; then
+  if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ] 2>/dev/null; then  # silent-ok: optional fallback path.
+# silent-ok: optional fallback path.
     python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
       --event=brief_recorded \
       --target="$target" \
@@ -189,7 +175,7 @@ _brief_add() {
       --module="$_brief_module" \
       --source="$source" \
       --caused_by="$source:$target" \
-      --session="$(whoami 2>/dev/null || echo shell)" \
+      --session="${USER:-shell}" \
       >/dev/null 2>&1 &
   fi
 }

@@ -7,15 +7,10 @@ moduleLifecycle.declare({
   name: 'conductorSignalBridge',
   subsystem: 'crossLayer',
   // Full-DI deps: every cross-subsystem reference inside method bodies
-  // resolves through deps.X. Aliasing as locals keeps refresh() readable
-  // (`signalReader.snapshot()` reads from the local const, not the global).
   deps: ['harmonicContext', 'hyperMetaManager', 'pipelineCouplingManager', 'signalReader', 'systemDynamicsProfiler', 'validator'],
   lazyDeps: ['explainabilityBus'],
   provides: ['conductorSignalBridge'],
   // Phase 4: declare post-init registrations inline. Registry binds the
-  // recorder to conductorIntelligence and registers the module with
-  // crossLayerRegistry for scoped resets -- replaces the trailing register
-  // calls that previously lived after the IIFE close.
   crossLayerScopes: ['all', 'section'],
   recorder: (ctx) => { conductorSignalBridge.refresh(ctx); },
   init: (deps) => {
@@ -76,13 +71,9 @@ moduleLifecycle.declare({
       couplingStrength: (() => { const ds = systemDynamicsProfiler.getSnapshot(); return ds ? V.optionalFinite(ds.couplingStrength, 0.3) : 0.3; })(),
       axisEnergyShares: (() => { const ae = pipelineCouplingManager.getAxisEnergyShare(); return (ae && ae.shares) ? /** @type {Record<string,number>} */ (ae.shares) : null; })(),
       adaptiveTargetSnapshot: /** @type {Record<string,any>|null} */ (pipelineCouplingManager.getAdaptiveTargetSnapshot() || null),
-      // Semantic coupling labels for axis pairs -- 'opposed'/'contrasting' labels indicate
       // creative anti-correlations that should not be treated as structural failures.
       couplingLabels: (() => { const ds = systemDynamicsProfiler.getSnapshot(); return (ds && ds.couplingLabels) ? ds.couplingLabels : null; })(),
       // Xenolinguistic L2: regime probability distribution (superposition).
-      // Instead of collapsing to one regime, expose soft probabilities based on
-      // velocity + coupling. Low velocity + high coupling = coherent-leaning.
-      // High velocity + low coupling = exploring-leaning. Medium = evolving.
       regimeProb: (() => {
         const ds = systemDynamicsProfiler.getSnapshot();
         if (!ds) return { coherent: 0.33, exploring: 0.33, evolving: 0.34 };

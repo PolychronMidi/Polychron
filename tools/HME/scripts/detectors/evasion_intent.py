@@ -130,7 +130,6 @@ EVASION_INTENT_PHRASES = (
     "to avoid the verify-landed",
 )
 
-# Empty-result fabrication: the agent narrates tool results as "empty" / "no body" / "not sure if it landed" when the result actually carried content. The middleware (26_empty_result_marker.js) tags genuine empty bodies with [SUCCESS] or [FAIL] -- any agent claim of "empty" without those markers is a fabrication that prior turns confirmed dozens of times. Listed SEPARATELY from EVASION_INTENT_PHRASES so the self-reference rescue (which exempts detector-maintenance turns) does NOT exempt these.
 FABRICATION_PHRASES = (
     "came back empty",
     "came back as empty",
@@ -214,7 +213,6 @@ def main() -> int:
     thinking_combined = "\n\n".join(thinking_blocks).lower()
     output_lower = output_text.lower()
 
-    # FABRICATION first: scans BOTH thinking AND output. No self-reference rescue. Repeated user-confirmed pattern across this session: agent narrates tool results as empty when content was present. Editing this detector cannot exempt fabrication-style narration about empty results, because that exemption IS the bug.
     fab_matched: list[str] = []
     fab_haystack = thinking_combined + "\n\n" + output_lower
     for phrase in FABRICATION_PHRASES:

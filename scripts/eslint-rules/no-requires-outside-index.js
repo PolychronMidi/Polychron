@@ -25,7 +25,6 @@ module.exports = {
       CallExpression(node) {
         if (!node.callee || node.callee.type !== 'Identifier' || node.callee.name !== 'require') return;
 
-        // Allow require() of packages (non-relative); only enforce rule for local/relative requires
         const arg = node.arguments && node.arguments[0];
         if (!arg || arg.type !== 'Literal' || typeof arg.value !== 'string') return;
         const reqStr = String(arg.value);

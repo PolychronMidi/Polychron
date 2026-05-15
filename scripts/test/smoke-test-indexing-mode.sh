@@ -32,8 +32,6 @@ fi
 _pass "worker reachable at $_WORKER_URL"
 
 # --- Assertion 2: coder healthy before we start ---
-# 120s cap: a fresh coder load from cold pagecache pulls 17 GB off disk
-# into VRAM, routinely takes 60-90s before /health returns ok.
 echo "[2/5] coder healthy at baseline"
 _waited=0
 until curl -sf "$_CODER_URL/health" 2>/dev/null | grep -q "ok"; do
@@ -63,9 +61,6 @@ fi
 _pass "indexing-mode cycle completed in ${_elapsed}s: $(echo "$_result" | head -c 100)"
 
 # --- Assertion 4: coder returns to healthy within 120s ---
-# Same budget as baseline wait: llama-server cold-boot is ~90s worst case.
-# Shorter budgets conflate "indexing-mode left coder stuck" with "normal
-# cold-load is slow"; 120s clearly separates the two.
 echo "[4/5] coder returns to /health=ok post-indexing-mode"
 _t0=$(date +%s)
 until curl -sf "$_CODER_URL/health" 2>/dev/null | grep -q "ok"; do

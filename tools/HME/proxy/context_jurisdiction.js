@@ -43,6 +43,7 @@ function loadBiasManifest() {
       }
     }
   } catch (_err) {
+    // silent-ok: optional fallback path.
     // manifest absent or malformed -- zone-match only
   }
   _biasLoadedAt = now;

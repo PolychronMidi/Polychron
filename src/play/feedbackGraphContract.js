@@ -1,4 +1,3 @@
-// feedbackGraphContract.js - Runtime validation of feedback_graph.json against live module topology.
 // Extracted from mainBootstrap.js for single-responsibility.
 // This is a second immune layer beyond lint rules: it proves the declared
 // feedback topology still matches live registrations and firewall boundaries.
@@ -99,7 +98,6 @@ moduleLifecycle.declare({
       V.assertObject(loop, 'loop');
 
       V.assertNonEmptyString(loop.id, `${label}.id`);
-      // Module names may be dotted (e.g. "pipelineBalancer.tension") - resolve root global.
       const rawModName = V.assertNonEmptyString(loop.module, `${label}.module`);
       const modName = rawModName.split('.')[0];
       V.assertNonEmptyString(loop.sourceDomain, `${label}.sourceDomain`);
@@ -117,7 +115,6 @@ moduleLifecycle.declare({
         }
       }
 
-      // L0-mediated loops use feedbackRegistry but have no single global ref -- skip shape check.
       if (loop.contractExempt) continue;
 
       const modRef = moduleRefs[modName];

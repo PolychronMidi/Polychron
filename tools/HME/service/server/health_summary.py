@@ -144,6 +144,7 @@ def _probe_versions(project_root: str) -> tuple[str, list[str]]:
             with urllib.request.urlopen(url, timeout=2) as r:
                 live[name] = json.loads(r.read()).get("version", "?")
         except Exception:
+            # silent-ok: optional fallback path.
             live[name] = "unreachable"
     mismatches = [
         f"{name}: live={live[name]} canonical={canonical.get(name, '?')}"
@@ -201,6 +202,7 @@ def health() -> str:
                 alias = cmd.split("--alias", 1)[1].split()[0]
             lines.append(f"  llama:   PID {pid}  alias={alias}  up {_fmt_uptime(_proc_start_time(pid))}")
         except Exception:
+            # silent-ok: optional fallback path.
             lines.append(f"  llama:   PID {pid} (cmdline unreadable)")
     if len(ls_pids) > 2:
         lines.append(f"  ** {len(ls_pids)} llama-server processes -- topology declares 2 (arbiter + coder)")

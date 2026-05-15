@@ -69,8 +69,6 @@ def _exec_grep(pattern: str, path: str = "src/") -> str:
             cmd = ["rg", "-n", "--max-count=30", "--max-columns=200", pattern, target]
         else:
             # GNU grep: -r recursive, -n line numbers, --include for source files,
-            # --max-count limits per file. Some output formatting differs but the
-            # path:line:content shape that downstream parsing expects is preserved.
             cmd = [
                 "grep", "-rn", "--max-count=30",
                 "--include=*.js", "--include=*.py", "--include=*.sh",

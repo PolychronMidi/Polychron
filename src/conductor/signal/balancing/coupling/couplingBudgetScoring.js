@@ -58,11 +58,7 @@ moduleLifecycle.declare({
         const hotspotRate = tailTelemetry.hotspotRate;
         const severeRate = tailTelemetry.severeRate;
         const previousEffectiveGain = V.optionalFinite(ps.lastEffectiveGain, 0);
-        // R78 E3: Track consecutive near-zero-effectiveGain beats per pair.
-        // Pairs with zeroed gain (density-flicker, flicker-trust) waste
-        // budget slots. Decay their boost after 10 consecutive zero beats.
-        // R79 E1: Near-zero threshold (was === 0, but modifier chain
-        // produces small positive values that never hit exact zero).
+        // Track consecutive near-zero-effectiveGain beats per pair.
         if (previousEffectiveGain < 0.01 && absCorr > target) {
           zeroGainStreaks[key] = (V.optionalFinite(zeroGainStreaks[key], 0)) + 1;
         } else if (previousEffectiveGain >= 0.01) {
@@ -89,15 +85,7 @@ moduleLifecycle.declare({
             (previousEffectiveGain < 0.01 ? 0.12 : 0),
             0, 1)
           : 0;
-        // R24 E1: Flicker-trust decorrelation pressure. Structural FT
-        // correlation r~0.56 resists regime-level brakes. Elevate FT
-        // budget priority when the pair shows persistent positive corr,
-        // driving gain escalation to actively dampen the correlation.
-        // R42 E2: Lower FT threshold 0.35->0.25. FT reversed to +0.184
-        // in R41. Many per-beat samples fall below old 0.35 threshold.
-        // R49 E2: Boost FT coefficient 0.45->0.52. FT surged to +0.335
-        // in R48. The threshold 0.25 is correct but needs stronger
-        // penalization to drive decorrelation.
+        // Flicker-trust decorrelation pressure. Structural FT
         const flickerTrustCorrPressure = isFlickerTrustPair
           ? clamp(
             clamp((absCorr - 0.25) / 0.25, 0, 1) * 0.52 +
@@ -105,10 +93,7 @@ moduleLifecycle.declare({
             clamp((p95 - 0.75) / 0.15, 0, 1) * 0.10,
             0, 1)
           : 0;
-        // R26 E1: Tension-phase decorrelation pressure. TP r=0.3354
-        // trending increasing. Same proven pattern as R24 FT fix:
-        // elevate TP budget priority when pair shows persistent
-        // positive correlation, driving gain escalation to dampen it.
+        // Tension-phase decorrelation pressure. TP r=0.3354
         const tensionPhaseCorrPressure = isTensionPhasePair
           ? clamp(
             clamp((absCorr - 0.30) / 0.30, 0, 1) * 0.40 +
@@ -116,10 +101,7 @@ moduleLifecycle.declare({
             clamp((p95 - 0.70) / 0.20, 0, 1) * 0.15,
             0, 1)
           : 0;
-        // R29 E1: Density-trust decorrelation pressure. DT r=0.637
-        // trending increasing. Same proven pattern as R24 FT and R26 TP:
-        // elevate DT budget priority when pair shows persistent positive
-        // correlation, driving gain escalation to dampen it.
+        // Density-trust decorrelation pressure. DT r=0.637
         const densityTrustCorrPressure = isDensityTrustPair
           ? clamp(
             clamp((absCorr - 0.40) / 0.25, 0, 1) * 0.35 +
@@ -145,18 +127,7 @@ moduleLifecycle.declare({
             clamp((p95 - 0.65) / 0.20, 0, 1) * 0.15,
             0, 1)
           : 0;
-        // R35 E3: Tension-entropy decorrelation pressure. TE r=-0.434
-        // "decreasing" in R34. Entropy axis at 0.122 (27% below fair
-        // share). Anti-correlation suppresses entropy when tension is high.
-        // R47 E2: Boost TE pressure. TE surged to -0.492 in R46.
-        // Lower threshold 0.35->0.30, raise coefficient 0.30->0.40.
-        // R52 E3: Boost TE coefficient. TE collapsed to -0.413 in R51.
-        // R55 E1: Lower TE threshold 0.30->0.25. In R54 TE rollingAbsCorr
-        // was 0.2848 -- just below 0.30 -- so budget scoring never activated.
-        // This left TE at -0.294 with zero budget pressure. Lowering to 0.25
-        // ensures engagement.
-        // R58 E3: Raise TE coeff 0.46->0.50. R57 regressed to -0.239 after
-        // the R56 near-best +0.145 run, so TE still needs more force.
+        // Tension-entropy decorrelation pressure. TE r=-0.434
         const tensionEntropyCorrPressure = isTensionEntropyPair
           ? clamp(
             clamp((absCorr - 0.25) / 0.25, 0, 1) * 0.50 +
@@ -164,12 +135,7 @@ moduleLifecycle.declare({
             clamp((p95 - 0.65) / 0.20, 0, 1) * 0.15,
             0, 1)
           : 0;
-        // R37 E2: Tension-flicker decorrelation pressure. TF r=-0.321
-        // "decreasing" in R36. New anti-correlation pair emerging.
-        // Budget scoring to preempt entrenchment.
-        // R43 E1: Boost TF pressure. TF worsened -0.104 -> -0.395 in R42.
-        // R45 E1: Heavy TF boost. TF now -0.422 (3rd consecutive worsening).
-        // Lower threshold 0.30->0.20, raise coefficient 0.40->0.50.
+        // Tension-flicker decorrelation pressure. TF r=-0.321
         const isTensionFlickerPair = (dimA === 'tension' && dimB === 'flicker') || (dimA === 'flicker' && dimB === 'tension');
         const tensionFlickerCorrPressure = isTensionFlickerPair
           ? clamp(
@@ -185,15 +151,9 @@ moduleLifecycle.declare({
             clamp((0.35 - setup.densityFlickerTailPressure) / 0.35, 0, 1) * 0.16,
             0, 1)
           : 0;
-        // R38 E2: Entropy-trust decorrelation pressure. ET r=-0.407
-        // "decreasing" in R37. New anti-correlation pair from TE cap
-        // spillover. Budget scoring to preempt. absCorr threshold 0.35.
+        // Entropy-trust decorrelation pressure. ET r=-0.407
         const isEntropyTrustPair = (dimA === 'entropy' && dimB === 'trust') || (dimA === 'trust' && dimB === 'entropy');
-        // R42 E5: Lower ET threshold 0.35->0.28.
-        // R46 E3: Boost ET pressure. ET worsened to -0.373 in R45.
-        // Raise coefficient 0.28->0.35 for stronger decorrelation.
-        // R56 E2: Boost ET coeff 0.42->0.48. ET plunged -0.143->-0.443
-        // in R55. Budget needs more force.
+        // Lower ET threshold 0.35->0.28.
         const entropyTrustCorrPressure = isEntropyTrustPair
           ? clamp(
             clamp((absCorr - 0.28) / 0.25, 0, 1) * 0.48 +
@@ -202,9 +162,7 @@ moduleLifecycle.declare({
             0, 1)
           : 0;
         const recentP95 = V.optionalFinite(tailTelemetry.recentP95, 0);
-        // R82 E2: recent-deterioration bonus. When recentHotspotRate is
-        // worsening relative to overall hotspotRate, the pair is actively
-        // deteriorating and needs higher budget priority.
+        // recent-deterioration bonus. When recentHotspotRate is
         const recentHotspotRate = V.optionalFinite(tailTelemetry.recentHotspotRate, 0);
         const recentDeteriorationBonus = recentHotspotRate > hotspotRate * 2.0 && recentHotspotRate > 0.15
           ? clamp((recentHotspotRate - hotspotRate) / 0.20, 0, 0.5) * 0.18
@@ -216,10 +174,7 @@ moduleLifecycle.declare({
             clamp((absCorr - 0.72) / 0.16, 0, 1) * 0.20,
             0, 1)
           : 0;
-        // R73 E2: Entropy-surface severe uplift. When an entropy-surface pair
-        // has persistent severe tail (p95 > 0.80, severeRate > 0.06), boost
-        // its spillover pressure to elevate budget priority. Breaks entropy-
-        // axis concentration monopoly on severe pairs.
+        // Entropy-surface severe uplift. When an entropy-surface pair
         const entropySevereUplift = isEntropySurfacePair && p95 > 0.80 && severeRate > 0.06
           ? clamp((p95 - 0.80) / 0.12, 0, 1) * 0.35 + clamp(severeRate / 0.15, 0, 1) * 0.25
           : 0;
@@ -268,9 +223,7 @@ moduleLifecycle.declare({
           0, 1.45);
         // R72 E4: Phase-pair budget floor
         let budgetScore = (isPhasePair && p95 > 0.60 && hotspotRate > 0.01) ? m.max(score, 0.08) : score;
-        // R82 E6: Temporal discount. When recent tail has cooled well below
-        // lifetime p95, the pair no longer needs aggressive budget priority.
-        // Prevent stale scoring from keeping gain maxed on recovered pairs.
+        // Temporal discount. When recent tail has cooled well below
         if (recentP95 > 0 && p95 > 0 && recentP95 < p95 * 0.60) {
           budgetScore = m.max(budgetScore - 0.10, 0);
         }
@@ -328,9 +281,7 @@ moduleLifecycle.declare({
       const axisDominanceBoost = dominantBudgetAxis && entry.key.indexOf(dominantBudgetAxis) !== -1
         ? 1 + (dominantBudgetAxisCount - 2) * 0.12
         : 1.0;
-      // R78 E3: Decay budget boost for prolonged zero-effectiveGain pairs.
-      // After 10 consecutive zero-gain beats, decay by 0.95^(count-10),
-      // floored at 0.5. Frees budget from density-flicker/flicker-trust.
+      // Decay budget boost for prolonged zero-effectiveGain pairs.
       const zgs = V.optionalFinite(zeroGainStreaks[entry.key], 0);
       const zeroGainDecay = zgs > 10 ? m.max(m.pow(0.95, zgs - 10), 0.5) : 1;
       if (i < BUDGET_PRIORITY_TOP_K) {

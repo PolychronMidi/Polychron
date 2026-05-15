@@ -88,7 +88,6 @@ class _CircuitBreaker:
                 self._state = self.OPEN
                 self._opened_at = now
                 logger.info(f"CircuitBreaker({self.name}): HALF_OPEN -> OPEN (probe failed)")
-                # Layer 21: flap = probe fired but failed immediately -> distinct from cold OPEN
                 try:
                     from server import operational_state as _ops
                     _ops.record_circuit_breaker_flap(self.name)
@@ -149,10 +148,6 @@ def _refresh_arbiter() -> None:
     _REASONING_MODEL = ENV.require("HME_REASONING_MODEL")
 
 # keep_alive=-1: pin models permanently. num_ctx sized to fit KV cache in VRAM.
-# 30B Q4_K_M on M40 24GB: model weights ~18.5GB, KV ~69KB/token.
-# At 32K ctx: KV ~= 2.2GB, total ~= 20.7GB, leaving ~1.8GB headroom.
-# At 65K ctx: KV ~= 4.3GB, total ~= 22.8GB -- overflows VRAM, KV spills to RAM,
-# inference drops to ~0.02 tok/s (114s for 2 tokens). Never exceed VRAM.
 _KEEP_ALIVE = ENV.require_int("HME_KEEP_ALIVE")
 _NUM_CTX_30B = ENV.require_int("HME_NUM_CTX_30B")
 _NUM_CTX_4B  = ENV.require_int("HME_NUM_CTX_4B")
@@ -162,9 +157,6 @@ def _num_ctx_for(model: str) -> int:
     return _NUM_CTX_4B if model == _ARBITER_MODEL else _NUM_CTX_30B
 
 # llama-server (Vulkan) routing
-# Two llama-server instances, each owning its GPU end-to-end. Both expose
-# OpenAI-compatible /v1/chat/completions. llamacpp_daemon enforces the
-# full-offload invariant at spawn time.
 _LLAMACPP_ARBITER_URL = ENV.require("HME_LLAMACPP_ARBITER_URL")
 _LLAMACPP_CODER_URL   = ENV.require("HME_LLAMACPP_CODER_URL")
 
@@ -238,6 +230,7 @@ def _set_arbiter_busy(busy: bool) -> None:
         )
         _ur.urlopen(req, timeout=0.3).read()
     except Exception as _e:
+        # silent-ok: optional fallback path.
         # Daemon unreachable is expected during boot / upgrades. Log at
         # debug level only -- the routing degrades safely to GPU-only.
         import logging as _l
@@ -304,9 +297,6 @@ def route_model(prompt: str) -> str:
 
 
 # llama.cpp priority
-# _interactive_event: set by interactive callers. Background checks this flag and
-# yields (before sending) or cancels mid-stream (via socket timeout in _cancellable_urlopen).
-# No Python locks -- llama.cpp handles its own per-model FIFO queue.
 _interactive_event = _threading.Event()
 
 

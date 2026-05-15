@@ -22,9 +22,7 @@ moduleLifecycle.declare({
   const tensionHistory = [];
   /** @type {number[]} rolling density history across sections */
   const densityHistory = [];
-  // R33: section quality scoring -- self-evaluating cross-section learning.
-  // Tracks coupling stability, exceedance rate, and regime coherence per section,
-  // then feeds quality assessment into the next section's intent targets.
+  // section quality scoring -- self-evaluating cross-section learning.
   /** @type {number[]} */
   const qualityHistory = [];
   const QUALITY_FEEDFORWARD_STRENGTH = 0.15;
@@ -56,7 +54,6 @@ moduleLifecycle.declare({
     densityHistory.push(sectionMemoryPrev.density);
     if (tensionHistory.length > 8) tensionHistory.shift();
     if (densityHistory.length > 8) densityHistory.shift();
-    // R33: quality scoring -- coherent share + low exceedance + coupling stability = high quality
     const regimeBalance = snap && snap.regime === 'coherent' ? 0.8 : snap && snap.regime === 'evolving' ? 0.5 : 0.3;
     const coherenceQuality = clamp(coherenceBias, 0.5, 1.5) / 1.5;
     const transitionPenalty = clamp(1.0 - (sectionMemoryPrev.regimeTransitionCount ?? 0) * 0.08, 0.3, 1.0);
@@ -76,7 +73,6 @@ moduleLifecycle.declare({
     if (!sectionMemoryPrev) return;
     // Blend previous density into the freshly-reset currentDensity
     currentDensity = currentDensity * (1 - CARRYOVER) + sectionMemoryPrev.density * CARRYOVER;
-    // R33: quality feed-forward via L0 channel (conductor can't write to crossLayer directly).
     // sectionIntentCurves reads this to adjust targets for the next section.
     if (typeof sectionMemoryPrev.quality === 'number') {
       const qualityGap = 0.6 - sectionMemoryPrev.quality;

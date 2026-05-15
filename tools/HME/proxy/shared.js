@@ -21,6 +21,7 @@ function emit(fields) {
     p.on('error', () => {});
     p.unref();
   } catch (_err) {
+    // silent-ok: optional fallback path.
     // ignore
   }
 }

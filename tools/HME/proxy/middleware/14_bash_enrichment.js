@@ -9,10 +9,6 @@
  */
 
 // Anchor to log-line conventions (start-of-line marker + colon or
-// dedicated-phrase) so benign mentions like `"no errors found"`,
-// `set -o errexit`, or grep output containing the literal word don't
-// produce misleading [err] footers. Free-floating word-boundary
-// matching previously caused the agent to chase non-issues.
 const ERROR_LINE_RE = /^\s*(?:Traceback \(most recent call last\)|ERROR:|FAIL(?:ED)?:|Segmentation fault|core dumped|OutOfMemory(?:Error)?|OOMKilled|fatal:|panic:)/;
 
 function _textOf(toolResult) {
@@ -25,11 +21,7 @@ function _textOf(toolResult) {
 }
 
 function _firstErrorSnippet(text) {
-  // Return the matching line PLUS up to 2 trailing context lines, capped
-  // by total bytes -- long Python tracebacks routinely exceed 120 chars
-  // before reaching the salient phrase (e.g. `OutOfMemoryError: CUDA
-  // out of memory. Tried to allocate ...`). Slicing to per-line 120
-  // chars used to crop to a path prefix and drop the diagnosis.
+  // Keep the matched error plus nearby context; path prefixes can hide the diagnosis.
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
     if (ERROR_LINE_RE.test(lines[i])) {
@@ -49,9 +41,6 @@ module.exports = {
     const text = _textOf(toolResult);
     if (!text || !ERROR_LINE_RE.test(text)) return;
     // Guard against restart-stacking: _processed is in-memory only, so on
-    // every proxy restart the entire conversation's tool_results re-enter
-    // the pipeline. Without this check we'd stack `[err]` footers N deep
-    // after N restarts within a single conversation.
     if (ctx.hasHmeFooter(toolResult, '[err] ')) return;
     const snip = _firstErrorSnippet(text);
     if (!snip) return;

@@ -25,15 +25,10 @@ moduleLifecycle.declare({
   const FLICKER_SMOOTHING = 0.40; // 0.30->0.40. Faster tracking reduces EMA compression, wider beat-to-beat flicker variation
 
   // Density-flicker additive decorrelation: tracks rolling correlation
-  // between density direction and flicker amplitude direction. When both
-  // move together (high positive correlation), the additive densityFlicker
-  // term is scaled down to break the structural coupling path.
   let globalConductorDfCorrEma = 0; // EMA of sign-agreement (range [-1, 1])
   const DF_CORR_ALPHA = 0.12;
 
   // Flicker variance floor: when registryFlickerMod has near-zero variance,
-  // inject small independent noise to prevent statistical lock from inflating
-  // coupling measurements. Uses Welford's online algorithm for rolling std.
   let globalConductorFVarN = 0;
   let globalConductorFVarMean = 1.0;
   let globalConductorFVarM2 = 0;
@@ -133,8 +128,6 @@ moduleLifecycle.declare({
     const registryDensityBias = V.optionalFinite(Number(densityAttr.product), 1);
 
     // Coherence + emission density corrections (boot-validated globals - direct calls)
-    // layerCoherenceScorer.getDensityBias() now registered in the density registry
-    // (attributed, dampened). Only emission correction remains extra-pipeline.
     const emissionRatio = clamp(V.optionalFinite(Number(emissionFeedbackListener.getEmissionRatio()), 1), 0, 2);
     const densityCorrection = clamp(1 + clamp(1 - emissionRatio, -1, 1) * 0.2, 0.8, 1.25);
 
@@ -145,9 +138,6 @@ moduleLifecycle.declare({
     // Harmonic excursion thins density up to 4% for exposed distant-key passages.
     const excursionDensityScale = 1.0 - clamp(V.optionalFinite(Number(excursion), 0), 0, 6) / 6 * 0.04;
     // Harmonic excursion tension coupling. When the harmonic
-    // journey ventures far from home (high excursion), boost tension to
-    // create dramatic, distant-key passages. Near home key, tension
-    // relaxes for resolution. Range: [1.0, 1.05] -- gentle 5% boost.
     const excursionTensionScale = 1.0 + clamp(V.optionalFinite(Number(excursion), 0), 0, 6) / 6 * 0.05;
     const targetDensity = clamp(
       V.optionalFinite(Number(conductorConfig.getTargetDensity(compositeIntensity)), safeCurrentDensity) * dynamicsScale * densityCorrection * registryDensityBias * densityLateRelief * densityHotspotTrim * phaseProtectionTrim * excursionDensityScale * (1 + densityRecoverySupport),
@@ -163,8 +153,6 @@ moduleLifecycle.declare({
     const textureDensityBoost = clamp(Number(drumTextureCoupler.getIntensity()), 0, 1) * 0.5;
     const flickerAttr = conductorIntelligence.collectFlickerModifierWithAttribution();
     // EMA on flicker modifier: smooths the amplitude envelope to reduce
-    // beat-to-beat reversals that inflate trajectory curvature, while
-    // preserving the per-beat noise pattern (sine + random terms below).
     const rawFlickerMod = flickerAttr.product;
     const prevFlickerSnapshot = globalConductorPrevFlickerMod; // snapshot BEFORE update for direction calc
     const registryFlickerMod = globalConductorPrevFlickerMod * (1 - FLICKER_SMOOTHING) + rawFlickerMod * FLICKER_SMOOTHING;
@@ -189,14 +177,9 @@ moduleLifecycle.declare({
     const tensionFlickerCounterPhase = clamp((compositeIntensity - 0.55) / 0.25, 0, 1) * m.PI * 0.15;
     const flickerCarrier = 0.5 + 0.5 * m.sin(densitySeed * 0.0017 + harmonicRhythm * m.PI + carrierPhaseOffset + tensionFlickerCounterPhase);
     // FlickerBase compositeIntensity deweighting.
-    // R87 used 0.28, creating density-flicker anti-correlation (-0.4225).
-    // Fine-tuned to 0.30 to move toward neutral correlation while
-    // preserving most of the exceedance reduction (71->4 in R87).
     const flickerBase = clamp(compositeIntensity * 0.30 + harmonicRhythm * 0.30 + flickerCarrier * 0.40, 0, 1.2);
     const flickerHotspotTrim = 1 - clamp(densityFlickerPressure * 0.16 + flickerTrustPressure * 0.20 + densityTrustPressure * 0.08 + trustSharePressure * 0.10 + phaseRecoveryPressure * 0.10, 0, 0.40);
     // E21: Flicker amplitude cap under exceedance. Suppresses peak flicker
-    // amplitude when coupling is stressed, reducing density-flicker coupling
-    // pressure without touching the smoothing pathway (which feeds variance floor).
     const e21AmpCap = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e21FlickerAmplitudeCap'));
     const flickerAmplitude = (flickerBase + textureDensityBoost) * registryFlickerMod * flickerHotspotTrim * e21AmpCap;
 
@@ -251,9 +234,6 @@ moduleLifecycle.declare({
     const resolved = dynamismEngine.resolve('beat');
 
     // 8. Collect tension bias from registry (attributed)
-    // Temporal smoothing: density has EMA via getDensitySmoothing(),
-    // but tension had none - contributing to the oscillating regime.
-    // Small smoothing factor (0.25) reduces beat-to-beat reversals.
     const tensionAttr = conductorIntelligence.collectTensionBiasWithAttribution();
     const registryTensionBias = tensionAttr.product;
     // Macro tension arch: peak near p=0.6, activate only against collapse.
@@ -268,14 +248,10 @@ moduleLifecycle.declare({
     // Shift tension toward harmonic context to decorrelate from density intensity.
     const rawTensionBase = (Number(resolved.composite) * 0.45 + Number(harmonicTension) * 0.55) * registryTensionBias * tensionLateLift * excursionTensionScale;
     // Section-boundary tension breathing. Brief 5% dip in the first
-    // 5% of each section (after S0) creates audible section articulation
-    // at the tension level, complementing density relief from sectionIntentCurves.
     const sectionBoundaryTensionDip = sectionIndex > 0 && sectionProgress < 0.05
       ? 1.0 - (1.0 - sectionProgress / 0.05) * 0.05
       : 1.0;
     // Raised max boost 0.15->0.20. The arch floor shape is
-    // correct but the boost ceiling limits actual lift especially
-    // during the mid-composition peak where tensionArchTarget=0.59.
     const tensionArchBoost = rawTensionBase * sectionBoundaryTensionDip < tensionArchTarget
       ? clamp((tensionArchTarget - rawTensionBase * sectionBoundaryTensionDip) * 0.5, 0, 0.20)
       : 0;
@@ -285,9 +261,6 @@ moduleLifecycle.declare({
       : currentRegime === 'exploring' ? -0.02
       : 0;
     // E16: Tension micro-release at rest/sparse events. When E11 sparse
-    // windows are active (phrase-boundary breathing), briefly dip tension.
-    // This creates psychoacoustic "breathing" -- not just silence but actual
-    // tension release. Small dip (max 0.05) to avoid coupling discontinuities.
     const e11Sparse = /** @type {number} */ (hyperMetaManager.getRateMultiplier("e11SparseWindow"));
     const e11CeilOvr = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e11DensityCeilingOverride'));
     // Only dip tension when ceiling is suppressed, not during exploring.
@@ -295,9 +268,6 @@ moduleLifecycle.declare({
       ? clamp((1.0 - e11CeilOvr) * 0.08, 0, 0.03)
       : 0;
     const rawTension = clamp(rawTensionBase * sectionBoundaryTensionDip + tensionArchBoost + regimeTensionWarmth - e16TensionDip, 0, 1);
-    // Reduced smoothing 0.38->0.30 for faster tension response.
-    // R74 showed S1 peaking at 0.783 but smoothing delays arch shape
-    // propagation, blurring section-boundary tension transitions.
     // Reduced smoothing 0.38->0.30 for faster tension response.
     const TENSION_SMOOTHING = 0.30;
     const prevTension = harmonicContext.getField('tension');

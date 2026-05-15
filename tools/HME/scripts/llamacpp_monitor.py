@@ -78,6 +78,7 @@ def _query_llamacpp(port: int) -> dict:
                             longest = age
                 result["longest_active_ms"] = longest
     except Exception as e:
+        # silent-ok: optional fallback path.
         result["slots_error"] = str(e)[:60]
 
     # /props reports model metadata including loaded model file.
@@ -212,8 +213,6 @@ def monitor_tick() -> dict:
             )
 
         # Invariant check: the GPU assigned to this instance must hold the
-        # model weights -- if VRAM is suspiciously low, the process probably
-        # fell back to CPU offload.
         gpu = gpu_by_idx.get(inst["cuda_idx"])
         if gpu:
             vram_used = gpu.get("mem_used_mb", 0)

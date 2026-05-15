@@ -188,7 +188,6 @@ validator = (() => {
   function validatorFromLabel(from) {
     if (from && String(from).length) return String(from);
 
-    // best-effort: infer caller name from stack so missing `from` doesn't produce a useless message
     try {
       const stack = (new Error()).stack || '';
       const lines = stack.split('\n').map(l => l.trim()).filter(Boolean);
@@ -221,7 +220,6 @@ validator = (() => {
 
   function validatorWrapWithFrom(fn, from) {
     const fromLabel = validatorFromLabel(from);
-    // Avoid rest/spread (...args) to eliminate per-call array allocation on the hot path.
     // All validator methods take at most 4 arguments.
     return function wrapped(a, b, c, d) {
       try {
@@ -230,7 +228,6 @@ validator = (() => {
         const msg = String(err && err.message ? err.message : err);
         const stripped = msg.replace(/^[^:]+:\s*/, '');
         const enriched = new Error(`${fromLabel}: ${stripped}`);
-        // Attach system snapshot (loaded after validator; safePreBoot guards pre-load calls)
         safePreBoot.call(() => systemSnapshot.enrichError(enriched));
         throw enriched;
       }

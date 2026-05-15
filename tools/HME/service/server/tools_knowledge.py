@@ -35,11 +35,6 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
     results = []
 
     # Horizon III asymptote -- auto-densification. When the caller didn't
-    # provide an explicit relation, run a semantic-similarity scan of
-    # the existing KB. Strong matches (>=0.70) become auto-relations
-    # noted in the response; weaker matches (0.50-0.70) surface as a
-    # suggestion the agent can act on after-the-fact. Cheap (single
-    # encode + dot-products against in-memory vectors).
     auto_predecessor_note = ""
     has_explicit_relation = bool(related_to) or any(
         ":" in t and len(t.split(":", 1)[1]) >= 8 for t in tag_list
@@ -65,6 +60,7 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
                         dot = sum(float(a) * float(b) for a, b in zip(cand_vec, vlist))
                         sim = dot / (cand_norm * v_norm)
                     except Exception:
+                        # silent-ok: optional fallback path.
                         continue
                     if sim > top[1]:
                         top = (str(row.get("id", "")), sim, str(row.get("title", "")))
@@ -217,9 +213,6 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
     glob_results = ctx.global_engine.search_knowledge(query, top_k=top_k, category=cat)
 
     # Drop hard-zero scores: cross-encoder rerank clamps negatives to 0,
-    # meaning the entry is irrelevant. Sub-1% entries with non-zero raw
-    # scores are kept -- display rounds them to 0% but they're statistically
-    # distinct from clamped noise. Mirrors helpers.format_knowledge_results.
     proj_results = [r for r in proj_results
                     if (_s := r.get("score")) is not None and _s > 0]
     glob_results = [r for r in glob_results
@@ -274,7 +267,6 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
     if ok:
         ctx._kb_version = getattr(ctx, "_kb_version", 0) + 1
         # Inject tombstone into warm contexts -- cheap (~1-2s) vs full re-prime (~30s).
-        # Models see "REMOVED entry X" and disregard it. GC re-prime cleans up tombstones.
         try:
             from server.tools_analysis.synthesis_warm import queue_tombstone
             queue_tombstone(entry_id=entry_id, new_kb_ver=ctx._kb_version)

@@ -42,9 +42,6 @@ _audio_init_lock = threading.Lock()               # one-shot eager init gate
 _audio_init_done = False
 
 # Device selection -- read from central .env via ENV.require (fail-fast).
-# The hme_env module lives at tools/HME/service/hme_env.py; add the mcp dir to
-# sys.path so we can import it from server/tools_analysis/ without a
-# cross-package relative import.
 import sys as _sys_env
 _mcp_dir_env = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if _mcp_dir_env not in _sys_env.path:
@@ -198,9 +195,6 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
     parts.append("")
 
     # All model calls go inside the acquire block so offload/reload
-    # decisions apply cleanly across the whole pass. The final similarity
-    # matrix is moved to CPU as numpy at the boundary so the rest of the
-    # analysis runs device-independently.
     with _acquire_clap() as model:
         text_embed = model.get_text_embedding(query_list, use_tensor=True)
 
@@ -223,14 +217,10 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
         )  # [n_queries, n_chunks]
 
         # Detach to CPU numpy before exiting the acquire block so the
-        # remainder of the function can run even if the model gets
-        # offloaded by a subsequent VramManager pressure event.
         similarity = similarity_t.detach().cpu().numpy()
         del text_embed, audio_embed, similarity_t
 
     # Report: for each query, which chunks match best.
-    # `similarity` is now a numpy array (moved off device inside the
-    # _acquire_clap block), so the rest of the analysis is device-independent.
     parts.append("## Query Matches (chunk = ~10s window)")
     for qi, query in enumerate(query_list):
         scores = similarity[qi]

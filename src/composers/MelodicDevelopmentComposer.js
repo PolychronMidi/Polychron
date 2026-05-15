@@ -1,4 +1,3 @@
-// MelodicDevelopmentComposer.js - A ScaleComposer that applies melodic transformations based on intensity and phrase arc
 const V = validator.create('MelodicDevelopmentComposer');
 
 MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleComposer {
@@ -48,7 +47,6 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this.enableVoiceLeading(new VoiceLeadingScore());
 
     const preservesScale = !(this.inversionMode === 'chromatic' && this.normalizeToScale === false);
-    // MelodicDevelopment intentionally mutates pitch classes over time (within scale when preservesScale=true).
     const mutatesPitchClasses = true;
     this.setCapabilities({
       preservesScale,
@@ -89,7 +87,6 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     V.assertArray(effectiveScale, 'effectiveScale', true);
     const { fitMidi } = scaleNormalization.createMidiFitter(effectiveScale, 'MelodicDevelopmentComposer.getNotes');
 
-    // If composer honors time-varying scale context, derive baseNotes from the effectiveScale (fail-fast if not available)
     let baseNotes;
     if (this.hasCapability('timeVaryingScaleContext') && Array.isArray(effectiveScale) && effectiveScale.length > 0) {
       const prevNotes = this.notes;
@@ -112,8 +109,6 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
 
     this.measureCount++;
     // -- Texture-phase coupling (#4) --
-    // Texture state biases development technique: chord bursts - transposition
-    // (phases 0,1), flurries - inversion (phase 2), sustained single - retrograde (phase 3)
     const basePhase = m.floor((this.measureCount - 1) / 2) % 4;
     if (drumTextureCoupler) {
       const texMetrics = drumTextureCoupler.getMetrics();

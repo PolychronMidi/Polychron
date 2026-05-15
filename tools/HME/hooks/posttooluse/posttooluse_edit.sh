@@ -3,11 +3,6 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
 # PostToolUse: Edit -- coverage classification + user-facing review reminders.
-# Nexus EDIT tracking lives in BOTH the proxy middleware (nexus_tracking.js)
-# and this shell hook. Middleware covers proxy-routed sessions; the shell
-# fallback below covers direct-to-API sessions (VS Code Claude Code) where
-# the middleware never sees the tool result. _nexus_add is content-keyed
-# so double-tracking is harmless.
 INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 SESSION_ID=$(_safe_jq "$INPUT" '.session_id' 'unknown')
@@ -19,9 +14,6 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
 fi
 
 # CheckpointPerISC (PAI v6.3.0 import #6). When an ISA.md is edited, fire
-# the checkpoint hook in the background -- it's a no-op for ISAs that
-# haven't opted in via `checkpoint: enabled` and idempotent against
-# already-recorded transitions, so unconditional firing is safe.
 if [[ "$FILE" == */ISA.md ]]; then
   python3 "$PROJECT_ROOT/tools/HME/scripts/isa/checkpoint_hook.py" "$FILE" \
     >/dev/null 2>&1 &
@@ -40,11 +32,6 @@ if [[ "$FILE" == */doc/templates/SPEC.md ]]; then
 fi
 
 # Bias-registration edits trigger the jurisdiction manifest snapshot in the
-# background. `registerTrustBias` / `registerCouplingBias` / `registerJurisdictionBias`
-# write into 93 locked bias-bounds; a change to any of them must be reflected
-# in scripts/bias-bounds-manifest.json or the hypermeta-jurisdiction check
-# fails at lint time. Auto-fire the snapshot so legitimate structural changes
-# don't trip CI on the next pipeline run.
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 if echo "$FILE" | grep -qE '/Polychron/src/conductor/' \
    && echo "$NEW_STRING" | grep -qE 'conductorIntelligence\.register(Trust|Coupling|Jurisdiction)Bias\b'; then
@@ -60,13 +47,6 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
     HME_READ_PRIOR=true
   fi
   # Coverage classification -- emit productive_incoherence for exploratory
-  # writes into KB-uncovered territory (still useful: suggests learn()).
-  # The "coherence_violation / write_without_hme_read" emission was removed
-  # -- it was measuring a legacy MCP-era contract that doesn't match the
-  # current architecture (auto-enrichment middleware attaches KB context
-  # to every Edit tool_result automatically, so "write without HME read"
-  # is no longer meaningful signal; check-hme-coherence was aborting the
-  # pipeline on 240 false positives per round).
   if [ "$HME_READ_PRIOR" = "false" ] && _onb_is_graduated; then
     STALENESS_FILE="$PROJECT/output/metrics/kb-staleness.json"
     COVERAGE_STATUS=UNKNOWN

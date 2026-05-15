@@ -73,6 +73,7 @@ function _waitForResult(jobId, timeoutMs) {
         try { return resolve(JSON.parse(text)); }
         catch (_e) { return resolve({ _parseError: true, raw: text }); }
       } catch (_e) {
+        // silent-ok: optional fallback path.
         // not yet -- continue
       }
       const elapsed = Date.now() - start;
@@ -129,6 +130,7 @@ async function workerRequest(method, reqPath, body, timeoutMs = 30_000) {
   try {
     _atomicWrite(queuePath, JSON.stringify(job));
   } catch (err) {
+    // silent-ok: optional fallback path.
     return { status: 0, json: null, raw: '', error: err };
   }
   const result = await _waitForResult(jobId, timeoutMs);
@@ -145,10 +147,6 @@ async function workerRequest(method, reqPath, body, timeoutMs = 30_000) {
     };
   }
   // worker_queue.py's _dispatch returns:
-  //   tool:    {ok: bool, result?: any, error?: str}
-  //   enrich:  whatever _enrich() returns directly
-  //   error:   {error: str}
-  // Translate to {status, json} the http-shape callers expect.
   if (result && result.error && result.ok !== true) {
     return {
       status: 500, json: result, raw: String(result.error), error: null,

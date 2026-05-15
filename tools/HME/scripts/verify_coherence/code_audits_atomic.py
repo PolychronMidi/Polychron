@@ -107,8 +107,6 @@ class AtomicStateWritesVerifier(Verifier):
                             f"per-line opt-out: append '# atomic-ok')"
                         )
         # Shell pass: scan .sh for `cmd > "<state-path>"` redirects without
-        # same-line atomic `mv`. Excludes pure truncate (`^>`), stderr (`2>`),
-        # and append (`>>`). Quoted/unquoted paths matched via substring.
         truncate_only_re = re.compile(r'^\s*>')
         path_substr_re = re.compile(
             r'[A-Za-z_"}\)]\s*>\s*"?[^"\s]*?(?:output/metrics/[^"\s]*\.json|'

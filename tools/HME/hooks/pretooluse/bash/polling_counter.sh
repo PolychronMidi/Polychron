@@ -1,10 +1,6 @@
 _streak_tick 15
 if ! _streak_check; then exit 1; fi
 # Redirect: repeated polling of background task output files (3rd+ check).
-# Covers both /tmp/claude-*/tasks/*.output paths AND any /tmp/*.log file,
-# which catches the "wait for training" / "wait for background script"
-# class of antipatterns. Also catches nvidia-smi polling when a bg task
-# is running (GPU-check is a proxy for "is my job done yet?").
 TASK_POLL_COUNTER="/tmp/polychron-task-poll-count"
 _POLLING=0
 # Pattern 1: file inspection tools targeting /tmp/claude-*, /tmp/*.log, /tmp/*.output

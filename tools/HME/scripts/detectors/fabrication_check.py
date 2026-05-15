@@ -126,12 +126,6 @@ def main() -> int:
         print("ok")
         return 0
     # Path containment: transcript_path is supplied via Claude Code's hook
-    # payload, which is in principle attacker-influenced. A crafted
-    # session state could point at /etc/shadow / ~/.ssh/id_rsa / etc.,
-    # the detector would read it, regex-match against FABRICATION_PHRASES,
-    # and log matched-phrase snippets to detector-stats.jsonl -- leaking
-    # secret excerpts into a metrics file. Allow only paths under either
-    # ~/.claude/projects/ or $PROJECT_ROOT/tmp/.
     import os.path as _osp
     _tp_abs = _osp.abspath(sys.argv[1])
     _allowed_roots = []
@@ -148,10 +142,6 @@ def main() -> int:
         return 0
     events = load_turn_events(sys.argv[1])
     # Strip code-fenced / backticked / quoted spans before phrase-
-    # matching -- same discipline stop_work + exhaust_check + psycho_stop
-    # apply. Without this, an agent response that DESCRIBES an
-    # invariance claim (regex example, quoted user prompt, code block
-    # showing the antipattern) false-fires as if the agent declared it.
     from _text_strip import strip_quoted
     final_text = strip_quoted(_last_assistant_text(events)).lower()
     if not final_text:
@@ -169,8 +159,6 @@ def main() -> int:
         return 0
 
     # Verification disclosure waives the block. The agent must CHOOSE to
-    # claim certainty or claim ignorance -- silent fabrication is what's
-    # caught.
     for marker in VERIFICATION_MARKERS:
         if marker in final_text:
             _emit_stats("ok", f"disclosed: matched={matched!r}")

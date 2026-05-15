@@ -38,12 +38,6 @@ _lib_engines = {}
 
 
 # RAG routing: GPU vs CPU mirror
-# When the arbiter is actively processing a request on the shared GPU, we
-# route jina / bge-reranker work to the CPU mirrors to avoid contending for
-# compute. The llamacpp_daemon exposes /rag-route which answers "gpu" or
-# "cpu" based on its in-memory _arbiter_busy flag (set around every arbiter
-# request dispatch). We cache the last answer for 100 ms so bursty RAG calls
-# don't DoS the daemon with HTTP probes.
 _LLAMACPP_DAEMON_URL = ENV.require("HME_LLAMACPP_DAEMON_URL")
 _rag_route_cache = {"route": "gpu", "ts": 0.0}
 _rag_route_ttl_s = 0.1

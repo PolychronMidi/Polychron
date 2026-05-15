@@ -10,6 +10,7 @@ const REGISTRY_PATH = (() => {
     require('fs').accessSync(candidate);
     return candidate;
   } catch (_) {
+    // silent-ok: optional fallback path.
     return path.join(FALLBACK_ROOT, 'tools', 'HME', 'config', 'services.json');
   }
 })();

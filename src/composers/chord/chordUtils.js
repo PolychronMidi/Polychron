@@ -1,4 +1,3 @@
-// chordUtils.js - small utilities for chord normalization and helpers (naked global for project style)
 const _chord_enharmonicMap = {
   'B#': 'C', 'E#': 'F', 'Cb': 'B', 'Fb': 'E',
   'Bb#': 'B', 'Eb#': 'E', 'Ab#': 'A', 'Db#': 'D', 'Gb#': 'G',

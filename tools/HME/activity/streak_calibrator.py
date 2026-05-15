@@ -56,8 +56,6 @@ HISTORY = METRICS_DIR / "hme-streak-calibration-history.jsonl"
 OUTPUT = METRICS_DIR / "hme-streak-calibration.json"
 
 # Bounds on recommended threshold. Bridges are constrained -- an uncontrolled
-# controller violates hypermeta jurisdiction. These locked ranges prevent the
-# bridge from recommending values outside safe operating envelope.
 MIN_THRESHOLD = 2
 MAX_THRESHOLD = 10
 DEFAULT_THRESHOLD = 5  # matches .env HME_STREAK_WARN fallback
@@ -157,9 +155,6 @@ def main() -> None:
     if args.record:
         HISTORY.parent.mkdir(parents=True, exist_ok=True)
         # fsync after append so a crash mid-write doesn't truncate the
-        # JSON record. _load_history's per-line JSONDecodeError swallow
-        # would otherwise drop the corrupted line silently and the
-        # calibrator would run on an under-counted window indefinitely.
         line = json.dumps({
             "ts": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
             "turnstart_lines": turnstart_lines,

@@ -48,10 +48,6 @@ SPECIFICITY_THRESHOLD = float(
 )
 
 # Dynamic project vocabulary
-#
-# Instead of a hardcoded list (the R96 bug -- missed everything not in a
-# fixed 40-token set), we build vocab at run time from the three places
-# Polychron-specific identifiers actually live.
 
 _CAMEL_SPLITTER = re.compile(r'(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])')
 
@@ -75,8 +71,6 @@ def _build_project_vocab() -> set[str]:
     vocab: set[str] = set()
 
     # 1. Bias-bounds registrations -- "module:field" pairs. Both halves
-    # count (module names like "climaxProximityPredictor" AND field names
-    # like "density" are both specific to Polychron's topology).
     bias_path = os.path.join(PROJECT_ROOT, "scripts", "pipeline", "bias-bounds-manifest.json")
     try:
         with open(bias_path) as f:
@@ -117,8 +111,6 @@ def _build_project_vocab() -> set[str]:
         pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 4. Hand-curated seeds for concepts that don't live in code but are
-    # Polychron-native (regime names, verdict labels, etc.). Small
-    # anchor list -- everything else comes from the dynamic sources.
     vocab.update({
         "polychron", "regime", "coherent", "evolving", "exploring", "initializing",
         "legendary", "stable", "evolved", "drifted", "baseline",

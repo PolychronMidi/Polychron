@@ -32,6 +32,7 @@ function appendHookExec(row, logFile = LOG_FILE) {
       fs.writeFileSync(logFile, `${lines.slice(-10001).join('\n')}`);
     }
   } catch (_) {
+    // silent-ok: optional fallback path.
     // Hook telemetry must not block hook execution.
   }
 }

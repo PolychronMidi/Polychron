@@ -49,6 +49,7 @@ function readState(sessionId = '') {
   try {
     return normalize(JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')), sessionId);
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return defaultState(sessionId);
   }
 }

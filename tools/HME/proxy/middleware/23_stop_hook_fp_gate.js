@@ -100,9 +100,6 @@ module.exports = {
     if (!isStopHook) return;
 
     // Turn-specific: only inject when the prior turn ACTUALLY denied
-    // (signaled by the armed flag written by work_checks.js). Without
-    // this, any user message that quotes deny-marker text triggers
-    // injection, force-marker-prefixing the agent on clean prompts.
     let armed = false;
     try { armed = fs.existsSync(FP_GATE_ARMED_FLAG); } catch (_e) { /* ignore */ }
     if (!armed) return;

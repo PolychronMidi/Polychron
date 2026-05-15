@@ -16,9 +16,6 @@ for arg in "$@"; do [ "$arg" = "--verbose" ] && VERBOSE=1; done
 # Resolve project root from this script's location (works from anywhere).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Test was relocated from scripts/ to scripts/test/ -- PROJECT_ROOT is two
-# levels up, not one. Without this fix every relative-path check below
-# resolves under scripts/ and reports false negatives on KB / hook /
-# .env / invariants.json existence.
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
@@ -134,8 +131,6 @@ fi
 _section "9-tool smoke battery"
 
 # Per-tool check run in the background. Writes result to a temp file keyed
-# by a caller-provided slot index so the main loop can tally without races.
-# Result format on one line: PASS|label  OR  FAIL|label|detail
 _tool_check_bg() {
   local slot="$1" label="$2"
   shift 2

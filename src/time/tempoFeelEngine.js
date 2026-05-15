@@ -59,7 +59,6 @@ moduleLifecycle.declare({
         feel = 0;
     }
 
-    // Phrase-level rubato: ritardando approaching phrase end, accelerando in early phrase
     const tempoLayer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
     const tempoEntry = L0.getLast(L0_CHANNELS.tickDuration, { layer: tempoLayer });
     const bpmScaleForRubato = tempoEntry && Number.isFinite(tempoEntry.bpmScale) ? tempoEntry.bpmScale : 1.0;

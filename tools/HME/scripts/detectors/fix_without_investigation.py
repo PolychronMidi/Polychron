@@ -37,8 +37,6 @@ from _transcript import (  # noqa: E402
 
 
 # Bug-report shape in user prompt. Matches a wide-ish set of "something
-# is broken" phrasings. Combined with the fix-request OR standalone-report
-# disambiguation below.
 _BUG_REPORT_RE = re.compile(
     r"\b(bug|broken|fails?|failing|crash(?:es|ed|ing)?|error(?:s)?|"
     r"doesn'?t\s+work|not\s+working|regression|wrong|off|stuck|hangs?|"
@@ -49,9 +47,6 @@ _BUG_REPORT_RE = re.compile(
 )
 
 # Investigation-shape Bash commands. If the agent runs ANY of these
-# BEFORE the first Edit, we credit them with investigation.
-# Mirrors claim_without_evidence's evidence list, scoped to inspection
-# (no execution-of-build/test which would also count there).
 _INVESTIGATION_BASH_TOKENS = (
     "grep", "find", "ls", "stat", "cat", "head", "tail", "wc", "diff",
     "git log", "git show", "git diff", "git blame", "git status",

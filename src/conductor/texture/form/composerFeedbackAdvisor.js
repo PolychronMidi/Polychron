@@ -1,7 +1,5 @@
 // composerFeedbackAdvisor.js - Closes the loop between musical quality observation and
-// composer selection. Reads existing quality signals (repetition fatigue, textural memory,
 // thematic recall, profile adaptation) and produces per-family weight adjustments that
-// factoryFamilies.scoreFamilyCandidateConfig can consume. This makes the composer subsystem
 // self-aware: it responds to what the organism has recently produced, not just what the
 // conductor intends.
 //
@@ -131,8 +129,6 @@ moduleLifecycle.declare({
       }
 
       // Layer 5: Profile adaptation hints - match family character to musical needs
-      // Restrained hint - boost families with calmer character
-      // Explosive hint - boost families with intense character
       if (signals.profileHints.restrainedHint > 0.3) {
         // Families containing 'harmonic' or 'modal' tend to be calmer
         if (family.includes('harmonic') || family.includes('modal') || family.includes('tonal')) {
@@ -149,14 +145,7 @@ moduleLifecycle.declare({
       weights[family] = clamp(w, 0.3, 2.0);
     }
 
-    // R64 E4: Layer 6 - Regime-responsive weight adjustment
-    // During evolving: boost families with harmonic variety character
-    // During coherent: boost families with tonal stability character
-    // R70 E4: During exploring: boost rhythmic and chromatic families
-    // to create more intervallic variety in exploratory passages
-    // R75 E3: Added 'melodic' to evolving family boost. Evolving regime
-    // now doubled to 9.4% -- melodic development composers during evolving
-    // create intervallic richness in transitional passages.
+    // Layer 6 - Regime-responsive weight adjustment
     if (signals.currentRegime === 'evolving') {
       for (let i = 0; i < availableFamilies.length; i++) {
         const fam = availableFamilies[i];
@@ -165,11 +154,7 @@ moduleLifecycle.declare({
         }
       }
     } else if (signals.currentRegime === 'coherent') {
-      // R89 E5: Coherent composer palette expansion. Coherent is 48.5% of
-      // beats. Adding pentatonic at 1.15x injects exotic intervallic color
-      // into the dominant regime, complementing existing harmonic/modal/tonal/
-      // melodic emphasis (1.20x). This creates richer harmonic motion during
-      // coherent passages without destabilizing their stable character.
+      // Coherent composer palette expansion. Coherent is 48.5% of
       for (let i = 0; i < availableFamilies.length; i++) {
         const fam = availableFamilies[i];
         if (fam.includes('harmonic') || fam.includes('modal') || fam.includes('tonal') || fam.includes('melodic')) {
@@ -180,11 +165,6 @@ moduleLifecycle.declare({
       }
     } else if (signals.currentRegime === 'exploring') {
       // R76 E3 / R87 E4: Exploring composer distinctiveness. Previously
-      // exploring and evolving shared chromatic/tension families (1.22x).
-      // Now exploring emphasizes exotic interval families (pentatonic,
-      // quartal, blues) at 1.30x while dropping chromatic/tension overlap
-      // with evolving. This gives exploring a distinct exotic/modal color
-      // vs evolving's chromatic/tension intensity.
       for (let i = 0; i < availableFamilies.length; i++) {
         const fam = availableFamilies[i];
         if (fam.includes('pentatonic') || fam.includes('quartal') || fam.includes('blues') || fam.includes('modal')) {

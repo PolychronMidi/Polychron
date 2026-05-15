@@ -59,9 +59,6 @@ CORPUS = (
      "HCI held steady across all three runs and stayed constant; "
      "metrics unchanged across runs from yesterday and today."),
     # VERIFICATION_MARKERS are LITERAL parenthesized tokens -- `(verified)`
-    # matches, but `(verified via i/status)` does NOT (prose defeats the
-    # exact-substring check). The detector is strict here on purpose: the
-    # agent must use the canonical token, not paraphrase it.
     ("fabrication_check", "claim-with-verify", "ok",
      "report HCI",
      "HCI held steady at 84.7 (verified). i/status confirmed the value."),
@@ -101,10 +98,6 @@ CORPUS = (
      _PADDING + "Updated the value and the test passes.",
      {"ADVISOR_DOCTRINE_TIER": "E1"}),
     # summary_format -- detector requires substantive tool_use to fire,
-    # which the text-only corpus harness cannot construct. All probes
-    # return "ok"; firing semantics covered in test_detector_chain.py
-    # fixtures (missing-block-fires + malformed-fires + complete-block-passes
-    # all use _assistant_tool_use to inject Edit calls).
     ("summary_format", "e5-text-only-passes", "ok",
      "do the sweep",
      _PADDING + "All checks green. Stopping.",

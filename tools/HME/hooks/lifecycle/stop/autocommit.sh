@@ -7,9 +7,7 @@
 source "${_HME_HELPERS_DIR}/_autocommit.sh"
 _ac_do_commit stop.sh || true
 # Clear the nexus COMMIT_FAILED marker on success. The helper already
-# wrote one on failure (see _autocommit.sh); this side clears on success
-# so a recovered state doesn't keep nagging.
 if [ ! -f "$_AC_FAIL_FLAG" ]; then
   source "${_HME_HELPERS_DIR}/_nexus.sh"
-  _nexus_clear_type COMMIT_FAILED 2>/dev/null || true
+  _nexus_clear_type COMMIT_FAILED 2>/dev/null || true  # silent-ok: optional fallback path.
 fi

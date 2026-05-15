@@ -38,6 +38,7 @@ def _load_learned_stopwords() -> None:
             data = json.load(f)
         _LEARNED_STOPWORDS = set(data.get("candidates", []))
     except Exception:
+        # silent-ok: optional fallback path.
         _LEARNED_STOPWORDS = set()
 
 
@@ -191,9 +192,6 @@ _MODE_CONFIGS = {
         "max_files": 6,
         "file_lines": 80,
         # Fast mode: skip arbiter (10-30s saved) and use keyword extraction
-        # + directory inference as the planning substitute. Arbiter JSON
-        # planning is mostly redundant with the improved _extract_search_terms
-        # + _infer_directories and the CPU 4b model is slow.
         "skip_arbiter": True,
     },
     # plan: architecture-level implementation planner

@@ -1,4 +1,3 @@
-// src/conductor/texturalMemoryAdvisor.js - Tracks which composer/texture modes have been used.
 // Detects overuse or neglect of certain timbral colors across sections.
 // Pure query API - biases FactoryManager selection toward underused textures.
 

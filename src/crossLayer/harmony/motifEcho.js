@@ -45,26 +45,16 @@ moduleLifecycle.declare({
     if (notes.length > RECENT_WINDOW) notes.shift();
 
     // When we accumulate enough notes, potentially capture a motif fragment
-    // R51: CIM-modulated echo probability -- coordinated = more imitative echo, independent = less
-    // R55: thematic density gate -- high recall suppresses new capture (preserve existing material)
     const melodicCtx = emergentMelodicEngine.getContext();
     const thematicMult = melodicCtx ? clamp(1.0 - melodicCtx.thematicDensity * 0.45, 0.55, 1.0) : 1.0;
-    // Rhythmic coupling: strong emergent rhythm structure = natural thematic imitation moment.
     const rhythmEntryME = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmBiasME = rhythmEntryME && Number.isFinite(rhythmEntryME.biasStrength) ? rhythmEntryME.biasStrength : 0;
-    // R77 E2: harmonic-journey-eval gate -- suppress capture after key change (old-key motifs wrong tonal region)
     const journeyEntryME = L0.getLast(L0_CHANNELS.harmonicJourneyEval, { layer: 'both', since: absoluteSeconds - 2, windowSeconds: 2 });
     const journeySuppress = journeyEntryME && Number.isFinite(journeyEntryME.distance) && journeyEntryME.distance > 2
       ? clamp(journeyEntryME.distance * 0.08, 0, 0.45)
       : 0;
-    // R78: phase-lock coupling -- repel mode opens space for imitation (layers offset creates echo opportunity),
-    // lock mode suppresses echo (synchronized layers reinforce directly, no need for delayed imitation).
     const phaseModeEcho = rhythmicPhaseLock.getMode();
     const phaseEchoScale = phaseModeEcho === 'repel' ? 1.15 : phaseModeEcho === 'lock' ? 0.88 : 1.0;
-    // R90 E1: contourShape antagonism bridge with entropyRegulator (VIRGIN pair r=-0.503) -- falling melodic contour
-    // boosts echo probability (descending = nostalgic repetition, imitative memory natural).
-    // Rising contour suppresses echo (ascending = forward-looking, not looking back at old motifs).
-    // Counterpart: entropyRegulator RAISES entropy under same signal (rising motion expands variety).
     const contourShapeScaleME = melodicCtx
       ? (melodicCtx.contourShape === 'rising' ? 0.88 : melodicCtx.contourShape === 'falling' ? 1.12 : 1.0)
       : 1.0;

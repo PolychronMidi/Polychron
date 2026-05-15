@@ -62,41 +62,25 @@ moduleLifecycle.declare({
       // Regime-responsive penalty: coherent tolerates unisons, exploring penalizes
       const regime = regimeClassifier.getRegime();
       const regimeScale = regime === 'coherent' ? 0.4 : regime === 'exploring' ? 1.5 : 1.0;
-      // CIM: coordinated = more tolerance (layers meant to overlap), independent = harder penalty
       const cimPenaltyScale = 1.3 - cimScale * 0.6;
       // Melodic coupling: intervalFreshness scales collision penalty.
-      // Novel intervals -> collisions add exploratory dissonance -> reduce penalty.
-      // Stale intervals -> collisions are muddy repetition -> increase penalty.
       const melodicCtxVIM = emergentMelodicEngine.getContext();
       const intervalFreshness = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.intervalFreshness, 0.5) : 0.5;
       const freshnessScale = 1.3 - intervalFreshness * 0.6; // [0.7 fresh ... 1.3 stale]
 
-      // Rhythmic coupling: dense rhythm -> collisions statistically expected -> reduce penalty.
       const rhythmEntryVIM = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
       const rhythmDensityVIM = rhythmEntryVIM && Number.isFinite(rhythmEntryVIM.density) ? rhythmEntryVIM.density : 0;
       const rhythmPenaltyMod = 1.0 - rhythmDensityVIM * 0.20; // [0.80-1.0] dense->less penalty
-      // R84 E1: complexity bridge -- high rhythmic complexity raises collision penalty
-      // (tighter vertical control during complex moments). Counterpart: dynamicRoleSwap
-      // LOWERS swap gate under same signal (dynamics reshuffle during complexity).
+      // complexity bridge -- high rhythmic complexity raises collision penalty
       const rhythmComplexityVIM = rhythmEntryVIM && Number.isFinite(rhythmEntryVIM.complexity) ? rhythmEntryVIM.complexity : 0.5;
       const complexityPenaltyMod = 1.0 + clamp((rhythmComplexityVIM - 0.5) * 0.20, -0.05, 0.10);
-      // R86 E1: biasStrength antagonism bridge -- confident rhythm pulse raises collision tolerance.
-      // Counterpart: temporalGravity STRENGTHENS gravity wells under same signal (temporal cohesion + harmonic freedom).
       const biasStrengthVIM = rhythmEntryVIM && Number.isFinite(rhythmEntryVIM.biasStrength) ? rhythmEntryVIM.biasStrength : 0;
       const biasPenaltyMod = 1.0 - clamp((biasStrengthVIM - 0.3) * 0.15, 0, 0.10);
-      // R88 E3: ascendRatio antagonism bridge with convergenceHarmonicTrigger -- ascending melodic momentum
-      // tightens collision penalty (ascending motion is harmonically directed; unison clashes disrupt).
-      // Counterpart: convergenceHarmonicTrigger BOOSTS trigger probability under same signal (harmonic assertiveness + discipline).
       const ascendRatioVIM = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.ascendRatio, 0.5) : 0.5;
       const ascendPenaltyMod = 1.0 + clamp((ascendRatioVIM - 0.45) * 0.20, -0.04, 0.10);
-      // R89 E1: freshnessEma antagonism bridge with dynamicRoleSwap -- sustained melodic novelty
-      // reduces collision penalty (novel territory = exploratory dissonance is musically endorsed).
-      // Counterpart: dynamicRoleSwap INCREASES swap frequency under same signal (roles reshuffle during novelty).
+      // freshnessEma antagonism bridge with dynamicRoleSwap -- sustained melodic novelty
       const freshnessEmaVIM = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.freshnessEma, 0.5) : 0.5;
       const freshnessEmaVIMScale = 1.12 - freshnessEmaVIM * 0.25; // [0.87 novel ... 1.12 familiar]
-      // R92 E1: tessituraLoad antagonism bridge with crossLayerSilhouette -- crowded register makes
-      // unison collisions muddier and more disruptive, so penalty tightens.
-      // Counterpart: crossLayerSilhouette WIDENS effectiveSmoothing (more form flexibility to breathe).
       const tessituraLoadVIM = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.tessituraLoad, 0.5) : 0.5;
       const tessituralPenaltyMod = 1.0 + clamp((tessituraLoadVIM - 0.5) * 0.18, -0.04, 0.09);
       return BASE_PROB_REDUCE * m.min(collisions, 3) * regimeScale * cimPenaltyScale * freshnessScale * rhythmPenaltyMod * complexityPenaltyMod * biasPenaltyMod * ascendPenaltyMod * freshnessEmaVIMScale * tessituralPenaltyMod;

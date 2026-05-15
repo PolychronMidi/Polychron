@@ -74,10 +74,7 @@ moduleLifecycle.declare({
     // Exceedance tracking
     /** @type {Record<string, number>} */
     exceedanceTicks: {},
-    // R77 E1: Exceedance-outcome EMA for self-calibrating tail threshold (#18)
-    // R78 E1: Initial 0.05->0.10. Conservative start: no relaxation until EMA
-    // decays below 0.05 threshold (~24 beats of zero hotspot rate). Prevents
-    // premature threshold relaxation that contributed to R77's 70-beat exceedance.
+    // Exceedance-outcome EMA for self-calibrating tail threshold (#18)
     exceedanceOutcomeEma: 0.10,
     exceedanceRelaxOffset: 0,
 

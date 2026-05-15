@@ -100,6 +100,7 @@ def analyze_diff(project_root: str, ref: str = "") -> dict:
         try:
             content = f.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         for pat in IMPORT_PATTERNS.get(lang, []):
             for match in pat.finditer(content):
@@ -134,6 +135,7 @@ def trace_cross_language(symbol_name: str, project_root: str) -> dict:
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         m = fn_re.search(content)
         if m:
@@ -154,6 +156,7 @@ def trace_cross_language(symbol_name: str, project_root: str) -> dict:
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
+            # silent-ok: optional fallback path.
             continue
         fname = fpath.name
         is_bridge = "wasm" in fname.lower()

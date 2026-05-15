@@ -31,8 +31,6 @@ KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 OUT_PATH = os.path.join(METRICS_DIR, "kb-signatures.json")
 
 # Import current_signature() from the sibling drift checker -- that's the
-# single source of truth for signature composition. runpy handles the
-# hyphenated filename that regular import can't.
 import runpy
 
 _drift_module_ns = runpy.run_path(

@@ -10,9 +10,7 @@ const WRITE_INTENT_TOOLS = new Set([
   'NotebookEdit',
 ]);
 
-//  Boilerplate stub stripper
-// Strips signalless harness acknowledgement strings from the in-flight payload.
-// Runs BEFORE scanMessages so the scanner sees the cleaned payload.
+// Boilerplate stub stripper
 const BOILERPLATE_PATTERNS = [
   {
     name: 'bash_no_output',
@@ -45,8 +43,6 @@ function _isBoilerplateText(text) {
 }
 
 // Only scan the last RECENT_MSG_WINDOW messages for mutable strip operations.
-// Older messages are already cached by Anthropic -- mutating them busts the
-// cache prefix and inflates token costs by 12x.
 const RECENT_MSG_WINDOW = 8;
 
 function stripBoilerplate(payload) {
@@ -118,14 +114,7 @@ function stripBoilerplate(payload) {
   return strippedCount;
 }
 
-//  Semantic-redundancy strip
-// C. Dup Read tool_results for same file (no intervening Edit) -> stub earlier.
-// D. Oversize Bash bodies > D_MAX_BYTES -> head+elision+tail.
-// E. Identical ide_selection blocks (cross-message) -> keep first.
-// F. Identical system-reminder blocks (within-message) -> keep first.
-// H. Compaction notes -> preserve first per payload.
-// I. Monitor timeout reminders -> preserve first per payload.
-// J. Deferred-tools schema blocks -> preserve first per payload.
+// Semantic-redundancy strip
 const D_MAX_BYTES = 50_000;
 const D_HEAD_BYTES = 20_000;
 const D_TAIL_BYTES = 20_000;
@@ -200,7 +189,6 @@ function stripSemanticRedundancy(payload) {
       if (srcUse.name === 'Read') {
         const fp = (srcUse.input && (srcUse.input.file_path || srcUse.input.path)) || null;
         const rawText = _textOf(block);
-        // Dup-read collapse (same file re-read with identical content -> earlier one stripped)
         if (fp) {
           const hash = _hashText(rawText);
           const prev = lastReadByFile.get(fp);
@@ -211,8 +199,6 @@ function stripSemanticRedundancy(payload) {
           lastReadByFile.set(fp, { hash, block });
         }
         // Oversize-read backstop: if a hook missed, truncate the result before
-        // it hits the Anthropic cache. Tighter threshold than Bash since Read
-        // output is usually dense file content, not log spew.
         if (rawText.length > D_MAX_BYTES) {
           const head = rawText.slice(0, D_HEAD_BYTES);
           const tail = rawText.slice(-D_TAIL_BYTES);
@@ -240,9 +226,6 @@ function stripSemanticRedundancy(payload) {
   const MONITOR_TIMEOUT_RE = /<system-reminder>\s*\[SYSTEM NOTIFICATION[\s\S]*?Monitor timed out[\s\S]*?<\/system-reminder>/g;
   const DEFERRED_TOOLS_RE = /<system-reminder>\s*The following deferred tools are now available[\s\S]*?<\/system-reminder>/g;
   // K: background-task exit notifications. Strip ALL occurrences (not
-  // preserve-first) -- they're exit telemetry for processes we've already
-  // moved past. Matches both the bare <task-notification> form and the
-  // common wrapping <system-reminder>...[SYSTEM NOTIFICATION...<task-notification>...</task-notification></system-reminder>.
   const TASK_NOTIFICATION_RE = /<task-notification>[\s\S]*?<\/task-notification>/g;
   const TASK_NOTIFICATION_WRAPPED_RE = /<system-reminder>\s*\[SYSTEM NOTIFICATION[\s\S]*?<task-notification>[\s\S]*?<\/task-notification>[\s\S]*?<\/system-reminder>/g;
   let compactionNoteSeen = false;
@@ -256,8 +239,6 @@ function stripSemanticRedundancy(payload) {
       let txt = block.text;
 
       // K runs first: strip task-notifications entirely (wrapped form, then bare).
-      // The wrapped form has an outer <system-reminder> that would otherwise
-      // match the later dup_system_reminder dedup and survive.
       txt = txt.replace(TASK_NOTIFICATION_WRAPPED_RE, () => { bump('task_notification_stripped'); return ''; });
       txt = txt.replace(TASK_NOTIFICATION_RE, () => { bump('task_notification_stripped'); return ''; });
 
@@ -307,11 +288,6 @@ function stripSemanticRedundancy(payload) {
 function scanMessages(payload) {
   const result = {
     // hmeReadCalled / firstWriteBeforeRead retained as stable `false`/`null`
-    // for downstream consumers that still reference them (see
-    // tools/HME/proxy/hme_proxy.js, where the coherence_violation emission
-    // is now dead code but the `violation:` field is still keyed off this
-    // for observability). We never flip hmeReadCalled true here because
-    // the detection model no longer fits the architecture.
     hmeReadCalled: true,  // treat as always-true: auto-enrichment handles it
     writeIntentCalled: false,
     toolCalls: [],

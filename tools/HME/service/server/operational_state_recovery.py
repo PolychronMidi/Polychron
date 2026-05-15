@@ -34,16 +34,6 @@ import logging
 logger = logging.getLogger("HME")
 
 # Sibling-module state. operational_state.py imports US at line 188 AFTER
-# defining `_state`, `_state_lock`, `_save_unlocked` (line 141), and the
-# `_ops._SESSIONS_FILE` / `_ops._SYNTHESIS_FILE` paths (lines 37-38, set by init()
-# at runtime). The bare-name references throughout this file are leftover
-# from when both lived in one module before the LOC split.
-#
-# `_state` is a dict -- mutations via shared reference work after a plain
-# import. `_save_unlocked` is a function -- same. `_ops._SESSIONS_FILE` /
-# `_ops._SYNTHESIS_FILE` are reassigned by init() AFTER our module loads, so
-# we must look them up dynamically -- accessed as `_ops._SESSIONS_FILE`
-# (module-attribute lookup is live).
 from . import operational_state as _ops
 from .operational_state import _state, _state_lock, _save_unlocked  # noqa: F401
 

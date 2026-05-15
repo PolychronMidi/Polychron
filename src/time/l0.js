@@ -1,5 +1,4 @@
 // src/time/L0.js - Unified in-memory temporal layer (L0).
-// Single flat-array buffer per channel. Never pruned - the composition run is finite and bounded.
 
 moduleLifecycle.declare({
   name: 'L0',
@@ -20,9 +19,7 @@ moduleLifecycle.declare({
   /** @type {Map<string, any>} */
   const queryCache = new Map();
 
-  //
   // Internal helpers
-  //
 
   function ensureChannel(name) {
     if (!channels[name]) channels[name] = [];
@@ -41,9 +38,7 @@ moduleLifecycle.declare({
     }
   }
 
-  //
   // Public API
-  //
 
   /**
    * Post an event to L0.

@@ -2,10 +2,6 @@ moduleLifecycle.declare({
   name: 'adaptiveTrustScores',
   subsystem: 'crossLayer',
   // Full-DI deps: every cross-module reference inside init() body and method
-  // closures resolves through deps. metaProfiles / trustSystems /
-  // explainabilityBus are declared modules (or bound globals) used at
-  // runtime; aliasing them as locals here keeps the method bodies clean
-  // (`metaProfiles.X` reads from the local const, not the global namespace).
   deps: ['controllerConfig', 'explainabilityBus', 'metaProfiles', 'signalHealthAnalyzer', 'trustSystems', 'validator'],
   lazyDeps: ['adaptiveTrustScoresCaching', 'adaptiveTrustScoresHelpers', 'adaptiveTrustScoresVelocityNourishment', 'conductorSignalBridge', 'contextualTrust'],
   provides: ['adaptiveTrustScores'],
@@ -17,8 +13,6 @@ moduleLifecycle.declare({
   const V = deps.validator.create('adaptiveTrustScores');
   const controllerConfig = deps.controllerConfig;
   // Full-DI aliases: methods reference these locals; the `deps` object is
-  // the source of truth, the bare globals are only kept available for
-  // legacy callers that haven't migrated yet.
   const metaProfiles = deps.metaProfiles;
   const trustSystems = deps.trustSystems;
   const explainabilityBus = deps.explainabilityBus;
@@ -33,8 +27,6 @@ moduleLifecycle.declare({
   let cimScale = 0.5;
 
   // Trust ceiling: prevents runaway dominance where high-trust systems
-  // accumulate ever-more influence via positive feedback (high trust -
-  // more influence - more positive outcomes - higher trust).
   const _BASE_TRUST_CEILING = V.optionalFinite(_atsc.baseTrustCeiling, 0.75);
 
   // Metaprofile trust axis: scaleFactor divides active by default profile's
@@ -49,17 +41,11 @@ moduleLifecycle.declare({
   const _BASE_EMA_DECAY = V.optionalFinite(_atsc.baseEmaDecay, 0.85);
   const _BASE_EMA_NEW = V.optionalFinite(_atsc.baseEmaNew, 0.15);
   const _BASE_EMA_NEW_REGIME = V.optionalType(_atsc.emaNewRegime, 'object', { exploring: 0.20, evolving: 0.15, coherent: 0.12 });
-  // Runtime mirror of the pipeline ema-rate-consistency invariant: decay + new must sum to 1.0.
-  // Runtime decayWeight is derived as (1 - newWeight); this assertion catches config drift
-  // before trust scoring begins so the declared constants stay coherent with the derivation.
   if (m.abs(_BASE_EMA_DECAY + _BASE_EMA_NEW - 1.0) > 1e-6) {
     throw new Error(`adaptiveTrustScores: _BASE_EMA_DECAY (${_BASE_EMA_DECAY}) + _BASE_EMA_NEW (${_BASE_EMA_NEW}) must sum to 1.0`);
   }
 
   // Metaprofile trust concentration: scales learning rate.
-  // Inverse relationship: higher concentration -> slower learning (incumbents
-  // dominate), lower -> faster (more competition). conc 0.3 -> ~1.12x faster,
-  // conc 0.7 -> ~0.88x slower at default sensitivity.
   const _CONCENTRATION_SENSITIVITY = V.optionalFinite(_atsc.concentrationLearningSensitivity, 0.3);
   function _getConcentrationScale() {
     const factor = metaProfiles.scaleFactor('trust', 'concentration');
@@ -71,8 +57,6 @@ moduleLifecycle.declare({
   let decayCycleCount = 0;
 
   // -- Trust journal: ring buffer of significant trust changes --
-  // Modeled after explainabilityBus. Keeps the most impactful trust
-  // transitions across the entire run for post-hoc forensics.
   const JOURNAL_CAPACITY  = 200;
   const JOURNAL_EVICT     = 40;
   /** @type {{ section: number, beat: number, systemName: string, payoff: number, scoreBefore: number, scoreAfter: number, ms: number }[]} */
@@ -137,19 +121,12 @@ moduleLifecycle.declare({
     const _concScale = _getConcentrationScale();
     let newWeight = BASE_EMA_NEW * _concScale;
     let decayWeight = 1 - newWeight;
-    // R95 E2: Regime-responsive EMA learning rate -- faster adaptation during exploring, slower during coherent
     const regimeForEma = conductorSignalBridge.getSignals().regime || null;
     if (regimeForEma && EMA_NEW_REGIME[regimeForEma] !== undefined) {
       newWeight = EMA_NEW_REGIME[regimeForEma] * _concScale;
       decayWeight = 1 - newWeight;
     }
-    // R71 E1: Removed coupling matrix brake (was reading coupling data
-    // directly to compute ad-hoc trust penalty -- same anti-pattern fixed in
-    // R69 for 5 harmonic/dynamics modules). Trust weight decay is now managed
-    // solely through the standard EMA path and trustSurfaceGainBrake below.
-    // The hypermeta controller chain handles coupling-related pressure.
-    // Trust Exceedance Limits (Starvation guard)
-    // Clamp bottom to 0.10 instead of -1 so aggressive exponential drops don't permanently decouple modules.
+    // Removed coupling matrix brake (was reading coupling data
     state.score = clamp(state.score * decayWeight + p * newWeight, 0.10, _getTrustCeiling());
     if (p > 0 && trustSurfaceSystem) {
       const trustSurfaceGainBrake = clamp(
@@ -166,11 +143,6 @@ moduleLifecycle.declare({
       }
     }
     // trust ecosystem looks like, eliminating per-module floor additions.
-    // Coefficient raised 0.30->0.50.
-    //  Self-deriving coefficient from trust score standard deviation.
-    // Widely dispersed scores (high stddev) get higher coefficient for stronger floor;
-    // converged scores (low stddev) get lower coefficient for more differentiation.
-    // coeff = clamp(0.30 + stddev * 1.8, 0.30, 0.60)
     if (scoreBySystem.size > 2) {
       const adaptiveTrustScoresScores = [];
       for (const s of scoreBySystem.values()) adaptiveTrustScoresScores.push(s.score);
@@ -235,11 +207,6 @@ moduleLifecycle.declare({
     const state = ensure(systemName);
     let effectiveScore = state.score;
     // Intentional hypermeta exemptions (structural, not tuning targets):
-    // CADENCE_ALIGNMENT needs phrase boundaries to accumulate signal -- floor of 0.20 prevents
-    // permanent starvation before it has enough samples. No controller manages this because
-    // the starvation is sampling-rate-driven, not coupling-driven.
-    // STUTTER_CONTAGION capped at 0.55 to prevent rhythmic overcrowding when stutter trust
-    // compounds with high entropy. Structural ceiling that predates the controller chain.
     if (systemName === trustSystems.names.CADENCE_ALIGNMENT && effectiveScore < 0.20) effectiveScore = 0.20;
     if (systemName === trustSystems.names.STUTTER_CONTAGION && effectiveScore > 0.55) effectiveScore = 0.55;
 
@@ -310,11 +277,6 @@ moduleLifecycle.declare({
     }
 
     // Health-aware exploration: when signalHealthAnalyzer reports trust as
-    // strained or worse, double the exploration nudge to accelerate recovery
-    // of dormant systems. Wires adaptiveTrustScores into the health self-
-    // healing loop without creating a new feedback mechanism.
-    // CIM: independent = more exploration nudge (keep all systems active),
-    // coordinated = less nudge (let dominant systems stay dominant)
     let effectiveNudge = EXPLORATION_NUDGE * (1.5 - cimScale);
     const trustGrade = signalHealthAnalyzer.getHealth().trust.grade;
     if (trustGrade === 'strained' || trustGrade === 'stressed' || trustGrade === 'critical') {
@@ -322,9 +284,6 @@ moduleLifecycle.declare({
     }
 
     // Structural fix: Compute universal trust floor from population mean
-    // before applying per-system decay. Replaces per-module hard-coded floors.
-    // Coefficient raised 0.30->0.50 (matches registerOutcome change).
-    // Self-deriving coefficient from trust score standard deviation.
     let adaptiveTrustScoresUniversalDecayFloor = 0.05;
     if (scoreBySystem.size > 2) {
       const adaptiveTrustScoresDScores = [];
@@ -358,8 +317,6 @@ moduleLifecycle.declare({
     }
 
     // -- #5: Trust stagnation auto-nourishment --
-    // Detect per-system velocity stagnation and inject synthetic payoff
-    // to break out of trust plateaus.
     let meanTrust = 0;
     let trustCountForMean = 0;
     for (const state of scoreBySystem.values()) {
@@ -371,9 +328,7 @@ moduleLifecycle.declare({
 
     adaptiveTrustScoresVelocityNourishment.runVelocityNourishment(scoreBySystem, meanTrust, context);
 
-    // R36: trust ecosystem biodiversity -- when Gini is high (monopolistic),
-    // create protected niches for bottom systems. Self-regulating: biodiversity
-    // boost scales with Gini coefficient and decays as distribution equalizes.
+    // trust ecosystem biodiversity -- when Gini is high (monopolistic),
     if (scoreBySystem.size > 5 && decayCycleCount % 8 === 0) {
       const allScores = [];
       for (const s of scoreBySystem.values()) allScores.push(s.score);

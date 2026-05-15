@@ -85,9 +85,6 @@ def _detect_contradictions() -> str:
     def _has_relation(a, b):
         a_tags = (a.get("tags") or "").split(",")
         b_tags = (b.get("tags") or "").split(",")
-        # If EITHER entry is a synthesis/supersedes/clarifies entry, skip the pair entirely.
-        # Synthesis entries summarize many specific entries and will always look similar to them --
-        # that similarity is intentional, not a contradiction.
         for tag in a_tags + b_tags:
             rel = tag.strip().split(":", 1)[0]
             if rel in _skip_relations:

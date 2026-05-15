@@ -1,4 +1,3 @@
-// src/conductor/rhythmic/interLayerRhythmAnalyzer.js - Unified cross-layer rhythm analysis.
 // Merges CrossLayerRhythmPhaseTracker + MicroTimingDriftDetector +
 // PolyrhythmicAlignmentTracker + MetricDisplacementDetector.
 // Provides phase relationship, timing drift, alignment flicker, and hemiola detection.

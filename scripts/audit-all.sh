@@ -41,8 +41,6 @@ run "audit-loc"                  python3 scripts/audit-loc.py $([ "$STRICT" = "1
 run "audit-python-undefined"     python3 scripts/audit-python-undefined-names.py $([ "$STRICT" = "1" ] && echo --strict)
 
 # Project-wide ASCII enforcement across .py / .js / .sh / .json / .md / .txt.
-# Strict: no allowlist, no emoji exceptions. ASCII (0x20-0x7e) + tab + LF + CR
-# are the only allowed bytes.
 run "audit-no-non-ascii"         python3 scripts/audit-no-non-ascii.py $([ "$STRICT" = "1" ] && echo --strict)
 
 # Shell `set -u` undefined-var references.
@@ -68,8 +66,6 @@ run "test-deny-alternatives"     python3 tools/HME/scripts/detectors/test_deny_a
 run "test-detector-chain"        python3 tools/HME/scripts/detectors/test_detector_chain.py
 
 # Meta-detector: corpus mode reports recall/precision per detector.
-# The corpus is small (7 probes today) but every probe is a regression
-# contract -- adding probes after every incident locks behavior in.
 run "audit-detectors-corpus"     python3 tools/HME/scripts/detectors/audit_detectors.py --corpus
 
 # ISA audit (PAI-import #1): scaffolds + validates Ideal State Artifact

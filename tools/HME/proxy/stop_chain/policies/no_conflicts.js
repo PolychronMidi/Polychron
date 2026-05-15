@@ -37,6 +37,7 @@ function unmergedFiles() {
     );
     return out.split('\n').map((s) => s.trim()).filter(Boolean);
   } catch (_e) {
+    // silent-ok: optional fallback path.
     return null;
   }
 }

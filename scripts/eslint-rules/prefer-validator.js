@@ -25,7 +25,6 @@ module.exports = {
     function isInsideSafePreBoot(node) {
       let parent = node.parent;
       while (parent) {
-        // safePreBoot.call(() => ...) wraps boot-safety checks centrally
         if (parent.type === 'CallExpression' &&
             parent.callee && parent.callee.type === 'MemberExpression' &&
             parent.callee.object && parent.callee.object.name === 'safePreBoot') {
@@ -63,7 +62,6 @@ module.exports = {
       // Direct: typeof x === 'type'
       const direct = getTypeofPositiveType(node);
       if (direct) return direct;
-      // Compound: (typeof x === 'number' && Number.isFinite(x)) or (guard && typeof x === 'number')
       if (node.type === 'LogicalExpression' && node.operator === '&&') {
         const leftType = extractTypeofType(node.left);
         if (leftType) return leftType;
@@ -98,30 +96,19 @@ module.exports = {
       },
 
       // === Positive ternary fallbacks: typeof x === 'type' ? x : fallback ===
-      // These are the silent-fallback antipatterns: use V.optionalFinite / V.optionalType.
-      // Only flag when the ternary test IS the typeof check (possibly in &&-chain) AND
-      // the alternate branch is a simple fallback (literal or identifier), not another typeof
-      // discriminant check. This avoids flagging legitimate union-type discriminant patterns.
       ConditionalExpression(node) {
         if (isInsideSafePreBoot(node)) return;
         // Is the ternary TEST rooted in a typeof === check?
         const typeStr = extractTypeofType(node.test);
         if (!typeStr) return;
 
-        // Skip if alternate is a nested typeof/type-narrowing ternary (discriminant pattern).
         // e.g. typeof x === 'number' ? x : (typeof x === 'string' ? x : null)
         if (node.alternate && extractTypeofType(
           node.alternate.type === 'ConditionalExpression' ? node.alternate.test : node.alternate
         )) return;
 
-        // Only flag when the CONSEQUENT is a simple pass-through (Identifier or MemberExpression
-        // chain that IS the typeof target) and ALTERNATE is a literal fallback. This avoids
-        // flagging discriminant patterns where the consequent does real work (property access,
-        // method call) on a different value from the typeof target.
         const consq = node.consequent;
         const alt = node.alternate;
-        // If consequent does real work on the value (property access, method call, arithmetic,
-        // object construction), it's a discriminant/transform, not a silent fallback -- skip.
         if (consq && (
           consq.type === 'MemberExpression' ||
           consq.type === 'CallExpression' ||

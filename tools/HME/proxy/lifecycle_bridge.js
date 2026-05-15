@@ -1,7 +1,6 @@
 'use strict';
 // Lifecycle HTTP adapter: two proxy-side delivery paths into the event kernel
 // (SessionStart/UserPromptSubmit/Stop):
-//   1. Forwarder POST to /hme/lifecycle?event=... (handleLifecycleRoute).
 //   2. Inline fallback (runInlineFallback) when forwarder not reaching us.
 // _lifecycleSeen + _LIFECYCLE_FRESH_MS=30s dedup window prevents double-fire.
 // SessionStart fires inline at module load as a bare safety net.
@@ -15,12 +14,6 @@ const _lifecycleSeen = { SessionStart: 0, UserPromptSubmit: 0, Stop: 0 };
 const _LIFECYCLE_FRESH_MS = 30_000;
 
 // Persist across restarts. Without this, every proxy restart resets the
-// dedup timestamps -- if Claude Code's forwarder fired a /hme/lifecycle
-// hit 5s before the restart, the new process thinks the forwarder has
-// been silent for >30s and inline-fires the same event, double-running
-// it. Persistence with TTL semantics avoids this. The file is small (3
-// timestamps) and best-effort -- a write failure leaves us in the
-// pre-fix behavior, not worse.
 const _LIFECYCLE_STATE_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-lifecycle-seen.json');
 
 function _loadLifecycleSeen() {
@@ -105,8 +98,6 @@ function handleLifecycleRoute(clientReq, clientRes) {
     // fallback fires don't double-invoke it.
     recordLifecycleHit(event);
     // Log receipt so we can verify the forwarder path is active. Fallback
-    // callers always run through inline (no POST) so this log existing =
-    // Claude Code's hook system is reaching us.
     console.error(`/hme/lifecycle received event=${event} (${stdin.length}B)`);
     let _dispatchErr = null;
     let _result = null;
@@ -119,16 +110,12 @@ function handleLifecycleRoute(clientReq, clientRes) {
       json(500, { stdout: '', stderr: `dispatch error: ${err.message}`, exit_code: -1 });
     }
     // EXHAUSTIVE LIFECYCLE DUMP: every hook stdin + result -> blank-debug/
-    // dir. Lets us correlate "no API request followed UserPromptSubmit"
-    // with the actual hook decision (block? injectAdditionalContext?
-    // crash?) instead of spelunking through proxy log.
     try {
       const _lcPath = require('path');
       const _lcFs = require('fs');
       const { PROJECT_ROOT } = require('./shared');
       const _lcDir = _lcPath.join(PROJECT_ROOT, 'tmp', 'blank-debug');
       try { _lcFs.mkdirSync(_lcDir, { recursive: true }); } catch (_e) { /* ignore */ }
-      // Cap blank-debug to 500 newest files per writer prefix. Without rotation the dir grew to 3.4GB (8617 files) before the cleanup. Keep enough history for forensics, prune the rest.
       try {
         const _existing = _lcFs.readdirSync(_lcDir).filter((f) => f.startsWith('hme-lc-'));
         if (_existing.length > 500) {
@@ -161,10 +148,6 @@ function handleLifecycleRoute(clientReq, clientRes) {
 }
 
 // Side effect: fire SessionStart inline at module load. If Claude Code
-// hits /hme/lifecycle with SessionStart shortly after, we'll note the
-// dup but it's harmless (sessionstart.sh is idempotent w.r.t. its
-// state writes). Module require caching guarantees this runs once per
-// process even if multiple modules require this file.
 runInlineFallback('SessionStart', '{}');
 
 module.exports = {

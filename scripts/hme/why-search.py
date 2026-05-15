@@ -162,10 +162,6 @@ def main(argv):
         return 0
 
     # Tier 3 -- opt-in subagent synthesis. Writes a queue entry containing
-    # the packet + question; emits the [[HME_AGENT_TASK ...]] sentinel that
-    # subagent_bridge.js looks for. The agent that runs i/why sees the
-    # sentinel in its tool result, fires Agent(...) on its next turn, and
-    # the bridge captures the result into tmp/hme-subagent-results/<id>.json.
     if deep:
         _emit_subagent_task(question, grep_hits, kb, activity)
         return 0

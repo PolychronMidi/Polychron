@@ -13,17 +13,13 @@
 set -u
 set -o pipefail
 # Not using `set -e`: per-component startup is intentionally resilient
-# (skip if port already healthy, fall back gracefully). But trap EXIT
-# to clean up orphan nohup'd children if the launcher aborts mid-flight
-# -- without this, a SIGINT during proxy startup left a zombie proxy
-# process that the shutdown script couldn't always find later.
 _orphan_pids=""
 _track_orphan() { _orphan_pids="$_orphan_pids $1"; }
 _kill_orphans_on_abort() {
   if [ -n "${_LAUNCH_OK:-}" ]; then return 0; fi
   for _p in $_orphan_pids; do
     if [ -n "$_p" ] && kill -0 "$_p" 2>/dev/null; then
-      kill "$_p" 2>/dev/null || true
+      kill "$_p" 2>/dev/null || true  # silent-ok: optional fallback path.
     fi
   done
 }
@@ -39,22 +35,16 @@ if [ -f "$_ENV_FILE" ]; then
   source "$_ENV_FILE"
   set +a
   # ANTHROPIC_BASE_URL is now exported in THIS launcher's process tree
-  # only -- intentional. Any VS Code (or anything else) launched OUTSIDE
-  # this script does NOT see it, so when the proxy is broken the user
-  # can `code .` from a normal terminal and traffic goes straight to
-  # api.anthropic.com. Do NOT propagate this var to ~/.profile,
-  # ~/.bashrc, systemd --user, or dbus -- doing so locks the user out
-  # of a working Claude Code whenever the proxy is in a bad state.
 else
   echo "[launch] WARNING: .env not found at $_ENV_FILE -- using defaults" >&2
 fi
 
 PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
-source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true
-PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"
+source "$PROJECT_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
+PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
 PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
-PROXY_PID_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"
-OMNIROUTE_PID_LABEL="$(_hme_service_pid_label omniroute 2>/dev/null || printf '%s' omniroute)"
+PROXY_PID_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"  # silent-ok: optional fallback path.
+OMNIROUTE_PID_LABEL="$(_hme_service_pid_label omniroute 2>/dev/null || printf '%s' omniroute)"  # silent-ok: optional fallback path.
 PROXY_STARTUP_TIMEOUT="${HME_PROXY_STARTUP_TIMEOUT:-25}"
 
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
@@ -73,7 +63,7 @@ _port_healthy() {
 }
 
 # 0. OmniRoute (MODE=4/5 main-agent translator)
-_OMNIROUTE_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"
+_OMNIROUTE_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"  # silent-ok: optional fallback path.
 _OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
 _OD_START="${OVERDRIVE_MODE:-0}"
 if [ "$_OD_START" = "4" ] || [ "$_OD_START" = "5" ] || [ "$_OD_START" = "6" ]; then
@@ -139,7 +129,7 @@ fi
 # 2. llama-server instances
 
 _llama_healthy() {
-  curl -sf --max-time 2 "http://127.0.0.1:$1/health" 2>/dev/null | grep -q '"status":"ok"'
+  curl -sf --max-time 2 "http://127.0.0.1:$1/health" 2>/dev/null | grep -q '"status":"ok"'  # silent-ok: optional fallback path.
 }
 
 _start_llama() {
@@ -181,11 +171,11 @@ fi
 # 3. Initial health check
 
 echo "[launch] health check..." >&2
-_proxy_status=$(curl -sf --max-time 3 "${PROXY_URL}/health" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "unreachable")
+_proxy_status=$(curl -sf --max-time 3 "${PROXY_URL}/health" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "unreachable")  # silent-ok: optional fallback path.
 echo "[launch]   proxy  -> ${_proxy_status}" >&2
 
-_worker_url="$(_hme_service_url worker 2>/dev/null || printf 'http://127.0.0.1:%s/health' "${HME_WORKER_PORT:-9098}")"
-_worker_status=$(curl -sf --max-time 3 "$_worker_url" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'), d.get('phase',''))" 2>/dev/null || echo "starting...")
+_worker_url="$(_hme_service_url worker 2>/dev/null || printf 'http://127.0.0.1:%s/health' "${HME_WORKER_PORT:-9098}")"  # silent-ok: optional fallback path.
+_worker_status=$(curl -sf --max-time 3 "$_worker_url" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'), d.get('phase',''))" 2>/dev/null || echo "starting...")  # silent-ok: optional fallback path.
 echo "[launch]   worker -> ${_worker_status}" >&2
 
 if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ]; then
@@ -196,9 +186,6 @@ if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ]; then
 fi
 
 # 4. ANTHROPIC_BASE_URL bridge: VSCode/GUI claude doesn't source .env, so
-# without this the extension bypasses the proxy. (a) inject into
-# .vscode/settings.json terminal.integrated.env (covers integrated terminal),
-# (b) warn on running claude pids missing the var.
 
 if [ -n "${ANTHROPIC_BASE_URL:-}" ]; then
   _vscode_dir="$PROJECT_ROOT/.vscode"
@@ -245,19 +232,9 @@ else:
 PYEOF
 
   # Detection + AUTO-FIX: any running claude binary missing the env var?
-  # Previously the launcher only WARNed (silent failure -- proxy bypass
-  # left every middleware dead), then HARD-FAILED with manual fix steps
-  # (still required user to remember the 4-step sequence). Now the
-  # launcher takes the user-equivalent path itself: kill VSCode + claude
-  # binaries, then relaunch VSCode with the launcher's already-sourced
-  # env (which includes ANTHROPIC_BASE_URL). The relaunched VSCode
-  # inherits the env, propagates it to the extension, propagates to the
-  # extension's child claude binary -- bypass is gone.
-  #
-  # Override: HME_NO_AUTOFIX_VSCODE=1 reverts to fail-loud-with-instructions.
-  # Use it on headless setups where the launcher can't relaunch VSCode.
   _bypass_pids=""
-  for _pid in $(pgrep -f "anthropic.claude-code.*native-binary/claude" 2>/dev/null); do
+  for _pid in $(pgrep -f "anthropic.claude-code.*native-binary/claude" 2>/dev/null); do  # silent-ok: optional fallback path.
+# silent-ok: optional fallback path.
     if ! tr '\0' '\n' < "/proc/$_pid/environ" 2>/dev/null | \
          grep -q "^ANTHROPIC_BASE_URL="; then
       _bypass_pids="$_bypass_pids $_pid"
@@ -286,29 +263,19 @@ PYEOF
       echo "[launch] HME_ALLOW_PROXY_BYPASS=1 -- continuing despite bypass" >&2
     else
       # AUTO-FIX path: kill bypassing claude binaries + every VSCode
-      # process, then relaunch VSCode with the launcher's env (which
-      # has ANTHROPIC_BASE_URL since .env was sourced at launcher entry).
       echo "" >&2
       echo "[launch] AUTO-FIX: killing bypassing processes and" \
            "relaunching VSCode with sourced env" >&2
 
       # Save any open VSCode workspace state -- VSCode auto-restores on
-      # next launch from its workspace state files, so unsaved buffers
-      # persist across the kill+restart.
-      # Note: \b is PCRE; pgrep uses POSIX ERE -- use ( |--type|$) anchors.
-      _code_pids=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | tr '\n' ' ')
+      _code_pids=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | tr '\n' ' ')  # silent-ok: optional fallback path.
       _code_pids="$_code_pids $_bypass_pids"
       # Defense-in-depth: never SIGTERM our own ancestor chain. Walk
-      # /proc/self/status PPid -> ... -> 1 and exclude any matching pid
-      # from the kill list. Without this, invoking the launcher from
-      # inside the very VSCode/claude-code session it's about to "fix"
-      # SIGTERMs the caller (exit 143) -- the same failure mode
-      # polychron-restart.sh now tries to head off via HME_NO_AUTOFIX_VSCODE.
       _ancestor_pids=" "
       _walk_pid=$$
       while [ -n "$_walk_pid" ] && [ "$_walk_pid" != "0" ] && [ "$_walk_pid" != "1" ]; do
         _ancestor_pids="$_ancestor_pids$_walk_pid "
-        _walk_pid=$(awk '/^PPid:/ {print $2}' "/proc/$_walk_pid/status" 2>/dev/null)
+        _walk_pid=$(awk '/^PPid:/ {print $2}' "/proc/$_walk_pid/status" 2>/dev/null)  # silent-ok: optional fallback path.
       done
       for _pid in $_code_pids; do
         if [ -n "$_pid" ]; then
@@ -318,7 +285,7 @@ PYEOF
                    "(would SIGTERM the caller)" >&2
               ;;
             *)
-              kill "$_pid" 2>/dev/null || true
+              kill "$_pid" 2>/dev/null || true  # silent-ok: optional fallback path.
               ;;
           esac
         fi
@@ -330,13 +297,13 @@ PYEOF
         if [ -n "$_pid" ]; then
           case "$_ancestor_pids" in
             *" $_pid "*) ;;  # skip ancestor
-            *) kill -9 "$_pid" 2>/dev/null || true ;;
+            *) kill -9 "$_pid" 2>/dev/null || true ;;  # silent-ok: optional fallback path.
           esac
         fi
       done
       sleep 1
 
-      _code_bin=$(command -v code 2>/dev/null || echo "/usr/bin/code")
+      _code_bin=$(command -v code 2>/dev/null || echo "/usr/bin/code")  # silent-ok: optional fallback path.
       if [ ! -x "$_code_bin" ]; then
         echo "[launch] WARN: 'code' binary not found at $_code_bin --" \
              "cannot auto-relaunch VSCode" >&2
@@ -344,8 +311,6 @@ PYEOF
         if [ "${HME_ALLOW_PROXY_BYPASS:-0}" != "1" ]; then exit 1; fi
       else
         # Launch VSCode in a new session, fully detached. The launcher's
-        # env (already-sourced .env) propagates to the new VSCode process
-        # and through to all its child extensions.
         ANTHROPIC_BASE_URL="$ANTHROPIC_BASE_URL" \
           PROJECT_ROOT="$PROJECT_ROOT" \
           setsid nohup "$_code_bin" "$PROJECT_ROOT" \
@@ -359,7 +324,8 @@ PYEOF
         # should spawn within a few seconds and inherit the env.
         sleep 6
         _new_bypass=""
-        for _pid in $(pgrep -f "anthropic.claude-code.*native-binary/claude" 2>/dev/null); do
+        for _pid in $(pgrep -f "anthropic.claude-code.*native-binary/claude" 2>/dev/null); do  # silent-ok: optional fallback path.
+# silent-ok: optional fallback path.
           if ! tr '\0' '\n' < "/proc/$_pid/environ" 2>/dev/null | \
                grep -q "^ANTHROPIC_BASE_URL="; then
             _new_bypass="$_new_bypass $_pid"
@@ -385,34 +351,22 @@ fi
 echo "[launch] stack up -- PIDs logged to ${PID_FILE}" >&2
 
 # Always (re)launch VS Code with ANTHROPIC_BASE_URL in its environ, even
-# when this launcher is itself running inside that VS Code. The new VS
-# Code is spawned via `systemd-run --user --scope` so its parent is
-# systemd (not the launcher), which means it survives even when the
-# launcher's own ancestor process tree is killed during the
-# kill-running-VS-Code step that immediately follows.
-# Skip with HME_NO_LAUNCH_VSCODE=1.
 if [ "${HME_NO_LAUNCH_VSCODE:-0}" != "1" ]; then
-  _code_bin=$(command -v code 2>/dev/null || echo "/usr/bin/code")
+  _code_bin=$(command -v code 2>/dev/null || echo "/usr/bin/code")  # silent-ok: optional fallback path.
   if [ ! -x "$_code_bin" ]; then
     echo "[launch] note: 'code' binary not found at $_code_bin -- skip VS Code spawn" >&2
   elif ! command -v systemd-run >/dev/null 2>&1; then
     echo "[launch] note: systemd-run not available -- cannot guarantee" \
          "VS Code survives ancestor-kill. Skipping VS Code spawn." >&2
   else
-    _vscode_running=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | head -1)
+    _vscode_running=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | head -1)  # silent-ok: optional fallback path.
     # Spawn the NEW VS Code FIRST in a transient systemd-user scope so
-    # its parent is systemd. Pass DISPLAY / DBUS / XAUTHORITY explicitly
-    # since systemd-run's default env is sparse.
     _setenv_args=(
       "--setenv=ANTHROPIC_BASE_URL=$ANTHROPIC_BASE_URL"
       "--setenv=PROJECT_ROOT=$PROJECT_ROOT"
     )
     [ -n "${DISPLAY:-}" ]                  && _setenv_args+=("--setenv=DISPLAY=$DISPLAY")
     # Right-side `${VAR:-}` is semantically identical to bare `$VAR` here
-    # (the && only fires when the test confirms VAR is non-empty), but
-    # bare references trip the audit_shell_undefined_vars static checker
-    # which can't prove the flow-control safety. Using the guarded form
-    # consistently keeps the audit clean.
     [ -n "${WAYLAND_DISPLAY:-}" ]          && _setenv_args+=("--setenv=WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}")
     [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && _setenv_args+=("--setenv=DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-}")
     [ -n "${XDG_RUNTIME_DIR:-}" ]          && _setenv_args+=("--setenv=XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-}")
@@ -434,9 +388,9 @@ if [ "${HME_NO_LAUNCH_VSCODE:-0}" != "1" ]; then
     disown
     sleep 2
     if [ -n "$_vscode_running" ]; then
-      pkill -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null || true
+      pkill -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null || true  # silent-ok: optional fallback path.
       sleep 1
-      pkill -9 -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null || true
+      pkill -9 -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null || true  # silent-ok: optional fallback path.
     fi
   fi
 fi

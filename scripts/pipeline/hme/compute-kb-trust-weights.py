@@ -119,8 +119,6 @@ def compute_trust(
     now: float,
 ) -> dict:
     # History-based components require at least MIN_HISTORY points to be
-    # statistically meaningful -- otherwise a single degenerate data point
-    # (e.g. a degraded session) drags every entry to the floor.
     MIN_HISTORY = 3
 
     # Coherence at write time -- pull from musical-correlation history which

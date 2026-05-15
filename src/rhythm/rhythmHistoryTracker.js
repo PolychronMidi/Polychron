@@ -51,9 +51,7 @@ moduleLifecycle.declare({
       }
     }
 
-    // R98 E5: Regime-responsive repetition penalty strength.
-    // Exploring: stronger penalty (0.35) forces more rhythmic novelty.
-    // Coherent: weaker penalty (0.15) allows comfortable repetition.
+    // Regime-responsive repetition penalty strength.
     const regimeSnap = systemDynamicsProfiler.getSnapshot();
     const trackerRegime = regimeSnap && regimeSnap.regime ? regimeSnap.regime : 'evolving';
     const penaltyStrength = trackerRegime === 'exploring' ? 0.35

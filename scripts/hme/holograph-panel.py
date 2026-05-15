@@ -153,8 +153,6 @@ def _agent_loop_summary() -> str:
         return "verifier absent"
     base = f"{alq.get('status', '?')}  score={alq.get('score', 0):.2f}"
     # Maturity tier marker (Horizon IV asymptote): GREEN/YELLOW/RED for
-    # adaptive-priming consumers. Surface inline so the panel reflects
-    # both the verifier verdict AND the actionable tier label.
     tier = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-agent-loop-tier.json"))
     if tier:
         base += f"  .  tier={tier.get('tier', '?')}"
@@ -194,8 +192,6 @@ def _verifier_meta_summary() -> str:
             parts.append(f"{st}={statuses[st]}")
     base = f"{n} verifiers . " + " ".join(parts)
     # Auto-prune marker (Horizon VI maturity): surface dead-weight
-    # candidate count so the agent sees how many always-PASS verifiers
-    # are diluting HCI without explicit drill-in.
     prune = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-verifier-prune.json"))
     if prune and isinstance(prune.get("candidates"), list):
         cand_n = len(prune["candidates"])
@@ -236,8 +232,6 @@ def _band_summary() -> str:
     """Horizon IX -- band proposal + V->IX tightening signal."""
     p = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-band-proposal.json"))
     # V->IX bidirectional coupling: surface active tightening signal so
-    # the agent sees the conjugate-channel verifier's recommendation
-    # alongside the static proposal.
     tightening = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-band-tightening.json"))
     if not p:
         if tightening:

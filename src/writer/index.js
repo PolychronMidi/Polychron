@@ -27,12 +27,6 @@ path = require('path');
  * @returns {void}
  */
 // Tap every emission to populate channelStateField. Note-on events feed the
-// 'velocity' dimension (no other path does -- gateway only observes cross-layer
-// modules). Control_c events are already observed at their call sites, but
-// catching them here too is harmless (substrate dedupe via writer tag).
-// Writer tag 'direct-p' marks emissions that bypassed any module-level tag;
-// anyone wanting finer attribution should call channelStateField.write()
-// directly with their module name before p().
 pushMultiple = (buffer, ...items) => {
   buffer.push(...items);
   for (let i = 0; i < items.length; i++) {

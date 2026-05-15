@@ -35,7 +35,6 @@ TS_PATTERNS = {
     ),
 }
 
-# Polychron uses CommonJS IIFE globals: `name = (() => { ... })();`
 # These are the primary module pattern (473 files). TS_PATTERNS misses them.
 JS_IIFE_PATTERNS = {
     "iife_global": re.compile(
@@ -50,16 +49,10 @@ JS_IIFE_PATTERNS = {
         r'^(?:const|let|var)\s+(\w+)\s*=\s*(?:require|function)',
         re.MULTILINE,
     ),
-    # Indented named functions inside IIFEs (function name(...) {)
     "inner_function": re.compile(
         r'^\s+function\s+(\w+)\s*\(([^)]*)\)',
         re.MULTILINE,
     ),
-    # Top-level bare arrow-function assignment: `name=(args)=>{...}` or
-    # `name = (args) => { ... }`. Used by modules like src/utils/clamps.js
-    # where helpers are registered to the parent IIFE scope via bare
-    # assignment rather than IIFE wrappers. Previously unrecognized -- the
-    # file showed "Symbols: none (data file or unsupported pattern)".
     "arrow_global": re.compile(
         r'^(\w+)\s*=\s*(?:async\s+)?\(([^)]*)\)\s*=>\s*[\{\(]',
         re.MULTILINE,

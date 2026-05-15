@@ -14,7 +14,6 @@ moduleLifecycle.declare({
   const WINDOW_SECONDS = 6;
   const SHORT_THRESHOLD = 0.15; // seconds - notes shorter than this are "attacks"
 
-  // Beat-level cache: getAttackSignal is called 2x per beat (densityBias + stateProvider)
   const attackDensityProfilerCache = beatCache.create(() => attackDensityProfilerGetAttackSignal());
 
   /**

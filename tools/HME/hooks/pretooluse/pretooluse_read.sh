@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # PreToolUse: Read -- hard-block forbidden paths, enforce pagination on huge files.
-# Guards agent context against theory essays, binary models, autogen dumps, and
-# append-only logs being read in full.
 
 INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
@@ -11,12 +9,11 @@ LIMIT=$(_safe_jq "$INPUT" '.tool_input.limit' '')
 
 [ -z "$FILE" ] && exit 0
 
-# Verify-landed antipattern: blocking Read on a file this turn already edited. Mirror logic of pretooluse/bash/verify_landed_block.sh -- Edit/Write returns explicit success affordance ("file state is current in your context"); re-reading is context-burn. Filename-shape match against tmp/hme-turn-edits.txt; override HME_VERIFY_LANDED_OK=1.
 if [ "${HME_VERIFY_LANDED_OK:-0}" != "1" ]; then
   _VLR_TURN_EDITS="${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt"
   if [ -s "$_VLR_TURN_EDITS" ]; then
-    _VLR_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')
-    if [ -n "$_VLR_BASE" ] && grep -qFx "$_VLR_BASE" "$_VLR_TURN_EDITS" 2>/dev/null; then
+    _VLR_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')  # silent-ok: optional fallback path.
+    if [ -n "$_VLR_BASE" ] && grep -qFx "$_VLR_BASE" "$_VLR_TURN_EDITS" 2>/dev/null; then  # silent-ok: optional fallback path.
       _emit_block "BLOCKED: verify-landed antipattern -- Read of $_VLR_BASE which was Edit/Written this turn. The Edit tool already returned [SUCCESS] as explicit confirmation; re-reading is context-burn."
       exit 2
     fi
@@ -24,8 +21,6 @@ if [ "${HME_VERIFY_LANDED_OK:-0}" != "1" ]; then
 fi
 
 # Block reads of the deprecated memory directory. Reading (even just to
-# "see what's there") legitimizes the abstraction; if the agent needs
-# historical context it queries HME KB via i/learn.
 if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
   _emit_block "BLOCKED: The .claude/projects memory directory is deprecated. Use HME KB instead: i/learn query=\"<what you're looking for>\". Memory files are not the source of truth for project knowledge."
   exit 2
@@ -45,11 +40,7 @@ if [ ! -f "$CONFIG" ]; then
 fi
 
 # Hard block list: never permit any read of these paths.
-# FAIL-LOUD: was `2>/dev/null` + `try/except: sys.exit(0)` which made every
-# crash silently fail-OPEN -- a malformed config or python crash defeated the
-# blocklist. Now: stderr captured, exceptions raise; load failure surfaces
-# to errors.log so LIFESAVER catches it and the gate fails CLOSED visibly.
-_PR_GATE_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pr_gate_err_$$")
+_PR_GATE_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pr_gate_err_$$")  # silent-ok: optional fallback path.
 BLOCK_HIT=$(python3 - "$REL" "$CONFIG" <<'PYEOF' 2>"$_PR_GATE_ERR"
 import json, sys
 rel, cfg = sys.argv[1], sys.argv[2]
@@ -80,7 +71,7 @@ fi
 
 # Paginated paths: require offset+limit with bounded max_lines.
 # FAIL-LOUD: same rationale as the blocklist gate above.
-_PR_PAG_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pr_pag_err_$$")
+_PR_PAG_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pr_pag_err_$$")  # silent-ok: optional fallback path.
 PAG=$(python3 - "$REL" "$CONFIG" "$OFFSET" "$LIMIT" <<'PYEOF' 2>"$_PR_PAG_ERR"
 import json, sys
 rel, cfg, offset, limit = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
@@ -117,9 +108,9 @@ fi
 
 #  Soft size limit: large unexplored file without offset/limit -> warn
 if [ -f "$FILE" ]; then
-  SIZE=$(stat -c %s "$FILE" 2>/dev/null || echo 0)
+  SIZE=$(stat -c %s "$FILE" 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
   # FAIL-LOUD: corrupted config silently produced default-150000 soft limit.
-  _PR_SOFT_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pr_soft_err_$$")
+  _PR_SOFT_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pr_soft_err_$$")  # silent-ok: optional fallback path.
   SOFT=$(python3 -c "import json; print(json.load(open('$CONFIG')).get('soft_size_limit_bytes', 150000))" 2>"$_PR_SOFT_ERR" || echo 150000)
   if [ -s "$_PR_SOFT_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
     _PR_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)

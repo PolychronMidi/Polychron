@@ -50,9 +50,6 @@ BOUNDARY_MARKERS = ("index.js", "index.ts", "__init__.py", "Manager.js")
 SOURCE_EXTS = {".js", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".sh"}
 
 # Metadata block is hidden in an HTML comment at the bottom of README.md. The
-# content above the block is captured verbatim as `intro` -- the file doubles as
-# a normal README for GitHub/human viewing. Anything outside this block is not
-# parsed (YAML frontmatter at the top is ignored -- HF model cards use that).
 INTENT_BLOCK_RE = re.compile(
     r"(.*?)\n?<!--\s*HME-DIR-INTENT\s*\n(.*?)\n\s*-->\s*$",
     re.DOTALL,
@@ -73,9 +70,6 @@ def _parse_readme(path: str) -> Optional[dict]:
     intro = m.group(1).strip()
     raw_yaml = m.group(2)
     # YAML treats a leading backtick as a tag. Authors naturally write rules
-    # with inline code `like this` at the start. Auto-quote list items whose
-    # first non-whitespace char after `- ` is a backtick -- transparent to the
-    # author, avoids a pitfall that trips every review.
     raw_yaml = re.sub(
         r"^(\s*-\s+)(`[^'\"]*?)$",
         lambda mm: mm.group(1) + '"' + mm.group(2).replace('"', '\\"') + '"',
@@ -319,10 +313,6 @@ def build() -> dict:
 
     os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
     # Atomic write: a SIGTERM/SIGKILL mid-rewrite (parent hook exits and
-    # supervisor reaps the orphaned subprocess; or Ctrl-C from the user)
-    # used to leave a half-written hme-dir-intent.json that dir_context.js
-    # would then read as corrupted JSON for its 60s cache window. Write
-    # to .tmp, fsync, then atomic rename.
     tmp_path = OUTPUT + ".tmp"
     with open(tmp_path, "w") as f:
         json.dump(index, f, indent=2, sort_keys=True)

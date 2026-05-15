@@ -17,15 +17,16 @@ _signal_emit() {
   mkdir -p "$dir" 2>/dev/null
   printf '{"ts":%s,"event":"%s","source":"%s","scope":"%s","payload":%s,"requires_ack":%s}\n' \
     "$ts" "$event" "$source" "$scope" "$payload" "$ack" \
-    >> "$_SIGNAL_BUS" 2>/dev/null
+    >> "$_SIGNAL_BUS" 2>/dev/null  # silent-ok: optional fallback path.
 
   # Lightweight rotation (mod-N trigger to avoid wc on every emit).
   if [ $((RANDOM % 128)) -eq 0 ]; then
     local n
-    n=$(wc -l < "$_SIGNAL_BUS" 2>/dev/null || echo 0)
+    n=$(wc -l < "$_SIGNAL_BUS" 2>/dev/null || echo 0)  # silent-ok: optional fallback path.
     if [ "$n" -gt "$_SIGNAL_ROTATE_AT" ]; then
+# silent-ok: optional fallback path.
       tail -"$_SIGNAL_KEEP" "$_SIGNAL_BUS" > "${_SIGNAL_BUS}.rot" 2>/dev/null \
-        && mv "${_SIGNAL_BUS}.rot" "$_SIGNAL_BUS" 2>/dev/null
+        && mv "${_SIGNAL_BUS}.rot" "$_SIGNAL_BUS" 2>/dev/null  # silent-ok: optional fallback path.
     fi
   fi
 }
@@ -33,11 +34,11 @@ _signal_emit() {
 _signal_tail() {
   local n="${1:-20}"
   [ -z "${PROJECT_ROOT:-}" ] || [ ! -f "$_SIGNAL_BUS" ] && return 0
-  tail -"$n" "$_SIGNAL_BUS" 2>/dev/null
+  tail -"$n" "$_SIGNAL_BUS" 2>/dev/null  # silent-ok: optional fallback path.
 }
 
 _signal_last() {
   local event="$1" n="${2:-5}"
   [ -z "${PROJECT_ROOT:-}" ] || [ ! -f "$_SIGNAL_BUS" ] && return 0
-  grep -F "\"event\":\"$event\"" "$_SIGNAL_BUS" 2>/dev/null | tail -"$n"
+  grep -F "\"event\":\"$event\"" "$_SIGNAL_BUS" 2>/dev/null | tail -"$n"  # silent-ok: optional fallback path.
 }

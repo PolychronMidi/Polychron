@@ -41,7 +41,6 @@ moduleLifecycle.declare({
       // High register pressure at a convergence moment -> more expressive impact.
       const melodicCtxCVS = emergentMelodicEngine.getContext();
       const tessLoad = melodicCtxCVS ? V.optionalFinite(melodicCtxCVS.tessituraLoad, 0) : 0;
-      // contourShape: rising arc at convergence = more expressive impact (build cresting);
       // falling arc = softer impact (release phase doesn't need the punch).
       const contourSurgeMod = melodicCtxCVS
         ? (melodicCtxCVS.contourShape === 'rising' ? 1.08 : melodicCtxCVS.contourShape === 'falling' ? 0.93 : 1.0)
@@ -64,7 +63,6 @@ moduleLifecycle.declare({
     return 1.0;
   }
 
-  // R31 lab: convergence density boost -- posts to L0 channel for clean inter-module comm
   function postDensityBoost(absoluteSeconds) {
     if (densityBoostRemaining > 0) {
       densityBoostRemaining--;

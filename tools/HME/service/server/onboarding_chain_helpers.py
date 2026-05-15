@@ -41,8 +41,6 @@ if _mcp_root not in sys.path:
 from hme_env import ENV  # noqa: E402
 
 # Sibling state-machine state. Lazy module-attr access avoids the circular
-# load order between onboarding_chain / onboarding_chain_dispatch / this
-# helpers module -- see onboarding_chain_dispatch.py for the same pattern.
 def state():
     from . import onboarding_chain as _oc; return _oc.state()
 def set_state(s):
@@ -59,9 +57,6 @@ def force_state(s):
     from . import onboarding_chain_dispatch as _ocd; return _ocd.force_state(s)
 
 # Pull canonical i/<wrapper> + action= forms from the single source of
-# truth. Fallback keeps server bootable if the helper module is missing.
-# _mcp_root is tools/HME/service; helpers live at tools/HME/scripts
-# (one dirname up from _mcp_root, then "scripts").
 try:
     _scripts_dir = os.path.join(
         os.path.dirname(_mcp_root), "scripts"
@@ -112,8 +107,6 @@ STEP_SHORT = [
 
 _PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 # Flat per-field state files -- kept separate (not merged into JSON) so shell
-# helpers can read them via `cat` without pulling in `jq` or Python. The
-# tradeoff: two files instead of one, but much simpler hook code.
 _STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
 _TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
 
@@ -157,8 +150,6 @@ def _selftest_clean(output: str) -> bool:
     from historical WARN log summaries ('default backend failed' inside a
     benign ONNX-fallback WARNING was blocking onboarding graduation)."""
     # Look for explicit FAIL-status lines in the structured selftest output.
-    # These have the form "  FAIL: <check name> -- <detail>" -- case-sensitive
-    # "FAIL:" distinguishes them from the word "failed" in prose.
     import re as _re
     if _re.search(r'^\s*FAIL:\s', output, flags=_re.MULTILINE):
         return False
@@ -247,7 +238,6 @@ def emit_review_verdict_marker(verdict: str) -> str:
 
 
 
-# CLI -- callable from shell hooks via `python3 -m server.onboarding_chain ...`
 
 
 def _cli():

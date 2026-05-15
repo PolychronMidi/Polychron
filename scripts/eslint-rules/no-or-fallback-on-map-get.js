@@ -1,5 +1,3 @@
-// ESLint: bans `Map.get(...) || <literal>` (collapses legit 0/''/false).
-// Trigger: `||` whose LHS is `.get(...)` and RHS is Literal/Array/Object.
 // Replacement: `??`. Counter pattern `(counters[k]||0)+1` is not flagged.
 
 'use strict';

@@ -37,6 +37,7 @@ def _parse_python_states() -> list:
             if states:
                 return states
     except Exception:
+        # silent-ok: optional fallback path.
         pass
     with open(_PY_FILE, encoding="utf-8") as f:
         src = f.read()
@@ -59,6 +60,7 @@ def _parse_shell_states() -> list:
             if states:
                 return states
     except Exception:
+        # silent-ok: optional fallback path.
         pass
     with open(_SH_FILE, encoding="utf-8") as f:
         src = f.read()

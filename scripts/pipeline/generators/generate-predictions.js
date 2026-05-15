@@ -35,13 +35,6 @@ function loadDepGraph() {
 
 function buildAdjacency(dg) {
   // edges: [{from, to, globals}] where `from` provides a global `to` consumes.
-  // We want downstream cascade: editing X predicts files that consume X's globals.
-  // So adjacency is from->to: adj[from] = set of files affected when `from` changes.
-  //
-  // R14 fix: previously this was adj[to].add(from), which made BFS from a node
-  // find its UPSTREAM dependencies (wrong direction). Predictions for an edit
-  // to axisAdjustments.js returned {pipelineCouplingManager, clamps, ...}
-  // (files it reads from) instead of {axisEnergyEquilibrator} (the consumer).
   const adj = new Map();
   for (const edge of dg.edges || []) {
     const from = stemOf(edge.from);
@@ -80,11 +73,6 @@ function bfs(adj, start, depth) {
 
 function getChangedFiles() {
   // R16 #4: align range with reconcile-predictions.js extractShiftedModules.
-  // Both must look at the SAME git range or they disagree about what's shifted:
-  //   predictions generated for modules A,B,C (range wide)
-  //   reconcile sees modules X,Y (range narrow)
-  // -> false refuted on A,B,C even when predictions are correct.
-  // Reconcile uses HEAD~2..HEAD (generate runs before commit). Match that.
   try {
     for (const range of ['HEAD~2..HEAD', 'HEAD~1..HEAD', 'HEAD']) {
       try {
@@ -125,9 +113,6 @@ function main() {
   for (const mod of changed) {
     const affected = bfs(adj, mod, MAX_DEPTH);
     // R16 #1: include the edited file itself in affected_modules. A file that
-    // changes IS shifted per git diff; reconcile counts it as "missed" when
-    // absent. Previously generate-predictions only emitted outward-from-target,
-    // which produced a structural floor on recall (recall <= deps/(deps+self)).
     const affectedWithSelf = [mod, ...affected.map((a) => a.module)];
     if (affectedWithSelf.length === 0) continue;
 

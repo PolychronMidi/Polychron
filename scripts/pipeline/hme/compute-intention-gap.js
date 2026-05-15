@@ -47,9 +47,6 @@ function sliceToRound(events) {
 }
 
 function extractMentionedFiles(todoText) {
-  // Pull out any "src/..." path, or any file mentioned with a .js/.py/.sh
-  // extension, or any CamelCase module-name token >=4 chars. Heuristic but
-  // stable -- the intent is to identify the files a todo nominally targets.
   if (!todoText) return { paths: [], modules: [] };
   const paths = Array.from(todoText.matchAll(/\b(?:src|tools\/HME|scripts)\/[A-Za-z0-9_\-./]+\.(?:js|py|sh|md|json)\b/g)).map((m) => m[0]);
   const modules = Array.from(todoText.matchAll(/\b([a-z][a-zA-Z0-9]{3,}(?:[A-Z][a-zA-Z0-9]+)+)\b/g)).map((m) => m[1]);
@@ -72,9 +69,6 @@ function main() {
   }
 
   // Consider only todos that existed during this round -- we approximate by
-  // filtering to todos with status in ('pending','in_progress','completed')
-  // and any timestamp (no per-round history available yet). This captures
-  // the current session's intentions.
   const scopedTodos = todos.filter((t) => t.status && t.text);
   if (scopedTodos.length === 0) {
     console.log('compute-intention-gap: no todos to evaluate');

@@ -19,8 +19,6 @@ require('./playMotifsApplyCycleTransforms');
 require('./playMotifs');
 
 // Register default generator as a declared module (full DI -- every
-// registrant goes through the manifest registry, not legacy
-// registerInitializer wrappers).
 moduleLifecycle.declare({
   name: 'motifDefaultRegistration',
   subsystem: 'composers',

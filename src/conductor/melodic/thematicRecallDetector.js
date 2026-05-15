@@ -113,11 +113,7 @@ moduleLifecycle.declare({
     sectionFingerprints.length = 0;
   }
 
-  // R28 E5: Tension bias from thematic recall. When the current material
-  // strongly echoes a prior section (strong-recall), reduce tension --
-  // familiarity creates a sense of resolution and emotional settling.
-  // R29 E5: Also respond to 'echo' (moderate recall >0.5 similarity)
-  // with a milder reduction. Fresh material stays neutral.
+  // Tension bias from thematic recall. When the current material
   /**
    * Get tension multiplier from thematic recall detection.
    * @returns {number}

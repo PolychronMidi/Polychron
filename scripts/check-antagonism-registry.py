@@ -107,9 +107,6 @@ def main() -> None:
     unaccounted.sort(key=lambda x: x[2])
 
     # --auto-append: write unaccounted pairs to registry as candidates with a
-    # placeholder hypothesis. Lets the pipeline keep the registry self-healing
-    # (new correlations automatically tracked as candidates for later review)
-    # rather than flapping between FAIL/PASS every time trace data shifts.
     if "--auto-append" in sys.argv:
         from datetime import datetime
         today = datetime.now().strftime("%Y-%m-%d")

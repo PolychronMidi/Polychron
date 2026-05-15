@@ -1,5 +1,4 @@
 // src/crossLayer/structure/trust/adaptiveTrustScoresVelocityNourishment.js
-// Velocity EMA tracking, stagnation detection, and synthetic payoff injection for trust scores.
 
 moduleLifecycle.declare({
   name: 'adaptiveTrustScoresVelocityNourishment',
@@ -13,9 +12,7 @@ moduleLifecycle.declare({
   const _DISENGAGE_THRESHOLD = 0.003;       // 3x threshold for hysteresis disengage
   const _DISENGAGE_BEATS = 50;              // beats above disengage threshold before stopping
   const _STAGNATION_BEATS_TRIGGER = 70;     // R33 E2: 100->70 faster recovery of stuck systems
-  // R16 E4: Lower coherent trigger 100->70. With coherent at 50.7% in R15,
-  // trust stagnation is waiting too long to nourish during coherent passages.
-  // maxConsecutiveCoherent was 72 beats -- barely exceeds old 100 threshold.
+  // Lower coherent trigger 100->70. With coherent at 50.7% in R15,
   const STAGNATION_BEATS_REGIME = { exploring: 50, evolving: 70, coherent: 70 };
   const _BASE_NOURISHMENT_STRENGTH = 0.15;  // max synthetic payoff scaling
   const _MIN_NOURISHMENT_STRENGTH = 0.05;   // floor after decay
@@ -61,8 +58,6 @@ moduleLifecycle.declare({
           vs.stagnantBeats = 0;
           vs.disengageBeats = 0;
           // Partial strength reset: a system that escaped stagnation and stayed active
-          // long enough to disengage has proven itself. Allow partial recovery of nourishment
-          // capacity so future stagnation episodes aren't permanently weaker.
           if (vs.effectiveStrength < _BASE_NOURISHMENT_STRENGTH * 0.7) {
             vs.effectiveStrength = m.min(_BASE_NOURISHMENT_STRENGTH, vs.effectiveStrength / _NOURISHMENT_DECAY);
           }
@@ -75,9 +70,6 @@ moduleLifecycle.declare({
       // R95 E4: Regime-responsive stagnation trigger
       const stagnRegime = conductorSignalBridge.getSignals().regime || 'evolving';
       const stagnTrigger = STAGNATION_BEATS_REGIME[stagnRegime] !== undefined ? STAGNATION_BEATS_REGIME[stagnRegime] : _STAGNATION_BEATS_TRIGGER;
-      // Scale trigger down for deeply stagnant systems (score far below mean = faster nourishment).
-      // Systems at 50% of mean or below get up to 2x faster nourishment to escape the catch-22
-      // where slow velocity EMA prevents the trigger from ever firing in time.
       const depthPenalty = clamp(state.score / m.max(meanTrust, 0.01), 0.5, 1.0);
       const stagnTriggerScaled = m.floor(stagnTrigger * depthPenalty);
       if (vs.stagnantBeats >= stagnTriggerScaled && state.samples > 32) {

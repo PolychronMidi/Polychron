@@ -135,14 +135,7 @@ moduleLifecycle.declare({
       args.eqCorrF -= monopolyPressure * args.equilibStrength * 0.85 * squaredEscalation * budgetDampen;
     }
 
-    // R77 E4: Exploring-deficit density boost amplifier. When exploring is
-    // significantly below target, amplify the density/flicker corrections
-    // to push the system toward more active dimensions and higher velocity,
-    // which are prerequisites for exploring entry. Self-calibrating: amplification
-    // is proportional to deficit magnitude, decays as exploring recovers.
-    // R79 E4: Threshold 0.07->0.05. R78 exploring 28.7% vs baseline 34.2%
-    // = 5.5pp deficit. At 0.07, amplifier never engaged. At 0.05, amplifier
-    // provides proportional correction at current deficit levels.
+    // Exploring-deficit density boost amplifier. When exploring is
     const exploringDeficit = m.max(0, args.regimeBudget.exploring - expShare);
     const exploringDeficitAmplifier = exploringDeficit > 0.05
       ? 1.0 + clamp((exploringDeficit - 0.05) / 0.12, 0, 0.5)

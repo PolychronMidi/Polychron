@@ -94,12 +94,8 @@ def _investigate_consensus(pattern: dict) -> dict:
             findings["verdict"] = "recovering -- consensus improved vs earlier rounds"
 
         # R25 #3: propose action class. If consensus degraded but HCI rose
-        # across the same rounds, composition is improving WHILE substrate-
-        # agreement drops -- that's regime shift, not degradation. Accept.
         hci_traj = [r.get("arc_iv", {}).get("pass_rate") for r in tail]
         # Better: use top-outlier-field from arc_iii.top_outlier_field history
-        # + consensus trajectory + HCI from pipeline-summary. HCI isn't in
-        # timeseries rows; read summary directly.
         try:
             ps_path = os.path.join(METRICS_DIR, "pipeline-summary.json")
             hci_now = None
@@ -148,8 +144,6 @@ def _investigate_drift(pattern: dict) -> dict:
             else:
                 traj_verdict = "falling trend"
         # R24 #7: propose a structural change class based on persistence +
-        # HCI health. 3+ rounds of same outlier AND HCI stable -> accept
-        # (envelope update). 3+ rounds AND HCI dropping -> correct (code change).
         hci_tail = [s.get("hci") for s in tail if isinstance(s.get("hci"), (int, float))]
         hci_healthy = hci_tail and all(h >= 95 for h in hci_tail[-3:])
         proposal = None

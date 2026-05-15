@@ -158,7 +158,6 @@ DEFERRAL_CANT_DO: tuple[str, ...] = (
     "session level",
 )
 
-# Forward-action punts: bare imperative verbs in closing context promising future work without doing it now. Born from the "wire X; investigate Y; surface Z" SUMMARY-block what's-next dodge. Distinct from DEFERRAL_ACK_NO_FIX (past-tense "I didn't do X") -- these are future-tense commitments.
 FORWARD_ACTION_PUNT_PHRASES: tuple[str, ...] = (
     "still to wire",
     "still to investigate",
@@ -199,16 +198,6 @@ ALL_DEFERRAL: tuple[str, ...] = (
 )
 
 # Scope-escape: phrases the agent uses to JUSTIFY skipping a problem by
-# claiming it doesn't belong to "this turn" / "this change" / "this work".
-# Born from the user correction: agent identified bugs surfaced during a
-# task ("4 pre-existing undefined-var issues", "pre-existing FAIL on
-# index"), characterized them as out-of-scope, and stopped. Each enumerated
-# instance is real work the agent SAW and chose not to do; the rule is
-# "if you saw it, fix it" -- escape phrases mark the intent to skip.
-#
-# Detection target: the phrases attached to a problem the agent just
-# named. Closing-text position counts as evidence the agent is summarizing
-# what they DIDN'T do (parallel to exhaust_check's deferral handling).
 SCOPE_ESCAPE: tuple[str, ...] = (
     "pre-existing",
     "preexisting",

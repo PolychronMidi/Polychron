@@ -62,9 +62,6 @@ moduleLifecycle.declare({
     const inertia = streakInertia * 0.6 + diversityInertia * 0.4;
 
     // Density bias: high inertia (rut) - nudge density to destabilize;
-    // very low inertia (chaos) - slight reduction to stabilize.
-    // Peer-aware: when flicker is strong (high texture variation),
-    // relax the inertia-break nudge - the texture layer is already providing variety.
     let densityBias = 1;
     if (inertia > 0.7) {
       densityBias = 1.06; // stuck in a rut - add density to force change
@@ -106,9 +103,7 @@ moduleLifecycle.declare({
   }
 
   conductorIntelligence.registerDensityBias('rhythmicInertiaTracker', () => rhythmicInertiaTracker.getDensityBias(), 0.9, 1.1);
-  // R21 E2: Rhythmic inertia flicker bias. Stuck patterns (inertia>0.7)
-  // widen flicker to inject timbral variation; chaotic patterns (inertia<0.15)
-  // narrow flicker for consistency. Untouched musical pathway.
+  // Rhythmic inertia flicker bias. Stuck patterns (inertia>0.7)
   conductorIntelligence.registerFlickerModifier('rhythmicInertiaTracker', () => {
     const s = rhythmicInertiaTracker.getInertiaSignal();
     if (s.inertia > 0.7) return 1.08;

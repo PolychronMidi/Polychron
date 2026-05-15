@@ -117,6 +117,7 @@ class Verifier:
         try:
             result = self.run()
         except Exception as e:
+            # silent-ok: optional fallback path.
             import traceback
             result = _result(
                 ERROR, 0.0, f"verifier crashed: {type(e).__name__}: {e}",

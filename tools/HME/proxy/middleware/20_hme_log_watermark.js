@@ -38,9 +38,6 @@ module.exports = {
     } catch (_e) { /* first run */ }
 
     // First run: seed the watermark at the current file end so we only
-    // escalate errors that appear AFTER the middleware starts observing.
-    // Without this, every fresh proxy boot re-escalates every historical
-    // ERROR line in hme.log to hme-errors.log.
     if (lastSize < 0) {
       try { fs.mkdirSync(path.dirname(wmPath), { recursive: true }); } catch (_e) { /* best-effort */ }
       fs.writeFileSync(wmPath, String(curSize));
@@ -60,13 +57,6 @@ module.exports = {
       const chunk = buf.toString('utf8');
       const newErrors = chunk.split('\n').filter((l) => ERR_LINE_RE.test(l)).slice(0, 20);
       // Peer-review iter 120: previously the watermark advanced even
-      // when appendFileSync to errLog threw -- so on a transient
-      // permission-flap or full-disk, errors were silently dropped from
-      // the LIFESAVER escalation channel forever. Now: append FIRST,
-      // verify (re-throw on failure so the outer catch logs it), then
-      // advance the watermark only after escalation actually landed.
-      // Idempotent re-escalation on next run is preferable to silent
-      // loss.
       if (newErrors.length > 0) {
         try { fs.mkdirSync(path.dirname(errLogPath), { recursive: true }); } catch (_e) { /* best-effort: silent-ok mkdir, the appendFileSync below will throw if errLog can't be created */ }
         const ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');

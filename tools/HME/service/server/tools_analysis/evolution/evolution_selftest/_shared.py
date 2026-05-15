@@ -12,22 +12,13 @@ if _mcp_root not in sys.path:
 from hme_env import ENV  # noqa: E402
 
 from server import context as ctx
-# Post-split: depth increased by 1, so `..` -> `...` for cross-package refs.
 from ...synthesis import _local_think
 from ... import _track
 
 logger = logging.getLogger("HME")
 
-# All reloadable tool modules (kept here so hme_selftest can inspect coverage via getsource).
 RELOADABLE = [
     # NOTE: the three subpackage names (synthesis / evolution / coupling)
-    # are deliberately absent -- these subpackages ARE their hub (hub code
-    # lives in __init__.py, not a sibling .py file), so reloading them
-    # happens via reload of the subpackage itself which is not a typical
-    # hot-reload target. Reloading individual submodules inside the
-    # subpackage works because the _alias_subpackage function now skips
-    # self-name collisions (see tools_analysis/__init__.py), preserving
-    # __path__ on the subpackage.
     "synthesis_config", "synthesis_llamacpp", "synthesis_gemini",
     "synthesis_groq", "synthesis_openrouter", "synthesis_cerebras",
     "synthesis_mistral", "synthesis_nvidia", "synthesis_reasoning",

@@ -47,19 +47,10 @@ SCAN_EXTS = (".py", ".js", ".ts", ".sh", ".bash", ".md")
 
 CATEGORIES = {
     # TODO/FIXME/XXX in a SELF-REFERENTIAL position (this code says it
-    # is itself unfinished). Excludes lines that DETECT or DESCRIBE
-    # those tokens (regex matchers, comment patterns, audit logic).
-    # Heuristic: the marker must be in a comment, not in a string
-    # literal that's a regex or detection pattern.
     "TODO_FIXME": re.compile(r"\b(TODO|FIXME|XXX)\b"),
     # MVP/placeholder claims about THIS file. "placeholder" inside a
-    # block-error message ("ellipsis-stub placeholder") is detection
-    # not deferral; filter via context.
     "MVP_SCOPE": re.compile(r"\bMVP scope\b|\bMVP\s+(?:only|intent|scope)\b|\bfor\s+now\s+(?:we|let's|ignore|skip|trust)\b", re.IGNORECASE),
     # Self-referential unwired claims. Must NOT match when the text is
-    # describing handling/blocking/detecting those concepts (e.g. a
-    # `stub blocker` middleware mentions "stub" repeatedly without
-    # itself being unimplemented).
     "UNWIRED": re.compile(
         r"\b(never wired|not yet wired|never connected|never built|"
         r"never implement(ed)?|currently unimplemented|"
@@ -68,8 +59,6 @@ CATEGORIES = {
         re.IGNORECASE,
     ),
     # Phase deferrals -- only matches "Phase N" when the surrounding text
-    # claims phase N is incomplete or aspirational (not when phase N is
-    # being delivered or referenced as historical context).
     "PHASE_DEFERRAL": re.compile(
         r"\bPhase[- ]?\d+\.?\d*\b.*\b(later|TODO|not yet|never|aspirational|future|deferred)\b"
         r"|\b(later|future|aspirational|deferred|TODO)\b.*\bPhase[- ]?\d+\.?\d*\b",
@@ -123,8 +112,6 @@ def main() -> int:
                 continue
             for ln, line in enumerate(lines, 1):
                 # Filter out lines that are DESCRIBING deferral patterns
-                # (regex matchers, audit logic, block-message literals)
-                # rather than admitting deferral in this file's own work.
                 if DETECTION_CONTEXT.search(line):
                     continue
                 # Skip lines inside obvious comment-block descriptions

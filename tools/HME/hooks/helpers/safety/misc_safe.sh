@@ -45,9 +45,6 @@ _safe_py3() {
 }
 
 # LIFESAVER-aware bg runner: timeout, log failures to hme-errors.log
-#
-# Usage: _lifesaver_bg <label> <timeout-seconds> <output-file> <command...>
-# Example: _lifesaver_bg "review_auto_fire" 600 /tmp/out.txt ./i/review mode=forget
 _lifesaver_bg() {
   local label="$1" tmo="$2" outfile="$3"
   shift 3
@@ -60,11 +57,11 @@ _lifesaver_bg() {
     if [ "$rc" -ne 0 ]; then
       printf '[%s] [%s] FAILED (rc=%d, timeout=%ss) -- check %s\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$label" "$rc" "$tmo" "$outfile" \
-        >> "$errlog" 2>/dev/null
+        >> "$errlog" 2>/dev/null  # silent-ok: optional fallback path.
     elif [ ! -s "$outfile" ]; then
       printf '[%s] [%s] produced EMPTY output (rc=0 but no stdout) -- downstream may be unreachable\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$label" \
-        >> "$errlog" 2>/dev/null
+        >> "$errlog" 2>/dev/null  # silent-ok: optional fallback path.
     fi
   ) >/dev/null 2>&1 &
 }
@@ -76,11 +73,10 @@ _hme_heartbeat() {
   [ -z "${PROJECT_ROOT:-}" ] && return 1
   local hb_dir="$PROJECT_ROOT/tmp"
   mkdir -p "$hb_dir" 2>/dev/null
-  date +%s > "$hb_dir/hme-heartbeat-${name}.ts" 2>/dev/null
+  date +%s > "$hb_dir/hme-heartbeat-${name}.ts" 2>/dev/null  # silent-ok: optional fallback path.
 }
 
 # Safe numeric check: returns 0 if value is not a valid integer.
-# Usage: if [ "$(_safe_int "$val")" -gt 0 ]; then ...
 _safe_int() {
   local val="$1"
   if [[ "$val" =~ ^-?[0-9]+$ ]]; then echo "$val"; else echo "0"; fi

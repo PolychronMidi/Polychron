@@ -159,8 +159,6 @@ moduleLifecycle.declare({
     const sectionIndexForRegime = sectionIndex;
     const midSectionBoost = (sectionIndexForRegime >= 1 && sectionIndexForRegime <= 3) ? 0.015 : 0;
     // High tension widens evolving sustain to resist premature coherent entry.
-    // Inner fn guarantees finite; `|| 0.5` was a redundant fallback that also
-    // silently rewrote legitimate 0 tension readings to 0.5.
     const tensionBiasProduct = V.optionalFinite(conductorState.getField('tension'), 0.5);
     const tensionEvolvingSustain = clamp((tensionBiasProduct - 0.55) / 0.35, 0, 1) * 0.015;
     if (cadenceMonopolyPressure > 0.40 &&

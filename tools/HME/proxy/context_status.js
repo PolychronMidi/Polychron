@@ -29,6 +29,7 @@ function _dirIntentHealthLine() {
     if (parts.length === 0) return null;
     return `dir-intent: ${parts.join(', ')} -- run build-dir-intent-index.py to investigate`;
   } catch (_err) {
+    // silent-ok: optional fallback path.
     return null;
   }
 }
@@ -52,6 +53,7 @@ function tailFileLines(filepath, maxLines, maxBytes = 500_000) {
     const lines = content.split('\n').filter((l) => l.length > 0);
     return lines.slice(-maxLines);
   } catch (_err) {
+    // silent-ok: optional fallback path.
     return [];
   }
 }
@@ -89,11 +91,6 @@ function recentLifesaverErrors() {
   }
 
   // Mirror the same classification lifesaver.sh and lifesaver_inject.js
-  // apply: drop CANARY self-tests, observation-severity (WARN/INFO/etc.),
-  // and self-origin tags (operator/supervisor concerns the agent can't
-  // act on -- _safe_curl, supervisor, universal_pulse, etc.). Three
-  // separate readers of hme-errors.log were all classifying differently;
-  // this one was the last hold-out.
   const _CANARY_RE = /\[CANARY-/;
   const _OBSERVATION_RE = /\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/;
   const _SELF_TAG_RE = /\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^\]]+)\]/;
@@ -123,14 +120,12 @@ function coherenceStatusLine() {
     else state = 'IN_BAND';
     return `coherence=${score.toFixed(3)} band=[${band[0]}, ${band[1]}] state=${state}`;
   } catch (_err) {
+    // silent-ok: optional fallback path.
     return null;
   }
 }
 
 // Recency cutoffs: stale entries leak across days otherwise. Every
-// activity/ground-truth event in this codebase carries a unix-seconds
-// `ts`. If `ts` is absent or non-numeric we treat the event as stale --
-// no provenance, no injection.
 const ACTIVITY_MAX_AGE_MS = 30 * 60 * 1000;
 const GROUND_TRUTH_MAX_AGE_MS = 60 * 60 * 1000;
 
@@ -224,10 +219,6 @@ function buildStatusContext() {
 }
 
 // Emit-once dedup. The 4-min snapshot cache prevents recomputation, not
-// re-emission -- without this, a stale "last verdict" or single-event
-// proxy_emergency reinjects every turn for as long as it survives the
-// recency cutoff above. Returns the snapshot only when it differs from
-// the last value consumed for this session.
 const _lastEmittedBySession = new Map();
 const _LAST_EMITTED_CAP = 64;
 

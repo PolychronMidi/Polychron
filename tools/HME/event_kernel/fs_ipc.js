@@ -78,6 +78,7 @@ function spawnFileInput(command, args = [], opts = {}) {
         env: { ...process.env, PROJECT_ROOT, ...ipc.env, ...(opts.env || {}) },
       });
     } catch (err) {
+      // silent-ok: optional fallback path.
       ipc.cleanup();
       resolve({ stdout: '', stderr: `[fs_ipc] spawn failed for ${command}: ${err.message}`, exit_code: -1, signal: null, error: err });
       return;

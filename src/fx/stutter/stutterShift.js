@@ -14,8 +14,6 @@ moduleLifecycle.declare({
   const rangeFor = (isBass) => ({ lo: minMidi, hi: isBass ? bassMax : maxMidi });
 
   // Shift a note by a semitone amount. Wraps through the range (modClamp) by
-  // default -- ascending past the ceiling resumes from the floor. Set wrap:false
-  // to clamp at the boundary instead.
   const shift = (note, semitones, opts = {}) => {
     V.requireFinite(note, 'note');
     V.requireFinite(semitones, 'semitones');
@@ -26,8 +24,6 @@ moduleLifecycle.declare({
   };
 
   // Pick an octave alternate of `note`: symmetric random between octUp/octDown
-  // when both fit the range, otherwise whichever fits. Returns `note` when
-  // neither fits (caller decides to fall through to source-only emission).
   const pickOctaveAlternate = (note, opts = {}) => {
     V.requireFinite(note, 'note');
     const { isBass = false } = opts;

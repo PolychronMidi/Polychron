@@ -95,10 +95,7 @@ moduleLifecycle.declare({
     let playProb = clamp(context.playProb * playScale * clamp(PLAY_ENTROPY_BASE + entropyScale * PLAY_ENTROPY_SCALE, PLAY_ENTROPY_MIN, PLAY_ENTROPY_MAX), 0, 1);
     let stutterProb = clamp(context.stutterProb * stutterScale * clamp(STUTTER_ENTROPY_BASE + entropyScale * STUTTER_ENTROPY_SCALE, STUTTER_ENTROPY_MIN, STUTTER_ENTROPY_MAX), 0, 1);
 
-    // R43 E4: removed in R45 E3. Regime-responsive play scaling was
-    // contributing to note count decline (54596->34940 over 4 rounds).
-    // Coherent play reduction (0.97x) compounded with stutter-regime
-    // modulation in processBeat. Removing to recover note output.
+    // removed in R45 E3. Regime-responsive play scaling was
 
     // Quark-level: multi-pair conflict detection (was single pair only)
     const trustValues = [trustStutter, trustCadence, trustPhase];
@@ -152,17 +149,14 @@ moduleLifecycle.declare({
     // Modulate trust floor by convergenceTarget from intent curves
     const intent = sectionIntentCurves.getLastIntent();
     const ct = V.requireFinite(intent.convergenceTarget, 'intent.convergenceTarget');
-    // CIM: coordinated = lower floor (allow convergence more easily), independent = higher
     const effectiveFloor = CONVERGENCE_TRUST_FLOOR * (1.3 - ct * 0.6) * (1.3 - cimScale * 0.6);
 
     if (trustConvergence < effectiveFloor) {
       return { allowHarmonicTrigger: false, allowDownbeat: false };
     }
 
-    // If cadence trust is high and convergence trust is not dominant, skip harmonic trigger
     // to avoid both cadenceAlignment and convergenceHarmonicTrigger firing
     const allowHarmonicTrigger = trustConvergence >= trustCadence * CONVERGENCE_DOMINANCE;
-    // If stutter trust is very high, suppress downbeat to avoid stutter + downbeat stacking
     const allowDownbeat = trustStutter < STUTTER_DOWNBEAT_CAP;
 
     explainabilityBus.emit('convergence-gate', layer, {

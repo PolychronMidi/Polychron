@@ -61,7 +61,6 @@ moduleLifecycle.declare({
     const contextualScore = getScore(moduleName);
     if (contextualScore === null) return null;
     // Melodic coupling: high thematic density = trust regime-contextual history more.
-    // Thematic recall marks compositional convergence -- lean on proven regime knowledge.
     const melodicCtxCT = emergentMelodicEngine.getContext();
     const thematicDensity = melodicCtxCT ? V.optionalFinite(melodicCtxCT.thematicDensity, 0) : 0;
     const dynamicWScale = W_SCALE * (1.0 + thematicDensity * 0.25); // 0.75 neutral ... 0.94 dense

@@ -1,4 +1,3 @@
-// voiceConfig.js - voice-related presets (delegates authoritative profiles to src/conductor/config.js)
 
 voiceConfig = (function() {
   const V = validator.create('voiceConfig');

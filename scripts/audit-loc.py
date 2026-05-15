@@ -44,8 +44,6 @@ _SKIP_DIRS = {
     "output", "csv_maestro", "bin", "pgmidi", "archive",
 }
 # `.md` added to the LOC discipline -- over-long doc rots faster than code.
-# Long-form theory essays + vendored model-card READMEs are handled via
-# loc-ignore.txt, not skipped here.
 _EXTS = {".py", ".js", ".ts", ".sh", ".md"}
 
 
@@ -163,10 +161,6 @@ def main(argv: list) -> int:
     warn.sort(reverse=True)
 
     # Build rationale lookup. Each exemption may carry a structured
-    # rationale token (see config/loc-ignore.txt). When --rationale
-    # is set we emit a separate report listing exempted files with
-    # their declared intent + revisit-when triggers -- the architectural
-    # rationale diary, queryable instead of buried in prose comments.
     exemption_records = load_with_rationale()
 
     if as_json:

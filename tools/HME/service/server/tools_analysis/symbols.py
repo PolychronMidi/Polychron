@@ -170,7 +170,6 @@ def get_module_map(directory: str = "", max_depth: int = 3) -> str:
     if directory:
         target = os.path.join(ctx.PROJECT_ROOT, directory)
         if not os.path.isdir(target):
-            # Try with src/ prefix for subsystem shorthand (e.g., "crossLayer" -> "src/crossLayer")
             target = os.path.join(ctx.PROJECT_ROOT, "src", directory)
     else:
         target = ctx.PROJECT_ROOT

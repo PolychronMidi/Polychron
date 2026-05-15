@@ -67,8 +67,6 @@ def list_knowledge(limit: int = 20, category: str | None = None) -> list[dict[st
         return []
     try:
         # Lance tables expose a .to_pandas() / .to_arrow() but for a
-        # daemon-less CLI we want minimal allocation. .search() with no
-        # query returns rows in insertion order; .limit() bounds it.
         q = table.search() if hasattr(table, "search") else None
         if q is None:
             df = table.to_pandas()

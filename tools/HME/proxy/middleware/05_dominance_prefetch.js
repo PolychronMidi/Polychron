@@ -63,9 +63,6 @@ function _post(pathName, payload, timeoutMs = 3000) {
       res.on('data', (c) => { raw += c.toString('utf8'); });
       res.on('end', () => {
         // Only cache 2xx responses. A worker 4xx/5xx (or an HTML error
-        // page from a misrouted port) would otherwise be cached for
-        // 60s and served as a "hit" to sibling middleware, poisoning
-        // every downstream consumer for the TTL.
         if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
           resolve(raw);
         } else {

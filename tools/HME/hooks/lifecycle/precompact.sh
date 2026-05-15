@@ -1,23 +1,17 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PreCompact: surface pending KB anchors and tracked note files before compaction
-#
-# MUST RUN BEFORE: postcompact
-# COORDINATES WITH: userpromptsubmit
-#
-# Captures pre-compaction state; postcompact reads what this writes to
-# reconstruct a coherent post-compaction session.
 cat > /dev/null  # consume stdin
 
 PROJECT="$PROJECT_ROOT"
 HME_LOG="$PROJECT/log/hme.log"
-printf '%s INFO compact: PRE-COMPACT event triggered\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" >> "$HME_LOG" 2>/dev/null
+printf '%s INFO compact: PRE-COMPACT event triggered\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" >> "$HME_LOG" 2>/dev/null  # silent-ok: optional fallback path.
 TAB="$PROJECT/tmp/hme-tab.txt"
 PARTS=()
 
 if [[ -f "$TAB" && -s "$TAB" ]]; then
   # Pending KB anchors
-  KB_LINES=$(grep '^KB:' "$TAB" 2>/dev/null)
+  KB_LINES=$(grep '^KB:' "$TAB" 2>/dev/null)  # silent-ok: optional fallback path.
   if [[ -n "$KB_LINES" ]]; then
     PARTS+=("PENDING KB ANCHORS -- save with add_knowledge before compaction:")
     PARTS+=("$KB_LINES")
@@ -25,7 +19,7 @@ if [[ -f "$TAB" && -s "$TAB" ]]; then
   fi
 
   # Tracked note files (from background tasks, writes, agents)
-  FILE_LINES=$(grep '^FILE:' "$TAB" 2>/dev/null)
+  FILE_LINES=$(grep '^FILE:' "$TAB" 2>/dev/null)  # silent-ok: optional fallback path.
   if [[ -n "$FILE_LINES" ]]; then
     PARTS+=("TRACKED NOTE FILES -- check these after compaction:")
     PARTS+=("$FILE_LINES")
@@ -34,16 +28,13 @@ if [[ -f "$TAB" && -s "$TAB" ]]; then
 fi
 
 # Also scan project tmp/ for recent .md/.txt not already in the tab
-FOUND=$(find "$PROJECT/tmp" -maxdepth 1 \( -name "*.md" -o -name "*.txt" \) -mmin -480 ! -name "hme-tab.txt" 2>/dev/null | sort)
+FOUND=$(find "$PROJECT/tmp" -maxdepth 1 \( -name "*.md" -o -name "*.txt" \) -mmin -480 ! -name "hme-tab.txt" 2>/dev/null | sort)  # silent-ok: optional fallback path.
 if [[ -n "$FOUND" ]]; then
   # Filter out files already tracked in tab
   UNTRACKED=""
   while IFS= read -r f; do
     # Match whole line, not substring. Previously a path like
-    # `tmp/note.md` was suppressed because a tracked path
-    # `tmp/note.md.bak` contained it as a prefix -- falsely treating
-    # legitimately-untracked files as tracked.
-    grep -qFx "$f" "$TAB" 2>/dev/null || UNTRACKED+="  $f"$'\n'
+    grep -qFx "$f" "$TAB" 2>/dev/null || UNTRACKED+="  $f"$'\n'  # silent-ok: optional fallback path.
   done <<< "$FOUND"
   if [[ -n "$UNTRACKED" ]]; then
     PARTS+=("UNTRACKED SESSION FILES in tmp/:")
@@ -55,7 +46,7 @@ fi
 ENTANGLE="$PROJECT/tmp/hme-entanglement.json"
 if [[ -f "$ENTANGLE" ]]; then
   # Build compact summary from entanglement checkpoint
-  ENT_AGE=$(( $(date +%s) - $(stat -c %Y "$ENTANGLE" 2>/dev/null || echo 0) ))
+  ENT_AGE=$(( $(date +%s) - $(stat -c %Y "$ENTANGLE" 2>/dev/null || echo 0) ))  # silent-ok: optional fallback path.
   if [[ "$ENT_AGE" -lt 600 ]]; then
     COH=$(_safe_py3 "import json; d=json.load(open('$ENTANGLE')); print(f\"coherence={d.get('coherence_avg','?')} trend={d.get('coherence_trend','?')} restarts={d.get('restarts_today','?')} session={int(d.get('session_age_s',0))//60}min\")" "" 2>/dev/null)
     if [[ -n "$COH" ]]; then
@@ -69,14 +60,13 @@ if [[ ${#PARTS[@]} -gt 0 ]]; then
 fi
 
 # Log compact event for context meter calibration.
-# Captures the statusline's last known reading so we can compare meter estimate vs actual trigger.
 CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
 LOG="${METRICS_DIR:-$PROJECT/output/metrics}/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
   # FAIL-LOUD: capture jq stderr; corrupted statusline JSON would silently
   # produce all-null calibration rows and skew the meter analysis.
-  _PC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pc_jq_err_$$")
+  _PC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pc_jq_err_$$")  # silent-ok: optional fallback path.
   USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>"$_PC_JQ_ERR" || echo "null")
   REM=$(jq -r '.remaining_pct // "null"' "$CTX_FILE" 2>>"$_PC_JQ_ERR" || echo "null")
   SIZE=$(jq -r '.size // "null"' "$CTX_FILE" 2>>"$_PC_JQ_ERR" || echo "null")
@@ -88,21 +78,19 @@ if [[ -f "$CTX_FILE" ]]; then
     done < "$_PC_JQ_ERR"
   fi
   rm -f "$_PC_JQ_ERR" 2>/dev/null
-  AGE=$(( $(date +%s) - $(stat -c %Y "$CTX_FILE" 2>/dev/null || echo 0) ))
+  AGE=$(( $(date +%s) - $(stat -c %Y "$CTX_FILE" 2>/dev/null || echo 0) ))  # silent-ok: optional fallback path.
   echo "{\"ts\":\"$TS\",\"event\":\"pre_compact\",\"used_pct\":$USED,\"remaining_pct\":$REM,\"ctx_size\":$SIZE,\"meter_age_s\":$AGE}" >> "$LOG"
 else
   echo "{\"ts\":\"$TS\",\"event\":\"pre_compact\",\"used_pct\":null,\"remaining_pct\":null,\"ctx_size\":null,\"meter_age_s\":null,\"note\":\"no_statusline_data\"}" >> "$LOG"
 fi
 
-# H-compact optimization #1 fallback: if preemption didn't fire at 70%, at
-# least take the chain snapshot NOW (before compaction destroys context)
-# so postcompact has something fresh to hydrate from. This is a safety net.
+# if preemption didn't fire at 70%, at
 CHAIN_SCRIPT="$PROJECT/tools/HME/scripts/chain-snapshot.py"
 LATEST_LINK="${METRICS_DIR:-$PROJECT/output/metrics}/chain-history/latest.yaml"
 _NEEDS_FALLBACK=1
 if [ -f "$LATEST_LINK" ]; then
   # If a link exists and is < 10 min old, assume preemption fired
-  LINK_AGE=$(( $(date +%s) - $(stat -c %Y "$LATEST_LINK" 2>/dev/null || echo 0) ))
+  LINK_AGE=$(( $(date +%s) - $(stat -c %Y "$LATEST_LINK" 2>/dev/null || echo 0) ))  # silent-ok: optional fallback path.
   if [ "$LINK_AGE" -lt 600 ]; then
     _NEEDS_FALLBACK=0
     echo "[PreCompact] chain link fresh (age ${LINK_AGE}s) -- preemption fired cleanly" >&2

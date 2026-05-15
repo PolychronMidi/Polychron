@@ -31,7 +31,6 @@ moduleLifecycle.declare({
     }
     const entry = { type, layer, payload, absoluteSeconds: t, cause: cause || null };
     entries.push(entry);
-    // Batch evict: let buffer grow past capacity, then splice once - avoids O(n) shift per emit
     if (entries.length > MAX_ENTRIES + EVICT_BATCH) {
       entries.splice(0, entries.length - MAX_ENTRIES);
     }

@@ -153,8 +153,6 @@ moduleLifecycle.declare({
     const coupling = phaseSpaceMath.coupling(state.rawTrajectory, stats.mean, config.DIM_NAMES, config.N_DIMS, config.N_COMPOSITIONAL_DIMS, relaxedGateThreshold);
     const effDim = phaseSpaceMath.effectiveDimensionality(state.rawTrajectory, stats.mean, config.N_COMPOSITIONAL_DIMS);
     // Relax stale threshold when orchestrator is relaxing variance gate.
-    // When phase is chronically near-zero and gate is relaxed, newly-admitted
-    // pairs shouldn't immediately be marked stale. Scale threshold up to 2x.
     const staleRelax = orchestratorGateRelax > 1.0
       ? m.round(config.PHASE_STALE_PAIR_THRESHOLD * clamp(orchestratorGateRelax, 1.0, 2.0))
       : config.PHASE_STALE_PAIR_THRESHOLD;
@@ -196,9 +194,7 @@ moduleLifecycle.declare({
       couplingMatrix: coupling.matrix,
       couplingLabels: (() => {
         const labels = {};
-        // R23 E3: Regime-aware label threshold. Coherent correlations are moderate
-        // not extreme, so lower threshold there. Exploring correlations are noisy,
-        // requiring a stronger signal to merit a semantic label.
+        // Regime-aware label threshold. Coherent correlations are moderate
         const LABEL_THRESHOLD = regime === 'coherent' ? 0.28 : regime === 'exploring' ? 0.42 : 0.35;
         const LABEL_MAP = {
           'density-tension': ['+', 'tension-drives-density', '-', 'tension-suppresses-density'],

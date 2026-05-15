@@ -89,25 +89,15 @@ moduleLifecycle.declare({
       * (melodicCtxTG.counterpoint === 'contrary' ? 0.70 : 1.0)
       * (1.0 + clamp(melodicCtxTG.thematicDensity, 0, 1) * 0.20)
       : 1.0;
-    // R73: hotspots coupling -- rhythmically dense burst positions strengthen gravity wells.
+    // hotspots coupling -- rhythmically dense burst positions strengthen gravity wells.
     const rhythmEntryTG = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const hotspotsScaleTG = rhythmEntryTG && Array.isArray(rhythmEntryTG.hotspots) ? rhythmEntryTG.hotspots.length / 16 : 0;
-    // R85 E2: intervalFreshness antagonism bridge -- novel intervals strengthen temporal gravity wells.
-    // Counterpart: dynamicRoleSwap INCREASES swap frequency under same signal (roles reshuffle while time pulls tighter).
     const intervalFreshnessTG = melodicCtxTG ? V.optionalFinite(melodicCtxTG.intervalFreshness, 0.5) : 0.5;
     const intervalFreshnessGravity = 1.0 + clamp((intervalFreshnessTG - 0.45) * 0.25, -0.05, 0.12);
-    // R86 E1: biasStrength antagonism bridge -- confident rhythm pulse strengthens temporal gravity.
-    // Counterpart: verticalIntervalMonitor REDUCES collision penalty under same signal (harmonic freedom at rhythmic confidence).
     const biasStrengthTG = rhythmEntryTG && Number.isFinite(rhythmEntryTG.biasStrength) ? rhythmEntryTG.biasStrength : 0;
     const biasGravityScale = 1.0 + clamp((biasStrengthTG - 0.3) * 0.25, -0.05, 0.15);
-    // R88 E1: density antagonism bridge with entropyRegulator -- high note density strengthens gravity wells
-    // (dense textures need tighter temporal anchoring to prevent metric blur).
-    // Counterpart: entropyRegulator RAISES entropy under same signal (chaos amplifies while structure tightens).
     const densityTG = rhythmEntryTG && Number.isFinite(rhythmEntryTG.density) ? rhythmEntryTG.density : 0.5;
     const densityGravityScale = 1.0 + clamp((densityTG - 0.5) * 0.20, -0.04, 0.10);
-    // R89 E2: complexity antagonism bridge with entropyRegulator -- high per-beat complexity tightens temporal gravity
-    // (complex rhythmic texture needs stronger temporal anchor to prevent metric blur).
-    // Counterpart: entropyRegulator RAISES entropy under same signal (pitch variety expands while time anchors).
     const complexityTG = rhythmEntryTG && Number.isFinite(rhythmEntryTG.complexity) ? rhythmEntryTG.complexity : 0.5;
     const complexityGravityScale = 1.0 + clamp((complexityTG - 0.5) * 0.14, -0.04, 0.06);
     const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO * (0.5 + cimScale) * melodicGravityMult * (1.0 + hotspotsScaleTG * 0.30) * intervalFreshnessGravity * biasGravityScale * densityGravityScale * complexityGravityScale;

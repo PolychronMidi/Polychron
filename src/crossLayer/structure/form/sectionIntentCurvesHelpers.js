@@ -1,4 +1,3 @@
-// Section intent curve helpers -- CLAP guidance, section contrast biases, mid-section self-eval.
 // Loaded before sectionIntentCurves.js via subsystem index.js.
 
 moduleLifecycle.declare({

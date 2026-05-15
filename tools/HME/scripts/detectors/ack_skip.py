@@ -60,9 +60,6 @@ def _is_surface(text: str) -> bool:
 
 
 # Background-self-resolution rescue: the deny prompt sanctions
-# "If the CRITICAL is from a long-running background process that will
-# resolve itself, say so EXPLICITLY in text before stopping". Recognize
-# that explicit-acknowledgment shape so the alternative path exists.
 SELF_RESOLVE_RES = (
     re.compile(r"\b(long.running|background|in.flight|still.running|currently.running)\s+(process|task|job|pipeline|build|compaction|index)\b[^.\n]{0,120}\b(will\s+resolve|self.resolv|complete|finish|clears?)\b", re.IGNORECASE),
     re.compile(r"\b(will|should)\s+(resolve|clear|self.resolve)\s+(itself|on\s+(its\s+own|completion|finish))\b", re.IGNORECASE),
@@ -104,9 +101,6 @@ def main() -> int:
     edit_after = False
     for i, event in enumerate(events):
         # Once a surface has been observed, _is_surface (which does
-        # `text.upper()` on multi-KB tool_result bodies) is wasted work
-        # -- short-circuit to skip the allocation. Combined with the
-        # early-break below, scan stops at first edit-after-surface.
         if surfaced_at == -1:
             for tr in iter_tool_results(event):
                 if _is_surface(tr["text"]):
@@ -121,11 +115,6 @@ def main() -> int:
     fires = surfaced_at >= 0 and not edit_after
     if fires and _has_self_resolve_rationale(_last_assistant_text(events)):
         # Self-resolve rescue: the deny prompt explicitly sanctions
-        # "if the CRITICAL is from a long-running background process
-        # that will resolve itself, say so EXPLICITLY in text before
-        # stopping". When the agent does exactly that, the detector
-        # must not fire -- the alternative path the deny advertises has
-        # to actually exist.
         print("ok")
         return 0
     print("ack_skip" if fires else "ok")

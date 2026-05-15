@@ -1,4 +1,3 @@
-// coherenceMonitor.js - Closed-loop feedback that regulates density based on actual output.
 // Subscribes to NOTES_EMITTED events, compares actual note counts against the
 // conductor's intended density, and feeds a correction bias back into the
 // conductorIntelligence density pipeline. This closes the open loop:
@@ -152,13 +151,11 @@ moduleLifecycle.declare({
     // Deviation from 1.0 (perfect coherence)
     const deviation = windowRatio - 1.0;
 
-    // Phase-aware correction strength: boundaries are tolerant, mid-phrase enforces tighter.
     // Uses a bell curve centered at phrase midpoint: sin(progress * pi) peaks at 0.5.
     const phraseProgress = timeStream.normalizedProgress('phrase');
     let phaseGain = 0.35 + 0.4 * m.sin(phraseProgress * m.PI); // 0.35 at edges, 0.75 at center
 
     // Peer-aware: if a single density contributor is dominating the product,
-    // strengthen our correction - the pipeline is unbalanced and needs tighter coherence.
     const attr = signalReader.densityAttribution();
     if (attr.contributions.length > 1) {
       let minC = Infinity;
@@ -174,7 +171,6 @@ moduleLifecycle.declare({
       }
     }
 
-    // densitySurprise bridge with entropyRegulator (r=-0.607): surprise sharpens tracking
     const rhythmEntryCoM = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const densitySurpriseCoM = rhythmEntryCoM && Number.isFinite(rhythmEntryCoM.densitySurprise) ? rhythmEntryCoM.densitySurprise : 0;
     phaseGain *= 1.0 + clamp(densitySurpriseCoM * 0.15, 0, 0.10);
@@ -182,10 +178,6 @@ moduleLifecycle.declare({
     const correction = 1.0 - deviation * phaseGain;
 
     // Density-level awareness: the emission-fidelity check above is blind to
-    // upstream suppression (when both intended and actual are equally low).
-    // Supplement with a product-level correction when density is structurally
-    // depressed. This closes the gap where the system precisely plays its
-    // suppressed intentions and sees no deviation.
     const densityProduct = signalReader.density();
     const HEALTHY_DENSITY = 0.78;
     let productCorrection = 1.0;
@@ -266,12 +258,6 @@ moduleLifecycle.declare({
   }
 
   // Self-register into conductorIntelligence. registerDensityBias has no
-  // manifest-field counterpart yet; the inline call is OK because
-  // conductorIntelligence is in deps so it's bound by the time init runs.
-  // registerStateProvider/registerModule could move to manifest fields but
-  // require the API object to be returned first; left inline for now since
-  // they reference functions defined in this scope. registerInitializer
-  // wrapper removed -- these run at init time, deps guarantee binding.
   conductorIntelligence.registerDensityBias('coherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING); // floor=0.60, ceiling=1.3
   conductorIntelligence.registerStateProvider('coherenceMonitor', () => ({
     coherenceBias: getDensityBias(),

@@ -77,7 +77,6 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   velocity = rl(baseVelocitySeed, -1, 1, 98, 102);
   velocity = m.max(1, m.min(127, m.round(velocity * combinedVelocityScale)));
 
-  // Unit-level velocity scaling (beat=1.0, div=0.9, subdiv=0.85, subsubdiv=0.8 - finer units play softer)
   const unitProfile = playNotesComputeUnitGetUnitProfile(unit);
   if (unitProfile && Number.isFinite(unitProfile.velocityScale)) {
     velocity = m.max(1, m.min(127, m.round(velocity * unitProfile.velocityScale)));

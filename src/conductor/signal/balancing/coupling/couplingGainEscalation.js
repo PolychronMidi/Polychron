@@ -135,9 +135,6 @@ moduleLifecycle.declare({
           ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + setup.entropyAxisPressure * 0.08, 1.0);
         }
         // Entropy-cluster severe escalation. When an entropy-surface
-        // pair is severe (p95 > 0.80) and telemetry confirms persistent
-        // hotspot activity, apply 1.3x multiplier to break structural
-        // entropy-axis coupling concentration
         if (flags.isEntropySurfacePair && p95 > 0.80 && telemetrySevereRate > 0.06) {
           const entropySevereBoost = 1.3 * clamp((p95 - 0.80) / 0.12, 0.5, 1.0);
           rate *= entropySevereBoost;
@@ -178,9 +175,6 @@ moduleLifecycle.declare({
           ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + trustPressure * 0.14, 1.0);
         }
         // Tension-flicker coherent spike suppression.
-        // When regime is coherent and a tension-flicker pair shows high
-        // absCorr with persistent severe exceedance, apply 1.5x escalation
-        // to break the late-run coupling lock observed in (p95 0.922).
         const isTensionFlickerPair = (dimA === 'tension' && dimB === 'flicker') || (dimA === 'flicker' && dimB === 'tension');
         if (isTensionFlickerPair && setup.regime === 'coherent' &&
             absCorr > 0.85 && tailTelemetry.recentSevereRate > 0.20) {
@@ -198,9 +192,6 @@ moduleLifecycle.declare({
         const hp = V.optionalFinite(ps.heatPenalty, 0);
         if (hp > 0.30) rate *= m.max(0.35, 1.0 - hp);
         // Decouple escalation learning rate from full GGM.
-        // sqrt(GGM) for all pairs. R4: DF pair uses linear GGM (full
-        // compression) because sqrt let DF escalate too fast (3->34 exceedance
-        // beats). Other pairs keep sqrt for better learning rate.
         if (flags.isDensityFlickerPair) {
           rate *= S.globalGainMultiplier;
         } else {
@@ -283,10 +274,6 @@ moduleLifecycle.declare({
     // Window push
     pushWindowValue(ps.recentAbsCorr, absCorr, P95_WINDOW);
     // Adaptive telemetry window scaling.
-    // Originally density-flicker only. Now applies to any pair whose
-    // reconciliation gap exceeds 0.25 (reduced from 0.30 to catch
-    // density-trust gap 0.340).
-    // Scale factor: 1 + max(0, (gap - 0.25) * 2.0), capped at 80 beats.
     let telWin = V.optionalFinite(setup.dynTelemetryWindow, TELEMETRY_WINDOW);
     if (ps.telemetryAbsCorr.length > 0 && ps.recentAbsCorr.length > 0) {
       const longP95 = tailTelemetry.p95;

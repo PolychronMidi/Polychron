@@ -19,8 +19,6 @@ if [ -f "$ERROR_LOG" ]; then
   WATERMARK_LINE=$(cat "$WATERMARK" 2>/dev/null | tr -d ' \t\n' || echo 0)
   WATERMARK_LINE=${WATERMARK_LINE:-0}
   # Inline-mid-turn watermark: PostToolUse hooks already surfaced any new
-  # errors that fired during the just-completed turn (via _check_errors_inline).
-  # Advance our scan baseline past those so Stop doesn't re-surface duplicates.
   INLINE_WATERMARK_FILE="$PROJECT/tmp/hme-errors.inline-watermark"
   INLINE_WATERMARK=$(cat "$INLINE_WATERMARK_FILE" 2>/dev/null | tr -d ' \t\n' || echo 0)
   INLINE_WATERMARK=${INLINE_WATERMARK:-0}
@@ -29,33 +27,24 @@ if [ -f "$ERROR_LOG" ]; then
   fi
 
   # Recompute TOTAL pre-watermark to avoid off-by-N if a writer appends mid-block.
-  # Severity-based scan: WARN/INFO/DEBUG/NOTICE -> observation only;
-  # ERROR/CRITICAL/FATAL/untagged -> agent-origin block. Source-tag
-  # whitelist was wrong axis (suppressed CRITICAL with WARN).
   _OBSERVATION_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
   # Self-origin source tags: writers emit only self-health alerts (not
-  # agent-actionable). Match at canonical [tag] position only -- tighter
-  # than the prior global whitelist that swallowed real failures.
   _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker_client|worker:[^]]+)\]'
   _CANARY_RE='\[CANARY-'
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
     NEW_RAW=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
     # CANARY markers: consume silently; they're alert-chain self-tests
-    # that prove the scanner ran. Advance watermark past them but don't
-    # surface as alerts.
     _CANARY_LINES=$(printf '%s\n' "$NEW_RAW" | grep -E "$_CANARY_RE" || true)
     if [ -n "$_CANARY_LINES" ]; then
       while IFS= read -r line; do
         # Strip "CANARY-" prefix to match pending-tracker bare-id format.
         cid=$(printf '%s' "$line" | grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1 | sed 's/^CANARY-//')
-        [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null
+        [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null  # silent-ok: optional fallback path.
       done <<< "$_CANARY_LINES"
     fi
     # Strip canaries before agent/self classification.
     _NEW_NO_CANARY=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_CANARY_RE" || true)
     # Self-origin = lines tagged with a known self-health writer (regardless
-    # of severity word) OR lines with an explicit observation-severity word.
-    # Agent-origin = everything else.
     SELF_BY_TAG=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -E "$_SELF_TAG_RE" || true)
     REMAINING=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -vE "$_SELF_TAG_RE" || true)
     AGENT_ERRORS=$(printf '%s\n' "$REMAINING" | grep -vE "$_OBSERVATION_RE" | grep -v '^$' || true)
@@ -63,14 +52,12 @@ if [ -f "$ERROR_LOG" ]; then
     # Combine self-origin from both axes (tag-based + severity-based).
     SELF_ERRORS=$(printf '%s\n%s\n' "$SELF_BY_TAG" "$SELF_BY_SEV" | grep -v '^$' | sort -u || true)
     # Re-read line count AFTER the awk consumed its snapshot so watermark matches.
-    TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
+    TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)  # silent-ok: optional fallback path.
     TOTAL=${TOTAL:-0}
     echo "$TOTAL" > "$WATERMARK"
     echo "$TOTAL" > "$TURNSTART"
     if [ -n "$AGENT_ERRORS" ]; then
       # Soften: emit additionalContext (visible) instead of decision:block.
-      # Stop-time block ate the rendered assistant turn; the same errors
-      # also surface via userpromptsubmit's hme-errors.log scan next turn.
       jq -n \
         --arg errors "$AGENT_ERRORS" \
         --arg self "$SELF_ERRORS" \
@@ -89,8 +76,6 @@ if [ -f "$ERROR_LOG" ]; then
   fi
 
   # Surface UNADDRESSED errors from prior turn (watermark < turnstart).
-  # Same severity + canary filtering as the new-errors branch above
-  # (canaries consumed silently; WARN/INFO/DEBUG observation-only).
   if [ "$WATERMARK_LINE" -lt "$TURN_START_LINE" ]; then
     UNFIXED_RAW=$(awk "NR > $WATERMARK_LINE && NR <= $TURN_START_LINE" "$ERROR_LOG" \
       | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
@@ -99,13 +84,11 @@ if [ -f "$ERROR_LOG" ]; then
     if [ -n "$_UNFIXED_CANARY" ]; then
       while IFS= read -r line; do
         cid=$(printf '%s' "$line" | grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1 | sed 's/^CANARY-//')
-        [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null
+        [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null  # silent-ok: optional fallback path.
       done <<< "$_UNFIXED_CANARY"
     fi
     _UNFIXED_NO_CANARY=$(printf '%s\n' "$UNFIXED_RAW" | grep -vE "$_CANARY_RE" || true)
     # Same source-tag + severity-axis classification as the new-errors
-    # branch. Self-tagged writers are observation-only regardless of
-    # severity word.
     UNFIXED_SELF_BY_TAG=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -E "$_SELF_TAG_RE" || true)
     UNFIXED_REMAINING=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -vE "$_SELF_TAG_RE" || true)
     UNFIXED_AGENT=$(printf '%s\n' "$UNFIXED_REMAINING" | grep -vE "$_OBSERVATION_RE" | grep -v '^$' || true)

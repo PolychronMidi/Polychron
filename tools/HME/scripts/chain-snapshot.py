@@ -194,6 +194,7 @@ def _tool_usage_section() -> dict:
                     try:
                         e = json.loads(line)
                     except Exception:
+                        # silent-ok: optional fallback path.
                         continue
                     if e.get("ts", 0) < start_ts:
                         continue

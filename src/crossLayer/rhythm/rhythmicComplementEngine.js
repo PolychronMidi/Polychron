@@ -176,17 +176,13 @@ moduleLifecycle.declare({
     });
     const realtimeDensity = densityRhythmEntry ? V.optionalFinite(densityRhythmEntry.density, 0.5) : 0.5;
     const density = V.optionalFinite(intent.densityTarget, 0.5) * 0.5 + realtimeDensity * 0.5;
-    // Rhythmic coupling: high emergent rhythm complexity adds to effective density for mode selection.
-    // Syncopated/complex rhythm patterns favor interlocking modes (hocket/antiphony) over free.
     const rhythmEntryRCE = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmComplexityRCE = rhythmEntryRCE && Number.isFinite(rhythmEntryRCE.complexity) ? rhythmEntryRCE.complexity : 0;
     const effectiveDensity = clamp(density + rhythmComplexityRCE * 0.15, 0, 1);
 
-    // Xenolinguistic: phase convergence prediction -> pre-position for canon before convergence
     const phaseEntry = L0.getLast(L0_CHANNELS.phaseConvergence, { layer: 'both' });
     const convergenceImminent = phaseEntry && Number.isFinite(phaseEntry.cycle) && phaseEntry.step < 2;
 
-    // Harmonic distance awareness: far from home key favors canon (coherence in distant territory)
     const harmonicEntry = L0.getLast(L0_CHANNELS.harmonic, { layer: 'both' });
     const excursion = harmonicEntry ? V.optionalFinite(harmonicEntry.excursion, 0) : 0;
     const farFromHome = excursion > 4;

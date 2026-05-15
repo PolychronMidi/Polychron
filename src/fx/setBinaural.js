@@ -6,7 +6,6 @@
  * @returns {void}
  */
 
-// Binaural should always be SUBPERCEPTUAL as a subtle neurostimulant, NOT as an overt effect. Rapid or large shifts can be jarring and unpleasant. The goal is to create a gentle, evolving soundscape that engages the brain without drawing attention to the binaural effect itself.
 const V = validator.create('setBinaural');
 
 /** Next absolute seconds at which a new binaural shift should be scheduled */
@@ -26,8 +25,6 @@ const lastConsumedByLayer = {};
  */
 function emitShiftEvents(shiftSyncSec, shiftFlip, bendDuration, maxVol) {
   // Pitch bend glide completes within the crossfade window, not over the full
-  // interval. After crossfade, channels are at full volume with final pitch bend
-  // already applied. No gliding while audible = no detune artifacts.
   const bendSteps = 5;
   const bendStepSec = bendDuration / bendSteps;
   for (let i = 0; i <= bendSteps; i++) {
@@ -61,11 +58,6 @@ function emitShiftEvents(shiftSyncSec, shiftFlip, bendDuration, maxVol) {
     // Volume dip at midpoint to mask detune overlap
     const dipScale = 1.0 - 0.25 * m.exp(-m.pow((frac - 0.5) / 0.15, 2));
     // setBinaural is IMPERCEPTIBLE NEUROSTIMULATION, not a music CC effect.
-    // It is excluded from the channelStateField substrate deliberately:
-    // binaural must not be mixed into CIS cooperation/antagonism analysis
-    // (it would pollute the metrics with rhythmic 8-12Hz oscillation that
-    // has nothing to do with musical dynamics). p() emits the MIDI event
-    // for neurostimulation; no observeControl call.
     flipBinF2.forEach(ch => { const volOutVal = m.round(volOut * maxVol * dipScale); p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, volOutVal] }); });
     flipBinT2.forEach(ch => { const volInVal = m.round(volIn * maxVol * dipScale); p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, volInVal] }); });
   }
@@ -112,7 +104,6 @@ setBinaural = () => {
     flipBin = LM.perLayerState[activeLayer].flipBin;
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
     const brightness = phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5;
-    // Xenolinguistic: modal color drives binaural frequency. Chromatic = higher beta (alert),
     // diatonic = lower alpha (calm). The brainstem hears harmonic complexity.
     const modalColor = modalColorTracker.getModalProfile();
     const colorShift = modalColor ? clamp((modalColor.colorToneRatio - 0.4) * 1.5, -0.5, 0.5) : 0;
@@ -135,9 +126,6 @@ setBinaural = () => {
   }
 
   // -- Consume the latest shared shift if not yet consumed by this layer --
-  // CRITICAL: this runs OUTSIDE the shiftDue gate so L2 processes L1's shifts
-  // even when L2's own shift isn't due. Prevents detune bleed-through from
-  // desynchronized pitch bend state between layers.
   const sharedEntry = L0.getLast(L0_CHANNELS.binaural, { layer: 'shared' });
   if (sharedEntry && sharedEntry.timeInSeconds !== lastConsumedByLayer[activeLayer]) {
     lastConsumedByLayer[activeLayer] = sharedEntry.timeInSeconds;

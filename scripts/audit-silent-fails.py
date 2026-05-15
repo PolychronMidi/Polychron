@@ -37,14 +37,9 @@ LEGITIMATE_PATTERNS = [
     re.compile(r"date\b[^|]*?2>/dev/null"),
     # `|| echo 0` after numeric reads is usually fallback for missing file
     re.compile(r"cat\s+\"?\$\{?[A-Z_]+\}?\"?\s*2>/dev/null\s*\|\|\s*echo\s+0"),
-    # `mktemp 2>/dev/null || echo "/tmp/..."` is the canonical fallback for
-    # mktemp on tmpfs-full / restricted env; the echoed string IS the
-    # tempfile path that gets used downstream, not a fake success value.
     re.compile(r"mktemp\b[^|]*?2>/dev/null\s*\|\|\s*echo\s+\"?/tmp/"),
-    # `git rev-parse ... || echo unknown` for diagnostic SHA display.
     # Fallback is a literal "unknown" used only in audit/log output.
     re.compile(r"git\s+rev-parse[^|]*?2>/dev/null\s*\|\|\s*echo\s+\"?unknown"),
-    # `whoami ... || echo shell` -- fallback identifier for non-interactive
     # contexts where whoami may not resolve a real user.
     re.compile(r"whoami\b[^|]*?2>/dev/null\s*\|\|\s*echo\s+\"?shell"),
     # `unset VAR 2>/dev/null` -- unsetting a possibly-already-unset var.
@@ -86,16 +81,9 @@ for sh in HOOKS.rglob("*.sh"):
         if not trigger.search(line):
             continue
         # Skip pure-comment lines: leading whitespace then `#`. These are
-        # documentation that often references the very patterns we audit
-        # (e.g. failfast.sh listing forbidden patterns in its docstring).
-        # Without this filter the audit produces false-positives that
-        # cannot be fixed without removing the documentation itself.
         if re.match(r"^\s*#", line):
             continue
         # Skip lines that ONLY redirect stderr to a captured file (the
-        # fail-loud pattern: `2>"$_some_err"`). Audit-script regex matches
-        # `2>/dev/null` literally, but a line capturing to a tempfile
-        # plus an `|| true` or fallback shouldn't be re-flagged.
         if re.search(r'2>"\$[A-Za-z_][A-Za-z0-9_]*"', line) and "2>/dev/null" not in line:
             continue
         # Try suspicious first

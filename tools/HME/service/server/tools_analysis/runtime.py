@@ -167,11 +167,6 @@ def drama_finder(top_n: int = 10) -> str:
             parts.append(f"  hotspots: {', '.join(f'{n}={v}' for n, v in ev['hotspots'])}")
 
     # Micro-narrative synthesis for top 3 events. Gated: this was the
-    # single 60s call in `i/review mode=composition`. The structural
-    # drama listing above is the high-signal part; the narrative is a
-    # "nice to have" that a status-surface caller shouldn't pay 60s for.
-    # Enabled by default when called directly (explicit intent), skipped
-    # under HME_READ_FAST=1 or HME_DRAMA_NO_SYNTHESIS=1.
     _skip_synth = (
         os.environ.get("HME_READ_FAST") in ("1", "true", "yes")
         or os.environ.get("HME_DRAMA_NO_SYNTHESIS") in ("1", "true", "yes")

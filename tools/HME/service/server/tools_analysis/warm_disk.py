@@ -111,7 +111,6 @@ def _load_warm_cache(model: str) -> bool:
             if _kb_newest_mtime() > cached_ts:
                 logger.info(f"warm cache STALE: {model} kb_ver {cached_kb_ver} != {current_kb_ver}, KB modified since save")
                 return False
-            # KB unchanged since cache was saved -- realign session counter and use cache.
             ctx._kb_version = max(current_kb_ver, cached_kb_ver)
             logger.info(
                 f"warm cache CROSS-RESTART: {model} kb_ver {cached_kb_ver} vs session {current_kb_ver} "
@@ -125,12 +124,6 @@ def _load_warm_cache(model: str) -> bool:
         _warm_ctx_ts[model] = cached_ts
         age_s = _time.time() - cached_ts
         # Touch mtime on successful load so warm-context-freshness verifier
-        # sees the cache as actively-validated. The cache CONTENT is
-        # unchanged across loads (KV state is a snapshot, not rewritten),
-        # but a successful load IS evidence the cache is still valid for
-        # the current KB version. Without this, mtime stays at original
-        # save time forever and the verifier escalates from WARN to FAIL
-        # the moment 24h pass even though the cache is fine.
         try:
             _now = _time.time()
             os.utime(cache_file, (_now, _now))

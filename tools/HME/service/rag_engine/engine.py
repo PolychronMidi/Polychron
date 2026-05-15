@@ -45,9 +45,6 @@ def _pick_embed_device() -> str:
                 return f"cuda:{best_idx}"
     except Exception as _cuda_err:
         # Silent CPU-fallback was the root of a 100* embedding slowdown
-        # that went unnoticed for weeks. Fire a CRITICAL LIFESAVER so
-        # the next tool response surfaces the regression instead of
-        # letting it be discovered via "why is indexing slow."
         logger.error(f"CUDA device probe FAILED: {type(_cuda_err).__name__}: {_cuda_err}")
         try:
             import sys as _sys
@@ -106,15 +103,10 @@ class RAGEngine(
         self.code_model = code_model if code_model is not None else model
         self.reranker = reranker
         # Per-kind batch caps. bge-code-v1 is a 2.7B-param FP16 model -- at
-        # batch=256 with 8K-token code chunks it OOMs a 22 GB GPU during a
-        # full reindex (single forward-pass allocation can hit 12+ GiB).
-        # Keep code conservative; text uses qwen3-embedding-0.6b which is
-        # ~4* smaller and tolerates larger batches.
         self._embed_batch_size_text = 128 if _device.startswith("cuda") else 64
         self._embed_batch_size_code = 16 if _device.startswith("cuda") else 16
         # Legacy alias retained for any external readers.
         self._embed_batch_size = self._embed_batch_size_text
-        # Dynamic vector dimension from the actual models -- both must match the table schema
         self._text_dim = self.text_model.get_sentence_embedding_dimension()
         self._code_dim = self.code_model.get_sentence_embedding_dimension()
         self._dim = self._text_dim  # legacy: some callers read self._dim

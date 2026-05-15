@@ -94,9 +94,6 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
             _tools.pop(tname, None)
 
         # Nuke the compiled bytecode BEFORE reloading. If the .pyc is newer
-        # than the .py source (common after a prior successful reload), Python
-        # will use the stale bytecode and the "OK" verdict silently hides that
-        # the new source never ran.
         _mod_file = getattr(mod, "__file__", None)
         if _mod_file:
             _pycache_dir = os.path.join(os.path.dirname(_mod_file), "__pycache__")
@@ -110,10 +107,6 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
                             logger.debug(f"pycache nuke {_pyc_entry}: {type(_unlink_err).__name__}: {_unlink_err}")
         try:
             # For packages that ship their logic across submodules (e.g.
-            # `symbols` -> symbols/patterns.py + symbols/extractor.py),
-            # reloading only the top-level `__init__.py` leaves the stale
-            # submodule objects in sys.modules. Reload submodules FIRST so
-            # the package re-import below picks up the fresh versions.
             _pkg_prefix = actual_full + "."
             _submods = [_name for _name in list(sys.modules.keys())
                         if _name.startswith(_pkg_prefix)]
@@ -161,9 +154,6 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
     summary = f"## HME Hot Reload\n" + "\n".join(results) + f"\n\nTotal tools registered: {total_tools}"
 
     # Surface the reload as an observable artifact. Both manual
-    # (i/hme admin action=reload) and auto (watcher.py debounced) paths
-    # converge here, so writing the marker here covers both. `i/status state`
-    # reads it to show "last hot-reload Ns ago".
     try:
         import json as _json
         import time as _time
@@ -175,10 +165,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
             "trigger": _trigger,  # "auto" from watcher, "manual" from i/hme admin
             "summary": summary.split("\n\n")[-1][:160],
         }
-        # Horizon VII: explicit caused_by -- the specific file that
-        # triggered this reload. Watcher fills this in with the path
-        # whose change scheduled the reload. Manual invocations leave
-        # it empty. Consumers prefer caused_by over heuristic chains.
+        # explicit caused_by -- the specific file that
         if _caused_by:
             payload["caused_by"] = _caused_by
         with open(_marker_tmp, "w") as _mf:

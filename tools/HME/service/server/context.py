@@ -20,8 +20,6 @@ from mcp.server.fastmcp import FastMCP
 logger = logging.getLogger("HME")
 
 # Cross-component session identity (Layer 1)
-# Unique per MCP server process lifetime. Passed as X-HME-Session header on all
-# shim requests so logs across MCP server, shim, and daemon can be correlated.
 SESSION_ID: str = str(uuid.uuid4())[:12]
 
 
@@ -46,9 +44,6 @@ def register_critical_failure(
         fid, is_new = "?", True
         logger.error(f"LIFESAVER failure_genealogy.record_failure failed -- failure may be lost: {_fge}")
     # Only log the first occurrence of a dedup group. The count is tracked
-    # inside failure_genealogy; the LIFESAVER banner at drain time already
-    # shows *N repeats. Logging every call flooded hme.log (see
-    # health_topology coherence-below-threshold stampede).
     if is_new:
         logger.error(f"LIFESAVER QUEUED [{severity}] {source}: {error}" + (f" (#{fid})" if fid != "?" else ""))
     # Layer 10: notify resonance detector
@@ -71,12 +66,6 @@ def register_critical_failure(
         logger.error(f"LIFESAVER todo append failed (failure still queued): {_te}")
 
     # CRITICAL bridge: write to hme-errors.log so the canonical Stop/PostToolUse
-    # LIFESAVER scanner picks it up. Without this, worker-side CRITICAL alerts
-    # were siloed in the worker's internal queue + logger output, never
-    # reaching the agent-visible alert channel. Recurring silent-fail vector
-    # documented across many sessions. Only log on first occurrence (is_new)
-    # so repeated cascade failures don't flood the log -- failure_genealogy
-    # already dedups by (source, error, severity).
     if is_new:
         try:
             project_root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or ""
@@ -143,7 +132,6 @@ class _LoggingMCP:
                     if result is None:
                         logger.error(f"ERR  {name} returned None -- tool must return a string")
                         result = f"Error: {name} returned None (bug in tool implementation)"
-                    # Layer 2: track tool response time EMA (feeds Layer 7 predictive health)
                     try:
                         from server import operational_state as ops
                         ops.update_ema("tool_response_ms_ema", elapsed * 1000)
@@ -155,7 +143,6 @@ class _LoggingMCP:
                     lifesaver_banner = drain_critical_failures()
                     if lifesaver_banner:
                         result = lifesaver_banner + str(result)
-                    # Layer 6: rich self-narration -- non-blocking (topology refreshes in background)
                     try:
                         from server import self_narration as sn
                         narration = sn.build_status_narrative()
@@ -204,8 +191,6 @@ class _NullMCP:
 
 
 # Populated by main.py before tool modules load. Default is a no-op mcp so
-# any process that imports tool modules can do so without crashing at
-# decorator-evaluation time; the real FastMCP is installed by worker boot.
 PROJECT_ROOT: str = ""
 PROJECT_DB: str = ""
 mcp = _NullMCP()
@@ -215,11 +200,8 @@ shared_model = None    # SentenceTransformer
 lib_engines: dict = {}
 
 # Pre-edit brief cache -- callers and KB hits are expensive; cache them per file+mtime.
-# kb_version increments on add_knowledge/remove_knowledge so KB-derived caches auto-invalidate.
 _kb_version: int = 0
 # _caller_cache: (abs_path, mtime) -> list[caller dicts]
-# _kb_hits_cache: (module_name, kb_version) -> list[kb result dicts]
-# Both live on ctx so they survive module hot-reloads.
 
 # Background startup synchronization -- set by main.py after background load completes
 _startup_done: threading.Event | None = None

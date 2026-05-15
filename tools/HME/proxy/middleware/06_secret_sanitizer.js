@@ -36,11 +36,7 @@
 // anti-fork-begin: secret-sanitizer-patterns min=12
 const PATTERNS = [
   // OpenAI / Anthropic / Stripe / GitHub / generic "sk-" provider keys.
-  // 30+ alphanumeric/underscore/dash chars after `sk-` covers OpenAI
-  // (sk-proj-, sk-...), Anthropic (sk-ant-...), Stripe (sk_live_, sk_test_),
-  // and most "secret key" conventions.
   [/\bsk-(?:proj-|ant-|live_|test_)?[A-Za-z0-9_\-]{24,}\b/g, '<REDACTED:provider-key>'],
-  // GitHub PATs (classic ghp_, fine-grained github_pat_, oauth gho_, app gha_, refresh ghs_, server-to-server ghu_)
   [/\bgh[opsuar]_[A-Za-z0-9]{30,}\b/g, '<REDACTED:github-token>'],
   [/\bgithub_pat_[A-Za-z0-9_]{60,}\b/g, '<REDACTED:github-pat>'],
   // AWS access keys (AKIA + SECRETKEY format).
@@ -49,7 +45,6 @@ const PATTERNS = [
   [/aws_secret_access_key\s*=\s*[A-Za-z0-9/+=]{40}/gi, 'aws_secret_access_key=<REDACTED:aws-secret>'],
   // Slack tokens (xox[abposr]-).
   [/\bxox[abposr]-[A-Za-z0-9-]{10,}\b/g, '<REDACTED:slack-token>'],
-  // Google API keys (AIza...).
   [/\bAIza[0-9A-Za-z_\-]{35}\b/g, '<REDACTED:google-key>'],
   // Discord bot tokens (3-segment, base64ish).
   [/\b[MN][A-Za-z\d]{23}\.[\w-]{6}\.[\w-]{27,}\b/g, '<REDACTED:discord-token>'],
@@ -130,8 +125,6 @@ module.exports = {
 
   onToolResult({ toolUse, toolResult, ctx }) {
     // Apply to ALL tools, not just Bash -- Read, Grep, web fetches, etc. can
-    // also leak secrets. Cost is one regex sweep per tool_result; the
-    // patterns are pre-compiled and short-circuit on no match.
     const text = _textOf(toolResult);
     if (!text) return;
     // Skip if the text already contains our redaction marker (proxy restart

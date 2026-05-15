@@ -76,9 +76,6 @@ moduleLifecycle.declare({
     const absCorr = m.abs(correlation);
 
     // Flicker modifier: continuous ramp based on absolute correlation.
-    // High correlation (0.4-1.0) - ramp 1.0-1.1 (break rigid pattern)
-    // Low correlation (0-0.2) - ramp 0.94-1.0 (tighten for coherence)
-    // Mid (0.2-0.4) - neutral
     let flickerMod = 1;
     if (absCorr > 0.4) {
       flickerMod = 1.0 + clamp((absCorr - 0.4) / 0.6, 0, 1) * 0.1;
@@ -86,10 +83,7 @@ moduleLifecycle.declare({
       flickerMod = 0.94 + clamp(absCorr / 0.2, 0, 1) * 0.06;
     }
 
-    // R36 E5: Tension bias (cross-domain: melodic->tension).
-    // Rigid pitch-velocity mapping signals musical monotony -- push tension
-    // to encourage change. Disconnected mapping suggests evolving texture --
-    // mild tension reinforcement for natural connection.
+    // Tension bias (cross-domain: melodic->tension).
     let tensionBias = 1;
     if (absCorr > 0.4) {
       tensionBias = 1.0 + clamp((absCorr - 0.4) / 0.5, 0, 1) * 0.06;

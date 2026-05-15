@@ -33,7 +33,6 @@ ChordComposer = class ChordComposer extends MeasureComposer {
     if (candidateNotes.length === 0) return null;
     if (!this.notes || this.notes.length === 0) return null;
 
-    // Delegate to centralized helper (chord tones = weight 1, non-chord tones = weight 0)
     const candidateWeights = voiceLeadingCore.buildPCWeights(candidateNotes, this.notes, 1, 0);
     return { candidateWeights };
   }
@@ -65,7 +64,6 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         return normalized;
       }
 
-      // Case C: both raw and normalized are invalid -> real warning (not labeled acceptable)
       if (!chordComposerWarnedInvalidChordSymbols.has(asRaw)) {
         try { console.warn('Acceptable warning: ChordComposer.noteSet: invalid chord symbol "' + asRaw + '" (normalized -> "' + normalized + '")'); } catch (_logErr) { process.stderr.write('ChordComposer: logging failed: ' + (_logErr && _logErr.message ? _logErr.message : String(_logErr)) + '\n'); }
         chordComposerWarnedInvalidChordSymbols.add(asRaw);

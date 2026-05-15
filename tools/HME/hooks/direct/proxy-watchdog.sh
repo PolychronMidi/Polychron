@@ -14,7 +14,7 @@ if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_R
 elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _WD_ROOT="$CLAUDE_PROJECT_DIR"
 else
-  _wd_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  _wd_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"  # silent-ok: optional fallback path.
   while [ -n "$_wd_try" ] && [ "$_wd_try" != "/" ]; do
     if [ -d "$_wd_try/.git" ] && [ -d "$_wd_try/src" ]; then
       _WD_ROOT="$_wd_try"
@@ -28,16 +28,14 @@ if [ -z "$_WD_ROOT" ]; then
   exit 0
 fi
 PROJECT_ROOT="$_WD_ROOT"
-source "$_WD_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true
+source "$_WD_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
 
-_WD_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"
-_WD_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_WD_PORT")"
+_WD_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
+_WD_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_WD_PORT")"  # silent-ok: optional fallback path.
 
 # -- OmniRoute health-check + respawn (MODE=4/5 main-agent translator) --
-# Session resume doesn't go through polychron-launch.sh, so the watchdog
-# must ensure OmniRoute is running before attempting proxy spawn.
-_OR_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"
-_OR_URL="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_OR_PORT")"
+_OR_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"  # silent-ok: optional fallback path.
+_OR_URL="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_OR_PORT")"  # silent-ok: optional fallback path.
 _OR_DIR="$_WD_ROOT/tools/omniroute"
 if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
   if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
@@ -111,9 +109,6 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 # Spawn the proxy. Match the pattern polychron-launch.sh uses:
-# setsid + nohup + disown so the proxy survives this hook exiting.
-# Env: PROJECT_ROOT and HME_PROXY_PORT explicit; stdout/stderr to
-# log/hme-proxy.out; stdin closed.
 mkdir -p "$_WD_ROOT/log" "$_WD_ROOT/tmp" 2>/dev/null
 ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
 echo "[$ts] [proxy-watchdog] SessionStart: proxy down, attempting respawn..." >&2
@@ -125,8 +120,6 @@ _WD_PID=$!
 disown 2>/dev/null || true
 
 # Poll for health. Bounded by SessionStart hook timeout (15s in
-# settings.json). Give the proxy up to 8s to bind the port, leaving
-# margin for the rest of SessionStart.
 _waited=0
 while [ "$_waited" -lt 8 ]; do
   if curl -sf --max-time 1 "$_WD_URL" >/dev/null 2>&1; then

@@ -22,7 +22,6 @@ moduleLifecycle.declare({
       'morph':{weights:[2,3,3],method:'morph',args:(length,pattern)=>[pattern,'?',length]}
     };
 
-    // Populate the naked-global `rhythms` by mutating rather than conditionally reassigning it
     rhythms = {};
     Object.assign(rhythms, LOCAL_RHYTHMS);
     if (RHYTHM_PATTERNS) {

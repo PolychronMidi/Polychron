@@ -81,10 +81,6 @@ def _persist_invariant_history(results: list) -> None:
     fail_streaks = history.get("fail_streaks") or {}
     last_result = history.get("last_result") or {}
     # R22 #3: prune entries for invariants that no longer exist in current
-    # config -- otherwise retired invariants linger forever with stale fail
-    # status, polluting the efficacy report. file-written-has-source-majority
-    # was the first retired invariant (R22); this prune makes the retirement
-    # actually clean. Note: results is list of (inv, ok, detail) tuples.
     current_ids = {inv.get("id") for (inv, _ok, _d) in results if inv.get("id")}
     for stale in list(fail_streaks.keys()):
         if stale not in current_ids:
@@ -128,8 +124,6 @@ def check_invariants(verbose: bool = False) -> str:
         results.append((inv, ok, detail))
 
     # Persist per-invariant pass/fail history so the chronic-failure check
-    # has data. Increments fail_streak on FAIL, resets on PASS. Tracked per
-    # invariant id so retirement/rename doesn't leak into unrelated streaks.
     try:
         _persist_invariant_history(results)
     except Exception as _hist_err:
@@ -169,11 +163,6 @@ def check_invariants(verbose: bool = False) -> str:
         parts.append("")
 
     # Enumerate PASSes only when verbose=True OR there are no failures.
-    # When there ARE failures, the agent only needs the failing items to
-    # act on; the 100+ PASS lines are ~8k chars of pure filler per call.
-    # An "all <N> pass" summary conveys the same positive signal in ~60
-    # chars. The `evolve(focus='invariants', query='verbose')` escape
-    # hatch surfaces the full listing when needed.
     if passes and (verbose or not (errors or warnings or infos)):
         parts.append(f"## Verified ({len(passes)})\n")
         for inv, detail in passes:

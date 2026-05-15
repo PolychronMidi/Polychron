@@ -90,9 +90,6 @@ def main(argv):
     print()
 
     # For each positive verdict, gather the files edited in the round-window
-    # leading up to it (last 1h before the verdict ts). Coerce ts to float
-    # since the ground-truth log carries both int and string timestamps
-    # depending on emitter.
     def _coerce_ts(v):
         ts = v.get("ts", 0)
         if isinstance(ts, (int, float)):
@@ -170,9 +167,6 @@ def main(argv):
         print()
 
     # Move-similarity scoring (Horizon VIII expansion). Compare recent
-    # file-write activity to the approved-move directory signature. If
-    # current edits cluster in dirs that historically appeared in
-    # approved rounds, score = high; if they don't, score = low.
     if pos_dirs:
         recent_files = _files_in_window(activity, _coerce_ts(verdicts[-1]) - 3600,
                                         _coerce_ts(verdicts[-1]) + 7200) \
@@ -204,10 +198,6 @@ def main(argv):
             dot = sum(pos_dirs.get(d, 0) * recent_dirs.get(d, 0) for d in all_dirs)
             similarity = dot / (pos_norm * recent_norm)
             # Threshold-warning (Horizon VIII asymptote): when similarity
-            # is high but unique-to-recent dirs dominate, warn about
-            # divergence from approved-move signature. When low, warn
-            # outright. The thresholds are deliberately conservative --
-            # this is a soft signal, not a gate.
             if similarity < 0.30:
                 marker = "!"
                 warn = "  [!] low similarity -- recent edits diverge from approved-move signature"
