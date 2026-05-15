@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3222,
-      "updated_ts": 1778889183.5209634,
-      "codex_plan_synced_ts": 1778889183.5209239,
+      "updated_ts": 1778889209.0407312,
+      "codex_plan_synced_ts": 1778889209.0406914,
       "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-      "codex_plan_ts": "2026-05-15T23:53:03.080Z"
+      "codex_plan_ts": "2026-05-15T23:53:28.579Z"
     }
   },
   {
@@ -2827,8 +2827,8 @@
     "id": 3220,
     "text": "Inspect current AGENTS/CLAUDE revert state",
     "activeForm": "Inspect current AGENTS/CLAUDE revert state",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2837,13 +2837,13 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-    "codex_plan_ts": "2026-05-15T23:53:03.080Z"
+    "codex_plan_ts": "2026-05-15T23:53:28.579Z"
   },
   {
     "id": 3221,
     "text": "Re-apply the reverted refactor commits safely",
     "activeForm": "Re-apply the reverted refactor commits safely",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "codex_plan",
@@ -2853,7 +2853,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-    "codex_plan_ts": "2026-05-15T23:53:03.080Z"
+    "codex_plan_ts": "2026-05-15T23:53:28.579Z"
   },
   {
     "id": 3222,
@@ -2869,6 +2869,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-    "codex_plan_ts": "2026-05-15T23:53:03.080Z"
+    "codex_plan_ts": "2026-05-15T23:53:28.579Z"
   }
 ]
