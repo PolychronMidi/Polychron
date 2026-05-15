@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect current proxy/SSE paths for remaining visible i/ or bridge gaps
 
 ## Next
 
-(empty)
+- [ ] [E3] Patch missing normalization without hook noise
+- [ ] [E3] Run targeted tests and syntax checks with evidence
 
 ## Done
 
