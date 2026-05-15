@@ -6,3 +6,5 @@ Tools that keep docs up to date without hand-maintained drift.
 
 Run: `python3 doc/infra/update_full_indexes.py`
 Check: `python3 doc/infra/update_full_indexes.py --check`
+
+Autolinks: inline backtick paths that exist in `git ls-files` (plus tracked directories) become relative Markdown links.
