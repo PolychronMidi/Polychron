@@ -9,6 +9,7 @@ const { loadJsonc } = require('./config_loader');
 const proxyAutocommit = require('./middleware/21_proxy_autocommit');
 const { readAutocommitFailure, touchLifesaverHeartbeat } = require('./lifesaver_alerts');
 const { applyRequestTransform } = require('./codex_payload');
+const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('./codex_native_tools');
 const { targetChain, targetSummary } = require('./codex_omniroute');
 const { createPlanScanner } = require('./codex_plan_scanner');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
@@ -216,15 +217,19 @@ function forwardResponses(req, res, targets, source, visibility) {
         return;
       }
     const headers = { ...upstreamRes.headers };
-      res.writeHead(status, headers);
+    delete headers['content-length'];
     const contentType = String(upstreamRes.headers['content-type'] || '');
+    res.writeHead(status, headers);
     if (contentType.includes('text/event-stream')) {
       const scanner = planScanner.createSseScanner(source);
+      const rewriter = createNativeToolSseRewriter();
       upstreamRes.on('data', (chunk) => {
-        scanner.feed(chunk);
-        res.write(chunk);
+        const out = rewriter.feed(chunk);
+        if (out) { scanner.feed(Buffer.from(out)); res.write(out); }
       });
       upstreamRes.on('end', () => {
+        const tail = rewriter.finish();
+        if (tail) { scanner.feed(Buffer.from(tail)); res.write(tail); }
         scanner.finish();
         res.end();
           finishResponse(target, status);
@@ -232,16 +237,16 @@ function forwardResponses(req, res, targets, source, visibility) {
       return;
     }
     const chunks = [];
-    upstreamRes.on('data', (chunk) => {
-      chunks.push(chunk);
-      res.write(chunk);
-    });
+    upstreamRes.on('data', (chunk) => chunks.push(chunk));
     upstreamRes.on('end', () => {
       const full = Buffer.concat(chunks).toString('utf8');
       const parsed = safeJson(full);
-      if (parsed && typeof parsed === 'object') planScanner.scanObjectForPlan(parsed, source);
-      res.end();
-        finishResponse(target, status, '', parsed);
+      const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
+      const finalBody = rewritten && rewritten.stats.calls ? JSON.stringify(rewritten.body) : full;
+      const finalParsed = rewritten ? rewritten.body : parsed;
+      if (finalParsed && typeof finalParsed === 'object') planScanner.scanObjectForPlan(finalParsed, source);
+      res.end(finalBody);
+        finishResponse(target, status, '', finalParsed);
     });
   });
   upstreamReq.on('error', (err) => {
