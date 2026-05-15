@@ -143,7 +143,7 @@ function evaluateLogFirst(cmd, root) {
 }
 
 function verifyLanded(cmd, root) {
-  if (process.env.HME_VERIFY_LANDED_OK === '1') return null;
+  if (process.env.HME_VERIFY_LANDED_OK === '1' || /^\s*HME_VERIFY_LANDED_OK=1\b/.test(cmd)) return null;
   const file = path.join(root, 'tmp/hme-turn-edits.txt');
   let edited = [];
   try { edited = fs.readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean); }
