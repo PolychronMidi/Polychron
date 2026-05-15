@@ -4,7 +4,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
 const ORIGINAL_PATH = process.env.PATH || '';
@@ -128,4 +128,17 @@ test('hook lint rejects unsafe raw background operators', () => {
     }
   }
   assert.deepStrictEqual(bad, []);
+});
+
+test('i-wrapper cwd auto-correct is silent on success', () => {
+  const res = spawnSync('bash', ['tools/HME/hooks/pretooluse/pretooluse_bash.sh'], {
+    cwd: REPO,
+    input: JSON.stringify({ tool_input: { command: 'cd tools/HME/scripts && i/status' } }),
+    encoding: 'utf8',
+    env: { ...process.env, PROJECT_ROOT: REPO },
+  });
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.doesNotMatch(res.stdout, /auto-corrected|systemMessage/);
+  const parsed = JSON.parse(res.stdout);
+  assert.match(parsed.hookSpecificOutput.updatedInput.command, /\/i\/status$/);
 });

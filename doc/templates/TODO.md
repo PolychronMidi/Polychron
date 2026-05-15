@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Locate hook-message strip path
+(empty)
 
 ## Next
 
-- [ ] [E3] Strip i-wrapper auto-correct notice
-- [ ] [E3] Add regression coverage
-- [ ] [E3] Run targeted verification
+(empty)
 
 ## Done
 

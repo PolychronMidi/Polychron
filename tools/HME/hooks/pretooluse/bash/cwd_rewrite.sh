@@ -35,10 +35,10 @@ PYEOF
     _RUN_BG=$(_safe_jq "$INPUT" '.tool_input.run_in_background' 'false')
     if [ "$_RUN_BG" = "true" ]; then
       jq -n --arg cmd "$_FIXED_CMD" \
-        '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd,"run_in_background":true}},"systemMessage":"i/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT"}'
+        '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd,"run_in_background":true}}}'
     else
       jq -n --arg cmd "$_FIXED_CMD" \
-        '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd}},"systemMessage":"i/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT"}'
+        '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd}}}'
     fi
     exit 0
   fi

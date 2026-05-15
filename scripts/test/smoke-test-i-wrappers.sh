@@ -253,6 +253,9 @@ _correct_check() {
   else
     _fail "auto-correct $label: expected containing '$expect_contains', got: $out"
   fi
+  if echo "$out" | grep -qF "auto-corrected"; then
+    _fail "auto-correct $label: rewrite should be silent, got: $out"
+  fi
 }
 
 # Inline cd && i/tool
@@ -267,6 +270,9 @@ if echo "$OUT" | grep -qF "/home/jah/Polychron/i/status"; then
   _ok "auto-correct: tool_input.cwd to subdir rewrites"
 else
   _fail "auto-correct tool_input.cwd: expected rewrite, got: $OUT"
+fi
+if echo "$OUT" | grep -qF "auto-corrected"; then
+  _fail "auto-correct tool_input.cwd: rewrite should be silent, got: $OUT"
 fi
 
 # Plain i/status at root should NOT rewrite

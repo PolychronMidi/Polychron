@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3095,
-      "updated_ts": 1778869138.5631678,
-      "codex_plan_synced_ts": 1778869138.5631552,
+      "max_id": 3096,
+      "updated_ts": 1778869498.5666726,
+      "codex_plan_synced_ts": 1778869498.5666602,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T18:18:36.548Z"
+      "codex_plan_ts": "2026-05-15T18:23:23.889Z"
     }
   },
   {
@@ -738,8 +738,8 @@
     "id": 3092,
     "text": "Locate hook-message strip path",
     "activeForm": "Locate hook-message strip path",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -748,14 +748,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:18:36.548Z"
+    "codex_plan_ts": "2026-05-15T18:23:23.889Z"
   },
   {
     "id": 3093,
     "text": "Strip i-wrapper auto-correct notice",
     "activeForm": "Strip i-wrapper auto-correct notice",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -764,14 +764,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:18:36.548Z"
+    "codex_plan_ts": "2026-05-15T18:18:36.548Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3094,
     "text": "Add regression coverage",
     "activeForm": "Add regression coverage",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -780,14 +781,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:18:36.548Z"
+    "codex_plan_ts": "2026-05-15T18:23:23.889Z"
   },
   {
     "id": 3095,
     "text": "Run targeted verification",
     "activeForm": "Run targeted verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -796,6 +797,22 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:18:36.548Z"
+    "codex_plan_ts": "2026-05-15T18:23:23.889Z"
+  },
+  {
+    "id": 3096,
+    "text": "Stop emitting i-wrapper auto-correct notice",
+    "activeForm": "Stop emitting i-wrapper auto-correct notice",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778869498.56657,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:23:23.889Z"
   }
 ]
