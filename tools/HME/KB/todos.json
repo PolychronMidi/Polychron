@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3140,
-      "updated_ts": 1778875258.5999608,
-      "codex_plan_synced_ts": 1778875258.5999365,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T20:00:48.199Z"
+      "max_id": 3144,
+      "updated_ts": 1778875745.1681502,
+      "codex_plan_synced_ts": 1778875745.1681266,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T20:09:04.747Z"
     }
   },
   {
@@ -1529,8 +1529,8 @@
     "id": 3140,
     "text": "Restart Codex proxy through supervisor",
     "activeForm": "Restart Codex proxy through supervisor",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1539,6 +1539,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:00:48.199Z"
+    "codex_plan_ts": "2026-05-15T20:00:48.199Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3141,
+    "text": "Locate the Codex/HME primer injection path",
+    "activeForm": "Locate the Codex/HME primer injection path",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778875745.16792,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:09:04.747Z"
+  },
+  {
+    "id": 3142,
+    "text": "Patch it to emit only once per real session and suppress duplicates/large output",
+    "activeForm": "Patch it to emit only once per real session and suppress duplicates/large output",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778875745.1679268,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:09:04.747Z"
+  },
+  {
+    "id": 3143,
+    "text": "Add regression coverage for duplicate primer suppression",
+    "activeForm": "Add regression coverage for duplicate primer suppression",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778875745.1679306,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:09:04.747Z"
+  },
+  {
+    "id": 3144,
+    "text": "Run focused checks and report evidence",
+    "activeForm": "Run focused checks and report evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778875745.1679337,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T20:09:04.747Z"
   }
 ]
