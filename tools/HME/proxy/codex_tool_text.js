@@ -43,9 +43,26 @@ function bridgeFromTokens(tokens) {
   return { tool: 'Edit', input };
 }
 
+function bridgeFromJsonCommand(text) {
+  const src = String(text || '');
+  const m = /codex_structured_tool\.js\s+(read|edit)\s+--json\s+<<['\"]?([A-Za-z0-9_:-]+)['\"]?\n([\s\S]*?)\n\2(?:\s|$)/.exec(src);
+  if (!m) return null;
+  let data;
+  try { data = JSON.parse(m[3]); } catch (_e) { return null; }
+  const input = { file_path: data.file_path || data.file || '' };
+  if (m[1] === 'read') {
+    if (data.offset !== undefined) input.offset = Number(data.offset);
+    if (data.limit !== undefined) input.limit = Number(data.limit);
+    return { tool: 'Read', input };
+  }
+  input.old_string = '<omitted by proxy>';
+  input.new_string = '<omitted by proxy>';
+  return { tool: 'Edit', input };
+}
+
 function bridgeCommand(text) {
   if (!String(text || '').includes('codex_structured_tool.js')) return null;
-  return bridgeFromTokens(splitWords(text));
+  return bridgeFromJsonCommand(text) || bridgeFromTokens(splitWords(text));
 }
 
 function displayCall(bridge) {
