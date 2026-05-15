@@ -162,19 +162,19 @@ def _mode_ground_truth():
     return _gt()
 
 def _mode_constitution():
-    from .phase6_reports import constitution_report as _c
+    from ..phase6_reports import constitution_report as _c
     return _c()
 
 def _mode_doc_drift():
-    from .phase6_reports import doc_drift_report as _dd
+    from ..phase6_reports import doc_drift_report as _dd
     return _dd()
 
 def _mode_generalizations():
-    from .phase6_reports import generalizations_report as _gr
+    from ..phase6_reports import generalizations_report as _gr
     return _gr()
 
 def _mode_reflexivity():
-    from .phase6_reports import reflexivity_report as _rr
+    from ..phase6_reports import reflexivity_report as _rr
     return _rr()
 
 def _mode_multi_agent():
