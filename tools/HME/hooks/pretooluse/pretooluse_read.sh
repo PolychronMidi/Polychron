@@ -126,7 +126,7 @@ if [ -f "$FILE" ]; then
 fi
 
 _streak_tick 10
-if ! _streak_check; then exit 1; fi
+if ! _streak_check; then exit 0; fi
 # Bounded-reads vow: counts consecutive Read/Grep/Glob; warns/blocks at HME_READ_BUDGET.
 if [ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ]; then
   PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" || exit 2

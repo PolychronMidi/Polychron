@@ -26,6 +26,7 @@
  */
 
 const path = require('path');
+const fs = require('fs');
 const { PROJECT_ROOT } = require('../proxy/shared');
 const { appendHookExec } = require('../hooks/hook_report');
 const { shouldSkipForNestedHooks } = require('../hooks/cwd_guard');
@@ -101,17 +102,41 @@ const NATIVE_POSTTOOL = nativeHooks.postToolHandlers;
  * exit_code=-1 with an error message on stderr.
  */
 function _finishHook(eventName, scriptPath, startedAt, result) {
+  const code = result.exit_code ?? 0;
   appendHookExec({
     event: eventName || 'hook',
     script: path.basename(scriptPath),
     cwd: process.cwd(),
     session_id: '',
-    exit_code: result.exit_code ?? 0,
+    exit_code: code,
     duration_ms: Date.now() - startedAt,
     stdout_bytes: Buffer.byteLength(result.stdout || ''),
     stderr_bytes: Buffer.byteLength(result.stderr || ''),
   });
+  if (code !== 0 && !_policyDecisionOutput(result.stdout || '')) {
+    _appendHookFailure(eventName, scriptPath, code, result);
+  }
   return result;
+}
+
+function _policyDecisionOutput(stdout) {
+  return /"decision"\s*:\s*"block"/.test(stdout)
+    || /"permissionDecision"\s*:\s*"deny"/.test(stdout);
+}
+
+function _appendHookFailure(eventName, scriptPath, code, result) {
+  try {
+    const file = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+    const stderr = String(result.stderr || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+    const stdout = String(result.stdout || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    const msg = `[${new Date().toISOString()}] [hook-failure] ${eventName}:${path.basename(scriptPath)} exit=${code}`
+      + (stderr ? ` stderr=${stderr}` : '')
+      + (stdout ? ` stdout=${stdout}` : '');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.appendFileSync(file, `${msg}\n`);
+  } catch (_e) {
+    // Hook failure mirroring must never cause a second hook failure.
+  }
 }
 
 function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') {

@@ -173,6 +173,6 @@ ${_file_head}"
 fi
 
 _streak_tick 10
-if ! _streak_check; then exit 1; fi
+if ! _streak_check; then exit 0; fi
 [ -n "$_AUTO_BRIEF_JSON" ] && printf '%s\n' "$_AUTO_BRIEF_JSON"
 exit 0

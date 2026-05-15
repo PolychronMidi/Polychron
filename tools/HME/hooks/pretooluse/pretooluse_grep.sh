@@ -58,7 +58,7 @@ if [ -n "$HIT" ]; then
 fi
 
 _streak_tick 10
-if ! _streak_check; then exit 1; fi
+if ! _streak_check; then exit 0; fi
 
 # KB brief: if grepping within a tracked src file, mark BRIEF so pretooluse_edit
 # knows this module has been examined before any edit.

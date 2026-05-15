@@ -1,5 +1,5 @@
 _streak_tick 15
-if ! _streak_check; then exit 1; fi
+if ! _streak_check; then exit 0; fi
 # Redirect: repeated polling of background task output files (3rd+ check).
 TASK_POLL_COUNTER="/tmp/polychron-task-poll-count"
 _POLLING=0

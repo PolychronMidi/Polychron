@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3065,
-      "updated_ts": 1778865388.5513284,
-      "codex_plan_synced_ts": 1778865388.5513217,
+      "max_id": 3070,
+      "updated_ts": 1778865598.5526574,
+      "codex_plan_synced_ts": 1778865598.5526497,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-      "codex_plan_ts": "2026-05-15T17:16:00.930Z"
+      "codex_plan_ts": "2026-05-15T17:19:39.789Z"
     }
   },
   {
@@ -303,5 +303,86 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
     "codex_plan_ts": "2026-05-15T17:16:00.930Z"
+  },
+  {
+    "id": 3066,
+    "text": "Check hook failure telemetry and Lifesaver inputs",
+    "activeForm": "Check hook failure telemetry and Lifesaver inputs",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778865538.5525546,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:19:39.789Z"
+  },
+  {
+    "id": 3067,
+    "text": "Explain why alerts were missed",
+    "activeForm": "Explain why alerts were missed",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778865538.5525575,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:19:39.789Z"
+  },
+  {
+    "id": 3068,
+    "text": "Verify post-restart state",
+    "activeForm": "Verify post-restart state",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778865538.5525599,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:18:29.303Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3069,
+    "text": "Patch false hook-failure and alert bridge",
+    "activeForm": "Patch false hook-failure and alert bridge",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778865598.5526032,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:19:39.789Z"
+  },
+  {
+    "id": 3070,
+    "text": "Verify post-restart state and tests",
+    "activeForm": "Verify post-restart state and tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778865598.552606,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:19:39.789Z"
   }
 ]

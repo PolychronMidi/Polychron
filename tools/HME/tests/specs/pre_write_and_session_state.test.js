@@ -96,6 +96,27 @@ test('synthetic PreToolUse Bash no-ops on harmless command', async () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('synthetic PreToolUse Bash raw-streak block is deny, not hook failure', async () => {
+  const root = _withSandbox('hme-hook-bash-streak-');
+  const streak = '/tmp/hme-non-hme-streak.score';
+  const previous = fs.existsSync(streak) ? fs.readFileSync(streak, 'utf8') : null;
+  fs.writeFileSync(streak, '70');
+  try {
+    const res = await dispatch(root, 'PreToolUse', {
+      tool_name: 'Bash',
+      session_id: 's3b',
+      tool_input: { command: 'git status --short' },
+    });
+    assert.strictEqual(res.exit_code, 0);
+    assert.match(res.stdout, /"permissionDecision":\s*"deny"/);
+    assert.match(res.stdout, /Raw tool streak/);
+  } finally {
+    if (previous === null) fs.rmSync(streak, { force: true });
+    else fs.writeFileSync(streak, previous);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('synthetic PostToolUse Bash records verification evidence', async () => {
   const root = _withSandbox('hme-hook-post-bash-');
   const res = await dispatch(root, 'PostToolUse', {
@@ -107,6 +128,20 @@ test('synthetic PostToolUse Bash records verification evidence', async () => {
   const state = require('../../proxy/session_state').readState('s4');
   assert.strictEqual(res.exit_code, 0);
   assert.ok(state.verification_evidence.some((e) => e.command.includes('synthetic.test.js')));
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('hook failures mirror into hme-errors for Lifesaver pickup', async () => {
+  const root = _withSandbox('hme-hook-fail-mirror-');
+  fresh(root);
+  const script = path.join(root, 'tmp', 'fail-hook.sh');
+  fs.writeFileSync(script, 'echo boom >&2\nexit 3\n');
+  const { runHook } = require('../../event_kernel/dispatcher');
+  const res = await runHook(script, '{}', 5000, 'PreToolUse');
+  assert.strictEqual(res.exit_code, 3);
+  const errLog = fs.readFileSync(path.join(root, 'log', 'hme-errors.log'), 'utf8');
+  assert.match(errLog, /hook-failure/);
+  assert.match(errLog, /fail-hook\.sh exit=3/);
   fs.rmSync(root, { recursive: true, force: true });
 });
 

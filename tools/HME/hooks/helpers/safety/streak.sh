@@ -19,15 +19,10 @@ _streak_check() {
   local score
   score=$(_safe_int "$(cat "$_STREAK_FILE" 2>/dev/null)")
   if [ "$score" -ge "$_STREAK_BLOCK" ]; then
-    # Calculate how many of each tool type remain before block.
-    # Weights: Bash=15, Grep=20, Edit/Write=10, Read=5.
-    local _sc_bash_rem=$(( (_STREAK_BLOCK - score + 14) / 15 ))
-    local _sc_edit_rem=$(( (_STREAK_BLOCK - score + 9) / 10 ))
-    local _sc_read_rem=$(( (_STREAK_BLOCK - score + 4) / 5 ))
-    echo "BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: Bash=15, Edit=10, Read=5, Grep=20)." >&2
-    echo "  After reset you get ~${_sc_bash_rem} Bash or ~${_sc_edit_rem} Edit or ~${_sc_read_rem} Read calls before blocking again." >&2
-    echo "  Reset now: run \`i/review mode=forget\` or use native Read on the target (any HME tool clears the counter)." >&2
-    echo "  HME tools add KB context that raw tools miss -- this is the designed workflow cadence." >&2
+    local msg
+    msg="BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: Bash=15, Edit=10, Read=5, Grep=20). Reset now: run \`i/review mode=forget\` or use native Read on the target; HME tools clear the counter and add KB context."
+    jq -n --arg reason "$msg" \
+      '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
     return 1
   elif [ "$score" -ge "$_STREAK_WARN" ]; then
     local _sc_rem=$(( (_STREAK_BLOCK - score + 9) / 10 ))
