@@ -11,7 +11,7 @@ const TODO_STATE_PATHS = ['doc/templates/TODO.md', 'tools/HME/KB/todos.json'];
 const REASON =
   'BLOCKED: this `git checkout` pattern can clobber the working tree (including freshly-popped stashes). For prior-state inspection use `git show <ref> -- <path>` (read-only stdout) or `git worktree add /tmp/x <ref>` (isolated). See doc/HME.md or CLAUDE.md.';
 const TODO_REASON =
-  'BLOCKED: TODO.md and todos.json are unified task state. Do not git-checkout/restore one or both behind the sync system; update native plan/TODO.md and let the sync path reconcile both.';
+  'BLOCKED: TODO.md and todos.json are unified task state; use native plan/update_plan/TODO.md sync surfaces instead.';
 
 function touchesTodoState(cmd) {
   return TODO_STATE_PATHS.some((p) => cmd.includes(p));

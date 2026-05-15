@@ -72,7 +72,5 @@ def check_todo_md_sync(*, write: bool = True) -> dict[str, Any]:
     from .todo_md_sync import repair_todo_md_from_store
 
     result = repair_todo_md_from_store(write=write)
-    if result.get("changed") and write:
-        _log_issue("TODO.md diverged from todos.json render; auto-reconciled")
     return result
 

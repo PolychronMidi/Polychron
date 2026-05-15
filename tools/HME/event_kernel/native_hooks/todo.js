@@ -19,10 +19,6 @@ async function pretoolTodoWrite(stdinJson) {
   if (!Array.isArray(todos) || todos.length === 0) {
     todos = toolInput(stdinJson).todos || [];
   }
-  try {
-    fs.mkdirSync(path.join(PROJECT_ROOT, 'log'), { recursive: true });
-    fs.appendFileSync(path.join(PROJECT_ROOT, 'log', 'hme.log'), `${new Date().toISOString()} INFO hook: TodoWrite merged with HME store\n`);
-  } catch (_e) { /* best effort */ }
   return allow(JSON.stringify({
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
