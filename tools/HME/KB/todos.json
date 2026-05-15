@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3130,
-      "updated_ts": 1778874178.5960786,
-      "codex_plan_synced_ts": 1778874178.5960588,
+      "max_id": 3135,
+      "updated_ts": 1778874448.6008744,
+      "codex_plan_synced_ts": 1778874448.60085,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T19:42:53.502Z"
+      "codex_plan_ts": "2026-05-15T19:47:03.412Z"
     }
   },
   {
@@ -1329,8 +1329,8 @@
     "id": 3128,
     "text": "Remove or de-advertise manual sync command while preserving automatic proxy/pulse sync",
     "activeForm": "Remove or de-advertise manual sync command while preserving automatic proxy/pulse sync",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1339,14 +1339,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:42:53.502Z"
+    "codex_plan_ts": "2026-05-15T19:42:53.502Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3129,
     "text": "Add regression proving help/admin no longer exposes manual sync",
     "activeForm": "Add regression proving help/admin no longer exposes manual sync",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1355,14 +1356,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:42:53.502Z"
+    "codex_plan_ts": "2026-05-15T19:42:53.502Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3130,
     "text": "Run focused verification and commit",
     "activeForm": "Run focused verification and commit",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1371,6 +1373,87 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:42:53.502Z"
+    "codex_plan_ts": "2026-05-15T19:42:53.502Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3131,
+    "text": "Inspect current Codex proxy/OmniRoute logging path and uncommitted changes",
+    "activeForm": "Inspect current Codex proxy/OmniRoute logging path and uncommitted changes",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874448.6006708,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:47:03.412Z"
+  },
+  {
+    "id": 3132,
+    "text": "Fix visibility logging so Codex requests appear in OmniRoute without operator ritual",
+    "activeForm": "Fix visibility logging so Codex requests appear in OmniRoute without operator ritual",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874448.6006756,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:47:03.412Z"
+  },
+  {
+    "id": 3133,
+    "text": "Remove/de-advertise manual TODO sync surface already in progress, preserving automatic sync",
+    "activeForm": "Remove/de-advertise manual TODO sync surface already in progress, preserving automatic sync",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874448.6006794,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:47:03.412Z"
+  },
+  {
+    "id": 3134,
+    "text": "Add focused regressions and run targeted checks",
+    "activeForm": "Add focused regressions and run targeted checks",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874448.600682,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:47:03.412Z"
+  },
+  {
+    "id": 3135,
+    "text": "Commit completed changes with evidence",
+    "activeForm": "Commit completed changes with evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874448.6006846,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:47:03.412Z"
   }
 ]

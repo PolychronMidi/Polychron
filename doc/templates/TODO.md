@@ -4,12 +4,14 @@
 
 ## Now
 
-- [ ] [E3] Remove or de-advertise manual sync command while preserving automatic proxy/pulse sync
+- [ ] [E3] Inspect current Codex proxy/OmniRoute logging path and uncommitted changes
 
 ## Next
 
-- [ ] [E3] Add regression proving help/admin no longer exposes manual sync
-- [ ] [E3] Run focused verification and commit
+- [ ] [E3] Fix visibility logging so Codex requests appear in OmniRoute without operator ritual
+- [ ] [E3] Remove/de-advertise manual TODO sync surface already in progress, preserving automatic sync
+- [ ] [E3] Add focused regressions and run targeted checks
+- [ ] [E3] Commit completed changes with evidence
 
 ## Done
 
