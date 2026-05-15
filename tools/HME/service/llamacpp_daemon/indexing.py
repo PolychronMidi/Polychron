@@ -23,6 +23,7 @@ import urllib.error
 import urllib.request
 
 from ._boot import ENV, logger
+from indexing_timeouts import indexing_timeouts
 from service_registry import service_map, service_port
 
 _indexing_mode_lock = threading.Lock()
@@ -62,7 +63,7 @@ def _run_indexing_mode_locked() -> dict:
     try:
         index_result = _shim_post(
             "/rag", {"engine": "project", "method": "index_directory"},
-            timeout=500,
+            timeout=indexing_timeouts()["shim_post_sec"],
         )
         result_data = index_result.get("result", index_result)
         logger.info(f"indexing-mode: index complete: {result_data}")

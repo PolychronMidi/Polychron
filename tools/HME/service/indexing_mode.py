@@ -18,6 +18,7 @@ import logging
 import urllib.request
 
 from hme_env import ENV
+from indexing_timeouts import indexing_timeouts
 
 logger = logging.getLogger("HME.indexing_mode")
 
@@ -36,7 +37,8 @@ def request_full_reindex() -> dict:
             data=json.dumps({"action": "start"}).encode(),
             headers={"Content-Type": "application/json"},
         )
-        resp = json.loads(urllib.request.urlopen(req, timeout=600).read())
+        resp = json.loads(urllib.request.urlopen(
+            req, timeout=indexing_timeouts()["client_sec"]).read())
         if resp.get("error"):
             logger.warning(f"Indexing mode failed: {resp['error']}")
             return resp

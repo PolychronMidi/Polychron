@@ -22,6 +22,7 @@ from .gpu_state import (
 )
 from .generate_proxy import _generate_with_timeout
 from .indexing import run_indexing_mode
+from indexing_timeouts import indexing_timeouts
 
 
 class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
@@ -173,9 +174,10 @@ def make_handler(supervisor):
 
             t = threading.Thread(target=_run)
             t.start()
-            t.join(timeout=580)  # slightly under the client's 600s timeout
+            join_timeout = indexing_timeouts()["daemon_join_sec"]
+            t.join(timeout=join_timeout)
             if t.is_alive():
-                result = {"error": "indexing mode timed out (580s)"}
+                result = {"error": f"indexing mode timed out ({join_timeout:.0f}s)"}
             self._send_json(200, result)
 
     return _Handler

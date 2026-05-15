@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3060,
-      "updated_ts": 1778863168.5382884,
-      "codex_plan_synced_ts": 1778863168.5382824,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/14/rollout-2026-05-14T15-04-10-019e2816-e83f-72f0-9bf1-8735fb3d1eed.jsonl",
-      "codex_plan_ts": "2026-05-15T16:39:21.332Z"
+      "max_id": 3065,
+      "updated_ts": 1778865388.5513284,
+      "codex_plan_synced_ts": 1778865388.5513217,
+      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+      "codex_plan_ts": "2026-05-15T17:16:00.930Z"
     }
   },
   {
@@ -176,8 +176,8 @@
     "id": 3058,
     "text": "Trace autocommit and lifesaver alert code paths",
     "activeForm": "Trace autocommit and lifesaver alert code paths",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -186,14 +186,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/14/rollout-2026-05-14T15-04-10-019e2816-e83f-72f0-9bf1-8735fb3d1eed.jsonl",
-    "codex_plan_ts": "2026-05-15T16:39:21.332Z"
+    "codex_plan_ts": "2026-05-15T16:39:21.332Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3059,
     "text": "Patch the missing failure signal and alert coverage",
     "activeForm": "Patch the missing failure signal and alert coverage",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -202,14 +203,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/14/rollout-2026-05-14T15-04-10-019e2816-e83f-72f0-9bf1-8735fb3d1eed.jsonl",
-    "codex_plan_ts": "2026-05-15T16:39:21.332Z"
+    "codex_plan_ts": "2026-05-15T16:39:21.332Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3060,
     "text": "Run forced-failure and normal-path verification",
     "activeForm": "Run forced-failure and normal-path verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -218,6 +220,88 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/14/rollout-2026-05-14T15-04-10-019e2816-e83f-72f0-9bf1-8735fb3d1eed.jsonl",
-    "codex_plan_ts": "2026-05-15T16:39:21.332Z"
+    "codex_plan_ts": "2026-05-15T16:39:21.332Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3061,
+    "text": "Scan current HME doctors and high-signal logs",
+    "activeForm": "Scan current HME doctors and high-signal logs",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778864878.5446837,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:16:00.930Z"
+  },
+  {
+    "id": 3062,
+    "text": "Classify remaining active vs historical issues",
+    "activeForm": "Classify remaining active vs historical issues",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778864878.5446875,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:07:52.308Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3063,
+    "text": "Report concise findings with evidence",
+    "activeForm": "Report concise findings with evidence",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778864878.5446901,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:16:00.930Z"
+  },
+  {
+    "id": 3064,
+    "text": "Investigate active worker project_root errors",
+    "activeForm": "Investigate active worker project_root errors",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778864908.5492382,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:16:00.930Z"
+  },
+  {
+    "id": 3065,
+    "text": "Patch and verify the active issue",
+    "activeForm": "Patch and verify the active issue",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778864908.5492415,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:16:00.930Z"
   }
 ]

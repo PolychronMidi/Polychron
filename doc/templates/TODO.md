@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Trace autocommit and lifesaver alert code paths
+(empty)
 
 ## Next
 
-- [ ] [E3] Patch the missing failure signal and alert coverage
-- [ ] [E3] Run forced-failure and normal-path verification
+(empty)
 
 ## Done
 

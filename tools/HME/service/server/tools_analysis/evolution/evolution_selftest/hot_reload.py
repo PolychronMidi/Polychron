@@ -13,6 +13,15 @@ from ._shared import all_reload_targets, module_candidates
 logger = logging.getLogger("HME")
 
 
+def _post_reload_reinit(name: str, mod) -> None:
+    actual = getattr(mod, "__name__", "")
+    if name != "file_walker" and actual != "file_walker":
+        return
+    root = getattr(ctx, "PROJECT_ROOT", "")
+    if root and hasattr(mod, "init_config"):
+        mod.init_config(root)
+
+
 @ctx.mcp.tool(meta={"hidden": True})
 def hme_hot_reload(modules: str = "", _trigger: str = "manual",
                    _caused_by: str = "") -> str:
@@ -68,6 +77,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
                         last_error = e
                 if mod is None:
                     raise last_error or ModuleNotFoundError(name)
+                _post_reload_reinit(name, mod)
                 actual_full = getattr(mod, "__name__", full)
                 tools_new = _tools_owned_by(actual_full)
                 results.append(f"  NEW {name}: {len(tools_new)} tools loaded")
@@ -121,6 +131,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
                 except Exception as _sub_reload_err:
                     logger.debug(f"submodule reload {_sub_name}: {type(_sub_reload_err).__name__}: {_sub_reload_err}")
             importlib.reload(mod)
+            _post_reload_reinit(name, mod)
         except Exception as e:
             # Roll back: restore the snapshot so a failed reload doesn't
             # leave the tool surface amputated.

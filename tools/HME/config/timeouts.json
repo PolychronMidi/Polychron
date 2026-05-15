@@ -8,5 +8,10 @@
   },
   "enrich": {
     "client_ms": 3500
+  },
+  "indexing": {
+    "shim_post_sec": 900,
+    "daemon_join_sec": 930,
+    "client_sec": 960
   }
 }
