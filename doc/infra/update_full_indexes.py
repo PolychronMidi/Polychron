@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -47,8 +49,12 @@ def headings(text: str, levels: set[int]) -> list[tuple[int, str, str]]:
 
 
 def render_nav(items: list[tuple[int, str, str]]) -> str:
-    links = " · ".join(f"[{title}](#{anchor})" for _level, title, anchor in items)
-    return f"{START} **Navigation:** {links} {END}\n"
+    lines = [START, "## Navigation", ""]
+    for level, title, anchor in items:
+        indent = "  " * max(0, level - 2)
+        lines.append(f"{indent}- [{title}](#{anchor})")
+    lines.append(END)
+    return "\n".join(lines) + "\n"
 
 
 def strip_nav(text: str) -> str:
@@ -64,8 +70,76 @@ def insert_nav(text: str, nav: str) -> str:
     return text.rstrip() + "\n\n" + nav
 
 
-def update_text(text: str, levels: set[int]) -> str:
+def repo_root() -> Path:
+    try:
+        root = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip()
+        return Path(root)
+    except Exception:
+        return Path.cwd()
+
+
+def git_paths(root: Path) -> set[str]:
+    try:
+        raw = subprocess.check_output(["git", "ls-files"], cwd=root, text=True)
+    except Exception:
+        return set()
+    paths = {line.strip() for line in raw.splitlines() if line.strip()}
+    for item in list(paths):
+        parent = Path(item).parent
+        while str(parent) != ".":
+            paths.add(parent.as_posix() + "/")
+            parent = parent.parent
+    return paths
+
+
+def path_target(raw: str, known: set[str]) -> str | None:
+    if raw.startswith(("http://", "https://", "#")) or "\n" in raw:
+        return None
+    candidates = [raw, raw.lstrip("./")]
+    if raw.endswith("/"):
+        candidates.append(raw.rstrip("/"))
+    else:
+        candidates.append(raw + "/")
+    for c in candidates:
+        if c in known:
+            return c
+    return None
+
+
+def rel_link(doc_path: Path, target: str, root: Path) -> str:
+    clean = target.rstrip("/")
+    rel = os.path.relpath(root / clean, start=(root / doc_path).parent)
+    rel = Path(rel).as_posix()
+    return rel + ("/" if target.endswith("/") else "")
+
+
+def autolink_paths(text: str, doc_path: Path, known: set[str], root: Path) -> str:
+    out: list[str] = []
+    in_fence = False
+    code_re = re.compile(r"`([^`]+)`")
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            out.append(line)
+            continue
+        if in_fence or START in line or END in line:
+            out.append(line)
+            continue
+        def repl(m: re.Match[str]) -> str:
+            end = m.end()
+            if m.start() > 0 and line[m.start() - 1] == "[" and line[end:end + 2] == "](":
+                return m.group(0)
+            target = path_target(m.group(1), known)
+            if not target:
+                return m.group(0)
+            return f"[`{m.group(1)}`]({rel_link(doc_path, target, root)})"
+        out.append(code_re.sub(repl, line))
+    return "\n".join(out) + "\n"
+
+
+def update_text(text: str, levels: set[int], doc_path: Path, known: set[str], root: Path) -> str:
     clean = strip_nav(text)
+    clean = autolink_paths(clean, doc_path, known, root)
     items = headings(clean, levels)
     if not items:
         return clean.rstrip() + "\n"
@@ -83,10 +157,12 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--levels", default="2,3,4,5,6", help="heading levels to index, comma-separated")
     args = ap.parse_args(argv)
     levels = {int(x) for x in args.levels.split(",") if x.strip()}
+    root = repo_root()
+    known = git_paths(root)
     changed: list[Path] = []
     for path in full_docs(Path(args.root)):
         before = path.read_text(encoding="utf-8")
-        after = update_text(before, levels)
+        after = update_text(before, levels, path, known, root)
         if before == after:
             continue
         changed.append(path)

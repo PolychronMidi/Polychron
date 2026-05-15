@@ -1,10 +1,36 @@
 # SRC Full Reference
 
-Detailed reference for `src/`, distilled from the former per-topic docs. Keep
+Detailed reference for [`src/`](../src/), distilled from the former per-topic docs. Keep
 this as the single source of truth for composition architecture, tuning
 context, subsystem responsibilities, and design primitives.
 
-<!-- doc-infra-nav:start --> **Navigation:** [Engine Model](#engine-model) · [Subsystem Map](#subsystem-map) · [Conductor Pipeline](#conductor-pipeline) · [Layer Isolation](#layer-isolation) · [Boundaries](#boundaries) · [Module Registry](#module-registry) · [Key Systems](#key-systems) · [Stutter](#stutter) · [Coordination Independence Manager](#coordination-independence-manager) · [Hypermeta Controllers](#hypermeta-controllers) · [Trust Ecology](#trust-ecology) · [Feedback](#feedback) · [Convergence](#convergence) · [Metaprofiles](#metaprofiles) · [Antagonism Bridges](#antagonism-bridges) · [Tuning Context](#tuning-context) · [Machine Anchors](#machine-anchors) · [directionBias Swap Gate Coupling](#directionbias-swap-gate-coupling) · [directionBias Articulation Contrast Coupling](#directionbias-articulation-contrast-coupling) · [directionBias Voicing Spread Coupling](#directionbias-voicing-spread-coupling) · [contourShape Surge and Groove Couplings](#contourshape-surge-and-groove-couplings) · [Calibration Anchors](#calibration-anchors) · [Diagnostics](#diagnostics) <!-- doc-infra-nav:end -->
+<!-- doc-infra-nav:start -->
+## Navigation
+
+- [Engine Model](#engine-model)
+- [Subsystem Map](#subsystem-map)
+- [Conductor Pipeline](#conductor-pipeline)
+- [Layer Isolation](#layer-isolation)
+- [Boundaries](#boundaries)
+- [Module Registry](#module-registry)
+- [Key Systems](#key-systems)
+  - [Stutter](#stutter)
+  - [Coordination Independence Manager](#coordination-independence-manager)
+  - [Hypermeta Controllers](#hypermeta-controllers)
+  - [Trust Ecology](#trust-ecology)
+  - [Feedback](#feedback)
+  - [Convergence](#convergence)
+  - [Metaprofiles](#metaprofiles)
+  - [Antagonism Bridges](#antagonism-bridges)
+- [Tuning Context](#tuning-context)
+- [Machine Anchors](#machine-anchors)
+  - [directionBias Swap Gate Coupling](#directionbias-swap-gate-coupling)
+  - [directionBias Articulation Contrast Coupling](#directionbias-articulation-contrast-coupling)
+  - [directionBias Voicing Spread Coupling](#directionbias-voicing-spread-coupling)
+  - [contourShape Surge and Groove Couplings](#contourshape-surge-and-groove-couplings)
+- [Calibration Anchors](#calibration-anchors)
+- [Diagnostics](#diagnostics)
+<!-- doc-infra-nav:end -->
 
 ## Engine Model
 
@@ -29,20 +55,20 @@ happened.
 
 ## Subsystem Map
 
-- `src/utils/` - validators, registries, lifecycle helpers, random helpers,
+- [`src/utils/`](../src/utils/) - validators, registries, lifecycle helpers, random helpers,
   L0 event bus, trust-system names, safe preboot utilities.
-- `src/conductor/` - signal pipeline, profiles, regime detection, dampening,
+- [`src/conductor/`](../src/conductor/) - signal pipeline, profiles, regime detection, dampening,
   coupling management, hypermeta controllers, diagnostics.
-- `src/rhythm/` - pattern generation, rhythm helpers, drum support, feedback
+- [`src/rhythm/`](../src/rhythm/) - pattern generation, rhythm helpers, drum support, feedback
   listeners.
-- `src/time/` - `LayerManager`, tempo feel, timing units, phrase/section time.
-- `src/composers/` - composer families, voice management, motif logic,
+- [`src/time/`](../src/time/) - `LayerManager`, tempo feel, timing units, phrase/section time.
+- [`src/composers/`](../src/composers/) - composer families, voice management, motif logic,
   harmonic material.
-- `src/fx/` - stutter variants, pan/balance, binaural/noise/color effects.
-- `src/crossLayer/` - rhythm, harmony, dynamics, structure, trust, convergence,
+- [`src/fx/`](../src/fx/) - stutter variants, pan/balance, binaural/noise/color effects.
+- [`src/crossLayer/`](../src/crossLayer/) - rhythm, harmony, dynamics, structure, trust, convergence,
   CIM, feedback, melodic/rhythmic emergence.
-- `src/writer/` - CSV/MIDI output and finale writing.
-- `src/play/` - beat loop, emission path, layer passes, feedback graph contract.
+- [`src/writer/`](../src/writer/) - CSV/MIDI output and finale writing.
+- [`src/play/`](../src/play/) - beat loop, emission path, layer passes, feedback graph contract.
 
 Directory-level README files carry local rules where the directory has its own
 cohesion boundary. The HME dir-intent index reads those README metadata blocks.
@@ -90,7 +116,7 @@ the value is truly global, such as system-wide pressure or total history.
 
 ## Module Registry
 
-`src/utils/moduleLifecycle.js` is the stepping-stone dependency registry. A
+[`src/utils/moduleLifecycle.js`](../src/utils/moduleLifecycle.js) is the stepping-stone dependency registry. A
 manifest declares:
 
 - `deps`

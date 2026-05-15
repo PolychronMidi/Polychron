@@ -1,11 +1,31 @@
 # HME Full Reference
 
-Detailed reference for `tools/HME/`, distilled from the former per-topic docs.
+Detailed reference for [`tools/HME/`](../tools/HME/), distilled from the former per-topic docs.
 Keep this as the single source of truth for HME architecture, lifecycle
 behavior, state ownership, local inference, self-coherence, and operational
 runbooks.
 
-<!-- doc-infra-nav:start --> **Navigation:** [Mental Model](#mental-model) · [Surfaces](#surfaces) · [Event Kernel](#event-kernel) · [Hook Portability Rules](#hook-portability-rules) · [Command Surface](#command-surface) · [Working Loop](#working-loop) · [Enforcement Stack](#enforcement-stack) · [LIFESAVER](#lifesaver) · [Stop Detectors](#stop-detectors) · [HCI And Holograph](#hci-and-holograph) · [RAG And Memory](#rag-and-memory) · [Local Inference](#local-inference) · [Evolution Loop](#evolution-loop) · [State Ownership Registry](#state-ownership-registry) · [Registries](#registries) · [Testing](#testing) · [Deep Links](#deep-links) <!-- doc-infra-nav:end -->
+<!-- doc-infra-nav:start -->
+## Navigation
+
+- [Mental Model](#mental-model)
+- [Surfaces](#surfaces)
+- [Event Kernel](#event-kernel)
+- [Hook Portability Rules](#hook-portability-rules)
+- [Command Surface](#command-surface)
+- [Working Loop](#working-loop)
+- [Enforcement Stack](#enforcement-stack)
+- [LIFESAVER](#lifesaver)
+- [Stop Detectors](#stop-detectors)
+- [HCI And Holograph](#hci-and-holograph)
+- [RAG And Memory](#rag-and-memory)
+- [Local Inference](#local-inference)
+- [Evolution Loop](#evolution-loop)
+- [State Ownership Registry](#state-ownership-registry)
+- [Registries](#registries)
+- [Testing](#testing)
+- [Deep Links](#deep-links)
+<!-- doc-infra-nav:end -->
 
 ## Mental Model
 
@@ -16,13 +36,13 @@ HME watches two coherences at once:
 - **Self-coherence:** whether HME's own rules, docs, tools, state, and
   measurements still describe reality.
 
-The agent acts through native tools and `i/` commands. The proxy, event kernel,
+The agent acts through native tools and [`i/`](../i/) commands. The proxy, event kernel,
 hooks, policies, worker, KB, and verifiers convert those actions into a
 measured evolution loop.
 
 ## Surfaces
 
-- `i/` wrappers: deliberate HME commands.
+- [`i/`](../i/) wrappers: deliberate HME commands.
 - Native Read/Edit/Grep/Glob/TodoWrite: enriched or replaced by proxy
   middleware where appropriate.
 - Codex `update_plan`: synced into the same TODO store by `codex_proxy` while
@@ -33,12 +53,12 @@ measured evolution loop.
 - Event kernel: portable routing for lifecycle and tool events.
 - Hooks: host-specific adapters and remaining shell lifecycle stages.
 - Worker service: KB, review, learn, trace, status, policies, admin actions.
-- Metrics: JSON/JSONL state in `output/metrics/`, `tmp/`, `runtime/hme/`, and
+- Metrics: JSON/JSONL state in `output/metrics/`, `tmp/`, [`runtime/hme/`](../runtime/hme/), and
   `log/`.
 
 ## Event Kernel
 
-`tools/HME/event_kernel/dispatcher.js` is the canonical event router. Adapters
+[`tools/HME/event_kernel/dispatcher.js`](../tools/HME/event_kernel/dispatcher.js) is the canonical event router. Adapters
 handle transport only.
 
 ```text
@@ -78,24 +98,24 @@ The kernel returns:
 ```
 
 All subprocess input uses filesystem IPC through
-`tools/HME/event_kernel/fs_ipc.js`. Inputs are written under
+[`tools/HME/event_kernel/fs_ipc.js`](../tools/HME/event_kernel/fs_ipc.js). Inputs are written under
 `runtime/hme/event-ipc/<invocation>/stdin.json`, passed to the child as stdin
 from that file, then cleaned up. This keeps the hook contract portable across
 Claude Code, Codex, shell execution, and future agent CLIs.
 
-Native handlers live in `tools/HME/event_kernel/native_hooks/`. Remaining shell
+Native handlers live in [`tools/HME/event_kernel/native_hooks/`](../tools/HME/event_kernel/native_hooks/). Remaining shell
 behavior stays behind the dispatcher or Stop-chain policy adapter until ported.
 
 Claude Code hook registration is manifest-driven. Edit
-`tools/HME/hooks/hooks.json`, then run `scripts/sync-claude-settings.py` to
-materialize live `~/.claude/settings.json`; `scripts/audit-claude-settings.py`
+[`tools/HME/hooks/hooks.json`](../tools/HME/hooks/hooks.json), then run [`scripts/sync-claude-settings.py`](../scripts/sync-claude-settings.py) to
+materialize live `~/.claude/settings.json`; [`scripts/audit-claude-settings.py`](../scripts/audit-claude-settings.py)
 fails if live settings drift from that manifest.
 
 Codex hook and provider registration is manifest-driven as well. Edit
-`tools/HME/hooks/codex_hooks.json`, then run `scripts/sync-codex-settings.py`
+[`tools/HME/hooks/codex_hooks.json`](../tools/HME/hooks/codex_hooks.json), then run [`scripts/sync-codex-settings.py`](../scripts/sync-codex-settings.py)
 to materialize `~/.codex/hooks.json`, enable `features.hooks`, and route the
 Responses provider through the `codex_proxy` service-registry port.
-`scripts/audit-codex-settings.py` checks for drift. Codex requires review for
+[`scripts/audit-codex-settings.py`](../scripts/audit-codex-settings.py) checks for drift. Codex requires review for
 non-managed user hooks, so `/hooks` may need a one-time trust action before the
 Codex hook adapter runs; the provider proxy still intercepts non-interactive
 Codex traffic without that trust step.
@@ -112,9 +132,9 @@ model_context_window = 1050000
 The generated catalog keeps Codex's current model list and capability metadata
 but replaces model prompt text with HME sources:
 
-- `base_instructions` -> `doc/templates/canonical-system-prompt.md`
-- `model_messages.instructions_template` -> `doc/templates/canonical-system-prompt.md`
-- `model_messages.instructions_variables.personality_pragmatic` -> `CLAUDE.md`
+- `base_instructions` -> [`doc/templates/canonical-system-prompt.md`](templates/canonical-system-prompt.md)
+- `model_messages.instructions_template` -> [`doc/templates/canonical-system-prompt.md`](templates/canonical-system-prompt.md)
+- `model_messages.instructions_variables.personality_pragmatic` -> [`CLAUDE.md`](../CLAUDE.md)
 - `context_window` and `max_context_window` -> `1050000`
 
 `~/.codex/models_cache.json` stays Codex-owned generated state; HME never edits
@@ -132,7 +152,7 @@ it directly.
 
 ## Command Surface
 
-Keep `i/` commands for explicit actions:
+Keep [`i/`](../i/) commands for explicit actions:
 
 - `i/hme admin action=selftest|health|reload|index|clear_index|warm|todo_status|todo_validate|todo_repair|todo_archive`
 - `i/review mode=forget|docs|health|convention`
@@ -154,7 +174,7 @@ automatically.
 2. Edit through native tools; HME enriches context automatically.
 3. `i/review mode=forget` after changes.
 4. Run the project pipeline for behavioral changes.
-5. Accept or write a KB entry with `i/learn`.
+5. Accept or write a KB entry with [`i/learn`](../i/learn).
 6. For HME substrate changes, run `i/hme admin action=selftest`.
 
 The onboarding walkthrough in [templates/ONBOARDING.md](templates/ONBOARDING.md)
@@ -168,7 +188,7 @@ is the detailed first-session state machine.
 - **Shell lifecycle stages:** lifecycle behavior not yet ported, still routed
   through the kernel.
 - **HCI verifiers:** weighted self-coherence probes.
-- **Declarative invariants:** `tools/HME/config/invariants.json`.
+- **Declarative invariants:** [`tools/HME/config/invariants.json`](../tools/HME/config/invariants.json).
 - **Pipeline validators:** source and metrics checks.
 - **ESLint rules:** JavaScript architectural boundaries.
 
@@ -221,7 +241,7 @@ Telemetry lands in `output/metrics/detector-stats.jsonl`.
 
 ## HCI And Holograph
 
-`tools/HME/scripts/verify-coherence.py` scores the HME Coherence Index from
+[`tools/HME/scripts/verify-coherence.py`](../tools/HME/scripts/verify-coherence.py) scores the HME Coherence Index from
 weighted verifiers across documentation, code, state, coverage, runtime,
 topology, and interface contracts.
 
@@ -244,7 +264,7 @@ HME indexing is tailored to Polychron's IIFE-heavy code:
 
 - IIFE-aware chunking for global module assignments.
 - symbol lookup and caller discovery for global-assignment modules.
-- knowledge search over `tools/HME/KB/`.
+- knowledge search over [`tools/HME/KB/`](../tools/HME/KB/).
 - temporal decay so recent decisions remain prominent.
 - typed KB relationships: `caused_by`, `fixed_by`, `depends_on`,
   `contradicts`, `similar_to`, `supersedes`.
@@ -293,23 +313,23 @@ iteration count or done signal is reached.
 
 ## State Ownership Registry
 
-The registry lives in `tools/HME/config/state-files.json` and is parsed by
-`scripts/audit-state-file-ownership.py`. Each entry declares path, owner,
+The registry lives in [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json) and is parsed by
+[`scripts/audit-state-file-ownership.py`](../scripts/audit-state-file-ownership.py). Each entry declares path, owner,
 readers, writers, retention, generated/committed status, schema, and repair
 command. Update that JSON before adding a shared state writer.
 
 <!-- BEGIN GENERATED STATE REGISTRY -->
 - Registered state paths: 31 (24 single-owner, 7 multi-writer).
 - Generated state: 31; committed state: 3.
-- Repair commands and reader/writer ownership live in `tools/HME/config/state-files.json`.
+- Repair commands and reader/writer ownership live in [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json).
 - Multi-writer paths:
-  - `doc/templates/TODO.md` -- 5 writer(s): tools/HME/service/server/tools_analysis/todo_md_sync.py, tools/HME/service/server/tools_analysis/todo_archive.py, tools/HME/scripts/todo_autoflip.py (+2 more)
+  - [`doc/templates/TODO.md`](templates/TODO.md) -- 5 writer(s): tools/HME/service/server/tools_analysis/todo_md_sync.py, tools/HME/service/server/tools_analysis/todo_archive.py, tools/HME/scripts/todo_autoflip.py (+2 more)
   - `log/hme-errors.log` -- 28 writer(s): tools/HME/activity/universal_pulse.py, tools/HME/proxy/middleware/20_hme_log_watermark.js, tools/HME/proxy/middleware/19_mcp_fail_scan.js (+25 more)
   - `tmp/hme-errors.lastread` -- 2 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh, tools/HME/hooks/lifecycle/stop/lifesaver.sh
   - `tmp/hme-errors.turnstart` -- 1 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh
   - `tmp/hme-nexus.state` -- 5 writer(s): tools/HME/proxy/middleware/index.js, tools/HME/hooks/posttooluse/posttooluse_hme_review.sh, tools/HME/hooks/lifecycle/stop/nexus_audit.sh (+2 more)
   - `tmp/hme-tab.txt` -- 4 writer(s): tools/HME/hooks/posttooluse/posttooluse_write.sh, tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh, tools/HME/hooks/lifecycle/sessionstart.sh (+1 more)
-  - `tools/HME/KB/todos.json` -- 2 writer(s): tools/HME/service/server/tools_analysis/todo_store.py, tools/HME/scripts/codex_plan_sync.py
+  - [`tools/HME/KB/todos.json`](../tools/HME/KB/todos.json) -- 2 writer(s): tools/HME/service/server/tools_analysis/todo_store.py, tools/HME/scripts/codex_plan_sync.py
 <!-- END GENERATED STATE REGISTRY -->
 
 The standard coordination patterns are append-only line writes, atomic rename
@@ -318,16 +338,16 @@ without a declared owner is a coherence failure.
 
 ## Registries
 
-- Services: `tools/HME/config/services.json`; Python, JS, and shell helpers
+- Services: [`tools/HME/config/services.json`](../tools/HME/config/services.json); Python, JS, and shell helpers
   derive ports, health URLs, supervision edges, PID labels, process patterns,
   logs, and starts from it.
-- `i/` surface: `tools/HME/i_registry.json`; `scripts/generate-i-shims.js`
-  generates/checks the public shims, and `scripts/hme-i-dispatch.js` owns
+- [`i/`](../i/) surface: [`tools/HME/i_registry.json`](../tools/HME/i_registry.json); [`scripts/generate-i-shims.js`](../scripts/generate-i-shims.js)
+  generates/checks the public shims, and [`scripts/hme-i-dispatch.js`](../scripts/hme-i-dispatch.js) owns
   behavior.
 - Agent jobs: `runtime/hme/agent-jobs/<role>/<job_id>/` contains
   `request.json`, `status.json`, `output.txt`, `stderr.txt`, and
   `events.jsonl`.
-- Adapter boundaries: `tools/HME/config/adapter-boundaries.json`; bridge/shim/wrapper
+- Adapter boundaries: [`tools/HME/config/adapter-boundaries.json`](../tools/HME/config/adapter-boundaries.json); bridge/shim/wrapper
   filenames are allowed only for real adapters, generators, or domain terms.
 
 ## Testing
@@ -339,7 +359,7 @@ node --test tools/HME/tests/specs/pre_write_and_session_state.test.js
 bash scripts/test/smoke-test-i-wrappers.sh
 bash scripts/chaos/run-all.sh
 ```
-Chaos tests live in `scripts/chaos/` and prove that selftest probes catch the
+Chaos tests live in [`scripts/chaos/`](../scripts/chaos/) and prove that selftest probes catch the
 faults they were written to detect.
 ## Deep Links
 
