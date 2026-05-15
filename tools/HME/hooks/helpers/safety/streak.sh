@@ -16,9 +16,9 @@ _streak_policy_value() {
 }
 _STREAK_WARN_BASE="$(_streak_policy_value '.warn_score' '50')"
 _STREAK_BLOCK_BASE="$(_streak_policy_value '.block_score' '70')"
-_STREAK_COST_SUMMARY="$(_streak_policy_value '.cost_summary' 'Bash=15, Edit=10, Grep=20; native Read resets')"
+_STREAK_COST_SUMMARY="$(_streak_policy_value '.cost_summary' 'Bash=15, Grep=20; native Read/Edit reset')"
 _STREAK_PREFERRED_EXIT="$(_streak_policy_value '.preferred_exit' 'use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done')"
-_STREAK_REMINDER="$(_streak_policy_value '.reminder' 'Prefer HME tools; native Read resets and Read/Edit are KB-enriched.')"
+_STREAK_REMINDER="$(_streak_policy_value '.reminder' 'Prefer HME tools; native Read/Edit reset and are KB-enriched.')"
 _STREAK_WARN=$((_STREAK_WARN_BASE + ${HME_STREAK_BLOCK_BUMP:-0}))
 _STREAK_BLOCK=$((_STREAK_BLOCK_BASE + ${HME_STREAK_BLOCK_BUMP:-0}))
 
@@ -149,6 +149,8 @@ _streak_unlock_class() {
       fi
       ;;
     i/status) echo "status" ;;
+    i/read) echo "structured-read" ;;
+    i/edit) echo "structured-edit" ;;
     i/learn) echo "learn" ;;
     i/trace) echo "trace" ;;
     i/evolve) echo "evolve" ;;
@@ -166,7 +168,7 @@ _streak_unlock_key() {
   PROJECT_ROOT="${PROJECT_ROOT:-}" python3 - "$cmd" <<'PY' 2>/dev/null || true
 import os, shlex, sys
 cmd = (sys.argv[1] or "").strip().splitlines()[0]
-tools = {"review", "learn", "trace", "evolve", "status", "hme", "audit", "why", "policies"}
+tools = {"review", "learn", "trace", "evolve", "status", "hme", "audit", "why", "policies", "read", "edit"}
 try:
     lex = shlex.shlex(cmd, posix=True, punctuation_chars=";&|()")
     lex.whitespace_split = True

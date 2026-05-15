@@ -235,7 +235,10 @@ if [ -n "$_MODULE_BASE" ] && [ -n "${PROJECT_ROOT:-}" ]; then
   echo "$_MODULE_BASE" >> "$_TURN_EDIT_STATE"
 fi
 
-_streak_tick 10
-if ! _streak_check; then exit 0; fi
+_STREAK_BEFORE=$(_streak_score)
+_streak_reset
+if [ "$_STREAK_BEFORE" -gt 0 ] 2>/dev/null; then
+  _signal_emit raw_streak_reset pretooluse_edit session "{\"score_before\":${_STREAK_BEFORE}}"
+fi
 [ -n "$_AUTO_BRIEF_JSON" ] && printf '%s\n' "$_AUTO_BRIEF_JSON"
 exit 0

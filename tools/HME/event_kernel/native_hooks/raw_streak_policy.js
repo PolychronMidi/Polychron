@@ -7,11 +7,11 @@ const { PROJECT_ROOT } = require('../../proxy/shared');
 const DEFAULT_POLICY = Object.freeze({
   warn_score: 50,
   block_score: 70,
-  costs: { Bash: 15, Edit: 10, Grep: 20 },
-  reset_tools: ['Read'],
-  cost_summary: 'Bash=15, Edit=10, Grep=20; native Read resets',
+  costs: { Bash: 15, Grep: 20 },
+  reset_tools: ['Read', 'Edit', 'MultiEdit'],
+  cost_summary: 'Bash=15, Grep=20; native Read/Edit reset',
   preferred_exit: 'use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done',
-  reminder: 'Prefer HME tools; native Read resets and Read/Edit are KB-enriched.',
+  reminder: 'Prefer HME tools; native Read/Edit reset and are KB-enriched.',
 });
 
 function loadPolicy() {

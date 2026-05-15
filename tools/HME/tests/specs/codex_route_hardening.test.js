@@ -46,8 +46,8 @@ async function dispatch(root, tool, input) {
 test('raw-streak policy is shared config for JS renderer', () => {
   const { loadPolicy, blockMessage } = require('../../event_kernel/native_hooks/raw_streak_policy');
   const policy = loadPolicy();
-  assert.equal(policy.cost_summary, 'Bash=15, Edit=10, Grep=20; native Read resets');
-  assert.match(blockMessage(75, 70), /native Read resets/);
+  assert.equal(policy.cost_summary, 'Bash=15, Grep=20; native Read/Edit reset');
+  assert.match(blockMessage(75, 70), /native Read\/Edit reset/);
 });
 
 test('Codex hook decision compact logs hash/channels without raw reason text', () => {
