@@ -225,12 +225,13 @@ def _mode_hook_decisions() -> str:
     path = os.path.join(ctx.PROJECT_ROOT, "runtime", "hme", "hook-decisions.jsonl")
     events = _iter_events(path, limit=80)
     out = ["# Hook decision compact", ""]
-    if not events:
-        out.append("No hook decisions recorded yet.")
+    relevant = [e for e in events if e.get("decision") != "allow" or e.get("reason_hash")]
+    if not relevant:
+        out.append("No hook deny/feedback decisions recorded yet.")
         out.append(f"Log: {path}")
         return "\n".join(out)
-    last = events[-1]
-    out.append("last decision:")
+    last = relevant[-1]
+    out.append("last deny/feedback decision:")
     out.append(
         f"  ts={last.get('ts')} host={last.get('host')} event={last.get('event')} "
         f"tool={last.get('tool')} decision={last.get('decision')}"

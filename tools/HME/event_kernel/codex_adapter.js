@@ -210,7 +210,7 @@ function hookDecisionSummary(event, rawStdout, sanitizedStdout, payload = {}) {
   const cleanFields = decisionFields(clean);
   const reason = cleanFields.reason || rawFields.reason;
   const decision = cleanFields.decision || rawFields.decision;
-  if (!reason && !decision) return null;
+  if (!reason && (!decision || decision === 'allow')) return null;
   return {
     ts: new Date().toISOString(),
     host: 'codex',
