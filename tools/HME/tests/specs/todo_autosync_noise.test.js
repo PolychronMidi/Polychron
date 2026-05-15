@@ -108,8 +108,7 @@ test('codex plan scanner is silent on sync success', async () => withProject(asy
     projectRoot: root,
   });
   scanner.scanObjectForPlan({ type: 'function_call', name: 'update_plan', call_id: 'ok1', arguments: JSON.stringify({ plan: [{ step: 'silent success', status: 'pending' }] }) }, {});
-  await waitFor(() => fs.existsSync(path.join(root, 'runtime', 'hme', 'event-ipc')));
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  await waitFor(() => fs.existsSync(path.join(root, 'done')));
   assert.deepStrictEqual(events, []);
   assert.strictEqual(fs.existsSync(path.join(root, 'runtime', 'hme', 'todo-sync.fail')), false);
 }));
