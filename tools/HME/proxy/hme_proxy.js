@@ -39,6 +39,10 @@ const {
 const { shouldInject, buildStatusContext, consumeStatusContext, buildJurisdictionContext, injectIntoSystem, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 const { servicePort } = require('./service_registry');
+const {
+  omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat,
+  firstLegacyChatCandidate,
+} = require('./omniroute_protocol');
 
 // Self-load .env via shared helper; parent shell may not have sourced it.
 (() => {
@@ -638,9 +642,7 @@ function handleRequest(clientReq, clientRes) {
             } catch (_) {}
             _swapModel = _swapChain[_stIdx].id;
             const _p = _swapChain[_stIdx].provider || '';
-            if (_p === 'codex') _omniProvider = 'cx';
-            else if (_p === 'opencode_go') _omniProvider = 'opencode-go';
-            else if (_p === 'opencode') _omniProvider = 'opencode';
+            _omniProvider = omniProviderForConfigProvider(_p);
           }
         } catch (_) { /* keep defaults */ }
 
@@ -653,7 +655,8 @@ function handleRequest(clientReq, clientRes) {
 
         if (!_OMNIROUTE_OFF) {
           // OmniRoute path (default). No per-request compression overrides.
-          console.error(`[hme-proxy] swap pre-omni: chainLen=${_swapChain.length} model=${_swapModel} provider=${_omniProvider}`);
+          const _targetFormat = omniTargetFormat(_omniProvider);
+          console.error(`[hme-proxy] swap pre-omni: chainLen=${_swapChain.length} model=${_swapModel} provider=${_omniProvider} targetFormat=${_targetFormat}`);
           try {
             _stripStaleToolResults(payload);
             _stripClaudeIdentity(payload);
@@ -672,9 +675,25 @@ function handleRequest(clientReq, clientRes) {
           _isMode4OmniRoute = true;
           console.error(`[hme-proxy] MODE=${_odMode} swap OK: omni=${_isMode4OmniRoute} model=${_omniProvider}/${_swapModel} chainLen=${_swapChain.length}`);
 
-          console.error(`[hme-proxy] MODE=${_odMode} OmniRoute: claude-* -> ${_omniProvider}/${_swapModel} via http://127.0.0.1:${_OMNIROUTE_PORT} (stream=${_mode4WasStreaming} msgs=${payload.messages.length} sys=${(payload.system||'').length}B tools=${(payload.tools||[]).length})`);
+          console.error(`[hme-proxy] MODE=${_odMode} OmniRoute: claude-* -> ${_omniProvider}/${_swapModel} via http://127.0.0.1:${_OMNIROUTE_PORT} targetFormat=${_targetFormat} (stream=${_mode4WasStreaming} msgs=${payload.messages.length} sys=${(payload.system||'').length}B tools=${(payload.tools||[]).length})`);
         } else {
           // Legacy zen_translator path (HME_OMNIROUTE_OFF=1)
+          if (isCodexOmniTarget(_omniProvider)) {
+            const _startIdx = _swapChain.findIndex((m) => m && m.id === _swapModel);
+            const _legacy = firstLegacyChatCandidate(_swapChain, _startIdx < 0 ? 0 : _startIdx);
+            if (!_legacy) {
+              clientRes.writeHead(503, { 'Content-Type': 'application/json' });
+              clientRes.end(JSON.stringify({
+                error: 'omniroute_required',
+                message: 'Codex targets require OmniRoute openai-responses; legacy chat translation is blocked.',
+              }));
+              return;
+            }
+            console.error(`[hme-proxy] MODE=${_odMode} legacy: skipping Codex responses target ${_omniProvider}/${_swapModel}; chat translator requires non-Codex target`);
+            _swapModel = _legacy.model.id;
+            _omniProvider = omniProviderForConfigProvider(_legacy.model.provider || '');
+            if (_swapModel.endsWith('-go')) _swapModel = _swapModel.slice(0, -3);
+          }
           const { translateRequestToOpenAI } = require('./zen_translator');
           const oaPayload = translateRequestToOpenAI(payload, _swapModel);
           clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
@@ -1162,8 +1181,9 @@ if (_mode4WasStreaming) {
               _st.fail++;
               _fs.writeFileSync(_stFile, JSON.stringify(_st));
               const _next = _swapChain[_st.idx];
-              const _np = _next.provider === 'codex' ? 'cx' : _next.provider === 'opencode_go' ? 'opencode-go' : 'opencode';
-              console.error(`[hme-proxy] MODE=${_odMode} fallback: rate-limited on ${_omniProvider}/${_swapModel} -> advancing to ${_np}/${_next.id} (chain pos ${_st.idx}/${_swapChain.length}, fail count ${_st.fail})`);
+              const _np = omniProviderForConfigProvider(_next.provider || '');
+              const _ntf = omniTargetFormat(_np);
+              console.error(`[hme-proxy] MODE=${_odMode} fallback: rate-limited on ${_omniProvider}/${_swapModel} -> advancing to ${_np}/${_next.id} targetFormat=${_ntf} (chain pos ${_st.idx}/${_swapChain.length}, fail count ${_st.fail})`);
             }
 
             // ITPM-exhaustion bumps panic-shrink so next request is smaller.
