@@ -17,6 +17,9 @@
     "disabled_tools": [],
     "max_instruction_bytes_warn": 60000,
     "max_tool_count_warn": 80,
+    "native_tools": {
+      "enabled": true
+    },
     "cleanup": {
       "enabled": true,
       "strip_success_hook_noise": true,
