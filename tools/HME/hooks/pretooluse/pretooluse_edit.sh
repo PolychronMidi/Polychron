@@ -67,7 +67,7 @@ fi
 # Architectural-decision audit. The retired `consulted` field is retained
 # for historical readers; new rows use `reviewed`.
 case "$FILE" in
-  *CLAUDE.md|*doc/templates/SPEC.md|*.claude/agents/*.md|*tools/HME/scripts/detectors/*.py|*tools/HME/proxy/stop_chain/policies/*.js)
+  *CLAUDE.md|*doc/templates/TODO.md|*.claude/agents/*.md|*tools/HME/scripts/detectors/*.py|*tools/HME/proxy/stop_chain/policies/*.js)
     _DA_LOG="$PROJECT_ROOT/output/metrics/decision-audit.jsonl"
     mkdir -p "$(dirname "$_DA_LOG")" 2>/dev/null
     _DA_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)

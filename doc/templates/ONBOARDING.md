@@ -107,7 +107,7 @@ i/learn action=health                    KB staleness check
 i/hme admin action=index                 reindex after batch changes
 i/hme admin action=reload                hot-reload tool modules
 TodoWrite                                native task list; HME merges persistent critical,
-                                         onboarding, and SPEC/TODO bridge items automatically
+                                         onboarding, and TODO.md items automatically
 ```
 
 (Run `i/help` for the full wrapper surface and `i/help <name>` for usage.

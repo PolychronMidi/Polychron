@@ -33,9 +33,9 @@ if [[ "$FILE" == */README.md ]]; then
     >/dev/null 2>&1 &
 fi
 
-# Auto-ship SPEC.md flips (mirror posttooluse_edit.sh -- handles Write of SPEC.md too).
-if [[ "$FILE" == */doc/templates/SPEC.md ]]; then
-  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/spec_autoflip.py" >&2 || true
+# Sync manual TODO.md checkbox flips back into the HME todo store.
+if [[ "$FILE" == */doc/templates/TODO.md ]]; then
+  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/todo_autoflip.py" >&2 || true
 fi
 
 _append_file_to_tab "$FILE"

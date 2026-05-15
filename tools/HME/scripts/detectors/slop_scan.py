@@ -63,7 +63,7 @@ _EVIDENCE_NEAR_RE = re.compile(
 )
 
 _WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
-# SPEC/TODO templates legitimately quote the patterns this detector matches.
+# Core instruction templates legitimately quote patterns this detector matches.
 _SKIP_PATH_PARTS = {"__pycache__", "node_modules", ".git", "tools/HME/KB/devlog"}
 _SKIP_EXACT_PATHS = {
     "doc/templates/SPEC.md", "doc/templates/TODO.md",

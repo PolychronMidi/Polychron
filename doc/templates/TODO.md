@@ -1,25 +1,28 @@
-# Polychron HME TODO
+# TODO
 
-> Cross-cycle state. Agents update this with SPEC when work spans turns. Three sections, in this order. See [doc/templates/SPEC.md](SPEC.md) for the active plan.
+> Pocket notepad. Native TodoWrite syncs this file. Use `[E1]`-`[E5]` on task lines.
 
-## In flight
+## Now
 
-<!-- Exactly one line per currently-running skill, format:
-  - [<skill-name> @ <utc-iso>] <one-line: what this skill is currently doing>
-  Empty when no skill is running. -->
+- [ ] [E3] HME onboarding walkthrough
+  - [ ] [E3] edit target module (KB briefing auto-chains)
+- [ ] [E3] Remove deprecated buddy/consult/senior runtime hooks and detector wiring
 
-## Just shipped (last cycle)
+## Next
 
-<!-- Append-on-close, newest first. Trim to last 10; older history lives in
-  the previous set's devlog at tools/HME/KB/devlog/. -->
+- [ ] [E4] MODE=6 migration: audit buddy/consult overlap after team fanout stabilizes; merge reusable queue/context/status semantics into team paradigm, then retire obsolete buddy docs/code
+  - [ ] [E3] audit changes (i/review mode=forget)
+  - [ ] [E3] run pipeline (Bash: npm run main)
+  - [ ] [E3] await pipeline verdict
+  - [ ] [E3] persist learning (i/learn title=... content=...)
+- [ ] [E3] Clean user-facing registry/proxy/service references that point at deleted buddy/consult files
+- [ ] [E3] Run targeted checks for remaining deprecated references and affected tests
 
-## Next up (queued for next cycle)
+## Done
 
-<!-- One line per queued item:
-  - [<difficulty>] <description>. Reason: <source> -->
+  - [x] [E3] boot check (i/hme admin action=selftest)
+  - [x] [E3] pick evolution target (i/evolve focus=design)
 
-(empty -- populated from the new set's SPEC Phase 0 by the HME todo bridge)
+## Later
 
----
-
-When this Next up is empty AND every `- [ ]` in [doc/templates/SPEC.md](SPEC.md) has been flipped to `[x]`, the dev cycle exits with `[no-work] <reason>`. See SPEC.md "Empty-queue bail" appendix.
+(empty)

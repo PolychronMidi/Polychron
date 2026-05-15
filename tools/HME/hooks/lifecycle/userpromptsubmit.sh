@@ -10,9 +10,9 @@ if [ -n "${PROJECT_ROOT:-}" ]; then
         "${PROJECT_ROOT}/tmp/hme-turn-briefs.txt" 2>/dev/null || true  # silent-ok: optional fallback path.
 fi
 
-if [ -n "${PROJECT_ROOT:-}" ] && [ -f "${PROJECT_ROOT}/doc/templates/SPEC.md" ]; then
+if [ -n "${PROJECT_ROOT:-}" ] && [ -f "${PROJECT_ROOT}/doc/templates/TODO.md" ]; then
   mkdir -p "${PROJECT_ROOT}/tmp" 2>/dev/null
-  cp "${PROJECT_ROOT}/doc/templates/SPEC.md" "${PROJECT_ROOT}/tmp/spec-turn-start.md" 2>/dev/null || true  # silent-ok: optional fallback path.
+  cp "${PROJECT_ROOT}/doc/templates/TODO.md" "${PROJECT_ROOT}/tmp/todo-turn-start.md" 2>/dev/null || true  # silent-ok: optional fallback path.
 fi
 
 _signal_emit turn_start userpromptsubmit turn '{}'

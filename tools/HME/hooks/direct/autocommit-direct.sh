@@ -58,12 +58,12 @@ _ac_do_commit "direct-${1:-unknown}" || true
 # Auto-fire i/review on any NEW commit touching code/tooling. Previously
 _AC_HEAD_AFTER=$(git -C "$_DIRECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")  # silent-ok: optional fallback path.
 if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE" != "$_AC_HEAD_AFTER" ]; then
-  # SPEC/TODO same-commit invariant (skill-set pattern, soft-warning form):
+  # TODO same-commit invariant (soft-warning form):
   _AC_DIFF=$(git -C "$_DIRECT_ROOT" diff --name-only "$_AC_HEAD_BEFORE" "$_AC_HEAD_AFTER" 2>/dev/null)  # silent-ok: optional fallback path.
   if echo "$_AC_DIFF" | /usr/bin/grep -qE '^src/' \
-     && ! echo "$_AC_DIFF" | /usr/bin/grep -qE '^doc/(SPEC|TODO)\.md$'; then
+     && ! echo "$_AC_DIFF" | /usr/bin/grep -qE '^doc/templates/TODO\.md$'; then
     _AC_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
-    echo "[$_AC_TS] [autocommit-direct] WARN spec-drift: src/ changed but doc/templates/SPEC.md + doc/templates/TODO.md untouched (commit ${_AC_HEAD_AFTER:0:8})" \
+    echo "[$_AC_TS] [autocommit-direct] WARN todo-drift: src/ changed but doc/templates/TODO.md untouched (commit ${_AC_HEAD_AFTER:0:8})" \
       >> "$_DIRECT_ROOT/log/hme-errors.log"
   fi
   # Auto-fire of `i/review mode=forget` after every commit was burning

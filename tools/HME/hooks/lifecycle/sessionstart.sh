@@ -343,14 +343,14 @@ if [ -x "$_FORK_WATCHDOG" ]; then
   esac
 fi
 
-# Learning-surface: prime patterns for latest Phase title.
+# Learning-surface: prime patterns for the first active TODO item.
 _LE="$PROJECT_ROOT/tools/HME/scripts/learning_extract.py"
-_SPEC_FILE="$PROJECT_ROOT/doc/templates/SPEC.md"
-if [ -x "$_LE" ] && [ -f "$_SPEC_FILE" ]; then
-  _LATEST_PHASE_TITLE=$(grep -E "^### Phase [0-9]+:" "$_SPEC_FILE" | tail -1 \
-    | sed -E 's/^### Phase [0-9]+:\s*([^(]+).*/\1/' | tr -d '[:cntrl:]' | xargs)
-  if [ -n "$_LATEST_PHASE_TITLE" ]; then
-    _FIRST_KW=$(echo "$_LATEST_PHASE_TITLE" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) if(length($i)>=4){print $i; exit}}')
+_TODO_FILE="$PROJECT_ROOT/doc/templates/TODO.md"
+if [ -x "$_LE" ] && [ -f "$_TODO_FILE" ]; then
+  _TODO_TITLE=$(grep -E "^[[:space:]]*-[[:space:]]+\\[[[:space:]]\\][[:space:]]+\\[(E[1-5]|easy|medium|hard)\\]" "$_TODO_FILE" | head -1 \
+    | sed -E 's/^[[:space:]]*-[[:space:]]+\[[[:space:]]\][[:space:]]+\[(E[1-5]|easy|medium|hard)\][[:space:]]+//' | tr -d '[:cntrl:]' | xargs)
+  if [ -n "$_TODO_TITLE" ]; then
+    _FIRST_KW=$(echo "$_TODO_TITLE" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) if(length($i)>=4){print $i; exit}}')
     if [ -n "$_FIRST_KW" ]; then
       PROJECT_ROOT="$PROJECT_ROOT" python3 "$_LE" surface --keyword "$_FIRST_KW" --top 3 2>/dev/null >&2 || true  # silent-ok: optional fallback path.
     fi

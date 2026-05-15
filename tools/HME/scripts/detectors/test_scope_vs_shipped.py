@@ -69,15 +69,15 @@ def _run_all():
         "type": "assistant",
         "message": {"content": [
             {"type": "tool_use", "name": "Edit", "input": {"file_path": "/foo/bar.py"}},
-            {"type": "tool_use", "name": "Edit", "input": {"file_path": "/proj/doc/templates/SPEC.md"}},
+            {"type": "tool_use", "name": "Edit", "input": {"file_path": "/proj/doc/templates/TODO.md"}},
             {"type": "tool_use", "name": "Write", "input": {"file_path": "/foo/baz.js"}},
         ]},
     }]
-    assert_eq(svs._turn_edited_non_spec(events_with_edit), 2, "2 non-spec edits, SPEC.md excluded")
+    assert_eq(svs._turn_edited_non_spec(events_with_edit), 2, "2 non-TODO edits, TODO.md excluded")
 
     assert_eq(_verdict_for(3, 0, 0), "scope-stacked", "3 new unchecked, no ticks, no edits -> scope-stacked")
-    assert_eq(_verdict_for(0, 0, 5), "scope-not-tracked", "5 non-spec edits, no SPEC ticks -> scope-not-tracked")
-    assert_eq(_verdict_for(0, 1, 5), "ok", "5 edits + 1 SPEC tick -> ok")
+    assert_eq(_verdict_for(0, 0, 5), "scope-not-tracked", "5 non-TODO edits, no TODO ticks -> scope-not-tracked")
+    assert_eq(_verdict_for(0, 1, 5), "ok", "5 edits + 1 TODO tick -> ok")
     assert_eq(_verdict_for(2, 1, 5), "ok", "2 new but 1 ticked -> ok (work is happening)")
     assert_eq(_verdict_for(0, 0, 0), "ok", "no activity -> ok")
 

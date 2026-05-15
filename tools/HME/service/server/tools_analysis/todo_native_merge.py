@@ -74,6 +74,7 @@ def merge_native_todowrite(incoming: list) -> list:
                 source=existing.get("source", "native"),
                 critical=existing.get("critical", False),
                 on_done=existing.get("on_done", ""),
+                tier=existing.get("tier", "E3"),
             )
             # Preserve id + ts from existing (don't churn the max_id counter)
             if existing:
@@ -94,7 +95,7 @@ def merge_native_todowrite(incoming: list) -> list:
             if t["text"] in native_texts:
                 continue
             src = t.get("source", "")
-            if src in ("lifesaver", "onboarding", "hme_todo"):
+            if src in ("lifesaver", "onboarding", "hme_todo", "spec", "todo_md"):
                 new_store.append(t)
 
         _save_todos(meta, new_store)
@@ -159,4 +160,3 @@ def merge_native_todowrite(incoming: list) -> list:
                 "status": "pending",
             })
         return flat
-

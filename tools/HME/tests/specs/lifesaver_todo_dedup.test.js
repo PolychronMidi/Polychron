@@ -175,13 +175,10 @@ test('archive: clear auto-archives complete set to KB devlog and resets to fresh
     const p2 = require('path');
     fs2.mkdirSync(p2.join(sandbox, 'doc', 'templates'), { recursive: true });
     fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'SPEC.md'),
-      `# Test SPEC\n\n## Phases\n\n### Phase 0: bootstrap\n\n- [x] [easy] Item A\n\n` +
-      `_Phase 0 complete_ (2026-04-26T10:00:00Z):\n\nDid bootstrap.\n\n` +
-      `### Phase 1: extension\n\n- [x] [hard] Item B\n\n` +
-      `_Phase 1 complete_ (2026-04-26T11:00:00Z):\n\nExtended.\n\n## Glossary\n\n- **t**: term\n`
+      `# Legacy SPEC\n\nOld active content should be replaced by the TODO pointer.\n`
     );
     fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'TODO.md'),
-      `# TODO\n\n## In flight\n\n## Just shipped\n\n- did stuff\n\n## Next up\n\n(empty)\n`
+      `# TODO\n\n## Now\n\n(empty)\n\n## Next\n\n(empty)\n\n## Done\n\n- [x] [E2] Item A\n- [x] [E4] Item B\n\n## Later\n\n(empty)\n`
     );
     const result = _runPython(sandbox, `
 from server.tools_analysis.todo import hme_todo, _detect_complete_set
@@ -197,12 +194,10 @@ print(json.dumps({
   "archive_message_present": "[ARCHIVE] Set archived" in out,
   "devlog_count": len(devlog_files),
   "devlog_filename_pattern": all("test-set-name" in f for f in devlog_files) if devlog_files else False,
-  "spec_has_phase_0_placeholder": "### Phase 0: <next initiative" in spec_md,
+  "spec_is_pointer": spec_md.startswith("# SPEC merged into TODO") and "TODO.md" in spec_md,
   "spec_has_archive_pointer": "Previous set" in spec_md and "archived" in spec_md,
-  "spec_has_generic_title": spec_md.startswith("# Polychron Active SPEC"),
-  "spec_preamble_no_buddy_specific": "buddy_system" not in spec_md and "Co-Buddy Fanout" not in spec_md,
-  "spec_no_old_phases": "_Phase 0 complete_" not in spec_md and "_Phase 1 complete_" not in spec_md,
-  "todo_reset_to_fresh": "(empty -- populated from the new set" in todo_md,
+  "spec_no_old_content": "Old active content" not in spec_md,
+  "todo_reset_to_fresh": todo_md.startswith("# TODO") and "## Next" in todo_md and "(empty)" in todo_md,
 }))
 `);
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
@@ -211,10 +206,10 @@ print(json.dumps({
     assert.strictEqual(parsed.archive_message_present, true, 'clear must surface archive message');
     assert.strictEqual(parsed.devlog_count, 1, 'one devlog file must be produced');
     assert.strictEqual(parsed.devlog_filename_pattern, true, 'devlog filename must include slug');
-    assert.strictEqual(parsed.spec_has_phase_0_placeholder, true, 'fresh SPEC has Phase 0 placeholder');
+    assert.strictEqual(parsed.spec_is_pointer, true, 'fresh SPEC is a TODO pointer');
     assert.strictEqual(parsed.spec_has_archive_pointer, true, 'fresh SPEC has archive pointer');
-    assert.strictEqual(parsed.spec_no_old_phases, true, 'fresh SPEC drops old completed phases');
-    assert.strictEqual(parsed.todo_reset_to_fresh, true, 'fresh TODO has empty-Next-up message');
+    assert.strictEqual(parsed.spec_no_old_content, true, 'fresh SPEC drops old active content');
+    assert.strictEqual(parsed.todo_reset_to_fresh, true, 'fresh TODO has empty notepad sections');
   });
 });
 
@@ -293,28 +288,29 @@ test('archive: clear refuses to archive when set is not complete', () => {
     const fs2 = require('fs');
     const p2 = require('path');
     fs2.mkdirSync(p2.join(sandbox, 'doc', 'templates'), { recursive: true });
-    // Phase has open `[ ]` items -- set not complete
     fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'SPEC.md'),
-      `# SPEC\n\n## Phases\n\n### Phase 0: wip\n\n- [x] [easy] Done item\n- [ ] [hard] Still open\n`
+      `# SPEC merged into TODO\n\nActive planning now lives in [TODO.md](TODO.md).\n`
     );
-    fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'TODO.md'), `# TODO\n\n## Just shipped\n\n## Next up\n`);
+    fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'TODO.md'),
+      `# TODO\n\n## Now\n\n- [ ] [E4] Still open\n\n## Next\n\n(empty)\n\n## Done\n\n- [x] [E2] Done item\n`
+    );
     const result = _runPython(sandbox, `
 from server.tools_analysis.todo import hme_todo
 import os
 out = hme_todo(action="clear")
-spec_md = open(os.path.join("${sandbox}", "doc", "templates", "SPEC.md")).read()
+todo_md = open(os.path.join("${sandbox}", "doc", "templates", "TODO.md")).read()
 import json
 print(json.dumps({
   "no_archive_message": "[ARCHIVE] Set archived" not in out,
   "blocker_message_shown": "Set not yet complete" in out,
-  "spec_unchanged": "Still open" in spec_md,
+  "todo_keeps_open_item": "Still open" in todo_md,
 }))
 `);
     if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
     const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
     assert.strictEqual(parsed.no_archive_message, true, 'must NOT archive when set incomplete');
     assert.strictEqual(parsed.blocker_message_shown, true, 'must surface blocker reason');
-    assert.strictEqual(parsed.spec_unchanged, true, 'SPEC.md must remain untouched');
+    assert.strictEqual(parsed.todo_keeps_open_item, true, 'TODO.md must keep the open item');
   });
 });
 
