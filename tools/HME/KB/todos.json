@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3172,
-      "updated_ts": 1778880328.6257973,
-      "codex_plan_synced_ts": 1778880328.6257691,
+      "updated_ts": 1778880538.6145225,
+      "codex_plan_synced_ts": 1778880538.6144946,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T21:25:07.531Z"
+      "codex_plan_ts": "2026-05-15T21:28:50.910Z"
     }
   },
   {
@@ -2001,8 +2001,8 @@
     "id": 3169,
     "text": "Inspect full-doc heading patterns",
     "activeForm": "Inspect full-doc heading patterns",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2011,14 +2011,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:25:07.531Z"
+    "codex_plan_ts": "2026-05-15T21:28:50.910Z"
   },
   {
     "id": 3170,
     "text": "Add doc/infra updater script",
     "activeForm": "Add doc/infra updater script",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2027,14 +2027,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:25:07.531Z"
+    "codex_plan_ts": "2026-05-15T21:28:50.910Z"
   },
   {
     "id": 3171,
     "text": "Run updater and inspect diffs",
     "activeForm": "Run updater and inspect diffs",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2043,14 +2043,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:25:07.531Z"
+    "codex_plan_ts": "2026-05-15T21:28:50.910Z"
   },
   {
     "id": 3172,
     "text": "Add/execute focused verification",
     "activeForm": "Add/execute focused verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2059,6 +2059,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:25:07.531Z"
+    "codex_plan_ts": "2026-05-15T21:28:50.910Z"
   }
 ]
