@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect Codex adapter/tool surface and hook event paths
 
 ## Next
 
-(empty)
+- [ ] [E3] Implement native exposure or synthetic Edit/Read event bridge
+- [ ] [E3] Add focused tests and verify
 
 ## Done
 
