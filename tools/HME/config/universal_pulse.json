@@ -32,7 +32,7 @@
       "name": "hme_activity",
       "path": "output/metrics/hme-activity.jsonl",
       "max_stale_sec": 1800,
-      "_why": "Activity bridge writes here on every turn_complete. Stale-for-30min means turn-end hooks stopped firing."
+      "_why": "Activity bridge writes here for hook/proxy/fs events. Stale-for-30min means the bridge is idle or stopped."
     },
     {
       "name": "doctor_health",

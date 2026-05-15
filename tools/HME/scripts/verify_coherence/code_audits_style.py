@@ -147,19 +147,7 @@ class HardcodedToolInvocationVerifier(Verifier):
 
 
 class AgentLoopQualityVerifier(Verifier):
-    """Horizon IV expansion -- agent loop quality wired into HCI.
-
-    Reads the activity log over the last 1h window and scores agent loop
-    quality on three axes:
-      - inference cadence: turns observed (>=1)
-      - hook-intervention rate: brief-related interventions per turn
-        (presence of >=1 indicates the briefing chain is working)
-      - error rate: bash_error_surfaced / inference_call (lower is better)
-
-    FAILs only on hard pathologies (zero turns, error rate above 25%);
-    PASS otherwise. The seed (`i/status mode=agent-loop`) is the human
-    view; this verifier is the same data wired into HCI so degraded
-    loops degrade the aggregate score automatically."""
+    """Scores recent agent-loop telemetry without treating fs-watcher noise as turns."""
     name = "agent-loop-quality"
     category = "code"
     subtag = "freshness"
@@ -188,29 +176,36 @@ class AgentLoopQualityVerifier(Verifier):
         if not events:
             return _result(SKIP, 1.0, "no activity in last hour")
 
-        turns = sum(1 for e in events if e.get("event") == "turn_complete")
-        infs = sum(1 for e in events if e.get("event") == "inference_call")
-        bash_errs = sum(1 for e in events if e.get("event") == "bash_error_surfaced")
-        briefs = sum(1 for e in events
+        loop_names = {
+            "turn_start", "turn_complete", "tool_call", "inference_call",
+            "bash_error_surfaced", "brief_recorded", "auto_brief_injected",
+        }
+        loop_events = [e for e in events if e.get("event") in loop_names]
+        if not loop_events:
+            return _result(SKIP, 1.0,
+                           f"no agent-loop telemetry in last hour "
+                           f"({len(events)} non-loop activity events)")
+
+        turn_markers = sum(1 for e in loop_events
+                           if e.get("event") in ("turn_start", "turn_complete"))
+        infs = sum(1 for e in loop_events if e.get("event") == "inference_call")
+        tools = sum(1 for e in loop_events if e.get("event") == "tool_call")
+        bash_errs = sum(1 for e in loop_events if e.get("event") == "bash_error_surfaced")
+        briefs = sum(1 for e in loop_events
                      if e.get("event") in ("brief_recorded", "auto_brief_injected"))
 
-        if turns == 0:
-            self._write_tier_marker("YELLOW", "no turn_complete in last hour")
-            return _result(WARN, 0.5,
-                           f"no turn_complete events in last hour "
-                           f"({len(events)} events but no turn boundaries)")
-
-        err_rate = bash_errs / infs if infs > 0 else 0.0
+        denominator = max(infs, tools, 1)
+        err_rate = bash_errs / denominator
         if err_rate > 0.25:
             self._write_tier_marker("RED", f"err_rate={err_rate*100:.1f}%")
             return _result(FAIL, max(0.0, 1.0 - err_rate),
                            f"high error rate: {err_rate*100:.1f}% "
-                           f"({bash_errs} bash errors / {infs} inferences)")
+                           f"({bash_errs} bash errors / {denominator} loop events)")
 
-        # Horizon IV maturity -- adaptive priming hook. Write a tier
         self._write_tier_marker("GREEN", "healthy loop")
         return _result(PASS, 1.0,
-                       f"healthy: {turns} turns, {infs} inferences, "
+                       f"healthy: {turn_markers} turn markers, {infs} inferences, "
+                       f"{tools} tool calls, "
                        f"{briefs} briefs, {bash_errs} errors "
                        f"(err_rate={err_rate*100:.1f}%)")
 

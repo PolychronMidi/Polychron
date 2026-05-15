@@ -184,27 +184,38 @@ def _mode_agent_loop():
     if not events:
         return "# i/status mode=agent-loop\nNo activity in last hour."
 
+    loop_names = {
+        "turn_start", "turn_complete", "tool_call", "inference_call",
+        "bash_error_surfaced", "brief_recorded", "auto_brief_injected",
+    }
+    loop_events = [e for e in events if e.get("event") in loop_names]
+    if not loop_events:
+        return (
+            "# i/status mode=agent-loop\n"
+            f"No agent-loop telemetry in last hour ({len(events)} non-loop activity events)."
+        )
+
     # Per-session windows
     per_session: dict[str, list[dict]] = defaultdict(list)
-    for e in events:
+    for e in loop_events:
         sid = e.get("session", "?")
         per_session[sid].append(e)
 
     # Aggregate
     by_event: Counter = Counter()
-    for e in events:
+    for e in loop_events:
         by_event[e.get("event", "?")] += 1
 
     tool_calls = by_event.get("tool_call", 0)
     inference_calls = by_event.get("inference_call", 0)
-    turns = by_event.get("turn_complete", 0)
-    edits = sum(1 for e in events if e.get("event") == "tool_call"
+    turns = by_event.get("turn_start", 0) + by_event.get("turn_complete", 0)
+    edits = sum(1 for e in loop_events if e.get("event") == "tool_call"
                 and e.get("tool") == "Edit")
     brief_inj = by_event.get("auto_brief_injected", 0)
     brief_rec = by_event.get("brief_recorded", 0)
     bash_errs = by_event.get("bash_error_surfaced", 0)
 
-    out = [f"# Agent loop (last hour, {len(events)} events, {len(per_session)} session(s))"]
+    out = [f"# Agent loop (last hour, {len(loop_events)} loop events, {len(per_session)} session(s))"]
     out.append("")
     out.append(f"  turns observed:        {turns}")
     if turns > 0:
@@ -220,9 +231,7 @@ def _mode_agent_loop():
         out.append(f"  bash error rate:       {err_rate:.1f}%  ({bash_errs}/{tool_calls})")
     else:
         # Known instrumentation gap: tool_call events emitted by the proxy
-        fwrites = sum(1 for e in events if e.get("event") == "file_written")
         out.append(f"  total tool calls:      -  (proxy tool_call instrumentation degraded; see note)")
-        out.append(f"  file writes (proxy):   {fwrites}  (via fs_watcher)")
         out.append(f"  briefs recorded:       {brief_rec}  (KB briefings)")
     out.append(f"  auto-brief injected:   {brief_inj}")
 
