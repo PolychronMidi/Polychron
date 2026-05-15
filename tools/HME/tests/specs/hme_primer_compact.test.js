@@ -13,6 +13,8 @@ const primer = path.join(repoRoot, 'tools', 'HME', 'hooks', 'pretooluse', 'preto
 function sandbox() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-primer-test-'));
   fs.mkdirSync(path.join(dir, 'tmp'), { recursive: true });
+  fs.mkdirSync(path.join(dir, '.git'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'tools', 'HME'), { recursive: true });
   return dir;
 }
 
