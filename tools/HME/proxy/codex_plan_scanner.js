@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { spawnFileInput } = require('../event_kernel/fs_ipc');
 
 function stableCallKey(candidate, source) {
@@ -19,6 +21,22 @@ function normalizePlanPayload(args, source, nowIso) {
     timestamp: nowIso(),
     session_file: source.thread_id ? `codex-proxy:${source.thread_id}` : 'codex-proxy',
   };
+}
+
+function failFlag(projectRoot) {
+  return path.join(projectRoot, 'runtime', 'hme', 'todo-sync.fail');
+}
+
+function clearFailFlag(projectRoot) {
+  try { fs.unlinkSync(failFlag(projectRoot)); } catch (_e) { /* absent */ }
+}
+
+function writeFailFlag(projectRoot, message) {
+  try {
+    const file = failFlag(projectRoot);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, `[${new Date().toISOString()}] ${String(message || '').slice(0, 1000)}\n`);
+  } catch (_e) { /* best effort */ }
 }
 
 function createPlanScanner(deps) {
@@ -53,7 +71,6 @@ function createPlanScanner(deps) {
     const key = stableCallKey(candidate, source);
     if (seenPlanCalls.has(key)) return;
     rememberPlanCall(key);
-    record({ kind: 'todo-sync-start', items: payload.plan.length, session_file: payload.session_file });
     spawnFileInput('python3', [planSync, 'sync-payload', '--json'], {
       input: JSON.stringify(payload),
       timeoutMs: 30_000,
@@ -62,17 +79,21 @@ function createPlanScanner(deps) {
       label: 'codex-plan-sync',
     }).then((result) => {
       if (result.exit_code === 0) {
-        let parsed = null;
-        try { parsed = JSON.parse(result.stdout.trim() || '{}'); } catch (_e) { parsed = null; }
-        record({ kind: 'todo-sync-ok', result: parsed || result.stdout.trim().slice(0, 500) });
-      } else {
-        record({
-          kind: 'todo-sync-failed',
-          exit_code: result.exit_code,
-          stderr: (result.stderr || '').slice(0, 1000),
-          stdout: (result.stdout || '').slice(0, 1000),
-        });
+        clearFailFlag(projectRoot);
+        return;
       }
+      const stderr = (result.stderr || '').slice(0, 1000);
+      const stdout = (result.stdout || '').slice(0, 1000);
+      writeFailFlag(projectRoot, `codex plan sync failed exit=${result.exit_code} ${stderr || stdout}`);
+      record({
+        kind: 'todo-sync-failed',
+        exit_code: result.exit_code,
+        stderr,
+        stdout,
+      });
+    }).catch((err) => {
+      writeFailFlag(projectRoot, `codex plan sync crashed: ${err.message}`);
+      record({ kind: 'todo-sync-failed', exit_code: -1, stderr: String(err.message || err).slice(0, 1000), stdout: '' });
     });
   }
 
