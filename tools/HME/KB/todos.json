@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3197,
-      "updated_ts": 1778884468.6514142,
-      "codex_plan_synced_ts": 1778884468.6513805,
+      "max_id": 3200,
+      "updated_ts": 1778884678.6613758,
+      "codex_plan_synced_ts": 1778884678.6613412,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T22:34:00.621Z"
+      "codex_plan_ts": "2026-05-15T22:37:54.608Z"
     }
   },
   {
@@ -2467,5 +2467,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T22:34:00.621Z"
+  },
+  {
+    "id": 3198,
+    "text": "Inspect current i/ rewrite and proxy cleanup paths",
+    "activeForm": "Inspect current i/ rewrite and proxy cleanup paths",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778884675.0279322,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T22:37:54.608Z"
+  },
+  {
+    "id": 3199,
+    "text": "Implement shared proxy i-command normalizer for Claude/Codex",
+    "activeForm": "Implement shared proxy i-command normalizer for Claude/Codex",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778884675.027938,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T22:37:54.608Z"
+  },
+  {
+    "id": 3200,
+    "text": "Remove/silence hook rewrite noise and add tests",
+    "activeForm": "Remove/silence hook rewrite noise and add tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778884675.0279417,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T22:37:54.608Z"
   }
 ]
