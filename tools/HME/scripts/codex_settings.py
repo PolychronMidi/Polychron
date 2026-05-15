@@ -21,7 +21,7 @@ CLAUDE_MD = PROJECT_ROOT / "CLAUDE.md"
 MODEL_CATALOG_JSON = PROJECT_ROOT / "runtime" / "hme" / "codex-model-catalog.json"
 PROJECT_ROOT_VAR = "${HME_PROJECT_ROOT}"
 PROVIDER_ID = "hme_codex"
-CODEX_CONTEXT_WINDOW = int(os.environ.get("HME_CODEX_CONTEXT_WINDOW", "1050000"))
+CODEX_CONTEXT_WINDOW = int(os.environ.get("HME_CODEX_CONTEXT_WINDOW", "950000")) #reduced from 105000 due to context overload
 REQUIRED_EVENTS = (
     "SessionStart",
     "UserPromptSubmit",
