@@ -15,6 +15,7 @@ function sandbox() {
   fs.mkdirSync(path.join(dir, 'tmp'), { recursive: true });
   fs.mkdirSync(path.join(dir, '.git'), { recursive: true });
   fs.mkdirSync(path.join(dir, 'tools', 'HME'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'src'), { recursive: true });
   return dir;
 }
 
