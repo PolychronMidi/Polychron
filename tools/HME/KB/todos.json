@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3191,
-      "updated_ts": 1778883628.6528587,
-      "codex_plan_synced_ts": 1778883628.6528227,
+      "updated_ts": 1778883808.6531622,
+      "codex_plan_synced_ts": 1778883808.65313,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T22:20:17.882Z"
+      "codex_plan_ts": "2026-05-15T22:23:27.887Z"
     }
   },
   {
@@ -2325,8 +2325,8 @@
     "id": 3189,
     "text": "Remove public i/read and i/edit shims/docs",
     "activeForm": "Remove public i/read and i/edit shims/docs",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2335,14 +2335,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T22:20:17.882Z"
+    "codex_plan_ts": "2026-05-15T22:23:27.887Z"
   },
   {
     "id": 3190,
     "text": "Keep internal structured fallback without public i surface",
     "activeForm": "Keep internal structured fallback without public i surface",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2351,14 +2351,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T22:20:17.882Z"
+    "codex_plan_ts": "2026-05-15T22:23:27.887Z"
   },
   {
     "id": 3191,
     "text": "Update tests and verify clean",
     "activeForm": "Update tests and verify clean",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2367,6 +2367,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T22:20:17.882Z"
+    "codex_plan_ts": "2026-05-15T22:23:27.887Z"
   }
 ]

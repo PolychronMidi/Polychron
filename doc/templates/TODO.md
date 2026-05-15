@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Remove public i/read and i/edit shims/docs
+(empty)
 
 ## Next
 
-- [ ] [E3] Keep internal structured fallback without public i surface
-- [ ] [E3] Update tests and verify clean
+(empty)
 
 ## Done
 
