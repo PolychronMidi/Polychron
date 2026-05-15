@@ -1,5 +1,7 @@
 'use strict';
 
+const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
+
 const BRIDGE = 'node tools/HME/scripts/codex_structured_tool.js';
 const TARGET_TOOL = 'exec_command';
 const NATIVE_NAMES = new Set(['Read', 'Edit']);
@@ -112,19 +114,38 @@ function argsText(obj) {
   return '';
 }
 
+function setCallArgs(obj, name, args) {
+  const next = { ...obj };
+  if (typeof next.name === 'string') next.name = name;
+  if (next.function && typeof next.function === 'object') {
+    next.function = { ...next.function, name, arguments: args };
+  }
+  if (Object.prototype.hasOwnProperty.call(next, 'arguments')) next.arguments = args;
+  return next;
+}
+
+function policyCommandArgs(args) {
+  const cmd = args.cmd || args.command || '';
+  if (!cmd) return args;
+  const verdict = evaluateBashInput({ command: cmd });
+  if (!verdict || verdict.decision === 'allow' && !verdict.changed) return args;
+  if (verdict.decision === 'deny') return { ...args, cmd: blockedCommand(verdict.reason) };
+  return { ...args, cmd: verdict.input.command || cmd };
+}
+
 function rewriteCallObject(obj, stats) {
   const name = callName(obj);
-  if (!NATIVE_NAMES.has(name)) return obj;
+  if (!NATIVE_NAMES.has(name) && name !== TARGET_TOOL && name !== 'functions.exec_command') return obj;
   const args = parseArgs(argsText(obj));
-  const next = { ...obj };
-  const commandArgs = JSON.stringify({ cmd: bridgeCommand(name, args) });
-  if (typeof next.name === 'string') next.name = TARGET_TOOL;
-  if (next.function && typeof next.function === 'object') {
-    next.function = { ...next.function, name: TARGET_TOOL, arguments: commandArgs };
+  if (NATIVE_NAMES.has(name)) {
+    const commandArgs = JSON.stringify(policyCommandArgs({ cmd: bridgeCommand(name, args) }));
+    stats.calls += 1;
+    return setCallArgs(obj, TARGET_TOOL, commandArgs);
   }
-  if (Object.prototype.hasOwnProperty.call(next, 'arguments')) next.arguments = commandArgs;
+  const nextArgs = policyCommandArgs(args);
+  if (JSON.stringify(nextArgs) === JSON.stringify(args)) return obj;
   stats.calls += 1;
-  return next;
+  return setCallArgs(obj, TARGET_TOOL, JSON.stringify(nextArgs));
 }
 
 function rewriteValue(value, stats) {
