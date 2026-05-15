@@ -1,5 +1,13 @@
 {
   "_doc": "Codex Responses proxy policy. The proxy is the Codex peer of the Claude Anthropic proxy: it preserves Codex's native request shape, observes prompt/tool size, can apply table-driven request shaping, and syncs update_plan calls into the HME TODO store.",
+  "omniroute": {
+    "enabled": true,
+    "mode": "upstream",
+    "url": "",
+    "provider_prefix": "cx",
+    "fallback_direct": true,
+    "fallback_http_statuses": [400, 401, 403, 404, 429, 500, 502, 503, 504]
+  },
   "todo_sync": {
     "enabled": true
   },

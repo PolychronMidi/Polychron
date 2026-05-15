@@ -218,19 +218,28 @@ print(mod._mode_codex_proxy())
   }
 });
 
-test('Codex proxy mirrors visibility rows into OmniRoute dashboard DB', async () => {
+test('Codex proxy routes through OmniRoute Responses for dashboard visibility', async () => {
   const sandbox = withSandbox();
-  const omniHome = path.join(sandbox, '.omniroute');
-  const omniDb = path.join(omniHome, 'storage.sqlite');
-  fs.mkdirSync(omniHome, { recursive: true });
-  createOmniDb(omniDb);
   const proxyPort = await freePort();
+  let directHits = 0;
+  let omniBody = null;
   const upstream = http.createServer((req, res) => {
+    directHits += 1;
     req.resume();
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ id: 'resp_test', usage: { input_tokens: 7, output_tokens: 3 }, output: [] }));
+    res.end(JSON.stringify({ id: 'resp_direct', usage: { input_tokens: 1, output_tokens: 1 }, output: [] }));
   });
   const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const omni = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      omniBody = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ id: 'resp_omni', usage: { input_tokens: 7, output_tokens: 3 }, output: [] }));
+    });
+  });
+  const omniPort = await new Promise((resolve) => omni.listen(0, '127.0.0.1', () => resolve(omni.address().port)));
   const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
     cwd: repoRoot,
     env: {
@@ -240,10 +249,9 @@ test('Codex proxy mirrors visibility rows into OmniRoute dashboard DB', async ()
       HME_CODEX_PROXY_PORT: String(proxyPort),
       HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
       HME_CODEX_PROXY_CONFIG: path.join(repoRoot, 'tools', 'HME', 'config', 'codex-proxy.json'),
-      HME_CODEX_OMNI_VISIBILITY_SCRIPT: path.join(repoRoot, 'tools', 'HME', 'scripts', 'omniroute_codex_visibility.py'),
+      HME_CODEX_OMNIROUTE_URL: `http://127.0.0.1:${omniPort}/v1/responses`,
+      HME_CODEX_OMNIROUTE_PROVIDER: 'cx',
       HME_CODEX_PROXY_AUTOCOMMIT: '0',
-      OMNIROUTE_HOME: omniHome,
-      OMNIROUTE_DB: omniDb,
     },
     stdio: ['ignore', 'ignore', 'pipe'],
   });
@@ -266,17 +274,70 @@ test('Codex proxy mirrors visibility rows into OmniRoute dashboard DB', async ()
       stream: false,
     });
     assert.strictEqual(response.status, 200);
-    await waitFor(() => {
-      const res = spawnSync('python3', ['-c', `
-import sqlite3, json
-con = sqlite3.connect("${omniDb}")
-row = con.execute("select provider, model, path, status, tokens_in, tokens_out, artifact_relpath from call_logs order by timestamp desc limit 1").fetchone()
-print(json.dumps(row))
-`], { encoding: 'utf8' });
-      if (res.status !== 0) return false;
-      const row = JSON.parse(res.stdout.trim());
-      return row && row[0] === 'codex-proxy' && row[1] === 'gpt-5.5' && row[2] === '/v1/responses' && row[3] === 200;
-    }, 10000);
+    assert.strictEqual(JSON.parse(response.body).id, 'resp_omni');
+    assert.strictEqual(directHits, 0);
+    assert.strictEqual(omniBody.model, 'cx/gpt-5.5');
+  } catch (err) {
+    err.message = `${err.message}\nproxy stderr:\n${stderr}`;
+    throw err;
+  } finally {
+    child.kill('SIGTERM');
+    upstream.close();
+    omni.close();
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
+test('Codex proxy falls back direct when OmniRoute is unavailable', async () => {
+  const sandbox = withSandbox();
+  const proxyPort = await freePort();
+  const missingOmniPort = await freePort();
+  let directBody = null;
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      directBody = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ id: 'resp_direct', usage: { input_tokens: 2, output_tokens: 1 }, output: [] }));
+    });
+  });
+  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      PROJECT_ROOT: sandbox,
+      PYTHONPATH: path.join(repoRoot, 'tools', 'HME', 'service'),
+      HME_CODEX_PROXY_PORT: String(proxyPort),
+      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
+      HME_CODEX_PROXY_CONFIG: path.join(repoRoot, 'tools', 'HME', 'config', 'codex-proxy.json'),
+      HME_CODEX_OMNIROUTE_URL: `http://127.0.0.1:${missingOmniPort}/v1/responses`,
+      HME_CODEX_PROXY_AUTOCOMMIT: '0',
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
+  try {
+    await waitFor(() => new Promise((resolve) => {
+      const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    }));
+    const response = await requestJson(proxyPort, '/v1/responses', {
+      model: 'gpt-5.5',
+      instructions: 'test',
+      tools: [],
+      stream: false,
+    });
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(JSON.parse(response.body).id, 'resp_direct');
+    assert.strictEqual(directBody.model, 'gpt-5.5');
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
     throw err;

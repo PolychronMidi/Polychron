@@ -5,11 +5,11 @@ const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const path = require('path');
-const { spawnFileInput } = require('../event_kernel/fs_ipc');
 const { loadJsonc } = require('./config_loader');
 const proxyAutocommit = require('./middleware/21_proxy_autocommit');
 const { readAutocommitFailure, touchLifesaverHeartbeat } = require('./lifesaver_alerts');
 const { applyRequestTransform } = require('./codex_payload');
+const { targetChain, targetSummary } = require('./codex_omniroute');
 const { createPlanScanner } = require('./codex_plan_scanner');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
 const { servicePort } = require('./service_registry');
@@ -20,8 +20,6 @@ const CONFIG_PATH = process.env.HME_CODEX_PROXY_CONFIG
   || path.join(PROJECT_ROOT, 'tools', 'HME', 'config', 'codex-proxy.json');
 const PLAN_SYNC = process.env.HME_CODEX_PLAN_SYNC_SCRIPT
   || path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'codex_plan_sync.py');
-const OMNI_VISIBILITY = process.env.HME_CODEX_OMNI_VISIBILITY_SCRIPT
-  || path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'omniroute_codex_visibility.py');
 const EVENT_LOG = path.join(RUNTIME_DIR, 'codex-proxy-events.jsonl');
 const DEFAULT_UPSTREAM = 'https://chatgpt.com/backend-api/codex/responses';
 const UPSTREAM_URL = process.env.HME_CODEX_UPSTREAM_URL || DEFAULT_UPSTREAM;
@@ -145,37 +143,19 @@ function injectCodexLifesaver(body) {
   };
 }
 
-function upstreamHeaders(req, bodyBytes) {
+function upstreamHeaders(req, bodyBytes, target) {
   const headers = { ...req.headers };
   for (const key of ['host', 'content-length', 'connection', 'transfer-encoding', 'trailer', 'upgrade']) {
     delete headers[key];
   }
+  if (target.kind === 'omniroute') {
+    delete headers.authorization;
+    delete headers['x-api-key'];
+    headers['x-hme-codex-proxy'] = '1';
+    if (target.apiKey) headers.authorization = `Bearer ${target.apiKey}`;
+  }
   headers['content-length'] = String(bodyBytes.length);
   return headers;
-}
-
-function logOmniVisibility(payload) {
-  if (process.env.HME_CODEX_OMNI_VISIBILITY === '0') return;
-  if (!fs.existsSync(OMNI_VISIBILITY)) return;
-  spawnFileInput('python3', [OMNI_VISIBILITY, '--json'], {
-    input: JSON.stringify(payload),
-    timeoutMs: 10_000,
-    cwd: PROJECT_ROOT,
-    env: {
-      PROJECT_ROOT,
-      OMNIROUTE_DB: process.env.OMNIROUTE_DB || '',
-      OMNIROUTE_HOME: process.env.OMNIROUTE_HOME || '',
-    },
-    label: 'codex-omniroute-visibility',
-  }).then((result) => {
-    if (result.exit_code !== 0) {
-      record({
-        kind: 'omniroute-visibility-failed',
-        stderr: (result.stderr || '').slice(0, 1000),
-        stdout: (result.stdout || '').slice(0, 1000),
-      });
-    }
-  });
 }
 
 function responseUsage(parsed) {
@@ -187,36 +167,56 @@ function responseUsage(parsed) {
   };
 }
 
-function forwardResponses(req, res, body, bodyBytes, source, visibility) {
-  const upstream = new URL(UPSTREAM_URL);
-  const client = upstream.protocol === 'http:' ? http : https;
+function forwardResponses(req, res, targets, source, visibility) {
   const started = Date.now();
-  let visibilityDone = false;
-  function finishVisibility(status, errorSummary = '', parsed = null) {
-    if (visibilityDone) return;
-    visibilityDone = true;
-    logOmniVisibility({
-      ...visibility,
-      id: `codex_proxy_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-      timestamp: nowIso(),
-      method: 'POST',
-      request_path: req.url,
+  let finished = false;
+
+  function finishResponse(target, status, errorSummary = '', parsed = null) {
+    if (finished) return;
+    finished = true;
+    record({
+      kind: 'response',
+      route: target.kind,
+      upstream: target.url,
       status,
       duration_ms: Date.now() - started,
       error_summary: errorSummary,
       ...responseUsage(parsed),
+      model: target.body && target.body.model ? target.body.model : visibility.model,
     });
   }
+
+  function attemptTarget(index) {
+    const target = targets[index];
+    const bodyBytes = Buffer.from(JSON.stringify(target.body));
+    const upstream = new URL(target.url);
+  const client = upstream.protocol === 'http:' ? http : https;
   const options = {
     method: 'POST',
     hostname: upstream.hostname,
     port: upstream.port || (upstream.protocol === 'http:' ? 80 : 443),
     path: `${upstream.pathname}${upstream.search}`,
-    headers: upstreamHeaders(req, bodyBytes),
+      headers: upstreamHeaders(req, bodyBytes, target),
   };
   const upstreamReq = client.request(options, (upstreamRes) => {
+      const status = upstreamRes.statusCode || 502;
+      if (target.fallbackDirect && target.fallbackHttpStatuses && target.fallbackHttpStatuses.has(status) && targets[index + 1]) {
+        const chunks = [];
+        upstreamRes.on('data', (chunk) => chunks.push(chunk));
+        upstreamRes.on('end', () => {
+          record({
+            kind: 'upstream-http-fallback',
+            route: target.kind,
+            upstream: target.url,
+            status,
+            body_preview: Buffer.concat(chunks).toString('utf8').slice(0, 500),
+          });
+          attemptTarget(index + 1);
+        });
+        return;
+      }
     const headers = { ...upstreamRes.headers };
-    res.writeHead(upstreamRes.statusCode || 502, headers);
+      res.writeHead(status, headers);
     const contentType = String(upstreamRes.headers['content-type'] || '');
     if (contentType.includes('text/event-stream')) {
       const scanner = planScanner.createSseScanner(source);
@@ -227,7 +227,7 @@ function forwardResponses(req, res, body, bodyBytes, source, visibility) {
       upstreamRes.on('end', () => {
         scanner.finish();
         res.end();
-        finishVisibility(upstreamRes.statusCode || 502);
+          finishResponse(target, status);
       });
       return;
     }
@@ -241,12 +241,16 @@ function forwardResponses(req, res, body, bodyBytes, source, visibility) {
       const parsed = safeJson(full);
       if (parsed && typeof parsed === 'object') planScanner.scanObjectForPlan(parsed, source);
       res.end();
-      finishVisibility(upstreamRes.statusCode || 502, '', parsed);
+        finishResponse(target, status, '', parsed);
     });
   });
   upstreamReq.on('error', (err) => {
-    record({ kind: 'upstream-error', message: err.message });
-    finishVisibility(502, err.message);
+      record({ kind: 'upstream-error', route: target.kind, upstream: target.url, message: err.message });
+      if (target.fallbackDirect && targets[index + 1] && !res.headersSent) {
+        attemptTarget(index + 1);
+        return;
+      }
+      finishResponse(target, 502, err.message);
     if (!res.headersSent) {
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
@@ -260,6 +264,9 @@ function forwardResponses(req, res, body, bodyBytes, source, visibility) {
   });
   upstreamReq.write(bodyBytes);
   upstreamReq.end();
+  }
+
+  attemptTarget(0);
 }
 
 async function handleResponses(req, res) {
@@ -287,10 +294,13 @@ async function handleResponses(req, res) {
     record,
     projectRoot: PROJECT_ROOT,
   });
+  const targets = targetChain(transformed, UPSTREAM_URL, loadConfig);
   record({
     kind: 'request',
     source,
-    upstream: UPSTREAM_URL,
+    upstream: targets[0].url,
+    route: targets[0].kind,
+    targets: targetSummary(targets),
     autocommit,
     lifesaver_injected: lifesaver.injected,
     lifesaver_flag: lifesaver.flag || '',
@@ -300,9 +310,9 @@ async function handleResponses(req, res) {
     payload_log: payloadLog,
     transformed: lifesaver.injected || JSON.stringify(before) !== JSON.stringify(after),
   });
-  forwardResponses(req, res, transformed, Buffer.from(JSON.stringify(transformed)), source, {
+  forwardResponses(req, res, targets, source, {
     source,
-    upstream: UPSTREAM_URL,
+    upstream: targets[0].url,
     model: after.model || before.model || '',
     before,
     after,
@@ -320,6 +330,7 @@ function handleRequest(req, res) {
       version: PROXY_VERSION,
       port: PORT,
       upstream: UPSTREAM_URL,
+      route: targetSummary(targetChain({ model: 'health' }, UPSTREAM_URL, loadConfig)),
       config: CONFIG_PATH,
     }));
     return;

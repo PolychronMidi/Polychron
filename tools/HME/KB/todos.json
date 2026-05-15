@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3138,
-      "updated_ts": 1778874598.5947125,
-      "codex_plan_synced_ts": 1778874598.5946906,
+      "max_id": 3140,
+      "updated_ts": 1778875258.5999608,
+      "codex_plan_synced_ts": 1778875258.5999365,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T19:49:34.083Z"
+      "codex_plan_ts": "2026-05-15T20:00:48.199Z"
     }
   },
   {
@@ -1431,8 +1431,8 @@
     "id": 3134,
     "text": "Add focused regressions and run targeted checks",
     "activeForm": "Add focused regressions and run targeted checks",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1441,14 +1441,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:49:34.083Z"
+    "codex_plan_ts": "2026-05-15T20:00:48.199Z"
   },
   {
     "id": 3135,
     "text": "Commit completed changes with evidence",
     "activeForm": "Commit completed changes with evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1457,14 +1457,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:49:34.083Z"
+    "codex_plan_ts": "2026-05-15T19:59:52.083Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3136,
     "text": "Inspect OmniRoute CLI/API abstraction, not raw DB rows",
     "activeForm": "Inspect OmniRoute CLI/API abstraction, not raw DB rows",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1473,14 +1474,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:49:34.083Z"
+    "codex_plan_ts": "2026-05-15T20:00:48.199Z"
   },
   {
     "id": 3137,
     "text": "Route Codex proxy visibility through OmniRoute-native translation/logging",
     "activeForm": "Route Codex proxy visibility through OmniRoute-native translation/logging",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1489,14 +1490,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:49:34.083Z"
+    "codex_plan_ts": "2026-05-15T20:00:48.199Z"
   },
   {
     "id": 3138,
     "text": "Remove manual DB visibility shim and manual TODO sync surface",
     "activeForm": "Remove manual DB visibility shim and manual TODO sync surface",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1505,6 +1506,39 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:49:34.083Z"
+    "codex_plan_ts": "2026-05-15T19:49:34.083Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3139,
+    "text": "Remove manual DB visibility shim and keep automatic TODO sync only",
+    "activeForm": "Remove manual DB visibility shim and keep automatic TODO sync only",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778875198.5975451,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:00:48.199Z"
+  },
+  {
+    "id": 3140,
+    "text": "Restart Codex proxy through supervisor",
+    "activeForm": "Restart Codex proxy through supervisor",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778875258.5997508,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:00:48.199Z"
   }
 ]
