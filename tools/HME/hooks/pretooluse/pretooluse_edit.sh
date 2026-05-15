@@ -187,9 +187,9 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
         && [ -n "$_AUTO_BRIEF_TURN_FILE" ]; then
       # /enrich KB hits (~70ms) + head of target file. 500ms timeout
 # silent-ok: optional fallback path.
-      _kb_hits=$(curl -sf --max-time 0.5 -X POST -H 'Content-Type: application/json' \
+      _kb_hits=$({ curl -sf --max-time 0.5 -X POST -H 'Content-Type: application/json' \
         --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
-        "http://127.0.0.1:${_HME_HTTP_PORT}/enrich" 2>/dev/null \
+        "http://127.0.0.1:${_HME_HTTP_PORT}/enrich" 2>/dev/null || true; } \
         | python3 -c "
 import json, sys
 try:
