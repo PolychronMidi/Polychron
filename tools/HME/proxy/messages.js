@@ -3,6 +3,7 @@
 
 const { emit } = require('./shared');
 const { isJurisdictionFile } = require('./context');
+const { normalizeICommandsInValue } = require('./i_command_text');
 
 const WRITE_INTENT_TOOLS = new Set([
   'Edit',
@@ -44,6 +45,17 @@ function _isBoilerplateText(text) {
 
 // Only scan the last RECENT_MSG_WINDOW messages for mutable strip operations.
 const RECENT_MSG_WINDOW = 8;
+
+
+function normalizeICommands(payload) {
+  const stats = { command_rewrites: 0, text_rewrites: 0 };
+  const normalized = normalizeICommandsInValue(payload, stats);
+  if (normalized && normalized !== payload) {
+    for (const key of Object.keys(payload)) delete payload[key];
+    Object.assign(payload, normalized);
+  }
+  return stats.command_rewrites + stats.text_rewrites;
+}
 
 function stripBoilerplate(payload) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
@@ -330,6 +342,7 @@ function scanMessages(payload) {
 
 module.exports = {
   WRITE_INTENT_TOOLS,
+  normalizeICommands,
   stripBoilerplate,
   stripSemanticRedundancy,
   scanMessages,

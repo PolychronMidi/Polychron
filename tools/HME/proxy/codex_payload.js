@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { normalizeStructuredBridgeCalls } = require('./codex_tool_text');
+const { normalizeICommandsInValue } = require('./i_command_text');
 
 const HOOK_SUCCESS_RE = /^\s*(SessionStart|UserPromptSubmit|PreToolUse|PostToolUse|Notification|Stop|SubagentStop|PreCompact|PostCompact|PermissionRequest) hook \((completed|skipped)\)\s*$/;
 const WRAPPER_AUTOCORRECT_RE = /^\s*warning:\s*i\/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT\s*$/;
@@ -215,6 +216,8 @@ function applyRequestTransform(body, deps) {
   if (extra) {
     transformed.instructions = `${typeof body.instructions === 'string' ? body.instructions : ''}\n\n${extra}`;
   }
+  const iCommandStats = { command_rewrites: 0, text_rewrites: 0 };
+  transformed = normalizeICommandsInValue(transformed, iCommandStats);
   const bridgeNormalized = normalizeStructuredBridgeCalls(transformed);
   transformed = bridgeNormalized.body;
   const cleaned = cleanPayload(transformed, cfg);
@@ -237,7 +240,7 @@ function applyRequestTransform(body, deps) {
     body: transformed,
     before,
     after,
-    cleanup: { ...cleaned.cleanup, bridge_calls: bridgeNormalized.stats.call_rewrites, bridge_text: bridgeNormalized.stats.text_rewrites },
+    cleanup: { ...cleaned.cleanup, bridge_calls: bridgeNormalized.stats.call_rewrites, bridge_text: bridgeNormalized.stats.text_rewrites, i_commands: iCommandStats.command_rewrites, i_text: iCommandStats.text_rewrites },
     payload_log: logOpts.enabled ? {
       target: 'codex-responses-log-only',
       before: requestStats(body, logOpts.previewChars),

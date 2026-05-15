@@ -37,7 +37,7 @@ const {
   DEFAULT_UPSTREAM_HOST, DEFAULT_UPSTREAM_PORT, DEFAULT_UPSTREAM_TLS,
 } = require('./upstream');
 const { shouldInject, buildStatusContext, consumeStatusContext, buildJurisdictionContext, injectIntoSystem, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
-const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
+const { normalizeICommands, stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 const { servicePort } = require('./service_registry');
 const {
   omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat,
@@ -770,12 +770,13 @@ function handleRequest(clientReq, clientRes) {
         if (process.env.HME_REPLACE_SYSTEM_PROMPT === '1') {
           if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
         }
+        const iw = normalizeICommands(payload);
         const b = stripBoilerplate(payload);
         const s = stripSemanticRedundancy(payload);
         const r = _stripHmePrefixOutgoing(payload);
         const n = await _injectHmeTools(payload);
         _sanitizePayload(payload);
-        if (b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
+        if (iw > 0 || b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
       }
 
       let scan = null;
