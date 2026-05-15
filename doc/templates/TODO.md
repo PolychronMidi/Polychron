@@ -4,16 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Map existing hook/proxy boundaries and choose shared module interfaces
+(empty)
 
 ## Next
 
-- [ ] [E3] Implement shared Bash/exec_command policy and wire proxy + hooks
-- [ ] [E3] Implement shared Read policy and wire hooks/proxy bridges
-- [ ] [E3] Expand central pre-write policy and thin Edit/Write hooks
-- [ ] [E3] Move post-write side effects to proxy middleware with hook fallback
-- [ ] [E3] Move low-risk Stop/UserPrompt cleanup to proxy layer
-- [ ] [E3] Run focused tests, restart proxy, verify live status
+(empty)
 
 ## Done
 

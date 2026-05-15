@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3219,
-      "updated_ts": 1778887318.6761918,
-      "codex_plan_synced_ts": 1778887318.6761541,
+      "updated_ts": 1778888128.6736748,
+      "codex_plan_synced_ts": 1778888128.6736362,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T23:21:40.831Z"
+      "codex_plan_ts": "2026-05-15T23:35:20.145Z"
     }
   },
   {
@@ -2715,8 +2715,8 @@
     "id": 3213,
     "text": "Map existing hook/proxy boundaries and choose shared module interfaces",
     "activeForm": "Map existing hook/proxy boundaries and choose shared module interfaces",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2725,14 +2725,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T23:21:40.831Z"
+    "codex_plan_ts": "2026-05-15T23:35:20.145Z"
   },
   {
     "id": 3214,
     "text": "Implement shared Bash/exec_command policy and wire proxy + hooks",
     "activeForm": "Implement shared Bash/exec_command policy and wire proxy + hooks",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2741,14 +2741,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T23:21:40.831Z"
+    "codex_plan_ts": "2026-05-15T23:35:20.145Z"
   },
   {
     "id": 3215,
     "text": "Implement shared Read policy and wire hooks/proxy bridges",
     "activeForm": "Implement shared Read policy and wire hooks/proxy bridges",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2757,14 +2757,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T23:21:40.831Z"
+    "codex_plan_ts": "2026-05-15T23:35:20.145Z"
   },
   {
     "id": 3216,
     "text": "Expand central pre-write policy and thin Edit/Write hooks",
     "activeForm": "Expand central pre-write policy and thin Edit/Write hooks",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2773,14 +2773,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T23:21:40.831Z"
+    "codex_plan_ts": "2026-05-15T23:35:20.145Z"
   },
   {
     "id": 3217,
     "text": "Move post-write side effects to proxy middleware with hook fallback",
     "activeForm": "Move post-write side effects to proxy middleware with hook fallback",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2789,14 +2789,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T23:21:40.831Z"
+    "codex_plan_ts": "2026-05-15T23:35:20.145Z"
   },
   {
     "id": 3218,
     "text": "Move low-risk Stop/UserPrompt cleanup to proxy layer",
     "activeForm": "Move low-risk Stop/UserPrompt cleanup to proxy layer",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2805,14 +2805,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T23:21:40.831Z"
+    "codex_plan_ts": "2026-05-15T23:35:20.145Z"
   },
   {
     "id": 3219,
     "text": "Run focused tests, restart proxy, verify live status",
     "activeForm": "Run focused tests, restart proxy, verify live status",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2821,6 +2821,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T23:21:40.831Z"
+    "codex_plan_ts": "2026-05-15T23:35:20.145Z"
   }
 ]
