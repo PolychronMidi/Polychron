@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Check working tree and recent relevant diffs/commits
+(empty)
 
 ## Next
 
-- [ ] [E3] Run focused script and generated-doc verification
-- [ ] [E3] Fix any failures and report evidence
+(empty)
 
 ## Done
 

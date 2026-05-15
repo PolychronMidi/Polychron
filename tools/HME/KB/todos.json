@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3183,
-      "updated_ts": 1778881228.6247497,
-      "codex_plan_synced_ts": 1778881228.6247182,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T21:40:03.582Z"
+      "updated_ts": 1778881291.7269666,
+      "codex_plan_synced_ts": 1778881291.7269356,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T21:41:31.315Z"
     }
   },
   {
@@ -2197,8 +2197,8 @@
     "id": 3181,
     "text": "Check working tree and recent relevant diffs/commits",
     "activeForm": "Check working tree and recent relevant diffs/commits",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2206,15 +2206,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:40:03.582Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:41:31.315Z"
   },
   {
     "id": 3182,
     "text": "Run focused script and generated-doc verification",
     "activeForm": "Run focused script and generated-doc verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2222,15 +2222,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:40:03.582Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:41:31.315Z"
   },
   {
     "id": 3183,
     "text": "Fix any failures and report evidence",
     "activeForm": "Fix any failures and report evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -2238,7 +2238,7 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:40:03.582Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:41:31.315Z"
   }
 ]
