@@ -1,6 +1,7 @@
 'use strict';
 
 const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
+const { evaluateReadInput } = require('./read_policy');
 
 const BRIDGE = 'node tools/HME/scripts/codex_structured_tool.js';
 const TARGET_TOOL = 'exec_command';
@@ -138,7 +139,12 @@ function rewriteCallObject(obj, stats) {
   if (!NATIVE_NAMES.has(name) && name !== TARGET_TOOL && name !== 'functions.exec_command') return obj;
   const args = parseArgs(argsText(obj));
   if (NATIVE_NAMES.has(name)) {
-    const commandArgs = JSON.stringify(policyCommandArgs({ cmd: bridgeCommand(name, args) }));
+    let cmd = bridgeCommand(name, args);
+    if (name === 'Read') {
+      const readVerdict = evaluateReadInput(bridgeInput(name, args));
+      if (readVerdict.decision === 'deny') cmd = blockedCommand(readVerdict.reason);
+    }
+    const commandArgs = JSON.stringify(policyCommandArgs({ cmd }));
     stats.calls += 1;
     return setCallArgs(obj, TARGET_TOOL, commandArgs);
   }
