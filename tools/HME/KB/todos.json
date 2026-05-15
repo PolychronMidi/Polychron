@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3172,
-      "updated_ts": 1778880538.6145225,
-      "codex_plan_synced_ts": 1778880538.6144946,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T21:28:50.910Z"
+      "max_id": 3176,
+      "updated_ts": 1778880633.9351654,
+      "codex_plan_synced_ts": 1778880633.9351358,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T21:30:33.515Z"
     }
   },
   {
@@ -2060,5 +2060,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T21:28:50.910Z"
+  },
+  {
+    "id": 3173,
+    "text": "Update updater default to all section levels",
+    "activeForm": "Update updater default to all section levels",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880633.934883,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:30:33.515Z"
+  },
+  {
+    "id": 3174,
+    "text": "Regenerate *_full.md indexes",
+    "activeForm": "Regenerate *_full.md indexes",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880633.9348881,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:30:33.515Z"
+  },
+  {
+    "id": 3175,
+    "text": "Verify links cover every heading",
+    "activeForm": "Verify links cover every heading",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880633.9348915,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:30:33.515Z"
+  },
+  {
+    "id": 3176,
+    "text": "Report exact correction",
+    "activeForm": "Report exact correction",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778880633.9348936,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:30:33.515Z"
   }
 ]

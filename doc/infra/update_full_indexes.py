@@ -80,7 +80,7 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--root", default="doc", help="documentation root")
     ap.add_argument("--check", action="store_true", help="fail if files need updates")
-    ap.add_argument("--levels", default="2", help="heading levels to index, comma-separated")
+    ap.add_argument("--levels", default="2,3,4,5,6", help="heading levels to index, comma-separated")
     args = ap.parse_args(argv)
     levels = {int(x) for x in args.levels.split(",") if x.strip()}
     changed: list[Path] = []
