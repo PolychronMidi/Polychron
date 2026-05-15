@@ -155,10 +155,32 @@ test('synthetic Stop chain policy returns decision shape', async () => {
 
 test('synthetic SessionStart returns lifecycle shape', async () => {
   const root = _withSandbox('hme-hook-session-');
+  const started = Date.now();
   const res = await dispatch(root, 'SessionStart', { session_id: 's6' });
+  const elapsed = Date.now() - started;
   assert.strictEqual(res.exit_code, 0);
   assert.strictEqual(typeof res.stderr, 'string');
+  assert.ok(elapsed < 8000, `SessionStart must not wait on bg jobs; took ${elapsed}ms`);
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('hook background subshells do not inherit hook stdio', () => {
+  const hooksRoot = path.resolve(__dirname, '..', '..', 'hooks');
+  const stack = [hooksRoot];
+  const bad = [];
+  while (stack.length) {
+    const dir = stack.pop();
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) stack.push(full);
+      if (!ent.isFile() || !ent.name.endsWith('.sh')) continue;
+      const lines = fs.readFileSync(full, 'utf8').split(/\r?\n/);
+      lines.forEach((line, idx) => {
+        if (/\)\s*&\s*$/.test(line)) bad.push(`${path.relative(hooksRoot, full)}:${idx + 1}`);
+      });
+    }
+  }
+  assert.deepStrictEqual(bad, [], `background subshells need explicit stdio redirection: ${bad.join(', ')}`);
 });
 
 test('synthetic PostCompact returns lifecycle shape', async () => {

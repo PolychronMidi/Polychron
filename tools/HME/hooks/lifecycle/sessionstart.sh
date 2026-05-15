@@ -34,8 +34,8 @@ mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-primer-needed.flag"
 
 # Refresh adaptive config and coherence health on every session start.
-(python3 "${PROJECT}/tools/HME/scripts/adapt-from-activity.py" >/dev/null 2>&1 || true) &
-(python3 "${PROJECT}/tools/HME/scripts/verify-coherence-registry.py" >/dev/null 2>&1 || true) &
+(python3 "${PROJECT}/tools/HME/scripts/adapt-from-activity.py" || true) >/dev/null 2>&1 &
+(python3 "${PROJECT}/tools/HME/scripts/verify-coherence-registry.py" || true) >/dev/null 2>&1 &
 
 _signal_emit session_start sessionstart session '{}'
 
@@ -206,7 +206,7 @@ if [ -f "$HOLO_SCRIPT" ]; then
       > "$SESSION_HOLO_TMP" 2>"$PROJECT/log/hme-bg-snapshot-holograph.err" \
       && mv "$SESSION_HOLO_TMP" "$SESSION_HOLO" \
       || rm -f "$SESSION_HOLO_TMP"
-  ) &
+  ) >/dev/null 2>>"$PROJECT/log/hme-bg-snapshot-holograph.err" &
 fi
 
 # Refresh tool-effectiveness analysis in the background.

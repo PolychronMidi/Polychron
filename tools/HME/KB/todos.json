@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3073,
-      "updated_ts": 1778866138.5481353,
-      "codex_plan_synced_ts": 1778866138.548127,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-      "codex_plan_ts": "2026-05-15T17:28:29.662Z"
+      "max_id": 3076,
+      "updated_ts": 1778866978.5562208,
+      "codex_plan_synced_ts": 1778866978.556211,
+      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+      "codex_plan_ts": "2026-05-15T17:40:16.844Z"
     }
   },
   {
@@ -395,8 +395,8 @@
     "id": 3071,
     "text": "Trace invalid PostToolUse stdout source",
     "activeForm": "Trace invalid PostToolUse stdout source",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -405,14 +405,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-    "codex_plan_ts": "2026-05-15T17:28:29.662Z"
+    "codex_plan_ts": "2026-05-15T17:28:29.662Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3072,
     "text": "Patch Codex PostToolUse JSON sanitization/visibility",
     "activeForm": "Patch Codex PostToolUse JSON sanitization/visibility",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -421,14 +422,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-    "codex_plan_ts": "2026-05-15T17:28:29.662Z"
+    "codex_plan_ts": "2026-05-15T17:28:29.662Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3073,
     "text": "Verify hook output and Lifesaver mirroring",
     "activeForm": "Verify hook output and Lifesaver mirroring",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -437,6 +439,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-    "codex_plan_ts": "2026-05-15T17:28:29.662Z"
+    "codex_plan_ts": "2026-05-15T17:28:29.662Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3074,
+    "text": "Locate hook config and logs",
+    "activeForm": "Locate hook config and logs",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778866978.5561485,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T17:40:16.844Z"
+  },
+  {
+    "id": 3075,
+    "text": "Identify why SessionStart timed out",
+    "activeForm": "Identify why SessionStart timed out",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778866978.5561528,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T17:40:16.844Z"
+  },
+  {
+    "id": 3076,
+    "text": "Recommend or apply a fix",
+    "activeForm": "Recommend or apply a fix",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778866978.5561562,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T17:40:16.844Z"
   }
 ]

@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Trace invalid PostToolUse stdout source
+(empty)
 
 ## Next
 
-- [ ] [E3] Patch Codex PostToolUse JSON sanitization/visibility
-- [ ] [E3] Verify hook output and Lifesaver mirroring
+(empty)
 
 ## Done
 

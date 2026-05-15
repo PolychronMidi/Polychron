@@ -124,13 +124,13 @@ printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "
 
 # 3. POST to HTTP shim (background, non-blocking)
 _WORKER_BASE="http://127.0.0.1:${_HME_HTTP_PORT}"
-(_safe_curl "${_WORKER_BASE}/transcript" "{\"entries\":[$ENTRY]}") &
+(_safe_curl "${_WORKER_BASE}/transcript" "{\"entries\":[$ENTRY]}") >/dev/null 2>&1 &
 
 # 3. If tool modified a file, trigger mini-reindex
 if [ -n "$FILE_PATH" ]; then
   case "$TOOL_NAME" in
     Edit|Write)
-      (_safe_curl "${_WORKER_BASE}/reindex" "{\"files\":[\"$FILE_PATH\"]}") &
+      (_safe_curl "${_WORKER_BASE}/reindex" "{\"files\":[\"$FILE_PATH\"]}") >/dev/null 2>&1 &
       node -e "const s=require('${PROJECT_ROOT}/tools/HME/proxy/session_state'); s.recordWrite(JSON.parse(process.argv[1]), {permissionDecision:'allow'});" "$HOOK_DATA" >/dev/null 2>&1 || true
       ;;
   esac
