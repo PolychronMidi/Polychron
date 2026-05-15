@@ -4,12 +4,10 @@
 
 ## Now
 
-- [ ] [E3] Inspect current routing/config
+- [ ] [E3] Add focused regression coverage
 
 ## Next
 
-- [ ] [E3] Implement responses-target routing signal
-- [ ] [E3] Add focused regression coverage
 - [ ] [E3] Run focused verification
 
 ## Done
