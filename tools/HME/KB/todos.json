@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3183,
-      "updated_ts": 1778881318.614351,
-      "codex_plan_synced_ts": 1778881318.61432,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T21:41:31.318Z"
+      "max_id": 3185,
+      "updated_ts": 1778882146.3275096,
+      "codex_plan_synced_ts": 1778882146.327478,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T21:55:45.906Z"
     }
   },
   {
@@ -1153,8 +1153,8 @@
     "id": 3117,
     "text": "Run focused verification and report evidence",
     "activeForm": "Run focused verification and report evidence",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1162,8 +1162,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:14:13.204Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:55:45.906Z"
   },
   {
     "id": 3118,
@@ -2240,5 +2240,37 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T21:41:31.318Z"
+  },
+  {
+    "id": 3184,
+    "text": "Find todo warning/status emission paths",
+    "activeForm": "Find todo warning/status emission paths",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778882146.3272092,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:55:45.906Z"
+  },
+  {
+    "id": 3185,
+    "text": "Patch warning removal and quiet-success behavior",
+    "activeForm": "Patch warning removal and quiet-success behavior",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778882146.3272152,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T21:55:45.906Z"
   }
 ]

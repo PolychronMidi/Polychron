@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Find todo warning/status emission paths
 
 ## Next
 
-(empty)
+- [ ] [E3] Run focused verification and report evidence
+- [ ] [E3] Patch warning removal and quiet-success behavior
 
 ## Done
 
