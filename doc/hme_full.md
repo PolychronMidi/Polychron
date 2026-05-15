@@ -5,11 +5,7 @@ Keep this as the single source of truth for HME architecture, lifecycle
 behavior, state ownership, local inference, self-coherence, and operational
 runbooks.
 
-<!-- doc-infra-nav:start -->
-## Navigation
-
-[Mental Model](#mental-model) · [Surfaces](#surfaces) · [Event Kernel](#event-kernel) · [Hook Portability Rules](#hook-portability-rules) · [Command Surface](#command-surface) · [Working Loop](#working-loop) · [Enforcement Stack](#enforcement-stack) · [LIFESAVER](#lifesaver) · [Stop Detectors](#stop-detectors) · [HCI And Holograph](#hci-and-holograph) · [RAG And Memory](#rag-and-memory) · [Local Inference](#local-inference) · [Evolution Loop](#evolution-loop) · [State Ownership Registry](#state-ownership-registry) · [Registries](#registries) · [Testing](#testing) · [Deep Links](#deep-links)
-<!-- doc-infra-nav:end -->
+<!-- doc-infra-nav:start --> **Navigation:** [Mental Model](#mental-model) · [Surfaces](#surfaces) · [Event Kernel](#event-kernel) · [Hook Portability Rules](#hook-portability-rules) · [Command Surface](#command-surface) · [Working Loop](#working-loop) · [Enforcement Stack](#enforcement-stack) · [LIFESAVER](#lifesaver) · [Stop Detectors](#stop-detectors) · [HCI And Holograph](#hci-and-holograph) · [RAG And Memory](#rag-and-memory) · [Local Inference](#local-inference) · [Evolution Loop](#evolution-loop) · [State Ownership Registry](#state-ownership-registry) · [Registries](#registries) · [Testing](#testing) · [Deep Links](#deep-links) <!-- doc-infra-nav:end -->
 
 ## Mental Model
 

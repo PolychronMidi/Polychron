@@ -48,11 +48,11 @@ def headings(text: str, levels: set[int]) -> list[tuple[int, str, str]]:
 
 def render_nav(items: list[tuple[int, str, str]]) -> str:
     links = " · ".join(f"[{title}](#{anchor})" for _level, title, anchor in items)
-    return f"{START}\n## Navigation\n\n{links}\n{END}\n"
+    return f"{START} **Navigation:** {links} {END}\n"
 
 
 def strip_nav(text: str) -> str:
-    pattern = re.compile(rf"\n?{re.escape(START)}\n.*?\n{re.escape(END)}\n?", re.S)
+    pattern = re.compile(rf"\n?{re.escape(START)}.*?{re.escape(END)}\n?", re.S)
     return pattern.sub("\n", text).lstrip("\n")
 
 
