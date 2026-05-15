@@ -1,7 +1,7 @@
 'use strict';
 
 const BRIDGE = 'node tools/HME/scripts/codex_structured_tool.js';
-const TARGET_TOOL = 'functions.exec_command';
+const TARGET_TOOL = 'exec_command';
 const NATIVE_NAMES = new Set(['Read', 'Edit']);
 
 const READ_TOOL = {

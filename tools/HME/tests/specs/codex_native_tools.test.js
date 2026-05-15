@@ -76,7 +76,7 @@ test('Codex native Read response rewrites to executable bridge and back to Read 
   };
   const rewritten = rewriteCodexResponseObject(response);
   const call = rewritten.body.output[0];
-  assert.equal(call.name, 'functions.exec_command');
+  assert.equal(call.name, 'exec_command');
   const args = JSON.parse(call.arguments);
   assert.match(args.cmd, /codex_structured_tool\.js read --json/);
   assert.match(args.cmd, /doc\/HME\.md/);
@@ -96,7 +96,7 @@ test('Codex SSE native Edit response rewrites before forwarding', () => {
     },
   };
   const out = rewriter.feed(Buffer.from(`data: ${JSON.stringify(event)}\n\n`));
-  assert.match(out, /functions\.exec_command/);
+  assert.match(out, /exec_command/);
   assert.match(out, /codex_structured_tool\.js edit --json/);
   assert.equal(rewriter.stats.calls, 1);
 });
@@ -148,7 +148,7 @@ test('Codex proxy sends Read/Edit upstream and translates native call response',
     assert.equal(response.status, 200);
     assert.deepEqual(upstreamBody.tools.map((t) => t.name), ['Read', 'Edit']);
     const call = JSON.parse(response.body).output[0];
-    assert.equal(call.name, 'functions.exec_command');
+    assert.equal(call.name, 'exec_command');
     assert.match(JSON.parse(call.arguments).cmd, /codex_structured_tool\.js read --json/);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
