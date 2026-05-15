@@ -25,7 +25,8 @@ measured evolution loop.
   middleware where appropriate.
 - Codex `update_plan`: synced into the same TODO store by `codex_proxy` while
   Responses events stream; universal pulse remains the fallback session-log
-  scanner; admin action `todo_sync_codex` is the manual path.
+  scanner. There is no normal manual sync command; sync failures are repaired
+  in proxy/pulse plumbing.
 - Proxy middleware: transforms inference and native-tool results.
 - Event kernel: portable routing for lifecycle and tool events.
 - Hooks: host-specific adapters and remaining shell lifecycle stages.
@@ -131,7 +132,7 @@ it directly.
 
 Keep `i/` commands for explicit actions:
 
-- `i/hme admin action=selftest|health|reload|index|clear_index|warm|todo_status|todo_validate|todo_repair|todo_archive|todo_sync_codex`
+- `i/hme admin action=selftest|health|reload|index|clear_index|warm|todo_status|todo_validate|todo_repair|todo_archive`
 - `i/review mode=forget|docs|health|convention`
 - `i/learn query=...`
 - `i/learn title=... content=... category=pattern`

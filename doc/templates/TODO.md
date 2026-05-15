@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Remove or de-advertise manual sync command while preserving automatic proxy/pulse sync
 
 ## Next
 
-(empty)
+- [ ] [E3] Add regression proving help/admin no longer exposes manual sync
+- [ ] [E3] Run focused verification and commit
 
 ## Done
 

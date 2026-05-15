@@ -187,16 +187,11 @@ class TodoCodexPlanSyncVerifier(Verifier):
                 failures.append("TODO.md still claims only native TodoWrite syncs it")
         except OSError as e:
             failures.append(f"TODO.md unreadable: {e}")
-        admin_path = os.path.join(
-            _SERVER_DIR,
-            "tools_analysis",
-            "evolution",
-            "evolution_admin.py",
-        )
+        admin_path = os.path.join(_SERVER_DIR, "tools_analysis", "evolution", "evolution_admin.py")
         try:
             admin_text = open(admin_path, encoding="utf-8").read()
-            if "todo_sync_codex" not in admin_text:
-                failures.append("hme_admin lacks todo_sync_codex operator action")
+            if "todo_sync_codex" in admin_text:
+                failures.append("hme_admin still advertises manual todo_sync_codex; Codex plan sync must be automatic")
         except OSError as e:
             failures.append(f"evolution_admin.py unreadable: {e}")
         pulse_tick = os.path.join(_PROJECT, "tools", "HME", "activity", "universal_pulse_tick.py")
@@ -216,7 +211,7 @@ class TodoCodexPlanSyncVerifier(Verifier):
             failures.append(f"universal_pulse.json codex sync config unreadable: {e}")
         if failures:
             return _result(FAIL, 0.0, f"{len(failures)} Codex TODO sync issue(s)", failures)
-        return _result(PASS, 1.0, "Codex update_plan sync has proxy, hook adapter, pulse, and manual operator paths")
+        return _result(PASS, 1.0, "Codex update_plan sync has proxy, hook adapter, and pulse automatic paths")
 
 
 class TodoOnboardingDecoupledVerifier(Verifier):

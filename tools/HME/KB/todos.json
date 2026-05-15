@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3126,
-      "updated_ts": 1778873993.583076,
-      "codex_plan_synced_ts": 1778873993.5830534,
+      "max_id": 3130,
+      "updated_ts": 1778874178.5960786,
+      "codex_plan_synced_ts": 1778874178.5960588,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T19:39:37.906Z"
+      "codex_plan_ts": "2026-05-15T19:42:53.502Z"
     }
   },
   {
@@ -1308,5 +1308,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T19:39:37.906Z"
+  },
+  {
+    "id": 3127,
+    "text": "Find every advertised/manual todo_sync_codex surface",
+    "activeForm": "Find every advertised/manual todo_sync_codex surface",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874118.6206868,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:42:53.502Z"
+  },
+  {
+    "id": 3128,
+    "text": "Remove or de-advertise manual sync command while preserving automatic proxy/pulse sync",
+    "activeForm": "Remove or de-advertise manual sync command while preserving automatic proxy/pulse sync",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874118.620692,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:42:53.502Z"
+  },
+  {
+    "id": 3129,
+    "text": "Add regression proving help/admin no longer exposes manual sync",
+    "activeForm": "Add regression proving help/admin no longer exposes manual sync",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874118.6206954,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:42:53.502Z"
+  },
+  {
+    "id": 3130,
+    "text": "Run focused verification and commit",
+    "activeForm": "Run focused verification and commit",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778874118.6206975,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:42:53.502Z"
   }
 ]

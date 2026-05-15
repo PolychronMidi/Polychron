@@ -34,8 +34,8 @@ def hme_admin(action: str = "selftest", modules: str = "",
     to a hook script (antipattern=, hook_target= one of: pretooluse_bash/edit/read/grep/write,
     posttooluse_bash, stop, userpromptsubmit).
     action='both': reload then selftest.
-    action='todo_status'|'todo_validate'|'todo_repair'|'todo_archive'|'todo_sync_codex': inspect,
-    validate, repair, force-archive, or sync Codex update_plan into the TODO store.
+    action='todo_status'|'todo_validate'|'todo_repair'|'todo_archive': inspect,
+    validate, repair, or force-archive the unified TODO store.
     Use after structural changes to HME tool files."""
     _track("hme_admin")
     from ..synthesis_session import append_session_narrative
@@ -103,10 +103,10 @@ def hme_admin(action: str = "selftest", modules: str = "",
             parts.append(_health())
         except Exception as e:
             parts.append(f"health summary error: {type(e).__name__}: {e}")
-    if action in ("todo_status", "todo_validate", "todo_repair", "todo_archive", "todo_sync_codex"):
+    if action in ("todo_status", "todo_validate", "todo_repair", "todo_archive"):
         parts.append(_hme_todo_admin(action, modules))
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', 'todo_status', 'todo_validate', 'todo_repair', 'todo_archive', 'todo_sync_codex', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', 'todo_status', 'todo_validate', 'todo_repair', 'todo_archive', or 'both'."
     return "\n\n".join(parts)
 
 
@@ -220,27 +220,6 @@ def _hme_todo_admin(action: str, set_name: str = "") -> str:
             )
         return f"TODO archive refused: {archive_result.get('message', 'unknown error')}"
 
-    if action == "todo_sync_codex":
-        from paths import project_root as _project_root
-        scripts_dir = os.path.join(_project_root(), "tools", "HME", "scripts")
-        if scripts_dir and scripts_dir not in sys.path:
-            sys.path.insert(0, scripts_dir)
-        try:
-            from codex_plan_sync import sync_latest_codex_plan
-            result = sync_latest_codex_plan(dry_run=("dry" in (set_name or "").lower()))
-        except Exception as e:
-            return f"Codex plan TODO sync failed: {type(e).__name__}: {e}"
-        if not result.get("ok"):
-            return f"Codex plan TODO sync skipped: {result.get('message', 'unknown reason')}"
-        suffix = " (dry run)" if result.get("dry_run") else ""
-        return (
-            f"Codex plan TODO sync complete{suffix}\n"
-            f"- items: {result['items']}\n"
-            f"- added: {result['added']}\n"
-            f"- updated: {result['updated']}\n"
-            f"- superseded: {result['superseded']}\n"
-            f"- source: {result['session_file']}"
-        )
     return f"Unknown TODO admin action: {action}"
 
 

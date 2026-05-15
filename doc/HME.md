@@ -28,8 +28,8 @@ Use native Read/Edit/Grep/Glob/TodoWrite first; proxy middleware enriches or
 replaces those where HME needs to participate. Claude `TodoWrite` and Codex
 `update_plan` both sync into `doc/templates/TODO.md`; the Codex path runs
 through the `codex_proxy` Responses service when configured, with universal
-pulse as the fallback scanner. `i/hme admin action=todo_sync_codex` is the
-manual operator path. Use `i/`
+pulse as the fallback scanner. There is no manual Codex TODO sync command in
+normal operation; failures belong in proxy/pulse repair, not operator ritual. Use `i/`
 commands for explicit HME workflows:
 
 ```bash
