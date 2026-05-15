@@ -108,6 +108,23 @@ def _latest_codex_pair(events: list[dict]) -> tuple[dict | None, dict | None]:
     return req, resp
 
 
+def _native_read_edit_line(req: dict | None) -> str:
+    after = (req or {}).get("after") or {}
+    tools = set(after.get("tool_names") or [])
+    if not tools:
+        return "codex native Read/Edit: unknown (no tool_names in latest request)"
+    read_ok = "Read" in tools
+    edit_ok = "Edit" in tools or "MultiEdit" in tools
+    if read_ok and edit_ok:
+        return "codex native Read/Edit: present"
+    missing = []
+    if not read_ok:
+        missing.append("Read")
+    if not edit_ok:
+        missing.append("Edit/MultiEdit")
+    return f"codex native Read/Edit: absent ({', '.join(missing)} missing); bridge fallback active"
+
+
 def _omniroute_logs(limit: int = 40) -> tuple[list[dict], str]:
     port = _service_port("omniroute", 20128)
     password = os.environ.get("OMNIROUTE_PASSWORD") or os.environ.get("INITIAL_PASSWORD") or "polychron"
@@ -206,6 +223,7 @@ def _mode_codex_route() -> str:
         )
     else:
         out.append("codex_proxy latest response: missing")
+    out.append(_native_read_edit_line(req))
     out.append(f"omniroute claude probe: {probe_status} ({probe_detail})")
     out.append("omniroute visibility: api=/api/usage/call-logs db=unused")
     out.append("omniroute direct: " + _fmt_call(direct))
