@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3070,
-      "updated_ts": 1778866018.5478902,
-      "codex_plan_synced_ts": 1778866018.5478823,
+      "max_id": 3073,
+      "updated_ts": 1778866138.5481353,
+      "codex_plan_synced_ts": 1778866138.548127,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-      "codex_plan_ts": "2026-05-15T17:26:30.576Z"
+      "codex_plan_ts": "2026-05-15T17:28:29.662Z"
     }
   },
   {
@@ -390,5 +390,53 @@
     "codex_plan_ts": "2026-05-15T17:26:30.576Z",
     "resolved_ts": 1778865946.911745,
     "resolved_reason": "completed-after-hook-scope-stack-check"
+  },
+  {
+    "id": 3071,
+    "text": "Trace invalid PostToolUse stdout source",
+    "activeForm": "Trace invalid PostToolUse stdout source",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778866138.548075,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:28:29.662Z"
+  },
+  {
+    "id": 3072,
+    "text": "Patch Codex PostToolUse JSON sanitization/visibility",
+    "activeForm": "Patch Codex PostToolUse JSON sanitization/visibility",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778866138.5480785,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:28:29.662Z"
+  },
+  {
+    "id": 3073,
+    "text": "Verify hook output and Lifesaver mirroring",
+    "activeForm": "Verify hook output and Lifesaver mirroring",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778866138.5480812,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
+    "codex_plan_ts": "2026-05-15T17:28:29.662Z"
   }
 ]
