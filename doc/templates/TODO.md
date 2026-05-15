@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Find auto-correct warning source
+- [ ] [E3] Locate hook-message strip path
 
 ## Next
 
-- [ ] [E3] Silence hook spam safely
-- [ ] [E3] Assess middleware/proxy ownership
-- [ ] [E3] Verify with tests/smoke
+- [ ] [E3] Strip i-wrapper auto-correct notice
+- [ ] [E3] Add regression coverage
+- [ ] [E3] Run targeted verification
 
 ## Done
 

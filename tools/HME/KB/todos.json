@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3091,
-      "updated_ts": 1778868988.5668097,
-      "codex_plan_synced_ts": 1778868988.566797,
+      "max_id": 3095,
+      "updated_ts": 1778869138.5631678,
+      "codex_plan_synced_ts": 1778869138.5631552,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T18:16:24.348Z"
+      "codex_plan_ts": "2026-05-15T18:18:36.548Z"
     }
   },
   {
@@ -670,8 +670,8 @@
     "id": 3088,
     "text": "Find auto-correct warning source",
     "activeForm": "Find auto-correct warning source",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -680,14 +680,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:16:24.348Z"
+    "codex_plan_ts": "2026-05-15T18:16:24.348Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3089,
     "text": "Silence hook spam safely",
     "activeForm": "Silence hook spam safely",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -696,14 +697,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:16:24.348Z"
+    "codex_plan_ts": "2026-05-15T18:16:24.348Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3090,
     "text": "Assess middleware/proxy ownership",
     "activeForm": "Assess middleware/proxy ownership",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -712,14 +714,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:16:24.348Z"
+    "codex_plan_ts": "2026-05-15T18:16:24.348Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3091,
     "text": "Verify with tests/smoke",
     "activeForm": "Verify with tests/smoke",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -728,6 +731,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:16:24.348Z"
+    "codex_plan_ts": "2026-05-15T18:16:24.348Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3092,
+    "text": "Locate hook-message strip path",
+    "activeForm": "Locate hook-message strip path",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778869138.5630615,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:18:36.548Z"
+  },
+  {
+    "id": 3093,
+    "text": "Strip i-wrapper auto-correct notice",
+    "activeForm": "Strip i-wrapper auto-correct notice",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778869138.5630655,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:18:36.548Z"
+  },
+  {
+    "id": 3094,
+    "text": "Add regression coverage",
+    "activeForm": "Add regression coverage",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778869138.5630682,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:18:36.548Z"
+  },
+  {
+    "id": 3095,
+    "text": "Run targeted verification",
+    "activeForm": "Run targeted verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778869138.56307,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:18:36.548Z"
   }
 ]
