@@ -2,9 +2,9 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3191,
-      "updated_ts": 1778883808.6531622,
-      "codex_plan_synced_ts": 1778883808.65313,
+      "max_id": 3194,
+      "updated_ts": 1778884168.655734,
+      "codex_plan_synced_ts": 1778884168.6557007,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
       "codex_plan_ts": "2026-05-15T22:23:27.887Z"
     }
@@ -2368,5 +2368,56 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T22:23:27.887Z"
+  },
+  {
+    "id": 3192,
+    "text": "Make structured bridge internal-only and non-unlockable from Bash",
+    "activeForm": "Make structured bridge internal-only and non-unlockable from Bash",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778884165.3706489,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T22:29:24.953Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3193,
+    "text": "Update tests to use internal env and assert direct shell use is blocked",
+    "activeForm": "Update tests to use internal env and assert direct shell use is blocked",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778884165.3706555,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T22:29:24.953Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3194,
+    "text": "Verify and report the hard limit of this API tool surface",
+    "activeForm": "Verify and report the hard limit of this API tool surface",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778884165.3706598,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T22:29:24.953Z",
+    "resolved_reason": "superseded-by-codex-plan"
   }
 ]
