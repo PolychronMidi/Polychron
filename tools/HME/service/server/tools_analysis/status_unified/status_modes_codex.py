@@ -217,3 +217,28 @@ def _mode_codex_route() -> str:
     out.append("")
     out.append(f"verdict={verdict}")
     return "\n".join(out)
+
+
+
+def _mode_hook_decisions() -> str:
+    path = os.path.join(ctx.PROJECT_ROOT, "runtime", "hme", "hook-decisions.jsonl")
+    events = _iter_events(path, limit=80)
+    out = ["# Hook decision compact", ""]
+    if not events:
+        out.append("No hook decisions recorded yet.")
+        out.append(f"Log: {path}")
+        return "\n".join(out)
+    last = events[-1]
+    out.append("last decision:")
+    out.append(
+        f"  ts={last.get('ts')} host={last.get('host')} event={last.get('event')} "
+        f"tool={last.get('tool')} decision={last.get('decision')}"
+    )
+    out.append(
+        f"  reason_hash={last.get('reason_hash')} "
+        f"surfaced_channels={','.join(last.get('surfaced_channels') or []) or 'none'} "
+        f"duplicate_systemMessage_stripped={last.get('duplicate_systemMessage_stripped')}"
+    )
+    out.append("")
+    out.append(f"Log: {path}")
+    return "\n".join(out)

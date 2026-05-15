@@ -12,6 +12,7 @@
  *   - relay only hook output fields Codex supports
  */
 
+const crypto = require('crypto');
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
@@ -179,8 +180,64 @@ function sanitizeStdout(event, stdout) {
   return Object.keys(sanitized).length ? JSON.stringify(sanitized) : '';
 }
 
-function finalRelay(event, result) {
-  const stdout = sanitizeStdout(event, result.stdout || '');
+
+function decisionFields(parsed) {
+  const hso = parsed && parsed.hookSpecificOutput;
+  if (!hso || typeof hso !== 'object') return { decision: parsed && parsed.decision, reason: parsed && parsed.reason, channels: [] };
+  const reason = hso.permissionDecisionReason
+    || hso.additionalContext
+    || (hso.decision && hso.decision.message)
+    || (parsed && parsed.systemMessage)
+    || '';
+  const decision = hso.permissionDecision || (hso.decision && hso.decision.behavior) || parsed.decision || '';
+  const channels = [];
+  if (hso.permissionDecisionReason) channels.push('permissionDecisionReason');
+  if (hso.additionalContext) channels.push('additionalContext');
+  if (hso.decision && hso.decision.message) channels.push('decision.message');
+  if (parsed && parsed.systemMessage) channels.push('systemMessage');
+  return { decision, reason: String(reason || ''), channels };
+}
+
+function reasonHash(reason) {
+  if (!reason) return '';
+  return crypto.createHash('sha256').update(reason).digest('hex').slice(0, 12);
+}
+
+function hookDecisionSummary(event, rawStdout, sanitizedStdout, payload = {}) {
+  const raw = parseJson(rawStdout);
+  const clean = parseJson(sanitizedStdout);
+  const rawFields = decisionFields(raw);
+  const cleanFields = decisionFields(clean);
+  const reason = cleanFields.reason || rawFields.reason;
+  const decision = cleanFields.decision || rawFields.decision;
+  if (!reason && !decision) return null;
+  return {
+    ts: new Date().toISOString(),
+    host: 'codex',
+    event,
+    tool: payload.tool_name || '',
+    session_id: payload.session_id || '',
+    decision: decision || '',
+    reason_hash: reasonHash(reason),
+    surfaced_channels: cleanFields.channels,
+    raw_channels: rawFields.channels,
+    duplicate_systemMessage_stripped: Boolean(
+      raw.systemMessage && raw.systemMessage === rawFields.reason && !clean.systemMessage
+    ),
+  };
+}
+
+function recordHookDecision(root, event, rawStdout, sanitizedStdout, payload = {}) {
+  const summary = hookDecisionSummary(event, rawStdout, sanitizedStdout, payload);
+  if (!summary || !root) return;
+  append(path.join(root, 'runtime', 'hme', 'hook-decisions.jsonl'), JSON.stringify(summary));
+}
+
+function finalRelay(event, result, body = '{}') {
+  const rawStdout = result.stdout || '';
+  const stdout = sanitizeStdout(event, rawStdout);
+  const payload = parseJson(body);
+  recordHookDecision(payload._hme_project_root || process.env.PROJECT_ROOT, event, rawStdout, stdout, payload);
   const stderr = result.stderr && result.stderr.trim() ? result.stderr : '';
   const code = Number.isInteger(result.exit_code) ? result.exit_code : 0;
   if (stdout) process.stdout.write(stdout);
@@ -212,7 +269,7 @@ async function main() {
       append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [codex-adapter] proxy unreachable during maintenance (event=${event})`);
       result = { stdout: '', stderr: '', exit_code: 0 };
       watchdog.end(watch, result);
-      finalRelay(event, result);
+      finalRelay(event, result, body);
       return;
     }
     append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [codex-adapter] ${event} direct fallback (proxy down)`);
@@ -222,7 +279,7 @@ async function main() {
   }
 
   watchdog.end(watch, result);
-  finalRelay(event, result);
+  finalRelay(event, result, body);
 }
 
 if (require.main === module) {
@@ -232,4 +289,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { sanitizeStdout, sanitizeHookSpecific, toPermissionRequestOutput };
+module.exports = { sanitizeStdout, sanitizeHookSpecific, toPermissionRequestOutput, hookDecisionSummary, recordHookDecision };
