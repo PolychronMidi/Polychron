@@ -147,6 +147,7 @@ test('Codex structured read/edit shims route synthetic native events', () => {
   ], { env: editEnv, encoding: 'utf8' });
   assert.equal(edit.status, 0, edit.stderr);
   assert.match(edit.stdout, /edit applied/);
+  assert.doesNotMatch(edit.stdout, /central pre-write check passed/);
   assert.equal(fs.readFileSync(file, 'utf8'), 'const x = 2;\n');
   assert.equal(fs.readFileSync(path.join(root, 'tmp', 'hme-streak', 'shim-edit.score'), 'utf8').trim(), '0');
   const nexus = fs.readFileSync(path.join(root, 'tmp', 'hme-nexus.state'), 'utf8');
