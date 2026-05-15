@@ -33,6 +33,7 @@ test('HME primer hook emits compact context and suppresses restart duplicates', 
     fs.writeFileSync(path.join(root, 'tmp', 'hme-primer-needed.flag'), '');
     const first = runPrimer(root);
     assert.strictEqual(first.status, 0, first.stderr);
+    assert.notStrictEqual(first.stdout, '', `empty primer stdout; stderr=${first.stderr}`);
     assert.ok(first.stdout.length < 900, `primer output too large: ${first.stdout.length}`);
     const payload = JSON.parse(first.stdout);
     const ctx = payload.hookSpecificOutput.additionalContext;
