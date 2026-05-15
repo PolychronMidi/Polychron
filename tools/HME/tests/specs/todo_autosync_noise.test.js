@@ -17,14 +17,22 @@ function clearHmeRequireCache() {
 function withProject(fn) {
   const oldRoot = process.env.PROJECT_ROOT;
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-todo-noise-'));
-  process.env.PROJECT_ROOT = root;
-  clearHmeRequireCache();
-  try { return fn(root); }
-  finally {
+  const cleanup = () => {
     if (oldRoot === undefined) delete process.env.PROJECT_ROOT;
     else process.env.PROJECT_ROOT = oldRoot;
     clearHmeRequireCache();
     fs.rmSync(root, { recursive: true, force: true });
+  };
+  process.env.PROJECT_ROOT = root;
+  clearHmeRequireCache();
+  try {
+    const result = fn(root);
+    if (result && typeof result.then === 'function') return result.finally(cleanup);
+    cleanup();
+    return result;
+  } catch (err) {
+    cleanup();
+    throw err;
   }
 }
 
