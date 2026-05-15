@@ -3,7 +3,18 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true
 # HME PreToolUse: Write -- enforce lab rules, block memory saves, detect secrets
 INPUT=$(cat)
-_DECISION=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const {preWriteCheck,toHookResponse}=require('${PROJECT_ROOT}/tools/HME/proxy/pre_write_check'); (async()=>{const d=await preWriteCheck(fs.readFileSync(0,'utf8')); process.stdout.write(toHookResponse(d));})().catch(e=>{process.stderr.write(e.stack||String(e)); process.exit(1);});" 2>/dev/null)
+_DECISION_ERR="${PROJECT_ROOT:+$PROJECT_ROOT/tmp/}hme-prewrite-check.$$.err"
+[ -n "${PROJECT_ROOT:-}" ] || _DECISION_ERR="/tmp/hme-prewrite-check.$$.err"
+mkdir -p "$(dirname "$_DECISION_ERR")" 2>/dev/null || true
+_DECISION=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const {preWriteCheck,toHookResponse}=require('${PROJECT_ROOT}/tools/HME/proxy/pre_write_check'); (async()=>{const d=await preWriteCheck(fs.readFileSync(0,'utf8')); process.stdout.write(toHookResponse(d));})().catch(e=>{process.stderr.write(e.stack||String(e)); process.exit(1);});" 2>"$_DECISION_ERR")
+_DECISION_RC=$?
+if [ "$_DECISION_RC" -ne 0 ]; then
+  _ERR_SNIP="$(tail -c 500 "$_DECISION_ERR" 2>/dev/null)"
+  rm -f "$_DECISION_ERR" 2>/dev/null || true
+  _emit_block "BLOCKED: central pre-write check failed (rc=$_DECISION_RC). Fix tools/HME/proxy/pre_write_check.js before writing. ${_ERR_SNIP}"
+  exit 2
+fi
+rm -f "$_DECISION_ERR" 2>/dev/null || true
 if [ -n "$_DECISION" ]; then
   printf '%s\n' "$_DECISION"
   case "$_DECISION" in *'"permissionDecision":"deny"'*|*'"permissionDecision":"ask"'*) exit 0;; esac
@@ -22,25 +33,6 @@ fi
 if _policy_enabled block-memory-dir-writes && echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
   _emit_block "BLOCKED: The .claude/projects memory directory is deprecated. Use HME KB instead: i/learn title=\"...\" content=\"...\" category=\"feedback\". Memories that point at behavioral rules belong in CLAUDE.md, not memory/."
   exit 2
-fi
-
-# Block writes to misplaced log/, metrics/, or tmp/ directories.
-# JS counterparts: block-misplaced-log-tmp + block-misplaced-metrics.
-if _policy_enabled block-misplaced-log-tmp && [ -n "${PROJECT_ROOT:-}" ] && [ "${FILE#"$PROJECT_ROOT"/}" != "$FILE" ]; then
-  _REL_FILE="${FILE#"$PROJECT_ROOT"/}"
-  case "$_REL_FILE" in
-    log/*|tmp/*) ;;
-    */log/*|*/tmp/*)
-      _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not write files inside subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
-      exit 2
-      ;;
-  esac
-fi
-if _policy_enabled block-misplaced-metrics && echo "$FILE" | grep -qE '/metrics/'; then
-  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/output/metrics/'; then
-    _emit_block "BLOCKED: metrics/ only exists at output/metrics/. Do not write files in any other metrics/ directory."
-    exit 2
-  fi
 fi
 
 # Block writes to credential filenames. JS counterpart: block-secrets-write.

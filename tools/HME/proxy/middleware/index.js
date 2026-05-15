@@ -39,6 +39,7 @@ const path = require('path');
 const { emit, PROJECT_ROOT } = require('../shared');
 
 const NEXUS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-nexus.state');
+const PHASES_FILE = path.join(__dirname, 'phases.json');
 
 function _ensureDir(p) {
   try { fs.mkdirSync(path.dirname(p), { recursive: true }); } catch (_e) { /* ignore */ }
@@ -252,6 +253,35 @@ const ctx = {
 
 //  Registration
 const _modules = [];
+const _moduleMeta = new Map(); // module.name -> {file, phase}
+
+let _phaseRegistry = null;
+function _loadPhaseRegistry() {
+  if (_phaseRegistry) return _phaseRegistry;
+  try {
+    const data = JSON.parse(fs.readFileSync(PHASES_FILE, 'utf8'));
+    _phaseRegistry = Array.isArray(data.phases) ? data.phases : [];
+  } catch (err) {
+    console.warn(`Acceptable warning: [middleware] phase registry unavailable: ${err.message}`);
+    _phaseRegistry = [];
+  }
+  return _phaseRegistry;
+}
+
+function _orderPrefix(fname) {
+  const m = /^(\d+)_/.exec(fname || '');
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function _phaseForFile(fname) {
+  const n = _orderPrefix(fname);
+  if (n === null) return 'unphased';
+  const hit = _loadPhaseRegistry().find((phase) => {
+    const r = phase && phase.range;
+    return Array.isArray(r) && r.length === 2 && n >= Number(r[0]) && n <= Number(r[1]);
+  });
+  return hit ? hit.id : 'unphased';
+}
 
 // Runnable-style shape validator (lesson: langchain_core Runnable).
 // Catches the silent-disable bug class: typo'd handler name / missing export.
@@ -266,9 +296,17 @@ function _validateMiddlewareShape(mod) {
   if (unknown.length > 0) console.warn(`Acceptable warning: [middleware] "${mod.name}" exports unknown keys ${JSON.stringify(unknown)} -- silently ignored. Mixed-concern smell; extract utilities to a sibling file (proxy/_*.js).`);
 }
 
-function register(mod) {
+function register(mod, file = '') {
   _validateMiddlewareShape(mod);
   _modules.push(mod);
+  _moduleMeta.set(mod.name, { file, phase: _phaseForFile(file) });
+}
+
+function listMiddleware() {
+  return _modules.map((mod) => ({
+    name: mod.name,
+    ...(_moduleMeta.get(mod.name) || { file: '', phase: 'unphased' }),
+  }));
 }
 
 // Tool-result dedup: each tool_use.id fires onToolResult exactly once
@@ -459,7 +497,7 @@ function loadAll() {
   for (const fname of ordered) {
     try {
       const mod = require(path.join(dir, fname));
-      register(mod);
+      register(mod, fname);
     } catch (err) {
       console.error(`[middleware] failed to load ${fname}: ${err.message}`);
     }
@@ -467,4 +505,4 @@ function loadAll() {
   return _modules.map((m) => m.name);
 }
 
-module.exports = { register, runPipeline, runOnToolResult, loadAll, ctx, _modules };
+module.exports = { register, runPipeline, runOnToolResult, loadAll, listMiddleware, ctx, _modules, _moduleMeta };

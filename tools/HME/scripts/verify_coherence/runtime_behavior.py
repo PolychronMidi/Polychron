@@ -75,6 +75,60 @@ class TransientErrorFilterVerifier(Verifier):
         return _result(PASS, 1.0, "_log_error uses source-based transient detection")
 
 
+class ServiceRegistryVerifier(Verifier):
+    """Service URLs/heartbeats must derive from tools/HME/config/services.json."""
+    name = "service-registry"
+    category = "runtime"
+    subtag = "interface-contract"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        sys.path.insert(0, _SCRIPTS_DIR)
+        try:
+            from service_registry import load_services, service_url
+            services = load_services()
+        except Exception as e:
+            return _result(FAIL, 0.0, f"services.json invalid/unreadable: {e}")
+        issues = []
+        seen = set()
+        for service in services:
+            sid = service.get("id")
+            kind = service.get("kind")
+            if not sid:
+                issues.append("service missing id")
+                continue
+            if sid in seen:
+                issues.append(f"duplicate service id: {sid}")
+            seen.add(sid)
+            if kind == "http":
+                for field in ("env_port", "default_port", "health_path"):
+                    if field not in service:
+                        issues.append(f"{sid}: missing {field}")
+                try:
+                    service_url(service)
+                except Exception as e:
+                    issues.append(f"{sid}: health URL failed: {e}")
+            elif kind == "heartbeat":
+                if not service.get("heartbeat_file"):
+                    issues.append(f"{sid}: missing heartbeat_file")
+            else:
+                issues.append(f"{sid}: unknown kind={kind!r}")
+        pulse_path = os.path.join(_PROJECT, "tools", "HME", "config", "universal_pulse.json")
+        try:
+            with open(pulse_path) as f:
+                pulse = json.load(f)
+            unknown = [sid for sid in pulse.get("http_probe_services", []) if sid not in seen]
+            if unknown:
+                issues.append(f"universal_pulse.http_probe_services unknown: {unknown}")
+            if pulse.get("http_probes"):
+                issues.append("universal_pulse.json still hardcodes http_probes; use http_probe_services")
+        except Exception as e:
+            issues.append(f"universal_pulse.json invalid/unreadable: {e}")
+        if issues:
+            return _result(FAIL, max(0.0, 1.0 - 0.1 * len(issues)), f"{len(issues)} service registry issue(s)", issues[:12])
+        return _result(PASS, 1.0, f"{len(services)} services registered; pulse probes derive from services.json")
+
+
 class ContextBudgetVerifier(Verifier):
     """H-compact optimization #13: verify that chain-link snapshots are
     being taken frequently enough relative to context consumption. Fails

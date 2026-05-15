@@ -1,0 +1,167 @@
+{
+  "_doc": "Canonical ownership registry for shared filesystem state. scripts/audit-state-file-ownership.py parses this file; docs should summarize it, not duplicate it.",
+  "single_owner": [
+    {
+      "path": "runtime/hme/proxy-supervisor.pid",
+      "owner": "tools/HME/hooks/direct/proxy-supervisor.sh",
+      "readers": ["shell ops", "monitoring"]
+    },
+    {
+      "path": "runtime/hme/universal-pulse-supervisor.pid",
+      "owner": "tools/HME/hooks/direct/universal-pulse-supervisor.sh",
+      "readers": ["shell ops", "monitoring"]
+    },
+    {
+      "path": "runtime/hme/team-dashboard.json",
+      "owner": "tools/HME/scripts/team_dashboard.py",
+      "readers": ["team_agent_router.py", "i/status team"]
+    },
+    {
+      "path": "runtime/hme/agent-jobs/*",
+      "owner": "tools/HME/scripts/agent_jobs.py",
+      "readers": ["scripts/hme/codex-agent-job.py", "team tools"]
+    },
+    {
+      "path": "tmp/hme-proxy-maintenance.flag",
+      "owner": "tools/HME/hooks/direct/proxy-maintenance.sh",
+      "readers": ["proxy-supervisor.sh", "universal_pulse.py"]
+    },
+    {
+      "path": "tmp/hme-universal-pulse.heartbeat",
+      "owner": "tools/HME/activity/universal_pulse.py",
+      "readers": ["scripts/hme-doctor.py", "service_registry.py"]
+    },
+    {
+      "path": "tmp/hme-non-hme-streak.score",
+      "owner": "tools/HME/hooks/helpers/_safety.sh",
+      "readers": ["tools/HME/hooks/helpers/_safety.sh"]
+    },
+    {
+      "path": "tmp/hme-streak-warn.txt",
+      "owner": "tools/HME/scripts/streak_calibrator.py",
+      "readers": ["tools/HME/hooks/helpers/_safety.sh"]
+    },
+    {
+      "path": "tmp/hme-onboarding.state",
+      "owner": "tools/HME/hooks/helpers/_onboarding.sh",
+      "readers": ["onboarding hook chain", "status"]
+    },
+    {
+      "path": "tmp/hme-log-errors.watermark",
+      "owner": "tools/HME/proxy/middleware/20_hme_log_watermark.js",
+      "readers": ["tools/HME/proxy/middleware/20_hme_log_watermark.js"]
+    },
+    {
+      "path": "tmp/hme-middleware-processed.jsonl",
+      "owner": "tools/HME/proxy/middleware/index.js",
+      "readers": ["tools/HME/proxy/middleware/index.js"]
+    },
+    {
+      "path": "runtime/hme/supervisor-abandoned",
+      "owner": "tools/HME/hooks/direct/proxy-supervisor.sh",
+      "readers": ["tools/HME/hooks/lifecycle/userpromptsubmit.sh"]
+    },
+    {
+      "path": "output/metrics/detector-stats.jsonl",
+      "owner": "each detector _emit_stats",
+      "readers": ["tools/HME/scripts/audit-detector-stats.py"]
+    },
+    {
+      "path": "output/metrics/hme-predictions.jsonl",
+      "owner": "tools/HME/service/server/tools_analysis/cascade_analysis.py",
+      "readers": ["prediction reconciler"]
+    },
+    {
+      "path": "output/metrics/hme-enricher-efficacy.jsonl",
+      "owner": "tools/HME/proxy/middleware/context_budget.js",
+      "readers": ["reports"]
+    },
+    {
+      "path": "output/metrics/hme-activity.jsonl",
+      "owner": "tools/HME/activity/emit.py",
+      "readers": ["i/status", "reports"]
+    },
+    {
+      "path": "tools/HME/before-editing-cache.json",
+      "owner": "worker pre-edit cache writer",
+      "readers": ["before-editing enrichment"]
+    },
+    {
+      "path": "tools/HME/KB/*.lance",
+      "owner": "worker KB indexer",
+      "readers": ["knowledge search"]
+    }
+  ],
+  "multi_writer": [
+    {
+      "path": "log/hme-errors.log",
+      "coordination": "append-only single-line writes with recognizable source tags; bounded trimming only in universal_pulse.py",
+      "writers": [
+        "tools/HME/activity/universal_pulse.py",
+        "tools/HME/proxy/middleware/20_hme_log_watermark.js",
+        "tools/HME/proxy/middleware/19_mcp_fail_scan.js",
+        "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
+        "tools/HME/hooks/helpers/_autocommit.sh",
+        "tools/HME/hooks/helpers/safety/curl.sh",
+        "tools/HME/hooks/helpers/safety/misc_safe.sh",
+        "tools/HME/hooks/lifecycle/sessionstart.sh",
+        "tools/HME/event_kernel/claude_adapter.js",
+        "tools/HME/hooks/direct/autocommit-direct.sh",
+        "tools/HME/hooks/direct/proxy-watchdog.sh",
+        "tools/HME/hooks/pretooluse/pretooluse_check_pipeline.sh",
+        "tools/HME/hooks/log-tool-call.sh",
+        "tools/HME/hooks/helpers/_resolve_bg_stub.sh",
+        "tools/HME/hooks/lifecycle/postcompact.sh",
+        "tools/HME/hooks/lifecycle/precompact.sh",
+        "tools/HME/hooks/lifecycle/stop/_preamble.sh",
+        "tools/HME/hooks/lifecycle/stop/detectors.sh",
+        "tools/HME/hooks/lifecycle/stop/holograph.sh",
+        "tools/HME/hooks/lifecycle/stop/lifesaver.sh",
+        "tools/HME/hooks/pretooluse/pretooluse_grep.sh",
+        "tools/HME/hooks/pretooluse/pretooluse_read.sh",
+        "tools/HME/hooks/pretooluse/pretooluse_hme_primer.sh",
+        "tools/HME/hooks/posttooluse/posttooluse_read_kb.sh",
+        "tools/HME/hooks/pretooluse/bash/reader_guards.sh",
+        "tools/HME/hooks/pretooluse/bash/cwd_rewrite.sh",
+        "tools/HME/hooks/pretooluse/bash/blackbox_guards.sh",
+        "tools/HME/telemetry/index.js"
+      ]
+    },
+    {
+      "path": "tmp/hme-nexus.state",
+      "coordination": "append-only writes plus bounded prune; rewrites must remain rare and auditable",
+      "writers": [
+        "tools/HME/proxy/middleware/index.js",
+        "tools/HME/hooks/posttooluse/posttooluse_hme_review.sh",
+        "tools/HME/hooks/lifecycle/stop/nexus_audit.sh",
+        "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
+        "tools/HME/hooks/lifecycle/sessionstart.sh"
+      ]
+    },
+    {
+      "path": "tmp/hme-tab.txt",
+      "coordination": "append-only single-line writes with occasional bounded cleanup",
+      "writers": [
+        "tools/HME/hooks/posttooluse/posttooluse_write.sh",
+        "tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh",
+        "tools/HME/hooks/lifecycle/sessionstart.sh",
+        "tools/HME/hooks/helpers/_nexus.sh"
+      ]
+    },
+    {
+      "path": "tmp/hme-errors.turnstart",
+      "coordination": "single actor per event class; shared tmp across parallel sessions is unsupported",
+      "writers": [
+        "tools/HME/hooks/lifecycle/userpromptsubmit.sh"
+      ]
+    },
+    {
+      "path": "tmp/hme-errors.lastread",
+      "coordination": "single actor per event class; shared tmp across parallel sessions is unsupported",
+      "writers": [
+        "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
+        "tools/HME/hooks/lifecycle/stop/lifesaver.sh"
+      ]
+    }
+  ]
+}

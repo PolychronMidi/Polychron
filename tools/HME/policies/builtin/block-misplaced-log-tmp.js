@@ -1,5 +1,6 @@
 'use strict';
-const { PROJECT_ROOT, hasMisplacedRootOnlyDir } = require('../../proxy/shared');
+const { PROJECT_ROOT } = require('../../proxy/shared');
+const { isMisplacedRootOnlyDir, rootOnlyDirMessage } = require('../../proxy/path_policy');
 /**
  * Block writes to misplaced log/ or tmp/ subdirectories. log/ and tmp/
  * exist ONLY at the project root; nested variants under src/ or
@@ -18,9 +19,7 @@ module.exports = {
   async fn(ctx) {
     const fp = (ctx.toolInput && ctx.toolInput.file_path) || '';
     const projectRoot = process.env.PROJECT_ROOT || PROJECT_ROOT;
-    if (!hasMisplacedRootOnlyDir(fp, ['log', 'tmp'], projectRoot)) return ctx.allow();
-    return ctx.deny(
-      `BLOCKED: log/ and tmp/ only exist at the project root (${projectRoot}/{log,tmp}/). Do not write files inside subdirectory variants. Path: ${fp}`
-    );
+    if (!isMisplacedRootOnlyDir(fp, ['log', 'tmp'], projectRoot)) return ctx.allow();
+    return ctx.deny(rootOnlyDirMessage('write', projectRoot, `Path: ${fp}`));
   },
 };

@@ -7,11 +7,11 @@ architectural contract: HME spans bash/python/JS runtimes that all touch
 shared filesystem state, and there is no automated guard against an
 unregistered writer.
 
-The registry is `doc/hme_full.md`. Files listed under "single
-owner" must have writes only from the declared owner. Files listed under
-"multiple writers" must have all writers enumerated. New files writing
-into `tmp/` or `log/` or `output/metrics/` that aren't in either table
-are flagged.
+The registry is `tools/HME/config/state-files.json`. Files listed under
+`single_owner` must have writes only from the declared owner. Files listed
+under `multi_writer` must have all writers enumerated. New files writing into
+`tmp/`, `log/`, `runtime/hme/`, or `output/metrics/` should be added there
+before the writer lands.
 
 This is a heuristic verifier -- grep-based, not AST-aware. False
 positives possible (e.g. a literal string mention not actually a write).
@@ -31,7 +31,12 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", "/home/jah/Polychron"))
-REGISTRY_DOC = PROJECT_ROOT / "doc" / "hme_full.md"
+HME_SCRIPTS = PROJECT_ROOT / "tools" / "HME" / "scripts"
+sys.path.insert(0, str(HME_SCRIPTS))
+
+from state_registry import ownership_map  # noqa: E402
+
+REGISTRY_JSON = PROJECT_ROOT / "tools" / "HME" / "config" / "state-files.json"
 
 # Roots to scan for write operations against shared state.
 SCAN_ROOTS = [
@@ -40,69 +45,6 @@ SCAN_ROOTS = [
     PROJECT_ROOT / "scripts" / "detectors",
 ]
 SKIP_DIRS = ("__pycache__", "node_modules", ".git", "out", "dist")
-
-
-# State paths the registry tracks. Auto-extracted from the doc; this is
-# a fallback if the parse fails.
-KNOWN_PATHS = (
-    "runtime/hme/thread.sid",
-    "runtime/hme/proxy-supervisor.pid",
-    "tmp/hme-proxy-maintenance.flag",
-    "tmp/hme-universal-pulse.heartbeat",
-    "tmp/hme-non-hme-streak.score",
-    "tmp/hme-streak-warn.txt",
-    "tmp/hme-onboarding.state",
-    "tmp/hme-tab.txt",
-    "tmp/hme-log-errors.watermark",
-    "runtime/hme/supervisor-abandoned",
-    "tmp/hme-nexus.state",
-    "runtime/hme/errors-turnstart",
-    "runtime/hme/errors-lastread",
-    "log/hme-errors.log",
-    "output/metrics/detector-stats.jsonl",
-    "output/metrics/hme-predictions.jsonl",
-    "output/metrics/hme-enricher-efficacy.jsonl",
-    "output/metrics/hme-activity.jsonl",
-    "tools/HME/before-editing-cache.json",
-)
-
-
-def _parse_registry() -> dict[str, set[str]]:
-    """Parse the markdown registry into {file -> {writer1, writer2, ...}}.
-
-    Walks the markdown table rows, extracting the | File | Owner | Read-only |
-    columns from the single-owner table, and the explicit Writers list
-    under each multi-writer file's section.
-    """
-    if not REGISTRY_DOC.exists():
-        return {}
-    text = REGISTRY_DOC.read_text(encoding="utf-8")
-    out: dict[str, set[str]] = {}
-
-    # Single-owner table rows. `| `path` | owner | ... |`
-    row_re = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*`?([^|`]+?)`?\s*\|", re.MULTILINE)
-    for m in row_re.finditer(text):
-        path = m.group(1).strip()
-        owner = m.group(2).strip()
-        if path and owner:
-            # Owners can include multiple writers separated by /, comma, +
-            writers = re.split(r"[/,+]|\s+OR\s+", owner)
-            out.setdefault(path, set()).update(w.strip() for w in writers if w.strip())
-
-    # Multi-writer sections: `### \`path\`` followed by **Writers:** list
-    section_re = re.compile(
-        r"### `([^`]+)`.*?\*\*Writers:\*\*(.*?)(?=\n###|\n## |\Z)",
-        re.DOTALL,
-    )
-    for m in section_re.finditer(text):
-        path = m.group(1).strip()
-        body = m.group(2)
-        # Each writer is `- \`relative/path.ext\``
-        writers = re.findall(r"-\s*`([^`]+)`", body)
-        if path:
-            out.setdefault(path, set()).update(writers)
-
-    return out
 
 
 def _find_writers(path_substr: str) -> list[tuple[str, int]]:
@@ -166,24 +108,26 @@ def _writer_matches_registry(writer_path: str, registered: set[str]) -> bool:
 
 
 def main() -> int:
-    if not REGISTRY_DOC.exists():
-        print(f"audit-state-file-ownership: registry doc missing at {REGISTRY_DOC}",
+    if not REGISTRY_JSON.exists():
+        print(f"audit-state-file-ownership: registry missing at {REGISTRY_JSON}",
               file=sys.stderr)
         return 2
-    registry = _parse_registry()
+    registry = ownership_map(PROJECT_ROOT)
     if not registry:
         print("audit-state-file-ownership: registry parsed empty -- check format",
               file=sys.stderr)
         return 2
 
-    # For each KNOWN_PATHS, scan for actual writers. Compare against registry.
+    # For each registered path, scan for actual writers. Compare against registry.
     drift: list[str] = []
     paths_checked = 0
-    for path in KNOWN_PATHS:
+    for path in registry:
         paths_checked += 1
         # Take the basename for grep -- full paths get computed at runtime
         # via PROJECT_ROOT/$file patterns and won't appear literally.
-        basename = os.path.basename(path)
+        basename = os.path.basename(path.rstrip("/*"))
+        if not basename or "*" in basename:
+            continue
         writers = _find_writers(basename)
         # Find the registry entry for this path (substring match -- registry
         # keys may be the basename or a more elaborate description)

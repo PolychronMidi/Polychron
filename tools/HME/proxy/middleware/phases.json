@@ -1,0 +1,35 @@
+{
+  "_doc": "Middleware phase registry. File prefixes still define order; this file names the ranges so audits/docs do not invent parallel ordering stories.",
+  "phases": [
+    {
+      "id": "normalize",
+      "range": [0, 4],
+      "description": "Request normalization, system replacement, tool surface shaping"
+    },
+    {
+      "id": "context",
+      "range": [5, 12],
+      "description": "Context enrichment, read/search neighborhoods, dominance prefetch"
+    },
+    {
+      "id": "agent-ipc",
+      "range": [13, 13],
+      "description": "Filesystem-backed subagent result bridge"
+    },
+    {
+      "id": "result-enrichment",
+      "range": [14, 18],
+      "description": "Tool-result enrichment, nexus tracking, activity logging"
+    },
+    {
+      "id": "fault-surfacing",
+      "range": [19, 22],
+      "description": "MCP failure scan, autocommit, lifesaver surfacing"
+    },
+    {
+      "id": "gates",
+      "range": [23, 27],
+      "description": "False-positive gates, dumps, trample/empty-result hygiene"
+    }
+  ]
+}

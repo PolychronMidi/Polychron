@@ -236,3 +236,50 @@ class SubagentBackendsVerifier(Verifier):
             details,
         )
 
+
+class AgentJobContractVerifier(Verifier):
+    """Codex/Claude/team agent launchers must share one filesystem contract."""
+    name = "agent-job-contract"
+    category = "coverage"
+    subtag = "interface-contract"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        helper = os.path.join(_SCRIPTS_DIR, "agent_jobs.py")
+        wrapper = os.path.join(_PROJECT, "scripts", "hme", "codex-agent-job.py")
+        missing = [p for p in (helper, wrapper) if not os.path.isfile(p)]
+        if missing:
+            return _result(FAIL, 0.0, "agent job contract file(s) missing", missing)
+        try:
+            rc = subprocess.run(
+                [sys.executable, "-m", "py_compile", helper, wrapper],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                env={**os.environ, "PROJECT_ROOT": _PROJECT},
+            )
+        except Exception as e:
+            return _result(ERROR, 0.0, f"py_compile invocation failed: {e}")
+        if rc.returncode != 0:
+            return _result(
+                FAIL, 0.0,
+                "agent job contract does not compile",
+                (rc.stderr or rc.stdout).splitlines()[-10:],
+            )
+        try:
+            with open(helper) as f:
+                src = f.read()
+        except OSError as e:
+            return _result(ERROR, 0.0, f"agent_jobs.py unreadable: {e}")
+        required = [
+            'runtime" / "hme" / "agent-jobs',
+            "prompt.txt",
+            "output.txt",
+            "stdout.jsonl",
+            "status.json",
+            "atomic_write_json",
+        ]
+        gaps = [needle for needle in required if needle not in src]
+        if gaps:
+            return _result(FAIL, 0.0, "agent job contract missing required paths/helpers", gaps)
+        return _result(PASS, 1.0, "agent job contract present, compile-clean, and file-backed")

@@ -21,7 +21,7 @@ from ._base import (
 class StateFileOwnershipVerifier(Verifier):
     """Delegates to scripts/audit-state-file-ownership.py, which checks
     that every grep-detectable writer of a shared state file is declared
-    in `doc/hme_full.md`. Pattern surfaced by peer-review
+    in `tools/HME/config/state-files.json`. Pattern surfaced by peer-review
     iter 136 as the most-impactful unwatched architectural contract:
     HME spans 4+ runtimes that all touch shared filesystem state, and
     until this verifier existed nothing automated guarded against an
@@ -30,7 +30,7 @@ class StateFileOwnershipVerifier(Verifier):
     Weight 1.5 -- gating: a new writer of `hme-errors.log` or
     `hme-nexus.state` without coordination is a real risk class
     (concurrent append/truncate, source-tag confusion). FAIL on any
-    detected drift; the doc is the authoritative registry.
+    detected drift; the JSON registry is the authoritative source.
     """
     name = "state-file-ownership"
     category = "code"
@@ -160,6 +160,31 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
         prefix_re = _re_mw.compile(r"^\d+_")
         files = sorted(f for f in os.listdir(mw_dir) if _is_middleware(f))
         unprefixed = [f for f in files if not prefix_re.match(f)]
+        phase_issues = []
+        phase_path = os.path.join(mw_dir, "phases.json")
+        try:
+            with open(phase_path) as f:
+                phase_data = json.load(f)
+            phases = phase_data.get("phases", [])
+            if not isinstance(phases, list):
+                phase_issues.append("phases.json: phases must be a list")
+                phases = []
+            for fname in files:
+                m = prefix_re.match(fname)
+                if not m:
+                    continue
+                n = int(fname.split("_", 1)[0])
+                hits = []
+                for phase in phases:
+                    r = phase.get("range") if isinstance(phase, dict) else None
+                    if isinstance(r, list) and len(r) == 2 and int(r[0]) <= n <= int(r[1]):
+                        hits.append(str(phase.get("id", "?")))
+                if len(hits) != 1:
+                    phase_issues.append(f"{fname}: expected exactly one phase, got {hits}")
+        except FileNotFoundError:
+            phase_issues.append("phases.json missing")
+        except Exception as e:
+            phase_issues.append(f"phases.json invalid: {type(e).__name__}: {e}")
         # Require() each middleware in a fresh Node subprocess to confirm load.
         import subprocess as _sp_mr
         load_failures = []
@@ -181,9 +206,11 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
             issues.extend(f"LOAD FAIL: {x}" for x in load_failures)
         if unprefixed:
             issues.append(f"files lacking NN_ numeric prefix (load alphabetically AFTER prefixed): {', '.join(unprefixed)}")
+        if phase_issues:
+            issues.extend(f"PHASE: {x}" for x in phase_issues)
         if not issues:
             return _result(PASS, 1.0,
-                           f"{len(files)} middleware loadable, all NN_-prefixed",
+                           f"{len(files)} middleware loadable, all NN_-prefixed and phased",
                            [])
         score = 0.0 if load_failures else 0.6
         verdict = FAIL if load_failures else WARN

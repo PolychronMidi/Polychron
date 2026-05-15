@@ -5,7 +5,13 @@ const registry = require('../policies/registry');
 const config = require('../policies/config');
 const stateClient = require('./session_state_client');
 const { normalize } = require('./hook_envelope');
-const { PROJECT_ROOT, hasMisplacedRootOnlyDir } = require('./shared');
+const { PROJECT_ROOT } = require('./shared');
+const {
+  isMisplacedRootOnlyDir,
+  isMisplacedMetricsPath,
+  rootOnlyDirMessage,
+  metricsMessage,
+} = require('./path_policy');
 
 function _permission(decision, reason = '', context = '') {
   return { permissionDecision: decision, reason, contextualRules: context ? [context] : [] };
@@ -46,12 +52,12 @@ function _shellParityDecision(payload) {
   );
   if (d) return d;
 
-  d = _denyIf(hasMisplacedRootOnlyDir(file, ['log', 'tmp']),
-    `BLOCKED: log/ and tmp/ only exist at project root. Do not ${writeVerb.toLowerCase()} files inside subdirectory variants. Route output through $PROJECT_ROOT/{log,tmp}/.`);
+  d = _denyIf(isMisplacedRootOnlyDir(file, ['log', 'tmp']),
+    rootOnlyDirMessage(writeVerb.toLowerCase()));
   if (d) return d;
 
-  d = _denyIf(/\/metrics\//.test(file) && !file.startsWith(`${PROJECT_ROOT}/output/metrics/`),
-    'BLOCKED: metrics/ only exists at output/metrics/. Do not write files in any other metrics/ directory.');
+  d = _denyIf(isMisplacedMetricsPath(file),
+    metricsMessage('write files in', file));
   if (d) return d;
 
   d = _denyIf(/^(id_rsa|id_ed25519|id_ecdsa|id_dsa)(\.pub)?$|\.(pem|key|pfx|p12|jks)$|^credentials(\.json)?$|^service[-_]account.*\.json$|^\.npmrc$|^\.pypirc$|^\.netrc$/i.test(base),

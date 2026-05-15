@@ -111,6 +111,9 @@ Directly invoked shell entrypoints:
 
 ### Long-running supervisors (started by `direct/`)
 
+Service metadata is centralized in `tools/HME/config/services.json`. The table
+below is orientation only; doctors and pulse probes read the registry.
+
 | Script | Pid file | Heartbeat | Purpose |
 |---|---|---|---|
 | `proxy-supervisor.sh` | `runtime/hme/proxy-supervisor.pid` | `/health` poll q10s, 3 misses -> respawn | Keep proxy alive between SessionStart events. |

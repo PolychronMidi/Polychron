@@ -66,8 +66,9 @@ scripts/hme-doctor.py --hooks
   best-effort behavior.
 - Hooks are host adapters, not business logic. Shared behavior belongs in the
   event kernel, proxy middleware, policies, or service modules.
-- Filesystem state must have an owner. Update the state registry in
-  [hme_full.md](hme_full.md) before adding a shared state writer.
+- Filesystem state must have an owner. Update
+  [state-files.json](../tools/HME/config/state-files.json) before adding a
+  shared state writer.
 
 ## Fast Links
 

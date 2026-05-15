@@ -4,6 +4,10 @@ Per-tool enrichment and side-effect modules. The proxy's `messages.js` pipeline 
 
 Each module owns a narrow concern -- callers lookup, bias-bound warnings, directory rules, KB bugfix validation, activity telemetry, NEXUS state tracking. All auto-loaded at proxy startup by `index.js`.
 
+Order is still encoded by the `NN_` filename prefix. Phase names live in
+`phases.json`; audits require every numbered module to land in exactly one
+phase so docs and loader behavior stay aligned.
+
 ## Module shape
 
 ```js

@@ -237,101 +237,21 @@ iteration count or done signal is reached.
 
 ## State Ownership Registry
 
-This registry is parsed by `scripts/audit-state-file-ownership.py`. Update it
-before adding a shared state writer.
+The registry lives in
+`tools/HME/config/state-files.json` and is parsed by
+`scripts/audit-state-file-ownership.py`. Update that JSON before adding a
+shared state writer. Docs summarize the rule; the JSON is authoritative.
 
-### State files with single owner
+Single-owner state includes supervisor PID files, heartbeat files, onboarding
+state, middleware dedup state, team dashboard state, agent job directories,
+activity metrics, prediction logs, and KB indexes. Multi-writer state must
+declare every writer plus a coordination strategy. The main multi-writer files
+are `log/hme-errors.log`, `tmp/hme-nexus.state`, `tmp/hme-tab.txt`,
+`tmp/hme-errors.turnstart`, and `tmp/hme-errors.lastread`.
 
-| File | Owner | Read-only consumers |
-|---|---|---|
-| `runtime/hme/proxy-supervisor.pid` | `proxy-supervisor.sh` | shell ops, monitoring |
-| `tmp/hme-proxy-maintenance.flag` | `proxy-maintenance.sh` | `proxy-supervisor.sh` |
-| `tmp/hme-universal-pulse.heartbeat` | `universal_pulse.py` | `validate_startup.py` |
-| `tmp/hme-non-hme-streak.score` | `_safety.sh` (`_streak_tick`) | `_safety.sh` (`_streak_check`) |
-| `tmp/hme-streak-warn.txt` | `streak_calibrator.py` | `_safety.sh` |
-| `tmp/hme-onboarding.state` | `_onboarding.sh` helpers | onboarding hook chain |
-| `tmp/hme-log-errors.watermark` | `hme_log_watermark.js` | `hme_log_watermark.js` |
-| `runtime/hme/supervisor-abandoned` | `proxy-supervisor.sh` | `userpromptsubmit.sh` |
-| `output/metrics/detector-stats.jsonl` | each detector's `_emit_stats` | `audit-detector-stats.py` |
-| `output/metrics/hme-predictions.jsonl` | `cascade_analysis._log_prediction` | reconciler |
-| `output/metrics/hme-enricher-efficacy.jsonl` | `context_budget.js._recordFire` | reports |
-| `output/metrics/hme-activity.jsonl` | `tools/HME/activity/emit.py` | `i/status`, reports |
-| `tools/HME/before-editing-cache.json` | worker pre-edit cache writer | before-editing enrichment |
-| `tools/HME/KB/*.lance` | worker KB indexer | knowledge search |
-
-### State files with MULTIPLE writers
-
-Multi-writer files require an explicit coordination strategy.
-
-### `log/hme-errors.log`
-
-**Writers:**
-
-- `tools/HME/activity/universal_pulse.py`
-- `tools/HME/proxy/middleware/20_hme_log_watermark.js`
-- `tools/HME/proxy/middleware/19_mcp_fail_scan.js`
-- `tools/HME/hooks/lifecycle/userpromptsubmit.sh`
-- `tools/HME/hooks/helpers/_autocommit.sh`
-- `tools/HME/hooks/helpers/safety/curl.sh`
-- `tools/HME/hooks/helpers/safety/misc_safe.sh`
-- `tools/HME/hooks/lifecycle/sessionstart.sh`
-- `tools/HME/event_kernel/claude_adapter.js`
-- `tools/HME/hooks/direct/autocommit-direct.sh`
-- `tools/HME/hooks/direct/proxy-watchdog.sh`
-- `tools/HME/hooks/pretooluse/pretooluse_check_pipeline.sh`
-- `tools/HME/hooks/log-tool-call.sh`
-- `tools/HME/hooks/helpers/_resolve_bg_stub.sh`
-- `tools/HME/hooks/lifecycle/postcompact.sh`
-- `tools/HME/hooks/lifecycle/precompact.sh`
-- `tools/HME/hooks/lifecycle/stop/_preamble.sh`
-- `tools/HME/hooks/lifecycle/stop/detectors.sh`
-- `tools/HME/hooks/lifecycle/stop/holograph.sh`
-- `tools/HME/hooks/pretooluse/pretooluse_grep.sh`
-- `tools/HME/hooks/pretooluse/pretooluse_read.sh`
-- `tools/HME/hooks/pretooluse/pretooluse_hme_primer.sh`
-- `tools/HME/hooks/posttooluse/posttooluse_read_kb.sh`
-- `tools/HME/hooks/pretooluse/bash/reader_guards.sh`
-- `tools/HME/hooks/pretooluse/bash/cwd_rewrite.sh`
-- `tools/HME/hooks/pretooluse/bash/blackbox_guards.sh`
-- `tools/HME/telemetry/index.js`
-
-**Coordination strategy:** append-only single-line writes with recognizable
-source tags. New self-origin tags must be registered in the marker registry.
-
-### `tmp/hme-nexus.state`
-
-**Writers:**
-
-- `tools/HME/proxy/middleware/index.js`
-- `tools/HME/hooks/posttooluse/posttooluse_hme_review.sh`
-- `tools/HME/hooks/lifecycle/stop/nexus_audit.sh`
-- `tools/HME/hooks/lifecycle/userpromptsubmit.sh`
-- `tools/HME/hooks/lifecycle/sessionstart.sh`
-
-**Coordination strategy:** append-only writes plus bounded prune. Rewrites are
-the risk surface; keep them rare and bounded.
-
-### `tmp/hme-tab.txt`
-
-**Writers:**
-
-- `tools/HME/hooks/posttooluse/posttooluse_write.sh`
-- `tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh`
-- `tools/HME/hooks/lifecycle/sessionstart.sh`
-- posttooluse hooks calling `_append_file_to_tab`
-
-**Coordination strategy:** append-only single-line writes with occasional
-bounded cleanup.
-
-### `tmp/hme-errors.turnstart` and `tmp/hme-errors.lastread`
-
-**Writers:**
-
-- `tools/HME/hooks/lifecycle/userpromptsubmit.sh`
-- `tools/HME/hooks/lifecycle/stop/lifesaver.sh`
-
-**Coordination strategy:** single actor per event class. Parallel sessions that
-share `tmp/` would break this assumption.
+The standard coordination patterns are append-only line writes, atomic rename
+for replacements, and narrow bounded rewrites where unavoidable. New state
+without a declared owner is a coherence failure.
 
 ## Testing
 Useful HME checks:

@@ -56,6 +56,39 @@ def _install_signal_handlers() -> None:
 _LAST_GOOD_CONFIG: dict | None = None
 
 
+def _with_service_http_probes(cfg: dict) -> dict:
+    ids = cfg.get("http_probe_services")
+    if not ids:
+        return cfg
+    try:
+        scripts_dir = PROJECT_ROOT / "tools" / "HME" / "scripts"
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        from service_registry import load_services, service_enabled, service_url
+
+        wanted = {str(x) for x in ids}
+        probes = []
+        for service in load_services(PROJECT_ROOT):
+            sid = str(service.get("id") or "")
+            if sid not in wanted or service.get("kind") != "http":
+                continue
+            if not service_enabled(service):
+                continue
+            probes.append({
+                "name": sid,
+                "url": service_url(service),
+                "timeout_sec": service.get("timeout_sec", 3),
+                "required": bool(service.get("required", True)),
+            })
+        cfg = dict(cfg)
+        cfg["http_probes"] = probes + list(cfg.get("http_probes_extra", []))
+    except Exception as err:
+        sys.stderr.write(
+            f"[universal_pulse] service probe registry failed "
+            f"({type(err).__name__}: {err}); using static http_probes\n")
+    return cfg
+
+
 def _load_config() -> dict:
     """Load universal_pulse.json with fallback to last-known-good cache.
 
@@ -69,6 +102,7 @@ def _load_config() -> dict:
     try:
         with open(CONFIG_PATH) as f:
             cfg = json.load(f)
+        cfg = _with_service_http_probes(cfg)
         _LAST_GOOD_CONFIG = cfg
         return cfg
     except (OSError, json.JSONDecodeError) as err:

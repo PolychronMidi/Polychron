@@ -88,10 +88,12 @@ from .meta_observers import (  # noqa: F401
 from .subagent import (  # noqa: F401
     SubagentModeVerifier, SubagentPassthroughVerifier,
     SubagentGuardVerifier, SubagentBackendsVerifier,
+    AgentJobContractVerifier,
 )
 from .runtime_behavior import (  # noqa: F401
     TransientErrorFilterVerifier, ContextBudgetVerifier,
     WarmContextFreshnessVerifier, PlanOutputValidityVerifier,
+    ServiceRegistryVerifier,
 )
 from .runtime_perf import (  # noqa: F401
     HookLatencyVerifier, GitCommitTestCoverageVerifier, ToolResponseLatencyVerifier,
@@ -156,8 +158,10 @@ REGISTRY = [
     ErrorLogVerifier(),
     SubagentModeVerifier(),
     SubagentPassthroughVerifier(),
+    AgentJobContractVerifier(),
     SubagentGuardVerifier(),
     SubagentBackendsVerifier(),
+    ServiceRegistryVerifier(),
     WarmContextFreshnessVerifier(),
     HookLatencyVerifier(),
     PlanOutputValidityVerifier(),

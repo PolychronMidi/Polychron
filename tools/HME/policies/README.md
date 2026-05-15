@@ -102,22 +102,14 @@ See `examples/example-custom-policy.js` for a working template.
 - **Middleware**: not yet wired through the unified registry; current
   middleware modules in `proxy/middleware/` are loaded directly.
 
-## Known wart: bash gate duplication
+## Remaining bash parity
 
-The PreToolUse policies `block-curl-pipe-sh` and `block-secrets-write`
-exist as JS policies in this registry AND as bash logic in
-`hooks/pretooluse/bash/blackbox_guards.sh` and
-`hooks/pretooluse/pretooluse_write.sh`. The duplication is intentional:
-
-- Proxy up: JS runs first; if it denies, bash chain is skipped.
-- Proxy down (direct-mode): the same event-kernel dispatcher runs JS first,
-  then falls through to bash gates when allowed.
-
-The wart: `i/policies disable <name>` only disables the JS version.
-The bash version still fires. To fully disable a duplicated rule,
-edit the bash file as well. Future migration work should either move
-each rule fully to JS (deleting the bash) or extend the bash gates to
-read the same `config/policies.json`.
+Path-placement rules (`log/`, `tmp/`, `metrics/`) now share
+`proxy/path_policy.js`; `pretooluse_write.sh` and `pretooluse_edit.sh` fail
+closed if the central JS pre-write check cannot run. Some Bash-only guards
+remain in `hooks/pretooluse/bash/blackbox_guards.sh` for shell command parsing,
+but new cross-tool policy logic should live in JS first and expose any shared
+parsing through a helper rather than cloning checks into shell.
 
 ## Meta-registry (step 2)
 

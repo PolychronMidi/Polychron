@@ -10,6 +10,17 @@ from pathlib import Path
 from omniroute_reasoning_config import verify as verify_omniroute
 
 ROOT = Path(__file__).resolve().parents[1]
+HME_SCRIPTS = ROOT / 'tools' / 'HME' / 'scripts'
+sys.path.insert(0, str(HME_SCRIPTS))
+
+from jsonc import load_jsonc  # noqa: E402
+from service_registry import (  # noqa: E402
+    heartbeat_path,
+    load_services,
+    service_enabled,
+    service_url,
+)
+
 ERR = ROOT / 'log' / 'hme-errors.log'
 
 
@@ -32,45 +43,41 @@ def http_ok(url):
         return False
 
 
-def load_jsonc(path):
-    text = path.read_text()
-    out = []
-    in_string = False
-    escaped = False
-    i = 0
-    while i < len(text):
-        ch = text[i]
-        nxt = text[i + 1] if i + 1 < len(text) else ''
-        if in_string:
-            out.append(ch)
-            if escaped:
-                escaped = False
-            elif ch == '\\':
-                escaped = True
-            elif ch == '"':
-                in_string = False
-            i += 1
-            continue
-        if ch == '"':
-            in_string = True
-            out.append(ch)
-            i += 1
-            continue
-        if ch == '/' and nxt == '/':
-            while i < len(text) and text[i] not in '\r\n':
-                i += 1
-            continue
-        out.append(ch)
-        i += 1
-    return json.loads(''.join(out))
-
-
 def model_limits_ok():
     try:
         cfg = load_jsonc(ROOT/'config/models.json')
         return [m['id'] for t in cfg['tiers'].values() for m in t['models'] if 'context_length' not in m or 'max_output_tokens' not in m]
     except Exception as e:
         return [str(e)]
+
+
+def service_checks():
+    ok = True
+    try:
+        services = load_services(ROOT)
+    except Exception as e:
+        return check('service_registry', False, str(e), 'fix tools/HME/config/services.json')
+    ok &= check('service_registry', True, f'{len(services)} service(s)')
+    for service in services:
+        name = str(service.get('id') or 'unknown')
+        if not service_enabled(service):
+            ok &= check(name, True, 'disabled by environment')
+            continue
+        kind = service.get('kind')
+        if kind == 'http':
+            url = service_url(service)
+            ok &= check(name, http_ok(url), url, str(service.get('fix') or 'start service'))
+        elif kind == 'heartbeat':
+            hb = heartbeat_path(service, ROOT)
+            max_age = float(service.get('max_age_sec', 90))
+            try:
+                age = time.time() - hb.stat().st_mtime
+                ok &= check(name, age < max_age, f'age={age:.0f}s', str(service.get('fix') or 'start heartbeat'))
+            except FileNotFoundError:
+                ok &= check(name, False, f'{hb} missing', str(service.get('fix') or 'start heartbeat'))
+        else:
+            ok &= check(name, False, f'unknown kind={kind!r}', 'fix tools/HME/config/services.json')
+    return ok
 
 
 def hooks_doctor():
@@ -147,9 +154,7 @@ def main():
         return 0 if hooks_doctor() else 1
 
     ok = True
-    ok &= check('proxy', http_ok('http://127.0.0.1:9099/health'), '9099/health', 'restart HME proxy')
-    ok &= check('omniroute', http_ok('http://127.0.0.1:20128/v1/models'), '20128/v1/models', 'tools/omniroute/start.sh')
-    ok &= check('universal_pulse', (ROOT/'tmp/hme-universal-pulse.heartbeat').exists(), 'heartbeat file', 'universal-pulse-supervisor start')
+    ok &= service_checks()
     or_ok, or_detail = verify_omniroute()
     ok &= check('omniroute_max_reasoning', or_ok, or_detail, 'scripts/configure-omniroute-max-reasoning.py')
     missing = model_limits_ok()

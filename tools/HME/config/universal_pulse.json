@@ -3,26 +3,7 @@
   "interval_sec": 30,
   "miss_streak_alert": 3,
   "cooldown_sec": 600,
-  "http_probes": [
-    {
-      "name": "proxy",
-      "url": "http://127.0.0.1:9099/health",
-      "timeout_sec": 3,
-      "required": true
-    },
-    {
-      "name": "worker",
-      "url": "http://127.0.0.1:9098/health",
-      "timeout_sec": 3,
-      "required": true
-    },
-    {
-      "name": "llamacpp_daemon",
-      "url": "http://127.0.0.1:7735/health",
-      "timeout_sec": 3,
-      "required": false
-    }
-  ],
+  "http_probe_services": ["proxy", "worker", "llamacpp_daemon", "omniroute"],
   "process_probes": [
     {
       "name": "worker",

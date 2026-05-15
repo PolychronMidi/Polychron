@@ -1,0 +1,77 @@
+{
+  "_doc": "Canonical HME service registry. Consumers should derive health URLs, heartbeat files, and startup hints from here instead of hardcoding ports in doctors, pulse probes, and docs.",
+  "services": [
+    {
+      "id": "proxy",
+      "kind": "http",
+      "description": "Anthropic-compatible proxy and middleware pipeline",
+      "env_port": "HME_PROXY_PORT",
+      "default_port": 9099,
+      "host": "127.0.0.1",
+      "health_path": "/health",
+      "required": true,
+      "timeout_sec": 3,
+      "start": ["tools/HME/hooks/direct/proxy-supervisor.sh", "start"],
+      "pid_file": "runtime/hme/proxy-supervisor.pid",
+      "log_file": "log/hme-proxy.out",
+      "fix": "tools/HME/hooks/direct/proxy-supervisor.sh start"
+    },
+    {
+      "id": "worker",
+      "kind": "http",
+      "description": "HME MCP worker",
+      "env_port": "HME_WORKER_PORT",
+      "default_port": 9098,
+      "host": "127.0.0.1",
+      "health_path": "/health",
+      "required": true,
+      "timeout_sec": 3,
+      "log_file": "log/hme-worker.log",
+      "fix": "restart HME proxy; it supervises worker.py"
+    },
+    {
+      "id": "llamacpp_daemon",
+      "kind": "http",
+      "description": "Local llama.cpp daemon",
+      "env_port": "HME_LLAMACPP_DAEMON_PORT",
+      "default_port": 7735,
+      "host": "127.0.0.1",
+      "health_path": "/health",
+      "required": false,
+      "timeout_sec": 3,
+      "fix": "enable/start local inference daemon when local synthesis is required"
+    },
+    {
+      "id": "omniroute",
+      "kind": "http",
+      "description": "OpenAI/Anthropic translation router used by overdrive modes 4-6",
+      "env_port": "HME_OMNIROUTE_PORT",
+      "default_port": 20128,
+      "host": "127.0.0.1",
+      "health_path": "/v1/models",
+      "required": false,
+      "timeout_sec": 3,
+      "enabled_when": {
+        "env": "OVERDRIVE_MODE",
+        "in": ["4", "5", "6"],
+        "unless_env": "HME_OMNIROUTE_OFF",
+        "unless_value": "1"
+      },
+      "start": ["tools/omniroute/start.sh"],
+      "log_file": "log/omniroute.out",
+      "fix": "tools/omniroute/start.sh"
+    },
+    {
+      "id": "universal_pulse",
+      "kind": "heartbeat",
+      "description": "Out-of-band health pulse and active probe loop",
+      "heartbeat_file": "tmp/hme-universal-pulse.heartbeat",
+      "max_age_sec": 90,
+      "required": true,
+      "start": ["tools/HME/hooks/direct/universal-pulse-supervisor.sh", "start"],
+      "pid_file": "runtime/hme/universal-pulse-supervisor.pid",
+      "log_file": "log/hme-errors.log",
+      "fix": "tools/HME/hooks/direct/universal-pulse-supervisor.sh start"
+    }
+  ]
+}

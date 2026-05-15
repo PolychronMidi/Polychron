@@ -1,4 +1,5 @@
 'use strict';
+const { isMisplacedMetricsPath, metricsMessage } = require('../../proxy/path_policy');
 /**
  * Block writes to misplaced metrics/ directories. metrics/ exists only at
  * output/metrics/. Other paths usually mean a path-derivation bug.
@@ -13,12 +14,7 @@ module.exports = {
   params: {},
   async fn(ctx) {
     const fp = (ctx.toolInput && ctx.toolInput.file_path) || '';
-    if (!/\/metrics\//.test(fp)) return ctx.allow();
-    const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
-    const expected = new RegExp('^' + projectRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/output/metrics/');
-    if (expected.test(fp)) return ctx.allow();
-    return ctx.deny(
-      `BLOCKED: metrics/ only exists at output/metrics/. Path: ${fp}`
-    );
+    if (!isMisplacedMetricsPath(fp)) return ctx.allow();
+    return ctx.deny(metricsMessage('write files in', fp));
   },
 };

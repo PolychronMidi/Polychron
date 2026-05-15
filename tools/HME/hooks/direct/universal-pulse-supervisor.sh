@@ -8,7 +8,9 @@
 set +e
 
 _SV_ROOT=""
-if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+  _SV_ROOT="$PROJECT_ROOT"
+elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _SV_ROOT="$CLAUDE_PROJECT_DIR"
 fi
 if [ -z "$_SV_ROOT" ]; then
@@ -36,13 +38,16 @@ _up_log() {
 
 _up_alive() {
   local p="$1"
-  [ -n "$p" ] && [ -d "/proc/$p" ]
+  local pattern="${2:-}"
+  [ -n "$p" ] && [ -d "/proc/$p" ] || return 1
+  [ -z "$pattern" ] && return 0
+  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qE "$pattern"
 }
 
 _up_kill_child() {
   local cp
   cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null)
-  if _up_alive "$cp"; then
+  if _up_alive "$cp" "universal_pulse.py"; then
     kill -TERM "$cp" 2>/dev/null
     sleep 2
     _up_alive "$cp" && kill -KILL "$cp" 2>/dev/null
@@ -100,7 +105,7 @@ _up_loop() {
     cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null)
     age=$(_up_heartbeat_age)
 
-    if ! _up_alive "$cp"; then
+    if ! _up_alive "$cp" "universal_pulse.py"; then
       _up_log "child dead -- respawning"
       _up_spawn_child
       continue
@@ -118,12 +123,16 @@ _up_start() {
   # Idempotent: if an alive supervisor is already recorded, no-op.
   local existing
   existing=$(cat "$_UP_PID_FILE" 2>/dev/null)
-  if _up_alive "$existing"; then
+  if _up_alive "$existing" "universal-pulse-supervisor.sh|bash .*_loop"; then
     _up_log "already running pid=$existing -- no-op"
     return 0
   fi
   # Fork into background.
-  nohup bash "$0" _loop </dev/null >/dev/null 2>&1 &
+  if command -v setsid >/dev/null 2>&1; then
+    setsid nohup bash "$0" _loop </dev/null >/dev/null 2>&1 &
+  else
+    nohup bash "$0" _loop </dev/null >/dev/null 2>&1 &
+  fi
   disown $! 2>/dev/null
   # No sleep -- the parent process of Claude code is waiting on us.
 }
@@ -132,11 +141,11 @@ _up_stop() {
   local svp cp
   svp=$(cat "$_UP_PID_FILE" 2>/dev/null)
   cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null)
-  _up_alive "$svp" && kill -TERM "$svp" 2>/dev/null
-  _up_alive "$cp"  && kill -TERM "$cp"  2>/dev/null
+  _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -TERM "$svp" 2>/dev/null
+  _up_alive "$cp" "universal_pulse.py" && kill -TERM "$cp"  2>/dev/null
   sleep 1
-  _up_alive "$svp" && kill -KILL "$svp" 2>/dev/null
-  _up_alive "$cp"  && kill -KILL "$cp"  2>/dev/null
+  _up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && kill -KILL "$svp" 2>/dev/null
+  _up_alive "$cp" "universal_pulse.py" && kill -KILL "$cp"  2>/dev/null
   rm -f "$_UP_PID_FILE" "$_UP_CHILD_PID_FILE" 2>/dev/null
   _up_log "stopped"
 }
@@ -146,8 +155,8 @@ _up_status() {
   svp=$(cat "$_UP_PID_FILE" 2>/dev/null)
   cp=$(cat "$_UP_CHILD_PID_FILE" 2>/dev/null)
   age=$(_up_heartbeat_age)
-  echo "supervisor pid=$svp alive=$(_up_alive "$svp" && echo yes || echo no)"
-  echo "child      pid=$cp  alive=$(_up_alive "$cp" && echo yes || echo no)"
+  echo "supervisor pid=$svp alive=$(_up_alive "$svp" "universal-pulse-supervisor.sh|bash .*_loop" && echo yes || echo no)"
+  echo "child      pid=$cp  alive=$(_up_alive "$cp" "universal_pulse.py" && echo yes || echo no)"
   echo "heartbeat  age=${age}s (threshold=${_UP_STALE_THRESHOLD}s)"
 }
 
