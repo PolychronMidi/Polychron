@@ -218,6 +218,48 @@ print(mod._mode_codex_proxy())
   }
 });
 
+
+test('Codex route status mode renders route smoke without prompt text', () => {
+  const sandbox = withSandbox();
+  const eventsPath = path.join(sandbox, 'runtime', 'hme', 'codex-proxy-events.jsonl');
+  fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
+  fs.writeFileSync(eventsPath, `${JSON.stringify({
+    ts: '2026-05-15T20:00:00.000Z',
+    kind: 'request',
+    route: 'omniroute',
+    upstream: 'http://127.0.0.1:20128/v1/responses',
+    after: { model: 'gpt-5.5' },
+  })}\n${JSON.stringify({
+    ts: '2026-05-15T20:00:01.000Z',
+    kind: 'response',
+    route: 'omniroute',
+    upstream: 'http://127.0.0.1:20128/v1/responses',
+    model: 'cx/gpt-5.5',
+    status: 200,
+  })}\n`);
+  const script = `
+import importlib.util, sys, types
+server = types.ModuleType("server")
+server.context = types.SimpleNamespace(PROJECT_ROOT="${sandbox}")
+sys.modules["server"] = server
+sys.modules["server.context"] = server.context
+spec = importlib.util.spec_from_file_location("status_modes_codex", "${path.join(repoRoot, 'tools', 'HME', 'service', 'server', 'tools_analysis', 'status_unified', 'status_modes_codex.py')}")
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+print(mod._mode_codex_route())
+`;
+  const res = spawnSync('python3', ['-c', script], { encoding: 'utf8' });
+  try {
+    assert.strictEqual(res.status, 0, res.stderr);
+    assert.match(res.stdout, /Codex route smoke/);
+    assert.match(res.stdout, /codex_proxy latest request: route=omniroute/);
+    assert.match(res.stdout, /codex_proxy latest response: route=omniroute status=200/);
+    assert.doesNotMatch(res.stdout, /secret prompt/i);
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
 test('Codex proxy routes through OmniRoute Responses for dashboard visibility', async () => {
   const sandbox = withSandbox();
   const proxyPort = await freePort();

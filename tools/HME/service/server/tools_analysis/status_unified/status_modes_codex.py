@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.error
+import urllib.request
 
 from server import context as ctx
 
@@ -64,3 +66,130 @@ def _mode_codex_proxy() -> str:
     out.append(f"Log: {path}")
     return "\n".join(out)
 
+
+
+
+def _service_port(service_id: str, default: int) -> int:
+    path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "config", "services.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            services = (json.load(f).get("services") or [])
+        for spec in services:
+            if spec.get("id") != service_id:
+                continue
+            env_port = os.environ.get(str(spec.get("env_port") or ""))
+            return int(env_port or spec.get("default_port") or default)
+    except Exception:
+        return default
+    return default
+
+
+def _json_url(url: str, *, timeout: float = 2.0, data: dict | None = None,
+              headers: dict | None = None) -> tuple[object | None, str]:
+    body = None if data is None else json.dumps(data).encode("utf-8")
+    req = urllib.request.Request(url, data=body, headers=headers or {})
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8") or "null"), ""
+    except (OSError, urllib.error.URLError, ValueError) as exc:
+        return None, f"{type(exc).__name__}: {exc}"
+
+
+def _health(service_id: str, default_port: int, path: str = "/health") -> tuple[dict | None, str]:
+    port = _service_port(service_id, default_port)
+    return _json_url(f"http://127.0.0.1:{port}{path}", timeout=2.0)
+
+
+def _latest_codex_pair(events: list[dict]) -> tuple[dict | None, dict | None]:
+    req = next((e for e in reversed(events) if e.get("kind") == "request"), None)
+    resp = next((e for e in reversed(events) if e.get("kind") == "response"), None)
+    return req, resp
+
+
+def _omniroute_logs(limit: int = 40) -> tuple[list[dict], str]:
+    port = _service_port("omniroute", 20128)
+    password = os.environ.get("OMNIROUTE_PASSWORD") or os.environ.get("INITIAL_PASSWORD") or "polychron"
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
+    try:
+        login = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/auth/login",
+            data=json.dumps({"password": password}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+        with opener.open(login, timeout=2.0) as resp:
+            if resp.status >= 400:
+                return [], f"login HTTP {resp.status}"
+        with opener.open(f"http://127.0.0.1:{port}/api/usage/call-logs?limit={limit}", timeout=3.0) as resp:
+            data = json.loads(resp.read().decode("utf-8") or "[]")
+        return data if isinstance(data, list) else [], ""
+    except (OSError, urllib.error.URLError, ValueError) as exc:
+        return [], f"{type(exc).__name__}: {exc}"
+
+
+def _fmt_health(name: str, data: dict | None, err: str) -> str:
+    if not isinstance(data, dict):
+        return f"{name}: DOWN ({err or 'no response'})"
+    status = data.get("status") or data.get("ok") or "?"
+    bits = [f"{name}: {status}"]
+    if data.get("git_sha"):
+        bits.append(f"sha={data.get('git_sha')}")
+    if data.get("started_at"):
+        bits.append(f"started={data.get('started_at')}")
+    if data.get("upstream"):
+        bits.append(f"upstream={data.get('upstream')}")
+    return " ".join(bits)
+
+
+def _fmt_call(call: dict | None) -> str:
+    if not call:
+        return "missing"
+    return (
+        f"path={call.get('path')} requested={call.get('requestedModel')} "
+        f"source={call.get('sourceFormat')} target={call.get('targetFormat')} "
+        f"status={call.get('status')}"
+    )
+
+
+def _mode_codex_route() -> str:
+    events_path = os.path.join(ctx.PROJECT_ROOT, "runtime", "hme", "codex-proxy-events.jsonl")
+    events = _iter_events(events_path, limit=80)
+    req, resp = _latest_codex_pair(events)
+    proxy, proxy_err = _health("proxy", 9099)
+    codex, codex_err = _health("codex_proxy", 9102)
+    logs, logs_err = _omniroute_logs()
+    codex_calls = [c for c in logs if c.get("provider") == "codex" or "codex/" in str(c.get("requestedModel"))]
+    direct = next((c for c in codex_calls if c.get("path") == "/v1/responses"), None)
+    claude = next((c for c in codex_calls if c.get("path") == "/v1/messages"), None)
+    direct_ok = bool(direct and direct.get("sourceFormat") == "openai-responses"
+                     and direct.get("targetFormat") == "openai-responses"
+                     and 200 <= int(direct.get("status") or 0) < 300)
+    out = ["# Codex route smoke", ""]
+    out.append(_fmt_health("proxy", proxy, proxy_err))
+    out.append(_fmt_health("codex_proxy", codex, codex_err))
+    if req:
+        out.append(
+            "codex_proxy latest request: "
+            f"route={req.get('route')} upstream={req.get('upstream')} "
+            f"model={(req.get('after') or {}).get('model') or req.get('model')}"
+        )
+    else:
+        out.append("codex_proxy latest request: missing")
+    if resp:
+        out.append(
+            "codex_proxy latest response: "
+            f"route={resp.get('route')} status={resp.get('status')} model={resp.get('model')}"
+        )
+    else:
+        out.append("codex_proxy latest response: missing")
+    out.append("omniroute direct: " + _fmt_call(direct))
+    out.append("omniroute claude: " + _fmt_call(claude))
+    if logs_err:
+        out.append(f"omniroute logs: unavailable ({logs_err})")
+    verdict = "PASS" if direct_ok else "WARN"
+    if claude is None:
+        out.append("note: no recent Claude /v1/messages -> Codex call in OmniRoute logs")
+    out.append("")
+    out.append(f"verdict={verdict}")
+    return "\n".join(out)
