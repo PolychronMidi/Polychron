@@ -1562,7 +1562,7 @@ if (_mode4WasStreaming) {
           // Original streaming path (no HME interception happened) -- pipe
           // through the Transform for Bash run_in_background rewriting.
           const { SseTransform } = require('./sse_transform');
-          const { readInputNormalizeRewrite, runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite, slopStripRewrite, hallucinatedTurnPrefixStripRewrite, stopHookCeremonyStripRewrite, fpGateMarkerRewrite, soloRationaleTrimRewrite } = require('./sse_rewriters');
+          const { readInputNormalizeRewrite, bashPolicyRewrite, runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite, slopStripRewrite, hallucinatedTurnPrefixStripRewrite, stopHookCeremonyStripRewrite, fpGateMarkerRewrite, soloRationaleTrimRewrite } = require('./sse_rewriters');
           // Order: longLeadingSleep rewrites BEFORE runInBackground reads
           // (both keyed by content-block index for consistent state).
           // Chain order is encoded in the rewriters[] array below.
@@ -1570,7 +1570,7 @@ if (_mode4WasStreaming) {
             // fpGateMarker FIRST -- handles [FP-CHECK: yes/no] marker (yes ->
             // truncate to `.`; no -> strip marker line). soloRationaleTrim
             // LAST -- surgical trim of trailing rationale paragraph.
-            rewriters: [readInputNormalizeRewrite, fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
+            rewriters: [readInputNormalizeRewrite, fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, bashPolicyRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
           });
           // Populate priorUserWasDeny flag for the ack-strip rewriter:
           // last user message matches a hook-deny payload marker.

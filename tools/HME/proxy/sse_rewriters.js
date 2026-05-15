@@ -17,6 +17,7 @@
 // Bash run_in_background -> /hme/spawn; avoids task-notification spam.
 
 const { serviceUrl } = require('./service_registry');
+const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
 
 const SPAWN_URL = serviceUrl('proxy', { path: '/hme/spawn' });
 const BASH_TOOL_NAMES = new Set(['Bash']);
@@ -134,6 +135,24 @@ function _rewriteLongLeadingSleep(command) {
   // Prefix with `:` (shell no-op / true). Leading token is `:`, sleep is
   // second. Claude Code's leading-sleep check doesn't trip.
   return ': ; ' + command;
+}
+
+function bashPolicyRewrite(eventName, data, ctx) {
+  if (eventName !== 'content_block_stop' || !data) return data;
+  const holds = ctx.get('bash_hold');
+  if (!holds) return data;
+  const state = holds.get(data.index);
+  if (!state) return data;
+  const input = _parseToolInput(state);
+  if (!input || typeof input.command !== 'string') return data;
+  const verdict = evaluateBashInput(input);
+  if (!verdict || verdict.decision === 'allow' && !verdict.changed) return data;
+  if (verdict.decision === 'deny') {
+    state.partial = JSON.stringify({ ...input, command: blockedCommand(verdict.reason), description: 'blocked by HME policy' });
+    return data;
+  }
+  state.partial = JSON.stringify(verdict.input || input);
+  return data;
 }
 
 function longLeadingSleepRewrite(eventName, data, ctx) {
@@ -915,6 +934,7 @@ function soloRationaleTrimRewrite(eventName, data, ctx) {
 
 module.exports = {
   readInputNormalizeRewrite,
+  bashPolicyRewrite,
   runInBackgroundRewrite,
   longLeadingSleepRewrite,
   ackStripRewrite,
