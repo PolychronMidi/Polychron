@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3158,
-      "updated_ts": 1778878648.624312,
-      "codex_plan_synced_ts": 1778878648.624286,
+      "max_id": 3161,
+      "updated_ts": 1778878738.6217544,
+      "codex_plan_synced_ts": 1778878738.6217275,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T20:56:59.469Z"
+      "codex_plan_ts": "2026-05-15T20:58:54.363Z"
     }
   },
   {
@@ -1710,8 +1710,8 @@
     "id": 3151,
     "text": "Run focused verification",
     "activeForm": "Run focused verification",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1720,7 +1720,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:42:19.968Z"
+    "codex_plan_ts": "2026-05-15T20:58:54.363Z"
   },
   {
     "id": 3152,
@@ -1790,8 +1790,8 @@
     "id": 3156,
     "text": "Check proxy/Codex live state",
     "activeForm": "Check proxy/Codex live state",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1800,14 +1800,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:56:59.469Z"
+    "codex_plan_ts": "2026-05-15T20:56:59.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3157,
     "text": "Confirm hook duplicate/read-reset behavior",
     "activeForm": "Confirm hook duplicate/read-reset behavior",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1816,14 +1817,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:56:59.469Z"
+    "codex_plan_ts": "2026-05-15T20:56:59.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3158,
     "text": "Recommend next hardening steps",
     "activeForm": "Recommend next hardening steps",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1832,6 +1834,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:56:59.469Z"
+    "codex_plan_ts": "2026-05-15T20:56:59.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3159,
+    "text": "Find new TODO item",
+    "activeForm": "Find new TODO item",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778878734.7977614,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:58:54.363Z"
+  },
+  {
+    "id": 3160,
+    "text": "Implement codex-route smoke",
+    "activeForm": "Implement codex-route smoke",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778878734.7977664,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:58:54.363Z"
+  },
+  {
+    "id": 3161,
+    "text": "Tick completed TODO",
+    "activeForm": "Tick completed TODO",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778878734.79777,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T20:58:54.363Z"
   }
 ]

@@ -4,12 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Check proxy/Codex live state
+- [ ] [E3] Find new TODO item
 
 ## Next
 
-- [ ] [E3] Confirm hook duplicate/read-reset behavior
-- [ ] [E3] Recommend next hardening steps
+- [ ] [E3] Run focused verification
+- [ ] [E3] Implement codex-route smoke
+- [ ] [E3] Tick completed TODO
 
 ## Done
 
