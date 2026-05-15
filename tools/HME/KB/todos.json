@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3087,
-      "updated_ts": 1778868898.5625257,
-      "codex_plan_synced_ts": 1778868898.562514,
+      "max_id": 3091,
+      "updated_ts": 1778868988.5668097,
+      "codex_plan_synced_ts": 1778868988.566797,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T18:10:47.543Z"
+      "codex_plan_ts": "2026-05-15T18:16:24.348Z"
     }
   },
   {
@@ -665,5 +665,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T18:10:47.543Z"
+  },
+  {
+    "id": 3088,
+    "text": "Find auto-correct warning source",
+    "activeForm": "Find auto-correct warning source",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778868988.566712,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:16:24.348Z"
+  },
+  {
+    "id": 3089,
+    "text": "Silence hook spam safely",
+    "activeForm": "Silence hook spam safely",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778868988.5667152,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:16:24.348Z"
+  },
+  {
+    "id": 3090,
+    "text": "Assess middleware/proxy ownership",
+    "activeForm": "Assess middleware/proxy ownership",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778868988.5667176,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:16:24.348Z"
+  },
+  {
+    "id": 3091,
+    "text": "Verify with tests/smoke",
+    "activeForm": "Verify with tests/smoke",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778868988.5667195,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:16:24.348Z"
   }
 ]

@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Find auto-correct warning source
 
 ## Next
 
-(empty)
+- [ ] [E3] Silence hook spam safely
+- [ ] [E3] Assess middleware/proxy ownership
+- [ ] [E3] Verify with tests/smoke
 
 ## Done
 
