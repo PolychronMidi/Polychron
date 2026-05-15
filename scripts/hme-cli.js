@@ -181,6 +181,15 @@ function getProxyVersion(timeoutMs) {
   return _getVersion(serviceHost('proxy'), servicePort('proxy'), timeoutMs);
 }
 
+function logFallback(message) {
+  try {
+    const root = path.resolve(__dirname, '..');
+    const file = path.join(root, 'log', 'hme-cli-fallback.log');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.appendFileSync(file, `[${new Date().toISOString()}] ${message}\n`);
+  } catch (_) { /* best-effort */ }
+}
+
 /**
  * Direct-lance fallback for read-only KB tools. Spawns
  * `python3 tools/HME/service/direct_lance.py` with the appropriate subcommand
@@ -271,13 +280,13 @@ async function main() {
         const queueTimeoutMs = Number(process.env.HME_CLI_QUEUE_TIMEOUT_MS) || 60_000;
         const queueRes = await wq.call('tool', { name: tool, args }, { timeoutMs: queueTimeoutMs });
         if (queueRes !== null) {
-          console.error(`hme-cli: HTTP failed (${e.message}) -- fell back to queue path, succeeded`);
+          logFallback(`HTTP failed (${e.message}) -- queue path succeeded for ${tool}`);
           res = { status: queueRes.ok ? 200 : 500, body: queueRes };
         } else {
           // Queue timed out -> try direct-lance fallback for read-only KB tools.
           const directRes = await _tryDirectLance(tool, args);
           if (directRes !== null) {
-            console.error(`hme-cli: HTTP+queue failed; direct-lance fallback succeeded for read-only ${tool}`);
+            logFallback(`HTTP+queue failed -- direct-lance fallback succeeded for read-only ${tool}`);
             res = { status: 200, body: { ok: true, result: directRes } };
           } else {
             console.error(`hme-cli: HTTP failed (${e.message}); queue path timed out after ${queueTimeoutMs}ms; direct-lance not available for ${tool}`);
