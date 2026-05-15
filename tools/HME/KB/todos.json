@@ -3,8 +3,8 @@
     "id": 0,
     "_meta": {
       "max_id": 3070,
-      "updated_ts": 1778865598.5526574,
-      "codex_plan_synced_ts": 1778865598.5526497,
+      "updated_ts": 1778865958.5467446,
+      "codex_plan_synced_ts": 1778865958.546737,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
       "codex_plan_ts": "2026-05-15T17:19:39.789Z"
     }
@@ -334,7 +334,9 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-    "codex_plan_ts": "2026-05-15T17:19:39.789Z"
+    "codex_plan_ts": "2026-05-15T17:19:39.789Z",
+    "resolved_ts": 1778865946.911745,
+    "resolved_reason": "completed-after-hook-scope-stack-check"
   },
   {
     "id": 3068,
@@ -367,7 +369,9 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-    "codex_plan_ts": "2026-05-15T17:19:39.789Z"
+    "codex_plan_ts": "2026-05-15T17:19:39.789Z",
+    "resolved_ts": 1778865946.911745,
+    "resolved_reason": "completed-after-hook-scope-stack-check"
   },
   {
     "id": 3070,
@@ -383,6 +387,8 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-00-50-019e2c95-6cc3-7bd2-8a81-e0aa0f7d04e2.jsonl",
-    "codex_plan_ts": "2026-05-15T17:19:39.789Z"
+    "codex_plan_ts": "2026-05-15T17:19:39.789Z",
+    "resolved_ts": 1778865946.911745,
+    "resolved_reason": "completed-after-hook-scope-stack-check"
   }
 ]
