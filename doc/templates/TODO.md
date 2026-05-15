@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Locate the Codex/HME primer injection path
+(empty)
 
 ## Next
 
-- [ ] [E3] Patch it to emit only once per real session and suppress duplicates/large output
-- [ ] [E3] Add regression coverage for duplicate primer suppression
-- [ ] [E3] Run focused checks and report evidence
+(empty)
 
 ## Done
 

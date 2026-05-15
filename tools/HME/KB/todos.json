@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3144,
-      "updated_ts": 1778875768.6006737,
-      "codex_plan_synced_ts": 1778875768.6006503,
+      "updated_ts": 1778876188.607351,
+      "codex_plan_synced_ts": 1778876188.6073277,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T20:09:04.750Z"
+      "codex_plan_ts": "2026-05-15T20:16:25.390Z"
     }
   },
   {
@@ -1546,8 +1546,8 @@
     "id": 3141,
     "text": "Locate the Codex/HME primer injection path",
     "activeForm": "Locate the Codex/HME primer injection path",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1556,14 +1556,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:09:04.750Z"
+    "codex_plan_ts": "2026-05-15T20:16:25.390Z"
   },
   {
     "id": 3142,
     "text": "Patch it to emit only once per real session and suppress duplicates/large output",
     "activeForm": "Patch it to emit only once per real session and suppress duplicates/large output",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1572,14 +1572,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:09:04.750Z"
+    "codex_plan_ts": "2026-05-15T20:16:25.390Z"
   },
   {
     "id": 3143,
     "text": "Add regression coverage for duplicate primer suppression",
     "activeForm": "Add regression coverage for duplicate primer suppression",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1588,14 +1588,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:09:04.750Z"
+    "codex_plan_ts": "2026-05-15T20:16:25.390Z"
   },
   {
     "id": 3144,
     "text": "Run focused checks and report evidence",
     "activeForm": "Run focused checks and report evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1604,6 +1604,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:09:04.750Z"
+    "codex_plan_ts": "2026-05-15T20:16:25.390Z"
   }
 ]
