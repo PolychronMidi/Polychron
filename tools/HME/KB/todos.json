@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3194,
-      "updated_ts": 1778884168.655734,
-      "codex_plan_synced_ts": 1778884168.6557007,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T22:23:27.887Z"
+      "max_id": 3197,
+      "updated_ts": 1778884181.051644,
+      "codex_plan_synced_ts": 1778884181.0516095,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T22:29:40.621Z"
     }
   },
   {
@@ -2419,5 +2419,53 @@
     "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
     "codex_plan_ts": "2026-05-15T22:29:24.953Z",
     "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3195,
+    "text": "Find Codex/Claude payload text normalization points",
+    "activeForm": "Find Codex/Claude payload text normalization points",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778884181.0513287,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T22:29:40.621Z"
+  },
+  {
+    "id": 3196,
+    "text": "Add proxy sanitizer for internal bridge command text",
+    "activeForm": "Add proxy sanitizer for internal bridge command text",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778884181.0513344,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T22:29:40.621Z"
+  },
+  {
+    "id": 3197,
+    "text": "Verify with focused tests",
+    "activeForm": "Verify with focused tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778884181.0513387,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T22:29:40.621Z"
   }
 ]
