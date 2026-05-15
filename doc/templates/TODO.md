@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Check current Codex/proxy tool exposure and health
+(empty)
 
 ## Next
 
-- [ ] [E3] Run a minimal read/edit bridge verification
-- [ ] [E3] Patch failure if native-looking Read/Edit still fails
-- [ ] [E3] Report evidence and exact remaining gap
+(empty)
 
 ## Done
 
