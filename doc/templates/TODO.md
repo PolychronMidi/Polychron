@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect current AGENTS/CLAUDE revert state
 
 ## Next
 
-(empty)
+- [ ] [E3] Re-apply the reverted refactor commits safely
+- [ ] [E3] Run targeted syntax/tests/status and ensure clean tree
 
 ## Done
 

@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3219,
-      "updated_ts": 1778888128.6736748,
-      "codex_plan_synced_ts": 1778888128.6736362,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T23:35:20.145Z"
+      "max_id": 3222,
+      "updated_ts": 1778889183.5209634,
+      "codex_plan_synced_ts": 1778889183.5209239,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-15T23:53:03.080Z"
     }
   },
   {
@@ -2822,5 +2822,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T23:35:20.145Z"
+  },
+  {
+    "id": 3220,
+    "text": "Inspect current AGENTS/CLAUDE revert state",
+    "activeForm": "Inspect current AGENTS/CLAUDE revert state",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778889183.520586,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T23:53:03.080Z"
+  },
+  {
+    "id": 3221,
+    "text": "Re-apply the reverted refactor commits safely",
+    "activeForm": "Re-apply the reverted refactor commits safely",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778889183.5205913,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T23:53:03.080Z"
+  },
+  {
+    "id": 3222,
+    "text": "Run targeted syntax/tests/status and ensure clean tree",
+    "activeForm": "Run targeted syntax/tests/status and ensure clean tree",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778889183.5205956,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-15T23:53:03.080Z"
   }
 ]
