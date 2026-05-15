@@ -46,7 +46,7 @@ measured evolution loop.
 - Native Read/Edit/Grep/Glob/TodoWrite: enriched or replaced by proxy
   middleware where appropriate.
 - Codex fallback bridge: when a host lacks native Read/Edit, adapter-owned
-  internals may synthesize native events; this is not a public `i/` surface.
+  internals may synthesize native events; this is not a public [`i/`](../i/) surface.
 - Codex `update_plan`: synced into the same TODO store by `codex_proxy` while
   Responses events stream; universal pulse remains the fallback session-log
   scanner. There is no normal manual sync command; sync failures are repaired
