@@ -110,7 +110,7 @@ function normalizeValue(value, stats) {
   const bridge = found.hit;
   if (typeof out.name === 'string') out.name = bridge.tool;
   if (typeof out.tool_name === 'string') out.tool_name = bridge.tool;
-  if (typeof out.arguments === 'string') out.arguments = rewriteArgumentString(out.arguments, bridge);
+  if (typeof out.arguments === 'string') out.arguments = JSON.stringify(bridge.input);
   if (out.input && typeof out.input === 'object' && !Array.isArray(out.input)) out.input = bridge.input;
   if (typeof out.cmd === 'string') out.cmd = displayCall(bridge);
   if (typeof out.command === 'string') out.command = displayCall(bridge);
