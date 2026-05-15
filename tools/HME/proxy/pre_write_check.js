@@ -95,7 +95,7 @@ function _shellParityDecision(payload) {
     if (/setBinaural\s*\(\s*([0-7](\.[0-9]+)?|1[3-9]|[2-9][0-9])\b/.test(content)) return _permission('deny', 'BLOCKED: setBinaural called outside alpha range 8-12Hz.');
   }
 
-  return _permission('allow', '', 'central pre-write check passed');
+  return _permission('allow');
 }
 
 async function preWriteCheck(stdinJson) {
