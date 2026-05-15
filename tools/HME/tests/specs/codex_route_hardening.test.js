@@ -90,7 +90,7 @@ test('Codex PreToolUse payload fixtures route for Read/Grep/Edit/Write', async (
 test('codex-route and hook-decision status views are compact and API-only', () => {
   const root = sandbox('codex-status-');
   fs.mkdirSync(path.join(root, 'runtime', 'hme'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'runtime', 'hme', 'codex-proxy-events.jsonl'), `${JSON.stringify({ kind: 'request', route: 'omniroute', upstream: 'http://127.0.0.1:20128/v1/responses', after: { model: 'gpt-5.5' } })}\n${JSON.stringify({ kind: 'response', route: 'omniroute', status: 200, model: 'cx/gpt-5.5' })}\n`);
+  fs.writeFileSync(path.join(root, 'runtime', 'hme', 'codex-proxy-events.jsonl'), `${JSON.stringify({ kind: 'request', route: 'omniroute', upstream: 'http://127.0.0.1:20128/v1/responses', after: { model: 'gpt-5.5', tool_names: ['exec_command', 'update_plan'] } })}\n${JSON.stringify({ kind: 'response', route: 'omniroute', status: 200, model: 'cx/gpt-5.5' })}\n`);
   fs.writeFileSync(path.join(root, 'runtime', 'hme', 'hook-decisions.jsonl'), `${JSON.stringify({ ts: 't', host: 'codex', event: 'PreToolUse', tool: 'Bash', decision: 'deny', reason_hash: 'abc', surfaced_channels: ['permissionDecisionReason'], duplicate_systemMessage_stripped: true })}\n`);
   const script = `
 import importlib.util, os, sys, types
@@ -115,6 +115,7 @@ print(mod._mode_hook_decisions())
   assert.equal(res.status, 0, res.stderr);
   assert.match(res.stdout, /verdict=PASS/);
   assert.match(res.stdout, /api=\/api\/usage\/call-logs db=unused/);
+  assert.match(res.stdout, /codex native Read\/Edit: absent \(Read, Edit\/MultiEdit missing\); bridge fallback active/);
   assert.match(res.stdout, /duplicate_systemMessage_stripped=True/);
   assert.doesNotMatch(res.stdout, /storage\.sqlite|\.omniroute/);
   fs.rmSync(root, { recursive: true, force: true });
