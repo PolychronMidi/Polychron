@@ -114,6 +114,7 @@ def _save_todos(meta: dict, todos: list):
     header = {"id": 0, "_meta": meta}
     with open(_TODO_FILE, "w", encoding="utf-8") as f:
         json.dump([header] + todos, f, indent=2)
+        f.write("\n")
     try:
         _write_graph_file(todos)
     except Exception as e:

@@ -62,8 +62,7 @@ emitPickCrossLayerRecord = function(ctx) {
   // Record cross-layer interval for harmonic guard tracking.
   if (Number.isFinite(harmonicOtherMidi) && harmonicOtherMidi > 0) {
     harmonicIntervalGuard.recordCrossInterval(noteToEmit, harmonicOtherMidi, timeInSeconds);
-  } else if (harmonicOtherMidi === -1) {
-  } else {
+  } else if (harmonicOtherMidi !== -1) {
     // Fallback: query L0 directly (should not normally occur)
     const otherLayerForGuard = crossLayerHelpers.getOtherLayer(activeLayerName);
     const otherRecentEntry = L0.getLast(L0_CHANNELS.note, { layer: otherLayerForGuard, since: timeInSeconds - 0.5, windowSeconds: 0.5 });
