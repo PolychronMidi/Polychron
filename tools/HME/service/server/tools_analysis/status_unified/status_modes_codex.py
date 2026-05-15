@@ -207,6 +207,7 @@ def _mode_codex_route() -> str:
     else:
         out.append("codex_proxy latest response: missing")
     out.append(f"omniroute claude probe: {probe_status} ({probe_detail})")
+    out.append("omniroute visibility: api=/api/usage/call-logs db=unused")
     out.append("omniroute direct: " + _fmt_call(direct))
     out.append("omniroute claude: " + _fmt_call(claude))
     if logs_err:
