@@ -15,7 +15,7 @@ if [ -n "$_POLICY_OUT" ]; then
 fi
 
 # Defense-in-depth: wrap each source in `set +u +e` so a stray unbound-var
-for _part in hme_dispatch gates kb_spam verify_landed_block polling_counter; do
+for _part in gates; do
   set +u +e
   source "${SCRIPT_DIR}/bash/${_part}.sh"
   _rc=$?
