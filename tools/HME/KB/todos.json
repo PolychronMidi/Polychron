@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3096,
-      "updated_ts": 1778869498.5666726,
-      "codex_plan_synced_ts": 1778869498.5666602,
+      "max_id": 3101,
+      "updated_ts": 1778869678.5643954,
+      "codex_plan_synced_ts": 1778869678.5643814,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T18:23:23.889Z"
+      "codex_plan_ts": "2026-05-15T18:26:23.608Z"
     }
   },
   {
@@ -787,8 +787,8 @@
     "id": 3095,
     "text": "Run targeted verification",
     "activeForm": "Run targeted verification",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -797,7 +797,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:23:23.889Z"
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
   },
   {
     "id": 3096,
@@ -814,5 +814,85 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-15T18:23:23.889Z"
+  },
+  {
+    "id": 3097,
+    "text": "Fix wrapper smoke misplaced-dir failure",
+    "activeForm": "Fix wrapper smoke misplaced-dir failure",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778869678.5642734,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+  },
+  {
+    "id": 3098,
+    "text": "Fix worker transport socket hangups",
+    "activeForm": "Fix worker transport socket hangups",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778869678.5642772,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+  },
+  {
+    "id": 3099,
+    "text": "Fix review verdict hook fail=1 branch",
+    "activeForm": "Fix review verdict hook fail=1 branch",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778869678.5642803,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+  },
+  {
+    "id": 3100,
+    "text": "Trace Claude Code OmniRoute translation path",
+    "activeForm": "Trace Claude Code OmniRoute translation path",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778869678.564283,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
+  },
+  {
+    "id": 3101,
+    "text": "Design/apply Codex proxy translation logging path",
+    "activeForm": "Design/apply Codex proxy translation logging path",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778869678.5642853,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T18:26:23.608Z"
   }
 ]
