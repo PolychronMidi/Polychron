@@ -5,6 +5,7 @@ const path = require('path');
 const { normalizeStructuredBridgeCalls } = require('./codex_tool_text');
 const { normalizeICommandsInValue } = require('./i_command_text');
 const { injectNativeToolSchemas } = require('./codex_native_tools');
+const { stripHookNoiseInValue } = require('./hook_noise_text');
 
 const HOOK_SUCCESS_RE = /^\s*(SessionStart|UserPromptSubmit|PreToolUse|PostToolUse|Notification|Stop|SubagentStop|PreCompact|PostCompact|PermissionRequest) hook \((completed|skipped)\)\s*$/;
 const WRAPPER_AUTOCORRECT_RE = /^\s*warning:\s*i\/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT\s*$/;
@@ -223,6 +224,8 @@ function applyRequestTransform(body, deps) {
   transformed = normalizeICommandsInValue(transformed, iCommandStats);
   const bridgeNormalized = normalizeStructuredBridgeCalls(transformed);
   transformed = bridgeNormalized.body;
+  const hookNoiseStats = {};
+  transformed = stripHookNoiseInValue(transformed, hookNoiseStats);
   const cleaned = cleanPayload(transformed, cfg);
   transformed = cleaned.body;
   const after = requestStats(transformed);
@@ -243,7 +246,7 @@ function applyRequestTransform(body, deps) {
     body: transformed,
     before,
     after,
-    cleanup: { ...cleaned.cleanup, bridge_calls: bridgeNormalized.stats.call_rewrites, bridge_text: bridgeNormalized.stats.text_rewrites, native_tools_added: nativeTools.stats.added, i_commands: iCommandStats.command_rewrites, i_text: iCommandStats.text_rewrites },
+    cleanup: { ...cleaned.cleanup, bridge_calls: bridgeNormalized.stats.call_rewrites, bridge_text: bridgeNormalized.stats.text_rewrites, native_tools_added: nativeTools.stats.added, hook_noise_lines: hookNoiseStats.stripped || 0, i_commands: iCommandStats.command_rewrites, i_text: iCommandStats.text_rewrites },
     payload_log: logOpts.enabled ? {
       target: 'codex-responses-log-only',
       before: requestStats(body, logOpts.previewChars),
