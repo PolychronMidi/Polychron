@@ -45,6 +45,8 @@ measured evolution loop.
 - [`i/`](../i/) wrappers: deliberate HME commands.
 - Native Read/Edit/Grep/Glob/TodoWrite: enriched or replaced by proxy
   middleware where appropriate.
+- Codex fallback `i/read` and `i/edit`: use only when the host lacks native
+  Read/Edit; they emit synthetic native events for the same hook/middleware path.
 - Codex `update_plan`: synced into the same TODO store by `codex_proxy` while
   Responses events stream; universal pulse remains the fallback session-log
   scanner. There is no normal manual sync command; sync failures are repaired
