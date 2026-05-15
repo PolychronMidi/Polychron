@@ -4,16 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Implement active Claude-route smoke
+(empty)
 
 ## Next
 
-- [ ] [E3] Centralize raw-streak policy
-- [ ] [E3] Log silent Read reset event
-- [ ] [E3] Add Codex payload fixture coverage
-- [ ] [E3] Add hook-decision compact view
-- [ ] [E3] Add API-only OmniRoute guard
-- [ ] [E3] Run focused verification and tick TODOs
+(empty)
 
 ## Done
 

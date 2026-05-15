@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3168,
-      "updated_ts": 1778879128.6191046,
-      "codex_plan_synced_ts": 1778879128.619077,
+      "updated_ts": 1778879758.6109147,
+      "codex_plan_synced_ts": 1778879758.6108868,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T21:05:16.524Z"
+      "codex_plan_ts": "2026-05-15T21:15:57.771Z"
     }
   },
   {
@@ -1889,8 +1889,8 @@
     "id": 3162,
     "text": "Implement active Claude-route smoke",
     "activeForm": "Implement active Claude-route smoke",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1899,14 +1899,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:05:16.524Z"
+    "codex_plan_ts": "2026-05-15T21:15:57.771Z"
   },
   {
     "id": 3163,
     "text": "Centralize raw-streak policy",
     "activeForm": "Centralize raw-streak policy",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1915,14 +1915,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:05:16.524Z"
+    "codex_plan_ts": "2026-05-15T21:15:57.771Z"
   },
   {
     "id": 3164,
     "text": "Log silent Read reset event",
     "activeForm": "Log silent Read reset event",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1931,14 +1931,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:05:16.524Z"
+    "codex_plan_ts": "2026-05-15T21:15:57.771Z"
   },
   {
     "id": 3165,
     "text": "Add Codex payload fixture coverage",
     "activeForm": "Add Codex payload fixture coverage",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1947,14 +1947,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:05:16.524Z"
+    "codex_plan_ts": "2026-05-15T21:15:57.771Z"
   },
   {
     "id": 3166,
     "text": "Add hook-decision compact view",
     "activeForm": "Add hook-decision compact view",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1963,14 +1963,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:05:16.524Z"
+    "codex_plan_ts": "2026-05-15T21:15:57.771Z"
   },
   {
     "id": 3167,
     "text": "Add API-only OmniRoute guard",
     "activeForm": "Add API-only OmniRoute guard",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1979,14 +1979,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:05:16.524Z"
+    "codex_plan_ts": "2026-05-15T21:15:57.771Z"
   },
   {
     "id": 3168,
     "text": "Run focused verification and tick TODOs",
     "activeForm": "Run focused verification and tick TODOs",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1995,6 +1995,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:05:16.524Z"
+    "codex_plan_ts": "2026-05-15T21:15:57.771Z"
   }
 ]
