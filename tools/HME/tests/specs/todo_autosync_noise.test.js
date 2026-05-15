@@ -97,7 +97,7 @@ function waitFor(predicate, timeoutMs = 3000) {
 
 test('codex plan scanner is silent on sync success', async () => withProject(async (root) => {
   const script = path.join(root, 'sync_ok.py');
-  fs.writeFileSync(script, 'import json; print(json.dumps({"ok": True}))\n');
+  fs.writeFileSync(script, 'import json, os; open(os.path.join(os.environ["PROJECT_ROOT"], "done"), "w").write("1"); print(json.dumps({"ok": True}))\n');
   const events = [];
   const { createPlanScanner } = require('../../proxy/codex_plan_scanner');
   const scanner = createPlanScanner({
