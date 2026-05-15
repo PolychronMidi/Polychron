@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3151,
-      "updated_ts": 1778877718.6182415,
-      "codex_plan_synced_ts": 1778877718.6182172,
+      "updated_ts": 1778877748.6213758,
+      "codex_plan_synced_ts": 1778877748.6213512,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T20:41:42.055Z"
+      "codex_plan_ts": "2026-05-15T20:42:19.968Z"
     }
   },
   {
@@ -1672,7 +1672,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:41:42.055Z"
+    "codex_plan_ts": "2026-05-15T20:42:19.968Z"
   },
   {
     "id": 3149,
@@ -1688,14 +1688,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:41:42.055Z"
+    "codex_plan_ts": "2026-05-15T20:42:19.968Z"
   },
   {
     "id": 3150,
     "text": "Add focused regression coverage",
     "activeForm": "Add focused regression coverage",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1704,14 +1704,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:41:42.055Z"
+    "codex_plan_ts": "2026-05-15T20:42:19.968Z"
   },
   {
     "id": 3151,
     "text": "Run focused verification",
     "activeForm": "Run focused verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1720,6 +1720,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T20:41:42.055Z"
+    "codex_plan_ts": "2026-05-15T20:42:19.968Z"
   }
 ]

@@ -4,11 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Add focused regression coverage
+(empty)
 
 ## Next
 
-- [ ] [E3] Run focused verification
+(empty)
 
 ## Done
 
