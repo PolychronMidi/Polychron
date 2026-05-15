@@ -45,17 +45,6 @@
       }
     },
     {
-      "path": "tools/HME/service/server/tools_analysis/todo_spec_bridge.py",
-      "kind": "legacy-name",
-      "owner": "todo-native-merge",
-      "reason": "Historical import path while TodoWrite replacement settles.",
-      "expires": {
-        "kind": "zero_refs",
-        "scan": "todo_spec_bridge",
-        "delete_when": "import scan has zero todo_spec_bridge references"
-      }
-    },
-    {
       "path": "tools/HME/service/server/tools_analysis/coupling/coupling_bridges.py",
       "kind": "domain-module",
       "owner": "coupling-analysis",

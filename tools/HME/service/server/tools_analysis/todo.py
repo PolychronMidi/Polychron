@@ -25,7 +25,9 @@ with todo.py keeping the core CRUD + dispatcher + on_done triggers and re-export
 their public symbols so existing callers don't change.
   todo_lifesaver.py    -- lifesaver-error registration, dedup, caps, pruning, onboarding
   todo_native_merge.py -- native TodoWrite payload merge
-  todo_spec_bridge.py  -- TODO.md/devlog lifecycle compatibility bridge
+  todo_markdown_ingest.py -- TODO.md ingest/promote helpers
+  todo_archive.py         -- TODO.md/devlog archive lifecycle
+  todo_close.py           -- TODO.md close helpers
 
 Main todos are done only when all their subs are done. Marking a parent done
 while subs are open raises a refusal message that names the blocking subs.
@@ -291,13 +293,21 @@ from .todo_lifesaver import (  # noqa: F401, E402
     _expire_stale_lifesavers,
 )
 from .todo_native_merge import merge_native_todowrite  # noqa: F401, E402
-from .todo_spec_bridge import (  # noqa: F401, E402
-    _NEXT_UP_RE, _SPEC_OPEN_RE,
-    _read_section, _ingest_from_spec, _promote_to_spec,
+from .todo_markdown_ingest import (  # noqa: F401, E402
+    _NEXT_UP_RE,
+    _read_section, _read_todo_open_lines,
+    _ingest_from_todo, _promote_to_todo,
     _normalize_for_match, _common_prefix_len,
+)
+from .todo_archive import (  # noqa: F401, E402
     _ensure_devlog_dir, _slugify, _detect_complete_set, _archive_set,
-    _reset_spec_to_fresh_slate, _reset_todo_to_fresh_slate,
-    _detect_phase_complete, _close_with_spec_update,
+    _reset_todo_to_fresh_slate, validate_archive_text,
+)
+from .todo_close import (  # noqa: F401, E402
+    _detect_todo_complete, _close_with_todo_update,
+)
+from .todo_md_sync import (  # noqa: E402
+    repair_todo_md_from_store,
 )
 
 @ctx.mcp.tool(meta={"hidden": True})
@@ -327,11 +337,11 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
     action='clear': remove completed main todos. When TODO.md has task lines and
         all are `[x]`, clear auto-archives TODO.md + todos.json and resets TODO.md.
     action='critical': list only critical open items (used by turn-start hook).
-    action='ingest_from_spec': compatibility name; ingests open TODO.md task lines.
-    action='promote_to_spec': compatibility name; keeps #todo_id visible in TODO.md.
-    action='close_with_spec_update': compatibility name; marks #todo_id done and
-        flips the matching TODO.md task line if present.
-    action='phase_complete': retired compatibility no-op; TODO.md completion is enough.
+    action='ingest_from_todo': ingests open TODO.md task lines.
+    action='promote_to_todo': keeps #todo_id visible in TODO.md.
+    action='close_with_todo_update': marks #todo_id done and flips the matching
+        TODO.md task line if present.
+    action='repair_markdown': regenerate TODO.md from tools/HME/KB/todos.json.
 
     Changes to this store propagate back to native TodoWrite via the
     native TodoWrite merge -- items appear in the agent's native view
@@ -524,14 +534,14 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                         f"archive will fire on next `clear` once TODO.md has no open tasks. "
                         f"First blocker: {detection['missing'][0]})"
                     )
-                _ingest_from_spec(meta, todos)
+                _ingest_from_todo(meta, todos)
             before = len(todos)
             todos = [t for t in todos if not _check_main_done(t)]
             removed = before - len(todos)
             _save_todos(meta, todos)
             return f"Cleared {removed} completed todos.{archive_msg}\n\n{_render(todos)}"
 
-        if action == "ingest_from_spec":
+        if action == "ingest_from_todo":
             phase_arg: int | str = 0
             if text.strip().lower() == "latest":
                 phase_arg = "latest"
@@ -539,7 +549,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 phase_arg = int(text.strip())
             elif todo_id > 0:
                 phase_arg = todo_id  # caller can pass via todo_id= as well
-            ingested = _ingest_from_spec(meta, todos, phase=phase_arg)
+            ingested = _ingest_from_todo(meta, todos, phase=phase_arg)
             _save_todos(meta, todos)
             src = "doc/templates/TODO.md"
             if not ingested:
@@ -547,9 +557,9 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             lines = [f"  + #{e['id']} [{e['tier']}] {e['text'][:80]}" for e in ingested]
             return f"Ingested {len(ingested)} entries from {src}:\n" + "\n".join(lines)
 
-        if action == "promote_to_spec":
+        if action == "promote_to_todo":
             if not todo_id:
-                return "Error: todo_id= required for promote_to_spec."
+                return "Error: todo_id= required for promote_to_todo."
             main, sub = _find_any(todos, todo_id)
             if main is None:
                 return f"Error: #{todo_id} not found."
@@ -557,18 +567,18 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             target["source"] = "todo_md"
             target["status"] = target.get("status") or "pending"
             target["done"] = target.get("status") == "completed"
-            line = _promote_to_spec(target)
+            line = _promote_to_todo(target)
             _save_todos(meta, todos)
             return f"Promoted #{todo_id} to doc/templates/TODO.md Next:\n  {line}"
 
-        if action == "close_with_spec_update":
+        if action == "close_with_todo_update":
             if not todo_id:
-                return "Error: todo_id= required for close_with_spec_update."
+                return "Error: todo_id= required for close_with_todo_update."
             main, sub = _find_any(todos, todo_id)
             if main is None:
                 return f"Error: #{todo_id} not found."
             target = sub or main
-            todo_flipped, shipped_line = _close_with_spec_update(target)
+            todo_flipped, shipped_line = _close_with_todo_update(target)
             # Mark done in the HME todo store.
             _mark_status(target, "completed")
             if sub is not None and _check_main_done(main):
@@ -579,11 +589,13 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 note = f" (flipped TODO.md item: {todo_flipped[:80]})"
             return f"Closed #{todo_id}{note}\nShipped: {shipped_line}\n"
 
-        if action == "phase_complete":
-            return "phase_complete is retired; TODO.md archives when all task lines are checked and clear runs.\n"
+        if action == "repair_markdown":
+            result = repair_todo_md_from_store()
+            state = "changed" if result["changed"] else "already synced"
+            return f"TODO.md repair {state}: {result['path']} ({result['todo_count']} top-level todo(s)).\n"
 
         return ("Unknown action. Use: list, add, done, undo, remove, clear, archive_now, critical, "
-                "ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.")
+                "ingest_from_todo, promote_to_todo, close_with_todo_update, repair_markdown.")
 
 
 

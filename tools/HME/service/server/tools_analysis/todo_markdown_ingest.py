@@ -1,4 +1,4 @@
-"""TODO.md ingest/promote compatibility for hidden hme_todo actions."""
+"""TODO.md ingest/promote helpers for hidden hme_todo actions."""
 import os
 import re
 import sys
@@ -11,9 +11,7 @@ from paths import todo_file as _todo_md_file  # noqa: E402
 
 logger = logging.getLogger("HME")
 
-from server.tools_analysis.todo import (
-    _write_todo_entry, _check_main_done,
-)
+from server.tools_analysis.todo import _write_todo_entry, _check_main_done
 
 
 from .todo_md_sync import (  # noqa: E402
@@ -28,8 +26,7 @@ _NEXT_UP_RE = re.compile(
     r"^\s*-\s+\[(E[1-5]|easy|medium|hard)\]\s+(.+?)(?:\s+Reason:\s+(.+?))?\s*$",
     re.IGNORECASE,
 )
-# Open spec checkbox: "- [ ] [tier] text". E1-E5 or legacy easy/medium/hard.
-_SPEC_OPEN_RE = re.compile(
+_TODO_OPEN_RE = re.compile(
     r"^(\s*-\s+\[)\s(\]\s+\[(?:E[1-5]|easy|medium|hard)\]\s+)(.+?)$",
     re.IGNORECASE,
 )
@@ -44,26 +41,26 @@ def _read_section(md_text: str, header: str) -> list[str]:
     return _read_md_section(md_text, header)
 
 
-def _ingest_from_spec(meta: dict, todos: list, phase: int | str = 0) -> list[dict]:
+def _ingest_from_todo(meta: dict, todos: list, phase: int | str = 0) -> list[dict]:
     """Materialize open TODO.md task lines as HME todo entries."""
     if not os.path.exists(_todo_md_file()):
-        logger.warning(f"ingest_from_spec: {_todo_md_file()} missing")
+        logger.warning(f"ingest_from_todo: {_todo_md_file()} missing")
         return []
     with open(_todo_md_file(), encoding="utf-8") as f:
         md = f.read()
-    spec_lines = _read_phase_block(phase)
-    if not spec_lines:
-        spec_lines = [it["line"] for it in task_items(md, sections=("now", "next")) if not it["done"]]
+    todo_lines = _read_todo_open_lines(phase)
+    if not todo_lines:
+        todo_lines = [it["line"] for it in task_items(md, sections=("now", "next")) if not it["done"]]
     created = []
-    for line in spec_lines:
+    for line in todo_lines:
         s = line.strip()
         if not s or s == "(empty)" or s.startswith("<!--") or s.startswith("-->"):
             continue
-        m_phase = _SPEC_OPEN_RE.match(line)
-        if m_phase:
+        m_task = _TODO_OPEN_RE.match(line)
+        if m_task:
             tier_str = re.search(r"\[(E[1-5]|easy|medium|hard)\]",
-                                 m_phase.group(2), re.IGNORECASE).group(1)
-            body = m_phase.group(3).strip()
+                                 m_task.group(2), re.IGNORECASE).group(1)
+            body = m_task.group(3).strip()
             reason = ""
         else:
             m = _NEXT_UP_RE.match(line)
@@ -93,8 +90,8 @@ def _ingest_from_spec(meta: dict, todos: list, phase: int | str = 0) -> list[dic
     return created
 
 
-def _read_phase_block(phase: int | str) -> list[str]:
-    """Compatibility name: return open TODO.md Now/Next task lines."""
+def _read_todo_open_lines(_phase: int | str = 0) -> list[str]:
+    """Return open TODO.md Now/Next task lines."""
     if not os.path.exists(_todo_md_file()):
         return []
     with open(_todo_md_file(), encoding="utf-8") as f:
@@ -102,8 +99,8 @@ def _read_phase_block(phase: int | str) -> list[str]:
     return [it["line"] for it in task_items(md, sections=("now", "next")) if not it["done"]]
 
 
-def _promote_to_spec(entry: dict) -> str:
-    """Compatibility name: return the TODO.md line rendered by store sync."""
+def _promote_to_todo(entry: dict) -> str:
+    """Return the TODO.md line rendered by store sync."""
     tier = normalize_tier(entry.get("tier", "E3"))
     text = entry.get("text", "").strip()
     return f"- [ ] [{tier}] {text}"

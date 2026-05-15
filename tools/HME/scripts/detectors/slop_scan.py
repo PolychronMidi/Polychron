@@ -66,7 +66,7 @@ _WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
 # Core instruction templates legitimately quote patterns this detector matches.
 _SKIP_PATH_PARTS = {"__pycache__", "node_modules", ".git", "tools/HME/KB/devlog"}
 _SKIP_EXACT_PATHS = {
-    "doc/templates/SPEC.md", "doc/templates/TODO.md",
+    "doc/templates/TODO.md",
     "tools/HME/scripts/detectors/slop_scan.py",
     "CLAUDE.md",
 }

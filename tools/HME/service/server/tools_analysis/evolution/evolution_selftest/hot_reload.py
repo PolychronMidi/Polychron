@@ -8,7 +8,7 @@ import sys
 
 from server import context as ctx
 from ... import _track
-from ._shared import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_RELOADABLE
+from ._shared import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_FIRST_RELOADABLE, ROOT_RELOADABLE
 
 logger = logging.getLogger("HME")
 
@@ -27,7 +27,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
     from server import tool_registry
 
     if not modules or modules.strip().lower() == "all":
-        targets = RELOADABLE + TOP_LEVEL_RELOADABLE + ROOT_RELOADABLE
+        targets = ROOT_FIRST_RELOADABLE + RELOADABLE + TOP_LEVEL_RELOADABLE + ROOT_RELOADABLE
     else:
         targets = [m.strip() for m in modules.split(",") if m.strip()]
 
@@ -48,7 +48,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
 
     results = []
     for name in targets:
-        if name in ROOT_RELOADABLE:
+        if name in ROOT_FIRST_RELOADABLE or name in ROOT_RELOADABLE:
             full = name
         elif name in TOP_LEVEL_RELOADABLE:
             full = f"server.{name}"
@@ -63,7 +63,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
                     break
         if mod is None:
             try:
-                if name in ROOT_RELOADABLE:
+                if name in ROOT_FIRST_RELOADABLE or name in ROOT_RELOADABLE:
                     mod = importlib.import_module(name)
                 elif name in TOP_LEVEL_RELOADABLE:
                     mod = importlib.import_module(f".{name}", "server")

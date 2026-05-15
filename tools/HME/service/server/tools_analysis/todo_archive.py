@@ -1,4 +1,4 @@
-"""TODO.md/devlog lifecycle compatibility for hidden hme_todo actions."""
+"""TODO.md/devlog lifecycle for hidden hme_todo actions."""
 import json
 import os
 import re
@@ -9,10 +9,10 @@ _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from hme_env import ENV  # noqa: E402
-from paths import spec_file as _spec_file, todo_file as _todo_md_file, kb_devlog_dir as _devlog_dir  # noqa: E402
+from paths import todo_file as _todo_md_file, kb_devlog_dir as _devlog_dir  # noqa: E402
 from .todo_md_sync import completion_state, write_blank_todo_md  # noqa: E402
 
-from server.tools_analysis.todo import _load_todos  # noqa: E402
+ARCHIVE_REQUIRED_SECTIONS = ("## TODO snapshot", "## todos.json snapshot")
 
 
 def _ensure_devlog_dir() -> None:
@@ -51,6 +51,41 @@ def _detect_complete_set() -> dict:
     return out
 
 
+def _render_archive(set_name: str, ts: str, todo_md: str, todo_json: str) -> str:
+    lines = [
+        f"# Devlog -- {set_name}",
+        "",
+        f"_Archived: {ts}_",
+        "_Source: doc/templates/TODO.md_",
+        "",
+        "## TODO snapshot",
+        "",
+        todo_md.rstrip(),
+        "",
+        "## todos.json snapshot",
+        "",
+        "```json",
+        todo_json,
+        "```",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def validate_archive_text(text: str) -> list[str]:
+    errors: list[str] = []
+    if not text.startswith("# Devlog -- "):
+        errors.append("missing devlog title")
+    if "_Archived:" not in text:
+        errors.append("missing archived timestamp")
+    for section in ARCHIVE_REQUIRED_SECTIONS:
+        if section not in text:
+            errors.append(f"missing {section}")
+    if "```json" not in text:
+        errors.append("missing todos.json fenced block")
+    return errors
+
+
 def _archive_set(set_name: str = "", force: bool = False) -> dict:
     """Archive TODO.md plus todos.json, then reset TODO.md."""
     detection = _detect_complete_set()
@@ -70,28 +105,19 @@ def _archive_set(set_name: str = "", force: bool = False) -> dict:
     slug = _slugify(set_name)
     devlog_path = os.path.join(_devlog_dir(), f"{ts}-{slug}.md")
     todo_md = open(_todo_md_file(), encoding="utf-8").read() if os.path.exists(_todo_md_file()) else ""
+    from server.tools_analysis.todo import _load_todos
     meta, todos = _load_todos()
     todo_json = json.dumps({"_meta": meta, "todos": todos}, indent=2, sort_keys=True)
-    devlog_content = [
-        f"# Devlog -- {set_name}",
-        "",
-        f"_Archived: {ts}_",
-        "_Source: doc/templates/TODO.md_",
-        "",
-        "## TODO snapshot",
-        "",
-        todo_md.rstrip(),
-        "",
-        "## todos.json snapshot",
-        "",
-        "```json",
-        todo_json,
-        "```",
-        "",
-    ]
+    devlog_content = _render_archive(set_name, ts, todo_md, todo_json)
+    contract_errors = validate_archive_text(devlog_content)
+    if contract_errors:
+        return {
+            "ok": False,
+            "devlog_path": "",
+            "message": "Archive contract failed: " + "; ".join(contract_errors),
+        }
     with open(devlog_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(devlog_content) + "\n")
-    _reset_spec_to_fresh_slate(set_name, ts, devlog_path)
+        f.write(devlog_content)
     _reset_todo_to_fresh_slate()
     # Auto-fire learning extraction on the new devlog so KB/learnings.jsonl
     # accumulates each cycle's patterns without a human running i/learn learnings.
@@ -108,20 +134,6 @@ def _archive_set(set_name: str = "", force: bool = False) -> dict:
         "devlog_path": devlog_path,
         "message": f"Archived TODO.md to {devlog_path}; doc/templates/TODO.md reset to fresh slate.",
     }
-def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: str) -> None:
-    """Keep legacy SPEC.md as a pointer, not an active planning surface."""
-    rel_devlog = os.path.relpath(devlog_path, ENV.require('PROJECT_ROOT'))
-    pointer = [
-        "# SPEC merged into TODO",
-        "",
-        "Active planning now lives in [TODO.md](TODO.md).",
-        "",
-        f"_Previous set ({prev_set_name}) archived {prev_ts} to {rel_devlog}._",
-        "",
-    ]
-    os.makedirs(os.path.dirname(_spec_file()), exist_ok=True)
-    with open(_spec_file(), "w", encoding="utf-8") as f:
-        f.write("\n".join(pointer))
 
 
 def _reset_todo_to_fresh_slate() -> None:

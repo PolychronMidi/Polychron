@@ -282,6 +282,50 @@
   ],
   "multi_writer": [
     {
+      "path": "doc/templates/TODO.md",
+      "coordination": "rendered from tools/HME/KB/todos.json; direct human edits are ingested by todo_autoflip.py",
+      "writers": [
+        "tools/HME/service/server/tools_analysis/todo_md_sync.py",
+        "tools/HME/service/server/tools_analysis/todo_archive.py",
+        "tools/HME/scripts/todo_autoflip.py",
+        "tools/HME/scripts/todo_repair.py"
+      ],
+      "owner": "HME todo store",
+      "readers": [
+        "humans",
+        "native TodoWrite replacement",
+        "scope_vs_shipped.py",
+        "parallel_detect.py",
+        "sessionstart.sh"
+      ],
+      "retention": "current active list only; completed sets archive to tools/HME/KB/devlog",
+      "generated": true,
+      "committed": true,
+      "schema": "markdown sections: Now, Next, Done, Later; task lines: - [ ] [E1-E5] text",
+      "repair": "python3 tools/HME/scripts/todo_repair.py"
+    },
+    {
+      "path": "tools/HME/KB/todos.json",
+      "coordination": "canonical machine todo store; TODO.md is the rendered human surface",
+      "writers": [
+        "tools/HME/service/server/tools_analysis/todo.py",
+        "tools/HME/service/server/tools_analysis/todo_md_sync.py",
+        "tools/HME/scripts/todo_autoflip.py"
+      ],
+      "owner": "HME todo store",
+      "readers": [
+        "native TodoWrite replacement",
+        "tools/HME/service/server/tools_analysis/todo_md_sync.py",
+        "tools/HME/scripts/todo_repair.py",
+        "tools/HME/service/server/tools_analysis/todo_archive.py"
+      ],
+      "retention": "open items retained; completed items auto-pruned or archived with TODO.md",
+      "generated": true,
+      "committed": true,
+      "schema": "JSON array with id=0 _meta header followed by todo entries",
+      "repair": "python3 tools/HME/scripts/todo_repair.py"
+    },
+    {
       "path": "log/hme-errors.log",
       "coordination": "append-only single-line writes with recognizable source tags; bounded trimming only in universal_pulse.py",
       "writers": [

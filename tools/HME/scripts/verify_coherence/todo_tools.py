@@ -52,6 +52,101 @@ class TodoStoreSchemaVerifier(Verifier):
         return _result(WARN, score, f"{len(violations)} schema violations", violations[:10])
 
 
+class TodoMarkdownSyncVerifier(Verifier):
+    """TODO.md should be the sole human todo surface and match todos.json."""
+    name = "todo-markdown-sync"
+    category = "state"
+    subtag = "interface-contract"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        todo_md = os.path.join(_PROJECT, "doc", "templates", "TODO.md")
+        spec_md = os.path.join(_PROJECT, "doc", "templates", "SPEC.md")
+        autoflip = os.path.join(_PROJECT, "tools", "HME", "scripts", "todo_autoflip.py")
+        old_autoflip = os.path.join(_PROJECT, "tools", "HME", "scripts", "spec_autoflip.py")
+        failures: list[str] = []
+        if not os.path.isfile(todo_md):
+            failures.append("doc/templates/TODO.md missing")
+        if os.path.exists(spec_md):
+            failures.append("doc/templates/SPEC.md should be deleted")
+        if not os.path.isfile(autoflip):
+            failures.append("todo_autoflip.py missing")
+        if os.path.exists(old_autoflip):
+            failures.append("spec_autoflip.py still exists")
+        hook_paths = [
+            os.path.join(_PROJECT, "tools", "HME", "hooks", "posttooluse", "posttooluse_edit.sh"),
+            os.path.join(_PROJECT, "tools", "HME", "hooks", "posttooluse", "posttooluse_write.sh"),
+        ]
+        for hook in hook_paths:
+            try:
+                text = open(hook, encoding="utf-8").read()
+            except OSError as e:
+                failures.append(f"{os.path.relpath(hook, _PROJECT)} unreadable: {e}")
+                continue
+            if "doc/templates/TODO.md" not in text or "todo_autoflip.py" not in text:
+                failures.append(f"{os.path.relpath(hook, _PROJECT)} not wired to TODO autoflip")
+        try:
+            sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
+            from server.tools_analysis.todo_md_sync import load_store, render_todo_md, section_headers, TODO_SECTIONS
+            _raw, _meta, todos = load_store()
+            current = open(todo_md, encoding="utf-8").read() if os.path.isfile(todo_md) else ""
+            if tuple(section_headers(current)) != TODO_SECTIONS:
+                failures.append(f"TODO.md sections are {section_headers(current)}, expected {list(TODO_SECTIONS)}")
+            rendered = render_todo_md(todos, previous_md=current)
+            if current and rendered != current:
+                failures.append("TODO.md does not match render(todos.json)")
+        except Exception as e:
+            failures.append(f"TODO.md sync check errored: {e}")
+        if failures:
+            score = max(0.0, 1.0 - 0.25 * len(failures))
+            return _result(FAIL, score, f"{len(failures)} TODO sync violation(s)", failures)
+        return _result(PASS, 1.0, "TODO.md is canonical, synced, and hook-wired")
+
+
+class TodoArchiveContractVerifier(Verifier):
+    """TODO-era devlogs should keep their documented archive shape."""
+    name = "todo-archive-contract"
+    category = "state"
+    subtag = "interface-contract"
+    weight = 0.5
+    strict_from = "2026-05-15"
+
+    def run(self) -> VerdictResult:
+        devlog = os.path.join(_PROJECT, "tools", "HME", "KB", "devlog")
+        if not os.path.isdir(devlog):
+            return _result(SKIP, 1.0, "no devlog directory")
+        try:
+            sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
+            from server.tools_analysis.todo_archive import validate_archive_text
+        except Exception as e:
+            return _result(ERROR, 0.0, f"archive validator import failed: {e}")
+        checked = 0
+        legacy = 0
+        failures: list[str] = []
+        for name in sorted(os.listdir(devlog)):
+            if not name.endswith(".md"):
+                continue
+            path = os.path.join(devlog, name)
+            try:
+                text = open(path, encoding="utf-8", errors="ignore").read()
+            except OSError as e:
+                failures.append(f"{name}: unreadable: {e}")
+                continue
+            if "## TODO snapshot" not in text:
+                continue
+            if name[:10] < self.strict_from and "## todos.json snapshot" not in text:
+                legacy += 1
+                continue
+            checked += 1
+            errors = validate_archive_text(text)
+            if errors:
+                failures.append(f"{name}: {', '.join(errors)}")
+        if failures:
+            return _result(FAIL, 0.0, f"{len(failures)} TODO archive contract violation(s)", failures[:10])
+        suffix = f"; {legacy} legacy TODO archive(s) skipped" if legacy else ""
+        return _result(PASS, 1.0, f"{checked} current TODO archive(s) match contract{suffix}")
+
+
 
 # Verifiers -- COVERAGE category
 

@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Cross-Phase pattern extraction. Adapted from egregore:learning.
+"""Devlog pattern extraction.
 
-Walks KB devlog snapshots (`tools/HME/KB/devlog/<ts>-<slug>.md`), parses Phase
-completion paragraphs + worthiness scores + ship-line provenance, accumulates
-patterns by category, surfaces the top-N most-relevant patterns when a new
-Phase starts.
+Walks KB devlog snapshots (`tools/HME/KB/devlog/<ts>-<slug>.md`), parses the
+current TODO-era archive contract and legacy phase-era snapshots, accumulates
+patterns by category, and surfaces relevant patterns for the next initiative.
 
 Pattern categories detected:
   - tech_stack    -- recurring file-paths / module names that show up in completions
   - failure_mode  -- "what's next" items that became "manual ship", "race condition", "false positive"
-  - architecture  -- worthiness-axis high-scorers (P=3 or S=3 patterns repeated)
+  - architecture  -- worthiness-axis high-scorers from legacy phase snapshots
+  - task          -- completed TODO items from current archives
+  - task_tier     -- recurring completed effort tiers from current archives
+  - archive       -- recurring archive/set names
   - approach      -- recurring phrases from completion paragraphs (e.g. "synchronously", "fall-through")
 
 Storage: appends a `tools/HME/KB/learnings.jsonl` line per detected pattern,
@@ -18,7 +20,7 @@ deduped by (category, description) on read.
 Usage:
   i/learn learnings extract              # walk devlog + extract new patterns
   i/learn learnings list                 # show all known patterns sorted by frequency
-  i/learn learnings surface --keyword X  # patterns matching keyword (for new-Phase priming)
+  i/learn learnings surface --keyword X  # patterns matching keyword
 """
 from __future__ import annotations
 
@@ -41,7 +43,13 @@ _PHASE_HEADER_RE = re.compile(
     r"^###\s+Phase\s+(\d+)\s*:\s*(.+?)(?:\s*\(worthiness\s+P/C/S/E\s*=\s*(\d)/(\d)/(\d)/(\d)\))?\s*$"
 )
 _PHASE_COMPLETE_RE = re.compile(r"^_Phase\s+(\d+)\s+complete_\b")
-_FILE_REF_RE = re.compile(r"\[[^\]]+\]\(([^)]+\.(?:py|js|ts|sh|md|json))\)")
+_FILE_REF_RE = re.compile(
+    r"\[[^\]]+\]\(([^)]+\.(?:py|js|ts|sh|md|json))\)|`([^`]+\.(?:py|js|ts|sh|md|json))`"
+)
+_TODO_TASK_RE = re.compile(
+    r"^\s*-\s+\[(?P<mark>[ xX])\]\s+\[(?P<tier>E[1-5]|easy|medium|hard)\]\s+(?P<body>.+?)\s*$",
+    re.IGNORECASE,
+)
 _FAILURE_PHRASES = (
     "race condition", "false positive", "manual ship", "raced autocommit",
     "false-positive", "false flagged", "false-flagged", "regression", "stale",
@@ -73,14 +81,86 @@ def _walk_devlog() -> list[Path]:
     return sorted(_DEVLOG_DIR.glob("*-*.md"))
 
 
+def _section(text: str, header: str) -> str:
+    marker = f"## {header}"
+    if marker not in text:
+        return ""
+    after = text.split(marker, 1)[1]
+    next_header = re.search(r"\n##\s+", after)
+    return after[:next_header.start()] if next_header else after
+
+
+def _archive_section(text: str, header: str, next_header: str) -> str:
+    marker = f"## {header}"
+    if marker not in text:
+        return ""
+    after = text.split(marker, 1)[1]
+    stop = f"\n## {next_header}"
+    return after.split(stop, 1)[0] if stop in after else after
+
+
+def _extract_todo_archive(text: str, slug: str) -> list[Pattern]:
+    out: list[Pattern] = []
+    first = text.splitlines()[0] if text.splitlines() else ""
+    if first.startswith("# Devlog -- "):
+        set_name = first.replace("# Devlog -- ", "", 1).strip()
+        if set_name:
+            out.append(Pattern(
+                category="archive",
+                description=f"archived set: {set_name[:80]}",
+                last_seen=slug,
+                source_phases=[f"{slug}#TODO"],
+            ))
+    todo_snapshot = _archive_section(text, "TODO snapshot", "todos.json snapshot")
+    if not todo_snapshot:
+        return out
+    for line in todo_snapshot.splitlines():
+        m = _TODO_TASK_RE.match(line)
+        if not m:
+            continue
+        tier = m.group("tier").upper()
+        if tier == "EASY":
+            tier = "E2"
+        elif tier == "MEDIUM":
+            tier = "E3"
+        elif tier == "HARD":
+            tier = "E4"
+        body = m.group("body").strip()
+        source = f"{slug}#TODO"
+        if m.group("mark").lower() == "x":
+            out.append(Pattern(
+                category="task",
+                description=body[:120],
+                last_seen=slug,
+                source_phases=[source],
+            ))
+            out.append(Pattern(
+                category="task_tier",
+                description=f"{tier} completed task",
+                last_seen=slug,
+                source_phases=[source],
+            ))
+        for fref in _FILE_REF_RE.finditer(body):
+            path = (fref.group(1) or fref.group(2) or "").lstrip("./")
+            if path and not path.startswith("../"):
+                out.append(Pattern(
+                    category="tech_stack",
+                    description=path,
+                    last_seen=slug,
+                    source_phases=[source],
+                ))
+    return out
+
+
 def _extract_from_devlog(fp: Path) -> list[Pattern]:
-    """Parse one devlog snapshot. Returns patterns extracted from its Phase blocks."""
+    """Parse one devlog snapshot."""
     out: list[Pattern] = []
     try:
         text = fp.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return out
     slug = fp.stem
+    out.extend(_extract_todo_archive(text, slug))
     in_phase: int | None = None
     for line in text.splitlines():
         ph = _PHASE_HEADER_RE.match(line)
@@ -95,7 +175,7 @@ def _extract_from_devlog(fp: Path) -> list[Pattern]:
                 ))
             continue
         for fref in _FILE_REF_RE.finditer(line):
-            path = fref.group(1).lstrip("./")
+            path = (fref.group(1) or fref.group(2) or "").lstrip("./")
             if path.startswith("../"):
                 continue
             out.append(Pattern(
@@ -222,7 +302,7 @@ def main(argv: list[str]) -> int:
     sub.add_parser("extract", help="walk devlog + extract patterns to KB/learnings.jsonl")
     p_list = sub.add_parser("list", help="show patterns by category, frequency-ranked")
     p_list.add_argument("--top", type=int, default=10)
-    p_surface = sub.add_parser("surface", help="patterns matching keyword (for new-Phase priming)")
+    p_surface = sub.add_parser("surface", help="patterns matching keyword")
     p_surface.add_argument("--keyword", required=True)
     p_surface.add_argument("--top", type=int, default=5)
     args = parser.parse_args(argv)

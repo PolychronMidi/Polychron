@@ -169,14 +169,46 @@ print(json.dumps({
   });
 });
 
+test('native TodoWrite merge syncs todos.json and TODO.md without dropping HME-only items', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, merge_native_todowrite, _load_todos, _save_todos
+import json, os
+os.makedirs(os.path.join("${sandbox}", "doc", "templates"), exist_ok=True)
+hme_todo(action="add", text="persistent HME item", tier="E4")
+merge_native_todowrite([{"content": "native item", "activeForm": "doing native item", "status": "pending"}])
+meta, todos = _load_todos()
+native = next(t for t in todos if t.get("text") == "native item")
+native["tier"] = "E5"
+_save_todos(meta, todos)
+merged = merge_native_todowrite([{"content": "native item", "activeForm": "done native item", "status": "completed"}])
+meta, todos = _load_todos()
+native = next(t for t in todos if t.get("text") == "native item")
+hme = next(t for t in todos if t.get("text") == "persistent HME item")
+todo_md = open(os.path.join("${sandbox}", "doc", "templates", "TODO.md")).read()
+print(json.dumps({
+  "native_completed": native.get("status") == "completed" and native.get("done") is True,
+  "native_tier_preserved": native.get("tier") == "E5",
+  "hme_only_preserved": hme.get("tier") == "E4" and any(i.get("content") == "persistent HME item" for i in merged),
+  "todo_has_done_native": "- [x] [E5] native item" in todo_md,
+  "todo_has_hme_next": "- [ ] [E4] persistent HME item" in todo_md,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.native_completed, true, 'native completion flows into todos.json');
+    assert.strictEqual(parsed.native_tier_preserved, true, 'existing native tier survives later native updates');
+    assert.strictEqual(parsed.hme_only_preserved, true, 'HME-only item survives native merge and returned payload');
+    assert.strictEqual(parsed.todo_has_done_native, true, 'TODO.md renders completed native item in Done');
+    assert.strictEqual(parsed.todo_has_hme_next, true, 'TODO.md renders HME-only item in Next');
+  });
+});
+
 test('archive: clear auto-archives complete set to KB devlog and resets to fresh slate', () => {
   _withSandboxedTodoStore((sandbox) => {
     const fs2 = require('fs');
     const p2 = require('path');
     fs2.mkdirSync(p2.join(sandbox, 'doc', 'templates'), { recursive: true });
-    fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'SPEC.md'),
-      `# Legacy SPEC\n\nOld active content should be replaced by the TODO pointer.\n`
-    );
     fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'TODO.md'),
       `# TODO\n\n## Now\n\n(empty)\n\n## Next\n\n(empty)\n\n## Done\n\n- [x] [E2] Item A\n- [x] [E4] Item B\n\n## Later\n\n(empty)\n`
     );
@@ -185,7 +217,7 @@ from server.tools_analysis.todo import hme_todo, _detect_complete_set
 import json, os
 detection = _detect_complete_set()
 out = hme_todo(action="clear", text="test set name")
-spec_md = open(os.path.join("${sandbox}", "doc", "templates", "SPEC.md")).read()
+spec_exists = os.path.exists(os.path.join("${sandbox}", "doc", "templates", "SPEC.md"))
 todo_md = open(os.path.join("${sandbox}", "doc", "templates", "TODO.md")).read()
 devlog_dir = os.path.join("${sandbox}", "tools", "HME", "KB", "devlog")
 devlog_files = sorted(os.listdir(devlog_dir)) if os.path.exists(devlog_dir) else []
@@ -194,9 +226,7 @@ print(json.dumps({
   "archive_message_present": "[ARCHIVE] Set archived" in out,
   "devlog_count": len(devlog_files),
   "devlog_filename_pattern": all("test-set-name" in f for f in devlog_files) if devlog_files else False,
-  "spec_is_pointer": spec_md.startswith("# SPEC merged into TODO") and "TODO.md" in spec_md,
-  "spec_has_archive_pointer": "Previous set" in spec_md and "archived" in spec_md,
-  "spec_no_old_content": "Old active content" not in spec_md,
+  "spec_absent": not spec_exists,
   "todo_reset_to_fresh": todo_md.startswith("# TODO") and "## Next" in todo_md and "(empty)" in todo_md,
 }))
 `);
@@ -206,9 +236,7 @@ print(json.dumps({
     assert.strictEqual(parsed.archive_message_present, true, 'clear must surface archive message');
     assert.strictEqual(parsed.devlog_count, 1, 'one devlog file must be produced');
     assert.strictEqual(parsed.devlog_filename_pattern, true, 'devlog filename must include slug');
-    assert.strictEqual(parsed.spec_is_pointer, true, 'fresh SPEC is a TODO pointer');
-    assert.strictEqual(parsed.spec_has_archive_pointer, true, 'fresh SPEC has archive pointer');
-    assert.strictEqual(parsed.spec_no_old_content, true, 'fresh SPEC drops old active content');
+    assert.strictEqual(parsed.spec_absent, true, 'SPEC.md is not recreated');
     assert.strictEqual(parsed.todo_reset_to_fresh, true, 'fresh TODO has empty notepad sections');
   });
 });
@@ -288,9 +316,6 @@ test('archive: clear refuses to archive when set is not complete', () => {
     const fs2 = require('fs');
     const p2 = require('path');
     fs2.mkdirSync(p2.join(sandbox, 'doc', 'templates'), { recursive: true });
-    fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'SPEC.md'),
-      `# SPEC merged into TODO\n\nActive planning now lives in [TODO.md](TODO.md).\n`
-    );
     fs2.writeFileSync(p2.join(sandbox, 'doc', 'templates', 'TODO.md'),
       `# TODO\n\n## Now\n\n- [ ] [E4] Still open\n\n## Next\n\n(empty)\n\n## Done\n\n- [x] [E2] Done item\n`
     );

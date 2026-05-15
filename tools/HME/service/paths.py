@@ -34,12 +34,12 @@ def templates_dir() -> str:
     return os.path.join(doc_dir(), "templates")
 
 
-def spec_file() -> str:
-    return os.path.join(templates_dir(), "SPEC.md")
-
-
 def todo_file() -> str:
     return os.path.join(templates_dir(), "TODO.md")
+
+
+def todo_store_file() -> str:
+    return os.path.join(project_root(), "tools", "HME", "KB", "todos.json")
 
 
 def onboarding_file() -> str:
