@@ -4,13 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Inspect current generator and path mentions
+- [ ] [E3] Check working tree and recent relevant diffs/commits
 
 ## Next
 
-- [ ] [E3] Implement multiline nav and path autolinks
-- [ ] [E3] Regenerate full docs
-- [ ] [E3] Verify nav/path links
+- [ ] [E3] Run focused script and generated-doc verification
+- [ ] [E3] Fix any failures and report evidence
 
 ## Done
 
