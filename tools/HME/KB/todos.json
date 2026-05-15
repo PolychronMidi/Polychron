@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3105,
-      "updated_ts": 1778871898.582765,
-      "codex_plan_synced_ts": 1778871898.5827498,
+      "max_id": 3109,
+      "updated_ts": 1778871958.5777903,
+      "codex_plan_synced_ts": 1778871958.5777745,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-15T19:04:23.694Z"
+      "codex_plan_ts": "2026-05-15T19:05:45.470Z"
     }
   },
   {
@@ -953,8 +953,8 @@
     "id": 3105,
     "text": "Run focused tests/smoke and commit changes if clean",
     "activeForm": "Run focused tests/smoke and commit changes if clean",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -963,6 +963,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T19:04:23.694Z"
+    "codex_plan_ts": "2026-05-15T19:04:23.694Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3106,
+    "text": "Restore unified TODO sync state from native plan instead of reverting it",
+    "activeForm": "Restore unified TODO sync state from native plan instead of reverting it",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778871958.5776472,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:05:45.470Z"
+  },
+  {
+    "id": 3107,
+    "text": "Add policy/test blocking git checkout/restore of TODO sync files",
+    "activeForm": "Add policy/test blocking git checkout/restore of TODO sync files",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778871958.5776515,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:05:45.470Z"
+  },
+  {
+    "id": 3108,
+    "text": "Finish Codex proxy logging/cleanup changes with TODO state kept synced",
+    "activeForm": "Finish Codex proxy logging/cleanup changes with TODO state kept synced",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778871958.5776548,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:05:45.470Z"
+  },
+  {
+    "id": 3109,
+    "text": "Run focused tests and commit coherent changes",
+    "activeForm": "Run focused tests and commit coherent changes",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778871958.5776575,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-15T19:05:45.470Z"
   }
 ]

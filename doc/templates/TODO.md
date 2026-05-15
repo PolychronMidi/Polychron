@@ -4,11 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Run focused tests/smoke and commit changes if clean
+- [ ] [E3] Restore unified TODO sync state from native plan instead of reverting it
 
 ## Next
 
-(empty)
+- [ ] [E3] Add policy/test blocking git checkout/restore of TODO sync files
+- [ ] [E3] Finish Codex proxy logging/cleanup changes with TODO state kept synced
+- [ ] [E3] Run focused tests and commit coherent changes
 
 ## Done
 
