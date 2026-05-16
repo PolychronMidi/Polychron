@@ -53,6 +53,9 @@ def post_tool(handler, name: str, args: dict, *, tool_call,
 
     timeout_s = float(os.environ.get("HME_TOOL_WATCHDOG_S", "120"))
     hard_kill_s = float(os.environ.get("HME_TOOL_HARDKILL_S", "240"))
+    if name == "hme_admin" and isinstance(args, dict) and args.get("action") in {"index", "clear_index"}:
+        timeout_s = max(timeout_s, float(os.environ.get("HME_INDEX_WATCHDOG_S", "900")))
+        hard_kill_s = max(hard_kill_s, float(os.environ.get("HME_INDEX_HARDKILL_S", "1200")))
     result_box: list = [None, None]
 
     def _runner():
