@@ -158,6 +158,8 @@ def _classification_for(rel: str, samples: list[str]) -> str:
         return "test helper"
     if any(sample.startswith("doc/") for sample in samples):
         return "documented operator entrypoint"
+    if samples:
+        return "referenced helper/entrypoint"
     return ""
 
 
