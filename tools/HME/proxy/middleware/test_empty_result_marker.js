@@ -85,7 +85,7 @@ assert(ctx._appends[0].startsWith('[FAIL]'), 'is_error empty body -> [FAIL]');
 assert(ctx._emits[0].status === 'FAIL', 'emits status=FAIL for is_error');
 
 // Case 6: idempotency -- already-marked SUCCESS result is a no-op.
-r = { content: '[SUCCESS] tool completed with no output body' };
+r = { content: '[SUCCESS]' };
 ctx = makeCtx();
 mw.onToolResult({ toolUse: { name: 'Edit' }, toolResult: r, ctx });
 assert(ctx._appends.length === 0, '[SUCCESS]-marked result is idempotent');

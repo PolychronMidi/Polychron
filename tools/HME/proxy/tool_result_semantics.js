@@ -1,6 +1,6 @@
 'use strict';
 
-const SUCCESS_EMPTY = '[SUCCESS] tool completed with no output body';
+const SUCCESS_EMPTY = '[SUCCESS]';
 const FAIL_EMPTY = '[FAIL] tool errored with no error message body';
 const EDIT_SUCCESS = '[SUCCESS] edit applied';
 

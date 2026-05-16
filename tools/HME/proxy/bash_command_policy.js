@@ -5,7 +5,7 @@ const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
 const { mkdirHasMisplacedRootOnlyDir, mkdirHasMisplacedMetrics, rootOnlyDirMessage, metricsMessage } = require('./path_policy');
 const { rawCommandRewrite } = require('./raw_command_rewrites');
-const { noopAfterFailureDecision } = require('./turn_failure_state');
+const { noopAfterFailureDecision, isNoopCommand, clearFailure } = require('./turn_failure_state');
 
 const LOCK_NAME = 'run' + '.lock';
 const I_TOOLS = '(review|learn|trace|evolve|status|hme|audit|why|policies)';
@@ -190,6 +190,7 @@ function evaluateBashInput(input = {}, opts = {}) {
   const trimmed = cmd.trimStart().split('\n')[0];
   const noopFailure = noopAfterFailureDecision(cmd, root);
   if (noopFailure) return noopFailure;
+  if (!isNoopCommand(cmd)) clearFailure(root);
   if (next.timeout && String(next.timeout) !== '0') delete next.timeout;
   const timeoutChanged = !Object.prototype.hasOwnProperty.call(next, 'timeout') && Object.prototype.hasOwnProperty.call(input, 'timeout');
   if (/\b(curl|wget|fetch)\b[^|]*\|\s*(\.\s+|sudo\s+|exec\s+)?(sh|bash|zsh|ksh|dash)\b/.test(cmd)) return deny('BLOCKED: piping a remote download into a shell interpreter is a supply-chain risk. Download, inspect, then execute deliberately.');
