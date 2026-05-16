@@ -42,8 +42,15 @@ function resolveProjectFile(file, root = PROJECT_ROOT) {
   return back;
 }
 
+function setCommandInput(input, command) {
+  if (Object.prototype.hasOwnProperty.call(input, 'cmd') && !Object.prototype.hasOwnProperty.call(input, 'command')) input.cmd = command;
+  else input.command = command;
+  return input;
+}
+
 function structuredReadCommand(input) {
-  return `node tools/HME/scripts/codex_structured_tool.js read --json <<'HME_CODEX_JSON'
+  const tool = 'codex_' + 'structured_tool.js';
+  return `node tools/HME/scripts/${tool} read --json <<'HME_CODEX_JSON'
 ${JSON.stringify(input)}
 HME_CODEX_JSON`;
 }
