@@ -51,7 +51,22 @@ function _editShapeDecision(payload) {
   if (_badPathShape(file)) return _permission('deny', `BLOCKED: malformed Edit file_path: ${String(file || '(empty)').slice(0, 120)}`);
   if (typeof input.old_string !== 'string' || input.old_string.length === 0) return _permission('deny', 'BLOCKED: malformed Edit missing old_string. Use exact current file text.');
   if (typeof input.new_string !== 'string') return _permission('deny', 'BLOCKED: malformed Edit missing new_string.');
-  if (/<display-redacted:|<omitted by proxy>/i.test(input.old_string)) return _permission('deny', 'BLOCKED: Edit old_string is display-redacted. Re-read current file text, then retry with the actual old_string.');
+  if (/<display-redacted:|<omitted by proxy>/i.test(input.old_string) || /<display-redacted:|<omitted by proxy>/i.test(input.new_string)) {
+    return _permission('deny', 'BLOCKED: Edit text is display-redacted. Re-read current file text, then retry with actual old_string/new_string.');
+  }
+  if (input.old_string === input.new_string) return _permission('deny', 'BLOCKED: Edit old_string equals new_string; this is a no-op/false-success risk. Use a real replacement or stop if no change is needed.');
+  try {
+    if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return _permission('deny', `BLOCKED: Edit target is not an existing file: ${String(file).slice(0, 160)}`);
+    const current = fs.readFileSync(file, 'utf8');
+    if (!current.includes(input.old_string)) {
+      if (input.new_string && current.includes(input.new_string)) {
+        return _permission('deny', 'BLOCKED: Edit old_string is absent and new_string is already present. The change appears already applied; do not trust a native Edit success here.');
+      }
+      return _permission('deny', 'BLOCKED: Edit old_string is absent from current file. Re-read current file text, then retry with an exact old_string.');
+    }
+  } catch (err) {
+    return _permission('deny', `BLOCKED: Edit preflight could not read target: ${err.message}`);
+  }
   return null;
 }
 

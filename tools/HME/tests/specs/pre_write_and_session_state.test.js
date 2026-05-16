@@ -72,13 +72,36 @@ test('pre-write check denies malformed or display-redacted Edit input', async ()
   }));
   assert.strictEqual(malformed.permissionDecision, 'deny');
   assert.match(malformed.reason, /malformed Edit file_path/);
+  const target = path.join(root, 'src', 'x.js');
+  fs.writeFileSync(target, 'const x = 1;\n');
   const redacted = await preWriteCheck(JSON.stringify({
     tool_name: 'Edit',
     session_id: 's-shape',
-    tool_input: { file_path: path.join(root, 'src', 'x.js'), old_string: '<omitted by proxy>', new_string: 'y' },
+    tool_input: { file_path: target, old_string: '<omitted by proxy>', new_string: 'y' },
   }));
   assert.strictEqual(redacted.permissionDecision, 'deny');
-  assert.match(redacted.reason, /old_string is display-redacted/);
+  assert.match(redacted.reason, /display-redacted/);
+  const noOp = await preWriteCheck(JSON.stringify({
+    tool_name: 'Edit',
+    session_id: 's-shape',
+    tool_input: { file_path: target, old_string: 'const x = 1;\n', new_string: 'const x = 1;\n' },
+  }));
+  assert.strictEqual(noOp.permissionDecision, 'deny');
+  assert.match(noOp.reason, /old_string equals new_string/);
+  const absent = await preWriteCheck(JSON.stringify({
+    tool_name: 'Edit',
+    session_id: 's-shape',
+    tool_input: { file_path: target, old_string: 'const x = 2;', new_string: 'const x = 3;' },
+  }));
+  assert.strictEqual(absent.permissionDecision, 'deny');
+  assert.match(absent.reason, /old_string is absent/);
+  const already = await preWriteCheck(JSON.stringify({
+    tool_name: 'Edit',
+    session_id: 's-shape',
+    tool_input: { file_path: target, old_string: 'const missing = 0;', new_string: 'const x = 1;' },
+  }));
+  assert.strictEqual(already.permissionDecision, 'deny');
+  assert.match(already.reason, /already present/);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
