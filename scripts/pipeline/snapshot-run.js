@@ -6,9 +6,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const { requireMetricsDir } = require('../utils/metrics-dir');
 
-const METRICS_DIR = process.env.METRICS_DIR;
-if (!METRICS_DIR) throw new Error('METRICS_DIR is required');
+const METRICS_DIR = requireMetricsDir();
 const HISTORY_DIR = path.join(METRICS_DIR, 'run-history');
 const FP_PATH = path.join(METRICS_DIR, 'golden-fingerprint.json');
 const TS_PATH = path.join(METRICS_DIR, 'trace-summary.json');

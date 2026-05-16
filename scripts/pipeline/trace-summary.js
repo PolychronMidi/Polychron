@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { requireMetricsDir } = require('../utils/metrics-dir');
 
 function parseLine(line, index) {
   try {
@@ -1943,8 +1944,7 @@ function summarizeTrace(entries, manifest) {
 }
 
 function main() {
-  const metricsDir = process.env.METRICS_DIR;
-  if (!metricsDir) throw new Error('METRICS_DIR is required');
+  const metricsDir = requireMetricsDir();
   const tracePath = path.join(metricsDir, 'trace.jsonl');
   const summaryPath = path.join(metricsDir, 'trace-summary.json');
   const manifestPath = path.join(metricsDir, 'system-manifest.json');
