@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Run focused and broad verification with evidence
+(empty)
 
 ## Next
 
