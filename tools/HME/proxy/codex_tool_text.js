@@ -1,6 +1,6 @@
 'use strict';
 
-const BRIDGE_JSON_HEREDOC_RE = /\b(?:node\s+)?(?:\.\/)?(?:[^\s]+\/)?codex_structured_tool\.js\s+(read|edit)\s+--json\s+<<['\"]?([A-Za-z0-9_:-]+)['\"]?\n([\s\S]*?)\n\2/g;
+const BRIDGE_JSON_HEREDOC_RE = /\b(?:node\s+)?(?:\.\/)?(?:[^\s]+\/)?codex_structured_tool\.js\s+(read|edit|grep|glob)\s+--json\s+<<['\"]?([A-Za-z0-9_:-]+)['\"]?\n([\s\S]*?)\n\2/g;
 
 
 // Normalize internal Codex fallback bridge calls so model-visible history reads
@@ -35,8 +35,10 @@ function bridgeFromTokens(tokens) {
   const idx = tokens.findIndex((t) => /(^|\/)codex_structured_tool\.js$/.test(t));
   if (idx < 0) return null;
   const action = tokens[idx + 1];
-  if (action !== 'read' && action !== 'edit') return null;
+  if (!['read', 'edit', 'grep', 'glob'].includes(action)) return null;
   const { kv, pos } = kvArgs(tokens.slice(idx + 2));
+  if (action === 'grep') return { tool: 'Grep', input: { pattern: kv.pattern || pos[0] || '', path: kv.path || pos[1] || '.' } };
+  if (action === 'glob') return { tool: 'Glob', input: { pattern: kv.pattern || pos[0] || '*', path: kv.path || pos[1] || '.' } };
   const file = kv.file_path || kv.file || pos[0] || '';
   const input = file ? { file_path: file } : {};
   if (action === 'read') {
@@ -51,10 +53,12 @@ function bridgeFromTokens(tokens) {
 
 function bridgeFromJsonCommand(text) {
   const src = String(text || '');
-  const m = /codex_structured_tool\.js\s+(read|edit)\s+--json\s+<<['\"]?([A-Za-z0-9_:-]+)['\"]?\n([\s\S]*?)\n\2(?:\s|$)/.exec(src);
+  const m = /codex_structured_tool\.js\s+(read|edit|grep|glob)\s+--json\s+<<['\"]?([A-Za-z0-9_:-]+)['\"]?\n([\s\S]*?)\n\2(?:\s|$)/.exec(src);
   if (!m) return null;
   let data;
   try { data = JSON.parse(m[3]); } catch (_e) { return null; }
+  if (m[1] === 'grep') return { tool: 'Grep', input: { pattern: data.pattern || '', path: data.path || '.' } };
+  if (m[1] === 'glob') return { tool: 'Glob', input: { pattern: data.pattern || '*', path: data.path || '.' } };
   const input = { file_path: data.file_path || data.file || '' };
   if (m[1] === 'read') {
     if (data.offset !== undefined) input.offset = Number(data.offset);
