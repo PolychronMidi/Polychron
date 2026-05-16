@@ -390,3 +390,24 @@ test('synthetic hooks manifest maps lifecycle through Claude adapter', () => {
     assert.match(text, /event_kernel\/claude_adapter\.js/);
   }
 });
+
+
+test('pre-write check denies malformed and display-redacted Edit inputs', async () => {
+  const root = _withSandbox('hme-pre-write-edit-shape-');
+  const { preWriteCheck } = require('../../proxy/pre_write_check');
+  const malformed = await preWriteCheck(JSON.stringify({
+    tool_name: 'Edit',
+    session_id: 'shape1',
+    tool_input: { file_path: "<<'HME_CODEX_JSON',", old_string: 'x', new_string: 'y' },
+  }));
+  assert.strictEqual(malformed.permissionDecision, 'deny');
+  assert.match(malformed.reason, /malformed Edit file_path/);
+  const redacted = await preWriteCheck(JSON.stringify({
+    tool_name: 'Edit',
+    session_id: 'shape2',
+    tool_input: { file_path: path.join(root, 'src', 'x.js'), old_string: '<omitted by proxy>', new_string: 'y' },
+  }));
+  assert.strictEqual(redacted.permissionDecision, 'deny');
+  assert.match(redacted.reason, /display-redacted|actual old_string/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
