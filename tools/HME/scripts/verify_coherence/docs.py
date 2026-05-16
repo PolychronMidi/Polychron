@@ -90,7 +90,7 @@ class DocCoreLayoutVerifier(Verifier):
             "AGENTS.md",
             "doc/HME.md",
             "doc/composition.md",
-            "doc/hme_full.md",
+            "doc/self-coherence-full.md",
             "doc/composition-full.md",
         ]
         issues = [f"missing {rel}" for rel in required

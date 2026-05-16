@@ -20,7 +20,7 @@ Every new session starts in onboarding state `boot`. The chain decider -- living
 - Make one `i/<tool>` call per step. Prerequisites run silently and prepend their output to the result.
 - When a hook blocks you with "call X instead," X is the next correct move. No retry dance -- just call X and the state advances.
 - While editing composition code, also watch HME itself. Any stale KB entry, wrong constraint, missing hook coverage, broken enforcement -- note it, report it at step 7 in your `learn()` content under an `## HME observations` section.
-- **LIFESAVER is meant to be painful.** If a LIFESAVER alert fires, do not add a cooldown/throttle/dedup to silence it. Either fix the condition (so it stops firing naturally) or fix the detector (so it correctly distinguishes real from false). Dampening alerts is a structural violation caught by the `LifesaverIntegrityVerifier` at weight 5.0. Full specification including the calibration-vs-dampening distinction and allowed/forbidden moves: [doc/hme_full.md](../hme_full.md).
+- **LIFESAVER is meant to be painful.** If a LIFESAVER alert fires, do not add a cooldown/throttle/dedup to silence it. Either fix the condition (so it stops firing naturally) or fix the detector (so it correctly distinguishes real from false). Dampening alerts is a structural violation caught by the `LifesaverIntegrityVerifier` at weight 5.0. Full specification including the calibration-vs-dampening distinction and allowed/forbidden moves: [doc/self-coherence-full.md](../self-coherence-full.md).
 - **No psychopathic polling.** When waiting for a long-running background task, do NOT repeatedly `tail`/`wc`/`cat` its output, `nvidia-smi`, or `ps | grep`. The background task fires a completion notification automatically. Do parallel work (unrelated to the running task) until then. The `pretooluse_bash.sh` hook blocks the 3rd polling-style bash call in a turn.
 
 ## The loop (one session, one evolution)
@@ -131,7 +131,7 @@ pulse as a fallback scanner. The HME layer adds the following transparently:
 
 ## Phase 1-6 HME infrastructure
 
-A set of post-composition instrumentation features -- musical correlation, coherence budget, trajectory, prediction accuracy, trust weights, crystallization, constitution, and related -- all wired into `main-pipeline.js` POST_COMPOSITION and refreshed by every `npm run main`. Surfaced through the `status(mode=...)` branches. You don't need to remember the internals; just the per-round workflow below and which mode answers which question. For the full subsystem narrative, see [hme_full.md](../hme_full.md).
+A set of post-composition instrumentation features -- musical correlation, coherence budget, trajectory, prediction accuracy, trust weights, crystallization, constitution, and related -- all wired into `main-pipeline.js` POST_COMPOSITION and refreshed by every `npm run main`. Surfaced through the `status(mode=...)` branches. You don't need to remember the internals; just the per-round workflow below and which mode answers which question. For the full subsystem narrative, see [self-coherence-full.md](../self-coherence-full.md).
 
 ### Per-round workflow when the user reports a listening verdict
 
@@ -215,7 +215,7 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 - [AGENTS.md](../../AGENTS.md) -- authoritative rule set, loaded every prompt. Read first on any new session where the walkthrough does not answer the question.
 - [doc/HME.md](../HME.md) -- short HME orientation. Read this before deeper substrate detail.
 - [tools/HME/service/server/onboarding_chain.py](../../tools/HME/service/server/onboarding_chain.py) -- chain decider source + design spec (decorator wiring, gate hooks, failure modes, "adding new steps" recipe). The state machine itself is documented above in this primer.
-- [doc/hme_full.md](../hme_full.md) -- HME internals, tool surface, event kernel, state registry, LIFESAVER, and self-coherence.
+- [doc/self-coherence-full.md](../self-coherence-full.md) -- HME internals, tool surface, event kernel, state registry, LIFESAVER, and self-coherence.
 - [doc/composition-full.md](../composition-full.md) -- beat lifecycle, signal flow, L1/L2 layer isolation, tuning context, and engine systems.
 - [doc/theory/](../theory/) -- long-form arguments for the architecture's commitments. Read when the *why* behind a rule is needed.
 - `python3 tools/HME/scripts/verify-numeric-drift.py` -- audit counted claims ("N hypermeta controllers" / "K verifiers" / etc.) across all markdown against live code counts. Fires via the `numeric-claim-drift` HCI verifier every pipeline run.

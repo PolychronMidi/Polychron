@@ -22,7 +22,7 @@ HME -- *Hypermeta Ecstasy*, "master executive for hypermeta evolutionary intelli
 
 The five-layer executive: an MCP server behind explicit `i/` commands (`i/evolve`, `i/review`, `i/learn`, `i/trace`, `i/hme admin`) plus proxy-enriched native tools; a AGENTS.md that encodes rules, boundaries, and hard constraints; lifecycle hooks enforcing workflow automatically; and an evolution loop grounded in metrics and KB learning. On top of this substrate sits an observability and governance architecture surfaced through `i/status mode=...` branches.
 
-The companion operational material now lives in `hme_full.md`: HME used to be a tool that helps Polychron evolve; it is becoming the same kind of organism Polychron is, evolving by the same rules, monitored by the same instruments, and coupled to Polychron's evolution as a co-equal subsystem.
+The companion operational material now lives in `self-coherence-full.md`: HME used to be a tool that helps Polychron evolve; it is becoming the same kind of organism Polychron is, evolving by the same rules, monitored by the same instruments, and coupled to Polychron's evolution as a co-equal subsystem.
 
 This is where the work psychology has done on coherence meets a substrate that can finally hold it.
 

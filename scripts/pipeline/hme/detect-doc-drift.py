@@ -36,7 +36,7 @@ PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
 METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 DOCS = [
     "doc/composition-full.md",
-    "doc/hme_full.md",
+    "doc/self-coherence-full.md",
     "doc/composition.md",
     "doc/HME.md",
     "AGENTS.md",

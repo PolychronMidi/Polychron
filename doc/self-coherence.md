@@ -4,7 +4,7 @@ Hypermeta Ecstasy is Polychron's self-coherence substrate. It wraps agent
 workflows with a proxy, event kernel, lifecycle hooks, KB retrieval, verifiers,
 metrics, and a small `i/` command surface.
 
-Read this before changing `tools/HME/`. Use [hme_full.md](hme_full.md) for the
+Read this before changing `tools/HME/`. Use [self-coherence-full.md](self-coherence-full.md) for the
 full architecture, event-kernel contract, state ownership registry, LIFESAVER
 rules, RAG stack, local LLM notes, and testing runbook.
 
@@ -94,5 +94,5 @@ catalog replaces Codex model `base_instructions` and
 
 - Project orientation: [README.md](../README.md)
 - Agent rules: [AGENTS.md](../AGENTS.md)
-- Full HME reference: [hme_full.md](hme_full.md)
+- Full HME reference: [self-coherence-full.md](self-coherence-full.md)
 - Composition reference: [composition.md](composition.md)
