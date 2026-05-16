@@ -1,4 +1,4 @@
-use strict';
+'use strict';
 
 function emitStartMarker(name, details = {}) {
   const fields = Object.entries({ pid: process.pid, ...details })
