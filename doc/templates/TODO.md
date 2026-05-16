@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Check items 1-15 against current repo state
 
 ## Next
 
-(empty)
+- [ ] [E3] Run final verification wrapper/evidence
+- [ ] [E3] Report exact completion status and caveats
 
 ## Done
 

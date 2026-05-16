@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3300,
-      "updated_ts": 1778937238.8660731,
-      "codex_plan_synced_ts": 1778937238.8660185,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T13:13:28.485Z"
+      "max_id": 3303,
+      "updated_ts": 1778937308.234789,
+      "codex_plan_synced_ts": 1778937308.234733,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T13:15:07.814Z"
     }
   },
   {
@@ -4177,5 +4177,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T13:13:28.485Z"
+  },
+  {
+    "id": 3301,
+    "text": "Check items 1-15 against current repo state",
+    "activeForm": "Check items 1-15 against current repo state",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778937308.234232,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:15:07.814Z"
+  },
+  {
+    "id": 3302,
+    "text": "Run final verification wrapper/evidence",
+    "activeForm": "Run final verification wrapper/evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778937308.2342372,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:15:07.814Z"
+  },
+  {
+    "id": 3303,
+    "text": "Report exact completion status and caveats",
+    "activeForm": "Report exact completion status and caveats",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778937308.2342408,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:15:07.814Z"
   }
 ]
