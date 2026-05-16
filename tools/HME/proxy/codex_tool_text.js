@@ -1,6 +1,7 @@
 'use strict';
 
 const BRIDGE_JSON_HEREDOC_RE = /\b(?:node\s+)?(?:\.\/)?(?:[^\s]+\/)?codex_structured_tool\.js\s+(read|edit|grep|glob)\s+--json\s+<<['\"]?([A-Za-z0-9_:-]+)['\"]?\n([\s\S]*?)\n\2/g;
+const EDIT_REDACTION = '<display-redacted: original was sent; do not reuse>';
 
 
 // Normalize internal Codex fallback bridge calls so model-visible history reads
