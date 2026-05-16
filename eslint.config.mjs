@@ -47,6 +47,7 @@ export default [
     // Other tools/ JS (activity/emit.py has no .js etc.) falls through.
     ignores: [
       'src/scripts/**',
+      'src/tests/**',
       'eslint.config.mjs',
       'vitest.config.mjs',
       'tmp/**',
