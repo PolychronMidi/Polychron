@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Find current [SUCCESS]/empty-output handling
+(empty)
 
 ## Next
 
-- [ ] [E3] Determine whether it is partial vs universal
-- [ ] [E3] Recommend concrete universalization path
+(empty)
 
 ## Done
 
