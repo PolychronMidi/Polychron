@@ -511,30 +511,6 @@ _CASES = [
      "ok",
      {"SUMMARY_FORMAT_TIER": "E1"}),
 
-    # live_probe -- ISA edit + simulated unverified verdict via env
-    # override (mirrors ADVISOR_DOCTRINE_TIER pattern). Real-ISA
-    # parsing exercised by audit-isa.py's own tests.
-    ("live_probe", "isa-with-unverified-isc-fires",
-     [
-         _user_msg("mark the criterion done"),
-         _assistant_tool_use("Edit", {
-             "file_path": "tmp/_lp_test/ISA.md",
-             "old_string": "x", "new_string": "y",
-         }),
-     ],
-     "live_probe_missing",
-     {"LIVE_PROBE_FORCE": "live_probe_missing"}),
-    # live_probe -- forced-ok matches the no-fire path.
-    ("live_probe", "no-isa-edit-passes",
-     [
-         _user_msg("just edit a python file"),
-         _assistant_tool_use("Edit", {
-             "file_path": "some_file.py",
-             "old_string": "x", "new_string": "y",
-         }),
-     ],
-     "ok",
-     {"LIVE_PROBE_FORCE": "ok"}),
 
     # phase_gate -- E5 + open-ended prompt + Edit without BUILD fires.
     ("phase_gate", "open-ended-edit-without-marker-fires",

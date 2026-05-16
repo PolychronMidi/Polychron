@@ -52,7 +52,6 @@ _DETECTOR_FOR_KEY = {
     "ADVISOR_SILENTLY_SKIPPED":   "advisor_doctrine",
     "SUMMARY_MISSING":            "summary_format",
     "SUMMARY_MALFORMED":          "summary_format",
-    "LIVE_PROBE_MISSING":         "live_probe",
     "PHASE_SKIPPED":              "phase_gate",
     "MINIMAL_FORMAT_VIOLATION":   "summary_format",
 }

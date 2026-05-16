@@ -13,7 +13,6 @@ Schema (every line):
       "criteria_passed": <int>,
       "criteria_failed": <int>,   # done with [DEFERRED-VERIFY] or unverified
       "doctrine_fired": {
-          "live_probe":           <bool>,  # >=1 ISC marked done with verification entry
           "advisor":              <bool>,  # legacy advisor invoked this turn
           "cato":                 <bool>,  # cross-vendor audit invoked (E4/E5 only)
           "conflict":             <bool>,  # advisor re-called after conflict
@@ -162,7 +161,7 @@ def _try_audit_panel() -> dict | None:
 
 
 def derive_doctrine_fired(detector_verdicts: dict, isa_progress: dict) -> dict:
-    """Best-effort heuristic: 'live_probe' fired if any ISCs got verified
+    """Best-effort heuristic:  fired if any ISCs got verified
     this turn (criteria_passed > 0); 'advisor' fired if any advisor
     pattern shows up in detector verdicts; 'cato' / 'conflict' default
     False unless explicit signals exist (TODO: wire to actual cross-

@@ -236,7 +236,6 @@ Stop policies catch abandonment and malformed final behavior:
 - `phantom_capability`
 - `summary_format`
 - `ceremony_dodge`
-- `live_probe`
 - `phase_gate`
 
 Telemetry lands in `output/metrics/detector-stats.jsonl`.

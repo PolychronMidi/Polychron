@@ -68,11 +68,6 @@ run "test-detector-chain"        python3 tools/HME/scripts/detectors/test_detect
 # Meta-detector: corpus mode reports recall/precision per detector.
 run "audit-detectors-corpus"     python3 tools/HME/scripts/detectors/audit_detectors.py --corpus
 
-# ISA audit (PAI-import #1): scaffolds + validates Ideal State Artifact
-# documents. No-op when no ISAs exist yet; runs against any tmp/isa/*/ISA.md.
-if compgen -G "tmp/isa/*/ISA.md" > /dev/null 2>&1; then
-  run "audit-isa"                python3 tools/HME/scripts/isa/audit-isa.py tmp/isa/*/ISA.md
-fi
 
 if [ "$failures" -gt 0 ]; then
   echo "audit-all: $failures audit(s) reported findings" >&2

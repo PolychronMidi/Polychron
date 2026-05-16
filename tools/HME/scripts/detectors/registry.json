@@ -227,20 +227,6 @@
       "outage_link": null
     },
     {
-      "name": "live_probe",
-      "module": "live_probe",
-      "fires_when": "live_probe_missing",
-      "bash_var": "LIVE_PROBE",
-      "deny": true,
-      "reason_key": "LIVE_PROBE_MISSING",
-      "category": "security",
-      "scope": "transcript",
-      "owning_invariant": "security and evidence-backed claims",
-      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
-      "why": "Protects transcript against live probe failures.",
-      "outage_link": null
-    },
-    {
       "name": "phase_gate",
       "module": "phase_gate",
       "fires_when": "phase_skipped",
