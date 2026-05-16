@@ -2,6 +2,7 @@
 """Validate split invariant config and merged ID/type integrity."""
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -29,9 +30,19 @@ def _load_doc(path: Path, seen: set[Path] | None = None) -> dict:
     return merged
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", default=str(CONFIG))
+    parser.add_argument("--dispatch", default=str(DISPATCH))
+    return parser.parse_args()
+
+
 def main() -> int:
+    args = _parse_args()
+    config = Path(args.config)
+    dispatch = Path(args.dispatch)
     try:
-        data = _load_doc(CONFIG)
+        data = _load_doc(config)
     except Exception as exc:
         print(f"invariant config load failed: {type(exc).__name__}: {exc}")
         return 0
@@ -41,7 +52,7 @@ def main() -> int:
             print("invariant missing id")
         elif n > 1:
             print(f"duplicate invariant id: {inv_id}")
-    supported = set(re.findall(r'"([a-z_]+)":\s*_check_', DISPATCH.read_text(encoding="utf-8")))
+    supported = set(re.findall(r'"([a-z_]+)":\s*_check_', dispatch.read_text(encoding="utf-8")))
     documented = set((data.get("_types") or {}).keys())
     used = {i.get("type") for i in invs}
     for t in sorted(used - supported):
