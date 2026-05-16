@@ -233,7 +233,14 @@ def main() -> int:
         rows.append((p in obs, obs.get(p, (0, ""))[0], ref_count, rel, samples, obs.get(p, (0, ""))[1], COLD_CLASSIFICATIONS.get(rel, "")))
     rows.sort(key=lambda r: (r[0], r[1], r[2], r[3]))
 
-    print(f"audit-scripts-recency: scripts={len(scripts)} observed={sum(1 for p in scripts if p in obs)} cold={sum(1 for p in scripts if p not in obs)}")
+    cold_paths = [p for p in scripts if p not in obs]
+    classified_cold = [p for p in cold_paths if str(p.relative_to(ROOT)) in COLD_CLASSIFICATIONS]
+    print(
+        f"audit-scripts-recency: scripts={len(scripts)} "
+        f"observed={sum(1 for p in scripts if p in obs)} "
+        f"cold={len(cold_paths)} "
+        f"unclassified_cold={len(cold_paths) - len(classified_cold)}"
+    )
     if broken:
         print("BROKEN_SYMLINKS:")
         for item in broken:
