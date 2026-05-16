@@ -250,35 +250,25 @@ def audit_stress_probe_refs(root: Path) -> list[dict]:
             })
     # RELOADABLE modules
     try:
-        src = (root / "tools" / "HME" / "service" / "server" / "tools_analysis"
-               / "evolution" / "evolution_selftest.py").read_text()
-        for listname in ("RELOADABLE", "TOP_LEVEL_RELOADABLE", "ROOT_RELOADABLE"):
-            m = re.search(rf'{listname}\s*=\s*\[([^\]]*)\]', src)
-            if not m:
-                continue
-            items = re.findall(r'["\']([a-zA-Z_][a-zA-Z0-9_]*)["\']', m.group(1))
-            if listname == "RELOADABLE":
-                search_dirs = [
-                    root / "tools" / "HME" / "service" / "server" / "tools_analysis",
-                    root / "tools" / "HME" / "service" / "server" / "tools_analysis" / "synthesis",
-                    root / "tools" / "HME" / "service" / "server" / "tools_analysis" / "evolution",
-                    root / "tools" / "HME" / "service" / "server" / "tools_analysis" / "coupling",
-                ]
-            elif listname == "TOP_LEVEL_RELOADABLE":
-                search_dirs = [root / "tools" / "HME" / "service" / "server"]
-            else:
-                search_dirs = [root / "tools" / "HME" / "service"]
-            for name in items:
-                if not any((d / f"{name}.py").is_file() for d in search_dirs):
-                    findings.append({
-                        "source": "evolution_selftest",
-                        "id": f"{listname}.{name}",
-                        "type": "reloadable",
-                        "status": "MISSING",
-                        "detail": f"{name}.py not found in {[str(d.name) for d in search_dirs]}",
-                    })
+        import importlib.util as _iu
+        registry = (root / "tools" / "HME" / "service" / "server" / "tools_analysis"
+                    / "evolution" / "evolution_selftest" / "reload_registry.py")
+        spec = _iu.spec_from_file_location("hme_reload_registry_audit", registry)
+        if not spec or not spec.loader:
+            raise RuntimeError(f"cannot load {registry}")
+        mod = _iu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        for name in mod.all_reload_targets():
+            candidates = mod.candidate_files(root, name)
+            if not any(path.is_file() for path in candidates):
+                findings.append({
+                    "source": "evolution_selftest",
+                    "id": f"reloadable.{name}",
+                    "type": "reloadable",
+                    "status": "MISSING",
+                    "detail": f"{name} has no candidate file in reload_registry",
+                })
     except Exception as e:
-        # silent-ok: optional fallback path.
         findings.append({
             "source": "evolution_selftest RELOADABLE",
             "status": "ERROR",
