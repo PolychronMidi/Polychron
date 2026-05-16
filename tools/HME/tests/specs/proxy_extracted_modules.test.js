@@ -84,7 +84,7 @@ test('passthrough compaction keeps Claude payload coherent after shrinking', () 
   const payload = { messages: [] };
   for (let i = 0; i < 10; i += 1) payload.messages.push({ role: 'user', content: `message-${i} ${'x'.repeat(100)}` });
   const changed = shrinkForPassthrough(payload, {
-    threshold: 800,
+    threshold: 1000,
     keepMin: 3,
     env: { HME_PROXY_LOCAL_SUMMARY: '1' },
     log: (msg) => logs.push(msg),
@@ -93,7 +93,7 @@ test('passthrough compaction keeps Claude payload coherent after shrinking', () 
   assert.ok(changed > 0);
   assert.equal(payload.messages[0].role, 'user');
   assert.match(payload.messages[0].content, /^\(hme-proxy local-summary placeholder:/);
-  assert.ok(JSON.stringify(payload).length <= 800);
+  assert.ok(JSON.stringify(payload).length <= 1000);
   assert.ok(logs.some((line) => line.includes('local-summary')));
 });
 
