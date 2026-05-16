@@ -14,7 +14,8 @@
 
 const fs   = require('fs');
 const path = require('path');
-const { ROOT, loadJson } = require('../hme/utils');
+const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
+function loadJson(file) { return JSON.parse(fs.readFileSync(file, 'utf8')); }
 const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const SRC  = path.join(ROOT, 'src');

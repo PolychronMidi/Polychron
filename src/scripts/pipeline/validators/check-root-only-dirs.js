@@ -5,7 +5,7 @@
 
 const fs   = require('fs');
 const path = require('path');
-const { ROOT } = require('../hme/utils');
+const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
 const { execSync } = require('child_process');
 
 // log/ and tmp/ must be at root only. metrics/ is special: allowed only at output/metrics/.
