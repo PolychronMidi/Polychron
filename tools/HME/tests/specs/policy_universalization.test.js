@@ -102,3 +102,12 @@ test('Bash dispatcher does not source retired per-gate fragments', () => {
   assert.match(dispatcher, /for _part in gates;/);
   for (const name of retired) assert.doesNotMatch(dispatcher, new RegExp(`bash/\$\{_part\}\.sh.*${name}|for _part in .*${name}`));
 });
+
+
+test('proxy supervisor restart reloads live proxy child semantics', () => {
+  const script = fs.readFileSync(path.join(root, 'tools/HME/hooks/direct/proxy-supervisor.sh'), 'utf8');
+  assert.match(script, /restart\|reload\)/);
+  assert.match(script, /polychron-proxy-restart\.sh/);
+  assert.match(script, /proxy child stop requested/);
+  assert.match(script, /initial bundle unhealthy on supervisor start/);
+});
