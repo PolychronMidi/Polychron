@@ -250,9 +250,13 @@ def main() -> int:
         for item in missing:
             print(f"  - {item}")
     print("COLDEST:")
-    for observed, _ts, ref_count, rel, samples, source in rows[:args.limit]:
+    for observed, _ts, ref_count, rel, samples, source, classification in rows[:args.limit]:
         status = "observed" if observed else "never-observed"
+        if not observed and classification:
+            status = "classified"
         suffix = f" last_seen={source}" if source else ""
+        if classification:
+            suffix = f"{suffix} classified={classification}"
         print(f"  {status:14} refs={ref_count:3} {rel}{suffix}")
         if samples:
             print(f"    refs: {', '.join(samples)}")
