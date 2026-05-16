@@ -62,18 +62,18 @@ _port_healthy() {
   curl -sf --max-time 1 "$1" > /dev/null 2>&1
 }
 
-# 0. OmniRoute (MODE=4/5 main-agent translator)
+# 0. OmniRoute (OVERDRIVE_MODE=6 translator)
 _OMNIROUTE_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"  # silent-ok: optional fallback path.
 _OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
 _OD_START="${OVERDRIVE_MODE:-0}"
-if [ "$_OD_START" = "4" ] || [ "$_OD_START" = "5" ] || [ "$_OD_START" = "6" ]; then
+if [ "$_OD_START" = "6" ]; then
   if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
   _OR_DIR="$PROJECT_ROOT/tools/omniroute"
   if [ -x "$_OR_DIR/start.sh" ]; then
     if _port_healthy "${_OMNIROUTE_URL}/v1/models"; then
       echo "[launch] OmniRoute already up on :${_OMNIROUTE_PORT}" >&2
     else
-      echo "[launch] starting OmniRoute on :${_OMNIROUTE_PORT} (MODE=4 translator)..." >&2
+      echo "[launch] starting OmniRoute on :${_OMNIROUTE_PORT} (OVERDRIVE_MODE=6 translator)..." >&2
       HME_OMNIROUTE_PORT="$_OMNIROUTE_PORT" \
         bash "$_OR_DIR/start.sh" --configure > "$PROJECT_ROOT/log/omniroute.out" 2>&1 &
       _ORPID=$!
@@ -92,7 +92,7 @@ if [ "$_OD_START" = "4" ] || [ "$_OD_START" = "5" ] || [ "$_OD_START" = "6" ]; t
       fi
     fi
   else
-    echo "[launch] WARNING: OmniRoute launcher not found at $_OR_DIR/start.sh -- MODE=4 will fail" >&2
+    echo "[launch] WARNING: OmniRoute launcher not found at $_OR_DIR/start.sh -- OVERDRIVE_MODE=6 will fail" >&2
   fi
   fi
 fi
