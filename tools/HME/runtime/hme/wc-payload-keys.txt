@@ -1,1 +1,0 @@
-{"tp":"FALSY","keys":["session_id","transcript_path"]}
