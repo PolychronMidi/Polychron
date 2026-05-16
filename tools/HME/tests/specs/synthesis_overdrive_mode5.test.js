@@ -33,9 +33,9 @@ test('registry helper still resolves tier chains for active mode 6', () => {
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
 print(json.dumps({
-  "E5": list(sr._resolve_mode5_chain("E5")[:2]),
-  "E4": list(sr._resolve_mode5_chain("E4")[:2]),
-  "E2": list(sr._resolve_mode5_chain("E2")[:2]),
+  "E5": list(sr._resolve_registry_tier_chain("E5")[:2]),
+  "E4": list(sr._resolve_registry_tier_chain("E4")[:2]),
+  "E2": list(sr._resolve_registry_tier_chain("E2")[:2]),
 }))
 `);
   assert.equal(result.status, 0, result.stderr);

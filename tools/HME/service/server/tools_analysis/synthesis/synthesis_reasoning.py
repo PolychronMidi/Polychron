@@ -243,7 +243,7 @@ def _overdrive_timeout() -> int:
 _last_source: str | None = None
 
 
-def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
+def _resolve_registry_tier_chain(tier: str) -> tuple[str, ...] | None:
     """Resolve registry tier chain used by active OVERDRIVE_MODE=6.
     Chain ordered free first (including cascade), then subscription, then
     usage; each group by tier_score desc. Returns None if config unreadable
@@ -306,9 +306,9 @@ def _resolve_mode_legacy_chain_from_registry(mode: str, tier: str) -> tuple[tupl
     return (_chain, _allow_sub)
 
 
-def _resolve_mode5_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
+def _resolve_registry_tier_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     """Read registry tier chain; allow subagent only when chain includes claude."""
-    chain = _resolve_mode5_chain(tier)
+    chain = _resolve_registry_tier_chain(tier)
     if chain is None:
         return None
     allow_sub = any(m.startswith("claude-") for m in chain)
@@ -342,7 +342,7 @@ def _mode6_role_chain(cfg: dict, role: str, role_tier: str) -> tuple[str, ...] |
     if not isinstance(spec, dict):
         return None
     spec_tier = role_tier if spec.get("tier") == "role" else spec.get("tier", role_tier)
-    base = _resolve_mode5_chain(spec_tier)
+    base = _resolve_registry_tier_chain(spec_tier)
     if base is None:
         return None
     if spec.get("source") != "manually_toprank":
@@ -359,8 +359,8 @@ def _resolve_mode6_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     try:
         cfg = _lmj()
     except Exception as _exc:
-        return _resolve_mode5_entry(role_tier)
-    chain = _mode6_role_chain(cfg, role, role_tier) or _resolve_mode5_chain(role_tier)
+        return _resolve_registry_tier_entry(role_tier)
+    chain = _mode6_role_chain(cfg, role, role_tier) or _resolve_registry_tier_chain(role_tier)
     return (chain, any(m.startswith("claude-") for m in chain)) if chain else None
 
 
