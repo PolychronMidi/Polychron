@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3297,
-      "updated_ts": 1778935348.848799,
-      "codex_plan_synced_ts": 1778935348.8487463,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+      "max_id": 3300,
+      "updated_ts": 1778936898.2094016,
+      "codex_plan_synced_ts": 1778936898.2093458,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T13:08:17.792Z"
     }
   },
   {
@@ -3879,8 +3879,8 @@
     "id": 3283,
     "text": "1. Remove legacy hardcoded metrics-path backlog and shrink/delete baseline",
     "activeForm": "1. Remove legacy hardcoded metrics-path backlog and shrink/delete baseline",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3889,14 +3889,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3284,
     "text": "2. Add METRICS_DIR regression tests for trace-summary.js and snapshot-run.js",
     "activeForm": "2. Add METRICS_DIR regression tests for trace-summary.js and snapshot-run.js",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3905,14 +3906,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3285,
     "text": "3. Add quiet baseline stats diagnostic mode",
     "activeForm": "3. Add quiet baseline stats diagnostic mode",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3921,14 +3923,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3286,
     "text": "4. Add PersistentMap project-root path regression test",
     "activeForm": "4. Add PersistentMap project-root path regression test",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3937,14 +3940,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3287,
     "text": "5. Harden chronic-failure meta-invariant against stale history/current-pass drift",
     "activeForm": "5. Harden chronic-failure meta-invariant against stale history/current-pass drift",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3953,14 +3957,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3288,
     "text": "6. Add compact post-refactor verification wrapper",
     "activeForm": "6. Add compact post-refactor verification wrapper",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3969,14 +3974,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3289,
     "text": "7. Audit and enforce categorized # env-ok usage",
     "activeForm": "7. Audit and enforce categorized # env-ok usage",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3985,14 +3991,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3290,
     "text": "8. Add runtime env helpers and migrate intentional transient env reads",
     "activeForm": "8. Add runtime env helpers and migrate intentional transient env reads",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4001,14 +4008,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3291,
     "text": "9. Add trace/run-history sync repair script",
     "activeForm": "9. Add trace/run-history sync repair script",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4017,14 +4025,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3292,
     "text": "11. Convert remaining complex invariant shell checks toward named checkers",
     "activeForm": "11. Convert remaining complex invariant shell checks toward named checkers",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4033,14 +4042,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3293,
     "text": "12. Add baseline shrink policy",
     "activeForm": "12. Add baseline shrink policy",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4049,14 +4059,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3294,
     "text": "13. Add invariant-loader consumer tests",
     "activeForm": "13. Add invariant-loader consumer tests",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4065,14 +4076,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3295,
     "text": "14. Document generated metric churn policy",
     "activeForm": "14. Document generated metric churn policy",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4081,14 +4093,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3296,
     "text": "15. Add actionable invariant warning/report mode",
     "activeForm": "15. Add actionable invariant warning/report mode",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4097,14 +4110,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3297,
     "text": "Final verification across targeted checks, invariant battery, specs, and audits",
     "activeForm": "Final verification across targeted checks, invariant battery, specs, and audits",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4113,6 +4127,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T12:42:10.469Z"
+    "codex_plan_ts": "2026-05-16T12:42:10.469Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3298,
+    "text": "Fix failing todo autosync/post-write side-effect test",
+    "activeForm": "Fix failing todo autosync/post-write side-effect test",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778936898.2088459,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:08:17.792Z"
+  },
+  {
+    "id": 3299,
+    "text": "Run targeted and full node specs",
+    "activeForm": "Run targeted and full node specs",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778936898.2088513,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:08:17.792Z"
+  },
+  {
+    "id": 3300,
+    "text": "Run HME refactor verification wrapper and invariant evidence",
+    "activeForm": "Run HME refactor verification wrapper and invariant evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778936898.2088594,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:08:17.792Z"
   }
 ]
