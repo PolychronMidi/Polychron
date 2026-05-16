@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3235,
-      "updated_ts": 1778891488.7184467,
-      "codex_plan_synced_ts": 1778891488.718405,
+      "updated_ts": 1778891938.7155397,
+      "codex_plan_synced_ts": 1778891938.715498,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T00:31:07.353Z"
+      "codex_plan_ts": "2026-05-16T00:38:49.946Z"
     }
   },
   {
@@ -3011,8 +3011,8 @@
     "id": 3231,
     "text": "Map current raw-streak enforcement and Bash rewrite path.",
     "activeForm": "Map current raw-streak enforcement and Bash rewrite path.",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3021,14 +3021,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T00:31:07.353Z"
+    "codex_plan_ts": "2026-05-16T00:38:49.946Z"
   },
   {
     "id": 3232,
     "text": "Add silent raw-command rewrite rules for safe reads/search/status equivalents before streak blocking.",
     "activeForm": "Add silent raw-command rewrite rules for safe reads/search/status equivalents before streak blocking.",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3037,14 +3037,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T00:31:07.353Z"
+    "codex_plan_ts": "2026-05-16T00:38:49.946Z"
   },
   {
     "id": 3233,
     "text": "Make raw-streak block quieter/fallback-only when rewrite is unavailable.",
     "activeForm": "Make raw-streak block quieter/fallback-only when rewrite is unavailable.",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3053,14 +3053,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T00:31:07.353Z"
+    "codex_plan_ts": "2026-05-16T00:38:49.946Z"
   },
   {
     "id": 3234,
     "text": "Add regression tests for silent rewrite and reduced block noise.",
     "activeForm": "Add regression tests for silent rewrite and reduced block noise.",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3069,14 +3069,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T00:31:07.353Z"
+    "codex_plan_ts": "2026-05-16T00:38:49.946Z"
   },
   {
     "id": 3235,
     "text": "Run focused tests and report evidence.",
     "activeForm": "Run focused tests and report evidence.",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3085,6 +3085,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T00:31:07.353Z"
+    "codex_plan_ts": "2026-05-16T00:38:49.946Z"
   }
 ]

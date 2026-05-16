@@ -4,14 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Map current raw-streak enforcement and Bash rewrite path.
+(empty)
 
 ## Next
 
-- [ ] [E3] Add silent raw-command rewrite rules for safe reads/search/status equivalents before streak blocking.
-- [ ] [E3] Make raw-streak block quieter/fallback-only when rewrite is unavailable.
-- [ ] [E3] Add regression tests for silent rewrite and reduced block noise.
-- [ ] [E3] Run focused tests and report evidence.
+(empty)
 
 ## Done
 
