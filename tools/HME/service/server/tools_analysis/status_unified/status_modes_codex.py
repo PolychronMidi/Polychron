@@ -34,7 +34,7 @@ def _fmt_delta(before: dict, after: dict) -> str:
 
 
 def _mode_codex_proxy() -> str:
-    path = os.path.join(ctx.PROJECT_ROOT, "runtime", "hme", "codex-proxy-events.jsonl")
+    path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "runtime", "codex-proxy-events.jsonl")
     requests = [e for e in _iter_events(path) if e.get("kind") == "request"][-20:]
     out = ["# Codex proxy payload visibility", ""]
     if not requests:
@@ -189,7 +189,7 @@ def _fmt_call(call: dict | None) -> str:
 
 
 def _mode_codex_route() -> str:
-    events_path = os.path.join(ctx.PROJECT_ROOT, "runtime", "hme", "codex-proxy-events.jsonl")
+    events_path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "runtime", "codex-proxy-events.jsonl")
     events = _iter_events(events_path, limit=80)
     req, resp = _latest_codex_pair(events)
     proxy, proxy_err = _health("proxy", 9099)
