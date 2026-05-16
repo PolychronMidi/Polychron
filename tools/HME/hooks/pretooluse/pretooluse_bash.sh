@@ -12,12 +12,20 @@ _POLICY_OUT=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const p=re
 if [ -n "$_POLICY_OUT" ]; then
   case "$_POLICY_OUT" in
     *'"permissionDecision":"allow"'*)
-      _streak_hme_precheck "$CMD"
+      _POLICY_CMD=$(_safe_jq "$_POLICY_OUT" '.hookSpecificOutput.updatedInput.command // .hookSpecificOutput.updatedInput.cmd' "$CMD")
+      _POLICY_HAS_UPDATE=$(_safe_jq "$_POLICY_OUT" 'has("hookSpecificOutput") and (.hookSpecificOutput | has("updatedInput"))' 'false')
+      set +e
+      _streak_hme_precheck "$_POLICY_CMD"
       _HME_PRECHECK_RC=$?
-      if [ "$_HME_PRECHECK_RC" -eq 0 ] || [ "$_HME_PRECHECK_RC" -eq 1 ]; then exit 0; fi
+      set -e
+      if [ "$_HME_PRECHECK_RC" -eq 1 ]; then exit 0; fi
+      if [ "$_POLICY_HAS_UPDATE" = "true" ]; then printf '%s
+' "$_POLICY_OUT"; exit 0; fi
+      if [ "$_HME_PRECHECK_RC" -eq 0 ]; then exit 0; fi
       ;;
   esac
-  printf '%s\n' "$_POLICY_OUT"
+  printf '%s
+' "$_POLICY_OUT"
   exit 0
 fi
 
