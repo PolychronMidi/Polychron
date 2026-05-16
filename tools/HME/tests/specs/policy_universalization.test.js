@@ -21,21 +21,21 @@ test('shared Bash policy rewrites i commands and strips timeout', () => {
 });
 
 test('shared Bash policy silently rewrites simple readers to structured Read', () => {
-  for (const command of ['cat AGENTS.md', 'head -n 3 AGENTS.md', 'sed -n 1,3p AGENTS.md']) {
+  for (const command of ['cat doc/templates/AGENTS.md', 'head -n 3 doc/templates/AGENTS.md', 'sed -n 1,3p doc/templates/AGENTS.md']) {
     const out = evaluateBashInput({ command }, { projectRoot: root });
     assert.equal(out.decision, 'allow');
     assert.equal(out.changed, true);
     assert.match(out.input.command, /codex_structured_tool\.js read --json/);
-    assert.match(out.input.command, /AGENTS\.md/);
+    assert.match(out.input.command, /doc\/templates\/AGENTS\.md/);
   }
 });
 
 test('shared Bash policy silently rewrites common raw read-only commands', () => {
   const cases = [
-    ['rg Rules AGENTS.md', /codex_structured_tool\.js grep --json/],
+    ['rg Rules doc/templates/AGENTS.md', /codex_structured_tool\.js grep --json/],
     ['ls tools/HME', /codex_structured_tool\.js glob --json/],
     ['find tools/HME -maxdepth 1 -type f -name *.md', /codex_structured_tool\.js glob --json/],
-    ['wc -l AGENTS.md', /codex_structured_tool\.js count --json/],
+    ['wc -l doc/templates/AGENTS.md', /codex_structured_tool\.js count --json/],
     ['git status --short', /codex_structured_tool\.js git --json/],
   ];
   for (const [command, pattern] of cases) {
@@ -65,8 +65,8 @@ test('hook noise stripper removes duplicate hook/status spam', () => {
   const text = stripHookNoiseText([
     'PreToolUse hook (completed)',
     '  warning: i/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT',
-    'STOP. Re-read AGENTS.md and the user prompt. Did you do ALL the work asked?',
-    'STOP. Re-read AGENTS.md and the user prompt. Did you do ALL the work asked?',
+    'STOP. Re-read doc/templates/AGENTS.md and the user prompt. Did you do ALL the work asked?',
+    'STOP. Re-read doc/templates/AGENTS.md and the user prompt. Did you do ALL the work asked?',
     'warning: BLOCKED: Raw tool streak 75/70 (cost: Bash=15). Preferred exits:',
     '  use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done.',
     'feedback: BLOCKED: Raw tool streak 75/70 (cost: Bash=15). Preferred exits:',
@@ -74,7 +74,7 @@ test('hook noise stripper removes duplicate hook/status spam', () => {
     'signal',
   ].join('\n'), stats);
   assert.equal(text, [
-    'STOP. Re-read AGENTS.md and the user prompt. Did you do ALL the work asked?',
+    'STOP. Re-read doc/templates/AGENTS.md and the user prompt. Did you do ALL the work asked?',
     'warning: BLOCKED: Raw tool streak 75/70 (cost: Bash=15). Preferred exits:',
     '  use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done.',
     'signal',

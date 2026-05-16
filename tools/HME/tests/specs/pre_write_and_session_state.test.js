@@ -118,7 +118,8 @@ test('synthetic PreToolUse Bash raw-streak is observational, not blocking', asyn
 
 test('synthetic PreToolUse Bash rewrites reader at raw-streak limit instead of blocking', async () => {
   const root = _withSandbox('hme-hook-bash-streak-read-rewrite-');
-  fs.writeFileSync(path.join(root, 'AGENTS.md'), '# agent\n');
+  fs.mkdirSync(path.join(root, 'doc', 'templates'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'doc', 'templates', 'AGENTS.md'), '# agent\n');
   const dir = path.join(root, 'tmp', 'hme-streak');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 's3read.score'), '70');
@@ -126,7 +127,7 @@ test('synthetic PreToolUse Bash rewrites reader at raw-streak limit instead of b
     const res = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
       session_id: 's3read',
-      tool_input: { command: 'cat AGENTS.md' },
+      tool_input: { command: 'cat doc/templates/AGENTS.md' },
     });
     assert.strictEqual(res.exit_code, 0);
     assert.doesNotMatch(res.stdout, /Raw tool streak/);
@@ -148,7 +149,7 @@ test('synthetic PreToolUse Bash structured Read always resets even after prior R
     const res = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
       session_id: 's3structured',
-      tool_input: { command: 'node tools/HME/scripts/codex_structured_tool.js read file=AGENTS.md' },
+      tool_input: { command: 'node tools/HME/scripts/codex_structured_tool.js read file=doc/templates/AGENTS.md' },
     });
     assert.strictEqual(res.exit_code, 0);
     assert.doesNotMatch(res.stdout, /unlock loop detected|Raw tool streak/);

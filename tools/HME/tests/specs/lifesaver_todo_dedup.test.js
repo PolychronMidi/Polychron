@@ -32,7 +32,7 @@ function _withSandboxedTodoStore(fn) {
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-todo-test-'));
   fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'KB'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'output', 'metrics'), { recursive: true });
-  // hme_env requires a .env file in PROJECT_ROOT and a AGENTS.md sibling
+  // hme_env requires a .env file in PROJECT_ROOT and a doc/templates/AGENTS.md file
   // to resolve project root. The synthesis import chain validates many
   // model-alias keys at import time, so a minimal stub doesn't suffice.
   //
@@ -59,7 +59,8 @@ function _withSandboxedTodoStore(fn) {
     return line;
   }).join('\n');
   fs.writeFileSync(path.join(sandbox, '.env'), sandboxEnv, { mode: 0o600 });
-  fs.writeFileSync(path.join(sandbox, 'AGENTS.md'), '# sandbox\n');
+  fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
+  fs.writeFileSync(path.join(sandbox, 'doc', 'templates', 'AGENTS.md'), '# sandbox\n');
   // Seed an empty store with the legacy meta-header sentinel shape.
   fs.writeFileSync(
     path.join(sandbox, 'tools', 'HME', 'KB', 'todos.json'),

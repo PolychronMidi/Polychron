@@ -78,7 +78,8 @@ function withSandbox() {
     return line;
   }).join('\n');
   fs.writeFileSync(path.join(sandbox, '.env'), sandboxEnv, { mode: 0o600 });
-  fs.writeFileSync(path.join(sandbox, 'AGENTS.md'), '# sandbox\n');
+  fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
+  fs.writeFileSync(path.join(sandbox, 'doc', 'templates', 'AGENTS.md'), '# sandbox\n');
   fs.writeFileSync(
     path.join(sandbox, 'tools', 'HME', 'KB', 'todos.json'),
     JSON.stringify([{ id: 0, _meta: { max_id: 0, updated_ts: 0 } }]),

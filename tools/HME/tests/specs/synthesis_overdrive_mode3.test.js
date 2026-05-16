@@ -15,7 +15,8 @@ function _runPython(envOverrides, body) {
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'config'), { recursive: true });
-  fs.writeFileSync(path.join(sandbox, 'AGENTS.md'), '# sandbox\n');
+  fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
+  fs.writeFileSync(path.join(sandbox, 'doc', 'templates', 'AGENTS.md'), '# sandbox\n');
   fs.copyFileSync(path.join(REPO, 'config', 'models.json'), path.join(sandbox, 'config', 'models.json'));
   let env = fs.readFileSync(path.join(REPO, '.env'), 'utf8');
   env = env.replace(/^PROJECT_ROOT=.*$/m, `PROJECT_ROOT=${sandbox}`);

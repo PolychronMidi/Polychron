@@ -9,7 +9,7 @@ const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '
 const DISPATCH = path.join(PROJECT_ROOT, 'tools', 'HME', 'event_kernel', 'cli.js');
 
 const CASES = [
-  { name: 'PreToolUse Read', event: 'PreToolUse', payload: { tool_name: 'Read', tool_input: { file_path: path.join(PROJECT_ROOT, 'AGENTS.md') }, session_id: 'direct-test' } },
+  { name: 'PreToolUse Read', event: 'PreToolUse', payload: { tool_name: 'Read', tool_input: { file_path: path.join(PROJECT_ROOT, 'doc', 'templates', 'AGENTS.md') }, session_id: 'direct-test' } },
   { name: 'PostToolUse Bash', event: 'PostToolUse', payload: { tool_name: 'Bash', tool_input: { command: 'true' }, tool_response: { exit_code: 0, stdout: '', stderr: '' }, session_id: 'direct-test' } },
 ];
 
