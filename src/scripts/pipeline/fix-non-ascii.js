@@ -47,11 +47,12 @@ const REPLACEMENTS = [
 const SENTINEL = '?unknown-ascii-character?';
 const NON_ASCII = /[^\x09\x0A\x0D\x20-\x7E]/g;
 
-const SCAN_DIRS = ['src', 'scripts'];
+const SCAN_DIRS = ['src', 'tools/HME/scripts', 'tools/HME/tests'];
 const ROOT = path.join(__dirname, '..', '..', '..');
 
 function collectJsFiles(dir) {
   const results = [];
+  if (!fs.existsSync(dir)) return results;
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const e of entries) {
     if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
