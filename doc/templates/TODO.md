@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Identify duplicate Codex process pairs
 
 ## Next
 
-(empty)
+- [ ] [E3] Terminate stale older pair only
+- [ ] [E3] Verify single Codex pair remains and report cause
 
 ## Done
 
