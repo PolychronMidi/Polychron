@@ -4,11 +4,11 @@
 
 ## Now
 
-- [ ] [E3] 2. Fix stale-mode grep invariant so it targets source/config/docs only
+- [ ] [E3] 12. Add/verify single post-restart contract spec and run full verification
 
 ## Next
 
-- [ ] [E3] 12. Add/verify single post-restart contract spec and run full verification
+(empty)
 
 ## Done
 
