@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Find anti-wait policy call context
+- [ ] [E3] Run targeted verification and launch npm main appropriately
 
 ## Next
 
-- [ ] [E3] Patch policy/tests for Codex-safe behavior
-- [ ] [E3] Run targeted verification and launch npm main appropriately
+(empty)
 
 ## Done
 
