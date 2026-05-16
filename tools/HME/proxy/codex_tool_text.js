@@ -2,7 +2,6 @@
 
 const BRIDGE_JSON_HEREDOC_RE = /\b(?:node\s+)?(?:\.\/)?(?:[^\s]+\/)?codex_structured_tool\.js\s+(read|edit)\s+--json\s+<<['\"]?([A-Za-z0-9_:-]+)['\"]?\n([\s\S]*?)\n\2/g;
 
-const JSON_HEREDOC_RE = /\b(?:node\s+)?(?:\.\/)?(?:\S*\/)?codex_structured_tool\.js\s+(?:read|edit)\s+--json\s+<<['"]?([A-Za-z0-9_:-]+)['"]?\n[\s\S]*?\n\1/g;
 
 // Normalize internal Codex fallback bridge calls so model-visible history reads
 // like native Read/Edit tool use, not like shelling out to a helper script.

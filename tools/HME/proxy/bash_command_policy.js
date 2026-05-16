@@ -31,6 +31,54 @@ function normalizeRel(file, root = PROJECT_ROOT) {
   return f.replace(/^\.\//, '');
 }
 
+function resolveProjectFile(file, root = PROJECT_ROOT) {
+  const rel = normalizeRel(file, root);
+  if (!rel || rel.startsWith('-')) return '';
+  if (/[$`*?{};|&<>]/.test(rel)) return '';
+  const abs = path.resolve(root, rel);
+  const back = path.relative(root, abs);
+  if (back.startsWith('..') || path.isAbsolute(back)) return '';
+  try { if (!fs.statSync(abs).isFile()) return ''; } catch (_e) { return ''; }
+  return back;
+}
+
+function structuredReadCommand(input) {
+  return `node tools/HME/scripts/codex_structured_tool.js read --json <<'HME_CODEX_JSON'
+${JSON.stringify(input)}
+HME_CODEX_JSON`;
+}
+
+function simpleReadEquivalent(cmd, root = PROJECT_ROOT) {
+  if (/[|;&<>`$]/.test(cmd)) return '';
+  const tokens = shellWords(cmd);
+  if (!tokens.length) return '';
+  const name = path.basename(tokens[0]);
+  const cfg = readGuardsConfig(root);
+  const mk = (file, usedPagination, extra = {}) => {
+    const rel = resolveProjectFile(file, root);
+    if (!rel) return '';
+    if (contextHit(rel, cfg, usedPagination, root)) return '';
+    return structuredReadCommand({ file_path: rel, ...extra });
+  };
+  if (name === 'cat' && tokens.length === 2) return mk(tokens[1], false);
+  if (name === 'head') {
+    let limit = 10; let file = '';
+    if (tokens.length === 2) file = tokens[1];
+    else if (tokens.length === 3 && /^-\d+$/.test(tokens[1])) { limit = Math.abs(Number(tokens[1])); file = tokens[2]; }
+    else if (tokens.length === 4 && tokens[1] === '-n') { limit = Math.abs(Number(tokens[2])); file = tokens[3]; }
+    if (file && limit > 0) return mk(file, true, { limit });
+  }
+  if (name === 'sed' && tokens.length === 4 && tokens[1] === '-n') {
+    const m = /^(\d+),(\d+)p$/.exec(tokens[2]) || /^(\d+)p$/.exec(tokens[2]);
+    if (m) {
+      const start = Number(m[1]);
+      const end = Number(m[2] || m[1]);
+      if (start > 0 && end >= start) return mk(tokens[3], true, { offset: start - 1, limit: end - start + 1 });
+    }
+  }
+  return '';
+}
+
 function readGuardsConfig(root = PROJECT_ROOT) {
   try { return JSON.parse(fs.readFileSync(path.join(root, 'tools/HME/config/context-guards.json'), 'utf8')); }
   catch (_e) { return null; }
@@ -155,7 +203,7 @@ function verifyLanded(cmd, root) {
   const verbs = new Set(['grep', 'egrep', 'fgrep', 'rg', 'ag', 'ack', 'cat', 'head', 'tail', 'less', 'more', 'bat', 'batcat', 'wc', 'awk', 'sed']);
   if (!tokens.some((t) => verbs.has(path.basename(t)))) return null;
   const hit = tokens.map((t) => path.basename(t).replace(/\.[^.]*$/, '')).find((b) => edited.includes(b));
-  return hit ? deny(`BLOCKED: verify-landed antipattern -- Bash reads ${hit} which was Edit/Written this turn. Trust the Edit success affordance; do not re-grep just to verify landing.`) : null;
+  return hit ? { hit } : null;
 }
 
 function pollingDecision(cmd, root) {
@@ -198,7 +246,10 @@ function evaluateBashInput(input = {}, opts = {}) {
     if (/\s&\s*$/.test(cmd)) return deny('BLOCKED: Do NOT use & with run_in_background=true; remove the shell background operator.');
   }
   const reader = readerGuard(cmd, root); if (reader) return reader;
-  const landed = verifyLanded(cmd, root); if (landed) return landed;
+  const enrichedRead = simpleReadEquivalent(cmd, root);
+  if (enrichedRead) return allow(setCommandInput(next, enrichedRead), '', true);
+  const landed = verifyLanded(cmd, root);
+  if (landed) return allow(setCommandInput(next, ':'), '', true);
   const feedback = feedbackKbSpam(cmd); if (feedback) return feedback;
   const lf = evaluateLogFirst(cmd, root); if (lf) return lf;
   if (new RegExp(`(tail|cat|head|grep).*(r4[0-9]+_run|run\\.log|pipeline\\.log)|\\b${LOCK_NAME.replace('.', '\\.')}\\b`).test(cmd)) return deny(`BLOCKED: polling pipeline logs/${LOCK_NAME} is an antipattern. Run i/status, then continue other work.`);
@@ -210,19 +261,18 @@ function evaluateBashInput(input = {}, opts = {}) {
   }
   if (root && new RegExp(`(^|[\\s;&|(])i/${I_TOOLS}\\b`).test(cmd)) {
     cmd = cmd.replace(new RegExp(`(^|[\\s;&|(])i/${I_TOOLS}\\b`, 'g'), (_m, lead, tool) => `${lead}${root}/i/${tool}`);
-    next.command = cmd;
-    return allow(next, '', true);
+    return allow(setCommandInput(next, cmd), '', true);
   }
   return allow(next, '', timeoutChanged);
 }
 
 function toHookResponse(result) {
   if (!result || (result.decision === 'allow' && !result.changed && !result.reason)) return '';
-  if (result.decision === 'deny') return JSON.stringify({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: result.reason }, systemMessage: result.reason });
+  if (result.decision === 'deny') return JSON.stringify({ hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: result.reason } });
   const hso = { permissionDecision: 'allow' };
   if (result.changed) hso.updatedInput = result.input;
   if (result.reason) hso.additionalContext = result.reason;
-  return JSON.stringify({ hookSpecificOutput: hso, ...(result.reason ? { systemMessage: result.reason } : {}) });
+  return JSON.stringify({ hookSpecificOutput: hso });
 }
 
 module.exports = { evaluateBashInput, toHookResponse, blockedCommand, readerGuard, contextHit };
