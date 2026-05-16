@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Run routing-ready and health probes
 
 ## Next
 
-(empty)
+- [ ] [E3] Check duplicate Codex sessions and recent OmniRoute artifacts
+- [ ] [E3] Report verdict and any issues
 
 ## Done
 
