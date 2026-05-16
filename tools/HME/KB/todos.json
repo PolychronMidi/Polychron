@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3372,
-      "updated_ts": 1778947108.9144645,
-      "codex_plan_synced_ts": 1778947108.9143965,
+      "updated_ts": 1778947408.917471,
+      "codex_plan_synced_ts": 1778947408.9174016,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T15:58:09.562Z"
+      "codex_plan_ts": "2026-05-16T16:03:16.868Z"
     }
   },
   {
@@ -5305,8 +5305,8 @@
     "id": 3370,
     "text": "Run routing-ready and health probes",
     "activeForm": "Run routing-ready and health probes",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5315,14 +5315,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:58:09.562Z"
+    "codex_plan_ts": "2026-05-16T16:03:16.868Z"
   },
   {
     "id": 3371,
     "text": "Check duplicate Codex sessions and recent OmniRoute artifacts",
     "activeForm": "Check duplicate Codex sessions and recent OmniRoute artifacts",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5331,14 +5331,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:58:09.562Z"
+    "codex_plan_ts": "2026-05-16T16:03:16.868Z"
   },
   {
     "id": 3372,
     "text": "Report verdict and any issues",
     "activeForm": "Report verdict and any issues",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5347,6 +5347,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:58:09.562Z"
+    "codex_plan_ts": "2026-05-16T16:03:16.868Z"
   }
 ]
