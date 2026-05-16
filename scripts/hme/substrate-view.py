@@ -214,12 +214,27 @@ def diff_view():
     return "\n".join(lines)
 
 
+def _load_invariant_doc(path: str, seen: set[str] | None = None) -> dict:
+    seen = seen or set()
+    path = os.path.abspath(path)
+    if path in seen:
+        raise ValueError(f"cyclic invariant include: {path}")
+    seen.add(path)
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    invs = list(data.get("invariants") or [])
+    for rel in data.get("_include") or []:
+        child = _load_invariant_doc(os.path.join(os.path.dirname(path), rel), seen)
+        invs.extend(child.get("invariants") or [])
+    data["invariants"] = invs
+    return data
+
+
 def invariants_view(filt: str = ""):
     inv_path = os.path.join(PROJECT_ROOT, "tools", "HME", "config", "invariants.json")
     try:
-        with open(inv_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+        data = _load_invariant_doc(inv_path)
+    except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
         return f"invariants: cannot load {inv_path} ({e})"
     invs = data.get("invariants", [])
     eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
