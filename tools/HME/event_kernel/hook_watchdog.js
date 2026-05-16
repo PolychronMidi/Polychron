@@ -40,8 +40,15 @@ function sessionId(payload) {
 }
 
 function readState(root) {
-  try { return JSON.parse(fs.readFileSync(paths(root).state, 'utf8')); }
-  catch (_e) { return { invocations: {}, latest: {}, success: {}, alerted: {} }; }
+  let state;
+  try { state = JSON.parse(fs.readFileSync(paths(root).state, 'utf8')); }
+  catch (_e) { state = {}; }
+  state.invocations = state.invocations || {};
+  state.latest = state.latest || {};
+  state.success = state.success || {};
+  state.alerted = state.alerted || {};
+  state.activity = state.activity || {};
+  return state;
 }
 
 function writeState(root, state) {
