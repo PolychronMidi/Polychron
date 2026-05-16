@@ -14,6 +14,8 @@ const { createPlanScanner } = require('./codex_plan_scanner');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
 const { requestTelemetry } = require('./request_telemetry');
 const { servicePort } = require('./service_registry');
+const { emitStartMarker } = require('./start_marker');
+const { ensureSession, reapDuplicates } = require('./codex_session_guard');
 
 const PORT = servicePort('codex_proxy');
 const PROXY_VERSION = 'hme-codex-proxy/1';
@@ -35,6 +37,8 @@ const PROXY_STARTED_AT = new Date().toISOString();
 
 let _config = null;
 let _recent = [];
+let _lastGuardMs = 0;
+const _metrics = { requests: 0, omniroute: 0, direct: 0, fallback_direct: 0, errors: 0, duplicate_reaps: 0, last_route: null, last_error: '', last_model: '' };
 
 function loadConfig() {
   if (_config) return _config;
@@ -62,6 +66,7 @@ function appendJsonl(file, row) {
 }
 
 function record(row) {
+  updateMetrics(row);
   const event = { ts: nowIso(), ...row };
   _recent.push(event);
   if (_recent.length > 100) _recent = _recent.slice(-100);
@@ -69,6 +74,33 @@ function record(row) {
 }
 
 const planScanner = createPlanScanner({ loadConfig, record, nowIso, planSync: PLAN_SYNC, projectRoot: PROJECT_ROOT });
+
+function updateMetrics(row) {
+  if (!row || typeof row !== 'object') return;
+  if (row.kind === 'request') {
+    _metrics.requests += 1;
+    if (row.route === 'omniroute') _metrics.omniroute += 1;
+    if (row.route === 'direct') _metrics.direct += 1;
+    _metrics.last_route = row.route || '';
+    _metrics.last_model = (row.after && row.after.model) || (row.before && row.before.model) || '';
+  }
+  if (row.kind === 'upstream-http-fallback') _metrics.fallback_direct += 1;
+  if (row.kind === 'upstream-error' || row.kind === 'request-crash') { _metrics.errors += 1; _metrics.last_error = row.message || row.error_summary || ''; }
+  if (row.kind === 'codex-session-reaped') _metrics.duplicate_reaps += row.killed || 0;
+}
+
+function guardSession(sessionId) {
+  if (!sessionId) return;
+  const now = Date.now();
+  if (now - _lastGuardMs < 30000) return;
+  _lastGuardMs = now;
+  try {
+    const result = ensureSession(sessionId);
+    if (result.killed && result.killed.length) record({ kind: 'codex-session-reaped', session_id: sessionId, killed: result.killed.length, lock_pid: result.lock_pid });
+  } catch (err) {
+    record({ kind: 'codex-session-guard-error', message: err.message });
+  }
+}
 
 function parseCodexMetadata(req) {
   const raw = req.headers['x-codex-turn-metadata'];
@@ -261,6 +293,7 @@ async function handleResponses(req, res) {
     return;
   }
   const meta = parseCodexMetadata(req);
+  guardSession(meta.session_id || '');
   const source = { session_id: meta.session_id || '', thread_id: meta.thread_id || '', turn_id: meta.turn_id || '', originator: req.headers.originator || '' };
   const autocommit = runCodexAutocommit();
   const lifesaver = injectCodexLifesaver(body);
@@ -300,7 +333,7 @@ async function handleResponses(req, res) {
 function handleRequest(req, res) {
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok', component: 'hme-codex-proxy', version: PROXY_VERSION, git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, port: PORT, upstream: UPSTREAM_URL, route: targetSummary(targetChain({ model: 'health' }, UPSTREAM_URL, loadConfig)), config: CONFIG_PATH }));
+    res.end(JSON.stringify({ status: 'ok', component: 'hme-codex-proxy', version: PROXY_VERSION, git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, port: PORT, upstream: UPSTREAM_URL, route: targetSummary(targetChain({ model: 'health' }, UPSTREAM_URL, loadConfig)), metrics: _metrics, config: CONFIG_PATH }));
     return;
   }
   if (req.url === '/hme/codex/metrics') {
@@ -325,6 +358,8 @@ function handleRequest(req, res) {
 }
 
 http.createServer(handleRequest).listen(PORT, '127.0.0.1', () => {
+  emitStartMarker('codex_proxy', { port: PORT, git: PROXY_GIT_SHA });
+  try { const reaped = reapDuplicates(); if (reaped.killed.length) record({ kind: 'codex-session-reaped', killed: reaped.killed.length }); } catch (err) { record({ kind: 'codex-session-guard-error', message: err.message }); }
   record({ kind: 'startup', port: PORT, upstream: UPSTREAM_URL, config: CONFIG_PATH, git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT });
   process.stderr.write(`[codex_proxy] listening on 127.0.0.1:${PORT}, upstream=${UPSTREAM_URL}\n`);
 });
