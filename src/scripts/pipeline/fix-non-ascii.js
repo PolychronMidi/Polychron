@@ -48,7 +48,7 @@ const SENTINEL = '?unknown-ascii-character?';
 const NON_ASCII = /[^\x09\x0A\x0D\x20-\x7E]/g;
 
 const SCAN_DIRS = ['src', 'scripts'];
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '..', '..', '..');
 
 function collectJsFiles(dir) {
   const results = [];

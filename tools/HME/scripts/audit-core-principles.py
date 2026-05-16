@@ -50,7 +50,7 @@ from loc_ignore import load_patterns, is_exempt  # noqa: E402
 from loc_count import cloc  # noqa: E402  -- imported lazily below as _loc alias
 
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 _SRC = os.path.join(_PROJECT, "src")
 

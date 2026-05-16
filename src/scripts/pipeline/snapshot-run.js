@@ -215,7 +215,7 @@ function main() {
 
   // --perceptual: run EnCodec analysis and attach to snapshot
   // Only if WAV is newer than trace-summary (same pipeline run)
-  const WAV_PATH = path.join(__dirname, '..', '..', 'output', 'combined.wav');
+  const WAV_PATH = path.join(__dirname, '..', '..', '..', 'output', 'combined.wav');
   const wavFresh = fs.existsSync(WAV_PATH) &&
     fs.statSync(WAV_PATH).mtimeMs > fs.statSync(TS_PATH).mtimeMs - 600000; // within 10min
   let encodecFailed = false;

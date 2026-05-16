@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from loc_ignore import load_patterns, is_exempt, load_with_rationale  # noqa: E402
 
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 
 _DEFAULT_ROOTS = [

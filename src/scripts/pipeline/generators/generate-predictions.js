@@ -16,7 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
+const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 const DEPGRAPH = path.join(METRICS_DIR, 'dependency-graph.json');
 const OUT = path.join(METRICS_DIR, 'hme-predictions.jsonl');

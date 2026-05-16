@@ -13,7 +13,7 @@ const path = require('path');
 let _declaredCache = null;
 function getDeclaredNames() {
   if (_declaredCache) return _declaredCache;
-  const SRC = path.join(__dirname, '..', '..', 'src');
+  const SRC = path.join(__dirname, '..', '..', '..', 'src');
   const out = new Set();
   function walk(dir) {
     let entries;

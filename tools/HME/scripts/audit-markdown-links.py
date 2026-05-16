@@ -27,7 +27,7 @@ import re
 import sys
 
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 
 _LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")

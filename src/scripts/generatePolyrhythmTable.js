@@ -18,7 +18,7 @@ const fs   = require('fs');
 const path = require('path');
 
 // -- Read limits from config.js
-const CONFIG_PATH = path.join(__dirname, '..', 'src', 'conductor', 'config.js');
+const CONFIG_PATH = path.join(__dirname, '..', '..', 'src', 'conductor', 'config.js');
 const configSrc   = fs.readFileSync(CONFIG_PATH, 'utf8');
 
 function readConfigBlock(name) {
@@ -42,7 +42,7 @@ const CHECK = args.includes('--check');
 const MAX_MEASURES = mmArg !== -1 ? parseInt(args[mmArg + 1], 10) : 10;
 const OUT_PATH = outArg !== -1
   ? args[outArg + 1]
-  : path.join(__dirname, '..', 'src', 'time', 'polyrhythmPairs.js');
+  : path.join(__dirname, '..', '..', 'src', 'time', 'polyrhythmPairs.js');
 
 // -- Helpers -
 function gcd(a, b) { while (b) { [a, b] = [b, a % b]; } return a; }

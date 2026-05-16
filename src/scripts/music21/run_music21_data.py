@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+ROOT = pathlib.Path(__file__).resolve().parents[3]
 
 STEPS = [
     "src/scripts/music21/export_harmonic_priors.py",

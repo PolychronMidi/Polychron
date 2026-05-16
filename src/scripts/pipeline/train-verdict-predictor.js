@@ -9,8 +9,8 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const HISTORY_DIR = path.join(__dirname, '..', '..', 'metrics', 'run-history');
-const MODEL_PATH = path.join(__dirname, '..', '..', 'metrics', 'verdict-model.json');
+const HISTORY_DIR = path.join(__dirname, '..', '..', '..', 'metrics', 'run-history');
+const MODEL_PATH = path.join(__dirname, '..', '..', '..', 'metrics', 'verdict-model.json');
 const MIN_LABELED = 10;
 const CHECK_ONLY = process.argv.includes('--check');
 const UNKNOWN_ARGS = process.argv.slice(2).filter((arg) => arg !== '--check');

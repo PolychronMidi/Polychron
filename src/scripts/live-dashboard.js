@@ -15,7 +15,7 @@ const http = require('http');
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT       = path.join(__dirname, '..');
+const ROOT       = path.join(__dirname, '..', '..');
 const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 const TRACE_FILE = path.join(METRICS_DIR, 'trace.jsonl');
 const HTML_FILE  = path.join(__dirname, 'dashboard.html');

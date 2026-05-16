@@ -353,7 +353,7 @@ function main() {
   // context for downstream metrics.
   try {
     var lastSha = '';
-    var lastShaFile = path.join(__dirname, '..', '..', 'tmp', 'hme-last-pipeline-sha');
+    var lastShaFile = path.join(__dirname, '..', '..', '..', 'tmp', 'hme-last-pipeline-sha');
     if (fs.existsSync(lastShaFile)) {
       lastSha = fs.readFileSync(lastShaFile, 'utf8').trim();
     }
@@ -467,7 +467,7 @@ function main() {
   // were missing/days-stale because their bg-spawn errors were being swallowed
   // by stdio: 'ignore'. Now each script's stderr lands at log/hme-bg-<name>.err
   // (truncated each round so it reflects the latest run only).
-  var bgLogDir = path.join(__dirname, '..', '..', 'log');
+  var bgLogDir = path.join(__dirname, '..', '..', '..', 'log');
   try { fs.mkdirSync(bgLogDir, { recursive: true }); } catch (_e) { /* best-effort */ }
   function _spawnBg(scriptPath, scriptArgs, label) {
     try {
@@ -506,7 +506,7 @@ function main() {
   // full battery (not --score mode), so the pipeline explicitly ensures it
   // fires after every run without requiring a full battery invocation.
   try {
-    var warmSentinel = path.join(__dirname, '..', '..', 'tmp', 'hme-warm-reprime.request');
+    var warmSentinel = path.join(__dirname, '..', '..', '..', 'tmp', 'hme-warm-reprime.request');
     fs.mkdirSync(path.dirname(warmSentinel), { recursive: true });
     fs.writeFileSync(warmSentinel, String(Math.floor(Date.now() / 1000)));
   } catch (_we) { /* best-effort -- warm reprime is advisory */ }

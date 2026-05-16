@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
+const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const SRC = path.join(ROOT, 'src');
 const DTS = path.join(ROOT, 'src/types/globals.d.ts');
 

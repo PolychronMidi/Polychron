@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
+const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const PENDING = path.join(ROOT, 'tmp', 'hme-canary-pending.txt');
 const CONSUMED = path.join(ROOT, 'tmp', 'hme-canary-consumed.txt');
 

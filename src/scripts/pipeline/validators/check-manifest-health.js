@@ -231,7 +231,7 @@ function assertManifestHealth(manifest, manifestPath) {
 function main() {
   const manifestPath = process.env.METRICS_DIR
     ? path.join(process.env.METRICS_DIR, 'system-manifest.json')
-    : path.join(__dirname, '..', '..', '..', 'output', 'metrics', 'system-manifest.json');
+    : path.join(__dirname, '..', '..', '..', '..', 'output', 'metrics', 'system-manifest.json');
   const manifest = loadManifest(manifestPath);
   assertManifestHealth(manifest, manifestPath);
 }

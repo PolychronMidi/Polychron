@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
+const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const RUNTIME = path.join(ROOT, 'runtime', 'hme');
 
 // Expected heartbeats and their freshness windows.
