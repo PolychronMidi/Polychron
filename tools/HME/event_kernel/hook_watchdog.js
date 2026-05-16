@@ -159,6 +159,7 @@ function userPromptAlert(root, body) {
   const latestId = state.latest[`SessionStart:${sid}`];
   const latest = latestId ? state.invocations[latestId] : null;
   const success = state.success[sid];
+  const activity = state.activity[sid];
   const now = Date.now();
   if (latest && latest.phase !== 'end') {
     const age = now - (latest.started_ms || now);
