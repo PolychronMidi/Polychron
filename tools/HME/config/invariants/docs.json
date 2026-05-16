@@ -59,13 +59,12 @@
       "id": "antagonism-registry-covers-observed-pairs",
       "description": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted.",
       "type": "shell_output_empty",
-      "shell": "python3 scripts/check-antagonism-registry.py 2>&1 | grep -v '^$'",
+      "shell": "python3 scripts/check-antagonism-registry.py",
       "severity": "warning",
       "finding_label": "finding",
       "success_detail": "no findings",
       "allow_exit_codes": [
-        0,
-        1
+        0
       ],
       "capture_stderr": true,
       "context": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted. An unaccounted negative correlation means the system is observing a tension it has not named per the antagonism-bridge principle. See doc/composition-full.md."
