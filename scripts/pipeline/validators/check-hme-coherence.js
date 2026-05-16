@@ -54,9 +54,9 @@ function sliceToRound(events) {
       break;
     }
   }
-  if (lastRound >= 0) return events.slice(lastRound + 1);
+  const windowEvents = lastRound >= 0 ? events.slice(lastRound + 1) : events;
   const cutoff = Date.now() / 1000 - FALLBACK_WINDOW_SEC;
-  return events.filter((e) => !Number.isFinite(Number(e.ts)) || Number(e.ts) >= cutoff);
+  return windowEvents.filter((e) => !Number.isFinite(Number(e.ts)) || Number(e.ts) >= cutoff);
 }
 
 function writeReport(report) {
