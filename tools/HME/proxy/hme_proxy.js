@@ -41,6 +41,7 @@ const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./m
 const { applyAnthropicCommonTransforms } = require('./request_transform_core');
 const { stripStaleToolResults, sanitizeMessages } = require('./conversation_graph');
 const { servicePort } = require('./service_registry');
+const { emitStartMarker } = require('./start_marker');
 const { requestTelemetry } = require('./request_telemetry');
 const { routeDecision } = require('./model_route_resolver');
 const { shrinkForPassthrough } = require('./anthropic_passthrough_compact');
@@ -82,6 +83,22 @@ const PROXY_GIT_SHA = (() => {
   } catch (_) { return 'unknown'; }
 })();
 const PROXY_STARTED_AT = new Date().toISOString();
+
+const _routeMetrics = {
+  requests: 0, omniroute: 0, legacy_swap: 0, direct: 0, passthrough: 0,
+  errors: 0, last_route: '', last_model: '', last_error: '', last_request_at: '',
+};
+function _recordProxyRoute(route, model) {
+  _routeMetrics.requests += 1;
+  if (_routeMetrics[route] !== undefined) _routeMetrics[route] += 1;
+  _routeMetrics.last_route = route;
+  _routeMetrics.last_model = model || '';
+  _routeMetrics.last_request_at = new Date().toISOString();
+}
+function _recordProxyError(err) {
+  _routeMetrics.errors += 1;
+  _routeMetrics.last_error = err && err.message ? err.message : String(err || '');
+}
 
 const PORT = servicePort('proxy');
 const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
@@ -325,7 +342,7 @@ function handleRequest(clientReq, clientRes) {
   if (clientReq.url === '/health') {
     clientRes.writeHead(200, { 'Content-Type': 'application/json' });
     clientRes.end(JSON.stringify({
-      status: 'ok', port: PORT, version: PROXY_VERSION, git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, supervisor: supervisorStatus(),
+      status: 'ok', port: PORT, version: PROXY_VERSION, git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, routes: _routeMetrics, supervisor: supervisorStatus(),
     }));
     return;
   }
@@ -409,6 +426,7 @@ function handleRequest(clientReq, clientRes) {
     }
 
     const upstream = resolveUpstream(clientReq);
+    _recordProxyRoute(_isOmniRouteSwap ? 'omniroute' : (_isLegacySwap ? 'legacy_swap' : (isPassthroughMode() ? 'passthrough' : 'direct')), payload && payload.model);
     const isAnthropic = upstream.provider === 'anthropic' || _isOmniRouteSwap;
 
     // Discriminator: only INTERACTIVE-path 429s trip the global escape
@@ -1460,12 +1478,14 @@ if (process.argv.includes('--test')) {
   supervisor.registerServer(server);  // enables graceful drain on shutdown
   server.listen(PORT, '127.0.0.1', () => {
     const scheme = DEFAULT_UPSTREAM_TLS ? 'https' : 'http';
+    emitStartMarker('hme_proxy', { port: PORT, git: PROXY_GIT_SHA });
     console.log(`hme-proxy listening on http://127.0.0.1:${PORT}`);
     console.log(`  Anthropic upstream: ${scheme}://${DEFAULT_UPSTREAM_HOST}:${DEFAULT_UPSTREAM_PORT}`);
     console.log(`  worker upstream: http://127.0.0.1:${WORKER_PORT} (supervised, /mcp/* routed here)`);
     if (!SUPERVISE) console.log('  supervision: disabled (HME_PROXY_SUPERVISE=0)');
   });
   server.on('error', (err) => {
+    _recordProxyError(err);
     console.error('listen error:', err.message);
     process.exit(1);
   });
