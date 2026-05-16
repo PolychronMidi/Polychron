@@ -4,14 +4,14 @@
 
 ## Now
 
-- [ ] [E3] Inventory lab/output/runtime contents and all references
+- [ ] [E3] Inspect current output/ and i/ state plus references
 
 ## Next
 
-- [ ] [E3] Move directories to src/lab, src/output, tools/HME/runtime
-- [ ] [E3] Update path helpers, env defaults, gitignore, docs/tests/scripts
-- [ ] [E3] Run targeted validators/tests and fix remaining path errors
-- [ ] [E3] Run full relevant verification
+- [ ] [E3] Move remaining root output/ to src/output and update defaults
+- [ ] [E3] Move/route root i/ to HME-owned location and update references
+- [ ] [E3] Update guards/gitignore/docs for no root output/i
+- [ ] [E3] Run targeted checks and fix path fallout
 
 ## Done
 
