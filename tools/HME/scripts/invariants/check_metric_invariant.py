@@ -168,7 +168,11 @@ def lance_deletions_not_excessive() -> None:
         print(f"_deletions has {n} files (cap=50)")
 
 
-RULES = {name.replace("_", "-"): fn for name, fn in list(globals().items()) if callable(fn) and not name.startswith("_")}
+RULES = {
+    name.replace("_", "-"): fn
+    for name, fn in list(globals().items())
+    if callable(fn) and getattr(fn, "__module__", None) == __name__ and not name.startswith("_")
+}
 
 
 def main() -> int:
