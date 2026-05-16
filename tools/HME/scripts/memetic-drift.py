@@ -28,7 +28,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", "metrics")
-_CLAUDE_MD = os.path.join(_PROJECT, "doc", "templates", "AGENTS.md")
+_AGENTS_MD = os.path.join(_PROJECT, "doc", "templates", "AGENTS.md")
 _OUTPUT = os.path.join(METRICS_DIR, "hme-memetic-drift.json")
 
 # Violation signals -- phrases in error log or commit messages that indicate
@@ -50,11 +50,11 @@ _VIOLATION_SIGNALS = {
 def _extract_rules() -> list:
     """Extract imperative lines from doc/templates/AGENTS.md. Each rule gets its line
     number (for reorder suggestions) and the sentence text."""
-    if not os.path.isfile(_CLAUDE_MD):
+    if not os.path.isfile(_AGENTS_MD):
         return []
     rules = []
     try:
-        with open(_CLAUDE_MD) as f:
+        with open(_AGENTS_MD) as f:
             for i, line in enumerate(f, start=1):
                 line = line.strip()
                 if not line or line.startswith("#"):

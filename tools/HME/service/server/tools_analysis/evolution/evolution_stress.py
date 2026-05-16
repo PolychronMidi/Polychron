@@ -323,9 +323,9 @@ def _adversarial_stress() -> str:
         results.append(("globals.d.ts: readable", False, str(e)))
 
     # Probe 22: doc/templates/AGENTS.md is current and references key enforcement systems
-    claude_path = os.path.join(ctx.PROJECT_ROOT, "doc", "templates", "AGENTS.md")
+    agents_path = os.path.join(ctx.PROJECT_ROOT, "doc", "templates", "AGENTS.md")
     try:
-        with open(claude_path, encoding="utf-8") as f:
+        with open(agents_path, encoding="utf-8") as f:
             claude_md = f.read()
         enforcement_refs = ["crossLayerEmissionGateway", "trustSystems.names",
                             "feedbackRegistry", "L0_CHANNELS"]
