@@ -73,6 +73,11 @@ function fmtTs(ts) {
   }
 }
 
+function isBlockingViolation(e) {
+  if (!e || e.event !== 'coherence_violation' || e.verdict === 'STALE') return false;
+  return Boolean(e.file || e.module || e.reason || e.source === 'proxy');
+}
+
 const events = readEvents();
 
 if (events.length === 0) {
@@ -92,7 +97,7 @@ if (events.length === 0) {
 const windowEvents = sliceToRound(events);
 
 // Count violations and write coherence
-const violations = windowEvents.filter((e) => e && e.event === 'coherence_violation');
+const violations = windowEvents.filter(isBlockingViolation);
 const writes = windowEvents.filter((e) => e && e.event === 'file_written');
 const writesWithPriorRead = writes.filter((e) => e.hme_read_prior === true);
 const writesWithoutPriorRead = writes.length - writesWithPriorRead.length;
