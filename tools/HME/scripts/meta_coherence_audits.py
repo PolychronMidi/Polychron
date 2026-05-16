@@ -266,7 +266,7 @@ def audit_module_imports(root: Path) -> list[dict]:
     definitions, and builtins."""
     findings: list[dict] = []
     import builtins
-    server_dir = root / "tools" / "HME" / "mcp" / "server"
+    server_dir = root / "tools" / "HME" / "service" / "server"
     if not server_dir.is_dir():
         return findings
     builtin_names = set(dir(builtins)) | {"self", "cls", "__name__", "__file__",
