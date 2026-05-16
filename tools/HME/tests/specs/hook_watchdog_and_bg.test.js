@@ -16,7 +16,12 @@ function sandbox(prefix) {
   for (const d of ['src', 'tmp', 'log', 'output/metrics', 'tools/HME/runtime', '.git', 'bin']) {
     fs.mkdirSync(path.join(root, d), { recursive: true });
   }
-  for (const d of ['tools', 'scripts', 'config']) fs.symlinkSync(path.join(REPO, d), path.join(root, d));
+  for (const d of ['scripts', 'config']) fs.symlinkSync(path.join(REPO, d), path.join(root, d));
+  const hmeRoot = path.join(root, 'tools/HME');
+  for (const ent of fs.readdirSync(path.join(REPO, 'tools/HME'), { withFileTypes: true })) {
+    if (ent.name === 'runtime') continue;
+    fs.symlinkSync(path.join(REPO, 'tools/HME', ent.name), path.join(hmeRoot, ent.name));
+  }
   const fakeGit = path.join(root, 'bin', 'git');
   fs.writeFileSync(fakeGit, '#!/usr/bin/env bash\nexit 0\n');
   fs.chmodSync(fakeGit, 0o755);
