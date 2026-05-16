@@ -6,6 +6,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { dispatchEvent } = require('../event_kernel/dispatcher');
 const middleware = require('../proxy/middleware');
+const { recordFailure, clearFailure } = require('../proxy/turn_failure_state');
 
 const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
 const SESSION = process.env.HME_SESSION_ID || process.env.CODEX_SESSION_ID || 'codex-structured';
@@ -90,9 +91,64 @@ function globToRe(pattern) { return new RegExp(`^${String(pattern || '*').replac
 function parseGrep(argv) { const d = jsonData(argv); return { pattern: String(d.pattern || d._?.[0] || ''), path: d.path || d._?.[1] || '.', paths: d.paths || null, ignore_case: Boolean(d.ignore_case), fixed: Boolean(d.fixed), limit: Number(d.limit || 200) }; }
 function parseGlob(argv) { const d = jsonData(argv); return { pattern: String(d.pattern || d._?.[0] || '*'), path: d.path || d._?.[1] || '.', max_depth: Number(d.max_depth ?? 8), type: d.type || '', limit: Number(d.limit || 500) }; }
 
-async function runRead(argv) { const input = parseRead(argv); await pre('Read', input); const text = readSlice(fs.readFileSync(input.file_path, 'utf8'), input); const out = await enrich('Read', input, text); await post('Read', input, { exit_code: 0, stdout: text }); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
-function applyEdit(input) { if (!input.old_string) throw new Error('old_string/old/old_file is required'); const text = fs.readFileSync(input.file_path, 'utf8'); const first = text.indexOf(input.old_string); if (first < 0) throw new Error('old_string not found'); if (text.indexOf(input.old_string, first + input.old_string.length) >= 0) throw new Error('old_string is not unique'); fs.writeFileSync(input.file_path, text.slice(0, first) + input.new_string + text.slice(first + input.old_string.length)); }
-async function runEdit(argv) { const input = parseEdit(argv); const context = await pre('Edit', input); applyEdit(input); let out = await enrich('Edit', input, '[SUCCESS] edit applied'); await post('Edit', input, { exit_code: 0, stdout: out }); if (context) process.stdout.write(`${context}\n`); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
+async function runRead(argv) { const input = parseRead(argv); await pre('Read', input); const text = readSlice(fs.readFileSync(input.file_path, 'utf8'), input); const out = await enrich('Read', input, text); await post('Read', input, { exit_code: 0, stdout: text }); clearFailure(ROOT); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
+
+function countOccurrences(text, needle) { if (!needle) return 0; let n = 0; let i = 0; while ((i = text.indexOf(needle, i)) >= 0) { n++; i += Math.max(1, needle.length); } return n; }
+function editVariants(input, text) {
+  const variants = [{ ...input, _why: 'exact' }];
+  const old = input.old_string || '';
+  const neu = input.new_string || '';
+  if (old.includes('\\n') && !old.includes('\n')) variants.push({ ...input, old_string: old.replace(/\\n/g, '\n'), new_string: neu.replace(/\\n/g, '\n'), _why: 'decoded literal \\n' });
+  if (text.includes('\r\n') && old.includes('\n') && !old.includes('\r\n')) variants.push({ ...input, old_string: old.replace(/\n/g, '\r\n'), new_string: neu.replace(/\n/g, '\r\n'), _why: 'crlf-normalized' });
+  if (!text.includes('\r\n') && old.includes('\r\n')) variants.push({ ...input, old_string: old.replace(/\r\n/g, '\n'), new_string: neu.replace(/\r\n/g, '\n'), _why: 'lf-normalized' });
+  return variants;
+}
+function contextWindow(file, oldString, newString, reason) {
+  const text = fs.readFileSync(file, 'utf8');
+  const lines = text.split(/\r?\n/);
+  const anchors = [...String(oldString || '').split(/\r?\n/), ...String(newString || '').split(/\r?\n/)]
+    .map((s) => s.trim()).filter((s) => s.length >= 6);
+  let hit = 0;
+  for (const a of anchors) { const idx = lines.findIndex((line) => line.includes(a)); if (idx >= 0) { hit = idx; break; } }
+  const start = Math.max(0, hit - 20);
+  const end = Math.min(lines.length, hit + 21);
+  const body = lines.slice(start, end).map((line, i) => `${String(start + i + 1).padStart(5, ' ')} ${line}`).join('\n');
+  return `Error: ${reason}\n[READ current context ${relPath(file)}:${start + 1}-${end}]\n${body}`;
+}
+function editFailure(input, reason) { const err = new Error(reason); err.userMessage = contextWindow(input.file_path, input.old_string, input.new_string, reason); return err; }
+function applyEdit(input) {
+  if (!input.old_string) throw editFailure(input, 'old_string/old/old_file is required');
+  const text = fs.readFileSync(input.file_path, 'utf8');
+  if (text.indexOf(input.old_string) < 0 && input.new_string && countOccurrences(text, input.new_string) === 1) return { status: 'already_applied' };
+  for (const candidate of editVariants(input, text)) {
+    const first = text.indexOf(candidate.old_string);
+    if (first < 0) continue;
+    if (text.indexOf(candidate.old_string, first + candidate.old_string.length) >= 0) throw editFailure(input, `old_string is not unique (${candidate._why})`);
+    fs.writeFileSync(input.file_path, text.slice(0, first) + candidate.new_string + text.slice(first + candidate.old_string.length));
+    return { status: candidate._why === 'exact' ? 'applied' : `applied via ${candidate._why}` };
+  }
+  throw editFailure(input, 'old_string not found');
+}
+async function runEdit(argv) {
+  const input = parseEdit(argv);
+  const context = await pre('Edit', input);
+  try {
+    const result = applyEdit(input);
+    const label = result.status === 'already_applied' ? '[SUCCESS] edit already applied' : `[SUCCESS] edit ${result.status}`;
+    const out = await enrich('Edit', input, label);
+    await post('Edit', input, { exit_code: 0, stdout: out });
+    clearFailure(ROOT);
+    if (context) process.stdout.write(`${context}\n`);
+    process.stdout.write(out.endsWith('\n') ? out : `${out}\n`);
+  } catch (err) {
+    const message = err.userMessage || `Error: ${err.message}`;
+    recordFailure(ROOT, { tool: 'Edit', reason: err.message, file: input.file_path, session_id: SESSION });
+    const out = await enrich('Edit', input, message, true);
+    await post('Edit', input, { exit_code: 1, stderr: message, stdout: out, is_error: true });
+    process.stdout.write(out.endsWith('\n') ? out : `${out}\n`);
+    process.exit(1);
+  }
+}
 async function runGrep(argv) { const input = parseGrep(argv); if (!input.pattern) usage(); await pre('Grep', input); const flags = input.ignore_case ? 'i' : ''; const re = input.fixed ? null : new RegExp(input.pattern, flags); const bases = (input.paths || [input.path]).map((p) => absPath(p)); const lines = []; for (const b of bases) for (const fp of walk(b, 10)) { const rel = relPath(fp); const text = fs.readFileSync(fp, 'utf8'); text.split(/\r?\n/).some((line, idx) => { const hit = input.fixed ? (input.ignore_case ? line.toLowerCase().includes(input.pattern.toLowerCase()) : line.includes(input.pattern)) : re.test(line); if (hit) lines.push(`${rel}:${idx + 1}:${line}`); return lines.length >= input.limit; }); if (lines.length >= input.limit) break; } const outText = lines.join('\n'); const out = await enrich('Grep', input, outText); await post('Grep', input, { exit_code: 0, stdout: outText }); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
 async function runGlob(argv) { const input = parseGlob(argv); await pre('Glob', input); const base = absPath(input.path); const re = globToRe(input.pattern); const rows = walk(base, input.max_depth).map(relPath).filter((r) => re.test(path.basename(r)) || re.test(r)).slice(0, input.limit); const text = rows.join('\n'); const out = await enrich('Glob', input, text); await post('Glob', input, { exit_code: 0, stdout: text }); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
 async function runCount(argv) { const d = jsonData(argv); const fp = absPath(d.file_path || d.file || d._?.[0]); const text = fs.readFileSync(fp, 'utf8'); process.stdout.write(`${relPath(fp)}:${text.split(/\r?\n/).length - 1}\n`); }
