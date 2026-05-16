@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const PROJECT_ROOT = path.join(__dirname, '..', '..');
+const PROJECT_ROOT = path.join(__dirname, '..', '..', '..');
 const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'output', 'metrics');
 const WAV_PATH = path.join(PROJECT_ROOT, 'output', 'combined.wav');
 const TRACE_SUMMARY = path.join(METRICS_DIR, 'trace-summary.json');
