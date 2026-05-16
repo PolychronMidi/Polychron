@@ -21,7 +21,8 @@ RUN_SUFFIXES = {".py", ".js", ".sh"}
 
 
 def git_files(prefix: str = "") -> list[Path]:
-    out = subprocess.check_output(["git", "ls-files", prefix], cwd=ROOT, text=True)
+    cmd = ["git", "ls-files"] + ([prefix] if prefix else [])
+    out = subprocess.check_output(cmd, cwd=ROOT, text=True)
     return [ROOT / line for line in out.splitlines() if line]
 
 
