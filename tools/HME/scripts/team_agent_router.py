@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 PROJECT = Path(os.environ.get("PROJECT_ROOT") or os.getcwd())
-DASH = PROJECT / "runtime" / "hme" / "team-dashboard.json"
+DASH = PROJECT / "tools" / "HME" / "runtime" / "team-dashboard.json"
 
 # subagent_type -> target tier (effort, not caller tier)
 TYPE_TIER: dict[str, str] = {

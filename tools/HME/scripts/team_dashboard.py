@@ -5,7 +5,7 @@ import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
 from pathlib import Path
 PROJECT = Path(os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "")))
-DASHBOARD = PROJECT / "runtime" / "hme" / "team-dashboard.json"
+DASHBOARD = PROJECT / "tools" / "HME" / "runtime" / "team-dashboard.json"
 ROLES = {
  "driver": {"team": "command", "tier": "E5"}, "blue_lead": {"team": "blue", "tier": "E5"}, "blue_purple": {"team": "blue", "tier": "E4"},
  "red_lead": {"team": "red", "tier": "E5"}, "red_purple": {"team": "red", "tier": "E4"},
