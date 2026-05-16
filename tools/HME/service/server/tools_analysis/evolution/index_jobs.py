@@ -147,6 +147,7 @@ def start_index_job(
             name=f"hme-{action}-job",
         )
         _JOB_THREAD.start()
+        status["just_started"] = True
         return status
 
 
@@ -162,9 +163,14 @@ def format_index_job(project_root: str, status: dict) -> str:
     status_path, log_path = _paths(project_root)
     state = status.get("state", "missing")
     action = status.get("action", "n/a")
-    prefix = "Index job already running" if status.get("already_running") else "Index job status"
-    if state == "running" and not status.get("already_running"):
+    if status.get("already_running"):
+        prefix = "Index job already running"
+    elif state == "running" and status.get("just_started"):
         prefix = "Index job started in background"
+    elif state == "running":
+        prefix = "Index job running"
+    else:
+        prefix = "Index job status"
     lines = [
         prefix,
         f"- action: {action}",
