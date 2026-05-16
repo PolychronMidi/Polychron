@@ -122,6 +122,7 @@ Directly invoked shell entrypoints:
 - `autocommit-direct.sh`
 - `proxy-maintenance.sh`
 - `proxy-supervisor.sh`
+- `codex-proxy-supervisor.sh`
 - `proxy-watchdog.sh`
 - `universal-pulse-supervisor.sh`
 
@@ -146,6 +147,7 @@ below is orientation only; doctors and pulse probes read the registry.
 | Script | Pid file | Heartbeat | Purpose |
 |---|---|---|---|
 | `proxy-supervisor.sh` | `runtime/hme/proxy-supervisor.pid` | `/health` poll q10s, 3 misses -> respawn | Keep proxy alive between SessionStart events. |
+| `codex-proxy-supervisor.sh` | `runtime/hme/codex-proxy-supervisor.pid` | `codex_proxy` health poll | Keep Codex proxy routing alive for OpenAI-compatible traffic. |
 | `universal-pulse-supervisor.sh` | `runtime/hme/universal-pulse-supervisor.pid` | `tmp/hme-universal-pulse.heartbeat` q15s, >90s stale -> respawn | Active probes for proxy/worker/daemon/CPU. |
 
 <!-- HME-DIR-INTENT
