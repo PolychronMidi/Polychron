@@ -1,5 +1,5 @@
 'use strict';
-// Regression: OVERDRIVE_MODE=3 maps E3/E4/E5 to configured chains.
+// Legacy overdrive modes 3/4 are retired: only 0 and 6 remain active.
 
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -9,172 +9,38 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
-
-function _runPython(envOverrides, body) {
-  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od3-test-'));
+function run(mode) {
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-retired-'));
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'config'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
   fs.writeFileSync(path.join(sandbox, 'doc', 'templates', 'AGENTS.md'), '# sandbox\n');
   fs.copyFileSync(path.join(REPO, 'config', 'models.json'), path.join(sandbox, 'config', 'models.json'));
-  let env = fs.readFileSync(path.join(REPO, '.env'), 'utf8');
-  env = env.replace(/^PROJECT_ROOT=.*$/m, `PROJECT_ROOT=${sandbox}`);
-  env = env.replace(/^([A-Z_]+_(TOKEN|KEY|SECRET|PASSWORD|AUTH|CREDENTIAL))=.*$/gm, '$1=REDACTED');
-  for (const [k, v] of Object.entries(envOverrides)) {
-    if (env.match(new RegExp(`^${k}=`, 'm'))) {
-      env = env.replace(new RegExp(`^${k}=.*$`, 'm'), `${k}=${v}`);
-    } else {
-      env += `\n${k}=${v}\n`;
-    }
-  }
-  fs.writeFileSync(path.join(sandbox, '.env'), env);
+  fs.writeFileSync(path.join(sandbox, '.env'), `PROJECT_ROOT=${sandbox}\nOVERDRIVE_MODE=${mode}\n`);
   try {
-    const result = spawnSync('python3', ['-c', body], {
-      env: {
-        ...process.env,
-        PROJECT_ROOT: sandbox,
-        PYTHONPATH: path.join(REPO, 'tools', 'HME', 'service'),
-      },
-      encoding: 'utf8',
-    });
-    return result;
-  } finally {
-    try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
-  }
+    return spawnSync('python3', ['-c', `
+from server.tools_analysis.synthesis import synthesis_reasoning as sr
+import json
+overdrive_called = {"flag": False}
+def fake_call_opus_overdrive(*a, **kw):
+    overdrive_called["flag"] = True
+    return ("should-not-fire", "overdrive/retired")
+sr._call_opus_overdrive = fake_call_opus_overdrive
+def fake_load_providers(): return {}
+sr._load_providers = fake_load_providers
+sr.call(prompt="test", tier="E5")
+print(json.dumps({"called": overdrive_called["flag"], "source": sr.last_source()}))
+`], { env: { ...process.env, PROJECT_ROOT: sandbox, PYTHONPATH: path.join(REPO, 'tools', 'HME', 'service') }, encoding: 'utf8' });
+  } finally { fs.rmSync(sandbox, { recursive: true, force: true }); }
 }
 
-test('overdrive mode=3: tier=E5 routes through full Opus chain', () => {
-  const result = _runPython({ OVERDRIVE_MODE: '3', OVERDRIVE_VIA_SUBAGENT: '0' }, `
-from server.tools_analysis.synthesis import synthesis_reasoning as sr
-import json
-captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
-    captured["chain_override"] = chain_override
-    captured["allow_subagent"] = allow_subagent
-    return ("e5-response", "overdrive/opus")
-sr._call_opus_overdrive = fake_call_opus_overdrive
-result = sr.call(prompt="test", tier="E5")
-print(json.dumps({
-  "result": result,
-  "chain_override": captured.get("chain_override"),
-  "allow_subagent": captured.get("allow_subagent"),
-  "last_source": sr.last_source(),
-}))
-`);
-  if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
-  const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-  assert.strictEqual(parsed.result, 'e5-response');
-  assert.strictEqual(parsed.chain_override, null, 'E5 uses default Opus chain');
-  assert.strictEqual(parsed.allow_subagent, true, 'E5 permits subagent dispatch');
-  assert.strictEqual(parsed.last_source, 'overdrive/opus');
-});
-
-test('overdrive mode=3: tier=E4 pins deepseek-v4-pro + forces direct API', () => {
-  const result = _runPython({ OVERDRIVE_MODE: '3', OVERDRIVE_VIA_SUBAGENT: '1' }, `
-from server.tools_analysis.synthesis import synthesis_reasoning as sr
-import json
-captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
-    captured["chain_override"] = chain_override
-    captured["allow_subagent"] = allow_subagent
-    return ("e4-response", "overdrive/zen/deepseek-pro")
-sr._call_opus_overdrive = fake_call_opus_overdrive
-result = sr.call(prompt="test", tier="E4")
-print(json.dumps({
-  "result": result,
-  "chain_override": list(captured.get("chain_override") or []),
-  "allow_subagent": captured.get("allow_subagent"),
-  "last_source": sr.last_source(),
-}))
-`);
-  if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
-  const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-  assert.strictEqual(parsed.result, 'e4-response');
-  assert.deepStrictEqual(parsed.chain_override, ['deepseek-v4-pro'], 'E4 pins deepseek-v4-pro');
-  assert.strictEqual(parsed.allow_subagent, false, 'E4 forces direct API (subagent cant pin non-Anthropic model)');
-  assert.strictEqual(parsed.last_source, 'overdrive/zen/deepseek-pro');
-});
-
-test('overdrive mode=3: tier=E3 pins deepseek-v4-flash + forces direct API', () => {
-  const result = _runPython({ OVERDRIVE_MODE: '3', OVERDRIVE_VIA_SUBAGENT: '0' }, `
-from server.tools_analysis.synthesis import synthesis_reasoning as sr
-import json
-captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
-    captured["chain_override"] = chain_override
-    captured["allow_subagent"] = allow_subagent
-    return ("e3-response", "overdrive/zen/deepseek-flash")
-sr._call_opus_overdrive = fake_call_opus_overdrive
-result = sr.call(prompt="test", tier="E3")
-print(json.dumps({
-  "result": result,
-  "chain_override": list(captured.get("chain_override") or []),
-  "allow_subagent": captured.get("allow_subagent"),
-  "last_source": sr.last_source(),
-}))
-`);
-  if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
-  const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-  assert.strictEqual(parsed.result, 'e3-response');
-  assert.deepStrictEqual(parsed.chain_override, ['deepseek-v4-flash'], 'E3 pins deepseek-v4-flash');
-  assert.strictEqual(parsed.allow_subagent, false, 'E3 forces direct API');
-  assert.strictEqual(parsed.last_source, 'overdrive/zen/deepseek-flash');
-});
-
-test('overdrive mode=3: tier=E2 skips overdrive (cascade fallthrough)', () => {
-  const result = _runPython({ OVERDRIVE_MODE: '3', OVERDRIVE_VIA_SUBAGENT: '0' }, `
-from server.tools_analysis.synthesis import synthesis_reasoning as sr
-import json
-overdrive_called = {"flag": False}
-def fake_call_opus_overdrive(*a, **kw):
-    overdrive_called["flag"] = True
-    return ("should-not-fire", "overdrive/should-not-fire")
-sr._call_opus_overdrive = fake_call_opus_overdrive
-def fake_load_providers():
-    return {}
-sr._load_providers = fake_load_providers
-sr.call(prompt="test", tier="E2")
-print(json.dumps({"overdrive_called": overdrive_called["flag"]}))
-`);
-  if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
-  const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-  assert.strictEqual(parsed.overdrive_called, false, 'E2 must skip overdrive entirely');
-});
-
-test('overdrive mode=3: tier=E1 skips overdrive (cascade fallthrough)', () => {
-  const result = _runPython({ OVERDRIVE_MODE: '3', OVERDRIVE_VIA_SUBAGENT: '0' }, `
-from server.tools_analysis.synthesis import synthesis_reasoning as sr
-import json
-overdrive_called = {"flag": False}
-def fake_call_opus_overdrive(*a, **kw):
-    overdrive_called["flag"] = True
-    return ("should-not-fire", "overdrive/should-not-fire")
-sr._call_opus_overdrive = fake_call_opus_overdrive
-def fake_load_providers():
-    return {}
-sr._load_providers = fake_load_providers
-sr.call(prompt="test", tier="E1")
-print(json.dumps({"overdrive_called": overdrive_called["flag"]}))
-`);
-  if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
-  const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-  assert.strictEqual(parsed.overdrive_called, false, 'E1 must skip overdrive entirely');
-});
-
-test('overdrive mode=3: legacy tier=hard maps to E4 (deepseek-pro)', () => {
-  const result = _runPython({ OVERDRIVE_MODE: '3', OVERDRIVE_VIA_SUBAGENT: '0' }, `
-from server.tools_analysis.synthesis import synthesis_reasoning as sr
-import json
-captured = {}
-def fake_call_opus_overdrive(prompt, system, max_tokens, chain_override=None, allow_subagent=True, tier="E3"):
-    captured["chain_override"] = chain_override
-    return ("hard-response", "overdrive/zen/deepseek-pro")
-sr._call_opus_overdrive = fake_call_opus_overdrive
-sr.call(prompt="test", tier="hard")
-print(json.dumps({"chain_override": list(captured.get("chain_override") or [])}))
-`);
-  if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
-  const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
-  assert.deepStrictEqual(parsed.chain_override, ['deepseek-v4-pro'], 'legacy hard maps to E4 = deepseek-pro');
+test('overdrive modes 3 and 4 are retired and fall through to cascade', () => {
+  for (const mode of ['3', '4']) {
+    const result = run(mode);
+    assert.equal(result.status, 0, result.stderr);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.equal(parsed.called, false, `mode ${mode} must not call overdrive`);
+    assert.equal(parsed.source, null);
+  }
 });
