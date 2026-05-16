@@ -66,7 +66,7 @@ function getStagedDeletions() {
 function rootFileViolations(entries, stagedDeletions) {
   const violations = [];
   for (const entry of entries) {
-    if (!entry.isFile()) continue;
+    if (entry.isDirectory()) continue;
     if (stagedDeletions.has(entry.name)) continue;
     for (const pattern of ROOT_FORBIDDEN_FILE_PATTERNS) {
       if (pattern.re.test(entry.name)) {
