@@ -16,7 +16,7 @@ def _root() -> Path:
 
 
 def _guard_path() -> Path:
-    return _root() / "runtime" / "hme" / "todo-state-guard.json"
+    return _root() / "tools" / "HME" / "runtime" / "todo-state-guard.json"
 
 
 def _error_log() -> Path:

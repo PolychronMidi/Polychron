@@ -190,7 +190,7 @@ def hooks_doctor():
     if git_dirty():
         ok &= freshness_check(
             'autocommit_heartbeat',
-            ROOT / 'runtime' / 'hme' / 'heartbeat-autocommit.ts',
+            ROOT / 'tools' / 'HME' / 'runtime' / 'heartbeat-autocommit.ts',
             active_max_age,
             'run a real Claude/Codex request through the proxy; inspect autocommit fail channels if stale',
         )
@@ -198,7 +198,7 @@ def hooks_doctor():
         ok &= check('autocommit_heartbeat', True, 'clean tree; freshness not required')
     ok &= freshness_check(
         'lifesaver_heartbeat',
-        ROOT / 'runtime' / 'hme' / 'heartbeat-lifesaver.ts',
+        ROOT / 'tools' / 'HME' / 'runtime' / 'heartbeat-lifesaver.ts',
         active_max_age,
         'run a real Claude/Codex request through the proxy; lifesaver must heartbeat from hook or proxy path',
     )
