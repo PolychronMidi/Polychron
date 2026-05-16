@@ -1,10 +1,18 @@
 'use strict';
 
-function disabled(value) { return value === '0' || value === 'false' || value === 'off' || value === 'disabled'; }
-function defaultOmniResponsesUrl(servicePort, env = process.env) { return `http://127.0.0.1:${servicePort('omniroute')}/v1/responses`; }
+function disabled(value) { return ['0', 'false', 'off', 'direct', 'disabled'].includes(String(value || '').toLowerCase()); }
+function modeFromEnv(env) {
+  const raw = env.HME_CODEX_OMNIROUTE_MODE || env.HME_CODEX_OMNIROUTE || '';
+  if (!raw || raw === '1' || raw === 'true') return '';
+  return String(raw).toLowerCase();
+}
+function defaultOmniResponsesUrl(servicePort, env = process.env) {
+  const port = env.HME_OMNIROUTE_PORT || servicePort('omniroute', env);
+  return `http://127.0.0.1:${port}/v1/responses`;
+}
 
 function codexOmniConfig({ cfg = {}, env = process.env, servicePort }) {
-  const mode = env.HME_CODEX_OMNIROUTE_MODE || env.HME_CODEX_OMNIROUTE || '';
+  const mode = modeFromEnv(env) || cfg.mode || 'upstream';
   if (disabled(env.HME_CODEX_OMNIROUTE) || cfg.enabled === false || mode !== 'upstream') return { enabled: false };
   return {
     enabled: true,
