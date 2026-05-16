@@ -4,11 +4,11 @@
 
 ## Now
 
-- [ ] [E3] 11. Add boundary/enforcement regression tests
+- [ ] [E3] 12. Run targeted/full verification and report exact status
 
 ## Next
 
-- [ ] [E3] 12. Run targeted/full verification and report exact status
+(empty)
 
 ## Done
 
