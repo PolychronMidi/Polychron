@@ -250,7 +250,7 @@ def audit_stress_probe_refs(root: Path) -> list[dict]:
             })
     # RELOADABLE modules
     try:
-        src = (root / "tools" / "HME" / "mcp" / "server" / "tools_analysis"
+        src = (root / "tools" / "HME" / "service" / "server" / "tools_analysis"
                / "evolution" / "evolution_selftest.py").read_text()
         for listname in ("RELOADABLE", "TOP_LEVEL_RELOADABLE", "ROOT_RELOADABLE"):
             m = re.search(rf'{listname}\s*=\s*\[([^\]]*)\]', src)
@@ -259,15 +259,15 @@ def audit_stress_probe_refs(root: Path) -> list[dict]:
             items = re.findall(r'["\']([a-zA-Z_][a-zA-Z0-9_]*)["\']', m.group(1))
             if listname == "RELOADABLE":
                 search_dirs = [
-                    root / "tools" / "HME" / "mcp" / "server" / "tools_analysis",
-                    root / "tools" / "HME" / "mcp" / "server" / "tools_analysis" / "synthesis",
-                    root / "tools" / "HME" / "mcp" / "server" / "tools_analysis" / "evolution",
-                    root / "tools" / "HME" / "mcp" / "server" / "tools_analysis" / "coupling",
+                    root / "tools" / "HME" / "service" / "server" / "tools_analysis",
+                    root / "tools" / "HME" / "service" / "server" / "tools_analysis" / "synthesis",
+                    root / "tools" / "HME" / "service" / "server" / "tools_analysis" / "evolution",
+                    root / "tools" / "HME" / "service" / "server" / "tools_analysis" / "coupling",
                 ]
             elif listname == "TOP_LEVEL_RELOADABLE":
-                search_dirs = [root / "tools" / "HME" / "mcp" / "server"]
+                search_dirs = [root / "tools" / "HME" / "service" / "server"]
             else:
-                search_dirs = [root / "tools" / "HME" / "mcp"]
+                search_dirs = [root / "tools" / "HME" / "service"]
             for name in items:
                 if not any((d / f"{name}.py").is_file() for d in search_dirs):
                     findings.append({
