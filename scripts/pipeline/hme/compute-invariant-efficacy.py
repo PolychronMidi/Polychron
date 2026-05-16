@@ -40,10 +40,24 @@ RECENT_COMMITS = 500
 MIN_RUNS_FOR_EFFICACY = 5  # don't judge invariants before we have enough samples
 
 
-def _load_invariants():
-    with open(CONFIG_PATH, encoding="utf-8") as f:
+def _load_doc(path, seen=None):
+    seen = seen or set()
+    path = os.path.abspath(path)
+    if path in seen:
+        raise ValueError(f"cyclic invariant include: {path}")
+    seen.add(path)
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    return data.get("invariants", [])
+    invariants = list(data.get("invariants") or [])
+    for rel in data.get("_include") or []:
+        child = _load_doc(os.path.join(os.path.dirname(path), rel), seen)
+        invariants.extend(child.get("invariants") or [])
+    data["invariants"] = invariants
+    return data
+
+
+def _load_invariants():
+    return _load_doc(CONFIG_PATH).get("invariants", [])
 
 
 def _scan_git_for_citations(ids: list[str]) -> dict[str, int]:
