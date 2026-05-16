@@ -4,11 +4,22 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] 1. Add regression test for Polychron launcher mode-1 startup
 
 ## Next
 
-(empty)
+- [ ] [E3] 2. Add stale-mode grep invariant
+- [ ] [E3] 3. Run routing-ready automatically after Polychron launch
+- [ ] [E3] 4. Expand codex_proxy stale dependency restart checks
+- [ ] [E3] 5. Record codex_proxy in main Polychron PID file
+- [ ] [E3] 6. Teach polychron-shutdown about Codex proxy and OmniRoute
+- [ ] [E3] 7. Add freshness warnings to routing health
+- [ ] [E3] 8. Compress InjectionGuard advisory noise
+- [ ] [E3] 9. Add Claude proxy route-counter tests
+- [ ] [E3] 10. Harden OmniRoute startup idempotence
+- [ ] [E3] 11. Add log epoch filtering to health
+- [ ] [E3] 12. Add post-restart contract spec
+- [ ] [E3] Run targeted tests and full verification
 
 ## Done
 
