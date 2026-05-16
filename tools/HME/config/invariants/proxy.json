@@ -95,13 +95,12 @@
       "id": "versions-file-exists",
       "description": "tools/HME/config/versions.json is the single source of truth for cli/proxy/worker wire versions. Must be valid JSON with all three keys.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json; d=json.load(open('tools/HME/config/versions.json')); assert 'cli' in d and 'proxy' in d and 'worker' in d, 'missing version key'\" 2>&1 | grep -v '^$'",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py versions-file-exists",
       "severity": "error",
-      "finding_label": "finding",
-      "success_detail": "no findings",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
       "allow_exit_codes": [
-        0,
-        1
+        0
       ],
       "capture_stderr": true
     },

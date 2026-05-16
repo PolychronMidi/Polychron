@@ -460,13 +460,12 @@
       "id": "antagonism-registry-schema-valid",
       "description": "tools/HME/config/invariants.json and metrics/hme-suspected-upstreams.json both parse and the suspected-upstreams registry has the required three buckets (candidates/confirmed/refuted).",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json; d=json.load(open('output/metrics/hme-suspected-upstreams.json')); assert all(k in d for k in ('candidates','confirmed','refuted')), 'missing bucket'\" 2>&1 | grep -v '^$'",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py antagonism-registry-schema-valid",
       "severity": "error",
-      "finding_label": "finding",
-      "success_detail": "no findings",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
       "allow_exit_codes": [
-        0,
-        1
+        0
       ],
       "capture_stderr": true
     }
