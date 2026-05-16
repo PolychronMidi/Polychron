@@ -49,10 +49,17 @@ if [ -f "$PID_FILE" ]; then
   done < "$PID_FILE"
 fi
 
-# 2. Pattern-based SIGTERM sweep (catches anything not in PID file)
+# 2. Service-owned shutdown helpers
+
+_CODEX_PROXY_SUPERVISOR="$PROJECT_ROOT/tools/HME/hooks/direct/codex-proxy-supervisor.sh"
+if [ -x "$_CODEX_PROXY_SUPERVISOR" ]; then
+  PROJECT_ROOT="$PROJECT_ROOT" "$_CODEX_PROXY_SUPERVISOR" stop >/dev/null 2>&1 || true  # silent-ok: optional fallback path.
+fi
+
+# 3. Pattern-based SIGTERM sweep (catches anything not in PID file)
 
 _PATTERNS=()
-for _svc in proxy worker llamacpp_daemon omniroute; do
+for _svc in proxy worker llamacpp_daemon codex_proxy omniroute; do
   while IFS= read -r _pat; do
     [ -n "$_pat" ] && _PATTERNS+=("$_pat")
   done < <(_hme_service_process_patterns "$_svc" 2>/dev/null || true)  # silent-ok: optional fallback path.
@@ -64,7 +71,7 @@ done
 
 sleep 3
 
-# 3. SIGKILL anything that survived
+# 4. SIGKILL anything that survived
 
 for label in "${!_TRACKED_PIDS[@]}"; do
   _kill_pid "${_TRACKED_PIDS[$label]}" "$label"
@@ -73,7 +80,7 @@ for pat in "${_PATTERNS[@]}"; do
   pkill -KILL -f "$pat" 2>/dev/null && echo "[shutdown] SIGKILL -> $pat" >&2 || true  # silent-ok: optional fallback path.
 done
 
-# 4. Cleanup
+# 5. Cleanup
 
 [ -f "$PID_FILE" ] && rm -f "$PID_FILE" && echo "[shutdown] removed $PID_FILE" >&2
 
