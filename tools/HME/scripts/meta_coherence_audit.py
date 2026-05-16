@@ -186,7 +186,7 @@ def audit_doc_sync(root: Path) -> list[dict]:
     # Use the same `doc_sync_check` path the selftest exercises, via a one-liner.
     cmd = [py, "-c", (
         "import os, sys;"
-        "sys.path.insert(0, os.path.join(os.environ['PROJECT_ROOT'], 'tools', 'HME', 'mcp'));"
+        "sys.path.insert(0, os.path.join(os.environ['PROJECT_ROOT'], 'tools', 'HME', 'service'));"
         "os.environ.setdefault('HF_HUB_OFFLINE', '1');"
         "os.environ.setdefault('TRANSFORMERS_OFFLINE', '1');"
         "from server.tools_analysis.health import doc_sync_check;"
