@@ -80,6 +80,19 @@ test('watchdog turns missing SessionStart completion into a prompt-visible alert
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('watchdog treats later successful hooks as recovered session activity', () => {
+  const root = sandbox('hme-watchdog-recovery-');
+  fresh(root);
+  const wd = require('../../event_kernel/hook_watchdog');
+  const tok = wd.begin(root, 'PreToolUse', JSON.stringify({ session_id: 's-recovered' }), { host: 'test' });
+  wd.end(tok, { exit_code: 0 });
+  assert.strictEqual(wd.userPromptAlert(root, JSON.stringify({ session_id: 's-recovered' })), '');
+  const state = wd.readState(root);
+  assert.strictEqual(state.activity['s-recovered'].event, 'PreToolUse');
+  assert.strictEqual(state.alerted['missing:s-recovered'], undefined);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('codex adapter SessionStart path stays below the client timeout', async () => {
   const root = sandbox('hme-adapter-session-');
   const started = Date.now();
