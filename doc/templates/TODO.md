@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Trace native Edit proxy path and current failure normalization
+- [ ] [E3] Trace how malformed native-looking Edit calls reach empty success
 
 ## Next
 
-- [ ] [E3] Patch safe Edit retry/diagnostic behavior for omitted/near-miss old_string cases
-- [ ] [E3] Add regression coverage for the observed failure mode
-- [ ] [E3] Run focused specs and compact verification
+- [ ] [E3] Patch malformed Edit validation/autocorrection to fail loud with current context instead of empty output
+- [ ] [E3] Add regression tests for heredoc-fragment/omitted-string Edit misuse
+- [ ] [E3] Run focused tests and verify no silent empty Edit path remains
 
 ## Done
 

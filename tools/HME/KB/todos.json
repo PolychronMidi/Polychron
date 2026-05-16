@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3392,
-      "updated_ts": 1778948848.9255798,
-      "codex_plan_synced_ts": 1778948848.9254918,
+      "max_id": 3396,
+      "updated_ts": 1778949208.9188411,
+      "codex_plan_synced_ts": 1778949208.9187667,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T16:27:20.251Z"
+      "codex_plan_ts": "2026-05-16T16:33:12.924Z"
     }
   },
   {
@@ -5614,8 +5614,8 @@
     "id": 3389,
     "text": "Trace native Edit proxy path and current failure normalization",
     "activeForm": "Trace native Edit proxy path and current failure normalization",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5624,14 +5624,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T16:27:20.251Z"
+    "codex_plan_ts": "2026-05-16T16:27:20.251Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3390,
     "text": "Patch safe Edit retry/diagnostic behavior for omitted/near-miss old_string cases",
     "activeForm": "Patch safe Edit retry/diagnostic behavior for omitted/near-miss old_string cases",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5640,14 +5641,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T16:27:20.251Z"
+    "codex_plan_ts": "2026-05-16T16:27:20.251Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3391,
     "text": "Add regression coverage for the observed failure mode",
     "activeForm": "Add regression coverage for the observed failure mode",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5656,14 +5658,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T16:27:20.251Z"
+    "codex_plan_ts": "2026-05-16T16:27:20.251Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3392,
     "text": "Run focused specs and compact verification",
     "activeForm": "Run focused specs and compact verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5672,6 +5675,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T16:27:20.251Z"
+    "codex_plan_ts": "2026-05-16T16:27:20.251Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3393,
+    "text": "Trace how malformed native-looking Edit calls reach empty success",
+    "activeForm": "Trace how malformed native-looking Edit calls reach empty success",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778949193.3401566,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:33:12.924Z"
+  },
+  {
+    "id": 3394,
+    "text": "Patch malformed Edit validation/autocorrection to fail loud with current context instead of empty output",
+    "activeForm": "Patch malformed Edit validation/autocorrection to fail loud with current context instead of empty output",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778949193.340164,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:33:12.924Z"
+  },
+  {
+    "id": 3395,
+    "text": "Add regression tests for heredoc-fragment/omitted-string Edit misuse",
+    "activeForm": "Add regression tests for heredoc-fragment/omitted-string Edit misuse",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778949193.3401687,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:33:12.924Z"
+  },
+  {
+    "id": 3396,
+    "text": "Run focused tests and verify no silent empty Edit path remains",
+    "activeForm": "Run focused tests and verify no silent empty Edit path remains",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778949193.340172,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:33:12.924Z"
   }
 ]
