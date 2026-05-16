@@ -106,7 +106,7 @@ def _persist_invariant_history(results: list) -> None:
     os.replace(tmp, history_path)
 
 
-def check_invariants(verbose: bool = False) -> str:
+def check_invariants(verbose: bool = False, report_mode: str = "default") -> str:
     """Run the declarative invariant battery from config/invariants.json."""
     try:
         invariants = _load_invariants()
@@ -134,6 +134,8 @@ def check_invariants(verbose: bool = False) -> str:
     errors = [(inv, d) for inv, ok, d in results if not ok and inv.get("severity") == "error"]
     warnings = [(inv, d) for inv, ok, d in results if not ok and inv.get("severity") == "warning"]
     infos = [(inv, d) for inv, ok, d in results if not ok and inv.get("severity") == "info"]
+    actionable_warnings = [(inv, d) for inv, d in warnings if inv.get("warning_kind") not in {"stale-data", "informational"}]
+    stale_warnings = [(inv, d) for inv, d in warnings if inv.get("warning_kind") in {"stale-data", "informational"}]
     passes = [(inv, d) for inv, ok, d in results if ok]
 
     if errors:
@@ -144,12 +146,35 @@ def check_invariants(verbose: bool = False) -> str:
                 parts.append(f"        {detail}")
         parts.append("")
 
-    if warnings:
+    if warnings and report_mode == "actionable":
+        parts.append(f"## ACTIONABLE WARNINGS ({len(actionable_warnings)})\n")
+        if actionable_warnings:
+            for inv, detail in actionable_warnings:
+                parts.append(f"  WARN [{inv['id']}]: {inv['description']}")
+                if detail:
+                    parts.append(f"        {detail}")
+                if inv.get("repair_command"):
+                    parts.append(f"        repair: {inv['repair_command']}")
+        else:
+            parts.append("  none")
+        parts.append("")
+        if stale_warnings:
+            parts.append(f"## STALE/INFORMATIONAL WARNINGS ({len(stale_warnings)})\n")
+            for inv, detail in stale_warnings:
+                parts.append(f"  WARN [{inv['id']}]: {inv['description']}")
+                if detail:
+                    parts.append(f"        {detail}")
+                if inv.get("repair_command"):
+                    parts.append(f"        repair: {inv['repair_command']}")
+            parts.append("")
+    elif warnings:
         parts.append(f"## WARNINGS ({len(warnings)})\n")
         for inv, detail in warnings:
             parts.append(f"  WARN [{inv['id']}]: {inv['description']}")
             if detail:
                 parts.append(f"        {detail}")
+            if inv.get("repair_command"):
+                parts.append(f"        repair: {inv['repair_command']}")
         parts.append("")
 
     if infos:
