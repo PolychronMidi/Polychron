@@ -9,7 +9,7 @@ import re
 
 from server import context as ctx
 
-from ._base import METRICS_DIR, _CONFIG_REL, _resolve, _excluded, _is_regex
+from ._base import METRICS_DIR, _CONFIG_REL, _resolve, _excluded, _is_regex, _load_invariants
 import time
 import datetime
 
@@ -84,6 +84,7 @@ def _check_invariant_chronically_failing(inv: dict) -> tuple[bool, str]:
     Config:
       path         -- history file (default metrics/hme-invariant-history.json)
       min_streak   -- minimum consecutive-FAIL runs to trigger (default 10)
+      min_severity -- only count invariants at/above this severity (default error)
     """
     import json as _json
     path = os.path.join(ctx.PROJECT_ROOT,
@@ -96,16 +97,33 @@ def _check_invariant_chronically_failing(inv: dict) -> tuple[bool, str]:
             data = _json.load(f)
     except (OSError, _json.JSONDecodeError) as e:
         return False, f"cannot read {path}: {e}"
+    rank = {"info": 0, "warning": 1, "error": 2}
+    min_rank = rank.get(str(inv.get("min_severity", "error")).lower(), 2)
+    ignore_ids = set(inv.get("ignore_ids") or []) | {inv.get("id")}
+    severity_by_id = {
+        item.get("id"): str(item.get("severity", "error")).lower()
+        for item in _load_invariants()
+        if item.get("id")
+    }
     chronic = []
+    ignored = 0
     for inv_id, streaks in (data.get("fail_streaks") or {}).items():
-        if isinstance(streaks, int) and streaks >= min_streak:
-            chronic.append(f"{inv_id} ({streaks} runs)")
+        if not isinstance(streaks, int) or streaks < min_streak:
+            continue
+        severity = severity_by_id.get(inv_id, "error")
+        if inv_id in ignore_ids or rank.get(severity, 2) < min_rank:
+            ignored += 1
+            continue
+        chronic.append(f"{inv_id} ({streaks} runs)")
     if chronic:
         return False, (
             f"{len(chronic)} invariant(s) chronically failing: {', '.join(chronic[:5])}"
             + (f" +{len(chronic)-5} more" if len(chronic) > 5 else "")
         )
-    return True, "no chronic failures"
+    detail = "no chronic error failures"
+    if ignored:
+        detail += f" ({ignored} warning/info/self streaks ignored)"
+    return True, detail
 
 
 def _check_same_commit_determinism(inv: dict) -> tuple[bool, str]:
