@@ -4,11 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Re-apply the reverted refactor commits safely
+(empty)
 
 ## Next
 
-- [ ] [E3] Run targeted syntax/tests/status and ensure clean tree
+(empty)
 
 ## Done
 
