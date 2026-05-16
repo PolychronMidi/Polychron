@@ -4,11 +4,11 @@
 
 ## Now
 
+(empty)
 
 ## Next
 
-- [ ] [E3] Run targeted verification
-- [ ] [E3] Scan pipeline for missing script paths
+(empty)
 
 ## Done
 

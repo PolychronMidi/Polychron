@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3432,
-      "updated_ts": 1778953078.948229,
-      "codex_plan_synced_ts": 1778953078.9481483,
+      "updated_ts": 1778953348.972665,
+      "codex_plan_synced_ts": 1778953348.9725852,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T17:37:53.504Z"
+      "codex_plan_ts": "2026-05-16T17:42:27.879Z"
     }
   },
   {
@@ -787,8 +787,8 @@
     "id": 3095,
     "text": "Run targeted verification",
     "activeForm": "Run targeted verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -797,7 +797,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:37:53.504Z",
+    "codex_plan_ts": "2026-05-16T17:42:27.879Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
@@ -6299,8 +6299,8 @@
     "id": 3431,
     "text": "Remove synthesize-generalizations pipeline/docs refs",
     "activeForm": "Remove synthesize-generalizations pipeline/docs refs",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6309,14 +6309,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:37:53.504Z"
+    "codex_plan_ts": "2026-05-16T17:42:27.879Z"
   },
   {
     "id": 3432,
     "text": "Scan pipeline for missing script paths",
     "activeForm": "Scan pipeline for missing script paths",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6325,6 +6325,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:37:53.504Z"
+    "codex_plan_ts": "2026-05-16T17:42:27.879Z"
   }
 ]
