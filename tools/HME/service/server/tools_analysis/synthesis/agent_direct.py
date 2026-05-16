@@ -30,8 +30,6 @@ import os
 import subprocess
 import time
 
-from hme_env import ENV
-
 logger = logging.getLogger("HME")
 
 _CLAUDE_MODEL_BY_TIER = {
@@ -58,12 +56,12 @@ def _claude_model_for_tier(tier: str) -> str:
 
 # Per-process cap for legacy `claude --resume`; persisted count prevents restart-bypass.
 _DISPATCH_THREAD_CALL_COUNT = 0
-_DISPATCH_THREAD_CALL_CAP = ENV.optional_int("HME_THREAD_CALL_CAP", 50)
+_DISPATCH_THREAD_CALL_CAP = int(os.environ.get("HME_THREAD_CALL_CAP", "50"))  # env-ok: runtime/test tuning
 _DISPATCH_THREAD_COUNT_TTL_SEC = 24 * 3600
 
 
 def _count_file() -> str | None:
-    root = ENV.optional("PROJECT_ROOT", "")
+    root = os.environ.get("PROJECT_ROOT", "")  # env-ok: sandbox/root override
     return os.path.join(root, "tmp", "hme-thread-call-count") if root else None
 
 
@@ -132,9 +130,9 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0,
     dedupes the second).
     """
     global _DISPATCH_THREAD_CALL_COUNT
-    if not ENV.optional_bool("HME_LEGACY_THREAD_DISPATCH", False):
+    if os.environ.get("HME_LEGACY_THREAD_DISPATCH") != "1":  # env-ok: feature flag
         return None
-    project_root = ENV.optional("PROJECT_ROOT", "")
+    project_root = os.environ.get("PROJECT_ROOT", "")  # env-ok: sandbox/root override
     if not project_root:
         return None
     sid_file = os.path.join(project_root, "tmp", "hme-thread.sid")
@@ -198,7 +196,7 @@ def dispatch_direct(prompt: str, system: str, max_tokens: int,
     Returns the raw text output or None on any failure. Callers treat None
     as "fall back to sentinel-bounce path".
     """
-    if not ENV.optional_bool("OVERDRIVE_DIRECT_AGENT", False):
+    if os.environ.get("OVERDRIVE_DIRECT_AGENT") != "1":  # env-ok: feature flag
         return None  # feature-flag gated
     # Minimal settings request only the subagent type; thinking remains default-off.
     settings = json.dumps({"subagent_type": subagent_type})
