@@ -4,11 +4,10 @@
 
 ## Now
 
-- [ ] [E3] Patch active mode from 6 to 1 and update .env
+- [ ] [E3] Run targeted and full verification
 
 ## Next
 
-- [ ] [E3] Run targeted and full verification
 - [ ] [E3] Report concise evidence
 
 ## Done
