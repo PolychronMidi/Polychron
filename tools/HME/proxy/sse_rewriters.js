@@ -145,7 +145,7 @@ function bashPolicyRewrite(eventName, data, ctx) {
   if (!state) return data;
   const input = _parseToolInput(state);
   if (!input || typeof input.command !== 'string') return data;
-  const verdict = evaluateBashInput(input);
+  const verdict = evaluateBashInput(input, { supportsRunInBackground: true });
   if (!verdict || verdict.decision === 'allow' && !verdict.changed) return data;
   if (verdict.decision === 'deny') {
     state.partial = JSON.stringify({ ...input, command: blockedCommand(verdict.reason), description: 'blocked by HME policy' });

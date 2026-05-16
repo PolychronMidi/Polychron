@@ -177,7 +177,7 @@ function setCallArgs(obj, name, args) {
 function policyCommandArgs(args) {
   const cmd = args.cmd || args.command || '';
   if (!cmd) return args;
-  const verdict = evaluateBashInput({ command: cmd });
+  const verdict = evaluateBashInput({ command: cmd }, { supportsRunInBackground: false });
   if (!verdict || verdict.decision === 'allow' && !verdict.changed) return args;
   if (verdict.decision === 'deny') return { ...args, cmd: blockedCommand(verdict.reason) };
   return { ...args, cmd: verdict.input.command || cmd };
