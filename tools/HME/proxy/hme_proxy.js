@@ -744,7 +744,7 @@ function handleRequest(clientReq, clientRes) {
         const r = _stripHmePrefixOutgoing(payload);
         const n = await _injectHmeTools(payload);
         _sanitizePayload(payload);
-        if (iw > 0 || hns.stripped > 0 || b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
+        if (iw > 0 || hns.stripped > 0 || common.sanitized > 0 || b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
       }
 
       let scan = null;
