@@ -121,7 +121,7 @@ def _recent_errors(log_path: str, minutes: int = 10) -> list[str]:
                     ts = time.mktime(time.strptime(ts_str, "%Y-%m-%d %H:%M:%S"))
                     if ts >= threshold:
                         errors.append(line.rstrip())
-                except Exception:
+                except (TypeError, ValueError):
                     continue
     except Exception as e:
         errors.append(f"(log read failed: {e})")
