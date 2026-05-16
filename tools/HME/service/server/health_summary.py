@@ -225,6 +225,14 @@ def health() -> str:
         lines.append(f"  {name}{url}  ->  {status[:80]}")
     lines.append("")
 
+    try:
+        from server.route_health import format_route_health as _format_route_health
+        lines.append(_format_route_health(Path(project_root)))
+    except Exception as e:
+        lines.append("### Routing")
+        lines.append(f"  unavailable: {type(e).__name__}: {e}")
+    lines.append("")
+
     # GPU
     lines.append("### GPU")
     for gpu in _gpu_state():
