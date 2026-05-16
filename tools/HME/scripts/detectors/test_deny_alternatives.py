@@ -158,11 +158,6 @@ _PROBES = {
     "SUMMARY_MALFORMED": [
         ("complete-block", None),
     ],
-    "LIVE_PROBE_MISSING": [
-        # Requires Edit tool_use on an ISA file; chain fixtures cover.
-        ("add-verification", None),
-        ("revert-to-deferred", None),
-    ],
     "PHASE_SKIPPED": [
         # Requires Edit tool_use + tier env; chain fixtures cover.
         ("emit-build-marker", None),

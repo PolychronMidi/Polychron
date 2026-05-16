@@ -167,7 +167,6 @@ def derive_doctrine_fired(detector_verdicts: dict, isa_progress: dict) -> dict:
     False unless explicit signals exist (TODO: wire to actual cross-
     vendor verdicts when those land)."""
     return {
-        "live_probe": isa_progress.get("criteria_passed", 0) > 0,
         "advisor": detector_verdicts.get("ADVISOR_INVOKED") == "yes",
         "cato": detector_verdicts.get("CATO_INVOKED") == "yes",
         "conflict": detector_verdicts.get("ADVISOR_CONFLICT") == "yes",
