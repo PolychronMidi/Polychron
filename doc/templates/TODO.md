@@ -4,11 +4,10 @@
 
 ## Now
 
-- [ ] [E3] Edit .env cleanup targets
+- [ ] [E3] Re-audit active keys and duplicates
 
 ## Next
 
-- [ ] [E3] Re-audit active keys and duplicates
 - [ ] [E3] Run focused config verification
 - [ ] [E3] Report evidence
 

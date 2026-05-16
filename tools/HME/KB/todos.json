@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3416,
-      "updated_ts": 1778951188.9345863,
-      "codex_plan_synced_ts": 1778951188.9345095,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T17:06:13.637Z"
+      "updated_ts": 1778951221.1033251,
+      "codex_plan_synced_ts": 1778951221.103247,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T17:07:00.669Z"
     }
   },
   {
@@ -6002,8 +6002,8 @@
     "id": 3413,
     "text": "Edit .env cleanup targets",
     "activeForm": "Edit .env cleanup targets",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6011,14 +6011,14 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:06:13.637Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:07:00.669Z"
   },
   {
     "id": 3414,
     "text": "Re-audit active keys and duplicates",
     "activeForm": "Re-audit active keys and duplicates",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "codex_plan",
@@ -6027,8 +6027,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:06:13.637Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:07:00.669Z"
   },
   {
     "id": 3415,
@@ -6043,8 +6043,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:06:13.637Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:07:00.669Z"
   },
   {
     "id": 3416,
@@ -6059,7 +6059,7 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:06:13.637Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:07:00.669Z"
   }
 ]
