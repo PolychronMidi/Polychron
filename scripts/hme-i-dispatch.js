@@ -73,7 +73,7 @@ function dispatchAudit(args) {
 }
 
 function dispatchStatus(args) {
-  const local = ['state', 'timeline', 'holograph', 'substrate', 'team', 'project', 'project-detect', 'forks', 'fork-watchdog', 'decision-audit', 'freeze', 'pattern', 'patterns'];
+  const local = ['state', 'timeline', 'holograph', 'substrate', 'team', 'project', 'project-detect', 'forks', 'fork-watchdog', 'decision-audit', 'freeze', 'pattern', 'patterns', 'codex-route', 'codex_proxy', 'codex-proxy'];
   const { mode, rest } = selector(args, local);
   if (!mode && args.length === 0) run('python3', [path.join(ROOT, 'scripts/hme/substrate-view.py'), 'brief']);
   const r = rest.map((a) => a.startsWith('submode=') || a.startsWith('view=') ? `mode=${a.split('=').slice(1).join('=')}` : a === 'brief=true' ? 'mode=brief' : a === 'trajectory=true' ? 'mode=trajectory' : a.startsWith('pattern=') ? a.slice(8) : a);
@@ -92,6 +92,8 @@ function dispatchStatus(args) {
     pattern: 'scripts/hme/pattern-registry.py',
   };
   if (mode === 'patterns') run('python3', [path.join(ROOT, 'scripts/hme/substrate-view.py'), 'patterns', ...r]);
+  if (mode === 'codex-route') hmeCli('status', ['mode=codex_route', ...r]);
+  if (mode === 'codex_proxy' || mode === 'codex-proxy') hmeCli('status', ['mode=codex_proxy', ...r]);
   if (py[mode]) {
     const final = mode === 'team' ? keyValueToFlags(r) : r;
     run('python3', [path.join(ROOT, py[mode]), ...final]);

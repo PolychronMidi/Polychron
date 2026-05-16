@@ -157,7 +157,9 @@
         "band-tuning",
         "conjugate",
         "multi-axis-band",
-        "tool-latency"
+        "tool-latency",
+        "codex-route",
+        "codex-proxy"
       ],
       "examples": [
         "i/status",
@@ -167,6 +169,7 @@
         "i/status substrate drift",
         "i/status team summary",
         "i/status mode=coherence",
+        "i/status codex-route",
         "i/status mode=list"
       ],
       "safe_no_args": true
