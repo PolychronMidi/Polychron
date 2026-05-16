@@ -198,6 +198,33 @@ class _EnvLoader:
             f"hme_env: {key}={val!r} in {self._path} is not a valid bool"
         )
 
+
+    # Runtime/transient accessors (process env by design)
+
+    def runtime_optional(self, key: str, default: str) -> str:
+        val = os.environ.get(key)
+        return val if val else default
+
+    def runtime_int(self, key: str, default: int) -> int:
+        val = os.environ.get(key)
+        if val is None or val == "":
+            return default
+        try:
+            return int(val)
+        except ValueError as e:
+            raise ValueError(f"hme_env: runtime {key}={val!r} is not a valid int") from e
+
+    def runtime_bool(self, key: str, default: bool = False) -> bool:
+        val = os.environ.get(key)
+        if val is None or val == "":
+            return default
+        v = val.lower()
+        if v in ("1", "true", "yes", "on"):
+            return True
+        if v in ("0", "false", "no", "off"):
+            return False
+        raise ValueError(f"hme_env: runtime {key}={val!r} is not a valid bool")
+
     # Introspection
 
     def path(self) -> str:
