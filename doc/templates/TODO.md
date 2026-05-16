@@ -4,11 +4,20 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] 1. Fix stale hidden activity-hook-wiring invariant
 
 ## Next
 
-(empty)
+- [ ] [E3] 2. Harden shell_output_empty return/stderr semantics
+- [ ] [E3] 3. Sync invariant type docs and generated extension text
+- [ ] [E3] 4. Extract long inline shell/Python invariant checks
+- [ ] [E3] 5. Add born_from migration discipline
+- [ ] [E3] 6. Trim long invariant descriptions into born_from/context
+- [ ] [E3] 7. Split invariants config by domain (Option 7A)
+- [ ] [E3] 8. Move raw grep invariants to dedicated audit scripts
+- [ ] [E3] 9. Add generic finding labels for shell_output_empty
+- [ ] [E3] 10. Clarify/remove unused invariant types
+- [ ] [E3] Run full verification and report evidence
 
 ## Done
 
