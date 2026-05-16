@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3464,
-      "updated_ts": 1778962559.0389068,
-      "codex_plan_synced_ts": 1778962559.0388167,
+      "max_id": 3468,
+      "updated_ts": 1778963189.0307457,
+      "codex_plan_synced_ts": 1778963189.0306566,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T20:15:42.197Z"
+      "codex_plan_ts": "2026-05-16T20:26:27.957Z"
     }
   },
   {
@@ -6842,8 +6842,8 @@
     "id": 3464,
     "text": "Rerun npm run main and fix the next surfaced blocker",
     "activeForm": "Rerun npm run main and fix the next surfaced blocker",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6852,6 +6852,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T20:15:42.197Z"
+    "codex_plan_ts": "2026-05-16T20:15:42.197Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3465,
+    "text": "Correct the verification rule: no direct composition runs as a substitute for npm run main",
+    "activeForm": "Correct the verification rule: no direct composition runs as a substitute for npm run main",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778963188.4207253,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T20:26:27.957Z"
+  },
+  {
+    "id": 3466,
+    "text": "Rerun npm run main through the pipeline contract",
+    "activeForm": "Rerun npm run main through the pipeline contract",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778963188.420731,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T20:26:27.957Z"
+  },
+  {
+    "id": 3467,
+    "text": "Fix the first in-pipeline blocker surfaced by npm run main",
+    "activeForm": "Fix the first in-pipeline blocker surfaced by npm run main",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778963188.4207356,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T20:26:27.957Z"
+  },
+  {
+    "id": 3468,
+    "text": "Re-run npm run main for same-turn evidence",
+    "activeForm": "Re-run npm run main for same-turn evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778963188.4207382,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T20:26:27.957Z"
   }
 ]

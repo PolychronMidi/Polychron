@@ -4,11 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Rerun npm run main and fix the next surfaced blocker
+- [ ] [E3] Rerun npm run main through the pipeline contract
 
 ## Next
 
-(empty)
+- [ ] [E3] Fix the first in-pipeline blocker surfaced by npm run main
+- [ ] [E3] Re-run npm run main for same-turn evidence
 
 ## Done
 
