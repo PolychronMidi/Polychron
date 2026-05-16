@@ -36,3 +36,16 @@ test('Codex request transform hides bridge script calls before upstream', () => 
   assert.strictEqual(result.cleanup.bridge_calls, 1);
   assert.doesNotMatch(JSON.stringify(result.body), /codex_structured_tool/);
 });
+
+
+test('normalizes Edit bridge calls without pretending old_string was omitted', () => {
+  const cmd = [
+    "node tools/HME/scripts/codex_structured_tool.js edit --json <<'HME_CODEX_JSON'",
+    JSON.stringify({ file_path: 'src/target.js', old_string: 'secret old text', new_string: 'secret new text' }),
+    'HME_CODEX_JSON',
+  ].join('\n');
+  const out = normalizeStructuredBridgeCalls({ text: cmd });
+  assert.match(out.body.text, /Edit\(/);
+  assert.match(out.body.text, /display-redacted: original was sent; do not reuse/);
+  assert.doesNotMatch(out.body.text, /secret old text|secret new text|omitted by proxy/);
+});
