@@ -57,6 +57,12 @@ run "audit-hook-coordination"    python3 scripts/audit-hook-coordination.py $([ 
 # [text](path) link must resolve, every #anchor must match a heading.
 run "audit-doc-integrity"        python3 scripts/audit-doc-integrity.py $([ "$STRICT" = "1" ] && echo --strict)
 
+# Generated music-prior outputs must remain structurally valid.
+run "verify-music21-priors"      python3 scripts/music21/verify_priors_outputs.py
+
+# Generated polyrhythm table must match conductor config ranges.
+run "check-polyrhythm-table"     node scripts/generatePolyrhythmTable.js --check
+
 # Detector <-> deny-prompt link integrity (each prompt's advertised
 # alternative paths must be honored by the paired detector).
 run "test-deny-alternatives"     python3 tools/HME/scripts/detectors/test_deny_alternatives.py

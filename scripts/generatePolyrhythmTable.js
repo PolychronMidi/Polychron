@@ -38,6 +38,7 @@ const LENGTH_MAX = 5;  // longest allowed phrase length (whole-note units)
 const args = process.argv.slice(2);
 const mmArg  = args.indexOf('--max-measures');
 const outArg = args.indexOf('--out');
+const CHECK = args.includes('--check');
 const MAX_MEASURES = mmArg !== -1 ? parseInt(args[mmArg + 1], 10) : 10;
 const OUT_PATH = outArg !== -1
   ? args[outArg + 1]
@@ -120,6 +121,12 @@ const lines = [
 ];
 const output = lines.join('\n') + '\n';
 
-fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
-fs.writeFileSync(OUT_PATH, output, 'utf8');
-console.log(`Written ${pairs.length} pairs - ${OUT_PATH}`);
+if (CHECK) {
+  const current = fs.existsSync(OUT_PATH) ? fs.readFileSync(OUT_PATH, 'utf8') : '';
+  if (current !== output) throw new Error(`generatePolyrhythmTable: ${OUT_PATH} is stale; run node scripts/generatePolyrhythmTable.js`);
+  console.log(`generatePolyrhythmTable: OK (${pairs.length} pairs)`);
+} else {
+  fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
+  fs.writeFileSync(OUT_PATH, output, 'utf8');
+  console.log(`Written ${pairs.length} pairs - ${OUT_PATH}`);
+}

@@ -73,6 +73,18 @@ def source_reference_counts(paths: list[Path]) -> dict[Path, tuple[int, list[str
                 count += c
                 if len(samples) < 3:
                     samples.append(str(f.relative_to(ROOT)))
+        if str(target.relative_to(ROOT)).startswith('scripts/eslint-rules/') and target.name not in {'index.js'}:
+            stem = target.stem
+            idx = text(ROOT / 'scripts' / 'eslint-rules' / 'index.js')
+            cfg = text(ROOT / 'eslint.config.mjs')
+            if f"require('./{stem}')" in idx:
+                count += 1
+                if len(samples) < 3:
+                    samples.append('scripts/eslint-rules/index.js')
+            if f'local/{stem}' in cfg:
+                count += 1
+                if len(samples) < 3:
+                    samples.append('eslint.config.mjs')
         refs[target] = (count, samples)
     return refs
 
