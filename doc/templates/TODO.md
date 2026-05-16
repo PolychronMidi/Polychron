@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Fix failing todo autosync/post-write side-effect test
+- [ ] [E3] Run HME refactor verification wrapper and invariant evidence
 
 ## Next
 
-- [ ] [E3] Run targeted and full node specs
-- [ ] [E3] Run HME refactor verification wrapper and invariant evidence
+(empty)
 
 ## Done
 
