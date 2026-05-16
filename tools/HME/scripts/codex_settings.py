@@ -17,7 +17,7 @@ CODEX_MODELS_CACHE_JSON = CODEX_HOME / "models_cache.json"
 HOOKS_JSON = PROJECT_ROOT / "tools" / "HME" / "hooks" / "codex_hooks.json"
 LIVE_HOOKS_JSON = CODEX_HOME / "hooks.json"
 CANONICAL_SYSTEM_PROMPT = PROJECT_ROOT / "doc" / "templates" / "canonical-system-prompt.md"
-CLAUDE_MD = PROJECT_ROOT / "doc" / "templates" / "AGENTS.md"
+AGENTS_MD = PROJECT_ROOT / "doc" / "templates" / "AGENTS.md"
 MODEL_CATALOG_JSON = PROJECT_ROOT / "runtime" / "hme" / "codex-model-catalog.json"
 PROJECT_ROOT_VAR = "${HME_PROJECT_ROOT}"
 PROVIDER_ID = "hme_codex"
@@ -219,7 +219,7 @@ def expected_model_catalog(
     *,
     source_path: Path = CODEX_MODELS_CACHE_JSON,
     canonical_path: Path = CANONICAL_SYSTEM_PROMPT,
-    claude_path: Path = CLAUDE_MD,
+    agents_path: Path = AGENTS_MD,
     context_window: int = CODEX_CONTEXT_WINDOW,
 ) -> tuple[dict[str, Any], dict[str, int]]:
     try:
@@ -235,7 +235,7 @@ def expected_model_catalog(
     catalog = {"models": models}
 
     canonical = _required_text(canonical_path, "canonical system prompt")
-    claude = _required_text(claude_path, "doc/templates/AGENTS.md")
+    agents = _required_text(agents_path, "doc/templates/AGENTS.md")
     stats = {
         "models": len(models),
         "base_instructions": 0,
@@ -257,7 +257,7 @@ def expected_model_catalog(
                 stats["instructions_template"] += 1
             variables = messages.get("instructions_variables")
             if isinstance(variables, dict) and "personality_pragmatic" in variables:
-                variables["personality_pragmatic"] = claude
+                variables["personality_pragmatic"] = agents
                 stats["personality_pragmatic"] += 1
         if "context_window" in model:
             model["context_window"] = context_window
