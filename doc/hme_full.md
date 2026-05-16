@@ -136,7 +136,7 @@ but replaces model prompt text with HME sources:
 
 - `base_instructions` -> [`doc/templates/canonical-system-prompt.md`](templates/canonical-system-prompt.md)
 - `model_messages.instructions_template` -> [`doc/templates/canonical-system-prompt.md`](templates/canonical-system-prompt.md)
-- `model_messages.instructions_variables.personality_pragmatic` -> [`AGENTS.md`](../AGENTS.md)
+- `model_messages.instructions_variables.personality_pragmatic` -> [`AGENTS.md`](templates/AGENTS.md)
 - `context_window` and `max_context_window` -> `1050000`
 
 `~/.codex/models_cache.json` stays Codex-owned generated state; HME never edits

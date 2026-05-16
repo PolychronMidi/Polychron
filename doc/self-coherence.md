@@ -93,6 +93,6 @@ catalog replaces Codex model `base_instructions` and
 ## Fast Links
 
 - Project orientation: [README.md](../README.md)
-- Agent rules: [AGENTS.md](../AGENTS.md)
+- Agent rules: [AGENTS.md](templates/AGENTS.md)
 - Full HME reference: [self-coherence-full.md](self-coherence-full.md)
 - Composition reference: [composition.md](composition.md)

@@ -7,8 +7,8 @@ If something potentially auto-enforced would need to be mentioned here, it must 
 - This file (doc/templates/AGENTS.md) -- *operational* rules: workflow style, LOC/comment discipline, plan-execution shape, mode-specific composition vs HME guidance. Changes via normal commit.
 
 Polychron development has two interleaving modes; mode-specific rules live in companion files:
-- **Composition** (`src/`) -- [doc/composition.md](doc/composition.md)
-- **HME** (`tools/HME/`) -- [doc/self-coherence.md](doc/self-coherence.md)
+- **Composition** (`src/`) -- [doc/composition.md](../composition.md)
+- **HME** (`tools/HME/`) -- [doc/self-coherence.md](../self-coherence.md)
 
 ## Universal Principles (operational)
 
