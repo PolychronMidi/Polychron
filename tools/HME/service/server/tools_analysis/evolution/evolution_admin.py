@@ -34,6 +34,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
     to a hook script (antipattern=, hook_target= one of: pretooluse_bash/edit/read/grep/write,
     posttooluse_bash, stop, userpromptsubmit).
     action='both': reload then selftest.
+    action='index_status': report background index job state and current index counts.
     action='todo_status'|'todo_validate'|'todo_repair'|'todo_archive': inspect,
     validate, repair, or force-archive the unified TODO store.
     Use after structural changes to HME tool files."""
