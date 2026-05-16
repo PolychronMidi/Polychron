@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Fix any broken moved-path references or root-depth bugs
+- [ ] [E3] Run full audit/refactor verification and summarize evidence
 
 ## Next
 
-- [ ] [E3] Run targeted HME/src checks
-- [ ] [E3] Run full audit/refactor verification and summarize evidence
+(empty)
 
 ## Done
 
