@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
-const RUNTIME = path.join(ROOT, 'runtime', 'hme');
+const RUNTIME = path.join(ROOT, 'tools', 'HME', 'runtime');
 
 // Expected heartbeats and their freshness windows.
 // New components: add an entry here AND wire `date +%s > $tools/HME/runtime/heartbeat-<name>.ts`
