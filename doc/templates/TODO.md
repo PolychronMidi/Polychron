@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Investigate verifier failure
+- [ ] [E3] Fix/rerun targeted verification
 
 ## Next
 
 - [ ] [E3] Report evidence
-- [ ] [E3] Fix/rerun targeted verification
 
 ## Done
 
