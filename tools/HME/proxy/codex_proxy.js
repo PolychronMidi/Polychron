@@ -6,13 +6,13 @@ const http = require('http');
 const https = require('https');
 const path = require('path');
 const { loadJsonc } = require('./config_loader');
-const proxyAutocommit = require('./middleware/21_proxy_autocommit');
-const { readAutocommitFailure, touchLifesaverHeartbeat } = require('./lifesaver_alerts');
+const { runAutocommit, injectLifesaver } = require('./turn_side_effects');
 const { applyRequestTransform } = require('./codex_payload');
 const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('./codex_native_tools');
 const { targetChain, targetSummary } = require('./codex_omniroute');
 const { createPlanScanner } = require('./codex_plan_scanner');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
+const { requestTelemetry } = require('./request_telemetry');
 const { servicePort } = require('./service_registry');
 
 const PORT = servicePort('codex_proxy');
@@ -107,29 +107,16 @@ function readRequestBody(req, res) {
 }
 
 function runCodexAutocommit() {
-  if (process.env.HME_CODEX_PROXY_AUTOCOMMIT === '0') return 'disabled';
-  try {
-    proxyAutocommit.onRequest({
-      payload: { messages: [{ role: 'user', content: '' }] },
-      ctx: { PROJECT_ROOT },
-    });
-    return 'ran';
-  } catch (err) {
-    record({ kind: 'autocommit-crash', message: err.message, stack: err.stack });
-    return 'crashed';
-  }
-}
-
-function appendInstructions(body, note) {
-  const current = typeof body.instructions === 'string' ? body.instructions : '';
-  return { ...body, instructions: current ? `${current}\n\n${note}` : note };
+  return runAutocommit({
+    host: 'codex',
+    projectRoot: PROJECT_ROOT,
+    record,
+    disabled: process.env.HME_CODEX_PROXY_AUTOCOMMIT === '0',
+  });
 }
 
 function injectCodexLifesaver(body) {
-  touchLifesaverHeartbeat(PROJECT_ROOT);
-  const failure = readAutocommitFailure(PROJECT_ROOT);
-  if (!failure) return { body, injected: false };
-  return { body: appendInstructions(body, `[lifesaver inject from codex proxy]\n${failure.banner}`), injected: true, flag: failure.flagPath };
+  return injectLifesaver({ body, host: 'codex', projectRoot: PROJECT_ROOT });
 }
 
 function upstreamHeaders(req, bodyBytes, target) {
@@ -289,6 +276,7 @@ async function handleResponses(req, res) {
     upstream: targets[0].url,
     route: targets[0].kind,
     targets: targetSummary(targets),
+    telemetry: requestTelemetry({ host: 'codex', protocol: 'openai-responses', provider: targets[0].kind, route: targets[0].kind, path: req.url, body: transformed, before, after, cleanup }),
     autocommit,
     lifesaver_injected: lifesaver.injected,
     lifesaver_flag: lifesaver.flag || '',
