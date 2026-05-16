@@ -15,11 +15,31 @@ METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(ctx.PROJECT_ROOT or _PR
 _CONFIG_REL = os.path.join("tools", "HME", "config", "invariants.json")
 
 
-def _load_invariants() -> list[dict]:
-    path = os.path.join(ctx.PROJECT_ROOT, _CONFIG_REL)
+def _merge_config(path: str, seen: set[str] | None = None) -> dict:
+    seen = seen or set()
+    path = os.path.abspath(path)
+    if path in seen:
+        raise ValueError(f"cyclic invariant include: {path}")
+    seen.add(path)
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    return data.get("invariants", [])
+    merged = {k: v for k, v in data.items() if k not in {"_include", "invariants"}}
+    invariants = list(data.get("invariants") or [])
+    for rel in data.get("_include") or []:
+        child = _merge_config(os.path.join(os.path.dirname(path), rel), seen)
+        invariants.extend(child.get("invariants") or [])
+        if child.get("_js_rules"):
+            merged["_js_rules"] = child["_js_rules"]
+    merged["invariants"] = invariants
+    return merged
+
+
+def _load_invariant_config() -> dict:
+    return _merge_config(os.path.join(ctx.PROJECT_ROOT, _CONFIG_REL))
+
+
+def _load_invariants() -> list[dict]:
+    return _load_invariant_config().get("invariants", [])
 
 
 def _resolve(rel_path: str) -> str:
