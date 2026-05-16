@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Tighten scripts recency run-evidence sources
+- [ ] [E3] Fix recency auditor import/reference detection and rerun cold ranking
 
 ## Next
 
-- [ ] [E3] Re-rank cold scripts with corrected evidence
-- [ ] [E3] Inspect/delete/wire cold targets
-- [ ] [E3] Verify strict audit and full checks
+- [ ] [E3] Inspect and act on remaining cold scripts directory-wide
+- [ ] [E3] Update references/audit wiring/classifications as needed
+- [ ] [E3] Run targeted and full verification with evidence
 
 ## Done
 

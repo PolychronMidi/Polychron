@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3444,
-      "updated_ts": 1778954488.9797006,
-      "codex_plan_synced_ts": 1778954488.9796154,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T18:01:27.146Z"
+      "max_id": 3448,
+      "updated_ts": 1778955010.762271,
+      "codex_plan_synced_ts": 1778955010.7621875,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T18:10:10.308Z"
     }
   },
   {
@@ -6467,8 +6467,8 @@
     "id": 3441,
     "text": "Tighten scripts recency run-evidence sources",
     "activeForm": "Tighten scripts recency run-evidence sources",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6477,14 +6477,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:01:27.146Z"
+    "codex_plan_ts": "2026-05-16T18:01:27.146Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3442,
     "text": "Re-rank cold scripts with corrected evidence",
     "activeForm": "Re-rank cold scripts with corrected evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6493,14 +6494,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:01:27.146Z"
+    "codex_plan_ts": "2026-05-16T18:01:27.146Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3443,
     "text": "Inspect/delete/wire cold targets",
     "activeForm": "Inspect/delete/wire cold targets",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6509,14 +6511,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:01:27.146Z"
+    "codex_plan_ts": "2026-05-16T18:01:27.146Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3444,
     "text": "Verify strict audit and full checks",
     "activeForm": "Verify strict audit and full checks",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6525,6 +6528,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:01:27.146Z"
+    "codex_plan_ts": "2026-05-16T18:01:27.146Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3445,
+    "text": "Fix recency auditor import/reference detection and rerun cold ranking",
+    "activeForm": "Fix recency auditor import/reference detection and rerun cold ranking",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778955010.761407,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T18:10:10.308Z"
+  },
+  {
+    "id": 3446,
+    "text": "Inspect and act on remaining cold scripts directory-wide",
+    "activeForm": "Inspect and act on remaining cold scripts directory-wide",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778955010.7614133,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T18:10:10.308Z"
+  },
+  {
+    "id": 3447,
+    "text": "Update references/audit wiring/classifications as needed",
+    "activeForm": "Update references/audit wiring/classifications as needed",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778955010.761417,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T18:10:10.308Z"
+  },
+  {
+    "id": 3448,
+    "text": "Run targeted and full verification with evidence",
+    "activeForm": "Run targeted and full verification with evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778955010.76142,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T18:10:10.308Z"
   }
 ]
