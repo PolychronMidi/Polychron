@@ -122,12 +122,12 @@ function main() {
   const violations = [];
   let manifestCount = 0;
 
-  // The registry implementation file references `moduleLifecycle.declare(`
-  // in comments and inside its own implementation -- skip it.
+  // The registry implementation and this verifier mention declare() in prose.
   const REGISTRY_IMPL = path.join(SRC_DIR, 'utils', 'moduleLifecycle.js');
+  const SELF = __filename;
 
   for (const file of files) {
-    if (file === REGISTRY_IMPL) continue;
+    if (file === REGISTRY_IMPL || file === SELF) continue;
     const source = fs.readFileSync(file, 'utf8');
     if (!source.includes('moduleLifecycle.declare(')) continue;
     const manifests = _extractManifestsFromSource(source);
