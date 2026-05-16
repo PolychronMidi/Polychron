@@ -54,7 +54,7 @@ _streak_check() {
     jq -n --arg reason "$msg" \
       '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
     return 1
-  elif [ "$score" -ge "$_STREAK_WARN" ]; then
+  elif [ "$score" -ge "$_STREAK_WARN" ] && [ "${HME_STREAK_WARN_VISIBLE:-0}" = "1" ]; then
     local _sc_rem=$(( (_STREAK_BLOCK - score + 9) / 10 ))
     echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK} (~${_sc_rem} Edit calls until block). ${_STREAK_REMINDER}" >&2
   fi

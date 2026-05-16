@@ -14,6 +14,12 @@ if [ -n "$_POLICY_OUT" ]; then
     *'"permissionDecision":"allow"'*)
       _POLICY_CMD=$(_safe_jq "$_POLICY_OUT" '.hookSpecificOutput.updatedInput.command // .hookSpecificOutput.updatedInput.cmd' "$CMD")
       _POLICY_HAS_UPDATE=$(_safe_jq "$_POLICY_OUT" 'has("hookSpecificOutput") and (.hookSpecificOutput | has("updatedInput"))' 'false')
+      if [ "$_POLICY_HAS_UPDATE" = "true" ] && { [[ "$_POLICY_CMD" == *codex_structured_tool.js* ]] || [ "$_POLICY_CMD" = ":" ]; }; then
+        _streak_reset "$_POLICY_CMD"
+        printf '%s
+' "$_POLICY_OUT"
+        exit 0
+      fi
       set +e
       _streak_hme_precheck "$_POLICY_CMD"
       _HME_PRECHECK_RC=$?
