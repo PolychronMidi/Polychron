@@ -17,7 +17,7 @@ _engine_ready: threading.Event = threading.Event()
 _project_engine = None
 _global_engine = None
 PROJECT_ROOT: str = ""
-METRICS_DIR: str = os.environ.get("METRICS_DIR", "")
+METRICS_DIR: str = ENV.require("METRICS_DIR")
 
 
 def init_handlers(engine_ready: threading.Event, project_engine, global_engine, project_root: str) -> None:
@@ -27,7 +27,7 @@ def init_handlers(engine_ready: threading.Event, project_engine, global_engine, 
     _project_engine = project_engine
     _global_engine = global_engine
     PROJECT_ROOT = project_root
-    METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics"))
+    METRICS_DIR = ENV.require("METRICS_DIR")
 
 
 def _is_indexable(abs_path: str) -> str | None:

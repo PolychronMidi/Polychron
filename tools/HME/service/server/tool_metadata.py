@@ -4,16 +4,13 @@ from __future__ import annotations
 import inspect
 import logging
 import json
-import os
 from pathlib import Path
+
+from hme_env import ENV
 from typing import Any
 
 
-PROJECT_ROOT = Path(
-    os.environ.get("PROJECT_ROOT")
-    or os.environ.get("CLAUDE_PROJECT_DIR")
-    or Path(__file__).resolve().parents[4]
-)
+PROJECT_ROOT = Path(ENV.optional("PROJECT_ROOT", "") or Path(__file__).resolve().parents[4])
 INVOCATIONS_PATH = PROJECT_ROOT / "tools" / "HME" / "config" / "tool-invocations.json"
 logger = logging.getLogger("HME")
 

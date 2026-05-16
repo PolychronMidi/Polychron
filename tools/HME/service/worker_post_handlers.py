@@ -13,6 +13,8 @@ import os
 import sys
 import time
 
+from hme_env import ENV
+
 logger = logging.getLogger("HME.worker")
 
 
@@ -51,11 +53,11 @@ def post_tool(handler, name: str, args: dict, *, tool_call,
     logger.info(f"/tool/{name} dispatching  args={_args_preview}")
     _tool_t0 = time.time()
 
-    timeout_s = float(os.environ.get("HME_TOOL_WATCHDOG_S", "120"))
-    hard_kill_s = float(os.environ.get("HME_TOOL_HARDKILL_S", "240"))
+    timeout_s = ENV.optional_float("HME_TOOL_WATCHDOG_S", 120.0)
+    hard_kill_s = ENV.optional_float("HME_TOOL_HARDKILL_S", 240.0)
     if name == "hme_admin" and isinstance(args, dict) and args.get("action") in {"index", "clear_index"}:
-        timeout_s = max(timeout_s, float(os.environ.get("HME_INDEX_WATCHDOG_S", "900")))
-        hard_kill_s = max(hard_kill_s, float(os.environ.get("HME_INDEX_HARDKILL_S", "1200")))
+        timeout_s = max(timeout_s, ENV.optional_float("HME_INDEX_WATCHDOG_S", 900.0))
+        hard_kill_s = max(hard_kill_s, ENV.optional_float("HME_INDEX_HARDKILL_S", 1200.0))
     result_box: list = [None, None]
 
     def _runner():

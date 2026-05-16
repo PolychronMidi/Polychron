@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
+
+from hme_env import ENV
 
 _CFG = Path(__file__).resolve().parents[1] / "config" / "timeouts.json"
 _DEFAULTS = {"shim_post_sec": 900.0, "daemon_join_sec": 930.0, "client_sec": 960.0}
@@ -22,7 +23,7 @@ def _read_config() -> dict:
 
 def _num(cfg: dict, key: str) -> float:
     env_key = f"HME_INDEXING_{key.upper()}"
-    raw = os.environ.get(env_key, cfg.get(key, _DEFAULTS[key]))
+    raw = ENV.optional(env_key, str(cfg.get(key, _DEFAULTS[key])))
     try:
         return float(raw)
     except (TypeError, ValueError):

@@ -17,7 +17,7 @@ _engine_ready: threading.Event = threading.Event()
 _project_engine = None
 _global_engine = None
 PROJECT_ROOT: str = ""
-METRICS_DIR: str = os.environ.get("METRICS_DIR", "")
+METRICS_DIR: str = ENV.require("METRICS_DIR")
 
 
 

@@ -82,7 +82,7 @@ if _tool_root not in sys.path:
 
 from hme_env import ENV  # noqa: E402
 # Force .env load NOW (before torch import) so PYTORCH_CUDA_ALLOC_CONF
-# lands in os.environ before PyTorch's CUDA init. Lazy load is too late.
+# reaches the process env before PyTorch CUDA init. Lazy load is too late.
 ENV.load()
 
 # Rotate log files before we start writing to them. Without this,

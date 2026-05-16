@@ -23,7 +23,7 @@ _BUILTIN_IGNORE_DIRS = {
 
 def _dirs_from_env() -> set[str]:
     """Parse HME_IGNORE_DIRS env var (comma-separated). Returns empty set if unset."""
-    raw = os.environ.get("HME_IGNORE_DIRS", "")
+    raw = ENV.optional("HME_IGNORE_DIRS", "")
     return {d.strip() for d in raw.split(",") if d.strip()} if raw.strip() else set()
 
 
@@ -67,7 +67,7 @@ _BUILTIN_IGNORE_FILES = {
 
 
 def _files_from_env() -> set[str]:
-    raw = os.environ.get("HME_IGNORE_FILES", "")
+    raw = ENV.optional("HME_IGNORE_FILES", "")
     return {f.strip() for f in raw.split(",") if f.strip()} if raw.strip() else set()
 
 

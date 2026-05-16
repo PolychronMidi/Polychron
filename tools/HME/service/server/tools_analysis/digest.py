@@ -13,7 +13,7 @@ logger = logging.getLogger("HME")
 from . import _load_trace as _load_trace_impl  # shared helper
 
 # Files written by every pipeline run -- used to detect freshness.
-_METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(ctx.PROJECT_ROOT, "output", "metrics"))
+_METRICS_DIR = ENV.require("METRICS_DIR")
 _PIPELINE_OUTPUT_FILES = [
     os.path.join(_METRICS_DIR, "trace.jsonl"),
     os.path.join(_METRICS_DIR, "trace-summary.json"),

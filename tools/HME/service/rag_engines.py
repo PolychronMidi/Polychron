@@ -541,7 +541,7 @@ def reload_on_device(target_device: str) -> dict:
     """
     # Pinning enforcement. If someone explicitly sets the escape hatch,
     # allow migration -- they've acknowledged the risk. Otherwise refuse.
-    if os.environ.get("HME_ALLOW_EMBEDDER_MIGRATION") not in ("1", "true", "yes"):
+    if not ENV.optional_bool("HME_ALLOW_EMBEDDER_MIGRATION", False):
         return {
             "error": (
                 "embedder migration refused -- models are pinned to HME_RAG_GPU. "
