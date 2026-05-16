@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3460,
-      "updated_ts": 1778961088.996837,
-      "codex_plan_synced_ts": 1778961088.996751,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T19:51:05.010Z"
+      "max_id": 3464,
+      "updated_ts": 1778962483.7711341,
+      "codex_plan_synced_ts": 1778962483.7710452,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T20:14:43.312Z"
     }
   },
   {
@@ -6777,8 +6777,8 @@
     "id": 3460,
     "text": "Run targeted verification and launch npm main appropriately",
     "activeForm": "Run targeted verification and launch npm main appropriately",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6787,6 +6787,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T19:51:05.010Z"
+    "codex_plan_ts": "2026-05-16T19:51:05.010Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3461,
+    "text": "Investigate missing feedback-graph ESLint enforcement rules",
+    "activeForm": "Investigate missing feedback-graph ESLint enforcement rules",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778962483.7702658,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T20:14:43.312Z"
+  },
+  {
+    "id": 3462,
+    "text": "Implement or correct the enforcement wiring",
+    "activeForm": "Implement or correct the enforcement wiring",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778962483.7702718,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T20:14:43.312Z"
+  },
+  {
+    "id": 3463,
+    "text": "Run targeted feedback-graph and ESLint-rule checks",
+    "activeForm": "Run targeted feedback-graph and ESLint-rule checks",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778962483.7702756,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T20:14:43.312Z"
+  },
+  {
+    "id": 3464,
+    "text": "Rerun npm run main and fix the next surfaced blocker",
+    "activeForm": "Rerun npm run main and fix the next surfaced blocker",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778962483.7702787,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T20:14:43.312Z"
   }
 ]

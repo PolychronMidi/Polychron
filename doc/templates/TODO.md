@@ -4,11 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Run targeted verification and launch npm main appropriately
+- [ ] [E3] Investigate missing feedback-graph ESLint enforcement rules
 
 ## Next
 
-(empty)
+- [ ] [E3] Implement or correct the enforcement wiring
+- [ ] [E3] Run targeted feedback-graph and ESLint-rule checks
+- [ ] [E3] Rerun npm run main and fix the next surfaced blocker
 
 ## Done
 
