@@ -92,7 +92,7 @@ def _adversarial_stress() -> str:
     # Probe 5: Doc sync runs and produces actionable output
     try:
         from ..health import doc_sync_check
-        sync = doc_sync_check("doc/HME.md")
+        sync = doc_sync_check("doc/self-coherence.md")
         actionable = "SYNC" in sync
         results.append(("Doc sync: produces verdict", actionable,
                         sync[:80] if not actionable else ""))

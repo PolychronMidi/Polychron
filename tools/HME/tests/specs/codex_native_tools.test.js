@@ -71,7 +71,7 @@ test('Codex native Read response rewrites to executable bridge and back to Read 
       type: 'function_call',
       name: 'Read',
       call_id: 'call_read',
-      arguments: JSON.stringify({ file_path: 'doc/HME.md', limit: 5 }),
+      arguments: JSON.stringify({ file_path: 'doc/self-coherence.md', limit: 5 }),
     }],
   };
   const rewritten = rewriteCodexResponseObject(response);
@@ -82,7 +82,7 @@ test('Codex native Read response rewrites to executable bridge and back to Read 
   assert.match(args.cmd, /doc\/HME\.md/);
   const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
   assert.equal(normalized.name, 'Read');
-  assert.deepEqual(JSON.parse(normalized.arguments), { file_path: 'doc/HME.md', limit: 5 });
+  assert.deepEqual(JSON.parse(normalized.arguments), { file_path: 'doc/self-coherence.md', limit: 5 });
 });
 
 
@@ -143,7 +143,7 @@ test('Codex proxy sends native tools upstream and translates native call respons
         output: [{
           type: 'function_call',
           name: 'Read',
-          arguments: JSON.stringify({ file_path: 'doc/HME.md', limit: 2 }),
+          arguments: JSON.stringify({ file_path: 'doc/self-coherence.md', limit: 2 }),
         }],
       }));
     });

@@ -6,7 +6,7 @@ Self-evolving algorithmic composition. A ~500-file JavaScript engine produces MI
 
 - [AGENTS.md](../../AGENTS.md) -- the **rules**. Load order, firewalls, hypermeta-first discipline, hard rules. Loaded into every prompt. Authoritative.
 - This primer -- the **behavior**. What you do in your first session, in what order, with what redirects. The hook emits only a compact pointer to this file on first HME tool use; it does not paste this whole document into context.
-- [HME.md](../HME.md) -- the **reference**. Short HME orientation that links into the full substrate reference. Read on demand when the primer points you at something specific.
+- [self-coherence.md](../self-coherence.md) -- the **reference**. Short HME orientation that links into the full substrate reference. Read on demand when the primer points you at something specific.
 
 **Continuity.** Session continuity comes from proxy-enriched native tools, status views, KB retrieval, and onboarding state. For context health, use `i/status state` or `i/status timeline`.
 
@@ -213,7 +213,7 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 ## Reference (as needed)
 
 - [AGENTS.md](../../AGENTS.md) -- authoritative rule set, loaded every prompt. Read first on any new session where the walkthrough does not answer the question.
-- [doc/HME.md](../HME.md) -- short HME orientation. Read this before deeper substrate detail.
+- [doc/self-coherence.md](../self-coherence.md) -- short HME orientation. Read this before deeper substrate detail.
 - [tools/HME/service/server/onboarding_chain.py](../../tools/HME/service/server/onboarding_chain.py) -- chain decider source + design spec (decorator wiring, gate hooks, failure modes, "adding new steps" recipe). The state machine itself is documented above in this primer.
 - [doc/self-coherence-full.md](../self-coherence-full.md) -- HME internals, tool surface, event kernel, state registry, LIFESAVER, and self-coherence.
 - [doc/composition-full.md](../composition-full.md) -- beat lifecycle, signal flow, L1/L2 layer isolation, tuning context, and engine systems.

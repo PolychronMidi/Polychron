@@ -8,7 +8,7 @@ If something potentially auto-enforced would need to be mentioned here, it must 
 
 Polychron development has two interleaving modes; mode-specific rules live in companion files:
 - **Composition** (`src/`) -- [doc/composition.md](doc/composition.md)
-- **HME** (`tools/HME/`) -- [doc/HME.md](doc/HME.md)
+- **HME** (`tools/HME/`) -- [doc/self-coherence.md](doc/self-coherence.md)
 
 ## Universal Principles (operational)
 

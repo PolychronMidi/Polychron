@@ -195,7 +195,7 @@ def symbol_importance(top_n: int = 20) -> str:
 
 def doc_sync_check(doc_path: str = "") -> str:
     """Check if a doc file is in sync with the codebase it describes. Finds stale references, missing tools, outdated counts."""
-    target = doc_path if doc_path else os.path.join(ctx.PROJECT_ROOT, "doc/HME.md")
+    target = doc_path if doc_path else os.path.join(ctx.PROJECT_ROOT, "doc/self-coherence.md")
     abs_target = target if os.path.isabs(target) else os.path.join(ctx.PROJECT_ROOT, target)
     if not os.path.isfile(abs_target):
         return f"File not found: {abs_target}"

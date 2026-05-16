@@ -4,7 +4,7 @@
 
 ## What this directory is
 
-The operational docs describe *what is*. `composition.md` and `composition-full.md` trace the composition engine. `HME.md` and `self-coherence-full.md` catalog the executive substrate. They answer *how*.
+The operational docs describe *what is*. `composition.md` and `composition-full.md` trace the composition engine. `self-coherence.md` and `self-coherence-full.md` catalog the executive substrate. They answer *how*.
 
 `doc/theory/` answers *why this shape, and what does it entail*.
 

@@ -14,7 +14,7 @@ from ._base import (
 
 class ToolSurfaceCoverageVerifier(Verifier):
     """Every public @ctx.mcp.tool() function appears in either templates/ONBOARDING.md
-    or HME.md. Hidden tools don't need to be documented."""
+    or self-coherence.md. Hidden tools don't need to be documented."""
     name = "tool-surface-coverage"
     category = "coverage"
     subtag = "interface-contract"
@@ -56,9 +56,9 @@ class ToolSurfaceCoverageVerifier(Verifier):
                             public_tools.add(node.name)
         if not public_tools:
             return _result(SKIP, 1.0, "no public tools found")
-        # Check each public tool appears in primer/HME.md
+        # Check each public tool appears in primer/self-coherence.md
         primer = os.path.join(_PROJECT, "doc", "templates", "ONBOARDING.md")
-        hmemd = os.path.join(_PROJECT, "doc", "HME.md")
+        hmemd = os.path.join(_PROJECT, "doc", "self-coherence.md")
         text = ""
         for p in (primer, hmemd):
             if os.path.isfile(p):

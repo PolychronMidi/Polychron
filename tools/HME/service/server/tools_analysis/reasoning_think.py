@@ -117,10 +117,10 @@ def think(about: str, context: str = "") -> str:
     if _is_meta_hme and not context:
         # Inject HME tool overview so the model reasons about HME UX, not music src
         try:
-            hme_doc = os.path.join(ctx.PROJECT_ROOT, "doc", "HME.md")
+            hme_doc = os.path.join(ctx.PROJECT_ROOT, "doc", "self-coherence.md")
             if os.path.isfile(hme_doc):
                 with open(hme_doc, encoding="utf-8") as _f:
-                    injected_state = "## HME Tool Reference (from doc/HME.md):\n" + _f.read()[:3000]
+                    injected_state = "## HME Tool Reference (from doc/self-coherence.md):\n" + _f.read()[:3000]
         except Exception as _err2:
             logger.debug(f'silent-except reasoning_think.py:129: {type(_err2).__name__}: {_err2}')
         injected_state += "\n\n## Recent HME Evolution History (from KB):\n"

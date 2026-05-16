@@ -242,7 +242,7 @@ def _daemon_generate(payload: dict, wall_timeout: float = 30.0) -> dict | None:
 
     This is the ONE canonical path for local llama.cpp synthesis. The
     daemon is the single source of truth for wall-clock enforcement
-    (see doc/HME.md -- "all llama.cpp timeouts live in llamacpp_daemon.py").
+    (see doc/self-coherence.md -- "all llama.cpp timeouts live in llamacpp_daemon.py").
     The urllib client timeout here is a trivial grace on top of the
     daemon's own wall_timeout: if the daemon is alive it will have
     already returned a {"error": "wall timeout"} JSON by then.

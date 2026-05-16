@@ -117,7 +117,7 @@ def what_did_i_forget(changed_files: str) -> str:
                 if _doc_key not in _emitted_scaffold:
                     _emitted_scaffold.add(_doc_key)
                     all_warnings.append(
-                        f"[{rel_path}] DOC CHECK: update doc/HME.md hook descriptions if behavior changed."
+                        f"[{rel_path}] DOC CHECK: update doc/self-coherence.md hook descriptions if behavior changed."
                     )
         elif rel_path.startswith(("tools/", "scripts/", "lab/")):
             # KB constraints are for the composition system (src/). Tooling files (chat

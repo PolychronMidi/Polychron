@@ -571,7 +571,7 @@
     },
     {
       "id": "public-surface-coherent",
-      "description": "The public HME surface has one source of truth: i/ wrappers match i_registry.json, retired wrappers stay gone, tool-invocations.json maps internal names to current public forms, and doc/ top-level stays limited to HME.md/composition.md plus full-detail companions.",
+      "description": "The public HME surface has one source of truth: i/ wrappers match i_registry.json, retired wrappers stay gone, tool-invocations.json maps internal names to current public forms, and doc/ top-level stays limited to self-coherence.md/composition.md plus full-detail companions.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/audit-public-surface.py --quiet 2>&1",
       "severity": "error"

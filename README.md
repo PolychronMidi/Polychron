@@ -9,7 +9,7 @@ Development has two interleaving domains:
 
 - **Composition engine:** `src/`, documented from [doc/composition.md](doc/composition.md) into
   [doc/composition-full.md](doc/composition-full.md).
-- **HME substrate:** `tools/HME/`, documented from [doc/HME.md](doc/HME.md) into
+- **HME substrate:** `tools/HME/`, documented from [doc/self-coherence.md](doc/self-coherence.md) into
   [doc/self-coherence-full.md](doc/self-coherence-full.md).
 
 [AGENTS.md](doc/templates/AGENTS.md) is the concise operational rule file loaded by agents.
@@ -51,7 +51,7 @@ Read progressively:
 1. [README.md](README.md) - project orientation.
 2. [AGENTS.md](doc/templates/AGENTS.md) - agent rules and hard workflow discipline.
 3. [doc/composition.md](doc/composition.md) - concise composition-engine rules.
-4. [doc/HME.md](doc/HME.md) - concise HME rules and workflow.
+4. [doc/self-coherence.md](doc/self-coherence.md) - concise HME rules and workflow.
 5. [doc/composition-full.md](doc/composition-full.md) - detailed composition architecture.
 6. [doc/self-coherence-full.md](doc/self-coherence-full.md) - detailed HME architecture.
 

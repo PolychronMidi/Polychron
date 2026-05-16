@@ -29,4 +29,4 @@ design primitives.
 - Project orientation: [README.md](../README.md)
 - Agent rules: [AGENTS.md](../AGENTS.md)
 - Full engine reference: [composition-full.md](composition-full.md)
-- HME reference: [HME.md](HME.md)
+- HME reference: [self-coherence.md](self-coherence.md)

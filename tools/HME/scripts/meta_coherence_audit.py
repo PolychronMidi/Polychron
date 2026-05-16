@@ -180,7 +180,7 @@ def audit_tuning_extractors(root: Path) -> list[dict]:
 
 
 def audit_doc_sync(root: Path) -> list[dict]:
-    """Exercise the doc-sync check against doc/HME.md. Failures here mean
+    """Exercise the doc-sync check against doc/self-coherence.md. Failures here mean
     the agent-facing tool-count claim in the doc has drifted from code."""
     findings: list[dict] = []
     import subprocess
@@ -192,7 +192,7 @@ def audit_doc_sync(root: Path) -> list[dict]:
         "os.environ.setdefault('HF_HUB_OFFLINE', '1');"
         "os.environ.setdefault('TRANSFORMERS_OFFLINE', '1');"
         "from server.tools_analysis.health import doc_sync_check;"
-        "print(doc_sync_check('doc/HME.md'))"
+        "print(doc_sync_check('doc/self-coherence.md'))"
     )]
     try:
         rc = subprocess.run(cmd, capture_output=True, text=True, timeout=30,
@@ -202,7 +202,7 @@ def audit_doc_sync(root: Path) -> list[dict]:
         if "OUT OF SYNC" in out or "STALE" in out or "MISSING" in out:
             findings.append({
                 "source": "health.py doc_sync_check",
-                "id": "doc/HME.md",
+                "id": "doc/self-coherence.md",
                 "type": "doc_sync",
                 "status": "STALE",
                 "detail": out.strip()[:400],

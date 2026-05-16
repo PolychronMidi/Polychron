@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 PROJECT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
-DOC_TOP_FILES = {"HME.md", "composition.md", "self-coherence-full.md", "composition-full.md"}
+DOC_TOP_FILES = {"self-coherence.md", "composition.md", "self-coherence-full.md", "composition-full.md"}
 DOC_TOP_DIRS = {"infra", "templates", "theory"}
 
 RETIRED_WRAPPERS = {"consult", "handoff", "chain", "todo", "hme-admin", "hme-read", "read"}

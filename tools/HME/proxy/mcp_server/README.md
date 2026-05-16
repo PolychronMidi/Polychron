@@ -4,7 +4,7 @@ In-process MCP (Model Context Protocol) server, hosted by `hme_proxy.js`
 on the proxy port. Currently dormant -- no `.mcp.json` registers this
 server with Claude Code; HME tools reach the agent via Bash(`i/<tool>`)
 shell wrappers + tool injection, not MCP. See repo-level [README.md](../../../../README.md)
-and [doc/HME.md](../../../../doc/HME.md) for the active surface.
+and [doc/self-coherence.md](../../../../doc/self-coherence.md) for the active surface.
 
 ## What's here
 

@@ -61,7 +61,7 @@ def hme_selftest(verbose: bool = False) -> str:
 
     try:
         from ...health import doc_sync_check
-        sync = doc_sync_check("doc/HME.md")
+        sync = doc_sync_check("doc/self-coherence.md")
         is_sync = "IN SYNC" in sync
         # Don't truncate the sync report -- identifier names can be long and
         # the truncation masks the actual symbol being flagged.
@@ -73,7 +73,7 @@ def hme_selftest(verbose: bool = False) -> str:
         results.append(f"FAIL: doc sync -- {e}")
 
     # Doc-code stale-reference verifier (catches legacy tool name drift across
-    # all doc/*.md files, not just HME.md). Runs as a subprocess so a broken
+    # all doc/*.md files, not just self-coherence.md). Runs as a subprocess so a broken
     # verifier can't crash the selftest.
     _project_root = ENV.optional("PROJECT_ROOT", "") or os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

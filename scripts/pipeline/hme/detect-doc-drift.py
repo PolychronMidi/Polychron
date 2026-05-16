@@ -38,7 +38,7 @@ DOCS = [
     "doc/composition-full.md",
     "doc/self-coherence-full.md",
     "doc/composition.md",
-    "doc/HME.md",
+    "doc/self-coherence.md",
     "AGENTS.md",
 ]
 OUT_PATH = os.path.join(METRICS_DIR, "hme-doc-drift.json")
