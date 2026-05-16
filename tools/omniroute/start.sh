@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start OmniRoute for HME MODE=4 integration.
+# Start OmniRoute for HME OVERDRIVE_MODE=1 integration.
 # Usage: ./start.sh [--port PORT] [--configure]
 #   --port PORT    Override default port (20128)
 #   --configure     Also configure the opencode-go credential
@@ -53,13 +53,14 @@ else
   fi
 
   mkdir -p "${PROJECT_ROOT}/log"
+  _MARKER="=== omniroute start $(date -u +%Y-%m-%dT%H:%M:%SZ) pid=$$ port=${PORT} ==="
   if command -v setsid >/dev/null 2>&1; then
     HME_OMNIROUTE_PORT="$PORT" \
-      setsid node_modules/.bin/omniroute --no-open --port "$PORT" \
+      setsid bash -c 'echo "$1"; exec node_modules/.bin/omniroute --no-open --port "$2"' _ "$_MARKER" "$PORT" \
         > "${PROJECT_ROOT}/log/omniroute.out" 2>&1 < /dev/null &
   else
     HME_OMNIROUTE_PORT="$PORT" \
-      nohup node_modules/.bin/omniroute --no-open --port "$PORT" \
+      nohup bash -c 'echo "$1"; exec node_modules/.bin/omniroute --no-open --port "$2"' _ "$_MARKER" "$PORT" \
         > "${PROJECT_ROOT}/log/omniroute.out" 2>&1 < /dev/null &
   fi
   ORPID=$!

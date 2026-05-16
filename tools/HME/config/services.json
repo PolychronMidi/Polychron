@@ -74,7 +74,7 @@
     {
       "id": "omniroute",
       "kind": "http",
-      "description": "OpenAI/Anthropic translation router used by overdrive modes 4-6",
+      "description": "OpenAI/Anthropic translation router used by OVERDRIVE_MODE=1",
       "env_port": "HME_OMNIROUTE_PORT",
       "default_port": 20128,
       "host": "127.0.0.1",
@@ -85,12 +85,12 @@
       "timeout_sec": 3,
       "enabled_when": {
         "env": "OVERDRIVE_MODE",
-        "in": ["4", "5", "6"],
+        "in": ["1"],
         "unless_env": "HME_OMNIROUTE_OFF",
         "unless_value": "1"
       },
       "start": ["tools/omniroute/start.sh"],
-      "process_patterns": ["omniroute.*server-ws"],
+      "process_patterns": ["node_modules/.bin/omniroute", "omniroute --no-open"],
       "log_file": "log/omniroute.out",
       "fix": "tools/omniroute/start.sh"
     },
