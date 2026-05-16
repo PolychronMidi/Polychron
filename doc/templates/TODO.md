@@ -4,12 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Remove missing script references
+- [ ] [E3] Remove synthesize-generalizations pipeline/docs refs
 
 ## Next
 
-- [ ] [E3] Delete obsolete duplicate files
-- [ ] [E3] Verify no stale refs remain
+- [ ] [E3] Run targeted verification
+- [ ] [E3] Scan pipeline for missing script paths
 
 ## Done
 

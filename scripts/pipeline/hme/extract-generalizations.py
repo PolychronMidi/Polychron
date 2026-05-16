@@ -6,9 +6,7 @@ general ones (would apply to any similar topological system).
 
 Output:
   output/metrics/hme-generalizations.json -- machine-readable, per-pattern
-  scores + candidate list. Consumed by `synthesize-generalizations.py`,
-  `render-generalizations.py` was retired in R97 along with the spam path
-  that appended vague LLM waffle
+  scores + candidate list for status(mode=generalizations).
 
 Scoring fix: vocabulary is now built dynamically from three sources
 and matched against camelCase-split pattern tags + synthesis text:
@@ -22,8 +20,7 @@ After camelCase-splitting (emergent, melodic, engine) and dynamic vocab
 (all three tokens appear in l0Channels + crossLayer/melody), it scores ~0.9.
 
 Threshold stays at 0.3: patterns whose project-token share is below that
-are candidates for generalization. The synthesis step decides whether a
-candidate has enough real structure to become a discovery draft.
+are candidates for generalization. The status reader surfaces candidates; no separate synthesis step remains.
 """
 from __future__ import annotations
 
@@ -148,7 +145,7 @@ def project_specificity(text: str, tags: list[str]) -> float:
 
 def draft_template(p: dict) -> str:
     """The structural scaffold a generalization candidate starts with.
-    Synthesize-generalizations fills this in via the reasoning cascade."""
+    This remains a local scaffold for the status reader."""
     tags = p.get("shared_tags", [])
     rounds = p.get("rounds", [])
     members = p.get("member_count", 0)

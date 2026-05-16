@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3430,
-      "updated_ts": 1778953018.9476006,
-      "codex_plan_synced_ts": 1778953018.947521,
+      "max_id": 3432,
+      "updated_ts": 1778953078.948229,
+      "codex_plan_synced_ts": 1778953078.9481483,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T17:36:33.908Z"
+      "codex_plan_ts": "2026-05-16T17:37:53.504Z"
     }
   },
   {
@@ -787,8 +787,8 @@
     "id": 3095,
     "text": "Run targeted verification",
     "activeForm": "Run targeted verification",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -797,7 +797,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:04:53.462Z",
+    "codex_plan_ts": "2026-05-16T17:37:53.504Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
@@ -6248,8 +6248,8 @@
     "id": 3428,
     "text": "Remove missing script references",
     "activeForm": "Remove missing script references",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6258,14 +6258,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:36:33.908Z"
+    "codex_plan_ts": "2026-05-16T17:36:33.908Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3429,
     "text": "Delete obsolete duplicate files",
     "activeForm": "Delete obsolete duplicate files",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6274,14 +6275,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:36:33.908Z"
+    "codex_plan_ts": "2026-05-16T17:36:33.908Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3430,
     "text": "Verify no stale refs remain",
     "activeForm": "Verify no stale refs remain",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6290,6 +6292,39 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:36:33.908Z"
+    "codex_plan_ts": "2026-05-16T17:36:33.908Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3431,
+    "text": "Remove synthesize-generalizations pipeline/docs refs",
+    "activeForm": "Remove synthesize-generalizations pipeline/docs refs",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778953073.9345021,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:37:53.504Z"
+  },
+  {
+    "id": 3432,
+    "text": "Scan pipeline for missing script paths",
+    "activeForm": "Scan pipeline for missing script paths",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778953073.9345076,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:37:53.504Z"
   }
 ]
