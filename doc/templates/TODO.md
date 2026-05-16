@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Rerun focused invariant/status checks to identify current failures
+- [ ] [E3] Run focused and broad verification with evidence
 
 ## Next
 
-- [ ] [E3] Fix remaining invariant errors and actionable warnings in place
-- [ ] [E3] Run focused and broad verification with evidence
+(empty)
 
 ## Done
 
