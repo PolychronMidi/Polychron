@@ -41,6 +41,7 @@ _CP_PID_FILE="$_SV_ROOT/runtime/hme/codex-proxy.pid"
 _CP_SCRIPT="$_SV_ROOT/tools/HME/proxy/codex_proxy.js"
 _CP_OMNI="$_SV_ROOT/tools/HME/proxy/codex_omniroute.js"
 _CP_CONFIG="$_SV_ROOT/tools/HME/config/codex-proxy.json"
+_CP_DEPS="codex_proxy.js codex_omniroute.js codex_session_guard.js start_marker.js model_route_resolver.js request_transform_core.js codex_native_tools.js codex_payload.js turn_side_effects.js request_telemetry.js"
 _CP_LOG="$_SV_ROOT/log/hme-codex-proxy.out"
 _CP_LIFECYCLE_LOG="$_SV_ROOT/log/hme-codex-proxy.log"
 _CP_POLL_INTERVAL=15
@@ -63,10 +64,12 @@ _cp_healthy() {
 }
 
 _cp_stale() {
-  local p="$1"
+  local p="$1" dep dep_path
   [ -n "$p" ] && [ -d "/proc/$p" ] || return 1
-  [ "$_CP_SCRIPT" -nt "/proc/$p" ] && return 0
-  [ -f "$_CP_OMNI" ] && [ "$_CP_OMNI" -nt "/proc/$p" ] && return 0
+  for dep in $_CP_DEPS; do
+    dep_path="$_SV_ROOT/tools/HME/proxy/$dep"
+    [ -f "$dep_path" ] && [ "$dep_path" -nt "/proc/$p" ] && return 0
+  done
   [ -f "$_CP_CONFIG" ] && [ "$_CP_CONFIG" -nt "/proc/$p" ] && return 0
   return 1
 }
