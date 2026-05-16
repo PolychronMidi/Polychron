@@ -4,6 +4,7 @@ import os
 import logging
 import glob as _glob
 
+from hme_env import ENV
 from server import context as ctx
 from . import _track
 
@@ -12,8 +13,8 @@ logger = logging.getLogger("HME")
 
 def _check_trace_staleness() -> str:
     """Compare trace.jsonl mtime against latest run-history snapshot. Returns warning if stale."""
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
-    rh_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
+    trace_path = os.path.join(ENV.require("METRICS_DIR"), "trace.jsonl")
+    rh_dir = os.path.join(ENV.require("METRICS_DIR"), "run-history")
     if not os.path.isfile(trace_path) or not os.path.isdir(rh_dir):
         return ""
     trace_mtime = os.path.getmtime(trace_path)
@@ -39,7 +40,7 @@ def drama_finder(top_n: int = 10) -> str:
     ctx.ensure_ready_sync()
     _track("drama_finder")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
+    trace_path = os.path.join(ENV.require("METRICS_DIR"), "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 
@@ -168,8 +169,8 @@ def drama_finder(top_n: int = 10) -> str:
 
     # Micro-narrative synthesis for top 3 events. Gated: this was the
     _skip_synth = (
-        os.environ.get("HME_READ_FAST") in ("1", "true", "yes")
-        or os.environ.get("HME_DRAMA_NO_SYNTHESIS") in ("1", "true", "yes")
+        ENV.optional_bool("HME_READ_FAST", False)
+        or ENV.optional_bool("HME_DRAMA_NO_SYNTHESIS", False)
     )
     if not _skip_synth:
         from .synthesis import _reasoning_think
@@ -204,7 +205,7 @@ def beat_snapshot(beat_key: str) -> str:
     ctx.ensure_ready_sync()
     _track("beat_snapshot")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
+    trace_path = os.path.join(ENV.require("METRICS_DIR"), "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 

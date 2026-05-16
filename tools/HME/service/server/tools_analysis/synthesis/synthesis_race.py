@@ -10,6 +10,7 @@ import re
 import logging
 import threading as _threading
 
+from hme_env import ENV
 from server import context as ctx
 from .synthesis_config import _THINK_SYSTEM
 from .synthesis_llamacpp import (  # noqa: F401
@@ -51,10 +52,7 @@ def _adaptive_cloud_delay() -> float:
         import json as _json
         import os as _os
         from server import context as _ctx
-        path = _os.path.join(
-            _os.environ.get("METRICS_DIR") or _os.path.join(
-                getattr(_ctx, "PROJECT_ROOT", "."), "output", "metrics"),
-            "hme-race-outcomes.jsonl")
+        path = _os.path.join(ENV.require("METRICS_DIR"), "hme-race-outcomes.jsonl")
         if not _os.path.isfile(path):
             return _RACE_CLOUD_DELAY_DEFAULT_SEC
         size = _os.path.getsize(path)
@@ -224,8 +222,7 @@ def _emit_race_outcome(profile: str, max_tokens: int, winner: str | None,
     try:
         from common import maybe_trim_append
         from server import context as _ctx
-        out_dir = _os.environ.get("METRICS_DIR") or _os.path.join(
-            getattr(_ctx, "PROJECT_ROOT", "."), "output", "metrics")
+        out_dir = ENV.require("METRICS_DIR")
         _os.makedirs(out_dir, exist_ok=True)
         out = _os.path.join(out_dir, "hme-race-outcomes.jsonl")
         entry = {

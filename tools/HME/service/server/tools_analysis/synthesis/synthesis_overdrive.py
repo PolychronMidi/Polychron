@@ -88,12 +88,7 @@ def _emit_overdrive_activity(source_label: str, model_id: str,
         import json as _json
         import os as _os
         import time as _time
-        path = _os.environ.get("METRICS_DIR")
-        if not path:
-            root = _os.environ.get("PROJECT_ROOT", "")
-            if not root:
-                return
-            path = _os.path.join(root, "output", "metrics")
+        path = ENV.require("METRICS_DIR")
         _os.makedirs(path, exist_ok=True)
         entry = {
             "ts": int(_time.time()),
@@ -167,13 +162,13 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
         return (None, True)
 
     import sys as _sys
-    _project = _os.environ.get("PROJECT_ROOT") or _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..", "..", "..", "..", ".."))
+    _project = ENV.require("PROJECT_ROOT")
     _scripts = _os.path.join(_project, "tools", "HME", "scripts")
     if _scripts not in _sys.path:
         _sys.path.insert(0, _scripts)
     from service_registry import service_map as _service_map, service_url as _service_url
     _services = _service_map()
-    base_url = _os.environ.get("ANTHROPIC_BASE_URL", _service_url(_services["proxy"]).removesuffix("/health")).rstrip("/")
+    base_url = ENV.optional("ANTHROPIC_BASE_URL", _service_url(_services["proxy"]).removesuffix("/health")).rstrip("/")
 
     from . import synthesis_reasoning as _sr
     timeout_secs = _sr._overdrive_timeout()
@@ -321,7 +316,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
         logger.warning(f"OVERDRIVE_VIA_SUBAGENT: queue write failed: {e}")
         return None
     # Self-instructing sentinel; thread.sid routes to persistent subagent if present
-    project_root = _os.environ.get("PROJECT_ROOT", "")
+    project_root = ENV.optional("PROJECT_ROOT", "")
     thread_sid_file = _os.path.join(project_root, "tmp", "hme-thread.sid") \
         if project_root else ""
     thread_active = bool(thread_sid_file) and _os.path.exists(thread_sid_file)
