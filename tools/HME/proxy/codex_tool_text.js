@@ -1,5 +1,7 @@
 'use strict';
 
+const BRIDGE_JSON_HEREDOC_RE = /\b(?:node\s+)?(?:\.\/)?(?:[^\s]+\/)?codex_structured_tool\.js\s+(read|edit)\s+--json\s+<<['\"]?([A-Za-z0-9_:-]+)['\"]?\n([\s\S]*?)\n\2/g;
+
 const JSON_HEREDOC_RE = /\b(?:node\s+)?(?:\.\/)?(?:\S*\/)?codex_structured_tool\.js\s+(?:read|edit)\s+--json\s+<<['"]?([A-Za-z0-9_:-]+)['"]?\n[\s\S]*?\n\1/g;
 
 // Normalize internal Codex fallback bridge calls so model-visible history reads
@@ -117,7 +119,13 @@ function rewriteLine(line, stats) {
 
 function rewriteText(text, stats) {
   if (!String(text || '').includes('codex_structured_tool.js')) return text;
-  return String(text).split(/\r?\n/).map((line) => rewriteLine(line, stats)).join('\n');
+  const replaced = String(text).replace(BRIDGE_JSON_HEREDOC_RE, (full) => {
+    const hit = bridgeFromJsonCommand(full);
+    if (!hit) return full;
+    stats.text_rewrites += 1;
+    return displayCall(hit);
+  });
+  return replaced.split(/\r?\n/).map((line) => rewriteLine(line, stats)).join('\n');
 }
 
 function normalizeValue(value, stats) {
