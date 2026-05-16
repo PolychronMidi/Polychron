@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Find references outside .env with generated/vendor paths ignored
+(empty)
 
 ## Next
 
-- [ ] [E3] Classify unused keys: delete-target vs relevant-unimplemented
-- [ ] [E3] Report deletion candidates with evidence
+(empty)
 
 ## Done
 
