@@ -33,13 +33,7 @@ function thresholds(env = process.env) {
   };
 }
 
-function blockMessage(score, block) {
-  const policy = loadPolicy();
-  return `BLOCKED: Raw tool streak ${score}/${block} (cost: ${policy.cost_summary}).\n  Reset now: ${policy.preferred_exit}.`;
-}
-
-function reminderMessage(score, block) {
-  return `REMINDER: Raw tool streak ${score}/${block}. ${loadPolicy().reminder}`;
-}
+function blockMessage(_score, _block) { return ''; }
+function reminderMessage(_score, _block) { return ''; }
 
 module.exports = { loadPolicy, thresholds, blockMessage, reminderMessage };
