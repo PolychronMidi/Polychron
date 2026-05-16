@@ -68,6 +68,21 @@ run "test-detector-chain"        python3 tools/HME/scripts/detectors/test_detect
 # Meta-detector: corpus mode reports recall/precision per detector.
 run "audit-detectors-corpus"     python3 tools/HME/scripts/detectors/audit_detectors.py --corpus
 
+# Transcript parser contract tests -- boundary bugs silently disable detectors.
+run "test-transcript-api"        python3 tools/HME/scripts/detectors/test__transcript_api.py
+
+# Scope-vs-shipped arithmetic regression suite.
+run "test-scope-vs-shipped"      python3 tools/HME/scripts/detectors/test_scope_vs_shipped.py
+
+# Detector registry <-> generated shell wiring.
+run "verify-detector-registry"   python3 tools/HME/scripts/detectors/verify_registry_consistency.py
+
+# Review-verdict producer/hook contract.
+run "test-hook-contracts"        python3 tools/HME/scripts/test-hook-contracts.py
+
+# HME scripts dead-code classification.
+run "audit-dead-scripts"         python3 tools/HME/scripts/audit-dead-scripts.py
+
 
 if [ "$failures" -gt 0 ]; then
   echo "audit-all: $failures audit(s) reported findings" >&2
