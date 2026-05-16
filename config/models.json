@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": "1.0.0-draft",
-    "description": "OVERDRIVE_MODE=5 model registry. Models ranked into 5 effort tiers (E5-E1). Within each tier: free models first (OpenCode Zen free + cascade free from various direct APIs), then subscription (OpenCode Go), then usage-based (OpenCode Zen non-free).",
+    "description": "OVERDRIVE_MODE=1 team-role model registry. Models ranked into 5 effort tiers (E5-E1). Within each tier: free models first (OpenCode Zen free + cascade free from various direct APIs), then subscription (OpenCode Go), then usage-based (OpenCode Zen non-free).",
     "providers": {
       "opencode": {
         "note": "Zen (free tier and usage-based)"
