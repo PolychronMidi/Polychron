@@ -96,12 +96,11 @@ metaProfiles.setActive('chaotic');
 const before = metaProfiles.getRegimeTargets();
 assert(before.exploring === 0.50, 'chaotic exploring = 0.50');
 
-metaProfiles.disableAxis('regime-budget');
+metaProfiles.disableAxis('regime');
 const disabled = metaProfiles.getRegimeTargets();
-assertClose(disabled.exploring, 0.333, 0.001, 'disabled -> fallback 0.333');
-assertClose(disabled.coherent, 0.333, 0.001, 'disabled -> fallback 0.333');
+assert(disabled === null, 'disabled regime -> no metaprofile target');
 
-metaProfiles.enableAxis('regime-budget');
+metaProfiles.enableAxis('regime');
 const restored = metaProfiles.getRegimeTargets();
 assert(restored.exploring === 0.50, 'enabled -> chaotic exploring restored');
 
