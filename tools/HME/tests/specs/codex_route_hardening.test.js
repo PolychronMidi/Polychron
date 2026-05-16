@@ -161,6 +161,22 @@ test('Codex structured read/edit shims route synthetic native events', () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('Codex structured git marks empty success explicitly', () => {
+  const root = sandbox('codex-structured-git-');
+  const env = {
+    ...process.env,
+    PROJECT_ROOT: root,
+    HME_SESSION_ID: 'shim-git',
+    PATH: path.join(root, 'bin') + path.delimiter + originalPath,
+  };
+  const res = spawnSync('node', [
+    path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_structured_tool.js'), 'git', '--json',
+  ], { env, input: JSON.stringify({ args: ['status', '--short'] }), encoding: 'utf8' });
+  assert.equal(res.status, 0, res.stderr);
+  assert.match(res.stdout, /\[SUCCESS\] tool completed with no output body/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('Codex Bash hook treats internal structured bridge as structured exit', async () => {
   const root = sandbox('codex-structured-bash-');
   fs.mkdirSync(path.join(root, 'tmp', 'hme-streak'), { recursive: true });
