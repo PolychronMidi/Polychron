@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3265,
-      "updated_ts": 1778899288.7564037,
-      "codex_plan_synced_ts": 1778899288.7563572,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T02:41:28.148Z"
+      "max_id": 3268,
+      "updated_ts": 1778902305.3628602,
+      "codex_plan_synced_ts": 1778902305.3628075,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T03:31:44.940Z"
     }
   },
   {
@@ -3528,8 +3528,8 @@
     "id": 3262,
     "text": "Clear current audit-all backlog failures",
     "activeForm": "Clear current audit-all backlog failures",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3538,14 +3538,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T02:41:28.148Z"
+    "codex_plan_ts": "2026-05-16T02:41:28.148Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3263,
     "text": "Continue scripts dead-code audit for newly exposed issues",
     "activeForm": "Continue scripts dead-code audit for newly exposed issues",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3554,14 +3555,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T02:41:28.148Z"
+    "codex_plan_ts": "2026-05-16T02:41:28.148Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3264,
     "text": "Run focused HME checks and audit-all --strict",
     "activeForm": "Run focused HME checks and audit-all --strict",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3570,14 +3572,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T02:41:28.148Z"
+    "codex_plan_ts": "2026-05-16T02:41:28.148Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3265,
     "text": "Report changed files and evidence",
     "activeForm": "Report changed files and evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3586,6 +3589,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T02:41:28.148Z"
+    "codex_plan_ts": "2026-05-16T02:41:28.148Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3266,
+    "text": "Profile invariants structure and current validation",
+    "activeForm": "Profile invariants structure and current validation",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778902305.3623838,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T03:31:44.940Z"
+  },
+  {
+    "id": 3267,
+    "text": "Find duplication, stale refs, and brittle shell patterns",
+    "activeForm": "Find duplication, stale refs, and brittle shell patterns",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778902305.3623896,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T03:31:44.940Z"
+  },
+  {
+    "id": 3268,
+    "text": "Summarize cleanup opportunities with evidence",
+    "activeForm": "Summarize cleanup opportunities with evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778902305.362394,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T03:31:44.940Z"
   }
 ]

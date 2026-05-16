@@ -4,13 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Clear current audit-all backlog failures
+- [ ] [E3] Profile invariants structure and current validation
 
 ## Next
 
-- [ ] [E3] Continue scripts dead-code audit for newly exposed issues
-- [ ] [E3] Run focused HME checks and audit-all --strict
-- [ ] [E3] Report changed files and evidence
+- [ ] [E3] Find duplication, stale refs, and brittle shell patterns
+- [ ] [E3] Summarize cleanup opportunities with evidence
 
 ## Done
 
