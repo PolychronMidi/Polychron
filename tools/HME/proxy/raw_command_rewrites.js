@@ -142,8 +142,18 @@ function statusRewrite(tokens, cmd, root) {
   return '';
 }
 
+
+function controlStatusRewrite(cmd, root) {
+  if (/ps\s+-[A-Za-z]*[ef][A-Za-z]*.*\|\s*grep/.test(cmd)) return `${root}/i/hme admin action=health`;
+  if (/(tail|cat|head|grep).*log\//.test(cmd)) return `${root}/i/status mode=activity`;
+  return '';
+}
+
 function rawCommandRewrite(cmd, root = PROJECT_ROOT) {
-  if (!cmd || CONTROL_RE.test(cmd)) return '';
+  if (!cmd) return '';
+  const control = controlStatusRewrite(cmd, root);
+  if (control) return control;
+  if (CONTROL_RE.test(cmd)) return '';
   const tokens = shellWords(cmd);
   if (!tokens.length) return '';
   const cfg = guards(root);
