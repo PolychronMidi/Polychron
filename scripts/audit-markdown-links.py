@@ -39,7 +39,7 @@ _SCAN_ROOTS = [
 ]
 _EXTRA_FILES = [
     os.path.join(_PROJECT, "README.md"),
-    os.path.join(_PROJECT, "AGENTS.md"),
+    os.path.join(_PROJECT, "doc", "templates", "AGENTS.md"),
 ]
 
 

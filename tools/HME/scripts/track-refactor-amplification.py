@@ -64,7 +64,7 @@ def _require_project_root() -> Path:
         return Path(root)
     here = Path(__file__).resolve()
     for parent in [here.parent, *here.parents]:
-        if (parent / ".env").exists() and (parent / "AGENTS.md").exists():
+        if (parent / ".env").exists() and (parent / "doc" / "templates" / "AGENTS.md").exists():
             return parent
     raise RuntimeError("PROJECT_ROOT unresolved")
 

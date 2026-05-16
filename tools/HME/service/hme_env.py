@@ -55,7 +55,7 @@ class _EnvLoader:
                 return Path(val)
         here = Path(__file__).resolve()
         for parent in [here] + list(here.parents):
-            if (parent / ".env").exists() and (parent / "AGENTS.md").exists():
+            if (parent / ".env").exists() and (parent / "doc" / "templates" / "AGENTS.md").exists():
                 return parent
         raise RuntimeError(
             "hme_env: cannot resolve project root. Set PROJECT_ROOT in .env "

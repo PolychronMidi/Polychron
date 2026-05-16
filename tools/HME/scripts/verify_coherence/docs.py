@@ -87,7 +87,7 @@ class DocCoreLayoutVerifier(Verifier):
     def run(self) -> VerdictResult:
         required = [
             "README.md",
-            "AGENTS.md",
+            "doc/templates/AGENTS.md",
             "doc/self-coherence.md",
             "doc/composition.md",
             "doc/self-coherence-full.md",
@@ -98,7 +98,7 @@ class DocCoreLayoutVerifier(Verifier):
         for rel in ("self-coherence.md", "composition.md", "doc/self-coherence.md", "doc/composition.md"):
             if os.path.exists(os.path.join(_PROJECT, rel)):
                 issues.append(f"unexpected duplicate doc path: {rel}")
-        for rel in ("README.md", "AGENTS.md"):
+        for rel in ("README.md", "doc/templates/AGENTS.md"):
             path = os.path.join(_PROJECT, rel)
             if not os.path.isfile(path):
                 continue
@@ -107,7 +107,7 @@ class DocCoreLayoutVerifier(Verifier):
                 issues.append(f"{rel}: links root self-coherence.md/composition.md instead of doc/self-coherence.md or doc/composition.md")
         if issues:
             return _result(FAIL, 0.0, f"{len(issues)} doc layout issue(s)", issues)
-        return _result(PASS, 1.0, "core docs use README/CLAUDE + concise/full doc layout")
+        return _result(PASS, 1.0, "core docs use README + doc/templates/AGENTS + concise/full doc layout")
 
 
 class DocstringPresenceVerifier(Verifier):

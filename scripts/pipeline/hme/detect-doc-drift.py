@@ -39,7 +39,7 @@ DOCS = [
     "doc/self-coherence-full.md",
     "doc/composition.md",
     "doc/self-coherence.md",
-    "AGENTS.md",
+    "doc/templates/AGENTS.md",
 ]
 OUT_PATH = os.path.join(METRICS_DIR, "hme-doc-drift.json")
 ACTIVITY_PATH = os.path.join(METRICS_DIR, "hme-activity.jsonl")

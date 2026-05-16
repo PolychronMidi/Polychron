@@ -186,11 +186,11 @@ class ExplicitListTrackingRuleVerifier(Verifier):
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        path = os.path.join(_PROJECT, "AGENTS.md")
+        path = os.path.join(_PROJECT, "doc", "templates", "AGENTS.md")
         try:
             text = open(path, encoding="utf-8").read()
         except OSError as e:
-            return _result(FAIL, 0.0, f"AGENTS.md unreadable: {e}")
+            return _result(FAIL, 0.0, f"doc/templates/AGENTS.md unreadable: {e}")
         required = (
             "Explicit user lists track 1:1",
             "numbered/bulleted list",
@@ -199,7 +199,7 @@ class ExplicitListTrackingRuleVerifier(Verifier):
         missing = [needle for needle in required if needle not in text]
         if missing:
             return _result(FAIL, 0.0, "explicit-list tracking rule missing", missing)
-        return _result(PASS, 1.0, "AGENTS.md requires 1:1 tracking for explicit user lists")
+        return _result(PASS, 1.0, "doc/templates/AGENTS.md requires 1:1 tracking for explicit user lists")
 
 
 class ContextBudgetVerifier(Verifier):

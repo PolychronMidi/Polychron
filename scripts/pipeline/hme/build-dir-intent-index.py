@@ -162,7 +162,7 @@ def _load_claude_md_rules() -> list:
     We match against each rule separately so shared vocabulary in AGENTS.md
     doesn't cause false positives -- only actual near-duplication trips the check.
     """
-    path = os.path.join(PROJECT, "AGENTS.md")
+    path = os.path.join(PROJECT, "doc", "templates", "AGENTS.md")
     try:
         with open(path, encoding="utf-8") as f:
             text = f.read()

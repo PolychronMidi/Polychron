@@ -53,7 +53,7 @@ def _require_project_root() -> Path:
         # Walk up from this script looking for AGENTS.md + .env sentinels.
         here = Path(__file__).resolve()
         for parent in [here.parent, *here.parents]:
-            if (parent / "AGENTS.md").exists() and (parent / ".env").exists():
+            if (parent / "doc" / "templates" / "AGENTS.md").exists() and (parent / ".env").exists():
                 return parent
         raise RuntimeError("Cannot resolve PROJECT_ROOT. Set env or invoke with project-root sentinels.")
     return Path(root)

@@ -28,7 +28,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", "metrics")
-_CLAUDE_MD = os.path.join(_PROJECT, "AGENTS.md")
+_CLAUDE_MD = os.path.join(_PROJECT, "doc", "templates", "AGENTS.md")
 _OUTPUT = os.path.join(METRICS_DIR, "hme-memetic-drift.json")
 
 # Violation signals -- phrases in error log or commit messages that indicate
