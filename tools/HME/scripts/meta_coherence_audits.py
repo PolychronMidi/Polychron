@@ -63,6 +63,23 @@ def _require_project_root() -> Path:
 # (A) invariants.json
 
 
+def _load_invariant_doc(path: Path, seen: set[Path] | None = None) -> dict:
+    seen = seen or set()
+    path = path.resolve()
+    if path in seen:
+        raise ValueError(f"cyclic invariant include: {path}")
+    seen.add(path)
+    data = json.loads(path.read_text())
+    merged = {k: v for k, v in data.items() if k not in {"_include", "invariants"}}
+    invariants = list(data.get("invariants") or []) if isinstance(data, dict) else list(data)
+    if isinstance(data, dict):
+        for rel in data.get("_include") or []:
+            child = _load_invariant_doc(path.parent / rel, seen)
+            invariants.extend(child.get("invariants") or [])
+    merged["invariants"] = invariants
+    return merged
+
+
 
 
 def audit_detector_phrases(root: Path) -> list[dict]:

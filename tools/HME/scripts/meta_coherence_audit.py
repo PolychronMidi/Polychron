@@ -64,14 +64,31 @@ def _require_project_root() -> Path:
 # (A) invariants.json
 
 
+def _load_invariant_doc(path: Path, seen: set[Path] | None = None) -> dict:
+    seen = seen or set()
+    path = path.resolve()
+    if path in seen:
+        raise ValueError(f"cyclic invariant include: {path}")
+    seen.add(path)
+    data = json.loads(path.read_text())
+    merged = {k: v for k, v in data.items() if k not in {"_include", "invariants"}}
+    invariants = list(data.get("invariants") or []) if isinstance(data, dict) else list(data)
+    if isinstance(data, dict):
+        for rel in data.get("_include") or []:
+            child = _load_invariant_doc(path.parent / rel, seen)
+            invariants.extend(child.get("invariants") or [])
+    merged["invariants"] = invariants
+    return merged
+
+
 def audit_invariants_json(root: Path) -> list[dict]:
     """Check every invariant's path exists and pattern still matches."""
     findings: list[dict] = []
     inv_path = root / "tools" / "HME" / "config" / "invariants.json"
     if not inv_path.exists():
         return [{"source": "invariants.json", "status": "MISSING", "detail": str(inv_path)}]
-    data = json.loads(inv_path.read_text())
-    invariants = data.get("invariants", []) if isinstance(data, dict) else data
+    data = _load_invariant_doc(inv_path)
+    invariants = data.get("invariants", [])
     for inv in invariants:
         inv_id = inv.get("id", "<unnamed>")
         inv_type = inv.get("type", "")
@@ -80,7 +97,7 @@ def audit_invariants_json(root: Path) -> list[dict]:
 
         # Single-path types
         if inv_type in ("pattern_in_file", "patterns_all_in_file", "pattern_count_gte",
-                        "pattern_in_file_not", "file_exists", "json_valid", "symlink_valid"):
+                        "pattern_in_file_not", "file_exists", "json_valid"):
             # ~ expansion: invariants may reference dotfiles under $HOME
             if path and path.startswith("~"):
                 full = Path(path).expanduser()
