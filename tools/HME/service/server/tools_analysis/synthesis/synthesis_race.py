@@ -80,7 +80,7 @@ def _adaptive_cloud_delay() -> float:
         # +0.5s head-start gives local a reliable win when healthy.
         candidate = p50 + 0.5
         return max(_RACE_CLOUD_DELAY_MIN, min(_RACE_CLOUD_DELAY_MAX, candidate))
-    except Exception:
+    except Exception as _exc:
         # silent-ok: optional fallback path.
         return _RACE_CLOUD_DELAY_DEFAULT_SEC
 
@@ -191,7 +191,7 @@ def _race_local_vs_cloud(prompt: str, system: str, max_tokens: int,
     for _ in range(2):
         try:
             source, result = q.get(timeout=60.0)
-        except Exception:
+        except Exception as _exc:
             # silent-ok: optional fallback path.
             break
         if result:

@@ -24,7 +24,7 @@ try:
     if _scripts_dir not in _sys_ti.path:
         _sys_ti.path.insert(0, _scripts_dir)
     from tool_invocations import action_form as _action_form, i_form as _i_form  # type: ignore
-except Exception:
+except Exception as _exc:
     def _action_form(action: str) -> str:
         return f"i/hme admin action={action}"  # tool-form-ok: fallback when helper unavailable
     def _i_form(name: str, primer: bool = False, value: str = "") -> str:
@@ -823,7 +823,7 @@ def hme_selftest(verbose: bool = False) -> str:
                         detectors_seen.add(r.get("detector", "?"))
                         if (last_row is None) or (r.get("ts", 0) > last_row.get("ts", 0)):
                             last_row = r
-                    except Exception:  # silent-ok: malformed jsonl line skipped in tally
+                    except Exception as _exc:  # silent-ok: malformed jsonl line skipped in tally
                         continue
                 import time as _time_ds
                 age_days = (_time_ds.time() - (last_row or {}).get("ts", 0)) / 86400 if last_row else 999

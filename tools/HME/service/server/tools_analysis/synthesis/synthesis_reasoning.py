@@ -359,7 +359,7 @@ def _resolve_mode6_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     role_tier = _role_tier(role, tier)
     try:
         cfg = _lmj()
-    except Exception:
+    except Exception as _exc:
         return _resolve_mode5_entry(role_tier)
     chain = _mode6_role_chain(cfg, role, role_tier) or _resolve_mode5_chain(role_tier)
     return (chain, any(m.startswith("claude-") for m in chain)) if chain else None

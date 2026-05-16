@@ -75,7 +75,7 @@ def _unified_evolution_recommender() -> str:
                     try:
                         with open(fpath, encoding="utf-8", errors="ignore") as f:
                             content = f.read()
-                    except Exception:
+                    except Exception as _exc:
                         # silent-ok: optional fallback path.
                         continue
                     for p, pat in prod_patterns.items():

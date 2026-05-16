@@ -146,7 +146,7 @@ def _entry_errors(entry: Any, path: str, parent_id: int = 0) -> list[str]:
         entry_id = int(entry.get("id"))
         if entry_id <= 0:
             errors.append(f"{path}: id must be > 0")
-    except Exception:
+    except Exception as _exc:
         errors.append(f"{path}: id must be an integer")
     if not str(entry.get("text", "")).strip():
         errors.append(f"{path}: text is empty")
@@ -168,7 +168,7 @@ def _entry_errors(entry: Any, path: str, parent_id: int = 0) -> list[str]:
     try:
         raw_parent_id = entry.get("parent_id", -1)
         actual_parent_id = int(raw_parent_id if raw_parent_id is not None else -1)
-    except Exception:
+    except Exception as _exc:
         actual_parent_id = -1
         errors.append(f"{path}: parent_id must be an integer")
     if actual_parent_id != parent_id:
@@ -221,7 +221,7 @@ def validate_store(path: str | None = None, raw: list[dict] | None = None) -> li
         for item in [entry] + [s for s in entry.get("subs", []) if isinstance(s, dict)]:
             try:
                 entry_id = int(item.get("id"))
-            except Exception:
+            except Exception as _exc:
                 continue
             if entry_id in seen:
                 errors.append(f"id {entry_id} appears more than once")
@@ -230,7 +230,7 @@ def validate_store(path: str | None = None, raw: list[dict] | None = None) -> li
     try:
         if int(meta.get("max_id", 0)) < max_id:
             errors.append(f"metadata max_id {meta.get('max_id')} is lower than seen id {max_id}")
-    except Exception:
+    except Exception as _exc:
         errors.append("metadata max_id must be an integer")
     return errors
 
@@ -269,7 +269,7 @@ def repair_store(path: str | None = None) -> dict[str, Any]:
                 entry_id = int(entry.get("id"))
                 if entry_id <= 0 or entry_id in seen:
                     raise ValueError()
-            except Exception:
+            except Exception as _exc:
                 entry_id = _fresh_id()
                 changed = True
             seen.add(entry_id)
@@ -285,7 +285,7 @@ def repair_store(path: str | None = None) -> dict[str, Any]:
             tier = normalize_tier(entry.get("tier"))
             try:
                 ts = float(entry.get("ts") or now)
-            except Exception:
+            except Exception as _exc:
                 ts = now
                 changed = True
             repaired = {

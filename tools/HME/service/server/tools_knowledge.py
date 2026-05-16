@@ -59,7 +59,7 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
                         v_norm = _math.sqrt(sum(float(x) * float(x) for x in vlist)) or 1.0
                         dot = sum(float(a) * float(b) for a, b in zip(cand_vec, vlist))
                         sim = dot / (cand_norm * v_norm)
-                    except Exception:
+                    except Exception as _exc:
                         # silent-ok: optional fallback path.
                         continue
                     if sim > top[1]:

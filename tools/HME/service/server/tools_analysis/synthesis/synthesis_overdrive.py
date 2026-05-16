@@ -219,7 +219,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
         is_rate = (e.code == 429)
         try:
             body = e.read().decode(errors="replace")[:200]
-        except Exception:
+        except Exception as _exc:
             body = ""
         logger.warning(f"OVERDRIVE {model_id} HTTP {e.code}: {body}")
         if is_rate:

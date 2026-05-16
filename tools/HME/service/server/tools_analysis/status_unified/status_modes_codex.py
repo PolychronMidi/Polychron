@@ -80,7 +80,7 @@ def _service_port(service_id: str, default: int) -> int:
                 continue
             env_port = ENV.optional(str(spec.get("env_port") or ""), "")
             return int(env_port or spec.get("default_port") or default)
-    except Exception:
+    except Exception as _exc:
         return default
     return default
 
