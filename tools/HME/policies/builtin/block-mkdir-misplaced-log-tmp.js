@@ -22,7 +22,7 @@ module.exports = {
   async fn(ctx) {
     const cmd = (ctx.toolInput && ctx.toolInput.command) || '';
     if (!hasMkdir(cmd)) return ctx.allow();
-    const projectRoot = process.env.PROJECT_ROOT || PROJECT_ROOT;
+    const projectRoot = ctx.projectRoot || PROJECT_ROOT;
     if (!mkdirHasMisplacedRootOnlyDir(cmd, ['log', 'tmp'], projectRoot)) return ctx.allow();
     return ctx.deny(rootOnlyDirMessage('mkdir', projectRoot));
   },

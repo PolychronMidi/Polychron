@@ -18,7 +18,7 @@ module.exports = {
   params: {},
   async fn(ctx) {
     const fp = (ctx.toolInput && ctx.toolInput.file_path) || '';
-    const projectRoot = process.env.PROJECT_ROOT || PROJECT_ROOT;
+    const projectRoot = ctx.projectRoot || PROJECT_ROOT;
     if (!isMisplacedRootOnlyDir(fp, ['log', 'tmp'], projectRoot)) return ctx.allow();
     return ctx.deny(rootOnlyDirMessage('write', projectRoot, `Path: ${fp}`));
   },
