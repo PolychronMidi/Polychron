@@ -3,7 +3,7 @@
 # once at SessionStart). Polls /health q10s; 3 consecutive misses -> respawn.
 # PID at runtime/hme/proxy-supervisor.pid; new invocations no-op if alive.
 # Skips spawn during proxy-maintenance.sh flag windows.
-# Stop: `proxy-supervisor.sh stop` or `kill $(cat runtime/hme/proxy-supervisor.pid)`.
+# Stop: `proxy-supervisor.sh stop`; restart/reload restarts the live proxy child.
 
 set +e
 
@@ -247,6 +247,11 @@ _sv_loop() {
     exit 0
   ' INT TERM
 
+  if ! _sv_bundle_healthy && ! _sv_is_maintenance_active; then
+    _sv_log "initial bundle unhealthy on supervisor start: $(_sv_bundle_health_issue)"
+    _sv_spawn_and_verify && _sv_log "initial spawn verified healthy"
+  fi
+
   local misses=0
   local consecutive_spawn_fails=0
   local backoff_secs=0
@@ -345,6 +350,12 @@ case "$_action" in
     else
       echo "proxy-supervisor: not running" >&2
     fi
+    pkill -TERM -f "node $_SV_PROXY_SCRIPT" 2>/dev/null || pkill -TERM -f "$_SV_PROXY_SCRIPT" 2>/dev/null || true
+    _sv_log "proxy child stop requested via proxy-supervisor.sh stop"
+    ;;
+  restart|reload)
+    "$_SV_ROOT/tools/HME/launcher/polychron-proxy-restart.sh"
+    "$_SV_SELF" start >/dev/null 2>&1 || true
     ;;
   status)
     if [ -f "$_SV_PID_FILE" ]; then
@@ -364,7 +375,7 @@ case "$_action" in
     _sv_loop
     ;;
   *)
-    echo "Usage: proxy-supervisor.sh {start|stop|status}" >&2
+    echo "Usage: proxy-supervisor.sh {start|stop|restart|reload|status}" >&2
     exit 2
     ;;
 esac
