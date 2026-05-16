@@ -41,6 +41,23 @@ if [ -d "$HOME/.nvm/versions/node" ]; then
 fi
 export PATH="$(dirname "$_NODE_BIN"):$PATH"
 
+_omni_pids() {
+  pgrep -f "omniroute --no-open --port ${PORT}|node_modules/.bin/omniroute --no-open --port ${PORT}" 2>/dev/null | \
+    while read -r _pid; do
+      [ -n "$_pid" ] && [ "$_pid" != "$$" ] && echo "$_pid"
+    done
+}
+
+if ! curl -sf --max-time 1 "http://127.0.0.1:${PORT}/v1/models" > /dev/null 2>&1; then
+  _stale_pids="$(_omni_pids | tr '\n' ' ')"
+  if [ -n "$_stale_pids" ]; then
+    echo "[omniroute] stale process(es) without healthy /v1/models: ${_stale_pids}"
+    for _pid in $_stale_pids; do kill -TERM "$_pid" 2>/dev/null || true; done
+    sleep 2
+    for _pid in $_stale_pids; do kill -0 "$_pid" 2>/dev/null && kill -KILL "$_pid" 2>/dev/null || true; done
+  fi
+fi
+
 # Check if already running
 if curl -sf --max-time 1 "http://127.0.0.1:${PORT}/v1/models" > /dev/null 2>&1; then
   echo "[omniroute] already running on :${PORT}"
