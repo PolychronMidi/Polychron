@@ -84,7 +84,7 @@
       "doc/composition-full.md (cross-layer changes)"
     ],
     "src/utils/": [
-      "AGENTS.md (new utility)"
+      "doc/templates/AGENTS.md (new utility)"
     ],
     "src/time/": [
       "doc/composition-full.md (timing changes)"
