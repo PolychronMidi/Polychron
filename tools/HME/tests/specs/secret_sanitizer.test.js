@@ -8,7 +8,11 @@ const sanitizer = require('../../proxy/middleware/06_secret_sanitizer');
 // match the secret-detection regex of pretooluse_write.sh's content scanner.
 const F = {
   openai:   'sk' + '-proj-' + 'AbCdEfGhIjKlMnOpQrStUvWxYz1234567890abcdef',
+  anthropic:'sk' + '-ant-' + 'AbCdEfGhIjKlMnOpQrStUvWxYz1234567890abcdef',
+  openrouter:'sk' + '-or-v1-' + 'AbCdEfGhIjKlMnOpQrStUvWxYz1234567890abcdef',
   github:   'g' + 'hp_' + 'AbCdEfGhIj1234567890MnOpQrStUvWxYzAa',
+  githubPat:'github' + '_pat_' + 'AbCdEfGhIjKlMnOpQrStUvWxYz1234567890abcdefABCDE1234567890abcdef',
+  google:   'AI' + 'zaAbCdEfGhIjKlMnOpQrStUvWxYz123456789',
   groq:     'gsk' + '_AbCdEfGhIj1234567890MnOpQrStUvWxYzAaBbCcDd',
   awsKey:   'AK' + 'IAIOSFODNN7EXAMPLE',
   bearer:   'Bearer ' + 'abcDEF1234567890.fakesig_part_here',
@@ -34,9 +38,22 @@ test('sanitize: OpenAI provider key', () => {
   assert.ok(!out.includes(F.openai), 'original key value must not survive');
 });
 
+test('sanitize: Anthropic and OpenRouter provider keys', () => {
+  const out = _scrub(`ANTHROPIC_API_KEY=${F.anthropic} OPENROUTER_API_KEY=${F.openrouter}`);
+  assert.equal((out.match(/<REDACTED:provider-key>/g) || []).length, 2);
+  assert.ok(!out.includes(F.anthropic));
+  assert.ok(!out.includes(F.openrouter));
+});
+
 test('sanitize: GitHub PAT', () => {
   const out = _scrub('token: ' + F.github);
   assert.match(out, /<REDACTED:github-token>/);
+});
+
+test('sanitize: GitHub fine-grained PAT and Google key', () => {
+  const out = _scrub(`gh=${F.githubPat} google=${F.google}`);
+  assert.match(out, /<REDACTED:github-pat>/);
+  assert.match(out, /<REDACTED:google-key>/);
 });
 
 test('sanitize: Groq provider key', () => {
