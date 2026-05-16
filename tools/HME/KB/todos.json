@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3396,
-      "updated_ts": 1778949208.9188411,
-      "codex_plan_synced_ts": 1778949208.9187667,
+      "updated_ts": 1778950198.9290867,
+      "codex_plan_synced_ts": 1778950198.9290135,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T16:33:12.924Z"
+      "codex_plan_ts": "2026-05-16T16:49:51.751Z"
     }
   },
   {
@@ -5682,8 +5682,8 @@
     "id": 3393,
     "text": "Trace how malformed native-looking Edit calls reach empty success",
     "activeForm": "Trace how malformed native-looking Edit calls reach empty success",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5692,14 +5692,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T16:33:12.924Z"
+    "codex_plan_ts": "2026-05-16T16:49:51.751Z"
   },
   {
     "id": 3394,
     "text": "Patch malformed Edit validation/autocorrection to fail loud with current context instead of empty output",
     "activeForm": "Patch malformed Edit validation/autocorrection to fail loud with current context instead of empty output",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5708,14 +5708,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T16:33:12.924Z"
+    "codex_plan_ts": "2026-05-16T16:49:51.751Z"
   },
   {
     "id": 3395,
     "text": "Add regression tests for heredoc-fragment/omitted-string Edit misuse",
     "activeForm": "Add regression tests for heredoc-fragment/omitted-string Edit misuse",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5724,14 +5724,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T16:33:12.924Z"
+    "codex_plan_ts": "2026-05-16T16:49:51.751Z"
   },
   {
     "id": 3396,
     "text": "Run focused tests and verify no silent empty Edit path remains",
     "activeForm": "Run focused tests and verify no silent empty Edit path remains",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5740,6 +5740,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T16:33:12.924Z"
+    "codex_plan_ts": "2026-05-16T16:49:51.751Z"
   }
 ]

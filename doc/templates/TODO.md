@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Trace how malformed native-looking Edit calls reach empty success
+(empty)
 
 ## Next
 
-- [ ] [E3] Patch malformed Edit validation/autocorrection to fail loud with current context instead of empty output
-- [ ] [E3] Add regression tests for heredoc-fragment/omitted-string Edit misuse
-- [ ] [E3] Run focused tests and verify no silent empty Edit path remains
+(empty)
 
 ## Done
 
