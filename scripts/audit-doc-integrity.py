@@ -34,7 +34,6 @@ _DEFAULT_ROOTS = [
     _PROJECT / "src",
     _PROJECT / "scripts",
     _PROJECT / "tools" / "HME",
-    _PROJECT / "doc" / "templates" / "AGENTS.md",
 ]
 
 _EXCLUDE_DIRS = {"node_modules", ".git", "output", "tmp",
