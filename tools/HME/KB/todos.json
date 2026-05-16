@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3421,
-      "updated_ts": 1778952118.936505,
-      "codex_plan_synced_ts": 1778952118.9364247,
+      "max_id": 3425,
+      "updated_ts": 1778952628.9482903,
+      "codex_plan_synced_ts": 1778952628.9482107,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T17:21:44.300Z"
+      "codex_plan_ts": "2026-05-16T17:30:25.225Z"
     }
   },
   {
@@ -4871,8 +4871,8 @@
     "id": 3343,
     "text": "Run targeted and full verification",
     "activeForm": "Run targeted and full verification",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6142,5 +6142,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T17:21:44.300Z"
+  },
+  {
+    "id": 3422,
+    "text": "Build least-recently-run script ranking",
+    "activeForm": "Build least-recently-run script ranking",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778952625.6660864,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:30:25.225Z"
+  },
+  {
+    "id": 3423,
+    "text": "Inspect coldest scripts for purpose and references",
+    "activeForm": "Inspect coldest scripts for purpose and references",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778952625.6660926,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:30:25.225Z"
+  },
+  {
+    "id": 3424,
+    "text": "Delete obsolete or wire live scripts",
+    "activeForm": "Delete obsolete or wire live scripts",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778952625.6660962,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:30:25.225Z"
+  },
+  {
+    "id": 3425,
+    "text": "Run targeted verification and report evidence",
+    "activeForm": "Run targeted verification and report evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778952625.6660988,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:30:25.225Z"
   }
 ]

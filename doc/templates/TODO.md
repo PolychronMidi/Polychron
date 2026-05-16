@@ -4,11 +4,13 @@
 
 ## Now
 
-- [x] [E3] Run targeted and full verification
+- [ ] [E3] Build least-recently-run script ranking
 
 ## Next
 
-(empty)
+- [ ] [E3] Inspect coldest scripts for purpose and references
+- [ ] [E3] Delete obsolete or wire live scripts
+- [ ] [E3] Run targeted verification and report evidence
 
 ## Done
 
