@@ -4,15 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Inspect hme_proxy overdrive/compaction/stream sections and tests
+- [ ] [E3] Fix remaining mode-5 retirement patch and test sandbox env helpers
 
 ## Next
 
-- [ ] [E3] Extract Anthropic passthrough compaction module
-- [ ] [E3] Extract overdrive routing and phase out modes 1-5
-- [ ] [E3] Extract stream/translation edge handlers
-- [ ] [E3] Add/update regression tests
-- [ ] [E3] Run targeted and full verification
+- [ ] [E3] Run targeted syntax and overdrive/proxy tests
+- [ ] [E3] Run compact refactor verification
+- [ ] [E3] Report changed files and same-turn evidence
 
 ## Done
 

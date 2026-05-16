@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3343,
-      "updated_ts": 1778941678.8773746,
-      "codex_plan_synced_ts": 1778941678.8773127,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+      "max_id": 3347,
+      "updated_ts": 1778942442.5167673,
+      "codex_plan_synced_ts": 1778942442.5167038,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T14:40:42.071Z"
     }
   },
   {
@@ -4786,8 +4786,8 @@
     "id": 3338,
     "text": "Inspect hme_proxy overdrive/compaction/stream sections and tests",
     "activeForm": "Inspect hme_proxy overdrive/compaction/stream sections and tests",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4796,14 +4796,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3339,
     "text": "Extract Anthropic passthrough compaction module",
     "activeForm": "Extract Anthropic passthrough compaction module",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4812,14 +4813,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3340,
     "text": "Extract overdrive routing and phase out modes 1-5",
     "activeForm": "Extract overdrive routing and phase out modes 1-5",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4828,14 +4830,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3341,
     "text": "Extract stream/translation edge handlers",
     "activeForm": "Extract stream/translation edge handlers",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4844,14 +4847,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3342,
     "text": "Add/update regression tests",
     "activeForm": "Add/update regression tests",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4860,14 +4864,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3343,
     "text": "Run targeted and full verification",
     "activeForm": "Run targeted and full verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4876,6 +4881,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3344,
+    "text": "Fix remaining mode-5 retirement patch and test sandbox env helpers",
+    "activeForm": "Fix remaining mode-5 retirement patch and test sandbox env helpers",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778942442.5161262,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T14:40:42.071Z"
+  },
+  {
+    "id": 3345,
+    "text": "Run targeted syntax and overdrive/proxy tests",
+    "activeForm": "Run targeted syntax and overdrive/proxy tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778942442.5161319,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T14:40:42.071Z"
+  },
+  {
+    "id": 3346,
+    "text": "Run compact refactor verification",
+    "activeForm": "Run compact refactor verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778942442.5161364,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T14:40:42.071Z"
+  },
+  {
+    "id": 3347,
+    "text": "Report changed files and same-turn evidence",
+    "activeForm": "Report changed files and same-turn evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778942442.5161393,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T14:40:42.071Z"
   }
 ]
