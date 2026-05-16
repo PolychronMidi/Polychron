@@ -145,8 +145,10 @@ def source_reference_counts(paths: list[Path]) -> dict[Path, tuple[int, list[str
 
 def _is_run_evidence_log(path: Path) -> bool:
     rel = str(path.relative_to(ROOT))
+    if rel in {"log/lint.log", "log/pipeline.log"}:
+        return True
     if rel.startswith("log/"):
-        return path.suffix in {".log", ".out", ".jsonl"} or path.name.startswith("hme.log")
+        return path.suffix == ".jsonl"
     if rel.startswith("output/metrics/archive/"):
         return path.name.startswith("hme-activity") and path.suffix == ".archive"
     if rel.startswith("output/metrics/"):
