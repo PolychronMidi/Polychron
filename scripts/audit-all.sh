@@ -80,6 +80,9 @@ run "verify-detector-registry"   python3 tools/HME/scripts/detectors/verify_regi
 # Review-verdict producer/hook contract.
 run "test-hook-contracts"        python3 tools/HME/scripts/test-hook-contracts.py
 
+# Root scripts/ run/reference recency: catches stale pipeline refs and cold deletion candidates.
+run "audit-scripts-recency"      python3 scripts/audit-scripts-recency.py --limit 25 $([ "$STRICT" = "1" ] && echo --strict)
+
 # HME scripts dead-code classification.
 run "audit-dead-scripts"         python3 tools/HME/scripts/audit-dead-scripts.py
 
