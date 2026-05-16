@@ -13,7 +13,7 @@ import os
 import sys
 from datetime import datetime
 
-from _common import PROJECT_ROOT
+from _common import PROJECT_ROOT, load_jsonl_all
 
 
 def main(argv):

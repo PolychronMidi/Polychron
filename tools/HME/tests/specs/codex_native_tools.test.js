@@ -79,7 +79,7 @@ test('Codex native Read response rewrites to executable bridge and back to Read 
   assert.equal(call.name, 'exec_command');
   const args = JSON.parse(call.arguments);
   assert.match(args.cmd, /codex_structured_tool\.js read --json/);
-  assert.match(args.cmd, /doc\/HME\.md/);
+  assert.match(args.cmd, /doc\/self-coherence\.md/);
   const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
   assert.equal(normalized.name, 'Read');
   assert.deepEqual(JSON.parse(normalized.arguments), { file_path: 'doc/self-coherence.md', limit: 5 });

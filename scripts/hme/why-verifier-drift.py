@@ -22,7 +22,7 @@ import re
 import sys
 from collections import defaultdict
 
-from _common import PROJECT_ROOT
+from _common import PROJECT_ROOT, load_jsonl_all
 
 
 def _verifier_source_hashes() -> dict[str, str]:
@@ -86,12 +86,7 @@ def main(argv):
         print(f"No timeseries at {ts_path}")
         return 1
 
-    try:
-        with open(ts_path) as f:
-            rows = [json.loads(ln) for ln in f if ln.strip()]
-    except (OSError, ValueError) as e:
-        print(f"Failed to read timeseries: {e}")
-        return 1
+    rows = load_jsonl_all("output/metrics/hme-coherence-timeseries.jsonl")
 
     if len(rows) < n_runs:
         n_runs = len(rows)

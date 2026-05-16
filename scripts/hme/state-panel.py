@@ -15,7 +15,7 @@ import os
 import sys
 import time
 
-from _common import PROJECT_ROOT
+from _common import PROJECT_ROOT, load_jsonl_all
 
 
 def _read_text(path: str) -> str:
@@ -134,6 +134,10 @@ def main(argv):
                                    "hci-verifier-snapshot.json"))
     if snap:
         hci = snap.get("hci", "?")
+        try:
+            hci_num = float(hci)
+        except (TypeError, ValueError):
+            hci_num = None
         n = len(snap.get("verifiers", {})) or snap.get("verifier_count", "?")
         # Horizon II maturity -- confidence dimension on HCI line.
         scores = [info.get("score", 0) for info in snap.get("verifiers", {}).values()
@@ -150,14 +154,9 @@ def main(argv):
         out.append(f"  HCI                {hci}/100 ({n} verifiers){conf_str}")
         ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
                                "hme-coherence-timeseries.jsonl")
-        if os.path.isfile(ts_path) and isinstance(hci, (int, float)):
-            try:
-                with open(ts_path) as _tf:
-                    rows = [json.loads(ln) for ln in _tf
-                            if ln.strip()]
-                rows = [r for r in rows if r.get("hci") is not None]
-            except (OSError, ValueError):
-                rows = []
+        if os.path.isfile(ts_path) and hci_num is not None:
+            rows = load_jsonl_all("output/metrics/hme-coherence-timeseries.jsonl")
+            rows = [r for r in rows if r.get("hci") is not None]
             if len(rows) >= 2:
                 now = time.time()
                 horizons = [
@@ -175,7 +174,7 @@ def main(argv):
                         else:
                             break
                     if anchor:
-                        d = float(hci) - float(anchor["hci"])
+                        d = hci_num - float(anchor["hci"])
                         sign = "+" if d > 0 else ""
                         segments.append(f"{label} {sign}{d:.1f}")
                     else:
