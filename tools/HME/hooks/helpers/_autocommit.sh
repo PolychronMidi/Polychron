@@ -180,7 +180,7 @@ _ac_do_commit() {
   # Also mark nexus for the agent-visible reminder, if available.
   if [ -f "$_AC_ROOT/tools/HME/hooks/helpers/_nexus.sh" ]; then
     # shellcheck source=/dev/null
-    source "$_AC_ROOT/tools/HME/hooks/helpers/_nexus.sh" 2>/dev/null  # silent-ok: optional fallback path.
+    source "$_AC_ROOT/tools/HME/hooks/helpers/_nexus.sh"
     if declare -F _nexus_mark >/dev/null; then
       _nexus_mark COMMIT_FAILED "autocommit failed twice -- uncommitted changes may exist" 2>/dev/null || true  # silent-ok: optional fallback path.
     fi

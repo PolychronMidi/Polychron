@@ -28,7 +28,7 @@ if [ -z "$_WD_ROOT" ]; then
   exit 0
 fi
 PROJECT_ROOT="$_WD_ROOT"
-source "$_WD_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
+[ -f "$_WD_ROOT/tools/HME/hooks/helpers/service_registry.sh" ] && source "$_WD_ROOT/tools/HME/hooks/helpers/service_registry.sh"
 
 _WD_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
 _WD_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_WD_PORT")"  # silent-ok: optional fallback path.

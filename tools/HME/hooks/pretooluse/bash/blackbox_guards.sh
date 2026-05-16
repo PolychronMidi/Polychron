@@ -7,7 +7,7 @@
 # ascent resolved into Claude Code's plugin cache when hooks were invoked
 # from there -- a silent disable. The audit-shell-hooks R1 rule catches
 # this specific cache-trap pattern.
-source "${PROJECT_ROOT}/tools/HME/hooks/helpers/_policy_enabled.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
+[ -f "${PROJECT_ROOT}/tools/HME/hooks/helpers/_policy_enabled.sh" ] && source "${PROJECT_ROOT}/tools/HME/hooks/helpers/_policy_enabled.sh"
 
 # Block mkdir of misplaced log/, metrics/, or tmp/ directories via the
 # canonical JS path_policy module used by proxy policies.
