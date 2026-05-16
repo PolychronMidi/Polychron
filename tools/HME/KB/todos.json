@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3268,
-      "updated_ts": 1778902318.7599418,
-      "codex_plan_synced_ts": 1778902318.7598944,
+      "updated_ts": 1778902648.762225,
+      "codex_plan_synced_ts": 1778902648.7621772,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T03:31:44.944Z"
+      "codex_plan_ts": "2026-05-16T03:37:25.659Z"
     }
   },
   {
@@ -3596,8 +3596,8 @@
     "id": 3266,
     "text": "Profile invariants structure and current validation",
     "activeForm": "Profile invariants structure and current validation",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3606,14 +3606,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T03:31:44.944Z"
+    "codex_plan_ts": "2026-05-16T03:37:25.659Z"
   },
   {
     "id": 3267,
     "text": "Find duplication, stale refs, and brittle shell patterns",
     "activeForm": "Find duplication, stale refs, and brittle shell patterns",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3622,14 +3622,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T03:31:44.944Z"
+    "codex_plan_ts": "2026-05-16T03:37:25.659Z"
   },
   {
     "id": 3268,
     "text": "Summarize cleanup opportunities with evidence",
     "activeForm": "Summarize cleanup opportunities with evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3638,6 +3638,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T03:31:44.944Z"
+    "codex_plan_ts": "2026-05-16T03:37:25.659Z"
   }
 ]

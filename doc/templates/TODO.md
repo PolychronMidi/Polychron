@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Profile invariants structure and current validation
+(empty)
 
 ## Next
 
-- [ ] [E3] Find duplication, stale refs, and brittle shell patterns
-- [ ] [E3] Summarize cleanup opportunities with evidence
+(empty)
 
 ## Done
 
