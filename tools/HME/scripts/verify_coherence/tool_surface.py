@@ -21,7 +21,6 @@ class ToolSurfaceCoverageVerifier(Verifier):
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        import ast
         public_tools = set()
         hidden_tools = set()
         for root, _dirs, files in os.walk(_SERVER_DIR):
@@ -72,7 +71,6 @@ class ToolSurfaceCoverageVerifier(Verifier):
         score = 1.0 - len(missing) / len(public_tools)
         return _result(WARN, score, f"{len(missing)}/{len(public_tools)} public tools undocumented",
                        missing)
-
 
 
 # Verifiers -- RUNTIME category
