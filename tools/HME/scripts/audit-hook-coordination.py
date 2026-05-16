@@ -37,7 +37,7 @@ from collections import defaultdict
 from pathlib import Path
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
-                Path(__file__).resolve().parent.parent)
+                Path(__file__).resolve().parents[3])
 
 _POLICY_DIR = _PROJECT / "tools" / "HME" / "proxy" / "stop_chain" / "policies"
 _HOOK_DIR = _PROJECT / "tools" / "HME" / "hooks" / "lifecycle"

@@ -22,7 +22,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parent.parent.parent.parent))
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[3].parent.parent))
 RULES = PROJECT_ROOT / "tools" / "HME" / "config" / "adaptation-rules.json"
 ACTIVITY = PROJECT_ROOT / "output" / "metrics" / "hme-activity.jsonl"
 OUT = PROJECT_ROOT / "tmp" / "hme-adaptive-config.sh"

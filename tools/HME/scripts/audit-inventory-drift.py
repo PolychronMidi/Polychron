@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 
 _env = os.environ.get("PROJECT_ROOT")
-PROJECT_ROOT = Path(_env) if _env else Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(_env) if _env else Path(__file__).resolve().parents[3]
 RUNTIME_DIR = PROJECT_ROOT / "runtime" / "hme"
 INVENTORY = RUNTIME_DIR / "INVENTORY.md"
 SCAN_ROOTS = [PROJECT_ROOT / "tools" / "HME", PROJECT_ROOT / "scripts"]

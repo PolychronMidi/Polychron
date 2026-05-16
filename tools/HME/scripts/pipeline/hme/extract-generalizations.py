@@ -68,7 +68,7 @@ def _build_project_vocab() -> set[str]:
     vocab: set[str] = set()
 
     # 1. Bias-bounds registrations -- "module:field" pairs. Both halves
-    bias_path = os.path.join(PROJECT_ROOT, "scripts", "pipeline", "bias-bounds-manifest.json")
+    bias_path = os.path.join(PROJECT_ROOT, "src", "scripts", "pipeline", "bias-bounds-manifest.json")
     try:
         with open(bias_path) as f:
             bias = json.load(f)

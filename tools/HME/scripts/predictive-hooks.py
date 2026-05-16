@@ -32,7 +32,7 @@ from collections import defaultdict
 from pathlib import Path
 
 
-ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parent.parent.parent.parent)
+ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3].parent.parent)
 LATENCY_LOG = ROOT / "log" / "hme-hook-latency.jsonl"
 OUT = ROOT / "output" / "metrics" / "hme-hook-signal-value.json"
 

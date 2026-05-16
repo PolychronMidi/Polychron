@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 
 _env = os.environ.get("PROJECT_ROOT")
-PROJECT_ROOT = Path(_env) if _env else Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(_env) if _env else Path(__file__).resolve().parents[3]
 SCAN_ROOTS = [PROJECT_ROOT / "tools" / "HME", PROJECT_ROOT / "scripts"]
 SKIP_DIRS = ("__pycache__", "node_modules", ".git", "out", "dist", "tests")
 EXTS = (".py", ".js", ".sh", ".bash", ".ts")

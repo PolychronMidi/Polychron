@@ -42,7 +42,7 @@ import sys
 from pathlib import Path
 
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[3]
 HOOKS_DIR = REPO_ROOT / "tools" / "HME" / "hooks"
 ENV_FILE = REPO_ROOT / ".env"
 

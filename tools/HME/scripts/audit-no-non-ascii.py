@@ -84,7 +84,7 @@ def main() -> int:
                    help='exit 1 if any non-ASCII found')
     args = p.parse_args()
 
-    project = pathlib.Path(__file__).resolve().parent.parent
+    project = pathlib.Path(__file__).resolve().parents[3]
     if args.paths:
         roots = [pathlib.Path(p) for p in args.paths]
     else:

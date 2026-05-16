@@ -25,7 +25,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 
-_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 _STATS = os.path.join(_PROJECT_ROOT, "output", "metrics", "detector-stats.jsonl")
 
 

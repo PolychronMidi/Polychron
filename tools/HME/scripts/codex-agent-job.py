@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[2]))
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[3]))
 HME_SCRIPTS = PROJECT_ROOT / "tools" / "HME" / "scripts"
 sys.path.insert(0, str(HME_SCRIPTS))
 

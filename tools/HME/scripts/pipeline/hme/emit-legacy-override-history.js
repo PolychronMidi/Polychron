@@ -13,7 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.resolve(__dirname, '..', '..', '..');
+const ROOT = (process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..', '..'));
 const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 const TRACE = path.join(METRICS_DIR, 'trace-summary.json');
 const OUT = path.join(METRICS_DIR, 'legacy-override-history.jsonl');

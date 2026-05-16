@@ -38,7 +38,7 @@ import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT") or
-                    Path(__file__).resolve().parents[2])
+                    Path(__file__).resolve().parents[3])
 REGISTRY = PROJECT_ROOT / "tools" / "HME" / "i_registry.json"
 DEVLOG = PROJECT_ROOT / "tools" / "HME" / "KB" / "devlog"
 

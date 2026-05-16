@@ -9,7 +9,7 @@ import urllib.request
 from pathlib import Path
 from omniroute_reasoning_config import verify as verify_omniroute
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 HME_SCRIPTS = ROOT / 'tools' / 'HME' / 'scripts'
 sys.path.insert(0, str(HME_SCRIPTS))
 

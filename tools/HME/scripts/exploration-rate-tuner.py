@@ -30,7 +30,7 @@ import time
 from pathlib import Path
 
 
-ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parent.parent.parent.parent)
+ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3].parent.parent)
 ACTIVITY = ROOT / "output" / "metrics" / "hme-activity.jsonl"
 OUT_TXT = ROOT / "tmp" / "hme-exploration-rate.txt"
 OUT_JSON = ROOT / "output" / "metrics" / "hme-exploration-rate.json"

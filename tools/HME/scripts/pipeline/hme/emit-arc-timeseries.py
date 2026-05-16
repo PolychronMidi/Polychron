@@ -29,7 +29,7 @@ import subprocess
 import sys
 import time
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 TIMESERIES = os.path.join(METRICS_DIR, "hme-arc-timeseries.jsonl")
 ENVELOPE_SHIFT = os.path.join(METRICS_DIR, "hme-envelope-shift.json")

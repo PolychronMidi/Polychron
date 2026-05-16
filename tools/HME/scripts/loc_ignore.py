@@ -20,7 +20,7 @@ def _project_root() -> Path:
     pr = os.environ.get("PROJECT_ROOT")
     if pr:
         return Path(pr)
-    return Path(__file__).resolve().parents[1]
+    return Path(__file__).resolve().parents[3]
 
 
 def _compile_pattern(pat: str) -> re.Pattern[str]:

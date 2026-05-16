@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
+const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..', '..');
 
 /**
  * Load JSON from an absolute or project-relative path. Returns null on missing/malformed.

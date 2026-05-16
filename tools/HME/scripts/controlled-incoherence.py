@@ -51,7 +51,7 @@ import time
 from pathlib import Path
 
 
-ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parent.parent.parent.parent)
+ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3].parent.parent)
 LOG = ROOT / "output" / "metrics" / "hme-controlled-incoherence.jsonl"
 
 

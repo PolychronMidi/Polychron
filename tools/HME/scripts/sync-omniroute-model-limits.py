@@ -87,7 +87,7 @@ def sync(path: Path, catalog: dict, dry_run: bool) -> int:
 
 
 def main() -> int:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools" / "HME" / "scripts"))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools" / "HME" / "scripts"))
     from service_registry import service_map, service_port
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", default="config/models.json")

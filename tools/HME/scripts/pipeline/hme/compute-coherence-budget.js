@@ -174,7 +174,7 @@ function main() {
   // if the conjugate-channel
   let bandTighteningApplied = null;
   try {
-    const tighteningPath = path.join(__dirname, '..', '..', '..', 'tmp', 'hme-band-tightening.json');
+    const tighteningPath = path.join(ROOT, 'tmp', 'hme-band-tightening.json');
     if (fs.existsSync(tighteningPath)) {
       const tightenRaw = fs.readFileSync(tighteningPath, 'utf8');
       const tighten = JSON.parse(tightenRaw);

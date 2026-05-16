@@ -29,7 +29,7 @@ import os
 import sys
 import time
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 OUT = os.path.join(METRICS_DIR, "hme-next-actions.json")
 

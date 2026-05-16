@@ -15,7 +15,7 @@ const cp = require('child_process');
 const { execSync, spawnSync } = cp;
 const fs   = require('fs');
 const path = require('path');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(__dirname, '..', '..', 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(__dirname, '..', '..', '..', 'output', 'metrics');
 
 const MEASURE_TIMEOUT_SEC = 30;
 
@@ -211,12 +211,12 @@ function writeSummaryJSON(wallTime, extra) {
   // hci=null summary. The HCI computation has no hook-specific context --
   // it's just a subprocess call -- so it belongs here.
   try {
-    var hciScript = path.join(__dirname, '..', '..', 'tools', 'HME', 'scripts', 'verify-coherence.py');
+    var hciScript = path.join(__dirname, '..', '..', '..', 'tools', 'HME', 'scripts', 'verify-coherence.py');
     if (fs.existsSync(hciScript)) {
       var hciOut = cp.spawnSync('python3', [hciScript, '--score'], {
         encoding: 'utf8', timeout: 30_000,
         env: Object.assign({}, process.env, {
-          PROJECT_ROOT: path.join(__dirname, '..', '..'),
+          PROJECT_ROOT: path.join(__dirname, '..', '..', '..'),
         }),
       });
       var hciStr = (hciOut.stdout || '').trim();
@@ -312,7 +312,7 @@ function writeSummaryJSON(wallTime, extra) {
 // single-fire: append-first guarantees the event lands, spawn-second adds any
 // side-effects emit.py performs (detached so it can't block or duplicate).
 function emitActivity(event, fields) {
-  var projectRoot = path.join(__dirname, '..', '..');
+  var projectRoot = path.join(__dirname, '..', '..', '..');
   // 1. Guaranteed direct-append to the activity log.
   var record = Object.assign({ event: event, ts: Math.floor(Date.now() / 1000) }, fields || {});
   try {
@@ -360,7 +360,7 @@ function main() {
     var curSha = '';
     try {
       curSha = execSync('git rev-parse --short HEAD', {
-        cwd: path.join(__dirname, '..', '..'),
+        cwd: path.join(__dirname, '..', '..', '..'),
         stdio: ['ignore', 'pipe', 'ignore'],
       }).toString().trim();
     } catch (_e) { /* git not available */ }
@@ -368,7 +368,7 @@ function main() {
     if (lastSha && curSha) {
       try {
         var diff = execSync(`git diff --name-only ${lastSha}..${curSha}`, {
-          cwd: path.join(__dirname, '..', '..'),
+          cwd: path.join(__dirname, '..', '..', '..'),
           stdio: ['ignore', 'pipe', 'ignore'],
         }).toString().trim();
         filesChanged = diff ? diff.split('\n').length : 0;
@@ -447,7 +447,7 @@ function main() {
   // Moved from posttooluse_bash.sh so non-Claude pipeline runs (shell, cron,
   // CI, any other agent) also refresh these artifacts. Spawned detached so
   // they don't block pipeline-finish latency.
-  var hmeScripts = path.join(__dirname, '..', '..', 'tools', 'HME', 'scripts');
+  var hmeScripts = path.join(__dirname, '..', '..', '..', 'tools', 'HME', 'scripts');
   var bgScripts = [
     'snapshot-holograph.py',           // time-series holograph for HCI trend
     'analyze-tool-effectiveness.py',   // tool-usage patterns per session
@@ -459,7 +459,7 @@ function main() {
     'memetic-drift.py',                // doc/templates/AGENTS.md rule violation scan
   ];
   var bgEnv = Object.assign({}, process.env, {
-    PROJECT_ROOT: path.join(__dirname, '..', '..'),
+    PROJECT_ROOT: path.join(__dirname, '..', '..', '..'),
   });
   // Pipe stderr (not 'ignore') to a per-script log file so silent failures
   // surface for diagnosis. Verified failure mode: hme-coupling.json + hme-
@@ -478,7 +478,7 @@ function main() {
         stdio: ['ignore', 'ignore', fd],
         detached: true,
         env: bgEnv,
-        cwd: path.join(__dirname, '..', '..'),
+        cwd: path.join(__dirname, '..', '..', '..'),
       }).unref();
       fs.closeSync(fd);  // child has its own ref via inheritance
     } catch (_e) { /* best-effort -- don't block pipeline on analytics spawn */ }
@@ -496,8 +496,8 @@ function main() {
   // round. Lives under tools/HME/scripts/pipeline/hme/ (not HME scripts/) so it spawns
   // separately from the hmeScripts loop above.
   _spawnBg(
-    path.join(__dirname, 'hme', 'run-invariant-battery.py'),
-    [path.join(__dirname, 'hme', 'run-invariant-battery.py')],
+    path.join(__dirname, '..', '..', '..', 'tools', 'HME', 'scripts', 'pipeline', 'hme', 'run-invariant-battery.py'),
+    [path.join(__dirname, '..', '..', '..', 'tools', 'HME', 'scripts', 'pipeline', 'hme', 'run-invariant-battery.py')],
     'run-invariant-battery'
   );
 

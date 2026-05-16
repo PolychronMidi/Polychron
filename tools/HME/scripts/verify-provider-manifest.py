@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import json, sys
 from pathlib import Path
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 manifest = json.loads((ROOT/'config/provider-manifest.json').read_text())
 missing = [p for p in manifest.get('requiredFiles', []) if not (ROOT/p).exists()]
 for name, rel in manifest.get('checks', {}).items():

@@ -9,7 +9,7 @@ const path = require('path');
 const readline = require('readline');
 
 function _loadLocIgnorePatterns() {
-  const ignoreFile = path.resolve(__dirname, '..', 'config', 'loc-ignore.txt');
+  const ignoreFile = path.resolve(__dirname, '..', '..', '..', 'config', 'loc-ignore.txt');
   if (!fs.existsSync(ignoreFile)) return [];
   const out = [];
   for (const raw of fs.readFileSync(ignoreFile, 'utf8').split('\n')) {
@@ -84,7 +84,7 @@ async function countLinesForFiles(files, concurrency = 8) {
 
 async function main() {
   const arg = process.argv[2];
-  const srcDir = arg ? path.resolve(process.cwd(), arg) : path.resolve(__dirname, '..', 'src');
+  const srcDir = arg ? path.resolve(process.cwd(), arg) : path.resolve(__dirname, '..', '..', '..', 'src');
 
   try {
     const st = await fs.promises.stat(srcDir);

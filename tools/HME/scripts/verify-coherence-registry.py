@@ -20,7 +20,7 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parent.parent.parent.parent))
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[3].parent.parent))
 REGISTRY = PROJECT_ROOT / "tools" / "HME" / "config" / "coherence-registry.json"
 OUTPUT = PROJECT_ROOT / "output" / "metrics" / "hme-coherence-health.json"
 

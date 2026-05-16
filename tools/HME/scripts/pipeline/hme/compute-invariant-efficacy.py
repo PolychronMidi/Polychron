@@ -32,7 +32,7 @@ from collections import defaultdict
 
 from _metrics import METRICS_DIR
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 CONFIG_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "config", "invariants.json")
 HISTORY_PATH = os.path.join(METRICS_DIR, "hme-invariant-history.json")
 OUT_PATH = os.path.join(METRICS_DIR, "hme-invariant-efficacy.json")

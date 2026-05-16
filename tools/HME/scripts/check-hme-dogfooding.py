@@ -35,7 +35,7 @@ import os
 import sys
 
 
-_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 _MCP_ROOT = os.path.join(_PROJECT_ROOT, "tools", "HME", "mcp")
 
 # Allow-list for try/except bodies that are legitimately quiet:

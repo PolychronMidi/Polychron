@@ -13,7 +13,7 @@ import shlex
 import subprocess
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 SCRIPT_ROOT = ROOT / "scripts"
 LOG_ROOTS = [ROOT / "log", ROOT / "output" / "metrics", ROOT / "runtime" / "hme"]
 RUN_EVIDENCE_METRICS = {"hme-activity.jsonl", "hme-activity-archive.jsonl", "hme-tool-usage.jsonl"}

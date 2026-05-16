@@ -12,7 +12,7 @@ import os
 import sys
 
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..")
 )
 sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
 

@@ -53,7 +53,7 @@ def _vars():
     import audit_shell_undefined_vars as _v
     return _v
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[3]
 HOOKS_DIR = REPO_ROOT / "tools" / "HME" / "hooks"
 ENV_FILE = REPO_ROOT / ".env"
 

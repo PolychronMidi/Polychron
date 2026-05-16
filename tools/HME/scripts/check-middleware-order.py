@@ -13,7 +13,7 @@ import re
 import sys
 
 
-_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 _MW_DIR = os.path.join(_PROJECT_ROOT, "tools", "HME", "proxy", "middleware")
 _PREFIX_RE = re.compile(r"^\d+[a-z]?_")
 

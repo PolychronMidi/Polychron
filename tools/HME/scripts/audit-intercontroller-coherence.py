@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 
 
-ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parent.parent)
+ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
 SNAPSHOTS = ROOT / "output" / "metrics" / "runtime-snapshots.json"
 OUT = ROOT / "output" / "metrics" / "hme-intercontroller-coherence.json"
 

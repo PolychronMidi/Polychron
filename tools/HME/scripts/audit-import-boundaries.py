@@ -45,7 +45,7 @@ from collections import defaultdict
 from pathlib import Path
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
-                Path(__file__).resolve().parent.parent)
+                Path(__file__).resolve().parents[3])
 
 _DEFAULT_ROOTS = [
     _PROJECT / "tools" / "HME" / "service",
