@@ -20,6 +20,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('../../shared');
 const sessionState = require('../../session_state');
+const { parentTaskDebt } = require('./parent_task_guard');
 
 const VERDICTS_FILE = path.join(RUNTIME_DIR, 'stop-detector-verdicts.env');
 const COMPL_FILE = path.join(RUNTIME_DIR, 'completeness-injected.json');
@@ -323,6 +324,8 @@ module.exports = {
     if (!lastUser) return ctx.allow();
     ctx.shared.lastRealUserText = lastUser;
     if (isStartupGraceTurn(ctx)) return ctx.allow();
+    const parentDebt = parentTaskDebt(transcriptPath);
+    if (parentDebt) { armFpGate('CORRECTION_PIVOT_PARENT_TASK'); return ctx.deny(parentDebt); }
 
     // Dedup key = turnIndex+text so identical retypes get separate budgets.
     const turnKey = crypto.createHash('sha256')
