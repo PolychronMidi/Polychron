@@ -41,6 +41,8 @@ const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./m
 const { applyAnthropicCommonTransforms } = require('./request_transform_core');
 const { stripStaleToolResults, sanitizeMessages } = require('./conversation_graph');
 const { servicePort } = require('./service_registry');
+const { requestTelemetry } = require('./request_telemetry');
+const { routeDecision } = require('./model_route_resolver');
 const {
   omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat,
   firstLegacyChatCandidate,
@@ -812,6 +814,8 @@ function handleRequest(clientReq, clientRes) {
         model: (payload.model || 'unknown').replace(/[,=\s]/g, '_'),
         messages: payload.messages.length,
         injected: injected,
+        route_decision: routeDecision({ host: 'claude', requestedModel: payload.model || '', provider: upstream.provider, protocol: 'anthropic-messages', route: upstream.provider }),
+        telemetry: requestTelemetry({ host: 'claude', protocol: 'anthropic-messages', provider: upstream.provider, route: upstream.provider, path: clientReq.url || '?', body: payload, stream: payload.stream }),
       });
     }
 
