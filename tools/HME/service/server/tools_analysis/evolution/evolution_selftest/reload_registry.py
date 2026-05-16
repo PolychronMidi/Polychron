@@ -18,6 +18,7 @@ RELOADABLE = [
     "evolution_next", "evolution_suggest",
     "evolution_trace", "evolution_strategies",
     "evolution_admin", "evolution_introspect", "evolution_selftest",
+    "index_jobs", "todo_admin",
     "runtime", "composition", "trust_analysis",
     "digest", "digest_analysis",
     "section_compare", "perceptual", "perceptual_engines",
