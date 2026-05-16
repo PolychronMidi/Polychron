@@ -277,12 +277,12 @@ class AdapterBoundaryRegistryVerifier(Verifier):
                 continue
             if entry.get("kind") not in ("adapter-boundary", "domain-module", "generator"):
                 issues.append(f"{path}: unknown boundary kind={entry.get('kind')!r}")
-        for root in (os.path.join(_PROJECT, "tools", "HME"), os.path.join(_PROJECT, "scripts")):
+        for root in (os.path.join(_PROJECT, "tools", "HME"), os.path.join(_PROJECT, "src", "scripts")):
             for dirpath, dirnames, filenames in os.walk(root):
                 dirnames[:] = [d for d in dirnames if d not in ("__pycache__", "node_modules", ".git")]
                 for fname in filenames:
                     rel = os.path.relpath(os.path.join(dirpath, fname), _PROJECT)
-                    if "/tests/" in rel or rel.startswith("scripts/test/"):
+                    if "/tests/" in rel:
                         continue
                     low = fname.lower()
                     if not any(x in low for x in ("bridge", "shim", "wrapper")):
