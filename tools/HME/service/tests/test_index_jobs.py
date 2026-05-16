@@ -29,11 +29,11 @@ def test_start_index_job_returns_immediately(tmp_path):
     assert Path(status["status_path"]).exists()
     assert started.wait(1)
 
-    release.set()
-    assert index_jobs.wait_for_current_job(2)
     running = index_jobs.read_index_job(str(tmp_path))
     assert "Index job running" in index_jobs.format_index_job(str(tmp_path), running)
 
+    release.set()
+    assert index_jobs.wait_for_current_job(2)
     final = index_jobs.read_index_job(str(tmp_path))
     assert final["state"] == "done"
     assert final["result"] == "index ok"
