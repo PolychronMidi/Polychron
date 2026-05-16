@@ -46,6 +46,9 @@ run "audit-no-non-ascii"         python3 scripts/audit-no-non-ascii.py $([ "$STR
 # Shell `set -u` undefined-var references.
 run "audit-shell-undefined"      python3 scripts/audit_shell_undefined_vars.py
 
+# Shared state writer/reader path symmetry.
+run "audit-state-file-symmetry"  python3 scripts/audit-state-file-symmetry.py
+
 # Cross-subsystem import boundaries (reaches-into-internals + public surface).
 run "audit-import-boundaries"    python3 scripts/audit-import-boundaries.py $([ "$STRICT" = "1" ] && echo --strict)
 
