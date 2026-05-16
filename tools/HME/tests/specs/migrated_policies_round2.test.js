@@ -141,8 +141,8 @@ test('mkdir-log-tmp: allow mkdir without log or tmp', async () => {
 // -- block-mkdir-misplaced-metrics -------------------------------------
 const mkdirMetrics = require('../../policies/builtin/block-mkdir-misplaced-metrics');
 
-test('mkdir-metrics: deny mkdir of nested metrics/', async () => {
-  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/output/metrics/foo' } }));
+test('mkdir-metrics: deny mkdir of misplaced metrics/', async () => {
+  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/src/metrics/foo' } }));
   assert.strictEqual(r.decision, 'deny');
 });
 

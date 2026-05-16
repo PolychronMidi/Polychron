@@ -28,7 +28,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ROOT } = require('../hme/utils');
+const ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 
 const SRC_DIR = path.join(ROOT, 'src');
 const GLOBALS_DTS = path.join(ROOT, 'src/types/globals.d.ts');

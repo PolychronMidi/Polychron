@@ -15,7 +15,7 @@ const fs = require('fs');
 const path = require('path');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
-const AUDIT_SCRIPT = path.join(REPO, 'scripts', 'hme', 'audit-tool-surface.py');
+const AUDIT_SCRIPT = path.join(REPO, 'tools', 'HME', 'scripts', 'audit-tool-surface.py');
 
 test('audit-tool-surface: _run wraps with systemd-run --scope', () => {
   const src = fs.readFileSync(AUDIT_SCRIPT, 'utf8');

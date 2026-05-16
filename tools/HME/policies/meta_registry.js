@@ -58,7 +58,7 @@ function _scanHookPolicies() {
 }
 
 function _scanEslintRules() {
-  const dir = path.join(PROJECT_ROOT, 'scripts', 'eslint-rules');
+  const dir = path.join(PROJECT_ROOT, 'src', 'scripts', 'eslint-rules');
   if (!fs.existsSync(dir)) return [];
   const out = [];
   for (const f of fs.readdirSync(dir).sort()) {
@@ -117,7 +117,7 @@ function _scanHciVerifiers() {
 }
 
 function _scanAuditScripts() {
-  const dir = path.join(PROJECT_ROOT, 'scripts');
+  const dir = path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts');
   if (!fs.existsSync(dir)) return [];
   const out = [];
   for (const f of fs.readdirSync(dir).sort()) {
@@ -144,7 +144,7 @@ function _scanAuditScripts() {
 }
 
 function _scanHypermeta() {
-  const manifest = path.join(PROJECT_ROOT, 'scripts', 'bias-bounds-manifest.json');
+  const manifest = path.join(PROJECT_ROOT, 'src', 'scripts', 'pipeline', 'bias-bounds-manifest.json');
   if (!fs.existsSync(manifest)) return [];
   return [{
     name: 'hypermeta-jurisdiction',

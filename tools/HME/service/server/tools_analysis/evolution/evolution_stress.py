@@ -100,7 +100,7 @@ def _adversarial_stress() -> str:
         results.append(("Doc sync: runnable", False, str(e)))
 
     # Probe 6: ESLint custom rules exist (>=21)
-    eslint_dir = os.path.join(ctx.PROJECT_ROOT, "scripts", "eslint-rules")
+    eslint_dir = os.path.join(ctx.PROJECT_ROOT, "src", "scripts", "eslint-rules")
     if os.path.isdir(eslint_dir):
         rules = [f for f in os.listdir(eslint_dir) if f.endswith(".js")]
         results.append((f"ESLint: {len(rules)} custom rules (need >=22)",
