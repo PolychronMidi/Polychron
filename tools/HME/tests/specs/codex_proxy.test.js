@@ -337,6 +337,7 @@ test('Codex proxy routes through OmniRoute Responses for dashboard visibility', 
     assert.strictEqual(JSON.parse(response.body).id, 'resp_omni');
     assert.strictEqual(directHits, 0);
     assert.strictEqual(omniBody.model, 'cx/gpt-5.5');
+    assert.deepStrictEqual(omniBody.input, []);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
     throw err;
