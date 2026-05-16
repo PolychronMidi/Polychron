@@ -48,7 +48,7 @@ def _mode_hme():
         from tool_invocations import action_form as _action_form
     except ImportError:
         def _action_form(a): return f"i/hme admin action={a}"
-    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
     out = ["## HME session state",
            f"(For pre-flight check use `{_action_form('selftest')}`.)",
            ""]

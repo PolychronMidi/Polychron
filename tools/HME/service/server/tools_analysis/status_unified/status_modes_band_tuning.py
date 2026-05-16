@@ -38,7 +38,7 @@ def _mode_band_tuning():
     import os as _os
     import json as _json
     from .. import ctx as _ctx_mod
-    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
 
     gt_path = _os.path.join(_root, "output", "metrics", "hme-ground-truth.jsonl")
     ts_path = _os.path.join(_root, "output", "metrics", "hme-coherence-timeseries.jsonl")

@@ -36,7 +36,7 @@ def _mode_tool_latency():
     import time as _time
     from collections import defaultdict
     from .. import ctx as _ctx_mod
-    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
     activity = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
     if not _os.path.isfile(activity):
         return "# i/status mode=tool-latency\nNo activity log."
@@ -151,7 +151,7 @@ def _mode_agent_loop():
     import time as _time
     from collections import Counter, defaultdict
     from .. import ctx as _ctx_mod
-    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
     activity = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
     if not _os.path.isfile(activity):
         return "# i/status mode=agent-loop\nNo activity log found."

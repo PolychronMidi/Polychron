@@ -6,6 +6,7 @@ import os
 import urllib.error
 import urllib.request
 
+from hme_env import ENV
 from server import context as ctx
 
 
@@ -77,7 +78,7 @@ def _service_port(service_id: str, default: int) -> int:
         for spec in services:
             if spec.get("id") != service_id:
                 continue
-            env_port = os.environ.get(str(spec.get("env_port") or ""))
+            env_port = ENV.optional(str(spec.get("env_port") or ""), "")
             return int(env_port or spec.get("default_port") or default)
     except Exception:
         return default
@@ -127,7 +128,7 @@ def _native_read_edit_line(req: dict | None) -> str:
 
 def _omniroute_logs(limit: int = 40) -> tuple[list[dict], str]:
     port = _service_port("omniroute", 20128)
-    password = os.environ.get("OMNIROUTE_PASSWORD") or os.environ.get("INITIAL_PASSWORD") or "polychron"
+    password = ENV.optional("OMNIROUTE_PASSWORD", "") or ENV.optional("INITIAL_PASSWORD", "polychron")
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())
     try:
         login = urllib.request.Request(
@@ -147,10 +148,10 @@ def _omniroute_logs(limit: int = 40) -> tuple[list[dict], str]:
 
 
 def _probe_claude_route() -> tuple[str, str]:
-    if os.environ.get("HME_CODEX_ROUTE_SMOKE_ACTIVE") == "0":
+    if ENV.optional("HME_CODEX_ROUTE_SMOKE_ACTIVE", "1") == "0":
         return "skipped", "disabled by HME_CODEX_ROUTE_SMOKE_ACTIVE=0"
     port = _service_port("omniroute", 20128)
-    model = os.environ.get("HME_CODEX_ROUTE_SMOKE_MODEL", "cx/gpt-5.5-low")
+    model = ENV.optional("HME_CODEX_ROUTE_SMOKE_MODEL", "cx/gpt-5.5-low")
     body = {
         "model": model,
         "max_tokens": 1,

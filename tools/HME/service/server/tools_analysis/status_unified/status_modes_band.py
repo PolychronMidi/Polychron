@@ -39,7 +39,7 @@ def _mode_multi_axis_band():
     import sys as _sys
     from collections import defaultdict
     from .. import ctx as _ctx_mod
-    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
     snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
     if not _os.path.isfile(snap_path):
         return ("# i/status mode=multi-axis-band\n"
@@ -162,7 +162,7 @@ def _mode_conjugate():
     import os as _os
     import json as _json
     from .. import ctx as _ctx_mod
-    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
     mc_path = _os.path.join(_root, "output", "metrics", "hme-musical-correlation.json")
     if not _os.path.isfile(mc_path):
         return ("# i/status mode=conjugate\n"

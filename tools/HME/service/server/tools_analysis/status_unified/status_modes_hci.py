@@ -7,6 +7,7 @@ import json
 import logging
 import os
 
+from hme_env import ENV
 from server import context as ctx
 from .. import (
     _track, get_session_intent, _budget_gate, _budget_section, _git_run,
@@ -30,8 +31,8 @@ def _mode_hci_by_subtag():
     import json as _json
     import sys as _sys
     from .. import ctx as _ctx_mod
-    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
-    snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
+    snap_path = _os.path.join(ENV.require("METRICS_DIR"), "hci-verifier-snapshot.json")
     if not _os.path.isfile(snap_path):
         return ("# i/status mode=hci-by-subtag\n"
                 "No snapshot found -- run `python3 tools/HME/scripts/verify-coherence.py` first.")
@@ -97,8 +98,8 @@ def _mode_hci_diff():
     import os as _os
     import json as _json
     from .. import ctx as _ctx_mod
-    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
-    cur_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
+    cur_path = _os.path.join(ENV.require("METRICS_DIR"), "hci-verifier-snapshot.json")
     prev_path = cur_path + ".prev"
     if not _os.path.isfile(cur_path):
         return ("# i/status mode=hci-diff\n"
@@ -159,8 +160,7 @@ def _mode_race_stats():
     import os as _os
     import json as _json
     from server import context as _ctx
-    out_dir = _os.environ.get("METRICS_DIR") or _os.path.join(
-        getattr(_ctx, "PROJECT_ROOT", "."), "output", "metrics")
+    out_dir = ENV.require("METRICS_DIR")
     path = _os.path.join(out_dir, "hme-race-outcomes.jsonl")
     if not _os.path.isfile(path):
         return "## Race Stats\n  (no races run yet -- hme-race-outcomes.jsonl absent)"
