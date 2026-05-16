@@ -105,10 +105,15 @@ def _check_invariant_chronically_failing(inv: dict) -> tuple[bool, str]:
         for item in _load_invariants()
         if item.get("id")
     }
+    last_result = data.get("last_result") or {}
     chronic = []
     ignored = 0
+    current_pass_ignored = 0
     for inv_id, streaks in (data.get("fail_streaks") or {}).items():
         if not isinstance(streaks, int) or streaks < min_streak:
+            continue
+        if last_result.get(inv_id) == "pass":
+            current_pass_ignored += 1
             continue
         severity = severity_by_id.get(inv_id, "error")
         if inv_id in ignore_ids or rank.get(severity, 2) < min_rank:
@@ -121,8 +126,13 @@ def _check_invariant_chronically_failing(inv: dict) -> tuple[bool, str]:
             + (f" +{len(chronic)-5} more" if len(chronic) > 5 else "")
         )
     detail = "no chronic error failures"
+    extras = []
     if ignored:
-        detail += f" ({ignored} warning/info/self streaks ignored)"
+        extras.append(f"{ignored} warning/info/self streaks ignored")
+    if current_pass_ignored:
+        extras.append(f"{current_pass_ignored} current-pass stale streaks ignored")
+    if extras:
+        detail += " (" + "; ".join(extras) + ")"
     return True, detail
 
 
