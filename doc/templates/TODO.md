@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] 12. Run targeted/full verification and report exact status
+(empty)
 
 ## Next
 
