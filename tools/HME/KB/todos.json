@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3448,
-      "updated_ts": 1778956648.9916754,
-      "codex_plan_synced_ts": 1778956648.9915912,
+      "max_id": 3452,
+      "updated_ts": 1778956678.9909823,
+      "codex_plan_synced_ts": 1778956678.990897,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T18:37:00.438Z"
+      "codex_plan_ts": "2026-05-16T18:37:55.194Z"
     }
   },
   {
@@ -6594,5 +6594,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T18:37:00.438Z"
+  },
+  {
+    "id": 3449,
+    "text": "Inventory scripts/tests and decide src vs HME move set",
+    "activeForm": "Inventory scripts/tests and decide src vs HME move set",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778956675.651347,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T18:37:55.194Z"
+  },
+  {
+    "id": 3450,
+    "text": "Move directories/files into src/scripts, src/tests, and tools/HME/scripts/tests",
+    "activeForm": "Move directories/files into src/scripts, src/tests, and tools/HME/scripts/tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778956675.6513531,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T18:37:55.194Z"
+  },
+  {
+    "id": 3451,
+    "text": "Update references and centralize paths/env helpers where useful",
+    "activeForm": "Update references and centralize paths/env helpers where useful",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778956675.6513572,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T18:37:55.194Z"
+  },
+  {
+    "id": 3452,
+    "text": "Run audits/tests, fix path failures, repeat to green",
+    "activeForm": "Run audits/tests, fix path failures, repeat to green",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778956675.6513603,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T18:37:55.194Z"
   }
 ]
