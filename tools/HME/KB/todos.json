@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3257,
-      "updated_ts": 1778896378.7540412,
-      "codex_plan_synced_ts": 1778896378.7539954,
+      "max_id": 3261,
+      "updated_ts": 1778896978.7756062,
+      "codex_plan_synced_ts": 1778896978.775559,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T01:52:33.849Z"
+      "codex_plan_ts": "2026-05-16T02:02:49.130Z"
     }
   },
   {
@@ -1710,8 +1710,8 @@
     "id": 3151,
     "text": "Run focused verification",
     "activeForm": "Run focused verification",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1720,7 +1720,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T21:02:57.566Z"
+    "codex_plan_ts": "2026-05-16T02:02:49.130Z"
   },
   {
     "id": 3152,
@@ -3393,8 +3393,8 @@
     "id": 3254,
     "text": "Inventory scripts and names",
     "activeForm": "Inventory scripts and names",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3403,14 +3403,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:52:33.849Z"
+    "codex_plan_ts": "2026-05-16T01:52:33.849Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3255,
     "text": "Check references from repo/config/hooks",
     "activeForm": "Check references from repo/config/hooks",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3419,14 +3420,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:52:33.849Z"
+    "codex_plan_ts": "2026-05-16T01:52:33.849Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3256,
     "text": "Classify dead vs entrypoints",
     "activeForm": "Classify dead vs entrypoints",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3435,14 +3437,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:52:33.849Z"
+    "codex_plan_ts": "2026-05-16T01:52:33.849Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3257,
     "text": "Report evidence and safe deletions",
     "activeForm": "Report evidence and safe deletions",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3451,6 +3454,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:52:33.849Z"
+    "codex_plan_ts": "2026-05-16T01:52:33.849Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3258,
+    "text": "Fix discovered script-audit failures",
+    "activeForm": "Fix discovered script-audit failures",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778896969.5653918,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T02:02:49.130Z"
+  },
+  {
+    "id": 3259,
+    "text": "Continue dead-code sweep",
+    "activeForm": "Continue dead-code sweep",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778896969.5654008,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T02:02:49.130Z"
+  },
+  {
+    "id": 3260,
+    "text": "Fix new findings immediately",
+    "activeForm": "Fix new findings immediately",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778896969.565404,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T02:02:49.130Z"
+  },
+  {
+    "id": 3261,
+    "text": "Report evidence and remaining decisions",
+    "activeForm": "Report evidence and remaining decisions",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778896969.5654066,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T02:02:49.130Z"
   }
 ]

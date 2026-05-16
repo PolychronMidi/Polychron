@@ -4,13 +4,14 @@
 
 ## Now
 
-- [ ] [E3] Inventory scripts and names
+- [ ] [E3] Fix discovered script-audit failures
 
 ## Next
 
-- [ ] [E3] Check references from repo/config/hooks
-- [ ] [E3] Classify dead vs entrypoints
-- [ ] [E3] Report evidence and safe deletions
+- [ ] [E3] Run focused verification
+- [ ] [E3] Continue dead-code sweep
+- [ ] [E3] Fix new findings immediately
+- [ ] [E3] Report evidence and remaining decisions
 
 ## Done
 
