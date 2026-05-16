@@ -10,7 +10,7 @@ const { recordFailure, clearFailure } = require('../proxy/turn_failure_state');
 
 const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
 const SESSION = process.env.HME_SESSION_ID || process.env.CODEX_SESSION_ID || 'codex-structured';
-const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', '__pycache__']);
+const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', '__pycache__', 'tmp', 'runtime', 'log']);
 const DISPLAY_REDACTED_RE = /<display-redacted:|<omitted by proxy>/i;
 
 function usage() {
@@ -199,7 +199,33 @@ async function runEdit(argv) {
     await finishStructured('Edit', input, message, { isError: true, rawStderr: message });
   }
 }
-async function runGrep(argv) { const input = parseGrep(argv); if (!input.pattern) usage(); await pre('Grep', input); const flags = input.ignore_case ? 'i' : ''; const re = input.fixed ? null : new RegExp(input.pattern, flags); const bases = (input.paths || [input.path]).map((p) => absPath(p)); const lines = []; for (const b of bases) for (const fp of walk(b, 10)) { const rel = relPath(fp); const text = fs.readFileSync(fp, 'utf8'); text.split(/\r?\n/).some((line, idx) => { const hit = input.fixed ? (input.ignore_case ? line.toLowerCase().includes(input.pattern.toLowerCase()) : line.includes(input.pattern)) : re.test(line); if (hit) lines.push(`${rel}:${idx + 1}:${line}`); return lines.length >= input.limit; }); if (lines.length >= input.limit) break; } await finishStructured('Grep', input, lines.join('\n')); }
+async function runGrep(argv) {
+  const input = parseGrep(argv);
+  if (!input.pattern) usage();
+  await pre('Grep', input);
+  const flags = input.ignore_case ? 'i' : '';
+  const re = input.fixed ? null : new RegExp(input.pattern, flags);
+  const bases = (input.paths || [input.path]).map((p) => absPath(p));
+  const lines = [];
+  for (const b of bases) {
+    for (const fp of walk(b, 10)) {
+      let text;
+      try { text = fs.readFileSync(fp, 'utf8'); }
+      catch (_e) { continue; }
+      const rel = relPath(fp);
+      text.split(/\r?\n/).some((line, idx) => {
+        const hit = input.fixed
+          ? (input.ignore_case ? line.toLowerCase().includes(input.pattern.toLowerCase()) : line.includes(input.pattern))
+          : re.test(line);
+        if (hit) lines.push(`${rel}:${idx + 1}:${line}`);
+        return lines.length >= input.limit;
+      });
+      if (lines.length >= input.limit) break;
+    }
+    if (lines.length >= input.limit) break;
+  }
+  await finishStructured('Grep', input, lines.join('\n'));
+}
 async function runGlob(argv) { const input = parseGlob(argv); await pre('Glob', input); const base = absPath(input.path); const re = globToRe(input.pattern); const rows = walk(base, input.max_depth).map(relPath).filter((r) => re.test(path.basename(r)) || re.test(r)).slice(0, input.limit); await finishStructured('Glob', input, rows.join('\n')); }
 async function runCount(argv) { const d = jsonData(argv); const fp = absPath(d.file_path || d.file || d._?.[0]); const text = fs.readFileSync(fp, 'utf8'); await finishStructured('Bash', { command: `wc -l ${relPath(fp)}` }, `${relPath(fp)}:${text.split(/\r?\n/).length - 1}`); }
 async function runGit(argv) {
