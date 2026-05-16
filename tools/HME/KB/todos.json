@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3261,
-      "updated_ts": 1778898868.7637568,
-      "codex_plan_synced_ts": 1778898868.7637103,
+      "max_id": 3265,
+      "updated_ts": 1778899288.7564037,
+      "codex_plan_synced_ts": 1778899288.7563572,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T02:34:11.828Z"
+      "codex_plan_ts": "2026-05-16T02:41:28.148Z"
     }
   },
   {
@@ -3477,8 +3477,8 @@
     "id": 3259,
     "text": "Continue dead-code sweep",
     "activeForm": "Continue dead-code sweep",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3487,14 +3487,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T02:34:11.828Z"
+    "codex_plan_ts": "2026-05-16T02:34:11.828Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3260,
     "text": "Fix new findings immediately",
     "activeForm": "Fix new findings immediately",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3503,14 +3504,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T02:34:11.828Z"
+    "codex_plan_ts": "2026-05-16T02:34:11.828Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3261,
     "text": "Report evidence and remaining decisions",
     "activeForm": "Report evidence and remaining decisions",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3519,6 +3521,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T02:34:11.828Z"
+    "codex_plan_ts": "2026-05-16T02:34:11.828Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3262,
+    "text": "Clear current audit-all backlog failures",
+    "activeForm": "Clear current audit-all backlog failures",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778899288.5639782,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T02:41:28.148Z"
+  },
+  {
+    "id": 3263,
+    "text": "Continue scripts dead-code audit for newly exposed issues",
+    "activeForm": "Continue scripts dead-code audit for newly exposed issues",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778899288.563984,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T02:41:28.148Z"
+  },
+  {
+    "id": 3264,
+    "text": "Run focused HME checks and audit-all --strict",
+    "activeForm": "Run focused HME checks and audit-all --strict",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778899288.5639877,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T02:41:28.148Z"
+  },
+  {
+    "id": 3265,
+    "text": "Report changed files and evidence",
+    "activeForm": "Report changed files and evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778899288.56399,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T02:41:28.148Z"
   }
 ]

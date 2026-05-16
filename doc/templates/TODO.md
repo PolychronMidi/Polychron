@@ -4,12 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Continue dead-code sweep
+- [ ] [E3] Clear current audit-all backlog failures
 
 ## Next
 
-- [ ] [E3] Fix new findings immediately
-- [ ] [E3] Report evidence and remaining decisions
+- [ ] [E3] Continue scripts dead-code audit for newly exposed issues
+- [ ] [E3] Run focused HME checks and audit-all --strict
+- [ ] [E3] Report changed files and evidence
 
 ## Done
 
