@@ -385,8 +385,6 @@ function handleRequest(clientReq, clientRes) {
     let _swapModel = 'deepseek-v4-pro';
     let _omniProvider = 'opencode-go';
 
-    const _OMNIROUTE_PORT = String(servicePort('omniroute'));
-    const _OMNIROUTE_OFF = process.env.HME_OMNIROUTE_OFF === '1';
     const _odMode = process.env.OVERDRIVE_MODE || '0';
 
     const overdriveRoute = applyOverdriveRoute({
@@ -798,9 +796,9 @@ function handleRequest(clientReq, clientRes) {
             }
             // Trip escape hatch on every interactive 4xx (incl x-should-retry
             // 429s -- user wants the lifesaver alert as recovery signal).
-            // MODE=5: never trip the escape hatch (OmniRoute errors must not
+            // MODE=6: never trip the escape hatch (OmniRoute errors must not
             // cause passthrough to api.anthropic.com).
-            if (_isInteractivePath && !_coolingDown && (process.env.OVERDRIVE_MODE !== '5' && process.env.OVERDRIVE_MODE !== '6')) {
+            if (_isInteractivePath && !_coolingDown && process.env.OVERDRIVE_MODE !== '6') {
               recordUpstreamFailure(_errMsg);
             } else if (_isInteractivePath) {
               console.error(`escape hatch SUPPRESSED (OVERDRIVE_MODE=${process.env.OVERDRIVE_MODE || '0'}, _isMode4OmniRoute=${_isMode4OmniRoute}) -- passthrough blocked`);
