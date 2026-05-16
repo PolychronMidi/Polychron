@@ -33,11 +33,11 @@ PROJECT_ROOT="$_WD_ROOT"
 _WD_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PORT:-9099}")"  # silent-ok: optional fallback path.
 _WD_URL="$(_hme_service_url proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_WD_PORT")"  # silent-ok: optional fallback path.
 
-# -- OmniRoute health-check + respawn (MODE=4/5 main-agent translator) --
+# -- OmniRoute health-check + respawn (OVERDRIVE_MODE=6 translator) --
 _OR_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"  # silent-ok: optional fallback path.
 _OR_URL="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_OR_PORT")"  # silent-ok: optional fallback path.
 _OR_DIR="$_WD_ROOT/tools/omniroute"
-if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
+if [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
   if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
   if ! curl -sf --max-time 2 "$_OR_URL" >/dev/null 2>&1; then
     ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
@@ -61,7 +61,7 @@ if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${
           >> "$_WD_ROOT/log/hme-errors.log"
       fi
     else
-      echo "[$ts] [proxy-watchdog] OmniRoute launcher missing at $_OR_DIR/start.sh -- MODE=4 will fail" >&2
+      echo "[$ts] [proxy-watchdog] OmniRoute launcher missing at $_OR_DIR/start.sh -- MODE=6 will fail" >&2
       echo "[$ts] [proxy-watchdog] OmniRoute launcher missing at $_OR_DIR/start.sh" \
         >> "$_WD_ROOT/log/hme-errors.log"
     fi

@@ -244,7 +244,7 @@ _last_source: str | None = None
 
 
 def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
-    """Resolve model chain for OVERDRIVE_MODE=5 from config/models.json.
+    """Resolve registry tier chain used by active OVERDRIVE_MODE=6.
     Chain ordered free first (including cascade), then subscription, then
     usage; each group by tier_score desc. Returns None if config unreadable
     or tier empty. Caller determines allow_subagent from chain contents."""
@@ -307,8 +307,7 @@ def _resolve_mode_legacy_chain_from_registry(mode: str, tier: str) -> tuple[tupl
 
 
 def _resolve_mode5_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
-    """MODE=5: read chain from models.json; allow subagent only when chain
-    includes a claude- model (none currently do)."""
+    """Read registry tier chain; allow subagent only when chain includes claude."""
     chain = _resolve_mode5_chain(tier)
     if chain is None:
         return None
@@ -376,7 +375,7 @@ _MODE_CHAIN_RESOLVERS = {
 def last_source() -> str | None:
     """Return a short string identifying which path produced the most
     recent non-None result from synthesis_reasoning.call(). Values:
-        'overdrive/zen/<model>'          -- model from MODE=5 registry chain
+        'overdrive/zen/<model>'          -- model from active registry chain
         'overdrive/<model>'              -- model from overdrive chain
         '<provider>/<model>'             -- free-cascade slot fired
         None                             -- last call returned None OR

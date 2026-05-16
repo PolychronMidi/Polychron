@@ -133,11 +133,11 @@ _sv_spawn_proxy() {
 _sv_spawn_and_verify() {
   # Ensure OmniRoute when required, spawn proxy, wait for bundle health.
 
-  # -- OmniRoute pre-flight (MODE=4/5 main-agent translator) --
+  # -- OmniRoute pre-flight (OVERDRIVE_MODE=6 translator) --
   local _or_port="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"  # silent-ok: optional fallback path.
   local _or_url="$(_hme_service_url omniroute 2>/dev/null || printf 'http://127.0.0.1:%s/v1/models' "$_or_port")"  # silent-ok: optional fallback path.
   local _or_dir="$_SV_ROOT/tools/omniroute"
-  if [ "${OVERDRIVE_MODE:-0}" = "4" ] || [ "${OVERDRIVE_MODE:-0}" = "5" ] || [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
+  if [ "${OVERDRIVE_MODE:-0}" = "6" ]; then
     if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
       if ! curl -sf --max-time 2 "$_or_url" >/dev/null 2>&1; then
         _sv_log "OmniRoute down, starting on :${_or_port}..."
