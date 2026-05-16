@@ -39,7 +39,7 @@ import time
 from pathlib import Path
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
-                Path(__file__).resolve().parents[3].parent.parent)
+                Path(__file__).resolve().parents[3])
 _TELEMETRY = (_PROJECT / "output" / "metrics" / "mode-classifier.jsonl")
 
 _TIER_OVERRIDE_RE = re.compile(r"(?i)\B/e([1-5])\b")

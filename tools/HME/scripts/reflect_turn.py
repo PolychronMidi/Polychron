@@ -54,7 +54,7 @@ import time
 from pathlib import Path
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
-                Path(__file__).resolve().parents[3].parent.parent)
+                Path(__file__).resolve().parents[3])
 _REFLECTIONS = _PROJECT / "output" / "metrics" / "reflections.jsonl"
 _DETECTOR_VERDICTS = _PROJECT / "runtime" / "hme" / "stop-detector-verdicts.env"
 _MODE_CLASSIFIER_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"

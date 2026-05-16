@@ -39,7 +39,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 
-ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3].parent.parent)
+ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
 ERRORS_LOG = ROOT / "log" / "hme-errors.log"
 LATENCY_LOG = ROOT / "log" / "hme-hook-latency.jsonl"
 OUT = ROOT / "output" / "metrics" / "hme-self-improvement-proposals.jsonl"

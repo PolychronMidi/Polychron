@@ -30,7 +30,7 @@ import time
 from pathlib import Path
 
 
-ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3].parent.parent)
+ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
 LOG = ROOT / "output" / "metrics" / "hme-formatter-ab.jsonl"
 
 
