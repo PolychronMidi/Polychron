@@ -27,32 +27,162 @@
   "_js_rules": {
     "_comment": "Concordance map between custom ESLint rules (scripts/eslint-rules/*.js) and their Python invariants. Status values: 'ported' = has a Python equivalent registered under python_invariant; 'js_only' = architecturally JS-specific (composition engine, CommonJS, JS globals) or covered by Python language/tooling conventions (PEP8, raise semantics). This block is the source of truth for the README parity table and is validated by the eslint_concordance_complete invariant.",
     "rules": [
-      {"name": "no-empty-catch", "status": "ported", "python_invariant": "hme-py-no-silent-catchall", "reason": "Silent `except Exception: pass` is the direct Python analog of an empty catch block."},
-      {"name": "no-silent-early-return", "status": "ported", "python_invariant": "hme-py-no-silent-fallback", "reason": "Silent `except Exception: return <empty default>` without a logger call is the Python form of the R33-class silent-failure pattern."},
-      {"name": "no-non-ascii", "status": "ported", "python_invariant": "hme-py-no-non-ascii", "reason": "Same copy-paste failure mode (NBSP, curly quotes, zero-width spaces) in Python source."},
-      {"name": "no-doubled-fallback", "status": "ported", "python_invariant": "hme-py-no-doubled-fallback", "reason": "`dict.get(k, DEFAULT) or X` silently coerces legitimate falsy values -- same class of bug as the regimeClassifier 0->0.5 tension incident that motivated the JS rule."},
-      {"name": "no-or-fallback-on-config-read", "status": "conventions_cover", "python_invariant": null, "reason": "Partial coverage via hme-py-no-os-environ (forces ENV.get() helper) and hme-py-no-doubled-fallback (catches the .get(k, D) or X variant). Python has no equivalent to the JS `_cc`/`_atsc` config-section naming convention, so a strict port would be noisy on legitimate `.get(k) or {}` idioms."},
-      {"name": "only-error-throws", "status": "js_only", "python_invariant": null, "reason": "Python's `raise` statement already requires a BaseException subclass at runtime; raising a literal raises TypeError immediately. No static check needed."},
-      {"name": "case-conventions", "status": "js_only", "python_invariant": null, "reason": "Python has PEP8 (snake_case for functions/vars, PascalCase for classes) enforced by ruff/flake8/black. Not re-enforcing in the battery."},
-      {"name": "no-console-acceptable-warning", "status": "js_only", "python_invariant": null, "reason": "Python HME code uses structured logger.* calls, not console-equivalent `print`. The discipline is enforced by reviewing new `print(` calls, not by lint."},
-      {"name": "no-math-random", "status": "js_only", "python_invariant": null, "reason": "No Math global in Python; deterministic-random discipline lives in pipeline determinism invariants instead."},
-      {"name": "no-bare-math", "status": "js_only", "python_invariant": null, "reason": "No Math global in Python."},
-      {"name": "no-typeof-validated-global", "status": "js_only", "python_invariant": null, "reason": "Boot-validated globals are a JS/CommonJS concept; Python has no `typeof` operator and no equivalent boot-validation chain."},
-      {"name": "no-requires-outside-index", "status": "js_only", "python_invariant": null, "reason": "CommonJS require() load-order discipline is JS-specific; Python imports have no equivalent hazard."},
-      {"name": "no-bare-l0-channel", "status": "js_only", "python_invariant": null, "reason": "L0 channels are a composition-engine concept living entirely in src/ (JS). No Python-side surface."},
-      {"name": "no-direct-signal-read", "status": "js_only", "python_invariant": null, "reason": "conductorIntelligence.getSignalSnapshot is a JS composition-engine surface; no Python consumer."},
-      {"name": "no-direct-buffer-push-from-crosslayer", "status": "js_only", "python_invariant": null, "reason": "crossLayerEmissionGateway is a JS-side boundary; Python pipeline scripts don't participate."},
-      {"name": "no-direct-conductor-state-from-crosslayer", "status": "js_only", "python_invariant": null, "reason": "Conductor/cross-layer boundary lives entirely in src/."},
-      {"name": "no-direct-crosslayer-write-from-conductor", "status": "js_only", "python_invariant": null, "reason": "Conductor/cross-layer boundary lives entirely in src/."},
-      {"name": "no-direct-coupling-matrix-read", "status": "js_only", "python_invariant": null, "reason": "Coupling matrix firewall is a JS-only architectural rule covering src/ only."},
-      {"name": "no-conductor-registration-from-crosslayer", "status": "js_only", "python_invariant": null, "reason": "Conductor registration surface is JS-only."},
-      {"name": "no-unregistered-feedback-loop", "status": "js_only", "python_invariant": null, "reason": "feedbackRegistry is a JS-side registry; Python pipeline scripts declare loops via metrics/feedback_graph.json directly."},
-      {"name": "no-unstamped-validator", "status": "js_only", "python_invariant": null, "reason": "The validator stamp chain is a JS-side invariant; Python has no equivalent validator factory."},
-      {"name": "prefer-validator", "status": "js_only", "python_invariant": null, "reason": "validator.create pattern is JS-only."},
-      {"name": "validator-name-matches-filename", "status": "js_only", "python_invariant": null, "reason": "JS-only naming discipline tied to validator.create('ModuleName')."},
-      {"name": "no-useless-expose-dependencies-comments", "status": "js_only", "python_invariant": null, "reason": "`// expose dependencies` comments are a JS/CommonJS boot-chain artifact; no Python analog."},
-      {"name": "no-bare-declared-global-in-init", "status": "js_only", "python_invariant": null, "reason": "moduleLifecycle.declare init-closure deps discipline is a JS/CommonJS pattern; no Python analog."},
-      {"name": "no-or-fallback-on-map-get", "status": "js_only", "python_invariant": null, "reason": "JS `Map.get(...) || literal` collapsing-zero pattern; Python `dict.get` defaults are explicit, no equivalent hazard."}
+      {
+        "name": "no-empty-catch",
+        "status": "ported",
+        "python_invariant": "hme-py-no-silent-catchall",
+        "reason": "Silent `except Exception: pass` is the direct Python analog of an empty catch block."
+      },
+      {
+        "name": "no-silent-early-return",
+        "status": "ported",
+        "python_invariant": "hme-py-no-silent-fallback",
+        "reason": "Silent `except Exception: return <empty default>` without a logger call is the Python form of the R33-class silent-failure pattern."
+      },
+      {
+        "name": "no-non-ascii",
+        "status": "ported",
+        "python_invariant": "hme-py-no-non-ascii",
+        "reason": "Same copy-paste failure mode (NBSP, curly quotes, zero-width spaces) in Python source."
+      },
+      {
+        "name": "no-doubled-fallback",
+        "status": "ported",
+        "python_invariant": "hme-py-no-doubled-fallback",
+        "reason": "`dict.get(k, DEFAULT) or X` silently coerces legitimate falsy values -- same class of bug as the regimeClassifier 0->0.5 tension incident that motivated the JS rule."
+      },
+      {
+        "name": "no-or-fallback-on-config-read",
+        "status": "conventions_cover",
+        "python_invariant": null,
+        "reason": "Partial coverage via hme-py-no-os-environ (forces ENV.get() helper) and hme-py-no-doubled-fallback (catches the .get(k, D) or X variant). Python has no equivalent to the JS `_cc`/`_atsc` config-section naming convention, so a strict port would be noisy on legitimate `.get(k) or {}` idioms."
+      },
+      {
+        "name": "only-error-throws",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "Python's `raise` statement already requires a BaseException subclass at runtime; raising a literal raises TypeError immediately. No static check needed."
+      },
+      {
+        "name": "case-conventions",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "Python has PEP8 (snake_case for functions/vars, PascalCase for classes) enforced by ruff/flake8/black. Not re-enforcing in the battery."
+      },
+      {
+        "name": "no-console-acceptable-warning",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "Python HME code uses structured logger.* calls, not console-equivalent `print`. The discipline is enforced by reviewing new `print(` calls, not by lint."
+      },
+      {
+        "name": "no-math-random",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "No Math global in Python; deterministic-random discipline lives in pipeline determinism invariants instead."
+      },
+      {
+        "name": "no-bare-math",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "No Math global in Python."
+      },
+      {
+        "name": "no-typeof-validated-global",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "Boot-validated globals are a JS/CommonJS concept; Python has no `typeof` operator and no equivalent boot-validation chain."
+      },
+      {
+        "name": "no-requires-outside-index",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "CommonJS require() load-order discipline is JS-specific; Python imports have no equivalent hazard."
+      },
+      {
+        "name": "no-bare-l0-channel",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "L0 channels are a composition-engine concept living entirely in src/ (JS). No Python-side surface."
+      },
+      {
+        "name": "no-direct-signal-read",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "conductorIntelligence.getSignalSnapshot is a JS composition-engine surface; no Python consumer."
+      },
+      {
+        "name": "no-direct-buffer-push-from-crosslayer",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "crossLayerEmissionGateway is a JS-side boundary; Python pipeline scripts don't participate."
+      },
+      {
+        "name": "no-direct-conductor-state-from-crosslayer",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "Conductor/cross-layer boundary lives entirely in src/."
+      },
+      {
+        "name": "no-direct-crosslayer-write-from-conductor",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "Conductor/cross-layer boundary lives entirely in src/."
+      },
+      {
+        "name": "no-direct-coupling-matrix-read",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "Coupling matrix firewall is a JS-only architectural rule covering src/ only."
+      },
+      {
+        "name": "no-conductor-registration-from-crosslayer",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "Conductor registration surface is JS-only."
+      },
+      {
+        "name": "no-unregistered-feedback-loop",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "feedbackRegistry is a JS-side registry; Python pipeline scripts declare loops via metrics/feedback_graph.json directly."
+      },
+      {
+        "name": "no-unstamped-validator",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "The validator stamp chain is a JS-side invariant; Python has no equivalent validator factory."
+      },
+      {
+        "name": "prefer-validator",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "validator.create pattern is JS-only."
+      },
+      {
+        "name": "validator-name-matches-filename",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "JS-only naming discipline tied to validator.create('ModuleName')."
+      },
+      {
+        "name": "no-useless-expose-dependencies-comments",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "`// expose dependencies` comments are a JS/CommonJS boot-chain artifact; no Python analog."
+      },
+      {
+        "name": "no-bare-declared-global-in-init",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "moduleLifecycle.declare init-closure deps discipline is a JS/CommonJS pattern; no Python analog."
+      },
+      {
+        "name": "no-or-fallback-on-map-get",
+        "status": "js_only",
+        "python_invariant": null,
+        "reason": "JS `Map.get(...) || literal` collapsing-zero pattern; Python `dict.get` defaults are explicit, no equivalent hazard."
+      }
     ]
   },
   "invariants": [
@@ -590,7 +720,7 @@
       "id": "hme-py-meta-has-trim",
       "description": "meta_layers.py must define trim helpers (_trim_narrative_file, _trim_counterfactuals_file) alongside its append-only file writes. Prevents unbounded JSONL growth.",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/service/server/meta_layers.py",
+      "path": "tools/HME/service/server/meta_layers/__init__.py",
       "patterns": [
         "_trim_narrative_file",
         "_trim_counterfactuals_file"
@@ -630,13 +760,13 @@
       "id": "review-verdict-marker-emitter-present",
       "description": "The server must emit verdicts via the canonical emit_review_verdict_marker() function. If this name is removed/renamed, the hook's contract regex will silently stop matching.",
       "type": "pattern_in_file",
-      "path": "tools/HME/service/server/onboarding_chain.py",
+      "path": "tools/HME/service/server/onboarding_chain_helpers.py",
       "pattern": "def emit_review_verdict_marker",
       "severity": "error"
     },
     {
       "id": "cli-modelUsage-contextWindow-shape",
-      "description": "Claude CLI result.modelUsage[alias].contextWindow must be a number \u22651000  routerClaude.ts:computeTurnUsage divides by this. If CLI version drift drops or renames the field, the context meter silently stalls and the chain mistriggers. The probe script skips when the CLI is unavailable or the API is unreachable.",
+      "description": "Claude CLI result.modelUsage[alias].contextWindow must be a number ≥1000  routerClaude.ts:computeTurnUsage divides by this. If CLI version drift drops or renames the field, the context meter silently stalls and the chain mistriggers. The probe script skips when the CLI is unavailable or the API is unreachable.",
       "type": "shell_output_empty",
       "shell": "bash scripts/check-claude-cli-result-shape.sh",
       "severity": "warning"
@@ -685,8 +815,8 @@
       "id": "lifesaver-todo-mirror-dedup",
       "description": "register_todo_from_lifesaver must dedupe by text+source so a monitor loop cannot flood the todo store with zombie entries (116 such entries polluted todos.json before this rule landed).",
       "type": "pattern_in_file",
-      "path": "tools/HME/service/server/tools_analysis/todo.py",
-      "pattern": "existing.get\\(.source.\\) == .lifesaver.",
+      "path": "tools/HME/service/server/tools_analysis/todo_lifesaver.py",
+      "pattern": "existing.get\\(\"source\"\\) == \"lifesaver\"",
       "severity": "error"
     },
     {
@@ -712,7 +842,7 @@
     },
     {
       "id": "conductor-no-or-zero-on-validator-output",
-      "description": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0\u21920.5 tension bug). Use the inner value directly, or nullish coalescing (??) if you want to catch only undefined.",
+      "description": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0→0.5 tension bug). Use the inner value directly, or nullish coalescing (??) if you want to catch only undefined.",
       "type": "shell_output_empty",
       "shell": "grep -rnE '(V\\.optionalFinite\\([^)]*,[^)]*\\)|safePreBoot\\.call\\([^)]*,[^)]*\\))\\s*\\|\\|' src/ --include='*.js'",
       "severity": "error"
@@ -757,7 +887,7 @@
       "id": "activity-digest-in-reloadable",
       "description": "activity_digest module must be in RELOADABLE so hot-reload picks up changes",
       "type": "pattern_in_file",
-      "path": "tools/HME/service/server/tools_analysis/evolution/evolution_selftest.py",
+      "path": "tools/HME/service/server/tools_analysis/evolution/evolution_selftest/reload_registry.py",
       "pattern": "\"activity_digest\"",
       "severity": "error"
     },
@@ -765,8 +895,8 @@
       "id": "activity-mode-in-status",
       "description": "status_unified must dispatch mode='activity' to activity_digest",
       "type": "pattern_in_file",
-      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
-      "pattern": "from \\.activity_digest import activity_digest",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/status_modes_agent.py",
+      "pattern": "from \\.\\.activity_digest import activity_digest",
       "severity": "error"
     },
     {
@@ -853,9 +983,9 @@
     },
     {
       "id": "status-new-modes-dispatched",
-      "description": "status_unified must dispatch the Phase 2.2\u20132.4 modes (staleness, coherence, blindspots)",
+      "description": "status_unified must dispatch the Phase 2.2–2.4 modes (staleness, coherence, blindspots)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
       "patterns": [
         "\"staleness\":",
         "\"coherence\":",
@@ -891,13 +1021,13 @@
     },
     {
       "id": "productive-incoherence-hook-wired",
-      "description": "posttooluse_edit.sh must split lazy vs productive violations using the staleness index",
+      "description": "post-write proxy side effects must classify writes against the staleness index",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/hooks/posttooluse/posttooluse_edit.sh",
+      "path": "tools/HME/proxy/middleware/28_post_write_side_effects.js",
       "patterns": [
         "productive_incoherence",
         "kb-staleness.json",
-        "COVERAGE_STATUS"
+        "coherence_violation"
       ],
       "severity": "error"
     },
@@ -974,7 +1104,7 @@
       "id": "status-phase3-modes",
       "description": "status_unified must dispatch the Phase 3 modes (hypotheses, drift, accuracy, crystallized)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
       "patterns": [
         "\"hypotheses\":",
         "\"drift\":",
@@ -987,7 +1117,7 @@
       "id": "proxy-extended-injections",
       "description": "Proxy must inject open hypotheses and semantic drift warnings alongside jurisdiction context (Phase 3.1/3.3 -- moved to context.js during the middleware split)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/proxy/context.js",
+      "path": "tools/HME/proxy/context_jurisdiction.js",
       "patterns": [
         "loadOpenHypothesesMap",
         "loadDriftMap",
@@ -1079,8 +1209,13 @@
       "pattern": "^[a-zA-Z_][a-zA-Z0-9_\\-.]{0,63}$",
       "window_events": 2000,
       "max_violations": 10,
-      "exclude_values": ["", null],
-      "require_fields": ["source"],
+      "exclude_values": [
+        "",
+        null
+      ],
+      "require_fields": [
+        "source"
+      ],
       "severity": "warning"
     },
     {
@@ -1149,7 +1284,7 @@
       "correlations_key": "correlations",
       "name": "hme_coherence__verdict_numeric",
       "direction": "positive",
-      "threshold": -0.10,
+      "threshold": -0.1,
       "min_n": 10,
       "severity": "error"
     },
@@ -1203,7 +1338,7 @@
       "correlations_key": "correlations",
       "name": "hme_coherence__hci_normalized",
       "direction": "positive",
-      "threshold": -0.10,
+      "threshold": -0.1,
       "min_n": 10,
       "severity": "error"
     },
@@ -1263,7 +1398,7 @@
       "id": "phase4-status-modes",
       "description": "status_unified must dispatch the Phase 4 modes (music_truth, kb_trust, intention_gap, self_audit, probes)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
       "patterns": [
         "\"music_truth\":",
         "\"kb_trust\":",
@@ -1323,7 +1458,7 @@
       "id": "phase5-status-modes",
       "description": "status_unified must dispatch the Phase 5 modes (trajectory, budget, negative_space, cognitive_load, ground_truth)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
       "patterns": [
         "\"trajectory\":",
         "\"budget\":",
@@ -1423,7 +1558,7 @@
       "id": "phase6-status-modes",
       "description": "status_unified must dispatch the Phase 6 modes (constitution, doc_drift, generalizations, reflexivity, multi_agent)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
       "patterns": [
         "\"constitution\":",
         "\"doc_drift\":",
