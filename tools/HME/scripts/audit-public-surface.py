@@ -19,7 +19,7 @@ from pathlib import Path
 
 PROJECT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
 DOC_TOP_FILES = {"HME.md", "SRC.md", "hme_full.md", "src_full.md"}
-DOC_TOP_DIRS = {"templates", "theory"}
+DOC_TOP_DIRS = {"infra", "templates", "theory"}
 
 RETIRED_WRAPPERS = {"consult", "handoff", "chain", "todo", "hme-admin", "hme-read", "read"}
 RETIRED_PUBLIC_RE = re.compile(
