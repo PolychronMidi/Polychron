@@ -26,6 +26,13 @@ const DEFAULT_UPSTREAM = 'https://chatgpt.com/backend-api/codex/responses';
 const UPSTREAM_URL = process.env.HME_CODEX_UPSTREAM_URL || DEFAULT_UPSTREAM;
 const MAX_BODY_BYTES = Number(process.env.HME_CODEX_PROXY_MAX_BODY_BYTES || 64 * 1024 * 1024);
 
+const PROXY_GIT_SHA = (() => {
+  try {
+    return require('child_process').execSync('git rev-parse --short HEAD', { cwd: PROJECT_ROOT, encoding: 'utf8', timeout: 1000 }).trim();
+  } catch (_e) { return 'unknown'; }
+})();
+const PROXY_STARTED_AT = new Date().toISOString();
+
 let _config = null;
 let _recent = [];
 
@@ -305,7 +312,7 @@ async function handleResponses(req, res) {
 function handleRequest(req, res) {
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok', component: 'hme-codex-proxy', version: PROXY_VERSION, port: PORT, upstream: UPSTREAM_URL, route: targetSummary(targetChain({ model: 'health' }, UPSTREAM_URL, loadConfig)), config: CONFIG_PATH }));
+    res.end(JSON.stringify({ status: 'ok', component: 'hme-codex-proxy', version: PROXY_VERSION, git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, port: PORT, upstream: UPSTREAM_URL, route: targetSummary(targetChain({ model: 'health' }, UPSTREAM_URL, loadConfig)), config: CONFIG_PATH }));
     return;
   }
   if (req.url === '/hme/codex/metrics') {
@@ -330,6 +337,6 @@ function handleRequest(req, res) {
 }
 
 http.createServer(handleRequest).listen(PORT, '127.0.0.1', () => {
-  record({ kind: 'startup', port: PORT, upstream: UPSTREAM_URL, config: CONFIG_PATH });
+  record({ kind: 'startup', port: PORT, upstream: UPSTREAM_URL, config: CONFIG_PATH, git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT });
   process.stderr.write(`[codex_proxy] listening on 127.0.0.1:${PORT}, upstream=${UPSTREAM_URL}\n`);
 });
