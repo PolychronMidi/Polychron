@@ -187,12 +187,12 @@
     },
     {
       "id": "file-written-module-sane",
-      "description": "file_written events must carry module names that look like real source file basenames -- alphanumeric with underscore/dash/dot, 1-64 chars.",
+      "description": "file_written events must carry module names that look like real source file basenames -- alphanumeric with underscore/dash/dot, 1-64 chars; numeric middleware prefixes are valid.",
       "type": "activity_field_sanity",
       "path": "output/metrics/hme-activity.jsonl",
       "event": "file_written",
       "field": "module",
-      "pattern": "^[a-zA-Z_][a-zA-Z0-9_\\-.]{0,63}$",
+      "pattern": "^[a-zA-Z0-9_][a-zA-Z0-9_\\-.]{0,63}$",
       "window_events": 2000,
       "max_violations": 10,
       "exclude_values": [
@@ -203,7 +203,7 @@
         "source"
       ],
       "severity": "warning",
-      "context": "file_written events must carry module names that look like real source file basenames -- alphanumeric with underscore/dash/dot, 1-64 chars. Catches infrastructure leaks: LanceDB UUIDs, timestamps, hex strings that indicate the watcher filter is letting noise through."
+      "context": "file_written events must carry module names that look like real source file basenames -- alphanumeric with underscore/dash/dot, 1-64 chars; numeric middleware prefixes are valid. Catches infrastructure leaks: LanceDB UUIDs, timestamps, hex strings that indicate the watcher filter is letting noise through."
     },
     {
       "id": "coherence-same-commit-deterministic",
