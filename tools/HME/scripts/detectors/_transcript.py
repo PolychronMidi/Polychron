@@ -94,36 +94,42 @@ def _parse_all(transcript_path: str | Path) -> list[dict]:
     return events
 
 
-def load_turn_events(transcript_path: str | Path) -> list[dict]:
-    """Events in the current turn, oldest first. Boundary = most recent
-    REAL user prompt (string content), NOT tool_result wrappers (which
-    Claude Code records with role=user too). Mis-counting tool_result as
-    turn boundary made every consumer detector see only 1-3 events at
-    Stop time and silently miss the turn's tool calls."""
-    events = _parse_all(transcript_path)
+def is_real_user_prompt(event: dict) -> bool:
+    """True for human prompts; false for tool_result user wrappers."""
+    if not is_user(event):
+        return False
+    content = event.get("message", {}).get("content") if isinstance(event.get("message"), dict) else event.get("content")
+    if isinstance(content, str):
+        return bool(content.strip())
+    if not isinstance(content, list):
+        return False
+    has_text = any(isinstance(b, dict) and b.get("type") == "text" for b in content)
+    has_tool_result = any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content)
+    return has_text and not has_tool_result
+
+
+def _last_real_user_idx(events: list[dict]) -> int:
     last_user_idx = -1
     for i, obj in enumerate(events):
-        if not is_user(obj):
-            continue
-        msg = obj.get("message")
-        if isinstance(msg, dict) and isinstance(msg.get("content"), str):
+        if is_real_user_prompt(obj):
             last_user_idx = i
+    return last_user_idx
+
+
+def load_turn_events(transcript_path: str | Path) -> list[dict]:
+    """Events in the current turn, oldest first. Boundary = most recent
+    REAL user prompt, NOT tool_result wrappers."""
+    events = _parse_all(transcript_path)
+    last_user_idx = _last_real_user_idx(events)
     if last_user_idx == -1:
         return events
     return events[last_user_idx + 1:]
 
 
 def load_full_turn_with_user(transcript_path: str | Path) -> list[dict]:
-    """Like load_turn_events but includes the triggering user message at index 0.
-    Same real-user-prompt boundary as load_turn_events (not tool_result wrappers)."""
+    """Like load_turn_events but includes the triggering user message."""
     events = _parse_all(transcript_path)
-    last_user_idx = -1
-    for i, obj in enumerate(events):
-        if not is_user(obj):
-            continue
-        msg = obj.get("message")
-        if isinstance(msg, dict) and isinstance(msg.get("content"), str):
-            last_user_idx = i
+    last_user_idx = _last_real_user_idx(events)
     if last_user_idx == -1:
         return events
     return events[last_user_idx:]
