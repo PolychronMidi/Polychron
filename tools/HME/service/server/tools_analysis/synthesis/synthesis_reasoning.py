@@ -365,13 +365,10 @@ def _resolve_mode6_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     return (chain, any(m.startswith("claude-") for m in chain)) if chain else None
 
 
-# MODE 1..4 -> legacy_chains registry; MODE=5/6 -> tiers. None = cascade.
+# Active overdrive modes: 0=cascade, 6=team-role registry routing.
+# Legacy modes 1..5 are retired; helpers remain only where MODE=6 reuses
+# registry chain resolution. None = cascade.
 _MODE_CHAIN_RESOLVERS = {
-    "1": lambda tier: _resolve_mode_legacy_chain_from_registry("1", tier),
-    "2": lambda tier: _resolve_mode_legacy_chain_from_registry("2", tier),
-    "3": lambda tier: _resolve_mode_legacy_chain_from_registry("3", tier),
-    "4": lambda tier: _resolve_mode_legacy_chain_from_registry("4", tier),
-    "5": _resolve_mode5_entry,
     "6": _resolve_mode6_entry,
 }
 
@@ -429,12 +426,8 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     None immediately -- caller falls straight to local fallback. Useful when
     Anthropic is having an outage, when rate-limited, or for offline dev.
 
-    OVERDRIVE_MODE=1 in .env short-circuits this walk and calls Claude Opus
-    with max extended thinking instead. On any failure of the overdrive path
-    we fall through to the normal cascade so an API blip doesn't block work.
-    OVERDRIVE_VIA_SUBAGENT=1 additionally routes Claude calls through an
-    Agent job captured by proxy middleware instead of hitting api.anthropic.com directly -- moves reasoning cost
-    off raw per-minute RPM onto session-budget, which has far more headroom.
+    OVERDRIVE_MODE=6 enables team-role registry routing. Legacy modes 1..5
+    are retired and fall through to the normal cascade.
     """
     import time as _time
     from hme_env import ENV as _ENV
@@ -448,8 +441,8 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         logger.info("reasoning: HME_REASONING_OFFLINE=1 -- skipping external cascade")
         return None
 
-    # OVERDRIVE_MODE: 0=cascade; 1=Opus-all; 2=Opus/Sonnet/cascade; 3=Opus/DSeek/cascade;
-    # 4=main-agent swap + DSeek tier routing; 5=registry cascade from config/models.json.
+    # OVERDRIVE_MODE: 0=cascade; 6=team-role registry routing.
+    # Legacy modes 1..5 are retired and intentionally fall through.
     _od_mode = _ENV.optional("OVERDRIVE_MODE", "0")
     _LEGACY_TIER = {"easy": "E2", "medium": "E3", "hard": "E4"}
     _raw_tier = (tier or "E3").strip()
