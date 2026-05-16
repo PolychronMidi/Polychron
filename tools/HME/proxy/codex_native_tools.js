@@ -5,7 +5,7 @@ const { evaluateReadInput } = require('./read_policy');
 
 const BRIDGE = 'node tools/HME/scripts/codex_structured_tool.js';
 const TARGET_TOOL = 'exec_command';
-const NATIVE_NAMES = new Set(['Read', 'Edit']);
+const NATIVE_NAMES = new Set(['Read', 'Edit', 'Grep', 'Glob']);
 
 const READ_TOOL = {
   type: 'function',
@@ -39,6 +39,42 @@ const EDIT_TOOL = {
   },
 };
 
+
+const GREP_TOOL = {
+  type: 'function',
+  name: 'Grep',
+  description: 'Search project files with bounded, HME-enriched output. Prefer this over shell grep/rg.',
+  parameters: {
+    type: 'object',
+    properties: {
+      pattern: { type: 'string', description: 'Regex or fixed string to search for.' },
+      path: { type: 'string', description: 'Project file or directory to search. Defaults to current project.' },
+      ignore_case: { type: 'boolean', description: 'Case-insensitive search.' },
+      fixed: { type: 'boolean', description: 'Treat pattern as a fixed string.' },
+      limit: { type: 'number', description: 'Maximum matching lines to return.' },
+    },
+    required: ['pattern'],
+    additionalProperties: false,
+  },
+};
+
+const GLOB_TOOL = {
+  type: 'function',
+  name: 'Glob',
+  description: 'List project files with a bounded glob. Prefer this over shell find/ls.',
+  parameters: {
+    type: 'object',
+    properties: {
+      pattern: { type: 'string', description: 'Glob pattern such as **/*.js.' },
+      path: { type: 'string', description: 'Project directory to search from.' },
+      max_depth: { type: 'number', description: 'Optional recursion depth.' },
+      limit: { type: 'number', description: 'Maximum paths to return.' },
+    },
+    required: ['pattern'],
+    additionalProperties: false,
+  },
+};
+
 function toolName(tool) {
   if (!tool || typeof tool !== 'object') return '';
   return tool.name || (tool.function && tool.function.name) || '';
@@ -49,7 +85,7 @@ function clone(value) {
 }
 
 function nativeToolSchemas() {
-  return [clone(READ_TOOL), clone(EDIT_TOOL)];
+  return [clone(READ_TOOL), clone(EDIT_TOOL), clone(GREP_TOOL), clone(GLOB_TOOL)];
 }
 
 function nativeToolConfig(cfg) {
@@ -85,6 +121,19 @@ function bridgeInput(name, args) {
     if (args.limit != null) out.limit = Number(args.limit);
     return out;
   }
+  if (name === 'Grep') {
+    const out = { pattern: args.pattern || '', path: args.path || '.' };
+    if (args.ignore_case != null) out.ignore_case = Boolean(args.ignore_case);
+    if (args.fixed != null) out.fixed = Boolean(args.fixed);
+    if (args.limit != null) out.limit = Number(args.limit);
+    return out;
+  }
+  if (name === 'Glob') {
+    const out = { pattern: args.pattern || '*', path: args.path || '.' };
+    if (args.max_depth != null) out.max_depth = Number(args.max_depth);
+    if (args.limit != null) out.limit = Number(args.limit);
+    return out;
+  }
   return {
     file_path: file,
     old_string: args.old_string || '',
@@ -97,7 +146,7 @@ function jsonHeredoc(input) {
 }
 
 function bridgeCommand(name, args) {
-  const action = name === 'Read' ? 'read' : 'edit';
+  const action = ({ Read: 'read', Edit: 'edit', Grep: 'grep', Glob: 'glob' })[name] || 'read';
   return `${BRIDGE} ${action} --json ${jsonHeredoc(bridgeInput(name, args))}`;
 }
 
