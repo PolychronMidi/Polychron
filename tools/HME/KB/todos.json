@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3421,
-      "updated_ts": 1778951818.9461057,
-      "codex_plan_synced_ts": 1778951818.9460256,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T17:16:54.540Z"
+      "updated_ts": 1778952104.7425642,
+      "codex_plan_synced_ts": 1778952104.7424843,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T17:21:44.296Z"
     }
   },
   {
@@ -4871,7 +4871,7 @@
     "id": 3343,
     "text": "Run targeted and full verification",
     "activeForm": "Run targeted and full verification",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "codex_plan",
@@ -4880,8 +4880,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:16:54.540Z",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:21:44.296Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
@@ -6099,8 +6099,8 @@
     "id": 3419,
     "text": "Locate Edit pre/post work-check path",
     "activeForm": "Locate Edit pre/post work-check path",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6108,15 +6108,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:16:54.540Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:21:44.296Z"
   },
   {
     "id": 3420,
     "text": "Add regression for redacted/no-op Edit false-success",
     "activeForm": "Add regression for redacted/no-op Edit false-success",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6124,15 +6124,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:16:54.540Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:21:44.296Z"
   },
   {
     "id": 3421,
     "text": "Patch guard to fail loud before native Edit can appear successful",
     "activeForm": "Patch guard to fail loud before native Edit can appear successful",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6140,7 +6140,7 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:16:54.540Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:21:44.296Z"
   }
 ]
