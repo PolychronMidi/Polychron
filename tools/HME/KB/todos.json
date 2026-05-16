@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3235,
-      "updated_ts": 1778891938.7155397,
-      "codex_plan_synced_ts": 1778891938.715498,
+      "max_id": 3241,
+      "updated_ts": 1778892988.7413259,
+      "codex_plan_synced_ts": 1778892988.7412608,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T00:38:49.946Z"
+      "codex_plan_ts": "2026-05-16T00:56:15.377Z"
     }
   },
   {
@@ -3086,5 +3086,101 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T00:38:49.946Z"
+  },
+  {
+    "id": 3236,
+    "text": "Delete raw-streak blocking/unlock-loop denies and update tests to expect non-blocking behavior.",
+    "activeForm": "Delete raw-streak blocking/unlock-loop denies and update tests to expect non-blocking behavior.",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778892975.8175068,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T00:56:15.377Z"
+  },
+  {
+    "id": 3237,
+    "text": "Broaden silent raw Bash rewrites to enriched equivalents: grep/rg, ls/find/wc, git read-only status/diff/log/show, health/process/log status.",
+    "activeForm": "Broaden silent raw Bash rewrites to enriched equivalents: grep/rg, ls/find/wc, git read-only status/diff/log/show, health/process/log status.",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778892975.817514,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T00:56:15.377Z"
+  },
+  {
+    "id": 3238,
+    "text": "Add native Codex Grep/Glob schemas and bridge support where safe.",
+    "activeForm": "Add native Codex Grep/Glob schemas and bridge support where safe.",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778892975.817518,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T00:56:15.377Z"
+  },
+  {
+    "id": 3239,
+    "text": "Fix proxy restart semantics so restart actually reloads proxy child.",
+    "activeForm": "Fix proxy restart semantics so restart actually reloads proxy child.",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778892975.8175213,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T00:56:15.377Z"
+  },
+  {
+    "id": 3240,
+    "text": "Complete normal KB/index stale CLAUDE purge path and quiet synthetic Stop test output.",
+    "activeForm": "Complete normal KB/index stale CLAUDE purge path and quiet synthetic Stop test output.",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778892975.8175251,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T00:56:15.377Z"
+  },
+  {
+    "id": 3241,
+    "text": "Add Codex proxy health identity and run focused/live verification.",
+    "activeForm": "Add Codex proxy health identity and run focused/live verification.",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778892975.817528,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T00:56:15.377Z"
   }
 ]

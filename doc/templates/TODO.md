@@ -4,11 +4,15 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Delete raw-streak blocking/unlock-loop denies and update tests to expect non-blocking behavior.
 
 ## Next
 
-(empty)
+- [ ] [E3] Broaden silent raw Bash rewrites to enriched equivalents: grep/rg, ls/find/wc, git read-only status/diff/log/show, health/process/log status.
+- [ ] [E3] Add native Codex Grep/Glob schemas and bridge support where safe.
+- [ ] [E3] Fix proxy restart semantics so restart actually reloads proxy child.
+- [ ] [E3] Complete normal KB/index stale CLAUDE purge path and quiet synthetic Stop test output.
+- [ ] [E3] Add Codex proxy health identity and run focused/live verification.
 
 ## Done
 
