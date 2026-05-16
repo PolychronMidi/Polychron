@@ -18,7 +18,7 @@
  *   - runtime invariants in src/ (validator.create() + emissionGateway etc.)
  *     are too pervasive and don't have stable named identities. Listing
  *     every single _safety.assertFinite call is noise, not signal.
- *   - AGENTS.md prose rules -- these are LLM-readable text, not executable
+ *   - doc/templates/AGENTS.md prose rules -- these are LLM-readable text, not executable
  *     rules with names.
  *
  * Each adapter returns an array of:

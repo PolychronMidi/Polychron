@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Core-principles audit -- survey how well src/ actually follows the five
-core principles AGENTS.md declares.
+core principles doc/templates/AGENTS.md declares.
 
 The ESLint rules in scripts/eslint-rules/ enforce specific corners of each
 principle at lint time (requires-outside-index, fallback bans, validator
@@ -24,7 +24,7 @@ Principles audited (numbered to match doc/templates/AGENTS.md):
         subsubsystem should have at most one *Manager.js file. Multiple
         managers at the same level without clearly disjoint scopes is a
         smell.
-  P5 -- Coherent files (AGENTS.md target: 150-350 LOC; 350 is the
+  P5 -- Coherent files (doc/templates/AGENTS.md target: 150-350 LOC; 350 is the
         upper bound, files exceeding it are CRITICAL).
         Thresholds loaded from tools/HME/config/project-rules.json
         (defaults: WARN >250, CRITICAL >350). Files matched by

@@ -148,7 +148,7 @@
       "reason_key": "SCOPE_ESCAPE",
       "category": "project_contract",
       "scope": "transcript",
-      "owning_invariant": "AGENTS.md / HME workflow contract",
+      "owning_invariant": "doc/templates/AGENTS.md / HME workflow contract",
       "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
       "why": "Protects transcript against scope escape failures.",
       "outage_link": null
@@ -179,7 +179,7 @@
       "reason_key": "ADVISOR_MISSING_PRE_BUILD",
       "category": "project_contract",
       "scope": "transcript",
-      "owning_invariant": "AGENTS.md / HME workflow contract",
+      "owning_invariant": "doc/templates/AGENTS.md / HME workflow contract",
       "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
       "why": "Protects transcript against advisor missing pre build failures.",
       "outage_link": null
@@ -193,7 +193,7 @@
       "reason_key": "ADVISOR_MISSING_POST_DELIVER",
       "category": "project_contract",
       "scope": "transcript",
-      "owning_invariant": "AGENTS.md / HME workflow contract",
+      "owning_invariant": "doc/templates/AGENTS.md / HME workflow contract",
       "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
       "why": "Protects transcript against advisor missing post deliver failures.",
       "outage_link": null
@@ -207,7 +207,7 @@
       "reason_key": "ADVISOR_SILENTLY_SKIPPED",
       "category": "project_contract",
       "scope": "transcript",
-      "owning_invariant": "AGENTS.md / HME workflow contract",
+      "owning_invariant": "doc/templates/AGENTS.md / HME workflow contract",
       "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
       "why": "Protects transcript against advisor silently skipped failures.",
       "outage_link": null
@@ -221,7 +221,7 @@
       "reason_key": "SUMMARY_MISSING",
       "category": "project_contract",
       "scope": "transcript",
-      "owning_invariant": "AGENTS.md / HME workflow contract",
+      "owning_invariant": "doc/templates/AGENTS.md / HME workflow contract",
       "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
       "why": "Protects transcript against summary missing failures.",
       "outage_link": null
@@ -235,7 +235,7 @@
       "reason_key": "PHASE_SKIPPED",
       "category": "project_contract",
       "scope": "transcript",
-      "owning_invariant": "AGENTS.md / HME workflow contract",
+      "owning_invariant": "doc/templates/AGENTS.md / HME workflow contract",
       "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
       "why": "Protects transcript against phase gate failures.",
       "outage_link": null
@@ -249,7 +249,7 @@
       "reason_key": "PILE_ON",
       "category": "project_contract",
       "scope": "transcript",
-      "owning_invariant": "AGENTS.md / HME workflow contract",
+      "owning_invariant": "doc/templates/AGENTS.md / HME workflow contract",
       "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
       "why": "Protects transcript against pile on failures.",
       "outage_link": null
@@ -348,7 +348,7 @@
       "_note": "soft-flagged 2026-05-09; promotion criterion: latency P95 < 5s + zero false-positive runs. Re-evaluate 2026-05-24.",
       "category": "project_contract",
       "scope": "changed-files",
-      "owning_invariant": "AGENTS.md / HME workflow contract",
+      "owning_invariant": "doc/templates/AGENTS.md / HME workflow contract",
       "fixture_waiver": {
         "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
         "review_date": "2026-06-15"
@@ -366,7 +366,7 @@
       "_note": "shipped 2026-05-10 advisory, promoted to deny same day after firing correctly on the very turn that named the problem. Catches enumerate-without-tick the existing phrase detectors miss.",
       "category": "project_contract",
       "scope": "changed-files",
-      "owning_invariant": "AGENTS.md / HME workflow contract",
+      "owning_invariant": "doc/templates/AGENTS.md / HME workflow contract",
       "fixture_waiver": {
         "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
         "review_date": "2026-06-15"
@@ -402,7 +402,7 @@
       "_note": "shipped 2026-05-12. Checks LOC + comment-bloat + char-spam on edited files. Fires on any violation.",
       "category": "project_contract",
       "scope": "changed-files",
-      "owning_invariant": "AGENTS.md / HME workflow contract",
+      "owning_invariant": "doc/templates/AGENTS.md / HME workflow contract",
       "fixture_waiver": {
         "reason": "covered by runtime/state-driven integration checks, not static transcript fixture",
         "review_date": "2026-06-15"

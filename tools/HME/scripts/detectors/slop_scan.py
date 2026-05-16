@@ -68,7 +68,7 @@ _SKIP_PATH_PARTS = {"__pycache__", "node_modules", ".git", "tools/HME/KB/devlog"
 _SKIP_EXACT_PATHS = {
     "doc/templates/TODO.md",
     "tools/HME/scripts/detectors/slop_scan.py",
-    "AGENTS.md",
+    "doc/templates/AGENTS.md",
 }
 
 

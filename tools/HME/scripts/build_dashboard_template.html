@@ -222,7 +222,7 @@ if (Object.keys(mv).length) {
     x: sorted.map(s => s[1]).reverse(),
     marker: { color: sorted.map(s => s[1] >= 3 ? '#f38ba8' : s[1] >= 1 ? '#f9e2af' : '#a6e3a1').reverse() },
   }], {
-    ...DARK, title: 'AGENTS.md rule violations (recent history)',
+    ...DARK, title: 'doc/templates/AGENTS.md rule violations (recent history)',
     xaxis: { gridcolor: '#313244' }, yaxis: { automargin: true },
   }, {displaylogo: false});
 }

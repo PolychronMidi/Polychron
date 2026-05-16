@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Boyscout LOC enforcer (AGENTS.md "Files MUST be <=350 LOC unless in
+"""Boyscout LOC enforcer (doc/templates/AGENTS.md "Files MUST be <=350 LOC unless in
 loc-ignore.txt"). Per-turn detector: any file Edited/Written this turn
 must be <=350 LOC OR listed in config/loc-ignore.txt.
 

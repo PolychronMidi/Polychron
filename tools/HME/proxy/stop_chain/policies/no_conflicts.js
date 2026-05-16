@@ -2,7 +2,7 @@
 /**
  * Block stop if a git merge/rebase is in progress with unresolved conflicts.
  * Pattern lifted from FailproofAI's `require-no-conflicts-before-stop`.
- * Polychron's AGENTS.md says "investigate before deleting or overwriting"
+ * Polychron's doc/templates/AGENTS.md says "investigate before deleting or overwriting"
  * unfamiliar state -- this enforces that for the most common case (an
  * abandoned rebase or merge with `<<<<<<<` markers in tracked files). spam-ok
  *

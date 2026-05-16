@@ -139,8 +139,8 @@ test('Codex payload transform logs shape and strips successful hook autocorrect 
           {
             type: 'input_text',
             text: [
-              'STOP. Re-read AGENTS.md and the user prompt. Did you do ALL the work asked?',
-              'STOP. Re-read AGENTS.md and the user prompt. Did you do ALL the work asked?',
+              'STOP. Re-read doc/templates/AGENTS.md and the user prompt. Did you do ALL the work asked?',
+              'STOP. Re-read doc/templates/AGENTS.md and the user prompt. Did you do ALL the work asked?',
             ].join('\n'),
           },
           {

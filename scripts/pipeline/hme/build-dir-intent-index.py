@@ -158,7 +158,7 @@ def _trigrams(text: str) -> set:
 
 
 def _load_claude_md_rules() -> list:
-    """Extract imperative bullet points from AGENTS.md as individual rules.
+    """Extract imperative bullet points from doc/templates/AGENTS.md as individual rules.
     We match against each rule separately so shared vocabulary in doc/templates/AGENTS.md
     doesn't cause false positives -- only actual near-duplication trips the check.
     """
@@ -184,7 +184,7 @@ def _load_claude_md_rules() -> list:
 
 
 def _claude_overlap(rule: str, claude_rules: list) -> float:
-    """Max trigram Jaccard between this rule and any AGENTS.md bullet."""
+    """Max trigram Jaccard between this rule and any doc/templates/AGENTS.md bullet."""
     rt = _trigrams(rule)
     if not rt:
         return 0.0

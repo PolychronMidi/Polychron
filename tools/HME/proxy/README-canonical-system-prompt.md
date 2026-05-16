@@ -37,7 +37,7 @@ HME hooks can't):
 
 Everything else (style, code conventions, refactor discipline, comment
 policy, end-of-turn discipline, system-reminder priority, plan
-adherence, Hypermeta workflow, etc.) is owned by `AGENTS.md` (auto-loaded
+adherence, Hypermeta workflow, etc.) is owned by `doc/templates/AGENTS.md` (auto-loaded
 into context) and HME's hook layer (proxy middleware + stop-chain
 detectors like `exhaust_check` and `psycho_stop`, plus the `trample_gate`
 proxy middleware for request-time interrupt-ack).

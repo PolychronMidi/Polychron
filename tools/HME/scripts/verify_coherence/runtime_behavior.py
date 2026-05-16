@@ -179,7 +179,7 @@ class ServiceRegistryVerifier(Verifier):
 
 
 class ExplicitListTrackingRuleVerifier(Verifier):
-    """AGENTS.md must protect explicit user lists from silent todo collapse."""
+    """doc/templates/AGENTS.md must protect explicit user lists from silent todo collapse."""
     name = "explicit-list-tracking-rule"
     category = "runtime"
     subtag = "regression-prevention"

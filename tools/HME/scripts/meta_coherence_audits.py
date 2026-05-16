@@ -50,7 +50,7 @@ from pathlib import Path
 def _require_project_root() -> Path:
     root = os.environ.get("PROJECT_ROOT")
     if not root:
-        # Walk up from this script looking for AGENTS.md + .env sentinels.
+        # Walk up from this script looking for doc/templates/AGENTS.md + .env sentinels.
         here = Path(__file__).resolve()
         for parent in [here.parent, *here.parents]:
             if (parent / "doc" / "templates" / "AGENTS.md").exists() and (parent / ".env").exists():
