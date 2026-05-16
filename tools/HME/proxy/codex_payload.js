@@ -7,9 +7,6 @@ const { normalizeICommandsInValue } = require('./i_command_text');
 const { injectNativeToolSchemas } = require('./codex_native_tools');
 const { stripHookNoiseInValue } = require('./hook_noise_text');
 
-const HOOK_SUCCESS_RE = /^\s*(SessionStart|UserPromptSubmit|PreToolUse|PostToolUse|Notification|Stop|SubagentStop|PreCompact|PostCompact|PermissionRequest) hook \((completed|skipped)\)\s*$/;
-const WRAPPER_AUTOCORRECT_RE = /^\s*warning:\s*i\/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT\s*$/;
-const STOP_REREAD_RE = /^\s*STOP\. Re-read (?:AGENTS|CLAUDE)\.md and the user prompt\./;
 const EMPTY_TEXT_TYPES = new Set(['input_text', 'output_text', 'text']);
 
 function jsonBytes(value) {
@@ -118,7 +115,6 @@ function cleanupOptions(cfg) {
   const cleanup = cfg?.request_transform?.cleanup || cfg?.cleanup || {};
   return {
     enabled: process.env.HME_CODEX_PROXY_CLEANUP === '1' || cleanup.enabled === true,
-    stripSuccessHookNoise: cleanup.strip_success_hook_noise !== false,
     dropEmptyTextItems: cleanup.drop_empty_text_items !== false,
   };
 }
@@ -131,30 +127,6 @@ function payloadLogOptions(cfg) {
   };
 }
 
-function cleanText(text, opts, stats) {
-  if (!opts.stripSuccessHookNoise) return text;
-  const lines = String(text).split(/\r?\n/);
-  const kept = [];
-  let sawStopReread = false;
-  for (const line of lines) {
-    let category = '';
-    if (HOOK_SUCCESS_RE.test(line)) category = 'hook_success_lines';
-    else if (WRAPPER_AUTOCORRECT_RE.test(line)) category = 'autocorrect_lines';
-    else if (STOP_REREAD_RE.test(line)) {
-      if (sawStopReread) category = 'duplicate_stop_blocks';
-      sawStopReread = true;
-    }
-    if (category) {
-      stats.removed_lines++;
-      stats.removed_bytes += byteLen(line) + 1;
-      stats.categories[category] = (stats.categories[category] || 0) + 1;
-      continue;
-    }
-    kept.push(line);
-  }
-  return kept.join('\n');
-}
-
 function isEmptyTextItem(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   if (!EMPTY_TEXT_TYPES.has(String(value.type || ''))) return false;
@@ -165,7 +137,7 @@ function isEmptyTextItem(value) {
 }
 
 function cleanValue(value, opts, stats, protectedUserText = false) {
-  if (typeof value === 'string') return protectedUserText ? value : cleanText(value, opts, stats);
+  if (typeof value === 'string') return value;
   if (!value || typeof value !== 'object') return value;
   if (Array.isArray(value)) {
     const next = [];
