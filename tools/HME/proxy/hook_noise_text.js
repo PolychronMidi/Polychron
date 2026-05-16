@@ -2,7 +2,7 @@
 
 const HOOK_SUCCESS_RE = /^\s*(SessionStart|UserPromptSubmit|PreToolUse|PostToolUse|Notification|Stop|SubagentStop|PreCompact|PostCompact|PermissionRequest) hook \((completed|skipped)\)\s*$/;
 const WRAPPER_AUTOCORRECT_RE = /^\s*warning:\s*i\/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT\s*$/;
-const DUP_STOP_RE = /^\s*STOP\. Re-read (?:AGENTS|CLAUDE)\.md and the user prompt\./;
+const DUP_STOP_RE = /^\s*STOP\. Re-read (?:(?:doc\/templates\/)?AGENTS|CLAUDE)\.md and the user prompt\./;
 const RAW_CHANNEL_RE = /^\s*(warning|feedback):\s*(BLOCKED: Raw tool streak.*)$/;
 const RAW_CONTINUATION_RE = /^\s*(TodoWrite\b|i\/[A-Za-z_-]+\b|or stop\b|Preferred exits\b|Do not loop\b|use native\b|run a different\b|native Read\/Edit\b|Read\/Edit\/?)/;
 
