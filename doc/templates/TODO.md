@@ -4,12 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Rerun npm run main through the pipeline contract
+- [ ] [E3] Locate current root ts_api_*.jsonl files and active writers
 
 ## Next
 
-- [ ] [E3] Fix the first in-pipeline blocker surfaced by npm run main
-- [ ] [E3] Re-run npm run main for same-turn evidence
+- [ ] [E3] Patch every writer still targeting PROJECT_ROOT
+- [ ] [E3] Delete leaked root artifacts after confirming they are temp files
+- [ ] [E3] Run regression checks that fail on root JSONL leaks
 
 ## Done
 
