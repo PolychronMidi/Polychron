@@ -55,18 +55,6 @@ def _check_file_exists(inv: dict) -> tuple[bool, str]:
     return False, f"missing: {inv['path']}"
 
 
-def _check_symlink_valid(inv: dict) -> tuple[bool, str]:
-    path = _resolve(inv["path"])
-    if not os.path.islink(path):
-        if os.path.exists(path):
-            return True, "exists (not a symlink)"
-        return False, f"not found: {inv['path']}"
-    target = os.path.realpath(path)
-    if os.path.exists(target):
-        return True, f"-> {os.path.basename(target)}"
-    return False, f"broken symlink -> {os.readlink(path)}"
-
-
 def _check_json_valid(inv: dict) -> tuple[bool, str]:
     path = _resolve(inv["path"])
     with open(path, encoding="utf-8") as f:
@@ -196,6 +184,6 @@ from .checks_runtime import (  # noqa: F401, E402
     _check_same_commit_determinism, _check_activity_field_sanity,
 )
 from .checks_code import (  # noqa: F401, E402
-    _check_public_functions_reachable, _check_shell_output_empty,
+    _check_shell_output_empty,
     _check_eslint_concordance_complete,
 )

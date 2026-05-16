@@ -12,14 +12,14 @@ logger = logging.getLogger("HME")
 from ._base import METRICS_DIR, _load_invariants
 from .checks import (
     _check_files_executable, _check_files_referenced, _check_file_exists,
-    _check_symlink_valid, _check_json_valid, _check_glob_count_gte,
+    _check_json_valid, _check_glob_count_gte,
     _check_pattern_in_file, _check_patterns_all_in_file, _check_pattern_count_gte,
     _check_symbols_used, _check_symbols_have_kb, _check_files_mtime_window,
     _check_kb_content_no_pattern, _check_kb_freshness,
     _check_metric_has_variance, _check_metric_threshold, _check_correlation_direction,
     _check_activity_events_balanced, _check_activity_field_sanity,
     _check_same_commit_determinism, _check_invariant_chronically_failing,
-    _check_public_functions_reachable, _check_shell_output_empty,
+    _check_shell_output_empty,
     _check_eslint_concordance_complete,
 )
 
@@ -29,7 +29,6 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "files_executable": _check_files_executable,
         "files_referenced": _check_files_referenced,
         "file_exists": _check_file_exists,
-        "symlink_valid": _check_symlink_valid,
         "json_valid": _check_json_valid,
         "glob_count_gte": _check_glob_count_gte,
         "pattern_in_file": _check_pattern_in_file,
@@ -47,7 +46,6 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "activity_field_sanity": _check_activity_field_sanity,
         "same_commit_determinism": _check_same_commit_determinism,
         "invariant_chronically_failing": _check_invariant_chronically_failing,
-        "public_functions_reachable": _check_public_functions_reachable,
         "shell_output_empty": _check_shell_output_empty,
         "eslint_concordance_complete": _check_eslint_concordance_complete,
     }
@@ -174,10 +172,16 @@ def check_invariants(verbose: bool = False) -> str:
         parts.append(f"## Verified ({len(passes)} -- detail suppressed; use `evolve(focus='invariants', query='verbose')` for full listing)")
 
     parts.append(f"\n## Extending")
-    parts.append(f"Add to `tools/HME/config/invariants.json` -- no Python changes needed.")
-    parts.append(f"Types: files_executable, files_referenced, file_exists, symlink_valid,")
-    parts.append(f"json_valid, glob_count_gte, pattern_in_file, patterns_all_in_file,")
-    parts.append(f"pattern_count_gte, symbols_used, symbols_have_kb, files_mtime_window,")
-    parts.append(f"kb_content_no_pattern, kb_freshness")
+    parts.append(f"Add entries to `tools/HME/config/invariants/*.json`; `invariants.json` is the index.")
+    parts.append("Types: " + ", ".join(sorted({
+        "files_executable", "files_referenced", "file_exists", "json_valid",
+        "glob_count_gte", "pattern_in_file", "patterns_all_in_file",
+        "pattern_count_gte", "symbols_used", "symbols_have_kb",
+        "files_mtime_window", "kb_content_no_pattern", "kb_freshness",
+        "metric_has_variance", "metric_threshold", "correlation_direction",
+        "activity_events_balanced", "activity_field_sanity",
+        "same_commit_determinism", "invariant_chronically_failing",
+        "shell_output_empty", "eslint_concordance_complete",
+    })))
 
     return "\n".join(parts)
