@@ -19,9 +19,9 @@ import traceback
 
 def _add_path() -> None:
     here = os.path.dirname(os.path.abspath(__file__))
-    mcp_root = os.path.abspath(os.path.join(here, "..", "..", "tools", "HME", "mcp"))
-    if mcp_root not in sys.path:
-        sys.path.insert(0, mcp_root)
+    service_root = os.path.abspath(os.path.join(here, "..", "..", "tools", "HME", "service"))
+    if service_root not in sys.path:
+        sys.path.insert(0, service_root)
 
 
 def main() -> int:
