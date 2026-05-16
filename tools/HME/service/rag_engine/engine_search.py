@@ -196,7 +196,7 @@ class RAGEngineSearchMixin:
                     logger.debug(f"count_tokens: cannot read {key_path} ({type(_e).__name__})")
         if api_key and len(text) > 50:
             # OVERDRIVE_MODE=1: skip all Anthropic API calls.
-            if ENV.optional("OVERDRIVE_MODE", "0") != "6":
+            if ENV.optional("OVERDRIVE_MODE", "0") != "1":
                 try:
                     import httpx
                     resp = httpx.post(

@@ -364,9 +364,8 @@ def _resolve_mode1_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     return (chain, any(m.startswith("claude-") for m in chain)) if chain else None
 
 
-# Active overdrive modes: 0=cascade, 6=team-role registry routing.
-# Legacy modes 1..5 are retired; helpers remain only where MODE=1 reuses
-# registry chain resolution. None = cascade.
+# Active overdrive modes: 0=cascade, 1=team-role registry routing.
+# Legacy modes 2..6 are retired. None = cascade.
 _MODE_CHAIN_RESOLVERS = {
     "1": _resolve_mode1_entry,
 }
@@ -425,7 +424,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     None immediately -- caller falls straight to local fallback. Useful when
     Anthropic is having an outage, when rate-limited, or for offline dev.
 
-    OVERDRIVE_MODE=1 enables team-role registry routing. Legacy modes 1..5
+    OVERDRIVE_MODE=1 enables team-role registry routing. Legacy modes 2..6
     are retired and fall through to the normal cascade.
     """
     import time as _time
@@ -440,8 +439,8 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         logger.info("reasoning: HME_REASONING_OFFLINE=1 -- skipping external cascade")
         return None
 
-    # OVERDRIVE_MODE: 0=cascade; 6=team-role registry routing.
-    # Legacy modes 1..5 are retired and intentionally fall through.
+    # OVERDRIVE_MODE: 0=cascade; 1=team-role registry routing.
+    # Legacy modes 2..6 are retired and intentionally fall through.
     _od_mode = _ENV.optional("OVERDRIVE_MODE", "0")
     _LEGACY_TIER = {"easy": "E2", "medium": "E3", "hard": "E4"}
     _raw_tier = (tier or "E3").strip()

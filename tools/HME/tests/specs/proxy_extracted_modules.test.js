@@ -30,7 +30,7 @@ test('overdrive route retires legacy modes and keeps only mode 1 active', () => 
   for (const mode of ['0', '2', '3', '4', '5', '6', '', undefined]) {
     assert.equal(effectiveMode({ OVERDRIVE_MODE: mode }), '0');
   }
-  assert.equal(effectiveMode({ OVERDRIVE_MODE: '1' }), '6');
+  assert.equal(effectiveMode({ OVERDRIVE_MODE: '1' }), '1');
 });
 
 test('mode 1 chain builder preserves team-role tier routing', () => {

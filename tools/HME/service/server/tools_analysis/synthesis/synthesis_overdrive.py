@@ -361,7 +361,7 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
     allow_subagent: when False, force direct API even with OVERDRIVE_VIA_SUBAGENT=1.
     """
     from hme_env import ENV as _ENV_OD
-    if _ENV_OD.optional("OVERDRIVE_MODE", "0") == "6":
+    if _ENV_OD.optional("OVERDRIVE_MODE", "0") == "1":
         allow_subagent = False
     if allow_subagent and _ENV_OD.optional("OVERDRIVE_VIA_SUBAGENT", "0") == "1":
         return _dispatch_via_subagent(prompt, system, max_tokens, tier=tier)

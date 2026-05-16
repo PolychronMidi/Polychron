@@ -1,5 +1,5 @@
 'use strict';
-// Active overdrive modes are 0 and 1. Registry-chain helpers remain because mode 1 uses them.
+// Active overdrive modes are 0 and 1.
 
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -28,7 +28,7 @@ const EXPECTED_E5_HEAD = ['gpt-5.5-xhigh', 'gpt-5.5-high'];
 const EXPECTED_E4_HEAD = ['mistral-large-latest', 'gemini-2.5-pro'];
 const EXPECTED_E2_HEAD = ['gemini-2.0-flash', 'gpt-4o-mini'];
 
-test('registry helper still resolves tier chains for active mode 1', () => {
+test('registry helper still resolves tier chains for mode 1', () => {
   const result = run({ OVERDRIVE_MODE: '1' }, `
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
 import json
