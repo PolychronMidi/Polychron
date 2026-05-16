@@ -43,6 +43,7 @@
     {
       "id": "overdrive-no-stale-mode6",
       "description": "Active source must not retain stale OVERDRIVE_MODE=6 gates or helper names after mode 1 became canonical.",
+      "born_from": "2026-05-16 overdrive mode 6 retirement to canonical mode 1",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py overdrive-no-stale-mode6",
       "severity": "error",
