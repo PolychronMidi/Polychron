@@ -112,6 +112,7 @@ function end(token, result = {}) {
   if (!token || !token.root || !token.id) return;
   const now = Date.now();
   if (token.event !== 'SessionStart') {
+    const exitCode = Number.isInteger(result.exit_code) ? result.exit_code : 0;
     append(token.root, {
       phase: 'end',
       id: token.id,
@@ -119,8 +120,13 @@ function end(token, result = {}) {
       session_id: token.session_id || '',
       ended_ms: now,
       duration_ms: now - (token.started_ms || now),
-      exit_code: Number.isInteger(result.exit_code) ? result.exit_code : 0,
+      exit_code: exitCode,
     });
+    if (exitCode === 0 && token.session_id) {
+      const state = readState(token.root);
+      state.activity[token.session_id] = { id: token.id, event: token.event, ended_ms: now };
+      writeState(token.root, state);
+    }
     return;
   }
   const state = readState(token.root);
