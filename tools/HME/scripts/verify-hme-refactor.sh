@@ -39,7 +39,7 @@ run invariants bash -c 'PYTHONPATH=tools/HME/service python3 - <<"PY" >/tmp/hme-
 from server.tools_analysis.evolution.evolution_invariants import check_invariants
 out = check_invariants(verbose=False)
 print(out)
-raise SystemExit(0 if "170/170 passed" in out or "171/171 passed" in out or "172/172 passed" in out else 1)
+raise SystemExit(0 if "170/170 passed" in out or "171/171 passed" in out or "172/172 passed" in out or "173/173 passed" in out else 1)
 PY'
 run node-hme-specs node --test tools/HME/tests/specs/*.test.js
 run audit-all bash scripts/audit-all.sh --strict

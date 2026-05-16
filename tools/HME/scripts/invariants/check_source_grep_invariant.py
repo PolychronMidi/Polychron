@@ -46,6 +46,7 @@ RULES = {
     "index-directory-zero-args": [{"paths": ["tools/HME/service/rag_engine/engine_indexing.py"], "pattern": r"def index_directory\(self,|def _index_directory_locked\(self,|def _collect_files\(self,"}],
     "no-direct-gpu-model-load-in-indexing": [{"paths": ["tools/HME/service/indexing_mode.py", "tools/HME/service/server/tools_index.py"], "pattern": r"from sentence_transformers|import torch|SentenceTransformer"}],
     "event-kernel-subprocesses-use-fs-ipc": [{"roots": ["tools/HME/event_kernel", "tools/HME/proxy/stop_chain"], "include": [".js"], "pattern": r"child\.stdin|stdin\.write|spawnSync\([^\n]*input"}],
+    "overdrive-no-stale-mode6": [{"roots": ["."] , "include": [".js", ".py", ".sh", ".md", ".json", ""], "pattern": r"OVERDRIVE_MODE=6|MODE=6|mode 6|_mode6|mode6|buildMode6|resolve_mode6|_OD_START.*[\"']6", "exclude": r"tools/HME/KB/|tools/HME/tests/|tools/HME/config/invariants/|tools/HME/scripts/invariants/check_source_grep_invariant\.py|tools/HME/session-state\.json|log/|activity/|node_modules/|\.git/"}],
 }
 
 
