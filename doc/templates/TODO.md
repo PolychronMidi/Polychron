@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Run HME refactor verification wrapper and invariant evidence
+(empty)
 
 ## Next
 
