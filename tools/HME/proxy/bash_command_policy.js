@@ -188,6 +188,8 @@ function evaluateBashInput(input = {}, opts = {}) {
   let cmd = String(next.command || next.cmd || '');
   if (!cmd) return allow(next);
   const trimmed = cmd.trimStart().split('\n')[0];
+  const noopFailure = noopAfterFailureDecision(cmd, root);
+  if (noopFailure) return noopFailure;
   if (next.timeout && String(next.timeout) !== '0') delete next.timeout;
   const timeoutChanged = !Object.prototype.hasOwnProperty.call(next, 'timeout') && Object.prototype.hasOwnProperty.call(input, 'timeout');
   if (/\b(curl|wget|fetch)\b[^|]*\|\s*(\.\s+|sudo\s+|exec\s+)?(sh|bash|zsh|ksh|dash)\b/.test(cmd)) return deny('BLOCKED: piping a remote download into a shell interpreter is a supply-chain risk. Download, inspect, then execute deliberately.');
