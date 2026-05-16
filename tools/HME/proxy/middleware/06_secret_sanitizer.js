@@ -37,6 +37,7 @@
 const PATTERNS = [
   // OpenAI / Anthropic / Stripe / GitHub / generic "sk-" provider keys.
   [/\bsk-(?:proj-|ant-|live_|test_)?[A-Za-z0-9_\-]{24,}\b/g, '<REDACTED:provider-key>'],
+  [/\bgsk_[A-Za-z0-9]{24,}\b/g, '<REDACTED:provider-key>'],
   [/\bgh[opsuar]_[A-Za-z0-9]{30,}\b/g, '<REDACTED:github-token>'],
   [/\bgithub_pat_[A-Za-z0-9_]{60,}\b/g, '<REDACTED:github-pat>'],
   // AWS access keys (AKIA + SECRETKEY format).
