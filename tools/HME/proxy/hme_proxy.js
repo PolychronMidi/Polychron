@@ -43,6 +43,9 @@ const { stripStaleToolResults, sanitizeMessages } = require('./conversation_grap
 const { servicePort } = require('./service_registry');
 const { requestTelemetry } = require('./request_telemetry');
 const { routeDecision } = require('./model_route_resolver');
+const { shrinkForPassthrough } = require('./anthropic_passthrough_compact');
+const { applyOverdriveRoute } = require('./overdrive_route');
+const { handleLegacySwapResponse } = require('./legacy_swap_response');
 const {
   omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat,
   firstLegacyChatCandidate,
@@ -279,158 +282,13 @@ function _stripClaudeIdentity(payload) {
 }
 
 function _shrinkForPassthrough(payload) {
-  if (process.env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
-  if (!payload || !Array.isArray(payload.messages)) return 0;
-  const msgs = payload.messages;
-  if (msgs.length <= _PASSTHROUGH_COMPACT_KEEP_MIN) return 0;
-  // Dynamic threshold: shrink the byte budget when Anthropic's
-  // anthropic-ratelimit-input-tokens-remaining header on the prior
-  // response said we're near the cap. Static 400KB is the worst-case
-  // ceiling; the dynamic value can be lower.
-  const _threshold = _effectiveCompactThreshold();
-  let serialized = JSON.stringify(payload);
-  if (serialized.length <= _threshold) return 0;
-
-  // TIER 1: microcompact -- elide older tool_result blocks. Floor=500B,
-  // recent-keep=10%. Most large requests stop here with no message drops.
-  const _TOOL_RESULT_BYTE_FLOOR = 2000;
-  const _RECENT_KEEP_FRACTION = 0.20;
-  const _recent_start = Math.floor(msgs.length * (1 - _RECENT_KEEP_FRACTION));
-  let elided = 0;
-  for (let i = 0; i < _recent_start; i++) {
-    const m = msgs[i];
-    if (!m || !Array.isArray(m.content)) continue;
-    for (const b of m.content) {
-      if (!b || b.type !== 'tool_result') continue;
-      const cstr = typeof b.content === 'string'
-        ? b.content
-        : (Array.isArray(b.content) ? JSON.stringify(b.content) : '');
-      if (cstr.length < _TOOL_RESULT_BYTE_FLOOR) continue;
-      b.content = `(content elided by hme-proxy precompact: original was ${cstr.length}B)`;
-      elided++;
-    }
-  }
-  if (elided > 0) {
-    serialized = JSON.stringify(payload);
-    console.error(`precompact tier-1 (microcompact): elided ${elided} stale tool_result block(s), body=${serialized.length}B`);
-    if (serialized.length <= _threshold) {
-      console.error(`precompact: tier-1 sufficient, no message drops needed`);
-      return elided; // success at tier 1, no dropping required
-    }
-  }
-
-  // TIER 2: summary-via-local-model fallback (HME_PROXY_LOCAL_SUMMARY=1).
-  // Replaces oldest half with a marker; runs before tier-3 message-drop.
-  // Stub -- a real summarization call would replace `_summaryText`.
-  if (process.env.HME_PROXY_LOCAL_SUMMARY === '1' && msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN * 2) {
-    const _half = Math.floor(msgs.length / 2);
-    const _summaryText = `(hme-proxy local-summary placeholder: ${_half} oldest messages compacted)`;
-    msgs.splice(0, _half, { role: 'user', content: _summaryText });
-    serialized = JSON.stringify(payload);
-    console.error(`precompact tier-2 (local-summary): collapsed ${_half} oldest msgs into 1 marker, body=${serialized.length}B`);
-    if (serialized.length <= _threshold) return elided + _half;
-  }
-
-  // TIER 3: session-notes compact. If tmp/hme-session-notes.txt exists,
-  // use it as the summary (skips model call; supersedes tier-2 marker).
-  try {
-    const fsX = require('fs');
-    const pathX = require('path');
-    const { PROJECT_ROOT } = require('./shared');
-    const notesPath = pathX.join(PROJECT_ROOT, 'tmp', 'hme-session-notes.txt');
-    if (fsX.existsSync(notesPath) && msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN * 2) {
-      const notes = fsX.readFileSync(notesPath, 'utf8');
-      if (notes && notes.length > 0) {
-        const _half = Math.floor(msgs.length / 2);
-        msgs.splice(0, _half, {
-          role: 'user',
-          content: `(hme-proxy session-memory compact: ${_half} oldest messages summarized)\n\n${notes.slice(0, 8_000)}`,
-        });
-        serialized = JSON.stringify(payload);
-        console.error(`precompact tier-3 (session-memory): used pre-extracted notes (${notes.length}B), body=${serialized.length}B`);
-        if (serialized.length <= _threshold) return elided + _half;
-      }
-    }
-  } catch (_e) { /* best-effort */ }
-
-  // TIER 4 -- message-drop fallback. Drop the OLDEST messages until
-  // under threshold. Keep at least _PASSTHROUGH_COMPACT_KEEP_MIN. The
-  // walk-backward pair-preservation in pass 5 below ensures we don't
-  // create orphan tool_use/tool_result pairs across the drop boundary.
-  let dropped = 0;
-  while (msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN) {
-    msgs.shift();
-    dropped++;
-    serialized = JSON.stringify(payload);
-    if (serialized.length <= _threshold) break;
-  }
-  // PASS 5: walk-backward tool-pair preservation. Drop leading user message
-  // if it's tool_result-only with its tool_use in a dropped assistant block.
-  // Iterate until the first surviving message is clean.
-  while (msgs.length > _PASSTHROUGH_COMPACT_KEEP_MIN) {
-    const first = msgs[0];
-    if (!first || !Array.isArray(first.content)) break;
-    const onlyOrphanResults = first.role === 'user'
-      && first.content.length > 0
-      && first.content.every((b) => b && b.type === 'tool_result');
-    if (!onlyOrphanResults) break;
-    msgs.shift();
-    dropped++;
-  }
-
-  // PASS 6: residual orphan scrub -- strip tool_result whose tool_use_id
-  // isn't in surviving assistants (and vice versa). Empty content arrays
-  // get a placeholder to satisfy Anthropic's non-empty-content rule.
-  const surviving_use_ids = new Set();
-  const surviving_result_ids = new Set();
-  for (const m of msgs) {
-    if (!m || !Array.isArray(m.content)) continue;
-    for (const b of m.content) {
-      if (!b || typeof b !== 'object') continue;
-      if (b.type === 'tool_use' && b.id) surviving_use_ids.add(b.id);
-      if (b.type === 'tool_result' && b.tool_use_id) surviving_result_ids.add(b.tool_use_id);
-    }
-  }
-  let orphans = 0;
-  for (const m of msgs) {
-    if (!m || !Array.isArray(m.content)) continue;
-    const before = m.content.length;
-    // Snapshot text from original blocks so output_file paths survive
-    // orphan scrub when tool_use_id references a dropped prefix msg.
-    const _origTexts = [];
-    for (const b of m.content) {
-      if (b && typeof b === 'object' && typeof b.text === 'string') _origTexts.push(b.text);
-      if (b && typeof b === 'object' && b.type === 'tool_result' && typeof b.content === 'string') _origTexts.push(b.content);
-    }
-    m.content = m.content.filter((b) => {
-      if (!b || typeof b !== 'object') return true;
-      if (b.type === 'tool_result' && b.tool_use_id && !surviving_use_ids.has(b.tool_use_id)) return false;
-      if (b.type === 'tool_use' && b.id && !surviving_result_ids.has(b.id)) return false;
-      return true;
-    });
-    orphans += before - m.content.length;
-    if (m.content.length === 0) {
-      const _ofMatch = _origTexts.join(' ').match(/output_file:\s*(\S+)/);
-      if (_ofMatch) {
-        m.content = [{ type: 'text', text: `(hme-proxy compact: agent output at ${_ofMatch[1]})` }];
-      } else {
-        m.content = [{ type: 'text', text: '(content stripped by hme-proxy passthrough-compact)' }];
-      }
-    }
-  }
-  // Insert a synthetic user marker at messages[0] so Anthropic doesn't
-  // reject the conversation for starting on assistant. Also gives the
-  // model a hint that history was elided.
-  if (dropped > 0 && msgs[0] && msgs[0].role === 'assistant') {
-    msgs.unshift({
-      role: 'user',
-      content: `[hme-proxy passthrough-compact: ${dropped} oldest message(s) dropped to fit under TPM rate limit; restart proxy to clear escape-hatch state]`,
-    });
-  }
-  serialized = JSON.stringify(payload);
-  console.error(`passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks (now ${msgs.length} msgs, body=${serialized.length}B)`);
-  return dropped;
+  return shrinkForPassthrough(payload, {
+    effectiveThreshold: _effectiveCompactThreshold,
+    keepMin: _PASSTHROUGH_COMPACT_KEEP_MIN,
+    projectRoot: require('./shared').PROJECT_ROOT,
+  });
 }
+
 
 function _sanitizePayload(payload) {
   return sanitizeMessages(payload);
@@ -531,151 +389,25 @@ function handleRequest(clientReq, clientRes) {
     const _OMNIROUTE_OFF = process.env.HME_OMNIROUTE_OFF === '1';
     const _odMode = process.env.OVERDRIVE_MODE || '0';
 
-    console.error(`[hme-proxy] swap-check: odMode=${_odMode} model=${payload && payload.model ? payload.model : 'no-payload'} upstream=${!!clientReq.headers['x-hme-upstream']}`);
-    if ((_odMode === '4' || _odMode === '5' || _odMode === '6')
-        && payload && typeof payload.model === 'string'
-        && payload.model.startsWith('claude-')
-        && !clientReq.headers['x-hme-upstream']) {
-
-      const _zenKey = process.env.OPENCODE_API_KEY || '';
-      if (_zenKey) {
-        _mode4WasStreaming = (payload.stream === true);
-        injected = true;
-
-        // Read swap model chain from config/models.json.
-        // MODE=6 routes by team role when present, else by requested Claude family.
-        try {
-          const _cfg = require('./shared').loadModelsJson();
-          const _msgText = (payload.messages || []).map(m => {
-            const c = m && m.content;
-            if (typeof c === 'string') return c;
-            if (Array.isArray(c)) return c.map(p => (p && (p.text || p.content)) || '').join('\n');
-            return '';
-          }).join('\n');
-          const _roleFromText = (() => {
-            if (_msgText.includes('You are Blue Lead')) return 'blue_lead';
-            if (_msgText.includes('You are Red Lead')) return 'red_lead';
-            if (_msgText.includes('You are Blue Purple')) return 'blue_purple';
-            if (_msgText.includes('You are Red Purple')) return 'red_purple';
-            const m = /\bcrew_e[1-4]_[01]\b/.exec(_msgText);
-            return m ? m[0] : '';
-          })();
-          const _role = (_roleFromText || process.env.HME_TEAM_ROLE || '').toLowerCase();
-          const _roleTier = (() => {
-            if (['driver', 'blue_lead', 'red_lead', 'team_lead'].includes(_role)) return 'E5';
-            if (['blue_purple', 'red_purple', 'team_purple'].includes(_role)) return 'E4';
-            const m = /^crew_e([1-4])/.exec(_role);
-            return m ? `E${m[1]}` : null;
-          })();
-          const _modelTier = (() => {
-            const model = String(payload.model || '').toLowerCase();
-            if (model.includes('opus')) return 'E5';
-            if (model.includes('sonnet')) return 'E4';
-            if (model.includes('haiku')) return 'E2';
-            return 'E5';
-          })();
-          const _tier = _odMode === '6' ? (_roleTier || _modelTier) : 'E5';
-          const _roleKey = (() => {
-            if (_role === 'driver') return 'driver';
-            if (['blue_lead', 'red_lead', 'team_lead'].includes(_role)) return 'team_lead';
-            if (['blue_purple', 'red_purple', 'team_purple'].includes(_role)) return 'team_purple';
-            if (_role.startsWith('crew_') || _role === 'stage_crew') return 'stage_crew';
-            return '';
-          })();
-          const _co = (_cfg.ranking_rules && _cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
-          const _chainFor = (tier) => {
-            const tm = (_cfg.tiers && _cfg.tiers[tier] && _cfg.tiers[tier].models) || [];
-            const ranked = [];
-            for (const c of _co) ranked.push(...tm.filter(m => m.cost === c).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
-            return { tm, ranked };
-          };
-          const _spec = _odMode === '6' && _roleKey && _cfg.team_role_models ? _cfg.team_role_models[_roleKey] : null;
-          const _specTier = _spec && _spec.tier === 'role' ? _tier : ((_spec && _spec.tier) || _tier);
-          const _base = _chainFor(_specTier);
-          let _front = [];
-          if (_spec && _spec.source === 'manually_toprank') _front = (_cfg.manually_toprank && _cfg.manually_toprank[_specTier]) || [];
-          const _frontSet = new Set(_front);
-          _swapChain.push(..._front.map(id => _base.tm.find(m => m.id === id)).filter(Boolean));
-          _swapChain.push(..._base.ranked.filter(m => !_frontSet.has(m.id)));
-          console.error(`[hme-proxy] MODE=${_odMode} ${_tier} chain built (role=${_role || 'none'} model=${payload.model}): ${_swapChain.map(m => m.id).join(' -> ')} (${_swapChain.length} models)`);
-          // Pick from chain: first model, unless a recent failure advanced us.
-          if (_swapChain.length > 0) {
-            let _stIdx = 0;
-            try {
-              const _fs2 = require('fs');
-              const _pth2 = require('path');
-              const _stFile2 = _pth2.join(__dirname, '..', '..', '..', 'tmp', 'hme-omni-swap-state.json');
-              const _st2 = JSON.parse(_fs2.readFileSync(_stFile2, 'utf8'));
-              _stIdx = Math.min(_st2.idx || 0, _swapChain.length - 1);
-            } catch (_) {}
-            _swapModel = _swapChain[_stIdx].id;
-            const _p = _swapChain[_stIdx].provider || '';
-            _omniProvider = omniProviderForConfigProvider(_p);
-          }
-        } catch (_) { /* keep defaults */ }
-
-        // Strip -go suffix: models.json uses it as a local cost-tier marker;
-        // the actual OpenCode API rejects these (e.g. mimo-v2.5-pro-go -> 400).
-        if (_swapModel.endsWith('-go')) _swapModel = _swapModel.slice(0, -3);
-
-        // Env override wins over auto-detection
-        if (process.env.HME_OMNIROUTE_PROVIDER) _omniProvider = process.env.HME_OMNIROUTE_PROVIDER;
-
-        if (!_OMNIROUTE_OFF) {
-          // OmniRoute path (default). No per-request compression overrides.
-          const _targetFormat = omniTargetFormat(_omniProvider);
-          console.error(`[hme-proxy] swap pre-omni: chainLen=${_swapChain.length} model=${_swapModel} provider=${_omniProvider} targetFormat=${_targetFormat}`);
-          try {
-            _stripStaleToolResults(payload);
-            _stripClaudeIdentity(payload);
-          } catch (_e) {
-            console.error(`[hme-proxy] OmniRoute payload strip failed: ${_e.message}`);
-          }
-          payload.model = `${_omniProvider}/${_swapModel}`;
-          try { outBody = Buffer.from(JSON.stringify(payload), 'utf8'); } catch (_e) {
-            console.error(`[hme-proxy] OmniRoute payload serialize failed: ${_e.message} (len=${JSON.stringify(payload).length}B)`);
-            outBody = Buffer.from(JSON.stringify({ model: payload.model, messages: payload.messages.slice(-50), system: payload.system, stream: payload.stream, max_tokens: payload.max_tokens }), 'utf8');
-          }
-          _lastPayloadBytes = outBody.length;
-          clientReq.headers['x-hme-upstream'] = `http://127.0.0.1:${_OMNIROUTE_PORT}`;
-          delete clientReq.headers['authorization'];
-          delete clientReq.headers['x-api-key'];
-          _isMode4OmniRoute = true;
-          console.error(`[hme-proxy] MODE=${_odMode} swap OK: omni=${_isMode4OmniRoute} model=${_omniProvider}/${_swapModel} chainLen=${_swapChain.length}`);
-
-          console.error(`[hme-proxy] MODE=${_odMode} OmniRoute: claude-* -> ${_omniProvider}/${_swapModel} via http://127.0.0.1:${_OMNIROUTE_PORT} targetFormat=${_targetFormat} (stream=${_mode4WasStreaming} msgs=${payload.messages.length} sys=${(payload.system||'').length}B tools=${(payload.tools||[]).length})`);
-        } else {
-          // Legacy zen_translator path (HME_OMNIROUTE_OFF=1)
-          if (isCodexOmniTarget(_omniProvider)) {
-            const _startIdx = _swapChain.findIndex((m) => m && m.id === _swapModel);
-            const _legacy = firstLegacyChatCandidate(_swapChain, _startIdx < 0 ? 0 : _startIdx);
-            if (!_legacy) {
-              clientRes.writeHead(503, { 'Content-Type': 'application/json' });
-              clientRes.end(JSON.stringify({
-                error: 'omniroute_required',
-                message: 'Codex targets require OmniRoute openai-responses; legacy chat translation is blocked.',
-              }));
-              return;
-            }
-            console.error(`[hme-proxy] MODE=${_odMode} legacy: skipping Codex responses target ${_omniProvider}/${_swapModel}; chat translator requires non-Codex target`);
-            _swapModel = _legacy.model.id;
-            _omniProvider = omniProviderForConfigProvider(_legacy.model.provider || '');
-            if (_swapModel.endsWith('-go')) _swapModel = _swapModel.slice(0, -3);
-          }
-          const { translateRequestToOpenAI } = require('./zen_translator');
-          const oaPayload = translateRequestToOpenAI(payload, _swapModel);
-          clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
-          clientReq.headers['authorization'] = `Bearer ${_zenKey}`;
-          clientReq.headers['x-api-key'] = _zenKey;
-          clientReq.url = '/v1/chat/completions';
-          outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
-          _isMode4Swap = true;
-
-          console.error(`[hme-proxy] MODE=${_odMode} legacy: claude-* -> ${_swapModel} via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${_mode4WasStreaming})`);
-        }
-      } else {
-        console.error(`[hme-proxy] MODE=${_odMode} active but OPENCODE_API_KEY missing -- swap skipped`);
-      }
+    const overdriveRoute = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes,
+      outBody,
+      stripStaleToolResults: _stripStaleToolResults,
+      stripClaudeIdentity: _stripClaudeIdentity,
+    });
+    if (overdriveRoute.ended) return;
+    if (overdriveRoute.applied) {
+      outBody = overdriveRoute.outBody;
+      injected = true;
+      _mode4WasStreaming = overdriveRoute.wasStreaming;
+      _isMode4Swap = overdriveRoute.isLegacySwap;
+      _isMode4OmniRoute = overdriveRoute.isOmniRoute;
+      _swapChain = overdriveRoute.swapChain;
+      _swapModel = overdriveRoute.swapModel;
+      _omniProvider = overdriveRoute.omniProvider;
+      if (overdriveRoute.lastPayloadBytes) _lastPayloadBytes = overdriveRoute.lastPayloadBytes;
     }
 
     const upstream = resolveUpstream(clientReq);
@@ -889,118 +621,16 @@ function handleRequest(clientReq, clientRes) {
       upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
         const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
 
-        // MODE 4 SWAP RESPONSE HANDLER
-if (_isMode4Swap) {
-          const { ZenSseTranslator, translateNonStreamResponseToAnthropic } = require('./zen_translator');
-
-          if (upstreamRes.statusCode === 401 || upstreamRes.statusCode === 403) {
-             console.error(`MODE=4 AUTH FAILURE: Upstream returned ${upstreamRes.statusCode}. Faking success to protect session.`);
-             clientRes.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
-
-             // 1. Send message_start (This fixes the "current message" error)
-             clientRes.write('event: message_start\n');
-             clientRes.write(`data: {"type":"message_start","message":{"id":"proxy_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n`);
-
-             // 2. Send a dummy content block so the UI shows something
-             clientRes.write('event: content_block_start\n');
-             clientRes.write('data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}\n\n');
-
-             // 3. Close it out
-             clientRes.write('event: message_delta\n');
-             clientRes.write('data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n');
-             clientRes.write('event: message_stop\n');
-             clientRes.write('data: {"type":"message_stop"}\n\n');
-
-             return clientRes.end();
-          }
-
-if (_mode4WasStreaming) {
-            const { ZenSseTranslator } = require('./zen_translator');
-            const translator = new ZenSseTranslator({ model: 'deepseek-v4-pro' });
-            let _sentStop = false;
-            let _sentStart = false;
-            let _hasInjectedThinking = false;
-
-            clientRes.writeHead(200, {
-              'Content-Type': 'text/event-stream; charset=utf-8',
-              'Cache-Control': 'no-cache, no-transform',
-              'Connection': 'keep-alive'
-            });
-
-            upstreamRes.on('data', (c) => {
-              const translated = translator.feed(c);
-              if (!translated) return;
-
-              let output = translated;
-
-              // 1. Opus 4.7 Handshake: Inject thinking block after message_start
-              if (!_hasInjectedThinking && output.includes('message_start')) {
-                _hasInjectedThinking = true;
-                output = output.replace(
-                  /("type":"message_start".*?\n\n)/,
-                  `$1event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}}\n\nevent: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"DeepSeek reasoning..."}}\n\nevent: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n`
-                );
-              }
-
-              // 2. Shift all subsequent Opus 4.7 blocks (text/tools) to index 1+
-              output = output.replace(/"index":(\d+)/g, (match, p1) => {
-                return `"index":${parseInt(p1) + 1}`;
-              });
-
-              if (output.trim()) {
-                if (output.includes('message_start')) _sentStart = true;
-                if (output.includes('message_stop')) _sentStop = true;
-                clientRes.write(output.endsWith('\n\n') ? output : output + '\n\n');
-              }
-            });
-
-            upstreamRes.on('end', () => {
-              if (!_sentStart) {
-                // Force a message_start if we never got one from the stream
-                clientRes.write('event: message_start\n');
-                clientRes.write(`data: {"type":"message_start","message":{"id":"proxy_${Date.now()}","type":"message","role":"assistant","content":[],"model":"deepseek-v4-pro","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"output_tokens":0}}}\n\n`);
-              }
-              if (!_sentStop) {
-                const finalSequence =
-                  'event: message_delta\n' +
-                  'data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":0}}\n\n' +
-                  'event: message_stop\n' +
-                  'data: {"type":"message_stop"}\n\n';
-                clientRes.write(finalSequence);
-              }
-              clientRes.end();
-              _releaseOpusSlot();
-            });
-
-            upstreamRes.on('error', (err) => {
-              _releaseOpusSlot();
-              try { clientRes.end(); } catch (_e) {}
-            });
-          } else {
-            const chunks = [];
-            upstreamRes.on('data', (c) => chunks.push(c));
-            upstreamRes.on('end', () => {
-              const buf = Buffer.concat(chunks).toString('utf8');
-              let oaBody;
-              try { oaBody = JSON.parse(buf); } catch (_e) {
-                clientRes.writeHead(502, { 'Content-Type': 'application/json' });
-                clientRes.end(JSON.stringify({ error: 'zen response parse failed', raw: buf.slice(0, 500) }));
-                _releaseOpusSlot();
-                return;
-              }
-              const anthropicBody = translateNonStreamResponseToAnthropic(oaBody, 'deepseek-v4-pro');
-              const body = JSON.stringify(anthropicBody);
-              clientRes.writeHead(upstreamRes.statusCode || 200, {
-                'content-type': 'application/json',
-                'content-length': Buffer.byteLength(body),
-              });
-              clientRes.end(body);
-              _releaseOpusSlot();
-            });
-          }
+        if (_isMode4Swap) {
+          handleLegacySwapResponse({
+            upstreamRes,
+            clientRes,
+            wasStreaming: _mode4WasStreaming,
+            releaseOpusSlot: _releaseOpusSlot,
+            model: _swapModel,
+          });
           return;
         }
-        // END MODE 4 SWAP RESPONSE HANDLER
 
         if (!isAnthropic) {
           clientRes.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
@@ -1135,7 +765,7 @@ if (_mode4WasStreaming) {
             const _shouldRetry = headers['x-should-retry'] === 'true';
             const _isRateLimit = _errInfo.type === 'rate_limit_error';
 
-            // MODE=4/5 OmniRoute fallback: advance to next model in E5 chain on failure.
+            // MODE=6 OmniRoute fallback: advance to next model in E5 chain on failure.
             console.error(`[hme-proxy] fallback probe: _isMode4OmniRoute=${_isMode4OmniRoute} chainLen=${_swapChain.length} _isRateLimit=${_isRateLimit} status=${status}`);
             if (_isMode4OmniRoute && _swapChain.length > 1) {
               const _fs = require('fs');
