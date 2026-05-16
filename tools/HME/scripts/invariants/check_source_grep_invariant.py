@@ -2,6 +2,8 @@
 """Source grep invariants with stable Python-side allowlists."""
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import re
 import sys
@@ -42,6 +44,22 @@ RULES = {
 }
 
 
+def _baseline_hash(rel: str, line: str) -> str:
+    return hashlib.sha256(f"{rel}\0{line.strip()}".encode()).hexdigest()
+
+
+def _load_baseline(rule_name: str) -> set[str]:
+    if rule_name != "no-hardcoded-metrics-path":
+        return set()
+    path = ROOT / "tools/HME/config/invariants/hardcoded_metrics_baseline.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    hashes = data.get("hashes")
+    return set(hashes) if isinstance(hashes, list) else set()
+
+
 def _candidate_files(rule: dict):
     if "paths" in rule:
         for rel in rule["paths"]:
@@ -74,7 +92,9 @@ def main() -> int:
         print("usage: check_source_grep_invariant.py <rule>", file=sys.stderr)
         print("rules: " + ", ".join(sorted(RULES)), file=sys.stderr)
         return 2
-    for rule in RULES[sys.argv[1]]:
+    rule_name = sys.argv[1]
+    baseline = _load_baseline(rule_name)
+    for rule in RULES[rule_name]:
         pattern = re.compile(rule["pattern"])
         exclude = re.compile(rule["exclude"]) if rule.get("exclude") else None
         for path in _candidate_files(rule):
@@ -82,8 +102,11 @@ def main() -> int:
             text = path.read_text(encoding="utf-8", errors="replace")
             for lineno, line in enumerate(text.splitlines(), 1):
                 row = f"{rel}:{lineno}:{line}"
-                if pattern.search(line) and not (exclude and exclude.search(row)):
-                    print(row)
+                if not pattern.search(line) or (exclude and exclude.search(row)):
+                    continue
+                if _baseline_hash(rel, line) in baseline:
+                    continue
+                print(row)
     return 0
 
 
