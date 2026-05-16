@@ -40,7 +40,10 @@ function ctx() {
   return {
     dirty: false,
     emitted: [],
+    warnings: [],
     replaceResult(result, text) { result.content = text; },
+    appendToResult(result, text) { result.content = String(result.content || '') + text; },
+    warn(message) { this.warnings.push(message); },
     markDirty() { this.dirty = true; },
     emit(row) { this.emitted.push(row); },
   };
@@ -130,4 +133,57 @@ test('codex plan scanner records only sync failure', async () => withProject(asy
   const flag = fs.readFileSync(path.join(root, 'runtime', 'hme', 'todo-sync.fail'), 'utf8');
   assert.match(flag, /codex plan sync failed exit=7/);
   assert.strictEqual(events.length, 1);
+}));
+
+
+test('post_write_side_effects keeps successful side effects model-silent', () => withProject((root) => {
+  const childProcess = require('child_process');
+  const originalSpawn = childProcess.spawn;
+  const calls = [];
+  childProcess.spawn = (cmd, args) => {
+    calls.push([cmd, args]);
+    return { on() { return this; }, unref() {} };
+  };
+  try {
+    clearHmeRequireCache();
+    const mod = require('../../proxy/middleware/28_post_write_side_effects');
+    const toolResult = { content: 'edit ok' };
+    const c = ctx();
+    mod.onToolResult({
+      toolUse: { name: 'Edit', input: { file_path: path.join(root, 'doc/templates/TODO.md'), new_string: 'x' } },
+      toolResult,
+      ctx: c,
+    });
+    assert.strictEqual(toolResult.content, 'edit ok');
+    assert.deepStrictEqual(c.emitted, []);
+    assert.deepStrictEqual(c.warnings, []);
+    assert.strictEqual(calls.length, 1);
+    assert.deepStrictEqual(calls[0], ['python3', ['tools/HME/scripts/todo_autoflip.py']]);
+  } finally {
+    childProcess.spawn = originalSpawn;
+    clearHmeRequireCache();
+  }
+}));
+
+test('post_write_side_effects surfaces side-effect spawn failures', () => withProject((root) => {
+  const childProcess = require('child_process');
+  const originalSpawn = childProcess.spawn;
+  childProcess.spawn = () => { throw new Error('spawn denied'); };
+  try {
+    clearHmeRequireCache();
+    const mod = require('../../proxy/middleware/28_post_write_side_effects');
+    const toolResult = { content: 'edit ok' };
+    const c = ctx();
+    mod.onToolResult({
+      toolUse: { name: 'Edit', input: { file_path: path.join(root, 'doc/templates/TODO.md'), new_string: 'x' } },
+      toolResult,
+      ctx: c,
+    });
+    assert.match(toolResult.content, /post-write side effect failed/);
+    assert.match(c.warnings[0], /spawn denied/);
+    assert.strictEqual(c.emitted[0].event, 'post_write_side_effect_failed');
+  } finally {
+    childProcess.spawn = originalSpawn;
+    clearHmeRequireCache();
+  }
 }));
