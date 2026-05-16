@@ -136,12 +136,9 @@ if not os.path.isdir(os.path.join(PROJECT_ROOT, "src")):
     )
 _log_dir = os.path.join(PROJECT_ROOT, "log")
 os.makedirs(_log_dir, exist_ok=True)
-from server.log_config import FlushFileHandler  # noqa: E402
+from server.log_config import configure_hme_file_logger  # noqa: E402
 
-_file_handler = FlushFileHandler(os.path.join(_log_dir, "hme.log"), encoding="utf-8")
-_file_handler.setLevel(logging.DEBUG)
-_file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-logger.addHandler(_file_handler)
+_file_handler = configure_hme_file_logger(logger, os.path.join(_log_dir, "hme.log"))
 logger.info("HME worker starting (option-d: proxy-served MCP, no FastMCP)")
 
 PROJECT_DB = ENV.require("HME_RAG_DB_PATH")
