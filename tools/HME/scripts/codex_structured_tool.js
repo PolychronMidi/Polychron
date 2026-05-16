@@ -68,6 +68,15 @@ function hookDecision(result) {
 async function pre(tool, input) { const d = hookDecision(await dispatchEvent('PreToolUse', hookJson(tool, input))); if (!d.ok) { console.error(d.reason); process.exit(2); } return d.context || ''; }
 async function post(tool, input, response) { await dispatchEvent('PostToolUse', hookJson(tool, input, { tool_response: response, tool_result: response })); }
 async function enrich(tool, input, text, isError = false) { middleware.loadAll(); const id = `codex-structured-${tool}-${Date.now()}`; const toolUse = { id, name: tool, input }; const toolResult = { tool_use_id: id, content: text, is_error: isError }; await middleware.runOnToolResult(toolUse, toolResult, { session: SESSION }); return typeof toolResult.content === 'string' ? toolResult.content : JSON.stringify(toolResult.content); }
+async function finishStructured(tool, input, text, opts = {}) {
+  const isError = opts.isError === true;
+  const out = await enrich(opts.enrichTool || tool, opts.enrichInput || input, text, isError);
+  await post(opts.postTool || tool, opts.postInput || input, { exit_code: isError ? 1 : 0, stdout: isError ? out : (opts.rawStdout ?? text), stderr: isError ? (opts.rawStderr ?? text) : '', is_error: isError });
+  if (!isError) clearFailure(ROOT);
+  process.stdout.write(out.endsWith('\n') ? out : `${out}\n`);
+  if (isError) process.exit(1);
+  return out;
+}
 function jsonData(argv) { const args = kvArgs(argv); return args.json ? JSON.parse(readStdin() || '{}') : args; }
 
 function parseRead(argv) { const data = jsonData(argv); const input = { file_path: absPath(data.file_path || data.file || data._?.[0]) }; if (data.offset != null) input.offset = Number(data.offset); if (data.limit != null) input.limit = Number(data.limit); if (data.tail != null) input.tail = Number(data.tail); return input; }
@@ -91,7 +100,7 @@ function globToRe(pattern) { return new RegExp(`^${String(pattern || '*').replac
 function parseGrep(argv) { const d = jsonData(argv); return { pattern: String(d.pattern || d._?.[0] || ''), path: d.path || d._?.[1] || '.', paths: d.paths || null, ignore_case: Boolean(d.ignore_case), fixed: Boolean(d.fixed), limit: Number(d.limit || 200) }; }
 function parseGlob(argv) { const d = jsonData(argv); return { pattern: String(d.pattern || d._?.[0] || '*'), path: d.path || d._?.[1] || '.', max_depth: Number(d.max_depth ?? 8), type: d.type || '', limit: Number(d.limit || 500) }; }
 
-async function runRead(argv) { const input = parseRead(argv); await pre('Read', input); const text = readSlice(fs.readFileSync(input.file_path, 'utf8'), input); const out = await enrich('Read', input, text); await post('Read', input, { exit_code: 0, stdout: text }); clearFailure(ROOT); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
+async function runRead(argv) { const input = parseRead(argv); await pre('Read', input); const text = readSlice(fs.readFileSync(input.file_path, 'utf8'), input); await finishStructured('Read', input, text); }
 
 function countOccurrences(text, needle) { if (!needle) return 0; let n = 0; let i = 0; while ((i = text.indexOf(needle, i)) >= 0) { n++; i += Math.max(1, needle.length); } return n; }
 function editVariants(input, text) {
@@ -135,23 +144,17 @@ async function runEdit(argv) {
   try {
     const result = applyEdit(input);
     const label = result.status === 'already_applied' ? '[SUCCESS] edit already applied' : `[SUCCESS] edit ${result.status}`;
-    const out = await enrich('Edit', input, label);
-    await post('Edit', input, { exit_code: 0, stdout: out });
-    clearFailure(ROOT);
     if (context) process.stdout.write(`${context}\n`);
-    process.stdout.write(out.endsWith('\n') ? out : `${out}\n`);
+    await finishStructured('Edit', input, label);
   } catch (err) {
     const message = err.userMessage || `Error: ${err.message}`;
     recordFailure(ROOT, { tool: 'Edit', reason: err.message, file: input.file_path, session_id: SESSION });
-    const out = await enrich('Edit', input, message, true);
-    await post('Edit', input, { exit_code: 1, stderr: message, stdout: out, is_error: true });
-    process.stdout.write(out.endsWith('\n') ? out : `${out}\n`);
-    process.exit(1);
+    await finishStructured('Edit', input, message, { isError: true, rawStderr: message });
   }
 }
-async function runGrep(argv) { const input = parseGrep(argv); if (!input.pattern) usage(); await pre('Grep', input); const flags = input.ignore_case ? 'i' : ''; const re = input.fixed ? null : new RegExp(input.pattern, flags); const bases = (input.paths || [input.path]).map((p) => absPath(p)); const lines = []; for (const b of bases) for (const fp of walk(b, 10)) { const rel = relPath(fp); const text = fs.readFileSync(fp, 'utf8'); text.split(/\r?\n/).some((line, idx) => { const hit = input.fixed ? (input.ignore_case ? line.toLowerCase().includes(input.pattern.toLowerCase()) : line.includes(input.pattern)) : re.test(line); if (hit) lines.push(`${rel}:${idx + 1}:${line}`); return lines.length >= input.limit; }); if (lines.length >= input.limit) break; } const outText = lines.join('\n'); const out = await enrich('Grep', input, outText); await post('Grep', input, { exit_code: 0, stdout: outText }); clearFailure(ROOT); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
-async function runGlob(argv) { const input = parseGlob(argv); await pre('Glob', input); const base = absPath(input.path); const re = globToRe(input.pattern); const rows = walk(base, input.max_depth).map(relPath).filter((r) => re.test(path.basename(r)) || re.test(r)).slice(0, input.limit); const text = rows.join('\n'); const out = await enrich('Glob', input, text); await post('Glob', input, { exit_code: 0, stdout: text }); clearFailure(ROOT); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
-async function runCount(argv) { const d = jsonData(argv); const fp = absPath(d.file_path || d.file || d._?.[0]); const text = fs.readFileSync(fp, 'utf8'); clearFailure(ROOT); process.stdout.write(`${relPath(fp)}:${text.split(/\r?\n/).length - 1}\n`); }
+async function runGrep(argv) { const input = parseGrep(argv); if (!input.pattern) usage(); await pre('Grep', input); const flags = input.ignore_case ? 'i' : ''; const re = input.fixed ? null : new RegExp(input.pattern, flags); const bases = (input.paths || [input.path]).map((p) => absPath(p)); const lines = []; for (const b of bases) for (const fp of walk(b, 10)) { const rel = relPath(fp); const text = fs.readFileSync(fp, 'utf8'); text.split(/\r?\n/).some((line, idx) => { const hit = input.fixed ? (input.ignore_case ? line.toLowerCase().includes(input.pattern.toLowerCase()) : line.includes(input.pattern)) : re.test(line); if (hit) lines.push(`${rel}:${idx + 1}:${line}`); return lines.length >= input.limit; }); if (lines.length >= input.limit) break; } await finishStructured('Grep', input, lines.join('\n')); }
+async function runGlob(argv) { const input = parseGlob(argv); await pre('Glob', input); const base = absPath(input.path); const re = globToRe(input.pattern); const rows = walk(base, input.max_depth).map(relPath).filter((r) => re.test(path.basename(r)) || re.test(r)).slice(0, input.limit); await finishStructured('Glob', input, rows.join('\n')); }
+async function runCount(argv) { const d = jsonData(argv); const fp = absPath(d.file_path || d.file || d._?.[0]); const text = fs.readFileSync(fp, 'utf8'); await finishStructured('Bash', { command: `wc -l ${relPath(fp)}` }, `${relPath(fp)}:${text.split(/\r?\n/).length - 1}`); }
 async function runGit(argv) {
   const d = jsonData(argv);
   const args = Array.isArray(d.args) ? d.args.map(String) : (d._ || []).map(String);
@@ -159,10 +162,7 @@ async function runGit(argv) {
   const r = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8', timeout: 10000 });
   const code = Number.isInteger(r.status) ? r.status : (r.error ? 1 : 0);
   const raw = ((r.stdout || '') + (r.stderr || '')).slice(0, Number(d.limit || 500) * 200);
-  const out = await enrich('Bash', { command: `git ${args.join(' ')}` }, raw, code !== 0);
-  if (code === 0) clearFailure(ROOT);
-  process.stdout.write(out.endsWith('\n') ? out : `${out}\n`);
-  if (code !== 0) process.exit(code);
+  await finishStructured('Bash', { command: `git ${args.join(' ')}` }, raw, { isError: code !== 0, rawStdout: raw, rawStderr: raw });
 }
 
 async function main() { const mode = process.argv[2] || ''; if (mode === 'read') return runRead(process.argv.slice(3)); if (mode === 'edit') return runEdit(process.argv.slice(3)); if (mode === 'grep') return runGrep(process.argv.slice(3)); if (mode === 'glob') return runGlob(process.argv.slice(3)); if (mode === 'count') return runCount(process.argv.slice(3)); if (mode === 'git') return runGit(process.argv.slice(3)); usage(); }
