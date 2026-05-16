@@ -37,8 +37,9 @@ const {
   DEFAULT_UPSTREAM_HOST, DEFAULT_UPSTREAM_PORT, DEFAULT_UPSTREAM_TLS,
 } = require('./upstream');
 const { shouldInject, buildStatusContext, consumeStatusContext, buildJurisdictionContext, injectIntoSystem, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
-const { normalizeICommands, stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
-const { stripHookNoiseInValue } = require('./hook_noise_text');
+const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
+const { applyAnthropicCommonTransforms } = require('./request_transform_core');
+const { stripStaleToolResults, sanitizeMessages } = require('./conversation_graph');
 const { servicePort } = require('./service_registry');
 const {
   omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat,
@@ -261,30 +262,7 @@ function _injectContextHeader(headers, swapModel) {
 
 // Strip tool_result blocks older than 7 turns to prevent context bloat.
 function _stripStaleToolResults(payload) {
-  if (!payload || !Array.isArray(payload.messages)) return;
-  const msgs = payload.messages;
-  let userWithToolResults = 0;
-  const strippedIds = new Set();
-  for (let i = msgs.length - 1; i >= 0; i--) {
-    const m = msgs[i];
-    if (!m || m.role !== 'user') continue;
-    const content = m.content;
-    if (!Array.isArray(content)) continue;
-    const toolResults = content.filter(b => b && b.type === 'tool_result');
-    if (!toolResults.length) continue;
-    userWithToolResults++;
-    if (userWithToolResults > 7) {
-      for (const b of toolResults) strippedIds.add(b.tool_use_id);
-      m.content = content.filter(b => !b || b.type !== 'tool_result');
-    }
-  }
-  // Strip orphaned tool_use blocks from assistant messages
-  if (strippedIds.size > 0) {
-    for (const m of msgs) {
-      if (!m || m.role !== 'assistant' || !Array.isArray(m.content)) continue;
-      m.content = m.content.filter(b => !b || b.type !== 'tool_use' || !strippedIds.has(b.id));
-    }
-  }
+  return stripStaleToolResults(payload, 7);
 }
 
 // Strip the Claude Code identity sentence from the system prompt array
@@ -453,22 +431,9 @@ function _shrinkForPassthrough(payload) {
 }
 
 function _sanitizePayload(payload) {
-  // Remove empty text blocks left behind by regex-based strips. Anthropic's
-  // /v1/messages rejects them with 400 "text content blocks must be non-empty".
-  if (!Array.isArray(payload.messages)) return;
-  for (const msg of payload.messages) {
-    if (!msg || !Array.isArray(msg.content)) continue;
-    msg.content = msg.content.filter((b) => {
-      if (!b) return false;
-      if (b.type === 'text' && typeof b.text === 'string' && b.text.trim().length === 0) return false;
-      return true;
-    });
-    if (msg.content.length === 0) {
-      // Preserve the turn boundary -- inject a minimal placeholder.
-      msg.content = [{ type: 'text', text: '[SUCCESS]' }];
-    }
-  }
+  return sanitizeMessages(payload);
 }
+
 
 async function _injectHmeTools(payload) {
   // HME tools are invoked as Bash(`npm run <tool>`) calls; inline API-tool
@@ -771,10 +736,9 @@ function handleRequest(clientReq, clientRes) {
         if (process.env.HME_REPLACE_SYSTEM_PROMPT === '1') {
           if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
         }
-        const iw = normalizeICommands(payload);
-        const hns = {};
-        const hn = stripHookNoiseInValue(payload, hns);
-        if (hn && hn !== payload) { for (const k of Object.keys(payload)) delete payload[k]; Object.assign(payload, hn); }
+        const common = applyAnthropicCommonTransforms(payload);
+        const iw = common.i.command_rewrites + common.i.text_rewrites;
+        const hns = common.hook_noise;
         const b = stripBoilerplate(payload);
         const s = stripSemanticRedundancy(payload);
         const r = _stripHmePrefixOutgoing(payload);
