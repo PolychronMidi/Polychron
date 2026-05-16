@@ -47,7 +47,7 @@ _streak_scope_file() {
   local kind="${1:-score}" sid safe dir
   sid="${SESSION_ID:-}"
   if [ -z "$sid" ] && [ -n "${INPUT:-}" ]; then
-    sid="$(_safe_jq "$INPUT" '.session_id' '')"
+    sid="$(_safe_jq "${INPUT:-}" '.session_id' '')"
   fi
   [ -n "$sid" ] || sid="no-session"
   safe=$(printf '%s' "$sid" | tr -c 'A-Za-z0-9_.-' '_' | cut -c1-120)
