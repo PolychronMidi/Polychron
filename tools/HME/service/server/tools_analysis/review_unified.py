@@ -89,15 +89,15 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             from .composition import composition_events as _ce
             # drama_finder inside composition_events does a 60s LLM
             import os as _os
-            _prev = _os.environ.get("HME_DRAMA_NO_SYNTHESIS")
-            _os.environ["HME_DRAMA_NO_SYNTHESIS"] = "1"
+            _prev = _os.environ.get("HME_DRAMA_NO_SYNTHESIS")  # env-ok: scoped synthesis suppression
+            _os.environ["HME_DRAMA_NO_SYNTHESIS"] = "1"  # env-ok: scoped synthesis suppression
             try:
                 parts.append(_ce(mode="full"))
             finally:
                 if _prev is None:
-                    _os.environ.pop("HME_DRAMA_NO_SYNTHESIS", None)
+                    _os.environ.pop("HME_DRAMA_NO_SYNTHESIS", None)  # env-ok: restore scoped override
                 else:
-                    _os.environ["HME_DRAMA_NO_SYNTHESIS"] = _prev
+                    _os.environ["HME_DRAMA_NO_SYNTHESIS"] = _prev  # env-ok: restore scoped override
         elif m == "health":
             from .health import codebase_health as _ch
             parts.append(_ch())
