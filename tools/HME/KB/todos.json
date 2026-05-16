@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3448,
-      "updated_ts": 1778955028.9732118,
-      "codex_plan_synced_ts": 1778955028.973128,
+      "updated_ts": 1778956648.9916754,
+      "codex_plan_synced_ts": 1778956648.9915912,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T18:10:10.313Z"
+      "codex_plan_ts": "2026-05-16T18:37:00.438Z"
     }
   },
   {
@@ -6535,8 +6535,8 @@
     "id": 3445,
     "text": "Fix recency auditor import/reference detection and rerun cold ranking",
     "activeForm": "Fix recency auditor import/reference detection and rerun cold ranking",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6545,14 +6545,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:10:10.313Z"
+    "codex_plan_ts": "2026-05-16T18:37:00.438Z"
   },
   {
     "id": 3446,
     "text": "Inspect and act on remaining cold scripts directory-wide",
     "activeForm": "Inspect and act on remaining cold scripts directory-wide",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6561,14 +6561,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:10:10.313Z"
+    "codex_plan_ts": "2026-05-16T18:37:00.438Z"
   },
   {
     "id": 3447,
     "text": "Update references/audit wiring/classifications as needed",
     "activeForm": "Update references/audit wiring/classifications as needed",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6577,14 +6577,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:10:10.313Z"
+    "codex_plan_ts": "2026-05-16T18:37:00.438Z"
   },
   {
     "id": 3448,
     "text": "Run targeted and full verification with evidence",
     "activeForm": "Run targeted and full verification with evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6593,6 +6593,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:10:10.313Z"
+    "codex_plan_ts": "2026-05-16T18:37:00.438Z"
   }
 ]

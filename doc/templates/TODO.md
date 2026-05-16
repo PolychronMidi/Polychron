@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Fix recency auditor import/reference detection and rerun cold ranking
+(empty)
 
 ## Next
 
-- [ ] [E3] Inspect and act on remaining cold scripts directory-wide
-- [ ] [E3] Update references/audit wiring/classifications as needed
-- [ ] [E3] Run targeted and full verification with evidence
+(empty)
 
 ## Done
 
