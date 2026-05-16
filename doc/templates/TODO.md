@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Remove synthesize-generalizations pipeline/docs refs
+- [x] [E3] Remove synthesize-generalizations pipeline/docs refs
 
 ## Next
 
