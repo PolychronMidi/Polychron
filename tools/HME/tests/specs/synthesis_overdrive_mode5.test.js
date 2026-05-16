@@ -7,6 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { writeRedactedEnv } = require('../sandbox_env');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
 function run(envOverrides, body) {
@@ -17,9 +18,7 @@ function run(envOverrides, body) {
   fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
   fs.writeFileSync(path.join(sandbox, 'doc', 'templates', 'AGENTS.md'), '# sandbox\n');
   fs.copyFileSync(path.join(REPO, 'config', 'models.json'), path.join(sandbox, 'config', 'models.json'));
-  let env = `PROJECT_ROOT=${sandbox}\n`;
-  for (const [k, v] of Object.entries(envOverrides)) env += `${k}=${v}\n`;
-  fs.writeFileSync(path.join(sandbox, '.env'), env);
+  writeRedactedEnv(REPO, sandbox, envOverrides);
   try {
     return spawnSync('python3', ['-c', body], { env: { ...process.env, PROJECT_ROOT: sandbox, PYTHONPATH: path.join(REPO, 'tools', 'HME', 'service') }, encoding: 'utf8' });
   } finally { fs.rmSync(sandbox, { recursive: true, force: true }); }

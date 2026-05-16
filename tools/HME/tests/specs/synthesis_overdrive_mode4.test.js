@@ -7,6 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { writeRedactedEnv } = require('../sandbox_env');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
 
@@ -18,7 +19,7 @@ test('overdrive mode 5 is retired and falls through to cascade', () => {
   fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
   fs.writeFileSync(path.join(sandbox, 'doc', 'templates', 'AGENTS.md'), '# sandbox\n');
   fs.copyFileSync(path.join(REPO, 'config', 'models.json'), path.join(sandbox, 'config', 'models.json'));
-  fs.writeFileSync(path.join(sandbox, '.env'), `PROJECT_ROOT=${sandbox}\nOVERDRIVE_MODE=5\n`);
+  writeRedactedEnv(REPO, sandbox, { OVERDRIVE_MODE: '5' });
   try {
     const result = spawnSync('python3', ['-c', `
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
