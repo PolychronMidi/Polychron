@@ -4,11 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Run focused config verification
+- [ ] [E3] Investigate verifier failure
 
 ## Next
 
 - [ ] [E3] Report evidence
+- [ ] [E3] Fix/rerun targeted verification
 
 ## Done
 
