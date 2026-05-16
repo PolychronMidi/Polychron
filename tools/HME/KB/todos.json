@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3245,
-      "updated_ts": 1778894728.7208662,
-      "codex_plan_synced_ts": 1778894728.7208219,
+      "max_id": 3249,
+      "updated_ts": 1778895118.7192237,
+      "codex_plan_synced_ts": 1778895118.7191799,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T01:25:22.767Z"
+      "codex_plan_ts": "2026-05-16T01:31:57.745Z"
     }
   },
   {
@@ -3193,8 +3193,8 @@
     "id": 3242,
     "text": "Inspect hme.log duplication pattern and current logger setup.",
     "activeForm": "Inspect hme.log duplication pattern and current logger setup.",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3203,14 +3203,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:25:22.767Z"
+    "codex_plan_ts": "2026-05-16T01:25:22.767Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3243,
     "text": "Find duplicate handler/config sources.",
     "activeForm": "Find duplicate handler/config sources.",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3219,14 +3220,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:25:22.767Z"
+    "codex_plan_ts": "2026-05-16T01:25:22.767Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3244,
     "text": "Patch logger setup to be idempotent/single-writer.",
     "activeForm": "Patch logger setup to be idempotent/single-writer.",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3235,14 +3237,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:25:22.767Z"
+    "codex_plan_ts": "2026-05-16T01:25:22.767Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3245,
     "text": "Run focused verification.",
     "activeForm": "Run focused verification.",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3251,6 +3254,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:25:22.767Z"
+    "codex_plan_ts": "2026-05-16T01:25:22.767Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3246,
+    "text": "Trace current hme_admin index call path and logs.",
+    "activeForm": "Trace current hme_admin index call path and logs.",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778895118.1750855,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T01:31:57.745Z"
+  },
+  {
+    "id": 3247,
+    "text": "Patch hme_admin index/clear_index to launch a background indexed job with status file/log.",
+    "activeForm": "Patch hme_admin index/clear_index to launch a background indexed job with status file/log.",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778895118.175093,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T01:31:57.745Z"
+  },
+  {
+    "id": 3248,
+    "text": "Add focused tests for immediate response and status artifact.",
+    "activeForm": "Add focused tests for immediate response and status artifact.",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778895118.1750972,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T01:31:57.745Z"
+  },
+  {
+    "id": 3249,
+    "text": "Reload/restart HME worker and verify live index returns promptly.",
+    "activeForm": "Reload/restart HME worker and verify live index returns promptly.",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778895118.1751003,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T01:31:57.745Z"
   }
 ]

@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Inspect hme.log duplication pattern and current logger setup.
+- [ ] [E3] Trace current hme_admin index call path and logs.
 
 ## Next
 
-- [ ] [E3] Find duplicate handler/config sources.
-- [ ] [E3] Patch logger setup to be idempotent/single-writer.
-- [ ] [E3] Run focused verification.
+- [ ] [E3] Patch hme_admin index/clear_index to launch a background indexed job with status file/log.
+- [ ] [E3] Add focused tests for immediate response and status artifact.
+- [ ] [E3] Reload/restart HME worker and verify live index returns promptly.
 
 ## Done
 
