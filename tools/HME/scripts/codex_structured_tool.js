@@ -149,9 +149,9 @@ async function runEdit(argv) {
     process.exit(1);
   }
 }
-async function runGrep(argv) { const input = parseGrep(argv); if (!input.pattern) usage(); await pre('Grep', input); const flags = input.ignore_case ? 'i' : ''; const re = input.fixed ? null : new RegExp(input.pattern, flags); const bases = (input.paths || [input.path]).map((p) => absPath(p)); const lines = []; for (const b of bases) for (const fp of walk(b, 10)) { const rel = relPath(fp); const text = fs.readFileSync(fp, 'utf8'); text.split(/\r?\n/).some((line, idx) => { const hit = input.fixed ? (input.ignore_case ? line.toLowerCase().includes(input.pattern.toLowerCase()) : line.includes(input.pattern)) : re.test(line); if (hit) lines.push(`${rel}:${idx + 1}:${line}`); return lines.length >= input.limit; }); if (lines.length >= input.limit) break; } const outText = lines.join('\n'); const out = await enrich('Grep', input, outText); await post('Grep', input, { exit_code: 0, stdout: outText }); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
-async function runGlob(argv) { const input = parseGlob(argv); await pre('Glob', input); const base = absPath(input.path); const re = globToRe(input.pattern); const rows = walk(base, input.max_depth).map(relPath).filter((r) => re.test(path.basename(r)) || re.test(r)).slice(0, input.limit); const text = rows.join('\n'); const out = await enrich('Glob', input, text); await post('Glob', input, { exit_code: 0, stdout: text }); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
-async function runCount(argv) { const d = jsonData(argv); const fp = absPath(d.file_path || d.file || d._?.[0]); const text = fs.readFileSync(fp, 'utf8'); process.stdout.write(`${relPath(fp)}:${text.split(/\r?\n/).length - 1}\n`); }
+async function runGrep(argv) { const input = parseGrep(argv); if (!input.pattern) usage(); await pre('Grep', input); const flags = input.ignore_case ? 'i' : ''; const re = input.fixed ? null : new RegExp(input.pattern, flags); const bases = (input.paths || [input.path]).map((p) => absPath(p)); const lines = []; for (const b of bases) for (const fp of walk(b, 10)) { const rel = relPath(fp); const text = fs.readFileSync(fp, 'utf8'); text.split(/\r?\n/).some((line, idx) => { const hit = input.fixed ? (input.ignore_case ? line.toLowerCase().includes(input.pattern.toLowerCase()) : line.includes(input.pattern)) : re.test(line); if (hit) lines.push(`${rel}:${idx + 1}:${line}`); return lines.length >= input.limit; }); if (lines.length >= input.limit) break; } const outText = lines.join('\n'); const out = await enrich('Grep', input, outText); await post('Grep', input, { exit_code: 0, stdout: outText }); clearFailure(ROOT); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
+async function runGlob(argv) { const input = parseGlob(argv); await pre('Glob', input); const base = absPath(input.path); const re = globToRe(input.pattern); const rows = walk(base, input.max_depth).map(relPath).filter((r) => re.test(path.basename(r)) || re.test(r)).slice(0, input.limit); const text = rows.join('\n'); const out = await enrich('Glob', input, text); await post('Glob', input, { exit_code: 0, stdout: text }); clearFailure(ROOT); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
+async function runCount(argv) { const d = jsonData(argv); const fp = absPath(d.file_path || d.file || d._?.[0]); const text = fs.readFileSync(fp, 'utf8'); clearFailure(ROOT); process.stdout.write(`${relPath(fp)}:${text.split(/\r?\n/).length - 1}\n`); }
 async function runGit(argv) {
   const d = jsonData(argv);
   const args = Array.isArray(d.args) ? d.args.map(String) : (d._ || []).map(String);
@@ -160,6 +160,7 @@ async function runGit(argv) {
   const code = Number.isInteger(r.status) ? r.status : (r.error ? 1 : 0);
   const raw = ((r.stdout || '') + (r.stderr || '')).slice(0, Number(d.limit || 500) * 200);
   const out = await enrich('Bash', { command: `git ${args.join(' ')}` }, raw, code !== 0);
+  if (code === 0) clearFailure(ROOT);
   process.stdout.write(out.endsWith('\n') ? out : `${out}\n`);
   if (code !== 0) process.exit(code);
 }
