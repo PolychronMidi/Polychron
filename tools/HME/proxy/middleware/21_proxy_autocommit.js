@@ -7,7 +7,7 @@ const path = require('path');
 const { execSync, spawn, spawnSync } = require('child_process');
 
 const ERR_LOG = 'log/hme-errors.log';
-const STATE_DIR = path.join('runtime', 'hme');
+const STATE_DIR = path.join('tools', 'HME', 'runtime');
 const FAIL_FLAG_REL = path.join(STATE_DIR, 'autocommit.fail');
 const COUNTER_REL = path.join(STATE_DIR, 'autocommit.counter');
 const LAST_SUCCESS_REL = path.join(STATE_DIR, 'autocommit.last-success');
