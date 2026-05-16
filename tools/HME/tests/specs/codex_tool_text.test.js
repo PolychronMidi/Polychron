@@ -137,3 +137,22 @@ test('normalizes edit bridge displays with non-reusable redaction sentinel', () 
   assert.match(out.body.text, /Edit\(/);
   assert.doesNotMatch(out.body.text, /codex_structured_tool|secret old|<omitted by proxy>/);
 });
+
+
+test('normalizes edit bridge display without reusable replacement strings', () => {
+  const cmd = [
+    'node tools/HME/scripts/codex_structured_tool.js edit --json <<\'HME_CODEX_JSON\'',
+    '{"file_path":"src/x.js","old_string":"secret old","new_string":"secret new"}',
+    'HME_CODEX_JSON',
+  ].join('\n');
+  const bridge = bridgeCommand(cmd);
+  assert.strictEqual(bridge.tool, 'Edit');
+  assert.deepStrictEqual(bridge.input, {
+    file_path: 'src/x.js',
+    old_string: '<display-redacted: original was sent; do not reuse>',
+    new_string: '<display-redacted: original was sent; do not reuse>',
+  });
+  const out = normalizeStructuredBridgeCalls({ text: cmd });
+  assert.match(out.body.text, /Edit\(\{"file_path":"src\/x.js"/);
+  assert.doesNotMatch(out.body.text, /secret old|secret new|<omitted by proxy>/);
+});

@@ -100,6 +100,26 @@ test('session state records structured verification evidence', () => {
 });
 
 
+test('pre-write check rejects malformed or redacted Edit input', async () => {
+  const root = _withSandbox('hme-pre-write-malformed-edit-');
+  const { preWriteCheck } = require('../../proxy/pre_write_check');
+  const malformed = await preWriteCheck(JSON.stringify({
+    tool_name: 'Edit',
+    session_id: 's-shape',
+    tool_input: { file_path: "<<'HME_CODEX_JSON',", old_string: 'x', new_string: 'y' },
+  }));
+  assert.strictEqual(malformed.permissionDecision, 'deny');
+  assert.match(malformed.reason, /malformed Edit file_path/);
+  const redacted = await preWriteCheck(JSON.stringify({
+    tool_name: 'Edit',
+    session_id: 's-shape',
+    tool_input: { file_path: path.join(root, 'src', 'x.js'), old_string: '<omitted by proxy>', new_string: 'y' },
+  }));
+  assert.strictEqual(redacted.permissionDecision, 'deny');
+  assert.match(redacted.reason, /old_string is display-redacted/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('synthetic PreToolUse Edit denies stub content', async () => {
   const root = _withSandbox('hme-hook-edit-');
   const res = await dispatch(root, 'PreToolUse', {
