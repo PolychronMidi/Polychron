@@ -1,5 +1,3 @@
-'use strict';
-
 const test = require('node:test');
 const assert = require('node:assert');
 const { normalizeStructuredBridgeCalls, bridgeCommand } = require('../../proxy/codex_tool_text');
@@ -38,7 +36,7 @@ test('Codex request transform hides bridge script calls before upstream', () => 
   assert.doesNotMatch(JSON.stringify(result.body), /codex_structured_tool/);
 });
 
-test('normalizes Edit bridge display with non-reusable redaction', () => {
+test('normalizes edit bridge display without reusable replacement strings', () => {
   const cmd = [
     "node tools/HME/scripts/codex_structured_tool.js edit --json <<'HME_CODEX_JSON'",
     '{"file_path":"src/x.js","old_string":"secret old","new_string":"secret new"}',
