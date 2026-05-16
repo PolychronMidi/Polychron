@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Run targeted verification
+(empty)
 
 ## Next
 
