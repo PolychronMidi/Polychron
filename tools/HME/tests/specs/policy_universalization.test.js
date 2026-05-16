@@ -20,6 +20,16 @@ test('shared Bash policy rewrites i commands and strips timeout', () => {
   assert.equal(Object.hasOwn(out.input, 'timeout'), false);
 });
 
+test('shared Bash policy silently rewrites simple readers to structured Read', () => {
+  for (const command of ['cat AGENTS.md', 'head -n 3 AGENTS.md', 'sed -n 1,3p AGENTS.md']) {
+    const out = evaluateBashInput({ command }, { projectRoot: root });
+    assert.equal(out.decision, 'allow');
+    assert.equal(out.changed, true);
+    assert.match(out.input.command, /codex_structured_tool\.js read --json/);
+    assert.match(out.input.command, /AGENTS\.md/);
+  }
+});
+
 test('shared Bash policy blocks dangerous shell and lock deletion', () => {
   assert.equal(evaluateBashInput({ command: pipeShell }, { projectRoot: root }).decision, 'deny');
   const lock = 'run' + '.lock';

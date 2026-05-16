@@ -117,6 +117,28 @@ test('synthetic PreToolUse Bash raw-streak block is deny, not hook failure', asy
   }
 });
 
+test('synthetic PreToolUse Bash rewrites reader at raw-streak limit instead of blocking', async () => {
+  const root = _withSandbox('hme-hook-bash-streak-read-rewrite-');
+  fs.writeFileSync(path.join(root, 'AGENTS.md'), '# agent\n');
+  const dir = path.join(root, 'tmp', 'hme-streak');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 's3read.score'), '70');
+  try {
+    const res = await dispatch(root, 'PreToolUse', {
+      tool_name: 'Bash',
+      session_id: 's3read',
+      tool_input: { command: 'cat AGENTS.md' },
+    });
+    assert.strictEqual(res.exit_code, 0);
+    assert.doesNotMatch(res.stdout, /Raw tool streak/);
+    assert.match(res.stdout, /updatedInput/);
+    assert.match(res.stdout, /codex_structured_tool\.js read --json/);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 's3read.score'), 'utf8').trim(), '0');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('raw-streak unlock blocks repeated same i command', async () => {
   const root = _withSandbox('hme-hook-bash-streak-repeat-');
   const dir = path.join(root, 'tmp', 'hme-streak');
