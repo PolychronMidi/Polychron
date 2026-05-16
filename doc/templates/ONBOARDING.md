@@ -216,7 +216,7 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 - [doc/HME.md](../HME.md) -- short HME orientation. Read this before deeper substrate detail.
 - [tools/HME/service/server/onboarding_chain.py](../../tools/HME/service/server/onboarding_chain.py) -- chain decider source + design spec (decorator wiring, gate hooks, failure modes, "adding new steps" recipe). The state machine itself is documented above in this primer.
 - [doc/hme_full.md](../hme_full.md) -- HME internals, tool surface, event kernel, state registry, LIFESAVER, and self-coherence.
-- [doc/src_full.md](../src_full.md) -- beat lifecycle, signal flow, L1/L2 layer isolation, tuning context, and engine systems.
+- [doc/composition-full.md](../composition-full.md) -- beat lifecycle, signal flow, L1/L2 layer isolation, tuning context, and engine systems.
 - [doc/theory/](../theory/) -- long-form arguments for the architecture's commitments. Read when the *why* behind a rule is needed.
 - `python3 tools/HME/scripts/verify-numeric-drift.py` -- audit counted claims ("N hypermeta controllers" / "K verifiers" / etc.) across all markdown against live code counts. Fires via the `numeric-claim-drift` HCI verifier every pipeline run.
 - `python3 scripts/audit-core-principles.py` -- survey `src/` against the five core principles. Fires via the `core-principles-audit` HCI verifier every pipeline run. Critical violations (files >400 LOC, subsystems without `index.js`) drop HCI; 200-line warnings are informational.

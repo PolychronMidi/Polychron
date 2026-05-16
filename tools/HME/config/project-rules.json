@@ -78,16 +78,16 @@
   ],
   "doc_update_triggers": {
     "src/conductor/": [
-      "doc/src_full.md (conductor changes)"
+      "doc/composition-full.md (conductor changes)"
     ],
     "src/crossLayer/": [
-      "doc/src_full.md (cross-layer changes)"
+      "doc/composition-full.md (cross-layer changes)"
     ],
     "src/utils/": [
       "AGENTS.md (new utility)"
     ],
     "src/time/": [
-      "doc/src_full.md (timing changes)"
+      "doc/composition-full.md (timing changes)"
     ]
   },
   "known_non_tool_identifiers": [

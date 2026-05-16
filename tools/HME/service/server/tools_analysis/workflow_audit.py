@@ -147,12 +147,12 @@ def what_did_i_forget(changed_files: str) -> str:
                 for ch in channels:
                     if ch not in KNOWN_L0_CHANNELS:
                         all_warnings.append(f"[{rel_path}] NEW L0 CHANNEL: '{ch}' -- add to project-rules.json and narrative-digest/trace-summary consumers")
-            # Check rhythm coupling: L0.getLast('emergentRhythm') added but src_full.md consumer comment missing
+            # Check rhythm coupling: L0.getLast('emergentRhythm') added but composition-full.md consumer comment missing
             if rel_path.endswith(".js") and "L0.getLast('emergentRhythm'" in content:
                 import re as _re
                 has_arch_comment = bool(_re.search(r'//\s*R\d+.*rhyth', content, _re.IGNORECASE))
                 if not has_arch_comment:
-                    all_warnings.append(f"[{rel_path}] RHYTHM COUPLING: L0.getLast('emergentRhythm') present -- add R-comment and update doc/src_full.md emergentRhythm consumers list")
+                    all_warnings.append(f"[{rel_path}] RHYTHM COUPLING: L0.getLast('emergentRhythm') present -- add R-comment and update doc/composition-full.md emergentRhythm consumers list")
                 # Check known rhythm field usage
                 used_fields = set(_re.findall(r'(?:rhythmEntry|emergentEntry)\w*\.(\w+)', content))
                 _KNOWN_FIELDS = {"density", "complexity", "biasStrength", "densitySurprise", "hotspots", "complexityEma"}

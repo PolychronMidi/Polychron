@@ -2,7 +2,7 @@
 
 Rules for `src/`, the polyrhythmic composition engine.
 
-Read this before editing engine code. Use [src_full.md](src_full.md) when you
+Read this before editing engine code. Use [composition-full.md](composition-full.md) when you
 need the full architecture, subsystem map, tuning context, or historical
 design primitives.
 
@@ -28,5 +28,5 @@ design primitives.
 
 - Project orientation: [README.md](../README.md)
 - Agent rules: [AGENTS.md](../AGENTS.md)
-- Full engine reference: [src_full.md](src_full.md)
+- Full engine reference: [composition-full.md](composition-full.md)
 - HME reference: [HME.md](HME.md)

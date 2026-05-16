@@ -11,7 +11,7 @@ The write-firewall to conductor is strict and enforced by lint (`local/no-direct
 - `emission/` -- `crossLayerEmissionGateway`, sole legitimate entry point for buffer writes
 - `heatmap/` -- trust-system heatmap generation
 
-See [output/metrics/feedback_graph.json](../../output/metrics/feedback_graph.json) for the port topology and [doc/src_full.md](../../doc/src_full.md) for the boundary rationale.
+See [output/metrics/feedback_graph.json](../../output/metrics/feedback_graph.json) for the port topology and [doc/composition-full.md](../../doc/composition-full.md) for the boundary rationale.
 
 <!-- HME-DIR-INTENT
 rules:

@@ -510,9 +510,9 @@
     },
     {
       "id": "coupling-labels-documented",
-      "description": "All 11 known active coupling label pairs must be documented in doc/src_full.md",
+      "description": "All 11 known active coupling label pairs must be documented in doc/composition-full.md",
       "type": "patterns_all_in_file",
-      "path": "doc/src_full.md",
+      "path": "doc/composition-full.md",
       "patterns": [
         "density-entropy",
         "density-flicker",
@@ -530,9 +530,9 @@
     },
     {
       "id": "directionbias-documented",
-      "description": "doc/src_full.md must document all three directionBias coupling sections",
+      "description": "doc/composition-full.md must document all three directionBias coupling sections",
       "type": "patterns_all_in_file",
-      "path": "doc/src_full.md",
+      "path": "doc/composition-full.md",
       "patterns": [
         "directionBias Swap Gate Coupling",
         "directionBias Articulation Contrast Coupling",
@@ -1649,7 +1649,7 @@
     },
     {
       "id": "antagonism-registry-covers-observed-pairs",
-      "description": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted. An unaccounted negative correlation means the system is observing a tension it has not named per the antagonism-bridge principle. See doc/src_full.md.",
+      "description": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted. An unaccounted negative correlation means the system is observing a tension it has not named per the antagonism-bridge principle. See doc/composition-full.md.",
       "type": "shell_output_empty",
       "shell": "python3 scripts/check-antagonism-registry.py 2>&1 | grep -v '^$'",
       "severity": "warning"

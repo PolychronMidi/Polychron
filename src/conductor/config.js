@@ -17,7 +17,7 @@
 //   "I want to change MIDI instruments, BPM, PPQ, or voice counts" -> edit this file
 //   "I want to change density/tension/stutter behavior for a musical style" -> edit a profile
 //   "I want a new musical personality" -> create a new profile in profiles/
-//   "I want to change tier-1 feedback constants" -> edit this file, read doc/src_full.md first
+//   "I want to change tier-1 feedback constants" -> edit this file, read doc/composition-full.md first
 //
 // The profile system CANNOT override constants in this file. The two systems are
 // independent: config.js sets the physical/structural substrate, profiles set the
@@ -25,7 +25,7 @@
 //
 // -- Sensitivity Tiers --
 // Every constant is annotated with a tier indicating its impact on emergent behavior.
-// @tier-1 : Feedback loop constants (documented in doc/src_full.md). Changing these
+// @tier-1 : Feedback loop constants (documented in doc/composition-full.md). Changing these
 //           alters the fundamental character of composition output. Understand the
 //           full TUNING_MAP and cross-constant invariants before touching.
 // @tier-2 : Musical texture constants. Changes affect timbral quality, rhythmic feel,

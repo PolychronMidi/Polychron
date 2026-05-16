@@ -91,7 +91,7 @@ class DocCoreLayoutVerifier(Verifier):
             "doc/HME.md",
             "doc/composition.md",
             "doc/hme_full.md",
-            "doc/src_full.md",
+            "doc/composition-full.md",
         ]
         issues = [f"missing {rel}" for rel in required
                   if not os.path.isfile(os.path.join(_PROJECT, rel))]

@@ -50,7 +50,7 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
         parts.append(comp)
 
     tuning_context = ""
-    tuning_path = os.path.join(ctx.PROJECT_ROOT, "doc", "src_full.md")
+    tuning_path = os.path.join(ctx.PROJECT_ROOT, "doc", "composition-full.md")
     if os.path.isfile(tuning_path):
         try:
             with open(tuning_path, encoding="utf-8") as _f:

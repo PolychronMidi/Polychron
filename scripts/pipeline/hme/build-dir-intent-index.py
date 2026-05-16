@@ -9,7 +9,7 @@ Used by:
   - tools/HME/proxy/middleware/11_dir_context.js (injects local rules on tool calls)
   - review(mode='health') surfaces drifted / missing READMEs
 
-See doc/src_full.md for the schema and conventions.
+See doc/composition-full.md for the schema and conventions.
 """
 import hashlib
 import json
