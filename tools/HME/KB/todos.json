@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3412,
-      "updated_ts": 1778951038.934359,
-      "codex_plan_synced_ts": 1778951038.9342818,
+      "max_id": 3416,
+      "updated_ts": 1778951188.9345863,
+      "codex_plan_synced_ts": 1778951188.9345095,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T17:03:53.895Z"
+      "codex_plan_ts": "2026-05-16T17:06:13.637Z"
     }
   },
   {
@@ -5997,5 +5997,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T17:03:53.895Z"
+  },
+  {
+    "id": 3413,
+    "text": "Edit .env cleanup targets",
+    "activeForm": "Edit .env cleanup targets",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778951174.0663524,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:06:13.637Z"
+  },
+  {
+    "id": 3414,
+    "text": "Re-audit active keys and duplicates",
+    "activeForm": "Re-audit active keys and duplicates",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778951174.0663579,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:06:13.637Z"
+  },
+  {
+    "id": 3415,
+    "text": "Run focused config verification",
+    "activeForm": "Run focused config verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778951174.0663612,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:06:13.637Z"
+  },
+  {
+    "id": 3416,
+    "text": "Report evidence",
+    "activeForm": "Report evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778951174.0663648,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:06:13.637Z"
   }
 ]

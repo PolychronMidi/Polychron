@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Edit .env cleanup targets
 
 ## Next
 
-(empty)
+- [ ] [E3] Re-audit active keys and duplicates
+- [ ] [E3] Run focused config verification
+- [ ] [E3] Report evidence
 
 ## Done
 
