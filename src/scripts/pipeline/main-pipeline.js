@@ -16,6 +16,7 @@ const { execSync, spawnSync } = cp;
 const fs   = require('fs');
 const path = require('path');
 const METRICS_DIR = process.env.METRICS_DIR || path.join(__dirname, '..', '..', '..', 'output', 'metrics');
+if (!process.env.METRICS_DIR) process.env.METRICS_DIR = METRICS_DIR;
 
 const MEASURE_TIMEOUT_SEC = 30;
 
