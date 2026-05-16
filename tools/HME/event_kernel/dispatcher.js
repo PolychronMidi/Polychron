@@ -33,6 +33,7 @@ const { shouldSkipForNestedHooks } = require('../hooks/cwd_guard');
 const { preWriteCheck, toHookResponse } = require('../proxy/pre_write_check');
 const stateClient = require('../proxy/session_state_client');
 const { normalize } = require('./envelope');
+const { recordFailure } = require('../proxy/turn_failure_state');
 const { spawnFileInput } = require('./fs_ipc');
 const nativeHooks = require('./native_hooks');
 
@@ -55,6 +56,8 @@ async function _recordPostToolEvidence(stdinJson) {
     ? response.slice(0, 500)
     : JSON.stringify(response).slice(0, 500);
   const exitCode = Number.isInteger(response.exit_code) ? response.exit_code : null;
+  const failed = response && (response.is_error === true || response.error === true || (exitCode !== null && exitCode !== 0));
+  if (failed) recordFailure(PROJECT_ROOT, { tool, reason: response.stderr || response.error || `exit ${exitCode}`, command, session_id: env.session_id || '' });
   await stateClient.call('verification-evidence', env.session_id || '', {
     session_id: env.session_id || '',
     command,
