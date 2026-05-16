@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Dump every project-root directory entry with escaped names and lstat type
+(empty)
 
 ## Next
 
-- [ ] [E3] Remove the exact ts_api JSONL root entries found
-- [ ] [E3] Broaden root guard to reject any root entry whose name contains jsonl/API transcript spam, regardless of type
-- [ ] [E3] Verify with raw root dump and root-only validator
+(empty)
 
 ## Done
 

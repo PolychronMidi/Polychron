@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3480,
-      "updated_ts": 1778964839.0360708,
-      "codex_plan_synced_ts": 1778964839.0359786,
+      "updated_ts": 1778964929.0186076,
+      "codex_plan_synced_ts": 1778964929.018515,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T20:53:52.000Z"
+      "codex_plan_ts": "2026-05-16T20:55:27.090Z"
     }
   },
   {
@@ -7062,8 +7062,8 @@
     "id": 3477,
     "text": "Dump every project-root directory entry with escaped names and lstat type",
     "activeForm": "Dump every project-root directory entry with escaped names and lstat type",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7072,14 +7072,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T20:53:52.000Z"
+    "codex_plan_ts": "2026-05-16T20:55:27.090Z"
   },
   {
     "id": 3478,
     "text": "Remove the exact ts_api JSONL root entries found",
     "activeForm": "Remove the exact ts_api JSONL root entries found",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7088,14 +7088,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T20:53:52.000Z"
+    "codex_plan_ts": "2026-05-16T20:55:27.090Z"
   },
   {
     "id": 3479,
     "text": "Broaden root guard to reject any root entry whose name contains jsonl/API transcript spam, regardless of type",
     "activeForm": "Broaden root guard to reject any root entry whose name contains jsonl/API transcript spam, regardless of type",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7104,14 +7104,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T20:53:52.000Z"
+    "codex_plan_ts": "2026-05-16T20:55:27.090Z"
   },
   {
     "id": 3480,
     "text": "Verify with raw root dump and root-only validator",
     "activeForm": "Verify with raw root dump and root-only validator",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7120,6 +7120,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T20:53:52.000Z"
+    "codex_plan_ts": "2026-05-16T20:55:27.090Z"
   }
 ]
