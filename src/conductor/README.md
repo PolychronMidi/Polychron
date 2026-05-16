@@ -1,6 +1,6 @@
 # conductor
 
-The hypermeta layer -- 19 self-calibrating controllers that own every coupling target, regime distribution, pipeline centroid, flicker range, trust starvation response, progressive strength, gain budget, axis equilibration, phase energy floor, per-pair gain ceiling, section-0 warmup ramp, and `coherentThresholdScale`. 93 bias registrations are validated against `scripts/pipeline/bias-bounds-manifest.json` on every run.
+The hypermeta layer -- 19 self-calibrating controllers that own every coupling target, regime distribution, pipeline centroid, flicker range, trust starvation response, progressive strength, gain budget, axis equilibration, phase energy floor, per-pair gain ceiling, section-0 warmup ramp, and `coherentThresholdScale`. 93 bias registrations are validated against `src/scripts/pipeline/bias-bounds-manifest.json` on every run.
 
 This directory **is** the control authority. Cross-layer and other subsystems consume signals via `conductorIntelligence` + `signalReader`, never by directly reading state. Controllers self-register via `metaControllerRegistry.register()` at load time; query the topology with `getAll()` / `getById()` / `getByAxis()`.
 

@@ -25,8 +25,8 @@ Why this matters:
     "listener appetite" upstream, not independently optimized.
 
 Usage:
-  python3 scripts/verdict-polar.py [--history metrics/trace.jsonl]
-  python3 scripts/verdict-polar.py --show-map
+  python3 src/scripts/verdict-polar.py [--history metrics/trace.jsonl]
+  python3 src/scripts/verdict-polar.py --show-map
 """
 from __future__ import annotations
 import argparse

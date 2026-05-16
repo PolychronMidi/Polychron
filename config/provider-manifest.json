@@ -1,14 +1,14 @@
 {
   "version": "1.0.0",
   "checks": {
-    "omnirouteMaxReasoning": "scripts/probe-omniroute-max-reasoning.py",
-    "modelLimitSync": "scripts/sync-omniroute-model-limits.py",
+    "omnirouteMaxReasoning": "tools/HME/scripts/probe-omniroute-max-reasoning.py",
+    "modelLimitSync": "tools/HME/scripts/sync-omniroute-model-limits.py",
     "hookReport": "tools/HME/hooks/hook_report.js",
-    "hookTest": "scripts/hme-hook-test.js"
+    "hookTest": "tools/HME/scripts/hme-hook-test.js"
   },
   "requiredFiles": [
     "config/omniroute-payloadRules.json",
-    "scripts/configure-omniroute-max-reasoning.py",
-    "scripts/probe-omniroute-max-reasoning.py"
+    "tools/HME/scripts/configure-omniroute-max-reasoning.py",
+    "tools/HME/scripts/probe-omniroute-max-reasoning.py"
   ]
 }

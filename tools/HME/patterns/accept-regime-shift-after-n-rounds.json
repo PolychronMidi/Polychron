@@ -11,7 +11,7 @@
   "action": {
     "summary": "Accept regime shift -- update Arc III envelope to recent-only snapshots.",
     "auto_apply": true,
-    "auto_apply_script": "scripts/pipeline/hme/auto-apply-regime-shift.py",
+    "auto_apply_script": "tools/HME/src/scripts/pipeline/auto-apply-regime-shift.py",
     "steps": [
       "Confirm HCI has been >=95 across the persistent-drift window.",
       "Log the epoch transition in metrics/hme-epoch-transitions.jsonl with timestamp + reason (auto-applied).",

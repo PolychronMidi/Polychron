@@ -25,7 +25,7 @@ const labDir = path.resolve(__dirname);
 const rootDir = path.resolve(__dirname, '..');
 const labOutputDir = path.join(labDir, 'output');
 const SF = path.join(process.env.HOME, 'Downloads/SGM-v2.01-NicePianosGuitarsBass-V1.2.sf2');
-const INTERP = path.join(rootDir, 'scripts/fluidsynth-init.txt');
+const INTERP = path.join(rootDir, 'src/scripts/fluidsynth-init.txt');
 
 fs.mkdirSync(labOutputDir, { recursive: true });
 
@@ -45,7 +45,7 @@ function createIsolatedWorkDir() {
 
   // feedback_graph.json is REQUIRED by feedbackGraphContract at main.js boot
   // but is a derived artifact (regenerated each pipeline run from src/ AST
-  // annotations by scripts/pipeline/generators/generate-feedback-graph.js,
+  // annotations by src/scripts/pipeline/generators/generate-feedback-graph.js,
   // not a runtime output). Lab runs ONLY main.js, so the file is otherwise
   // missing in the temp work dir. Copy from the real output/metrics/ —
   // preserves the lab's "isolated from runtime output" property while
@@ -215,7 +215,7 @@ if (typeof _mainLoop === 'function') {
 
   // Convert CSV -> MIDI (runs in tmpWork so c2m.py reads tmpWork/output/)
   try {
-    execSync(`python3 scripts/c2m.py`, { cwd: tmpWork, stdio: 'pipe' });
+    execSync(`python3 src/scripts/c2m.py`, { cwd: tmpWork, stdio: 'pipe' });
   } catch (e) {
     const stderr = e.stderr && e.stderr.length > 0 ? e.stderr.toString().split('\n').slice(-6).join('\n') : '';
     const msg = (stderr || e.message || 'unknown error').trim();

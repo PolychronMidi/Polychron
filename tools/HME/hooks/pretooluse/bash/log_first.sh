@@ -2,7 +2,7 @@
 # AND no source code has changed since. Re-running burns time, hides flapping,
 # and is wasteful when the answer sits in a file. Read the log instead.
 #
-# Commands that write logs via scripts/utils/run-with-log.js:
+# Commands that write logs via src/scripts/utils/run-with-log.js:
 #   npm run lint   -> log/lint.log
 #   npm run tc     -> log/tc.log
 #   (others writers can be added here as needed)

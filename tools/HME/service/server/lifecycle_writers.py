@@ -21,7 +21,7 @@ Registered domains:
   kb                 -> tools_knowledge         (tools/HME/service/server/tools_knowledge.py)
   conductor-state    -> conductor subsystem     (src/conductor/*)
   cross-layer        -> crossLayerEmissionGateway
-  adaptive-state     -> adaptive-state writer   (scripts/pipeline/*)
+  adaptive-state     -> adaptive-state writer   (src/scripts/pipeline/*)
   hme-todo-store     -> server.tools_analysis.todo
   lifesaver-registry -> server.failure_genealogy
 

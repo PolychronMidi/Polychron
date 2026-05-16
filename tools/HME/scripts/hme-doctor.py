@@ -118,27 +118,27 @@ def hooks_doctor():
     ok = True
     ok &= run_check(
         'claude_settings_sync',
-        [sys.executable, str(ROOT / 'scripts/sync-claude-settings.py'), '--check'],
-        fix='scripts/sync-claude-settings.py',
+        [sys.executable, str(ROOT / 'tools/HME/scripts/sync-claude-settings.py'), '--check'],
+        fix='tools/HME/scripts/sync-claude-settings.py',
     )
     ok &= run_check(
         'claude_settings_audit',
-        [sys.executable, str(ROOT / 'scripts/audit-claude-settings.py')],
-        fix='scripts/sync-claude-settings.py',
+        [sys.executable, str(ROOT / 'tools/HME/scripts/audit-claude-settings.py')],
+        fix='tools/HME/scripts/sync-claude-settings.py',
     )
     ok &= run_check(
         'codex_settings_sync',
-        [sys.executable, str(ROOT / 'scripts/sync-codex-settings.py'), '--check'],
-        fix='scripts/sync-codex-settings.py',
+        [sys.executable, str(ROOT / 'tools/HME/scripts/sync-codex-settings.py'), '--check'],
+        fix='tools/HME/scripts/sync-codex-settings.py',
     )
     ok &= run_check(
         'codex_settings_audit',
-        [sys.executable, str(ROOT / 'scripts/audit-codex-settings.py')],
-        fix='scripts/sync-codex-settings.py',
+        [sys.executable, str(ROOT / 'tools/HME/scripts/audit-codex-settings.py')],
+        fix='tools/HME/scripts/sync-codex-settings.py',
     )
     ok &= run_check(
         'event_kernel_dispatch',
-        ['node', str(ROOT / 'scripts/hme-hook-test.js')],
+        ['node', str(ROOT / 'tools/HME/scripts/hme-hook-test.js')],
         fix='check tools/HME/event_kernel/dispatcher.js',
     )
 
@@ -217,9 +217,9 @@ def main():
     ok &= service_checks()
     ok &= state_registry_check()
     or_ok, or_detail = verify_omniroute()
-    ok &= check('omniroute_max_reasoning', or_ok, or_detail, 'scripts/configure-omniroute-max-reasoning.py')
+    ok &= check('omniroute_max_reasoning', or_ok, or_detail, 'tools/HME/scripts/configure-omniroute-max-reasoning.py')
     missing = model_limits_ok()
-    ok &= check('model_limits', not missing, f'missing={len(missing)}', 'scripts/sync-omniroute-model-limits.py')
+    ok &= check('model_limits', not missing, f'missing={len(missing)}', 'tools/HME/scripts/sync-omniroute-model-limits.py')
     report = subprocess.run(['node', str(ROOT/'tools/HME/hooks/hook_report.js'), '--json'], text=True, capture_output=True)
     ok &= check('hook_report', report.returncode == 0, 'log/hme-hook-exec.jsonl', 'check event kernel')
     ok &= hooks_doctor()
@@ -229,7 +229,7 @@ def main():
         ERR.parent.mkdir(exist_ok=True)
         with ERR.open('a') as f:
             ts = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-            f.write(f'[{ts}] [hme-doctor] FAIL health check; run scripts/hme-doctor.py\n')
+            f.write(f'[{ts}] [hme-doctor] FAIL health check; run tools/HME/scripts/hme-doctor.py\n')
     return 0 if ok else 1
 
 

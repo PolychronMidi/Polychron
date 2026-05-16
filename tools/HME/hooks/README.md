@@ -34,14 +34,14 @@ Use `_emit_block "reason"` + `exit 2` only for rules the agent MUST NOT violate 
 ## Dispatch tree
 
 `hooks.json` is the source of truth for live Claude Code hook registration.
-Run `scripts/sync-claude-settings.py` to materialize it into
-`~/.claude/settings.json`; `scripts/audit-claude-settings.py` fails if live
+Run `tools/HME/scripts/sync-claude-settings.py` to materialize it into
+`~/.claude/settings.json`; `tools/HME/scripts/audit-claude-settings.py` fails if live
 settings drift from this manifest.
 
 `codex_hooks.json` is the source of truth for live Codex hook registration.
-Run `scripts/sync-codex-settings.py` to materialize it into
+Run `tools/HME/scripts/sync-codex-settings.py` to materialize it into
 `~/.codex/hooks.json` and route Codex Responses traffic through the
-`codex_proxy` service. `scripts/audit-codex-settings.py` fails if the hooks or
+`codex_proxy` service. `tools/HME/scripts/audit-codex-settings.py` fails if the hooks or
 provider config drift. Codex user hooks are non-managed hooks; if Codex reports
 that hooks need review, approve them once from `/hooks` in the interactive CLI.
 The `hme_codex` provider proxy is active independently of that hook review.

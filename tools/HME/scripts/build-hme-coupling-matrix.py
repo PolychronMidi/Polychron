@@ -29,8 +29,8 @@ Output schema:
     }
 
 Usage:
-    python3 tools/HME/scripts/build-hme-coupling-matrix.py
-    python3 tools/HME/scripts/build-hme-coupling-matrix.py --summary
+    python3 tools/HME/tools/HME/scripts/build-hme-coupling-matrix.py
+    python3 tools/HME/tools/HME/scripts/build-hme-coupling-matrix.py --summary
 """
 import itertools
 import json

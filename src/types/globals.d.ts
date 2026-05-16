@@ -2217,7 +2217,7 @@ declare var polyNumerator: number;
 declare var polyDenominator: number;
 
 // === AUTO-GENERATED FROM MANIFESTS (moduleLifecycle.declare) -- do not hand-edit below this line ===
-// 273 manifest-derived globals (regenerate via: node scripts/pipeline/generators/generate-manifest-globals.js)
+// 273 manifest-derived globals (regenerate via: node src/scripts/pipeline/generators/generate-manifest-globals.js)
 declare var FXFeedbackListener: any;
 declare var L0: any;
 declare var accentPatternTracker: any;

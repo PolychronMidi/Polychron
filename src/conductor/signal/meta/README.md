@@ -2,7 +2,7 @@
 
 The actual hypermeta brains. Every controller self-registers at load time via `metaControllerRegistry.register()` and is queryable by id / axis / all. The 19 registered controllers own every coupling target, regime distribution, pipeline centroid, gain budget, axis equilibration, phase energy floor, per-pair gain ceiling, and `coherentThresholdScale` -- they *are* the control authority this subtree is named for.
 
-Bias registrations live in `scripts/pipeline/bias-bounds-manifest.json` (93 entries) and are validated by `check-hypermeta-jurisdiction.js`. Any controller that registers a bias outside its declared `[lo, hi]` range fails the pipeline. Snapshot after legitimate structural changes with `--snapshot-bias-bounds`.
+Bias registrations live in `src/scripts/pipeline/bias-bounds-manifest.json` (93 entries) and are validated by `check-hypermeta-jurisdiction.js`. Any controller that registers a bias outside its declared `[lo, hi]` range fails the pipeline. Snapshot after legitimate structural changes with `--snapshot-bias-bounds`.
 
 ## Current controllers
 
@@ -17,7 +17,7 @@ Bias registrations live in `scripts/pipeline/bias-bounds-manifest.json` (93 entr
 1. Write the file; self-register at the end of the IIFE via `metaControllerRegistry.register(spec)`
 2. Require it from this directory's `index.js` in load order (watchdogs after targets)
 3. Declare every bias registration range in `bias-bounds-manifest.json`
-4. Re-snapshot: `node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`
+4. Re-snapshot: `node src/scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`
 
 See [doc/composition-full.md](../../../../doc/composition-full.md) for the axis <-> controller mapping.
 

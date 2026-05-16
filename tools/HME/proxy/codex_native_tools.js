@@ -3,7 +3,7 @@
 const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
 const { evaluateReadInput } = require('./read_policy');
 
-const BRIDGE = 'node tools/HME/scripts/codex_structured_tool.js';
+const BRIDGE = 'node tools/HME/tools/HME/scripts/codex_structured_tool.js';
 const TARGET_TOOL = 'exec_command';
 const NATIVE_NAMES = new Set(['Read', 'Edit', 'Grep', 'Glob']);
 

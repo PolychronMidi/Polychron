@@ -14,7 +14,7 @@ _hme_service_registry_py() {
     done
   fi
   [ -n "$root" ] || return 2
-  PROJECT_ROOT="$root" python3 "$root/tools/HME/scripts/service_registry.py" "$cmd" "$sid"
+  PROJECT_ROOT="$root" python3 "$root/tools/HME/tools/HME/scripts/service_registry.py" "$cmd" "$sid"
 }
 
 _hme_service_url() { _hme_service_registry_py url "$1"; }

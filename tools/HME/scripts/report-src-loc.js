@@ -1,6 +1,6 @@
 // Walks the `src` directory and prints files sorted by lines of code.
 // Honors `config/loc-ignore.txt` (gitignore-style) -- same source consumed
-// by `scripts/audit-core-principles.py` and `i/evolve focus=loc`. Exempt
+// by `tools/HME/scripts/audit-core-principles.py` and `i/evolve focus=loc`. Exempt
 // files print with an `[exempt]` tag instead of being hidden so the report
 // stays visible while explicit waivers are obvious.
 

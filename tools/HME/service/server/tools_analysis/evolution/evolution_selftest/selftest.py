@@ -104,7 +104,7 @@ def hme_selftest(verbose: bool = False) -> str:
             elif hits == 0:
                 results.append("PASS: doc stale-ref scan -- no legacy tool references detected")
             else:
-                results.append(f"FAIL: doc stale-ref scan -- {hits} legacy tool reference(s) detected (run tools/HME/scripts/verify-doc-sync.py for details)")
+                results.append(f"FAIL: doc stale-ref scan -- {hits} legacy tool reference(s) detected (run tools/HME/tools/HME/scripts/verify-doc-sync.py for details)")
         else:
             results.append("INFO: doc stale-ref scan -- verifier script not found")
     except Exception as e:
@@ -264,7 +264,7 @@ def hme_selftest(verbose: bool = False) -> str:
         results.append(f"FAIL: reload mechanism -- {type(_rl_err).__name__}: {_rl_err}")
 
     # fix_antipattern plumbing check: preflight + code path only.
-    # Full LLM round-trip lives in scripts/selftest-fix-antipattern.py.
+    # Full LLM round-trip lives in tools/HME/scripts/selftest-fix-antipattern.py.
     try:
         from ..evolution_admin import _daemon_health_snapshot
         _snap = _daemon_health_snapshot()
@@ -791,7 +791,7 @@ def hme_selftest(verbose: bool = False) -> str:
                 results.append(
                     f"FAIL: meta-invariant coverage -- {_count_line} "
                     f"(single-writer invariant silently violated; "
-                    f"run scripts/check-single-writer-coverage.py for detail)"
+                    f"run tools/HME/scripts/check-single-writer-coverage.py for detail)"
                 )
             else:
                 results.append(f"WARN: meta-invariant coverage -- analyzer rc={_res.returncode}: {(_res.stderr or '')[:100]}")
@@ -984,10 +984,10 @@ def hme_selftest(verbose: bool = False) -> str:
     # robust to inline "(run X for details)" suffixes already present.
     _FIX_HINTS = {
         "doc sync":              "edit the file/count the verifier names; re-run.",
-        "doc stale-ref scan":    "python3 tools/HME/scripts/verify-doc-sync.py for offending files.",
-        "onboarding flow":       "python3 tools/HME/scripts/verify-onboarding-flow.py for diff.",
-        "STATES sync":           "python3 tools/HME/scripts/verify-states-sync.py for diff.",
-        "HCI":                   "python3 tools/HME/scripts/verify-coherence.py for per-verifier breakdown.",
+        "doc stale-ref scan":    "python3 tools/HME/tools/HME/scripts/verify-doc-sync.py for offending files.",
+        "onboarding flow":       "python3 tools/HME/tools/HME/scripts/verify-onboarding-flow.py for diff.",
+        "STATES sync":           "python3 tools/HME/tools/HME/scripts/verify-states-sync.py for diff.",
+        "HCI":                   "python3 tools/HME/tools/HME/scripts/verify-coherence.py for per-verifier breakdown.",
         "index":                 f"{_action_form('index')} to fill gaps; {_action_form('clear_index')} only if index is corrupt/empty.",
         "hash cache":            f"{_action_form('index')} to rebuild.",
         "middleware order":      "edit tools/HME/proxy/middleware/order.json or remove stale entries.",

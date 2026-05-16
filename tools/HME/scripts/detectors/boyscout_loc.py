@@ -4,7 +4,7 @@ loc-ignore.txt"). Per-turn detector: any file Edited/Written this turn
 must be <=350 LOC OR listed in config/loc-ignore.txt.
 
 Counter + ignore-pattern matcher are SHARED with audit-core-principles.py
-via scripts/loc_count.py + scripts/loc_ignore.py so the threshold means
+via tools/HME/scripts/loc_count.py + tools/HME/scripts/loc_ignore.py so the threshold means
 the same thing in both places (no audit-PASS / detector-FAIL splits).
 
 Verdicts:

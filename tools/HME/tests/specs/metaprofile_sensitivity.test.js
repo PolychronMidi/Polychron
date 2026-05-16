@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 
-const { aggregate, stats, quantile, markdown } = require('../../../../scripts/metaprofile-sensitivity.js');
+const { aggregate, stats, quantile, markdown } = require('../../../../src/scripts/metaprofile-sensitivity.js');
 
 test('quantile: handles single-element array', () => {
   assert.strictEqual(quantile([5], 0), 5);

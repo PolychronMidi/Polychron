@@ -21,7 +21,7 @@ appear in the results as ground truth -- if it doesn't, the detector or
 the data is wrong.
 
 Usage:
-  python3 scripts/detect-antagonism-candidates.py [--threshold 0.4] [--json OUT]
+  python3 tools/HME/scripts/detect-antagonism-candidates.py [--threshold 0.4] [--json OUT]
 """
 from __future__ import annotations
 import argparse

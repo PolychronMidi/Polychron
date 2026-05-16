@@ -112,7 +112,7 @@ fi
 
 # section 2: worker health
 _section "Worker health"
-WORKER_HEALTH=$(PROJECT_ROOT="$PROJECT_ROOT" python3 tools/HME/scripts/service_registry.py url worker)
+WORKER_HEALTH=$(PROJECT_ROOT="$PROJECT_ROOT" python3 tools/HME/tools/HME/scripts/service_registry.py url worker)
 HEALTH=$(curl -s --max-time 3 "$WORKER_HEALTH" 2>&1 || echo "")
 if echo "$HEALTH" | grep -q '"ready": *true'; then
   _ok "worker /health reports ready"

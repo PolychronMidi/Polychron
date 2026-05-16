@@ -12,9 +12,9 @@ plus the top-3 detail strings. Used both as an operator command
 (run ad-hoc) and as input to a selftest probe.
 
 Usage:
-  python3 scripts/analyze-detector-stats.py              # summary
-  python3 scripts/analyze-detector-stats.py --coverage   # phrase coverage
-  python3 scripts/analyze-detector-stats.py --json       # machine-readable
+  python3 tools/HME/scripts/analyze-detector-stats.py              # summary
+  python3 tools/HME/scripts/analyze-detector-stats.py --coverage   # phrase coverage
+  python3 tools/HME/scripts/analyze-detector-stats.py --json       # machine-readable
 """
 from __future__ import annotations
 

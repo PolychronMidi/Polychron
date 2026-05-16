@@ -1,7 +1,7 @@
 {
-  "_comment": "Metadata registry for the public i/* command surface. scripts/generate-i-shims.js generates the executable shims in i/ from this file; behavior lives in scripts/hme-i-dispatch.js. Internal helpers and retired aliases belong under scripts/, not i/.",
-  "generated_by": "scripts/generate-i-shims.js",
-  "dispatcher": "scripts/hme-i-dispatch.js",
+  "_comment": "Metadata registry for the public i/* command surface. tools/HME/scripts/generate-i-shims.js generates the executable shims in i/ from this file; behavior lives in tools/HME/scripts/hme-i-dispatch.js. Internal helpers and retired aliases belong under scripts/, not i/.",
+  "generated_by": "tools/HME/scripts/generate-i-shims.js",
+  "dispatcher": "tools/HME/scripts/hme-i-dispatch.js",
   "commands": {
     "review": {
       "description": "Post-change audit: KB constraints, boundary rules, doc drift, review verdicts.",

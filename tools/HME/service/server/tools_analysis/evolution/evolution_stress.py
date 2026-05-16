@@ -106,7 +106,7 @@ def _adversarial_stress() -> str:
         results.append((f"ESLint: {len(rules)} custom rules (need >=22)",
                         len(rules) >= 22, "" if len(rules) >= 22 else f"only {len(rules)}"))
     else:
-        results.append(("ESLint: rules directory exists", False, "scripts/eslint-rules/ missing"))
+        results.append(("ESLint: rules directory exists", False, "src/scripts/eslint-rules/ missing"))
 
     # Probe 7: All critical hook scripts exist and are executable.
     # Post-migration layout: LIFESAVER moved to proxy middleware, Read KB

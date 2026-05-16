@@ -41,7 +41,7 @@ _SELF_REFERENCE_FILES = frozenset((
     "tools/HME/hooks/pretooluse/pretooluse_edit.sh",
     "tools/HME/hooks/pretooluse/bash/verify_landed_block.sh",
     "tools/HME/hooks/pretooluse/pretooluse_read.sh",
-    "scripts/audit-comment-bloat.py",
+    "tools/HME/scripts/audit-comment-bloat.py",
 ))
 
 

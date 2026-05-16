@@ -44,15 +44,15 @@ Native tool handlers live under `native_hooks/`; shell hooks remain behind the
 dispatcher or Stop-chain policy adapter until their behavior is ported.
 
 Claude Code settings are also manifest-driven: edit
-`tools/HME/hooks/hooks.json`, then run `scripts/sync-claude-settings.py`.
-`scripts/audit-claude-settings.py` compares live `~/.claude/settings.json`
+`tools/HME/hooks/hooks.json`, then run `tools/HME/scripts/sync-claude-settings.py`.
+`tools/HME/scripts/audit-claude-settings.py` compares live `~/.claude/settings.json`
 against that manifest.
 
 Codex settings are manifest-driven too: edit
 `tools/HME/hooks/codex_hooks.json`, then run
-`scripts/sync-codex-settings.py`. That writes `~/.codex/hooks.json`, enables
+`tools/HME/scripts/sync-codex-settings.py`. That writes `~/.codex/hooks.json`, enables
 `features.hooks`, and registers the `hme_codex` Responses provider at the
-service-registry `codex_proxy` port. `scripts/audit-codex-settings.py` checks
+service-registry `codex_proxy` port. `tools/HME/scripts/audit-codex-settings.py` checks
 the live Codex files against those registries. Codex treats user hooks as
 non-managed hooks, so the first interactive Codex launch may require `/hooks`
 review before the hook adapter runs; the provider proxy path is not gated by

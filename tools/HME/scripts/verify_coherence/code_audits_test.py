@@ -18,7 +18,7 @@ from ._base import (
 
 
 class SilentFailureClassVerifier(Verifier):
-    """Delegates to scripts/audit-silent-failure-class.py, which surfaces
+    """Delegates to tools/HME/scripts/audit-silent-failure-class.py, which surfaces
     broad-except / catch-and-swallow sites that lack a `silent-ok:`
     annotation.
     """

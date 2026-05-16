@@ -20,7 +20,7 @@ Exit codes:
     2 -- unexpected error
 
 Usage:
-    python3 tools/HME/scripts/verify-onboarding-flow.py
+    python3 tools/HME/tools/HME/scripts/verify-onboarding-flow.py
 """
 import importlib.util
 import os

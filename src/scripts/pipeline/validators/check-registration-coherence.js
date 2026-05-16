@@ -1,4 +1,4 @@
-// scripts/pipeline/check-registration-coherence.js
+// src/scripts/pipeline/check-registration-coherence.js
 // Validates that conductor modules with functional registrations
 // (registerDensityBias, registerTensionBias, registerFlickerModifier,
 // registerRecorder, registerStateProvider) also call registerModule()

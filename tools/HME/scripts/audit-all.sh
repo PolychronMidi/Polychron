@@ -8,8 +8,8 @@
 # without waiting on later steps.
 #
 # Usage:
-#   bash scripts/audit-all.sh             # report-only, always exit 0
-#   bash scripts/audit-all.sh --strict    # exit 1 if any audit reports findings
+#   bash tools/HME/scripts/audit-all.sh             # report-only, always exit 0
+#   bash tools/HME/scripts/audit-all.sh --strict    # exit 1 if any audit reports findings
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
@@ -35,59 +35,59 @@ run() {
 }
 
 # Project-wide LOC limits. Honors config/loc-ignore.txt.
-run "audit-loc"                  python3 scripts/audit-loc.py $([ "$STRICT" = "1" ] && echo --strict)
+run "audit-loc"                  python3 tools/HME/scripts/audit-loc.py $([ "$STRICT" = "1" ] && echo --strict)
 
 # Python F821-class undefined names.
-run "audit-python-undefined"     python3 scripts/audit-python-undefined-names.py $([ "$STRICT" = "1" ] && echo --strict)
+run "audit-python-undefined"     python3 tools/HME/scripts/audit-python-undefined-names.py $([ "$STRICT" = "1" ] && echo --strict)
 
 # Project-wide ASCII enforcement across .py / .js / .sh / .json / .md / .txt.
-run "audit-no-non-ascii"         python3 scripts/audit-no-non-ascii.py $([ "$STRICT" = "1" ] && echo --strict)
+run "audit-no-non-ascii"         python3 tools/HME/scripts/audit-no-non-ascii.py $([ "$STRICT" = "1" ] && echo --strict)
 
 # Shell `set -u` undefined-var references.
-run "audit-shell-undefined"      python3 scripts/audit_shell_undefined_vars.py
+run "audit-shell-undefined"      python3 tools/HME/scripts/audit_shell_undefined_vars.py
 
 # Shared state writer/reader path symmetry.
-run "audit-state-file-symmetry"  python3 scripts/audit-state-file-symmetry.py
+run "audit-state-file-symmetry"  python3 tools/HME/scripts/audit-state-file-symmetry.py
 
 # HME dogfooding: HME's own Python must obey silent-failure rules.
-run "check-hme-dogfooding"      python3 scripts/check-hme-dogfooding.py
+run "check-hme-dogfooding"      python3 tools/HME/scripts/check-hme-dogfooding.py
 
 # HME proxy middleware load-order guard.
-run "check-middleware-order"    python3 scripts/check-middleware-order.py
+run "check-middleware-order"    python3 tools/HME/scripts/check-middleware-order.py
 
 # Lifecycle writer ownership unit tests.
-run "test-lifecycle-writers"    python3 scripts/test/test-lifecycle-writers.py
+run "test-lifecycle-writers"    python3 tools/HME/tests/scripts/test-lifecycle-writers.py
 
 # Cross-subsystem import boundaries (reaches-into-internals + public surface).
-run "audit-import-boundaries"    python3 scripts/audit-import-boundaries.py $([ "$STRICT" = "1" ] && echo --strict)
+run "audit-import-boundaries"    python3 tools/HME/scripts/audit-import-boundaries.py $([ "$STRICT" = "1" ] && echo --strict)
 
 # Hook coordination -- MUST RUN BEFORE/AFTER directives in policy/hook
 # docstrings vs. actual stop_chain runtime ordering. Acyclic-graph check.
-run "audit-hook-coordination"    python3 scripts/audit-hook-coordination.py $([ "$STRICT" = "1" ] && echo --strict)
+run "audit-hook-coordination"    python3 tools/HME/scripts/audit-hook-coordination.py $([ "$STRICT" = "1" ] && echo --strict)
 
 # DocIntegrity -- cross-reference audit on markdown files. Every
 # [text](path) link must resolve, every #anchor must match a heading.
-run "audit-doc-integrity"        python3 scripts/audit-doc-integrity.py $([ "$STRICT" = "1" ] && echo --strict)
+run "audit-doc-integrity"        python3 tools/HME/scripts/audit-doc-integrity.py $([ "$STRICT" = "1" ] && echo --strict)
 
 # Generated music-prior outputs must remain structurally valid.
-run "verify-music21-priors"      python3 scripts/music21/verify_priors_outputs.py
+run "verify-music21-priors"      python3 src/scripts/music21/verify_priors_outputs.py
 
 # Standalone custom ESLint rule regression.
-run "test-eslint-map-get"        node scripts/eslint-rules/no-or-fallback-on-map-get.test.js
+run "test-eslint-map-get"        node src/scripts/eslint-rules/no-or-fallback-on-map-get.test.js
 
 # Generated polyrhythm table must match conductor config ranges.
-run "check-polyrhythm-table"     node scripts/generatePolyrhythmTable.js --check
+run "check-polyrhythm-table"     node src/scripts/generatePolyrhythmTable.js --check
 
 # Cold-entrypoint smoke checks keep script CLIs wired without doing writes.
-run "verify-provider-manifest"   python3 scripts/verify-provider-manifest.py
-run "test-regime-core"           node scripts/test/regimeReactiveDampingCore.test.js
-run "test-hme-hook-dispatch"     node scripts/hme-hook-test.js
-run "smoke-c2m-help"             python3 scripts/c2m.py --help
-run "smoke-m2c-help"             python3 scripts/m2c.py --help
-run "smoke-hme-timeline"         python3 scripts/hme/timeline-panel.py window=0s
-run "smoke-hme-freeze"           python3 scripts/hme/freeze-check.py
-run "check-verdict-predictor"    node scripts/pipeline/train-verdict-predictor.js --check
-run "check-lance-compaction"     python3 scripts/compact-lance-tables.py --dry-run
+run "verify-provider-manifest"   python3 tools/HME/scripts/verify-provider-manifest.py
+run "test-regime-core"           node src/tests/regimeReactiveDampingCore.test.js
+run "test-hme-hook-dispatch"     node tools/HME/scripts/hme-hook-test.js
+run "smoke-c2m-help"             python3 src/scripts/c2m.py --help
+run "smoke-m2c-help"             python3 src/scripts/m2c.py --help
+run "smoke-hme-timeline"         python3 tools/HME/tools/HME/scripts/timeline-panel.py window=0s
+run "smoke-hme-freeze"           python3 tools/HME/tools/HME/scripts/freeze-check.py
+run "check-verdict-predictor"    node src/scripts/pipeline/train-verdict-predictor.js --check
+run "check-lance-compaction"     python3 tools/HME/scripts/compact-lance-tables.py --dry-run
 
 # Detector <-> deny-prompt link integrity (each prompt's advertised
 # alternative paths must be honored by the paired detector).
@@ -110,13 +110,13 @@ run "test-scope-vs-shipped"      python3 tools/HME/scripts/detectors/test_scope_
 run "verify-detector-registry"   python3 tools/HME/scripts/detectors/verify_registry_consistency.py
 
 # Review-verdict producer/hook contract.
-run "test-hook-contracts"        python3 tools/HME/scripts/test-hook-contracts.py
+run "test-hook-contracts"        python3 tools/HME/tools/HME/scripts/test-hook-contracts.py
 
 # Root scripts/ run/reference recency: catches stale pipeline refs and cold deletion candidates.
-run "audit-scripts-recency"      python3 scripts/audit-scripts-recency.py --limit 25 $([ "$STRICT" = "1" ] && echo --strict)
+run "audit-scripts-recency"      python3 tools/HME/scripts/audit-scripts-recency.py --limit 25 $([ "$STRICT" = "1" ] && echo --strict)
 
 # HME scripts dead-code classification.
-run "audit-dead-scripts"         python3 tools/HME/scripts/audit-dead-scripts.py
+run "audit-dead-scripts"         python3 tools/HME/tools/HME/scripts/audit-dead-scripts.py
 
 
 if [ "$failures" -gt 0 ]; then

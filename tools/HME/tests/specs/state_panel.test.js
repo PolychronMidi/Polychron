@@ -427,7 +427,7 @@ test('rotate-history-files dry-run reports policy state without modifying', () =
   const activityPath = path.join(PROJECT_ROOT, 'output/metrics/hme-activity.jsonl');
   const beforeSize = fs.existsSync(activityPath) ? fs.statSync(activityPath).size : 0;
   const r = spawnSync('python3',
-    [path.join(PROJECT_ROOT, 'scripts/hme/rotate-history-files.py'), '--dry-run'],
+    [path.join(PROJECT_ROOT, 'tools/HME/tools/HME/scripts/rotate-history-files.py'), '--dry-run'],
     { encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
       env: { ...process.env, PROJECT_ROOT } });
   assert.strictEqual(r.status, 0);
@@ -614,7 +614,7 @@ test('compute-coherence-budget handles bidirectional band adjustment (widen + na
       expires_after_rounds: 1,
     }));
     const r = spawnSync('node',
-      [path.join(PROJECT_ROOT, 'scripts/pipeline/hme/compute-coherence-budget.js')],
+      [path.join(PROJECT_ROOT, 'tools/HME/src/scripts/pipeline/compute-coherence-budget.js')],
       { encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
         env: { ...process.env, PROJECT_ROOT } });
     if (r.status !== 0) return;  // bail gracefully if upstream deps missing
@@ -667,7 +667,7 @@ test('compute-coherence-budget consumes V->IX band-tightening proposal', () => {
     }));
     // Run the pipeline script
     const r = spawnSync('node',
-      [path.join(PROJECT_ROOT, 'scripts/pipeline/hme/compute-coherence-budget.js')],
+      [path.join(PROJECT_ROOT, 'tools/HME/src/scripts/pipeline/compute-coherence-budget.js')],
       { encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
         env: { ...process.env, PROJECT_ROOT } });
     if (r.status !== 0) {

@@ -46,7 +46,7 @@ def _check_eslint_concordance_complete(inv: dict) -> tuple[bool, str]:
     """Validate the _js_rules concordance map in invariants.json.
 
     Ensures:
-      (a) every scripts/eslint-rules/*.js (minus index.js) appears in _js_rules.rules
+      (a) every src/scripts/eslint-rules/*.js (minus index.js) appears in _js_rules.rules
       (b) every rule with status='ported' names a python_invariant id that exists
       (c) no _js_rules entry names a rule file that no longer exists
       (d) every status value is one of: ported, js_only, conventions_cover

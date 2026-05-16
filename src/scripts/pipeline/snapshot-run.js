@@ -2,7 +2,7 @@
 // Pipeline step: snapshot run features for quality predictor training.
 // Saves golden-fingerprint + trace-summary subset + metadata to
 // metrics/run-history/{ISO-timestamp}.json. Accumulates across runs.
-// Label with verdict later via: node scripts/pipeline/snapshot-run.js --label STABLE
+// Label with verdict later via: node src/scripts/pipeline/snapshot-run.js --label STABLE
 
 const fs = require('fs');
 const path = require('path');

@@ -99,7 +99,7 @@ def _run_intent_loop(max_runs: int = 6) -> str:
     is converging, oscillating, or stalled per section."""
     history_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
     if not os.path.isdir(history_dir):
-        return "No run-history directory. Run `node scripts/pipeline/snapshot-run.js --perceptual` to build history."
+        return "No run-history directory. Run `node src/scripts/pipeline/snapshot-run.js --perceptual` to build history."
 
     snapshots = sorted(
         [f for f in os.listdir(history_dir) if f.endswith(".json")],

@@ -12,9 +12,9 @@ Thresholds: WARN 250, CRITICAL 350 -- same source as audit-core-principles
 (tools/HME/config/project-rules.json), so the two scripts can never drift.
 
 Usage:
-    python3 scripts/audit-loc.py            # default: tools/HME, scripts, src
-    python3 scripts/audit-loc.py --json
-    python3 scripts/audit-loc.py --strict   # exit 1 on any CRITICAL
+    python3 tools/HME/scripts/audit-loc.py            # default: tools/HME, scripts, src
+    python3 tools/HME/scripts/audit-loc.py --json
+    python3 tools/HME/scripts/audit-loc.py --strict   # exit 1 on any CRITICAL
 
 Exit codes:
     0 -- no CRITICAL findings (WARN findings logged but do not fail)

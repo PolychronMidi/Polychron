@@ -11,7 +11,7 @@ test('normalizes i wrapper path variants to canonical command text', () => {
   assert.strictEqual(normalizeICommand(ABS), 'i/status mode=health');
   assert.strictEqual(normalizeICommand('./i/review -- mode=forget'), 'i/review mode=forget');
   assert.strictEqual(normalizeICommand('cd tools/HME && ../../i/status mode=health'), 'i/status mode=health');
-  assert.strictEqual(normalizeICommand('node scripts/hme-i-dispatch.js status mode=health'), 'i/status mode=health');
+  assert.strictEqual(normalizeICommand('node tools/HME/scripts/hme-i-dispatch.js status mode=health'), 'i/status mode=health');
 });
 
 test('normalizes structured command fields without touching prose', () => {

@@ -1,7 +1,7 @@
 'use strict';
 /**
  * Edit context -- fires on Edit/Write/NotebookEdit when the target file has
- * bias-bounds locked in scripts/pipeline/bias-bounds-manifest.json. Shows
+ * bias-bounds locked in src/scripts/pipeline/bias-bounds-manifest.json. Shows
  * the exact locked parameters with their current [lo, hi] ranges and the
  * snapshot command the agent must run if the new bounds are intentional.
  *
@@ -16,7 +16,7 @@ const path = require('path');
 const { biasBoundsFor } = require('../context');
 const { validate } = require('../worker_client');
 
-const SNAPSHOT_CMD = 'node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds';
+const SNAPSHOT_CMD = 'node src/scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds';
 
 // Thresholds tuned so only high-signal KB matches surface.
 const BUGFIX_MIN_SCORE = 0.45;

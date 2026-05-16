@@ -1,4 +1,4 @@
-// scripts/pipeline/check-hme-coherence.js
+// src/scripts/pipeline/check-hme-coherence.js
 //
 // Phase 3 of doc/openshell_features_to_mimic.md. Reads the activity bridge
 // event stream (metrics/hme-activity.jsonl) and fails the pipeline if any

@@ -1,4 +1,4 @@
-// scripts/pipeline/generate-predictions.js
+// src/scripts/pipeline/generate-predictions.js
 //
 // Phase 3.4 -- generate cascade predictions for this round's changed files.
 // Reads dependency-graph.json, runs BFS from each changed src/ file, and

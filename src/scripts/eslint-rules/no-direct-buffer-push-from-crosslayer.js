@@ -1,4 +1,4 @@
-// scripts/eslint-rules/no-direct-buffer-push-from-crosslayer.js
+// src/scripts/eslint-rules/no-direct-buffer-push-from-crosslayer.js
 // Architectural boundary enforcement: cross-layer modules must not push MIDI
 // events directly to buffers. All MIDI emissions must go through
 // crossLayerEmissionGateway.emit() for attribution and density tracking.

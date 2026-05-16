@@ -86,8 +86,8 @@ test('log-tmp: allow project-root tmp/', async () => {
 // -- block-misplaced-metrics ------------------------------------------
 const metrics = require('../../policies/builtin/block-misplaced-metrics');
 
-test('metrics: deny scripts/metrics/', async () => {
-  const r = await metrics.fn(_ctx({ toolInput: { file_path: '/home/jah/Polychron/scripts/metrics/x.json' } }));
+test('metrics: deny output/metrics/', async () => {
+  const r = await metrics.fn(_ctx({ toolInput: { file_path: '/home/jah/Polychron/output/metrics/x.json' } }));
   assert.strictEqual(r.decision, 'deny');
 });
 

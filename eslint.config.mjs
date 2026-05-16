@@ -1,4 +1,4 @@
-import localRules from './scripts/eslint-rules/index.js';
+import localRules from './src/scripts/eslint-rules/index.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,7 +46,7 @@ export default [
     // leak went undetected because tools/** used to be globally ignored).
     // Other tools/ JS (activity/emit.py has no .js etc.) falls through.
     ignores: [
-      'scripts/**',
+      'src/scripts/**',
       'eslint.config.mjs',
       'vitest.config.mjs',
       'tmp/**',
@@ -98,7 +98,7 @@ export default [
   {
     files: ['src/**/*.js', 'src/**'],
     ignores: [
-      'scripts/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**',
+      'src/scripts/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**',
       '**/*.mjs',
       'node_modules/**',
       'csv_maestro/**',

@@ -23,7 +23,7 @@ from .code_audits_syntax import (  # noqa: F401
 # Verifier classes (extracted from code_audits.py).
 
 class CorePrinciplesAuditVerifier(Verifier):
-    """Delegates to scripts/audit-core-principles.py, which surveys src/
+    """Delegates to tools/HME/scripts/audit-core-principles.py, which surveys src/
     against the five core principles declared in doc/templates/AGENTS.md. FAILs only on
     CRITICAL-level violations -- files exceeding 400 LOC or subsystems with
     >=1 .js file but no index.js. WARN-level findings (files over the 200-
@@ -332,7 +332,7 @@ class CommentBloatVerifier(Verifier):
     single-line and terse. Elaboration goes in doc/." 3+ consecutive
     comment lines = WARN; 5+ = FAIL.
 
-    Delegates to scripts/audit-comment-bloat.py. Advisory weight (1.0):
+    Delegates to tools/HME/scripts/audit-comment-bloat.py. Advisory weight (1.0):
     backlog at audit-creation time was 800+ FAIL across the codebase;
     monotonic improvement is the goal, not zero. Score is logarithmic:
     every halving of FAIL count adds substantial score.

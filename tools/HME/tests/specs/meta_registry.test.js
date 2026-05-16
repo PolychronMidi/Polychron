@@ -36,7 +36,7 @@ test('meta_registry: hook layer is populated by the hook policy registry', () =>
   }
 });
 
-test('meta_registry: eslint layer enumerates scripts/eslint-rules/*.js', () => {
+test('meta_registry: eslint layer enumerates src/scripts/eslint-rules/*.js', () => {
   const eslint = meta.listByLayer('eslint');
   assert.ok(eslint.length >= 10, `expected many eslint rules, got ${eslint.length}`);
   for (const r of eslint) {
@@ -70,7 +70,7 @@ test('meta_registry: middleware layer enumerates non-helper middleware files', (
   }
 });
 
-test('meta_registry: audit layer enumerates scripts/audit-*', () => {
+test('meta_registry: audit layer enumerates tools/HME/scripts/audit-*', () => {
   const audit = meta.listByLayer('audit');
   for (const r of audit) {
     assert.strictEqual(r.layer, 'audit');

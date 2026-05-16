@@ -35,7 +35,7 @@ def _mode_hci_by_subtag():
     snap_path = _os.path.join(ENV.require("METRICS_DIR"), "hci-verifier-snapshot.json")
     if not _os.path.isfile(snap_path):
         return ("# i/status mode=hci-by-subtag\n"
-                "No snapshot found -- run `python3 tools/HME/scripts/verify-coherence.py` first.")
+                "No snapshot found -- run `python3 tools/HME/tools/HME/scripts/verify-coherence.py` first.")
     try:
         with open(snap_path) as _f:
             snap = _json.load(_f)
@@ -103,7 +103,7 @@ def _mode_hci_diff():
     prev_path = cur_path + ".prev"
     if not _os.path.isfile(cur_path):
         return ("# i/status mode=hci-diff\n"
-                "No snapshot found -- run `python3 tools/HME/scripts/verify-coherence.py` first.")
+                "No snapshot found -- run `python3 tools/HME/tools/HME/scripts/verify-coherence.py` first.")
     if not _os.path.isfile(prev_path):
         return ("# i/status mode=hci-diff\n"
                 "No prior snapshot to diff -- run the engine twice (once to seed .prev).")

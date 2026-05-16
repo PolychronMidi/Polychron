@@ -1,4 +1,4 @@
-// scripts/eslint-rules/no-direct-conductor-state-from-crosslayer.js
+// src/scripts/eslint-rules/no-direct-conductor-state-from-crosslayer.js
 // Architectural boundary enforcement: cross-layer modules must read conductor
 // signals through conductorSignalBridge, never directly from conductorState
 // or signalReader. This preserves the beat-delayed firewall that prevents

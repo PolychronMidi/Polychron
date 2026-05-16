@@ -20,8 +20,8 @@ Default policy:
   - hme-holograph-history.jsonl: keep last 200
 
 Invocation:
-  python3 scripts/hme/rotate-history-files.py            # default policy
-  python3 scripts/hme/rotate-history-files.py --dry-run  # report only
+  python3 tools/HME/tools/HME/scripts/rotate-history-files.py            # default policy
+  python3 tools/HME/tools/HME/scripts/rotate-history-files.py --dry-run  # report only
 """
 from __future__ import annotations
 import os

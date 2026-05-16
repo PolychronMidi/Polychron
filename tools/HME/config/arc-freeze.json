@@ -13,7 +13,7 @@
     "new voters in compute-consensus.js",
     "new patterns in tools/HME/patterns/",
     "new invariants in tools/HME/config/invariants.json",
-    "new arc scripts in scripts/pipeline/hme/",
+    "new arc scripts in tools/HME/src/scripts/pipeline/",
     "extending Arc III's snapshot state fields"
   ],
   "thaw_condition": "run_count >= frozen_run_count + thaw_after_runs OR listening verdict changes to non-legendary OR HCI drops below 95 for 2+ consecutive rounds"

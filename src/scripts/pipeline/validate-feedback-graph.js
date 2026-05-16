@@ -215,7 +215,7 @@ for (const [firewallName, ruleNames] of Object.entries(FIREWALL_ESLINT_MAP)) {
     if (fs.existsSync(ruleFile)) {
       passes++;
     } else {
-      failures.push(`Firewall "${firewallName}" expects ESLint rule "${ruleName}" but ${ruleName}.js not found in scripts/eslint-rules/`);
+      failures.push(`Firewall "${firewallName}" expects ESLint rule "${ruleName}" but ${ruleName}.js not found in src/scripts/eslint-rules/`);
     }
   }
 }

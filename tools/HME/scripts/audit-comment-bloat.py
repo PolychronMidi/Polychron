@@ -21,9 +21,9 @@ Excluded from the scan:
     files with docstring-embedded `#` lines)
 
 Usage:
-  python3 scripts/audit-comment-bloat.py            # human report
-  python3 scripts/audit-comment-bloat.py --json     # machine output
-  python3 scripts/audit-comment-bloat.py --strict   # exit 1 on any FAIL
+  python3 tools/HME/scripts/audit-comment-bloat.py            # human report
+  python3 tools/HME/scripts/audit-comment-bloat.py --json     # machine output
+  python3 tools/HME/scripts/audit-comment-bloat.py --strict   # exit 1 on any FAIL
 
 Output JSON shape:
   {

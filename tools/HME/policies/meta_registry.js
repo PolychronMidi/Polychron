@@ -7,10 +7,10 @@
  *
  * Layers covered (per the unification analysis):
  *   - hook        -- tools/HME/policies/builtin/*.js (already unified, registry)
- *   - eslint      -- scripts/eslint-rules/*.js
+ *   - eslint      -- src/scripts/eslint-rules/*.js
  *   - hci         -- tools/HME/scripts/verify_coherence/*.py (verifier classes)
  *   - hypermeta   -- scripts/bias-bounds-manifest.json + check-hypermeta-jurisdiction.js
- *   - audit       -- scripts/audit-*.py
+ *   - audit       -- tools/HME/scripts/audit-*.py
  *   - boot        -- src/play/fullBootstrap.js (advisory + critical globals)
  *   - middleware  -- tools/HME/proxy/middleware/*.js
  *
@@ -151,7 +151,7 @@ function _scanHypermeta() {
     layer: 'hypermeta',
     category: 'invariant',
     description: 'Validates 93 conductorIntelligence.register*Bias() calls against bounds manifest. Runs in 4 phases.',
-    file: 'scripts/pipeline/validators/check-hypermeta-jurisdiction.js',
+    file: 'src/scripts/pipeline/validators/check-hypermeta-jurisdiction.js',
     status: 'always',
   }];
 }

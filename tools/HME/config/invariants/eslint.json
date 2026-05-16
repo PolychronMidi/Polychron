@@ -5,7 +5,7 @@
       "id": "eslint-rules-registered",
       "description": "Every custom ESLint rule must be registered in eslint.config.mjs",
       "type": "files_referenced",
-      "glob": "scripts/eslint-rules/*.js",
+      "glob": "src/scripts/eslint-rules/*.js",
       "exclude": [
         "index.js",
         "*.test.js"
@@ -19,13 +19,13 @@
       "description": "Single source of truth for ESLint-rule <-> Python-invariant pairing lives in invariants.json under _js_rules.",
       "type": "eslint_concordance_complete",
       "severity": "error",
-      "context": "Single source of truth for ESLint-rule <-> Python-invariant pairing lives in invariants.json under _js_rules. Every file in scripts/eslint-rules/*.js (minus index.js) must appear there with a known status; every status='ported' entry must name a python_invariant id that exists; no _js_rules entry may point to a deleted rule file. Guards against drift between the two sides -- adding a rule on either side without updating the concordance fails the battery."
+      "context": "Single source of truth for ESLint-rule <-> Python-invariant pairing lives in invariants.json under _js_rules. Every file in src/scripts/eslint-rules/*.js (minus index.js) must appear there with a known status; every status='ported' entry must name a python_invariant id that exists; no _js_rules entry may point to a deleted rule file. Guards against drift between the two sides -- adding a rule on either side without updating the concordance fails the battery."
     },
     {
       "id": "eslint-rules-count",
       "description": "Must have at least 23 custom ESLint rules",
       "type": "glob_count_gte",
-      "glob": "scripts/eslint-rules/*.js",
+      "glob": "src/scripts/eslint-rules/*.js",
       "exclude": [
         "index.js"
       ],
@@ -36,7 +36,7 @@
       "id": "hme-py-no-silent-catchall",
       "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/service/server.",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/scripts/check-silent-except.py tools/HME/service/server",
+      "shell": "python3 tools/HME/tools/HME/scripts/check-silent-except.py tools/HME/service/server",
       "js_equivalent": "no-empty-catch",
       "severity": "error",
       "finding_label": "finding",
@@ -51,7 +51,7 @@
       "id": "hme-py-no-silent-fallback",
       "description": "HME Python files must not silently return an empty default (`[]`, `None`, `False`, `{}`, `''`, `dict()`, etc.) from an `except Exception` without calling `logger.*` or `print` first.",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/scripts/check-silent-fallback.py tools/HME/service",
+      "shell": "python3 tools/HME/tools/HME/scripts/check-silent-fallback.py tools/HME/service",
       "js_equivalent": "no-silent-early-return",
       "severity": "error",
       "finding_label": "finding",
@@ -67,7 +67,7 @@
       "id": "hme-py-no-non-ascii",
       "description": "Project-wide ASCII enforcement. Strict: no allowlist, no emoji exceptions, no math-symbol exceptions. Source must be pure ASCII (0x20-0x7e + tab + LF + CR).",
       "type": "shell_output_empty",
-      "shell": "python3 scripts/audit-no-non-ascii.py",
+      "shell": "python3 tools/HME/scripts/audit-no-non-ascii.py",
       "js_equivalent": "no-non-ascii",
       "severity": "error",
       "finding_label": "finding",
@@ -76,13 +76,13 @@
         0
       ],
       "capture_stderr": true,
-      "context": "Project-wide ASCII enforcement. Strict: no allowlist, no emoji exceptions, no math-symbol exceptions. Source must be pure ASCII (0x20-0x7e + tab + LF + CR). Use the generalized scripts/audit-no-non-ascii.py which scans .py / .js / .sh / .json / .md / .txt under src + scripts + tools/HME. Mirrors scripts/eslint-rules/no-non-ascii.js for the JS half."
+      "context": "Project-wide ASCII enforcement. Strict: no allowlist, no emoji exceptions, no math-symbol exceptions. Source must be pure ASCII (0x20-0x7e + tab + LF + CR). Use the generalized tools/HME/scripts/audit-no-non-ascii.py which scans .py / .js / .sh / .json / .md / .txt under src + scripts + tools/HME. Mirrors src/scripts/eslint-rules/no-non-ascii.js for the JS half."
     },
     {
       "id": "hme-py-no-doubled-fallback",
-      "description": "Python equivalent of ESLint local/no-doubled-fallback (scripts/eslint-rules/no-doubled-fallback.js).",
+      "description": "Python equivalent of ESLint local/no-doubled-fallback (src/scripts/eslint-rules/no-doubled-fallback.js).",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/scripts/check-py-no-doubled-fallback.py tools/HME/service",
+      "shell": "python3 tools/HME/tools/HME/scripts/check-py-no-doubled-fallback.py tools/HME/service",
       "js_equivalent": "no-doubled-fallback",
       "severity": "error",
       "finding_label": "finding",
@@ -91,11 +91,11 @@
         0
       ],
       "capture_stderr": true,
-      "context": "Python equivalent of ESLint local/no-doubled-fallback (scripts/eslint-rules/no-doubled-fallback.js). Detects `dict.get(key, DEFAULT) or X` where DEFAULT is nontrivial -- either the outer `or` is dead code OR it silently rewrites legitimate falsy values (empty list, 0, False) to X. The JS rule caught a regimeClassifier bug where every real 0-tension reading got coerced to 0.5; same class of bug in Python."
+      "context": "Python equivalent of ESLint local/no-doubled-fallback (src/scripts/eslint-rules/no-doubled-fallback.js). Detects `dict.get(key, DEFAULT) or X` where DEFAULT is nontrivial -- either the outer `or` is dead code OR it silently rewrites legitimate falsy values (empty list, 0, False) to X. The JS rule caught a regimeClassifier bug where every real 0-tension reading got coerced to 0.5; same class of bug in Python."
     }
   ],
   "_js_rules": {
-    "_comment": "Concordance map between custom ESLint rules (scripts/eslint-rules/*.js) and their Python invariants. Status values: 'ported' = has a Python equivalent registered under python_invariant; 'js_only' = architecturally JS-specific (composition engine, CommonJS, JS globals) or covered by Python language/tooling conventions (PEP8, raise semantics). This block is the source of truth for the README parity table and is validated by the eslint_concordance_complete invariant.",
+    "_comment": "Concordance map between custom ESLint rules (src/scripts/eslint-rules/*.js) and their Python invariants. Status values: 'ported' = has a Python equivalent registered under python_invariant; 'js_only' = architecturally JS-specific (composition engine, CommonJS, JS globals) or covered by Python language/tooling conventions (PEP8, raise semantics). This block is the source of truth for the README parity table and is validated by the eslint_concordance_complete invariant.",
     "rules": [
       {
         "name": "no-empty-catch",

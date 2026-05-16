@@ -13,7 +13,7 @@
     "steps": [
       "Remove the override's branch from src/conductor/signal/balancing/axisEnergyEquilibratorAxisAdjustments.js (leave explanatory comment with commit link).",
       "Remove entries from perLegacyOverride + perLegacyOverrideEntries init in src/conductor/signal/balancing/axisEnergyEquilibrator.js.",
-      "Remove entry from LEGACY_OVERRIDES in scripts/pipeline/validators/check-hypermeta-jurisdiction.js (replace with retirement comment).",
+      "Remove entry from LEGACY_OVERRIDES in src/scripts/pipeline/validators/check-hypermeta-jurisdiction.js (replace with retirement comment).",
       "Append record to metrics/legacy-override-retirement-log.jsonl: {ts, id, rounds_observed_zero, reason, fallback_handler, retired_in, commit}.",
       "Verify next pipeline's perAxisAdj.<axis> stays non-zero (generic handler picks up the slack)."
     ]

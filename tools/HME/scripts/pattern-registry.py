@@ -71,7 +71,7 @@ def main(argv):
                 print(f"  [{p.get('category', '?')}] {pid}")
                 print(f"    when: {trig_s}")
             print("\nInspect the full pattern with: i/learn patterns <id>")
-            print("Compute fresh matches with: node scripts/pipeline/hme/match-patterns.js")
+            print("Compute fresh matches with: node tools/HME/src/scripts/pipeline/match-patterns.js")
         return 0
     # Otherwise treat as pattern id
     for _, p in _load_patterns():

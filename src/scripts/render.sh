@@ -3,10 +3,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-python3 scripts/c2m.py
+python3 src/scripts/c2m.py
 
 SF="$HOME/Downloads/SGM-v2.01-NicePianosGuitarsBass-V1.2.sf2"
-INTERP="scripts/fluidsynth-init.txt"
+INTERP="src/scripts/fluidsynth-init.txt"
 
 fluidsynth -ni -f "$INTERP" -T wav -O float -F output/output1.wav \
   -r 96000 \

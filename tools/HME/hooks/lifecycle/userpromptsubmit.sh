@@ -27,16 +27,16 @@ _signal_emit turn_start userpromptsubmit turn '{}'
 # SatisfactionCapture: score the prompt 1-10 -> output/metrics/satisfaction.jsonl
 # (neutral=5, never null). Best-effort; never blocks the turn.
 if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
-  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true  # silent-ok: optional fallback path.
+  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true  # silent-ok: optional fallback path.
 fi
 
 if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
-  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/tier_classifier.py" --prompt "$PROMPT" --json >/dev/null 2>&1 || true
+  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/tools/HME/scripts/tier_classifier.py" --prompt "$PROMPT" --json >/dev/null 2>&1 || true
 fi
 
 # Stale-state sweep: per-turn cleanup of runtime/hme/ files whose owner
 # forgot the cleanup path (catches the supervisor-abandoned bug class).
-python3 "$PROJECT_ROOT/tools/HME/scripts/stale_state_sweep.py" >/dev/null 2>&1 || true
+python3 "$PROJECT_ROOT/tools/HME/tools/HME/scripts/stale_state_sweep.py" >/dev/null 2>&1 || true
 
 # Auto-commit snapshot via _autocommit.sh (4-channel failsafe, sticky fail
 # flag, attempt counter). Don't die on return code; LIFESAVER surfaces failures.
@@ -272,7 +272,7 @@ except Exception: pass" 2>/dev/null || echo "")  # silent-ok: optional fallback 
   fi
 fi
 
-_PD="$PROJECT_ROOT/tools/HME/scripts/project_detect.py"
+_PD="$PROJECT_ROOT/tools/HME/tools/HME/scripts/project_detect.py"
 [ -x "$_PD" ] && PROJECT_ROOT="$PROJECT_ROOT" python3 "$_PD" --tag 2>/dev/null >&2 || true  # silent-ok: optional fallback path.
 
 # inject auto-todo reminders from last turn's ingest

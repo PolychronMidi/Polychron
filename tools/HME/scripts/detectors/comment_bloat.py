@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Per-turn wrapper around the existing scripts/audit-comment-bloat.py.
+"""Per-turn wrapper around the existing tools/HME/scripts/audit-comment-bloat.py.
 
 The project-level auditor scans all files and reports backlog. For Stop
 hook gating we only care about THIS TURN's Edit/Write targets -- collect

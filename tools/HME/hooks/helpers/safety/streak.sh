@@ -143,12 +143,12 @@ for i, tok in enumerate(tokens):
     start = i + 1
     if base in tools and (tok.startswith("i/") or tok.startswith("./i/") or "/i/" in tok):
         norm = f"i/{base}"
-    elif tok.endswith("scripts/hme-cli.js") or tok == "scripts/hme-cli.js":
+    elif tok.endswith("tools/HME/scripts/hme-cli.js") or tok == "tools/HME/scripts/hme-cli.js":
         tool = tokens[i + 1] if i + 1 < len(tokens) else ""
         if tool in tools:
             norm = f"i/{tool}"
             start = i + 2
-    elif base == "codex_structured_tool.js" or tok.endswith("tools/HME/scripts/codex_structured_tool.js"):
+    elif base == "codex_structured_tool.js" or tok.endswith("tools/HME/tools/HME/scripts/codex_structured_tool.js"):
         action = tokens[i + 1] if i + 1 < len(tokens) else ""
         if action in {"read", "edit"}:
             norm = f"codex/{action}"

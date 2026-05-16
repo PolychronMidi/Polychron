@@ -1,4 +1,4 @@
-// scripts/eslint-rules/prefer-validator.js
+// src/scripts/eslint-rules/prefer-validator.js
 // Enforce use of validator methods over ad-hoc typeof / isFinite / isArray guards
 // in modules that already have a validator instance (contain validator.create()).
 //

@@ -58,11 +58,11 @@ module.exports = {
     if (!file) return;
     emitWriteCoherence(ctx, file);
     if (/\/ISA\.md$/.test(file)) bg('python3', ['tools/HME/scripts/isa/checkpoint_hook.py', file], ctx, toolResult);
-    if (/\/README\.md$/.test(file)) bg('python3', ['scripts/pipeline/hme/build-dir-intent-index.py'], ctx, toolResult);
-    if (/\/doc\/templates\/TODO\.md$/.test(file)) bg('python3', ['tools/HME/scripts/todo_autoflip.py'], ctx, toolResult);
+    if (/\/README\.md$/.test(file)) bg('python3', ['tools/HME/src/scripts/pipeline/build-dir-intent-index.py'], ctx, toolResult);
+    if (/\/doc\/templates\/TODO\.md$/.test(file)) bg('python3', ['tools/HME/tools/HME/scripts/todo_autoflip.py'], ctx, toolResult);
     const content = String(input.new_string ?? input.content ?? '');
     if (/\/Polychron\/src\/conductor\//.test(file) && /conductorIntelligence\.register(Trust|Coupling|Jurisdiction)Bias\b/.test(content)) {
-      bg('node', ['scripts/pipeline/validators/check-hypermeta-jurisdiction.js', '--snapshot-bias-bounds'], ctx, toolResult);
+      bg('node', ['src/scripts/pipeline/validators/check-hypermeta-jurisdiction.js', '--snapshot-bias-bounds'], ctx, toolResult);
       ctx.emit({ event: 'bias_bounds_snapshot_queued', file });
     }
     if (/\.(md|txt)$/.test(file) && !/\/tmp\//.test(file)) {

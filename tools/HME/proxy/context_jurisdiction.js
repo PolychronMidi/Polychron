@@ -8,7 +8,7 @@ const { PROJECT_ROOT } = require('./shared');
 const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'output', 'metrics');
 const REFRESH_INTERVAL_MS = 60_000;
 
-const BIAS_MANIFEST = path.join(PROJECT_ROOT, 'scripts/pipeline/bias-bounds-manifest.json');
+const BIAS_MANIFEST = path.join(PROJECT_ROOT, 'src/scripts/pipeline/bias-bounds-manifest.json');
 const STALENESS_PATH = path.join(PROJECT_ROOT, path.join(METRICS_DIR, 'kb-staleness.json'));
 const HYPOTHESES_PATH = path.join(PROJECT_ROOT, path.join(METRICS_DIR, 'hme-hypotheses.json'));
 const DRIFT_PATH = path.join(PROJECT_ROOT, path.join(METRICS_DIR, 'hme-semantic-drift.json'));

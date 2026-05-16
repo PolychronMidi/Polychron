@@ -63,7 +63,7 @@ Templates and long-form theory remain in [doc/templates/](doc/templates/) and
 Hook/autocommit wiring:
 
 ```bash
-scripts/hme-doctor.py --hooks
+tools/HME/scripts/hme-doctor.py --hooks
 ```
 
 Generated artifacts live in `output/metrics/`:

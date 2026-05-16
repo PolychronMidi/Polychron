@@ -2,7 +2,7 @@
 """Audit Python files for undefined-name references at module scope.
 
 This is the project-local analog of `ruff check --select F821`. It walks the
-AST of every Python file under tools/HME/ + scripts/pipeline/ + scripts/, and
+AST of every Python file under tools/HME/ + src/scripts/pipeline/ + scripts/, and
 flags `Name(ctx=Load)` references that aren't bound by any of:
 
   - module-level def/class
@@ -43,10 +43,10 @@ Limitations:
     it is arguably correct.
 
 Usage:
-    python3 scripts/audit-python-undefined-names.py
-    python3 scripts/audit-python-undefined-names.py --path tools/HME/service
-    python3 scripts/audit-python-undefined-names.py --json
-    python3 scripts/audit-python-undefined-names.py --strict   # exit 1 on any
+    python3 tools/HME/scripts/audit-python-undefined-names.py
+    python3 tools/HME/scripts/audit-python-undefined-names.py --path tools/HME/service
+    python3 tools/HME/scripts/audit-python-undefined-names.py --json
+    python3 tools/HME/scripts/audit-python-undefined-names.py --strict   # exit 1 on any
 
 Exit codes:
     0 -- no findings (or every finding is in the false-positive ignore list)

@@ -182,7 +182,7 @@ def extract_claims_from_pipeline() -> list[dict]:
             "kind": "structural",
             "confidence": 1.0,
             "evidence": {
-                "source": "scripts/pipeline/main-pipeline.js",
+                "source": "src/scripts/pipeline/main-pipeline.js",
                 "claim_id": claim_id,
             },
         })

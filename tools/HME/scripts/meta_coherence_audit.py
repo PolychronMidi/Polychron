@@ -32,9 +32,9 @@ Exit codes:
     2 -- unexpected error
 
 Usage:
-    python3 tools/HME/scripts/meta_coherence_audit.py
-    python3 tools/HME/scripts/meta_coherence_audit.py --json  # machine-readable
-    python3 tools/HME/scripts/meta_coherence_audit.py --write-metrics
+    python3 tools/HME/tools/HME/scripts/meta_coherence_audit.py
+    python3 tools/HME/tools/HME/scripts/meta_coherence_audit.py --json  # machine-readable
+    python3 tools/HME/tools/HME/scripts/meta_coherence_audit.py --write-metrics
 """
 from __future__ import annotations
 

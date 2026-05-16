@@ -60,8 +60,8 @@ the behavior deliberately.
 If hooks, statusline, or autocommit look stale, run:
 
 ```bash
-scripts/hme-doctor.py --hooks
-scripts/sync-codex-settings.py
+tools/HME/scripts/hme-doctor.py --hooks
+tools/HME/scripts/sync-codex-settings.py
 ```
 
 Codex hooks installed through `~/.codex/hooks.json` are user hooks. If Codex

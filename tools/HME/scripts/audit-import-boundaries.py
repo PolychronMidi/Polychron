@@ -17,10 +17,10 @@ Output: one line per offending import, formatted so editors can jump
 to the source. Exit 0 on clean, 1 on findings (with --strict).
 
 Usage:
-    python3 scripts/audit-import-boundaries.py
-    python3 scripts/audit-import-boundaries.py --json
-    python3 scripts/audit-import-boundaries.py --strict
-    python3 scripts/audit-import-boundaries.py --subsystem coupling
+    python3 tools/HME/scripts/audit-import-boundaries.py
+    python3 tools/HME/scripts/audit-import-boundaries.py --json
+    python3 tools/HME/scripts/audit-import-boundaries.py --strict
+    python3 tools/HME/scripts/audit-import-boundaries.py --subsystem coupling
 
 Design notes:
   - A subsystem's PUBLIC SURFACE is the set of names it imports in its

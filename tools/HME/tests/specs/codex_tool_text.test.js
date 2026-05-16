@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const { normalizeStructuredBridgeCalls, bridgeCommand } = require('../../proxy/codex_tool_text');
 const { applyRequestTransform } = require('../../proxy/codex_payload');
 
-const CMD = 'node tools/HME/scripts/codex_structured_tool.js read file=doc/self-coherence.md limit=12';
+const CMD = 'node tools/HME/tools/HME/scripts/codex_structured_tool.js read file=doc/self-coherence.md limit=12';
 
 test('normalizes internal bridge function_call into native-looking Read call', () => {
   const input = { type: 'function_call', name: 'functions.exec_command', arguments: JSON.stringify({ cmd: CMD }) };
@@ -38,7 +38,7 @@ test('Codex request transform hides bridge script calls before upstream', () => 
 
 test('normalizes edit bridge display without reusable replacement strings', () => {
   const cmd = [
-    "node tools/HME/scripts/codex_structured_tool.js edit --json <<'HME_CODEX_JSON'",
+    "node tools/HME/tools/HME/scripts/codex_structured_tool.js edit --json <<'HME_CODEX_JSON'",
     '{"file_path":"src/x.js","old_string":"secret old","new_string":"secret new"}',
     'HME_CODEX_JSON',
   ].join('\n');

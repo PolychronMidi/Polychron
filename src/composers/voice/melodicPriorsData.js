@@ -1,4 +1,4 @@
-// GENERATED FILE - DO NOT EDIT. Run: scripts/music21/export_melodic_priors.py
+// GENERATED FILE - DO NOT EDIT. Run: src/scripts/music21/export_melodic_priors.py
 MELODIC_PRIOR_TABLES = {
   "version": 2,
   "source": "music21-derived offline melodic priors (v2: mode-specific dorian/mixolydian)",

@@ -3,7 +3,7 @@
 Export music21-derived voice-leading priors into the project's runtime JS table.
 
 Usage:
-  python scripts/music21/export_voice_leading_priors.py \
+  python src/scripts/music21/export_voice_leading_priors.py \
     --output src/composers/voice/voiceLeadingPriorsData.js \
     --limit 220
 
@@ -161,7 +161,7 @@ def build_tendency_weights(tendency_counter: Counter, top_n: int = 28) -> Dict[s
 
 
 def to_js_assignment_for_voice_leading(data: Dict) -> str:
-    return to_js_assignment("VOICE_LEADING_PRIOR_TABLES", data, "scripts/music21/export_voice_leading_priors.py")
+    return to_js_assignment("VOICE_LEADING_PRIOR_TABLES", data, "src/scripts/music21/export_voice_leading_priors.py")
 
 
 def main() -> None:

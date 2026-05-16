@@ -17,7 +17,7 @@ module.exports = {
           context.report({
             node,
             loc: source.getLocFromIndex(sm.index),
-            message: 'Unknown non-ASCII character was replaced by sentinel. Add a mapping for it in scripts/pipeline/fix-non-ascii.js REPLACEMENTS.'
+            message: 'Unknown non-ASCII character was replaced by sentinel. Add a mapping for it in src/scripts/pipeline/fix-non-ascii.js REPLACEMENTS.'
           });
         }
 

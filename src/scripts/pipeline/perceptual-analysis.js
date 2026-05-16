@@ -1,7 +1,7 @@
 'use strict';
 // Post-render perceptual analysis: runs EnCodec + CLAP on combined.wav,
 // correlates with trace data, produces metrics/perceptual-report.json.
-// Usage: node scripts/pipeline/perceptual-analysis.js
+// Usage: node src/scripts/pipeline/perceptual-analysis.js
 // Runs after npm run render. Skips if WAV is stale.
 
 const fs = require('fs');

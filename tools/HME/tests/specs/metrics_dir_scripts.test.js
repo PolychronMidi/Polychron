@@ -31,7 +31,7 @@ test('trace-summary writes to METRICS_DIR and never cwd/metrics', () => {
   }) + '\n');
   const cwd = path.join(root, 'cwd');
   fs.mkdirSync(cwd, { recursive: true });
-  const r = runNode(path.join(PROJECT_ROOT, 'scripts/pipeline/trace-summary.js'), metricsDir, cwd);
+  const r = runNode(path.join(PROJECT_ROOT, 'src/scripts/pipeline/trace-summary.js'), metricsDir, cwd);
   assert.equal(r.status, 0, r.stderr);
   assert.equal(fs.existsSync(path.join(metricsDir, 'trace-summary.json')), true);
   assert.equal(fs.existsSync(path.join(cwd, 'metrics', 'trace-summary.json')), false);
@@ -55,7 +55,7 @@ test('snapshot-run reads and writes run history through METRICS_DIR', () => {
   }));
   const cwd = path.join(root, 'cwd');
   fs.mkdirSync(cwd, { recursive: true });
-  const r = runNode(path.join(PROJECT_ROOT, 'scripts/pipeline/snapshot-run.js'), metricsDir, cwd);
+  const r = runNode(path.join(PROJECT_ROOT, 'src/scripts/pipeline/snapshot-run.js'), metricsDir, cwd);
   assert.equal(r.status, 0, r.stderr);
   assert.equal(fs.existsSync(path.join(metricsDir, 'current-run.json')), true);
   assert.equal(fs.readdirSync(path.join(metricsDir, 'run-history')).filter(f => f.endsWith('.json')).length, 1);

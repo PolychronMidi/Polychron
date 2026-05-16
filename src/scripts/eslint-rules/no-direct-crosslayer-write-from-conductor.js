@@ -1,4 +1,4 @@
-// scripts/eslint-rules/no-direct-crosslayer-write-from-conductor.js
+// src/scripts/eslint-rules/no-direct-crosslayer-write-from-conductor.js
 // Architectural boundary enforcement: conductor modules must not call mutating
 // methods on cross-layer globals. Read-only access (get*, is*, has*, query*) is
 // permitted. explainabilityBus is fully exempt (diagnostic channel per architecture).

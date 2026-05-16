@@ -252,7 +252,7 @@ def cascade_report(target: str, depth: int = 3) -> str:
         return (
             f"# Cascade Report: {target}\n\n"
             f"Module not found in dependency graph (looked for `{path}`).\n"
-            f"Regenerate with: node scripts/pipeline/generate-dependency-graph.js"
+            f"Regenerate with: node src/scripts/pipeline/generate-dependency-graph.js"
         )
 
     node_info = nodes[path]

@@ -18,7 +18,7 @@ from ._base import (
 
 
 class ShellUndefinedVarsVerifier(Verifier):
-    """Delegates to scripts/audit_shell_undefined_vars.py, which statically
+    """Delegates to tools/HME/scripts/audit_shell_undefined_vars.py, which statically
     scans tools/HME/hooks/**/*.sh for `$VAR` references that have no
     matching definition anywhere in scope (the file, any file it sources,
     or the dispatcher chain that sources it). Catches the exact bug class

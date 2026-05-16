@@ -55,7 +55,7 @@ def retirement_log_consistent() -> None:
         row.get("id") for row in _jsonl("output/metrics/legacy-override-retirement-log.jsonl")
         if row.get("action") != "keep" and row.get("id")
     }
-    src = (ROOT / "scripts/pipeline/validators/check-hypermeta-jurisdiction.js").read_text(encoding="utf-8", errors="replace")
+    src = (ROOT / "src/scripts/pipeline/validators/check-hypermeta-jurisdiction.js").read_text(encoding="utf-8", errors="replace")
     current = set(re.findall(r"id:\s*'([\w.-]+)'", src))
     for item in sorted(retired & current):
         print(f"retired id still allowlisted: {item}")

@@ -33,14 +33,14 @@
       "id": "bias-manifest-exists",
       "description": "Bias bounds manifest must exist for Phase 3 enforcement",
       "type": "file_exists",
-      "path": "scripts/pipeline/bias-bounds-manifest.json",
+      "path": "src/scripts/pipeline/bias-bounds-manifest.json",
       "severity": "error"
     },
     {
       "id": "pipeline-main-exists",
       "description": "Pipeline main script must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/main-pipeline.js",
+      "path": "src/scripts/pipeline/main-pipeline.js",
       "severity": "error"
     },
     {
@@ -114,7 +114,7 @@
       "id": "cli-modelUsage-contextWindow-shape",
       "description": "Claude CLI result.modelUsage[alias].contextWindow must be a number >=1000  routerClaude.ts:computeTurnUsage divides by this.",
       "type": "shell_output_empty",
-      "shell": "bash scripts/check-claude-cli-result-shape.sh",
+      "shell": "bash tools/HME/scripts/check-claude-cli-result-shape.sh",
       "severity": "warning",
       "finding_label": "finding",
       "success_detail": "no findings",
@@ -126,16 +126,16 @@
     },
     {
       "id": "hme-cli-error-prefix-emitter",
-      "description": "scripts/hme-cli.js must prefix every stderr error line with 'hme-cli:' so PostToolUse hooks such as posttooluse_hme_review and posttooluse_addknowledge can distinguish transport failure from content.",
+      "description": "tools/HME/scripts/hme-cli.js must prefix every stderr error line with 'hme-cli:' so PostToolUse hooks such as posttooluse_hme_review and posttooluse_addknowledge can distinguish transport failure from content.",
       "type": "patterns_all_in_file",
-      "path": "scripts/hme-cli.js",
+      "path": "tools/HME/scripts/hme-cli.js",
       "patterns": [
         "hme-cli: \\$\\{e\\.message\\}",
         "hme-cli: request failed",
         "hme-cli: \\$\\{tool\\} failed"
       ],
       "severity": "error",
-      "context": "scripts/hme-cli.js must prefix every stderr error line with 'hme-cli:' so PostToolUse hooks such as posttooluse_hme_review and posttooluse_addknowledge can distinguish transport failure from content. Drift here silently turns 'worker down' into 'operation succeeded cleanly' in nexus state."
+      "context": "tools/HME/scripts/hme-cli.js must prefix every stderr error line with 'hme-cli:' so PostToolUse hooks such as posttooluse_hme_review and posttooluse_addknowledge can distinguish transport failure from content. Drift here silently turns 'worker down' into 'operation succeeded cleanly' in nexus state."
     },
     {
       "id": "no-mcp-side-timeouts-synthesis",
@@ -156,7 +156,7 @@
       "id": "staleness-score-wired-pipeline",
       "description": "main-pipeline.js POST_COMPOSITION must wire the staleness index + coherence score so they regenerate every run",
       "type": "patterns_all_in_file",
-      "path": "scripts/pipeline/main-pipeline.js",
+      "path": "src/scripts/pipeline/main-pipeline.js",
       "patterns": [
         "build-kb-staleness-index\\.py",
         "compute-coherence-score\\.js"
@@ -167,7 +167,7 @@
       "id": "semantic-drift-scripts-exist",
       "description": "Phase 3.3  semantic drift checker + signature capture must exist",
       "type": "patterns_all_in_file",
-      "path": "scripts/pipeline/main-pipeline.js",
+      "path": "src/scripts/pipeline/main-pipeline.js",
       "patterns": [
         "check-kb-semantic-drift\\.py",
         "reconcile-predictions\\.js"
@@ -178,21 +178,21 @@
       "id": "drift-checker-file-exists",
       "description": "check-kb-semantic-drift.py must be present for the pipeline step to run",
       "type": "file_exists",
-      "path": "scripts/pipeline/hme/check-kb-semantic-drift.py",
+      "path": "tools/HME/src/scripts/pipeline/check-kb-semantic-drift.py",
       "severity": "error"
     },
     {
       "id": "signature-capture-exists",
       "description": "capture-kb-signatures.py must exist so baselines can be bootstrapped",
       "type": "file_exists",
-      "path": "scripts/pipeline/hme/capture-kb-signatures.py",
+      "path": "tools/HME/src/scripts/pipeline/capture-kb-signatures.py",
       "severity": "error"
     },
     {
       "id": "musical-correlation-script-exists",
       "description": "Phase 4.1  musical ground truth correlator must exist (the external anchor)",
       "type": "file_exists",
-      "path": "scripts/pipeline/hme/compute-musical-correlation.js",
+      "path": "tools/HME/src/scripts/pipeline/compute-musical-correlation.js",
       "severity": "error"
     },
     {
@@ -213,21 +213,21 @@
       "id": "kb-trust-weights-script-exists",
       "description": "Phase 4.2  KB trust weight computer must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/hme/compute-kb-trust-weights.py",
+      "path": "tools/HME/src/scripts/pipeline/compute-kb-trust-weights.py",
       "severity": "error"
     },
     {
       "id": "intention-gap-script-exists",
       "description": "Phase 4.3  intention-execution gap tracker must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/hme/compute-intention-gap.js",
+      "path": "tools/HME/src/scripts/pipeline/compute-intention-gap.js",
       "severity": "error"
     },
     {
       "id": "phase4-pipeline-steps-wired",
       "description": "main-pipeline.js POST_COMPOSITION must run all 3 Phase 4 scripts",
       "type": "patterns_all_in_file",
-      "path": "scripts/pipeline/main-pipeline.js",
+      "path": "src/scripts/pipeline/main-pipeline.js",
       "patterns": [
         "compute-musical-correlation\\.js",
         "compute-kb-trust-weights\\.py",
@@ -239,14 +239,14 @@
       "id": "trajectory-script-exists",
       "description": "Phase 5.1  compositional trajectory script must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/hme/compute-compositional-trajectory.js",
+      "path": "tools/HME/src/scripts/pipeline/compute-compositional-trajectory.js",
       "severity": "error"
     },
     {
       "id": "phase5-pipeline-steps-wired",
       "description": "main-pipeline.js POST_COMPOSITION must run Phase 5 scripts (trajectory + budget)",
       "type": "patterns_all_in_file",
-      "path": "scripts/pipeline/main-pipeline.js",
+      "path": "src/scripts/pipeline/main-pipeline.js",
       "patterns": [
         "compute-compositional-trajectory\\.js",
         "compute-coherence-budget\\.js"
@@ -257,7 +257,7 @@
       "id": "ground-truth-kb-override",
       "description": "compute-kb-trust-weights.py must unconditionally tier human_ground_truth KB entries as HIGH",
       "type": "patterns_all_in_file",
-      "path": "scripts/pipeline/hme/compute-kb-trust-weights.py",
+      "path": "tools/HME/src/scripts/pipeline/compute-kb-trust-weights.py",
       "patterns": [
         "human_ground_truth",
         "\"tier\": \"HIGH\""
@@ -268,7 +268,7 @@
       "id": "reflexivity-split-in-reconciler",
       "description": "reconcile-predictions.js must split predictions into clean vs injected buckets",
       "type": "patterns_all_in_file",
-      "path": "scripts/pipeline/hme/reconcile-predictions.js",
+      "path": "tools/HME/src/scripts/pipeline/reconcile-predictions.js",
       "patterns": [
         "cleanPredicted",
         "injectedPredicted",
@@ -280,28 +280,28 @@
       "id": "constitution-script-exists",
       "description": "Phase 6.2  constitutional identity derivation script must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/hme/derive-constitution.py",
+      "path": "tools/HME/src/scripts/pipeline/derive-constitution.py",
       "severity": "error"
     },
     {
       "id": "doc-drift-script-exists",
       "description": "Phase 6.3  doc drift detector must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/hme/detect-doc-drift.py",
+      "path": "tools/HME/src/scripts/pipeline/detect-doc-drift.py",
       "severity": "error"
     },
     {
       "id": "generalizations-script-exists",
       "description": "Phase 6.4  generalization extractor must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/hme/extract-generalizations.py",
+      "path": "tools/HME/src/scripts/pipeline/extract-generalizations.py",
       "severity": "error"
     },
     {
       "id": "phase6-pipeline-steps-wired",
       "description": "main-pipeline.js POST_COMPOSITION must run Phase 6 scripts",
       "type": "patterns_all_in_file",
-      "path": "scripts/pipeline/main-pipeline.js",
+      "path": "src/scripts/pipeline/main-pipeline.js",
       "patterns": [
         "derive-constitution\\.py",
         "detect-doc-drift\\.py",
@@ -339,7 +339,7 @@
     },
     {
       "id": "lance-deletions-not-excessive",
-      "description": "tools/HME/KB/code_chunks.lance/_deletions/ must have at most 50 files. Above this threshold, dead arrow files slow table opens and waste disk. Run `python3 scripts/compact-lance-tables.py` to compact.",
+      "description": "tools/HME/KB/code_chunks.lance/_deletions/ must have at most 50 files. Above this threshold, dead arrow files slow table opens and waste disk. Run `python3 tools/HME/scripts/compact-lance-tables.py` to compact.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py lance-deletions-not-excessive",
       "severity": "warning",
@@ -349,19 +349,19 @@
         0
       ],
       "capture_stderr": true,
-      "context": "tools/HME/KB/code_chunks.lance/_deletions/ must have at most 50 files. Above this threshold, dead arrow files slow table opens and waste disk. Run `python3 scripts/compact-lance-tables.py` to compact. This count grows on every re-index cycle (delete old chunks + add new) and needs periodic compaction."
+      "context": "tools/HME/KB/code_chunks.lance/_deletions/ must have at most 50 files. Above this threshold, dead arrow files slow table opens and waste disk. Run `python3 tools/HME/scripts/compact-lance-tables.py` to compact. This count grows on every re-index cycle (delete old chunks + add new) and needs periodic compaction."
     },
     {
       "id": "hme-cli-version-stamp",
-      "description": "scripts/hme-cli.js must declare a CLI_VERSION constant and emit it in --version output. Allows version mismatch detection between old wrappers and new worker deployments.",
+      "description": "tools/HME/scripts/hme-cli.js must declare a CLI_VERSION constant and emit it in --version output. Allows version mismatch detection between old wrappers and new worker deployments.",
       "type": "pattern_in_file",
-      "path": "scripts/hme-cli.js",
+      "path": "tools/HME/scripts/hme-cli.js",
       "pattern": "CLI_VERSION",
       "severity": "error"
     },
     {
       "id": "lance-internals-not-tracked",
-      "description": "KB lance tables (tools/HME/KB/*.lance/) are ephemeral generated state  regenerated by rag_engines indexing and compacted by scripts/compact-lance-tables.py.",
+      "description": "KB lance tables (tools/HME/KB/*.lance/) are ephemeral generated state  regenerated by rag_engines indexing and compacted by tools/HME/scripts/compact-lance-tables.py.",
       "type": "shell_output_empty",
       "shell": "git ls-files 'tools/HME/KB/*.lance/*' 2>/dev/null",
       "severity": "error",
@@ -371,7 +371,7 @@
         0
       ],
       "capture_stderr": true,
-      "context": "KB lance tables (tools/HME/KB/*.lance/) are ephemeral generated state  regenerated by rag_engines indexing and compacted by scripts/compact-lance-tables.py. Their _deletions/, _transactions/, _versions/, and data/ internals must not be tracked by git. Tracking them produces gigabytes of binary drift per indexer run and breaks patch-based commit tools (GitLens) with 'cannot apply binary patch without full index line' errors. If this invariant fails, the fix is: add to .gitignore, then `git rm --cached -r tools/HME/KB/<table>.lance`."
+      "context": "KB lance tables (tools/HME/KB/*.lance/) are ephemeral generated state  regenerated by rag_engines indexing and compacted by tools/HME/scripts/compact-lance-tables.py. Their _deletions/, _transactions/, _versions/, and data/ internals must not be tracked by git. Tracking them produces gigabytes of binary drift per indexer run and breaks patch-based commit tools (GitLens) with 'cannot apply binary patch without full index line' errors. If this invariant fails, the fix is: add to .gitignore, then `git rm --cached -r tools/HME/KB/<table>.lance`."
     },
     {
       "id": "lab-sketches-patches-array",

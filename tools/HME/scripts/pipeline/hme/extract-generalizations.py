@@ -10,7 +10,7 @@ Output:
 
 Scoring fix: vocabulary is now built dynamically from three sources
 and matched against camelCase-split pattern tags + synthesis text:
-  - scripts/pipeline/bias-bounds-manifest.json  (93 bias registrations)
+  - src/scripts/pipeline/bias-bounds-manifest.json  (93 bias registrations)
   - src/time/l0Channels.js                       (~45 canonical channel names)
   - src/<subsystem>/                             (nine subsystem directories)
 

@@ -21,21 +21,21 @@ SOURCE_SKIP_PREFIXES = ("log/", "output/", "runtime/", "tmp/", "tools/models/")
 RUN_SUFFIXES = {".py", ".js", ".sh"}
 
 COLD_CLASSIFICATIONS = {
-    "scripts/hme/codex-agent-job.py": "manual Codex filesystem job launcher",
-    "scripts/hme/timeline-panel.py": "i/status timeline panel",
-    "scripts/hme/freeze-check.py": "i/why mode=freeze panel",
-    "scripts/probe-omniroute-max-reasoning.py": "provider-manifest OmniRoute check",
-    "scripts/sync-omniroute-model-limits.py": "doctor/admin OmniRoute sync",
-    "scripts/configure-omniroute-max-reasoning.py": "OmniRoute startup/admin config",
-    "scripts/c2m.py": "render/lab MIDI conversion utility",
-    "scripts/compact-lance-tables.py": "pipeline/lifecycle LanceDB maintenance",
-    "scripts/sync-claude-settings.py": "Claude settings sync admin check",
-    "scripts/pipeline/train-verdict-predictor.js": "post-composition trainer; audit --check",
-    "scripts/pipeline/hme/utils.js": "shared HME pipeline helper module",
-    "scripts/audit_shell_undefined_audit.py": "audit helper module",
-    "scripts/report-src-loc.js": "LOC audit helper",
-    "scripts/loc_ignore.py": "LOC audit helper",
-    "scripts/test/smoke-test-indexing-mode.sh": "manual live indexing smoke",
+    "tools/HME/tools/HME/scripts/codex-agent-job.py": "manual Codex filesystem job launcher",
+    "tools/HME/tools/HME/scripts/timeline-panel.py": "i/status timeline panel",
+    "tools/HME/tools/HME/scripts/freeze-check.py": "i/why mode=freeze panel",
+    "tools/HME/scripts/probe-omniroute-max-reasoning.py": "provider-manifest OmniRoute check",
+    "tools/HME/scripts/sync-omniroute-model-limits.py": "doctor/admin OmniRoute sync",
+    "tools/HME/scripts/configure-omniroute-max-reasoning.py": "OmniRoute startup/admin config",
+    "src/scripts/c2m.py": "render/lab MIDI conversion utility",
+    "tools/HME/scripts/compact-lance-tables.py": "pipeline/lifecycle LanceDB maintenance",
+    "tools/HME/scripts/sync-claude-settings.py": "Claude settings sync admin check",
+    "src/scripts/pipeline/train-verdict-predictor.js": "post-composition trainer; audit --check",
+    "tools/HME/src/scripts/pipeline/utils.js": "shared HME pipeline helper module",
+    "tools/HME/scripts/audit_shell_undefined_audit.py": "audit helper module",
+    "tools/HME/scripts/report-src-loc.js": "LOC audit helper",
+    "tools/HME/scripts/loc_ignore.py": "LOC audit helper",
+    "tools/HME/tests/scripts/smoke-test-indexing-mode.sh": "manual live indexing smoke",
 }
 
 
@@ -118,7 +118,7 @@ def _local_import_count(target: Path, source: Path, body: str) -> int:
 
 def _basename_reference_count(target: Path, body: str) -> int:
     rel = str(target.relative_to(ROOT))
-    if rel.startswith(("scripts/hme/", "scripts/chaos/")) or rel == "scripts/pipeline/hme/run-invariant-battery.py":
+    if rel.startswith(("tools/HME/scripts/", "tools/HME/scripts/chaos/")) or rel == "tools/HME/src/scripts/pipeline/run-invariant-battery.py":
         return body.count(target.name)
     return 0
 
@@ -126,13 +126,13 @@ def _basename_reference_count(target: Path, body: str) -> int:
 def _classification_for(rel: str, samples: list[str]) -> str:
     if rel in COLD_CLASSIFICATIONS:
         return COLD_CLASSIFICATIONS[rel]
-    if "scripts/audit-all.sh" in samples:
+    if "tools/HME/scripts/audit-all.sh" in samples:
         return "audit-all check"
-    if "scripts/chaos/run-all.sh" in samples:
+    if "tools/HME/tools/HME/scripts/chaos/run-all.sh" in samples:
         return "chaos battery"
-    if "scripts/pipeline/main-pipeline.js" in samples:
+    if "src/scripts/pipeline/main-pipeline.js" in samples:
         return "main pipeline"
-    if "scripts/hme-i-dispatch.js" in samples:
+    if "tools/HME/scripts/hme-i-dispatch.js" in samples:
         return "i/ dispatch"
     if "package.json" in samples:
         return "npm script"
@@ -160,14 +160,14 @@ def source_reference_counts(paths: list[Path]) -> dict[Path, tuple[int, list[str
             if c:
                 count += c
                 _sample(samples, f)
-        if str(target.relative_to(ROOT)).startswith('scripts/eslint-rules/') and target.name not in {'index.js'}:
+        if str(target.relative_to(ROOT)).startswith('src/scripts/eslint-rules/') and target.name not in {'index.js'}:
             stem = target.stem
             idx = text(ROOT / 'scripts' / 'eslint-rules' / 'index.js')
             cfg = text(ROOT / 'eslint.config.mjs')
             if f"require('./{stem}')" in idx:
                 count += 1
                 if len(samples) < 3:
-                    samples.append('scripts/eslint-rules/index.js')
+                    samples.append('src/scripts/eslint-rules/index.js')
             if f'local/{stem}' in cfg:
                 count += 1
                 if len(samples) < 3:
@@ -237,7 +237,7 @@ def log_observations(paths: list[Path]) -> dict[Path, tuple[float, str]]:
     if lint_log.exists():
         configured = _configured_eslint_rules()
         for rel, p in rel_to_path.items():
-            if rel.startswith("scripts/eslint-rules/") and p.stem in configured:
+            if rel.startswith("src/scripts/eslint-rules/") and p.stem in configured:
                 _record(obs, p, lint_log.stat().st_mtime, "log/lint.log")
     pipeline_log = ROOT / "log" / "pipeline.log"
     if pipeline_log.exists():

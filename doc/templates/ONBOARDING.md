@@ -153,9 +153,9 @@ A set of post-composition instrumentation features -- musical correlation, coher
    emit round_complete to close that window. Do this BEFORE rebuilding
    the derived metrics -- order matters.
 
-4. node scripts/pipeline/compute-coherence-score.js
-   python3 scripts/pipeline/compute-kb-trust-weights.py
-   python3 scripts/pipeline/derive-constitution.py
+4. node src/scripts/pipeline/compute-coherence-score.js
+   python3 src/scripts/pipeline/compute-kb-trust-weights.py
+   python3 src/scripts/pipeline/derive-constitution.py
    Rebuild the derived metrics against the now-bounded window. The
    pipeline POST_COMPOSITION already ran them once but with the
    polluted pre-round_complete window; this is the clean pass.
@@ -218,8 +218,8 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 - [doc/self-coherence-full.md](../self-coherence-full.md) -- HME internals, tool surface, event kernel, state registry, LIFESAVER, and self-coherence.
 - [doc/composition-full.md](../composition-full.md) -- beat lifecycle, signal flow, L1/L2 layer isolation, tuning context, and engine systems.
 - [doc/theory/](../theory/) -- long-form arguments for the architecture's commitments. Read when the *why* behind a rule is needed.
-- `python3 tools/HME/scripts/verify-numeric-drift.py` -- audit counted claims ("N hypermeta controllers" / "K verifiers" / etc.) across all markdown against live code counts. Fires via the `numeric-claim-drift` HCI verifier every pipeline run.
-- `python3 scripts/audit-core-principles.py` -- survey `src/` against the five core principles. Fires via the `core-principles-audit` HCI verifier every pipeline run. Critical violations (files >400 LOC, subsystems without `index.js`) drop HCI; 200-line warnings are informational.
-- `python3 scripts/audit-shell-hooks.py` -- static scan of `tools/HME/hooks/**/*.sh` for cache-trap patterns (BASH_SOURCE-relative ascents that resolve INTO the plugin cache when hooks are invoked from it). Fires via the `shell-hook-audit` HCI verifier every pipeline run. Sister-audit to ESLint-for-JS and `_scan_python_bug_patterns`-for-Python.
+- `python3 tools/HME/tools/HME/scripts/verify-numeric-drift.py` -- audit counted claims ("N hypermeta controllers" / "K verifiers" / etc.) across all markdown against live code counts. Fires via the `numeric-claim-drift` HCI verifier every pipeline run.
+- `python3 tools/HME/scripts/audit-core-principles.py` -- survey `src/` against the five core principles. Fires via the `core-principles-audit` HCI verifier every pipeline run. Critical violations (files >400 LOC, subsystems without `index.js`) drop HCI; 200-line warnings are informational.
+- `python3 tools/HME/scripts/audit-shell-hooks.py` -- static scan of `tools/HME/hooks/**/*.sh` for cache-trap patterns (BASH_SOURCE-relative ascents that resolve INTO the plugin cache when hooks are invoked from it). Fires via the `shell-hook-audit` HCI verifier every pipeline run. Sister-audit to ESLint-for-JS and `_scan_python_bug_patterns`-for-Python.
 - Proxy middleware substrate at [tools/HME/proxy/middleware/](../../tools/HME/proxy/middleware/) owns tool-result transformation. Export `onToolResult({toolUse, toolResult, ctx})` to append, replace, or enrich any Claude-native tool's result before the model sees it. `ctx.replaceResult` swaps content entirely; `ctx.retryNextTurn(toolUseId)` defers unfinished work to a future turn (bounded, 3-retry max). Working examples: `background_dominance.js` resolves backgrounded `i/*` stubs into real output, `bash_enrichment.js` surfaces error snippets. Load failures are caught by the `proxy-middleware-registry` HCI verifier. Tests live next to the code they exercise (`test_*.js`), excluded from middleware registration by the loader.
 - Calibration anchors live in KB (`i/learn query=...`). The historical `output/metrics/journal.md` is a retired archive.

@@ -1,4 +1,4 @@
-// scripts/eslint-rules/no-bare-math.js
+// src/scripts/eslint-rules/no-bare-math.js
 // Ban direct Math.* property access in src/ files.
 // The project convention is to use the global `m = Math` alias for all Math
 // operations. This keeps call-sites short and consistent.

@@ -14,7 +14,7 @@ Categories:
     (e.g. `mkdir -p ... 2>/dev/null` -- already-exists is fine)
   - UNCLASSIFIED: needs manual review
 
-Usage: python3 scripts/audit-silent-fails.py
+Usage: python3 tools/HME/scripts/audit-silent-fails.py
 Output: ranked list, suspicious + fallback-masking first.
 """
 from __future__ import annotations

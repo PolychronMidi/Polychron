@@ -3,7 +3,7 @@
 Export music21-derived melodic priors into the project's runtime JS table.
 
 Usage:
-  python scripts/music21/export_melodic_priors.py \
+  python src/scripts/music21/export_melodic_priors.py \
     --output src/composers/voice/melodicPriorsData.js \
     --limit 220
 
@@ -150,7 +150,7 @@ def build_tendency_weights(tendency_counter: Counter, top_n: int = 24) -> Dict[s
 
 
 def to_js_assignment_for_melodic(data: Dict) -> str:
-    return to_js_assignment("MELODIC_PRIOR_TABLES", data, "scripts/music21/export_melodic_priors.py")
+    return to_js_assignment("MELODIC_PRIOR_TABLES", data, "src/scripts/music21/export_melodic_priors.py")
 
 
 def main() -> None:

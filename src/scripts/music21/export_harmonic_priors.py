@@ -3,7 +3,7 @@
 Export music21-derived harmonic progression priors into the project's runtime JS table.
 
 Usage:
-  python scripts/music21/export_harmonic_priors.py \
+  python src/scripts/music21/export_harmonic_priors.py \
     --output src/composers/chord/harmonicPriorsData.js \
     --limit 220
 
@@ -278,7 +278,7 @@ def build_profile(counter: Counter, top_n: int = 10) -> Dict:
 
 
 def to_js_assignment_for_harmonic(data: Dict) -> str:
-    return to_js_assignment("HARMONIC_PRIOR_TABLES", data, "scripts/music21/export_harmonic_priors.py")
+    return to_js_assignment("HARMONIC_PRIOR_TABLES", data, "src/scripts/music21/export_harmonic_priors.py")
 
 
 def main() -> None:

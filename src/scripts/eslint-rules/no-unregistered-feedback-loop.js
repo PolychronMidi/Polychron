@@ -1,4 +1,4 @@
-// scripts/eslint-rules/no-unregistered-feedback-loop.js
+// src/scripts/eslint-rules/no-unregistered-feedback-loop.js
 // Architectural boundary enforcement: ensures every manual feedback loop
 // creation is accompanied by a feedbackRegistry.registerLoop() call.
 //

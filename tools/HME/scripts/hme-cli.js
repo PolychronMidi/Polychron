@@ -3,7 +3,7 @@
  * HME CLI dispatcher -- invokes a worker tool over HTTP.
  *
  * Usage:
- *   node scripts/hme-cli.js <tool-name> [flags...]
+ *   node tools/HME/scripts/hme-cli.js <tool-name> [flags...]
  *
  * Via shell wrappers in `i/` (the intended entry point):
  *   i/review  mode=forget

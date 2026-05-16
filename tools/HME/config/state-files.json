@@ -1,5 +1,5 @@
 {
-  "_doc": "Canonical ownership registry for shared filesystem state. scripts/audit-state-file-ownership.py parses this file; docs should summarize it, not duplicate it.",
+  "_doc": "Canonical ownership registry for shared filesystem state. tools/HME/scripts/audit-state-file-ownership.py parses this file; docs should summarize it, not duplicate it.",
   "single_owner": [
     {
       "path": "runtime/hme/proxy-supervisor.pid",
@@ -15,7 +15,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "runtime/hme/universal-pulse-supervisor.pid",
@@ -31,7 +31,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "runtime/hme/codex-proxy.pid",
@@ -67,19 +67,19 @@
     },
     {
       "path": "runtime/hme/codex-model-catalog.json",
-      "owner": "tools/HME/scripts/codex_settings.py",
+      "owner": "tools/HME/tools/HME/scripts/codex_settings.py",
       "readers": [
         "Codex CLI",
-        "scripts/audit-codex-settings.py"
+        "tools/HME/scripts/audit-codex-settings.py"
       ],
       "writers": [
-        "scripts/sync-codex-settings.py"
+        "tools/HME/scripts/sync-codex-settings.py"
       ],
       "retention": "generated from ~/.codex/models_cache.json plus HME prompt/context replacements; regenerate after Codex model catalog refreshes",
       "generated": true,
       "committed": false,
       "schema": "Codex model catalog JSON with HME-replaced base_instructions, model_messages.instructions_template, personality_pragmatic, context_window, and max_context_window",
-      "repair": "scripts/sync-codex-settings.py"
+      "repair": "tools/HME/scripts/sync-codex-settings.py"
     },
     {
       "path": "runtime/hme/hook-watchdog-state.json",
@@ -122,7 +122,7 @@
       "owner": "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
       "readers": [
         "operators",
-        "scripts/hme-doctor.py"
+        "tools/HME/scripts/hme-doctor.py"
       ],
       "writers": [
         "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
@@ -151,35 +151,35 @@
     },
     {
       "path": "runtime/hme/team-dashboard.json",
-      "owner": "tools/HME/scripts/team_dashboard.py",
+      "owner": "tools/HME/tools/HME/scripts/team_dashboard.py",
       "readers": [
         "team_agent_router.py",
         "i/status team"
       ],
       "writers": [
-        "tools/HME/scripts/team_dashboard.py"
+        "tools/HME/tools/HME/scripts/team_dashboard.py"
       ],
       "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "runtime/hme/agent-jobs/*",
-      "owner": "tools/HME/scripts/agent_jobs.py",
+      "owner": "tools/HME/tools/HME/scripts/agent_jobs.py",
       "readers": [
-        "scripts/hme/codex-agent-job.py",
+        "tools/HME/tools/HME/scripts/codex-agent-job.py",
         "team tools"
       ],
       "writers": [
-        "tools/HME/scripts/agent_jobs.py"
+        "tools/HME/tools/HME/scripts/agent_jobs.py"
       ],
       "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-proxy-maintenance.flag",
@@ -195,13 +195,13 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-universal-pulse.heartbeat",
       "owner": "tools/HME/activity/universal_pulse.py",
       "readers": [
-        "scripts/hme-doctor.py",
+        "tools/HME/scripts/hme-doctor.py",
         "service_registry.py"
       ],
       "writers": [
@@ -211,7 +211,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-non-hme-streak.score",
@@ -226,7 +226,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-streak-warn.txt",
@@ -241,7 +241,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-onboarding.state",
@@ -257,7 +257,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-log-errors.watermark",
@@ -272,7 +272,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-middleware-processed.jsonl",
@@ -287,7 +287,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "runtime/hme/supervisor-abandoned",
@@ -302,7 +302,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "output/metrics/detector-stats.jsonl",
@@ -317,7 +317,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "output/metrics/hme-predictions.jsonl",
@@ -332,7 +332,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "output/metrics/hme-enricher-efficacy.jsonl",
@@ -347,7 +347,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "output/metrics/hme-activity.jsonl",
@@ -363,7 +363,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tools/HME/before-editing-cache.json",
@@ -378,7 +378,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tools/HME/config/todo-archive-index.json",
@@ -394,7 +394,7 @@
       "generated": true,
       "committed": true,
       "schema": "JSON object with archives[] records: archived, set_name, archive_path, task_count, done_count, todo_count",
-      "repair": "python3 tools/HME/scripts/todo_repair.py --check"
+      "repair": "python3 tools/HME/tools/HME/scripts/todo_repair.py --check"
     },
     {
       "path": "tools/HME/KB/*.lance",
@@ -409,7 +409,7 @@
       "generated": true,
       "committed": false,
       "schema": "owner-defined",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     }
   ],
   "multi_writer": [
@@ -419,9 +419,9 @@
       "writers": [
         "tools/HME/service/server/tools_analysis/todo_md_sync.py",
         "tools/HME/service/server/tools_analysis/todo_archive.py",
-        "tools/HME/scripts/todo_autoflip.py",
-        "tools/HME/scripts/todo_repair.py",
-        "tools/HME/scripts/codex_plan_sync.py"
+        "tools/HME/tools/HME/scripts/todo_autoflip.py",
+        "tools/HME/tools/HME/scripts/todo_repair.py",
+        "tools/HME/tools/HME/scripts/codex_plan_sync.py"
       ],
       "owner": "HME todo store",
       "readers": [
@@ -436,14 +436,14 @@
       "generated": true,
       "committed": true,
       "schema": "markdown sections: Now, Next, Done, Later; task lines: - [ ] [E1-E5] text",
-      "repair": "python3 tools/HME/scripts/todo_repair.py"
+      "repair": "python3 tools/HME/tools/HME/scripts/todo_repair.py"
     },
     {
       "path": "tools/HME/KB/todos.json",
       "coordination": "canonical machine todo store; TODO.md is the rendered human surface; native TodoWrite and Codex update_plan converge here; all JSON writes go through todo_store.py",
       "writers": [
         "tools/HME/service/server/tools_analysis/todo_store.py",
-        "tools/HME/scripts/codex_plan_sync.py"
+        "tools/HME/tools/HME/scripts/codex_plan_sync.py"
       ],
       "owner": "HME todo store",
       "readers": [
@@ -451,14 +451,14 @@
         "Codex update_plan sync",
         "tools/HME/service/server/tools_analysis/todo_store.py",
         "tools/HME/service/server/tools_analysis/todo_md_sync.py",
-        "tools/HME/scripts/todo_repair.py",
+        "tools/HME/tools/HME/scripts/todo_repair.py",
         "tools/HME/service/server/tools_analysis/todo_archive.py"
       ],
       "retention": "open items retained; completed items auto-pruned or archived with TODO.md",
       "generated": true,
       "committed": true,
       "schema": "JSON array with id=0 _meta header followed by todo entries",
-      "repair": "python3 tools/HME/scripts/todo_repair.py"
+      "repair": "python3 tools/HME/tools/HME/scripts/todo_repair.py"
     },
     {
       "path": "log/hme-errors.log",
@@ -503,7 +503,7 @@
       "generated": true,
       "committed": false,
       "schema": "append-only text/jsonl unless coordination says otherwise",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-nexus.state",
@@ -523,7 +523,7 @@
       "generated": true,
       "committed": false,
       "schema": "append-only text/jsonl unless coordination says otherwise",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-tab.txt",
@@ -542,7 +542,7 @@
       "generated": true,
       "committed": false,
       "schema": "append-only text/jsonl unless coordination says otherwise",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-errors.turnstart",
@@ -558,7 +558,7 @@
       "generated": true,
       "committed": false,
       "schema": "append-only text/jsonl unless coordination says otherwise",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
       "path": "tmp/hme-errors.lastread",
@@ -575,7 +575,7 @@
       "generated": true,
       "committed": false,
       "schema": "append-only text/jsonl unless coordination says otherwise",
-      "repair": "run scripts/hme-doctor.py"
+      "repair": "run tools/HME/scripts/hme-doctor.py"
     }
   ]
 }

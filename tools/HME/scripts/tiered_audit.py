@@ -45,7 +45,7 @@ def _run(cmd: list[str], timeout: int = 60) -> tuple[int, str, str]:
 
 
 def pass_lint_floor() -> dict:
-    rc, out, _err = _run(["python3", "scripts/audit-comment-bloat.py", "--strict", "--json"], 60)
+    rc, out, _err = _run(["python3", "tools/HME/scripts/audit-comment-bloat.py", "--strict", "--json"], 60)
     try:
         d = json.loads(out or "{}")
         fail_n = len(d.get("fail") or [])

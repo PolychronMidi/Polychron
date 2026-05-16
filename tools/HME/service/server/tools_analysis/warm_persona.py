@@ -135,7 +135,7 @@ def _gpu_persona(model: str) -> str:
         _src_char_budget = max(500, _arbiter_cap - len(arb_base) - 100)
         _src_token_budget = _src_char_budget // 3
         src = _load_src_files_for_warm([
-            "scripts/pipeline/*.js",
+            "src/scripts/pipeline/*.js",
             "src/conductor/melodic/*.js",
             "src/crossLayer/structure/**/*.js",
         ], _src_token_budget)

@@ -1,4 +1,4 @@
-"""Shared helpers for scripts/hme/* tools.
+"""Shared helpers for tools/HME/scripts/* tools.
 
 Deduplicates the PROJECT_ROOT resolution + JSON/jsonl loading logic that
 was copy-pasted across substrate-view, why-invariant, freeze-check,

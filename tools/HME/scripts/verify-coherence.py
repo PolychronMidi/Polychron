@@ -3,7 +3,7 @@
 
 Original file split into tools/HME/scripts/verify_coherence/
 per package structure. This thin wrapper preserves the
-`python3 tools/HME/scripts/verify-coherence.py` invocation path that
+`python3 tools/HME/tools/HME/scripts/verify-coherence.py` invocation path that
 existing callers (main-pipeline.js, chain-snapshot.py, emit-hci-signal.py,
 build-dashboard.py, verify-numeric-drift.py) use.
 

@@ -25,5 +25,5 @@ rules:
   - Validators must be idempotent, cwd-independent, and side-effect-free (no writes outside metrics/)
   - Non-fatal validator errors must be written to `output/metrics/pipeline-summary.json` errorPatterns -- stdout alone gets missed by the LIFESAVER scanner
   - Run order is deterministic and matters -- cheap syntactic checks first, expensive semantic ones last
-  - New validators register in `scripts/pipeline/main-pipeline.js` at their correct phase position
+  - New validators register in `src/scripts/pipeline/main-pipeline.js` at their correct phase position
 -->

@@ -2,7 +2,7 @@
 """Core-principles audit -- survey how well src/ actually follows the five
 core principles doc/templates/AGENTS.md declares.
 
-The ESLint rules in scripts/eslint-rules/ enforce specific corners of each
+The ESLint rules in src/scripts/eslint-rules/ enforce specific corners of each
 principle at lint time (requires-outside-index, fallback bans, validator
 stamping, etc.). What ESLint does not do is survey the whole codebase and
 say which principle has structural slack vs. which is airtight. This is
@@ -36,9 +36,9 @@ Outputs:
   - Exit 0 if no CRITICAL violations, 1 otherwise
 
 Usage:
-    python3 scripts/audit-core-principles.py
-    python3 scripts/audit-core-principles.py --json
-    python3 scripts/audit-core-principles.py --subsystem conductor
+    python3 tools/HME/scripts/audit-core-principles.py
+    python3 tools/HME/scripts/audit-core-principles.py --json
+    python3 tools/HME/scripts/audit-core-principles.py --subsystem conductor
 """
 import json
 import os
@@ -74,7 +74,7 @@ _LOAD_ORDER = [
 ]
 
 # LOC exemptions live in config/loc-ignore.txt -- single source of truth
-# shared with i/evolve focus=loc and scripts/report-src-loc.js. Edit there.
+# shared with i/evolve focus=loc and tools/HME/scripts/report-src-loc.js. Edit there.
 _LOC_IGNORE_PATTERNS = load_patterns()
 
 

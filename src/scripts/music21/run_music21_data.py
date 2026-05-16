@@ -11,11 +11,11 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 STEPS = [
-    "scripts/music21/export_harmonic_priors.py",
-    "scripts/music21/export_melodic_priors.py",
-    "scripts/music21/export_rhythm_priors.py",
-    "scripts/music21/export_voice_leading_priors.py",
-    "scripts/music21/verify_priors_outputs.py",
+    "src/scripts/music21/export_harmonic_priors.py",
+    "src/scripts/music21/export_melodic_priors.py",
+    "src/scripts/music21/export_rhythm_priors.py",
+    "src/scripts/music21/export_voice_leading_priors.py",
+    "src/scripts/music21/verify_priors_outputs.py",
 ]
 
 

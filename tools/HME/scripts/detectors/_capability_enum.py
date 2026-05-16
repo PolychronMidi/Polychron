@@ -50,7 +50,7 @@ THINKING_CAPABILITIES = (
     "HCIVerifier",              # invoke verify-coherence.py with intent
     "Holograph",                # snapshot-holograph diff for state drift
     "DetectorChainTest",        # corpus + chain test as analytical move
-    "AuditAll",                 # run scripts/audit-all.sh as analytical move
+    "AuditAll",                 # run tools/HME/scripts/audit-all.sh as analytical move
 )
 
 # Delegation-capability vocabulary (closed). Verbatim names.

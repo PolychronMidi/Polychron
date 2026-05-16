@@ -10,7 +10,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 
-const VERIFIER = path.resolve(__dirname, '../../../../scripts/pipeline/validators/check-module-manifests.js');
+const VERIFIER = path.resolve(__dirname, '../../../../src/scripts/pipeline/validators/check-module-manifests.js');
 const PROJECT_ROOT = path.resolve(__dirname, '../../../..');
 
 function _runVerifier(env = {}) {

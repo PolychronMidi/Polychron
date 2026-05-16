@@ -1,6 +1,6 @@
 """Single source of truth for LOC counting across the project.
 
-Both `scripts/audit-core-principles.py` (subsystem-level rollup) and
+Both `tools/HME/scripts/audit-core-principles.py` (subsystem-level rollup) and
 `tools/HME/scripts/detectors/boyscout_loc.py` (per-turn touched-file gate)
 import from here so the LOC threshold (doc/templates/AGENTS.md: <=350) means the same
 thing in both. Previously they used different counters (cLOC vs raw

@@ -4,9 +4,9 @@
 # trailing `/` means directory.
 #
 # Consumers:
-#   - scripts/audit-core-principles.py (P5 audit)
+#   - tools/HME/scripts/audit-core-principles.py (P5 audit)
 #   - tools/HME/service/.../evolution_evolve.py (i/evolve focus=loc)
-#   - scripts/report-src-loc.js (LOC report)
+#   - tools/HME/scripts/report-src-loc.js (LOC report)
 
 # Architecturally required single-file modules.
 src/play/fullBootstrap.js
@@ -29,8 +29,8 @@ tools/HME/tests/specs/*.test.js
 tools/HME/scripts/detectors/test_*.py
 
 # Pipeline phase scripts — single-phase orchestrators end-to-end.
-scripts/pipeline/*.js
-scripts/pipeline/validators/*.js
+src/scripts/pipeline/*.js
+src/scripts/pipeline/validators/*.js
 
 # Vendored third-party (py_midicsv) — not project code, do not split.
 tools/csv_maestro/
@@ -43,7 +43,7 @@ tools/bin/
 # helper-function chains, which is a different class of work than
 # splitting modules and trades cohesion for compliance.
 
-# Rationale tokens (machine-parsed by scripts/loc_ignore.py):
+# Rationale tokens (machine-parsed by tools/HME/scripts/loc_ignore.py):
 #   rationale: intent=<class>; revisit-when=<condition>; decided=<YYYY-MM-DD>
 # `intent` values:
 #   mega-function-dispatcher  one entry-point with N branches; helpers add

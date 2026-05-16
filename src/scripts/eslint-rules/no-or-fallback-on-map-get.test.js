@@ -1,6 +1,6 @@
 'use strict';
 // Regression tests for the no-or-fallback-on-map-get rule.
-// Run via `node scripts/eslint-rules/no-or-fallback-on-map-get.test.js`.
+// Run via `node src/scripts/eslint-rules/no-or-fallback-on-map-get.test.js`.
 const { RuleTester } = require('eslint');
 const rule = require('./no-or-fallback-on-map-get');
 

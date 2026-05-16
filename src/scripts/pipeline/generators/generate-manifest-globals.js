@@ -61,7 +61,7 @@ function rewriteDts(names) {
   const dtsSrc = fs.readFileSync(DTS, 'utf8');
   const block = [
     START_MARKER,
-    `// ${names.length} manifest-derived globals (regenerate via: node scripts/pipeline/generators/generate-manifest-globals.js)`,
+    `// ${names.length} manifest-derived globals (regenerate via: node src/scripts/pipeline/generators/generate-manifest-globals.js)`,
     ...names.map(n => `declare var ${n}: any;`),
     END_MARKER,
   ].join('\n');

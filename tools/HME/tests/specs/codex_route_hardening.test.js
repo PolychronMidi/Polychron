@@ -186,7 +186,7 @@ test('Codex Bash hook treats internal structured bridge as structured exit', asy
     cwd: root,
     _hme_host: 'codex',
     tool_name: 'Bash',
-    tool_input: { command: 'node tools/HME/scripts/codex_structured_tool.js edit file=src/x.js old=a new=b' },
+    tool_input: { command: 'node tools/HME/tools/HME/scripts/codex_structured_tool.js edit file=src/x.js old=a new=b' },
     session_id: 'codex-Bash',
   }));
   assert.equal(res.exit_code, 0);

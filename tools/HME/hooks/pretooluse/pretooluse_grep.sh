@@ -74,7 +74,7 @@ if [ -n "$SEARCH_PATH" ]; then
   fi
 fi
 # Bounded-reads vow: counts consecutive Read/Grep/Glob.
-if [ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ]; then
-  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" || exit 2
+if [ -x "${PROJECT_ROOT}/tools/HME/tools/HME/scripts/vow_bounded_reads.py" ]; then
+  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/tools/HME/scripts/vow_bounded_reads.py" || exit 2
 fi
 exit 0

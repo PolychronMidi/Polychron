@@ -199,9 +199,9 @@ fi
 
 # 4. Routing readiness check
 
-if [ "${HME_ROUTING_READY_ON_LAUNCH:-1}" != "0" ] && [ -x "$PROJECT_ROOT/tools/HME/scripts/routing_ready.py" ]; then
+if [ "${HME_ROUTING_READY_ON_LAUNCH:-1}" != "0" ] && [ -x "$PROJECT_ROOT/tools/HME/tools/HME/scripts/routing_ready.py" ]; then
   echo "[launch] routing-ready check..." >&2
-  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/routing_ready.py" 2>&1 | sed 's/^/[launch]   /' >&2
+  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/tools/HME/scripts/routing_ready.py" 2>&1 | sed 's/^/[launch]   /' >&2
 fi
 
 # 5. ANTHROPIC_BASE_URL bridge: VSCode/GUI claude doesn't source .env, so

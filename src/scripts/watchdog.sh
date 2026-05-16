@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # watchdog.sh -- wraps npm run main with per-measure timeout monitoring.
-# Usage: bash scripts/watchdog.sh [measure_timeout_seconds]
+# Usage: bash src/scripts/watchdog.sh [measure_timeout_seconds]
 # Default timeout: 15s per measure. Kills the entire process tree if exceeded.
 
 TIMEOUT=${1:-15}

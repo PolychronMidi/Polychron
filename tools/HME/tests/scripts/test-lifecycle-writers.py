@@ -7,7 +7,7 @@ disable every invariant without a single log line. That would reproduce
 the exact failure mode this module was built to prevent: the system
 claims invariants hold, reality doesn't.
 
-Run directly:   python3 scripts/test/test-lifecycle-writers.py
+Run directly:   python3 tools/HME/tests/scripts/test-lifecycle-writers.py
 Exit 0 on pass, 1 on any failure.
 """
 from __future__ import annotations

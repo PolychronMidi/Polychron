@@ -1,5 +1,5 @@
 {
-  "description": "HyperMeta Ecstasy Codex hooks -- all supported Codex lifecycle/tool events route through node event_kernel/codex_adapter.js, then into the shared HME event kernel. This file is the source of truth for scripts/sync-codex-settings.py.",
+  "description": "HyperMeta Ecstasy Codex hooks -- all supported Codex lifecycle/tool events route through node event_kernel/codex_adapter.js, then into the shared HME event kernel. This file is the source of truth for tools/HME/scripts/sync-codex-settings.py.",
   "hooks": {
     "SessionStart": [
       {

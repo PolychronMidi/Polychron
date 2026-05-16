@@ -3,7 +3,7 @@
 // Uses Python/sklearn LogisticRegression (L2, C=0.5) on numeric features.
 // Saves weights to metrics/verdict-model.json for prediction in snapshot-run.js.
 // Skips if fewer than MIN_LABELED labeled snapshots exist.
-// Usage: node scripts/pipeline/train-verdict-predictor.js
+// Usage: node src/scripts/pipeline/train-verdict-predictor.js
 
 const fs = require('fs');
 const path = require('path');

@@ -1,4 +1,4 @@
-// GENERATED FILE - DO NOT EDIT. Run: scripts/music21/export_rhythm_priors.py
+// GENERATED FILE - DO NOT EDIT. Run: src/scripts/music21/export_rhythm_priors.py
 RHYTHM_PRIOR_TABLES = {
   "version": 2,
   "source": "music21-derived offline rhythm priors",

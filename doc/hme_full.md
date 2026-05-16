@@ -110,15 +110,15 @@ Native handlers live in [`tools/HME/event_kernel/native_hooks/`](../tools/HME/ev
 behavior stays behind the dispatcher or Stop-chain policy adapter until ported.
 
 Claude Code hook registration is manifest-driven. Edit
-[`tools/HME/hooks/hooks.json`](../tools/HME/hooks/hooks.json), then run [`scripts/sync-claude-settings.py`](../scripts/sync-claude-settings.py) to
-materialize live `~/.claude/settings.json`; [`scripts/audit-claude-settings.py`](../scripts/audit-claude-settings.py)
+[`tools/HME/hooks/hooks.json`](../tools/HME/hooks/hooks.json), then run [`tools/HME/scripts/sync-claude-settings.py`](../tools/HME/scripts/sync-claude-settings.py) to
+materialize live `~/.claude/settings.json`; [`tools/HME/scripts/audit-claude-settings.py`](../tools/HME/scripts/audit-claude-settings.py)
 fails if live settings drift from that manifest.
 
 Codex hook and provider registration is manifest-driven as well. Edit
-[`tools/HME/hooks/codex_hooks.json`](../tools/HME/hooks/codex_hooks.json), then run [`scripts/sync-codex-settings.py`](../scripts/sync-codex-settings.py)
+[`tools/HME/hooks/codex_hooks.json`](../tools/HME/hooks/codex_hooks.json), then run [`tools/HME/scripts/sync-codex-settings.py`](../tools/HME/scripts/sync-codex-settings.py)
 to materialize `~/.codex/hooks.json`, enable `features.hooks`, and route the
 Responses provider through the `codex_proxy` service-registry port.
-[`scripts/audit-codex-settings.py`](../scripts/audit-codex-settings.py) checks for drift. Codex requires review for
+[`tools/HME/scripts/audit-codex-settings.py`](../tools/HME/scripts/audit-codex-settings.py) checks for drift. Codex requires review for
 non-managed user hooks, so `/hooks` may need a one-time trust action before the
 Codex hook adapter runs; the provider proxy still intercepts non-interactive
 Codex traffic without that trust step.
@@ -243,17 +243,17 @@ Telemetry lands in `output/metrics/detector-stats.jsonl`.
 
 ## HCI And Holograph
 
-[`tools/HME/scripts/verify-coherence.py`](../tools/HME/scripts/verify-coherence.py) scores the HME Coherence Index from
+[`tools/HME/tools/HME/scripts/verify-coherence.py`](../tools/HME/tools/HME/scripts/verify-coherence.py) scores the HME Coherence Index from
 weighted verifiers across documentation, code, state, coverage, runtime,
 topology, and interface contracts.
 
 Useful commands:
 
 ```bash
-python3 tools/HME/scripts/verify-coherence.py
-python3 tools/HME/scripts/verify-coherence.py --json
-python3 tools/HME/scripts/verify-coherence.py --score
-python3 tools/HME/scripts/snapshot-holograph.py
+python3 tools/HME/tools/HME/scripts/verify-coherence.py
+python3 tools/HME/tools/HME/scripts/verify-coherence.py --json
+python3 tools/HME/tools/HME/scripts/verify-coherence.py --score
+python3 tools/HME/tools/HME/scripts/snapshot-holograph.py
 ```
 
 The holograph snapshots HME state for later diffing: HCI, onboarding state,
@@ -320,14 +320,14 @@ Generated metric files are state, not source. Keep them quiet and predictable:
 
 - `output/metrics/` is the only metrics directory; callers use `METRICS_DIR`.
 - Pipeline analyzers may update committed metric snapshots when verification runs.
-- Runtime-only caches stay in `tmp/`, [`runtime/hme/`](../runtime/hme/), or `log/`, never nested `tools/tmp` or `scripts/metrics`.
+- Runtime-only caches stay in `tmp/`, [`runtime/hme/`](../runtime/hme/), or `log/`, never nested `tools/tmp` or `output/metrics`.
 - Migration baselines such as `hardcoded_metrics_baseline.json` must only shrink; new findings fail.
-- Repair stale trace/run-history state with [`tools/HME/scripts/repair-trace-run-history-sync.sh`](../tools/HME/scripts/repair-trace-run-history-sync.sh).
+- Repair stale trace/run-history state with [`tools/HME/tools/HME/scripts/repair-trace-run-history-sync.sh`](../tools/HME/tools/HME/scripts/repair-trace-run-history-sync.sh).
 
 ## State Ownership Registry
 
 The registry lives in [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json) and is parsed by
-[`scripts/audit-state-file-ownership.py`](../scripts/audit-state-file-ownership.py). Each entry declares path, owner,
+[`tools/HME/scripts/audit-state-file-ownership.py`](../tools/HME/scripts/audit-state-file-ownership.py). Each entry declares path, owner,
 readers, writers, retention, generated/committed status, schema, and repair
 command. Update that JSON before adding a shared state writer.
 
@@ -336,13 +336,13 @@ command. Update that JSON before adding a shared state writer.
 - Generated state: 31; committed state: 3.
 - Repair commands and reader/writer ownership live in [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json).
 - Multi-writer paths:
-  - [`doc/templates/TODO.md`](templates/TODO.md) -- 5 writer(s): tools/HME/service/server/tools_analysis/todo_md_sync.py, tools/HME/service/server/tools_analysis/todo_archive.py, tools/HME/scripts/todo_autoflip.py (+2 more)
+  - [`doc/templates/TODO.md`](templates/TODO.md) -- 5 writer(s): tools/HME/service/server/tools_analysis/todo_md_sync.py, tools/HME/service/server/tools_analysis/todo_archive.py, tools/HME/tools/HME/scripts/todo_autoflip.py (+2 more)
   - `log/hme-errors.log` -- 28 writer(s): tools/HME/activity/universal_pulse.py, tools/HME/proxy/middleware/20_hme_log_watermark.js, tools/HME/proxy/middleware/19_mcp_fail_scan.js (+25 more)
   - `tmp/hme-errors.lastread` -- 2 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh, tools/HME/hooks/lifecycle/stop/lifesaver.sh
   - `tmp/hme-errors.turnstart` -- 1 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh
   - `tmp/hme-nexus.state` -- 5 writer(s): tools/HME/proxy/middleware/index.js, tools/HME/hooks/posttooluse/posttooluse_hme_review.sh, tools/HME/hooks/lifecycle/stop/nexus_audit.sh (+2 more)
   - `tmp/hme-tab.txt` -- 4 writer(s): tools/HME/hooks/posttooluse/posttooluse_write.sh, tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh, tools/HME/hooks/lifecycle/sessionstart.sh (+1 more)
-  - [`tools/HME/KB/todos.json`](../tools/HME/KB/todos.json) -- 2 writer(s): tools/HME/service/server/tools_analysis/todo_store.py, tools/HME/scripts/codex_plan_sync.py
+  - [`tools/HME/KB/todos.json`](../tools/HME/KB/todos.json) -- 2 writer(s): tools/HME/service/server/tools_analysis/todo_store.py, tools/HME/tools/HME/scripts/codex_plan_sync.py
 <!-- END GENERATED STATE REGISTRY -->
 
 The standard coordination patterns are append-only line writes, atomic rename
@@ -354,8 +354,8 @@ without a declared owner is a coherence failure.
 - Services: [`tools/HME/config/services.json`](../tools/HME/config/services.json); Python, JS, and shell helpers
   derive ports, health URLs, supervision edges, PID labels, process patterns,
   logs, and starts from it.
-- [`i/`](../i/) surface: [`tools/HME/i_registry.json`](../tools/HME/i_registry.json); [`scripts/generate-i-shims.js`](../scripts/generate-i-shims.js)
-  generates/checks the public shims, and [`scripts/hme-i-dispatch.js`](../scripts/hme-i-dispatch.js) owns
+- [`i/`](../i/) surface: [`tools/HME/i_registry.json`](../tools/HME/i_registry.json); [`tools/HME/scripts/generate-i-shims.js`](../tools/HME/scripts/generate-i-shims.js)
+  generates/checks the public shims, and [`tools/HME/scripts/hme-i-dispatch.js`](../tools/HME/scripts/hme-i-dispatch.js) owns
   behavior.
 - Agent jobs: `runtime/hme/agent-jobs/<role>/<job_id>/` contains
   `request.json`, `status.json`, `output.txt`, `stderr.txt`, and
@@ -366,13 +366,13 @@ without a declared owner is a coherence failure.
 ## Testing
 Useful HME checks:
 ```bash
-node scripts/hme-hook-test.js
+node tools/HME/scripts/hme-hook-test.js
 node tools/HME/hooks/direct_test.js
 node --test tools/HME/tests/specs/pre_write_and_session_state.test.js
-bash scripts/test/smoke-test-i-wrappers.sh
-bash scripts/chaos/run-all.sh
+bash tools/HME/tests/scripts/smoke-test-i-wrappers.sh
+bash tools/HME/tools/HME/scripts/chaos/run-all.sh
 ```
-Chaos tests live in [`scripts/chaos/`](../scripts/chaos/) and prove that selftest probes catch the
+Chaos tests live in [`tools/HME/scripts/chaos/`](../tools/HME/scripts/chaos/) and prove that selftest probes catch the
 faults they were written to detect.
 ## Deep Links
 

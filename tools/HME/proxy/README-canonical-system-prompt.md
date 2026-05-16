@@ -7,7 +7,7 @@ restructure their default at will and our content still ships verbatim,
 no regex anchors to drift.
 
 Codex uses the same file through a generated model catalog. Run
-`scripts/sync-codex-settings.py` to regenerate
+`tools/HME/scripts/sync-codex-settings.py` to regenerate
 `runtime/hme/codex-model-catalog.json` from `~/.codex/models_cache.json` and
 point Codex's `model_catalog_json` at the generated catalog.
 

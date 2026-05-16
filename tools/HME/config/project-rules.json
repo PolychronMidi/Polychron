@@ -280,7 +280,7 @@
     "/conductor/signal/meta/",
     "/conductor/signal/output/",
     "conductorDiagnostics",
-    "/scripts/pipeline/",
+    "/src/scripts/pipeline/",
     "/writer/traceDrain",
     "play/processBeat.js",
     "play/main.js",

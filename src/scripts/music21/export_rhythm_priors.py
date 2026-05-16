@@ -3,7 +3,7 @@
 Export music21-derived rhythm priors into the project's runtime JS table.
 
 Usage:
-  python scripts/music21/export_rhythm_priors.py \
+  python src/scripts/music21/export_rhythm_priors.py \
     --output src/rhythm/rhythmPriorsData.js \
     --limit 220
 
@@ -183,7 +183,7 @@ def seed_fallback_profiles() -> Dict[str, Dict]:
 
 
 def to_js_assignment_for_rhythm(data: Dict) -> str:
-    return to_js_assignment("RHYTHM_PRIOR_TABLES", data, "scripts/music21/export_rhythm_priors.py")
+    return to_js_assignment("RHYTHM_PRIOR_TABLES", data, "src/scripts/music21/export_rhythm_priors.py")
 
 
 def main() -> None:

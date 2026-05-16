@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Shell-hook audit -- static analysis for tools/HME/hooks/**/*.sh.
 
-Sister of scripts/audit-core-principles.py for shell code. ESLint covers
+Sister of tools/HME/scripts/audit-core-principles.py for shell code. ESLint covers
 .js, `_scan_python_bug_patterns` in workflow_audit.py covers .py, and
 audit-core-principles.py covers src/ architecture -- .sh hooks were the
 blind spot. This script closes it.
@@ -30,8 +30,8 @@ Outputs:
   - Exit 0 if no violations, 1 otherwise
 
 Usage:
-    python3 scripts/audit-shell-hooks.py
-    python3 scripts/audit-shell-hooks.py --json
+    python3 tools/HME/scripts/audit-shell-hooks.py
+    python3 tools/HME/scripts/audit-shell-hooks.py --json
 """
 import json
 import os

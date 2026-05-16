@@ -13,7 +13,7 @@ with the worker running -- LanceDB's MVCC makes compaction atomic.
 isn't present so this script works across a version bump.)
 
 Usage:
-  python3 scripts/compact-lance-tables.py [--dry-run]
+  python3 tools/HME/scripts/compact-lance-tables.py [--dry-run]
 
 Exit 0 on success or if no compaction needed. Exit 1 on error.
 Writes a one-line summary to stdout (for pipeline/hook consumption).

@@ -16,9 +16,9 @@ Each test case declares:
 Exit code 0 = all pass, 1 = one or more failed, 2 = engine error.
 
 Usage:
-    python3 tools/HME/scripts/stress-test-subagent.py
-    python3 tools/HME/scripts/stress-test-subagent.py --only 1,3,5
-    python3 tools/HME/scripts/stress-test-subagent.py --timeout-mult 2
+    python3 tools/HME/tools/HME/scripts/stress-test-subagent.py
+    python3 tools/HME/tools/HME/scripts/stress-test-subagent.py --only 1,3,5
+    python3 tools/HME/tools/HME/scripts/stress-test-subagent.py --timeout-mult 2
 """
 import json
 import os

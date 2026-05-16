@@ -22,7 +22,7 @@
  * Centralizing these here gives every consumer + producer a single source
  * of truth. New markers added here MUST be referenced by at least one
  * producer and one consumer (enforced by the marker-coherence verifier
- * in scripts/audit-* or by manual review until that lints).
+ * in tools/HME/scripts/audit-* or by manual review until that lints).
  *
  * Each marker entry documents its producer file, consumer files, and
  * the regex form. Bash/Python consumers can mirror these constants by

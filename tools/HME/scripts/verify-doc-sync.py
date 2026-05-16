@@ -13,8 +13,8 @@ Exit codes:
     2 -- unexpected error (malformed source, etc.)
 
 Usage:
-    python3 tools/HME/scripts/verify-doc-sync.py
-    python3 tools/HME/scripts/verify-doc-sync.py --fix  # print suggested sed replacements
+    python3 tools/HME/tools/HME/scripts/verify-doc-sync.py
+    python3 tools/HME/tools/HME/scripts/verify-doc-sync.py --fix  # print suggested sed replacements
 """
 import ast
 import json

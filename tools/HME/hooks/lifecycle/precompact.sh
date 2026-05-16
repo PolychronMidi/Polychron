@@ -85,7 +85,7 @@ else
 fi
 
 # if preemption didn't fire at 70%, at
-CHAIN_SCRIPT="$PROJECT/tools/HME/scripts/chain-snapshot.py"
+CHAIN_SCRIPT="$PROJECT/tools/HME/tools/HME/scripts/chain-snapshot.py"
 LATEST_LINK="${METRICS_DIR:-$PROJECT/output/metrics}/chain-history/latest.yaml"
 _NEEDS_FALLBACK=1
 if [ -f "$LATEST_LINK" ]; then

@@ -1,4 +1,4 @@
-// scripts/eslint-rules/no-empty-catch.js
+// src/scripts/eslint-rules/no-empty-catch.js
 // Ban catch blocks that silently swallow errors. Catch blocks must either:
 // - Rethrow (throw)
 // - Log with console.error/console.warn

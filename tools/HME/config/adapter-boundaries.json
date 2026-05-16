@@ -2,7 +2,7 @@
   "_doc": "Only real adapter/domain boundary names live here. Pure forwarders are deleted.",
   "boundaries": [
     {
-      "path": "scripts/generate-i-shims.js",
+      "path": "tools/HME/scripts/generate-i-shims.js",
       "kind": "generator",
       "owner": "i-surface",
       "reason": "Generates public i/ command files from tools/HME/i_registry.json."

@@ -26,9 +26,9 @@ narrow rename, single-fact lookup). It under-classifies on ambiguous
 prompts and the fail-safe handles those by escalating to E3.
 
 Usage:
-    python3 tools/HME/scripts/tier_classifier.py --prompt "fix the lint"
-    echo "rebuild the audit suite" | python3 tools/HME/scripts/tier_classifier.py
-    python3 tools/HME/scripts/tier_classifier.py --json --prompt "..."
+    python3 tools/HME/tools/HME/scripts/tier_classifier.py --prompt "fix the lint"
+    echo "rebuild the audit suite" | python3 tools/HME/tools/HME/scripts/tier_classifier.py
+    python3 tools/HME/tools/HME/scripts/tier_classifier.py --json --prompt "..."
 """
 import argparse
 import json

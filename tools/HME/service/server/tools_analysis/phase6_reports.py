@@ -33,7 +33,7 @@ def constitution_report() -> str:
         return (
             "# HME Constitution\n\n"
             "output/metrics/hme-constitution.json not found.\n"
-            "Run: python3 scripts/pipeline/derive-constitution.py"
+            "Run: python3 src/scripts/pipeline/derive-constitution.py"
         )
     meta = data.get("meta", {}) or {}
     claims = data.get("claims", []) or []
@@ -73,7 +73,7 @@ def doc_drift_report() -> str:
         return (
             "# HME Doc Drift\n\n"
             "output/metrics/hme-doc-drift.json not found.\n"
-            "Run: python3 scripts/pipeline/detect-doc-drift.py"
+            "Run: python3 src/scripts/pipeline/detect-doc-drift.py"
         )
     meta = data.get("meta", {}) or {}
     docs = data.get("docs", {}) or {}

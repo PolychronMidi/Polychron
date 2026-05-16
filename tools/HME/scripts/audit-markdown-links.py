@@ -15,9 +15,9 @@ Exit codes:
   1 -- broken links found (with --strict)
 
 Usage:
-  python3 scripts/audit-markdown-links.py            # human report
-  python3 scripts/audit-markdown-links.py --json
-  python3 scripts/audit-markdown-links.py --strict
+  python3 tools/HME/scripts/audit-markdown-links.py            # human report
+  python3 tools/HME/scripts/audit-markdown-links.py --json
+  python3 tools/HME/scripts/audit-markdown-links.py --strict
 """
 from __future__ import annotations
 

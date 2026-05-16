@@ -8,7 +8,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const ROUTER = path.join(PROJECT_ROOT, 'tools/HME/scripts/team_agent_router.py');
+const ROUTER = path.join(PROJECT_ROOT, 'tools/HME/tools/HME/scripts/team_agent_router.py');
 
 function runRouter(project, payload, role = 'driver') {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-agent-router-input-'));

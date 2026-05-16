@@ -14,10 +14,10 @@ Pairs with audit_detectors.py's drift mode: same diagnostic posture, but
 operates on user satisfaction signal rather than detector verdicts.
 
 Usage:
-    python3 tools/HME/scripts/satisfaction_analyzer.py
-    python3 tools/HME/scripts/satisfaction_analyzer.py --window 50
-    python3 tools/HME/scripts/satisfaction_analyzer.py --json
-    python3 tools/HME/scripts/satisfaction_analyzer.py --notable-only
+    python3 tools/HME/tools/HME/scripts/satisfaction_analyzer.py
+    python3 tools/HME/tools/HME/scripts/satisfaction_analyzer.py --window 50
+    python3 tools/HME/tools/HME/scripts/satisfaction_analyzer.py --json
+    python3 tools/HME/tools/HME/scripts/satisfaction_analyzer.py --notable-only
 """
 from __future__ import annotations
 

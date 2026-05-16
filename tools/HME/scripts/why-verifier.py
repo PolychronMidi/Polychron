@@ -101,7 +101,7 @@ def main(argv):
                                    "hci-verifier-snapshot.json"))
     if not snap:
         print(f"# i/why mode=verifier {name}")
-        print("No snapshot found -- run `python3 tools/HME/scripts/verify-coherence.py` first.")
+        print("No snapshot found -- run `python3 tools/HME/tools/HME/scripts/verify-coherence.py` first.")
         return 1
     entry = snap.get("verifiers", {}).get(name)
     if not entry:

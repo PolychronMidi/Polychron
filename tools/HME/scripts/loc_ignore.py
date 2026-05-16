@@ -2,10 +2,10 @@
 that exempt files from the LOC target declared in doc/templates/AGENTS.md.
 
 Single source of truth for LOC exemptions. Consumed by:
-  - scripts/audit-core-principles.py (P5 audit)
+  - tools/HME/scripts/audit-core-principles.py (P5 audit)
   - tools/HME/service/.../evolution_evolve.py (i/evolve focus=loc)
 
-JS/Node consumers (scripts/report-src-loc.js) implement the same
+JS/Node consumers (tools/HME/scripts/report-src-loc.js) implement the same
 gitignore-style match logic locally -- keep that mirror in sync if you
 extend the syntax here.
 """

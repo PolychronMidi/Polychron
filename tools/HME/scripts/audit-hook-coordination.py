@@ -22,9 +22,9 @@ audit reports declared coordinations so a developer can read dependency
 relationships without tracing execution.
 
 Usage:
-    python3 scripts/audit-hook-coordination.py
-    python3 scripts/audit-hook-coordination.py --json
-    python3 scripts/audit-hook-coordination.py --strict   # exit 1 on issues
+    python3 tools/HME/scripts/audit-hook-coordination.py
+    python3 tools/HME/scripts/audit-hook-coordination.py --json
+    python3 tools/HME/scripts/audit-hook-coordination.py --strict   # exit 1 on issues
 """
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-// GENERATED FILE - DO NOT EDIT. Run: scripts/music21/export_voice_leading_priors.py
+// GENERATED FILE - DO NOT EDIT. Run: src/scripts/music21/export_voice_leading_priors.py
 VOICE_LEADING_PRIOR_TABLES = {
   "version": 2,
   "source": "music21-derived offline voice-leading priors (v2: mode-specific dorian/mixolydian)",
