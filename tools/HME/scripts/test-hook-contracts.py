@@ -27,6 +27,7 @@ import tempfile
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+os.environ.setdefault("PROJECT_ROOT", str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "tools" / "HME" / "service"))
 
 try:
