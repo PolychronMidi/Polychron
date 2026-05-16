@@ -25,6 +25,7 @@ function findJsFiles(dir) {
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (full === path.join(SRC, 'scripts') || full === path.join(SRC, 'tests')) continue;
       results.push(...findJsFiles(full));
     } else if (entry.name.endsWith('.js')) {
       results.push(full);
@@ -115,6 +116,14 @@ function loadExistingGraph() {
  * - New entries: scaffold with TODO placeholders.
  * - Conceptual entries: preserve verbatim (no source registration expected).
  */
+function isAutoScaffold(loop) {
+  return loop &&
+    loop.sourceDomain === 'TODO' &&
+    loop.targetDomain === 'TODO' &&
+    typeof loop.mechanism === 'string' &&
+    loop.mechanism.startsWith('TODO:');
+}
+
 function mergeLoops(existingLoops, sourceLoops) {
   const merged = [];
   const handledSourceNames = new Set();
@@ -134,7 +143,11 @@ function mergeLoops(existingLoops, sourceLoops) {
       merged.push(loop);
       handledSourceNames.add(loop.module);
     } else {
-      // Orphaned: in JSON but not in source. Keep with warning.
+      if (isAutoScaffold(loop)) {
+        console.log('generate-feedback-graph: WARNING - stale scaffold "' + loop.module + '" dropped (no source registration)');
+        continue;
+      }
+      // Orphaned curated entries must be explicit conceptual entries.
       console.log('generate-feedback-graph: WARNING - loop "' + loop.module + '" in JSON has no source registration (keeping)');
       merged.push(loop);
     }
