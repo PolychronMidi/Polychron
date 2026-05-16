@@ -6,7 +6,7 @@ const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const { PROJECT_ROOT } = require('../proxy/shared');
 
-const IPC_ROOT = path.join(PROJECT_ROOT, 'runtime', 'hme', 'event-ipc');
+const IPC_ROOT = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'event-ipc');
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
