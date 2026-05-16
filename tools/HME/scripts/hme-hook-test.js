@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 const assert = require('assert');
-const hook = require('../tools/HME/event_kernel/dispatcher');
+const hook = require('../event_kernel/dispatcher');
 (async () => {
   let r = await hook.dispatchEvent('NoSuchEvent', '{}');
   assert.equal(r.exit_code, 0);
