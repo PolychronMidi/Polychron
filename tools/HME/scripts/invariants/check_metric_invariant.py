@@ -151,6 +151,20 @@ def no_duplicate_output_dirs() -> None:
             print(f"./{rel}")
 
 
+def antagonism_registry_schema_valid() -> None:
+    data = _json("output/metrics/hme-suspected-upstreams.json", {}) or {}
+    missing = [k for k in ("candidates", "confirmed", "refuted") if k not in data]
+    if missing:
+        print(f"missing registry bucket(s): {', '.join(missing)}")
+
+
+def versions_file_exists() -> None:
+    data = _json("tools/HME/config/versions.json", {}) or {}
+    missing = [k for k in ("cli", "proxy", "worker") if k not in data]
+    if missing:
+        print(f"missing version key(s): {', '.join(missing)}")
+
+
 def review_verdict_emitter_importable() -> None:
     sys.path.insert(0, str(ROOT / "tools/HME/service"))
     try:
