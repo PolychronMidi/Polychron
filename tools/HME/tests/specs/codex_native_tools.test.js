@@ -51,7 +51,7 @@ function requestJson(port, body) {
   });
 }
 
-test('Codex request transform injects upstream Read/Edit schemas', () => {
+test('Codex request transform injects upstream native file/search schemas', () => {
   const result = applyRequestTransform({
     model: 'gpt-5.5',
     instructions: 'test',
@@ -61,8 +61,8 @@ test('Codex request transform injects upstream Read/Edit schemas', () => {
     record: () => {},
     projectRoot: repoRoot,
   });
-  assert.deepEqual(result.after.tool_names.slice(-2), ['Read', 'Edit']);
-  assert.equal(result.cleanup.native_tools_added, 2);
+  assert.deepEqual(result.after.tool_names.slice(-4), ['Read', 'Edit', 'Grep', 'Glob']);
+  assert.equal(result.cleanup.native_tools_added, 4);
 });
 
 test('Codex native Read response rewrites to executable bridge and back to Read history', () => {
@@ -83,6 +83,19 @@ test('Codex native Read response rewrites to executable bridge and back to Read 
   const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
   assert.equal(normalized.name, 'Read');
   assert.deepEqual(JSON.parse(normalized.arguments), { file_path: 'doc/HME.md', limit: 5 });
+});
+
+
+test('Codex native Grep response rewrites to executable bridge and back to Grep history', () => {
+  const response = { output: [{ type: 'function_call', name: 'Grep', arguments: JSON.stringify({ pattern: 'needle', path: 'src' }) }] };
+  const rewritten = rewriteCodexResponseObject(response);
+  const call = rewritten.body.output[0];
+  assert.equal(call.name, 'exec_command');
+  const args = JSON.parse(call.arguments);
+  assert.match(args.cmd, /codex_structured_tool\.js grep --json/);
+  const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
+  assert.equal(normalized.name, 'Grep');
+  assert.deepEqual(JSON.parse(normalized.arguments), { pattern: 'needle', path: 'src' });
 });
 
 test('Codex bridge heredoc text normalizes without leaking heredoc header', () => {
@@ -116,7 +129,7 @@ test('Codex SSE native Edit response rewrites before forwarding', () => {
   assert.equal(rewriter.stats.calls, 1);
 });
 
-test('Codex proxy sends Read/Edit upstream and translates native call response', async () => {
+test('Codex proxy sends native tools upstream and translates native call response', async () => {
   const proxyPort = await freePort();
   let upstreamBody = null;
   const upstream = http.createServer((req, res) => {
@@ -161,7 +174,7 @@ test('Codex proxy sends Read/Edit upstream and translates native call response',
     }));
     const response = await requestJson(proxyPort, { model: 'gpt-5.5', tools: [], stream: false });
     assert.equal(response.status, 200);
-    assert.deepEqual(upstreamBody.tools.map((t) => t.name), ['Read', 'Edit']);
+    assert.deepEqual(upstreamBody.tools.map((t) => t.name), ['Read', 'Edit', 'Grep', 'Glob']);
     const call = JSON.parse(response.body).output[0];
     assert.equal(call.name, 'exec_command');
     assert.match(JSON.parse(call.arguments).cmd, /codex_structured_tool\.js read --json/);

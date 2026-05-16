@@ -30,6 +30,22 @@ test('shared Bash policy silently rewrites simple readers to structured Read', (
   }
 });
 
+test('shared Bash policy silently rewrites common raw read-only commands', () => {
+  const cases = [
+    ['rg Rules AGENTS.md', /codex_structured_tool\.js grep --json/],
+    ['ls tools/HME', /codex_structured_tool\.js glob --json/],
+    ['find tools/HME -maxdepth 1 -type f -name *.md', /codex_structured_tool\.js glob --json/],
+    ['wc -l AGENTS.md', /codex_structured_tool\.js count --json/],
+    ['git status --short', /codex_structured_tool\.js git --json/],
+  ];
+  for (const [command, pattern] of cases) {
+    const out = evaluateBashInput({ command }, { projectRoot: root });
+    assert.equal(out.decision, 'allow');
+    assert.equal(out.changed, true);
+    assert.match(out.input.command, pattern);
+  }
+});
+
 test('shared Bash policy blocks dangerous shell and lock deletion', () => {
   assert.equal(evaluateBashInput({ command: pipeShell }, { projectRoot: root }).decision, 'deny');
   const lock = 'run' + '.lock';
