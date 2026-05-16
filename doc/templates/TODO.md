@@ -4,11 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Fix/rerun targeted verification
+(empty)
 
 ## Next
 
-- [ ] [E3] Report evidence
+(empty)
 
 ## Done
 

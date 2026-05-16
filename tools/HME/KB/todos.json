@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3418,
-      "updated_ts": 1778951578.936759,
-      "codex_plan_synced_ts": 1778951578.9366798,
+      "updated_ts": 1778951698.9432378,
+      "codex_plan_synced_ts": 1778951698.943159,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T17:12:46.711Z"
+      "codex_plan_ts": "2026-05-16T17:14:41.684Z"
     }
   },
   {
@@ -6012,7 +6012,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:12:46.711Z"
+    "codex_plan_ts": "2026-05-16T17:14:41.684Z"
   },
   {
     "id": 3414,
@@ -6028,7 +6028,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:12:46.711Z"
+    "codex_plan_ts": "2026-05-16T17:14:41.684Z"
   },
   {
     "id": 3415,
@@ -6051,8 +6051,8 @@
     "id": 3416,
     "text": "Report evidence",
     "activeForm": "Report evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6061,7 +6061,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:12:46.711Z"
+    "codex_plan_ts": "2026-05-16T17:14:41.684Z"
   },
   {
     "id": 3417,
@@ -6077,14 +6077,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:12:46.711Z"
+    "codex_plan_ts": "2026-05-16T17:14:41.684Z"
   },
   {
     "id": 3418,
     "text": "Fix/rerun targeted verification",
     "activeForm": "Fix/rerun targeted verification",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6093,6 +6093,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:12:46.711Z"
+    "codex_plan_ts": "2026-05-16T17:14:41.684Z"
   }
 ]
