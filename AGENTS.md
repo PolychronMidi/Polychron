@@ -15,7 +15,7 @@ Deep references live in [doc/src_full.md](doc/src_full.md) and [doc/hme_full.md]
 ## Universal Principles (operational)
 
 - **Stop hooks.** Never explain declining a stop hook's directive when it doesn't fit. End the turn in silence, or just a minimal ".", immediately if the hook should not apply to the scenario.
-- **Single Responsibility / LOC.** Files MUST be <=350 LOC unless listed in loc-ignore.txt. Organize at logical boundaries.
+- **Single Responsibility / LOC.** Files MUST be <=350 LOC unless listed in `config/loc-ignore.txt`. Organize at logical boundaries.
 - **Comments and docs.** Inline comments MUST be concise, single-line, and terse. Elaboration goes in `doc/`, where style retains project-wide focus on concise, focused clarity.
 - **Never delete unused code/config before checking if it should be implemented.** Adapt or wire up; only delete when its concerns are already covered elsewhere.
 - **"Review" = read-only analysis.** No code changes unless explicitly asked.
