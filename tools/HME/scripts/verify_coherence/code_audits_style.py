@@ -24,7 +24,7 @@ from .code_audits_syntax import (  # noqa: F401
 
 class CorePrinciplesAuditVerifier(Verifier):
     """Delegates to scripts/audit-core-principles.py, which surveys src/
-    against the five core principles declared in doc/templates/doc/templates/AGENTS.md. FAILs only on
+    against the five core principles declared in doc/templates/AGENTS.md. FAILs only on
     CRITICAL-level violations -- files exceeding 400 LOC or subsystems with
     >=1 .js file but no index.js. WARN-level findings (files over the 200-
     line soft target but under 400) are informational; the 200-line target

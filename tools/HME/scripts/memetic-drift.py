@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """H16: Memetic drift detection.
 
-Parses doc/templates/doc/templates/AGENTS.md and extracts imperative rules (sentences starting with
+Parses doc/templates/AGENTS.md and extracts imperative rules (sentences starting with
 "Never", "Always", "Must", etc.) and short imperatives. Then checks
 log/hme-errors.log and git log for evidence that any rule has been violated
 recently. Rules that are frequently violated are either too buried (need
