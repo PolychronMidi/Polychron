@@ -8,13 +8,11 @@ import time
 from pathlib import Path
 from typing import Any
 
-from hme_env import ENV
-
 logger = logging.getLogger("HME")
 
 
 def _root() -> Path:
-    return Path(ENV.optional("PROJECT_ROOT", "") or Path.cwd())
+    return Path(os.environ.get("PROJECT_ROOT") or Path.cwd())  # env-ok: runtime/test sandbox root override
 
 
 def _guard_path() -> Path:
