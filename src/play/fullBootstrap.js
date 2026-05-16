@@ -1,4 +1,4 @@
-// fullBootstrap.js - AUTO-GENERATED from src/types/globals.d.ts by scripts/generate-globals-dts.js (runs automatically at the start of `npm run main`).
+// fullBootstrap.js - AUTO-GENERATED from src/types/globals.d.ts by src/scripts/pipeline/generators/generate-globals-dts.js (runs automatically at the start of `npm run main`).
 // To add a new validated global: edit globals.d.ts only.
 
 moduleLifecycle.declare({

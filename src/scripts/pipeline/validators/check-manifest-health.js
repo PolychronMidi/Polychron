@@ -1,4 +1,4 @@
-// scripts/check-manifest-health.js
+// src/scripts/pipeline/validators/check-manifest-health.js
 // Enforce machine-readable health gates from metrics/system-manifest.json.
 
 'use strict';

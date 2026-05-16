@@ -42,7 +42,7 @@ function selector(args, allowed) {
 
 function hmeCli(tool, args) {
   if (!fs.existsSync(HME_CLI)) {
-    console.error(`i/: tools/HME/scripts/hme-cli.js missing at ${HME_CLI} -- run scripts/setup-mcp.sh after cloning`);
+    console.error(`i/: tools/HME/scripts/hme-cli.js missing at ${HME_CLI} -- verify the checkout or regenerate i/ shims`);
     process.exit(1);
   }
   run('node', [HME_CLI, tool, ...args]);

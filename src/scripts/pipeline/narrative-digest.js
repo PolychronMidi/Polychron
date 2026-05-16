@@ -1,4 +1,4 @@
-// scripts/narrative-digest.js
+// src/scripts/pipeline/narrative-digest.js
 // Generates a human-readable prose narrative of the composition run.
 // Instead of raw data, this produces a STORY: what the system did, why it
 // did it, and how it felt about it (trust scores, regime transitions, etc.)
@@ -9,7 +9,7 @@
 // This is the most compelling artifact for understanding a composition run
 // without reading thousands of lines of trace data.
 //
-// Run: node scripts/narrative-digest.js
+// Run: node src/scripts/pipeline/narrative-digest.js
 // Integrated into `npm run main` pipeline.
 
 'use strict';

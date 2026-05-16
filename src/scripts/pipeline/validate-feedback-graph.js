@@ -1,4 +1,4 @@
-// scripts/validate-feedback-graph.js
+// src/scripts/pipeline/validate-feedback-graph.js
 // Cross-validates metrics/feedback_graph.json against source code.
 // Ensures the declared feedback topology matches actual registrations.
 // Runs as a static analysis step (no runtime coupling to the engine).
@@ -11,7 +11,7 @@
 //   5. Firewall ESLint rule mapping
 //   6. Firewall ports structure
 //
-// Run: node scripts/validate-feedback-graph.js
+// Run: node src/scripts/pipeline/validate-feedback-graph.js
 // Integrated into `npm run main` pipeline (after check-tuning-invariants).
 
 'use strict';

@@ -1,4 +1,4 @@
-// scripts/check-tuning-invariants.js
+// src/scripts/pipeline/validators/check-tuning-invariants.js
 // Executable cross-constant invariant checker.
 // Verifies that the feedback loop constants documented in doc/composition-full.md
 // maintain their required relationships. Fails fast if any invariant is
@@ -7,7 +7,7 @@
 // Constants are extracted directly from source files using regex, so this
 // script has zero runtime coupling to the composition engine.
 //
-// Run: node scripts/check-tuning-invariants.js
+// Run: node src/scripts/pipeline/validators/check-tuning-invariants.js
 // Integrated into `npm run main` pipeline.
 
 'use strict';

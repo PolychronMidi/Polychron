@@ -10,6 +10,6 @@ if echo "$CMD" | grep -qE '(^|[[:space:]/])i/status\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/pretooluse_check_pipeline.sh" || true
 fi
 # Agent primer -- fires on FIRST HME tool call of a session (any i/<hme-tool>).
-if echo "$CMD" | grep -qE '(^|[[:space:]/])i/(review|learn|trace|evolve|status|hme|audit|why|policies)\b|scripts/hme-cli\.js'; then
+if echo "$CMD" | grep -qE '(^|[[:space:]/])i/(review|learn|trace|evolve|status|hme|audit|why|policies)\b|tools/HME/scripts/hme-cli\.js'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/pretooluse_hme_primer.sh" || true
 fi

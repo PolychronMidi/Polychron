@@ -6,8 +6,8 @@
 # Exit status: 0 if all checks pass, 1 on any failure. Every failure is
 # printed with the exact command and output.
 #
-# Usage: scripts/smoke-test-i-wrappers.sh [--verbose]
-#        VERBOSE=1 scripts/smoke-test-i-wrappers.sh
+# Usage: tools/HME/tests/scripts/smoke-test-i-wrappers.sh [--verbose]
+#        VERBOSE=1 tools/HME/tests/scripts/smoke-test-i-wrappers.sh
 set -uo pipefail
 
 VERBOSE="${VERBOSE:-0}"
@@ -15,8 +15,8 @@ for arg in "$@"; do [ "$arg" = "--verbose" ] && VERBOSE=1; done
 
 # Resolve project root from this script's location (works from anywhere).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Test was relocated from scripts/ to scripts/test/ -- PROJECT_ROOT is two
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Test lives under tools/HME/tests/scripts; PROJECT_ROOT is four levels up.
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 cd "$PROJECT_ROOT"
 
 PASS=0

@@ -17,10 +17,10 @@ _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub
 [ -n "$_RESOLVED" ] && INPUT="$_RESOLVED"
 
 # Dispatch HME shell-command post-processors. These used to be triggered via
-if echo "$CMD" | grep -qE '(^|[[:space:]/])i/learn\b|scripts/hme-cli\.js learn\b'; then
+if echo "$CMD" | grep -qE '(^|[[:space:]/])i/learn\b|tools/HME/scripts/hme-cli\.js learn\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_addknowledge.sh" || true
 fi
-if echo "$CMD" | grep -qE '(^|[[:space:]/])i/review\b|scripts/hme-cli\.js review\b'; then
+if echo "$CMD" | grep -qE '(^|[[:space:]/])i/review\b|tools/HME/scripts/hme-cli\.js review\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_hme_review.sh" || true
 fi
 

@@ -26,7 +26,7 @@ Enabling the signal requires:
   1. A composition module (e.g. src/crossLayer/structure/form/*) that
      imports the signal file and maps hci_normalized to one of its axes
   2. The new coupling declared in metrics/feedback_graph.json and
-     validated by scripts/validate-feedback-graph.js
+     validated by src/scripts/pipeline/validate-feedback-graph.js
   3. A biasBoundsSnapshot update via check-hypermeta-jurisdiction.js
 
 Until those steps happen, the signal is INFORMATIONAL -- written but unread.

@@ -1,4 +1,4 @@
-// scripts/golden-fingerprint.js
+// src/scripts/pipeline/golden-fingerprint.js
 // Computes statistical fingerprints of composition output for regression detection.
 // After each run, compares the current output's character against the previous
 // golden fingerprint. Does NOT require exact MIDI matching - tests the statistical
@@ -19,7 +19,7 @@
 //         metrics/golden-fingerprint.prev.json (previous run, for diff)
 //         metrics/fingerprint-comparison.json (comparison results)
 //
-// Run: node scripts/golden-fingerprint.js
+// Run: node src/scripts/pipeline/golden-fingerprint.js
 // Integrated into `npm run main` pipeline.
 
 'use strict';

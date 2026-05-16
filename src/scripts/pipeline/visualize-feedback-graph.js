@@ -1,9 +1,9 @@
-// scripts/visualize-feedback-graph.js
+// src/scripts/pipeline/visualize-feedback-graph.js
 // Generates an interactive HTML visualization of the feedback topology
 // from feedback_graph.json. Pure zero-dependency SVG rendering.
 //
 // Output: metrics/feedback-graph.html
-// Run: node scripts/visualize-feedback-graph.js
+// Run: node src/scripts/pipeline/visualize-feedback-graph.js
 // Integrated into `npm run main` pipeline.
 
 'use strict';

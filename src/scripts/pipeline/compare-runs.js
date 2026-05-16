@@ -1,20 +1,20 @@
-// scripts/compare-runs.js
+// src/scripts/pipeline/compare-runs.js
 // Profile A/B comparison tool: compares two composition runs side-by-side.
 // Takes two run directories (or uses metrics/ vs a named snapshot) and produces
 // a detailed comparison report showing what changed and why.
 //
 // Usage:
-//   node scripts/compare-runs.js <dirA> <dirB>
-//   node scripts/compare-runs.js --snapshot <name>       (save current metrics/ as named snapshot)
-//   node scripts/compare-runs.js --against <name>        (compare metrics/ against snapshot)
+//   node src/scripts/pipeline/compare-runs.js <dirA> <dirB>
+//   node src/scripts/pipeline/compare-runs.js --snapshot <name>       (save current metrics/ as named snapshot)
+//   node src/scripts/pipeline/compare-runs.js --against <name>        (compare metrics/ against snapshot)
 //
 // Snapshots are stored in metrics/snapshots/<name>/
 // Output: metrics/run-comparison.json
 //
 // Example workflow:
-//   node scripts/compare-runs.js --snapshot baseline
+//   node src/scripts/pipeline/compare-runs.js --snapshot baseline
 //   # ... make changes, run main ...
-//   node scripts/compare-runs.js --against baseline
+//   node src/scripts/pipeline/compare-runs.js --against baseline
 
 'use strict';
 
@@ -287,9 +287,9 @@ function main() {
     dirB = path.resolve(args[1]);
   } else {
     console.log('Usage:');
-    console.log('  node scripts/compare-runs.js <dirA> <dirB>');
-    console.log('  node scripts/compare-runs.js --snapshot <name>');
-    console.log('  node scripts/compare-runs.js --against <name>');
+    console.log('  node src/scripts/pipeline/compare-runs.js <dirA> <dirB>');
+    console.log('  node src/scripts/pipeline/compare-runs.js --snapshot <name>');
+    console.log('  node src/scripts/pipeline/compare-runs.js --against <name>');
     process.exit(1);
   }
 

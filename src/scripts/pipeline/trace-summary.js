@@ -1,4 +1,4 @@
-// scripts/trace-summary.js
+// src/scripts/pipeline/trace-summary.js
 // Summarize metrics/trace.jsonl into metrics/trace-summary.json for quick diagnostics.
 
 'use strict';

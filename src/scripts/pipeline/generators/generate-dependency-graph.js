@@ -1,4 +1,4 @@
-// scripts/generate-dependency-graph.js
+// src/scripts/pipeline/generators/generate-dependency-graph.js
 // Builds a machine-readable dependency graph of global variable producers and
 // consumers across all source files. Extends boot-order.json (which tracks
 // providers) with the consumption side: which files READ which globals.
@@ -8,7 +8,7 @@
 //   - edges: { from, to, globals[] } where `from` provides a global `to` consumes
 //   - summary: aggregate statistics
 //
-// Run: node scripts/generate-dependency-graph.js
+// Run: node src/scripts/pipeline/generators/generate-dependency-graph.js
 // Integrated into `npm run main` pipeline.
 
 'use strict';

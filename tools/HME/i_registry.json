@@ -1,5 +1,5 @@
 {
-  "_comment": "Metadata registry for the public i/* command surface. tools/HME/scripts/generate-i-shims.js generates the executable shims in i/ from this file; behavior lives in tools/HME/scripts/hme-i-dispatch.js. Internal helpers and retired aliases belong under scripts/, not i/.",
+  "_comment": "Metadata registry for the public i/* command surface. tools/HME/scripts/generate-i-shims.js generates the executable shims in i/ from this file; behavior lives in tools/HME/scripts/hme-i-dispatch.js. Internal helpers and retired aliases belong under tools/HME/scripts/, not i/.",
   "generated_by": "tools/HME/scripts/generate-i-shims.js",
   "dispatcher": "tools/HME/scripts/hme-i-dispatch.js",
   "commands": {

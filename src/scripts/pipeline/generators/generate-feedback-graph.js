@@ -203,7 +203,7 @@ if (CHECK_MODE) {
   } else {
     console.error(
       'generate-feedback-graph: STALE - metrics/feedback_graph.json is out of date. ' +
-      'Run: node scripts/generate-feedback-graph.js'
+      'Run: node src/scripts/pipeline/generators/generate-feedback-graph.js'
     );
     process.exit(1);
   }

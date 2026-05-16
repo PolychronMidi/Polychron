@@ -1,4 +1,4 @@
-// scripts/verify-boot-order.js
+// src/scripts/pipeline/verify-boot-order.js
 // Walks the require chains from src/index.js to build the complete flat
 // boot order, maps each file to the global(s) it provides, and cross-
 // references with globals.d.ts. Writes metrics/boot-order.json for forensics.

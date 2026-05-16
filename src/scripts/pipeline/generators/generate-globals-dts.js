@@ -1,4 +1,4 @@
-// scripts/generate-globals-dts.js
+// src/scripts/pipeline/generators/generate-globals-dts.js
 // Single source of truth: src/types/globals.d.ts
 // Reads every `declare var NAME:` entry (preserving section comments) and
 // rewrites the VALIDATED_GLOBALS array in src/play/fullBootstrap.js.

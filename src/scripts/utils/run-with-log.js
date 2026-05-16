@@ -1,7 +1,7 @@
 /**
  * Run a command and stream stdout/stderr to a log file while mirroring it to the console.
- * Usage: node scripts/run-with-log.js <logFile> <command> [args...]
- * @module scripts/run-with-log
+ * Usage: node src/scripts/utils/run-with-log.js <logFile> <command> [args...]
+ * @module src/scripts/utils/run-with-log
  */
 const { spawn } = require('child_process');
 const { mkdir } = require('fs/promises');
@@ -13,7 +13,7 @@ const cwd = process.cwd();
 const [, , logFile, ...command] = process.argv;
 
 if (!logFile || command.length === 0) {
-  console.error('Usage: node scripts/run-with-log.js <logFile> <command> [args...]');
+  console.error('Usage: node src/scripts/utils/run-with-log.js <logFile> <command> [args...]');
   process.exit(1);
 } else {
   console.log(`Logging output to log/${logFile}`);
