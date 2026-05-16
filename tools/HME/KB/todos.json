@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3418,
-      "updated_ts": 1778951698.9432378,
-      "codex_plan_synced_ts": 1778951698.943159,
+      "max_id": 3421,
+      "updated_ts": 1778951818.9461057,
+      "codex_plan_synced_ts": 1778951818.9460256,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T17:14:41.684Z"
+      "codex_plan_ts": "2026-05-16T17:16:54.540Z"
     }
   },
   {
@@ -4871,8 +4871,8 @@
     "id": 3343,
     "text": "Run targeted and full verification",
     "activeForm": "Run targeted and full verification",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4881,7 +4881,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:55:56.381Z",
+    "codex_plan_ts": "2026-05-16T17:16:54.540Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
@@ -6094,5 +6094,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T17:14:41.684Z"
+  },
+  {
+    "id": 3419,
+    "text": "Locate Edit pre/post work-check path",
+    "activeForm": "Locate Edit pre/post work-check path",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778951814.9790518,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:16:54.540Z"
+  },
+  {
+    "id": 3420,
+    "text": "Add regression for redacted/no-op Edit false-success",
+    "activeForm": "Add regression for redacted/no-op Edit false-success",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778951814.9790573,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:16:54.540Z"
+  },
+  {
+    "id": 3421,
+    "text": "Patch guard to fail loud before native Edit can appear successful",
+    "activeForm": "Patch guard to fail loud before native Edit can appear successful",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778951814.9790618,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:16:54.540Z"
   }
 ]

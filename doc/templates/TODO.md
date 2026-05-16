@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Locate Edit pre/post work-check path
 
 ## Next
 
-(empty)
+- [ ] [E3] Run targeted and full verification
+- [ ] [E3] Add regression for redacted/no-op Edit false-success
+- [ ] [E3] Patch guard to fail loud before native Edit can appear successful
 
 ## Done
 
