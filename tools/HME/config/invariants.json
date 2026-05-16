@@ -766,7 +766,7 @@
     },
     {
       "id": "cli-modelUsage-contextWindow-shape",
-      "description": "Claude CLI result.modelUsage[alias].contextWindow must be a number ≥1000  routerClaude.ts:computeTurnUsage divides by this. If CLI version drift drops or renames the field, the context meter silently stalls and the chain mistriggers. The probe script skips when the CLI is unavailable or the API is unreachable.",
+      "description": "Claude CLI result.modelUsage[alias].contextWindow must be a number >=1000  routerClaude.ts:computeTurnUsage divides by this. If CLI version drift drops or renames the field, the context meter silently stalls and the chain mistriggers. The probe script skips when the CLI is unavailable or the API is unreachable.",
       "type": "shell_output_empty",
       "shell": "bash scripts/check-claude-cli-result-shape.sh",
       "severity": "warning"
@@ -842,7 +842,7 @@
     },
     {
       "id": "conductor-no-or-zero-on-validator-output",
-      "description": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0→0.5 tension bug). Use the inner value directly, or nullish coalescing (??) if you want to catch only undefined.",
+      "description": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0->0.5 tension bug). Use the inner value directly, or nullish coalescing (??) if you want to catch only undefined.",
       "type": "shell_output_empty",
       "shell": "grep -rnE '(V\\.optionalFinite\\([^)]*,[^)]*\\)|safePreBoot\\.call\\([^)]*,[^)]*\\))\\s*\\|\\|' src/ --include='*.js'",
       "severity": "error"
@@ -983,7 +983,7 @@
     },
     {
       "id": "status-new-modes-dispatched",
-      "description": "status_unified must dispatch the Phase 2.2–2.4 modes (staleness, coherence, blindspots)",
+      "description": "status_unified must dispatch the Phase 2.2-2.4 modes (staleness, coherence, blindspots)",
       "type": "patterns_all_in_file",
       "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
       "patterns": [

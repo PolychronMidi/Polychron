@@ -144,8 +144,8 @@ function statusRewrite(tokens, cmd, root) {
 
 
 function controlStatusRewrite(cmd, root) {
-  if (/ps\s+-[A-Za-z]*[ef][A-Za-z]*.*\|\s*grep/.test(cmd)) return `${root}/i/hme admin action=health`;
-  if (/(tail|cat|head|grep).*log\//.test(cmd)) return `${root}/i/status mode=activity`;
+  if (/\bps\s+-[A-Za-z]*[ef][A-Za-z]*\b.*\|\s*grep\b/.test(cmd)) return `${root}/i/hme admin action=health`;
+  if (/\b(tail|cat|head|grep)\b.*\blog\//.test(cmd)) return `${root}/i/status mode=activity`;
   return '';
 }
 
