@@ -16,14 +16,18 @@ function clearHmeRequireCache() {
 
 function withProject(fn) {
   const oldRoot = process.env.PROJECT_ROOT;
+  const oldMetrics = process.env.METRICS_DIR;
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-todo-noise-'));
   const cleanup = () => {
     if (oldRoot === undefined) delete process.env.PROJECT_ROOT;
     else process.env.PROJECT_ROOT = oldRoot;
+    if (oldMetrics === undefined) delete process.env.METRICS_DIR;
+    else process.env.METRICS_DIR = oldMetrics;
     clearHmeRequireCache();
     fs.rmSync(root, { recursive: true, force: true });
   };
   process.env.PROJECT_ROOT = root;
+  process.env.METRICS_DIR = path.join(root, 'output', 'metrics');
   clearHmeRequireCache();
   try {
     const result = fn(root);
