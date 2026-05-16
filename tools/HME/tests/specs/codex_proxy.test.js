@@ -142,6 +142,16 @@ test('Codex payload transform logs shape and strips successful hook autocorrect 
               'STOP. Re-read AGENTS.md and the user prompt. Did you do ALL the work asked?',
             ].join('\n'),
           },
+          {
+            type: 'input_text',
+            text: [
+              'warning: BLOCKED: Raw tool streak 75/70 (cost: Bash=15). Preferred exits:',
+              '  use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done.',
+              'feedback: BLOCKED: Raw tool streak 75/70 (cost: Bash=15). Preferred exits:',
+              '  use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done.',
+              'raw signal kept',
+            ].join('\n'),
+          },
           { type: 'input_text', text: '   ' },
         ],
       },
@@ -150,7 +160,7 @@ test('Codex payload transform logs shape and strips successful hook autocorrect 
         content: [
           {
             type: 'input_text',
-            text: 'User quote stays: PreToolUse hook (completed)',
+            text: 'PreToolUse hook (completed)',
           },
         ],
       },
@@ -170,13 +180,16 @@ test('Codex payload transform logs shape and strips successful hook autocorrect 
   assert.match(systemText, /keep signal/);
   assert.match(result.body.input[0].content[1].text, /STOP\. Re-read/);
   assert.strictEqual((result.body.input[0].content[1].text.match(/STOP\. Re-read/g) || []).length, 1);
-  assert.match(userText, /PreToolUse hook \(completed\)/);
-  assert.strictEqual(result.body.input[0].content.length, 2);
-  assert.strictEqual(result.cleanup.removed_lines, 3);
+  assert.strictEqual((result.body.input[0].content[2].text.match(/BLOCKED: Raw tool streak/g) || []).length, 1);
+  assert.match(result.body.input[0].content[2].text, /raw signal kept/);
+  assert.strictEqual(userText, 'PreToolUse hook (completed)');
+  assert.strictEqual(result.body.input[0].content.length, 3);
+  assert.strictEqual(result.cleanup.removed_lines, 5);
   assert.strictEqual(result.cleanup.dropped_empty_text_items, 1);
   assert.strictEqual(result.cleanup.categories.hook_success_lines, 1);
   assert.strictEqual(result.cleanup.categories.autocorrect_lines, 1);
   assert.strictEqual(result.cleanup.categories.duplicate_stop_blocks, 1);
+  assert.strictEqual(result.cleanup.categories.duplicate_raw_tool_blocks, 2);
   assert.strictEqual(result.cleanup.categories.empty_text_items, 1);
   assert.strictEqual(result.payload_log.target, 'codex-responses-log-only');
   assert.strictEqual(result.payload_log.after.model, 'gpt-5.5');
