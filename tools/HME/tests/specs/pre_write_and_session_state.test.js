@@ -60,6 +60,34 @@ test('pre-write check centralizes deny decision for credential writes', async ()
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+
+test('pre-write check denies malformed or display-redacted Edit input', async () => {
+  const root = _withSandbox('hme-pre-edit-shape-');
+  const { preWriteCheck } = require('../../proxy/pre_write_check');
+  try {
+    const badPath = await preWriteCheck(JSON.stringify({
+      tool_name: 'Edit',
+      session_id: 's1e',
+      tool_input: { file_path: "<<'HME_CODEX_JSON',", old_string: 'x', new_string: 'y' },
+    }));
+    assert.strictEqual(badPath.permissionDecision, 'deny');
+    assert.match(badPath.reason, /malformed Edit file_path/);
+    const redacted = await preWriteCheck(JSON.stringify({
+      tool_name: 'Edit',
+      session_id: 's1f',
+      tool_input: {
+        file_path: path.join(root, 'src', 'x.js'),
+        old_string: '<omitted by proxy>',
+        new_string: 'y',
+      },
+    }));
+    assert.strictEqual(redacted.permissionDecision, 'deny');
+    assert.match(redacted.reason, /display-redacted/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('session state records structured verification evidence', () => {
   const root = _withSandbox('hme-session-state-');
   const state = require('../../proxy/session_state');
