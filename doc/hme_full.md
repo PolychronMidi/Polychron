@@ -190,7 +190,7 @@ is the detailed first-session state machine.
 - **Shell lifecycle stages:** lifecycle behavior not yet ported, still routed
   through the kernel.
 - **HCI verifiers:** weighted self-coherence probes.
-- **Declarative invariants:** [`tools/HME/config/invariants.json`](../tools/HME/config/invariants.json).
+- **Declarative invariants:** [`tools/HME/config/invariants.json`](../tools/HME/config/invariants.json) indexes domain shards in `tools/HME/config/invariants/`.
 - **Pipeline validators:** source and metrics checks.
 - **ESLint rules:** JavaScript architectural boundaries.
 

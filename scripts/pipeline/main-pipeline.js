@@ -498,7 +498,7 @@ function main() {
     var label = bgScripts[k].replace(/\.py$/, '');
     _spawnBg(script, scriptArgs, label);
   }
-  // Invariant battery runs the declarative checks in config/invariants.json and
+  // Invariant battery runs the declarative checks in config/invariants/*.json via invariants.json and
   // writes to metrics/hme-invariant-history.json so chronic streaks clear every
   // round. Lives under scripts/pipeline/hme/ (not HME scripts/) so it spawns
   // separately from the hmeScripts loop above.

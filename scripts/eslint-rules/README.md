@@ -14,7 +14,7 @@ Each rule follows the standard ESLint rule shape: `meta` (docs, type, schema) + 
 
 ## Python parity
 
-The authoritative concordance map lives in [`tools/HME/config/invariants.json`](../../tools/HME/config/invariants.json) under the top-level `_js_rules.rules` array. Each entry names an ESLint rule with one of three statuses:
+The authoritative concordance map lives in [`tools/HME/config/invariants/eslint.json`](../../tools/HME/config/invariants/eslint.json) under `_js_rules.rules` and is merged through the invariant index. Each entry names an ESLint rule with one of three statuses:
 
 - **`ported`** -- has a Python equivalent registered as an invariant; the entry names the `python_invariant` id. Scripts live in `tools/HME/scripts/check-*.py`.
 - **`js_only`** -- architecturally JS-specific (composition engine boundaries, CommonJS load order, JS globals, validator stamp chain) with no Python surface to enforce against.
@@ -30,7 +30,7 @@ Pattern: JS-side rules enforced at lint time; Python-side rules enforced by the 
 2. Register in `index.js`
 3. Enable in `.eslintrc.js` under `rules: { 'local/<rule-name>': 'error' }`
 4. Document the reason in the rule's `meta.docs.description` -- future readers need to know WHY it exists
-5. Add an entry to `_js_rules.rules` in `tools/HME/config/invariants.json` with the appropriate status (`ported`, `js_only`, or `conventions_cover`). If ported, also add `check-py-<rule>.py`, register a Python invariant with a `js_equivalent: "<rule-name>"` backlink, and point the entry's `python_invariant` field at its id. The `eslint-concordance-complete` invariant will fail if this step is skipped.
+5. Add an entry to `_js_rules.rules` in `tools/HME/config/invariants/eslint.json` with the appropriate status (`ported`, `js_only`, or `conventions_cover`). If ported, also add `check-py-<rule>.py`, register a Python invariant with a `js_equivalent: "<rule-name>"` backlink, and point the entry's `python_invariant` field at its id. The `eslint-concordance-complete` invariant will fail if this step is skipped.
 
 <!-- HME-DIR-INTENT
 rules:

@@ -38,7 +38,7 @@ focus='curate': living memory curation -- detects KB-worthy patterns from recent
     boundary rules, doc sync, hook registration, selftest, and other guardrails.
     Reports gaps in enforcement that could let violations slip through.
     focus='invariants': declarative invariant battery -- loads checks from
-    config/invariants.json and evaluates each one. Add new invariants as JSON
+    config/invariants/*.json via the invariants.json index and evaluates each one. Add new invariants as JSON
     without modifying Python.
     focus='think': deep reasoning about a question (pass question in query param).
     focus='blast': blast radius / transitive dependency chain (pass symbol in query).
