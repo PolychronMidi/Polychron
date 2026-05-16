@@ -126,7 +126,10 @@ function postTool(name, args) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify(args);
     // Client-side wall-clock timeout. Historical default was NONE, which
-    const timeoutMs = Number(process.env.HME_CLI_TIMEOUT_MS) || 150_000;
+    let timeoutMs = Number(process.env.HME_CLI_TIMEOUT_MS) || 150_000;
+    if (name === 'hme_admin' && ['index', 'clear_index'].includes(String(args.action || ''))) {
+      timeoutMs = Math.max(timeoutMs, Number(process.env.HME_INDEX_CLI_TIMEOUT_MS) || 900_000);
+    }
     const req = http.request({
       host: HOST,
       port: PORT,
