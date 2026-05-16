@@ -11,7 +11,6 @@ Validators run in deterministic order so earlier failures surface faster (cheap 
 - `check-tuning-invariants.js` -- numerical invariants on coupling matrix + gain budgets
 - `check-hypermeta-jurisdiction.js` -- bias-bounds manifest, 4-phase hypermeta boundary check (supports `--snapshot-bias-bounds`)
 - `check-hme-coherence.js` -- reads `output/metrics/hme-activity.jsonl`; fails on `coherence_violation` events in the current round. As of Apr 2026 the `write_without_hme_read` emitter was retired (legacy-MCP contract replaced by auto-enrichment middleware); the check runs as a no-op unless future `coherence_violation` variants are introduced.
-- `check-kb-semantic-drift.py` -- KB entries whose baseline signature has diverged from current code
 - `check-safe-preboot-audit.js` -- pre-boot side-effect audit (no writes, no network)
 
 ## Adding a validator
