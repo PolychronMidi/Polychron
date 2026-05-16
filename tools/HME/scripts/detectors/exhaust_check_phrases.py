@@ -164,6 +164,11 @@ DEFERRAL_REGEXES = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"\b(?:still\s+)?deserves?\s+(?:a|an|another|separate)\b[^\n]{0,50}?"
+        r"\b(hardening|pass|fix|review|investigation|follow-?up|diagnostic|work|sweep)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"\b(takes|will take)\s+effect\s+(on|when|after)\b",
         re.IGNORECASE,
     ),

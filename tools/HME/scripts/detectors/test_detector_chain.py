@@ -190,6 +190,20 @@ _CASES = [
      ],
      "ok"),
 
+    ("exhaust_check", "unaddressed-hardening-pass",
+     [
+         _user_msg("do all and do not leave issues"),
+         _assistant_msg(
+             "Done. Tests passed. One extra alarm: native Edit returned "
+             "success on a malformed redacted old_string without changing "
+             "the file. That means there is still a closed/native Edit "
+             "false-success edge outside the project-owned structured edit "
+             "path. It still deserves a separate hardening pass if observable "
+             "from our middleware."
+         ),
+     ],
+     "exhaust_violation"),
+
     # Research-evaluation exemption: enumeration IS the deliverable when
     # explicitly invited; detector must not fire on this shape.
     ("exhaust_check", "research-eval-exemption",
