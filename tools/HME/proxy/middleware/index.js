@@ -477,6 +477,7 @@ async function runPipeline(payload, scan, session) {
 // where NN is the load-order prefix (replaces the order.json manifest, which
 // was a 2-place sync risk). Files without a numeric prefix sort AFTER the
 // numbered ones, alphabetically, so new middleware can't be silently disabled.
+// A suffix letter (e.g. 08a_) is an explicit substep inside the integer phase.
 function loadAll() {
   const dir = __dirname;
   const allFiles = fs.readdirSync(dir).filter(f => (
@@ -484,15 +485,18 @@ function loadAll() {
     && !f.startsWith('test_') && !f.endsWith('.test.js') && !f.endsWith('_test.js')
     && !f.startsWith('_')
   ));
-  // Sort by numeric prefix when present, else alphabetical (after numbered).
+  // Sort by numeric prefix/substep when present, else alphabetical (after numbered).
   const ordered = allFiles.slice().sort((a, b) => {
-    const ma = /^(\d+)_/.exec(a); const mb = /^(\d+)_/.exec(b);
-    if (ma && mb) return (parseInt(ma[1], 10) - parseInt(mb[1], 10)) || a.localeCompare(b);
+    const ma = /^(\d+)([a-z]?)_/.exec(a); const mb = /^(\d+)([a-z]?)_/.exec(b);
+    if (ma && mb) {
+      const delta = parseInt(ma[1], 10) - parseInt(mb[1], 10);
+      return delta || ma[2].localeCompare(mb[2]) || a.localeCompare(b);
+    }
     if (ma && !mb) return -1;
     if (!ma && mb) return 1;
     return a.localeCompare(b);
   });
-  const unprefixed = ordered.filter(f => !/^\d+_/.test(f));
+  const unprefixed = ordered.filter(f => !/^\d+[a-z]?_/.test(f));
   if (unprefixed.length > 0) {
     console.warn(`Acceptable warning: [middleware] ${unprefixed.length} file(s) without numeric prefix (loaded alphabetically AFTER prefixed): ${unprefixed.join(', ')}`);
   }

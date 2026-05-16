@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Lint: every middleware file in tools/HME/proxy/middleware/ (except
-index.js, _-prefixed utilities, and tests) MUST have a NN_ numeric prefix
+index.js, _-prefixed utilities, and tests) MUST have a NN_ or NNa_ prefix
 encoding load order. Unprefixed files load alphabetically AFTER prefixed
 ones, which can break dependency chains.
 
@@ -15,7 +15,7 @@ import sys
 
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _MW_DIR = os.path.join(_PROJECT_ROOT, "tools", "HME", "proxy", "middleware")
-_PREFIX_RE = re.compile(r"^\d+_")
+_PREFIX_RE = re.compile(r"^\d+[a-z]?_")
 
 
 def main() -> int:
@@ -41,8 +41,8 @@ def main() -> int:
         m = _PREFIX_RE.match(f)
         if not m:
             continue
-        n = int(m.group(0).rstrip("_"))
-        prefixes.setdefault(n, []).append(f)
+        key = m.group(0).rstrip("_")
+        prefixes.setdefault(key, []).append(f)
     duplicates = {n: fs for n, fs in prefixes.items() if len(fs) > 1}
     if duplicates:
         print("FAIL: duplicate numeric prefixes:")
