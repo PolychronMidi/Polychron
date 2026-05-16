@@ -11,6 +11,9 @@ const { execSync } = require('child_process');
 // log/ and tmp/ must be at root only. metrics/ is special: allowed only at output/metrics/.
 const ROOT_ONLY_NAMES = new Set(['log', 'tmp']);
 const SKIP_DIRS = new Set(['node_modules', '.git', 'venv', '__pycache__']);
+const ROOT_FORBIDDEN_FILE_PATTERNS = [
+  { re: /\.jsonl$/i, reason: 'JSONL runtime/test artifacts belong under output/metrics/, runtime/, log/, or tmp/' }
+];
 
 function walk(dir, violations) {
   let entries;
@@ -60,6 +63,21 @@ function getStagedDeletions() {
 // for actual files on disk: any non-empty file inside a misplaced log/
 // tmp/ metrics/ directory IS a violation regardless of git status. Only
 // staged-for-deletion files (fix in progress) are exempt.
+function rootFileViolations(entries, stagedDeletions) {
+  const violations = [];
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    if (stagedDeletions.has(entry.name)) continue;
+    for (const pattern of ROOT_FORBIDDEN_FILE_PATTERNS) {
+      if (pattern.re.test(entry.name)) {
+        violations.push({ file: entry.name, reason: pattern.reason });
+        break;
+      }
+    }
+  }
+  return violations;
+}
+
 function isSafe(absPath, stagedDeletions) {
   const rel = path.relative(ROOT, absPath);
 
@@ -103,23 +121,28 @@ function main() {
 
   const stagedDeletions = getStagedDeletions();
   const unsafe = violations.filter(v => !isSafe(v, stagedDeletions));
+  const fileViolations = rootFileViolations(entries, stagedDeletions);
 
-  if (unsafe.length > 0) {
+  if (unsafe.length > 0 || fileViolations.length > 0) {
     for (const v of unsafe) {
       console.error('  VIOLATION: ' + path.relative(ROOT, v) + ' -- must not exist outside project root');
     }
+    for (const v of fileViolations) {
+      console.error('  VIOLATION: ' + v.file + ' -- ' + v.reason);
+    }
     throw new Error(
       'check-root-only-dirs: ' + unsafe.length + ' misplaced log/metrics/tmp director' +
-      (unsafe.length === 1 ? 'y' : 'ies') + ' found with live content. ' +
-      'log/ and tmp/ must be at project root; metrics/ must be at output/metrics/. ' +
-      'Add gitignore entries for any runtime-only paths.'
+      (unsafe.length === 1 ? 'y' : 'ies') + ' and ' + fileViolations.length +
+      ' forbidden root file(s) found. log/ and tmp/ must be at project root; ' +
+      'metrics/ must be at output/metrics/; runtime artifacts must stay out of root.'
     );
   }
 
   const empty = violations.length - unsafe.length;
   console.log(
     'check-root-only-dirs: PASS (' + violations.length + ' misplaced dir(s) found, ' +
-    empty + ' empty/pending-delete, 0 with live files)'
+    empty + ' empty/pending-delete, 0 with live files, ' + fileViolations.length +
+    ' forbidden root file(s))'
   );
 }
 
