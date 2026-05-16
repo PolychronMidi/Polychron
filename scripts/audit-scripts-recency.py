@@ -20,6 +20,20 @@ RUN_EVIDENCE_METRICS = {"hme-activity.jsonl", "hme-activity-archive.jsonl", "hme
 SOURCE_SKIP_PREFIXES = ("log/", "output/", "runtime/", "tmp/", "tools/models/")
 RUN_SUFFIXES = {".py", ".js", ".sh"}
 
+COLD_CLASSIFICATIONS = {
+    "scripts/hme/codex-agent-job.py": "manual Codex filesystem job launcher",
+    "scripts/hme/timeline-panel.py": "i/status timeline panel",
+    "scripts/hme/freeze-check.py": "i/why mode=freeze panel",
+    "scripts/probe-omniroute-max-reasoning.py": "provider-manifest OmniRoute check",
+    "scripts/sync-omniroute-model-limits.py": "doctor/admin OmniRoute sync",
+    "scripts/configure-omniroute-max-reasoning.py": "OmniRoute startup/admin config",
+    "scripts/c2m.py": "render/lab MIDI conversion utility",
+    "scripts/compact-lance-tables.py": "pipeline/lifecycle LanceDB maintenance",
+    "scripts/sync-claude-settings.py": "Claude settings sync admin check",
+    "scripts/pipeline/train-verdict-predictor.js": "post-composition trainer; audit --check",
+    "scripts/pipeline/hme/utils.js": "shared HME pipeline helper module",
+}
+
 
 def git_files(prefix: str = "") -> list[Path]:
     cmd = ["git", "ls-files"] + ([prefix] if prefix else [])
