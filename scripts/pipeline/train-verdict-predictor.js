@@ -62,6 +62,11 @@ function main() {
     }),
   }));
 
+  if (CHECK_ONLY) {
+    console.log(`Verdict predictor check: ${labeledFinal.length} labeled snapshots, features=${FEATURES.length}`);
+    return;
+  }
+
   if (labeledFinal.length < MIN_LABELED) {
     console.log(`Verdict predictor: ${labeledFinal.length} labeled snapshots (need ${MIN_LABELED}). Skipping training.`);
     return;
