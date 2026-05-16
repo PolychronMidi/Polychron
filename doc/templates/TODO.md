@@ -4,11 +4,21 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] 1. Verify Polychron launcher mode-1 startup regression/post-restart contract coverage
 
 ## Next
 
-(empty)
+- [ ] [E3] 2. Verify stale-mode grep invariant targets source/config/docs only
+- [ ] [E3] 3. Verify routing-ready runs automatically after Polychron launch
+- [ ] [E3] 4. Verify codex_proxy stale dependency restart checks expanded
+- [ ] [E3] 5. Verify codex_proxy is recorded in main Polychron PID file
+- [ ] [E3] 6. Verify polychron-shutdown owns Codex proxy and OmniRoute
+- [ ] [E3] 7. Verify routing health freshness warnings
+- [ ] [E3] 8. Verify InjectionGuard advisory compression
+- [ ] [E3] 9. Verify Claude proxy route-counter tests
+- [ ] [E3] 10. Verify OmniRoute startup idempotence hardening
+- [ ] [E3] 11. Verify log epoch filtering in health
+- [ ] [E3] 12. Verify single post-restart contract spec and full verification
 
 ## Done
 
