@@ -256,85 +256,39 @@ def audit_hook_sources(root: Path) -> list[dict]:
 
 
 def audit_module_imports(root: Path) -> list[dict]:
-    """Parse every .py file under tools/HME/service/server/ and verify that
-    every NAME referenced at module level OR in function bodies is either
-    imported, defined, or a builtin. Catches the exact bug class where
-    meta_layers.py used `subprocess.run(...)` without `import subprocess`.
-
-    Lightweight: uses Python's AST, no import execution. We find
-    undefined names by comparing `ast.Name` loads against imports,
-    definitions, and builtins."""
+    """Delegate server undefined-name checks to the canonical audit."""
+    import json as _json
+    import subprocess as _subprocess
     findings: list[dict] = []
-    import builtins
-    server_dir = root / "tools" / "HME" / "service" / "server"
-    if not server_dir.is_dir():
+    script = root / "scripts" / "audit-python-undefined-names.py"
+    target = root / "tools" / "HME" / "service" / "server"
+    if not script.is_file() or not target.is_dir():
         return findings
-    builtin_names = set(dir(builtins)) | {"self", "cls", "__name__", "__file__",
-                                           "__doc__", "__package__", "__path__",
-                                           "__spec__", "__loader__", "__builtins__"}
-
-    import ast as _ast
-
-    for py in server_dir.rglob("*.py"):
-        if "__pycache__" in py.parts:
-            continue
-        try:
-            src = py.read_text(errors="ignore")
-            tree = _ast.parse(src, filename=str(py))
-        except SyntaxError as e:
-            findings.append({
-                "source": f"server/{py.relative_to(server_dir)}",
-                "id": f"line {e.lineno}",
-                "type": "syntax_error",
-                "status": "STALE",
-                "detail": f"parse error: {e.msg}",
-            })
-            continue
-        except Exception:
-            # silent-ok: optional fallback path.
-            continue
-
-        # Collect all bound names at module scope: imports, def, class, assign.
-        module_names: set[str] = set(builtin_names)
-        for node in _ast.walk(tree):
-            if isinstance(node, (_ast.Import, _ast.ImportFrom)):
-                for alias in node.names:
-                    module_names.add(alias.asname or alias.name.split(".")[0])
-            elif isinstance(node, (_ast.FunctionDef, _ast.AsyncFunctionDef, _ast.ClassDef)):
-                module_names.add(node.name)
-            elif isinstance(node, _ast.Assign):
-                for t in node.targets:
-                    if isinstance(t, _ast.Name):
-                        module_names.add(t.id)
-            elif isinstance(node, _ast.AnnAssign) and isinstance(node.target, _ast.Name):
-                module_names.add(node.target.id)
-
-        # Walk module-level statements (not deep into nested scopes; function
-        comprehension_types = (_ast.ListComp, _ast.SetComp, _ast.DictComp, _ast.GeneratorExp)
-        for stmt in tree.body:
-            if isinstance(stmt, (_ast.Import, _ast.ImportFrom, _ast.FunctionDef,
-                                 _ast.AsyncFunctionDef, _ast.ClassDef)):
-                continue
-            # Collect comprehension node ids so we can skip their interiors.
-            comp_interior_ids: set[int] = set()
-            for node in _ast.walk(stmt):
-                if isinstance(node, comprehension_types):
-                    for sub in _ast.walk(node):
-                        if sub is not node:
-                            comp_interior_ids.add(id(sub))
-            for sub in _ast.walk(stmt):
-                if id(sub) in comp_interior_ids:
-                    continue
-                if isinstance(sub, _ast.Name) and isinstance(sub.ctx, _ast.Load):
-                    if sub.id not in module_names:
-                        findings.append({
-                            "source": f"server/{py.relative_to(server_dir)}",
-                            "id": f"{sub.id} @ line {sub.lineno}",
-                            "type": "undefined_name",
-                            "status": "STALE",
-                            "detail": f"module-scope reference to `{sub.id}` that isn't imported/defined -- will NameError at import",
-                        })
+    try:
+        proc = _subprocess.run(
+            [sys.executable, str(script), "--path", str(target), "--json"],
+            capture_output=True, text=True, timeout=60, cwd=str(root),
+        )
+        data = _json.loads(proc.stdout or "[]")
+    except Exception as e:
+        return [{
+            "source": "audit-python-undefined-names",
+            "status": "ERROR",
+            "detail": f"{type(e).__name__}: {e}",
+        }]
+    for item in data:
+        path = str(item.get("path", "?"))
+        rel = path.replace(str(root) + "/", "")
+        findings.append({
+            "source": rel,
+            "id": f"line {item.get('line', '?')}",
+            "type": "undefined_name",
+            "status": "STALE",
+            "detail": item.get("message", "undefined name"),
+        })
     return findings
+
+
 
 
 
