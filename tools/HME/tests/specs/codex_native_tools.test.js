@@ -85,6 +85,21 @@ test('Codex native Read response rewrites to executable bridge and back to Read 
   assert.deepEqual(JSON.parse(normalized.arguments), { file_path: 'doc/HME.md', limit: 5 });
 });
 
+test('Codex bridge heredoc text normalizes without leaking heredoc header', () => {
+  const cmd = [
+    "node tools/HME/scripts/codex_structured_tool.js read --json <<'HME_CODEX_JSON'",
+    JSON.stringify({ file_path: 'doc/templates/AGENTS.md', offset: 0, limit: 5 }),
+    'HME_CODEX_JSON',
+    'after',
+  ].join('\n');
+  const normalized = normalizeStructuredBridgeCalls({ text: cmd });
+  assert.equal(
+    normalized.body.text,
+    'Read({"file_path":"doc/templates/AGENTS.md","offset":0,"limit":5})\nafter',
+  );
+  assert.equal(normalized.stats.text_rewrites, 1);
+});
+
 test('Codex SSE native Edit response rewrites before forwarding', () => {
   const rewriter = createNativeToolSseRewriter();
   const event = {
