@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Sweep OVERDRIVE_MODE=6 gates/docs/tests to identify exact rename surface
 
 ## Next
 
-(empty)
+- [ ] [E3] Run targeted and full verification
+- [ ] [E3] Patch active mode from 6 to 1 and update .env
+- [ ] [E3] Report concise evidence
 
 ## Done
 

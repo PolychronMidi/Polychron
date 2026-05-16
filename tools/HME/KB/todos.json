@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3347,
-      "updated_ts": 1778943148.8970168,
-      "codex_plan_synced_ts": 1778943148.8969526,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T14:52:02.916Z"
+      "max_id": 3350,
+      "updated_ts": 1778943512.6006076,
+      "codex_plan_synced_ts": 1778943512.6005433,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T14:58:32.179Z"
     }
   },
   {
@@ -4871,8 +4871,8 @@
     "id": 3343,
     "text": "Run targeted and full verification",
     "activeForm": "Run targeted and full verification",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4880,8 +4880,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:27:55.080Z",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T14:58:32.179Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
@@ -4947,5 +4947,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T14:52:02.916Z"
+  },
+  {
+    "id": 3348,
+    "text": "Sweep OVERDRIVE_MODE=6 gates/docs/tests to identify exact rename surface",
+    "activeForm": "Sweep OVERDRIVE_MODE=6 gates/docs/tests to identify exact rename surface",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778943512.5999591,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T14:58:32.179Z"
+  },
+  {
+    "id": 3349,
+    "text": "Patch active mode from 6 to 1 and update .env",
+    "activeForm": "Patch active mode from 6 to 1 and update .env",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778943512.599965,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T14:58:32.179Z"
+  },
+  {
+    "id": 3350,
+    "text": "Report concise evidence",
+    "activeForm": "Report concise evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778943512.599971,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T14:58:32.179Z"
   }
 ]
