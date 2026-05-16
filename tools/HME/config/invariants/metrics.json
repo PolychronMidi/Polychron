@@ -37,7 +37,10 @@
       "path_a": "output/metrics/trace.jsonl",
       "path_b_glob": "output/metrics/run-history/*.json",
       "max_delta_seconds": 300,
-      "severity": "warning"
+      "severity": "warning",
+      "warning_kind": "stale-data",
+      "repair_command": "tools/HME/scripts/repair-trace-run-history-sync.sh",
+      "context": "Run-history and trace snapshots must be freshness-aligned. Repair regenerates trace-summary and a current run snapshot from METRICS_DIR."
     },
     {
       "id": "current-run-valid",
