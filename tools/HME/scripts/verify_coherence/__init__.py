@@ -15,7 +15,8 @@ Package layout (was single 2842-line verify-coherence.py):
   code_audits.py        core principles, shell hooks, proxy middleware, syntax
   autocommit_health.py  autocommit health, shim health
   onboarding.py         flow, state integrity, chain import, state sync
-  todo_tools.py         todo store/merge, tool surface coverage
+  todo_tools.py         todo store/merge/archive/codex-plan checks
+  tool_surface.py       public tool docs + native TodoWrite nonblock check
   meta_observers.py     meta-observer, verifier-coverage, memetic, predictive
   subagent.py           subagent mode/passthrough/guard/backends
   runtime_behavior.py   transient/context/warm/plan
