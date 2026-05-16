@@ -1,7 +1,7 @@
 """HME prediction accuracy reader -- Phase 3.4 of openshell_features_to_mimic.md.
 
 Renders `metrics/hme-prediction-accuracy.json` (populated by
-`tools/HME/tools/HME/scripts/pipeline/hme/reconcile-predictions.js`) as a markdown digest.
+`tools/HME/scripts/pipeline/hme/reconcile-predictions.js`) as a markdown digest.
 Surfaced via `status(mode='accuracy')`.
 """
 from __future__ import annotations

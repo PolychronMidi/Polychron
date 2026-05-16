@@ -5,8 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const ROOT = process.env.PROJECT_ROOT || process.env.CLAUDE_PROJECT_DIR || path.resolve(__dirname, '..');
-const HME_CLI = path.join(ROOT, 'scripts', 'hme-cli.js');
+const ROOT = process.env.PROJECT_ROOT || process.env.CLAUDE_PROJECT_DIR || path.resolve(__dirname, '..', '..', '..');
+const HME_CLI = path.join(ROOT, 'tools', 'HME', 'scripts', 'hme-cli.js');
 const REGISTRY = path.join(ROOT, 'tools', 'HME', 'i_registry.json');
 
 function run(cmd, args, opts = {}) {
@@ -127,7 +127,7 @@ function dispatchWhy(args) {
   for (const a of args) {
     if (a === 'mode=freeze') run('python3', [path.join(ROOT, 'tools/HME/scripts/freeze-check.py'), ...stripSelector(args, 'freeze')]);
     const m = /^mode=(.+)$/.exec(a);
-    if (m && modeMap[m[1]]) run('python3', [path.join(ROOT, 'scripts/hme', modeMap[m[1]]), ...args]);
+    if (m && modeMap[m[1]]) run('python3', [path.join(ROOT, 'tools/HME/scripts', modeMap[m[1]]), ...args]);
   }
   if (args.length > 1 || (args[0] || '').includes(' ') || (args[0] || '').includes('?')) {
     run('python3', [path.join(ROOT, 'tools/HME/scripts/why-search.py'), ...args]);

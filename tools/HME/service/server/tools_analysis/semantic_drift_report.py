@@ -1,7 +1,7 @@
 """HME semantic drift reader -- Phase 3.3 of openshell_features_to_mimic.md.
 
 Renders `metrics/hme-semantic-drift.json` (populated by
-`tools/HME/tools/HME/scripts/pipeline/hme/check-kb-semantic-drift.py`) as a markdown digest. Surfaced
+`tools/HME/scripts/pipeline/hme/check-kb-semantic-drift.py`) as a markdown digest. Surfaced
 via `status(mode='drift')`.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ def semantic_drift_report() -> str:
         return (
             "# KB Semantic Drift\n\n"
             "output/metrics/hme-semantic-drift.json not found.\n"
-            "Run: python3 tools/HME/tools/HME/scripts/pipeline/hme/check-kb-semantic-drift.py\n"
+            "Run: python3 tools/HME/scripts/pipeline/hme/check-kb-semantic-drift.py\n"
             "(Bootstrap baselines first with capture-kb-signatures.py)"
         )
     try:

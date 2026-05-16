@@ -178,21 +178,21 @@
       "id": "drift-checker-file-exists",
       "description": "check-kb-semantic-drift.py must be present for the pipeline step to run",
       "type": "file_exists",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/check-kb-semantic-drift.py",
+      "path": "tools/HME/scripts/pipeline/hme/check-kb-semantic-drift.py",
       "severity": "error"
     },
     {
       "id": "signature-capture-exists",
       "description": "capture-kb-signatures.py must exist so baselines can be bootstrapped",
       "type": "file_exists",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/capture-kb-signatures.py",
+      "path": "tools/HME/scripts/pipeline/hme/capture-kb-signatures.py",
       "severity": "error"
     },
     {
       "id": "musical-correlation-script-exists",
       "description": "Phase 4.1  musical ground truth correlator must exist (the external anchor)",
       "type": "file_exists",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/compute-musical-correlation.js",
+      "path": "tools/HME/scripts/pipeline/hme/compute-musical-correlation.js",
       "severity": "error"
     },
     {
@@ -213,14 +213,14 @@
       "id": "kb-trust-weights-script-exists",
       "description": "Phase 4.2  KB trust weight computer must exist",
       "type": "file_exists",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/compute-kb-trust-weights.py",
+      "path": "tools/HME/scripts/pipeline/hme/compute-kb-trust-weights.py",
       "severity": "error"
     },
     {
       "id": "intention-gap-script-exists",
       "description": "Phase 4.3  intention-execution gap tracker must exist",
       "type": "file_exists",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/compute-intention-gap.js",
+      "path": "tools/HME/scripts/pipeline/hme/compute-intention-gap.js",
       "severity": "error"
     },
     {
@@ -239,7 +239,7 @@
       "id": "trajectory-script-exists",
       "description": "Phase 5.1  compositional trajectory script must exist",
       "type": "file_exists",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/compute-compositional-trajectory.js",
+      "path": "tools/HME/scripts/pipeline/hme/compute-compositional-trajectory.js",
       "severity": "error"
     },
     {
@@ -257,7 +257,7 @@
       "id": "ground-truth-kb-override",
       "description": "compute-kb-trust-weights.py must unconditionally tier human_ground_truth KB entries as HIGH",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/compute-kb-trust-weights.py",
+      "path": "tools/HME/scripts/pipeline/hme/compute-kb-trust-weights.py",
       "patterns": [
         "human_ground_truth",
         "\"tier\": \"HIGH\""
@@ -268,7 +268,7 @@
       "id": "reflexivity-split-in-reconciler",
       "description": "reconcile-predictions.js must split predictions into clean vs injected buckets",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/reconcile-predictions.js",
+      "path": "tools/HME/scripts/pipeline/hme/reconcile-predictions.js",
       "patterns": [
         "cleanPredicted",
         "injectedPredicted",
@@ -280,21 +280,21 @@
       "id": "constitution-script-exists",
       "description": "Phase 6.2  constitutional identity derivation script must exist",
       "type": "file_exists",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/derive-constitution.py",
+      "path": "tools/HME/scripts/pipeline/hme/derive-constitution.py",
       "severity": "error"
     },
     {
       "id": "doc-drift-script-exists",
       "description": "Phase 6.3  doc drift detector must exist",
       "type": "file_exists",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/detect-doc-drift.py",
+      "path": "tools/HME/scripts/pipeline/hme/detect-doc-drift.py",
       "severity": "error"
     },
     {
       "id": "generalizations-script-exists",
       "description": "Phase 6.4  generalization extractor must exist",
       "type": "file_exists",
-      "path": "tools/HME/tools/HME/scripts/pipeline/hme/extract-generalizations.py",
+      "path": "tools/HME/scripts/pipeline/hme/extract-generalizations.py",
       "severity": "error"
     },
     {

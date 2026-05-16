@@ -171,7 +171,7 @@ def _trajectory_report() -> str:
         return (
             "# Compositional Trajectory\n\n"
             "output/metrics/hme-trajectory.json not found.\n"
-            "Run: node tools/HME/tools/HME/scripts/pipeline/hme/compute-compositional-trajectory.js"
+            "Run: node tools/HME/scripts/pipeline/hme/compute-compositional-trajectory.js"
         )
     try:
         with open(path, encoding="utf-8") as f:

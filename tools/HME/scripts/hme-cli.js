@@ -45,10 +45,12 @@ const http = require('http');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const path = require('path');
-const { serviceHost, servicePort } = require('../tools/HME/proxy/service_registry');
+const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const HME_ROOT = path.join(PROJECT_ROOT, 'tools', 'HME');
+const { serviceHost, servicePort } = require(path.join(HME_ROOT, 'proxy', 'service_registry'));
 
 // Single source of truth: tools/HME/config/versions.json.
-const _VERSIONS_PATH = path.resolve(__dirname, '..', 'tools', 'HME', 'config', 'versions.json');
+const _VERSIONS_PATH = path.join(HME_ROOT, 'config', 'versions.json');
 const CLI_VERSION = (() => {
   try { return JSON.parse(fs.readFileSync(_VERSIONS_PATH, 'utf8')).cli; }
   catch (_) { return 'unknown'; }
@@ -186,8 +188,7 @@ function getProxyVersion(timeoutMs) {
 
 function logFallback(message) {
   try {
-    const root = path.resolve(__dirname, '..');
-    const file = path.join(root, 'log', 'hme-cli-fallback.log');
+    const file = path.join(PROJECT_ROOT, 'log', 'hme-cli-fallback.log');
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.appendFileSync(file, `[${new Date().toISOString()}] ${message}\n`);
   } catch (_) { /* best-effort */ }
@@ -206,8 +207,8 @@ function logFallback(message) {
  */
 function _tryDirectLance(tool, args) {
   return new Promise((resolve) => {
-    const projectRoot = path.resolve(__dirname, '..');
-    const directLance = path.join(projectRoot, 'tools/HME/service/direct_lance.py');
+    const projectRoot = PROJECT_ROOT;
+    const directLance = path.join(HME_ROOT, 'service', 'direct_lance.py');
     if (!fs.existsSync(directLance)) return resolve(null);
 
     let scriptArgs;
@@ -279,7 +280,7 @@ async function main() {
     // HTTP failed -- fall back to filesystem-IPC queue. The queue path
     if (process.env.HME_CLI_DISABLE_QUEUE !== '1') {
       try {
-        const wq = require(path.join(__dirname, '..', 'tools/HME/proxy/worker_queue'));
+        const wq = require(path.join(HME_ROOT, 'proxy', 'worker_queue'));
         const queueTimeoutMs = Number(process.env.HME_CLI_QUEUE_TIMEOUT_MS) || 60_000;
         const queueRes = await wq.call('tool', { name: tool, args }, { timeoutMs: queueTimeoutMs });
         if (queueRes !== null) {

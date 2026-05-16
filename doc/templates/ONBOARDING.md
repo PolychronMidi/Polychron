@@ -153,9 +153,9 @@ A set of post-composition instrumentation features -- musical correlation, coher
    emit round_complete to close that window. Do this BEFORE rebuilding
    the derived metrics -- order matters.
 
-4. node tools/HME/tools/HME/scripts/pipeline/hme/compute-coherence-score.js
-   python3 tools/HME/tools/HME/scripts/pipeline/hme/compute-kb-trust-weights.py
-   python3 tools/HME/tools/HME/scripts/pipeline/hme/derive-constitution.py
+4. node tools/HME/scripts/pipeline/hme/compute-coherence-score.js
+   python3 tools/HME/scripts/pipeline/hme/compute-kb-trust-weights.py
+   python3 tools/HME/scripts/pipeline/hme/derive-constitution.py
    Rebuild the derived metrics against the now-bounded window. The
    pipeline POST_COMPOSITION already ran them once but with the
    polluted pre-round_complete window; this is the clean pass.

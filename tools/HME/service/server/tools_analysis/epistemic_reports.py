@@ -42,7 +42,7 @@ def music_truth_report() -> str:
             "# HME Musical Ground Truth\n\n"
             "output/metrics/hme-musical-correlation.json not found.\n"
             "Runs automatically post-composition "
-            "(`tools/HME/tools/HME/scripts/pipeline/hme/compute-musical-correlation.js`)."
+            "(`tools/HME/scripts/pipeline/hme/compute-musical-correlation.js`)."
         )
     latest = data.get("latest") or {}
     corr = data.get("correlations") or {}
@@ -132,7 +132,7 @@ def kb_trust_report() -> str:
             "# KB Trust Weights\n\n"
             "output/metrics/kb-trust-weights.json not found.\n"
             "Runs automatically post-composition "
-            "(`tools/HME/tools/HME/scripts/pipeline/hme/compute-kb-trust-weights.py`)."
+            "(`tools/HME/scripts/pipeline/hme/compute-kb-trust-weights.py`)."
         )
     meta = data.get("meta") or {}
     entries = data.get("entries") or {}
@@ -172,7 +172,7 @@ def intention_gap_report() -> str:
             "# HME Intention-Execution Gap\n\n"
             "output/metrics/hme-intention-gap.json not found.\n"
             "Runs automatically post-composition "
-            "(`tools/HME/tools/HME/scripts/pipeline/hme/compute-intention-gap.js`)."
+            "(`tools/HME/scripts/pipeline/hme/compute-intention-gap.js`)."
         )
     latest = data.get("latest") or {}
     ema = data.get("ema")
@@ -207,7 +207,7 @@ def intention_gap_report() -> str:
             f"  note: {n_untrackable}/{n_total} todos are UNTRACKABLE -- their text "
             f"doesn't match any artifact pattern the gap-computer can verify "
             f"(file paths, module names, commit tokens). Not failures; just "
-            f"outside introspection range. See tools/HME/tools/HME/scripts/pipeline/hme/compute-intention-gap.js "
+            f"outside introspection range. See tools/HME/scripts/pipeline/hme/compute-intention-gap.js "
             f"to extend the patterns."
         )
 

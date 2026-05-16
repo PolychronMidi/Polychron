@@ -12,7 +12,7 @@
 #   bash tools/HME/scripts/audit-all.sh --strict    # exit 1 if any audit reports findings
 set -uo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../../.."
 
 STRICT=0
 for arg in "$@"; do

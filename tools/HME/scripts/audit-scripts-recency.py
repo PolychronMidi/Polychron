@@ -31,7 +31,7 @@ COLD_CLASSIFICATIONS = {
     "tools/HME/scripts/compact-lance-tables.py": "pipeline/lifecycle LanceDB maintenance",
     "tools/HME/scripts/sync-claude-settings.py": "Claude settings sync admin check",
     "src/scripts/pipeline/train-verdict-predictor.js": "post-composition trainer; audit --check",
-    "tools/HME/tools/HME/scripts/pipeline/hme/utils.js": "shared HME pipeline helper module",
+    "tools/HME/scripts/pipeline/hme/utils.js": "shared HME pipeline helper module",
     "tools/HME/scripts/audit_shell_undefined_audit.py": "audit helper module",
     "tools/HME/scripts/report-src-loc.js": "LOC audit helper",
     "tools/HME/scripts/loc_ignore.py": "LOC audit helper",
@@ -118,7 +118,7 @@ def _local_import_count(target: Path, source: Path, body: str) -> int:
 
 def _basename_reference_count(target: Path, body: str) -> int:
     rel = str(target.relative_to(ROOT))
-    if rel.startswith(("tools/HME/scripts/", "tools/HME/scripts/chaos/")) or rel == "tools/HME/tools/HME/scripts/pipeline/hme/run-invariant-battery.py":
+    if rel.startswith(("tools/HME/scripts/", "tools/HME/scripts/chaos/")) or rel == "tools/HME/scripts/pipeline/hme/run-invariant-battery.py":
         return body.count(target.name)
     return 0
 

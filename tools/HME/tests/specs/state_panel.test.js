@@ -614,7 +614,7 @@ test('compute-coherence-budget handles bidirectional band adjustment (widen + na
       expires_after_rounds: 1,
     }));
     const r = spawnSync('node',
-      [path.join(PROJECT_ROOT, 'tools/HME/tools/HME/scripts/pipeline/hme/compute-coherence-budget.js')],
+      [path.join(PROJECT_ROOT, 'tools/HME/scripts/pipeline/hme/compute-coherence-budget.js')],
       { encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
         env: { ...process.env, PROJECT_ROOT } });
     if (r.status !== 0) return;  // bail gracefully if upstream deps missing
@@ -667,7 +667,7 @@ test('compute-coherence-budget consumes V->IX band-tightening proposal', () => {
     }));
     // Run the pipeline script
     const r = spawnSync('node',
-      [path.join(PROJECT_ROOT, 'tools/HME/tools/HME/scripts/pipeline/hme/compute-coherence-budget.js')],
+      [path.join(PROJECT_ROOT, 'tools/HME/scripts/pipeline/hme/compute-coherence-budget.js')],
       { encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
         env: { ...process.env, PROJECT_ROOT } });
     if (r.status !== 0) {
