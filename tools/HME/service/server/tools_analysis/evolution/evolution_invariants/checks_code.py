@@ -9,7 +9,7 @@ import re
 
 from server import context as ctx
 
-from ._base import METRICS_DIR, _CONFIG_REL, _resolve, _excluded, _is_regex
+from ._base import METRICS_DIR, _CONFIG_REL, _load_invariant_config, _resolve, _excluded, _is_regex
 import time
 import datetime
 
@@ -17,109 +17,29 @@ import datetime
 
 
 
-def _check_public_functions_reachable(inv: dict) -> tuple[bool, str]:
-    """Every undecorated public function (no leading `_`) in a scanned dir must
-    be either @ctx.mcp.tool-decorated, referenced from another module, OR
-    listed in the explicit `allowed_internals` list. Catches the class of
-    bug where a handler is defined with a public-looking name but nothing
-    can actually call it (status() was unreachable for months for exactly
-    this reason).
-
-    Config:
-      scan_dir         -- directory to walk for .py files
-      allowed_internals -- list of function names that are legitimately
-                          internal-but-undecorated (dispatch-table-called,
-                          test harness, etc.)
-    """
-    import ast as _ast
-    import re as _re
-    scan_dir = os.path.join(ctx.PROJECT_ROOT, inv["scan_dir"])
-    allowed = set(inv.get("allowed_internals", []))
-    candidates: dict = {}
-    for root, _dirs, files in os.walk(scan_dir):
-        if "__pycache__" in root:
-            continue
-        for f in files:
-            if not f.endswith(".py"):
-                continue
-            path = os.path.join(root, f)
-            try:
-                tree = _ast.parse(open(path, encoding="utf-8").read(), filename=path)
-            except (OSError, SyntaxError):
-                continue
-            for node in tree.body:
-                if not isinstance(node, _ast.FunctionDef):
-                    continue
-                if node.name.startswith("_"):
-                    continue
-                if node.name in allowed:
-                    continue
-                has_tool = any(
-                    "mcp.tool" in (_ast.unparse(d) if hasattr(_ast, "unparse") else "")
-                    for d in node.decorator_list
-                )
-                if has_tool:
-                    continue
-                rel = os.path.relpath(path, ctx.PROJECT_ROOT)
-                candidates[node.name] = (rel, node.lineno)
-
-    # Check cross-file references
-    scan_root = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "mcp")
-    orphans: list = []
-    for name, (file, line) in candidates.items():
-        refs = 0
-        for root, _dirs, files in os.walk(scan_root):
-            if "__pycache__" in root:
-                continue
-            for f in files:
-                if not f.endswith(".py"):
-                    continue
-                path = os.path.join(root, f)
-                rel = os.path.relpath(path, ctx.PROJECT_ROOT)
-                if rel == file:
-                    continue
-                try:
-                    content = open(path, encoding="utf-8").read()
-                except OSError:
-                    continue
-                if _re.search(rf"\b{_re.escape(name)}\b", content):
-                    refs += 1
-                    break
-        if refs == 0:
-            orphans.append(f"{file}:{line}:{name}")
-
-    if orphans:
-        preview = ", ".join(orphans[:5])
-        suffix = f" (+{len(orphans)-5} more)" if len(orphans) > 5 else ""
-        return False, (
-            f"{len(orphans)} undecorated public function(s) with zero external "
-            f"references: {preview}{suffix}. Either prefix with `_` to mark "
-            f"internal, add @ctx.mcp.tool() to expose, or add to "
-            f"`allowed_internals` in the invariant config."
-        )
-    return True, f"all {len(candidates)} public functions reachable"
-
-
 def _check_shell_output_empty(inv: dict) -> tuple[bool, str]:
-    """Run a shell command; pass if stdout is empty, fail if it produces any output.
-
-    Use for git-clean checks: shell='git ls-files --others --exclude-standard'
-    fails if any untracked non-gitignored files exist.
-    Optional 'cwd' key (default: PROJECT_ROOT).
-    """
+    """Run a command; pass only when exit code and output match config."""
     import subprocess
     shell_cmd = inv["shell"]
     cwd = inv.get("cwd", ctx.PROJECT_ROOT)
+    allowed = set(inv.get("allow_exit_codes", [0]))
+    capture_stderr = bool(inv.get("capture_stderr", True))
     result = subprocess.run(
         shell_cmd, shell=True, capture_output=True, text=True, cwd=cwd
     )
-    output = result.stdout.strip()
+    stdout = (result.stdout or "").strip()
+    stderr = (result.stderr or "").strip() if capture_stderr else ""
+    output = "\n".join(part for part in (stdout, stderr) if part)
+    if result.returncode not in allowed:
+        detail = output.splitlines()[0] if output else "no output"
+        return False, f"exit {result.returncode} (allowed {sorted(allowed)}): {detail}"
     if output:
         lines = output.splitlines()
         preview = ", ".join(lines[:5])
         suffix = f" (+{len(lines)-5} more)" if len(lines) > 5 else ""
-        return False, f"{len(lines)} untracked file(s): {preview}{suffix}"
-    return True, "no untracked files"
+        label = inv.get("finding_label", "finding")
+        return False, f"{len(lines)} {label}(s): {preview}{suffix}"
+    return True, inv.get("success_detail", "no findings")
 
 
 def _check_eslint_concordance_complete(inv: dict) -> tuple[bool, str]:
@@ -131,9 +51,7 @@ def _check_eslint_concordance_complete(inv: dict) -> tuple[bool, str]:
       (c) no _js_rules entry names a rule file that no longer exists
       (d) every status value is one of: ported, js_only, conventions_cover
     """
-    config_path = os.path.join(ctx.PROJECT_ROOT, _CONFIG_REL)
-    with open(config_path, encoding="utf-8") as f:
-        data = json.load(f)
+    data = _load_invariant_config()
     js_block = data.get("_js_rules", {})
     rules = js_block.get("rules", [])
     invariants_list = data.get("invariants", [])
