@@ -60,6 +60,9 @@ run "audit-doc-integrity"        python3 scripts/audit-doc-integrity.py $([ "$ST
 # Generated music-prior outputs must remain structurally valid.
 run "verify-music21-priors"      python3 scripts/music21/verify_priors_outputs.py
 
+# Standalone custom ESLint rule regression.
+run "test-eslint-map-get"        node scripts/eslint-rules/no-or-fallback-on-map-get.test.js
+
 # Generated polyrhythm table must match conductor config ranges.
 run "check-polyrhythm-table"     node scripts/generatePolyrhythmTable.js --check
 
