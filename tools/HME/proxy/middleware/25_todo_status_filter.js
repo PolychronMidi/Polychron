@@ -8,8 +8,8 @@ const { PROJECT_ROOT } = require('../shared');
 
 const TODO_STATE = new Set(['doc/templates/TODO.md', 'tools/HME/KB/todos.json']);
 const FAIL_FLAGS = [
-  path.join(PROJECT_ROOT, 'runtime', 'hme', 'todo-sync.fail'),
-  path.join(PROJECT_ROOT, 'runtime', 'hme', 'autocommit.fail'),
+  path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'todo-sync.fail'),
+  path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'autocommit.fail'),
 ];
 
 function textOf(toolResult) {
