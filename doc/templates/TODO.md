@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Trace current index admin path
+- [ ] [E3] Run tests and verify live response
 
 ## Next
 
-- [ ] [E3] Implement nonblocking index job status
-- [ ] [E3] Add focused tests
-- [ ] [E3] Run tests and verify live response
+(empty)
 
 ## Done
 
