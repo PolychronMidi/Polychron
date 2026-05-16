@@ -255,7 +255,7 @@ def module_story(module_name: str) -> str:
     if _trace_result is not None and "No trace data" in _trace_result:
         blind_spots.append("NO RUNTIME DATA: this module doesn't emit to trace.jsonl -- runtime behavior is invisible")
     # Check if module is mentioned in key docs
-    for doc_name in ["src_full.md", "SRC.md"]:
+    for doc_name in ["src_full.md", "composition.md"]:
         doc_path = os.path.join(ctx.PROJECT_ROOT, "doc", doc_name)
         if os.path.isfile(doc_path):
             try:

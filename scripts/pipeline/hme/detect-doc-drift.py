@@ -37,7 +37,7 @@ METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 DOCS = [
     "doc/src_full.md",
     "doc/hme_full.md",
-    "doc/SRC.md",
+    "doc/composition.md",
     "doc/HME.md",
     "AGENTS.md",
 ]

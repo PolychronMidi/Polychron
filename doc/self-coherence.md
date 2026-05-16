@@ -95,4 +95,4 @@ catalog replaces Codex model `base_instructions` and
 - Project orientation: [README.md](../README.md)
 - Agent rules: [AGENTS.md](../AGENTS.md)
 - Full HME reference: [hme_full.md](hme_full.md)
-- Composition reference: [SRC.md](SRC.md)
+- Composition reference: [composition.md](composition.md)

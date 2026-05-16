@@ -89,13 +89,13 @@ class DocCoreLayoutVerifier(Verifier):
             "README.md",
             "AGENTS.md",
             "doc/HME.md",
-            "doc/SRC.md",
+            "doc/composition.md",
             "doc/hme_full.md",
             "doc/src_full.md",
         ]
         issues = [f"missing {rel}" for rel in required
                   if not os.path.isfile(os.path.join(_PROJECT, rel))]
-        for rel in ("HME.md", "SRC.md", "doc/hme.md", "doc/src.md"):
+        for rel in ("HME.md", "composition.md", "doc/hme.md", "doc/composition.md"):
             if os.path.exists(os.path.join(_PROJECT, rel)):
                 issues.append(f"unexpected duplicate doc path: {rel}")
         for rel in ("README.md", "AGENTS.md"):
@@ -104,7 +104,7 @@ class DocCoreLayoutVerifier(Verifier):
                 continue
             text = open(path, encoding="utf-8").read()
             if re.search(r"\]\((?:\./)?(?:HME|SRC)\.md(?:#[^)]+)?\)", text):
-                issues.append(f"{rel}: links root HME.md/SRC.md instead of doc/HME.md or doc/SRC.md")
+                issues.append(f"{rel}: links root HME.md/composition.md instead of doc/HME.md or doc/composition.md")
         if issues:
             return _result(FAIL, 0.0, f"{len(issues)} doc layout issue(s)", issues)
         return _result(PASS, 1.0, "core docs use README/CLAUDE + concise/full doc layout")

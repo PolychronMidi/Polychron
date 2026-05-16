@@ -7,7 +7,7 @@ emergent structure.
 
 Development has two interleaving domains:
 
-- **Composition engine:** `src/`, documented from [doc/SRC.md](doc/SRC.md) into
+- **Composition engine:** `src/`, documented from [doc/composition.md](doc/composition.md) into
   [doc/src_full.md](doc/src_full.md).
 - **HME substrate:** `tools/HME/`, documented from [doc/HME.md](doc/HME.md) into
   [doc/hme_full.md](doc/hme_full.md).
@@ -50,7 +50,7 @@ Read progressively:
 
 1. [README.md](README.md) - project orientation.
 2. [AGENTS.md](doc/templates/AGENTS.md) - agent rules and hard workflow discipline.
-3. [doc/SRC.md](doc/SRC.md) - concise composition-engine rules.
+3. [doc/composition.md](doc/composition.md) - concise composition-engine rules.
 4. [doc/HME.md](doc/HME.md) - concise HME rules and workflow.
 5. [doc/src_full.md](doc/src_full.md) - detailed composition architecture.
 6. [doc/hme_full.md](doc/hme_full.md) - detailed HME architecture.
