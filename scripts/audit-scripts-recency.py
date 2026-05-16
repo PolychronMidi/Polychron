@@ -35,6 +35,7 @@ COLD_CLASSIFICATIONS = {
     "scripts/audit_shell_undefined_audit.py": "audit helper module",
     "scripts/report-src-loc.js": "LOC audit helper",
     "scripts/loc_ignore.py": "LOC audit helper",
+    "scripts/test/smoke-test-indexing-mode.sh": "manual live indexing smoke",
 }
 
 
@@ -117,7 +118,7 @@ def _local_import_count(target: Path, source: Path, body: str) -> int:
 
 def _basename_reference_count(target: Path, body: str) -> int:
     rel = str(target.relative_to(ROOT))
-    if rel.startswith("scripts/hme/") or rel == "scripts/pipeline/hme/run-invariant-battery.py":
+    if rel.startswith(("scripts/hme/", "scripts/chaos/")) or rel == "scripts/pipeline/hme/run-invariant-battery.py":
         return body.count(target.name)
     return 0
 
@@ -127,6 +128,8 @@ def _classification_for(rel: str, samples: list[str]) -> str:
         return COLD_CLASSIFICATIONS[rel]
     if "scripts/audit-all.sh" in samples:
         return "audit-all check"
+    if "scripts/chaos/run-all.sh" in samples:
+        return "chaos battery"
     if "scripts/pipeline/main-pipeline.js" in samples:
         return "main pipeline"
     if "scripts/hme-i-dispatch.js" in samples:

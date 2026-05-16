@@ -49,6 +49,15 @@ run "audit-shell-undefined"      python3 scripts/audit_shell_undefined_vars.py
 # Shared state writer/reader path symmetry.
 run "audit-state-file-symmetry"  python3 scripts/audit-state-file-symmetry.py
 
+# HME dogfooding: HME's own Python must obey silent-failure rules.
+run "check-hme-dogfooding"      python3 scripts/check-hme-dogfooding.py
+
+# HME proxy middleware load-order guard.
+run "check-middleware-order"    python3 scripts/check-middleware-order.py
+
+# Lifecycle writer ownership unit tests.
+run "test-lifecycle-writers"    python3 scripts/test/test-lifecycle-writers.py
+
 # Cross-subsystem import boundaries (reaches-into-internals + public surface).
 run "audit-import-boundaries"    python3 scripts/audit-import-boundaries.py $([ "$STRICT" = "1" ] && echo --strict)
 
