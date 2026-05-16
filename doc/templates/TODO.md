@@ -4,11 +4,13 @@
 
 ## Now
 
-- [ ] [E3] 12. Add/verify single post-restart contract spec and run full verification
+- [ ] [E3] Trace native Edit proxy path and current failure normalization
 
 ## Next
 
-(empty)
+- [ ] [E3] Patch safe Edit retry/diagnostic behavior for omitted/near-miss old_string cases
+- [ ] [E3] Add regression coverage for the observed failure mode
+- [ ] [E3] Run focused specs and compact verification
 
 ## Done
 

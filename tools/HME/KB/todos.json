@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3388,
-      "updated_ts": 1778948248.9172308,
-      "codex_plan_synced_ts": 1778948248.9171576,
+      "max_id": 3392,
+      "updated_ts": 1778948848.9255798,
+      "codex_plan_synced_ts": 1778948848.9254918,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T16:17:12.711Z"
+      "codex_plan_ts": "2026-05-16T16:27:20.251Z"
     }
   },
   {
@@ -5597,8 +5597,8 @@
     "id": 3388,
     "text": "12. Add/verify single post-restart contract spec and run full verification",
     "activeForm": "12. Add/verify single post-restart contract spec and run full verification",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5607,6 +5607,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T16:17:12.711Z"
+    "codex_plan_ts": "2026-05-16T16:17:12.711Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3389,
+    "text": "Trace native Edit proxy path and current failure normalization",
+    "activeForm": "Trace native Edit proxy path and current failure normalization",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778948840.663446,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:27:20.251Z"
+  },
+  {
+    "id": 3390,
+    "text": "Patch safe Edit retry/diagnostic behavior for omitted/near-miss old_string cases",
+    "activeForm": "Patch safe Edit retry/diagnostic behavior for omitted/near-miss old_string cases",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778948840.6634521,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:27:20.251Z"
+  },
+  {
+    "id": 3391,
+    "text": "Add regression coverage for the observed failure mode",
+    "activeForm": "Add regression coverage for the observed failure mode",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778948840.6634562,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:27:20.251Z"
+  },
+  {
+    "id": 3392,
+    "text": "Run focused specs and compact verification",
+    "activeForm": "Run focused specs and compact verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778948840.6634588,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:27:20.251Z"
   }
 ]
