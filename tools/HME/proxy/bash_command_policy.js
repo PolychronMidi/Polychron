@@ -205,8 +205,11 @@ function evaluateBashInput(input = {}, opts = {}) {
     if (verdict !== 'STABLE') return deny(`SNAPSHOT GATE: fingerprint verdict is ${verdict}, not STABLE. Diagnose or rerun until STABLE, then snapshot.`);
   }
   if (/^(npm run (main|snapshot)|node lab\/run)/.test(trimmed)) {
-    if (next.run_in_background !== true) return deny('ANTI-WAIT: pipeline commands must use run_in_background=true; continue parallel work instead of waiting.');
-    if (/\s&\s*$/.test(cmd)) return deny('BLOCKED: Do NOT use & with run_in_background=true; remove the shell background operator.');
+    if (/\s&\s*$/.test(cmd)) return deny('BLOCKED: Do NOT use & for pipeline commands; use the host background/session mechanism instead.');
+    const supportsRunInBackground = opts.supportsRunInBackground === true;
+    if (supportsRunInBackground && next.run_in_background !== true) {
+      return deny('ANTI-WAIT: pipeline commands must use run_in_background=true in Claude Code; Codex/exec hosts do not expose that option.');
+    }
   }
   const reader = readerGuard(cmd, root); if (reader) return reader;
   const landed = verifyLanded(cmd, root);
