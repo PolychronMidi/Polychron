@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
+import time
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +47,49 @@ def _http_ok(url: str, timeout: float = 2.0) -> str:
         return f"unreachable {type(exc).__name__}"
 
 
+def _parse_ts(value: str | None) -> float:
+    if not value:
+        return 0.0
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return 0.0
+
+
+def _age_minutes(value: str | None) -> float:
+    ts = _parse_ts(value)
+    return max(0.0, (time.time() - ts) / 60.0) if ts else 0.0
+
+
+def _newer_than_started(root: Path, started_at: str | None, rels: list[str]) -> list[str]:
+    started = _parse_ts(started_at)
+    if not started:
+        return []
+    stale = []
+    for rel in rels:
+        path = root / rel
+        try:
+            if path.stat().st_mtime > started:
+                stale.append(rel)
+        except OSError:
+            continue
+    return stale
+
+
+def _epoch_errors(root: Path, rel: str, marker: str) -> list[str]:
+    path = root / rel
+    if not path.exists():
+        return []
+    lines = path.read_text(errors="replace").splitlines()[-1200:]
+    start = 0
+    needle = f"=== {marker} start "
+    for idx, line in enumerate(lines):
+        if needle in line:
+            start = idx + 1
+    err_re = re.compile(r"\b(ERROR|FAIL|Exception|Traceback|timeout|EADDRINUSE|unhandled)\b", re.I)
+    return [line[:180] for line in lines[start:] if err_re.search(line)][-3:]
+
+
 def codex_sessions(root: Path) -> dict[str, Any]:
     guard = root / "tools" / "HME" / "proxy" / "codex_session_guard.js"
     try:
@@ -59,17 +105,34 @@ def route_snapshot(root: Path) -> dict[str, Any]:
     omniroute = _http_ok(_service_url(root, "omniroute"))
     sessions = codex_sessions(root)
     _with_scripts(root)
-    from omniroute_recent import recent_injection_advisories, recent_requests  # noqa: WPS433
+    from omniroute_recent import injection_advisory_counts, recent_requests  # noqa: WPS433
     recent = recent_requests(limit=5, model_contains="codex/")
-    advisories = recent_injection_advisories(root)
+    latest_age = _age_minutes(recent[0].get("timestamp") if recent else "")
+    proxy_stale = _newer_than_started(root, proxy.get("started_at") if proxy else None, [
+        "tools/HME/proxy/hme_proxy.js", "tools/HME/proxy/overdrive_route.js",
+        "tools/HME/proxy/proxy_route_metrics.js", "tools/HME/proxy/start_marker.js",
+    ])
+    codex_stale = _newer_than_started(root, codex.get("started_at") if codex else None, [
+        "tools/HME/proxy/codex_proxy.js", "tools/HME/proxy/codex_omniroute.js",
+        "tools/HME/proxy/codex_session_guard.js", "tools/HME/proxy/model_route_resolver.js",
+        "tools/HME/proxy/request_transform_core.js", "tools/HME/proxy/codex_native_tools.js",
+        "tools/HME/proxy/start_marker.js",
+    ])
+    epoch_errors = {
+        "proxy": _epoch_errors(root, "log/hme-proxy.out", "hme_proxy"),
+        "codex_proxy": _epoch_errors(root, "log/hme-codex-proxy.out", "codex_proxy"),
+        "omniroute": _epoch_errors(root, "log/omniroute.out", "omniroute"),
+    }
     return {
         "overdrive_mode": ENV.optional("OVERDRIVE_MODE", ""),
-        "proxy": proxy, "proxy_error": proxy_err,
-        "codex_proxy": codex, "codex_proxy_error": codex_err,
+        "proxy": proxy, "proxy_error": proxy_err, "proxy_stale_sources": proxy_stale,
+        "codex_proxy": codex, "codex_proxy_error": codex_err, "codex_proxy_stale_sources": codex_stale,
         "omniroute": omniroute,
         "codex_sessions": sessions,
         "recent_codex_omniroute": recent,
-        "injection_advisories": advisories,
+        "latest_codex_age_min": latest_age,
+        "injection_advisory_counts": injection_advisory_counts(root),
+        "epoch_errors": epoch_errors,
     }
 
 
@@ -89,6 +152,9 @@ def routing_ready(root: Path) -> tuple[bool, list[str]]:
         issues.append(f"duplicate Codex sessions: {len(dups)}")
     if not snap["recent_codex_omniroute"]:
         issues.append("no recent codex/* OmniRoute artifacts")
+    wrappers = [r for r in snap["codex_sessions"].get("rows", []) if r.get("kind") == "wrapper"]
+    if wrappers and snap["latest_codex_age_min"] > 10:
+        issues.append(f"latest codex/* OmniRoute artifact is stale ({snap['latest_codex_age_min']:.1f}m)")
     return not issues, issues
 
 
@@ -107,6 +173,9 @@ def format_route_health(root: Path) -> str:
             f"  {label}: ok started={data.get('started_at')} requests={metrics.get('requests', 0)} "
             f"omni={metrics.get('omniroute', 0)} direct={metrics.get('direct', 0)} last={metrics.get('last_route', '')}:{metrics.get('last_model', '')}"
         )
+        stale = snap.get(f"{key}_stale_sources") or []
+        if stale:
+            lines.append(f"    stale_source_warning={len(stale)} newer-than-process")
     lines.append(f"  omniroute: {snap['omniroute']}")
     rows = snap["codex_sessions"].get("rows", [])
     dups = snap["codex_sessions"].get("duplicates", [])
@@ -115,12 +184,18 @@ def format_route_health(root: Path) -> str:
     recent = snap["recent_codex_omniroute"]
     if recent:
         row = recent[0]
-        lines.append(f"  latest_codex_omni={row.get('timestamp')} {row.get('status')} {row.get('requested_model')} {row.get('source_format')}->{row.get('target_format')}")
+        lines.append(f"  latest_codex_omni={row.get('timestamp')} {row.get('status')} {row.get('requested_model')} {row.get('source_format')}->{row.get('target_format')} age={snap['latest_codex_age_min']:.1f}m")
     else:
         lines.append("  latest_codex_omni=none")
-    adv = snap["injection_advisories"]
+    adv = snap["injection_advisory_counts"]
     if adv:
-        lines.append(f"  injection_advisories={len(adv)} advisory_only; latest={adv[-1][:120]}")
+        summary = ", ".join(f"{k}:{v}" for k, v in sorted(adv.items()))
+        lines.append(f"  injection_advisories={summary} advisory_only")
+    epoch_errors = snap["epoch_errors"]
+    flat = [(name, item) for name, items in epoch_errors.items() for item in items]
+    lines.append(f"  log_epoch_errors={'none' if not flat else len(flat)}")
+    for name, item in flat[:3]:
+        lines.append(f"    {name}: {item}")
     return "\n".join(lines)
 
 

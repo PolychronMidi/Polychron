@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -84,6 +85,19 @@ def recent_injection_advisories(project_root: Path, minutes: int = 10) -> list[s
             pass
         out.append(line[:240])
     return out
+
+
+
+
+def injection_advisory_counts(project_root: Path, minutes: int = 10) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for line in recent_injection_advisories(project_root, minutes=minutes):
+        key = "injection"
+        match = re.search(r'"pattern":"([^"]+)"|Prompt injection detected: ([A-Za-z0-9_-]+)', line)
+        if match:
+            key = match.group(1) or match.group(2) or key
+        counts[key] = counts.get(key, 0) + 1
+    return counts
 
 
 def format_rows(rows: list[dict[str, Any]]) -> str:
