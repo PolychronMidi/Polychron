@@ -66,6 +66,17 @@ run "test-eslint-map-get"        node scripts/eslint-rules/no-or-fallback-on-map
 # Generated polyrhythm table must match conductor config ranges.
 run "check-polyrhythm-table"     node scripts/generatePolyrhythmTable.js --check
 
+# Cold-entrypoint smoke checks keep script CLIs wired without doing writes.
+run "verify-provider-manifest"   python3 scripts/verify-provider-manifest.py
+run "test-regime-core"           node scripts/test/regimeReactiveDampingCore.test.js
+run "test-hme-hook-dispatch"     node scripts/hme-hook-test.js
+run "smoke-c2m-help"             python3 scripts/c2m.py --help
+run "smoke-m2c-help"             python3 scripts/m2c.py --help
+run "smoke-hme-timeline"         python3 scripts/hme/timeline-panel.py window=0s
+run "smoke-hme-freeze"           python3 scripts/hme/freeze-check.py
+run "check-verdict-predictor"    node scripts/pipeline/train-verdict-predictor.js --check
+run "check-lance-compaction"     python3 scripts/compact-lance-tables.py --dry-run
+
 # Detector <-> deny-prompt link integrity (each prompt's advertised
 # alternative paths must be honored by the paired detector).
 run "test-deny-alternatives"     python3 tools/HME/scripts/detectors/test_deny_alternatives.py
