@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3350,
-      "updated_ts": 1778943538.8906345,
-      "codex_plan_synced_ts": 1778943538.89057,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T14:58:32.182Z"
+      "max_id": 3351,
+      "updated_ts": 1778943765.74503,
+      "codex_plan_synced_ts": 1778943765.7449632,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T15:02:45.319Z"
     }
   },
   {
@@ -4880,8 +4880,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:58:32.182Z",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T15:02:45.319Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
@@ -4952,8 +4952,8 @@
     "id": 3348,
     "text": "Sweep OVERDRIVE_MODE=6 gates/docs/tests to identify exact rename surface",
     "activeForm": "Sweep OVERDRIVE_MODE=6 gates/docs/tests to identify exact rename surface",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4962,13 +4962,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:58:32.182Z"
+    "codex_plan_ts": "2026-05-16T14:58:32.182Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3349,
     "text": "Patch active mode from 6 to 1 and update .env",
     "activeForm": "Patch active mode from 6 to 1 and update .env",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "codex_plan",
@@ -4977,8 +4978,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:58:32.182Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T15:02:45.319Z"
   },
   {
     "id": 3350,
@@ -4993,7 +4994,23 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:58:32.182Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T15:02:45.319Z"
+  },
+  {
+    "id": 3351,
+    "text": "Sweep overdrive gates/docs/tests to identify rename surface",
+    "activeForm": "Sweep overdrive gates/docs/tests to identify rename surface",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778943765.7443671,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T15:02:45.319Z"
   }
 ]
