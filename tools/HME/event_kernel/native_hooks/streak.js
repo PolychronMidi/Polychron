@@ -7,7 +7,7 @@ const {
   path,
   runPython,
 } = require('./common');
-const { thresholds, blockMessage, reminderMessage } = require('./raw_streak_policy');
+const { thresholds } = require('./raw_streak_policy');
 
 function streakTick(weight) {
   const file = '/tmp/hme-non-hme-streak.score';
@@ -15,13 +15,7 @@ function streakTick(weight) {
   try { score = Number(fs.readFileSync(file, 'utf8').trim()) || 0; } catch (_e) { /* missing */ }
   score += weight;
   fs.writeFileSync(file, String(score));
-  const { warn, block } = thresholds();
-  if (score >= block) {
-    return { ok: false, message: blockMessage(score, block) };
-  }
-  if (score >= warn) {
-    return { ok: true, message: reminderMessage(score, block) };
-  }
+  thresholds();
   return { ok: true, message: '' };
 }
 
