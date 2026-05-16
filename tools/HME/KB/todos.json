@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3457,
-      "updated_ts": 1778960669.0142162,
-      "codex_plan_synced_ts": 1778960669.0141299,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T19:44:23.352Z"
+      "max_id": 3460,
+      "updated_ts": 1778960854.2809153,
+      "codex_plan_synced_ts": 1778960854.2808259,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T19:47:33.814Z"
     }
   },
   {
@@ -6740,5 +6740,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T19:44:23.352Z"
+  },
+  {
+    "id": 3458,
+    "text": "Find anti-wait policy call context",
+    "activeForm": "Find anti-wait policy call context",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778960854.2800279,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T19:47:33.814Z"
+  },
+  {
+    "id": 3459,
+    "text": "Patch policy/tests for Codex-safe behavior",
+    "activeForm": "Patch policy/tests for Codex-safe behavior",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778960854.2800338,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T19:47:33.814Z"
+  },
+  {
+    "id": 3460,
+    "text": "Run targeted verification and launch npm main appropriately",
+    "activeForm": "Run targeted verification and launch npm main appropriately",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778960854.2800379,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T19:47:33.814Z"
   }
 ]
