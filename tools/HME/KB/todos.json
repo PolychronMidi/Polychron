@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3325,
-      "updated_ts": 1778939668.8684607,
-      "codex_plan_synced_ts": 1778939668.8684018,
+      "updated_ts": 1778940088.8761494,
+      "codex_plan_synced_ts": 1778940088.87609,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T13:54:13.372Z"
+      "codex_plan_ts": "2026-05-16T14:01:18.312Z"
     }
   },
   {
@@ -787,7 +787,7 @@
     "id": 3095,
     "text": "Run targeted verification",
     "activeForm": "Run targeted verification",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "codex_plan",
@@ -797,7 +797,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:54:13.372Z",
+    "codex_plan_ts": "2026-05-16T14:01:18.312Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
@@ -4530,8 +4530,8 @@
     "id": 3322,
     "text": "Inspect current edit/verify/no-op paths",
     "activeForm": "Inspect current edit/verify/no-op paths",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4540,14 +4540,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:54:13.372Z"
+    "codex_plan_ts": "2026-05-16T14:01:18.312Z"
   },
   {
     "id": 3323,
     "text": "Implement no-op-after-failure state and policy block",
     "activeForm": "Implement no-op-after-failure state and policy block",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4556,14 +4556,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:54:13.372Z"
+    "codex_plan_ts": "2026-05-16T14:01:18.312Z"
   },
   {
     "id": 3324,
     "text": "Make failed edits produce targeted read context without marking verify-landed edits",
     "activeForm": "Make failed edits produce targeted read context without marking verify-landed edits",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4572,14 +4572,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:54:13.372Z"
+    "codex_plan_ts": "2026-05-16T14:01:18.312Z"
   },
   {
     "id": 3325,
     "text": "Add safe edit normalization and regression tests",
     "activeForm": "Add safe edit normalization and regression tests",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4588,6 +4588,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:54:13.372Z"
+    "codex_plan_ts": "2026-05-16T14:01:18.312Z"
   }
 ]

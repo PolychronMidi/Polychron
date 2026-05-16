@@ -4,14 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect current edit/verify/no-op paths
+- [ ] [E3] Run targeted verification
 
 ## Next
 
-- [ ] [E3] Run targeted verification
-- [ ] [E3] Implement no-op-after-failure state and policy block
-- [ ] [E3] Make failed edits produce targeted read context without marking verify-landed edits
-- [ ] [E3] Add safe edit normalization and regression tests
+(empty)
 
 ## Done
 
