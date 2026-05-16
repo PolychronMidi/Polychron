@@ -105,7 +105,7 @@ def _is_run_evidence_log(path: Path) -> bool:
 
 def _configured_eslint_rules() -> set[str]:
     cfg = text(ROOT / "eslint.config.mjs")
-    return {m.group(1) for m in re.finditer(r"local/([a-z0-9-]+)['"]\s*:", cfg)}
+    return {m.group(1) for m in re.finditer(r'local/([a-z0-9-]+)[\'"]\s*:', cfg)}
 
 
 def _main_pipeline_commands() -> dict[str, str]:
