@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3369,
-      "updated_ts": 1778945518.898128,
-      "codex_plan_synced_ts": 1778945518.89806,
+      "updated_ts": 1778946958.915954,
+      "codex_plan_synced_ts": 1778946958.9158847,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+      "codex_plan_ts": "2026-05-16T15:55:56.381Z"
     }
   },
   {
@@ -4871,8 +4871,8 @@
     "id": 3343,
     "text": "Run targeted and full verification",
     "activeForm": "Run targeted and full verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4881,7 +4881,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z",
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
@@ -5113,8 +5113,8 @@
     "id": 3358,
     "text": "1. Add duplicate Codex session reaper",
     "activeForm": "1. Add duplicate Codex session reaper",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5123,14 +5123,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3359,
     "text": "2. Add duplicate Codex detection to HME health",
     "activeForm": "2. Add duplicate Codex detection to HME health",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5139,14 +5139,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3360,
     "text": "3. Add codex_proxy and OmniRoute to HME health",
     "activeForm": "3. Add codex_proxy and OmniRoute to HME health",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5155,14 +5155,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3361,
     "text": "4. Add post-restart routing-ready check",
     "activeForm": "4. Add post-restart routing-ready check",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5171,14 +5171,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3362,
     "text": "5. Add OmniRoute recent-request abstraction",
     "activeForm": "5. Add OmniRoute recent-request abstraction",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5187,14 +5187,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3363,
     "text": "6. Tune InjectionGuard advisory noise handling",
     "activeForm": "6. Tune InjectionGuard advisory noise handling",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5203,14 +5203,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3364,
     "text": "7. Add service-start epoch markers to logs",
     "activeForm": "7. Add service-start epoch markers to logs",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5219,14 +5219,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3365,
     "text": "8. Expose Codex proxy routing counters",
     "activeForm": "8. Expose Codex proxy routing counters",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5235,14 +5235,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3366,
     "text": "9. Add non-invasive OmniRoute visibility test/check",
     "activeForm": "9. Add non-invasive OmniRoute visibility test/check",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5251,14 +5251,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3367,
     "text": "10. Expand secret redaction provider fixtures",
     "activeForm": "10. Expand secret redaction provider fixtures",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5267,14 +5267,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3368,
     "text": "11. Add duplicate session prevention lock",
     "activeForm": "11. Add duplicate session prevention lock",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5283,14 +5283,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   },
   {
     "id": 3369,
     "text": "12. Canonicalize final overdrive mode docs",
     "activeForm": "12. Canonicalize final overdrive mode docs",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5299,6 +5299,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:31:50.010Z"
+    "codex_plan_ts": "2026-05-16T15:55:56.381Z"
   }
 ]
