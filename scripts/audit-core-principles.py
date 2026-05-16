@@ -8,7 +8,7 @@ stamping, etc.). What ESLint does not do is survey the whole codebase and
 say which principle has structural slack vs. which is airtight. This is
 that survey.
 
-Principles audited (numbered to match AGENTS.md):
+Principles audited (numbered to match doc/templates/AGENTS.md):
   P1 -- Globals via side-effect require() in index.js
         Cross-check: every .js under a subsystem with its own index.js
         must be either required from that index.js or declared helper/
@@ -66,7 +66,7 @@ def _load_loc_thresholds():
         return 250, 350  # safe defaults if config missing/malformed
 _LOC_WARN, _LOC_CRITICAL = _load_loc_thresholds()
 
-# Load order for subsystems (from AGENTS.md). Extra subsystems present in
+# Load order for subsystems (from doc/templates/AGENTS.md). Extra subsystems present in
 # src/ but not in this list get ordered last alphabetically.
 _LOAD_ORDER = [
     "utils", "conductor", "rhythm", "time",

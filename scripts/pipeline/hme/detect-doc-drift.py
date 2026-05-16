@@ -11,9 +11,9 @@ Four check classes:
   1. KB module references that no longer exist in src/
   2. Module names mentioned in the core docs
      that no longer have a matching file
-  3. Hard rules in AGENTS.md that have generated productive_incoherence
+  3. Hard rules in doc/templates/AGENTS.md that have generated productive_incoherence
      events (rule is blocking legitimate exploration -- promotion candidate)
-  4. Hard rules in AGENTS.md that have ZERO coherence_violation events
+  4. Hard rules in doc/templates/AGENTS.md that have ZERO coherence_violation events
      over the last N closed rounds (rule is being consistently honored --
      constitutional promotion candidate)
 
@@ -184,7 +184,7 @@ def main() -> int:
                 "message": (
                     f"No coherence_violation events over the last "
                     f"{rule_stats['rounds_in_window']} closed rounds. "
-                    "Hard rules in AGENTS.md are being consistently honored. "
+                    "Hard rules in doc/templates/AGENTS.md are being consistently honored. "
                     "Candidate for promotion to hme-constitution.json."
                 ),
             })
