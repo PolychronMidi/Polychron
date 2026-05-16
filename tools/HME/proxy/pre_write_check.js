@@ -39,6 +39,23 @@ function _denyIf(condition, reason) {
   return condition ? _permission('deny', reason) : null;
 }
 
+function _badPathShape(file) {
+  const s = String(file ?? '');
+  return !s.trim() || /[
+]/.test(s) || s.trim().startsWith('<<') || /HME_CODEX_JSON|[{}]/.test(s);
+}
+
+function _editShapeDecision(payload) {
+  if (payload.tool_name !== 'Edit') return null;
+  const input = payload.tool_input || {};
+  const file = input.file_path || '';
+  if (_badPathShape(file)) return _permission('deny', `BLOCKED: malformed Edit file_path: ${String(file || '(empty)').slice(0, 120)}`);
+  if (typeof input.old_string !== 'string' || input.old_string.length === 0) return _permission('deny', 'BLOCKED: malformed Edit missing old_string. Use exact current file text.');
+  if (typeof input.new_string !== 'string') return _permission('deny', 'BLOCKED: malformed Edit missing new_string.');
+  if (/<display-redacted:|<omitted by proxy>/i.test(input.old_string)) return _permission('deny', 'BLOCKED: Edit old_string is display-redacted. Re-read current file text, then retry with the actual old_string.');
+  return null;
+}
+
 
 function _commentBloatDecision(file, content, writeVerb) {
   const fp = String(file || '').toLowerCase();
@@ -191,6 +208,8 @@ async function preWriteCheck(stdinJson) {
   const payload = { ...env.raw, session_id: env.session_id, tool_name: env.tool_name, tool_input: env.tool_input };
   const tool = payload.tool_name || '';
   if (!['Write', 'Edit', 'MultiEdit'].includes(tool)) return _permission('allow');
+  const shapeDecision = _editShapeDecision(payload);
+  if (shapeDecision) return shapeDecision;
 
   try {
     _loadPolicies();

@@ -45,11 +45,22 @@ function kvArgs(argv) {
 function readStdin() { try { return fs.readFileSync(0, 'utf8'); } catch (_e) { return ''; } }
 function readMaybeFile(args, key) { return args[`${key}_file`] ? fs.readFileSync(path.resolve(String(args[`${key}_file`])), 'utf8') : (args[key] == null ? '' : String(args[key])); }
 function relPath(abs) { const rel = path.relative(ROOT, abs); return rel || '.'; }
+function malformedPath(raw) {
+  const s = String(raw ?? '');
+  return !s.trim() || /[
+]/.test(s) || s.trim().startsWith('<<') || /HME_CODEX_JSON|[{}]/.test(s);
+}
 function absPath(p, mustExist = true) {
-  const abs = path.resolve(ROOT, String(p || '.'));
+  if (malformedPath(p)) throw new Error(`invalid file_path: ${String(p ?? '').slice(0, 80) || '(empty)'}`);
+  const abs = path.resolve(ROOT, String(p));
   const rel = path.relative(ROOT, abs);
   if (rel.startsWith('..') || path.isAbsolute(rel)) throw new Error(`path outside PROJECT_ROOT: ${abs}`);
   if (mustExist) fs.statSync(abs);
+  return abs;
+}
+function absFilePath(p) {
+  const abs = absPath(p);
+  if (!fs.statSync(abs).isFile()) throw new Error(`file_path is not a file: ${relPath(abs)}`);
   return abs;
 }
 function hookJson(tool, input, extra = {}) { return JSON.stringify({ cwd: ROOT, _hme_host: 'codex', _hme_synthetic_tool: true, session_id: SESSION, tool_name: tool, tool_input: input, ...extra }); }
@@ -80,8 +91,8 @@ async function finishStructured(tool, input, text, opts = {}) {
 }
 function jsonData(argv) { const args = kvArgs(argv); return args.json ? JSON.parse(readStdin() || '{}') : args; }
 
-function parseRead(argv) { const data = jsonData(argv); const input = { file_path: absPath(data.file_path || data.file || data._?.[0]) }; if (data.offset != null) input.offset = Number(data.offset); if (data.limit != null) input.limit = Number(data.limit); if (data.tail != null) input.tail = Number(data.tail); return input; }
-function parseEdit(argv) { const data = jsonData(argv); return { file_path: absPath(data.file_path || data.file || data._?.[0]), old_string: data.old_string != null ? String(data.old_string) : readMaybeFile(data, 'old'), new_string: data.new_string != null ? String(data.new_string) : readMaybeFile(data, 'new') }; }
+function parseRead(argv) { const data = jsonData(argv); const input = { file_path: absFilePath(data.file_path || data.file || data._?.[0]) }; if (data.offset != null) input.offset = Number(data.offset); if (data.limit != null) input.limit = Number(data.limit); if (data.tail != null) input.tail = Number(data.tail); return input; }
+function parseEdit(argv) { const data = jsonData(argv); return { file_path: absFilePath(data.file_path || data.file || data._?.[0]), old_string: data.old_string != null ? String(data.old_string) : readMaybeFile(data, 'old'), new_string: data.new_string != null ? String(data.new_string) : readMaybeFile(data, 'new') }; }
 function readSlice(text, input) { const lines = text.split('\n'); if (Number.isFinite(input.tail) && input.tail > 0) return lines.slice(-input.tail).join('\n'); const offset = Number.isFinite(input.offset) ? Math.max(0, input.offset) : 0; const limit = Number.isFinite(input.limit) && input.limit > 0 ? input.limit : null; return (limit == null ? lines.slice(offset) : lines.slice(offset, offset + limit)).join('\n'); }
 
 function walk(base, maxDepth, out = [], depth = 0) {
@@ -165,7 +176,14 @@ function applyEdit(input) {
   throw editFailure(input, 'old_string not found');
 }
 async function runEdit(argv) {
-  const input = parseEdit(argv);
+  let input;
+  try { input = parseEdit(argv); }
+  catch (err) {
+    const message = `Error: ${err.message}`;
+    recordFailure(ROOT, { tool: 'Edit', reason: err.message, file: '', session_id: SESSION });
+    await finishStructured('Edit', { file_path: '' }, message, { isError: true, rawStderr: message });
+    return;
+  }
   const context = await pre('Edit', input);
   try {
     const result = applyEdit(input);
