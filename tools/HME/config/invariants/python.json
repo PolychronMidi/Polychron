@@ -30,13 +30,12 @@
       "id": "hme-py-valueerror-coverage",
       "description": "OSError-only except handlers in operational_state.py must also catch ValueError (int/float conversion safety)",
       "type": "shell_output_empty",
-      "shell": "grep -n 'except (OSError' tools/HME/service/server/operational_state.py | grep -v ValueError",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py hme-py-valueerror-coverage",
       "severity": "warning",
-      "finding_label": "finding",
-      "success_detail": "no findings",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
       "allow_exit_codes": [
-        0,
-        1
+        0
       ],
       "capture_stderr": true
     },
@@ -344,13 +343,12 @@
       "id": "index-directory-zero-args",
       "description": "index_directory must take zero arguments everywhere  ragIndexDirs in tools/HME/config/rag.json is the ONLY source of indexable paths.",
       "type": "shell_output_empty",
-      "shell": "grep -nE 'def index_directory\\(self,|def _index_directory_locked\\(self,|def _collect_files\\(self,' tools/HME/service/rag_engine/engine_indexing.py 2>/dev/null",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py index-directory-zero-args",
       "severity": "error",
-      "finding_label": "finding",
-      "success_detail": "no findings",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
       "allow_exit_codes": [
-        0,
-        1
+        0
       ],
       "capture_stderr": true,
       "context": "index_directory must take zero arguments everywhere  ragIndexDirs in tools/HME/config/rag.json is the ONLY source of indexable paths. Any signature with a directory/path parameter is a bypass vector that WILL be abused as a fallback. See the walk_code_files purge in commit 469d072b."
@@ -359,13 +357,12 @@
       "id": "no-direct-gpu-model-load-in-indexing",
       "description": "indexing_mode.py and tools_index.py must NEVER import SentenceTransformer or torch  they talk to the daemon via HTTP, which tells the shim what device to use.",
       "type": "shell_output_empty",
-      "shell": "grep -nE 'from sentence_transformers|import torch|SentenceTransformer' tools/HME/service/indexing_mode.py tools/HME/service/server/tools_index.py 2>/dev/null",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py no-direct-gpu-model-load-in-indexing",
       "severity": "error",
-      "finding_label": "finding",
-      "success_detail": "no findings",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
       "allow_exit_codes": [
-        0,
-        1
+        0
       ],
       "capture_stderr": true,
       "context": "indexing_mode.py and tools_index.py must NEVER import SentenceTransformer or torch  they talk to the daemon via HTTP, which tells the shim what device to use. Direct model loading in these files bypasses the daemon's GPU allocation authority. See the 'catastrophic failure' fix where indexing_mode was loading models directly."

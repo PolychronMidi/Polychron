@@ -16,13 +16,12 @@
       "id": "event-kernel-subprocesses-use-fs-ipc",
       "description": "Event-kernel and Stop-chain subprocess boundaries must use filesystem IPC rather than live stdin pipes, so hook portability does not depend on a specific agent CLI or Node spawn input semantics.",
       "type": "shell_output_empty",
-      "shell": "rg -nE \"child\\.stdin|stdin\\.write|spawnSync\\([^\\n]*input\" tools/HME/event_kernel tools/HME/proxy/stop_chain 2>/dev/null || true",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py event-kernel-subprocesses-use-fs-ipc",
       "severity": "error",
-      "finding_label": "finding",
-      "success_detail": "no findings",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
       "allow_exit_codes": [
-        0,
-        1
+        0
       ],
       "capture_stderr": true
     },
