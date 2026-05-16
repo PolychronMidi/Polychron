@@ -19,7 +19,7 @@ function run(mode) {
   fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
   fs.writeFileSync(path.join(sandbox, 'doc', 'templates', 'AGENTS.md'), '# sandbox\n');
   fs.copyFileSync(path.join(REPO, 'config', 'models.json'), path.join(sandbox, 'config', 'models.json'));
-  fs.writeFileSync(path.join(sandbox, '.env'), `PROJECT_ROOT=${sandbox}\nOVERDRIVE_MODE=${mode}\n`);
+  writeRedactedEnv(REPO, sandbox, { OVERDRIVE_MODE: mode });
   try {
     return spawnSync('python3', ['-c', `
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
