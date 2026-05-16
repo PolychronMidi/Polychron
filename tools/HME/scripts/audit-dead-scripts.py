@@ -21,6 +21,7 @@ MANUAL_ENTRYPOINTS = {
     "formatter-ab.py": "experimental formatter harness",
     "llamacpp_monitor.py": "operator live health probe",
     "predictive-hooks.py": "offline hook-signal analysis",
+    "routing_ready.py": "manual post-restart routing readiness probe; /home/jah/Polychron/i/hme action=routing_ready uses the shared server formatter",
     "satisfaction_analyzer.py": "operator report over satisfaction_capture output",
     "self-improvement-scout.py": "offline proposal generator",
     "track-refactor-amplification.py": "offline git-history analysis",
