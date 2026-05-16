@@ -1943,9 +1943,11 @@ function summarizeTrace(entries, manifest) {
 }
 
 function main() {
-  const tracePath = path.join(process.cwd(), 'metrics', 'trace.jsonl');
-  const summaryPath = path.join(process.cwd(), 'metrics', 'trace-summary.json');
-  const manifestPath = path.join(process.cwd(), 'metrics', 'system-manifest.json');
+  const metricsDir = process.env.METRICS_DIR;
+  if (!metricsDir) throw new Error('METRICS_DIR is required');
+  const tracePath = path.join(metricsDir, 'trace.jsonl');
+  const summaryPath = path.join(metricsDir, 'trace-summary.json');
+  const manifestPath = path.join(metricsDir, 'system-manifest.json');
 
   function clearStaleSummary(reason) {
     if (!fs.existsSync(summaryPath)) return;
@@ -1955,7 +1957,7 @@ function main() {
 
   if (!fs.existsSync(tracePath)) {
     clearStaleSummary('trace file missing');
-    console.log('trace-summary: trace file not found, skipping (run with --trace to generate metrics/trace.jsonl).');
+    console.log('trace-summary: trace file not found, skipping (run with --trace to generate trace.jsonl).');
     return;
   }
 
@@ -1984,7 +1986,7 @@ function main() {
     : null;
   const summary = summarizeTrace(entries, manifest);
   fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2) + '\n');
-  console.log(`trace-summary: ${entries.length} entries -> metrics/trace-summary.json`);
+  console.log(`trace-summary: ${entries.length} entries -> trace-summary.json`);
 }
 
 main();
