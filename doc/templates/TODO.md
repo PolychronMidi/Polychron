@@ -4,12 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Delete obsolete duplicate and references
+- [ ] [E3] Remove missing script references
 
 ## Next
 
-- [ ] [E3] Run targeted verification and report evidence
-- [ ] [E3] Wire cold live scripts that are not obsolete
+- [ ] [E3] Delete obsolete duplicate files
+- [ ] [E3] Verify no stale refs remain
 
 ## Done
 

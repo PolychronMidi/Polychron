@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3427,
-      "updated_ts": 1778952928.942981,
-      "codex_plan_synced_ts": 1778952928.942892,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T17:35:20.041Z"
+      "max_id": 3430,
+      "updated_ts": 1778952994.340789,
+      "codex_plan_synced_ts": 1778952994.340707,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T17:36:33.904Z"
     }
   },
   {
@@ -6197,8 +6197,8 @@
     "id": 3425,
     "text": "Run targeted verification and report evidence",
     "activeForm": "Run targeted verification and report evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6207,14 +6207,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:35:20.041Z"
+    "codex_plan_ts": "2026-05-16T17:35:20.041Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3426,
     "text": "Delete obsolete duplicate and references",
     "activeForm": "Delete obsolete duplicate and references",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6223,14 +6224,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:35:20.041Z"
+    "codex_plan_ts": "2026-05-16T17:35:20.041Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3427,
     "text": "Wire cold live scripts that are not obsolete",
     "activeForm": "Wire cold live scripts that are not obsolete",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6239,6 +6241,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:35:20.041Z"
+    "codex_plan_ts": "2026-05-16T17:35:20.041Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3428,
+    "text": "Remove missing script references",
+    "activeForm": "Remove missing script references",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778952994.3399637,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:36:33.904Z"
+  },
+  {
+    "id": 3429,
+    "text": "Delete obsolete duplicate files",
+    "activeForm": "Delete obsolete duplicate files",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778952994.3399687,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:36:33.904Z"
+  },
+  {
+    "id": 3430,
+    "text": "Verify no stale refs remain",
+    "activeForm": "Verify no stale refs remain",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778952994.339972,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T17:36:33.904Z"
   }
 ]
