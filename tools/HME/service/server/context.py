@@ -215,11 +215,8 @@ def bootstrap_project_root_from_env() -> str:
         return PROJECT_ROOT
     root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or ""
     if not root:
-        try:
-            from hme_env import ENV
-            root = ENV.require("PROJECT_ROOT")
-        except Exception:
-            root = ""
+        from hme_env import ENV
+        root = ENV.require("PROJECT_ROOT")
     if root:
         PROJECT_ROOT = root
         PROJECT_DB = PROJECT_DB or os.path.join(root, "tools", "HME", "KB")

@@ -209,8 +209,8 @@ def _archive_set(set_name: str = "", force: bool = False) -> dict:
                            "tools", "HME", "scripts", "learning_extract.py")
         if os.path.isfile(_le):
             _sp.run(["python3", _le, "extract"], capture_output=True, timeout=10)
-    except Exception:
-        pass  # silent-ok: diagnostic; failure non-fatal
+    except Exception as exc:
+        print(f"learning_extract sidecar failed: {type(exc).__name__}: {exc}", file=sys.stderr)
     return {
         "ok": True,
         "devlog_path": devlog_path,

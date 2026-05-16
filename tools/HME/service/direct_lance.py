@@ -54,7 +54,8 @@ def _open_table():
         db = lancedb.connect(str(KB_DIR))
         # The table is the lance dir's stem.
         return db.open_table("knowledge")
-    except Exception:
+    except Exception as exc:
+        print(f"direct_lance open_table failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return None
 
 
@@ -119,7 +120,8 @@ def knowledge_lookup_id(knowledge_id: str) -> dict[str, Any] | None:
             except (TypeError, ValueError):
                 row[k] = str(v)
         return row
-    except Exception:
+    except Exception as exc:
+        print(f"direct_lance lookup serialization failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return None
 
 

@@ -26,12 +26,12 @@ if [ -z "$_SV_ROOT" ]; then
 fi
 
 PROJECT_ROOT="$_SV_ROOT"
-source "$_SV_ROOT/tools/HME/hooks/helpers/service_registry.sh" 2>/dev/null || true  # silent-ok: optional fallback path.
+[ -f "$_SV_ROOT/tools/HME/hooks/helpers/service_registry.sh" ] && source "$_SV_ROOT/tools/HME/hooks/helpers/service_registry.sh"
 
 if [ -f "$_SV_ROOT/.env" ]; then
   set -a
   # shellcheck disable=SC1090,SC1091
-  source "$_SV_ROOT/.env" 2>/dev/null || true  # silent-ok: optional fallback path.
+  source "$_SV_ROOT/.env"
   set +a
 fi
 
