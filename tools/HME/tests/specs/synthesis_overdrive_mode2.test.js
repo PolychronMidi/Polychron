@@ -10,6 +10,8 @@ const { spawnSync } = require('child_process');
 const { writeRedactedEnv } = require('../sandbox_env');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
+const { writeRedactedEnv } = require('../sandbox_env');
+
 function run(mode) {
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-retired-'));
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
