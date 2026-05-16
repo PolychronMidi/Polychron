@@ -413,7 +413,7 @@
     },
     {
       "id": "no-hardcoded-metrics-path",
-      "description": "No JS, Python, or shell file may hardcode the string 'output/metrics/' as a path segment outside of output/metrics/. All callers must use METRICS_DIR (env var set in .env as ${PROJECT_ROOT}/output/metrics).",
+      "description": "No new JS, Python, or shell hardcoded metrics path may appear; legacy findings are migration-baselined and new callers must use METRICS_DIR.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py no-hardcoded-metrics-path",
       "severity": "error",
@@ -425,7 +425,7 @@
       ],
       "capture_stderr": true,
       "born_from": "2026 metrics path centralization: output/metrics is the only metrics directory",
-      "context": "No JS, Python, or shell file may hardcode the string 'output/metrics/' as a path segment outside of output/metrics/. All callers must use METRICS_DIR (env var set in .env as ${PROJECT_ROOT}/output/metrics). Bare 'output/metrics/' in path.join(), os.path.join(), or shell strings is the violation class that caused path fragmentation across 100+ files when metrics/ moved to output/metrics/. Exempt: this invariant's own shell, migration script, comments in .md files."
+      "context": "No new JS, Python, or shell hardcoded metrics path may appear; legacy findings are migration-baselined in tools/HME/config/invariants/hardcoded_metrics_baseline.json and new callers must use METRICS_DIR. Bare output/metrics in path.join(), os.path.join(), or shell strings is the violation class that caused metrics path fragmentation. Exempt: this invariant's own shell, migration script, comments in .md files."
     },
     {
       "id": "no-duplicate-output-dirs",
