@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Fix remaining mode-5 retirement patch and test sandbox env helpers
+(empty)
 
 ## Next
 
-- [ ] [E3] Run targeted syntax and overdrive/proxy tests
-- [ ] [E3] Run compact refactor verification
-- [ ] [E3] Report changed files and same-turn evidence
+(empty)
 
 ## Done
 
