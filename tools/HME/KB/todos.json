@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3453,
-      "updated_ts": 1778957248.986739,
-      "codex_plan_synced_ts": 1778957248.9866533,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T18:47:17.294Z"
+      "max_id": 3457,
+      "updated_ts": 1778958460.209433,
+      "codex_plan_synced_ts": 1778958460.2093446,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T19:07:39.757Z"
     }
   },
   {
@@ -6631,8 +6631,8 @@
     "id": 3451,
     "text": "Update references and centralize paths/env helpers where useful",
     "activeForm": "Update references and centralize paths/env helpers where useful",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6641,14 +6641,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:47:17.294Z"
+    "codex_plan_ts": "2026-05-16T18:47:17.294Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3452,
     "text": "Run audits/tests, fix path failures, repeat to green",
     "activeForm": "Run audits/tests, fix path failures, repeat to green",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6657,7 +6658,8 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:47:17.294Z"
+    "codex_plan_ts": "2026-05-16T18:47:17.294Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3453,
@@ -6674,5 +6676,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T18:47:17.294Z"
+  },
+  {
+    "id": 3454,
+    "text": "Check current refactor state and stale path references",
+    "activeForm": "Check current refactor state and stale path references",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778958460.2085416,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T19:07:39.757Z"
+  },
+  {
+    "id": 3455,
+    "text": "Fix any broken moved-path references or root-depth bugs",
+    "activeForm": "Fix any broken moved-path references or root-depth bugs",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778958460.208548,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T19:07:39.757Z"
+  },
+  {
+    "id": 3456,
+    "text": "Run targeted HME/src checks",
+    "activeForm": "Run targeted HME/src checks",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778958460.208553,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T19:07:39.757Z"
+  },
+  {
+    "id": 3457,
+    "text": "Run full audit/refactor verification and summarize evidence",
+    "activeForm": "Run full audit/refactor verification and summarize evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778958460.208556,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T19:07:39.757Z"
   }
 ]

@@ -4,11 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Update references and centralize paths/env helpers where useful
+- [ ] [E3] Check current refactor state and stale path references
 
 ## Next
 
-- [ ] [E3] Run audits/tests, fix path failures, repeat to green
+- [ ] [E3] Fix any broken moved-path references or root-depth bugs
+- [ ] [E3] Run targeted HME/src checks
+- [ ] [E3] Run full audit/refactor verification and summarize evidence
 
 ## Done
 
