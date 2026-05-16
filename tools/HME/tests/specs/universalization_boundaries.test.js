@@ -92,7 +92,7 @@ test('request telemetry emits prompt-free normalized request metadata', () => {
 test('turn side effects expose shared lifesaver/autocommit interfaces without forcing host protocol', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-turn-effects-'));
   try {
-    fs.mkdirSync(path.join(root, 'runtime', 'hme'), { recursive: true });
+    fs.mkdirSync(path.join(root, 'tools', 'HME', 'runtime'), { recursive: true });
     const { failFlagPath, injectLifesaver } = require('../../proxy/turn_side_effects');
     const flag = failFlagPath(root, 'autocommit.fail');
     fs.writeFileSync(flag, JSON.stringify({ banner: 'failure banner' }));
