@@ -12,7 +12,7 @@ synthesis in v1. The rules are deliberately conservative: only very
 strong evidence promotes a claim, so the constitution reflects what
 the system has become, not what any single round tried.
 
-Distinct from doc/templates/doc/templates/AGENTS.md's hard rules:
+Distinct from doc/templates/AGENTS.md's hard rules:
   - doc/templates/AGENTS.md says what Polychron can't be (prohibitions)
   - hme-constitution.json says what Polychron fundamentally IS (affirmations)
 
