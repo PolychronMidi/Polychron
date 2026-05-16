@@ -21,6 +21,7 @@ runbooks.
 - [RAG And Memory](#rag-and-memory)
 - [Local Inference](#local-inference)
 - [Evolution Loop](#evolution-loop)
+- [Generated Metric Churn](#generated-metric-churn)
 - [State Ownership Registry](#state-ownership-registry)
 - [Registries](#registries)
 - [Testing](#testing)
@@ -190,7 +191,7 @@ is the detailed first-session state machine.
 - **Shell lifecycle stages:** lifecycle behavior not yet ported, still routed
   through the kernel.
 - **HCI verifiers:** weighted self-coherence probes.
-- **Declarative invariants:** [`tools/HME/config/invariants.json`](../tools/HME/config/invariants.json) indexes domain shards in `tools/HME/config/invariants/`.
+- **Declarative invariants:** [`tools/HME/config/invariants.json`](../tools/HME/config/invariants.json) indexes domain shards in [`tools/HME/config/invariants/`](../tools/HME/config/invariants/).
 - **Pipeline validators:** source and metrics checks.
 - **ESLint rules:** JavaScript architectural boundaries.
 
@@ -319,9 +320,9 @@ Generated metric files are state, not source. Keep them quiet and predictable:
 
 - `output/metrics/` is the only metrics directory; callers use `METRICS_DIR`.
 - Pipeline analyzers may update committed metric snapshots when verification runs.
-- Runtime-only caches stay in `tmp/`, `runtime/hme/`, or `log/`, never nested `tools/tmp` or `scripts/metrics`.
+- Runtime-only caches stay in `tmp/`, [`runtime/hme/`](../runtime/hme/), or `log/`, never nested `tools/tmp` or `scripts/metrics`.
 - Migration baselines such as `hardcoded_metrics_baseline.json` must only shrink; new findings fail.
-- Repair stale trace/run-history state with `tools/HME/scripts/repair-trace-run-history-sync.sh`.
+- Repair stale trace/run-history state with [`tools/HME/scripts/repair-trace-run-history-sync.sh`](../tools/HME/scripts/repair-trace-run-history-sync.sh).
 
 ## State Ownership Registry
 
