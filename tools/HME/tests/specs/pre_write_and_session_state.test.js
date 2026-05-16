@@ -96,7 +96,7 @@ test('synthetic PreToolUse Bash no-ops on harmless command', async () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('synthetic PreToolUse Bash raw-streak block is deny, not hook failure', async () => {
+test('synthetic PreToolUse Bash raw-streak is observational, not blocking', async () => {
   const root = _withSandbox('hme-hook-bash-streak-');
   const streak = '/tmp/hme-non-hme-streak.score';
   const previous = fs.existsSync(streak) ? fs.readFileSync(streak, 'utf8') : null;
@@ -108,8 +108,7 @@ test('synthetic PreToolUse Bash raw-streak block is deny, not hook failure', asy
       tool_input: { command: 'git status --short' },
     });
     assert.strictEqual(res.exit_code, 0);
-    assert.match(res.stdout, /"permissionDecision":\s*"deny"/);
-    assert.match(res.stdout, /Raw tool streak/);
+    assert.doesNotMatch(res.stdout, /permissionDecision":\s*"deny"|Raw tool streak/);
   } finally {
     if (previous === null) fs.rmSync(streak, { force: true });
     else fs.writeFileSync(streak, previous);
@@ -159,7 +158,7 @@ test('synthetic PreToolUse Bash structured Read always resets even after prior R
   }
 });
 
-test('raw-streak unlock blocks repeated same i command', async () => {
+test('raw-streak unlock no longer blocks repeated same i command', async () => {
   const root = _withSandbox('hme-hook-bash-streak-repeat-');
   const dir = path.join(root, 'tmp', 'hme-streak');
   const streak = path.join(dir, 's3c.score');
@@ -174,8 +173,8 @@ test('raw-streak unlock blocks repeated same i command', async () => {
       tool_input: { command: `${root}/i/review -- mode=forget` },
     });
     assert.strictEqual(res.exit_code, 0);
-    assert.match(res.stdout, /"permissionDecision":\s*"deny"/);
-    assert.match(res.stdout, /unlock loop detected/);
+    assert.doesNotMatch(res.stdout, /permissionDecision":\s*"deny"|unlock loop detected|Raw tool streak/);
+    assert.strictEqual(fs.readFileSync(streak, 'utf8').trim(), '0');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -203,7 +202,7 @@ test('raw-streak unlock allows a different i command', async () => {
   }
 });
 
-test('raw-streak scores are scoped by session id', async () => {
+test('raw-streak scores are scoped by session id without blocking', async () => {
   const root = _withSandbox('hme-hook-bash-streak-session-');
   const dir = path.join(root, 'tmp', 'hme-streak');
   fs.mkdirSync(dir, { recursive: true });
@@ -216,12 +215,12 @@ test('raw-streak scores are scoped by session id', async () => {
     });
     assert.strictEqual(allowed.exit_code, 0);
     assert.doesNotMatch(allowed.stdout, /Raw tool streak/);
-    const denied = await dispatch(root, 'PreToolUse', {
+    const formerlyDenied = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
       session_id: 'session-A',
       tool_input: { command: 'git status --short' },
     });
-    assert.match(denied.stdout, /Raw tool streak/);
+    assert.doesNotMatch(formerlyDenied.stdout, /Raw tool streak|permissionDecision":\s*"deny"/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
