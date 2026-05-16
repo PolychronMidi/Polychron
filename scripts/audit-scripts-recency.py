@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_ROOT = ROOT / "scripts"
 LOG_ROOTS = [ROOT / "log", ROOT / "output" / "metrics", ROOT / "runtime" / "hme"]
+RUN_EVIDENCE_METRICS = {"hme-activity.jsonl", "hme-activity-archive.jsonl", "hme-tool-usage.jsonl"}
 SOURCE_SKIP_PREFIXES = ("log/", "output/", "runtime/", "tmp/", "tools/models/")
 RUN_SUFFIXES = {".py", ".js", ".sh"}
 
@@ -89,15 +90,49 @@ def source_reference_counts(paths: list[Path]) -> dict[Path, tuple[int, list[str
     return refs
 
 
+def _is_run_evidence_log(path: Path) -> bool:
+    rel = str(path.relative_to(ROOT))
+    if rel.startswith("log/"):
+        return path.suffix in {".log", ".out", ".jsonl"} or path.name.startswith("hme.log")
+    if rel.startswith("output/metrics/archive/"):
+        return path.name.startswith("hme-activity") and path.suffix == ".archive"
+    if rel.startswith("output/metrics/"):
+        return path.name in RUN_EVIDENCE_METRICS
+    if rel.startswith("runtime/hme/"):
+        return path.suffix == ".jsonl"
+    return False
+
+
+def _configured_eslint_rules() -> set[str]:
+    cfg = text(ROOT / "eslint.config.mjs")
+    return {m.group(1) for m in re.finditer(r"local/([a-z0-9-]+)['"]\s*:", cfg)}
+
+
+def _main_pipeline_commands() -> dict[str, str]:
+    out: dict[str, str] = {}
+    p = ROOT / "scripts" / "pipeline" / "main-pipeline.js"
+    for label, cmd in re.findall(r"label:\s*'([^']+)'\s*,\s*cmd:\s*'([^']+)'", text(p)):
+        for part in shlex.split(cmd):
+            if part.startswith("scripts/") and not any(ch in part for ch in "*?"):
+                out[part] = label
+    return out
+
+
+def _record(obs: dict[Path, tuple[float, str]], path: Path, ts: float, source: str) -> None:
+    if path not in obs or ts > obs[path][0]:
+        obs[path] = (ts, source)
+
+
 def log_observations(paths: list[Path]) -> dict[Path, tuple[float, str]]:
     logs: list[Path] = []
     for root in LOG_ROOTS:
         if not root.exists():
             continue
         for p in root.rglob("*"):
-            if p.is_file() and p.stat().st_size <= 20_000_000:
+            if p.is_file() and p.stat().st_size <= 20_000_000 and _is_run_evidence_log(p):
                 logs.append(p)
     obs: dict[Path, tuple[float, str]] = {}
+    rel_to_path = {str(p.relative_to(ROOT)): p for p in paths}
     for p in paths:
         rel = str(p.relative_to(ROOT))
         needles = {rel, "./" + rel, str(p)}
@@ -109,9 +144,20 @@ def log_observations(paths: list[Path]) -> dict[Path, tuple[float, str]]:
         for log in logs:
             body = text(log)
             if any(n in body for n in needles):
-                ts = log.stat().st_mtime
-                if p not in obs or ts > obs[p][0]:
-                    obs[p] = (ts, str(log.relative_to(ROOT)))
+                _record(obs, p, log.stat().st_mtime, str(log.relative_to(ROOT)))
+    lint_log = ROOT / "log" / "lint.log"
+    if lint_log.exists():
+        configured = _configured_eslint_rules()
+        for rel, p in rel_to_path.items():
+            if rel.startswith("scripts/eslint-rules/") and p.stem in configured:
+                _record(obs, p, lint_log.stat().st_mtime, "log/lint.log")
+    pipeline_log = ROOT / "log" / "pipeline.log"
+    if pipeline_log.exists():
+        body = text(pipeline_log)
+        for rel, label in _main_pipeline_commands().items():
+            p = rel_to_path.get(rel)
+            if p and (label in body or rel in body):
+                _record(obs, p, pipeline_log.stat().st_mtime, "log/pipeline.log")
     return obs
 
 
