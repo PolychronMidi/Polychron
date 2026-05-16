@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""H7: Self-improving stopwords for agent_local.py.
+"""H7: Self-improving stopwords for agent_local/research.py.
 
 Mines prompt history from log/hme.log and from stress-test-subagent.py's
 test cases to learn which words are pure noise (appear frequently but are
@@ -67,7 +67,7 @@ def _is_identifier(word: str) -> bool:
 
 def _existing_stopwords() -> set:
     """Parse agent_local.py for its hardcoded stop set."""
-    agent_py = os.path.join(_PROJECT, "tools", "HME", "mcp", "agent_local.py")
+    agent_py = os.path.join(_PROJECT, "tools", "HME", "service", "agent_local", "research.py")
     if not os.path.isfile(agent_py):
         return set()
     try:
@@ -126,7 +126,7 @@ def main(argv: list) -> int:
     print(f"Candidates ({len(data['candidates'])}): {data['candidates'][:15]}")
     if "--apply" in argv:
         print()
-        print("--apply: would add these to agent_local.py _extract_search_terms")
+        print("--apply: would add these to agent_local/research.py _extract_search_terms")
         print("(manual review recommended; use the output JSON directly via LEARNED_STOPWORDS)")
     return 0
 
