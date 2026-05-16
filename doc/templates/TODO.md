@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Add work-check regression for correction pivot abandoning parent task
 
 ## Next
 
-(empty)
+- [ ] [E3] Patch work_checks parent-task continuation guard
+- [ ] [E3] Resume scripts/ directory audit and act on cold targets
+- [ ] [E3] Run full verification
 
 ## Done
 

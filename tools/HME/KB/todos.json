@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3432,
-      "updated_ts": 1778953348.972665,
-      "codex_plan_synced_ts": 1778953348.9725852,
+      "max_id": 3436,
+      "updated_ts": 1778953498.975522,
+      "codex_plan_synced_ts": 1778953498.9754395,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T17:42:27.879Z"
+      "codex_plan_ts": "2026-05-16T17:44:56.790Z"
     }
   },
   {
@@ -6326,5 +6326,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T17:42:27.879Z"
+  },
+  {
+    "id": 3433,
+    "text": "Add work-check regression for correction pivot abandoning parent task",
+    "activeForm": "Add work-check regression for correction pivot abandoning parent task",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778953497.2591012,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:44:56.790Z"
+  },
+  {
+    "id": 3434,
+    "text": "Patch work_checks parent-task continuation guard",
+    "activeForm": "Patch work_checks parent-task continuation guard",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778953497.2591078,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:44:56.790Z"
+  },
+  {
+    "id": 3435,
+    "text": "Resume scripts/ directory audit and act on cold targets",
+    "activeForm": "Resume scripts/ directory audit and act on cold targets",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778953497.2591121,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:44:56.790Z"
+  },
+  {
+    "id": 3436,
+    "text": "Run full verification",
+    "activeForm": "Run full verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778953497.2591155,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T17:44:56.790Z"
   }
 ]
