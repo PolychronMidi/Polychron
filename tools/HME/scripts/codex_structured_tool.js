@@ -47,8 +47,7 @@ function readMaybeFile(args, key) { return args[`${key}_file`] ? fs.readFileSync
 function relPath(abs) { const rel = path.relative(ROOT, abs); return rel || '.'; }
 function malformedPath(raw) {
   const s = String(raw ?? '');
-  return !s.trim() || /[
-]/.test(s) || s.trim().startsWith('<<') || /HME_CODEX_JSON|[{}]/.test(s);
+  return !s.trim() || /[\r\n]/.test(s) || s.trim().startsWith('<<') || /HME_CODEX_JSON|[{}]/.test(s);
 }
 function absPath(p, mustExist = true) {
   if (malformedPath(p)) throw new Error(`invalid file_path: ${String(p ?? '').slice(0, 80) || '(empty)'}`);

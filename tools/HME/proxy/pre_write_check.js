@@ -41,8 +41,7 @@ function _denyIf(condition, reason) {
 
 function _badPathShape(file) {
   const s = String(file ?? '');
-  return !s.trim() || /[
-]/.test(s) || s.trim().startsWith('<<') || /HME_CODEX_JSON|[{}]/.test(s);
+  return !s.trim() || /[\r\n]/.test(s) || s.trim().startsWith('<<') || /HME_CODEX_JSON|[{}]/.test(s);
 }
 
 function _editShapeDecision(payload) {
