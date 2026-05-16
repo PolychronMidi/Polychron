@@ -112,6 +112,33 @@ def _local_import_count(target: Path, source: Path, body: str) -> int:
     return _py_local_import_count(target, source, body) + _js_local_import_count(target, source, body)
 
 
+def _basename_reference_count(target: Path, body: str) -> int:
+    rel = str(target.relative_to(ROOT))
+    if rel.startswith("scripts/hme/") or rel == "scripts/pipeline/hme/run-invariant-battery.py":
+        return body.count(target.name)
+    return 0
+
+
+def _classification_for(rel: str, samples: list[str]) -> str:
+    if rel in COLD_CLASSIFICATIONS:
+        return COLD_CLASSIFICATIONS[rel]
+    if "scripts/audit-all.sh" in samples:
+        return "audit-all check"
+    if "scripts/pipeline/main-pipeline.js" in samples:
+        return "main pipeline"
+    if "scripts/hme-i-dispatch.js" in samples:
+        return "i/ dispatch"
+    if "package.json" in samples:
+        return "npm script"
+    if any(sample.startswith("tools/HME/config/invariants/") for sample in samples):
+        return "invariant check"
+    if any(sample.startswith("tools/HME/tests/") for sample in samples):
+        return "test helper"
+    if any(sample.startswith("doc/") for sample in samples):
+        return "documented operator entrypoint"
+    return ""
+
+
 def source_reference_counts(paths: list[Path]) -> dict[Path, tuple[int, list[str]]]:
     all_files = [p for p in git_files() if not str(p.relative_to(ROOT)).startswith(SOURCE_SKIP_PREFIXES)]
     refs: dict[Path, tuple[int, list[str]]] = {}
@@ -123,7 +150,7 @@ def source_reference_counts(paths: list[Path]) -> dict[Path, tuple[int, list[str
             if f == target:
                 continue
             body = text(f)
-            c = body.count(rel) + _local_import_count(target, f, body)
+            c = body.count(rel) + _local_import_count(target, f, body) + _basename_reference_count(target, body)
             if c:
                 count += c
                 _sample(samples, f)
@@ -232,16 +259,16 @@ def main() -> int:
     for p in scripts:
         ref_count, samples = refs[p]
         rel = str(p.relative_to(ROOT))
-        rows.append((p in obs, obs.get(p, (0, ""))[0], ref_count, rel, samples, obs.get(p, (0, ""))[1], COLD_CLASSIFICATIONS.get(rel, "")))
+        rows.append((p in obs, obs.get(p, (0, ""))[0], ref_count, rel, samples, obs.get(p, (0, ""))[1], _classification_for(rel, samples)))
     rows.sort(key=lambda r: (r[0], r[1], r[2], r[3]))
 
-    cold_paths = [p for p in scripts if p not in obs]
-    classified_cold = [p for p in cold_paths if str(p.relative_to(ROOT)) in COLD_CLASSIFICATIONS]
+    cold_rows = [row for row in rows if not row[0]]
+    classified_cold = [row for row in cold_rows if row[6]]
     print(
         f"audit-scripts-recency: scripts={len(scripts)} "
         f"observed={sum(1 for p in scripts if p in obs)} "
-        f"cold={len(cold_paths)} "
-        f"unclassified_cold={len(cold_paths) - len(classified_cold)}"
+        f"cold={len(cold_rows)} "
+        f"unclassified_cold={len(cold_rows) - len(classified_cold)}"
     )
     if broken:
         print("BROKEN_SYMLINKS:")
