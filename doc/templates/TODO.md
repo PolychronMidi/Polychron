@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Trace current hme_admin index call path and logs.
+- [ ] [E3] Trace current index admin path
 
 ## Next
 
-- [ ] [E3] Patch hme_admin index/clear_index to launch a background indexed job with status file/log.
-- [ ] [E3] Add focused tests for immediate response and status artifact.
-- [ ] [E3] Reload/restart HME worker and verify live index returns promptly.
+- [ ] [E3] Implement nonblocking index job status
+- [ ] [E3] Add focused tests
+- [ ] [E3] Run tests and verify live response
 
 ## Done
 

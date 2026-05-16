@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3249,
-      "updated_ts": 1778895118.7192237,
-      "codex_plan_synced_ts": 1778895118.7191799,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T01:31:57.745Z"
+      "max_id": 3253,
+      "updated_ts": 1778895310.4753482,
+      "codex_plan_synced_ts": 1778895310.475303,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T01:35:10.057Z"
     }
   },
   {
@@ -3261,8 +3261,8 @@
     "id": 3246,
     "text": "Trace current hme_admin index call path and logs.",
     "activeForm": "Trace current hme_admin index call path and logs.",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3271,14 +3271,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:31:57.745Z"
+    "codex_plan_ts": "2026-05-16T01:31:57.745Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3247,
     "text": "Patch hme_admin index/clear_index to launch a background indexed job with status file/log.",
     "activeForm": "Patch hme_admin index/clear_index to launch a background indexed job with status file/log.",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3287,14 +3288,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:31:57.745Z"
+    "codex_plan_ts": "2026-05-16T01:31:57.745Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3248,
     "text": "Add focused tests for immediate response and status artifact.",
     "activeForm": "Add focused tests for immediate response and status artifact.",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3303,14 +3305,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:31:57.745Z"
+    "codex_plan_ts": "2026-05-16T01:31:57.745Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3249,
     "text": "Reload/restart HME worker and verify live index returns promptly.",
     "activeForm": "Reload/restart HME worker and verify live index returns promptly.",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3319,6 +3322,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:31:57.745Z"
+    "codex_plan_ts": "2026-05-16T01:31:57.745Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3250,
+    "text": "Trace current index admin path",
+    "activeForm": "Trace current index admin path",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778895310.474907,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T01:35:10.057Z"
+  },
+  {
+    "id": 3251,
+    "text": "Implement nonblocking index job status",
+    "activeForm": "Implement nonblocking index job status",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778895310.474912,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T01:35:10.057Z"
+  },
+  {
+    "id": 3252,
+    "text": "Add focused tests",
+    "activeForm": "Add focused tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778895310.474915,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T01:35:10.057Z"
+  },
+  {
+    "id": 3253,
+    "text": "Run tests and verify live response",
+    "activeForm": "Run tests and verify live response",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778895310.4749177,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T01:35:10.057Z"
   }
 ]
