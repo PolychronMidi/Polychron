@@ -80,7 +80,8 @@ def list_knowledge(limit: int = 20, category: str | None = None) -> list[dict[st
         if keep:
             df = df[keep]
         return df.head(limit).to_dict(orient="records")
-    except Exception:
+    except Exception as exc:
+        print(f"direct_lance list failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return []
 
 
@@ -96,7 +97,8 @@ def knowledge_count() -> dict[str, int]:
         counts = df["category"].value_counts().to_dict()
         counts["_total"] = int(len(df))
         return {k: int(v) for k, v in counts.items()}
-    except Exception:
+    except Exception as exc:
+        print(f"direct_lance count failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return {}
 
 
