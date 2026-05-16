@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from _common import PROJECT_ROOT
 
 
-STATE_PATH = os.path.join(PROJECT_ROOT, "runtime", "hme", "session-state.json")
+STATE_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "runtime", "session-state.json")
 LEGACY_STATE_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "session-state.json")
 ARCHIVE_DIR = os.path.join(PROJECT_ROOT, "output", "metrics", "archive")
 RETIRED_FRAGMENTS = (

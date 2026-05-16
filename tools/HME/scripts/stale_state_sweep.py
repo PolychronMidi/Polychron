@@ -81,7 +81,7 @@ CHECKS = [
 
 
 def main() -> int:
-    runtime_dir = os.path.join(_project_root(), "runtime", "hme")
+    runtime_dir = os.path.join(_project_root(), "tools", "HME", "runtime")
     if not os.path.isdir(runtime_dir):
         print(f"runtime dir absent: {runtime_dir}")
         return 0

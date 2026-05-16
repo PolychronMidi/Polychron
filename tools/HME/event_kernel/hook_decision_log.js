@@ -34,7 +34,7 @@ function hookDecisionSummary(host, event, rawStdout, sanitizedStdout, payload = 
 function recordHookDecision(root, host, event, rawStdout, sanitizedStdout, payload = {}) {
   const summary = hookDecisionSummary(host, event, rawStdout, sanitizedStdout, payload);
   if (!summary || !root) return;
-  append(path.join(root, 'runtime', 'hme', 'hook-decisions.jsonl'), JSON.stringify(summary));
+  append(path.join(root, 'tools', 'HME', 'runtime', 'hook-decisions.jsonl'), JSON.stringify(summary));
 }
 
 module.exports = { hookDecisionSummary, recordHookDecision };

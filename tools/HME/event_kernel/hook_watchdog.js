@@ -18,7 +18,7 @@ function budgetFor(event) {
 }
 
 function runtimeDir(root) {
-  return path.join(root, 'runtime', 'hme');
+  return path.join(root, 'tools', 'HME', 'runtime');
 }
 
 function paths(root) {

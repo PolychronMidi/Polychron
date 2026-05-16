@@ -24,7 +24,7 @@ function normalizePlanPayload(args, source, nowIso) {
 }
 
 function failFlag(projectRoot) {
-  return path.join(projectRoot, 'runtime', 'hme', 'todo-sync.fail');
+  return path.join(projectRoot, 'tools', 'HME', 'runtime', 'todo-sync.fail');
 }
 
 function clearFailFlag(projectRoot) {

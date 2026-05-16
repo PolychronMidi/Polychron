@@ -108,7 +108,7 @@ class LifesaverHeartbeatVerifier(Verifier):
     weight = 5.0
 
     def run(self) -> VerdictResult:
-        heartbeat = os.path.join(_PROJECT, "runtime", "hme", "heartbeat-lifesaver.ts")
+        heartbeat = os.path.join(_PROJECT, "tools", "HME", "runtime", "heartbeat-lifesaver.ts")
         max_age = float(os.environ.get("HME_LIFESAVER_ACTIVE_MAX_AGE_SEC", 6 * 60 * 60))
         try:
             age = time.time() - os.path.getmtime(heartbeat)
