@@ -119,7 +119,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
         try:
             from pathlib import Path as _Path
             from server.route_health import format_routing_ready as _format_routing_ready
-            parts.append(_format_routing_ready(_Path(ctx.PROJECT_ROOT)))
+            parts.append(_format_routing_ready(_Path(ctx.bootstrap_project_root_from_env())))
         except Exception as e:
             parts.append(f"routing_ready error: {type(e).__name__}: {e}")
     if action in ("todo_status", "todo_validate", "todo_repair", "todo_archive"):
