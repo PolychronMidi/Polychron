@@ -298,7 +298,6 @@ module.exports = {
       .filter((d) => d.deny)
       .map((d) => [d.bash_var, d.fires_when, d.reason_key]);
     const willDeny = FIRING_RULES.some(([f, val]) => v[f] === val);
-    if (!willDeny) process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     let firing = [];
     for (const [field, value, reasonKey] of FIRING_RULES) {
       if (v[field] === value) firing.push({ name: reasonKey, reason: REASONS[reasonKey] });
