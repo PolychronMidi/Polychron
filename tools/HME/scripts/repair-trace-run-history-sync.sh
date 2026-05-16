@@ -12,3 +12,9 @@ fi
 export PROJECT_ROOT="$ROOT" METRICS_DIR
 node scripts/pipeline/trace-summary.js
 node scripts/pipeline/snapshot-run.js
+trace_file="$METRICS_DIR/trace.jsonl"
+latest_snapshot="$(ls -t "$METRICS_DIR"/run-history/*.json 2>/dev/null | head -1 || true)"
+if [ -n "$latest_snapshot" ] && [ -f "$trace_file" ]; then
+  touch -r "$trace_file" "$latest_snapshot" "$METRICS_DIR/current-run.json"
+fi
+
