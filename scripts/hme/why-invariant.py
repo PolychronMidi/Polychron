@@ -5,10 +5,30 @@ Reads: hme-invariant-history.json (current state, streak), hme-invariant-efficac
 (class + citation count + role), and git log for recent commit references.
 """
 from __future__ import annotations
+import json
+import os
 import subprocess
 import sys
 
 from _common import PROJECT_ROOT, METRICS_DIR, load_json as _load
+
+
+def _load_invariant_doc(relpath: str) -> dict:
+    def _load_path(path: str, seen: set[str] | None = None) -> dict:
+        seen = seen or set()
+        path = os.path.abspath(path)
+        if path in seen:
+            raise ValueError(f"cyclic invariant include: {path}")
+        seen.add(path)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        invariants = list(data.get("invariants") or [])
+        for rel in data.get("_include") or []:
+            child = _load_path(os.path.join(os.path.dirname(path), rel), seen)
+            invariants.extend(child.get("invariants") or [])
+        data["invariants"] = invariants
+        return data
+    return _load_path(os.path.join(PROJECT_ROOT, relpath))
 
 
 def main(argv):
@@ -52,7 +72,7 @@ def main(argv):
     efficacy = per_inv.get("efficacy", 0)
 
     # Pull config definition
-    inv_cfg = _load("tools/HME/config/invariants.json") or {}
+    inv_cfg = _load_invariant_doc("tools/HME/config/invariants.json")
     defn = None
     for i in inv_cfg.get("invariants", []):
         if i.get("id") == inv_id:
