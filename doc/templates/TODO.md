@@ -4,11 +4,10 @@
 
 ## Now
 
-- [ ] [E3] Unblock doubled HME service_registry hook path
+- [ ] [E3] Update references and centralize paths/env helpers where useful
 
 ## Next
 
-- [ ] [E3] Update references and centralize paths/env helpers where useful
 - [ ] [E3] Run audits/tests, fix path failures, repeat to green
 
 ## Done
