@@ -75,3 +75,16 @@ test('normalizes edit bridge as display-redacted, not omitted literal text', () 
   assert.match(out.body.text, /display-redacted: original was sent; do not reuse/);
   assert.doesNotMatch(out.body.text, /secret old|secret new|omitted by proxy/);
 });
+
+
+test('edit bridge display marks redaction as display-only', () => {
+  const cmd = [
+    "node tools/HME/scripts/codex_structured_tool.js edit --json <<'HME_CODEX_JSON'",
+    JSON.stringify({ file_path: 'src/x.js', old_string: 'secret old', new_string: 'secret new' }),
+    'HME_CODEX_JSON',
+  ].join('\n');
+  const out = normalizeStructuredBridgeCalls({ text: cmd });
+  assert.match(out.body.text, /Edit\(\{"file_path":"src\/x\.js"/);
+  assert.match(out.body.text, /display-redacted: original was sent; do not reuse/);
+  assert.doesNotMatch(out.body.text, /secret old|secret new|omitted by proxy/);
+});
