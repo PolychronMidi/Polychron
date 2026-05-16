@@ -27,6 +27,6 @@ function injectLifesaver({ body, host, projectRoot }) {
   return { body: appendInstructions(body, `[lifesaver inject from ${host || 'proxy'} proxy]\n${failure.banner}`), injected: true, flag: failure.flagPath };
 }
 
-function failFlagPath(projectRoot, name) { return path.join(projectRoot, 'runtime', 'hme', name); }
+function failFlagPath(projectRoot, name) { return path.join(projectRoot, 'tools', 'HME', 'runtime', name); }
 
 module.exports = { appendInstructions, runAutocommit, injectLifesaver, failFlagPath };
