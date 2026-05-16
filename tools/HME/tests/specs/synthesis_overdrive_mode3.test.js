@@ -7,6 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { writeRedactedEnv } = require('../sandbox_env');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
 function run(mode) {
