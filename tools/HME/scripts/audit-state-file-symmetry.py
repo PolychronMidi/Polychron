@@ -47,10 +47,10 @@ _BARE_HME_RE = re.compile(
     r"""['"]hme-([A-Za-z0-9][A-Za-z0-9._\-]*\.(?:ts|json|sid|txt|env|flag|pid|lock|count|score|err|out|state|heartbeat|watermark))['"]"""
 )
 
-# Path.join / pathlib joins: `path.join(X, 'runtime', 'hme', 'foo.sid')`
-# or `_PROJECT / 'runtime' / 'hme' / 'foo'`. Match the trailing literal.
+# Path.join / pathlib joins: `path.join(X, 'tools', 'HME', 'runtime', 'foo.sid')`
+# or `_PROJECT / 'tools' / 'HME' / 'runtime' / 'foo'`. Match the trailing literal.
 _JOIN_RUNTIME_RE = re.compile(
-    r"""(?:'runtime'|"runtime")\s*[,)/]\s*(?:'hme'|"hme")\s*[,)/]\s*['"]([A-Za-z0-9][A-Za-z0-9._\-]*)['"]"""
+    r"""(?:'tools'|"tools")\s*[,)/]\s*(?:'HME'|"HME")\s*[,)/]\s*(?:'runtime'|"runtime")\s*[,)/]\s*['"]([A-Za-z0-9][A-Za-z0-9._\-]*)['"]"""
 )
 _JOIN_TMP_RE = re.compile(
     r"""(?:'tmp'|"tmp")\s*[,)/]\s*['"]hme-([A-Za-z0-9][A-Za-z0-9._\-]*)['"]"""
