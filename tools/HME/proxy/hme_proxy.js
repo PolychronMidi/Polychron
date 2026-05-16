@@ -42,6 +42,7 @@ const { applyAnthropicCommonTransforms } = require('./request_transform_core');
 const { stripStaleToolResults, sanitizeMessages } = require('./conversation_graph');
 const { servicePort } = require('./service_registry');
 const { emitStartMarker } = require('./start_marker');
+const { createRouteMetrics } = require('./proxy_route_metrics');
 const { requestTelemetry } = require('./request_telemetry');
 const { routeDecision } = require('./model_route_resolver');
 const { shrinkForPassthrough } = require('./anthropic_passthrough_compact');
@@ -84,21 +85,10 @@ const PROXY_GIT_SHA = (() => {
 })();
 const PROXY_STARTED_AT = new Date().toISOString();
 
-const _routeMetrics = {
-  requests: 0, omniroute: 0, legacy_swap: 0, direct: 0, passthrough: 0,
-  errors: 0, last_route: '', last_model: '', last_error: '', last_request_at: '',
-};
-function _recordProxyRoute(route, model) {
-  _routeMetrics.requests += 1;
-  if (_routeMetrics[route] !== undefined) _routeMetrics[route] += 1;
-  _routeMetrics.last_route = route;
-  _routeMetrics.last_model = model || '';
-  _routeMetrics.last_request_at = new Date().toISOString();
-}
-function _recordProxyError(err) {
-  _routeMetrics.errors += 1;
-  _routeMetrics.last_error = err && err.message ? err.message : String(err || '');
-}
+const _proxyRouteMetrics = createRouteMetrics();
+const _routeMetrics = _proxyRouteMetrics.metrics;
+const _recordProxyRoute = _proxyRouteMetrics.recordRoute;
+const _recordProxyError = _proxyRouteMetrics.recordError;
 
 const PORT = servicePort('proxy');
 const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
