@@ -164,8 +164,8 @@ def derive_doctrine_fired(detector_verdicts: dict, isa_progress: dict) -> dict:
     """Best-effort heuristic:  fired if any ISCs got verified
     this turn (criteria_passed > 0); 'advisor' fired if any advisor
     pattern shows up in detector verdicts; 'cato' / 'conflict' default
-    False unless explicit signals exist (TODO: wire to actual cross-
-    vendor verdicts when those land)."""
+    False unless explicit signals exist; cross-vendor verdict integration
+    should replace this fallback when those verdicts land."""
     return {
         "advisor": detector_verdicts.get("ADVISOR_INVOKED") == "yes",
         "cato": detector_verdicts.get("CATO_INVOKED") == "yes",
