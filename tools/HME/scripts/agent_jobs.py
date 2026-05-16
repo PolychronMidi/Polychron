@@ -28,7 +28,7 @@ PROJECT_ROOT = Path(
     or os.environ.get("CLAUDE_PROJECT_DIR")
     or Path(__file__).resolve().parents[3]
 )
-JOBS_ROOT = PROJECT_ROOT / "runtime" / "hme" / "agent-jobs"
+JOBS_ROOT = PROJECT_ROOT / "tools" / "HME" / "runtime" / "agent-jobs"
 _SAFE_NAME = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
