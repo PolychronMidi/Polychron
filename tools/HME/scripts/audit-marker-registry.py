@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", "/home/jah/Polychron"))
+PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
 MARKERS_FILE = PROJECT_ROOT / "tools/HME/proxy/middleware/_markers.js"
 
 

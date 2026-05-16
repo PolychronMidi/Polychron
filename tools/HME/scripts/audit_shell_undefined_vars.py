@@ -341,7 +341,7 @@ _JS_DISPATCHER_VARS = {
 
 
 # Re-exports -- audit + main extracted.
-import sys; sys.path.insert(0, "/home/jah/Polychron/scripts")
+import sys; sys.path.insert(0, str(Path(__file__).resolve().parent))
 from audit_shell_undefined_audit import _dispatcher_defs, audit_file, main  # noqa: F401, E402
 
 if __name__ == "__main__":

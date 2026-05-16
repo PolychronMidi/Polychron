@@ -32,8 +32,10 @@ import os
 import sys
 import time
 
-PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
-    "PROJECT_ROOT", "/home/jah/Polychron"
+PROJECT_ROOT = (
+    os.environ.get("CLAUDE_PROJECT_DIR")
+    or os.environ.get("PROJECT_ROOT")
+    or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
 METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 CRYSTALLIZED_PATH = os.path.join(METRICS_DIR, "hme-crystallized.json")

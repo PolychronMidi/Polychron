@@ -57,7 +57,7 @@ def _check_eslint_concordance_complete(inv: dict) -> tuple[bool, str]:
     invariants_list = data.get("invariants", [])
     invariant_ids = {inv_.get("id") for inv_ in invariants_list}
 
-    rules_dir = os.path.join(ctx.PROJECT_ROOT, "scripts", "eslint-rules")
+    rules_dir = os.path.join(ctx.PROJECT_ROOT, "src", "scripts", "eslint-rules")
     try:
         on_disk = {
             os.path.splitext(f_)[0]
