@@ -25,13 +25,20 @@ function codexOmniConfig({ cfg = {}, env = process.env, servicePort }) {
   };
 }
 
+function ensureResponsesInput(body) {
+  if (Object.prototype.hasOwnProperty.call(body, 'input')) return body;
+  if (Object.prototype.hasOwnProperty.call(body, 'messages')) return body;
+  return { ...body, input: [] };
+}
+
 function codexTargetChain({ body, upstreamUrl, cfg = {}, env = process.env, servicePort }) {
   const omni = codexOmniConfig({ cfg: cfg.omniroute || cfg.codex_omniroute || {}, env, servicePort });
   const direct = { kind: 'direct', url: upstreamUrl, body, fallbackDirect: false };
   if (!omni.enabled) return [direct];
   const model = omni.model || body.model || '';
   const prefixed = model.includes('/') ? model : `${omni.providerPrefix}/${model}`;
-  return [{ kind: 'omniroute', url: omni.url, body: { ...body, model: prefixed }, apiKey: omni.apiKey, fallbackDirect: omni.fallbackDirect, fallbackHttpStatuses: omni.fallbackHttpStatuses }, direct];
+  const omniBody = ensureResponsesInput({ ...body, model: prefixed });
+  return [{ kind: 'omniroute', url: omni.url, body: omniBody, apiKey: omni.apiKey, fallbackDirect: omni.fallbackDirect, fallbackHttpStatuses: omni.fallbackHttpStatuses }, direct];
 }
 
 function targetSummary(targets) { return targets.map((t) => `${t.kind}:${t.body && t.body.model ? t.body.model : ''}`).join(' -> '); }
