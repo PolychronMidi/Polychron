@@ -4,11 +4,14 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inventory lab/output/runtime contents and all references
 
 ## Next
 
-(empty)
+- [ ] [E3] Move directories to src/lab, src/output, tools/HME/runtime
+- [ ] [E3] Update path helpers, env defaults, gitignore, docs/tests/scripts
+- [ ] [E3] Run targeted validators/tests and fix remaining path errors
+- [ ] [E3] Run full relevant verification
 
 ## Done
 

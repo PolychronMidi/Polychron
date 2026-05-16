@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3480,
-      "updated_ts": 1778964929.0186076,
-      "codex_plan_synced_ts": 1778964929.018515,
+      "max_id": 3485,
+      "updated_ts": 1778965199.028686,
+      "codex_plan_synced_ts": 1778965199.028593,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T20:55:27.090Z"
+      "codex_plan_ts": "2026-05-16T20:59:46.780Z"
     }
   },
   {
@@ -7121,5 +7121,85 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T20:55:27.090Z"
+  },
+  {
+    "id": 3481,
+    "text": "Inventory lab/output/runtime contents and all references",
+    "activeForm": "Inventory lab/output/runtime contents and all references",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778965187.2490144,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T20:59:46.780Z"
+  },
+  {
+    "id": 3482,
+    "text": "Move directories to src/lab, src/output, tools/HME/runtime",
+    "activeForm": "Move directories to src/lab, src/output, tools/HME/runtime",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778965187.24902,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T20:59:46.780Z"
+  },
+  {
+    "id": 3483,
+    "text": "Update path helpers, env defaults, gitignore, docs/tests/scripts",
+    "activeForm": "Update path helpers, env defaults, gitignore, docs/tests/scripts",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778965187.249024,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T20:59:46.780Z"
+  },
+  {
+    "id": 3484,
+    "text": "Run targeted validators/tests and fix remaining path errors",
+    "activeForm": "Run targeted validators/tests and fix remaining path errors",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778965187.249027,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T20:59:46.780Z"
+  },
+  {
+    "id": 3485,
+    "text": "Run full relevant verification",
+    "activeForm": "Run full relevant verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778965187.249031,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T20:59:46.780Z"
   }
 ]
