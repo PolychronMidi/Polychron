@@ -235,7 +235,8 @@ def _overdrive_timeout() -> int:
     from hme_env import ENV as _ENV
     try:
         return _ENV.optional_int("OVERDRIVE_TIMEOUT", 240)
-    except Exception:
+    except Exception as exc:
+        logger.debug(f"reasoning timeout config read failed: {type(exc).__name__}: {exc}")
         return 240
 
 # Source-of-last-answer tracking. Callers read last_source() after call().
@@ -250,7 +251,8 @@ def _resolve_mode5_chain(tier: str) -> tuple[str, ...] | None:
     from . import _load_models_json as _lmj
     try:
         _cfg = _lmj()
-    except Exception:
+    except Exception as exc:
+        logger.debug(f"reasoning model config read failed: {type(exc).__name__}: {exc}")
         return None
     _models = (_cfg.get("tiers", {}).get(tier, {}).get("models", []) or [])
     if not _models:
@@ -275,7 +277,8 @@ def _resolve_mode_legacy_chain_from_registry(mode: str, tier: str) -> tuple[tupl
     from . import _load_models_json as _lmj
     try:
         _cfg = _lmj()
-    except Exception:
+    except Exception as exc:
+        logger.debug(f"reasoning provider config read failed: {type(exc).__name__}: {exc}")
         return None
     _legacy = _cfg.get("legacy_chains", {})
     _mode_chains = _legacy.get(f"mode{mode}", {})

@@ -57,7 +57,8 @@ def _proc_start_time(pid: int) -> float:
         with open("/proc/stat") as f:
             btime = next(int(ln.split()[1]) for ln in f if ln.startswith("btime "))
         return btime + (clock_ticks_after_boot / hz)
-    except Exception:
+    except Exception as exc:
+        logger.debug(f"process start time read failed for pid={pid}: {type(exc).__name__}: {exc}")
         return 0.0
 
 
@@ -68,7 +69,8 @@ def _pgrep(pattern: str) -> list[int]:
             stderr=subprocess.DEVNULL, timeout=3,
         ).decode()
         return [int(p) for p in out.strip().split() if p]
-    except Exception:
+    except Exception as exc:
+        logger.debug(f"pgrep failed for {pattern!r}: {type(exc).__name__}: {exc}")
         return []
 
 

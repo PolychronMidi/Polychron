@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger("HME")
 
 
 def _root() -> Path:
@@ -23,7 +26,8 @@ def _error_log() -> Path:
 def _read_guard() -> dict[str, Any]:
     try:
         return json.loads(_guard_path().read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as exc:
+        logger.debug(f"todo state guard read failed: {type(exc).__name__}: {exc}")
         return {}
 
 

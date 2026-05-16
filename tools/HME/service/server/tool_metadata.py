@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import inspect
+import logging
 import json
 import os
 from pathlib import Path
@@ -14,12 +15,14 @@ PROJECT_ROOT = Path(
     or Path(__file__).resolve().parents[4]
 )
 INVOCATIONS_PATH = PROJECT_ROOT / "tools" / "HME" / "config" / "tool-invocations.json"
+logger = logging.getLogger("HME")
 
 
 def _invocation_surface() -> dict[str, Any]:
     try:
         data = json.loads(INVOCATIONS_PATH.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as exc:
+        logger.debug(f"tool invocation metadata read failed: {type(exc).__name__}: {exc}")
         return {}
     tools = data.get("tools", {})
     return tools if isinstance(tools, dict) else {}
