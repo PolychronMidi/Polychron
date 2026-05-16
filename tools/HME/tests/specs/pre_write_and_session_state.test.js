@@ -61,46 +61,7 @@ test('pre-write check centralizes deny decision for credential writes', async ()
 });
 
 
-test('pre-write check denies malformed or display-redacted Edit input', async () => {
-  const root = _withSandbox('hme-pre-edit-shape-');
-  const { preWriteCheck } = require('../../proxy/pre_write_check');
-  try {
-    const badPath = await preWriteCheck(JSON.stringify({
-      tool_name: 'Edit',
-      session_id: 's1e',
-      tool_input: { file_path: "<<'HME_CODEX_JSON',", old_string: 'x', new_string: 'y' },
-    }));
-    assert.strictEqual(badPath.permissionDecision, 'deny');
-    assert.match(badPath.reason, /malformed Edit file_path/);
-    const redacted = await preWriteCheck(JSON.stringify({
-      tool_name: 'Edit',
-      session_id: 's1f',
-      tool_input: {
-        file_path: path.join(root, 'src', 'x.js'),
-        old_string: '<omitted by proxy>',
-        new_string: 'y',
-      },
-    }));
-    assert.strictEqual(redacted.permissionDecision, 'deny');
-    assert.match(redacted.reason, /display-redacted/);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('session state records structured verification evidence', () => {
-  const root = _withSandbox('hme-session-state-');
-  const state = require('../../proxy/session_state');
-  state.recordVerificationEvidence({ command: 'node --test x', exit_code: 0, excerpt: 'pass', artifact: 'x' });
-  const recent = state.recentVerificationEvidence(60_000);
-  assert.strictEqual(recent.length, 1);
-  assert.strictEqual(recent[0].command, 'node --test x');
-  assert.strictEqual(recent[0].exit_code, 0);
-  fs.rmSync(root, { recursive: true, force: true });
-});
-
-
-test('pre-write check rejects malformed or redacted Edit input', async () => {
+test('pre-write check denies malformed and display-redacted Edit inputs', async () => {
   const root = _withSandbox('hme-pre-write-malformed-edit-');
   const { preWriteCheck } = require('../../proxy/pre_write_check');
   const malformed = await preWriteCheck(JSON.stringify({
@@ -120,12 +81,24 @@ test('pre-write check rejects malformed or redacted Edit input', async () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('session state records structured verification evidence', () => {
+  const root = _withSandbox('hme-session-state-');
+  const state = require('../../proxy/session_state');
+  state.recordVerificationEvidence({ command: 'node --test x', exit_code: 0, excerpt: 'pass', artifact: 'x' });
+  const recent = state.recentVerificationEvidence(60_000);
+  assert.strictEqual(recent.length, 1);
+  assert.strictEqual(recent[0].command, 'node --test x');
+  assert.strictEqual(recent[0].exit_code, 0);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+
 test('synthetic PreToolUse Edit denies stub content', async () => {
   const root = _withSandbox('hme-hook-edit-');
   const res = await dispatch(root, 'PreToolUse', {
     tool_name: 'Edit',
     session_id: 's2',
-    tool_input: { file_path: path.join(root, 'src', 'x.js'), new_string: '// prev' + 'ious implementation' },
+    tool_input: { file_path: path.join(root, 'src', 'x.js'), old_string: 'const x = 1;', new_string: '// prev' + 'ious implementation' },
   });
   assert.match(res.stdout, /permissionDecision":"deny/);
   assert.match(res.stdout, /stub placeholder/);
