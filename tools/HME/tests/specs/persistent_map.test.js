@@ -85,3 +85,19 @@ test('PersistentMap: complex value shapes round-trip', () => {
   assert.deepStrictEqual(m2.get('obj'), { nested: { deep: 'string', n: 42 } });
   assert.strictEqual(m2.get('null'), null);
 });
+
+test('PersistentMap: project-relative paths resolve under PROJECT_ROOT root tmp', () => {
+  const prev = process.env.PROJECT_ROOT;
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pmap-root-'));
+  process.env.PROJECT_ROOT = root;
+  try {
+    const m = new PersistentMap('tmp/hme-mw-cache-test.jsonl');
+    m.set('rooted', true);
+    assert.equal(fs.existsSync(path.join(root, 'tmp', 'hme-mw-cache-test.jsonl')), true);
+    assert.equal(fs.existsSync(path.join(root, 'tools', 'tmp')), false);
+  } finally {
+    if (prev === undefined) delete process.env.PROJECT_ROOT;
+    else process.env.PROJECT_ROOT = prev;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
