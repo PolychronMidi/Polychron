@@ -4,11 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Run targeted and full verification
+(empty)
 
 ## Next
 
-- [ ] [E3] Report concise evidence
+(empty)
 
 ## Done
 
