@@ -1,10 +1,22 @@
+import importlib.util
 import sys
 import threading
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from server.tools_analysis.evolution import index_jobs
+
+def _load_index_jobs():
+    path = (Path(__file__).resolve().parent.parent
+            / "server" / "tools_analysis" / "evolution" / "index_jobs.py")
+    spec = importlib.util.spec_from_file_location("test_index_jobs_module", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+index_jobs = _load_index_jobs()
 
 
 def test_start_index_job_returns_immediately(tmp_path):
