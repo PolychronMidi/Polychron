@@ -1,17 +1,15 @@
-"""Todo store schema + merge consistency + tool-surface coverage."""
+"""Todo store schema, sync, archive, and Codex-plan consistency."""
 from __future__ import annotations
 
 import json
 import os
-import re
 import subprocess
 import sys
-import time
 
 from ._base import (
-    Verifier, VerdictResult, _result, _run_subprocess,
+    Verifier, VerdictResult, _result,
     PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    _PROJECT, _SERVER_DIR, _SCRIPTS_DIR,
 )
 
 
