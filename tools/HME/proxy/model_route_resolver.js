@@ -20,6 +20,7 @@ function codexOmniConfig({ cfg = {}, env = process.env, servicePort }) {
     providerPrefix: env.HME_CODEX_OMNIROUTE_PROVIDER || cfg.provider_prefix || 'cx',
     model: env.HME_CODEX_OMNIROUTE_MODEL || cfg.model || '',
     fallbackDirect: env.HME_CODEX_OMNIROUTE_FALLBACK_DIRECT !== '0' && cfg.fallback_direct !== false,
+    fallbackHttpStatuses: new Set(cfg.fallback_http_statuses || [400, 401, 403, 404, 429, 500, 502, 503, 504]),
     apiKey: env.HME_CODEX_OMNIROUTE_API_KEY || cfg.api_key || '',
   };
 }
@@ -30,7 +31,7 @@ function codexTargetChain({ body, upstreamUrl, cfg = {}, env = process.env, serv
   if (!omni.enabled) return [direct];
   const model = omni.model || body.model || '';
   const prefixed = model.includes('/') ? model : `${omni.providerPrefix}/${model}`;
-  return [{ kind: 'omniroute', url: omni.url, body: { ...body, model: prefixed }, apiKey: omni.apiKey, fallbackDirect: omni.fallbackDirect, fallbackHttpStatuses: new Set([404, 502, 503, 504]) }, direct];
+  return [{ kind: 'omniroute', url: omni.url, body: { ...body, model: prefixed }, apiKey: omni.apiKey, fallbackDirect: omni.fallbackDirect, fallbackHttpStatuses: omni.fallbackHttpStatuses }, direct];
 }
 
 function targetSummary(targets) { return targets.map((t) => `${t.kind}:${t.body && t.body.model ? t.body.model : ''}`).join(' -> '); }
