@@ -114,7 +114,6 @@ function parseGlob(argv) { const d = jsonData(argv); return { pattern: String(d.
 async function runRead(argv) { const input = parseRead(argv); await pre('Read', input); const text = readSlice(fs.readFileSync(input.file_path, 'utf8'), input); await finishStructured('Read', input, text); }
 
 function countOccurrences(text, needle) { if (!needle) return 0; let n = 0; let i = 0; while ((i = text.indexOf(needle, i)) >= 0) { n++; i += Math.max(1, needle.length); } return n; }
-function boundaryTrimmed(value) { return String(value || '').replace(/^\n+/, '').replace(/\n+$/, ''); }
 function editVariants(input, text) {
   const variants = [{ ...input, _why: 'exact' }];
   const old = input.old_string || '';
@@ -123,8 +122,6 @@ function editVariants(input, text) {
   if (old.includes('\\t') && !old.includes('\t')) variants.push({ ...input, old_string: old.replace(/\\t/g, '\t'), new_string: neu.replace(/\\t/g, '\t'), _why: 'decoded literal \\t' });
   if (text.includes('\r\n') && old.includes('\n') && !old.includes('\r\n')) variants.push({ ...input, old_string: old.replace(/\n/g, '\r\n'), new_string: neu.replace(/\n/g, '\r\n'), _why: 'crlf-normalized' });
   if (!text.includes('\r\n') && old.includes('\r\n')) variants.push({ ...input, old_string: old.replace(/\r\n/g, '\n'), new_string: neu.replace(/\r\n/g, '\n'), _why: 'lf-normalized' });
-  const trimmedOld = boundaryTrimmed(old);
-  if (trimmedOld && trimmedOld !== old) variants.push({ ...input, old_string: trimmedOld, new_string: boundaryTrimmed(neu), _why: 'boundary-newline-trimmed' });
   return variants;
 }
 function contextWindow(file, oldString, newString, reason) {
@@ -181,6 +178,13 @@ async function runEdit(argv) {
     const message = `Error: ${err.message}`;
     recordFailure(ROOT, { tool: 'Edit', reason: err.message, file: '', session_id: SESSION });
     await finishStructured('Edit', { file_path: '' }, message, { isError: true, rawStderr: message });
+    return;
+  }
+  if (DISPLAY_REDACTED_RE.test(input.old_string)) {
+    const err = editFailure(input, 'old_string is display-redacted; pass actual file text');
+    const message = err.userMessage || `Error: ${err.message}`;
+    recordFailure(ROOT, { tool: 'Edit', reason: err.message, file: input.file_path, session_id: SESSION });
+    await finishStructured('Edit', input, message, { isError: true, rawStderr: message });
     return;
   }
   const context = await pre('Edit', input);
