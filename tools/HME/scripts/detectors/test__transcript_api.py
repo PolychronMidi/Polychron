@@ -67,6 +67,16 @@ def _write_jsonl(events: list[dict]) -> str:
     return path
 
 
+class TempFileLocationContract(unittest.TestCase):
+    def test_transcript_fixture_files_never_land_in_project_root(self):
+        path = _write_jsonl([_fixture_user("root guard")])
+        try:
+            root = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[4])).resolve()
+            self.assertEqual(Path(path).resolve().parent.parent.parent, root / "tmp")
+        finally:
+            os.unlink(path)
+
+
 class IsAssistantContract(unittest.TestCase):
     def test_real_shape(self):
         self.assertTrue(is_assistant(_fixture_assistant("hi")))
