@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3337,
-      "updated_ts": 1778941078.8912115,
-      "codex_plan_synced_ts": 1778941078.8911493,
+      "max_id": 3343,
+      "updated_ts": 1778941678.8773746,
+      "codex_plan_synced_ts": 1778941678.8773127,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T14:17:51.816Z"
+      "codex_plan_ts": "2026-05-16T14:27:55.080Z"
     }
   },
   {
@@ -4781,5 +4781,101 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T14:17:51.816Z"
+  },
+  {
+    "id": 3338,
+    "text": "Inspect hme_proxy overdrive/compaction/stream sections and tests",
+    "activeForm": "Inspect hme_proxy overdrive/compaction/stream sections and tests",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778941675.5027103,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+  },
+  {
+    "id": 3339,
+    "text": "Extract Anthropic passthrough compaction module",
+    "activeForm": "Extract Anthropic passthrough compaction module",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778941675.5027156,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+  },
+  {
+    "id": 3340,
+    "text": "Extract overdrive routing and phase out modes 1-5",
+    "activeForm": "Extract overdrive routing and phase out modes 1-5",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778941675.5027206,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+  },
+  {
+    "id": 3341,
+    "text": "Extract stream/translation edge handlers",
+    "activeForm": "Extract stream/translation edge handlers",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778941675.502723,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+  },
+  {
+    "id": 3342,
+    "text": "Add/update regression tests",
+    "activeForm": "Add/update regression tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778941675.502726,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
+  },
+  {
+    "id": 3343,
+    "text": "Run targeted and full verification",
+    "activeForm": "Run targeted and full verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778941675.5027285,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T14:27:55.080Z"
   }
 ]

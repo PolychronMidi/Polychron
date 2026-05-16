@@ -4,11 +4,15 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect hme_proxy overdrive/compaction/stream sections and tests
 
 ## Next
 
-(empty)
+- [ ] [E3] Extract Anthropic passthrough compaction module
+- [ ] [E3] Extract overdrive routing and phase out modes 1-5
+- [ ] [E3] Extract stream/translation edge handlers
+- [ ] [E3] Add/update regression tests
+- [ ] [E3] Run targeted and full verification
 
 ## Done
 
