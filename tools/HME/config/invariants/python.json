@@ -72,6 +72,21 @@
       "context": "HME Python files must not read os.environ directly  use hme_env.ENV.require/optional instead. os.environ is mutable by any subprocess and unauditable; .env on disk is the single source of truth. Subprocess env construction (os.environ.copy()) is exempt when marked with # env-ok. hme_env.py itself is exempt."
     },
     {
+      "id": "hme-env-ok-waivers-categorized",
+      "description": "Every # env-ok waiver must state why raw process env access is intentional.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-env-ok-categories.py tools/HME",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "all env-ok waivers categorized",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "born_from": "2026 env access split: .env config vs transient runtime process state",
+      "context": "Raw process environment reads are allowed only for subprocess inheritance, bootstrap, runtime/test toggles, feature flags, scoped overrides, and similar transient state. The category makes every waiver auditable."
+    },
+    {
       "id": "hme-py-no-hardcoded-home",
       "description": "HME Python and shell files must not hardcode /home/jah  use PROJECT_ROOT from .env via hme_env.ENV or $PROJECT_ROOT in shell. Docs and logs are exempt.",
       "type": "shell_output_empty",
