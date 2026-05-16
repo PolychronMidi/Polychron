@@ -58,6 +58,46 @@ def pipeline_missing() -> list[str]:
     return missing
 
 
+def _sample(samples: list[str], path: Path) -> None:
+    rel = str(path.relative_to(ROOT))
+    if len(samples) < 3 and rel not in samples:
+        samples.append(rel)
+
+
+def _py_local_import_count(target: Path, source: Path, body: str) -> int:
+    if target.suffix != ".py" or source.suffix != ".py" or target.parent != source.parent:
+        return 0
+    stem = target.stem
+    if not re.fullmatch(r"[A-Za-z_]\w*", stem):
+        return 0
+    from_import = rf"(?m)^\s*from\s+\.?{re.escape(stem)}\s+import\s+"
+    direct_import = rf"(?m)^\s*import\s+.*(?:^|,\s*){re.escape(stem)}(?:\s+as\s+\w+)?(?:\s*,|\s*$)"
+    return len(re.findall(from_import, body)) + len(re.findall(direct_import, body))
+
+
+def _js_local_import_count(target: Path, source: Path, body: str) -> int:
+    if target.suffix != ".js" or source.suffix not in {".js", ".mjs", ".cjs"}:
+        return 0
+    rel = os.path.relpath(target, source.parent).replace(os.sep, "/")
+    if not rel.startswith("."):
+        rel = "./" + rel
+    specs = {rel, rel.removesuffix(target.suffix)}
+    total = 0
+    for spec in specs:
+        q = re.escape(spec)
+        patterns = [
+            rf"require\(\s*['\"]{q}['\"]\s*\)",
+            rf"from\s+['\"]{q}['\"]",
+            rf"import\(\s*['\"]{q}['\"]\s*\)",
+        ]
+        total += sum(len(re.findall(pattern, body)) for pattern in patterns)
+    return total
+
+
+def _local_import_count(target: Path, source: Path, body: str) -> int:
+    return _py_local_import_count(target, source, body) + _js_local_import_count(target, source, body)
+
+
 def source_reference_counts(paths: list[Path]) -> dict[Path, tuple[int, list[str]]]:
     all_files = [p for p in git_files() if not str(p.relative_to(ROOT)).startswith(SOURCE_SKIP_PREFIXES)]
     refs: dict[Path, tuple[int, list[str]]] = {}
@@ -69,11 +109,10 @@ def source_reference_counts(paths: list[Path]) -> dict[Path, tuple[int, list[str
             if f == target:
                 continue
             body = text(f)
-            c = body.count(rel)
+            c = body.count(rel) + _local_import_count(target, f, body)
             if c:
                 count += c
-                if len(samples) < 3:
-                    samples.append(str(f.relative_to(ROOT)))
+                _sample(samples, f)
         if str(target.relative_to(ROOT)).startswith('scripts/eslint-rules/') and target.name not in {'index.js'}:
             stem = target.stem
             idx = text(ROOT / 'scripts' / 'eslint-rules' / 'index.js')
