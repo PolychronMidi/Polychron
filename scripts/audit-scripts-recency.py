@@ -32,6 +32,9 @@ COLD_CLASSIFICATIONS = {
     "scripts/sync-claude-settings.py": "Claude settings sync admin check",
     "scripts/pipeline/train-verdict-predictor.js": "post-composition trainer; audit --check",
     "scripts/pipeline/hme/utils.js": "shared HME pipeline helper module",
+    "scripts/audit_shell_undefined_audit.py": "audit helper module",
+    "scripts/report-src-loc.js": "LOC audit helper",
+    "scripts/loc_ignore.py": "LOC audit helper",
 }
 
 
