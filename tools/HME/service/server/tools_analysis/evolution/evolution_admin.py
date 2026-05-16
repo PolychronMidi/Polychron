@@ -115,10 +115,17 @@ def hme_admin(action: str = "selftest", modules: str = "",
             parts.append(_health())
         except Exception as e:
             parts.append(f"health summary error: {type(e).__name__}: {e}")
+    if action == "routing_ready":
+        try:
+            from pathlib import Path as _Path
+            from server.route_health import format_routing_ready as _format_routing_ready
+            parts.append(_format_routing_ready(_Path(ctx.PROJECT_ROOT)))
+        except Exception as e:
+            parts.append(f"routing_ready error: {type(e).__name__}: {e}")
     if action in ("todo_status", "todo_validate", "todo_repair", "todo_archive"):
         parts.append(_hme_todo_admin(action, modules))
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', 'todo_status', 'todo_validate', 'todo_repair', 'todo_archive', 'index_status', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', 'routing_ready', 'todo_status', 'todo_validate', 'todo_repair', 'todo_archive', 'index_status', or 'both'."
     return "\n\n".join(parts)
 
 
