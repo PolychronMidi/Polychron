@@ -51,6 +51,11 @@ function _writeTranscript(sandbox, entries) {
   return transcriptPath;
 }
 
+
+function _assistantToolUse(name, input) {
+  return { type: 'assistant', message: { content: [{ type: 'tool_use', name, input }] } };
+}
+
 function _ctxStub(sandbox, transcriptPath) {
   const denied = { value: null };
   const allowed = { value: false };
@@ -147,4 +152,36 @@ test('work_checks: advisor_silently_skipped verdict denies with advisor reason',
     const result = await policy.run(_ctxStub(sandbox, transcript));
     assert.strictEqual(result.decision, 'deny');
     assert.ok(result.reason.includes('ADVISOR DOCTRINE (legacy E4/E5 floor)'));
+  }));
+
+
+test('work_checks: correction pivot cannot abandon broad parent task',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'analyze scripts/ for unused/obsolete deletion targets, by sorting by least recently run and inspecting the top ones' } },
+      _assistantToolUse('Bash', { command: 'python3 scripts/audit-one-file.py' }),
+      { type: 'user', message: { content: 'WHAT THE FUCK DID YOU THINK I MEANT IF NOT SYNTHESIZE GENERALIZATIONS?' } },
+      _assistantToolUse('Bash', { command: 'rg synthesize-generalizations scripts tools/HME doc' }),
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Removed synthesize-generalizations references. Full verifier passed.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /CORRECTION-PIVOT VIOLATION/);
+    assert.match(result.reason, /analyze scripts\//);
+  }));
+
+test('work_checks: correction pivot allows post-correction parent audit evidence',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'analyze scripts/ for unused/obsolete deletion targets, by sorting by least recently run and inspecting the top ones' } },
+      { type: 'user', message: { content: 'WHAT THE FUCK DID YOU THINK I MEANT IF NOT SYNTHESIZE GENERALIZATIONS?' } },
+      _assistantToolUse('Bash', { command: 'python3 - <<PY
+# scripts unused obsolete least recently runnable never_observed refs ranking
+PY' }),
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Continued the scripts/ audit and handled the cold targets.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    if (result.reason) assert.doesNotMatch(result.reason, /CORRECTION-PIVOT VIOLATION/);
   }));
