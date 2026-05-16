@@ -15,7 +15,7 @@ from pathlib import Path
 
 def resolve() -> str:
     for var in ("PROJECT_ROOT", "CLAUDE_PROJECT_DIR"):
-        val = os.environ.get(var)
+        val = os.environ.get(var)  # env-ok: low-level root bootstrap
         if val and os.path.isfile(os.path.join(val, ".env")):
             return val
     cur = Path(__file__).resolve().parent

@@ -55,7 +55,7 @@ def start_watcher(project_root: str, engine, debounce: float = 30.0):
         # LanceDB internal files -- churn on every index write.
         ".manifest", ".txn", ".lance",
     }
-    _env_exts_raw = os.environ.get("HME_IGNORE_EXTS", "")
+    _env_exts_raw = ENV.optional("HME_IGNORE_EXTS", "")
     _env_exts = {e.strip() if e.strip().startswith(".") else "." + e.strip()
                  for e in _env_exts_raw.split(",") if e.strip()}
     IGNORE_EXTS = _env_exts if _env_exts else _BUILTIN_IGNORE_EXTS

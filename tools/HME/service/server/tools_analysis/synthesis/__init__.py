@@ -11,10 +11,11 @@ Split into focused modules:
   synthesis_pipeline.py   -- arbiter triage, conflict resolution, two-stage/parallel think
 """
 import json as _json, os as _os, re as _re, logging
+from hme_env import ENV
 
 def _load_models_json():
     """Single loader for config/models.json (JSONC with // comments)."""
-    _cfg_path = _os.path.join(_os.environ.get("PROJECT_ROOT", "."), "config", "models.json")
+    _cfg_path = _os.path.join(ENV.require("PROJECT_ROOT"), "config", "models.json")
     with open(_cfg_path) as _f:
         _raw = _f.read()
     return _json.loads(_re.sub(r'^\s*//.*$|[ \t]+//.*$', '', _raw, flags=_re.MULTILINE))

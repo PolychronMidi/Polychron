@@ -51,7 +51,7 @@ def main():
     # rationale: daemon needs its own file_walker init before indexing or walking
     try:
         from file_walker import init_config as _walker_init_config
-        _project_root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
+        _project_root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")  # env-ok: daemon bootstrap before HME config
         if _project_root:
             _walker_init_config(_project_root)
             logger.info(f"file_walker initialized with project_root={_project_root}")

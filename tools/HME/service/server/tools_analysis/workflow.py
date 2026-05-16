@@ -3,6 +3,7 @@ import os
 import json
 import logging
 
+from hme_env import ENV
 from server import context as ctx
 from server.helpers import (
     get_context_budget, validate_project_path, fmt_score,
@@ -116,7 +117,7 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     Interactive calls use two-stage pipeline (extract->reason) for better grounding.
     Background/warm-cache calls use single-stage to avoid competing with interactive work."""
     # Honor fast=true on read(): skip the 30-90s synthesis entirely when
-    if os.environ.get("HME_READ_FAST") in ("1", "true", "yes"):
+    if ENV.optional_bool("HME_READ_FAST", False):
         return "(Edit Risks synthesis skipped -- HME_READ_FAST=1)"
     callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
     kb_summary = "\n".join(

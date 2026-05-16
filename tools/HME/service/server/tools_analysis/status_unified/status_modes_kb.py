@@ -7,6 +7,7 @@ import json
 import logging
 import os
 
+from hme_env import ENV
 from server import context as ctx
 from .. import (
     _track, get_session_intent, _budget_gate, _budget_section, _git_run,
@@ -31,7 +32,7 @@ def _mode_learn_suggestions():
     import json as _json
     from server import context as _ctx
     activity_path = _os.path.join(
-        _os.environ.get("METRICS_DIR") or _os.path.join(_ctx.PROJECT_ROOT, "output", "metrics"),
+        ENV.require("METRICS_DIR"),
         "hme-activity.jsonl",
     )
     if not _os.path.isfile(activity_path):

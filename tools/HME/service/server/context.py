@@ -16,6 +16,7 @@ import logging
 import threading
 import functools
 from mcp.server.fastmcp import FastMCP
+from hme_env import ENV
 
 logger = logging.getLogger("HME")
 
@@ -68,7 +69,7 @@ def register_critical_failure(
     # CRITICAL bridge: write to hme-errors.log so the canonical Stop/PostToolUse
     if is_new:
         try:
-            project_root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or ""
+            project_root = ENV.optional("PROJECT_ROOT", "") or ENV.optional("CLAUDE_PROJECT_DIR", "")
             err_log = os.path.join(project_root, "log", "hme-errors.log")
             ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             line = f"[{ts}] [worker:{source}] [{severity}] {error}\n"
@@ -213,9 +214,8 @@ def bootstrap_project_root_from_env() -> str:
     global PROJECT_ROOT, PROJECT_DB
     if PROJECT_ROOT:
         return PROJECT_ROOT
-    root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or ""
+    root = ENV.optional("PROJECT_ROOT", "") or ENV.optional("CLAUDE_PROJECT_DIR", "")
     if not root:
-        from hme_env import ENV
         root = ENV.require("PROJECT_ROOT")
     if root:
         PROJECT_ROOT = root

@@ -3,6 +3,7 @@ import os
 import json
 import logging
 
+from hme_env import ENV
 from server import context as ctx
 from server.helpers import (
     get_context_budget, validate_project_path, fmt_score,
@@ -245,7 +246,7 @@ def before_editing(file_path: str) -> str:
         logger.debug(f"parts.append: {type(_err4).__name__}: {_err4}")
 
     # P4. Edit Risks -- synthesized danger zones
-    _verbose = os.environ.get("HME_READ_VERBOSE", "0") == "1"
+    _verbose = ENV.optional_bool("HME_READ_VERBOSE", False)
     if synthesis and _verbose:
         parts.append(f"\n## Edit Risks *(adaptive)*")
         parts.append(compress_for_claude(synthesis, max_chars=800,

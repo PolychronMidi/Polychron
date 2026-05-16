@@ -2,6 +2,7 @@
 import os
 import logging
 
+from hme_env import ENV
 from server import context as ctx
 from server.helpers import get_context_budget, validate_project_path, fmt_score, fmt_sim_score, BUDGET_LIMITS
 from symbols import collect_all_symbols, find_callers as _find_callers
@@ -116,7 +117,7 @@ def module_story(module_name: str) -> str:
                 parts.append(f"    ... and {len(result['symbols']) - sym_limit} more")
         parts.append("")
     # Evolution history from KB -- filtered for actual relevance to this module.
-    _fast = os.environ.get("HME_READ_FAST") in ("1", "true", "yes")
+    _fast = ENV.optional_bool("HME_READ_FAST", False)
     from . import _filter_kb_relevance
     kb_limit = 5 if _fast else (limits["kb_entries"] * 2)
     kb_results = ctx.project_engine.search_knowledge(module_name, top_k=kb_limit)

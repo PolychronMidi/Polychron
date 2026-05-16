@@ -9,6 +9,8 @@ import sys
 import time
 import logging
 
+from hme_env import ENV
+
 _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
@@ -24,12 +26,12 @@ from server.tools_analysis.todo import (
 
 
 # Lifesaver-todo store-protection knobs. Override via env if the defaults
-_LIFESAVER_MAX_OPEN = int(os.environ.get("HME_LIFESAVER_TODO_MAX_OPEN", "20"))
-_LIFESAVER_TTL_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_TTL_SEC", str(24 * 3600)))
+_LIFESAVER_MAX_OPEN = ENV.optional_int("HME_LIFESAVER_TODO_MAX_OPEN", 20)
+_LIFESAVER_TTL_SECONDS = ENV.optional_int("HME_LIFESAVER_TODO_TTL_SEC", 24 * 3600)
 # Prune-after: how long a DONE lifesaver entry stays in the store before
-_LIFESAVER_PRUNE_AFTER_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_PRUNE_SEC", str(3 * 24 * 3600)))
+_LIFESAVER_PRUNE_AFTER_SECONDS = ENV.optional_int("HME_LIFESAVER_TODO_PRUNE_SEC", 3 * 24 * 3600)
 # Prune-after for non-lifesaver done todos (native, hme_todo, todo_md).
-_DONE_TODO_PRUNE_AFTER_SECONDS = int(os.environ.get("HME_DONE_TODO_PRUNE_SEC", str(7 * 24 * 3600)))
+_DONE_TODO_PRUNE_AFTER_SECONDS = ENV.optional_int("HME_DONE_TODO_PRUNE_SEC", 7 * 24 * 3600)
 
 
 def _normalize_error_for_dedup(error: str) -> str:

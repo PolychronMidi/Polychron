@@ -12,7 +12,7 @@ logger = logging.getLogger("HME")
 
 
 def _root() -> Path:
-    return Path(os.environ.get("PROJECT_ROOT") or Path.cwd())
+    return Path(ENV.optional("PROJECT_ROOT", "") or Path.cwd())
 
 
 def _guard_path() -> Path:
