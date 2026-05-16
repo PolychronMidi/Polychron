@@ -204,7 +204,7 @@ def health() -> str:
             if "--alias" in cmd:
                 alias = cmd.split("--alias", 1)[1].split()[0]
             lines.append(f"  llama:   PID {pid}  alias={alias}  up {_fmt_uptime(_proc_start_time(pid))}")
-        except Exception:
+        except Exception as exc:
             # silent-ok: optional fallback path.
             lines.append(f"  llama:   PID {pid} (cmdline unreadable)")
     if len(ls_pids) > 2:
