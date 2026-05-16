@@ -57,7 +57,36 @@ test('failed structured edit returns current context and does not mark verify-la
   }
 });
 
-test('malformed structured edit path fails loud instead of empty success', () => {
+test('successful structured edit marks verify-landed only after posttool success', () => {
+  const root = sandbox();
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'const value = 1;\n');
+  try {
+    const res = runEdit(root, [`file=${file}`, 'old=const value = 1;\n', 'new=const value = 2;\n']);
+    assert.equal(res.status, 0, res.stderr || res.stdout);
+    assert.match(res.stdout, /\[SUCCESS\] edit applied/);
+    assert.equal(fs.readFileSync(file, 'utf8'), 'const value = 2;\n');
+    assert.match(fs.readFileSync(path.join(root, 'tmp', 'hme-turn-edits.txt'), 'utf8'), /^target\n/m);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('structured edit treats already-applied replacement as safe success', () => {
+  const root = sandbox();
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'const value = 2;\n');
+  try {
+    const res = runEdit(root, [`file=${file}`, 'old=const value = 1;\n', 'new=const value = 2;\n']);
+    assert.equal(res.status, 0, res.stderr || res.stdout);
+    assert.match(res.stdout, /edit already applied/);
+    assert.equal(fs.readFileSync(file, 'utf8'), 'const value = 2;\n');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('malformed structured edit file path fails loud instead of empty success', () => {
   const root = sandbox('hme-edit-malformed-path-');
   try {
     const res = runEdit(root, ["file=<<'HME_CODEX_JSON',", 'old=x', 'new=y']);
@@ -86,7 +115,7 @@ test('display-redacted structured edit old_string fails with current context', (
   }
 });
 
-test('structured edit safely normalizes trailing whitespace mismatch', () => {
+test('structured edit auto-applies unique trailing whitespace mismatch', () => {
   const root = sandbox('hme-edit-trailing-ws-');
   const file = path.join(root, 'src', 'target.js');
   fs.writeFileSync(file, 'const value = 1;   \n');
@@ -94,35 +123,6 @@ test('structured edit safely normalizes trailing whitespace mismatch', () => {
     const res = runEdit(root, [`file=${file}`, 'old=const value = 1;\n', 'new=const value = 2;\n']);
     assert.equal(res.status, 0, res.stderr || res.stdout);
     assert.match(res.stdout, /trailing-whitespace-normalized/);
-    assert.equal(fs.readFileSync(file, 'utf8'), 'const value = 2;\n');
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('successful structured edit marks verify-landed only after posttool success', () => {
-  const root = sandbox();
-  const file = path.join(root, 'src', 'target.js');
-  fs.writeFileSync(file, 'const value = 1;\n');
-  try {
-    const res = runEdit(root, [`file=${file}`, 'old=const value = 1;\n', 'new=const value = 2;\n']);
-    assert.equal(res.status, 0, res.stderr || res.stdout);
-    assert.match(res.stdout, /\[SUCCESS\] edit applied/);
-    assert.equal(fs.readFileSync(file, 'utf8'), 'const value = 2;\n');
-    assert.match(fs.readFileSync(path.join(root, 'tmp', 'hme-turn-edits.txt'), 'utf8'), /^target\n/m);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('structured edit treats already-applied replacement as safe success', () => {
-  const root = sandbox();
-  const file = path.join(root, 'src', 'target.js');
-  fs.writeFileSync(file, 'const value = 2;\n');
-  try {
-    const res = runEdit(root, [`file=${file}`, 'old=const value = 1;\n', 'new=const value = 2;\n']);
-    assert.equal(res.status, 0, res.stderr || res.stdout);
-    assert.match(res.stdout, /edit already applied/);
     assert.equal(fs.readFileSync(file, 'utf8'), 'const value = 2;\n');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
