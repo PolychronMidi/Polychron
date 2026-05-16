@@ -26,7 +26,7 @@ def _session_state_path() -> str | None:
         ctx.bootstrap_project_root_from_env()
     root = getattr(ctx, "PROJECT_ROOT", "")
     if root:
-        _SESSION_STATE_FILE = os.path.join(root, "runtime", "hme", "session-state.json")
+        _SESSION_STATE_FILE = os.path.join(root, "tools", "HME", "runtime", "session-state.json")
         return _SESSION_STATE_FILE
     return None
 
