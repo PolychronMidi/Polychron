@@ -37,7 +37,7 @@ assertClose(regimeReactiveDampingCore.tensionShapeCurve('ascending', 1.0), 1.0, 
 // arch peaks at 0.5
 assertClose(regimeReactiveDampingCore.tensionShapeCurve('arch', 0.0), 0.0, 0.001, 'arch at 0');
 assertClose(regimeReactiveDampingCore.tensionShapeCurve('arch', 0.5), 1.0, 0.001, 'arch at 0.5 = peak');
-assertClose(regimeReactiveDampingCore.tensionShapeCurve('arch', 1.0), 0.0, 0.01, 'arch at 1 ?unknown-ascii-character? 0');
+assertClose(regimeReactiveDampingCore.tensionShapeCurve('arch', 1.0), 0.0, 0.01, 'arch at 1 ~= 0');
 
 // sawtooth resets 3x per piece
 assertClose(regimeReactiveDampingCore.tensionShapeCurve('sawtooth', 0.0), 0.0, 0.001, 'sawtooth at 0');
