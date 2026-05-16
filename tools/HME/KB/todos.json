@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3457,
-      "updated_ts": 1778958749.0017562,
-      "codex_plan_synced_ts": 1778958749.0016663,
+      "updated_ts": 1778960669.0142162,
+      "codex_plan_synced_ts": 1778960669.0141299,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T19:12:10.544Z"
+      "codex_plan_ts": "2026-05-16T19:44:23.352Z"
     }
   },
   {
@@ -6691,7 +6691,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T19:12:10.544Z"
+    "codex_plan_ts": "2026-05-16T19:44:23.352Z"
   },
   {
     "id": 3455,
@@ -6707,7 +6707,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T19:12:10.544Z"
+    "codex_plan_ts": "2026-05-16T19:44:23.352Z"
   },
   {
     "id": 3456,
@@ -6723,14 +6723,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T19:12:10.544Z"
+    "codex_plan_ts": "2026-05-16T19:44:23.352Z"
   },
   {
     "id": 3457,
     "text": "Run full audit/refactor verification and summarize evidence",
     "activeForm": "Run full audit/refactor verification and summarize evidence",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6739,6 +6739,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T19:12:10.544Z"
+    "codex_plan_ts": "2026-05-16T19:44:23.352Z"
   }
 ]
