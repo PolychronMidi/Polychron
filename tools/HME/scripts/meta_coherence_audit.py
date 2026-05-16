@@ -45,6 +45,8 @@ import re
 import sys
 from pathlib import Path
 
+os.environ.setdefault("PROJECT_ROOT", str(Path(__file__).resolve().parents[3]))
+
 
 def _require_project_root() -> Path:
     root = os.environ.get("PROJECT_ROOT")
