@@ -110,7 +110,7 @@ try:
     if _scripts_dir not in sys.path:
         sys.path.insert(0, _scripts_dir)
     from tool_invocations import i_form as _i_form, action_form as _action_form  # type: ignore
-except Exception:
+except Exception as exc:
     def _i_form(name, primer=False):
         return f"i/{name.replace('_', '-')}"
     def _action_form(action):
