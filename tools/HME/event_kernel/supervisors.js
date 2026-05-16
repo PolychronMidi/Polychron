@@ -22,11 +22,11 @@ function nudgeSupervisors(root) {
   const env = { ...process.env, PROJECT_ROOT: root, CLAUDE_PROJECT_DIR: root };
   const specs = [
     {
-      pidFile: path.join(root, 'runtime', 'hme', 'proxy-supervisor.pid'),
+      pidFile: path.join(root, 'tools', 'HME', 'runtime', 'proxy-supervisor.pid'),
       script: path.join(root, 'tools', 'HME', 'hooks', 'direct', 'proxy-supervisor.sh'),
     },
     {
-      pidFile: path.join(root, 'runtime', 'hme', 'universal-pulse-supervisor.pid'),
+      pidFile: path.join(root, 'tools', 'HME', 'runtime', 'universal-pulse-supervisor.pid'),
       script: path.join(root, 'tools', 'HME', 'hooks', 'direct', 'universal-pulse-supervisor.sh'),
     },
   ];
