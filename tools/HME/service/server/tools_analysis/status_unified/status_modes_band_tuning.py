@@ -162,8 +162,8 @@ def _mode_band_tuning():
                     subtag = _name_to_subtag.get(name, "(none)")
                     score = float(info.get("score", 0.0))
                     per_axis.setdefault(subtag, []).append(score)
-            except Exception:
-                pass  # silent-ok: diagnostic; failure non-fatal
+            except Exception as exc:
+                logger.debug(f"band tuning verifier-axis read failed: {type(exc).__name__}: {exc}")
         except (OSError, ValueError):
             pass  # silent-ok: best-effort fs op
 

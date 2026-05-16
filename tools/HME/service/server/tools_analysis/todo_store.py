@@ -33,8 +33,8 @@ def max_seen_id(todos: list[dict]) -> int:
             continue
         try:
             max_id = max(max_id, int(entry.get("id", 0)))
-        except Exception:
-            pass
+        except (TypeError, ValueError):
+            continue
         for sub in entry.get("subs", []):
             if isinstance(sub, dict):
                 try:

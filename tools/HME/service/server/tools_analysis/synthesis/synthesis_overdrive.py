@@ -58,7 +58,8 @@ def _circuit_cooldown_secs() -> int:
     from hme_env import ENV as _ENV
     try:
         return _ENV.optional_int("OVERDRIVE_RATE_LIMIT_COOLDOWN", 60)
-    except Exception:
+    except Exception as exc:
+        logger.debug(f"OVERDRIVE cooldown config read failed: {type(exc).__name__}: {exc}")
         return 60
 
 
@@ -125,8 +126,8 @@ def _resolve_model_meta(model_id: str) -> dict:
             for _m in _tier.get("models", []):
                 if _m.get("id") == model_id:
                     return _m
-    except Exception:  # silent-ok: config read best-effort, fallback context cap applies
-        pass
+    except Exception as exc:  # config read best-effort, fallback context cap applies
+        logger.debug(f"OVERDRIVE model metadata read failed: {type(exc).__name__}: {exc}")
     return {}
 
 
