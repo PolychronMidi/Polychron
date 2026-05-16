@@ -165,6 +165,30 @@ test('post_write_side_effects keeps successful side effects model-silent', () =>
   }
 }));
 
+test('post_write_side_effects emits staleness-based write coherence events', () => withProject((root) => {
+  fs.mkdirSync(path.join(root, 'output/metrics'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'output/metrics/kb-staleness.json'), JSON.stringify({
+    modules: [
+      { module: 'freshMissing', status: 'MISSING' },
+      { module: 'staleThing', status: 'STALE' },
+    ],
+  }));
+  clearHmeRequireCache();
+  const mod = require('../../proxy/middleware/28_post_write_side_effects');
+  const c = ctx();
+  mod.onToolResult({
+    toolUse: { name: 'Edit', input: { file_path: path.join(root, 'src/freshMissing.js'), new_string: 'x' } },
+    toolResult: { content: 'ok' },
+    ctx: c,
+  });
+  mod.onToolResult({
+    toolUse: { name: 'Edit', input: { file_path: path.join(root, 'src/staleThing.js'), new_string: 'x' } },
+    toolResult: { content: 'ok' },
+    ctx: c,
+  });
+  assert.deepStrictEqual(c.emitted.map((e) => e.event), ['productive_incoherence', 'coherence_violation']);
+}));
+
 test('post_write_side_effects surfaces side-effect spawn failures', () => withProject((root) => {
   const childProcess = require('child_process');
   const originalSpawn = childProcess.spawn;
