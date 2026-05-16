@@ -27,7 +27,7 @@ import sys
 import time
 from pathlib import Path
 
-_HOME = Path(os.environ.get("HOME", "/home/jah"))
+_HOME = Path.home()
 
 
 def _find_subagent_dirs() -> list[Path]:
