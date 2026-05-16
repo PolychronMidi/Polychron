@@ -1,5 +1,5 @@
 'use strict';
-// OpenAI <-> Anthropic translator for MODE=4 main-agent swap to Zen Go.
+// OpenAI <-> Anthropic translator for legacy main-agent swap to Zen Go.
 
 function _flattenContent(content) {
   if (typeof content === 'string') return content;

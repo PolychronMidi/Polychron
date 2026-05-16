@@ -378,9 +378,9 @@ function handleRequest(clientReq, clientRes) {
     let outBody = bodyBuf;
     let injected = false;
 
-    let _mode4WasStreaming = false;
-    let _isMode4Swap = false;
-    let _isMode4OmniRoute = false;
+    let _legacySwapWasStreaming = false;
+    let _isLegacySwap = false;
+    let _isOmniRouteSwap = false;
     let _swapChain = [];
     let _swapModel = 'deepseek-v4-pro';
     let _omniProvider = 'opencode-go';
@@ -399,9 +399,9 @@ function handleRequest(clientReq, clientRes) {
     if (overdriveRoute.applied) {
       outBody = overdriveRoute.outBody;
       injected = true;
-      _mode4WasStreaming = overdriveRoute.wasStreaming;
-      _isMode4Swap = overdriveRoute.isLegacySwap;
-      _isMode4OmniRoute = overdriveRoute.isOmniRoute;
+      _legacySwapWasStreaming = overdriveRoute.wasStreaming;
+      _isLegacySwap = overdriveRoute.isLegacySwap;
+      _isOmniRouteSwap = overdriveRoute.isOmniRoute;
       _swapChain = overdriveRoute.swapChain;
       _swapModel = overdriveRoute.swapModel;
       _omniProvider = overdriveRoute.omniProvider;
@@ -409,15 +409,15 @@ function handleRequest(clientReq, clientRes) {
     }
 
     const upstream = resolveUpstream(clientReq);
-    const isAnthropic = upstream.provider === 'anthropic' || _isMode4OmniRoute;
+    const isAnthropic = upstream.provider === 'anthropic' || _isOmniRouteSwap;
 
     // Discriminator: only INTERACTIVE-path 429s trip the global escape
     // hatch. OVERDRIVE/loopback callers self-handle via their own circuit
     // breaker; tripping global on them breaks Claude Code's UI.
-    const _isInteractivePath = (upstream.provider === 'anthropic' || _isMode4OmniRoute)
+    const _isInteractivePath = (upstream.provider === 'anthropic' || _isOmniRouteSwap)
       && (typeof clientReq.headers['authorization'] === 'string'
           || typeof clientReq.headers['x-api-key'] === 'string'
-          || _isMode4OmniRoute);
+          || _isOmniRouteSwap);
 
     // Hoisted session key: upstream response/error callbacks run outside
     // the `if (payload && messages && !_passthrough)` block.
@@ -568,7 +568,7 @@ function handleRequest(clientReq, clientRes) {
     }
 
     if (isAnthropic
-        && !_isMode4OmniRoute
+        && !_isOmniRouteSwap
         && !upstreamHeaders['authorization']
         && !upstreamHeaders['x-api-key']) {
       const remoteAddr = (clientReq.socket && clientReq.socket.remoteAddress) || '';
@@ -619,11 +619,11 @@ function handleRequest(clientReq, clientRes) {
       upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
         const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
 
-        if (_isMode4Swap) {
+        if (_isLegacySwap) {
           handleLegacySwapResponse({
             upstreamRes,
             clientRes,
-            wasStreaming: _mode4WasStreaming,
+            wasStreaming: _legacySwapWasStreaming,
             releaseOpusSlot: _releaseOpusSlot,
             model: _swapModel,
           });
@@ -720,7 +720,7 @@ function handleRequest(clientReq, clientRes) {
         let headers = { ...upstreamRes.headers };
         // Context monitoring: inject synthetic token-remaining header so
         // Claude Code's native /compact fires before hitting model context limits.
-        if (_isMode4OmniRoute) _injectContextHeader(headers, _swapModel);
+        if (_isOmniRouteSwap) _injectContextHeader(headers, _swapModel);
         // Capture Anthropic's rate-limit telemetry so the next request's
         // _shrinkForPassthrough can size the byte budget dynamically
         // instead of using the static 400KB ceiling. Header name per
@@ -749,7 +749,7 @@ function handleRequest(clientReq, clientRes) {
         if (_proxyMutatedBody) {
           const _errInfo = _detectUpstreamFailure(status, headers, fullBody);
           if (_errInfo) {
-            const _isOmniRouteErr = _isMode4OmniRoute;
+            const _isOmniRouteErr = _isOmniRouteSwap;
             const _provider = _isOmniRouteErr ? 'omniroute' : 'anthropic';
             const _pathLabel = _isInteractivePath ? 'interactive' : 'sub-pipeline';
             const _errMsg = `${_provider} ${status} ${_errInfo.type || 'error'} [${_pathLabel}]: ${_errInfo.message || '<no message>'}`;
@@ -764,8 +764,8 @@ function handleRequest(clientReq, clientRes) {
             const _isRateLimit = _errInfo.type === 'rate_limit_error';
 
             // MODE=6 OmniRoute fallback: advance to next model in E5 chain on failure.
-            console.error(`[hme-proxy] fallback probe: _isMode4OmniRoute=${_isMode4OmniRoute} chainLen=${_swapChain.length} _isRateLimit=${_isRateLimit} status=${status}`);
-            if (_isMode4OmniRoute && _swapChain.length > 1) {
+            console.error(`[hme-proxy] fallback probe: _isOmniRouteSwap=${_isOmniRouteSwap} chainLen=${_swapChain.length} _isRateLimit=${_isRateLimit} status=${status}`);
+            if (_isOmniRouteSwap && _swapChain.length > 1) {
               const _fs = require('fs');
               const _pth = require('path');
               const _stFile = _pth.join(PROJECT_ROOT, 'tmp', 'hme-omni-swap-state.json');
@@ -801,7 +801,7 @@ function handleRequest(clientReq, clientRes) {
             if (_isInteractivePath && !_coolingDown && process.env.OVERDRIVE_MODE !== '6') {
               recordUpstreamFailure(_errMsg);
             } else if (_isInteractivePath) {
-              console.error(`escape hatch SUPPRESSED (OVERDRIVE_MODE=${process.env.OVERDRIVE_MODE || '0'}, _isMode4OmniRoute=${_isMode4OmniRoute}) -- passthrough blocked`);
+              console.error(`escape hatch SUPPRESSED (OVERDRIVE_MODE=${process.env.OVERDRIVE_MODE || '0'}, _isOmniRouteSwap=${_isOmniRouteSwap}) -- passthrough blocked`);
             } else if (!_isInteractivePath) {
               console.error(`sub-pipeline failure -- NOT tripping escape hatch (interactive path unaffected)`);
             }
@@ -975,9 +975,9 @@ function handleRequest(clientReq, clientRes) {
           // Verdict: visible to user? text_chars>0 OR tool_use blocks present.
           const _isBlank = _textChars === 0 && _toolUseBlocks === 0;
           const _verdict = _isBlank ? 'BLANK' : 'OK';
-          console.error(`[hme-proxy] verdict=${_verdict} omni=${_isMode4OmniRoute} chain=${_swapChain.length} blank=${_isBlank} text=${_textChars} tools=${_toolUseBlocks}`);
+          console.error(`[hme-proxy] verdict=${_verdict} omni=${_isOmniRouteSwap} chain=${_swapChain.length} blank=${_isBlank} text=${_textChars} tools=${_toolUseBlocks}`);
 
-          if (_isBlank && _isMode4OmniRoute && _swapChain.length > 1) {
+          if (_isBlank && _isOmniRouteSwap && _swapChain.length > 1) {
             const _fs3 = require('fs');
             const _stFile3 = _bdPath.join(_bdRoot, 'tmp', 'hme-omni-swap-state.json');
             let _st3 = { idx: 0 };
