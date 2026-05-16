@@ -4,13 +4,13 @@
 
 ## Now
 
-- [x] [E3] Add work-check regression for correction pivot abandoning parent task
+- [ ] [E3] Re-run scripts/ recency ranking and identify remaining coldest files
 
 ## Next
 
-- [x] [E3] Patch work_checks parent-task continuation guard
-- [x] [E3] Resume scripts/ directory audit and act on cold targets
-- [x] [E3] Run full verification
+- [ ] [E3] Inspect each remaining cold file and decide delete vs wire
+- [ ] [E3] Apply wiring/deletions and stale-reference cleanup
+- [ ] [E3] Verify audit/strict/full checks and report evidence
 
 ## Done
 
