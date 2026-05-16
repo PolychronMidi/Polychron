@@ -39,8 +39,14 @@ const path = require('path');
 const crypto = require('crypto');
 const { PROJECT_ROOT } = require('./shared');
 
-const QUEUE_DIR   = path.join(PROJECT_ROOT, 'tmp', 'hme-worker-queue');
-const RESULTS_DIR = path.join(PROJECT_ROOT, 'tmp', 'hme-worker-results');
+function _dirs(root = PROJECT_ROOT) {
+  return {
+    QUEUE_DIR: path.join(root, 'tmp', 'hme-worker-queue'),
+    RESULTS_DIR: path.join(root, 'tmp', 'hme-worker-results'),
+  };
+}
+
+const { QUEUE_DIR, RESULTS_DIR } = _dirs(PROJECT_ROOT);
 
 function _ensure(dir) {
   try { fs.mkdirSync(dir, { recursive: true }); } catch (_e) { /* best-effort */ }
