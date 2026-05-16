@@ -18,7 +18,7 @@ def _now() -> str:
 
 
 def _paths(project_root: str) -> tuple[str, str]:
-    status_path = os.path.join(project_root, "runtime", "hme", "index-job.json")
+    status_path = os.path.join(project_root, "tools", "HME", "runtime", "index-job.json")
     log_path = os.path.join(project_root, "log", "hme-index-job.log")
     return status_path, log_path
 
