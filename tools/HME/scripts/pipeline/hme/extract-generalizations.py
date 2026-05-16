@@ -77,7 +77,7 @@ def _build_project_vocab() -> set[str]:
                 for part in _camel_split(half):
                     vocab.add(part)
     except (OSError, json.JSONDecodeError):
-        pass  # silent-ok: diagnostic; failure non-fatal  # env-ok: vocab source optional, missing just means narrower match
+        pass  # silent-ok: diagnostic; missing vocab source only narrows matching
 
     # 2. L0 channel names -- canonical inter-module signal identifiers.
     l0_path = os.path.join(PROJECT_ROOT, "src", "time", "l0Channels.js")
