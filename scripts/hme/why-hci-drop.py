@@ -24,12 +24,7 @@ def main(argv):
         print("No timeseries file at output/metrics/hme-coherence-timeseries.jsonl.")
         return 1
 
-    try:
-        with open(ts_path) as f:
-            rows = [json.loads(ln) for ln in f if ln.strip()]
-    except (OSError, ValueError) as e:
-        print(f"# i/why mode=hci-drop\nFailed to read timeseries: {e}")
-        return 1
+    rows = load_jsonl_all("output/metrics/hme-coherence-timeseries.jsonl")
 
     if len(rows) < 2:
         print("# i/why mode=hci-drop")
