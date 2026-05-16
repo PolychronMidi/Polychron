@@ -11,7 +11,7 @@ const { writeRedactedEnv } = require('../sandbox_env');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
 function run(envOverrides, body) {
-  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od6-test-'));
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od1-test-'));
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'config'), { recursive: true });
