@@ -259,7 +259,15 @@
     "verdict_numeric",
     "violation_penalty",
     "voter_trajectories",
-    "write_file"
+    "write_file",
+    "base_instructions",
+    "codex_proxy",
+    "context_window",
+    "hme_codex",
+    "max_context_window",
+    "model_catalog_json",
+    "personality_pragmatic",
+    "update_plan"
   ],
   "registration_patterns": [
     "conductorIntelligence.register",
