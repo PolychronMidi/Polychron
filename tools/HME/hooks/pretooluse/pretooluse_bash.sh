@@ -8,7 +8,7 @@ source "${_HME_HELPERS_DIR}/_onboarding.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
-_POLICY_OUT=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const p=require(process.env.PROJECT_ROOT + '/tools/HME/proxy/bash_command_policy'); const raw=JSON.parse(fs.readFileSync(0,'utf8')||'{}'); const out=p.toHookResponse(p.evaluateBashInput(raw.tool_input||{}, {projectRoot:process.env.PROJECT_ROOT})); if(out) process.stdout.write(out);" 2>/dev/null || true)
+_POLICY_OUT=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const p=require(process.env.PROJECT_ROOT + '/tools/HME/proxy/bash_command_policy'); const raw=JSON.parse(fs.readFileSync(0,'utf8')||'{}'); const out=p.toHookResponse(p.evaluateBashInput(raw.tool_input||{}, {projectRoot:process.env.PROJECT_ROOT, supportsRunInBackground:true})); if(out) process.stdout.write(out);" 2>/dev/null || true)
 if [ -n "$_POLICY_OUT" ]; then
   case "$_POLICY_OUT" in
     *'"permissionDecision":"allow"'*)
