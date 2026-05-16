@@ -4,11 +4,22 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] 1. Add duplicate Codex session reaper
 
 ## Next
 
-(empty)
+- [ ] [E3] Run targeted and full verification
+- [ ] [E3] 2. Add duplicate Codex detection to HME health
+- [ ] [E3] 3. Add codex_proxy and OmniRoute to HME health
+- [ ] [E3] 4. Add post-restart routing-ready check
+- [ ] [E3] 5. Add OmniRoute recent-request abstraction
+- [ ] [E3] 6. Tune InjectionGuard advisory noise handling
+- [ ] [E3] 7. Add service-start epoch markers to logs
+- [ ] [E3] 8. Expose Codex proxy routing counters
+- [ ] [E3] 9. Add non-invasive OmniRoute visibility test/check
+- [ ] [E3] 10. Expand secret redaction provider fixtures
+- [ ] [E3] 11. Add duplicate session prevention lock
+- [ ] [E3] 12. Canonicalize final overdrive mode docs
 
 ## Done
 
