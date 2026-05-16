@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3321,
-      "updated_ts": 1778938528.8682656,
-      "codex_plan_synced_ts": 1778938528.8682065,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+      "max_id": 3325,
+      "updated_ts": 1778939653.7922215,
+      "codex_plan_synced_ts": 1778939653.7921624,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T13:54:13.369Z"
     }
   },
   {
@@ -787,8 +787,8 @@
     "id": 3095,
     "text": "Run targeted verification",
     "activeForm": "Run targeted verification",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -796,8 +796,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-15T18:26:23.608Z",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:54:13.369Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
@@ -4326,8 +4326,8 @@
     "id": 3310,
     "text": "1. Extract shared host-adapter core for Claude/Codex lifecycle plumbing",
     "activeForm": "1. Extract shared host-adapter core for Claude/Codex lifecycle plumbing",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4336,14 +4336,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3311,
     "text": "2. Add normalized lifecycle payload builder",
     "activeForm": "2. Add normalized lifecycle payload builder",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4352,14 +4353,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3312,
     "text": "3. Add shared permission/decision normalization",
     "activeForm": "3. Add shared permission/decision normalization",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4368,14 +4370,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3313,
     "text": "4. Add shared request-transform core",
     "activeForm": "4. Add shared request-transform core",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4384,14 +4387,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3314,
     "text": "5. Add conversation/message graph normalizer",
     "activeForm": "5. Add conversation/message graph normalizer",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4400,14 +4404,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3315,
     "text": "6. Refactor structured tools through one execution wrapper",
     "activeForm": "6. Refactor structured tools through one execution wrapper",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4416,14 +4421,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3316,
     "text": "7. Add universal turn-side-effects module",
     "activeForm": "7. Add universal turn-side-effects module",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4432,14 +4438,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3317,
     "text": "8. Add shared request telemetry module",
     "activeForm": "8. Add shared request telemetry module",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4448,14 +4455,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3318,
     "text": "9. Add shared model-route resolver",
     "activeForm": "9. Add shared model-route resolver",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4464,14 +4472,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3319,
     "text": "10. Add shared tool-result semantics",
     "activeForm": "10. Add shared tool-result semantics",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4480,14 +4489,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3320,
     "text": "11. Add shared hook decision logging",
     "activeForm": "11. Add shared hook decision logging",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4496,14 +4506,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3321,
     "text": "12. Add boundary/enforcement tests and final verification",
     "activeForm": "12. Add boundary/enforcement tests and final verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -4512,6 +4523,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T13:35:22.612Z"
+    "codex_plan_ts": "2026-05-16T13:35:22.612Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3322,
+    "text": "Inspect current edit/verify/no-op paths",
+    "activeForm": "Inspect current edit/verify/no-op paths",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778939653.791603,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:54:13.369Z"
+  },
+  {
+    "id": 3323,
+    "text": "Implement no-op-after-failure state and policy block",
+    "activeForm": "Implement no-op-after-failure state and policy block",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778939653.7916086,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:54:13.369Z"
+  },
+  {
+    "id": 3324,
+    "text": "Make failed edits produce targeted read context without marking verify-landed edits",
+    "activeForm": "Make failed edits produce targeted read context without marking verify-landed edits",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778939653.7916129,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:54:13.369Z"
+  },
+  {
+    "id": 3325,
+    "text": "Add safe edit normalization and regression tests",
+    "activeForm": "Add safe edit normalization and regression tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778939653.791616,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T13:54:13.369Z"
   }
 ]
