@@ -66,7 +66,7 @@ _port_healthy() {
 _OMNIROUTE_PORT="$(_hme_service_port omniroute 2>/dev/null || printf '%s' "${HME_OMNIROUTE_PORT:-20128}")"  # silent-ok: optional fallback path.
 _OMNIROUTE_URL="http://127.0.0.1:${_OMNIROUTE_PORT}"
 _OD_START="${OVERDRIVE_MODE:-0}"
-if [ "$_OD_START" = "6" ]; then
+if [ "$_OD_START" = "1" ]; then
   if [ "${HME_OMNIROUTE_OFF:-0}" != "1" ]; then
   _OR_DIR="$PROJECT_ROOT/tools/omniroute"
   if [ -x "$_OR_DIR/start.sh" ]; then
@@ -95,6 +95,13 @@ if [ "$_OD_START" = "6" ]; then
     echo "[launch] WARNING: OmniRoute launcher not found at $_OR_DIR/start.sh -- OVERDRIVE_MODE=1 will fail" >&2
   fi
   fi
+fi
+
+# 0b. Codex proxy (optional OpenAI Responses bridge)
+_CODEX_PROXY_SUPERVISOR="$PROJECT_ROOT/tools/HME/hooks/direct/codex-proxy-supervisor.sh"
+if [ "${HME_CODEX_PROXY_START:-1}" != "0" ] && [ -x "$_CODEX_PROXY_SUPERVISOR" ]; then
+  PROJECT_ROOT="$PROJECT_ROOT" "$_CODEX_PROXY_SUPERVISOR" start >/dev/null 2>&1 || \
+    echo "[launch] WARNING: codex proxy supervisor start failed" >&2
 fi
 
 # 1. HME proxy

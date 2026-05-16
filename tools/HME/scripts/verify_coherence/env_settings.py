@@ -132,7 +132,7 @@ class OAuthTokenExpiryVerifier(Verifier):
                             break
             except OSError:
                 overdrive_mode = ""
-        if overdrive_mode == "6":
+        if overdrive_mode == "1":
             return _result(PASS, 1.0,
                            f"OVERDRIVE_MODE={overdrive_mode} is Anthropic-free; OAuth token freshness is not gating")
         path = os.path.expanduser("~/.claude/.credentials.json")
