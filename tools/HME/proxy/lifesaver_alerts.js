@@ -3,8 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const AUTOCOMMIT_FAIL_REL = path.join('runtime', 'hme', 'autocommit.fail');
-const LIFESAVER_HEARTBEAT_REL = path.join('runtime', 'hme', 'heartbeat-lifesaver.ts');
+const AUTOCOMMIT_FAIL_REL = path.join('tools', 'HME', 'runtime', 'autocommit.fail');
+const LIFESAVER_HEARTBEAT_REL = path.join('tools', 'HME', 'runtime', 'heartbeat-lifesaver.ts');
 
 function readAutocommitFailure(root) {
   const flagPath = path.join(root, AUTOCOMMIT_FAIL_REL);
