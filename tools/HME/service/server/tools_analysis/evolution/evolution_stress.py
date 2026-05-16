@@ -397,7 +397,7 @@ def _adversarial_stress() -> str:
             rc = subprocess.run(
                 ["python3", audit], capture_output=True, text=True, timeout=60,
                 cwd=ctx.PROJECT_ROOT,
-                env={**os.environ, "PROJECT_ROOT": ctx.PROJECT_ROOT},  # env-ok
+                env={**os.environ, "PROJECT_ROOT": ctx.PROJECT_ROOT},  # env-ok: subprocess project-root override
             )
             stale_n = 0
             err_n = 0

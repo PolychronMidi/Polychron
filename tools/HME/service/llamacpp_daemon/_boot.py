@@ -48,9 +48,9 @@ DAEMON_VERSION = _load_daemon_version()
 try:
     from log_rotation import rotate_on_boot as _rotate_logs
     _rotate_logs(
-        os.environ.get("PROJECT_ROOT", "")  # env-ok: boot fallback
+        os.environ.get("PROJECT_ROOT", "")  # env-ok: bootstrap fallback
         or os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )  # env-ok: boot fallback
+    )  # env-ok: bootstrap fallback
 except Exception as _rot_err:
     print(f"daemon: log rotation at boot failed (non-fatal): {_rot_err}", file=sys.stderr)
 

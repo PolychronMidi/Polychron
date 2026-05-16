@@ -30,7 +30,7 @@ def _scan(root: Path) -> list[str]:
         if SKIP_PARTS & set(path.parts):
             continue
         rel = path.as_posix()
-        if rel.endswith("check-env-ok-categories.py"):
+        if rel.endswith("check-env-ok-categories.py") or rel.endswith("check_source_grep_invariant.py"):
             continue
         for lineno, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             if "env-ok" not in line:

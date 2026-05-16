@@ -174,7 +174,7 @@ def audit_tuning_extractors(root: Path) -> list[dict]:
     try:
         rc = subprocess.run(
             ["node", str(validator)], capture_output=True, text=True,
-            timeout=30, cwd=str(root), env={**os.environ, "PROJECT_ROOT": str(root)},  # env-ok
+            timeout=30, cwd=str(root), env={**os.environ, "PROJECT_ROOT": str(root)},  # env-ok: subprocess project-root override
         )
     except Exception as e:
         return [{"source": "check-tuning-invariants.js", "status": "ERROR",
@@ -214,7 +214,7 @@ def audit_doc_sync(root: Path) -> list[dict]:
     try:
         rc = subprocess.run(cmd, capture_output=True, text=True, timeout=30,
                             cwd=str(root),
-                            env={**os.environ, "PROJECT_ROOT": str(root)})  # env-ok
+                            env={**os.environ, "PROJECT_ROOT": str(root)})  # env-ok: subprocess project-root override
         out = rc.stdout or ""
         if "OUT OF SYNC" in out or "STALE" in out or "MISSING" in out:
             findings.append({
