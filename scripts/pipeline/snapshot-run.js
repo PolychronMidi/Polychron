@@ -7,9 +7,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const HISTORY_DIR = path.join(__dirname, '..', '..', 'metrics', 'run-history');
-const FP_PATH = path.join(__dirname, '..', '..', 'metrics', 'golden-fingerprint.json');
-const TS_PATH = path.join(__dirname, '..', '..', 'metrics', 'trace-summary.json');
+const METRICS_DIR = process.env.METRICS_DIR;
+if (!METRICS_DIR) throw new Error('METRICS_DIR is required');
+const HISTORY_DIR = path.join(METRICS_DIR, 'run-history');
+const FP_PATH = path.join(METRICS_DIR, 'golden-fingerprint.json');
+const TS_PATH = path.join(METRICS_DIR, 'trace-summary.json');
 
 function extractFeatures() {
   const fp = JSON.parse(fs.readFileSync(FP_PATH, 'utf-8'));
@@ -105,7 +107,7 @@ function extractFeatures() {
 }
 
 function loadVerdictModel() {
-  const modelPath = path.join(__dirname, '..', '..', 'metrics', 'verdict-model.json');
+  const modelPath = path.join(METRICS_DIR, 'verdict-model.json');
   try {
     return fs.existsSync(modelPath) ? JSON.parse(fs.readFileSync(modelPath, 'utf-8')) : null;
   } catch (_) { return null; }
