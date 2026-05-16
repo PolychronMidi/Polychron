@@ -4,11 +4,21 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] 1. Extract shared host-adapter core for Claude/Codex lifecycle plumbing
 
 ## Next
 
-(empty)
+- [ ] [E3] 2. Add normalized lifecycle payload builder
+- [ ] [E3] 3. Add shared permission/decision normalization
+- [ ] [E3] 4. Add shared request-transform core
+- [ ] [E3] 5. Add conversation/message graph normalizer
+- [ ] [E3] 6. Refactor structured tools through one execution wrapper
+- [ ] [E3] 7. Add universal turn-side-effects module
+- [ ] [E3] 8. Add shared request telemetry module
+- [ ] [E3] 9. Add shared model-route resolver
+- [ ] [E3] 10. Add shared tool-result semantics
+- [ ] [E3] 11. Add shared hook decision logging
+- [ ] [E3] 12. Add boundary/enforcement tests and final verification
 
 ## Done
 
