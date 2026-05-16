@@ -4,11 +4,10 @@
 
 ## Now
 
-- [ ] [E3] Inventory scripts/tests and decide src vs HME move set
+- [ ] [E3] Unblock doubled HME service_registry hook path
 
 ## Next
 
-- [ ] [E3] Move directories/files into src/scripts, src/tests, and tools/HME/scripts/tests
 - [ ] [E3] Update references and centralize paths/env helpers where useful
 - [ ] [E3] Run audits/tests, fix path failures, repeat to green
 
