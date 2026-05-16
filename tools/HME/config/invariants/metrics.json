@@ -1,0 +1,459 @@
+{
+  "_comment": "metrics invariant shard; loaded through ../invariants.json.",
+  "invariants": [
+    {
+      "id": "feedback-graph-valid",
+      "description": "feedback_graph.json must be valid JSON",
+      "type": "json_valid",
+      "path": "output/metrics/feedback_graph.json",
+      "severity": "error"
+    },
+    {
+      "id": "adaptive-state-valid",
+      "description": "adaptive-state.json must be valid JSON",
+      "type": "json_valid",
+      "path": "output/metrics/adaptive-state.json",
+      "severity": "warning"
+    },
+    {
+      "id": "journal-exists",
+      "description": "Evolution journal must exist for calibration anchors",
+      "type": "file_exists",
+      "path": "output/metrics/journal.md",
+      "severity": "warning"
+    },
+    {
+      "id": "run-history-snapshots",
+      "description": "Must have at least 5 run-history snapshots",
+      "type": "glob_count_gte",
+      "glob": "output/metrics/run-history/*.json",
+      "min_count": 5,
+      "severity": "info"
+    },
+    {
+      "id": "trace-run-history-sync",
+      "description": "trace.jsonl and latest run-history snapshot must be from the same pipeline run (within 5 minutes)",
+      "type": "files_mtime_window",
+      "path_a": "output/metrics/trace.jsonl",
+      "path_b_glob": "output/metrics/run-history/*.json",
+      "max_delta_seconds": 300,
+      "severity": "warning"
+    },
+    {
+      "id": "current-run-valid",
+      "description": "current-run.json unified pointer must be valid JSON",
+      "type": "json_valid",
+      "path": "output/metrics/current-run.json",
+      "severity": "error"
+    },
+    {
+      "id": "feedback-loops-count",
+      "description": "feedback_graph.json must have at least 11 feedback loops",
+      "type": "pattern_count_gte",
+      "path": "output/metrics/feedback_graph.json",
+      "pattern": "\"id\":\\s*\"[a-z]",
+      "min_count": 11,
+      "severity": "error"
+    },
+    {
+      "id": "meta-coherence-audit-exists",
+      "description": "Meta-coherence audit script (the detector-of-detectors) must exist so the HME diagnostic layer is continuously self-validated",
+      "type": "file_exists",
+      "path": "tools/HME/scripts/meta_coherence_audit.py",
+      "severity": "error"
+    },
+    {
+      "id": "check-hme-coherence-exists",
+      "description": "Phase 3 (policy engine)  check-hme-coherence.js must exist as the pipeline gate reading hme-activity.jsonl",
+      "type": "file_exists",
+      "path": "scripts/pipeline/validators/check-hme-coherence.js",
+      "severity": "error"
+    },
+    {
+      "id": "check-hme-coherence-wired",
+      "description": "main-pipeline.js PRE_COMPOSITION must include check-hme-coherence so violations block composition",
+      "type": "pattern_in_file",
+      "path": "scripts/pipeline/main-pipeline.js",
+      "pattern": "check-hme-coherence\\.js",
+      "severity": "error"
+    },
+    {
+      "id": "coherence-score-exists",
+      "description": "Phase 2.3  round coherence score computer must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/hme/compute-coherence-score.js",
+      "severity": "error"
+    },
+    {
+      "id": "exploration-bonus-in-coherence-score",
+      "description": "compute-coherence-score.js must include an exploration_bonus term from productive_incoherence events",
+      "type": "patterns_all_in_file",
+      "path": "scripts/pipeline/hme/compute-coherence-score.js",
+      "patterns": [
+        "productive_incoherence",
+        "explorationBonus"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "prediction-reconciler-exists",
+      "description": "Phase 3.4  prediction reconciler must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/hme/reconcile-predictions.js",
+      "severity": "error"
+    },
+    {
+      "id": "cascade-logs-predictions",
+      "description": "cascade_analysis must log every prediction so the reconciler can score accuracy",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/service/server/tools_analysis/cascade_analysis.py",
+      "patterns": [
+        "_log_prediction",
+        "hme-predictions.jsonl"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "coherence-has-variance",
+      "description": "hme_coherence must show non-degenerate variance across rounds. If it stays at a single value (usually 0) for many rounds, the read_coverage -> coherence -> musical_correlation -> kb_trust cascade is silently broken.",
+      "type": "metric_has_variance",
+      "path": "output/metrics/hme-musical-correlation.json",
+      "history_key": "history",
+      "field": "hme_coherence",
+      "min_distinct": 3,
+      "min_rounds": 5,
+      "severity": "error",
+      "context": "hme_coherence must show non-degenerate variance across rounds. If it stays at a single value (usually 0) for many rounds, the read_coverage -> coherence -> musical_correlation -> kb_trust cascade is silently broken. This invariant caught a months-long regression where the activity_log middleware emitted file_written events without the hme_read_prior field. min_distinct=3 because 0/1 outliers can occur even when upstream is broken -- we need real motion to declare the cascade healthy."
+    },
+    {
+      "id": "perceptual-complexity-has-variance",
+      "description": "EnCodec perceptual_complexity_avg must vary across rounds. If this is flat, the compositional output is genuinely identical every round OR the EnCodec pipeline is producing cached/stale signals.",
+      "type": "metric_has_variance",
+      "path": "output/metrics/hme-musical-correlation.json",
+      "history_key": "history",
+      "field": "perceptual_complexity_avg",
+      "min_distinct": 3,
+      "min_rounds": 5,
+      "severity": "warning",
+      "context": "EnCodec perceptual_complexity_avg must vary across rounds. If this is flat, the compositional output is genuinely identical every round OR the EnCodec pipeline is producing cached/stale signals. Either case means the external anchor's most-sensitive dimension is dead."
+    },
+    {
+      "id": "clap-tension-has-variance",
+      "description": "CLAP tension query peak must vary across rounds.",
+      "type": "metric_has_variance",
+      "path": "output/metrics/hme-musical-correlation.json",
+      "history_key": "history",
+      "field": "clap_tension",
+      "min_distinct": 3,
+      "min_rounds": 5,
+      "severity": "warning",
+      "context": "CLAP tension query peak must vary across rounds. Flat CLAP means the CLAP model isn't sensitive to the compositional motion the pipeline produces -- either broken inference or the compositions are all semantically identical to CLAP."
+    },
+    {
+      "id": "prediction-accuracy-has-variance",
+      "description": "hme_prediction_accuracy must show non-degenerate variance across rounds. Constant-zero accuracy means the cascade model predicts identically every time (dependency graph drifted, or reconciler never confirms).",
+      "type": "metric_has_variance",
+      "path": "output/metrics/hme-musical-correlation.json",
+      "history_key": "history",
+      "field": "hme_prediction_accuracy",
+      "min_distinct": 2,
+      "min_rounds": 5,
+      "severity": "warning"
+    },
+    {
+      "id": "pipeline-start-end-balanced",
+      "description": "Every pipeline_start must be followed by exactly one pipeline_run in the recent activity window.",
+      "type": "activity_events_balanced",
+      "path": "output/metrics/hme-activity.jsonl",
+      "start_event": "pipeline_start",
+      "end_event": "pipeline_run",
+      "window_events": 2000,
+      "min_occurrences": 2,
+      "severity": "error",
+      "context": "Every pipeline_start must be followed by exactly one pipeline_run in the recent activity window. Catches observability regressions where a refactor drops emission of one of the paired events -- the pipeline owns its own instrumentation, and a missing emission silently breaks every downstream slicer."
+    },
+    {
+      "id": "pipeline-run-round-balanced",
+      "description": "Every pipeline_run must be paired with a round_complete event in the recent window.",
+      "type": "activity_events_balanced",
+      "path": "output/metrics/hme-activity.jsonl",
+      "start_event": "pipeline_run",
+      "end_event": "round_complete",
+      "require_field": "verdict",
+      "window_events": 100,
+      "min_occurrences": 2,
+      "severity": "error",
+      "context": "Every pipeline_run must be paired with a round_complete event in the recent window. R23: window narrowed from 500 to 100 to self-heal faster -- a persistent historical imbalance (pre-R17 duplicate emissions) otherwise pins the invariant to old state. At 100 events (~3-4 pipeline pairs), only recent behavior matters."
+    },
+    {
+      "id": "file-written-module-sane",
+      "description": "file_written events must carry module names that look like real source file basenames -- alphanumeric with underscore/dash/dot, 1-64 chars.",
+      "type": "activity_field_sanity",
+      "path": "output/metrics/hme-activity.jsonl",
+      "event": "file_written",
+      "field": "module",
+      "pattern": "^[a-zA-Z_][a-zA-Z0-9_\\-.]{0,63}$",
+      "window_events": 2000,
+      "max_violations": 10,
+      "exclude_values": [
+        "",
+        null
+      ],
+      "require_fields": [
+        "source"
+      ],
+      "severity": "warning",
+      "context": "file_written events must carry module names that look like real source file basenames -- alphanumeric with underscore/dash/dot, 1-64 chars. Catches infrastructure leaks: LanceDB UUIDs, timestamps, hex strings that indicate the watcher filter is letting noise through."
+    },
+    {
+      "id": "coherence-same-commit-deterministic",
+      "description": "Rounds with identical git SHA must produce hme_coherence values within 0.02 of each other.",
+      "type": "same_commit_determinism",
+      "correlation_path": "output/metrics/hme-musical-correlation.json",
+      "activity_path": "output/metrics/hme-activity.jsonl",
+      "field": "hme_coherence",
+      "tolerance": 0.02,
+      "severity": "warning",
+      "context": "Rounds with identical git SHA must produce hme_coherence values within 0.02 of each other. If the metric varies across identical-code runs, either a verifier has random inputs, a cache leaks state between runs, or something time-dependent is infecting the score."
+    },
+    {
+      "id": "predictions-log-gap-bounded",
+      "description": "predictions_log_size minus predictions_total measures how many stale predictions linger from previous rounds.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py predictions-log-gap-bounded",
+      "severity": "warning",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "predictions_log_size minus predictions_total measures how many stale predictions linger from previous rounds. Flagged only when gap GROWS round-over-round -- transient high gaps from accumulated history (before truncation catches up) are normal. Arc IV retirement candidate if this keeps flapping; otherwise converges after 2-3 rounds of the 50-line cap taking effect."
+    },
+    {
+      "id": "retirement-log-consistent",
+      "description": "Every retirement in metrics/legacy-override-retirement-log.jsonl must NOT appear as a current LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py retirement-log-consistent",
+      "severity": "error",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "born_from": "legacy override retirement log consistency guard",
+      "context": "Every retirement in metrics/legacy-override-retirement-log.jsonl must NOT appear as a current LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js. And every LEGACY_OVERRIDES entry that's been removed (absent from source detection) must have a retirement log entry. Catches silent removals that bypass the measurement-driven retirement pattern."
+    },
+    {
+      "id": "prediction-recall-nontrivial",
+      "description": "Once the predictor has processed 3+ rounds with >=1 shifted module each, recall should be >= 0.5 (predicted modules catch at least half of actual shifts).",
+      "type": "metric_threshold",
+      "path": "output/metrics/hme-prediction-accuracy.json",
+      "history_key": "rounds",
+      "field": "recall",
+      "min_value": 0.5,
+      "min_rounds": 3,
+      "require_positive_shifts": true,
+      "severity": "warning",
+      "context": "Once the predictor has processed 3+ rounds with >=1 shifted module each, recall should be >= 0.5 (predicted modules catch at least half of actual shifts). Low recall means the cascade model isn't seeing the dependency structure; low precision is acceptable (overprediction tolerable) but low recall is a structural blind spot."
+    },
+    {
+      "id": "legacy-override-chronically-zero",
+      "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py legacy-override-chronically-zero",
+      "severity": "error",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "born_from": "R11-R15 measurement-driven legacy override retirement pattern",
+      "context": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at error severity after 5 zero rounds -- by that point the signal is strong enough to demand action, not just warn. Escalation path: instrument (R11) -> warn (3 rounds) -> error (5 rounds). Retired ids (those in legacy-override-retirement-log.jsonl) are excluded so historical zero rows don't flag already-removed overrides. entropy-cap-0.19 (R13) and phase-trust-seesaw (R15) were the first retirements via this pattern."
+    },
+    {
+      "id": "hypermeta-legacy-overrides-covered",
+      "description": "Every LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js must match at least one call site in SpecialCaps source.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py hypermeta-legacy-overrides-covered",
+      "severity": "error",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "Every LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js must match at least one call site in SpecialCaps source. An id with zero matches means its detector regex drifted (variable renamed, refactored out, etc.) -- silently disarming the jurisdiction gate. registeredByLegacyId must have a positive count for every allowlisted id."
+    },
+    {
+      "id": "no-invariant-chronically-failing",
+      "description": "Meta-invariant: another invariant must not have been FAILing for >=10 consecutive runs. Catches the meta-pattern where alarms become background noise and never get addressed.",
+      "type": "invariant_chronically_failing",
+      "path": "output/metrics/hme-invariant-history.json",
+      "min_streak": 10,
+      "severity": "warning"
+    },
+    {
+      "id": "coherence-tracks-musical-outcome",
+      "description": "The ultimate anti-drift check: hme_coherence must be at least WEAKLY positively correlated with the musical verdict, not flat and not inverse.",
+      "type": "correlation_direction",
+      "path": "output/metrics/hme-musical-correlation.json",
+      "correlations_key": "correlations",
+      "name": "hme_coherence__verdict_numeric",
+      "direction": "positive",
+      "threshold": -0.1,
+      "min_n": 10,
+      "severity": "error",
+      "context": "The ultimate anti-drift check: hme_coherence must be at least WEAKLY positively correlated with the musical verdict, not flat and not inverse. A strongly negative correlation means HME's process discipline is actively hurting the music -- the whole optimization direction is wrong. This invariant is INERT when the correlation is degenerate (that's covered by coherence-has-variance); it only fires once there's enough signal to judge direction."
+    },
+    {
+      "id": "envelope-shift-bounded",
+      "description": "R22 #5: envelope-shift is the center-of-mass movement of the legendary state distribution across first-half vs second-half of accumulated snapshots.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py envelope-shift-bounded",
+      "severity": "warning",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "R22 #5: envelope-shift is the center-of-mass movement of the legendary state distribution across first-half vs second-half of accumulated snapshots. average_relative_shift > 0.5 means the 'normal' state itself is drifting fast -- distinct from single-round drift (which Arc III's legendary-drift-bounded catches). Large envelope shift = regime change, not anomaly."
+    },
+    {
+      "id": "legendary-drift-bounded",
+      "description": "Arc III: current round's HME state must stay within 2sigma envelope of prior legendary rounds (mean |z-score| across numeric state fields < 2.0).",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py legendary-drift-bounded",
+      "severity": "warning",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "Arc III: current round's HME state must stay within 2sigma envelope of prior legendary rounds (mean |z-score| across numeric state fields < 2.0). Preemptive detection: fires BEFORE the listening verdict fails, catching drift toward non-legendary territory. Reads metrics/hme-legendary-drift.json. Inert until envelope is computable (5+ snapshots)."
+    },
+    {
+      "id": "patterns-have-action-on-match",
+      "description": "Arc II: every matched pattern in metrics/hme-pattern-matches.json must carry non-empty action_summary + action_steps.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py patterns-have-action-on-match",
+      "severity": "error",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "Arc II: every matched pattern in metrics/hme-pattern-matches.json must carry non-empty action_summary + action_steps. A pattern that triggers without defining what to do is decorative -- it flags a condition but gives the agent no script to run. The registry's value is action-grounding, not just condition-detection."
+    },
+    {
+      "id": "invariant-efficacy-not-flappy-excessive",
+      "description": "Arc IV meta-measurement: more than 3 invariants in 'flappy' class (firing without citation in any commit message) means the battery has accumulated noise that clutters fail-reporting without driving action.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py invariant-efficacy-not-flappy-excessive",
+      "severity": "warning",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "Arc IV meta-measurement: more than 3 invariants in 'flappy' class (firing without citation in any commit message) means the battery has accumulated noise that clutters fail-reporting without driving action. Either fix the underlying bug OR recalibrate the flappy invariants OR retire them via the same data-driven pattern used for legacy overrides. Reads metrics/hme-invariant-efficacy.json."
+    },
+    {
+      "id": "consensus-not-divergent",
+      "description": "Arc I: cross-substrate consensus. Fires when divergence='high' (stdev > 0.4).",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py consensus-not-divergent",
+      "severity": "warning",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "Arc I: cross-substrate consensus. Fires when divergence='high' (stdev > 0.4). R24 #5: suppresses the warning when the same outlier voter has persisted for 3+ consecutive rounds AND listening verdict remains legendary -- a stable dissent is an accepted regime state, not a regression. New divergences and voter changes still fire."
+    },
+    {
+      "id": "coherence-tracks-hci",
+      "description": "Fallback anchor for coherence-tracks-musical-outcome. verdict_numeric collapses to 1.0 for every STABLE run (most rounds), making its correlation permanently degenerate.",
+      "type": "correlation_direction",
+      "path": "output/metrics/hme-musical-correlation.json",
+      "correlations_key": "correlations",
+      "name": "hme_coherence__hci_normalized",
+      "direction": "positive",
+      "threshold": -0.1,
+      "min_n": 10,
+      "severity": "error",
+      "context": "Fallback anchor for coherence-tracks-musical-outcome. verdict_numeric collapses to 1.0 for every STABLE run (most rounds), making its correlation permanently degenerate. hci has real variance (94.7->96.5 across recent rounds); hme_coherence correlated with hci_normalized is the working alternative. Inert until both metrics have 3+ distinct values."
+    },
+    {
+      "id": "rounds-have-identity",
+      "description": "Every round snapshot must have a round_id so downstream analyzers (intention-gap, reflexivity, trajectory) can cross-reference. Anonymous rounds collapse into unordered history.",
+      "type": "metric_has_variance",
+      "path": "output/metrics/hme-musical-correlation.json",
+      "history_key": "history",
+      "field": "round_id",
+      "min_distinct": 3,
+      "min_rounds": 5,
+      "allow_null": false,
+      "severity": "warning",
+      "context": "Every round snapshot must have a round_id so downstream analyzers (intention-gap, reflexivity, trajectory) can cross-reference. Anonymous rounds collapse into unordered history. allow_null=false because null means 'no identity at all' here, not 'cold start' -- identity should be present on every single round."
+    },
+    {
+      "id": "coherence-budget-script-exists",
+      "description": "Phase 5.2  coherence budget script must exist (homeostatic governance vs. maximization)",
+      "type": "file_exists",
+      "path": "scripts/pipeline/hme/compute-coherence-budget.js",
+      "severity": "error"
+    },
+    {
+      "id": "no-hardcoded-metrics-path",
+      "description": "No JS, Python, or shell file may hardcode the string 'output/metrics/' as a path segment outside of output/metrics/. All callers must use METRICS_DIR (env var set in .env as ${PROJECT_ROOT}/output/metrics).",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py no-hardcoded-metrics-path",
+      "severity": "error",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true,
+      "born_from": "2026 metrics path centralization: output/metrics is the only metrics directory",
+      "context": "No JS, Python, or shell file may hardcode the string 'output/metrics/' as a path segment outside of output/metrics/. All callers must use METRICS_DIR (env var set in .env as ${PROJECT_ROOT}/output/metrics). Bare 'output/metrics/' in path.join(), os.path.join(), or shell strings is the violation class that caused path fragmentation across 100+ files when metrics/ moved to output/metrics/. Exempt: this invariant's own shell, migration script, comments in .md files."
+    },
+    {
+      "id": "no-duplicate-output-dirs",
+      "description": "log/ and tmp/ exist ONLY at the project root; metrics/ exists ONLY at output/metrics/. Any other instance of these directory names is a duplicate that fragments telemetry.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_metric_invariant.py no-duplicate-output-dirs",
+      "severity": "error",
+      "finding_label": "metric finding",
+      "success_detail": "no metric findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "log/ and tmp/ exist ONLY at the project root; metrics/ exists ONLY at output/metrics/. Any other instance of these directory names is a duplicate that fragments telemetry. Writers must use $PROJECT_ROOT from .env; relative paths resolved against $(pwd) are banned in hook/daemon contexts."
+    },
+    {
+      "id": "antagonism-registry-schema-valid",
+      "description": "tools/HME/config/invariants.json and metrics/hme-suspected-upstreams.json both parse and the suspected-upstreams registry has the required three buckets (candidates/confirmed/refuted).",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json; d=json.load(open('output/metrics/hme-suspected-upstreams.json')); assert all(k in d for k in ('candidates','confirmed','refuted')), 'missing bucket'\" 2>&1 | grep -v '^$'",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "_comment": "composition invariant shard; loaded through ../invariants.json.",
+  "invariants": [
+    {
+      "id": "globals-dts-exists",
+      "description": "globals.d.ts must exist for TypeScript ambient declarations",
+      "type": "file_exists",
+      "path": "src/types/globals.d.ts",
+      "severity": "error"
+    },
+    {
+      "id": "stutter-variants-count",
+      "description": "Must have at least 19 stutter variant files",
+      "type": "glob_count_gte",
+      "glob": "src/fx/stutter/variants/*.js",
+      "exclude": [
+        "index.js"
+      ],
+      "min_count": 19,
+      "severity": "warning"
+    },
+    {
+      "id": "l0-channels-defined",
+      "description": "l0Channels.js must define at least 25 channel constants",
+      "type": "pattern_count_gte",
+      "path": "src/time/l0Channels.js",
+      "pattern": "  \\w+:\\s*'\\w",
+      "min_count": 25,
+      "severity": "error"
+    },
+    {
+      "id": "l0-channels-used",
+      "description": "Every L0_CHANNELS constant must be referenced in at least one src/ file",
+      "type": "symbols_used",
+      "definition_file": "src/time/l0Channels.js",
+      "definition_pattern": "\\b(\\w+)\\s*:",
+      "usage_glob": "src/**/*.js",
+      "usage_pattern": "L0_CHANNELS\\.{symbol}",
+      "min_usages": 1,
+      "severity": "warning"
+    },
+    {
+      "id": "trust-system-count",
+      "description": "Must have all 27 trust system pair assignments defined",
+      "type": "pattern_count_gte",
+      "path": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
+      "pattern": "trustSystems\\.names\\.",
+      "min_count": 27,
+      "severity": "error"
+    },
+    {
+      "id": "stutter-variant-registry",
+      "description": "All stutter variants must self-register via stutterVariants.register",
+      "type": "pattern_count_gte",
+      "path": "src/fx/stutter/variants/index.js",
+      "pattern": "require\\(",
+      "min_count": 19,
+      "severity": "error"
+    },
+    {
+      "id": "conductor-no-or-zero-on-validator-output",
+      "description": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0->0.5 tension...",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py conductor-no-or-zero-on-validator-output",
+      "severity": "error",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true,
+      "context": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0->0.5 tension bug). Use the inner value directly, or nullish coalescing (??) if you want to catch only undefined."
+    },
+    {
+      "id": "conductor-histogram-uses-nullish",
+      "description": "Map/object histogram counter reads should use `?? 0` not `|| 0`.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py conductor-histogram-uses-nullish",
+      "severity": "error",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true,
+      "context": "Map/object histogram counter reads should use `?? 0` not `|| 0`. A zero count in `(counts.get(k) || 0) + 1` is coerced to 0 + 1  correct here  but the idiom is brittle; `?? 0` documents intent and won't break if the counter type changes to allow falsy non-undefined values."
+    }
+  ]
+}

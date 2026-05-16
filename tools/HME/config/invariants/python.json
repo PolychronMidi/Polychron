@@ -1,0 +1,382 @@
+{
+  "_comment": "python invariant shard; loaded through ../invariants.json.",
+  "invariants": [
+    {
+      "id": "hme-http-handlers-exist",
+      "description": "HTTP handlers + store modules must exist -- absorbed into worker.py after the shim split (was hme_http.py pre-decoupling)",
+      "type": "file_exists",
+      "path": "tools/HME/service/hme_http_handlers.py",
+      "severity": "error"
+    },
+    {
+      "id": "hme-http-store-exists",
+      "description": "HTTP store module must exist (successor to parts of the old hme_http.py)",
+      "type": "file_exists",
+      "path": "tools/HME/service/hme_http_store.py",
+      "severity": "error"
+    },
+    {
+      "id": "hme-py-meta-has-trim",
+      "description": "meta_layers.py must define trim helpers (_trim_narrative_file, _trim_counterfactuals_file) alongside its append-only file writes. Prevents unbounded JSONL growth.",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/service/server/meta_layers/__init__.py",
+      "patterns": [
+        "_trim_narrative_file",
+        "_trim_counterfactuals_file"
+      ],
+      "severity": "warning"
+    },
+    {
+      "id": "hme-py-valueerror-coverage",
+      "description": "OSError-only except handlers in operational_state.py must also catch ValueError (int/float conversion safety)",
+      "type": "shell_output_empty",
+      "shell": "grep -n 'except (OSError' tools/HME/service/server/operational_state.py | grep -v ValueError",
+      "severity": "warning",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true
+    },
+    {
+      "id": "review-verdict-marker-emitter-present",
+      "description": "The server must emit verdicts via the canonical emit_review_verdict_marker() function. If this name is removed/renamed, the hook's contract regex will silently stop matching.",
+      "type": "pattern_in_file",
+      "path": "tools/HME/service/server/onboarding_chain_helpers.py",
+      "pattern": "def emit_review_verdict_marker",
+      "severity": "error"
+    },
+    {
+      "id": "lifesaver-todo-mirror-dedup",
+      "description": "register_todo_from_lifesaver must dedupe by text+source so a monitor loop cannot flood the todo store with zombie entries (116 such entries polluted todos.json before this rule landed).",
+      "type": "pattern_in_file",
+      "path": "tools/HME/service/server/tools_analysis/todo_lifesaver.py",
+      "pattern": "existing.get\\(\"source\"\\) == \"lifesaver\"",
+      "severity": "error"
+    },
+    {
+      "id": "hme-py-no-os-environ",
+      "description": "HME Python files must not read os.environ directly  use hme_env.ENV.require/optional instead. os.environ is mutable by any subprocess and unauditable; .env on disk is the single source of truth.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py hme-py-no-os-environ",
+      "severity": "error",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true,
+      "context": "HME Python files must not read os.environ directly  use hme_env.ENV.require/optional instead. os.environ is mutable by any subprocess and unauditable; .env on disk is the single source of truth. Subprocess env construction (os.environ.copy()) is exempt when marked with # env-ok. hme_env.py itself is exempt."
+    },
+    {
+      "id": "hme-py-no-hardcoded-home",
+      "description": "HME Python and shell files must not hardcode /home/jah  use PROJECT_ROOT from .env via hme_env.ENV or $PROJECT_ROOT in shell. Docs and logs are exempt.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py hme-py-no-hardcoded-home",
+      "severity": "error",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true
+    },
+    {
+      "id": "no-hardcoded-llamacpp-ports",
+      "description": "HME server files must not hardcode llamacpp ports 11434/11435/11436  they were retired in commit 0577c0f7 when local inference moved to llama-server.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py no-hardcoded-llamacpp-ports",
+      "severity": "error",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true,
+      "context": "HME server files must not hardcode llamacpp ports 11434/11435/11436  they were retired in commit 0577c0f7 when local inference moved to llama-server. Use HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL via os.environ, or the env fallback in the legacy llamacpp branch guarded by HME_ARBITER_BACKEND."
+    },
+    {
+      "id": "hme-py-exception-must-have-name",
+      "description": "HME Python exception handlers must bind to `as _var` or named var so the type/message can be logged.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-unnamed-except.py tools/HME/service/server",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "HME Python exception handlers must bind to `as _var` or named var so the type/message can be logged. Unbound `except Exception:` paired with anything other than `pass` (which is separately forbidden) is a code smell  you probably want to log the failure. Exempt: `except Exception: pass` is caught by hme-py-no-silent-catchall above; this rule catches the `except Exception:` + block-without-name case."
+    },
+    {
+      "id": "no-subpackage-alias-collision",
+      "description": "_alias_subpackage must skip name==subpkg_name  aliasing a subpackage's own name to a .py module strips __path__, which breaks importlib.reload() for every submodule parent-lookup",
+      "type": "pattern_in_file",
+      "path": "tools/HME/service/server/tools_analysis/__init__.py",
+      "pattern": "if name == subpkg_name",
+      "severity": "error"
+    },
+    {
+      "id": "activity-digest-in-reloadable",
+      "description": "activity_digest module must be in RELOADABLE so hot-reload picks up changes",
+      "type": "pattern_in_file",
+      "path": "tools/HME/service/server/tools_analysis/evolution/evolution_selftest/reload_registry.py",
+      "pattern": "\"activity_digest\"",
+      "severity": "error"
+    },
+    {
+      "id": "activity-mode-in-status",
+      "description": "status_unified must dispatch mode='activity' to activity_digest",
+      "type": "pattern_in_file",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/status_modes_agent.py",
+      "pattern": "from \\.\\.activity_digest import activity_digest",
+      "severity": "error"
+    },
+    {
+      "id": "blindspots-module-exists",
+      "description": "Phase 2.4  blind-spot surfacing module must exist under tools_analysis",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/blindspots.py",
+      "severity": "error"
+    },
+    {
+      "id": "cascade-analysis-module-exists",
+      "description": "Phase 2.5  causal cascade analysis module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/cascade_analysis.py",
+      "severity": "error"
+    },
+    {
+      "id": "cascade-mode-in-trace",
+      "description": "trace_unified must dispatch mode='impact' to cascade_report",
+      "type": "pattern_in_file",
+      "path": "tools/HME/service/server/tools_analysis/trace_unified.py",
+      "pattern": "from \\.cascade_analysis import cascade_report",
+      "severity": "error"
+    },
+    {
+      "id": "status-new-modes-dispatched",
+      "description": "status_unified must dispatch the Phase 2.2-2.4 modes (staleness, coherence, blindspots)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
+      "patterns": [
+        "\"staleness\":",
+        "\"coherence\":",
+        "\"blindspots\":"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "hypothesis-registry-module-exists",
+      "description": "Phase 3.1  hypothesis registry module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/hypothesis_registry.py",
+      "severity": "error"
+    },
+    {
+      "id": "hypothesis-actions-in-learn",
+      "description": "learn_unified must dispatch hypothesize/hypothesis_test actions",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/service/server/tools_analysis/learn_unified.py",
+      "patterns": [
+        "action == \"hypothesize\"",
+        "action == \"hypothesis_test\""
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "crystallizer-module-exists",
+      "description": "Phase 3.5  pattern crystallizer module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/crystallizer.py",
+      "severity": "error"
+    },
+    {
+      "id": "crystallize-action-in-learn",
+      "description": "learn_unified must dispatch action='crystallize'",
+      "type": "pattern_in_file",
+      "path": "tools/HME/service/server/tools_analysis/learn_unified.py",
+      "pattern": "action == \"crystallize\"",
+      "severity": "error"
+    },
+    {
+      "id": "status-phase3-modes",
+      "description": "status_unified must dispatch the Phase 3 modes (hypotheses, drift, accuracy, crystallized)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
+      "patterns": [
+        "\"hypotheses\":",
+        "\"drift\":",
+        "\"accuracy\":",
+        "\"crystallized\":"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "self-audit-module-exists",
+      "description": "Phase 4.4  HME self-audit module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/self_audit.py",
+      "severity": "error"
+    },
+    {
+      "id": "probe-module-exists",
+      "description": "Phase 4.5  adversarial probe generator must exist",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/probe.py",
+      "severity": "error"
+    },
+    {
+      "id": "phase4-status-modes",
+      "description": "status_unified must dispatch the Phase 4 modes (music_truth, kb_trust, intention_gap, self_audit, probes)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
+      "patterns": [
+        "\"music_truth\":",
+        "\"kb_trust\":",
+        "\"intention_gap\":",
+        "\"self_audit\":",
+        "\"probes\":"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "negative-space-module-exists",
+      "description": "Phase 5.3  architectural negative space discovery module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/negative_space.py",
+      "severity": "error"
+    },
+    {
+      "id": "cognitive-load-module-exists",
+      "description": "Phase 5.4  Evolver cognitive load modeling module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/cognitive_load.py",
+      "severity": "error"
+    },
+    {
+      "id": "ground-truth-module-exists",
+      "description": "Phase 5.5  human ground truth module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/ground_truth.py",
+      "severity": "error"
+    },
+    {
+      "id": "phase5-status-modes",
+      "description": "status_unified must dispatch the Phase 5 modes (trajectory, budget, negative_space, cognitive_load, ground_truth)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
+      "patterns": [
+        "\"trajectory\":",
+        "\"budget\":",
+        "\"negative_space\":",
+        "\"cognitive_load\":",
+        "\"ground_truth\":"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "ground-truth-action-in-learn",
+      "description": "learn_unified must dispatch action='ground_truth'",
+      "type": "pattern_in_file",
+      "path": "tools/HME/service/server/tools_analysis/learn_unified.py",
+      "pattern": "action == \"ground_truth\"",
+      "severity": "error"
+    },
+    {
+      "id": "reflexivity-flag-in-cascade",
+      "description": "Phase 6.1  cascade_analysis._log_prediction must carry an injected flag",
+      "type": "pattern_in_file",
+      "path": "tools/HME/service/server/tools_analysis/cascade_analysis.py",
+      "pattern": "injected: bool = False",
+      "severity": "error"
+    },
+    {
+      "id": "multi-agent-module-exists",
+      "description": "Phase 6.5  multi-agent observability scaffold must exist",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/multi_agent.py",
+      "severity": "error"
+    },
+    {
+      "id": "phase6-reports-module-exists",
+      "description": "Phase 6 reports module (constitution/doc_drift/generalizations/reflexivity) must exist",
+      "type": "file_exists",
+      "path": "tools/HME/service/server/tools_analysis/phase6_reports.py",
+      "severity": "error"
+    },
+    {
+      "id": "phase6-status-modes",
+      "description": "status_unified must dispatch the Phase 6 modes (constitution, doc_drift, generalizations, reflexivity, multi_agent)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/service/server/tools_analysis/status_unified/mode_handlers.py",
+      "patterns": [
+        "\"constitution\":",
+        "\"doc_drift\":",
+        "\"generalizations\":",
+        "\"reflexivity\":",
+        "\"multi_agent\":"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "index-directory-zero-args",
+      "description": "index_directory must take zero arguments everywhere  ragIndexDirs in tools/HME/config/rag.json is the ONLY source of indexable paths.",
+      "type": "shell_output_empty",
+      "shell": "grep -nE 'def index_directory\\(self,|def _index_directory_locked\\(self,|def _collect_files\\(self,' tools/HME/service/rag_engine/engine_indexing.py 2>/dev/null",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true,
+      "context": "index_directory must take zero arguments everywhere  ragIndexDirs in tools/HME/config/rag.json is the ONLY source of indexable paths. Any signature with a directory/path parameter is a bypass vector that WILL be abused as a fallback. See the walk_code_files purge in commit 469d072b."
+    },
+    {
+      "id": "no-direct-gpu-model-load-in-indexing",
+      "description": "indexing_mode.py and tools_index.py must NEVER import SentenceTransformer or torch  they talk to the daemon via HTTP, which tells the shim what device to use.",
+      "type": "shell_output_empty",
+      "shell": "grep -nE 'from sentence_transformers|import torch|SentenceTransformer' tools/HME/service/indexing_mode.py tools/HME/service/server/tools_index.py 2>/dev/null",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true,
+      "context": "indexing_mode.py and tools_index.py must NEVER import SentenceTransformer or torch  they talk to the daemon via HTTP, which tells the shim what device to use. Direct model loading in these files bypasses the daemon's GPU allocation authority. See the 'catastrophic failure' fix where indexing_mode was loading models directly."
+    },
+    {
+      "id": "daemon-is-gpu-authority",
+      "description": "Only llamacpp_daemon.py and rag_engines.py may reference CUDA device strings for model placement.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_source_grep_invariant.py daemon-is-gpu-authority",
+      "severity": "error",
+      "finding_label": "source finding",
+      "success_detail": "no source findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true,
+      "context": "Only llamacpp_daemon.py and rag_engines.py may reference CUDA device strings for model placement. Other HME files must not contain 'cuda:0' or 'cuda:1' device assignments  they route through the daemon which owns GPU topology. rag_engine/engine.py is exempt (fallback device picker for non-shim mode). # device-ok comments exempt specific lines."
+    },
+    {
+      "id": "worker-version-endpoint",
+      "description": "tools/HME/service/worker.py must expose a GET /version endpoint. Paired with CLI_VERSION in hme-cli.js so deployment mismatches (old wrapper, new worker) are detectable.",
+      "type": "pattern_in_file",
+      "path": "tools/HME/service/worker.py",
+      "pattern": "/version",
+      "severity": "error"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "_comment": "runtime invariant shard; loaded through ../invariants.json.",
+  "invariants": [
+    {
+      "id": "activity-emitter-exists",
+      "description": "Phase 1 activity bridge (openshell_features_to_mimic.md)  shared event emitter CLI must exist so hooks can append to hme-activity.jsonl",
+      "type": "file_exists",
+      "path": "tools/HME/activity/emit.py",
+      "severity": "error"
+    },
+    {
+      "id": "kb-staleness-index-exists",
+      "description": "Phase 2.2  KB staleness index builder must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/hme/build-kb-staleness-index.py",
+      "severity": "error"
+    }
+  ]
+}

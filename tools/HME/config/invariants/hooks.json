@@ -1,0 +1,267 @@
+{
+  "_comment": "hooks invariant shard; loaded through ../invariants.json.",
+  "invariants": [
+    {
+      "id": "hooks-executable",
+      "description": "Every directly-invoked hook script must be executable. Sourced subscripts (helpers/safety/*, lifecycle/stop/*, pretooluse/bash/*) are excluded from the glob since `source` does not require +x.",
+      "type": "files_executable",
+      "glob": [
+        "tools/HME/hooks/*.sh",
+        "tools/HME/hooks/lifecycle/*.sh",
+        "tools/HME/hooks/pretooluse/*.sh",
+        "tools/HME/hooks/posttooluse/*.sh",
+        "tools/HME/hooks/direct/*.sh"
+      ],
+      "exclude": [
+        "_*.sh"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "hooks-registered",
+      "description": "Every TOP-LEVEL hook script (the ones the event-kernel dispatcher calls directly) must be referenced in tools/HME/event_kernel/dispatcher.js.",
+      "type": "files_referenced",
+      "glob": [
+        "tools/HME/hooks/*.sh",
+        "tools/HME/hooks/lifecycle/*.sh",
+        "tools/HME/hooks/pretooluse/*.sh",
+        "tools/HME/hooks/posttooluse/*.sh"
+      ],
+      "exclude": [
+        "_*.sh",
+        "canary.sh",
+        "posttooluse_addknowledge.sh",
+        "posttooluse_hme_review.sh",
+        "posttooluse_write.sh",
+        "pretooluse_check_pipeline.sh"
+      ],
+      "reference_file": "tools/HME/event_kernel/dispatcher.js",
+      "severity": "error",
+      "context": "Every TOP-LEVEL hook script (the ones the event-kernel dispatcher calls directly) must be referenced in tools/HME/event_kernel/dispatcher.js. Adapter scripts and sub-dispatched scripts (posttooluse_addknowledge.sh, posttooluse_hme_*.sh, posttooluse_write.sh, pretooluse_check_pipeline.sh) are invoked outside this routing table -- they're excluded from this check and verified separately by their callers."
+    },
+    {
+      "id": "stop-hook-enforcement",
+      "description": "Stop chain must register every critical enforcement policy",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/stop_chain/index.js",
+      "patterns": [
+        "'lifesaver'",
+        "'evolver'",
+        "'detectors'",
+        "'anti_patterns'",
+        "'nexus_pending'",
+        "'work_checks'",
+        "'holograph'",
+        "'post_hooks'"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "safety-helpers-complete",
+      "description": "_safety.sh must source every split helper module that defines the hook safety functions",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/helpers/_safety.sh",
+      "patterns": [
+        "misc_safe\\.sh",
+        "curl\\.sh",
+        "emitters\\.sh",
+        "streak\\.sh",
+        "http\\.sh"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "hooks-json-valid",
+      "description": "Plugin hooks.json must be valid JSON",
+      "type": "json_valid",
+      "path": "tools/HME/hooks/hooks.json",
+      "severity": "error"
+    },
+    {
+      "id": "nexus-helper-exists",
+      "description": "NEXUS state helper must exist for edit tracking hooks",
+      "type": "file_exists",
+      "path": "tools/HME/hooks/helpers/_nexus.sh",
+      "severity": "error"
+    },
+    {
+      "id": "hooks-json-has-all-events",
+      "description": "hooks/hooks.json must register hooks for all 7 lifecycle events",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/hooks.json",
+      "patterns": [
+        "SessionStart",
+        "PreToolUse",
+        "PostToolUse",
+        "UserPromptSubmit",
+        "PreCompact",
+        "PostCompact",
+        "Stop"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "hooks-json-points-to-event-kernel-adapter",
+      "description": "hooks.json must route every Claude event through event_kernel/claude_adapter.js -- the single adapter for proxy-up and direct fallback dispatch",
+      "type": "pattern_in_file",
+      "path": "tools/HME/hooks/hooks.json",
+      "pattern": "event_kernel/claude_adapter\\.js",
+      "severity": "error"
+    },
+    {
+      "id": "tab-helpers-exists",
+      "description": "_tab_helpers.sh must exist; posttooluse_bash, posttooluse_addknowledge, and posttooluse_write still source it.",
+      "type": "file_exists",
+      "path": "tools/HME/hooks/helpers/_tab_helpers.sh",
+      "severity": "error"
+    },
+    {
+      "id": "hooks-documented-hooks-readme",
+      "description": "Every directly-invoked hook script must be documented in tools/HME/hooks/README.md",
+      "type": "files_referenced",
+      "glob": [
+        "tools/HME/hooks/*.sh",
+        "tools/HME/hooks/lifecycle/*.sh",
+        "tools/HME/hooks/pretooluse/*.sh",
+        "tools/HME/hooks/posttooluse/*.sh",
+        "tools/HME/hooks/direct/*.sh"
+      ],
+      "exclude": [
+        "_*.sh"
+      ],
+      "reference_file": "tools/HME/hooks/README.md",
+      "severity": "warning"
+    },
+    {
+      "id": "nexus-functions-complete",
+      "description": "_nexus.sh must define all 10 lifecycle state functions",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/helpers/_nexus.sh",
+      "patterns": [
+        "_nexus_ensure",
+        "_nexus_reset",
+        "_nexus_add",
+        "_nexus_mark",
+        "_nexus_clear_type",
+        "_nexus_has",
+        "_nexus_count",
+        "_nexus_get",
+        "_nexus_list",
+        "_nexus_pending"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "tab-helpers-functions-complete",
+      "description": "_tab_helpers.sh must define all 4 compact tab functions",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/helpers/_tab_helpers.sh",
+      "patterns": [
+        "_tab_path",
+        "_ensure_tab",
+        "_append_file_to_tab",
+        "_extract_bg_output_path"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "hme-hooks-briefing-reaches-claude",
+      "description": "Hook scripts that emit Claude-facing briefings (KB CONSTRAINTS, AGENT PRIMER, ANTI-POLLING, etc.) must use `hookSpecificOutput.additionalContext` (on allow) or `permissionDecisionReason` (on deny), not `systemMessage`...",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-hook-context-injection.py tools/HME/hooks",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "born_from": "incident: hook briefings emitted only as systemMessage did not reach the model",
+      "context": "Hook scripts that emit Claude-facing briefings (KB CONSTRAINTS, AGENT PRIMER, ANTI-POLLING, etc.) must use `hookSpecificOutput.additionalContext` (on allow) or `permissionDecisionReason` (on deny), not `systemMessage` alone. systemMessage is user-terminal-only; a briefing hook that emits only systemMessage never reaches Claude  this silently gutted the entire pretooluse_edit briefing chain for months."
+    },
+    {
+      "id": "hme-hooks-no-silent-source",
+      "description": "Shell hooks must not wrap `source <infrastructure-file>` in silent-swallow suffixes (`2>/dev/null || true`, `|| true`).",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-shell-silent-source.py tools/HME/hooks",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "Shell hooks must not wrap `source <infrastructure-file>` in silent-swallow suffixes (`2>/dev/null || true`, `|| true`). The _safety.sh .env-path bug hid for months behind `source X 2>/dev/null || true` because the missing file failed invisibly, leaving PROJECT_ROOT unset in every hook. Infrastructure sources must fail loud or use explicit `[ -f X ] && source X` guard."
+    },
+    {
+      "id": "nexus-review-issues-tracked",
+      "description": "posttooluse_hme_review.sh must extract depth meter count and write REVIEW_ISSUES to nexus",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/posttooluse/posttooluse_hme_review.sh",
+      "patterns": [
+        "REVIEW_ISSUES",
+        "issues total"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "review-verdict-marker-contract",
+      "description": "posttooluse_hme_review.sh must parse the canonical HME_REVIEW_VERDICT marker that onboarding_chain.emit_review_verdict_marker() emits.",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/posttooluse/posttooluse_hme_review.sh",
+      "patterns": [
+        "HME_REVIEW_VERDICT:",
+        "clean\\|warnings\\|error"
+      ],
+      "severity": "error",
+      "context": "posttooluse_hme_review.sh must parse the canonical HME_REVIEW_VERDICT marker that onboarding_chain.emit_review_verdict_marker() emits. Drift between the two caused clean reviews to fall into REVIEW_PARSE_FAILED until the hook regex was updated."
+    },
+    {
+      "id": "hme-cli-error-prefix-consumers",
+      "description": "Every hook that consumes hme-cli output must grep for the '^hme-cli:' prefix to distinguish transport failure from content. Removing this check silently lets a failed CLI call masquerade as a successful one.",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/posttooluse/posttooluse_hme_review.sh",
+      "patterns": [
+        "'\\^hme-cli:'"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "nexus-pending-review-gate",
+      "description": "_nexus_pending() must check REVIEW_ISSUES count and block stop when count > 3",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/helpers/_nexus.sh",
+      "patterns": [
+        "REVIEW_ISSUES",
+        "ri_count"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "activity-hook-wiring",
+      "description": "Post-write side effects must be owned by proxy middleware and emit write-coherence events on changed tracked files.",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/middleware/28_post_write_side_effects.js",
+      "patterns": [
+        "ctx.emit",
+        "post_write_side_effect_failed",
+        "productive_incoherence",
+        "coherence_violation"
+      ],
+      "severity": "error",
+      "born_from": "2026-05-16 post-write side effects moved from hook fragments to proxy middleware"
+    },
+    {
+      "id": "productive-incoherence-hook-wired",
+      "description": "post-write proxy side effects must classify writes against the staleness index",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/middleware/28_post_write_side_effects.js",
+      "patterns": [
+        "productive_incoherence",
+        "kb-staleness.json",
+        "coherence_violation"
+      ],
+      "severity": "error"
+    }
+  ]
+}

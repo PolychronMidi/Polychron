@@ -1,0 +1,74 @@
+{
+  "_comment": "docs invariant shard; loaded through ../invariants.json.",
+  "invariants": [
+    {
+      "id": "coupling-labels-documented",
+      "description": "All 11 known active coupling label pairs must be documented in doc/composition-full.md",
+      "type": "patterns_all_in_file",
+      "path": "doc/composition-full.md",
+      "patterns": [
+        "density-entropy",
+        "density-flicker",
+        "density-phase",
+        "density-tension",
+        "entropy-phase",
+        "entropy-trust",
+        "flicker-entropy",
+        "flicker-phase",
+        "tension-entropy",
+        "tension-flicker",
+        "tension-phase"
+      ],
+      "severity": "warning"
+    },
+    {
+      "id": "directionbias-documented",
+      "description": "doc/composition-full.md must document all three directionBias coupling sections",
+      "type": "patterns_all_in_file",
+      "path": "doc/composition-full.md",
+      "patterns": [
+        "directionBias Swap Gate Coupling",
+        "directionBias Articulation Contrast Coupling",
+        "directionBias Voicing Spread Coupling",
+        "contourShape Surge and Groove Couplings"
+      ],
+      "severity": "warning"
+    },
+    {
+      "id": "public-surface-coherent",
+      "description": "The public HME surface has one source of truth: i/ wrappers match i_registry.json, retired wrappers stay gone, tool-invocations.json maps internal names to current public forms, and doc/ top-level stays limited to sel...",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/audit-public-surface.py --quiet 2>&1",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "The public HME surface has one source of truth: i/ wrappers match i_registry.json, retired wrappers stay gone, tool-invocations.json maps internal names to current public forms, and doc/ top-level stays limited to self-coherence.md/composition.md plus full-detail companions."
+    },
+    {
+      "id": "lifesaver-doc-exists",
+      "description": "HME full reference must include LIFESAVER enforcement",
+      "type": "file_exists",
+      "path": "doc/self-coherence-full.md",
+      "severity": "error"
+    },
+    {
+      "id": "antagonism-registry-covers-observed-pairs",
+      "description": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted.",
+      "type": "shell_output_empty",
+      "shell": "python3 scripts/check-antagonism-registry.py 2>&1 | grep -v '^$'",
+      "severity": "warning",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true,
+      "context": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted. An unaccounted negative correlation means the system is observing a tension it has not named per the antagonism-bridge principle. See doc/composition-full.md."
+    }
+  ]
+}

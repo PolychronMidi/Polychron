@@ -1,0 +1,122 @@
+{
+  "_comment": "proxy invariant shard; loaded through ../invariants.json.",
+  "invariants": [
+    {
+      "id": "proxy-fail-scan-exists",
+      "description": "FAIL-scan middleware must exist in the proxy (moved from log-tool-call.sh after the MCP decoupling -- log-tool-call.sh itself is now a stub)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/middleware/19_mcp_fail_scan.js",
+      "patterns": [
+        "FAIL",
+        "hme-errors\\.log"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "event-kernel-subprocesses-use-fs-ipc",
+      "description": "Event-kernel and Stop-chain subprocess boundaries must use filesystem IPC rather than live stdin pipes, so hook portability does not depend on a specific agent CLI or Node spawn input semantics.",
+      "type": "shell_output_empty",
+      "shell": "rg -nE \"child\\.stdin|stdin\\.write|spawnSync\\([^\\n]*input\" tools/HME/event_kernel tools/HME/proxy/stop_chain 2>/dev/null || true",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true
+    },
+    {
+      "id": "hme-py-no-fallback-infra-imports",
+      "description": "HME Python files must not wrap `from hme_env import ENV` (or other infrastructure imports) in try/except fallback.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-no-fallback-infra-imports.py tools/HME/service",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "context": "HME Python files must not wrap `from hme_env import ENV` (or other infrastructure imports) in try/except fallback. Silent ImportError swallowed behind `os.environ.get(...)` fallback hid the synthesis_proxy_route ENV bug for weeks. Infrastructure imports must fail loud at module load time."
+    },
+    {
+      "id": "hme-proxy-exists",
+      "description": "Phase 2 (inference proxy)  hme_proxy.js must exist so ANTHROPIC_BASE_URL routing is available",
+      "type": "file_exists",
+      "path": "tools/HME/proxy/hme_proxy.js",
+      "severity": "error"
+    },
+    {
+      "id": "hme-proxy-syntactic-node",
+      "description": "hme_proxy.js must parse as valid Node so starting the daemon never fails at syntax level",
+      "type": "shell_output_empty",
+      "shell": "node --check tools/HME/proxy/hme_proxy.js 2>&1 | grep -v '^$'",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true
+    },
+    {
+      "id": "proxy-jurisdiction-injection-wired",
+      "description": "Phase 2.1 jurisdiction injection must be wired in the proxy (distributed across hme_proxy.js / context.js / messages.js after the middleware refactor)",
+      "type": "pattern_in_file",
+      "path": "tools/HME/proxy/context.js",
+      "pattern": "bias-bounds-manifest|buildJurisdictionContext",
+      "severity": "error"
+    },
+    {
+      "id": "proxy-extended-injections",
+      "description": "Proxy must inject open hypotheses and semantic drift warnings alongside jurisdiction context (Phase 3.1/3.3 -- moved to context.js during the middleware split)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/context_jurisdiction.js",
+      "patterns": [
+        "loadOpenHypothesesMap",
+        "loadDriftMap",
+        "Open hypotheses"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "versions-single-source",
+      "description": "All three wire-version components (cli/proxy/worker) must read from tools/HME/config/versions.json  not hardcoded strings. Protects the three-way version check from typo-drift.",
+      "type": "patterns_all_in_file",
+      "path": "scripts/hme-cli.js",
+      "patterns": [
+        "versions.json",
+        "CLI_VERSION"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "versions-file-exists",
+      "description": "tools/HME/config/versions.json is the single source of truth for cli/proxy/worker wire versions. Must be valid JSON with all three keys.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json; d=json.load(open('tools/HME/config/versions.json')); assert 'cli' in d and 'proxy' in d and 'worker' in d, 'missing version key'\" 2>&1 | grep -v '^$'",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "no findings",
+      "allow_exit_codes": [
+        0,
+        1
+      ],
+      "capture_stderr": true
+    },
+    {
+      "id": "proxy-version-endpoint",
+      "description": "tools/HME/proxy/hme_proxy.js must declare PROXY_VERSION and expose GET /version.",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/hme_proxy.js",
+      "patterns": [
+        "PROXY_VERSION",
+        "'/version'"
+      ],
+      "severity": "error",
+      "context": "tools/HME/proxy/hme_proxy.js must declare PROXY_VERSION and expose GET /version. Completes the three-way (cli/proxy/worker) version check surfaced via `hme-cli --version`  a stale proxy between a new CLI and new worker is otherwise invisible."
+    }
+  ]
+}
