@@ -38,8 +38,10 @@ function findJsFiles(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) results.push(...findJsFiles(full));
-    else if (entry.name.endsWith('.js')) results.push(full);
+    if (entry.isDirectory()) {
+      if (full === path.join(SRC, 'scripts')) continue;
+      results.push(...findJsFiles(full));
+    } else if (entry.name.endsWith('.js')) results.push(full);
   }
   return results;
 }
