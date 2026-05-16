@@ -15,6 +15,7 @@ moduleLifecycle.declare({
   provides: ['metaProfileDefinitions'],
   init: (deps) => {
   const V = deps.validator.create('metaProfileDefinitions');
+  const _projectRoot = process.env.PROJECT_ROOT || require('path').resolve(__dirname, '..', '..');
 
   // Schema. 'pair' = 2-element finite-number array (lo, hi with lo <= hi).
   // Profiles must declare every key; unknown keys are rejected.
