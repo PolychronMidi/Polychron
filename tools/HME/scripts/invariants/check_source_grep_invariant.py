@@ -42,6 +42,10 @@ RULES = {
     "hme-no-raw-os-environ": [{"roots": ["tools/HME/service"], "include": [".py"], "pattern": r"os\.environ\.get\(", "exclude": r"hme_env\.py|tools/HME/service/tests/|__pycache__|\.log|\.jsonl|^\s*#|env\[.*\] = os\.environ|# env-ok"}],
     "no-hardcoded-metrics-path": [{"roots": ["."], "include": [".js", ".py", ".sh"], "pattern": r"['\"]metrics/|path\.join\([^)]*['\"]metrics['\"]|os\.path\.join\([^)]*['\"]metrics['\"]", "exclude": r"# metrics-ok|output/metrics|scripts/migrate-metrics-path\.py|tools/HME/KB/", "skip_dirs": {"node_modules", ".git", "__pycache__", ".venv"}}],
     "daemon-is-gpu-authority": [{"roots": ["tools/HME/service"], "include": [".py"], "pattern": r"\"cuda:[0-9]\"", "exclude": r"__pycache__|llamacpp_daemon\.py|rag_engines\.py|rag_engine/engine\.py|vram_manager\.py|# device-ok"}],
+    "hme-py-valueerror-coverage": [{"paths": ["tools/HME/service/server/operational_state.py"], "pattern": r"except \(OSError", "exclude": r"ValueError"}],
+    "index-directory-zero-args": [{"paths": ["tools/HME/service/rag_engine/engine_indexing.py"], "pattern": r"def index_directory\(self,|def _index_directory_locked\(self,|def _collect_files\(self,"}],
+    "no-direct-gpu-model-load-in-indexing": [{"paths": ["tools/HME/service/indexing_mode.py", "tools/HME/service/server/tools_index.py"], "pattern": r"from sentence_transformers|import torch|SentenceTransformer"}],
+    "event-kernel-subprocesses-use-fs-ipc": [{"roots": ["tools/HME/event_kernel", "tools/HME/proxy/stop_chain"], "include": [".js"], "pattern": r"child\.stdin|stdin\.write|spawnSync\([^\n]*input"}],
 }
 
 
