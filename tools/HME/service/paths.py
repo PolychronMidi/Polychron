@@ -64,7 +64,7 @@ def errors_log() -> str:
 
 def runtime_dir() -> str:
     """Durable inter-script state. NOT tmp/ -- tmp/ is genuinely throwaway."""
-    return os.path.join(project_root(), "runtime", "hme")
+    return os.path.join(project_root(), "tools", "HME", "runtime")
 
 
 def supervisor_abandoned_sentinel() -> str:
