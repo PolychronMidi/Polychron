@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Check env, proxy, OmniRoute, and recent errors
+(empty)
 
 ## Next
 
-- [ ] [E3] Check recent routing/log evidence
-- [ ] [E3] Report verdict with fixes if needed
+(empty)
 
 ## Done
 

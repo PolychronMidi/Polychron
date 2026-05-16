@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3354,
-      "updated_ts": 1778944379.5721998,
-      "codex_plan_synced_ts": 1778944379.5719783,
+      "updated_ts": 1778944618.9102094,
+      "codex_plan_synced_ts": 1778944618.9101439,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T15:12:49.397Z"
+      "codex_plan_ts": "2026-05-16T15:16:50.152Z"
     }
   },
   {
@@ -5017,8 +5017,8 @@
     "id": 3352,
     "text": "Check env, proxy, OmniRoute, and recent errors",
     "activeForm": "Check env, proxy, OmniRoute, and recent errors",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5027,14 +5027,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:12:49.397Z"
+    "codex_plan_ts": "2026-05-16T15:16:50.152Z"
   },
   {
     "id": 3353,
     "text": "Check recent routing/log evidence",
     "activeForm": "Check recent routing/log evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5043,14 +5043,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:12:49.397Z"
+    "codex_plan_ts": "2026-05-16T15:16:50.152Z"
   },
   {
     "id": 3354,
     "text": "Report verdict with fixes if needed",
     "activeForm": "Report verdict with fixes if needed",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -5059,6 +5059,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T15:12:49.397Z"
+    "codex_plan_ts": "2026-05-16T15:16:50.152Z"
   }
 ]
