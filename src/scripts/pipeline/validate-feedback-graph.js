@@ -204,7 +204,7 @@ const FIREWALL_ESLINT_MAP = {
   ]
 };
 
-const eslintRulesDir = path.join(ROOT, 'scripts', 'eslint-rules');
+const eslintRulesDir = path.join(ROOT, 'src', 'scripts', 'eslint-rules');
 for (const [firewallName, ruleNames] of Object.entries(FIREWALL_ESLINT_MAP)) {
   if (!jsonFirewallKeys.has(firewallName)) {
     warnings.push(`Expected firewall "${firewallName}" not found in feedback_graph.json`);
