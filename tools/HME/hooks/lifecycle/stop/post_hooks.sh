@@ -12,6 +12,14 @@ _emit_activity turn_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/streak_calibrator.py" --record \
   > /dev/null 2>&1 &
 
+# reflection bridge: quiet per-turn metrics line
+_REFLECT_TURN="$PROJECT/tools/HME/scripts/reflect_turn.py"
+if [ -f "$_REFLECT_TURN" ]; then
+  PROJECT_ROOT="$PROJECT" SESSION_ID="$_SESSION_ID_FOR_ACTIVITY" \
+    python3 "$_REFLECT_TURN" --turn-id "$_SESSION_ID_FOR_ACTIVITY" --no-audit-panel \
+    >/dev/null 2>&1 || true
+fi
+
 # Turn-closing audit trail
 # silent-ok: optional fallback path.
 _EDIT_FILES=$(grep '^EDIT:' "${PROJECT_ROOT}/tmp/hme-nexus.state" 2>/dev/null \
