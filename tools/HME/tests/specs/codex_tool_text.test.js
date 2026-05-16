@@ -49,3 +49,16 @@ test('normalizes Edit bridge calls without pretending old_string was omitted', (
   assert.match(out.body.text, /display-redacted: original was sent; do not reuse/);
   assert.doesNotMatch(out.body.text, /secret old text|secret new text|omitted by proxy/);
 });
+
+
+test('normalizes edit bridge display without implying old_string was omitted', () => {
+  const cmd = [
+    "node tools/HME/scripts/codex_structured_tool.js edit --json <<'HME_CODEX_JSON'",
+    JSON.stringify({ file_path: 'src/target.js', old_string: 'secret old', new_string: 'secret new' }),
+    'HME_CODEX_JSON',
+  ].join('\n');
+  const out = normalizeStructuredBridgeCalls({ text: cmd });
+  assert.match(out.body.text, /Edit\(/);
+  assert.match(out.body.text, /display-redacted: original was sent; do not reuse/);
+  assert.doesNotMatch(out.body.text, /secret old|secret new|omitted by proxy/);
+});
