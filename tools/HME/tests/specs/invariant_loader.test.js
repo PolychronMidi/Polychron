@@ -16,7 +16,7 @@ function sandbox(prefix) {
 function py(args) {
   return spawnSync('python3', args, {
     cwd: PROJECT_ROOT,
-    env: { ...process.env, PROJECT_ROOT, METRICS_DIR: path.join(PROJECT_ROOT, 'output', 'metrics') },
+    env: { ...process.env, PROJECT_ROOT, METRICS_DIR: path.join(PROJECT_ROOT, 'output', 'metrics'), PYTHONPATH: path.join(PROJECT_ROOT, 'tools/HME/service') },
     encoding: 'utf8',
   });
 }
