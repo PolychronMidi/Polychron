@@ -51,19 +51,29 @@ def hme_admin(action: str = "selftest", modules: str = "",
     if action in ("selftest", "both"):
         # `modules` is overloaded as the verbose-flag carrier for selftest
         parts.append(hme_selftest(verbose=("verbose" in (modules or "").lower())))
-    if action == "index":
+    if action in ("index", "clear_index"):
         try:
-            from tools_index import index_codebase as _index_codebase
-            parts.append(_index_codebase())
+            from paths import project_root as _project_root
+            from .index_jobs import format_index_job as _format_index_job
+            from .index_jobs import start_index_job as _start_index_job
+            root = _project_root()
+            parts.append(_format_index_job(root, _start_index_job(root, action)))
         except Exception as e:
-            # silent-ok: optional fallback path.
-            parts.append(f"index_codebase error: {e}")
-    if action == "clear_index":
+            parts.append(f"{action} job start error: {type(e).__name__}: {e}")
+    if action == "index_status":
         try:
-            from tools_index import clear_index as _clear_index
-            parts.append(_clear_index())
+            from paths import project_root as _project_root
+            from .index_jobs import format_index_job as _format_index_job
+            from .index_jobs import read_index_job as _read_index_job
+            root = _project_root()
+            parts.append(_format_index_job(root, _read_index_job(root)))
+            try:
+                from tools_index import get_index_status as _get_index_status
+                parts.append(_get_index_status())
+            except Exception as status_error:
+                parts.append(f"index counts unavailable: {type(status_error).__name__}: {status_error}")
         except Exception as e:
-            parts.append(f"clear_index error: {e}")
+            parts.append(f"index_status error: {type(e).__name__}: {e}")
     if action == "warm":
         import threading as _threading
         def _bg_gpu_warm():
@@ -107,7 +117,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
     if action in ("todo_status", "todo_validate", "todo_repair", "todo_archive"):
         parts.append(_hme_todo_admin(action, modules))
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', 'todo_status', 'todo_validate', 'todo_repair', 'todo_archive', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', 'todo_status', 'todo_validate', 'todo_repair', 'todo_archive', 'index_status', or 'both'."
     return "\n\n".join(parts)
 
 
