@@ -4,12 +4,10 @@
 
 ## Now
 
-- [ ] [E3] Fix discovered script-audit failures
+- [ ] [E3] Continue dead-code sweep
 
 ## Next
 
-- [ ] [E3] Run focused verification
-- [ ] [E3] Continue dead-code sweep
 - [ ] [E3] Fix new findings immediately
 - [ ] [E3] Report evidence and remaining decisions
 
