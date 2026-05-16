@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Enumerate .env keys without exposing values
 
 ## Next
 
-(empty)
+- [ ] [E3] Find references outside .env with generated/vendor paths ignored
+- [ ] [E3] Classify unused keys: delete-target vs relevant-unimplemented
+- [ ] [E3] Report deletion candidates with evidence
 
 ## Done
 

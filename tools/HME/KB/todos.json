@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3408,
-      "updated_ts": 1778950468.9336305,
-      "codex_plan_synced_ts": 1778950468.9335556,
+      "max_id": 3412,
+      "updated_ts": 1778950768.9363537,
+      "codex_plan_synced_ts": 1778950768.936276,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T16:54:15.325Z"
+      "codex_plan_ts": "2026-05-16T16:59:20.288Z"
     }
   },
   {
@@ -5933,5 +5933,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T16:54:15.325Z"
+  },
+  {
+    "id": 3409,
+    "text": "Enumerate .env keys without exposing values",
+    "activeForm": "Enumerate .env keys without exposing values",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778950760.717378,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:59:20.288Z"
+  },
+  {
+    "id": 3410,
+    "text": "Find references outside .env with generated/vendor paths ignored",
+    "activeForm": "Find references outside .env with generated/vendor paths ignored",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778950760.7173836,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:59:20.288Z"
+  },
+  {
+    "id": 3411,
+    "text": "Classify unused keys: delete-target vs relevant-unimplemented",
+    "activeForm": "Classify unused keys: delete-target vs relevant-unimplemented",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778950760.7173874,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:59:20.288Z"
+  },
+  {
+    "id": 3412,
+    "text": "Report deletion candidates with evidence",
+    "activeForm": "Report deletion candidates with evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778950760.71739,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T16:59:20.288Z"
   }
 ]
