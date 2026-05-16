@@ -4,13 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Build least-recently-run script ranking
+- [ ] [E3] Delete obsolete duplicate and references
 
 ## Next
 
-- [ ] [E3] Inspect coldest scripts for purpose and references
-- [ ] [E3] Delete obsolete or wire live scripts
 - [ ] [E3] Run targeted verification and report evidence
+- [ ] [E3] Wire cold live scripts that are not obsolete
 
 ## Done
 
