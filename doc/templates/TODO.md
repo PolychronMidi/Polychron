@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Re-run scripts/ recency ranking and identify remaining coldest files
+- [ ] [E3] Tighten scripts recency run-evidence sources
 
 ## Next
 
-- [ ] [E3] Inspect each remaining cold file and decide delete vs wire
-- [ ] [E3] Apply wiring/deletions and stale-reference cleanup
-- [ ] [E3] Verify audit/strict/full checks and report evidence
+- [ ] [E3] Re-rank cold scripts with corrected evidence
+- [ ] [E3] Inspect/delete/wire cold targets
+- [ ] [E3] Verify strict audit and full checks
 
 ## Done
 

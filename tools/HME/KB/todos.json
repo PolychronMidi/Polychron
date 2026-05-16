@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3440,
-      "updated_ts": 1778954428.9811869,
-      "codex_plan_synced_ts": 1778954428.9810996,
+      "max_id": 3444,
+      "updated_ts": 1778954488.9797006,
+      "codex_plan_synced_ts": 1778954488.9796154,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T18:00:01.501Z"
+      "codex_plan_ts": "2026-05-16T18:01:27.146Z"
     }
   },
   {
@@ -6399,8 +6399,8 @@
     "id": 3437,
     "text": "Re-run scripts/ recency ranking and identify remaining coldest files",
     "activeForm": "Re-run scripts/ recency ranking and identify remaining coldest files",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6409,14 +6409,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:00:01.501Z"
+    "codex_plan_ts": "2026-05-16T18:00:01.501Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3438,
     "text": "Inspect each remaining cold file and decide delete vs wire",
     "activeForm": "Inspect each remaining cold file and decide delete vs wire",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6425,14 +6426,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:00:01.501Z"
+    "codex_plan_ts": "2026-05-16T18:00:01.501Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3439,
     "text": "Apply wiring/deletions and stale-reference cleanup",
     "activeForm": "Apply wiring/deletions and stale-reference cleanup",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6441,14 +6443,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:00:01.501Z"
+    "codex_plan_ts": "2026-05-16T18:00:01.501Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3440,
     "text": "Verify audit/strict/full checks and report evidence",
     "activeForm": "Verify audit/strict/full checks and report evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6457,6 +6460,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T18:00:01.501Z"
+    "codex_plan_ts": "2026-05-16T18:00:01.501Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3441,
+    "text": "Tighten scripts recency run-evidence sources",
+    "activeForm": "Tighten scripts recency run-evidence sources",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778954487.609893,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T18:01:27.146Z"
+  },
+  {
+    "id": 3442,
+    "text": "Re-rank cold scripts with corrected evidence",
+    "activeForm": "Re-rank cold scripts with corrected evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778954487.6098993,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T18:01:27.146Z"
+  },
+  {
+    "id": 3443,
+    "text": "Inspect/delete/wire cold targets",
+    "activeForm": "Inspect/delete/wire cold targets",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778954487.6099026,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T18:01:27.146Z"
+  },
+  {
+    "id": 3444,
+    "text": "Verify strict audit and full checks",
+    "activeForm": "Verify strict audit and full checks",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778954487.6099052,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-16T18:01:27.146Z"
   }
 ]
