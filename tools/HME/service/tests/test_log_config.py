@@ -6,6 +6,7 @@ from server.log_config import configure_hme_file_logger
 def test_configure_hme_file_logger_dedupes_same_file(tmp_path):
     logger = logging.getLogger("HME.test.dedupe")
     logger.handlers.clear()
+    logger.setLevel(logging.INFO)
     logger.propagate = True
     log_file = tmp_path / "hme.log"
 
