@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inventory scripts and names
 
 ## Next
 
-(empty)
+- [ ] [E3] Check references from repo/config/hooks
+- [ ] [E3] Classify dead vs entrypoints
+- [ ] [E3] Report evidence and safe deletions
 
 ## Done
 

@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3253,
-      "updated_ts": 1778895898.7433422,
-      "codex_plan_synced_ts": 1778895898.7432976,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T01:44:28.975Z"
+      "max_id": 3257,
+      "updated_ts": 1778896354.297185,
+      "codex_plan_synced_ts": 1778896354.2971385,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T01:52:33.846Z"
     }
   },
   {
@@ -3388,5 +3388,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-16T01:44:28.975Z"
+  },
+  {
+    "id": 3254,
+    "text": "Inventory scripts and names",
+    "activeForm": "Inventory scripts and names",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778896354.296722,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T01:52:33.846Z"
+  },
+  {
+    "id": 3255,
+    "text": "Check references from repo/config/hooks",
+    "activeForm": "Check references from repo/config/hooks",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778896354.2967284,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T01:52:33.846Z"
+  },
+  {
+    "id": 3256,
+    "text": "Classify dead vs entrypoints",
+    "activeForm": "Classify dead vs entrypoints",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778896354.2967322,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T01:52:33.846Z"
+  },
+  {
+    "id": 3257,
+    "text": "Report evidence and safe deletions",
+    "activeForm": "Report evidence and safe deletions",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778896354.2967348,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T01:52:33.846Z"
   }
 ]
