@@ -100,7 +100,7 @@ test('Codex native Grep response rewrites to executable bridge and back to Grep 
 
 test('Codex bridge heredoc text normalizes without leaking heredoc header', () => {
   const cmd = [
-    "node tools/HME/tools/HME/scripts/codex_structured_tool.js read --json <<'HME_CODEX_JSON'",
+    "node tools/HME/scripts/codex_structured_tool.js read --json <<'HME_CODEX_JSON'",
     JSON.stringify({ file_path: 'doc/templates/AGENTS.md', offset: 0, limit: 5 }),
     'HME_CODEX_JSON',
     'after',

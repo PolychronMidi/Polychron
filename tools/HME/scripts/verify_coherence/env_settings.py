@@ -170,7 +170,7 @@ class EnvTamperVerifier(Verifier):
     against a stored SHA-256 checkpoint at .env.sha256. The first run
     writes the checkpoint; every subsequent run diffs against it and
     flags any change. The operator confirms legitimate changes by
-    re-running `python3 tools/HME/tools/HME/scripts/verify-coherence.py
+    re-running `python3 tools/HME/scripts/verify-coherence.py
     --snapshot-env-sha` (or simply deleting .env.sha256 before the next
     run); unplanned drift surfaces as a FAIL.
 

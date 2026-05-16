@@ -101,7 +101,7 @@ class TodoCodexPlanSyncVerifier(Verifier):
         failures: list[str] = []
         script = os.path.join(_SCRIPTS_DIR, "codex_plan_sync.py")
         if not os.path.isfile(script):
-            failures.append("tools/HME/tools/HME/scripts/codex_plan_sync.py missing")
+            failures.append("tools/HME/scripts/codex_plan_sync.py missing")
         else:
             proc = subprocess.run(
                 ["python3", "-m", "py_compile", script],
@@ -132,7 +132,7 @@ class TodoCodexPlanSyncVerifier(Verifier):
         for rel in [
             "tools/HME/scripts/sync-codex-settings.py",
             "tools/HME/scripts/audit-codex-settings.py",
-            "tools/HME/tools/HME/scripts/codex_settings.py",
+            "tools/HME/scripts/codex_settings.py",
         ]:
             target = os.path.join(_PROJECT, rel)
             if not os.path.isfile(target):

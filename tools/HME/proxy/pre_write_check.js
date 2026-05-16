@@ -101,7 +101,7 @@ function _commentBloatDecision(file, content, writeVerb) {
 
 function _runTddGate(file) {
   if (!file) return null;
-  const script = path.join(PROJECT_ROOT, 'tools/HME/tools/HME/scripts/tdd_test_first_gate.py');
+  const script = path.join(PROJECT_ROOT, 'tools/HME/scripts/tdd_test_first_gate.py');
   if (!fs.existsSync(script)) return null;
   try { execFileSync('python3', [script, '--file', file], { cwd: PROJECT_ROOT, env: { ...process.env, PROJECT_ROOT }, encoding: 'utf8', stdio: 'pipe' }); }
   catch (err) { return _permission('deny', String(err.stderr || err.stdout || err.message || 'TDD test-first gate failed').slice(0, 800)); }

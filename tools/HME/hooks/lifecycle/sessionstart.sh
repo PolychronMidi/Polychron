@@ -35,9 +35,9 @@ mkdir -p "${PROJECT}/tmp"
 
 # Refresh adaptive config and coherence health on every session start.
 _hme_bg_timeout 20 adapt-from-activity "$PROJECT/log/hme-bg-adapt-from-activity.err" \
-  python3 "${PROJECT}/tools/HME/tools/HME/scripts/adapt-from-activity.py"
+  python3 "${PROJECT}/tools/HME/scripts/adapt-from-activity.py"
 _hme_bg_timeout 30 verify-coherence-registry "$PROJECT/log/hme-bg-verify-coherence-registry.err" \
-  python3 "${PROJECT}/tools/HME/tools/HME/scripts/verify-coherence-registry.py"
+  python3 "${PROJECT}/tools/HME/scripts/verify-coherence-registry.py"
 
 _signal_emit session_start sessionstart session '{}'
 
@@ -197,7 +197,7 @@ fi
 
 # Capture session-start holograph; keep background stderr auditable.
 mkdir -p "$PROJECT/log" 2>/dev/null
-HOLO_SCRIPT="$PROJECT/tools/HME/tools/HME/scripts/snapshot-holograph.py"
+HOLO_SCRIPT="$PROJECT/tools/HME/scripts/snapshot-holograph.py"
 if [ -f "$HOLO_SCRIPT" ]; then
   SESSION_HOLO="$PROJECT/tmp/hme-session-start.holograph.json"
   SNAP_LOG="$PROJECT/log/hme-bg-snapshot-holograph.err"
@@ -211,14 +211,14 @@ if [ -f "$HOLO_SCRIPT" ]; then
 fi
 
 # Refresh tool-effectiveness analysis in the background.
-EFF_SCRIPT="$PROJECT/tools/HME/tools/HME/scripts/analyze-tool-effectiveness.py"
+EFF_SCRIPT="$PROJECT/tools/HME/scripts/analyze-tool-effectiveness.py"
 if [ -f "$EFF_SCRIPT" ]; then
   _hme_bg_timeout 20 analyze-tool-effectiveness "$PROJECT/log/hme-bg-analyze-tool-effectiveness.err" \
     env PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT"
 fi
 
 # Update HCI trajectory in the background for time-series analysis.
-TRAJ_SCRIPT="$PROJECT/tools/HME/tools/HME/scripts/analyze-hci-trajectory.py"
+TRAJ_SCRIPT="$PROJECT/tools/HME/scripts/analyze-hci-trajectory.py"
 if [ -f "$TRAJ_SCRIPT" ]; then
   _hme_bg_timeout 20 analyze-hci-trajectory "$PROJECT/log/hme-bg-analyze-hci-trajectory.err" \
     env PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT"
@@ -313,7 +313,7 @@ if [ -x "$_SOFT_AUDIT" ]; then
 fi
 
 # Fork-watchdog: surface silently-dropped completion notifications (recent only).
-_FORK_WATCHDOG="$PROJECT_ROOT/tools/HME/tools/HME/scripts/fork_watchdog.py"
+_FORK_WATCHDOG="$PROJECT_ROOT/tools/HME/scripts/fork_watchdog.py"
 if [ -x "$_FORK_WATCHDOG" ]; then
   _FW_OUT=$(PROJECT_ROOT="$PROJECT_ROOT" python3 "$_FORK_WATCHDOG" 2>/dev/null || true)  # silent-ok: optional fallback path.
   case "$_FW_OUT" in
@@ -322,7 +322,7 @@ if [ -x "$_FORK_WATCHDOG" ]; then
 fi
 
 # Learning-surface: prime patterns for the first active TODO item.
-_LE="$PROJECT_ROOT/tools/HME/tools/HME/scripts/learning_extract.py"
+_LE="$PROJECT_ROOT/tools/HME/scripts/learning_extract.py"
 _TODO_FILE="$PROJECT_ROOT/doc/templates/TODO.md"
 if [ -x "$_LE" ] && [ -f "$_TODO_FILE" ]; then
   _TODO_TITLE=$(grep -E "^[[:space:]]*-[[:space:]]+\\[[[:space:]]\\][[:space:]]+\\[(E[1-5]|easy|medium|hard)\\]" "$_TODO_FILE" | head -1 \

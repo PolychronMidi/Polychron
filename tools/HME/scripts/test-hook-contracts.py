@@ -16,7 +16,7 @@ Catches drift the invariants.json patterns CAN'T catch:
 
 Exit 0 on all-pass, 1 on any failure with the offending case.
 
-Usage: python3 tools/HME/tools/HME/scripts/test-hook-contracts.py
+Usage: python3 tools/HME/scripts/test-hook-contracts.py
 """
 from __future__ import annotations
 import json

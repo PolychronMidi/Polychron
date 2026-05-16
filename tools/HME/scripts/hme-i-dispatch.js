@@ -50,18 +50,18 @@ function hmeCli(tool, args) {
 
 function dispatchAudit(args) {
   const map = {
-    tiered: ['python3', ['tools/HME/tools/HME/scripts/tiered_audit.py']],
-    'audit-tiered': ['python3', ['tools/HME/tools/HME/scripts/tiered_audit.py']],
-    blast: ['python3', ['tools/HME/tools/HME/scripts/blast_radius.py']],
-    'blast-radius': ['python3', ['tools/HME/tools/HME/scripts/blast_radius.py']],
-    parallel: ['python3', ['tools/HME/tools/HME/scripts/parallel_detect.py']],
-    'parallel-detect': ['python3', ['tools/HME/tools/HME/scripts/parallel_detect.py']],
+    tiered: ['python3', ['tools/HME/scripts/tiered_audit.py']],
+    'audit-tiered': ['python3', ['tools/HME/scripts/tiered_audit.py']],
+    blast: ['python3', ['tools/HME/scripts/blast_radius.py']],
+    'blast-radius': ['python3', ['tools/HME/scripts/blast_radius.py']],
+    parallel: ['python3', ['tools/HME/scripts/parallel_detect.py']],
+    'parallel-detect': ['python3', ['tools/HME/scripts/parallel_detect.py']],
     sensitivity: ['node', ['src/scripts/metaprofile-sensitivity.js']],
     metaprofile: ['node', ['src/scripts/metaprofile-sensitivity.js']],
-    prove: ['python3', ['tools/HME/tools/HME/scripts/prove.py']],
-    tools: ['python3', ['tools/HME/tools/HME/scripts/audit-tool-surface.py']],
-    'audit-tools': ['python3', ['tools/HME/tools/HME/scripts/audit-tool-surface.py']],
-    surface: ['python3', ['tools/HME/tools/HME/scripts/audit-tool-surface.py']],
+    prove: ['python3', ['tools/HME/scripts/prove.py']],
+    tools: ['python3', ['tools/HME/scripts/audit-tool-surface.py']],
+    'audit-tools': ['python3', ['tools/HME/scripts/audit-tool-surface.py']],
+    surface: ['python3', ['tools/HME/scripts/audit-tool-surface.py']],
   };
   const { mode, rest } = selector(args, Object.keys(map));
   if (!mode) {
@@ -75,23 +75,23 @@ function dispatchAudit(args) {
 function dispatchStatus(args) {
   const local = ['state', 'timeline', 'holograph', 'substrate', 'team', 'project', 'project-detect', 'forks', 'fork-watchdog', 'decision-audit', 'freeze', 'pattern', 'patterns', 'codex-route', 'codex_proxy', 'codex-proxy'];
   const { mode, rest } = selector(args, local);
-  if (!mode && args.length === 0) run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/substrate-view.py'), 'brief']);
+  if (!mode && args.length === 0) run('python3', [path.join(ROOT, 'tools/HME/scripts/substrate-view.py'), 'brief']);
   const r = rest.map((a) => a.startsWith('submode=') || a.startsWith('view=') ? `mode=${a.split('=').slice(1).join('=')}` : a === 'brief=true' ? 'mode=brief' : a === 'trajectory=true' ? 'mode=trajectory' : a.startsWith('pattern=') ? a.slice(8) : a);
   const py = {
-    state: 'tools/HME/tools/HME/scripts/state-panel.py',
-    timeline: 'tools/HME/tools/HME/scripts/timeline-panel.py',
-    holograph: 'tools/HME/tools/HME/scripts/holograph-panel.py',
-    substrate: 'tools/HME/tools/HME/scripts/substrate-view.py',
-    team: 'tools/HME/tools/HME/scripts/team_dashboard.py',
-    project: 'tools/HME/tools/HME/scripts/project_detect.py',
-    'project-detect': 'tools/HME/tools/HME/scripts/project_detect.py',
-    forks: 'tools/HME/tools/HME/scripts/fork_watchdog.py',
-    'fork-watchdog': 'tools/HME/tools/HME/scripts/fork_watchdog.py',
-    'decision-audit': 'tools/HME/tools/HME/scripts/decision_audit.py',
-    freeze: 'tools/HME/tools/HME/scripts/freeze-check.py',
-    pattern: 'tools/HME/tools/HME/scripts/pattern-registry.py',
+    state: 'tools/HME/scripts/state-panel.py',
+    timeline: 'tools/HME/scripts/timeline-panel.py',
+    holograph: 'tools/HME/scripts/holograph-panel.py',
+    substrate: 'tools/HME/scripts/substrate-view.py',
+    team: 'tools/HME/scripts/team_dashboard.py',
+    project: 'tools/HME/scripts/project_detect.py',
+    'project-detect': 'tools/HME/scripts/project_detect.py',
+    forks: 'tools/HME/scripts/fork_watchdog.py',
+    'fork-watchdog': 'tools/HME/scripts/fork_watchdog.py',
+    'decision-audit': 'tools/HME/scripts/decision_audit.py',
+    freeze: 'tools/HME/scripts/freeze-check.py',
+    pattern: 'tools/HME/scripts/pattern-registry.py',
   };
-  if (mode === 'patterns') run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/substrate-view.py'), 'patterns', ...r]);
+  if (mode === 'patterns') run('python3', [path.join(ROOT, 'tools/HME/scripts/substrate-view.py'), 'patterns', ...r]);
   if (mode === 'codex-route') hmeCli('status', ['mode=codex_route', ...r]);
   if (mode === 'codex_proxy' || mode === 'codex-proxy') hmeCli('status', ['mode=codex_proxy', ...r]);
   if (py[mode]) {
@@ -102,7 +102,7 @@ function dispatchStatus(args) {
 }
 
 function dispatchWhy(args) {
-  spawnSync('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/tool-usage-log.py'), 'why', ...args], {
+  spawnSync('python3', [path.join(ROOT, 'tools/HME/scripts/tool-usage-log.py'), 'why', ...args], {
     stdio: 'ignore',
     env: { ...process.env, PROJECT_ROOT: ROOT },
   });
@@ -125,36 +125,36 @@ function dispatchWhy(args) {
     search: 'why-search.py',
   };
   for (const a of args) {
-    if (a === 'mode=freeze') run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/freeze-check.py'), ...stripSelector(args, 'freeze')]);
+    if (a === 'mode=freeze') run('python3', [path.join(ROOT, 'tools/HME/scripts/freeze-check.py'), ...stripSelector(args, 'freeze')]);
     const m = /^mode=(.+)$/.exec(a);
     if (m && modeMap[m[1]]) run('python3', [path.join(ROOT, 'scripts/hme', modeMap[m[1]]), ...args]);
   }
   if (args.length > 1 || (args[0] || '').includes(' ') || (args[0] || '').includes('?')) {
-    run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/why-search.py'), ...args]);
+    run('python3', [path.join(ROOT, 'tools/HME/scripts/why-search.py'), ...args]);
   }
-  run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/why-invariant.py'), ...args]);
+  run('python3', [path.join(ROOT, 'tools/HME/scripts/why-invariant.py'), ...args]);
 }
 
 function dispatchLearn(args) {
-  if (['learnings', 'learning'].includes(args[0])) run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/learning_extract.py'), ...(keyValueToFlags(args.slice(1)).length ? keyValueToFlags(args.slice(1)) : ['list'])]);
-  if (['pattern', 'patterns'].includes(args[0])) run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/pattern-registry.py'), ...args.slice(1)]);
+  if (['learnings', 'learning'].includes(args[0])) run('python3', [path.join(ROOT, 'tools/HME/scripts/learning_extract.py'), ...(keyValueToFlags(args.slice(1)).length ? keyValueToFlags(args.slice(1)) : ['list'])]);
+  if (['pattern', 'patterns'].includes(args[0])) run('python3', [path.join(ROOT, 'tools/HME/scripts/pattern-registry.py'), ...args.slice(1)]);
   for (const a of args) {
     if (a === 'action=learnings' || a === 'action=learning') {
       const rest = keyValueToFlags(args.filter((x) => x !== a));
-      run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/learning_extract.py'), ...(rest.length ? rest : ['list'])]);
+      run('python3', [path.join(ROOT, 'tools/HME/scripts/learning_extract.py'), ...(rest.length ? rest : ['list'])]);
     }
   }
   hmeCli('learn', args);
 }
 
 function dispatchEvolve(args) {
-  if (['spec', 'extract-spec'].includes(args[0])) run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/extract-spec.py'), ...args.slice(1)]);
+  if (['spec', 'extract-spec'].includes(args[0])) run('python3', [path.join(ROOT, 'tools/HME/scripts/extract-spec.py'), ...args.slice(1)]);
   for (const a of args) {
     if (['action=extract-spec', 'action=spec', 'mode=extract-spec', 'mode=spec'].includes(a)) {
-      run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/extract-spec.py'), ...args.filter((x) => x !== a)]);
+      run('python3', [path.join(ROOT, 'tools/HME/scripts/extract-spec.py'), ...args.filter((x) => x !== a)]);
     }
   }
-  if (args.length === 0) run('python3', [path.join(ROOT, 'tools/HME/tools/HME/scripts/substrate-view.py'), 'actions']);
+  if (args.length === 0) run('python3', [path.join(ROOT, 'tools/HME/scripts/substrate-view.py'), 'actions']);
   hmeCli('evolve', args);
 }
 

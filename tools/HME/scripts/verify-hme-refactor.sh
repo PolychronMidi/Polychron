@@ -29,11 +29,11 @@ run born-from python3 tools/HME/scripts/invariants/check_born_from_migration.py
 run hardcoded-metrics python3 tools/HME/scripts/invariants/check_source_grep_invariant.py no-hardcoded-metrics-path
 run env-os python3 tools/HME/scripts/invariants/check_source_grep_invariant.py hme-py-no-os-environ
 run env-raw python3 tools/HME/scripts/invariants/check_source_grep_invariant.py hme-no-raw-os-environ
-run env-waiver-categories python3 tools/HME/tools/HME/scripts/check-env-ok-categories.py tools/HME
-run unnamed-except python3 tools/HME/tools/HME/scripts/check-unnamed-except.py tools/HME/service/server
-run silent-fallback python3 tools/HME/tools/HME/scripts/check-silent-fallback.py tools/HME/service
-run silent-except python3 tools/HME/tools/HME/scripts/check-silent-except.py tools/HME/service/server
-run silent-source python3 tools/HME/tools/HME/scripts/check-shell-silent-source.py tools/HME/hooks
+run env-waiver-categories python3 tools/HME/scripts/check-env-ok-categories.py tools/HME
+run unnamed-except python3 tools/HME/scripts/check-unnamed-except.py tools/HME/service/server
+run silent-fallback python3 tools/HME/scripts/check-silent-fallback.py tools/HME/service
+run silent-except python3 tools/HME/scripts/check-silent-except.py tools/HME/service/server
+run silent-source python3 tools/HME/scripts/check-shell-silent-source.py tools/HME/hooks
 run py-compile python3 -m py_compile tools/HME/scripts/invariants/*.py tools/HME/service/server/tools_analysis/evolution/evolution_invariants/*.py
 run invariants bash -c 'PYTHONPATH=tools/HME/service python3 - <<"PY" >/tmp/hme-invariants.verify
 from server.tools_analysis.evolution.evolution_invariants import check_invariants

@@ -194,7 +194,7 @@ test('synthetic PreToolUse Bash structured Read always resets even after prior R
     const res = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
       session_id: 's3structured',
-      tool_input: { command: 'node tools/HME/tools/HME/scripts/codex_structured_tool.js read file=doc/templates/AGENTS.md' },
+      tool_input: { command: 'node tools/HME/scripts/codex_structured_tool.js read file=doc/templates/AGENTS.md' },
     });
     assert.strictEqual(res.exit_code, 0);
     assert.doesNotMatch(res.stdout, /unlock loop detected|Raw tool streak/);

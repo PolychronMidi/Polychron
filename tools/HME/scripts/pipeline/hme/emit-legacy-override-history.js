@@ -1,4 +1,4 @@
-// tools/HME/src/scripts/pipeline/emit-legacy-override-history.js
+// tools/HME/tools/HME/scripts/pipeline/hme/emit-legacy-override-history.js
 //
 // Read axisEnergyEquilibrator.perLegacyOverride + perLegacyOverrideEntries
 // from metrics/trace-summary.json and append one row per pipeline run to

@@ -6,7 +6,7 @@
 # the holograph machinery becomes LOAD-BEARING: not just a snapshot, but a
 # diff that surfaces unexpected state changes before the agent stops.
 SESSION_HOLO="$PROJECT_ROOT/tmp/hme-session-start.holograph.json"
-HOLO_SCRIPT="$PROJECT_ROOT/tools/HME/tools/HME/scripts/snapshot-holograph.py"
+HOLO_SCRIPT="$PROJECT_ROOT/tools/HME/scripts/snapshot-holograph.py"
 if [ -f "$SESSION_HOLO" ] && [ -f "$HOLO_SCRIPT" ]; then
   # Run holograph diff with a timeout -- purely informational, never blocks.
   # Output goes to a temp file so we can read it without blocking stop.sh.

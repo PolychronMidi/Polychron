@@ -14,8 +14,8 @@ The goal is to make doc/templates/AGENTS.md adapt to what agents actually read, 
 humans think agents read.
 
 Usage:
-    python3 tools/HME/tools/HME/scripts/memetic-drift.py
-    python3 tools/HME/tools/HME/scripts/memetic-drift.py --suggest-reorder
+    python3 tools/HME/scripts/memetic-drift.py
+    python3 tools/HME/scripts/memetic-drift.py --suggest-reorder
 """
 import json
 import os

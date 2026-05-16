@@ -67,7 +67,7 @@
     },
     {
       "path": "runtime/hme/codex-model-catalog.json",
-      "owner": "tools/HME/tools/HME/scripts/codex_settings.py",
+      "owner": "tools/HME/scripts/codex_settings.py",
       "readers": [
         "Codex CLI",
         "tools/HME/scripts/audit-codex-settings.py"
@@ -151,13 +151,13 @@
     },
     {
       "path": "runtime/hme/team-dashboard.json",
-      "owner": "tools/HME/tools/HME/scripts/team_dashboard.py",
+      "owner": "tools/HME/scripts/team_dashboard.py",
       "readers": [
         "team_agent_router.py",
         "i/status team"
       ],
       "writers": [
-        "tools/HME/tools/HME/scripts/team_dashboard.py"
+        "tools/HME/scripts/team_dashboard.py"
       ],
       "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
       "generated": true,
@@ -167,13 +167,13 @@
     },
     {
       "path": "runtime/hme/agent-jobs/*",
-      "owner": "tools/HME/tools/HME/scripts/agent_jobs.py",
+      "owner": "tools/HME/scripts/agent_jobs.py",
       "readers": [
-        "tools/HME/tools/HME/scripts/codex-agent-job.py",
+        "tools/HME/scripts/codex-agent-job.py",
         "team tools"
       ],
       "writers": [
-        "tools/HME/tools/HME/scripts/agent_jobs.py"
+        "tools/HME/scripts/agent_jobs.py"
       ],
       "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
       "generated": true,
@@ -394,7 +394,7 @@
       "generated": true,
       "committed": true,
       "schema": "JSON object with archives[] records: archived, set_name, archive_path, task_count, done_count, todo_count",
-      "repair": "python3 tools/HME/tools/HME/scripts/todo_repair.py --check"
+      "repair": "python3 tools/HME/scripts/todo_repair.py --check"
     },
     {
       "path": "tools/HME/KB/*.lance",
@@ -419,9 +419,9 @@
       "writers": [
         "tools/HME/service/server/tools_analysis/todo_md_sync.py",
         "tools/HME/service/server/tools_analysis/todo_archive.py",
-        "tools/HME/tools/HME/scripts/todo_autoflip.py",
-        "tools/HME/tools/HME/scripts/todo_repair.py",
-        "tools/HME/tools/HME/scripts/codex_plan_sync.py"
+        "tools/HME/scripts/todo_autoflip.py",
+        "tools/HME/scripts/todo_repair.py",
+        "tools/HME/scripts/codex_plan_sync.py"
       ],
       "owner": "HME todo store",
       "readers": [
@@ -436,14 +436,14 @@
       "generated": true,
       "committed": true,
       "schema": "markdown sections: Now, Next, Done, Later; task lines: - [ ] [E1-E5] text",
-      "repair": "python3 tools/HME/tools/HME/scripts/todo_repair.py"
+      "repair": "python3 tools/HME/scripts/todo_repair.py"
     },
     {
       "path": "tools/HME/KB/todos.json",
       "coordination": "canonical machine todo store; TODO.md is the rendered human surface; native TodoWrite and Codex update_plan converge here; all JSON writes go through todo_store.py",
       "writers": [
         "tools/HME/service/server/tools_analysis/todo_store.py",
-        "tools/HME/tools/HME/scripts/codex_plan_sync.py"
+        "tools/HME/scripts/codex_plan_sync.py"
       ],
       "owner": "HME todo store",
       "readers": [
@@ -451,14 +451,14 @@
         "Codex update_plan sync",
         "tools/HME/service/server/tools_analysis/todo_store.py",
         "tools/HME/service/server/tools_analysis/todo_md_sync.py",
-        "tools/HME/tools/HME/scripts/todo_repair.py",
+        "tools/HME/scripts/todo_repair.py",
         "tools/HME/service/server/tools_analysis/todo_archive.py"
       ],
       "retention": "open items retained; completed items auto-pruned or archived with TODO.md",
       "generated": true,
       "committed": true,
       "schema": "JSON array with id=0 _meta header followed by todo entries",
-      "repair": "python3 tools/HME/tools/HME/scripts/todo_repair.py"
+      "repair": "python3 tools/HME/scripts/todo_repair.py"
     },
     {
       "path": "log/hme-errors.log",

@@ -19,9 +19,9 @@ approves. On approval, entries are copied via the /rag endpoint to the
 global store.
 
 Usage:
-    python3 tools/HME/tools/HME/scripts/promote-global-kb.py               # scan + propose
-    python3 tools/HME/tools/HME/scripts/promote-global-kb.py --approve     # copy to global_kb
-    python3 tools/HME/tools/HME/scripts/promote-global-kb.py --list-global # show global KB
+    python3 tools/HME/scripts/promote-global-kb.py               # scan + propose
+    python3 tools/HME/scripts/promote-global-kb.py --approve     # copy to global_kb
+    python3 tools/HME/scripts/promote-global-kb.py --list-global # show global KB
 """
 import json
 import os

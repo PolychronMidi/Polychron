@@ -87,7 +87,7 @@ exception: it refreshes the read-only conductor snapshot used by cross-layer
 modules.
 
 Bias providers register density, tension, and flicker influences. Bias bounds
-are locked by `scripts/bias-bounds-manifest.json` and checked by the
+are locked by `src/scripts/pipeline/bias-bounds-manifest.json` and checked by the
 hypermeta-jurisdiction validator.
 
 ## Layer Isolation

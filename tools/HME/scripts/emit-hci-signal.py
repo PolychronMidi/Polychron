@@ -34,7 +34,7 @@ That's intentional: H15 puts the pipe in place without changing any existing
 musical behavior. Activation is a conscious future choice.
 
 Usage:
-    python3 tools/HME/tools/HME/scripts/emit-hci-signal.py
+    python3 tools/HME/scripts/emit-hci-signal.py
 """
 import json
 import os

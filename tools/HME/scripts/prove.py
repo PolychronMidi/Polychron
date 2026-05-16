@@ -176,7 +176,7 @@ def main(argv):
             f"usage: prove.py <invariant> <key=val>...\n"
             f"  available invariants: {sorted(INVARIANTS)}\n"
             f"  example: prove.py sole-writer target=couplingMatrix allowed='src/conductor/**'\n"
-            f"  see tools/HME/tools/HME/scripts/prove.py docstring for the full invariant catalog."
+            f"  see tools/HME/scripts/prove.py docstring for the full invariant catalog."
         )
         _die(msg)
     kind = argv[1]

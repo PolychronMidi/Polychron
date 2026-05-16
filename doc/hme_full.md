@@ -243,17 +243,17 @@ Telemetry lands in `output/metrics/detector-stats.jsonl`.
 
 ## HCI And Holograph
 
-[`tools/HME/tools/HME/scripts/verify-coherence.py`](../tools/HME/tools/HME/scripts/verify-coherence.py) scores the HME Coherence Index from
+[`tools/HME/scripts/verify-coherence.py`](../tools/HME/scripts/verify-coherence.py) scores the HME Coherence Index from
 weighted verifiers across documentation, code, state, coverage, runtime,
 topology, and interface contracts.
 
 Useful commands:
 
 ```bash
-python3 tools/HME/tools/HME/scripts/verify-coherence.py
-python3 tools/HME/tools/HME/scripts/verify-coherence.py --json
-python3 tools/HME/tools/HME/scripts/verify-coherence.py --score
-python3 tools/HME/tools/HME/scripts/snapshot-holograph.py
+python3 tools/HME/scripts/verify-coherence.py
+python3 tools/HME/scripts/verify-coherence.py --json
+python3 tools/HME/scripts/verify-coherence.py --score
+python3 tools/HME/scripts/snapshot-holograph.py
 ```
 
 The holograph snapshots HME state for later diffing: HCI, onboarding state,
@@ -322,7 +322,7 @@ Generated metric files are state, not source. Keep them quiet and predictable:
 - Pipeline analyzers may update committed metric snapshots when verification runs.
 - Runtime-only caches stay in `tmp/`, [`runtime/hme/`](../runtime/hme/), or `log/`, never nested `tools/tmp` or `output/metrics`.
 - Migration baselines such as `hardcoded_metrics_baseline.json` must only shrink; new findings fail.
-- Repair stale trace/run-history state with [`tools/HME/tools/HME/scripts/repair-trace-run-history-sync.sh`](../tools/HME/tools/HME/scripts/repair-trace-run-history-sync.sh).
+- Repair stale trace/run-history state with [`tools/HME/scripts/repair-trace-run-history-sync.sh`](../tools/HME/scripts/repair-trace-run-history-sync.sh).
 
 ## State Ownership Registry
 
@@ -336,13 +336,13 @@ command. Update that JSON before adding a shared state writer.
 - Generated state: 31; committed state: 3.
 - Repair commands and reader/writer ownership live in [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json).
 - Multi-writer paths:
-  - [`doc/templates/TODO.md`](templates/TODO.md) -- 5 writer(s): tools/HME/service/server/tools_analysis/todo_md_sync.py, tools/HME/service/server/tools_analysis/todo_archive.py, tools/HME/tools/HME/scripts/todo_autoflip.py (+2 more)
+  - [`doc/templates/TODO.md`](templates/TODO.md) -- 5 writer(s): tools/HME/service/server/tools_analysis/todo_md_sync.py, tools/HME/service/server/tools_analysis/todo_archive.py, tools/HME/scripts/todo_autoflip.py (+2 more)
   - `log/hme-errors.log` -- 28 writer(s): tools/HME/activity/universal_pulse.py, tools/HME/proxy/middleware/20_hme_log_watermark.js, tools/HME/proxy/middleware/19_mcp_fail_scan.js (+25 more)
   - `tmp/hme-errors.lastread` -- 2 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh, tools/HME/hooks/lifecycle/stop/lifesaver.sh
   - `tmp/hme-errors.turnstart` -- 1 writer(s): tools/HME/hooks/lifecycle/userpromptsubmit.sh
   - `tmp/hme-nexus.state` -- 5 writer(s): tools/HME/proxy/middleware/index.js, tools/HME/hooks/posttooluse/posttooluse_hme_review.sh, tools/HME/hooks/lifecycle/stop/nexus_audit.sh (+2 more)
   - `tmp/hme-tab.txt` -- 4 writer(s): tools/HME/hooks/posttooluse/posttooluse_write.sh, tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh, tools/HME/hooks/lifecycle/sessionstart.sh (+1 more)
-  - [`tools/HME/KB/todos.json`](../tools/HME/KB/todos.json) -- 2 writer(s): tools/HME/service/server/tools_analysis/todo_store.py, tools/HME/tools/HME/scripts/codex_plan_sync.py
+  - [`tools/HME/KB/todos.json`](../tools/HME/KB/todos.json) -- 2 writer(s): tools/HME/service/server/tools_analysis/todo_store.py, tools/HME/scripts/codex_plan_sync.py
 <!-- END GENERATED STATE REGISTRY -->
 
 The standard coordination patterns are append-only line writes, atomic rename
@@ -370,7 +370,7 @@ node tools/HME/scripts/hme-hook-test.js
 node tools/HME/hooks/direct_test.js
 node --test tools/HME/tests/specs/pre_write_and_session_state.test.js
 bash tools/HME/tests/scripts/smoke-test-i-wrappers.sh
-bash tools/HME/tools/HME/scripts/chaos/run-all.sh
+bash tools/HME/scripts/chaos/run-all.sh
 ```
 Chaos tests live in [`tools/HME/scripts/chaos/`](../tools/HME/scripts/chaos/) and prove that selftest probes catch the
 faults they were written to detect.

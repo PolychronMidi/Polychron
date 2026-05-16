@@ -162,7 +162,7 @@ test('post_write_side_effects keeps successful side effects model-silent', () =>
     assert.deepStrictEqual(c.emitted, []);
     assert.deepStrictEqual(c.warnings, []);
     assert.strictEqual(calls.length, 1);
-    assert.deepStrictEqual(calls[0], ['python3', ['tools/HME/tools/HME/scripts/todo_autoflip.py']]);
+    assert.deepStrictEqual(calls[0], ['python3', ['tools/HME/scripts/todo_autoflip.py']]);
   } finally {
     childProcess.spawn = originalSpawn;
     clearHmeRequireCache();

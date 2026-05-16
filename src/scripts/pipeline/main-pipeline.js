@@ -65,34 +65,34 @@ const POST_COMPOSITION = [
   { label: 'snapshot-run',                 cmd: 'node src/scripts/pipeline/snapshot-run.js --perceptual' },
   { label: 'train-verdict-predictor',      cmd: 'node src/scripts/pipeline/train-verdict-predictor.js' },
   // -- HME self-coherence steps --
-  { label: 'build-kb-staleness-index',     cmd: 'python3 tools/HME/src/scripts/pipeline/build-kb-staleness-index.py' },
-  { label: 'check-kb-semantic-drift',      cmd: 'python3 tools/HME/src/scripts/pipeline/check-kb-semantic-drift.py' },
-  { label: 'compute-coherence-score',      cmd: 'node tools/HME/src/scripts/pipeline/compute-coherence-score.js' },
+  { label: 'build-kb-staleness-index',     cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/build-kb-staleness-index.py' },
+  { label: 'check-kb-semantic-drift',      cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/check-kb-semantic-drift.py' },
+  { label: 'compute-coherence-score',      cmd: 'node tools/HME/tools/HME/scripts/pipeline/hme/compute-coherence-score.js' },
   { label: 'generate-predictions',         cmd: 'node src/scripts/pipeline/generators/generate-predictions.js' },
-  { label: 'reconcile-predictions',        cmd: 'node tools/HME/src/scripts/pipeline/reconcile-predictions.js' },
-  { label: 'compute-musical-correlation',  cmd: 'node tools/HME/src/scripts/pipeline/compute-musical-correlation.js' },
-  { label: 'compute-compositional-trajectory', cmd: 'node tools/HME/src/scripts/pipeline/compute-compositional-trajectory.js' },
-  { label: 'compute-coherence-budget',     cmd: 'node tools/HME/src/scripts/pipeline/compute-coherence-budget.js' },
-  { label: 'compute-kb-trust-weights',     cmd: 'python3 tools/HME/src/scripts/pipeline/compute-kb-trust-weights.py' },
-  { label: 'compute-intention-gap',        cmd: 'node tools/HME/src/scripts/pipeline/compute-intention-gap.js' },
-  { label: 'derive-constitution',          cmd: 'python3 tools/HME/src/scripts/pipeline/derive-constitution.py' },
-  { label: 'detect-doc-drift',             cmd: 'python3 tools/HME/src/scripts/pipeline/detect-doc-drift.py' },
-  { label: 'extract-generalizations',      cmd: 'python3 tools/HME/src/scripts/pipeline/extract-generalizations.py' },
-  { label: 'compute-evolution-priority',   cmd: 'node tools/HME/src/scripts/pipeline/compute-evolution-priority.js' },
-  { label: 'emit-legacy-override-history', cmd: 'node tools/HME/src/scripts/pipeline/emit-legacy-override-history.js' },
-  { label: 'compute-consensus',            cmd: 'node tools/HME/src/scripts/pipeline/compute-consensus.js' },
-  { label: 'compute-invariant-efficacy',   cmd: 'python3 tools/HME/src/scripts/pipeline/compute-invariant-efficacy.py' },
-  { label: 'compute-legendary-drift',      cmd: 'python3 tools/HME/src/scripts/pipeline/compute-legendary-drift.py' },
-  { label: 'match-patterns',               cmd: 'python3 tools/HME/src/scripts/pipeline/match-patterns.py' },
-  { label: 'emit-arc-timeseries',          cmd: 'python3 tools/HME/src/scripts/pipeline/emit-arc-timeseries.py' },
-  { label: 'compute-blindspots',           cmd: 'python3 tools/HME/src/scripts/pipeline/compute-blindspots.py' },
-  { label: 'propose-next-actions',         cmd: 'python3 tools/HME/src/scripts/pipeline/propose-next-actions.py' },
-  { label: 'adapt-from-activity',          cmd: 'python3 tools/HME/tools/HME/scripts/adapt-from-activity.py' },
-  { label: 'verify-coherence-registry',    cmd: 'python3 tools/HME/tools/HME/scripts/verify-coherence-registry.py' },
-  { label: 'auto-investigate',             cmd: 'python3 tools/HME/src/scripts/pipeline/auto-investigate.py' },
+  { label: 'reconcile-predictions',        cmd: 'node tools/HME/tools/HME/scripts/pipeline/hme/reconcile-predictions.js' },
+  { label: 'compute-musical-correlation',  cmd: 'node tools/HME/tools/HME/scripts/pipeline/hme/compute-musical-correlation.js' },
+  { label: 'compute-compositional-trajectory', cmd: 'node tools/HME/tools/HME/scripts/pipeline/hme/compute-compositional-trajectory.js' },
+  { label: 'compute-coherence-budget',     cmd: 'node tools/HME/tools/HME/scripts/pipeline/hme/compute-coherence-budget.js' },
+  { label: 'compute-kb-trust-weights',     cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/compute-kb-trust-weights.py' },
+  { label: 'compute-intention-gap',        cmd: 'node tools/HME/tools/HME/scripts/pipeline/hme/compute-intention-gap.js' },
+  { label: 'derive-constitution',          cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/derive-constitution.py' },
+  { label: 'detect-doc-drift',             cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/detect-doc-drift.py' },
+  { label: 'extract-generalizations',      cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/extract-generalizations.py' },
+  { label: 'compute-evolution-priority',   cmd: 'node tools/HME/tools/HME/scripts/pipeline/hme/compute-evolution-priority.js' },
+  { label: 'emit-legacy-override-history', cmd: 'node tools/HME/tools/HME/scripts/pipeline/hme/emit-legacy-override-history.js' },
+  { label: 'compute-consensus',            cmd: 'node tools/HME/tools/HME/scripts/pipeline/hme/compute-consensus.js' },
+  { label: 'compute-invariant-efficacy',   cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/compute-invariant-efficacy.py' },
+  { label: 'compute-legendary-drift',      cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/compute-legendary-drift.py' },
+  { label: 'match-patterns',               cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/match-patterns.py' },
+  { label: 'emit-arc-timeseries',          cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/emit-arc-timeseries.py' },
+  { label: 'compute-blindspots',           cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/compute-blindspots.py' },
+  { label: 'propose-next-actions',         cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/propose-next-actions.py' },
+  { label: 'adapt-from-activity',          cmd: 'python3 tools/HME/scripts/adapt-from-activity.py' },
+  { label: 'verify-coherence-registry',    cmd: 'python3 tools/HME/scripts/verify-coherence-registry.py' },
+  { label: 'auto-investigate',             cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/auto-investigate.py' },
   { label: 'antagonism-registry-auto-append', cmd: 'python3 tools/HME/scripts/check-antagonism-registry.py --auto-append' },
   { label: 'compact-lance-tables',          cmd: 'python3 tools/HME/scripts/compact-lance-tables.py' },
-  { label: 'archive-activity',             cmd: 'python3 tools/HME/src/scripts/pipeline/archive-activity.py' },
+  { label: 'archive-activity',             cmd: 'python3 tools/HME/tools/HME/scripts/pipeline/hme/archive-activity.py' },
 ];
 
 // runner
@@ -493,7 +493,7 @@ function main() {
   }
   // Invariant battery runs the declarative checks in config/invariants/*.json via invariants.json and
   // writes to metrics/hme-invariant-history.json so chronic streaks clear every
-  // round. Lives under tools/HME/src/scripts/pipeline/ (not HME scripts/) so it spawns
+  // round. Lives under tools/HME/scripts/pipeline/hme/ (not HME scripts/) so it spawns
   // separately from the hmeScripts loop above.
   _spawnBg(
     path.join(__dirname, 'hme', 'run-invariant-battery.py'),

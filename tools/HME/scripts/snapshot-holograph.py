@@ -15,10 +15,10 @@ in snapshot_holograph_diff.py.
 Output: holograph-YYYYMMDD-HHMMSS.json in metrics/holograph/
 
 Usage:
-    python3 tools/HME/tools/HME/scripts/snapshot-holograph.py            # write file
-    python3 tools/HME/tools/HME/scripts/snapshot-holograph.py --stdout   # print JSON
-    python3 tools/HME/tools/HME/scripts/snapshot-holograph.py --diff PATH  # diff vs prior
-    python3 tools/HME/tools/HME/scripts/snapshot-holograph.py --replay PATH  # replay prior
+    python3 tools/HME/scripts/snapshot-holograph.py            # write file
+    python3 tools/HME/scripts/snapshot-holograph.py --stdout   # print JSON
+    python3 tools/HME/scripts/snapshot-holograph.py --diff PATH  # diff vs prior
+    python3 tools/HME/scripts/snapshot-holograph.py --replay PATH  # replay prior
 """
 import json
 import os

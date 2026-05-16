@@ -39,7 +39,7 @@
       "max_delta_seconds": 300,
       "severity": "warning",
       "warning_kind": "stale-data",
-      "repair_command": "tools/HME/tools/HME/scripts/repair-trace-run-history-sync.sh",
+      "repair_command": "tools/HME/scripts/repair-trace-run-history-sync.sh",
       "context": "Run-history and trace snapshots must be freshness-aligned. Repair regenerates trace-summary and a current run snapshot from METRICS_DIR."
     },
     {
@@ -62,7 +62,7 @@
       "id": "meta-coherence-audit-exists",
       "description": "Meta-coherence audit script (the detector-of-detectors) must exist so the HME diagnostic layer is continuously self-validated",
       "type": "file_exists",
-      "path": "tools/HME/tools/HME/scripts/meta_coherence_audit.py",
+      "path": "tools/HME/scripts/meta_coherence_audit.py",
       "severity": "error"
     },
     {
@@ -84,14 +84,14 @@
       "id": "coherence-score-exists",
       "description": "Phase 2.3  round coherence score computer must exist",
       "type": "file_exists",
-      "path": "tools/HME/src/scripts/pipeline/compute-coherence-score.js",
+      "path": "tools/HME/tools/HME/scripts/pipeline/hme/compute-coherence-score.js",
       "severity": "error"
     },
     {
       "id": "exploration-bonus-in-coherence-score",
       "description": "compute-coherence-score.js must include an exploration_bonus term from productive_incoherence events",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/src/scripts/pipeline/compute-coherence-score.js",
+      "path": "tools/HME/tools/HME/scripts/pipeline/hme/compute-coherence-score.js",
       "patterns": [
         "productive_incoherence",
         "explorationBonus"
@@ -102,7 +102,7 @@
       "id": "prediction-reconciler-exists",
       "description": "Phase 3.4  prediction reconciler must exist",
       "type": "file_exists",
-      "path": "tools/HME/src/scripts/pipeline/reconcile-predictions.js",
+      "path": "tools/HME/tools/HME/scripts/pipeline/hme/reconcile-predictions.js",
       "severity": "error"
     },
     {
@@ -411,7 +411,7 @@
       "id": "coherence-budget-script-exists",
       "description": "Phase 5.2  coherence budget script must exist (homeostatic governance vs. maximization)",
       "type": "file_exists",
-      "path": "tools/HME/src/scripts/pipeline/compute-coherence-budget.js",
+      "path": "tools/HME/tools/HME/scripts/pipeline/hme/compute-coherence-budget.js",
       "severity": "error"
     },
     {

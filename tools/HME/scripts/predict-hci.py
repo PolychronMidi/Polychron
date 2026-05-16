@@ -25,8 +25,8 @@ Output schema:
     }
 
 Usage:
-    python3 tools/HME/tools/HME/scripts/predict-hci.py
-    python3 tools/HME/tools/HME/scripts/predict-hci.py --summary
+    python3 tools/HME/scripts/predict-hci.py
+    python3 tools/HME/scripts/predict-hci.py --summary
 """
 import glob
 import json

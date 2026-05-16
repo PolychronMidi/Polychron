@@ -28,7 +28,7 @@ deepwiki.config.json
 /tools/HME/service/*.db
 /config/policies.local.json
 /src/scripts/pipeline/log/
-/tools/HME/src/scripts/pipeline/log/
+/tools/HME/scripts/pipeline/hme/log/
 /tools/HME/warm-context-cache/*.json
 /tools/models
 /tools/bin

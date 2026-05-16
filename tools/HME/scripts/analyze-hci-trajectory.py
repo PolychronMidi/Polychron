@@ -48,9 +48,9 @@ Runs as a pipeline step and from verify-coherence (optional). Wired into
 sessionstart.sh to surface recent drift in the orientation banner.
 
 Usage:
-    python3 tools/HME/tools/HME/scripts/analyze-hci-trajectory.py           # write file
-    python3 tools/HME/tools/HME/scripts/analyze-hci-trajectory.py --stdout  # print JSON
-    python3 tools/HME/tools/HME/scripts/analyze-hci-trajectory.py --summary # human text
+    python3 tools/HME/scripts/analyze-hci-trajectory.py           # write file
+    python3 tools/HME/scripts/analyze-hci-trajectory.py --stdout  # print JSON
+    python3 tools/HME/scripts/analyze-hci-trajectory.py --summary # human text
 """
 import glob
 import json

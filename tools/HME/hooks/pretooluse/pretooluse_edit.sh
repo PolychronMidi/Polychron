@@ -8,7 +8,7 @@ if [ -n "$_DECISION" ]; then
   printf '%s\n' "$_DECISION"
   case "$_DECISION" in *'"permissionDecision":"deny"'*|*'"permissionDecision":"ask"'*) exit 0;; esac
 fi
-[ -x "${PROJECT_ROOT}/tools/HME/tools/HME/scripts/vow_bounded_reads.py" ] && PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
+[ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
 _STREAK_BEFORE=$(_streak_score)
 _streak_reset
 if [ "$_STREAK_BEFORE" -gt 0 ] 2>/dev/null; then _signal_emit raw_streak_reset pretooluse_edit session "{\"score_before\":${_STREAK_BEFORE}}"; fi

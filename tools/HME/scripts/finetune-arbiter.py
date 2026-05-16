@@ -30,9 +30,9 @@ Prerequisites for real training:
   Base model: Qwen/Qwen2.5-4B-Instruct or compatible
 
 Usage:
-    python3 tools/HME/tools/HME/scripts/finetune-arbiter.py --export   # write corpus
-    python3 tools/HME/tools/HME/scripts/finetune-arbiter.py --config   # write training config
-    python3 tools/HME/tools/HME/scripts/finetune-arbiter.py --plan     # show training plan
+    python3 tools/HME/scripts/finetune-arbiter.py --export   # write corpus
+    python3 tools/HME/scripts/finetune-arbiter.py --config   # write training config
+    python3 tools/HME/scripts/finetune-arbiter.py --plan     # show training plan
 """
 import json
 import os
@@ -192,8 +192,8 @@ def show_plan() -> int:
     print("  - Base model: Qwen/Qwen2.5-4B-Instruct (or compatible 4B/7B)")
     print()
     print("## Steps")
-    print("  1. Export corpus:     python3 tools/HME/tools/HME/scripts/finetune-arbiter.py --export")
-    print("  2. Write config:      python3 tools/HME/tools/HME/scripts/finetune-arbiter.py --config")
+    print("  1. Export corpus:     python3 tools/HME/scripts/finetune-arbiter.py --export")
+    print("  2. Write config:      python3 tools/HME/scripts/finetune-arbiter.py --config")
     print("  3. Train (3 epochs):  accelerate launch -m axolotl.cli.train \\")
     print(f"                          {os.path.relpath(_CONFIG, _PROJECT)}")
     print("  4. Merge adapter:     python3 -m unsloth.save_gguf ./lora-out-hme-arbiter \\")

@@ -16,7 +16,7 @@
 //   Changing a module's registered bias range is the #1 whack-a-mole anti-pattern:
 //   it widens the module's system-level influence instead of fixing the
 //   controller chain that manages overall balance. Pipeline FAILS on any mismatch.
-//   Manifest: scripts/bias-bounds-manifest.json
+//   Manifest: src/scripts/pipeline/bias-bounds-manifest.json
 //   Update: node src/scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds
 //
 // Phase 4: Controller-jurisdiction constant lock. Verifies specific module
@@ -279,7 +279,7 @@ function snapshotBiasManifest() {
     registrations: manifest
   };
   fs.writeFileSync(BIAS_MANIFEST_PATH, JSON.stringify(data, null, 2), 'utf8');
-  console.log('check-hypermeta-jurisdiction: bias manifest snapshotted (' + regs.length + ' registrations) -> scripts/bias-bounds-manifest.json');
+  console.log('check-hypermeta-jurisdiction: bias manifest snapshotted (' + regs.length + ' registrations) -> src/scripts/pipeline/bias-bounds-manifest.json');
   return data;
 }
 

@@ -84,8 +84,8 @@ run "test-regime-core"           node src/tests/regimeReactiveDampingCore.test.j
 run "test-hme-hook-dispatch"     node tools/HME/scripts/hme-hook-test.js
 run "smoke-c2m-help"             python3 src/scripts/c2m.py --help
 run "smoke-m2c-help"             python3 src/scripts/m2c.py --help
-run "smoke-hme-timeline"         python3 tools/HME/tools/HME/scripts/timeline-panel.py window=0s
-run "smoke-hme-freeze"           python3 tools/HME/tools/HME/scripts/freeze-check.py
+run "smoke-hme-timeline"         python3 tools/HME/scripts/timeline-panel.py window=0s
+run "smoke-hme-freeze"           python3 tools/HME/scripts/freeze-check.py
 run "check-verdict-predictor"    node src/scripts/pipeline/train-verdict-predictor.js --check
 run "check-lance-compaction"     python3 tools/HME/scripts/compact-lance-tables.py --dry-run
 
@@ -110,13 +110,13 @@ run "test-scope-vs-shipped"      python3 tools/HME/scripts/detectors/test_scope_
 run "verify-detector-registry"   python3 tools/HME/scripts/detectors/verify_registry_consistency.py
 
 # Review-verdict producer/hook contract.
-run "test-hook-contracts"        python3 tools/HME/tools/HME/scripts/test-hook-contracts.py
+run "test-hook-contracts"        python3 tools/HME/scripts/test-hook-contracts.py
 
 # Root scripts/ run/reference recency: catches stale pipeline refs and cold deletion candidates.
 run "audit-scripts-recency"      python3 tools/HME/scripts/audit-scripts-recency.py --limit 25 $([ "$STRICT" = "1" ] && echo --strict)
 
 # HME scripts dead-code classification.
-run "audit-dead-scripts"         python3 tools/HME/tools/HME/scripts/audit-dead-scripts.py
+run "audit-dead-scripts"         python3 tools/HME/scripts/audit-dead-scripts.py
 
 
 if [ "$failures" -gt 0 ]; then

@@ -148,7 +148,7 @@ for i, tok in enumerate(tokens):
         if tool in tools:
             norm = f"i/{tool}"
             start = i + 2
-    elif base == "codex_structured_tool.js" or tok.endswith("tools/HME/tools/HME/scripts/codex_structured_tool.js"):
+    elif base == "codex_structured_tool.js" or tok.endswith("tools/HME/scripts/codex_structured_tool.js"):
         action = tokens[i + 1] if i + 1 < len(tokens) else ""
         if action in {"read", "edit"}:
             norm = f"codex/{action}"

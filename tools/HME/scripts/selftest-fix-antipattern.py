@@ -10,7 +10,7 @@ This is NOT part of hme_admin(action='selftest') because one synthesis call
 costs 30-60s and would push total selftest time past reasonable bounds.
 Run from the command line when a full synthesis-path verification is needed:
 
-    python3 tools/HME/tools/HME/scripts/selftest-fix-antipattern.py
+    python3 tools/HME/scripts/selftest-fix-antipattern.py
 
 Exit 0 on success, 1 on any failure.
 """

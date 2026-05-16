@@ -113,9 +113,9 @@ if echo "$CMD" | grep -q 'npm run main'; then
           _onb_advance_to verified
         fi
         # Auto-suggest a KB entry: write a draft to tmp/ that the agent
-        if [ -x "$PROJECT/tools/HME/tools/HME/scripts/draft-learn.py" ]; then
+        if [ -x "$PROJECT/tools/HME/scripts/draft-learn.py" ]; then
           DRAFT_PATH="$PROJECT/tmp/hme-learn-draft.json"
-          PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/tools/HME/scripts/draft-learn.py" \
+          PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/scripts/draft-learn.py" \
             --verdict="$VERDICT" --session="$SESSION_ID" --out="$DRAFT_PATH" \
             >/dev/null 2>&1 && \
             echo "[hme-learn] $VERDICT verdict -- KB draft written to tmp/hme-learn-draft.json. Accept with: i/learn action=add accept_draft=true" >&2

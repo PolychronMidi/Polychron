@@ -29,7 +29,7 @@
       "id": "hme-py-no-fallback-infra-imports",
       "description": "HME Python files must not wrap `from hme_env import ENV` (or other infrastructure imports) in try/except fallback.",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/tools/HME/scripts/check-no-fallback-infra-imports.py tools/HME/service",
+      "shell": "python3 tools/HME/scripts/check-no-fallback-infra-imports.py tools/HME/service",
       "severity": "error",
       "finding_label": "finding",
       "success_detail": "no findings",

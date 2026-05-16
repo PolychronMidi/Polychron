@@ -39,9 +39,9 @@ this stream.
 
 Usage (most fields auto-derived from existing project state):
 
-    python3 tools/HME/tools/HME/scripts/reflect_turn.py --turn-id $SESSION_ID
-    python3 tools/HME/tools/HME/scripts/reflect_turn.py --json --dry-run
-    python3 tools/HME/tools/HME/scripts/reflect_turn.py \
+    python3 tools/HME/scripts/reflect_turn.py --turn-id $SESSION_ID
+    python3 tools/HME/scripts/reflect_turn.py --json --dry-run
+    python3 tools/HME/scripts/reflect_turn.py \
         --tier E3 --isa-path tmp/isa/foo/ISA.md
 """
 from __future__ import annotations

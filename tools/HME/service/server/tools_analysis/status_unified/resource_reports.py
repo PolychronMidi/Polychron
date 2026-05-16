@@ -187,7 +187,7 @@ def _budget_report() -> str:
         return (
             "# Coherence Budget\n\n"
             "output/metrics/hme-coherence-budget.json not found.\n"
-            "Run: node src/scripts/pipeline/compute-coherence-budget.js"
+            "Run: node tools/HME/tools/HME/scripts/pipeline/hme/compute-coherence-budget.js"
         )
     try:
         with open(path, encoding="utf-8") as f:

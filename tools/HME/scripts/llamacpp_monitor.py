@@ -12,7 +12,7 @@ HME architecture: each model owns its GPU end-to-end. Partial offload is a
 critical failure -- never a graceful degradation. This monitor verifies the
 invariant every tick.
 
-Run: python3 tools/HME/tools/HME/scripts/llamacpp_monitor.py [--interval 60] [--once]
+Run: python3 tools/HME/scripts/llamacpp_monitor.py [--interval 60] [--once]
 """
 import json
 import os

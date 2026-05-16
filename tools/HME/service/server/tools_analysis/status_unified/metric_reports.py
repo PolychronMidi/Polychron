@@ -19,7 +19,7 @@ def _staleness_report() -> str:
         return (
             "# KB Staleness Index\n\n"
             "output/metrics/kb-staleness.json not found.\n"
-            "Run: python3 src/scripts/pipeline/build-kb-staleness-index.py"
+            "Run: python3 tools/HME/tools/HME/scripts/pipeline/hme/build-kb-staleness-index.py"
         )
     try:
         with open(path, encoding="utf-8") as f:
@@ -75,7 +75,7 @@ def _coherence_report() -> str:
         return (
             "# Round Coherence Score\n\n"
             "output/metrics/hme-coherence.json not found.\n"
-            "Run: node src/scripts/pipeline/compute-coherence-score.js"
+            "Run: node tools/HME/tools/HME/scripts/pipeline/hme/compute-coherence-score.js"
         )
     try:
         with open(path, encoding="utf-8") as f:

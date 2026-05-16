@@ -22,8 +22,8 @@ Output: tools/models/training/hme-learned-stopwords.json with schema:
     }
 
 Usage:
-    python3 tools/HME/tools/HME/scripts/learn-stopwords.py
-    python3 tools/HME/tools/HME/scripts/learn-stopwords.py --apply  # edit agent_local.py
+    python3 tools/HME/scripts/learn-stopwords.py
+    python3 tools/HME/scripts/learn-stopwords.py --apply  # edit agent_local.py
 """
 import json
 import os

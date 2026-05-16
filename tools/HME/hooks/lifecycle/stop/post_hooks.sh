@@ -13,7 +13,7 @@ PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/streak_calibrator.p
   > /dev/null 2>&1 &
 
 # reflection bridge: quiet per-turn metrics line
-_REFLECT_TURN="$PROJECT/tools/HME/tools/HME/scripts/reflect_turn.py"
+_REFLECT_TURN="$PROJECT/tools/HME/scripts/reflect_turn.py"
 if [ -f "$_REFLECT_TURN" ]; then
   PROJECT_ROOT="$PROJECT" SESSION_ID="$_SESSION_ID_FOR_ACTIVITY" \
     python3 "$_REFLECT_TURN" --turn-id "$_SESSION_ID_FOR_ACTIVITY" --no-audit-panel \
@@ -31,7 +31,7 @@ if [ -n "$_EDIT_FILES" ]; then
 fi
 
 # ingest "what's next" from SUMMARY blocks into HME todo system
-_INGESTOR="$PROJECT/tools/HME/tools/HME/scripts/ingest_summary_todos.py"
+_INGESTOR="$PROJECT/tools/HME/scripts/ingest_summary_todos.py"
 if [ -f "$_INGESTOR" ]; then
   _TSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')
   [ -n "$_TSCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$_INGESTOR" "$_TSCRIPT" >/dev/null 2>&1 || true

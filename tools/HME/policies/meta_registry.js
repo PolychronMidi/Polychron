@@ -9,7 +9,7 @@
  *   - hook        -- tools/HME/policies/builtin/*.js (already unified, registry)
  *   - eslint      -- src/scripts/eslint-rules/*.js
  *   - hci         -- tools/HME/scripts/verify_coherence/*.py (verifier classes)
- *   - hypermeta   -- scripts/bias-bounds-manifest.json + check-hypermeta-jurisdiction.js
+ *   - hypermeta   -- src/scripts/pipeline/bias-bounds-manifest.json + check-hypermeta-jurisdiction.js
  *   - audit       -- tools/HME/scripts/audit-*.py
  *   - boot        -- src/play/fullBootstrap.js (advisory + critical globals)
  *   - middleware  -- tools/HME/proxy/middleware/*.js

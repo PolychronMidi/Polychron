@@ -21,9 +21,9 @@ SOURCE_SKIP_PREFIXES = ("log/", "output/", "runtime/", "tmp/", "tools/models/")
 RUN_SUFFIXES = {".py", ".js", ".sh"}
 
 COLD_CLASSIFICATIONS = {
-    "tools/HME/tools/HME/scripts/codex-agent-job.py": "manual Codex filesystem job launcher",
-    "tools/HME/tools/HME/scripts/timeline-panel.py": "i/status timeline panel",
-    "tools/HME/tools/HME/scripts/freeze-check.py": "i/why mode=freeze panel",
+    "tools/HME/scripts/codex-agent-job.py": "manual Codex filesystem job launcher",
+    "tools/HME/scripts/timeline-panel.py": "i/status timeline panel",
+    "tools/HME/scripts/freeze-check.py": "i/why mode=freeze panel",
     "tools/HME/scripts/probe-omniroute-max-reasoning.py": "provider-manifest OmniRoute check",
     "tools/HME/scripts/sync-omniroute-model-limits.py": "doctor/admin OmniRoute sync",
     "tools/HME/scripts/configure-omniroute-max-reasoning.py": "OmniRoute startup/admin config",
@@ -31,7 +31,7 @@ COLD_CLASSIFICATIONS = {
     "tools/HME/scripts/compact-lance-tables.py": "pipeline/lifecycle LanceDB maintenance",
     "tools/HME/scripts/sync-claude-settings.py": "Claude settings sync admin check",
     "src/scripts/pipeline/train-verdict-predictor.js": "post-composition trainer; audit --check",
-    "tools/HME/src/scripts/pipeline/utils.js": "shared HME pipeline helper module",
+    "tools/HME/tools/HME/scripts/pipeline/hme/utils.js": "shared HME pipeline helper module",
     "tools/HME/scripts/audit_shell_undefined_audit.py": "audit helper module",
     "tools/HME/scripts/report-src-loc.js": "LOC audit helper",
     "tools/HME/scripts/loc_ignore.py": "LOC audit helper",
@@ -118,7 +118,7 @@ def _local_import_count(target: Path, source: Path, body: str) -> int:
 
 def _basename_reference_count(target: Path, body: str) -> int:
     rel = str(target.relative_to(ROOT))
-    if rel.startswith(("tools/HME/scripts/", "tools/HME/scripts/chaos/")) or rel == "tools/HME/src/scripts/pipeline/run-invariant-battery.py":
+    if rel.startswith(("tools/HME/scripts/", "tools/HME/scripts/chaos/")) or rel == "tools/HME/tools/HME/scripts/pipeline/hme/run-invariant-battery.py":
         return body.count(target.name)
     return 0
 
@@ -128,7 +128,7 @@ def _classification_for(rel: str, samples: list[str]) -> str:
         return COLD_CLASSIFICATIONS[rel]
     if "tools/HME/scripts/audit-all.sh" in samples:
         return "audit-all check"
-    if "tools/HME/tools/HME/scripts/chaos/run-all.sh" in samples:
+    if "tools/HME/scripts/chaos/run-all.sh" in samples:
         return "chaos battery"
     if "src/scripts/pipeline/main-pipeline.js" in samples:
         return "main pipeline"

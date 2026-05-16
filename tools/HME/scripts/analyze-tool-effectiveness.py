@@ -24,9 +24,9 @@ tools that actually fire.
 This is the empirical layer: not what SHOULD be effective, but what IS.
 
 Usage:
-    python3 tools/HME/tools/HME/scripts/analyze-tool-effectiveness.py
-    python3 tools/HME/tools/HME/scripts/analyze-tool-effectiveness.py --stdout
-    python3 tools/HME/tools/HME/scripts/analyze-tool-effectiveness.py --summary
+    python3 tools/HME/scripts/analyze-tool-effectiveness.py
+    python3 tools/HME/scripts/analyze-tool-effectiveness.py --stdout
+    python3 tools/HME/scripts/analyze-tool-effectiveness.py --summary
 """
 import json
 import os

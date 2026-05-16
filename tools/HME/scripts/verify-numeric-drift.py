@@ -20,8 +20,8 @@ Exit codes:
     2 - unexpected error
 
 Usage:
-    python3 tools/HME/tools/HME/scripts/verify-numeric-drift.py
-    python3 tools/HME/tools/HME/scripts/verify-numeric-drift.py --json
+    python3 tools/HME/scripts/verify-numeric-drift.py
+    python3 tools/HME/scripts/verify-numeric-drift.py --json
 """
 import json
 import os
