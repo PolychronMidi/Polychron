@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 import urllib.request
 from pathlib import Path
 from typing import Any
+
+from hme_env import ENV
 
 
 def _scripts_dir(root: Path) -> Path:
@@ -23,7 +24,7 @@ def _with_scripts(root: Path) -> None:
 def _service_url(root: Path, service_id: str) -> str:
     _with_scripts(root)
     from service_registry import service, service_url  # noqa: WPS433
-    return service_url(service(service_id, root), os.environ)
+    return service_url(service(service_id, root))
 
 
 def _http_json(url: str, timeout: float = 2.0) -> tuple[dict[str, Any] | None, str]:
@@ -62,7 +63,7 @@ def route_snapshot(root: Path) -> dict[str, Any]:
     recent = recent_requests(limit=5, model_contains="codex/")
     advisories = recent_injection_advisories(root)
     return {
-        "overdrive_mode": os.environ.get("OVERDRIVE_MODE", ""),
+        "overdrive_mode": ENV.optional("OVERDRIVE_MODE", ""),
         "proxy": proxy, "proxy_error": proxy_err,
         "codex_proxy": codex, "codex_proxy_error": codex_err,
         "omniroute": omniroute,
