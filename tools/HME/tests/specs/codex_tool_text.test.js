@@ -4,7 +4,6 @@ const { normalizeStructuredBridgeCalls, bridgeCommand } = require('../../proxy/c
 const { applyRequestTransform } = require('../../proxy/codex_payload');
 
 const CMD = 'node tools/HME/scripts/codex_structured_tool.js read file=doc/self-coherence.md limit=12';
-const REDACTED = '<display-redacted: original was sent; do not reuse>';
 
 test('normalizes internal bridge function_call into native-looking Read call', () => {
   const input = { type: 'function_call', name: 'functions.exec_command', arguments: JSON.stringify({ cmd: CMD }) };
@@ -37,7 +36,7 @@ test('Codex request transform hides bridge script calls before upstream', () => 
   assert.doesNotMatch(JSON.stringify(result.body), /codex_structured_tool/);
 });
 
-test('edit bridge display is redacted and not reusable as arguments', () => {
+test('normalizes edit bridge display without reusable replacement strings', () => {
   const cmd = [
     "node tools/HME/scripts/codex_structured_tool.js edit --json <<'HME_CODEX_JSON'",
     '{"file_path":"src/x.js","old_string":"secret old","new_string":"secret new"}',
@@ -45,7 +44,11 @@ test('edit bridge display is redacted and not reusable as arguments', () => {
   ].join('\n');
   const bridge = bridgeCommand(cmd);
   assert.strictEqual(bridge.tool, 'Edit');
-  assert.deepStrictEqual(bridge.input, { file_path: 'src/x.js', old_string: REDACTED, new_string: REDACTED });
+  assert.deepStrictEqual(bridge.input, {
+    file_path: 'src/x.js',
+    old_string: '<display-redacted: original was sent; do not reuse>',
+    new_string: '<display-redacted: original was sent; do not reuse>',
+  });
   const out = normalizeStructuredBridgeCalls({ text: cmd });
   assert.match(out.body.text, /Edit\(\{"file_path":"src\/x.js"/);
   assert.doesNotMatch(out.body.text, /secret old|secret new|<omitted by proxy>/);
