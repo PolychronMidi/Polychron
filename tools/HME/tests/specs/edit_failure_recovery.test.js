@@ -87,3 +87,36 @@ test('structured edit treats already-applied replacement as safe success', () =>
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('edit failure middleware removes stale verify-landed marker and appends current context', () => {
+  const root = sandbox('hme-edit-failure-mw-');
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'alpha\nbeta current\ngamma\n');
+  fs.mkdirSync(path.join(root, 'tmp'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tmp', 'hme-turn-edits.txt'), 'target\n');
+  const mw = require('../../proxy/middleware/29_edit_failure_context');
+  const toolResult = { content: 'Error: old_string not found', is_error: true };
+  const events = [];
+  const warnings = [];
+  const ctx = {
+    PROJECT_ROOT: root,
+    appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
+    markDirty() {},
+    warn(message) { warnings.push(message); },
+    emit(row) { events.push(row); },
+  };
+  try {
+    mw.onToolResult({
+      toolUse: { name: 'Edit', input: { file_path: file, old_string: 'missing', new_string: 'beta current' } },
+      toolResult,
+      ctx,
+    });
+    assert.match(toolResult.content, /\[READ current context src\/target\.js:/);
+    assert.match(toolResult.content, /beta current/);
+    assert.equal(fs.existsSync(path.join(root, 'tmp', 'hme-turn-edits.txt')), false);
+    assert.equal(events[0].event, 'edit_failure_context_appended');
+    assert.deepEqual(warnings, []);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
