@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3472,
-      "updated_ts": 1778964599.0504162,
-      "codex_plan_synced_ts": 1778964599.0503225,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T20:49:32.989Z"
+      "max_id": 3476,
+      "updated_ts": 1778964692.0736384,
+      "codex_plan_synced_ts": 1778964692.0735466,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-16T20:51:31.609Z"
     }
   },
   {
@@ -6926,8 +6926,8 @@
     "id": 3469,
     "text": "Locate current root ts_api_*.jsonl files and active writers",
     "activeForm": "Locate current root ts_api_*.jsonl files and active writers",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6936,14 +6936,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T20:49:32.989Z"
+    "codex_plan_ts": "2026-05-16T20:49:32.989Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3470,
     "text": "Patch every writer still targeting PROJECT_ROOT",
     "activeForm": "Patch every writer still targeting PROJECT_ROOT",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6952,14 +6953,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T20:49:32.989Z"
+    "codex_plan_ts": "2026-05-16T20:49:32.989Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3471,
     "text": "Delete leaked root artifacts after confirming they are temp files",
     "activeForm": "Delete leaked root artifacts after confirming they are temp files",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6968,14 +6970,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T20:49:32.989Z"
+    "codex_plan_ts": "2026-05-16T20:49:32.989Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3472,
     "text": "Run regression checks that fail on root JSONL leaks",
     "activeForm": "Run regression checks that fail on root JSONL leaks",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6984,6 +6987,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T20:49:32.989Z"
+    "codex_plan_ts": "2026-05-16T20:49:32.989Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3473,
+    "text": "Inspect root ts_api entries including symlinks",
+    "activeForm": "Inspect root ts_api entries including symlinks",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778964692.0727105,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T20:51:31.609Z"
+  },
+  {
+    "id": 3474,
+    "text": "Trace which code creates root symlinks/files",
+    "activeForm": "Trace which code creates root symlinks/files",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778964692.0727158,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T20:51:31.609Z"
+  },
+  {
+    "id": 3475,
+    "text": "Patch writer/guard to block any root ts_api entry type",
+    "activeForm": "Patch writer/guard to block any root ts_api entry type",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778964692.0727205,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T20:51:31.609Z"
+  },
+  {
+    "id": 3476,
+    "text": "Clean generated root spam and verify",
+    "activeForm": "Clean generated root spam and verify",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778964692.0727246,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-16T20:51:31.609Z"
   }
 ]

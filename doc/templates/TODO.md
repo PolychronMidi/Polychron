@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Locate current root ts_api_*.jsonl files and active writers
+- [ ] [E3] Inspect root ts_api entries including symlinks
 
 ## Next
 
-- [ ] [E3] Patch every writer still targeting PROJECT_ROOT
-- [ ] [E3] Delete leaked root artifacts after confirming they are temp files
-- [ ] [E3] Run regression checks that fail on root JSONL leaks
+- [ ] [E3] Trace which code creates root symlinks/files
+- [ ] [E3] Patch writer/guard to block any root ts_api entry type
+- [ ] [E3] Clean generated root spam and verify
 
 ## Done
 
