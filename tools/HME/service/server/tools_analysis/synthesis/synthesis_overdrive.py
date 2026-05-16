@@ -352,7 +352,7 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
     advances to the next; on any other failure (proxy down, timeout, empty
     content), returns None so the caller falls through to the cascade.
 
-    chain_override: optional explicit (model_id, ...) tuple. MODE=5 always
+    chain_override: optional explicit (model_id, ...) tuple. MODE=6 always
     provides this via the registry resolver.
 
     OVERDRIVE_VIA_SUBAGENT=1 routes through Claude Code's Agent tool instead

@@ -97,8 +97,8 @@ function isPassthroughMode() {
 }
 
 function tripEmergencyValve(lastErr) {
-  // OVERDRIVE_MODE=5/6: never enter passthrough (would leak to api.anthropic.com).
-  if (process.env.OVERDRIVE_MODE === '5' || process.env.OVERDRIVE_MODE === '6') {
+  // OVERDRIVE_MODE=6: never enter passthrough (would leak to api.anthropic.com).
+  if (process.env.OVERDRIVE_MODE === '6') {
     console.error(`[hme-proxy] MODE=${process.env.OVERDRIVE_MODE}: suppressing escape-hatch trip (Anthropic-free mode). Error: ${lastErr}`);
     return;
   }

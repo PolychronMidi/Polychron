@@ -107,7 +107,7 @@ class OAuthTokenExpiryVerifier(Verifier):
     before it happens.
 
     Thresholds:
-      - OVERDRIVE_MODE=5/6    -> PASS (Anthropic-free path; token irrelevant)
+      - OVERDRIVE_MODE=6      -> PASS (Anthropic-free path; token irrelevant)
       - expired / absent      -> WARN (Claude fallback unavailable until refresh)
       - <1h remaining         -> WARN (refresh soon)
       - >=1h remaining         -> PASS
@@ -132,7 +132,7 @@ class OAuthTokenExpiryVerifier(Verifier):
                             break
             except OSError:
                 overdrive_mode = ""
-        if overdrive_mode in {"5", "6"}:
+        if overdrive_mode == "6":
             return _result(PASS, 1.0,
                            f"OVERDRIVE_MODE={overdrive_mode} is Anthropic-free; OAuth token freshness is not gating")
         path = os.path.expanduser("~/.claude/.credentials.json")
