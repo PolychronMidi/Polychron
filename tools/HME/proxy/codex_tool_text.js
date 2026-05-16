@@ -46,8 +46,8 @@ function bridgeFromTokens(tokens) {
     if (kv.limit !== undefined) input.limit = Number(kv.limit);
     return { tool: 'Read', input };
   }
-  input.old_string = '<omitted by proxy>';
-  input.new_string = '<omitted by proxy>';
+  input.old_string = EDIT_REDACTION;
+  input.new_string = EDIT_REDACTION;
   return { tool: 'Edit', input };
 }
 
@@ -65,8 +65,8 @@ function bridgeFromJsonCommand(text) {
     if (data.limit !== undefined) input.limit = Number(data.limit);
     return { tool: 'Read', input };
   }
-  input.old_string = '<omitted by proxy>';
-  input.new_string = '<omitted by proxy>';
+  input.old_string = EDIT_REDACTION;
+  input.new_string = EDIT_REDACTION;
   return { tool: 'Edit', input };
 }
 

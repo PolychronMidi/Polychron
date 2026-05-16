@@ -11,6 +11,7 @@ const { recordFailure, clearFailure } = require('../proxy/turn_failure_state');
 const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
 const SESSION = process.env.HME_SESSION_ID || process.env.CODEX_SESSION_ID || 'codex-structured';
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', '__pycache__']);
+const DISPLAY_REDACTED_RE = /<display-redacted:|<omitted by proxy>/i;
 
 function usage() {
   console.error([
@@ -103,13 +104,17 @@ function parseGlob(argv) { const d = jsonData(argv); return { pattern: String(d.
 async function runRead(argv) { const input = parseRead(argv); await pre('Read', input); const text = readSlice(fs.readFileSync(input.file_path, 'utf8'), input); await finishStructured('Read', input, text); }
 
 function countOccurrences(text, needle) { if (!needle) return 0; let n = 0; let i = 0; while ((i = text.indexOf(needle, i)) >= 0) { n++; i += Math.max(1, needle.length); } return n; }
+function boundaryTrimmed(value) { return String(value || '').replace(/^\n+/, '').replace(/\n+$/, ''); }
 function editVariants(input, text) {
   const variants = [{ ...input, _why: 'exact' }];
   const old = input.old_string || '';
   const neu = input.new_string || '';
   if (old.includes('\\n') && !old.includes('\n')) variants.push({ ...input, old_string: old.replace(/\\n/g, '\n'), new_string: neu.replace(/\\n/g, '\n'), _why: 'decoded literal \\n' });
+  if (old.includes('\\t') && !old.includes('\t')) variants.push({ ...input, old_string: old.replace(/\\t/g, '\t'), new_string: neu.replace(/\\t/g, '\t'), _why: 'decoded literal \\t' });
   if (text.includes('\r\n') && old.includes('\n') && !old.includes('\r\n')) variants.push({ ...input, old_string: old.replace(/\n/g, '\r\n'), new_string: neu.replace(/\n/g, '\r\n'), _why: 'crlf-normalized' });
   if (!text.includes('\r\n') && old.includes('\r\n')) variants.push({ ...input, old_string: old.replace(/\r\n/g, '\n'), new_string: neu.replace(/\r\n/g, '\n'), _why: 'lf-normalized' });
+  const trimmedOld = boundaryTrimmed(old);
+  if (trimmedOld && trimmedOld !== old) variants.push({ ...input, old_string: trimmedOld, new_string: boundaryTrimmed(neu), _why: 'boundary-newline-trimmed' });
   return variants;
 }
 function contextWindow(file, oldString, newString, reason) {
@@ -125,8 +130,22 @@ function contextWindow(file, oldString, newString, reason) {
   return `Error: ${reason}\n[READ current context ${relPath(file)}:${start + 1}-${end}]\n${body}`;
 }
 function editFailure(input, reason) { const err = new Error(reason); err.userMessage = contextWindow(input.file_path, input.old_string, input.new_string, reason); return err; }
+function escapeRe(text) { return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function trailingWhitespaceMatch(text, oldString) {
+  const pattern = String(oldString).split('\n').map(escapeRe).join('[ \t]*\n') + (String(oldString).endsWith('\n') ? '' : '[ \t]*');
+  const re = new RegExp(pattern, 'g');
+  const hits = [];
+  let match;
+  while ((match = re.exec(text)) !== null) {
+    hits.push({ first: match.index, old_string: match[0] });
+    if (match[0].length === 0) re.lastIndex += 1;
+    if (hits.length > 1) break;
+  }
+  return hits;
+}
 function applyEdit(input) {
   if (!input.old_string) throw editFailure(input, 'old_string/old/old_file is required');
+  if (DISPLAY_REDACTED_RE.test(input.old_string)) throw editFailure(input, 'old_string is display-redacted; pass actual file text');
   const text = fs.readFileSync(input.file_path, 'utf8');
   if (text.indexOf(input.old_string) < 0 && input.new_string && countOccurrences(text, input.new_string) === 1) return { status: 'already_applied' };
   for (const candidate of editVariants(input, text)) {
@@ -135,6 +154,13 @@ function applyEdit(input) {
     if (text.indexOf(candidate.old_string, first + candidate.old_string.length) >= 0) throw editFailure(input, `old_string is not unique (${candidate._why})`);
     fs.writeFileSync(input.file_path, text.slice(0, first) + candidate.new_string + text.slice(first + candidate.old_string.length));
     return { status: candidate._why === 'exact' ? 'applied' : `applied via ${candidate._why}` };
+  }
+  const wsHits = trailingWhitespaceMatch(text, input.old_string);
+  if (wsHits.length > 1) throw editFailure(input, 'old_string is not unique (trailing-whitespace-normalized)');
+  if (wsHits.length === 1) {
+    const hit = wsHits[0];
+    fs.writeFileSync(input.file_path, text.slice(0, hit.first) + input.new_string + text.slice(hit.first + hit.old_string.length));
+    return { status: 'applied via trailing-whitespace-normalized' };
   }
   throw editFailure(input, 'old_string not found');
 }
