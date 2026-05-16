@@ -312,6 +312,17 @@ The autonomous loop is hook-driven through `.claude/hme-evolver.local.md`. The
 file is local/gitignored and lets Stop inject the next directive until a max
 iteration count or done signal is reached.
 
+
+## Generated Metric Churn
+
+Generated metric files are state, not source. Keep them quiet and predictable:
+
+- `output/metrics/` is the only metrics directory; callers use `METRICS_DIR`.
+- Pipeline analyzers may update committed metric snapshots when verification runs.
+- Runtime-only caches stay in `tmp/`, `runtime/hme/`, or `log/`, never nested `tools/tmp` or `scripts/metrics`.
+- Migration baselines such as `hardcoded_metrics_baseline.json` must only shrink; new findings fail.
+- Repair stale trace/run-history state with `tools/HME/scripts/repair-trace-run-history-sync.sh`.
+
 ## State Ownership Registry
 
 The registry lives in [`tools/HME/config/state-files.json`](../tools/HME/config/state-files.json) and is parsed by
