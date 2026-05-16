@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { PROJECT_ROOT } = require('../shared');
+const METRICS_DIR = process.env.METRICS_DIR || path.resolve(PROJECT_ROOT, 'output/metrics');
+const STALENESS_PATH = path.join(METRICS_DIR, 'kb-staleness.json');
 
 function reportFailure(ctx, toolResult, message) {
   const text = `[HME] post-write side effect failed: ${message}`;
@@ -24,6 +26,28 @@ function bg(cmd, args, ctx, toolResult, opts = {}) {
 function fp(input) { return (input && (input.file_path || input.path)) || ''; }
 function isWriteTool(name) { return ['Edit', 'Write', 'MultiEdit', 'NotebookEdit'].includes(name); }
 
+function stalenessForFile(file) {
+  const stem = path.basename(file, path.extname(file));
+  try {
+    const data = JSON.parse(fs.readFileSync(STALENESS_PATH, 'utf8'));
+    return (data.modules || []).find((m) => m && m.module === stem) || null;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function emitWriteCoherence(ctx, file) {
+  if (!ctx || typeof ctx.emit !== 'function') return;
+  const stale = stalenessForFile(file);
+  if (!stale || !stale.status) return;
+  const moduleName = path.basename(file, path.extname(file));
+  if (stale.status === 'MISSING') {
+    ctx.emit({ event: 'productive_incoherence', module: moduleName, file, verdict: 'MISSING' });
+  } else if (stale.status === 'STALE') {
+    ctx.emit({ event: 'coherence_violation', module: moduleName, file, verdict: 'STALE' });
+  }
+}
+
 module.exports = {
   name: 'post_write_side_effects',
   onToolResult({ toolUse, toolResult, ctx }) {
@@ -32,6 +56,7 @@ module.exports = {
     const input = toolUse.input || {};
     const file = fp(input);
     if (!file) return;
+    emitWriteCoherence(ctx, file);
     if (/\/ISA\.md$/.test(file)) bg('python3', ['tools/HME/scripts/isa/checkpoint_hook.py', file], ctx, toolResult);
     if (/\/README\.md$/.test(file)) bg('python3', ['scripts/pipeline/hme/build-dir-intent-index.py'], ctx, toolResult);
     if (/\/doc\/templates\/TODO\.md$/.test(file)) bg('python3', ['tools/HME/scripts/todo_autoflip.py'], ctx, toolResult);
