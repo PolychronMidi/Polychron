@@ -4,17 +4,14 @@
 
 ## Now
 
-- [ ] [E3] 1. Fix Codex native Read/Edit heredoc display normalization and add regression coverage.
+- [ ] [E3] Map current raw-streak enforcement and Bash rewrite path.
 
 ## Next
 
-- [ ] [E3] 2. Make hook-noise stripping single-owner and role-aware with user-quote preservation tests.
-- [ ] [E3] 3. Purge stale CLAUDE.md KB/index state through normal HME reindex/sync path.
-- [ ] [E3] 4. Fix AGENTS.md LOC pointer to config/loc-ignore.txt.
-- [ ] [E3] 5. Add/verify Codex-route health card smoke shortcut.
-- [ ] [E3] 6. Reference-audit inactive Bash hook fragments before any archive/delete decision.
-- [ ] [E3] 7. Add end-to-end proxy noise fixture covering duplicate warning/feedback and user text preservation.
-- [ ] [E3] 8. Add silent-success/loud-error coverage for post-write middleware side effects.
+- [ ] [E3] Add silent raw-command rewrite rules for safe reads/search/status equivalents before streak blocking.
+- [ ] [E3] Make raw-streak block quieter/fallback-only when rewrite is unavailable.
+- [ ] [E3] Add regression tests for silent rewrite and reduced block noise.
+- [ ] [E3] Run focused tests and report evidence.
 
 ## Done
 
