@@ -99,7 +99,7 @@ export default [
   {
     files: ['src/**/*.js', 'src/**'],
     ignores: [
-      'src/scripts/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**',
+      'src/scripts/**', 'src/tests/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**',
       '**/*.mjs',
       'node_modules/**',
       'csv_maestro/**',
