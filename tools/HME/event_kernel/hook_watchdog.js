@@ -173,7 +173,7 @@ function userPromptAlert(root, body) {
     return _markAlerted(root, state, `nonzero:${latest.id}`,
       `[ALERT] Previous SessionStart exited ${latest.exit_code} before this prompt.\nSession: ${sid}`);
   }
-  if (!success && !latest) {
+  if (!success && !latest && !activity) {
     return _markAlerted(root, state, `missing:${sid}`,
       `[ALERT] UserPromptSubmit fired before successful SessionStart.\nSession: ${sid}`);
   }
