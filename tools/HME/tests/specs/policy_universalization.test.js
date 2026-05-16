@@ -2,7 +2,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const { evaluateBashInput } = require('../../proxy/bash_command_policy');
 const { evaluateReadInput } = require('../../proxy/read_policy');
 const { stripHookNoiseText } = require('../../proxy/hook_noise_text');
@@ -62,4 +63,16 @@ test('Codex exec_command responses pass through shared Bash policy', () => {
   assert.equal(call.name, 'exec_command');
   assert.match(JSON.parse(call.arguments).cmd, /printf/);
   assert.equal(rewritten.stats.calls, 1);
+});
+
+
+test('Bash dispatcher does not source retired per-gate fragments', () => {
+  const dispatcher = fs.readFileSync(path.join(root, 'tools/HME/hooks/pretooluse/pretooluse_bash.sh'), 'utf8');
+  const retired = [
+    'cwd_rewrite', 'intent_rewrite', 'blackbox_guards', 'reader_guards', 'log_first',
+    'snapshot_gate', 'pipeline_antiwait', 'polling_redirects', 'failfast', 'kb_spam',
+    'verify_landed_block', 'polling_counter',
+  ];
+  assert.match(dispatcher, /for _part in gates;/);
+  for (const name of retired) assert.doesNotMatch(dispatcher, new RegExp(`bash/\$\{_part\}\.sh.*${name}|for _part in .*${name}`));
 });
