@@ -96,7 +96,17 @@ async function runEdit(argv) { const input = parseEdit(argv); const context = aw
 async function runGrep(argv) { const input = parseGrep(argv); if (!input.pattern) usage(); await pre('Grep', input); const flags = input.ignore_case ? 'i' : ''; const re = input.fixed ? null : new RegExp(input.pattern, flags); const bases = (input.paths || [input.path]).map((p) => absPath(p)); const lines = []; for (const b of bases) for (const fp of walk(b, 10)) { const rel = relPath(fp); const text = fs.readFileSync(fp, 'utf8'); text.split(/\r?\n/).some((line, idx) => { const hit = input.fixed ? (input.ignore_case ? line.toLowerCase().includes(input.pattern.toLowerCase()) : line.includes(input.pattern)) : re.test(line); if (hit) lines.push(`${rel}:${idx + 1}:${line}`); return lines.length >= input.limit; }); if (lines.length >= input.limit) break; } const outText = lines.join('\n'); const out = await enrich('Grep', input, outText); await post('Grep', input, { exit_code: 0, stdout: outText }); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
 async function runGlob(argv) { const input = parseGlob(argv); await pre('Glob', input); const base = absPath(input.path); const re = globToRe(input.pattern); const rows = walk(base, input.max_depth).map(relPath).filter((r) => re.test(path.basename(r)) || re.test(r)).slice(0, input.limit); const text = rows.join('\n'); const out = await enrich('Glob', input, text); await post('Glob', input, { exit_code: 0, stdout: text }); process.stdout.write(out.endsWith('\n') ? out : `${out}\n`); }
 async function runCount(argv) { const d = jsonData(argv); const fp = absPath(d.file_path || d.file || d._?.[0]); const text = fs.readFileSync(fp, 'utf8'); process.stdout.write(`${relPath(fp)}:${text.split(/\r?\n/).length - 1}\n`); }
-async function runGit(argv) { const d = jsonData(argv); const args = Array.isArray(d.args) ? d.args.map(String) : (d._ || []).map(String); if (!['status', 'diff', 'show', 'log'].includes(args[0]) || args.length > 24) usage(); const r = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8', timeout: 10000 }); const text = (r.stdout || '') + (r.stderr || ''); process.stdout.write(text.slice(0, Number(d.limit || 500) * 200)); }
+async function runGit(argv) {
+  const d = jsonData(argv);
+  const args = Array.isArray(d.args) ? d.args.map(String) : (d._ || []).map(String);
+  if (!['status', 'diff', 'show', 'log'].includes(args[0]) || args.length > 24) usage();
+  const r = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8', timeout: 10000 });
+  const code = Number.isInteger(r.status) ? r.status : (r.error ? 1 : 0);
+  const raw = ((r.stdout || '') + (r.stderr || '')).slice(0, Number(d.limit || 500) * 200);
+  const out = await enrich('Bash', { command: `git ${args.join(' ')}` }, raw, code !== 0);
+  process.stdout.write(out.endsWith('\n') ? out : `${out}\n`);
+  if (code !== 0) process.exit(code);
+}
 
 async function main() { const mode = process.argv[2] || ''; if (mode === 'read') return runRead(process.argv.slice(3)); if (mode === 'edit') return runEdit(process.argv.slice(3)); if (mode === 'grep') return runGrep(process.argv.slice(3)); if (mode === 'glob') return runGlob(process.argv.slice(3)); if (mode === 'count') return runCount(process.argv.slice(3)); if (mode === 'git') return runGit(process.argv.slice(3)); usage(); }
 main().catch((err) => { console.error(err.stack || err.message); process.exit(1); });
