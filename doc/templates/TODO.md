@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Run tests and verify live response
+(empty)
 
 ## Next
 
