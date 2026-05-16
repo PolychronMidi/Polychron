@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../helpers/_safety.sh"
+source "$SCRIPT_DIR/../helpers/_check_errors_inline.sh"
 INPUT=$(cat)
 printf '%s' "$INPUT" | node -e '
 const fs = require("fs");
@@ -19,4 +21,5 @@ if (!base) process.exit(0);
 fs.mkdirSync(path.join(root, "tmp"), { recursive: true });
 fs.appendFileSync(path.join(root, "tmp", "hme-turn-edits.txt"), `${base}\n`);
 ' 2>/dev/null || true
+_hme_check_errors_inline || true
 exit 0

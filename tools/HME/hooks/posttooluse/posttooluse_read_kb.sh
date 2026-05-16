@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../helpers/_safety.sh"
+source "$SCRIPT_DIR/../helpers/_nexus.sh"
+source "$SCRIPT_DIR/../helpers/_check_errors_inline.sh"
 # PostToolUse: Read -- silent KB brief injection for src/ and tools/HME/ files.
 
 INPUT=$(cat)
@@ -34,4 +36,5 @@ curl -sf --max-time 8 \
   "http://127.0.0.1:${WORKER}/hme/read?target=${_ENCODED}&mode=auto" \
   > /dev/null 2>&1 &
 
+_hme_check_errors_inline || true
 exit 0
