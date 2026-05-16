@@ -73,7 +73,7 @@ reports that they need review, open `/hooks` once in the interactive CLI; the
 catalog replaces Codex model `base_instructions` and
 `model_messages.instructions_template` with
 `doc/templates/canonical-system-prompt.md`, replaces
-`personality_pragmatic` with `AGENTS.md`, and sets every model
+`personality_pragmatic` with `doc/templates/AGENTS.md`, and sets every model
 `context_window`/`max_context_window` to `1050000`.
 
 ## Hard Style

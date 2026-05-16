@@ -10,7 +10,7 @@ Self-evolving algorithmic composition. A ~500-file JavaScript engine produces MI
 
 **Continuity.** Session continuity comes from proxy-enriched native tools, status views, KB retrieval, and onboarding state. For context health, use `i/status state` or `i/status timeline`.
 
-If you see a rule claim here that contradicts AGENTS.md, AGENTS.md wins -- this primer should not be restating rules, only describing behavior.
+If you see a rule claim here that contradicts [AGENTS.md](AGENTS.md), [AGENTS.md](AGENTS.md) wins -- this primer should not be restating rules, only describing behavior.
 
 ## How the walkthrough works
 
@@ -127,7 +127,7 @@ pulse as a fallback scanner. The HME layer adds the following transparently:
 
 ## Rules and boundaries -- authoritative source
 
-[AGENTS.md](AGENTS.md) is loaded in every prompt -- the single source of truth for coding rules, load order, architectural firewalls, hypermeta-first discipline, and hard rules. Treat its rules as always-on constraints. The walkthrough section above surfaces the three onboarding-critical rules (LIFESAVER no-dilution, no psychopathic polling, one tool call per step) -- the rest live in AGENTS.md.
+[AGENTS.md](AGENTS.md) is loaded in every prompt -- the single source of truth for coding rules, load order, architectural firewalls, hypermeta-first discipline, and hard rules. Treat its rules as always-on constraints. The walkthrough section above surfaces the three onboarding-critical rules (LIFESAVER no-dilution, no psychopathic polling, one tool call per step) -- the rest live in [AGENTS.md](AGENTS.md).
 
 ## Phase 1-6 HME infrastructure
 
