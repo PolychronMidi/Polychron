@@ -25,6 +25,10 @@ const FEATURES = [
 ];
 
 function main() {
+  if (UNKNOWN_ARGS.length > 0) {
+    console.error(`Unknown arg(s): ${UNKNOWN_ARGS.join(', ')}`);
+    process.exit(2);
+  }
   if (!fs.existsSync(HISTORY_DIR)) {
     console.log('Verdict predictor: no run-history dir. Skipping.');
     return;
