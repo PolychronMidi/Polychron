@@ -14,7 +14,7 @@ Each rule follows the standard ESLint rule shape: `meta` (docs, type, schema) + 
 
 ## Python parity
 
-The authoritative concordance map lives in [`tools/HME/config/invariants/eslint.json`](../../tools/HME/config/invariants/eslint.json) under `_js_rules.rules` and is merged through the invariant index. Each entry names an ESLint rule with one of three statuses:
+The authoritative concordance map lives in [`tools/HME/config/invariants/eslint.json`](../../../tools/HME/config/invariants/eslint.json) under `_js_rules.rules` and is merged through the invariant index. Each entry names an ESLint rule with one of three statuses:
 
 - **`ported`** -- has a Python equivalent registered as an invariant; the entry names the `python_invariant` id. Scripts live in `tools/HME/scripts/check-*.py`.
 - **`js_only`** -- architecturally JS-specific (composition engine boundaries, CommonJS load order, JS globals, validator stamp chain) with no Python surface to enforce against.

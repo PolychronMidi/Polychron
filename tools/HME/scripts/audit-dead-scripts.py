@@ -14,6 +14,13 @@ SCRIPTS = ROOT / "tools" / "HME" / "scripts"
 
 MANUAL_ENTRYPOINTS = {
     "blank-debug-ls": "operator view for tmp/blank-debug dumps",
+    "analyze-detector-stats.py": "offline detector statistics report",
+    "audit-inventory-drift.py": "manual inventory/documentation drift audit",
+    "audit-silent-fails.py": "manual hook silent-fail survey",
+    "backfill-legendary-states.py": "one-shot historical metric backfill",
+    "detect-antagonism-candidates.py": "manual antagonism candidate report",
+    "pipeline_walkers.py": "helper module for HME pipeline walkers",
+    "sanitize-session-state.py": "manual session-state repair tool",
     "bulk-fix-unnamed-except.py": "manual codemod paired with check-unnamed-except",
     "controlled-incoherence.py": "manual perturbation drill",
     "exploration-rate-tuner.py": "manual telemetry summarizer",

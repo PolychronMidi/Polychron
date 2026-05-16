@@ -14,7 +14,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-SCRIPT_ROOT = ROOT / "scripts"
+SCRIPT_PREFIXES = ["src/scripts", "tools/HME/scripts", "tools/HME/tests/scripts"]
 LOG_ROOTS = [ROOT / "log", ROOT / "output" / "metrics", ROOT / "runtime" / "hme"]
 RUN_EVIDENCE_METRICS = {"hme-activity.jsonl", "hme-activity-archive.jsonl", "hme-tool-usage.jsonl"}
 SOURCE_SKIP_PREFIXES = ("log/", "output/", "runtime/", "tmp/", "tools/models/")
@@ -61,7 +61,7 @@ def broken_symlinks(paths: list[Path]) -> list[str]:
 
 
 def pipeline_missing() -> list[str]:
-    p = ROOT / "scripts" / "pipeline" / "main-pipeline.js"
+    p = ROOT / "src" / "scripts" / "pipeline" / "main-pipeline.js"
     missing: list[str] = []
     for cmd in re.findall(r"cmd:\s*'([^']+)'", text(p)):
         try:
@@ -70,7 +70,7 @@ def pipeline_missing() -> list[str]:
             missing.append(f"{cmd} :: shlex {exc}")
             continue
         for part in parts:
-            if part.startswith("scripts/") and not any(ch in part for ch in "*?"):
+            if part.startswith(("src/scripts/", "tools/HME/scripts/")) and not any(ch in part for ch in "*?"):
                 if not (ROOT / part).exists():
                     missing.append(f"{part} <= {cmd}")
     return missing
@@ -118,7 +118,7 @@ def _local_import_count(target: Path, source: Path, body: str) -> int:
 
 def _basename_reference_count(target: Path, body: str) -> int:
     rel = str(target.relative_to(ROOT))
-    if rel.startswith(("tools/HME/scripts/", "tools/HME/scripts/chaos/")) or rel == "tools/HME/scripts/pipeline/hme/run-invariant-battery.py":
+    if rel.startswith(("tools/HME/scripts/", "src/scripts/")) or rel == "tools/HME/scripts/pipeline/hme/run-invariant-battery.py":
         return body.count(target.name)
     return 0
 
@@ -162,7 +162,7 @@ def source_reference_counts(paths: list[Path]) -> dict[Path, tuple[int, list[str
                 _sample(samples, f)
         if str(target.relative_to(ROOT)).startswith('src/scripts/eslint-rules/') and target.name not in {'index.js'}:
             stem = target.stem
-            idx = text(ROOT / 'scripts' / 'eslint-rules' / 'index.js')
+            idx = text(ROOT / 'src' / 'scripts' / 'eslint-rules' / 'index.js')
             cfg = text(ROOT / 'eslint.config.mjs')
             if f"require('./{stem}')" in idx:
                 count += 1
@@ -198,10 +198,10 @@ def _configured_eslint_rules() -> set[str]:
 
 def _main_pipeline_commands() -> dict[str, str]:
     out: dict[str, str] = {}
-    p = ROOT / "scripts" / "pipeline" / "main-pipeline.js"
+    p = ROOT / "src" / "scripts" / "pipeline" / "main-pipeline.js"
     for label, cmd in re.findall(r"label:\s*'([^']+)'\s*,\s*cmd:\s*'([^']+)'", text(p)):
         for part in shlex.split(cmd):
-            if part.startswith("scripts/") and not any(ch in part for ch in "*?"):
+            if part.startswith(("src/scripts/", "tools/HME/scripts/")) and not any(ch in part for ch in "*?"):
                 out[part] = label
     return out
 
@@ -255,10 +255,10 @@ def main() -> int:
     ap.add_argument("--strict", action="store_true")
     args = ap.parse_args()
 
-    scripts = [p for p in git_files("scripts") if p.is_file() and is_script(p)]
+    scripts = [p for prefix in SCRIPT_PREFIXES for p in git_files(prefix) if p.is_file() and is_script(p)]
     refs = source_reference_counts(scripts)
     obs = log_observations(scripts)
-    broken = broken_symlinks([p for p in git_files("scripts") if p.is_symlink()])
+    broken = broken_symlinks([p for prefix in SCRIPT_PREFIXES for p in git_files(prefix) if p.is_symlink()])
     missing = pipeline_missing()
 
     rows = []

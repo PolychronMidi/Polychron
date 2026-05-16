@@ -13,7 +13,7 @@ import sys
 import argparse
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
 from csv_maestro import py_midicsv as x
 
 
