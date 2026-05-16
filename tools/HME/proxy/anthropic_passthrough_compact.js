@@ -1,0 +1,123 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const { PROJECT_ROOT } = require('./shared');
+
+function shrinkForPassthrough(payload, opts = {}) {
+  const env = opts.env || process.env;
+  const log = opts.log || console.error;
+  const keepMin = Number(opts.keepMin || 7);
+  const threshold = Number(typeof opts.effectiveThreshold === 'function' ? opts.effectiveThreshold() : opts.threshold || 250000);
+  const projectRoot = opts.projectRoot || PROJECT_ROOT;
+  if (env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
+  if (!payload || !Array.isArray(payload.messages)) return 0;
+  const msgs = payload.messages;
+  if (msgs.length <= keepMin) return 0;
+  let serialized = JSON.stringify(payload);
+  if (serialized.length <= threshold) return 0;
+
+  const toolResultByteFloor = 2000;
+  const recentKeepFraction = 0.20;
+  const recentStart = Math.floor(msgs.length * (1 - recentKeepFraction));
+  let elided = 0;
+  for (let i = 0; i < recentStart; i += 1) {
+    const m = msgs[i];
+    if (!m || !Array.isArray(m.content)) continue;
+    for (const b of m.content) {
+      if (!b || b.type !== 'tool_result') continue;
+      const cstr = typeof b.content === 'string' ? b.content : (Array.isArray(b.content) ? JSON.stringify(b.content) : '');
+      if (cstr.length < toolResultByteFloor) continue;
+      b.content = `(content elided by hme-proxy precompact: original was ${cstr.length}B)`;
+      elided += 1;
+    }
+  }
+  if (elided > 0) {
+    serialized = JSON.stringify(payload);
+    log(`precompact tier-1 (microcompact): elided ${elided} stale tool_result block(s), body=${serialized.length}B`);
+    if (serialized.length <= threshold) {
+      log('precompact: tier-1 sufficient, no message drops needed');
+      return elided;
+    }
+  }
+
+  if (env.HME_PROXY_LOCAL_SUMMARY === '1' && msgs.length > keepMin * 2) {
+    const half = Math.floor(msgs.length / 2);
+    msgs.splice(0, half, { role: 'user', content: `(hme-proxy local-summary placeholder: ${half} oldest messages compacted)` });
+    serialized = JSON.stringify(payload);
+    log(`precompact tier-2 (local-summary): collapsed ${half} oldest msgs into 1 marker, body=${serialized.length}B`);
+    if (serialized.length <= threshold) return elided + half;
+  }
+
+  try {
+    const notesPath = path.join(projectRoot, 'tmp', 'hme-session-notes.txt');
+    if (fs.existsSync(notesPath) && msgs.length > keepMin * 2) {
+      const notes = fs.readFileSync(notesPath, 'utf8');
+      if (notes) {
+        const half = Math.floor(msgs.length / 2);
+        msgs.splice(0, half, { role: 'user', content: `(hme-proxy session-memory compact: ${half} oldest messages summarized)\n\n${notes.slice(0, 8_000)}` });
+        serialized = JSON.stringify(payload);
+        log(`precompact tier-3 (session-memory): used pre-extracted notes (${notes.length}B), body=${serialized.length}B`);
+        if (serialized.length <= threshold) return elided + half;
+      }
+    }
+  } catch (_err) { /* best effort */ }
+
+  let dropped = 0;
+  while (msgs.length > keepMin) {
+    msgs.shift();
+    dropped += 1;
+    serialized = JSON.stringify(payload);
+    if (serialized.length <= threshold) break;
+  }
+  while (msgs.length > keepMin) {
+    const first = msgs[0];
+    if (!first || !Array.isArray(first.content)) break;
+    const onlyOrphanResults = first.role === 'user'
+      && first.content.length > 0
+      && first.content.every((b) => b && b.type === 'tool_result');
+    if (!onlyOrphanResults) break;
+    msgs.shift();
+    dropped += 1;
+  }
+
+  const survivingUseIds = new Set();
+  const survivingResultIds = new Set();
+  for (const m of msgs) {
+    if (!m || !Array.isArray(m.content)) continue;
+    for (const b of m.content) {
+      if (!b || typeof b !== 'object') continue;
+      if (b.type === 'tool_use' && b.id) survivingUseIds.add(b.id);
+      if (b.type === 'tool_result' && b.tool_use_id) survivingResultIds.add(b.tool_use_id);
+    }
+  }
+  let orphans = 0;
+  for (const m of msgs) {
+    if (!m || !Array.isArray(m.content)) continue;
+    const before = m.content.length;
+    const origTexts = [];
+    for (const b of m.content) {
+      if (b && typeof b === 'object' && typeof b.text === 'string') origTexts.push(b.text);
+      if (b && typeof b === 'object' && b.type === 'tool_result' && typeof b.content === 'string') origTexts.push(b.content);
+    }
+    m.content = m.content.filter((b) => {
+      if (!b || typeof b !== 'object') return true;
+      if (b.type === 'tool_result' && b.tool_use_id && !survivingUseIds.has(b.tool_use_id)) return false;
+      if (b.type === 'tool_use' && b.id && !survivingResultIds.has(b.id)) return false;
+      return true;
+    });
+    orphans += before - m.content.length;
+    if (m.content.length === 0) {
+      const ofMatch = origTexts.join(' ').match(/output_file:\s*(\S+)/);
+      m.content = [{ type: 'text', text: ofMatch ? `(hme-proxy compact: agent output at ${ofMatch[1]})` : '(content stripped by hme-proxy passthrough-compact)' }];
+    }
+  }
+  if (dropped > 0 && msgs[0] && msgs[0].role === 'assistant') {
+    msgs.unshift({ role: 'user', content: `[hme-proxy passthrough-compact: ${dropped} oldest message(s) dropped to fit under TPM rate limit; restart proxy to clear escape-hatch state]` });
+  }
+  serialized = JSON.stringify(payload);
+  log(`passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks (now ${msgs.length} msgs, body=${serialized.length}B)`);
+  return dropped;
+}
+
+module.exports = { shrinkForPassthrough };
