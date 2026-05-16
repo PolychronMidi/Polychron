@@ -4,11 +4,21 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] 1. Re-audit current universalization state and partial modules
 
 ## Next
 
-(empty)
+- [ ] [E3] 2. Wire shared host adapter + lifecycle payload into Claude/Codex adapters
+- [ ] [E3] 3. Wire shared decision normalization and hook decision logging
+- [ ] [E3] 4. Wire shared request transform core for Codex and Anthropic common passes
+- [ ] [E3] 5. Wire conversation graph helpers into stale/sanitize paths
+- [ ] [E3] 6. Refactor structured tool execution wrapper across modes
+- [ ] [E3] 7. Wire universal turn side effects into Codex proxy
+- [ ] [E3] 8. Wire shared request telemetry into Codex/Claude request logs
+- [ ] [E3] 9. Wire shared model route resolver without breaking protocol edges
+- [ ] [E3] 10. Wire shared tool-result semantics everywhere relevant
+- [ ] [E3] 11. Add boundary/enforcement regression tests
+- [ ] [E3] 12. Run targeted/full verification and report exact status
 
 ## Done
 
