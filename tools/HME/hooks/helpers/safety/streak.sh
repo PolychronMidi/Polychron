@@ -68,6 +68,12 @@ _streak_hme_precheck() {
   score=$(_streak_score)
   last_info="$(_streak_read last_unlock)"
   last_key="${last_info#*$'\t'}"
+  case "$(_streak_unlock_class "$unlock_key")" in
+    structured-read|structured-edit)
+      _streak_write score 0
+      return 0
+      ;;
+  esac
   if [ "$score" -ge "$_STREAK_BLOCK" ] && _streak_same_unlock_class "$unlock_key" "$last_info"; then
     local repeat_msg prev
     prev="${last_key:-$last_info}"
