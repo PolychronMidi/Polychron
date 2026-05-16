@@ -59,7 +59,7 @@ function _editShapeDecision(payload) {
 }
 
 function _editCurrentFileDecision(payload) {
-  if (payload.tool_name !== 'Edit') return null;
+  if (payload.tool_name !== 'Edit' || payload._hme_synthetic_tool) return null;
   const input = payload.tool_input || {};
   const file = input.file_path || '';
   try {
