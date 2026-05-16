@@ -55,8 +55,11 @@ def _legacy_assistant(text: str = "") -> dict:
 
 
 def _write_jsonl(events: list[dict]) -> str:
+    root = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[4]))
+    tmp_dir = root / "tmp" / "hme-tests" / "transcript-api"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
     fd, path = tempfile.mkstemp(suffix=".jsonl",
-                                dir=os.environ.get("PROJECT_ROOT", "/tmp"),
+                                dir=str(tmp_dir),
                                 prefix="ts_api_")
     with os.fdopen(fd, "w") as f:
         for ev in events:
