@@ -54,6 +54,21 @@ test('shared Bash policy blocks dangerous shell and lock deletion', () => {
   assert.match(out.reason, /Never delete/);
 });
 
+test('shared Bash anti-wait only requires Claude run_in_background when host supports it', () => {
+  const codex = evaluateBashInput({ command: 'npm run main' }, { projectRoot: root, supportsRunInBackground: false });
+  assert.equal(codex.decision, 'allow');
+
+  const claudeBlocked = evaluateBashInput({ command: 'npm run main' }, { projectRoot: root, supportsRunInBackground: true });
+  assert.equal(claudeBlocked.decision, 'deny');
+  assert.match(claudeBlocked.reason, /run_in_background=true/);
+
+  const claudeBackground = evaluateBashInput(
+    { command: 'npm run main', run_in_background: true },
+    { projectRoot: root, supportsRunInBackground: true },
+  );
+  assert.equal(claudeBackground.decision, 'allow');
+});
+
 test('shared Read policy blocks guarded paths before execution', () => {
   const out = evaluateReadInput({ file_path: path.join(root, 'doc/theory/secret.md') }, { projectRoot: root });
   assert.equal(out.decision, 'deny');
