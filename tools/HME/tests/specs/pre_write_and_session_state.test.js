@@ -139,6 +139,26 @@ test('synthetic PreToolUse Bash rewrites reader at raw-streak limit instead of b
   }
 });
 
+test('synthetic PreToolUse Bash structured Read always resets even after prior Read unlock', async () => {
+  const root = _withSandbox('hme-hook-bash-structured-read-repeat-');
+  const dir = path.join(root, 'tmp', 'hme-streak');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 's3structured.score'), '70');
+  fs.writeFileSync(path.join(dir, 's3structured.last_unlock'), 'structured-read\tcodex/read --json <<HME_CODEX_JSON');
+  try {
+    const res = await dispatch(root, 'PreToolUse', {
+      tool_name: 'Bash',
+      session_id: 's3structured',
+      tool_input: { command: 'node tools/HME/scripts/codex_structured_tool.js read file=AGENTS.md' },
+    });
+    assert.strictEqual(res.exit_code, 0);
+    assert.doesNotMatch(res.stdout, /unlock loop detected|Raw tool streak/);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 's3structured.score'), 'utf8').trim(), '0');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('raw-streak unlock blocks repeated same i command', async () => {
   const root = _withSandbox('hme-hook-bash-streak-repeat-');
   const dir = path.join(root, 'tmp', 'hme-streak');
