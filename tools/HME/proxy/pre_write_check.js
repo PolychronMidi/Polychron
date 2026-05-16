@@ -55,6 +55,13 @@ function _editShapeDecision(payload) {
     return _permission('deny', 'BLOCKED: Edit text is display-redacted. Re-read current file text, then retry with actual old_string/new_string.');
   }
   if (input.old_string === input.new_string) return _permission('deny', 'BLOCKED: Edit old_string equals new_string; this is a no-op/false-success risk. Use a real replacement or stop if no change is needed.');
+  return null;
+}
+
+function _editCurrentFileDecision(payload) {
+  if (payload.tool_name !== 'Edit') return null;
+  const input = payload.tool_input || {};
+  const file = input.file_path || '';
   try {
     if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return _permission('deny', `BLOCKED: Edit target is not an existing file: ${String(file).slice(0, 160)}`);
     const current = fs.readFileSync(file, 'utf8');
@@ -249,6 +256,11 @@ async function preWriteCheck(stdinJson) {
     if (shellDecision.permissionDecision !== 'allow') {
       await stateClient.call('write', payload.session_id || '', { payload, decision: shellDecision });
       return shellDecision;
+    }
+    const editCurrentDecision = _editCurrentFileDecision(payload);
+    if (editCurrentDecision) {
+      await stateClient.call('write', payload.session_id || '', { payload, decision: editCurrentDecision });
+      return editCurrentDecision;
     }
     const kbDecision = await _kbBugfixDecision((payload.tool_input || {}).file_path || '', _content(payload), tool === 'Write' ? 'Write' : 'Edit');
     if (kbDecision) {
