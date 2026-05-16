@@ -28,6 +28,8 @@ COLD_CLASSIFICATIONS = {
     "tools/HME/scripts/sync-omniroute-model-limits.py": "doctor/admin OmniRoute sync",
     "tools/HME/scripts/configure-omniroute-max-reasoning.py": "OmniRoute startup/admin config",
     "src/scripts/c2m.py": "render/lab MIDI conversion utility",
+    "src/scripts/m2c.py": "manual MIDI-to-CSV conversion utility",
+    "src/scripts/verdict-polar.py": "manual verdict geometry report",
     "tools/HME/scripts/compact-lance-tables.py": "pipeline/lifecycle LanceDB maintenance",
     "tools/HME/scripts/sync-claude-settings.py": "Claude settings sync admin check",
     "src/scripts/pipeline/train-verdict-predictor.js": "post-composition trainer; audit --check",
@@ -126,6 +128,20 @@ def _basename_reference_count(target: Path, body: str) -> int:
 def _classification_for(rel: str, samples: list[str]) -> str:
     if rel in COLD_CLASSIFICATIONS:
         return COLD_CLASSIFICATIONS[rel]
+    if rel.startswith("tools/HME/scripts/detectors/"):
+        return "detector module/test"
+    if rel.startswith("tools/HME/scripts/invariants/"):
+        return "invariant checker"
+    if rel.startswith("tools/HME/scripts/verify_coherence/"):
+        return "verify-coherence module"
+    if rel.startswith("tools/HME/scripts/pipeline/hme/"):
+        return "HME pipeline module"
+    if rel.startswith("src/scripts/eslint-rules/"):
+        return "ESLint rule/test"
+    if rel.startswith("src/scripts/music21/"):
+        return "music21 generator/check"
+    if rel.startswith("src/scripts/pipeline/"):
+        return "composition pipeline"
     if "tools/HME/scripts/audit-all.sh" in samples:
         return "audit-all check"
     if "tools/HME/scripts/chaos/run-all.sh" in samples:
