@@ -916,9 +916,22 @@ def hme_selftest(verbose: bool = False) -> str:
     # `born_from` (incident/KB entry) so unclaimed invariants can be retired.
     try:
         import json as _json_g
+        def _load_inv_doc(_path, _seen=None):
+            _seen = _seen or set()
+            _path = os.path.abspath(_path)
+            if _path in _seen:
+                raise ValueError(f"cyclic invariant include: {_path}")
+            _seen.add(_path)
+            with open(_path, encoding="utf-8") as _if:
+                _doc = _json_g.load(_if)
+            _items = list(_doc.get("invariants") or [])
+            for _rel in _doc.get("_include") or []:
+                _child = _load_inv_doc(os.path.join(os.path.dirname(_path), _rel), _seen)
+                _items.extend(_child.get("invariants") or [])
+            _doc["invariants"] = _items
+            return _doc
         inv_path = os.path.join(_project_root, "tools", "HME", "config", "invariants.json")
-        with open(inv_path, encoding="utf-8") as _if:
-            _inv_doc = _json_g.load(_if)
+        _inv_doc = _load_inv_doc(inv_path)
         _inv_list = _inv_doc.get("invariants", [])
         if _inv_list:
             _with_born = sum(1 for i in _inv_list if i.get("born_from"))
