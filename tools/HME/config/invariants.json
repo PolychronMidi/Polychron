@@ -233,11 +233,11 @@
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/helpers/_safety.sh",
       "patterns": [
-        "misc_safe\.sh",
-        "curl\.sh",
-        "emitters\.sh",
-        "streak\.sh",
-        "http\.sh"
+        "misc_safe\\.sh",
+        "curl\\.sh",
+        "emitters\\.sh",
+        "streak\\.sh",
+        "http\\.sh"
       ],
       "severity": "error"
     },
