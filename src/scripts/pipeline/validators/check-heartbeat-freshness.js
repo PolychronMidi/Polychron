@@ -1,6 +1,6 @@
 'use strict';
 // Heartbeat freshness watchdog. Each critical hook component writes
-// runtime/hme/heartbeat-<name>.ts on successful execution (epoch seconds).
+// tools/HME/runtime/heartbeat-<name>.ts on successful execution (epoch seconds).
 // This validator checks that each expected heartbeat is no older than
 // its declared freshness window. Stale = silent-fail vector somewhere
 // in that component's chain.
@@ -16,7 +16,7 @@ const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const RUNTIME = path.join(ROOT, 'runtime', 'hme');
 
 // Expected heartbeats and their freshness windows.
-// New components: add an entry here AND wire `date +%s > $runtime/hme/heartbeat-<name>.ts`
+// New components: add an entry here AND wire `date +%s > $tools/HME/runtime/heartbeat-<name>.ts`
 // (or use `_hme_heartbeat <name>` from _safety.sh) into the success path.
 const HEARTBEATS = [
   {

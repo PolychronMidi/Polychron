@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Cross-check `runtime/hme/INVENTORY.md` against the actual filesystem.
+"""Cross-check `tools/HME/runtime/INVENTORY.md` against the actual filesystem.
 
-Locks the doc-as-contract: every file in `runtime/hme/` must have a row
+Locks the doc-as-contract: every file in `tools/HME/runtime/` must have a row
 in INVENTORY.md, and every documented file must have either a writer in
 the codebase or a non-zero presence on disk. New state files added to
 the runtime tree without inventory rows surface as drift; abandoned

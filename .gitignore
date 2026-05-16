@@ -40,9 +40,9 @@ log/
 # runtime/ — durable inter-script state. Track INVENTORY.md (the contract);
 # ignore actual state files (regenerated per session, machine-specific).
 /runtime/*
-!/runtime/hme/
-/runtime/hme/*
-!/runtime/hme/INVENTORY.md
+!/tools/HME/runtime/
+/tools/HME/runtime/*
+!/tools/HME/runtime/INVENTORY.md
 
 # KB lance tables — ephemeral generated state, never hand-authored.
 /tools/HME/KB/*.lance/

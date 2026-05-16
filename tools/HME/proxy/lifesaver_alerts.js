@@ -21,7 +21,7 @@ ${body}
 The autocommit helper left this flag behind. Last attempt did not
 succeed, which means working-tree changes have NOT been committed.
 Diagnose: check git status in the project root; read log/hme-errors.log;
-inspect runtime/hme/autocommit.err if present; verify .env loaded PROJECT_ROOT.
+inspect tools/HME/runtime/autocommit.err if present; verify .env loaded PROJECT_ROOT.
 Fix the root cause. Do not silence the alert -- the flag clears automatically
 on the next successful autocommit.`;
   return { flagPath, body, banner };

@@ -61,7 +61,7 @@ _MODE_CLASSIFIER_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
 
 
 def _read_detector_verdicts() -> dict:
-    """Read runtime/hme/stop-detector-verdicts.env (the file work_checks.js
+    """Read tools/HME/runtime/stop-detector-verdicts.env (the file work_checks.js
     consumes). Returns dict of detector_name -> verdict."""
     out: dict = {}
     if not _DETECTOR_VERDICTS.is_file():

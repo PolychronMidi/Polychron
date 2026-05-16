@@ -2,7 +2,7 @@
   "_doc": "Canonical ownership registry for shared filesystem state. tools/HME/scripts/audit-state-file-ownership.py parses this file; docs should summarize it, not duplicate it.",
   "single_owner": [
     {
-      "path": "runtime/hme/proxy-supervisor.pid",
+      "path": "tools/HME/runtime/proxy-supervisor.pid",
       "owner": "tools/HME/hooks/direct/proxy-supervisor.sh",
       "readers": [
         "shell ops",
@@ -18,7 +18,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "runtime/hme/universal-pulse-supervisor.pid",
+      "path": "tools/HME/runtime/universal-pulse-supervisor.pid",
       "owner": "tools/HME/hooks/direct/universal-pulse-supervisor.sh",
       "readers": [
         "shell ops",
@@ -34,7 +34,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "runtime/hme/codex-proxy.pid",
+      "path": "tools/HME/runtime/codex-proxy.pid",
       "owner": "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
       "readers": [
         "shell ops",
@@ -50,7 +50,7 @@
       "repair": "tools/HME/hooks/direct/codex-proxy-supervisor.sh start"
     },
     {
-      "path": "runtime/hme/codex-proxy-events.jsonl",
+      "path": "tools/HME/runtime/codex-proxy-events.jsonl",
       "owner": "tools/HME/proxy/codex_proxy.js",
       "readers": [
         "tools/HME/proxy/codex_proxy.js",
@@ -66,7 +66,7 @@
       "repair": "tools/HME/hooks/direct/codex-proxy-supervisor.sh start"
     },
     {
-      "path": "runtime/hme/codex-model-catalog.json",
+      "path": "tools/HME/runtime/codex-model-catalog.json",
       "owner": "tools/HME/scripts/codex_settings.py",
       "readers": [
         "Codex CLI",
@@ -82,7 +82,7 @@
       "repair": "tools/HME/scripts/sync-codex-settings.py"
     },
     {
-      "path": "runtime/hme/hook-watchdog-state.json",
+      "path": "tools/HME/runtime/hook-watchdog-state.json",
       "owner": "tools/HME/event_kernel/hook_watchdog.js",
       "readers": [
         "tools/HME/event_kernel/hook_watchdog.js",
@@ -100,7 +100,7 @@
       "repair": "remove file; next lifecycle adapter invocation recreates it"
     },
     {
-      "path": "runtime/hme/hook-watchdog.jsonl",
+      "path": "tools/HME/runtime/hook-watchdog.jsonl",
       "owner": "tools/HME/event_kernel/hook_watchdog.js",
       "readers": [
         "operators",
@@ -150,7 +150,7 @@
       "repair": "tools/HME/hooks/direct/codex-proxy-supervisor.sh start"
     },
     {
-      "path": "runtime/hme/team-dashboard.json",
+      "path": "tools/HME/runtime/team-dashboard.json",
       "owner": "tools/HME/scripts/team_dashboard.py",
       "readers": [
         "team_agent_router.py",
@@ -166,7 +166,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "runtime/hme/agent-jobs/*",
+      "path": "tools/HME/runtime/agent-jobs/*",
       "owner": "tools/HME/scripts/agent_jobs.py",
       "readers": [
         "tools/HME/scripts/codex-agent-job.py",
@@ -290,7 +290,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "runtime/hme/supervisor-abandoned",
+      "path": "tools/HME/runtime/supervisor-abandoned",
       "owner": "tools/HME/hooks/direct/proxy-supervisor.sh",
       "readers": [
         "tools/HME/hooks/lifecycle/userpromptsubmit.sh"

@@ -116,7 +116,7 @@ class LifesaverHeartbeatVerifier(Verifier):
             return _result(
                 FAIL, 0.0,
                 "lifesaver heartbeat missing",
-                ["run a real Claude/Codex request through the proxy; hook/proxy lifesaver route must update runtime/hme/heartbeat-lifesaver.ts"],
+                ["run a real Claude/Codex request through the proxy; hook/proxy lifesaver route must update tools/HME/runtime/heartbeat-lifesaver.ts"],
             )
         if age > max_age:
             return _result(
@@ -177,4 +177,3 @@ class TrajectoryTrendVerifier(Verifier):
                 f"HCI flat-ish downward ({slope:.2f}/day) -- monitor",
             )
         return _result(PASS, 1.0, f"HCI trend {direction} ({slope:+.2f}/day)")
-

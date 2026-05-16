@@ -14,7 +14,7 @@
       "stop_group": "proxy_bundle",
       "timeout_sec": 3,
       "start": ["tools/HME/hooks/direct/proxy-supervisor.sh", "start"],
-      "pid_file": "runtime/hme/proxy-supervisor.pid",
+      "pid_file": "tools/HME/runtime/proxy-supervisor.pid",
       "process_patterns": ["hme_proxy.js"],
       "log_file": "log/hme-proxy.out",
       "fix": "tools/HME/hooks/direct/proxy-supervisor.sh start"
@@ -49,7 +49,7 @@
       "stop_group": "codex_proxy",
       "timeout_sec": 3,
       "start": ["tools/HME/hooks/direct/codex-proxy-supervisor.sh", "start"],
-      "pid_file": "runtime/hme/codex-proxy.pid",
+      "pid_file": "tools/HME/runtime/codex-proxy.pid",
       "process_patterns": ["codex_proxy.js"],
       "log_file": "log/hme-codex-proxy.out",
       "fix": "tools/HME/hooks/direct/codex-proxy-supervisor.sh start"
@@ -104,7 +104,7 @@
       "pid_label": "universal_pulse",
       "stop_group": "pulse",
       "start": ["tools/HME/hooks/direct/universal-pulse-supervisor.sh", "start"],
-      "pid_file": "runtime/hme/universal-pulse-supervisor.pid",
+      "pid_file": "tools/HME/runtime/universal-pulse-supervisor.pid",
       "log_file": "log/hme-errors.log",
       "fix": "tools/HME/hooks/direct/universal-pulse-supervisor.sh start"
     }

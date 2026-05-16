@@ -4,10 +4,10 @@
 # Acknowledging without fixing is the violation this system exists to prevent.
 PROJECT="$PROJECT_ROOT"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
-TURNSTART="$PROJECT/runtime/hme/errors-turnstart"
-WATERMARK="$PROJECT/runtime/hme/errors-lastread"
+TURNSTART="$PROJECT/tools/HME/runtime/errors-turnstart"
+WATERMARK="$PROJECT/tools/HME/runtime/errors-lastread"
 # Heartbeat -- proves Stop-hook lifesaver actually ran.
-date +%s > "$PROJECT/runtime/hme/heartbeat-lifesaver.ts" 2>/dev/null || true
+date +%s > "$PROJECT/tools/HME/runtime/heartbeat-lifesaver.ts" 2>/dev/null || true
 
 if [ -f "$ERROR_LOG" ]; then
   # silent-ok: default-on-missing (turnstart/watermark may be absent on

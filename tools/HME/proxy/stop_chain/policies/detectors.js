@@ -1,6 +1,6 @@
 'use strict';
 // Transitional shell wrapper. detectors.sh runs scripts/detectors/run_all.py
-// and writes verdicts to runtime/hme/stop-detector-verdicts.env. Pure-JS port
+// and writes verdicts to tools/HME/runtime/stop-detector-verdicts.env. Pure-JS port
 // would just be a child_process.spawn of the same Python -- same shape, no
 // gain. Keep the bash for now; the file-based verdicts contract is what
 // matters for downstream policies.

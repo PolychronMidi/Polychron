@@ -1,0 +1,13 @@
+{
+  "action": "index",
+  "already_running": false,
+  "error": "",
+  "finished_at": "",
+  "log_path": "/home/jah/Polychron/log/hme-index-job.log",
+  "pid": 2677105,
+  "result": "",
+  "started_at": "2026-05-16T01:38:55Z",
+  "state": "running",
+  "status_path": "/home/jah/Polychron/tools/HME/runtime/index-job.json",
+  "updated_at": "2026-05-16T01:38:55Z"
+}

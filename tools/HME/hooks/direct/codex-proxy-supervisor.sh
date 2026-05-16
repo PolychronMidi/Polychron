@@ -37,7 +37,7 @@ fi
 
 _CP_PORT="$(_hme_service_port codex_proxy 2>/dev/null || printf '%s' "${HME_CODEX_PROXY_PORT:-9102}")"
 _CP_URL="$(_hme_service_url codex_proxy 2>/dev/null || printf 'http://127.0.0.1:%s/health' "$_CP_PORT")"
-_CP_PID_FILE="$_SV_ROOT/runtime/hme/codex-proxy.pid"
+_CP_PID_FILE="$_SV_ROOT/tools/HME/runtime/codex-proxy.pid"
 _CP_SCRIPT="$_SV_ROOT/tools/HME/proxy/codex_proxy.js"
 _CP_OMNI="$_SV_ROOT/tools/HME/proxy/codex_omniroute.js"
 _CP_CONFIG="$_SV_ROOT/tools/HME/config/codex-proxy.json"
@@ -83,7 +83,7 @@ _cp_spawn() {
     _cp_log "spawn aborted: node not on PATH"
     return 1
   fi
-  mkdir -p "$_SV_ROOT/log" "$_SV_ROOT/runtime/hme" 2>/dev/null
+  mkdir -p "$_SV_ROOT/log" "$_SV_ROOT/tools/HME/runtime" 2>/dev/null
   HME_CODEX_PROXY_PORT="$_CP_PORT" PROJECT_ROOT="$_SV_ROOT" \
     setsid nohup node "$_CP_SCRIPT" >> "$_CP_LOG" 2>&1 < /dev/null &
   local pid=$!

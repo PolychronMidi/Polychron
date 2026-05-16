@@ -173,8 +173,8 @@ def hooks_doctor():
         'fix filesystem permissions/mount; autocommit needs .git write access',
     )
 
-    fail_flag = ROOT / 'runtime/hme/autocommit.fail'
-    counter = ROOT / 'runtime/hme/autocommit.counter'
+    fail_flag = ROOT / 'tools/HME/runtime/autocommit.fail'
+    counter = ROOT / 'tools/HME/runtime/autocommit.counter'
     counter_value = counter.read_text().strip() if counter.exists() else '0'
     try:
         attempts = int(counter_value or '0')
@@ -184,7 +184,7 @@ def hooks_doctor():
         'autocommit_state',
         not fail_flag.exists() and attempts < 3,
         f'fail_flag={fail_flag.exists()} counter={counter_value}',
-        'let a real UserPromptSubmit autocommit succeed, or inspect runtime/hme/autocommit.fail',
+        'let a real UserPromptSubmit autocommit succeed, or inspect tools/HME/runtime/autocommit.fail',
     )
     active_max_age = int(os.environ.get('HME_DOCTOR_ACTIVE_HOOK_MAX_AGE_SEC', str(6 * 60 * 60)))
     if git_dirty():

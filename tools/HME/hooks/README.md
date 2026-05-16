@@ -57,7 +57,7 @@ Proxy health is bundle health: `services.json` marks `worker` as a required
 child of `proxy`, so watchdogs and doctors treat proxy-up/worker-down as
 unhealthy and restart the proxy bundle rather than reporting partial success.
 
-Subprocess transfer uses filesystem IPC under `runtime/hme/event-ipc/`; hook
+Subprocess transfer uses filesystem IPC under `tools/HME/runtime/event-ipc/`; hook
 payloads are written once and redirected into child processes from a file.
 
 ```text
@@ -146,9 +146,9 @@ below is orientation only; doctors and pulse probes read the registry.
 
 | Script | Pid file | Heartbeat | Purpose |
 |---|---|---|---|
-| `proxy-supervisor.sh` | `runtime/hme/proxy-supervisor.pid` | `/health` poll q10s, 3 misses -> respawn | Keep proxy alive between SessionStart events. |
-| `codex-proxy-supervisor.sh` | `runtime/hme/codex-proxy-supervisor.pid` | `codex_proxy` health poll | Keep Codex proxy routing alive for OpenAI-compatible traffic. |
-| `universal-pulse-supervisor.sh` | `runtime/hme/universal-pulse-supervisor.pid` | `tmp/hme-universal-pulse.heartbeat` q15s, >90s stale -> respawn | Active probes for proxy/worker/daemon/CPU. |
+| `proxy-supervisor.sh` | `tools/HME/runtime/proxy-supervisor.pid` | `/health` poll q10s, 3 misses -> respawn | Keep proxy alive between SessionStart events. |
+| `codex-proxy-supervisor.sh` | `tools/HME/runtime/codex-proxy-supervisor.pid` | `codex_proxy` health poll | Keep Codex proxy routing alive for OpenAI-compatible traffic. |
+| `universal-pulse-supervisor.sh` | `tools/HME/runtime/universal-pulse-supervisor.pid` | `tmp/hme-universal-pulse.heartbeat` q15s, >90s stale -> respawn | Active probes for proxy/worker/daemon/CPU. |
 
 <!-- HME-DIR-INTENT
 rules:

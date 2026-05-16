@@ -55,7 +55,7 @@ measured evolution loop.
 - Event kernel: portable routing for lifecycle and tool events.
 - Hooks: host-specific adapters and remaining shell lifecycle stages.
 - Worker service: KB, review, learn, trace, status, policies, admin actions.
-- Metrics: JSON/JSONL state in `output/metrics/`, `tmp/`, [`runtime/hme/`](../runtime/hme/), and
+- Metrics: JSON/JSONL state in `output/metrics/`, `tmp/`, [`tools/HME/runtime/`](../tools/HME/runtime/), and
   `log/`.
 
 ## Event Kernel
@@ -101,7 +101,7 @@ The kernel returns:
 
 All subprocess input uses filesystem IPC through
 [`tools/HME/event_kernel/fs_ipc.js`](../tools/HME/event_kernel/fs_ipc.js). Inputs are written under
-`runtime/hme/event-ipc/<invocation>/stdin.json`, passed to the child as stdin
+`tools/HME/runtime/event-ipc/<invocation>/stdin.json`, passed to the child as stdin
 from that file, then cleaned up. This keeps the hook contract portable across
 Claude Code, Codex, shell execution, and future agent CLIs.
 
@@ -124,10 +124,10 @@ Codex traffic without that trust step.
 
 The same sync script owns Codex's model-catalog replacement. It reads
 `~/.codex/models_cache.json`, writes the generated
-`runtime/hme/codex-model-catalog.json`, and sets these root config keys:
+`tools/HME/runtime/codex-model-catalog.json`, and sets these root config keys:
 
 ```toml
-model_catalog_json = "/home/jah/Polychron/runtime/hme/codex-model-catalog.json"
+model_catalog_json = "/home/jah/Polychron/tools/HME/runtime/codex-model-catalog.json"
 model_context_window = 1050000
 ```
 
@@ -345,7 +345,7 @@ without a declared owner is a coherence failure.
 - [`i/`](../i/) surface: [`tools/HME/i_registry.json`](../tools/HME/i_registry.json); [`tools/HME/scripts/generate-i-shims.js`](../tools/HME/scripts/generate-i-shims.js)
   generates/checks the public shims, and [`tools/HME/scripts/hme-i-dispatch.js`](../tools/HME/scripts/hme-i-dispatch.js) owns
   behavior.
-- Agent jobs: `runtime/hme/agent-jobs/<role>/<job_id>/` contains
+- Agent jobs: `tools/HME/runtime/agent-jobs/<role>/<job_id>/` contains
   `request.json`, `status.json`, `output.txt`, `stderr.txt`, and
   `events.jsonl`.
 - Adapter boundaries: [`tools/HME/config/adapter-boundaries.json`](../tools/HME/config/adapter-boundaries.json); bridge/shim/wrapper

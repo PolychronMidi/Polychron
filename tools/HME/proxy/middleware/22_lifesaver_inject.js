@@ -6,7 +6,7 @@ const path = require('path');
 const { readAutocommitFailure, touchLifesaverHeartbeat } = require('../lifesaver_alerts');
 
 const ERR_LOG = 'log/hme-errors.log';
-const WATERMARK = 'runtime/hme/errors-lastread.proxy';
+const WATERMARK = 'tools/HME/runtime/errors-lastread.proxy';
 
 // Mirrors lifesaver.sh classification: drop CANARY self-tests,
 // observation-severity, and self-origin tags.
@@ -111,7 +111,7 @@ module.exports = {
     let lines = content.split('\n').filter(Boolean);
     let totalLines = lines.length;
 
-    // Read watermark (separate from hook-based runtime/hme/errors-lastread)
+    // Read watermark (separate from hook-based tools/HME/runtime/errors-lastread)
     let lastSeen = null;
     try {
       const raw = fs.readFileSync(wmPath, 'utf8').trim();

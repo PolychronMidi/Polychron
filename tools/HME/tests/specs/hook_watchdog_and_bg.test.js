@@ -13,15 +13,15 @@ function sandbox(prefix) {
   const base = path.join(os.tmpdir(), 'hme-test-sandboxes');
   fs.mkdirSync(base, { recursive: true });
   const root = fs.mkdtempSync(path.join(base, prefix));
-  for (const d of ['src', 'tmp', 'log', 'output/metrics', 'runtime/hme', '.git', 'bin']) {
+  for (const d of ['src', 'tmp', 'log', 'output/metrics', 'tools/HME/runtime', '.git', 'bin']) {
     fs.mkdirSync(path.join(root, d), { recursive: true });
   }
   for (const d of ['tools', 'scripts', 'config']) fs.symlinkSync(path.join(REPO, d), path.join(root, d));
   const fakeGit = path.join(root, 'bin', 'git');
   fs.writeFileSync(fakeGit, '#!/usr/bin/env bash\nexit 0\n');
   fs.chmodSync(fakeGit, 0o755);
-  fs.writeFileSync(path.join(root, 'runtime/hme/proxy-supervisor.pid'), `${process.pid}\n`);
-  fs.writeFileSync(path.join(root, 'runtime/hme/universal-pulse-supervisor.pid'), `${process.pid}\n`);
+  fs.writeFileSync(path.join(root, 'tools/HME/runtime/proxy-supervisor.pid'), `${process.pid}\n`);
+  fs.writeFileSync(path.join(root, 'tools/HME/runtime/universal-pulse-supervisor.pid'), `${process.pid}\n`);
   return root;
 }
 
@@ -89,7 +89,7 @@ test('codex adapter SessionStart path stays below the client timeout', async () 
     });
   assert.strictEqual(res.code, 0, res.stderr);
   assert.ok(Date.now() - started < 8000, `adapter SessionStart too slow: ${Date.now() - started}ms`);
-  assert.match(fs.readFileSync(path.join(root, 'runtime/hme/hook-watchdog.jsonl'), 'utf8'), /"phase":"end"/);
+  assert.match(fs.readFileSync(path.join(root, 'tools/HME/runtime/hook-watchdog.jsonl'), 'utf8'), /"phase":"end"/);
   fs.rmSync(root, { recursive: true, force: true });
 });
 

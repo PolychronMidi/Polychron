@@ -34,7 +34,7 @@ if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
   PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/tier_classifier.py" --prompt "$PROMPT" --json >/dev/null 2>&1 || true
 fi
 
-# Stale-state sweep: per-turn cleanup of runtime/hme/ files whose owner
+# Stale-state sweep: per-turn cleanup of tools/HME/runtime/ files whose owner
 # forgot the cleanup path (catches the supervisor-abandoned bug class).
 python3 "$PROJECT_ROOT/tools/HME/scripts/stale_state_sweep.py" >/dev/null 2>&1 || true
 
@@ -45,7 +45,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_autocommit.sh"
 _AC_LIFESAVER_EMITTED=0
 _emit_autocommit_lifesaver_if_needed() {
   [ "$_AC_LIFESAVER_EMITTED" -eq 0 ] || return 0
-  _AC_FLAG_CHECK="${_AC_FAIL_FLAG:-${PROJECT_ROOT}/runtime/hme/autocommit.fail}"
+  _AC_FLAG_CHECK="${_AC_FAIL_FLAG:-${PROJECT_ROOT}/tools/HME/runtime/autocommit.fail}"
   [ -f "$_AC_FLAG_CHECK" ] || return 0
   _AC_LIFESAVER_EMITTED=1
   _AC_FLAG_BODY=$(cat "$_AC_FLAG_CHECK" 2>/dev/null)
@@ -56,7 +56,7 @@ $_AC_FLAG_BODY
 The autocommit helper left this flag behind. Last attempt did not
 succeed, which means working-tree changes have NOT been committed.
 Diagnose: check git status in the project root; read log/hme-errors.log;
-inspect runtime/hme/autocommit.err if present; verify .env loaded PROJECT_ROOT.
+inspect tools/HME/runtime/autocommit.err if present; verify .env loaded PROJECT_ROOT.
 Fix the root cause. Do not silence the alert -- the flag clears automatically
 on the next successful autocommit. Dampening the detector is a structural
 violation caught by the LifesaverIntegrityVerifier at weight 5.0."
@@ -112,8 +112,8 @@ fi
 # additionalContext. Errors must be FIXED, not acknowledged.
 PROJECT="$PROJECT_ROOT"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
-WATERMARK="$PROJECT/runtime/hme/errors-lastread"
-TURNSTART="$PROJECT/runtime/hme/errors-turnstart"
+WATERMARK="$PROJECT/tools/HME/runtime/errors-lastread"
+TURNSTART="$PROJECT/tools/HME/runtime/errors-turnstart"
 
 mkdir -p "$PROJECT/tmp"
 
@@ -139,16 +139,16 @@ if [ -f "$ERROR_LOG" ]; then
 ${NEW_ERRORS}"
     # Block ONLY if the supervisor-abandoned sentinel currently exists
     export BLOCK="false"
-    if [ -f "$PROJECT/runtime/hme/supervisor-abandoned" ]; then
+    if [ -f "$PROJECT/tools/HME/runtime/supervisor-abandoned" ]; then
       # Cross-check: if the named child is healthy NOW, sentinel is stale.
       # Unlink it and proceed without blocking.
       _sent_child=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('child',''))" \
-        "$PROJECT/runtime/hme/supervisor-abandoned" 2>/dev/null)  # silent-ok: optional fallback path.
+        "$PROJECT/tools/HME/runtime/supervisor-abandoned" 2>/dev/null)  # silent-ok: optional fallback path.
       _healthy=0
       _sent_url="$(_hme_service_url "$_sent_child" 2>/dev/null || true)"  # silent-ok: optional fallback path.
       [ -n "$_sent_url" ] && curl -s -m 2 -o /dev/null -w '%{http_code}' "$_sent_url" 2>/dev/null | grep -q '^200$' && _healthy=1  # silent-ok: optional fallback path.
       if [ "$_healthy" = "1" ]; then
-        rm -f "$PROJECT/runtime/hme/supervisor-abandoned" 2>/dev/null
+        rm -f "$PROJECT/tools/HME/runtime/supervisor-abandoned" 2>/dev/null
       else
         export BLOCK="true"
       fi

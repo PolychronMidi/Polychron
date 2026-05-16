@@ -8,7 +8,7 @@ no regex anchors to drift.
 
 Codex uses the same file through a generated model catalog. Run
 `tools/HME/scripts/sync-codex-settings.py` to regenerate
-`runtime/hme/codex-model-catalog.json` from `~/.codex/models_cache.json` and
+`tools/HME/runtime/codex-model-catalog.json` from `~/.codex/models_cache.json` and
 point Codex's `model_catalog_json` at the generated catalog.
 
 Mechanism: [`tools/HME/proxy/middleware/01_replace_system.js`](middleware/01_replace_system.js).

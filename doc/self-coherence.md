@@ -68,7 +68,7 @@ Codex hooks installed through `~/.codex/hooks.json` are user hooks. If Codex
 reports that they need review, open `/hooks` once in the interactive CLI; the
 `hme_codex` provider proxy remains active for Codex traffic either way.
 `sync-codex-settings.py` also generates
-`runtime/hme/codex-model-catalog.json`, points Codex at it with
+`tools/HME/runtime/codex-model-catalog.json`, points Codex at it with
 `model_catalog_json`, and sets `model_context_window = 1050000`. The generated
 catalog replaces Codex model `base_instructions` and
 `model_messages.instructions_template` with

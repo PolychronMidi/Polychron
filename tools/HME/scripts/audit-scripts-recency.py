@@ -204,7 +204,7 @@ def _is_run_evidence_log(path: Path) -> bool:
         return path.name.startswith("hme-activity") and path.suffix == ".archive"
     if rel.startswith("output/metrics/"):
         return path.name in RUN_EVIDENCE_METRICS
-    if rel.startswith("runtime/hme/"):
+    if rel.startswith("tools/HME/runtime/"):
         return path.suffix == ".jsonl"
     return False
 

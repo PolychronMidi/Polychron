@@ -15,8 +15,10 @@ const cp = require('child_process');
 const { execSync, spawnSync } = cp;
 const fs   = require('fs');
 const path = require('path');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(__dirname, '..', '..', '..', 'output', 'metrics');
-if (!process.env.METRICS_DIR) process.env.METRICS_DIR = METRICS_DIR;
+const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+const METRICS_DIR = path.join(PROJECT_ROOT, 'output', 'metrics');
+process.env.PROJECT_ROOT = PROJECT_ROOT;
+process.env.METRICS_DIR = METRICS_DIR;
 
 const MEASURE_TIMEOUT_SEC = 30;
 

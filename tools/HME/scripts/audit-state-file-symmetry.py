@@ -3,14 +3,14 @@
 
 Catches bugs of the shape "writer X writes path A, reader Y reads path B"
 where the migration moved one side but not the other. Two real bugs of
-this class were caught manually during the runtime/hme/ migration:
+this class were caught manually during the tools/HME/runtime/ migration:
 
   - `_autocommit.sh` wrote `hme-heartbeat-autocommit.ts` while
     `check-heartbeat-freshness.js` read `heartbeat-autocommit.ts`.
   - A retired subagent router wrote one namespace while its status reader
     read another.
 
-Approach: scan non-comment lines for path basenames in `runtime/hme/<name>`
+Approach: scan non-comment lines for path basenames in `tools/HME/runtime/<name>`
 and `tmp/hme-<name>` shapes (handles shell interpolation, Path/path.join
 joins, etc.). Classify each line as a write or read by surrounding I/O
 keywords (`>`, `tee`, `writeFileSync`, `write_text`, `cat`, `readFileSync`,
@@ -40,7 +40,7 @@ EXTS = (".py", ".js", ".sh", ".bash", ".ts")
 
 # Match the basename portion. Captured group is normalized: the leading
 _PATH_RE = re.compile(
-    r"""(?:runtime/hme/|tmp/hme-)([A-Za-z0-9][A-Za-z0-9._\-]*)"""
+    r"""(?:tools/HME/runtime/|tmp/hme-)([A-Za-z0-9][A-Za-z0-9._\-]*)"""
 )
 # Bare `hme-FOO.ext` in a string literal -- catches the heartbeat-bug shape
 _BARE_HME_RE = re.compile(

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stale-state-file sweeper. Walks runtime/hme/ and applies each file's
+"""Stale-state-file sweeper. Walks tools/HME/runtime/ and applies each file's
 documented stale-criterion (per INVENTORY.md). When stale, unlinks.
 
 Catches the supervisor-abandoned bug class generally: any state file
@@ -72,7 +72,7 @@ def _check_fp_gate_armed(path: str) -> tuple[str, str]:
     return "kept", f"armed {int(age)}s ago"
 
 
-# Each entry: (filename-in-runtime/hme, check-function).
+# Each entry: (filename-in-tools/HME/runtime, check-function).
 # Add new state files here as they migrate from tmp/.
 CHECKS = [
     ("supervisor-abandoned", _check_supervisor_abandoned),

@@ -154,7 +154,7 @@ async function _healthLoop() {
             }
           } catch (_e) { /* best-effort */ }
           console.error(msg);
-          const tailHint = childLogPath ? ` (see tail in runtime/hme/supervisor-abandoned; full log: ${childLogPath})` : '';
+          const tailHint = childLogPath ? ` (see tail in tools/HME/runtime/supervisor-abandoned; full log: ${childLogPath})` : '';
           try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}${tailHint}\n`); } catch (_e) { /* best-effort */ }
           // Filesystem sentinel the i/ wrappers + statusline check for immediate surfacing.
           // Cleared on successful adoption (see the adopt path above).

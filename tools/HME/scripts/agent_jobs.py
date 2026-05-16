@@ -2,7 +2,7 @@
 
 The contract is intentionally boring:
 
-runtime/hme/agent-jobs/<role>/<job_id>/
+tools/HME/runtime/agent-jobs/<role>/<job_id>/
   request.json
   status.json
   output.txt

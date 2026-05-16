@@ -19,7 +19,7 @@ JSON and filters unsupported fields such as `updatedInput`.
 ## Process IPC
 
 All subprocess boundaries use `fs_ipc.js`: the kernel writes hook input to
-`runtime/hme/event-ipc/<invocation>/stdin.json`, runs the child with stdin
+`tools/HME/runtime/event-ipc/<invocation>/stdin.json`, runs the child with stdin
 redirected from that file, then removes the invocation directory. This keeps
 event handling independent of Claude Code, Codex, shell pipes, or Node
 synchronous-spawn input behavior.
@@ -58,7 +58,7 @@ non-managed hooks, so the first interactive Codex launch may require `/hooks`
 review before the hook adapter runs; the provider proxy path is not gated by
 that review.
 
-The same sync path generates `runtime/hme/codex-model-catalog.json` from
+The same sync path generates `tools/HME/runtime/codex-model-catalog.json` from
 Codex's live `~/.codex/models_cache.json` and points `model_catalog_json` at
 the generated file. HME replaces `base_instructions` and
 `model_messages.instructions_template` with

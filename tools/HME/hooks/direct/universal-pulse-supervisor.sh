@@ -2,7 +2,7 @@
 # universal-pulse-supervisor.sh: keeps universal_pulse.py (proactive probe of
 # proxy/worker/daemon/hook-latency/CPU) alive. Fills the gap proxy-supervisor
 # can't see (worker GIL hangs, daemon stalls). Single instance via
-# runtime/hme/universal-pulse-supervisor.pid; heartbeat poll q15s; respawn if >90s
+# tools/HME/runtime/universal-pulse-supervisor.pid; heartbeat poll q15s; respawn if >90s
 # stale; respects maintenance flag.
 
 set +e
@@ -21,7 +21,7 @@ if [ -z "$_SV_ROOT" ]; then
   done
 fi
 
-_UP_PID_FILE="$_SV_ROOT/runtime/hme/universal-pulse-supervisor.pid"
+_UP_PID_FILE="$_SV_ROOT/tools/HME/runtime/universal-pulse-supervisor.pid"
 _UP_CHILD_PID_FILE="$_SV_ROOT/tmp/hme-universal-pulse.pid"
 _UP_HEARTBEAT="$_SV_ROOT/tmp/hme-universal-pulse.heartbeat"
 _UP_PYTHON_SCRIPT="$_SV_ROOT/tools/HME/activity/universal_pulse.py"

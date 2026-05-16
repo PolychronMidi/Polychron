@@ -25,7 +25,7 @@ if [ -z "$_AC_ROOT" ]; then
   return 1 2>/dev/null || exit 1  # silent-ok: optional fallback path.
 fi
 
-_AC_STATE_DIR="$_AC_ROOT/runtime/hme"
+_AC_STATE_DIR="$_AC_ROOT/tools/HME/runtime"
 _AC_COUNTER="$_AC_STATE_DIR/autocommit.counter"
 _AC_LAST_SUCCESS="$_AC_STATE_DIR/autocommit.last-success"
 _AC_FAIL_FLAG="$_AC_STATE_DIR/autocommit.fail"

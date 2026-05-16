@@ -3,7 +3,7 @@
  * Pure-JS port of work_checks.sh -- STOP_WORK / EXHAUST_CHECK gates plus
  * the AUTO-COMPLETENESS INJECT counter. Verdicts come from the verdicts
  * file; the enforcement reminder still goes to stderr; the inject counter
- * lives in runtime/hme/completeness-injected.json (50-entry cap, FIFO eviction).
+ * lives in tools/HME/runtime/completeness-injected.json (50-entry cap, FIFO eviction).
  *
  * MUST RUN AFTER: detectors
  * MUST RUN BEFORE: holograph, post_hooks

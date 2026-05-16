@@ -10,8 +10,8 @@ across any fixed threshold value.
 The shared upstream the antagonism bridge principle says we need to find:
 *did the last banner result in a real fix, or in the agent ignoring it?*
 Measurable from the LIFESAVER state files:
-  runtime/hme/errors-turnstart  -- line count at the start of a turn
-  runtime/hme/errors-lastread   -- watermark advanced by stop.sh only after a fix
+  tools/HME/runtime/errors-turnstart  -- line count at the start of a turn
+  tools/HME/runtime/errors-lastread   -- watermark advanced by stop.sh only after a fix
 
 Resolution-velocity proxy: for each turn where errors were surfaced, did
 the watermark advance to match the turn-end line count? That means fixed.

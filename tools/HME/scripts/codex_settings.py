@@ -38,7 +38,7 @@ HOOK_REVIEW_NOTE = (
     "The hme_codex provider proxy is still active for non-interactive traffic."
 )
 MODEL_CATALOG_NOTE = (
-    "HME generates runtime/hme/codex-model-catalog.json from Codex's live "
+    "HME generates tools/HME/runtime/codex-model-catalog.json from Codex's live "
     "models_cache.json; do not edit ~/.codex/models_cache.json directly."
 )
 

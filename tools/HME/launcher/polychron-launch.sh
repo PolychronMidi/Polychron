@@ -103,7 +103,7 @@ _CODEX_PROXY_SUPERVISOR="$PROJECT_ROOT/tools/HME/hooks/direct/codex-proxy-superv
 if [ "${HME_CODEX_PROXY_START:-1}" != "0" ] && [ -x "$_CODEX_PROXY_SUPERVISOR" ]; then
   PROJECT_ROOT="$PROJECT_ROOT" "$_CODEX_PROXY_SUPERVISOR" start >/dev/null 2>&1 || \
     echo "[launch] WARNING: codex proxy supervisor start failed" >&2
-  _CODEX_PROXY_PID=$(cat "$PROJECT_ROOT/runtime/hme/codex-proxy.pid" 2>/dev/null || true)
+  _CODEX_PROXY_PID=$(cat "$PROJECT_ROOT/tools/HME/runtime/codex-proxy.pid" 2>/dev/null || true)
   if [ -n "$_CODEX_PROXY_PID" ]; then
     _record_pid "$CODEX_PROXY_PID_LABEL" "$_CODEX_PROXY_PID"
   fi

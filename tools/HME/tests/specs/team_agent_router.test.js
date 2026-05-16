@@ -27,7 +27,7 @@ function runRouter(project, payload, role = 'driver') {
 
 function projectWithDashboard(agents) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-agent-router-'));
-  const dir = path.join(root, 'runtime/hme');
+  const dir = path.join(root, 'tools/HME/runtime');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'team-dashboard.json'), JSON.stringify({ agents }));
   return root;
