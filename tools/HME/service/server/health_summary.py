@@ -145,8 +145,9 @@ def _probe_versions(project_root: str) -> tuple[str, list[str]]:
         try:
             with urllib.request.urlopen(url, timeout=2) as r:
                 live[name] = json.loads(r.read()).get("version", "?")
-        except Exception:
+        except Exception as e:
             # silent-ok: optional fallback path.
+            _ = e
             live[name] = "unreachable"
     mismatches = [
         f"{name}: live={live[name]} canonical={canonical.get(name, '?')}"
