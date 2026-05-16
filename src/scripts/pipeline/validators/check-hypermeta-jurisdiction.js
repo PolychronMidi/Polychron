@@ -166,6 +166,7 @@ function collectJsFiles(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (full === path.join(SRC, 'scripts')) continue;
       results.push(...collectJsFiles(full));
     } else if (entry.name.endsWith('.js')) {
       results.push(full);
