@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3325,
-      "updated_ts": 1778940088.8761494,
-      "codex_plan_synced_ts": 1778940088.87609,
+      "updated_ts": 1778940178.877327,
+      "codex_plan_synced_ts": 1778940178.8772666,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T14:01:18.312Z"
+      "codex_plan_ts": "2026-05-16T14:02:52.320Z"
     }
   },
   {
@@ -797,7 +797,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:01:18.312Z",
+    "codex_plan_ts": "2026-05-16T14:02:52.320Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
@@ -4540,7 +4540,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:01:18.312Z"
+    "codex_plan_ts": "2026-05-16T14:02:52.320Z"
   },
   {
     "id": 3323,
@@ -4556,7 +4556,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:01:18.312Z"
+    "codex_plan_ts": "2026-05-16T14:02:52.320Z"
   },
   {
     "id": 3324,
@@ -4572,7 +4572,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:01:18.312Z"
+    "codex_plan_ts": "2026-05-16T14:02:52.320Z"
   },
   {
     "id": 3325,
@@ -4588,6 +4588,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T14:01:18.312Z"
+    "codex_plan_ts": "2026-05-16T14:02:52.320Z"
   }
 ]
