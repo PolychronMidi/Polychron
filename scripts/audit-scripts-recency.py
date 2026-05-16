@@ -229,7 +229,8 @@ def main() -> int:
     rows = []
     for p in scripts:
         ref_count, samples = refs[p]
-        rows.append((p in obs, obs.get(p, (0, ""))[0], ref_count, str(p.relative_to(ROOT)), samples, obs.get(p, (0, ""))[1]))
+        rel = str(p.relative_to(ROOT))
+        rows.append((p in obs, obs.get(p, (0, ""))[0], ref_count, rel, samples, obs.get(p, (0, ""))[1], COLD_CLASSIFICATIONS.get(rel, "")))
     rows.sort(key=lambda r: (r[0], r[1], r[2], r[3]))
 
     print(f"audit-scripts-recency: scripts={len(scripts)} observed={sum(1 for p in scripts if p in obs)} cold={sum(1 for p in scripts if p not in obs)}")
