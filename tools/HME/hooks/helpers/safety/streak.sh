@@ -31,60 +31,14 @@ _streak_tick() {
 }
 
 _streak_check() {
-  local score last_info last_key
-  score=$(_streak_score)
-  if [ "$score" -ge "$_STREAK_BLOCK" ]; then
-    local unlock_key last_unlock
-    unlock_key="$(_streak_unlock_key "${CMD:-}")"
-    last_info="$(_streak_read last_unlock)"
-    last_key="${last_info#*$'\t'}"
-    if [ -n "$unlock_key" ]; then
-      if _streak_same_unlock_class "$unlock_key" "$last_info"; then
-        local repeat_msg prev
-        prev="${last_key:-$last_info}"
-        repeat_msg="BLOCKED: Raw tool streak unlock loop detected. Previous unlock: \`${prev}\`; requested: \`${unlock_key}\`. ${_STREAK_PREFERRED_EXIT}."
-        jq -n --arg reason "$repeat_msg" \
-          '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
-        return 1
-      fi
-      return 0
-    fi
-    local msg
-    msg="BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK} (cost: ${_STREAK_COST_SUMMARY}). Do not loop on reset commands. Preferred exits: ${_STREAK_PREFERRED_EXIT}${last_key:+ (${last_key})}."
-    jq -n --arg reason "$msg" \
-      '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
-    return 1
-  elif [ "$score" -ge "$_STREAK_WARN" ] && [ "${HME_STREAK_WARN_VISIBLE:-0}" = "1" ]; then
-    local _sc_rem=$(( (_STREAK_BLOCK - score + 9) / 10 ))
-    echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK} (~${_sc_rem} Edit calls until block). ${_STREAK_REMINDER}" >&2
-  fi
   return 0
 }
 
 _streak_hme_precheck() {
-  local cmd="${1:-}" unlock_key last_info last_key score
+  local cmd="${1:-}" unlock_key
   unlock_key="$(_streak_unlock_key "$cmd")"
   [ -n "$unlock_key" ] || return 2
-  score=$(_streak_score)
-  last_info="$(_streak_read last_unlock)"
-  last_key="${last_info#*$'\t'}"
-  case "$(_streak_unlock_class "$unlock_key")" in
-    structured-read|structured-edit)
-      _streak_write score 0
-      return 0
-      ;;
-  esac
-  if [ "$score" -ge "$_STREAK_BLOCK" ] && _streak_same_unlock_class "$unlock_key" "$last_info"; then
-    local repeat_msg prev
-    prev="${last_key:-$last_info}"
-    repeat_msg="BLOCKED: Raw tool streak unlock loop detected. Previous unlock: \`${prev}\`; requested: \`${unlock_key}\`. ${_STREAK_PREFERRED_EXIT}."
-    jq -n --arg reason "$repeat_msg" \
-      '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
-    return 1
-  fi
-  if [ "$score" -ge "$_STREAK_BLOCK" ]; then
-    _streak_record_unlock "$unlock_key"
-  fi
+  _streak_record_unlock "$unlock_key"
   _streak_write score 0
   return 0
 }
