@@ -176,9 +176,7 @@ test('work_checks: correction pivot allows post-correction parent audit evidence
     const transcript = _writeTranscript(sandbox, [
       { type: 'user', message: { content: 'analyze scripts/ for unused/obsolete deletion targets, by sorting by least recently run and inspecting the top ones' } },
       { type: 'user', message: { content: 'WHAT THE FUCK DID YOU THINK I MEANT IF NOT SYNTHESIZE GENERALIZATIONS?' } },
-      _assistantToolUse('Bash', { command: 'python3 - <<PY
-# scripts unused obsolete least recently runnable never_observed refs ranking
-PY' }),
+      _assistantToolUse('Bash', { command: 'python3 -c "# scripts unused obsolete least recently runnable never_observed refs ranking"' }),
       { type: 'assistant', message: { content: [{ type: 'text', text: 'Continued the scripts/ audit and handled the cold targets.' }] } },
     ]);
     const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
