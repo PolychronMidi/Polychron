@@ -5,8 +5,8 @@
 'use strict';
 
 // Load just the core module -- no conductor, no globals, no side effects.
-require('../src/utils');  // validator, clamp
-require('../src/conductor/signal/profiling/regimeReactiveDampingCore');
+require('../../src/utils');  // validator, clamp
+require('../../src/conductor/signal/profiling/regimeReactiveDampingCore');
 
 let passed = 0;
 let failed = 0;
@@ -88,7 +88,7 @@ assertClose(eq3.corrT, 0, 0.01, 'on-target -> no correction');
 
 //  metaProfiles.disableAxis
 // Requires full conductor load for this section
-require('../src/conductor');
+require('../../src/conductor');
 
 console.log('metaProfiles.disableAxis:');
 
