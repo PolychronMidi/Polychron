@@ -76,8 +76,8 @@ test('todo_status_filter keeps real non-todo status output visible', () => withP
 }));
 
 test('todo_status_filter keeps todo status visible when sync failed', () => withProject((root) => {
-  fs.mkdirSync(path.join(root, 'runtime', 'hme'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'runtime', 'hme', 'todo-sync.fail'), 'sync failed\n');
+  fs.mkdirSync(path.join(root, 'tools', 'HME', 'runtime'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools', 'HME', 'runtime', 'todo-sync.fail'), 'sync failed\n');
   const mod = require('../../proxy/middleware/25_todo_status_filter');
   const toolUse = { name: 'Bash', input: { command: 'git status --short' } };
   const content = ' M doc/templates/TODO.md\n';
@@ -117,7 +117,7 @@ test('codex plan scanner is silent on sync success', async () => withProject(asy
   scanner.scanObjectForPlan({ type: 'function_call', name: 'update_plan', call_id: 'ok1', arguments: JSON.stringify({ plan: [{ step: 'silent success', status: 'pending' }] }) }, {});
   await waitFor(() => fs.existsSync(path.join(root, 'done')));
   assert.deepStrictEqual(events, []);
-  assert.strictEqual(fs.existsSync(path.join(root, 'runtime', 'hme', 'todo-sync.fail')), false);
+  assert.strictEqual(fs.existsSync(path.join(root, 'tools', 'HME', 'runtime', 'todo-sync.fail')), false);
 }));
 
 test('codex plan scanner records only sync failure', async () => withProject(async (root) => {
@@ -134,7 +134,7 @@ test('codex plan scanner records only sync failure', async () => withProject(asy
   });
   scanner.scanObjectForPlan({ type: 'function_call', name: 'update_plan', call_id: 'bad1', arguments: JSON.stringify({ plan: [{ step: 'loud failure', status: 'pending' }] }) }, {});
   await waitFor(() => events.some((e) => e.kind === 'todo-sync-failed'));
-  const flag = fs.readFileSync(path.join(root, 'runtime', 'hme', 'todo-sync.fail'), 'utf8');
+  const flag = fs.readFileSync(path.join(root, 'tools', 'HME', 'runtime', 'todo-sync.fail'), 'utf8');
   assert.match(flag, /codex plan sync failed exit=7/);
   assert.strictEqual(events.length, 1);
 }));

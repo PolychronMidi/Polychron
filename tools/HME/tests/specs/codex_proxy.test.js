@@ -199,7 +199,7 @@ test('Codex payload transform logs shape and strips successful hook autocorrect 
 
 test('Codex proxy status mode renders payload deltas without prompt text', () => {
   const sandbox = withSandbox();
-  const eventsPath = path.join(sandbox, 'runtime', 'hme', 'codex-proxy-events.jsonl');
+  const eventsPath = path.join(sandbox, 'tools', 'HME', 'runtime', 'codex-proxy-events.jsonl');
   fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
   fs.writeFileSync(eventsPath, `${JSON.stringify({
     ts: '2026-05-15T19:00:00.000Z',
@@ -237,7 +237,7 @@ print(mod._mode_codex_proxy())
 
 test('Codex route status mode renders route smoke without prompt text', () => {
   const sandbox = withSandbox();
-  const eventsPath = path.join(sandbox, 'runtime', 'hme', 'codex-proxy-events.jsonl');
+  const eventsPath = path.join(sandbox, 'tools', 'HME', 'runtime', 'codex-proxy-events.jsonl');
   fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
   fs.writeFileSync(eventsPath, `${JSON.stringify({
     ts: '2026-05-15T20:00:00.000Z',
@@ -479,7 +479,7 @@ test('Codex Responses proxy syncs streamed update_plan calls into TODO.md', asyn
     assert.match(todoMd, /## Now[\s\S]*Proxy captures Codex plan/);
     assert.match(todoMd, /## Next[\s\S]*TODO\.md receives Codex plan/);
   } catch (err) {
-    const eventsPath = path.join(sandbox, 'runtime', 'hme', 'codex-proxy-events.jsonl');
+    const eventsPath = path.join(sandbox, 'tools', 'HME', 'runtime', 'codex-proxy-events.jsonl');
     const events = fs.existsSync(eventsPath) ? fs.readFileSync(eventsPath, 'utf8') : '(no codex proxy events)';
     err.message = `${err.message}\nproxy stderr:\n${stderr}\nproxy events:\n${events}`;
     throw err;
@@ -493,7 +493,7 @@ test('Codex Responses proxy syncs streamed update_plan calls into TODO.md', asyn
 
 test('Codex Responses proxy injects autocommit fail flags into instructions', async () => {
   const sandbox = withSandbox();
-  const flagDir = path.join(sandbox, 'runtime', 'hme');
+  const flagDir = path.join(sandbox, 'tools', 'HME', 'runtime');
   fs.mkdirSync(flagDir, { recursive: true });
   fs.writeFileSync(
     path.join(flagDir, 'autocommit.fail'),
@@ -550,7 +550,7 @@ test('Codex Responses proxy injects autocommit fail flags into instructions', as
     assert.match(upstreamBody, /LIFESAVER - AUTOCOMMIT FAILED/);
     assert.match(upstreamBody, /synthetic autocommit failure/);
   } catch (err) {
-    const eventsPath = path.join(sandbox, 'runtime', 'hme', 'codex-proxy-events.jsonl');
+    const eventsPath = path.join(sandbox, 'tools', 'HME', 'runtime', 'codex-proxy-events.jsonl');
     const events = fs.existsSync(eventsPath) ? fs.readFileSync(eventsPath, 'utf8') : '(no codex proxy events)';
     err.message = `${err.message}\nproxy stderr:\n${stderr}\nproxy events:\n${events}\nupstream body:\n${upstreamBody}`;
     throw err;

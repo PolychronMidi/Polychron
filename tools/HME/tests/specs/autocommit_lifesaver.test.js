@@ -19,7 +19,7 @@ test('UserPromptSubmit surfaces pre-existing autocommit fail flag before retry c
   try {
     fs.mkdirSync(path.join(sandbox, 'src'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
-    fs.mkdirSync(path.join(sandbox, 'runtime', 'hme'), { recursive: true });
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'KB'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'scripts'), { recursive: true });
@@ -48,7 +48,7 @@ test('UserPromptSubmit surfaces pre-existing autocommit fail flag before retry c
     git(['add', 'src/seed.txt'], sandbox);
     git(['commit', '--quiet', '-m', 'initial'], sandbox);
     fs.writeFileSync(
-      path.join(sandbox, 'runtime', 'hme', 'autocommit.fail'),
+      path.join(sandbox, 'tools', 'HME', 'runtime', 'autocommit.fail'),
       '[2026-05-15T00:00:00Z] [test] synthetic failure\n',
     );
 

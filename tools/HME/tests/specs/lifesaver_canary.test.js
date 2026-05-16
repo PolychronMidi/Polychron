@@ -22,18 +22,18 @@ function _withLifesaverSandbox(canaryLines, opts = {}) {
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-lifesaver-test-'));
   fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
-  fs.mkdirSync(path.join(sandbox, 'runtime', 'hme'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
   const errLog = path.join(sandbox, 'log', 'hme-errors.log');
   fs.writeFileSync(errLog, canaryLines.join('\n') + '\n');
   if (branch === 'new') {
     // Watermarks AT 0 so all planted lines are "new this turn".
-    fs.writeFileSync(path.join(sandbox, 'runtime', 'hme', 'errors-lastread'), '0');
-    fs.writeFileSync(path.join(sandbox, 'runtime', 'hme', 'errors-turnstart'), '0');
+    fs.writeFileSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'errors-lastread'), '0');
+    fs.writeFileSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'errors-turnstart'), '0');
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.inline-watermark'), '0');
   } else {
     // Watermarks lag behind so the UNADDRESSED branch fires.
-    fs.writeFileSync(path.join(sandbox, 'runtime', 'hme', 'errors-lastread'), '0');
-    fs.writeFileSync(path.join(sandbox, 'runtime', 'hme', 'errors-turnstart'), String(canaryLines.length));
+    fs.writeFileSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'errors-lastread'), '0');
+    fs.writeFileSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'errors-turnstart'), String(canaryLines.length));
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.inline-watermark'), '0');
   }
   const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
@@ -54,7 +54,7 @@ function _withLifesaverSandbox(canaryLines, opts = {}) {
     stdout: result.stdout || '',
     stderr: result.stderr || '',
     consumedFile: path.join(sandbox, 'tmp', 'hme-canary-consumed.txt'),
-    watermarkFile: path.join(sandbox, 'runtime', 'hme', 'errors-lastread'),
+    watermarkFile: path.join(sandbox, 'tools', 'HME', 'runtime', 'errors-lastread'),
     cleanup: () => { try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ } },
   };
 }

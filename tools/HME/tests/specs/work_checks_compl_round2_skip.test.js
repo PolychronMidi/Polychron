@@ -81,7 +81,7 @@ test('compl-round2-skip: round 2 is suppressed when round-1 response was "Nothin
     const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
     // Pre-seed the COMPL counter to 1 (round 1 already fired) so this run
     // is the round-2 decision point.
-    const compl = path.join(sandbox, 'runtime', 'hme', 'completeness-injected.json');
+    const compl = path.join(sandbox, 'tools', 'HME', 'runtime', 'completeness-injected.json');
     // The dedup key includes a hash of (turnIndex, prompt-text). Easier to
     // first invoke the policy once to advance the counter to 1, then a
     // second invocation simulates the round-2 firing.
@@ -141,8 +141,8 @@ test('compl-round2-skip: long response containing "nothing missed" mid-sentence 
 
 test('work_checks: advisor_silently_skipped verdict denies with advisor reason',
   _withSandbox(async (sandbox) => {
-    fs.mkdirSync(path.join(sandbox, 'runtime', 'hme'), { recursive: true });
-    const verdicts = path.join(sandbox, 'runtime', 'hme', 'stop-detector-verdicts.env');
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
     fs.writeFileSync(verdicts, 'ADVISOR_DOCTRINE=advisor_silently_skipped\n');
     const transcript = _writeTranscript(sandbox, [
       { type: 'user', message: { content: 'fix the detector registry' } },
