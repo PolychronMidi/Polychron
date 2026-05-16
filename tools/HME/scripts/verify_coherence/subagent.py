@@ -280,7 +280,7 @@ class AgentJobContractVerifier(Verifier):
         except OSError as e:
             return _result(ERROR, 0.0, f"agent_jobs.py unreadable: {e}")
         required = [
-            'runtime" / "hme" / "agent-jobs',
+            'tools" / "HME" / "runtime" / "agent-jobs',
             "request.json",
             "output.txt",
             "stderr.txt",

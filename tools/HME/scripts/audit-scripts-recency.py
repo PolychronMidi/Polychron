@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT_PREFIXES = ["src/scripts", "tools/HME/scripts", "tools/HME/tests/scripts"]
-LOG_ROOTS = [ROOT / "log", ROOT / "output" / "metrics", ROOT / "runtime" / "hme"]
+LOG_ROOTS = [ROOT / "log", ROOT / "output" / "metrics", ROOT / "tools" / "HME" / "runtime"]
 RUN_EVIDENCE_METRICS = {"hme-activity.jsonl", "hme-activity-archive.jsonl", "hme-tool-usage.jsonl"}
 SOURCE_SKIP_PREFIXES = ("log/", "output/", "runtime/", "tmp/", "tools/models/")
 RUN_SUFFIXES = {".py", ".js", ".sh"}
