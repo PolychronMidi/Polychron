@@ -2,6 +2,7 @@
 """Source grep invariants with stable Python-side allowlists."""
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import os
@@ -48,15 +49,25 @@ def _baseline_hash(rel: str, line: str) -> str:
     return hashlib.sha256(f"{rel}\0{line.strip()}".encode()).hexdigest()
 
 
-def _load_baseline(rule_name: str) -> set[str]:
-    if rule_name != "no-hardcoded-metrics-path":
-        return set()
-    path = ROOT / "tools/HME/config/invariants/hardcoded_metrics_baseline.json"
+BASELINE_FILES = {
+    "no-hardcoded-metrics-path": "tools/HME/config/invariants/hardcoded_metrics_baseline.json",
+}
+
+
+def _load_baseline_doc(rule_name: str) -> dict:
+    rel = BASELINE_FILES.get(rule_name)
+    if not rel:
+        return {}
+    path = ROOT / rel
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return set()
-    hashes = data.get("hashes")
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _load_baseline(rule_name: str) -> set[str]:
+    hashes = _load_baseline_doc(rule_name).get("hashes")
     return set(hashes) if isinstance(hashes, list) else set()
 
 
@@ -87,13 +98,8 @@ def _candidate_files(rule: dict):
             yield path
 
 
-def main() -> int:
-    if len(sys.argv) != 2 or sys.argv[1] not in RULES:
-        print("usage: check_source_grep_invariant.py <rule>", file=sys.stderr)
-        print("rules: " + ", ".join(sorted(RULES)), file=sys.stderr)
-        return 2
-    rule_name = sys.argv[1]
-    baseline = _load_baseline(rule_name)
+def _findings(rule_name: str) -> list[tuple[str, int, str, str]]:
+    found: list[tuple[str, int, str, str]] = []
     for rule in RULES[rule_name]:
         pattern = re.compile(rule["pattern"])
         exclude = re.compile(rule["exclude"]) if rule.get("exclude") else None
@@ -104,9 +110,58 @@ def main() -> int:
                 row = f"{rel}:{lineno}:{line}"
                 if not pattern.search(line) or (exclude and exclude.search(row)):
                     continue
-                if _baseline_hash(rel, line) in baseline:
-                    continue
-                print(row)
+                found.append((rel, lineno, line, _baseline_hash(rel, line)))
+    return found
+
+
+def _baseline_stats(rule_name: str) -> dict:
+    baseline_doc = _load_baseline_doc(rule_name)
+    baseline = set(baseline_doc.get("hashes") or [])
+    findings = _findings(rule_name)
+    current = {h for *_rest, h in findings}
+    used = current & baseline
+    new = current - baseline
+    stale = baseline - current
+    return {
+        "rule": rule_name,
+        "baseline_file": BASELINE_FILES.get(rule_name, ""),
+        "initial_count": int(baseline_doc.get("initial_count", baseline_doc.get("count", len(baseline))) or 0),
+        "baseline_count": len(baseline),
+        "current_count": len(current),
+        "used_baseline_count": len(used),
+        "stale_baseline_count": len(stale),
+        "new_count": len(new),
+    }
+
+
+def _parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("rule", choices=sorted(RULES))
+    parser.add_argument("--baseline-stats", action="store_true")
+    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--include-baseline", action="store_true")
+    return parser.parse_args(argv)
+
+
+def main() -> int:
+    args = _parse_args(sys.argv[1:])
+    rule_name = args.rule
+    if args.baseline_stats:
+        stats = _baseline_stats(rule_name)
+        if args.json:
+            print(json.dumps(stats, sort_keys=True))
+        else:
+            print(
+                f"{rule_name}: current={stats['current_count']} "
+                f"baseline={stats['baseline_count']} used={stats['used_baseline_count']} "
+                f"stale={stats['stale_baseline_count']} new={stats['new_count']}"
+            )
+        return 0
+    baseline = set() if args.include_baseline else _load_baseline(rule_name)
+    for rel, lineno, line, digest in _findings(rule_name):
+        if digest in baseline:
+            continue
+        print(f"{rel}:{lineno}:{line}")
     return 0
 
 
