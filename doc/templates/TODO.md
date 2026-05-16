@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Inspect root ts_api entries including symlinks
+- [ ] [E3] Dump every project-root directory entry with escaped names and lstat type
 
 ## Next
 
-- [ ] [E3] Trace which code creates root symlinks/files
-- [ ] [E3] Patch writer/guard to block any root ts_api entry type
-- [ ] [E3] Clean generated root spam and verify
+- [ ] [E3] Remove the exact ts_api JSONL root entries found
+- [ ] [E3] Broaden root guard to reject any root entry whose name contains jsonl/API transcript spam, regardless of type
+- [ ] [E3] Verify with raw root dump and root-only validator
 
 ## Done
 
