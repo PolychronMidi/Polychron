@@ -9,6 +9,7 @@ const sanitizer = require('../../proxy/middleware/06_secret_sanitizer');
 const F = {
   openai:   'sk' + '-proj-' + 'AbCdEfGhIjKlMnOpQrStUvWxYz1234567890abcdef',
   github:   'g' + 'hp_' + 'AbCdEfGhIj1234567890MnOpQrStUvWxYzAa',
+  groq:     'gsk' + '_AbCdEfGhIj1234567890MnOpQrStUvWxYzAaBbCcDd',
   awsKey:   'AK' + 'IAIOSFODNN7EXAMPLE',
   bearer:   'Bearer ' + 'abcDEF1234567890.fakesig_part_here',
   jwt:      'ey' + 'JhbGciOiJIUzI1NiJ9.eyJ4Ijoi1234abcd.fakesig_part_here_xxx',
@@ -36,6 +37,12 @@ test('sanitize: OpenAI provider key', () => {
 test('sanitize: GitHub PAT', () => {
   const out = _scrub('token: ' + F.github);
   assert.match(out, /<REDACTED:github-token>/);
+});
+
+test('sanitize: Groq provider key', () => {
+  const out = _scrub('GROQ_API_KEY=' + F.groq);
+  assert.match(out, /<REDACTED:provider-key>/);
+  assert.ok(!out.includes(F.groq), 'original Groq key value must not survive');
 });
 
 test('sanitize: AWS access key', () => {
