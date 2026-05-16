@@ -10,7 +10,7 @@ const { servicePort } = require('./service_registry');
 
 function effectiveMode(env = process.env) {
   const mode = String(env.OVERDRIVE_MODE || '0');
-  return mode === '6' ? '6' : '0';
+  return mode === '1' ? '1' : '0';
 }
 
 function roleFromPayload(payload, env = process.env) {
@@ -59,7 +59,7 @@ function rankedForTier(cfg, tier) {
   return { models, ranked };
 }
 
-function buildMode6Chain(payload, env = process.env, cfg = loadModelsJson()) {
+function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
   const role = roleFromPayload(payload, env);
   const tier = roleTier(role, modelTier(payload.model));
   const key = roleKey(role);
@@ -106,21 +106,21 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     lastPayloadBytes: 0,
   };
   console.error(`[hme-proxy] swap-check: odMode=${requested} effective=${mode} model=${payload && payload.model ? payload.model : 'no-payload'} upstream=${!!clientReq.headers['x-hme-upstream']}`);
-  if (requested !== '0' && requested !== '6') console.error(`[hme-proxy] OVERDRIVE_MODE=${requested} retired; use 0 or 6.`);
-  if (mode !== '6' || !payload || typeof payload.model !== 'string' || !payload.model.startsWith('claude-') || clientReq.headers['x-hme-upstream']) return result;
+  if (requested !== '0' && requested !== '1') console.error(`[hme-proxy] OVERDRIVE_MODE=${requested} retired; use 0 or 1.`);
+  if (mode !== '1' || !payload || typeof payload.model !== 'string' || !payload.model.startsWith('claude-') || clientReq.headers['x-hme-upstream']) return result;
 
   const zenKey = env.OPENCODE_API_KEY || '';
   if (!zenKey) {
-    console.error('[hme-proxy] OVERDRIVE_MODE=6 active but OPENCODE_API_KEY missing -- swap skipped');
+    console.error('[hme-proxy] OVERDRIVE_MODE=1 active but OPENCODE_API_KEY missing -- swap skipped');
     return result;
   }
   result.wasStreaming = payload.stream === true;
   result.injected = true;
   let chainInfo;
-  try { chainInfo = buildMode6Chain(payload, env); }
-  catch (err) { console.error(`[hme-proxy] MODE=6 chain build failed: ${err.message}`); chainInfo = { chain: [], role: '', tier: modelTier(payload.model) }; }
+  try { chainInfo = buildMode1Chain(payload, env); }
+  catch (err) { console.error(`[hme-proxy] MODE=1 chain build failed: ${err.message}`); chainInfo = { chain: [], role: '', tier: modelTier(payload.model) }; }
   result.swapChain = chainInfo.chain || [];
-  console.error(`[hme-proxy] MODE=6 ${chainInfo.tier} chain built (role=${chainInfo.role || 'none'} model=${payload.model}): ${result.swapChain.map((m) => m.id).join(' -> ')} (${result.swapChain.length} models)`);
+  console.error(`[hme-proxy] MODE=1 ${chainInfo.tier} chain built (role=${chainInfo.role || 'none'} model=${payload.model}): ${result.swapChain.map((m) => m.id).join(' -> ')} (${result.swapChain.length} models)`);
   if (result.swapChain.length > 0) {
     const idx = selectedIndex(result.swapChain, projectRoot);
     result.swapModel = result.swapChain[idx].id;
@@ -146,7 +146,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     delete clientReq.headers['x-api-key'];
     result.isOmniRoute = true;
     result.applied = true;
-    console.error(`[hme-proxy] MODE=6 OmniRoute: claude-* -> ${result.omniProvider}/${result.swapModel} via ${clientReq.headers['x-hme-upstream']} targetFormat=${targetFormat} (stream=${result.wasStreaming} msgs=${payload.messages.length} sys=${(payload.system || '').length}B tools=${(payload.tools || []).length})`);
+    console.error(`[hme-proxy] MODE=1 OmniRoute: claude-* -> ${result.omniProvider}/${result.swapModel} via ${clientReq.headers['x-hme-upstream']} targetFormat=${targetFormat} (stream=${result.wasStreaming} msgs=${payload.messages.length} sys=${(payload.system || '').length}B tools=${(payload.tools || []).length})`);
     return result;
   }
 
@@ -159,7 +159,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
       result.ended = true;
       return result;
     }
-    console.error(`[hme-proxy] MODE=6 legacy: skipping Codex responses target ${result.omniProvider}/${result.swapModel}; chat translator requires non-Codex target`);
+    console.error(`[hme-proxy] MODE=1 legacy: skipping Codex responses target ${result.omniProvider}/${result.swapModel}; chat translator requires non-Codex target`);
     result.swapModel = stripGo(legacy.model.id);
     result.omniProvider = omniProviderForConfigProvider(legacy.model.provider || '');
   }
@@ -172,8 +172,8 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   result.outBody = Buffer.from(JSON.stringify(oaPayload), 'utf8');
   result.isLegacySwap = true;
   result.applied = true;
-  console.error(`[hme-proxy] MODE=6 legacy: claude-* -> ${result.swapModel} via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${result.wasStreaming})`);
+  console.error(`[hme-proxy] MODE=1 legacy: claude-* -> ${result.swapModel} via Zen Go /v1/chat/completions (tools=${(oaPayload.tools || []).length}, stream=${result.wasStreaming})`);
   return result;
 }
 
-module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, rankedForTier, buildMode6Chain, applyOverdriveRoute };
+module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, rankedForTier, buildMode1Chain, applyOverdriveRoute };

@@ -8,7 +8,7 @@ const path = require('path');
 
 const { shrinkForPassthrough } = require('../../proxy/anthropic_passthrough_compact');
 const { handleLegacySwapResponse, writeAnthropicStopSse } = require('../../proxy/legacy_swap_response');
-const { effectiveMode, buildMode6Chain, applyOverdriveRoute } = require('../../proxy/overdrive_route');
+const { effectiveMode, buildMode1Chain, applyOverdriveRoute } = require('../../proxy/overdrive_route');
 
 function quiet(fn) {
   const orig = console.error;
@@ -26,14 +26,14 @@ function fakeClientRes() {
   };
 }
 
-test('overdrive route retires legacy modes and keeps only mode 6 active', () => {
-  for (const mode of ['0', '1', '2', '3', '4', '5', '', undefined]) {
+test('overdrive route retires legacy modes and keeps only mode 1 active', () => {
+  for (const mode of ['0', '2', '3', '4', '5', '6', '', undefined]) {
     assert.equal(effectiveMode({ OVERDRIVE_MODE: mode }), '0');
   }
-  assert.equal(effectiveMode({ OVERDRIVE_MODE: '6' }), '6');
+  assert.equal(effectiveMode({ OVERDRIVE_MODE: '1' }), '6');
 });
 
-test('mode 6 chain builder preserves team-role tier routing', () => {
+test('mode 1 chain builder preserves team-role tier routing', () => {
   const cfg = {
     ranking_rules: { cost_order: ['free', 'usage'] },
     manually_toprank: { E5: ['manual-e5'] },
@@ -44,13 +44,13 @@ test('mode 6 chain builder preserves team-role tier routing', () => {
       { id: 'free-e5', cost: 'free', tier_score: 5 },
     ] } },
   };
-  const result = buildMode6Chain({ model: 'claude-sonnet-4-6', messages: [] }, { HME_TEAM_ROLE: 'driver' }, cfg);
+  const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, { HME_TEAM_ROLE: 'driver' }, cfg);
   assert.equal(result.role, 'driver');
   assert.equal(result.tier, 'E5');
   assert.deepEqual(result.chain.map((m) => m.id), ['manual-e5', 'free-e5', 'usage-e5']);
 });
 
-test('mode 6 OmniRoute path rewrites Claude payload and strips direct auth', () => quiet(() => {
+test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () => quiet(() => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-'));
   try {
     const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
@@ -64,7 +64,7 @@ test('mode 6 OmniRoute path rewrites Claude payload and strips direct auth', () 
       outBody: Buffer.from(JSON.stringify(payload)),
       stripStaleToolResults: () => { strippedTools = true; },
       stripClaudeIdentity: () => { strippedIdentity = true; },
-      env: { OVERDRIVE_MODE: '6', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'driver', HME_OMNIROUTE_PROVIDER: 'openai-responses' },
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'driver', HME_OMNIROUTE_PROVIDER: 'openai-responses' },
       projectRoot: tmp,
     });
     assert.equal(result.applied, true);

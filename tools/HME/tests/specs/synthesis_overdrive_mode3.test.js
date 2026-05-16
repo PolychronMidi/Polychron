@@ -1,5 +1,5 @@
 'use strict';
-// Legacy overdrive modes 3/4 are retired: only 0 and 6 remain active.
+// Legacy overdrive modes 3/4 are retired: only 0 and 1 remain active.
 
 const { test } = require('node:test');
 const assert = require('node:assert');

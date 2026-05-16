@@ -1,5 +1,5 @@
 'use strict';
-// Legacy overdrive modes 1/2 are retired: only 0 and 6 remain active.
+// Legacy overdrive mode 2 is retired: only 0 and 1 remain active.
 
 const { test } = require('node:test');
 const assert = require('node:assert');
@@ -37,8 +37,8 @@ print(json.dumps({"called": overdrive_called["flag"], "source": sr.last_source()
   } finally { fs.rmSync(sandbox, { recursive: true, force: true }); }
 }
 
-test('overdrive modes 1 and 2 are retired and fall through to cascade', () => {
-  for (const mode of ['1', '2']) {
+test('overdrive mode 2 is retired and falls through to cascade', () => {
+  for (const mode of ['2']) {
     const result = run(mode);
     assert.equal(result.status, 0, result.stderr);
     const parsed = JSON.parse(result.stdout.trim().split('\n').pop());

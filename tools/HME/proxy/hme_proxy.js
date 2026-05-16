@@ -763,7 +763,7 @@ function handleRequest(clientReq, clientRes) {
             const _shouldRetry = headers['x-should-retry'] === 'true';
             const _isRateLimit = _errInfo.type === 'rate_limit_error';
 
-            // MODE=6 OmniRoute fallback: advance to next model in E5 chain on failure.
+            // MODE=1 OmniRoute fallback: advance to next model in E5 chain on failure.
             console.error(`[hme-proxy] fallback probe: _isOmniRouteSwap=${_isOmniRouteSwap} chainLen=${_swapChain.length} _isRateLimit=${_isRateLimit} status=${status}`);
             if (_isOmniRouteSwap && _swapChain.length > 1) {
               const _fs = require('fs');
@@ -796,9 +796,9 @@ function handleRequest(clientReq, clientRes) {
             }
             // Trip escape hatch on every interactive 4xx (incl x-should-retry
             // 429s -- user wants the lifesaver alert as recovery signal).
-            // MODE=6: never trip the escape hatch (OmniRoute errors must not
+            // MODE=1: never trip the escape hatch (OmniRoute errors must not
             // cause passthrough to api.anthropic.com).
-            if (_isInteractivePath && !_coolingDown && process.env.OVERDRIVE_MODE !== '6') {
+            if (_isInteractivePath && !_coolingDown && process.env.OVERDRIVE_MODE !== '1') {
               recordUpstreamFailure(_errMsg);
             } else if (_isInteractivePath) {
               console.error(`escape hatch SUPPRESSED (OVERDRIVE_MODE=${process.env.OVERDRIVE_MODE || '0'}, _isOmniRouteSwap=${_isOmniRouteSwap}) -- passthrough blocked`);

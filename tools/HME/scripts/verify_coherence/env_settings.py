@@ -107,7 +107,7 @@ class OAuthTokenExpiryVerifier(Verifier):
     before it happens.
 
     Thresholds:
-      - OVERDRIVE_MODE=6      -> PASS (Anthropic-free path; token irrelevant)
+      - OVERDRIVE_MODE=1      -> PASS (Anthropic-free path; token irrelevant)
       - expired / absent      -> WARN (Claude fallback unavailable until refresh)
       - <1h remaining         -> WARN (refresh soon)
       - >=1h remaining         -> PASS

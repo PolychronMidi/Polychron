@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Team IPC dashboard for MODE=6 agent health."""
+"""Team IPC dashboard for MODE=1 agent health."""
 from __future__ import annotations
 import argparse, json, os, sqlite3, sys
 from datetime import datetime, timezone
@@ -128,7 +128,7 @@ def _role_names(body: dict) -> list[str]:
  if any(m.get("_omniroute_truncated_array") for m in body.get("messages", []) if isinstance(m, dict)):
   return []
  text = _user_text(body)
- if "Filesystem IPC only" not in text or "MODE=6" not in text:
+ if "Filesystem IPC only" not in text or "MODE=1" not in text:
   return []
  return [r for r, needles in ROLE_NEEDLES.items() if any(n in text for n in needles)]
 def _role_matches(role: str, body: dict, current_sid: str) -> bool:
@@ -178,8 +178,8 @@ def _current_session_id() -> str:
   raise RuntimeError(f"current session path empty: {path}")
  return Path(value).stem
 def _ctx_info(role: str, sid: str, tier: str, forked_at: str | None = None) -> dict:
- if os.environ.get("OVERDRIVE_MODE") != "6":
-  raise RuntimeError("team dashboard context requires OVERDRIVE_MODE=6")
+ if os.environ.get("OVERDRIVE_MODE") != "1":
+  raise RuntimeError("team dashboard context requires OVERDRIVE_MODE=1")
  ctx = _omniroute_ctx(role, sid, tier, forked_at)
  if not ctx:
   raise RuntimeError(f"omniroute context unavailable for {role} sid={sid}")

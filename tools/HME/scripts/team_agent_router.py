@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MODE=6 Agent level router."""
+"""MODE=1 Agent level router."""
 from __future__ import annotations
 
 import json
@@ -213,7 +213,7 @@ def _native_input(tool_input: dict, target: str) -> dict:
     return {
         "description": f"{target} routed: {desc}"[:200],
         "prompt": (
-            f"MODE=6 team-routed task. You are {target}.\n"
+            f"MODE=1 team-routed task. You are {target}.\n"
             f"Register/heartbeat via i/status team if not present. Do not fork further subagents.\n\n"
             f"Original task:\n{prompt}"
         ),
@@ -242,7 +242,7 @@ def resolve_target_for_tier(caller: str, request_tier: str) -> Optional[str]:
 
 def main() -> int:
     payload = json.load(sys.stdin)
-    if os.environ.get("OVERDRIVE_MODE") != "6":
+    if os.environ.get("OVERDRIVE_MODE") != "1":
         return 0
     if payload.get("tool_name") != "Agent":
         return 0

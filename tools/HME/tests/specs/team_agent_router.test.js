@@ -14,7 +14,7 @@ function runRouter(project, payload, role = 'driver') {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-agent-router-input-'));
   const inputFile = path.join(dir, 'payload.json');
   fs.writeFileSync(inputFile, JSON.stringify(payload));
-  const command = `PROJECT_ROOT=${JSON.stringify(project)} OVERDRIVE_MODE=6 HME_TEAM_ROLE=${JSON.stringify(role)} python3 ${JSON.stringify(ROUTER)} < ${JSON.stringify(inputFile)}`;
+  const command = `PROJECT_ROOT=${JSON.stringify(project)} OVERDRIVE_MODE=1 HME_TEAM_ROLE=${JSON.stringify(role)} python3 ${JSON.stringify(ROUTER)} < ${JSON.stringify(inputFile)}`;
   const result = spawnSync('bash', ['-lc', command], {
     cwd: PROJECT_ROOT,
     env: { ...process.env },

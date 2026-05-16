@@ -1,5 +1,5 @@
 'use strict';
-// Legacy overdrive mode 5 is retired as a dispatch mode; registry helpers now back mode 6.
+// Legacy overdrive mode 5 is retired as a dispatch mode; registry helpers now back mode 1.
 
 const { test } = require('node:test');
 const assert = require('node:assert');

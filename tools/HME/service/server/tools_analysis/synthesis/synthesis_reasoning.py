@@ -244,7 +244,7 @@ _last_source: str | None = None
 
 
 def _resolve_registry_tier_chain(tier: str) -> tuple[str, ...] | None:
-    """Resolve registry tier chain used by active OVERDRIVE_MODE=6.
+    """Resolve registry tier chain used by active OVERDRIVE_MODE=1.
     Chain ordered free first (including cascade), then subscription, then
     usage; each group by tier_score desc. Returns None if config unreadable
     or tier empty. Caller determines allow_subagent from chain contents."""
@@ -337,7 +337,7 @@ def _role_key(role: str) -> str:
     return ""
 
 
-def _mode6_role_chain(cfg: dict, role: str, role_tier: str) -> tuple[str, ...] | None:
+def _mode1_role_chain(cfg: dict, role: str, role_tier: str) -> tuple[str, ...] | None:
     spec = cfg.get("team_role_models", {}).get(_role_key(role))
     if not isinstance(spec, dict):
         return None
@@ -351,7 +351,7 @@ def _mode6_role_chain(cfg: dict, role: str, role_tier: str) -> tuple[str, ...] |
     return tuple(top + [m for m in base if m not in top])
 
 
-def _resolve_mode6_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
+def _resolve_mode1_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
     from hme_env import ENV as _ENV
     from . import _load_models_json as _lmj
     role = _ENV.optional("HME_TEAM_ROLE", "").strip().lower()
@@ -360,15 +360,15 @@ def _resolve_mode6_entry(tier: str) -> tuple[tuple[str, ...], bool] | None:
         cfg = _lmj()
     except Exception as _exc:
         return _resolve_registry_tier_entry(role_tier)
-    chain = _mode6_role_chain(cfg, role, role_tier) or _resolve_registry_tier_chain(role_tier)
+    chain = _mode1_role_chain(cfg, role, role_tier) or _resolve_registry_tier_chain(role_tier)
     return (chain, any(m.startswith("claude-") for m in chain)) if chain else None
 
 
 # Active overdrive modes: 0=cascade, 6=team-role registry routing.
-# Legacy modes 1..5 are retired; helpers remain only where MODE=6 reuses
+# Legacy modes 1..5 are retired; helpers remain only where MODE=1 reuses
 # registry chain resolution. None = cascade.
 _MODE_CHAIN_RESOLVERS = {
-    "6": _resolve_mode6_entry,
+    "1": _resolve_mode1_entry,
 }
 
 
@@ -425,7 +425,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     None immediately -- caller falls straight to local fallback. Useful when
     Anthropic is having an outage, when rate-limited, or for offline dev.
 
-    OVERDRIVE_MODE=6 enables team-role registry routing. Legacy modes 1..5
+    OVERDRIVE_MODE=1 enables team-role registry routing. Legacy modes 1..5
     are retired and fall through to the normal cascade.
     """
     import time as _time
