@@ -45,6 +45,7 @@ PROXY_PORT="$(_hme_service_port proxy 2>/dev/null || printf '%s' "${HME_PROXY_PO
 PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
 PROXY_PID_LABEL="$(_hme_service_pid_label proxy 2>/dev/null || printf '%s' proxy)"  # silent-ok: optional fallback path.
 OMNIROUTE_PID_LABEL="$(_hme_service_pid_label omniroute 2>/dev/null || printf '%s' omniroute)"  # silent-ok: optional fallback path.
+CODEX_PROXY_PID_LABEL="$(_hme_service_pid_label codex_proxy 2>/dev/null || printf '%s' codex_proxy)"  # silent-ok: optional fallback path.
 PROXY_STARTUP_TIMEOUT="${HME_PROXY_STARTUP_TIMEOUT:-25}"
 
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
@@ -102,6 +103,10 @@ _CODEX_PROXY_SUPERVISOR="$PROJECT_ROOT/tools/HME/hooks/direct/codex-proxy-superv
 if [ "${HME_CODEX_PROXY_START:-1}" != "0" ] && [ -x "$_CODEX_PROXY_SUPERVISOR" ]; then
   PROJECT_ROOT="$PROJECT_ROOT" "$_CODEX_PROXY_SUPERVISOR" start >/dev/null 2>&1 || \
     echo "[launch] WARNING: codex proxy supervisor start failed" >&2
+  _CODEX_PROXY_PID=$(cat "$PROJECT_ROOT/runtime/hme/codex-proxy.pid" 2>/dev/null || true)
+  if [ -n "$_CODEX_PROXY_PID" ]; then
+    _record_pid "$CODEX_PROXY_PID_LABEL" "$_CODEX_PROXY_PID"
+  fi
 fi
 
 # 1. HME proxy
@@ -192,7 +197,14 @@ if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ]; then
   echo "[launch]   coder llama   -> ${_cod_ok}" >&2
 fi
 
-# 4. ANTHROPIC_BASE_URL bridge: VSCode/GUI claude doesn't source .env, so
+# 4. Routing readiness check
+
+if [ "${HME_ROUTING_READY_ON_LAUNCH:-1}" != "0" ] && [ -x "$PROJECT_ROOT/tools/HME/scripts/routing_ready.py" ]; then
+  echo "[launch] routing-ready check..." >&2
+  PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/routing_ready.py" 2>&1 | sed 's/^/[launch]   /' >&2
+fi
+
+# 5. ANTHROPIC_BASE_URL bridge: VSCode/GUI claude doesn't source .env, so
 
 if [ -n "${ANTHROPIC_BASE_URL:-}" ]; then
   _vscode_dir="$PROJECT_ROOT/.vscode"
