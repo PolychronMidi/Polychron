@@ -27,6 +27,7 @@ const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metric
 
 const ACTIVITY = path.join(METRICS_DIR, 'hme-activity.jsonl');
 const OUT = path.join(METRICS_DIR, 'hme-violations.json');
+const FALLBACK_WINDOW_SEC = 24 * 60 * 60;
 
 function readEvents() {
   if (!fs.existsSync(ACTIVITY)) return [];
@@ -53,7 +54,9 @@ function sliceToRound(events) {
       break;
     }
   }
-  return lastRound >= 0 ? events.slice(lastRound + 1) : events;
+  if (lastRound >= 0) return events.slice(lastRound + 1);
+  const cutoff = Date.now() / 1000 - FALLBACK_WINDOW_SEC;
+  return events.filter((e) => !Number.isFinite(Number(e.ts)) || Number(e.ts) >= cutoff);
 }
 
 function writeReport(report) {
