@@ -246,7 +246,7 @@ def before_editing(file_path: str) -> str:
         logger.debug(f"parts.append: {type(_err4).__name__}: {_err4}")
 
     # P4. Edit Risks -- synthesized danger zones
-    _verbose = ENV.optional_bool("HME_READ_VERBOSE", False)
+    _verbose = ENV.runtime_bool("HME_READ_VERBOSE", False)
     if synthesis and _verbose:
         parts.append(f"\n## Edit Risks *(adaptive)*")
         parts.append(compress_for_claude(synthesis, max_chars=800,

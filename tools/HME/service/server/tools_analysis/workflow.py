@@ -117,7 +117,7 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     Interactive calls use two-stage pipeline (extract->reason) for better grounding.
     Background/warm-cache calls use single-stage to avoid competing with interactive work."""
     # Honor fast=true on read(): skip the 30-90s synthesis entirely when
-    if ENV.optional_bool("HME_READ_FAST", False):
+    if ENV.runtime_bool("HME_READ_FAST", False):
         return "(Edit Risks synthesis skipped -- HME_READ_FAST=1)"
     callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
     kb_summary = "\n".join(

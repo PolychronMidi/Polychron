@@ -169,8 +169,8 @@ def drama_finder(top_n: int = 10) -> str:
 
     # Micro-narrative synthesis for top 3 events. Gated: this was the
     _skip_synth = (
-        ENV.optional_bool("HME_READ_FAST", False)
-        or ENV.optional_bool("HME_DRAMA_NO_SYNTHESIS", False)
+        ENV.runtime_bool("HME_READ_FAST", False)
+        or ENV.runtime_bool("HME_DRAMA_NO_SYNTHESIS", False)
     )
     if not _skip_synth:
         from .synthesis import _reasoning_think

@@ -117,7 +117,7 @@ def module_story(module_name: str) -> str:
                 parts.append(f"    ... and {len(result['symbols']) - sym_limit} more")
         parts.append("")
     # Evolution history from KB -- filtered for actual relevance to this module.
-    _fast = ENV.optional_bool("HME_READ_FAST", False)
+    _fast = ENV.runtime_bool("HME_READ_FAST", False)
     from . import _filter_kb_relevance
     kb_limit = 5 if _fast else (limits["kb_entries"] * 2)
     kb_results = ctx.project_engine.search_knowledge(module_name, top_k=kb_limit)
@@ -319,7 +319,7 @@ def module_story(module_name: str) -> str:
         "- Only reference behaviors visible in the code above. Do NOT speculate.\n"
     )
     # Adaptive synthesis is slow (45-115s depending on cascade). Allow the
-    if os.environ.get("HME_READ_FAST") in ("1", "true", "yes"):  # env-ok: read transient per-call flag set by read_unified
+    if ENV.runtime_bool("HME_READ_FAST", False):
         parts.append(f"\n## Key Constraints *(adaptive)* -- SKIPPED (HME_READ_FAST=1)")
     else:
         import time as _time_mod
