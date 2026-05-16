@@ -428,6 +428,21 @@
       "context": "No new JS, Python, or shell hardcoded metrics path may appear; legacy findings are migration-baselined in tools/HME/config/invariants/hardcoded_metrics_baseline.json and new callers must use METRICS_DIR. Bare output/metrics in path.join(), os.path.join(), or shell strings is the violation class that caused metrics path fragmentation. Exempt: this invariant's own shell, migration script, comments in .md files."
     },
     {
+      "id": "hardcoded-metrics-baseline-shrinks",
+      "description": "Migration baselines must only shrink and must not hide new hardcoded metrics path findings.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/invariants/check_baseline_shrink.py no-hardcoded-metrics-path",
+      "severity": "error",
+      "finding_label": "finding",
+      "success_detail": "baseline shrinking/no new findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true,
+      "born_from": "2026 hardcoded metrics path migration baseline must not become permanent cover",
+      "context": "The no-hardcoded-metrics-path baseline is temporary migration state. New findings fail the source invariant; stale hashes or growth fail this guard so the baseline keeps shrinking."
+    },
+    {
       "id": "no-duplicate-output-dirs",
       "description": "log/ and tmp/ exist ONLY at the project root; metrics/ exists ONLY at output/metrics/. Any other instance of these directory names is a duplicate that fragments telemetry.",
       "type": "shell_output_empty",
