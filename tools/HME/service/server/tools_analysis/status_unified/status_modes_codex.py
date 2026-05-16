@@ -240,7 +240,7 @@ def _mode_codex_route() -> str:
 
 
 def _mode_hook_decisions() -> str:
-    path = os.path.join(ctx.PROJECT_ROOT, "runtime", "hme", "hook-decisions.jsonl")
+    path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "runtime", "hook-decisions.jsonl")
     events = _iter_events(path, limit=80)
     out = ["# Hook decision compact", ""]
     relevant = [e for e in events if e.get("decision") != "allow" or e.get("reason_hash")]
