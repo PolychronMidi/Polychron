@@ -57,8 +57,8 @@ function _ensure(dir) {
  * Endpoints currently honored by the worker watcher: 'enrich',
  * 'enrich_prompt', 'audit'. Unknown endpoints get an `error` result.
  */
-function dropJob(endpoint, body) {
-  const endpointDir = path.join(QUEUE_DIR, endpoint);
+function dropJob(endpoint, body, queueDir = QUEUE_DIR) {
+  const endpointDir = path.join(queueDir, endpoint);
   _ensure(endpointDir);
   const jobId = crypto.randomBytes(8).toString('hex');
   const jobFile = path.join(endpointDir, `${jobId}.json`);
@@ -79,8 +79,8 @@ function dropJob(endpoint, body) {
  * cheap enough to not pin a CPU. For long-running jobs callers can
  * raise pollMs.
  */
-async function waitForResult(jobId, timeoutMs = 10_000, pollMs = 50) {
-  const resultFile = path.join(RESULTS_DIR, `${jobId}.json`);
+async function waitForResult(jobId, timeoutMs = 10_000, pollMs = 50, resultsDir = RESULTS_DIR) {
+  const resultFile = path.join(resultsDir, `${jobId}.json`);
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (fs.existsSync(resultFile)) {
@@ -109,4 +109,22 @@ async function call(endpoint, body, opts = {}) {
   return await waitForResult(jobId, timeoutMs, pollMs);
 }
 
-module.exports = { dropJob, waitForResult, call, QUEUE_DIR, RESULTS_DIR };
+function createClient(root = PROJECT_ROOT) {
+  const dirs = _dirs(root);
+  return {
+    QUEUE_DIR: dirs.QUEUE_DIR,
+    RESULTS_DIR: dirs.RESULTS_DIR,
+    dropJob(endpoint, body) { return dropJob(endpoint, body, dirs.QUEUE_DIR); },
+    waitForResult(jobId, timeoutMs = 10_000, pollMs = 50) {
+      return waitForResult(jobId, timeoutMs, pollMs, dirs.RESULTS_DIR);
+    },
+    async call(endpoint, body, opts = {}) {
+      const timeoutMs = opts.timeoutMs || 10_000;
+      const pollMs = opts.pollMs || 50;
+      const jobId = dropJob(endpoint, body, dirs.QUEUE_DIR);
+      return await waitForResult(jobId, timeoutMs, pollMs, dirs.RESULTS_DIR);
+    },
+  };
+}
+
+module.exports = { dropJob, waitForResult, call, createClient, QUEUE_DIR, RESULTS_DIR };
