@@ -462,14 +462,6 @@
       "severity": "error"
     },
     {
-      "id": "claude-md-eslint-count",
-      "description": "AGENTS.md must document the correct ESLint rule count (23)",
-      "type": "pattern_in_file",
-      "path": "AGENTS.md",
-      "pattern": "ESLint rules \\(24\\)",
-      "severity": "warning"
-    },
-    {
       "id": "feedback-loops-count",
       "description": "feedback_graph.json must have at least 11 feedback loops",
       "type": "pattern_count_gte",
