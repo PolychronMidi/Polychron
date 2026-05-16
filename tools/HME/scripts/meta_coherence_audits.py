@@ -270,7 +270,8 @@ def audit_module_imports(root: Path) -> list[dict]:
             [sys.executable, str(script), "--path", str(target), "--json"],
             capture_output=True, text=True, timeout=60, cwd=str(root),
         )
-        data = _json.loads(proc.stdout or "[]")
+        payload = _json.loads(proc.stdout or "{}")
+        data = payload.get("findings", payload if isinstance(payload, list) else [])
     except Exception as e:
         return [{
             "source": "audit-python-undefined-names",
