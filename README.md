@@ -71,7 +71,7 @@ tools/HME/scripts/hme-doctor.py --hooks
 tools/HME/scripts/hme-doctor.py --portable
 ```
 
-Generated artifacts live in `src/output/metrics/`:
+Composition artifacts live in `src/output/metrics/`. HME runtime telemetry lives in `tools/HME/runtime/metrics/`:
 
 - `trace-summary.json` - beat, signal, regime, coupling, and trust summary.
 - `fingerprint-comparison.json` - STABLE / EVOLVED / DRIFTED verdict.
