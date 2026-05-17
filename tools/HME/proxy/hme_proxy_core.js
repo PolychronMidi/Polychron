@@ -202,9 +202,6 @@ const __hmeProxyInternals = {
 };
 module.exports = {
   _stripHmePrefixOutgoing,
-  _envNumber,
-  _resolveModelCtx,
-  _estimatedContextTokens,
   _anthropicTextSseBuffer,
   _stripStaleToolResults,
   _stripClaudeIdentity,
