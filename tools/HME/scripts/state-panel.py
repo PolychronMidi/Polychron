@@ -15,6 +15,7 @@ import os
 import sys
 import time
 import re
+import subprocess
 
 from _common import PROJECT_ROOT, load_jsonl_all
 from hme_paths import hme_metric
@@ -54,6 +55,19 @@ def _pid_alive(raw: str) -> bool | None:
         return True
 
 
+def _repair_stale_pipeline_lock() -> dict:
+    script = os.path.join(PROJECT_ROOT, "tools", "HME", "scripts",
+                          "repair-stale-runtime.py")
+    try:
+        raw = subprocess.check_output(
+            [sys.executable, script, "--fix", "--json"],
+            cwd=PROJECT_ROOT, text=True, timeout=3, stderr=subprocess.DEVNULL,
+        )
+        return json.loads(raw)
+    except Exception:
+        return {}
+
+
 def _age(path: str) -> str:
     if not os.path.isfile(path):
         return "(absent)"
@@ -85,7 +99,11 @@ def main(argv):
         pid = _read_text(lock)
         alive = _pid_alive(pid)
         if alive is False:
-            out.append(f"  pipeline           stale lock (dead pid={pid}, age {_age(lock)})")
+            repaired = _repair_stale_pipeline_lock()
+            if repaired.get("status") == "repaired":
+                out.append(f"  pipeline           repaired stale lock (dead pid={pid})")
+            else:
+                out.append(f"  pipeline           stale lock (dead pid={pid}, age {_age(lock)})")
         elif alive is True:
             out.append(f"  pipeline           RUNNING (pid={pid}, started {_age(lock)})")
         else:
@@ -263,7 +281,17 @@ def main(argv):
                 f"{int(age_s/60)}m ago" if age_s < 3600 else
                 f"{age_s/3600:.1f}h ago"
             )
-            out.append(f"  last hot-reload    {human_age}  ({trigger})")
+            loaded = str(reload_info.get("loaded_head") or "")[:8]
+            try:
+                current = subprocess.check_output(
+                    ["git", "-C", PROJECT_ROOT, "rev-parse", "HEAD"],
+                    text=True, stderr=subprocess.DEVNULL, timeout=2,
+                ).strip()[:8]
+            except Exception:
+                current = ""
+            stale = " stale" if loaded and current and loaded != current else ""
+            suffix = f" head={loaded}->{current}{stale}" if loaded or current else ""
+            out.append(f"  last hot-reload    {human_age}  ({trigger}){suffix}")
         except (OSError, TypeError):
             pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
