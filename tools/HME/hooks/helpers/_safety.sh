@@ -63,7 +63,6 @@ source "${_HME_SAFETY_DIR}/latency.sh"
 source "${_HME_SAFETY_DIR}/misc_safe.sh"
 source "${_HME_SAFETY_DIR}/curl.sh"
 source "${_HME_SAFETY_DIR}/emitters.sh"
-source "${_HME_SAFETY_DIR}/streak.sh"
 source "${_HME_SAFETY_DIR}/http.sh"
 
 # 6) Install EXIT trap AFTER _hme_exit_combined is defined (latency.sh).
