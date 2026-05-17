@@ -28,6 +28,16 @@ function fakeClientRes() {
   };
 }
 
+test('sessionKey prefers stable Anthropic metadata session id over content hash', () => {
+  const payload = {
+    metadata: {
+      user_id: JSON.stringify({ device_id: 'dev', session_id: 'real-session-id' }),
+    },
+    messages: [{ role: 'user', content: 'first prompt text' }],
+  };
+  assert.equal(sessionKey(payload), 'real-session-id');
+});
+
 test('overdrive route retires legacy modes and keeps only mode 1 active', () => {
   for (const mode of ['0', '2', '3', '4', '5', '6', '', undefined]) {
     assert.equal(effectiveMode({ OVERDRIVE_MODE: mode }), '0');
