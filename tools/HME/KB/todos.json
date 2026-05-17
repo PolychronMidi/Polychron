@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3540,
-      "updated_ts": 1778983818.772575,
-      "codex_plan_synced_ts": 1778983818.7724705,
+      "max_id": 3544,
+      "updated_ts": 1778983878.7694802,
+      "codex_plan_synced_ts": 1778983878.769373,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T02:10:01.706Z"
+      "codex_plan_ts": "2026-05-17T02:11:12.740Z"
     }
   },
   {
@@ -8123,5 +8123,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-17T02:10:01.706Z"
+  },
+  {
+    "id": 3541,
+    "text": "Trace current work-check enforcement path",
+    "activeForm": "Trace current work-check enforcement path",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778983873.18329,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T02:11:12.740Z"
+  },
+  {
+    "id": 3542,
+    "text": "Identify the missed-list failure mode",
+    "activeForm": "Identify the missed-list failure mode",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778983873.183296,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T02:11:12.740Z"
+  },
+  {
+    "id": 3543,
+    "text": "Patch checks/tests to block scoped-complete evasions",
+    "activeForm": "Patch checks/tests to block scoped-complete evasions",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778983873.1832995,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T02:11:12.740Z"
+  },
+  {
+    "id": 3544,
+    "text": "Verify targeted work-check tests",
+    "activeForm": "Verify targeted work-check tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778983873.1833029,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T02:11:12.740Z"
   }
 ]
