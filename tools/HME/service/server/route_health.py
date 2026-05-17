@@ -147,6 +147,12 @@ def routing_ready(root: Path) -> tuple[bool, list[str]]:
         issues.append(f"codex_proxy unhealthy: {snap['codex_proxy_error']}")
     if not str(snap["omniroute"]).startswith("ok"):
         issues.append(f"omniroute unhealthy: {snap['omniroute']}")
+    if snap.get("proxy_stale_sources"):
+        n = len(snap["proxy_stale_sources"])
+        issues.append(f"proxy stale sources: {n} newer-than-process")
+    if snap.get("codex_proxy_stale_sources"):
+        n = len(snap["codex_proxy_stale_sources"])
+        issues.append(f"codex_proxy stale sources: {n} newer-than-process")
     dups = snap["codex_sessions"].get("duplicates", [])
     if dups:
         issues.append(f"duplicate Codex sessions: {len(dups)}")
