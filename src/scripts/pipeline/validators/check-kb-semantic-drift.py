@@ -28,17 +28,17 @@ import re
 import sys
 import time
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = (
     os.environ.get("CLAUDE_PROJECT_DIR")
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 )
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
-SIGNATURES_PATH = os.path.join(METRICS_DIR, "kb-signatures.json")
-DRIFT_OUT = os.path.join(METRICS_DIR, "hme-semantic-drift.json")
-DEP_GRAPH = os.path.join(METRICS_DIR, "dependency-graph.json")
+SIGNATURES_PATH = metric_path("kb-signatures.json")
+DRIFT_OUT = metric_path("hme-semantic-drift.json")
+DEP_GRAPH = metric_path("dependency-graph.json")
 BIAS_MANIFEST = os.path.join(PROJECT_ROOT, "src", "scripts", "pipeline", "bias-bounds-manifest.json")
-FEEDBACK_GRAPH = os.path.join(METRICS_DIR, "feedback_graph.json")
+FEEDBACK_GRAPH = metric_path("feedback_graph.json")
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
 
 # A drift is flagged when the structural signature differs by at least this

@@ -31,6 +31,7 @@ import sys
 import time
 from pathlib import Path
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = (
     os.environ.get("CLAUDE_PROJECT_DIR")
     or os.environ.get("PROJECT_ROOT")
@@ -39,8 +40,8 @@ PROJECT_ROOT = (
 METRICS_DIR = os.environ.get(
     "METRICS_DIR", os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 )
-CRYSTALLIZED = os.path.join(METRICS_DIR, "hme-crystallized.json")
-OUT_JSON = os.path.join(METRICS_DIR, "hme-generalizations.json")
+CRYSTALLIZED = metric_path("hme-crystallized.json")
+OUT_JSON = metric_path("hme-generalizations.json")
 
 SPECIFICITY_THRESHOLD = float(
     os.environ.get("HME_GENERALIZATION_THRESHOLD", "0.3")

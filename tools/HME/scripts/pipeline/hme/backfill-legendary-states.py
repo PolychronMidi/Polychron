@@ -16,10 +16,10 @@ import json
 import os
 import sys
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
-HIST = os.path.join(METRICS_DIR, "legacy-override-history.jsonl")
-SNAPS = os.path.join(METRICS_DIR, "hme-legendary-states.jsonl")
+HIST = metric_path("legacy-override-history.jsonl")
+SNAPS = metric_path("hme-legendary-states.jsonl")
 
 
 def _load_jsonl(path):

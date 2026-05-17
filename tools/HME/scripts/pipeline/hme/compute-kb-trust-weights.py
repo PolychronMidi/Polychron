@@ -33,17 +33,17 @@ import os
 import sys
 import time
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = (
     os.environ.get("CLAUDE_PROJECT_DIR")
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
-OUT_PATH = os.path.join(METRICS_DIR, "kb-trust-weights.json")
-COHERENCE_PATH = os.path.join(METRICS_DIR, "hme-coherence.json")
-ACCURACY_PATH = os.path.join(METRICS_DIR, "hme-prediction-accuracy.json")
-MUSICAL_PATH = os.path.join(METRICS_DIR, "hme-musical-correlation.json")
+OUT_PATH = metric_path("kb-trust-weights.json")
+COHERENCE_PATH = metric_path("hme-coherence.json")
+ACCURACY_PATH = metric_path("hme-prediction-accuracy.json")
+MUSICAL_PATH = metric_path("hme-musical-correlation.json")
 
 
 def _load_json(path: str):

@@ -29,12 +29,12 @@ import os
 import sys
 import time
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
-MATCHES = os.path.join(METRICS_DIR, "hme-pattern-matches.json")
-TIMESERIES = os.path.join(METRICS_DIR, "hme-arc-timeseries.jsonl")
-SNAPSHOTS = os.path.join(METRICS_DIR, "hme-legendary-states.jsonl")
-REPORTS = os.path.join(METRICS_DIR, "hme-investigation-reports.jsonl")
+MATCHES = metric_path("hme-pattern-matches.json")
+TIMESERIES = metric_path("hme-arc-timeseries.jsonl")
+SNAPSHOTS = metric_path("hme-legendary-states.jsonl")
+REPORTS = metric_path("hme-investigation-reports.jsonl")
 LOOKBACK_ROUNDS = 5
 
 
@@ -97,7 +97,7 @@ def _investigate_consensus(pattern: dict) -> dict:
         hci_traj = [r.get("arc_iv", {}).get("pass_rate") for r in tail]
         # Better: use top-outlier-field from arc_iii.top_outlier_field history
         try:
-            ps_path = os.path.join(METRICS_DIR, "pipeline-summary.json")
+            ps_path = metric_path("pipeline-summary.json")
             hci_now = None
             if os.path.isfile(ps_path):
                 with open(ps_path) as hf:
@@ -116,7 +116,7 @@ def _investigate_consensus(pattern: dict) -> dict:
 
 def _investigate_drift(pattern: dict) -> dict:
     """Field-by-field trajectory for Arc III drift outliers."""
-    drift = _load_json(os.path.join(METRICS_DIR, "hme-legendary-drift.json")) or {}
+    drift = _load_json(metric_path("hme-legendary-drift.json")) or {}
     outliers = drift.get("outliers") or []
     snaps = _load_jsonl(SNAPSHOTS)
     tail = snaps[-LOOKBACK_ROUNDS:]

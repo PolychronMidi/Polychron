@@ -23,14 +23,14 @@ import re
 import sys
 import time
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = (
     os.environ.get("CLAUDE_PROJECT_DIR")
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
-OUT_PATH = os.path.join(METRICS_DIR, "kb-signatures.json")
+OUT_PATH = metric_path("kb-signatures.json")
 
 # Import current_signature() from the sibling drift checker -- that's the
 import runpy
@@ -125,7 +125,7 @@ def main() -> int:
 
     # Load dep graph once for module-stem disambiguation
     dep_graph = _load_json(
-        os.path.join(METRICS_DIR, "dependency-graph.json")
+        metric_path("dependency-graph.json")
     ) or {"nodes": {}}
     dep_nodes = dep_graph.get("nodes", {}) or {}
 

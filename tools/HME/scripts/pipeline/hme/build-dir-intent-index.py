@@ -19,6 +19,7 @@ import sys
 import time
 from typing import Optional
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 try:
     import yaml  # PyYAML
 except ImportError:
@@ -30,8 +31,8 @@ PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..")
 )
 METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(PROJECT, "src", "output", "metrics"))
-OUTPUT = os.path.join(METRICS_DIR, "hme-dir-intent.json")
-SIGNATURES = os.path.join(METRICS_DIR, "hme-dir-signatures.json")
+OUTPUT = metric_path("hme-dir-intent.json")
+SIGNATURES = metric_path("hme-dir-signatures.json")
 
 # Dirs never walked
 SKIP_DIRS = {

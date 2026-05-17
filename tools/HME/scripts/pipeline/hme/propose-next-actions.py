@@ -29,9 +29,9 @@ import os
 import sys
 import time
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
-OUT = os.path.join(METRICS_DIR, "hme-next-actions.json")
+OUT = metric_path("hme-next-actions.json")
 
 
 def _load(p):
@@ -55,7 +55,7 @@ def main() -> int:
     }
 
     # Arc II: matched patterns (highest priority -- each carries prescribed steps)
-    matches = _load(os.path.join(METRICS_DIR, "hme-pattern-matches.json")) or {}
+    matches = _load(metric_path("hme-pattern-matches.json")) or {}
     for m in matches.get("matches", []):
         cat = m.get("category")
         actions.append({
@@ -70,7 +70,7 @@ def main() -> int:
         })
 
     # Arc III: drift outliers (preemptive -- catches state drift before verdict fails)
-    drift = _load(os.path.join(METRICS_DIR, "hme-legendary-drift.json")) or {}
+    drift = _load(metric_path("hme-legendary-drift.json")) or {}
     if drift.get("status") == "drift_detected":
         for o in (drift.get("outliers") or [])[:5]:
             actions.append({
@@ -89,7 +89,7 @@ def main() -> int:
             })
 
     # Arc I: consensus outliers (substrates disagree)
-    con = _load(os.path.join(METRICS_DIR, "hme-consensus.json")) or {}
+    con = _load(metric_path("hme-consensus.json")) or {}
     if con.get("divergence") in ("moderate", "high"):
         for o in con.get("outliers", []):
             actions.append({
@@ -107,7 +107,7 @@ def main() -> int:
             })
 
     # Arc V: blindspots -- subsystem coverage gaps. Lifted from observation-only
-    bs = _load(os.path.join(METRICS_DIR, "hme-blindspots.json")) or {}
+    bs = _load(metric_path("hme-blindspots.json")) or {}
     for gap in (bs.get("dark_subsystems") or [])[:3]:
         sub = gap.get("subsystem") or gap.get("module") or gap.get("name")
         if not sub:
@@ -144,7 +144,7 @@ def main() -> int:
         })
 
     # Arc IV: retirement candidates (flappy invariants accumulated without citation)
-    eff = _load(os.path.join(METRICS_DIR, "hme-invariant-efficacy.json")) or {}
+    eff = _load(metric_path("hme-invariant-efficacy.json")) or {}
     for cand in eff.get("retirement_candidates", []):
         actions.append({
             "priority": 4,
@@ -161,7 +161,7 @@ def main() -> int:
         })
 
     # R24 #4 + R25 #5: track repeat-count across rounds. Only escalate once
-    prev = _load(os.path.join(METRICS_DIR, "hme-next-actions.json")) or {}
+    prev = _load(metric_path("hme-next-actions.json")) or {}
     prev_actions_by_id = {
         a.get("id"): a for a in (prev.get("actions") or []) if a.get("id")
     }

@@ -16,14 +16,14 @@ import os
 import sys
 import time
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = (
     os.environ.get("CLAUDE_PROJECT_DIR")
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
-ACTIVITY = os.path.join(METRICS_DIR, "hme-activity.jsonl")
-ARCHIVE = os.path.join(METRICS_DIR, "hme-activity-archive.jsonl")
+ACTIVITY = metric_path("hme-activity.jsonl")
+ARCHIVE = metric_path("hme-activity-archive.jsonl")
 KEEP_DAYS = float(os.environ.get("HME_ACTIVITY_KEEP_DAYS", "14"))
 
 
@@ -70,7 +70,7 @@ def main() -> int:
 
     print(
         f"archive-activity: moved {len(archive)} event(s) to "
-        f"{os.path.join(METRICS_DIR, 'hme-activity-archive.jsonl')} ({len(keep)} kept)"
+        f"{metric_path('hme-activity-archive.jsonl')} ({len(keep)} kept)"
     )
     return 0
 

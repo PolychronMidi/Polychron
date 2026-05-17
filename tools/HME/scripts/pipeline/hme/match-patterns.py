@@ -21,10 +21,10 @@ import subprocess
 import sys
 import time
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 PATTERNS_DIR = os.path.join(PROJECT_ROOT, "tools", "HME", "patterns")
-OUT_PATH = os.path.join(METRICS_DIR, "hme-pattern-matches.json")
+OUT_PATH = metric_path("hme-pattern-matches.json")
 
 
 def _load_patterns() -> list[dict]:

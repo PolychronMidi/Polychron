@@ -39,12 +39,12 @@ import os
 import sys
 import time
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = (
     os.environ.get("CLAUDE_PROJECT_DIR")
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
 # Tools/HME subtrees ALSO count as project territory -- edits to them should
@@ -56,8 +56,8 @@ HME_DIRS = [
     os.path.join(PROJECT_ROOT, "tools", "HME", "activity"),
 ]
 HME_EXTS = (".js", ".py", ".sh")
-ACTIVITY_LOG = os.path.join(METRICS_DIR, "hme-activity.jsonl")
-OUT_PATH = os.path.join(METRICS_DIR, "kb-staleness.json")
+ACTIVITY_LOG = metric_path("hme-activity.jsonl")
+OUT_PATH = metric_path("kb-staleness.json")
 
 STALE_DAYS = float(os.environ.get("HME_STALENESS_STALE_DAYS", "7"))
 STALE_SECONDS = STALE_DAYS * 86400.0

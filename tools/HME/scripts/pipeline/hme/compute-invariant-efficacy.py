@@ -30,12 +30,12 @@ import sys
 import time
 from collections import defaultdict
 
-from _metrics import METRICS_DIR
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 CONFIG_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "config", "invariants.json")
-HISTORY_PATH = os.path.join(METRICS_DIR, "hme-invariant-history.json")
-OUT_PATH = os.path.join(METRICS_DIR, "hme-invariant-efficacy.json")
+HISTORY_PATH = metric_path("hme-invariant-history.json")
+OUT_PATH = metric_path("hme-invariant-efficacy.json")
 
 RECENT_COMMITS = 500
 MIN_RUNS_FOR_EFFICACY = 5  # don't judge invariants before we have enough samples

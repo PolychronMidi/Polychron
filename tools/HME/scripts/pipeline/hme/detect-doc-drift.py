@@ -3,6 +3,7 @@
 
 Scope: DETECTION, not generation. Cross-references architectural claims
 from the KB against the project's hand-maintained docs and surfaces
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 mismatches. Never rewrites docs -- just flags where they've diverged
 from the more-current knowledge in the KB.
 
@@ -35,7 +36,6 @@ PROJECT_ROOT = (
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 DOCS = [
     "doc/composition-full.md",
     "doc/self-coherence-full.md",
@@ -43,8 +43,8 @@ DOCS = [
     "doc/self-coherence.md",
     "doc/templates/AGENTS.md",
 ]
-OUT_PATH = os.path.join(METRICS_DIR, "hme-doc-drift.json")
-ACTIVITY_PATH = os.path.join(METRICS_DIR, "hme-activity.jsonl")
+OUT_PATH = metric_path("hme-doc-drift.json")
+ACTIVITY_PATH = metric_path("hme-activity.jsonl")
 
 _MODULE_TOKEN_RE = re.compile(r"\b([a-z][a-zA-Z0-9]{3,}(?:[A-Z][a-zA-Z0-9]+)+)\b")
 _CODE_FENCE_RE = re.compile(r"`([a-z][a-zA-Z0-9]{3,}(?:[A-Z][a-zA-Z0-9]+)+)`")

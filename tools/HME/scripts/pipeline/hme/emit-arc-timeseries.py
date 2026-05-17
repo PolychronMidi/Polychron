@@ -29,11 +29,11 @@ import subprocess
 import sys
 import time
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
-TIMESERIES = os.path.join(METRICS_DIR, "hme-arc-timeseries.jsonl")
-ENVELOPE_SHIFT = os.path.join(METRICS_DIR, "hme-envelope-shift.json")
-SNAPSHOTS = os.path.join(METRICS_DIR, "hme-legendary-states.jsonl")
+TIMESERIES = metric_path("hme-arc-timeseries.jsonl")
+ENVELOPE_SHIFT = metric_path("hme-envelope-shift.json")
+SNAPSHOTS = metric_path("hme-legendary-states.jsonl")
 
 
 def _load(p):
@@ -122,7 +122,7 @@ def main() -> int:
     }
 
     # Arc I
-    con = _load(os.path.join(METRICS_DIR, "hme-consensus.json")) or {}
+    con = _load(metric_path("hme-consensus.json")) or {}
     row["arc_i"] = {
         "mean": con.get("mean"),
         "stdev": con.get("stdev"),
@@ -132,7 +132,7 @@ def main() -> int:
     }
 
     # Arc II
-    mat = _load(os.path.join(METRICS_DIR, "hme-pattern-matches.json")) or {}
+    mat = _load(metric_path("hme-pattern-matches.json")) or {}
     row["arc_ii"] = {
         "total_patterns": mat.get("patterns_total"),
         "matched_count": mat.get("matches_count"),
@@ -140,7 +140,7 @@ def main() -> int:
     }
 
     # Arc III
-    drift = _load(os.path.join(METRICS_DIR, "hme-legendary-drift.json")) or {}
+    drift = _load(metric_path("hme-legendary-drift.json")) or {}
     row["arc_iii"] = {
         "drift_score": drift.get("drift_score"),
         "envelope_n": drift.get("envelope_n"),
@@ -150,8 +150,8 @@ def main() -> int:
     }
 
     # Arc IV
-    eff = _load(os.path.join(METRICS_DIR, "hme-invariant-efficacy.json")) or {}
-    hist = _load(os.path.join(METRICS_DIR, "hme-invariant-history.json")) or {}
+    eff = _load(metric_path("hme-invariant-efficacy.json")) or {}
+    hist = _load(metric_path("hme-invariant-history.json")) or {}
     last = hist.get("last_result") or {}
     pass_count = sum(1 for v in last.values() if v == "pass")
     row["arc_iv"] = {

@@ -39,10 +39,10 @@ import sys
 import time
 from typing import Any
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
-SNAPSHOTS = os.path.join(METRICS_DIR, "hme-legendary-states.jsonl")
-DRIFT_OUT = os.path.join(METRICS_DIR, "hme-legendary-drift.json")
+SNAPSHOTS = metric_path("hme-legendary-states.jsonl")
+DRIFT_OUT = metric_path("hme-legendary-drift.json")
 DRIFT_THRESHOLD = 2.0  # mean |z-score| above this -> drift alert
 MIN_SNAPSHOTS_FOR_ENVELOPE = 5
 
@@ -96,21 +96,21 @@ def _capture_state() -> dict:
     }
 
     # pipeline-summary for hci + cost
-    ps = _load_json(os.path.join(METRICS_DIR, "pipeline-summary.json")) or {}
+    ps = _load_json(metric_path("pipeline-summary.json")) or {}
     if isinstance(ps.get("hci"), (int, float)):
         state["hci"] = ps["hci"]
     if isinstance(ps.get("axis_rebalance_cost_per_100_beats"), (int, float)):
         state["axis_rebalance_cost"] = ps["axis_rebalance_cost_per_100_beats"]
 
     # consensus
-    con = _load_json(os.path.join(METRICS_DIR, "hme-consensus.json")) or {}
+    con = _load_json(metric_path("hme-consensus.json")) or {}
     if isinstance(con.get("mean"), (int, float)):
         state["consensus_mean"] = con["mean"]
     if isinstance(con.get("stdev"), (int, float)):
         state["consensus_stdev"] = con["stdev"]
 
     # trace summary axis data
-    trace = _load_json(os.path.join(METRICS_DIR, "trace-summary.json")) or {}
+    trace = _load_json(metric_path("trace-summary.json")) or {}
     aee = trace.get("axisEnergyEquilibrator") or {}
     if isinstance(aee.get("perAxisAdj"), dict):
         state["per_axis_adj"] = {k: v for k, v in aee["perAxisAdj"].items()
@@ -124,14 +124,14 @@ def _capture_state() -> dict:
         state["entries"] = dict(aee["perLegacyOverrideEntries"])
 
     # musical correlation for hci_delta + prediction metrics
-    mc = _load_json(os.path.join(METRICS_DIR, "hme-musical-correlation.json")) or {}
+    mc = _load_json(metric_path("hme-musical-correlation.json")) or {}
     hist = mc.get("history") or []
     if hist and isinstance(hist[-1], dict):
         last = hist[-1]
         if isinstance(last.get("hci_delta"), (int, float)):
             state["hci_delta"] = last["hci_delta"]
 
-    pa = _load_json(os.path.join(METRICS_DIR, "hme-prediction-accuracy.json")) or {}
+    pa = _load_json(metric_path("hme-prediction-accuracy.json")) or {}
     rounds = pa.get("rounds") or []
     if rounds and isinstance(rounds[-1], dict) and not rounds[-1].get("skipped"):
         r = rounds[-1]
@@ -168,7 +168,7 @@ def main() -> int:
     current = _capture_state()
 
     # R22 #4: ground-truth integration. Default assumption: legendary. If the
-    gt_path = os.path.join(METRICS_DIR, "hme-ground-truth.jsonl")
+    gt_path = metric_path("hme-ground-truth.jsonl")
     current["legendary_confirmed"] = True  # default
     try:
         if os.path.isfile(gt_path):
@@ -240,8 +240,8 @@ def main() -> int:
 
     # Preemptive alert: emit activity event when drift exceeds threshold.
     try:
-        ts_path = os.path.join(METRICS_DIR, "hme-arc-timeseries.jsonl")
-        ep_path = os.path.join(METRICS_DIR, "hme-epoch-transitions.jsonl")
+        ts_path = metric_path("hme-arc-timeseries.jsonl")
+        ep_path = metric_path("hme-epoch-transitions.jsonl")
         if os.path.isfile(ts_path):
             rows = []
             with open(ts_path, encoding="utf-8") as tf:

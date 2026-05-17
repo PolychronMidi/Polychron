@@ -32,16 +32,16 @@ import os
 import sys
 import time
 
+from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 PROJECT_ROOT = (
     os.environ.get("CLAUDE_PROJECT_DIR")
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
-CRYSTALLIZED_PATH = os.path.join(METRICS_DIR, "hme-crystallized.json")
-GROUND_TRUTH_LOG = os.path.join(METRICS_DIR, "hme-ground-truth.jsonl")
-FEEDBACK_GRAPH = os.path.join(METRICS_DIR, "feedback_graph.json")
-OUT_PATH = os.path.join(METRICS_DIR, "hme-constitution.json")
+CRYSTALLIZED_PATH = metric_path("hme-crystallized.json")
+GROUND_TRUTH_LOG = metric_path("hme-ground-truth.jsonl")
+FEEDBACK_GRAPH = metric_path("feedback_graph.json")
+OUT_PATH = metric_path("hme-constitution.json")
 
 MIN_PATTERN_ROUNDS = int(os.environ.get("HME_CONSTITUTION_MIN_PATTERN_ROUNDS", "4"))
 MIN_PATTERN_MEMBERS = int(os.environ.get("HME_CONSTITUTION_MIN_PATTERN_MEMBERS", "3"))
@@ -208,7 +208,7 @@ def extract_claims_from_feedback_graph() -> list[dict]:
             "confidence": 1.0,
             "evidence": {
                 "loop_id": loop_id,
-                "source": os.path.join(METRICS_DIR, "feedback_graph.json"),
+                "source": metric_path("feedback_graph.json"),
             },
         })
     for port in ports:
@@ -221,7 +221,7 @@ def extract_claims_from_feedback_graph() -> list[dict]:
             "confidence": 1.0,
             "evidence": {
                 "port_id": port_id,
-                "source": os.path.join(METRICS_DIR, "feedback_graph.json"),
+                "source": metric_path("feedback_graph.json"),
             },
         })
     return out
