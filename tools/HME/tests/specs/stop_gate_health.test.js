@@ -44,3 +44,53 @@ test('stop reminder injects into payload.system and consumes staged file', () =>
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('Claude handler serves stop-gate health route', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stop-route-'));
+  const prevRoot = process.env.PROJECT_ROOT;
+  try {
+    fs.mkdirSync(path.join(root, 'tools/HME/scripts/detectors'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'tools/HME/scripts/detectors/registry.json'), JSON.stringify({ detectors: [] }));
+    process.env.PROJECT_ROOT = root;
+    clearProxyCache();
+    const { createClaudeHandler } = require(path.join(repo, 'tools/HME/proxy/hme_proxy_claude.js'));
+    const handle = createClaudeHandler({
+      PORT: 9099,
+      PROXY_VERSION: 'test',
+      PROXY_GIT_SHA: 'test',
+      PROXY_STARTED_AT: 'test',
+      routeMetrics: {},
+      recordProxyRoute() {},
+      effectiveCompactThreshold() { return 250000; },
+      shrinkForPassthrough() { return 0; },
+      shrinkForContext() { return 0; },
+      injectContextHeader() {},
+      async acquireOpusSlot() { return () => {}; },
+      anthropicTextSseBuffer() { return Buffer.from(''); },
+      getConsecutive429s() { return 0; },
+      setConsecutive429s() {},
+      incConsecutive429s() { return 0; },
+      getLastInputTokensRemaining() { return null; },
+      setLastInputTokensRemaining() {},
+      getLastInputTokensLimit() { return null; },
+      setLastInputTokensLimit() {},
+      setLastPayloadBytes() {},
+      loadedMiddleware: [],
+    });
+    const req = new EventEmitter();
+    req.url = '/hme/stop-gate/health';
+    req.headers = {};
+    const res = { statusCode: 0, headers: {}, body: '' };
+    await new Promise((resolve) => {
+      res.writeHead = (code, headers) => { res.statusCode = code; res.headers = headers; };
+      res.end = (body = '') => { res.body += String(body); resolve(); };
+      handle(req, res);
+    });
+    assert.equal(res.statusCode, 200);
+    assert.equal(JSON.parse(res.body).component, 'hme-stop-gate');
+  } finally {
+    if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
+    clearProxyCache();
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
