@@ -28,8 +28,11 @@ rules, RAG stack, local LLM notes, and testing runbook.
 
 HME core is project-agnostic. Project facts live in
 `config/project-adapter.json`: source roots, project docs, pipeline commands,
-artifacts, optional capabilities, and health expectations. For a new project,
-replace `src/` and `doc/composition.md`, then run:
+artifacts, optional capabilities, and health expectations. HME runtime metrics
+stay under `tools/HME/runtime/metrics`; project artifacts stay adapter-scoped.
+Project KB entries receive a `project:<id>` tag from the adapter.
+
+For a new project, replace `src/` and `doc/composition.md`, then run:
 
 ```bash
 tools/HME/scripts/init-project-profile.js --name="My Project"
