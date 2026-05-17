@@ -17,7 +17,7 @@ _hme_bg() {
 _hme_timeout_runner() {
   local seconds="$1"
   shift
-  "$@" &
+  "$@" 2>&1 &
   local pid=$! waited=0
   while kill -0 "$pid" 2>/dev/null; do
     if [ "$waited" -ge "$seconds" ]; then
