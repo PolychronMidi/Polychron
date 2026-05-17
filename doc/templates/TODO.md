@@ -4,12 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Identify why the 91-char comment edit block was repeated
+- [ ] [E3] Inspect current denied-Edit handling and runtime state
 
 ## Next
 
-- [ ] [E3] Patch the immediate stale i-wrapper/root reference docs/tests safely
-- [ ] [E3] Resume pipeline wait/verification after current run finishes
+- [ ] [E3] Add actionable denied-Edit context and repeat-denial guard
+- [ ] [E3] Run focused tests and resume migration verification
 
 ## Done
 

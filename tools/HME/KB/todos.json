@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3504,
-      "updated_ts": 1778978448.7837312,
-      "codex_plan_synced_ts": 1778978448.783632,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T00:40:36.457Z"
+      "max_id": 3507,
+      "updated_ts": 1778978701.3994033,
+      "codex_plan_synced_ts": 1778978701.3993075,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T00:45:00.961Z"
     }
   },
   {
@@ -7479,8 +7479,8 @@
     "id": 3502,
     "text": "Identify why the 91-char comment edit block was repeated",
     "activeForm": "Identify why the 91-char comment edit block was repeated",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7489,14 +7489,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T00:40:36.457Z"
+    "codex_plan_ts": "2026-05-17T00:40:36.457Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3503,
     "text": "Patch the immediate stale i-wrapper/root reference docs/tests safely",
     "activeForm": "Patch the immediate stale i-wrapper/root reference docs/tests safely",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7505,14 +7506,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T00:40:36.457Z"
+    "codex_plan_ts": "2026-05-17T00:40:36.457Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3504,
     "text": "Resume pipeline wait/verification after current run finishes",
     "activeForm": "Resume pipeline wait/verification after current run finishes",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7521,6 +7523,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T00:40:36.457Z"
+    "codex_plan_ts": "2026-05-17T00:40:36.457Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3505,
+    "text": "Inspect current denied-Edit handling and runtime state",
+    "activeForm": "Inspect current denied-Edit handling and runtime state",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778978701.3984191,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T00:45:00.961Z"
+  },
+  {
+    "id": 3506,
+    "text": "Add actionable denied-Edit context and repeat-denial guard",
+    "activeForm": "Add actionable denied-Edit context and repeat-denial guard",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778978701.398426,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T00:45:00.961Z"
+  },
+  {
+    "id": 3507,
+    "text": "Run focused tests and resume migration verification",
+    "activeForm": "Run focused tests and resume migration verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778978701.3984296,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T00:45:00.961Z"
   }
 ]
