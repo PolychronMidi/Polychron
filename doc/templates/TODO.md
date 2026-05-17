@@ -4,14 +4,14 @@
 
 ## Now
 
-- [ ] [E3] Inventory remaining HME/project metric coupling
+- [ ] [E3] Inventory remaining HME/composition coupling and path helper gaps
 
 ## Next
 
-- [ ] [E3] Add compatibility path layer and migrate HME telemetry access
-- [ ] [E3] Capability-gate remaining project-specific analyzers
-- [ ] [E3] Add invariants/tests preventing regression
-- [ ] [E3] Update docs/config and run targeted verification
+- [ ] [E3] Implement HME metric/path compatibility and migrate primary telemetry writers/readers
+- [ ] [E3] Gate project-specific HME analyzers through project adapter capabilities
+- [ ] [E3] Update invariants/docs/tests to enforce bifurcation
+- [ ] [E3] Run targeted verification and fix any failures
 
 ## Done
 
