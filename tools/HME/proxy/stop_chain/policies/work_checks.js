@@ -347,14 +347,8 @@ module.exports = {
       armFpGate('MULTI_FLAG'); return ctx.deny(header + body);
     }
 
-    let transcriptPath = ctx.payload && ctx.payload.transcript_path;
-    if (!transcriptPath) {
-      try {
-        transcriptPath = fs.readFileSync(path.join(PROJECT_ROOT, 'tmp', 'hme-transcript-path.txt'), 'utf8').trim();
-      } catch(_) {}
-    }
     if (!transcriptPath) return ctx.allow();
-    const { text: lastUser, turnIndex } = lastRealUserPrompt(transcriptPath);
+    const { text: lastUser, turnIndex } = lastUserInfo;
     if (!lastUser) return ctx.allow();
     ctx.shared.lastRealUserText = lastUser;
     if (isStartupGraceTurn(ctx)) return ctx.allow();
