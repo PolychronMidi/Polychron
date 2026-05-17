@@ -97,6 +97,30 @@ test('passthrough compaction keeps Claude payload coherent after shrinking', () 
   assert.ok(logs.some((line) => line.includes('local-summary')));
 });
 
+
+
+test('passthrough microcompaction honors configured stale tool horizon', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 10; i += 1) {
+    const id = `tool-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(20000) }] });
+  }
+  const changed = shrinkForPassthrough(payload, {
+    threshold: 1000,
+    keepMin: 3,
+    maxToolResultAge: 4,
+    toolResultByteFloor: 1000,
+    env: {},
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  const results = payload.messages.flatMap((m) => Array.isArray(m.content) ? m.content.filter((b) => b.type === 'tool_result') : []);
+  assert.ok(results.slice(0, -4).every((b) => String(b.content).includes('content elided by hme-proxy precompact')));
+  assert.ok(results.slice(-4).every((b) => String(b.content).length === 20000));
+});
+
 test('legacy swap auth failure emits Anthropic stop SSE instead of surfacing 401', () => quiet(() => {
   const clientRes = fakeClientRes();
   let released = false;
