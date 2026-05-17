@@ -19,7 +19,7 @@ if [[ -f "$TAB" && -s "$TAB" ]]; then
   fi
 
   # Tracked note files (from background tasks, writes, agents)
-  FILE_LINES=$(grep '^FILE:' "$TAB" 2>/dev/null)  # silent-ok: optional fallback path.
+  FILE_LINES=$(grep '^FILE:' "$TAB" 2>/dev/null || true)  # silent-ok: optional fallback path.
   if [[ -n "$FILE_LINES" ]]; then
     PARTS+=("TRACKED NOTE FILES -- check these after compaction:")
     PARTS+=("$FILE_LINES")
