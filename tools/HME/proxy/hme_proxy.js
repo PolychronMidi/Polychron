@@ -253,7 +253,7 @@ const _MODEL_CTX = {
   'gpt-5.5': 1050000, 'gpt-5.4': 400000, 'gpt-5.3': 400000, 'gpt-5.2': 400000,
   'gpt-4o': 200000, 'nemotron-super-49b': 131072, 'nemotron-3-nano': 131072,
 };
-const _DEFAULT_CTX = 200000;
+const _DEFAULT_CTX = 1000000;
 
 function _resolveModelCtx(modelId) {
   for (const [k, v] of Object.entries(_MODEL_CTX)) {
