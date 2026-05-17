@@ -172,13 +172,13 @@ const _PASSTHROUGH_COMPACT_KEEP_MIN = 50;
 // Dynamic threshold: track the most recent ITPM-remaining from Anthropic
 // response headers and shrink the byte budget when we're close to the
 // rate-limit ceiling. ~3.5 bytes/token is the rough conversion for
-// Claude-Code-shape JSON payloads. Floor at 40 KB so we never over-shrink.
+// Claude-Code-shape JSON payloads. Floor so we never over-shrink.
 let _lastInputTokensRemaining = null; // updated by response handler
 let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from headers
 let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
 let _lastPayloadBytes = 0;            // last OmniRoute payload size for context monitoring
 const _BYTES_PER_TOKEN_EST = 3.5;
-const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 500_000;
+const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 750_000;
 function _effectiveCompactThreshold() {
   // CEILING: HME_PROXY_COMPACT_BYTES (explicit) honored as hard cap.
   // Otherwise: % of learned ITPM cap (leaves room for response +
@@ -187,7 +187,7 @@ function _effectiveCompactThreshold() {
   if (_COMPACT_BYTES_EXPLICIT) {
     ceiling = _PASSTHROUGH_COMPACT_BYTES;
   } else if (_lastInputTokensLimit != null && _lastInputTokensLimit > 0) {
-    ceiling = Math.floor(_lastInputTokensLimit * 0.9 * _BYTES_PER_TOKEN_EST);
+    ceiling = Math.floor(_lastInputTokensLimit * 0.95 * _BYTES_PER_TOKEN_EST);
   } else {
     ceiling = _PASSTHROUGH_COMPACT_BYTES;
   }
