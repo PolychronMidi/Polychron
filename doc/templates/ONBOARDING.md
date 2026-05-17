@@ -140,7 +140,7 @@ A set of post-composition instrumentation features -- musical correlation, coher
           tags=[moment_type,sentiment] query=ROUND_TAG
    (SECTION: S0..S6 or 'all'. moment_type: convergence|climax|breath|
    arrival|misfire|... sentiment: compelling|surprising|moving|flat|
-   mechanical|... Writes src/output/metrics/hme-ground-truth.jsonl + mirrors to
+   mechanical|... Writes tools/HME/runtime/metrics/hme-ground-truth.jsonl + mirrors to
    KB with tag `human_ground_truth` -> unconditional HIGH trust tier)
 
 2. i/learn title="RNN ..." content="..." category=decision
