@@ -186,6 +186,34 @@ def update_ema(key: str, value: float, alpha: float = _EMA_ALPHA) -> float:
         return new_val
 
 
+_LATENCY_EXCLUDED_TOOLS = {"hme_admin", "hme_selftest", "hme_hot_reload"}
+
+
+def record_tool_response(name: str, elapsed_ms: float) -> float | None:
+    """Record interactive tool latency; skip maintenance/admin probes."""
+    with _state_lock:
+        _state["tool_response_ms_last_tool"] = name
+        _state["tool_response_ms_last_ms"] = round(elapsed_ms, 3)
+        _state["tool_response_ms_last_ts"] = time.time()
+        if name in _LATENCY_EXCLUDED_TOOLS:
+            _state["tool_response_ms_last_skipped"] = name
+            _save_unlocked()
+            return _state.get("tool_response_ms_ema")
+        current = _state.get("tool_response_ms_ema")
+        new_val = elapsed_ms if current is None else _EMA_ALPHA * elapsed_ms + (1 - _EMA_ALPHA) * current
+        _state["tool_response_ms_ema"] = round(new_val, 3)
+        _state["tool_response_ms_last_recorded"] = name
+        _save_unlocked()
+        return new_val
+
+
+def repair_tool_response_ema(value: float, reason: str) -> None:
+    """Approved repair path for polluted tool-latency EMA state."""
+    with _state_lock:
+        _state["tool_response_ms_ema"] = round(float(value), 3)
+        _state["tool_response_ms_repair"] = {"ts": time.time(), "reason": reason}
+        _save_unlocked()
+
 
 # Re-exports -- recovery/derived stats extracted.
 from .operational_state_recovery import record_recovery, record_startup_ms, record_shim_crash, is_crash_loop, record_circuit_breaker_trip, record_circuit_breaker_flap, record_synthesis_call, _trim_synthesis_file, record_coherence_multiscale, get_multiscale_coherence, is_coherence_ceiling, record_prediction_brier, write_session_document, load_recent_sessions, _trim_sessions_file, record_thermodynamic  # noqa: F401, E402
