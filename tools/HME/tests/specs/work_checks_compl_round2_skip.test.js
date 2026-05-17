@@ -276,6 +276,64 @@ test('work_checks: unfinished tasks still block the nothing-missed round-2 skip'
     assert.match(result.reason, /#11 \[in_progress\]/);
   }));
 
+test('work_checks: live Claude task store blocks unfinished session tasks',
+  _withSandbox(async (sandbox) => {
+    const sessionId = '11111111-2222-3333-4444-555555555555';
+    const transcript = path.join(sandbox, `${sessionId}.jsonl`);
+    fs.writeFileSync(transcript, [
+      JSON.stringify({ type: 'user', message: { content: 'fix HME middleware' } }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } }),
+    ].join('\n') + '\n');
+    const home = path.join(sandbox, 'home');
+    const taskDir = path.join(home, '.claude', 'tasks', sessionId);
+    fs.mkdirSync(taskDir, { recursive: true });
+    fs.writeFileSync(path.join(taskDir, '35.json'), JSON.stringify({
+      id: '35',
+      subject: 'Fix existing tool filter and TodoWrite compaction',
+      status: 'in_progress',
+    }));
+    const prevHome = process.env.HOME;
+    process.env.HOME = home;
+    try {
+      const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+      const result = await policy.run(_ctxStub(sandbox, transcript));
+      assert.strictEqual(result.decision, 'deny');
+      assert.match(result.reason, /UNFINISHED TASK-LIST VIOLATION/);
+      assert.match(result.reason, /#35 \[in_progress\] Fix existing tool filter/);
+    } finally {
+      if (prevHome === undefined) delete process.env.HOME;
+      else process.env.HOME = prevHome;
+    }
+  }));
+
+test('work_checks: completed Claude task store entries do not block',
+  _withSandbox(async (sandbox) => {
+    const sessionId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+    const transcript = path.join(sandbox, `${sessionId}.jsonl`);
+    fs.writeFileSync(transcript, [
+      JSON.stringify({ type: 'user', message: { content: 'fix HME middleware' } }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } }),
+    ].join('\n') + '\n');
+    const home = path.join(sandbox, 'home');
+    const taskDir = path.join(home, '.claude', 'tasks', sessionId);
+    fs.mkdirSync(taskDir, { recursive: true });
+    fs.writeFileSync(path.join(taskDir, '35.json'), JSON.stringify({
+      id: '35',
+      subject: 'Fix existing tool filter and TodoWrite compaction',
+      status: 'completed',
+    }));
+    const prevHome = process.env.HOME;
+    process.env.HOME = home;
+    try {
+      const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+      const result = await policy.run(_ctxStub(sandbox, transcript));
+      assert.notStrictEqual(result.reason && /UNFINISHED TASK-LIST VIOLATION/.test(result.reason), true);
+    } finally {
+      if (prevHome === undefined) delete process.env.HOME;
+      else process.env.HOME = prevHome;
+    }
+  }));
+
 test('work_checks: text-only short verdict maps to STOP_WORK_TEXT_ONLY reason',
   _withSandbox(async (sandbox) => {
     fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
