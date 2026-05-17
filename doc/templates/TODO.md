@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect live Claude processes and environment
 
 ## Next
 
-(empty)
+- [ ] [E3] Reproduce the exact Claude API request path
+- [ ] [E3] Patch actual refactor regression and verify
 
 ## Done
 
