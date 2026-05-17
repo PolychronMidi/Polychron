@@ -297,6 +297,7 @@ function _shrinkForPassthrough(payload) {
   return shrinkForPassthrough(payload, {
     effectiveThreshold: _effectiveCompactThreshold,
     keepMin: _PASSTHROUGH_COMPACT_KEEP_MIN,
+    maxToolResultAge: _STALE_TOOL_KEEP_TURNS,
     projectRoot: require('./shared').PROJECT_ROOT,
   });
 }
