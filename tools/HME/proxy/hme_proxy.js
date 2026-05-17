@@ -277,11 +277,20 @@ function _resolveModelCtx(modelId) {
   return _DEFAULT_CTX;
 }
 
+function _estimatedContextTokens(bytes) {
+  return Math.ceil(bytes / _CONTEXT_BYTES_PER_TOKEN_EST);
+}
+
+function _omniContextThresholdBytes(swapModel) {
+  const ctx = _resolveModelCtx(String(swapModel || ''));
+  return Math.floor(ctx * _CONTEXT_PREFLIGHT_FRACTION * _CONTEXT_BYTES_PER_TOKEN_EST);
+}
+
 function _injectContextHeader(headers, swapModel) {
   const ctx = _resolveModelCtx(swapModel);
-  const estUsed = Math.ceil(_lastPayloadBytes / _BYTES_PER_TOKEN_EST);
+  const estUsed = _estimatedContextTokens(_lastPayloadBytes);
   const remaining = Math.max(0, ctx - estUsed);
-  if (remaining < ctx * 0.25) {
+  if (remaining < ctx * _CONTEXT_SIGNAL_REMAINING_FRACTION) {
     headers['anthropic-ratelimit-input-tokens-remaining'] = String(remaining);
     console.error(`[hme-proxy] context signal: ~${estUsed}/${ctx} tokens (${remaining} remaining) -> triggering /compact`);
   }
