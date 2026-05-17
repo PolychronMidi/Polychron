@@ -35,6 +35,19 @@ function mergeFirewalls(existing = {}) {
   return { ...DEFAULT_FIREWALLS, ...existing };
 }
 
+const CONTRACT_EXEMPT_PORTS = new Set([
+  'emergentMelodicPort',
+  'emergentRhythmPort',
+  'rhythmicContagionPort'
+]);
+
+function applyDerivedAnnotations(loop) {
+  if (loop && CONTRACT_EXEMPT_PORTS.has(loop.module)) {
+    return { ...loop, contractExempt: true };
+  }
+  return loop;
+}
+
 // -Filesystem helpers -
 
 function findJsFiles(dir) {
@@ -154,12 +167,12 @@ function mergeLoops(existingLoops, sourceLoops) {
       if (loop.module && sourceLoops.has(loop.module)) {
         handledSourceNames.add(loop.module);
       }
-      merged.push(loop);
+      merged.push(applyDerivedAnnotations(loop));
       continue;
     }
     if (sourceLoops.has(loop.module)) {
       // Existing entry with matching source registration - preserve annotations
-      merged.push(loop);
+      merged.push(applyDerivedAnnotations(loop));
       handledSourceNames.add(loop.module);
     } else {
       if (isAutoScaffold(loop)) {
@@ -168,7 +181,7 @@ function mergeLoops(existingLoops, sourceLoops) {
       }
       // Orphaned curated entries must be explicit conceptual entries.
       console.log('generate-feedback-graph: WARNING - loop "' + loop.module + '" in JSON has no source registration (keeping)');
-      merged.push(loop);
+      merged.push(applyDerivedAnnotations(loop));
     }
   }
 
@@ -177,7 +190,7 @@ function mergeLoops(existingLoops, sourceLoops) {
     if (handledSourceNames.has(name)) continue; // already handled above
     // New loop - scaffold entry
     const kebab = name.replace(/\./g, '-').replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
-    merged.push({
+    merged.push(applyDerivedAnnotations({
       id: kebab,
       module: name,
       sourceDomain: srcLoop.sourceDomain || 'TODO',
@@ -185,7 +198,7 @@ function mergeLoops(existingLoops, sourceLoops) {
       latency: 'beat-delayed',
       firewallsCrossed: ['REGISTRY_DAMPENING'],
       mechanism: 'TODO: describe feedback mechanism'
-    });
+    }));
     console.log('generate-feedback-graph: NEW loop scaffolded:', name);
   }
 
