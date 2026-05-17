@@ -52,7 +52,6 @@ test('Claude handler serves stop-gate health route', async () => {
     fs.mkdirSync(path.join(root, 'tools/HME/scripts/detectors'), { recursive: true });
     fs.writeFileSync(path.join(root, 'tools/HME/scripts/detectors/registry.json'), JSON.stringify({ detectors: [] }));
     process.env.PROJECT_ROOT = root;
-    process.env.HME_PROXY_QUIET_IMPORT = '1';
     clearProxyCache();
     const { createClaudeHandler } = require(path.join(repo, 'tools/HME/proxy/hme_proxy_claude.js'));
     const handle = createClaudeHandler({
