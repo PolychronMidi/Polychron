@@ -57,6 +57,7 @@ test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () 
     const clientReq = { headers: { authorization: 'Bearer direct', 'x-api-key': 'direct-key' }, url: '/v1/messages' };
     let strippedTools = false;
     let strippedIdentity = false;
+    let contextPreflight = false;
     const result = applyOverdriveRoute({
       payload,
       clientReq,
@@ -64,6 +65,7 @@ test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () 
       outBody: Buffer.from(JSON.stringify(payload)),
       stripStaleToolResults: () => { strippedTools = true; },
       stripClaudeIdentity: () => { strippedIdentity = true; },
+      shrinkForContext: () => { contextPreflight = true; },
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'driver', HME_OMNIROUTE_PROVIDER: 'openai-responses' },
       projectRoot: tmp,
     });
@@ -72,6 +74,7 @@ test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () 
     assert.equal(result.isLegacySwap, false);
     assert.equal(strippedTools, true);
     assert.equal(strippedIdentity, true);
+    assert.equal(contextPreflight, true);
     assert.match(payload.model, /^openai-responses\//);
     assert.match(clientReq.headers['x-hme-upstream'], /^http:\/\/127\.0\.0\.1:/);
     assert.equal(clientReq.headers.authorization, undefined);
