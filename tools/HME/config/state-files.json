@@ -617,5 +617,6 @@
       "schema": "append-only text/jsonl unless coordination says otherwise",
       "repair": "run tools/HME/scripts/hme-doctor.py"
     }
-  ]
+  ],
+  "files": []
 }
