@@ -3,6 +3,10 @@
 const assert = require('node:assert');
 const test = require('node:test');
 
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
 const middleware = require('../../proxy/middleware/04_compact_tool_descriptions');
 
 function run(payload) {
