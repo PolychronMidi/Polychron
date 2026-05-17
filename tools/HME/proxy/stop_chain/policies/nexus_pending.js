@@ -51,6 +51,19 @@ function pipelineVerdict() {
   return nexusGet('PIPELINE');
 }
 
+function workingTreeDirty() {
+  try {
+    const result = cp.spawnSync('git', ['status', '--porcelain'], {
+      cwd: PROJECT_ROOT,
+      encoding: 'utf8',
+      timeout: 5000,
+    });
+    return result.status !== 0 || Boolean(String(result.stdout || '').trim());
+  } catch (_e) {
+    return true;
+  }
+}
+
 module.exports = {
   name: 'nexus_pending',
   async run(ctx) {
