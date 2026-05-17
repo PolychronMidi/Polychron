@@ -232,6 +232,9 @@ def main() -> int:
 _BUILTINS = {
     "CamelCase", "JavaScript", "TypeScript", "OpenShell", "OpenCSF", "LoRA",
     "GraphQL", "ThreadPool", "GitHub", "TypeScriptTypes", "NodeJS",
+    "coherentThresholdScale", "conductorScopes", "contourShape",
+    "crossLayerScopes", "directionBias", "densityBias", "phaseProfile",
+    "tensionBias", "textureProfile",
 }
 
 
