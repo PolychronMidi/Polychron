@@ -414,6 +414,46 @@
   ],
   "multi_writer": [
     {
+      "path": "tools/HME/runtime/metrics/*",
+      "coordination": "HME-owned telemetry; project metrics stay adapter-scoped.",
+      "writers": [
+        "tools/HME/proxy/hme_paths.js",
+        "tools/HME/scripts/hme_paths.py",
+        "HME components using HME_METRICS_DIR"
+      ],
+      "owner": "HME runtime telemetry",
+      "readers": [
+        "diagnostics",
+        "hme-doctor",
+        "operators"
+      ],
+      "retention": "generated local telemetry; prune or rotate by owner",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined metric artifacts",
+      "repair": "run tools/HME/scripts/hme-doctor.py"
+    },
+    {
+      "path": "tools/HME/runtime/state/*",
+      "coordination": "Durable HME state; not part of swappable project src/.",
+      "writers": [
+        "tools/HME/proxy/hme_paths.js",
+        "tools/HME/scripts/hme_paths.py",
+        "HME components using HME_STATE_DIR"
+      ],
+      "owner": "HME runtime state",
+      "readers": [
+        "diagnostics",
+        "HME services",
+        "operators"
+      ],
+      "retention": "durable local state; repair through owner-specific checks",
+      "generated": true,
+      "committed": false,
+      "schema": "owner-defined state artifacts",
+      "repair": "run tools/HME/scripts/hme-doctor.py"
+    },
+    {
       "path": "doc/templates/TODO.md",
       "coordination": "rendered from tools/HME/KB/todos.json; direct human edits are ingested by todo_autoflip.py; Codex update_plan syncs through codex_plan_sync.py",
       "writers": [
