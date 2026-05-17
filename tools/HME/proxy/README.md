@@ -56,8 +56,12 @@ Exit `0` = clean, `1` = violation.
 
 - `hme_proxy.js` -- thin executable entrypoint and process-supervisor bootstrap
 - `hme_proxy_core.js` -- shared helper functions, stop-reminder health, compaction helpers
-- `hme_proxy_claude.js` -- Claude/Anthropic request handler and upstream response path
+- `hme_proxy_claude.js` -- Claude/Anthropic request handler and upstream orchestration
 - `hme_proxy_codex.js` -- OmniRoute/Codex fallback helpers used by the Claude path
+- `hme_proxy_response_trace.js` -- response dump/blank-response diagnostics
+- `hme_proxy_response_send.js` -- SSE/non-SSE final response rewriting and Stop fallback
+- `hme_proxy_fp_gate.js` -- FP-check upstream kill scanner
+- `hme_proxy_upstream_failure.js` -- upstream failure classification, snapshots, and retry
 - `middleware/` -- per-tool enrichment modules; one file per concern
 - `supervisor/` -- child process specs, health probing, pre-flight adoption
 - `mcp_server/` -- SSE handler for `/mcp` (currently unused; HME goes via tool injection)
