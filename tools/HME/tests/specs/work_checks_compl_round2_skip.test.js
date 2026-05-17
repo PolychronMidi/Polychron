@@ -231,7 +231,7 @@ test('work_checks: broad completion treats next-action language as next-action d
     const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
     const result = await policy.run(_ctxStub(sandbox, transcript));
     assert.strictEqual(result.decision, 'deny');
-    assert.match(result.reason, /BROAD-SCOPE COMPLETION DEBT/);
+    assert.match(result.reason, /NEXT-ACTION DEBT/);
     assert.match(result.reason, /Next action/);
   }));
 
