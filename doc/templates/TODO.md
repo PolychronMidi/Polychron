@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Locate the unaddressed LIFESAVER error source via HME status surfaces
+- [ ] [E3] Re-run targeted verification and HME review
 
 ## Next
 
-- [ ] [E3] Patch the root cause or clear stale state only through approved HME paths
-- [ ] [E3] Re-run targeted verification and HME review
+(empty)
 
 ## Done
 
