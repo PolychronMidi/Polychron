@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Rerun npm run main after non-fatal failure fixes
 
 ## Next
 
-(empty)
+- [ ] [E3] Inspect pipeline summary and HME state
+- [ ] [E3] Fix any remaining failure before stopping
 
 ## Done
 
