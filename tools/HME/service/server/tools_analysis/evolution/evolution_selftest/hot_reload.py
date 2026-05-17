@@ -5,6 +5,7 @@ import importlib
 import logging
 import os
 import sys
+import subprocess
 
 from server import context as ctx
 from ... import _track
@@ -158,11 +159,19 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
         import json as _json
         import time as _time
         _root = ctx.PROJECT_ROOT
-        _marker_path = os.path.join(_root, "tmp", "hme-last-reload.json")
+        _marker_path = os.path.join(_root, "tools", "HME", "runtime", "last-reload.json")
         _marker_tmp = _marker_path + ".tmp"
+        try:
+            head = subprocess.check_output(
+                ["git", "-C", _root, "rev-parse", "HEAD"],
+                text=True, stderr=subprocess.DEVNULL, timeout=2,
+            ).strip()
+        except Exception:
+            head = ""
         payload = {
             "ts": _time.time(),
-            "trigger": _trigger,  # "auto" from watcher, "manual" from i/hme admin
+            "trigger": _trigger,
+            "loaded_head": head,
             "summary": summary.split("\n\n")[-1][:160],
         }
         # explicit caused_by -- the specific file that
