@@ -182,33 +182,10 @@ test('synthetic PreToolUse Bash no-ops on harmless command', async () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('synthetic PreToolUse Bash raw-streak is observational, not blocking', async () => {
-  const root = _withSandbox('hme-hook-bash-streak-');
-  const streak = '/tmp/hme-non-hme-streak.score';
-  const previous = fs.existsSync(streak) ? fs.readFileSync(streak, 'utf8') : null;
-  fs.writeFileSync(streak, '70');
-  try {
-    const res = await dispatch(root, 'PreToolUse', {
-      tool_name: 'Bash',
-      session_id: 's3b',
-      tool_input: { command: 'git status --short' },
-    });
-    assert.strictEqual(res.exit_code, 0);
-    assert.doesNotMatch(res.stdout, /permissionDecision":\s*"deny"|Raw tool streak/);
-  } finally {
-    if (previous === null) fs.rmSync(streak, { force: true });
-    else fs.writeFileSync(streak, previous);
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('synthetic PreToolUse Bash rewrites reader at raw-streak limit instead of blocking', async () => {
-  const root = _withSandbox('hme-hook-bash-streak-read-rewrite-');
+test('synthetic PreToolUse Bash rewrites reader without raw-streak state', async () => {
+  const root = _withSandbox('hme-hook-bash-read-rewrite-');
   fs.mkdirSync(path.join(root, 'doc', 'templates'), { recursive: true });
   fs.writeFileSync(path.join(root, 'doc', 'templates', 'AGENTS.md'), '# agent\n');
-  const dir = path.join(root, 'tmp', 'hme-streak');
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 's3read.score'), '70');
   try {
     const res = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
@@ -216,43 +193,15 @@ test('synthetic PreToolUse Bash rewrites reader at raw-streak limit instead of b
       tool_input: { command: 'cat doc/templates/AGENTS.md' },
     });
     assert.strictEqual(res.exit_code, 0);
-    assert.doesNotMatch(res.stdout, /Raw tool streak/);
     assert.match(res.stdout, /updatedInput/);
     assert.match(res.stdout, /codex_structured_tool\.js read --json/);
-    assert.strictEqual(fs.readFileSync(path.join(dir, 's3read.score'), 'utf8').trim(), '0');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('synthetic PreToolUse Bash structured Read always resets even after prior Read unlock', async () => {
-  const root = _withSandbox('hme-hook-bash-structured-read-repeat-');
-  const dir = path.join(root, 'tmp', 'hme-streak');
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 's3structured.score'), '70');
-  fs.writeFileSync(path.join(dir, 's3structured.last_unlock'), 'structured-read\tcodex/read --json <<HME_CODEX_JSON');
-  try {
-    const res = await dispatch(root, 'PreToolUse', {
-      tool_name: 'Bash',
-      session_id: 's3structured',
-      tool_input: { command: 'node tools/HME/scripts/codex_structured_tool.js read file=doc/templates/AGENTS.md' },
-    });
-    assert.strictEqual(res.exit_code, 0);
-    assert.doesNotMatch(res.stdout, /unlock loop detected|Raw tool streak/);
-    assert.strictEqual(fs.readFileSync(path.join(dir, 's3structured.score'), 'utf8').trim(), '0');
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('raw-streak unlock no longer blocks repeated same i command', async () => {
-  const root = _withSandbox('hme-hook-bash-streak-repeat-');
-  const dir = path.join(root, 'tmp', 'hme-streak');
-  const streak = path.join(dir, 's3c.score');
-  const last = path.join(dir, 's3c.last_unlock');
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(streak, '70');
-  fs.writeFileSync(last, 'review-reset\ti/review mode=forget');
+test('synthetic PreToolUse Bash allows HME i commands without raw-streak state', async () => {
+  const root = _withSandbox('hme-hook-bash-i-command-');
   try {
     const res = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
@@ -260,78 +209,7 @@ test('raw-streak unlock no longer blocks repeated same i command', async () => {
       tool_input: { command: `${root}/tools/HME/i/review -- mode=forget` },
     });
     assert.strictEqual(res.exit_code, 0);
-    assert.doesNotMatch(res.stdout, /permissionDecision":\s*"deny"|unlock loop detected|Raw tool streak/);
-    assert.strictEqual(fs.readFileSync(streak, 'utf8').trim(), '0');
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('raw-streak unlock allows a different i command', async () => {
-  const root = _withSandbox('hme-hook-bash-streak-different-');
-  const dir = path.join(root, 'tmp', 'hme-streak');
-  const streak = path.join(dir, 's3d.score');
-  const last = path.join(dir, 's3d.last_unlock');
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(streak, '70');
-  fs.writeFileSync(last, 'review-reset\ti/review mode=forget');
-  try {
-    const res = await dispatch(root, 'PreToolUse', {
-      tool_name: 'Bash',
-      session_id: 's3d',
-      tool_input: { command: `${root}/tools/HME/i/status` },
-    });
-    assert.strictEqual(res.exit_code, 0);
-    assert.doesNotMatch(res.stdout, /unlock loop detected/);
-    assert.strictEqual(fs.readFileSync(streak, 'utf8').trim(), '0');
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('raw-streak scores are scoped by session id without blocking', async () => {
-  const root = _withSandbox('hme-hook-bash-streak-session-');
-  const dir = path.join(root, 'tmp', 'hme-streak');
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'session-A.score'), '70');
-  try {
-    const allowed = await dispatch(root, 'PreToolUse', {
-      tool_name: 'Bash',
-      session_id: 'session-B',
-      tool_input: { command: 'git status --short' },
-    });
-    assert.strictEqual(allowed.exit_code, 0);
-    assert.doesNotMatch(allowed.stdout, /Raw tool streak/);
-    const formerlyDenied = await dispatch(root, 'PreToolUse', {
-      tool_name: 'Bash',
-      session_id: 'session-A',
-      tool_input: { command: 'git status --short' },
-    });
-    assert.doesNotMatch(formerlyDenied.stdout, /Raw tool streak|permissionDecision":\s*"deny"/);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-
-test('synthetic PreToolUse Read resets raw-streak score', async () => {
-  const root = _withSandbox('hme-hook-read-streak-reset-');
-  const dir = path.join(root, 'tmp', 'hme-streak');
-  const streak = path.join(dir, 's-read-reset.score');
-  const target = path.join(root, 'src', 'x.js');
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, 'const x = 1;\n');
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(streak, '70');
-  try {
-    const res = await dispatch(root, 'PreToolUse', {
-      tool_name: 'Read',
-      session_id: 's-read-reset',
-      tool_input: { file_path: target },
-    });
-    assert.strictEqual(res.exit_code, 0);
-    assert.doesNotMatch(res.stdout, /Raw tool streak/);
-    assert.strictEqual(fs.readFileSync(streak, 'utf8').trim(), '0');
+    assert.doesNotMatch(res.stdout, /permissionDecision\":\s*\"deny/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
