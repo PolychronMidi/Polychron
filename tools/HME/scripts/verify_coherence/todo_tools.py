@@ -72,7 +72,8 @@ class TodoMarkdownSyncVerifier(Verifier):
             except OSError as e:
                 unreadable.append(f"{os.path.relpath(bridge, _PROJECT)} unreadable: {e}")
                 continue
-            if "doc/templates/TODO.md" in text and "todo_autoflip.py" in text:
+            norm = text.replace("\\/", "/").replace("\\.", ".")
+            if "doc/templates/TODO.md" in norm and "todo_autoflip.py" in norm:
                 wired = True
                 break
         if not wired:
