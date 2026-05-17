@@ -53,6 +53,13 @@ function reasonHash(reason) {
   return crypto.createHash('sha256').update(reason).digest('hex').slice(0, 12);
 }
 
+function systemReminder(text) {
+  const s = String(text || '').trim();
+  if (!s) return '';
+  if (/^<system-reminder>[\s\S]*<\/system-reminder>$/.test(s)) return s;
+  return `<system-reminder>\n${s}\n</system-reminder>`;
+}
+
 function toPermissionRequestOutput(parsed) {
   const hso = parsed && parsed.hookSpecificOutput;
   if (!hso || typeof hso !== 'object') return sanitizeHookSpecific('PermissionRequest', parsed);
