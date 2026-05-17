@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3514,
-      "updated_ts": 1778980428.7569,
-      "codex_plan_synced_ts": 1778980428.7567954,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T01:13:26.831Z"
+      "max_id": 3517,
+      "updated_ts": 1778980644.8593585,
+      "codex_plan_synced_ts": 1778980644.8592615,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T01:17:24.421Z"
     }
   },
   {
@@ -7645,8 +7645,8 @@
     "id": 3512,
     "text": "Rerun npm run main after non-fatal failure fixes",
     "activeForm": "Rerun npm run main after non-fatal failure fixes",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7655,14 +7655,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:13:26.831Z"
+    "codex_plan_ts": "2026-05-17T01:13:26.831Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3513,
     "text": "Inspect pipeline summary and HME state",
     "activeForm": "Inspect pipeline summary and HME state",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7671,14 +7672,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:13:26.831Z"
+    "codex_plan_ts": "2026-05-17T01:13:26.831Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3514,
     "text": "Fix any remaining failure before stopping",
     "activeForm": "Fix any remaining failure before stopping",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7687,6 +7689,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:13:26.831Z"
+    "codex_plan_ts": "2026-05-17T01:13:26.831Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3515,
+    "text": "Check whether interrupted pipeline is still running",
+    "activeForm": "Check whether interrupted pipeline is still running",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778980644.8583586,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:17:24.421Z"
+  },
+  {
+    "id": 3516,
+    "text": "Run or finish clean post-fix pipeline",
+    "activeForm": "Run or finish clean post-fix pipeline",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778980644.8583639,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:17:24.421Z"
+  },
+  {
+    "id": 3517,
+    "text": "Inspect pipeline summary and clear remaining failures",
+    "activeForm": "Inspect pipeline summary and clear remaining failures",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778980644.8583674,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:17:24.421Z"
   }
 ]

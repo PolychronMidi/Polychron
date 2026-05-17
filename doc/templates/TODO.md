@@ -4,12 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Rerun npm run main after non-fatal failure fixes
+- [ ] [E3] Check whether interrupted pipeline is still running
 
 ## Next
 
-- [ ] [E3] Inspect pipeline summary and HME state
-- [ ] [E3] Fix any remaining failure before stopping
+- [ ] [E3] Run or finish clean post-fix pipeline
+- [ ] [E3] Inspect pipeline summary and clear remaining failures
 
 ## Done
 
