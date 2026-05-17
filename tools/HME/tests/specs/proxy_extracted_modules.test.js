@@ -112,7 +112,7 @@ test('passthrough microcompaction honors configured stale tool horizon', () => {
   const changed = shrinkForPassthrough(payload, {
     threshold: 120000,
     keepMin: 3,
-    maxToolResultAge: 4,
+    maxToolResultAge: 8,
     toolResultByteFloor: 1000,
     env: {},
     log: () => {},
