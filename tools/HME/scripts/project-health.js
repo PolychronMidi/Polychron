@@ -4,7 +4,6 @@
 const fs = require('fs');
 const path = require('path');
 const adapterLib = require('../proxy/project_adapter');
-const hmePaths = require('../proxy/hme_paths');
 
 function check(results, name, ok, detail = '') {
   results.push({ name, ok, detail });
