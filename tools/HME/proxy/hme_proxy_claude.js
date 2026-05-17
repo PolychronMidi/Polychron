@@ -7,21 +7,11 @@ const { sessionKey, emit } = require('./shared');
 const {
   resolveUpstream, recordUpstreamFailure, isPassthroughMode,
 } = require('./upstream');
-const { servicePort } = require('./service_registry');
 const { applyOverdriveRoute } = require('./overdrive_route');
 const { handleLegacySwapResponse } = require('./legacy_swap_response');
 const middleware = require('./middleware/index');
 const hmeDispatcher = require('./hme_dispatcher');
-const { handleMcpRequest } = require('./mcp_server/index');
-const { status: supervisorStatus } = require('./supervisor/index');
-const {
-  lifecycleInactive: _lifecycleInactive,
-  runInlineFallback: _runInlineFallback,
-  handleLifecycleRoute: _handleLifecycleRoute,
-} = require('./lifecycle_bridge');
-const { handlePreWriteCheckRoute: _handlePreWriteCheckRoute } = require('./pre_write_route');
-const { handleSessionStateRoute: _handleSessionStateRoute } = require('./session_state_route');
-const { handleSpawnRoute: _handleSpawnRoute } = require('./routes_admin');
+const { createProxyRouteDispatcher } = require('./hme_proxy_routes');
 const {
   _stripHmePrefixOutgoing,
   _stripStaleToolResults,
