@@ -77,6 +77,6 @@ def test_read_index_job_marks_orphaned_running_job_stale(tmp_path):
 
     assert status["state"] == "stale"
     assert status["live_in_process"] is False
-    assert "no live index thread" in status["error"]
+    assert "no live worker thread" in status["error"]
     assert "Index job status" in index_jobs.format_index_job(str(tmp_path), status)
 
