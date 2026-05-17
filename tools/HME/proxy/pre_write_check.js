@@ -127,10 +127,15 @@ function _commentBloatDecision(file, content, writeVerb) {
   const longLine = Number(process.env.COMMENT_BLOAT_LONG_LINE || 90);
   const annotations = ['# rationale:', '# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// rationale:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa'];
   let run = 0;
-  for (const line of String(content || '').split('\n')) {
+  const lines = String(content || '').split('\n');
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
     const t = line.trimStart();
     if (prefixes.some((p) => t.startsWith(p)) && !t.startsWith('#!')) {
-      if (line.length >= longLine) return _permission('deny', `BLOCKED: ${writeVerb} content contains a comment line of ${line.length} chars (>= ${longLine}). Long rationale belongs in doc/.`);
+      if (line.length >= longLine) {
+        const reason = `BLOCKED: ${writeVerb} content contains a comment line of ${line.length} chars (>= ${longLine}). Long rationale belongs in doc/.`;
+        return _permission('deny', `${reason}\nOffending line ${i + 1}: ${_shortLine(line)}\nAction: shorten that comment before retrying.`);
+      }
       if (!annotations.some((a) => t.startsWith(a))) {
         run += 1;
         if (run >= threshold) return _permission('deny', `BLOCKED: ${writeVerb} content contains a ${run}-line consecutive inline-comment block. Trim to <=2 lines OR move prose into doc/.`);
@@ -235,9 +240,11 @@ function _shellParityDecision(payload) {
   const sourceFile = /\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$/.test(file);
   const rootJson = new RegExp('"PROJECT_ROOT":[^,}]*"' + PROJECT_ROOT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"').test(content);
   const rootExempt = /(\/\.env(\.[a-z]+)?$|\/README(\.[a-z]+)?$|\/CLAUDE\.md$|\/tools\/HME\/KB\/devlog\/|\/doc\/[^/]+\.md$|\/doc\/archive\/)/.test(file);
-  d = _denyIf(rootInContent && sourceFile && !rootJson && !rootExempt,
-    `BLOCKED: ${writeVerb} content contains hardcoded project root '${PROJECT_ROOT}'. Use $PROJECT_ROOT or $CLAUDE_PROJECT_DIR -- never a host-specific path.`);
-  if (d) return d;
+  if (rootInContent && sourceFile && !rootJson && !rootExempt) {
+    const hit = _offendingLine(content, (line) => line.includes(PROJECT_ROOT));
+    const where = hit ? `\nOffending line ${hit.line}: ${hit.text}` : '';
+    return _permission('deny', `BLOCKED: ${writeVerb} content contains hardcoded project root '${PROJECT_ROOT}'. Use $PROJECT_ROOT or $CLAUDE_PROJECT_DIR -- never a host-specific path.${where}\nAction: remove that literal path before retrying.`);
+  }
 
   d = _denyIf(/(api[_-]?key|password|secret|token)[\s]*[:=][\s]*[A-Za-z0-9+/]{20,}/i.test(content),
     'BLOCKED: Potential secret/credential detected in write content. Review before writing.');
@@ -271,7 +278,7 @@ async function preWriteCheck(stdinJson) {
   const tool = payload.tool_name || '';
   if (!['Write', 'Edit', 'MultiEdit'].includes(tool)) return _permission('allow');
   const shapeDecision = _editShapeDecision(payload);
-  if (shapeDecision) return shapeDecision;
+  if (shapeDecision) return _repeatDeny(payload, shapeDecision);
 
   try {
     _loadPolicies();
@@ -288,25 +295,28 @@ async function preWriteCheck(stdinJson) {
     };
     const { firstDeny, instructs, errors } = await registry.runChain(policies, ctx);
     if (firstDeny) {
-      const out = _permission('deny', firstDeny.reason, `policy:${firstDeny.policy}`);
+      const out = _repeatDeny(payload, _permission('deny', firstDeny.reason, `policy:${firstDeny.policy}`));
       await stateClient.call('write', payload.session_id || '', { payload, decision: out });
       return out;
     }
     if (errors.length) return _permission('ask', errors.map((e) => `${e.policy}: ${e.error}`).join('\n'));
     const shellDecision = _shellParityDecision(payload);
     if (shellDecision.permissionDecision !== 'allow') {
-      await stateClient.call('write', payload.session_id || '', { payload, decision: shellDecision });
-      return shellDecision;
+      const out = _repeatDeny(payload, shellDecision);
+      await stateClient.call('write', payload.session_id || '', { payload, decision: out });
+      return out;
     }
     const editCurrentDecision = _editCurrentFileDecision(payload);
     if (editCurrentDecision) {
-      await stateClient.call('write', payload.session_id || '', { payload, decision: editCurrentDecision });
-      return editCurrentDecision;
+      const out = _repeatDeny(payload, editCurrentDecision);
+      await stateClient.call('write', payload.session_id || '', { payload, decision: out });
+      return out;
     }
     const kbDecision = await _kbBugfixDecision((payload.tool_input || {}).file_path || '', _content(payload), tool === 'Write' ? 'Write' : 'Edit');
     if (kbDecision) {
-      await stateClient.call('write', payload.session_id || '', { payload, decision: kbDecision });
-      return kbDecision;
+      const out = _repeatDeny(payload, kbDecision);
+      await stateClient.call('write', payload.session_id || '', { payload, decision: out });
+      return out;
     }
     if (instructs.length) shellDecision.contextualRules.push(...instructs.map((i) => i.message));
     await stateClient.call('write', payload.session_id || '', { payload, decision: shellDecision });
