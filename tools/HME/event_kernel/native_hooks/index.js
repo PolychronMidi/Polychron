@@ -9,7 +9,6 @@ const preToolHandlers = {
   Agent: agent.pretoolAgent,
   Glob: streak.pretoolGlob,
   TodoWrite: todo.pretoolTodoWrite,
-  ToolSearch: toolsearch.pretoolToolSearch,
 };
 
 const postToolHandlers = {
