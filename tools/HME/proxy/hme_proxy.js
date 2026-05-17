@@ -552,6 +552,10 @@ function handleRequest(clientReq, clientRes) {
         } catch (err) {
           console.error('middleware pipeline error:', err.message);
         }
+        if (_injectStopReminderSystem(payload)) {
+          emit({ event: 'stop_reminder_inject', session });
+          bodyDirtiedByStrip = true;
+        }
         if (shouldInject()) {
           const statusBlock = consumeStatusContext(session);
           if (statusBlock) {
