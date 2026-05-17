@@ -381,6 +381,15 @@ def hme_selftest(verbose: bool = False) -> str:
             _now = _ts_mod.time()
             _window_s = 600  # 10 minutes
             _warning_window_s = 1800  # 30 minutes
+            _resolved_after = 0.0
+            _reload_marker = os.path.join(
+                ctx.PROJECT_ROOT, "tools", "HME", "runtime", "last-reload.json"
+            )
+            try:
+                with open(_reload_marker, encoding="utf-8") as _rf:
+                    _resolved_after = float(json.load(_rf).get("ts", 0) or 0)
+            except Exception:
+                _resolved_after = 0.0
             _stale_err_count = 0
             _stale_warn_count = 0
             for _line in _lines:
@@ -392,7 +401,7 @@ def hme_selftest(verbose: bool = False) -> str:
                     if _tsm:
                         try:
                             _ts = _dt_log.datetime.strptime(_tsm.group(1), "%Y-%m-%d %H:%M:%S").timestamp()
-                            _is_fresh = (_now - _ts) <= _window_s
+                            _is_fresh = (_now - _ts) <= _window_s and _ts >= _resolved_after
                         except Exception as _tse:
                             logger.debug(f"hme.log ts parse: {type(_tse).__name__}: {_tse}")
                     if _is_fresh:
@@ -406,7 +415,10 @@ def hme_selftest(verbose: bool = False) -> str:
                     if _tsm:
                         try:
                             _ts = _dt_log.datetime.strptime(_tsm.group(1), "%Y-%m-%d %H:%M:%S").timestamp()
-                            _is_fresh = (_now - _ts) <= _warning_window_s
+                            _is_fresh = (
+                                (_now - _ts) <= _warning_window_s
+                                and _ts >= _resolved_after
+                            )
                         except Exception as _tse:
                             logger.debug(f"hme.log ts parse: {type(_tse).__name__}: {_tse}")
                     if _is_fresh:
