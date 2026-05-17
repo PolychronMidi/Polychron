@@ -16,7 +16,6 @@ CONFIG_PATH = CODEX_HOME / "config.toml"
 CODEX_MODELS_CACHE_JSON = CODEX_HOME / "models_cache.json"
 HOOKS_JSON = PROJECT_ROOT / "tools" / "HME" / "hooks" / "codex_hooks.json"
 LIVE_HOOKS_JSON = CODEX_HOME / "hooks.json"
-CANONICAL_SYSTEM_PROMPT = PROJECT_ROOT / "doc" / "templates" / "canonical-system-prompt.md"
 AGENTS_MD = PROJECT_ROOT / "doc" / "templates" / "AGENTS.md"
 MODEL_CATALOG_JSON = PROJECT_ROOT / "tools" / "HME" / "runtime" / "codex-model-catalog.json"
 PROJECT_ROOT_VAR = "${HME_PROJECT_ROOT}"
@@ -218,7 +217,6 @@ def compare_config(live_text: str, *, port: int) -> list[str]:
 def expected_model_catalog(
     *,
     source_path: Path = CODEX_MODELS_CACHE_JSON,
-    canonical_path: Path = CANONICAL_SYSTEM_PROMPT,
     agents_path: Path = AGENTS_MD,
     context_window: int = CODEX_CONTEXT_WINDOW,
 ) -> tuple[dict[str, Any], dict[str, int]]:

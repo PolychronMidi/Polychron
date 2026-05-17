@@ -46,10 +46,6 @@ def onboarding_file() -> str:
     return os.path.join(templates_dir(), "ONBOARDING.md")
 
 
-def canonical_system_prompt_file() -> str:
-    return os.path.join(templates_dir(), "canonical-system-prompt.md")
-
-
 def kb_devlog_dir() -> str:
     return os.path.join(project_root(), "tools", "HME", "KB", "devlog")
 
