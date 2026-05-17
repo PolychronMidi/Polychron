@@ -277,20 +277,6 @@ def capture_git_state() -> dict:
     }
 
 
-def capture_streak() -> dict:
-    f = "/tmp/claude-non-hme-streak.count"
-    f2 = "/tmp/hme-non-hme-streak.count"
-    streak = None
-    for path in (f2, f):
-        if os.path.isfile(path):
-            try:
-                with open(path) as fp:
-                    streak = int(fp.read().strip() or 0)
-                break
-            except Exception:
-                continue
-    return {"non_hme_streak": streak}
-
 
 def capture_audit_state() -> dict:
     """Snapshot of the project audit suite -- LOC, undefined-name, shell,
