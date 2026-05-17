@@ -17,6 +17,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const crypto = require('crypto');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('../../shared');
 const sessionState = require('../../session_state');
