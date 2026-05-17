@@ -199,3 +199,21 @@ test('work_checks: broad completion question blocks scoped-not-complete answer',
     assert.match(result.reason, /BROAD-SCOPE COMPLETION DEBT/);
     assert.match(result.reason, /scoped pass|Remaining gaps/);
   }));
+
+test('work_checks: unfinished task reminder blocks stopping before auto-completeness',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix HME stop checks' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Started.' }] } },
+      { type: 'user', message: { content:
+        '<system-reminder>\nHere are the existing tasks:\n' +
+        '- id: 6 subject: Block stopping with unfinished tasks status: in_progress\n' +
+        '</system-reminder>' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Done.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /UNFINISHED TASK-LIST VIOLATION/);
+    assert.match(result.reason, /status: in_progress/);
+  }));
