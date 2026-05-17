@@ -13,6 +13,19 @@ from server.helpers import (
 
 logger = logging.getLogger("HME")
 
+
+def _project_scope_tag() -> str:
+    try:
+        import json
+        cfg = os.path.join(ctx.PROJECT_ROOT, "config", "project-adapter.json")
+        with open(cfg, encoding="utf-8") as f:
+            project_id = str(json.load(f).get("project_id") or "").strip()
+        return f"project:{project_id}" if project_id else ""
+    except Exception as exc:
+        logger.debug("project scope tag unavailable: %s", exc)
+        return ""
+
+
 def add_knowledge(title: str, content: str, category: str = "general", tags: list[str] = [], scope: str = "project", related_to: str = "", relation_type: str = "", listening_notes: str = "") -> str:
     """Persist a knowledge entry to the KB. Tell the STORY, not just the fact: include WHY this matters musically, what the listener experiences when this constraint is violated, and what happened in the round that discovered it. Categories: 'architecture', 'decision', 'pattern', 'bugfix', 'general'. Use listening_notes to describe the musical effect ('coherent sections lost their sense of arrival'). Use related_to=<entry_id> with relation_type (caused_by, fixed_by, depends_on, contradicts, similar_to, supersedes) for knowledge_graph edges. Scope 'project'/'global'/'both'."""
     try:
@@ -32,6 +45,10 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
     if category not in valid_categories:
         return f"Error: invalid category '{category}'. Valid: {', '.join(sorted(valid_categories))}"
     tag_list = [str(t).strip() for t in tags if str(t).strip()] if tags else []
+    project_tag_list = list(tag_list)
+    project_tag = _project_scope_tag()
+    if project_tag and project_tag not in project_tag_list:
+        project_tag_list.append(project_tag)
     results = []
 
     # Horizon III asymptote -- auto-densification. When the caller didn't
@@ -83,7 +100,14 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
             logger.debug("auto-predecessor scan failed: %s", _e)
 
     if scope in ("project", "both"):
-        r = ctx.project_engine.add_knowledge(title=title, content=content, category=category, tags=tag_list, related_to=related_to, relation_type=relation_type)
+        r = ctx.project_engine.add_knowledge(
+            title=title,
+            content=content,
+            category=category,
+            tags=project_tag_list,
+            related_to=related_to,
+            relation_type=relation_type,
+        )
         action = r.get("action", "store")
         action_msg = {
             "store": "NEW entry",
