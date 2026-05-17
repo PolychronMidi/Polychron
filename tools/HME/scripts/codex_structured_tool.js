@@ -50,13 +50,26 @@ function malformedPath(raw) {
   const s = String(raw ?? '');
   return !s.trim() || /[\r\n]/.test(s) || s.trim().startsWith('<<') || /HME_CODEX_JSON|[{}]/.test(s);
 }
+function pathCandidates(p) {
+  const raw = String(p ?? '').trim();
+  const cleaned = raw.replace(/^['"`]+|['"`.,;:]+$/g, '');
+  return cleaned && cleaned !== raw ? [raw, cleaned] : [raw];
+}
 function absPath(p, mustExist = true) {
   if (malformedPath(p)) throw new Error(`invalid file_path: ${String(p ?? '').slice(0, 80) || '(empty)'}`);
-  const abs = path.resolve(ROOT, String(p));
-  const rel = path.relative(ROOT, abs);
-  if (rel.startsWith('..') || path.isAbsolute(rel)) throw new Error(`path outside PROJECT_ROOT: ${abs}`);
-  if (mustExist) fs.statSync(abs);
-  return abs;
+  let lastErr = null;
+  for (const candidate of pathCandidates(p)) {
+    const abs = path.resolve(ROOT, candidate);
+    const rel = path.relative(ROOT, abs);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) throw new Error(`path outside PROJECT_ROOT: ${abs}`);
+    try {
+      if (mustExist) fs.statSync(abs);
+      return abs;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error(`path not found: ${String(p ?? '')}`);
 }
 function absFilePath(p) {
   const abs = absPath(p);
