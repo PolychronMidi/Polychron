@@ -43,6 +43,8 @@ function _withSandbox(fn) {
       else process.env.HME_RUNTIME_DIR = prevRuntime;
       for (const k of Object.keys(require.cache)) {
         if (k.startsWith(PROXY_DIR)) delete require.cache[k];
+        if (k.endsWith(path.join('tools', 'HME', 'proxy', 'shared.js'))) delete require.cache[k];
+        if (k.endsWith(path.join('tools', 'HME', 'proxy', 'hme_paths.js'))) delete require.cache[k];
       }
       try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
     }
