@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3570,
-      "updated_ts": 1778993358.8169122,
-      "codex_plan_synced_ts": 1778993358.8168,
+      "max_id": 3574,
+      "updated_ts": 1778994468.832419,
+      "codex_plan_synced_ts": 1778994468.8323052,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T04:49:17.560Z"
+      "codex_plan_ts": "2026-05-17T05:07:47.811Z"
     }
   },
   {
@@ -8559,8 +8559,8 @@
     "id": 3567,
     "text": "Implement stale-lock repair, freshness/restart contracts, metric-path/orphan audits, and status noise cleanup",
     "activeForm": "Implement stale-lock repair, freshness/restart contracts, metric-path/orphan audits, and status noise cleanup",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8569,7 +8569,8 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T04:49:17.560Z"
+    "codex_plan_ts": "2026-05-17T04:49:17.560Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3568,
@@ -8591,8 +8592,8 @@
     "id": 3569,
     "text": "Refresh indexes/docs drift/KB signals and package hme:swap-contract",
     "activeForm": "Refresh indexes/docs drift/KB signals and package hme:swap-contract",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8601,14 +8602,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T04:49:17.560Z"
+    "codex_plan_ts": "2026-05-17T04:49:17.560Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3570,
     "text": "Run targeted and full verification, then report evidence",
     "activeForm": "Run targeted and full verification, then report evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8617,6 +8619,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T04:49:17.560Z"
+    "codex_plan_ts": "2026-05-17T04:49:17.560Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3571,
+    "text": "Fix remaining HCI/pipeline-bg failures at root cause",
+    "activeForm": "Fix remaining HCI/pipeline-bg failures at root cause",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778994468.2502408,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T05:07:47.811Z"
+  },
+  {
+    "id": 3572,
+    "text": "Repair/refresh stale coherence-registry artifacts cleanly",
+    "activeForm": "Repair/refresh stale coherence-registry artifacts cleanly",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778994468.2502468,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T05:07:47.811Z"
+  },
+  {
+    "id": 3573,
+    "text": "Harden tool-latency metric semantics and status noise",
+    "activeForm": "Harden tool-latency metric semantics and status noise",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778994468.2502506,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T05:07:47.811Z"
+  },
+  {
+    "id": 3574,
+    "text": "Run final swap-contract, selftest, status, and workspace verification",
+    "activeForm": "Run final swap-contract, selftest, status, and workspace verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778994468.2502546,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T05:07:47.811Z"
   }
 ]

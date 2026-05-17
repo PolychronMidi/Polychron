@@ -4,12 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Implement stale-lock repair, freshness/restart contracts, metric-path/orphan audits, and status noise cleanup
+- [ ] [E3] Fix remaining HCI/pipeline-bg failures at root cause
 
 ## Next
 
-- [ ] [E3] Refresh indexes/docs drift/KB signals and package hme:swap-contract
-- [ ] [E3] Run targeted and full verification, then report evidence
+- [ ] [E3] Repair/refresh stale coherence-registry artifacts cleanly
+- [ ] [E3] Harden tool-latency metric semantics and status noise
+- [ ] [E3] Run final swap-contract, selftest, status, and workspace verification
 
 ## Done
 
