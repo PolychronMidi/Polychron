@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3560,
-      "updated_ts": 1778989938.7878368,
-      "codex_plan_synced_ts": 1778989938.7877226,
+      "updated_ts": 1778989998.7846084,
+      "codex_plan_synced_ts": 1778989998.784499,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T03:52:11.213Z"
+      "codex_plan_ts": "2026-05-17T03:53:16.345Z"
     }
   },
   {
@@ -8410,8 +8410,8 @@
     "id": 3558,
     "text": "Run bifurcation and portability verification",
     "activeForm": "Run bifurcation and portability verification",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8420,14 +8420,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T03:52:11.213Z"
+    "codex_plan_ts": "2026-05-17T03:53:16.345Z"
   },
   {
     "id": 3559,
     "text": "Run HME review and clean worktree evidence",
     "activeForm": "Run HME review and clean worktree evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8436,13 +8436,13 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T03:52:11.213Z"
+    "codex_plan_ts": "2026-05-17T03:53:16.345Z"
   },
   {
     "id": 3560,
     "text": "Answer with exact completion status and evidence",
     "activeForm": "Answer with exact completion status and evidence",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "codex_plan",
@@ -8452,6 +8452,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T03:52:11.213Z"
+    "codex_plan_ts": "2026-05-17T03:53:16.345Z"
   }
 ]
