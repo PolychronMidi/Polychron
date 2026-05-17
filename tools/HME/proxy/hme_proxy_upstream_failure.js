@@ -48,7 +48,7 @@ async function handleUpstreamFailureOrSuccess({
     return { status, headers, fullBody };
   }
 
-  const errInfo = detectUpstreamFailure(status, headers, fullBody);
+  const errInfo = _detectUpstreamFailure(status, headers, fullBody);
   if (!errInfo) {
     recordSuccessAndReset({ getConsecutive429s, setConsecutive429s });
     return { status, headers, fullBody };
