@@ -69,7 +69,8 @@ test('telemetry: metric -> JSONL append to hme-hook-latency.jsonl', _withSandbox
 
 test('telemetry: audit -> JSONL append to hme-audit.jsonl', _withSandbox(async (sb, t) => {
   t.audit('audit_test', { caller: 'test', action: 'verify' });
-  const file = path.join(sb, 'log', 'hme-audit.jsonl');
+  const file = t.PATHS.audit;
+  assert.ok(file.startsWith(sb + path.sep), 'audit path must stay inside sandbox');
   assert.ok(fs.existsSync(file));
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8').trim());
   assert.strictEqual(parsed.event, 'audit_test');
