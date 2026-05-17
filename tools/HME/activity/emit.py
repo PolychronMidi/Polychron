@@ -90,13 +90,7 @@ def main(argv: list[str]) -> int:
     if skip_append:
         return 0
 
-    project_root = os.environ.get("PROJECT_ROOT") or os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "..", "..")
-    )
-    hme_metrics = os.environ.get("HME_METRICS_DIR") or os.path.join(
-        project_root, "tools", "HME", "runtime", "metrics"
-    )
-    out_path = os.path.join(hme_metrics, "hme-activity.jsonl")
+    out_path = os.path.join(str(HME_METRICS_DIR), "hme-activity.jsonl")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     line = json.dumps(fields, separators=(",", ":"), sort_keys=True) + "\n"
