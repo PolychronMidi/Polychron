@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
+const projectAdapter = require('../../../proxy/project_adapter');
 const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
 
 const COHERENCE    = path.join(METRICS_DIR, 'hme-coherence.json');
@@ -32,7 +33,24 @@ const WARN_THRESHOLD = (() => {
 // R32: math extracted to correlation_math.js helper module.
 const { extractPerceptualSignals, pearson } = require('./correlation_math');
 
+function writeSkipped(reason) {
+  const prev = loadJson(OUT) || {};
+  const out = Object.assign({}, prev, {
+    skipped: true,
+    skipped_reason: reason,
+    generated: new Date().toISOString(),
+  });
+  fs.mkdirSync(path.dirname(OUT), { recursive: true });
+  fs.writeFileSync(OUT, JSON.stringify(out, null, 2) + '\n');
+  console.log('compute-musical-correlation: SKIPPED -- ' + reason);
+}
+
 function main() {
+  const cfg = projectAdapter.loadAdapter(ROOT);
+  if (!projectAdapter.hasCapability('perceptual_analysis', cfg)) {
+    writeSkipped('adapter capability perceptual_analysis=false');
+    return;
+  }
   const coherence   = loadJson(COHERENCE);
   const accuracy    = loadJson(ACCURACY);
   const fingerprint = loadJson(FINGERPRINT);
