@@ -1,6 +1,7 @@
 """Background index-job status for hme_admin."""
 from __future__ import annotations
 
+import calendar
 import json
 import os
 import threading
@@ -62,7 +63,7 @@ def _thread_alive() -> bool:
 
 def _iso_to_epoch(value: str) -> float:
     try:
-        return time.mktime(time.strptime(value, "%Y-%m-%dT%H:%M:%SZ"))
+        return float(calendar.timegm(time.strptime(value, "%Y-%m-%dT%H:%M:%SZ")))
     except (TypeError, ValueError):
         return 0.0
 
