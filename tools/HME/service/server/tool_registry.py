@@ -134,7 +134,7 @@ class Registry:
                     # Layer 2: tool response EMA
                     try:
                         from server import operational_state as ops
-                        ops.update_ema("tool_response_ms_ema", elapsed * 1000)
+                        ops.record_tool_response(name, elapsed * 1000)
                     except (ImportError, AttributeError) as _ema_err:
                         logger.debug(f"operational_state EMA update unavailable: {_ema_err}")
                     logger.info(f"RESP {name} [{elapsed:.1f}s] {str(result)[:200]}")
