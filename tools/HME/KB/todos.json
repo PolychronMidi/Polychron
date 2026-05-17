@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3605,
-      "updated_ts": 1779033487.091041,
-      "codex_plan_synced_ts": 1779033487.0909238,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-      "codex_plan_ts": "2026-05-17T15:57:55.176Z"
+      "updated_ts": 1779033519.4879353,
+      "codex_plan_synced_ts": 1779033519.4878175,
+      "codex_plan_source": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+      "codex_plan_ts": "2026-05-17T15:58:39.044Z"
     }
   },
   {
@@ -9140,16 +9140,16 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:45:59.836Z",
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:58:39.044Z",
     "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3603,
     "text": "Inspect Claude config semantics and active process",
     "activeForm": "Inspect Claude config semantics and active process",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9157,15 +9157,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:57:55.176Z"
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:58:39.044Z"
   },
   {
     "id": 3604,
     "text": "Trace whether Claude requests reach proxy",
     "activeForm": "Trace whether Claude requests reach proxy",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9173,15 +9173,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:57:55.176Z"
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:58:39.044Z"
   },
   {
     "id": 3605,
     "text": "Patch actual launcher/config bridge if broken",
     "activeForm": "Patch actual launcher/config bridge if broken",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9190,6 +9190,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:57:55.176Z"
+    "codex_plan_ts": "2026-05-17T15:57:55.176Z",
+    "resolved_reason": "superseded-by-codex-plan"
   }
 ]

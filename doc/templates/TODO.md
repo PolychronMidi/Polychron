@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect Claude config semantics and active process
+(empty)
 
 ## Next
 
-- [ ] [E3] Trace whether Claude requests reach proxy
-- [ ] [E3] Patch actual launcher/config bridge if broken
+(empty)
 
 ## Done
 
