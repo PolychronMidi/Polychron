@@ -27,6 +27,7 @@ const { createFpGateScanner } = require('./hme_proxy_fp_gate');
 const { handleUpstreamFailureOrSuccess } = require('./hme_proxy_upstream_failure');
 const { prepareUpstreamHeaders } = require('./hme_proxy_headers');
 const { mutateClaudeRequest } = require('./hme_proxy_request_mutation');
+const { handleMidResponseError, handleConnectionError } = require('./hme_proxy_connection_errors');
 
 function lifecycleBridge() {
   return require('./lifecycle_bridge');
