@@ -109,6 +109,45 @@ test('pre-write check denies malformed or display-redacted Edit input', async ()
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('pre-write denial names cause and blocks retry loops', async () => {
+  const root = _withSandbox('hme-pre-write-repeat-');
+  const { preWriteCheck } = require('../../proxy/pre_write_check');
+  const target = path.join(root, 'script.sh');
+  const content = '# ' + 'x'.repeat(90) + '
+';
+  const payload = JSON.stringify({
+    tool_name: 'Write',
+    session_id: 's-repeat',
+    tool_input: { file_path: target, content },
+  });
+  const first = await preWriteCheck(payload);
+  assert.strictEqual(first.permissionDecision, 'deny');
+  assert.match(first.reason, /Offending line 1/);
+  assert.doesNotMatch(first.reason, /REPEATED DENIED EDIT/);
+  const second = await preWriteCheck(payload);
+  assert.match(second.reason, /REPEATED DENIED EDIT #2/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('pre-write hardcoded-root denial names offending line', async () => {
+  const root = _withSandbox('hme-pre-write-root-line-');
+  const { preWriteCheck } = require('../../proxy/pre_write_check');
+  const decision = await preWriteCheck(JSON.stringify({
+    tool_name: 'Write',
+    session_id: 's-root-line',
+    tool_input: {
+      file_path: path.join(root, 'probe.sh'),
+      content: `echo "${root}/tools/HME/i/status"
+`,
+    },
+  }));
+  assert.strictEqual(decision.permissionDecision, 'deny');
+  assert.match(decision.reason, /hardcoded project root/);
+  assert.match(decision.reason, /Offending line 1/);
+  assert.match(decision.reason, /Action: remove that literal path/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test('session state records structured verification evidence', () => {
   const root = _withSandbox('hme-session-state-');
   const state = require('../../proxy/session_state');
