@@ -41,10 +41,8 @@ const { recordOmniRouteFailureAdvance, retryBlankOmniRouteResponse } = require('
 
 function createClaudeHandler(deps) {
   const {
-    PORT, PROXY_VERSION, PROXY_GIT_SHA, PROXY_STARTED_AT, routeMetrics,
-    recordProxyRoute, recordProxyError: _recordProxyError,
-    WORKER_PORT,
-    SUPERVISE,
+    PORT, PROXY_VERSION, PROXY_GIT_SHA, PROXY_STARTED_AT, routeMetrics: _routeMetrics,
+    recordProxyRoute,
     effectiveCompactThreshold: _effectiveCompactThreshold,
     shrinkForPassthrough: _shrinkForPassthrough,
     shrinkForContext: _shrinkForOmniContext,
@@ -58,7 +56,6 @@ function createClaudeHandler(deps) {
     setLastInputTokensRemaining,
     getLastInputTokensLimit,
     setLastInputTokensLimit,
-    getLastPayloadBytes,
     setLastPayloadBytes,
     loadedMiddleware,
   } = deps;
@@ -370,9 +367,7 @@ function createClaudeHandler(deps) {
       function _spawnUpstream() {
         _connAttempt++;
         upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
-          const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
-
-          if (_isLegacySwap) {
+            if (_isLegacySwap) {
             handleLegacySwapResponse({
               upstreamRes,
               clientRes,
