@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect dirty state, flags, and recent error logs
+- [ ] [E3] Verify clean status and proxy guards
 
 ## Next
 
-- [ ] [E3] Fix any live unresolved hook/proxy error
-- [ ] [E3] Verify clean status and proxy guards
+(empty)
 
 ## Done
 
