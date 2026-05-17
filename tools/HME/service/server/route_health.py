@@ -56,6 +56,14 @@ def _parse_ts(value: str | None) -> float:
         return 0.0
 
 
+_TS_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z")
+
+
+def _line_ts(line: str) -> float:
+    match = _TS_RE.search(line)
+    return _parse_ts(match.group(0)) if match else 0.0
+
+
 def _age_minutes(value: str | None) -> float:
     ts = _parse_ts(value)
     return max(0.0, (time.time() - ts) / 60.0) if ts else 0.0
@@ -76,6 +84,35 @@ def _newer_than_started(root: Path, started_at: str | None, rels: list[str]) -> 
     return stale
 
 
+def _autocommit_clear_ts(root: Path) -> float:
+    state = root / "tools" / "HME" / "runtime"
+    if (state / "autocommit.fail").exists():
+        return 0.0
+    try:
+        counter = int((state / "autocommit.counter").read_text().strip() or "0")
+    except (OSError, ValueError):
+        counter = 0
+    if counter >= 3:
+        return 0.0
+    try:
+        return _parse_ts((state / "autocommit.last-success").read_text().strip())
+    except OSError:
+        return 0.0
+
+
+def _resolved_epoch_error(line: str, autocommit_clear_ts: float) -> bool:
+    stripped = line.strip()
+    if stripped in {"throw new Error(", "^"}:
+        return True
+    if autocommit_clear_ts <= 0:
+        return False
+    text = line.lower()
+    if "autocommit" in text and "fail" in text:
+        ts = _line_ts(line)
+        return bool(ts and ts <= autocommit_clear_ts)
+    return "check-root-only-dirs" in text or "misplaced root/runtime directory" in text
+
+
 def _epoch_errors(root: Path, rel: str, marker: str) -> list[str]:
     path = root / rel
     if not path.exists():
@@ -87,7 +124,11 @@ def _epoch_errors(root: Path, rel: str, marker: str) -> list[str]:
         if needle in line:
             start = idx + 1
     err_re = re.compile(r"\b(ERROR|FAIL|Exception|Traceback|timeout|EADDRINUSE|unhandled)\b", re.I)
-    return [line[:180] for line in lines[start:] if err_re.search(line)][-3:]
+    clear_ts = _autocommit_clear_ts(root)
+    return [
+        line[:180] for line in lines[start:]
+        if err_re.search(line) and not _resolved_epoch_error(line, clear_ts)
+    ][-3:]
 
 
 def codex_sessions(root: Path) -> dict[str, Any]:
