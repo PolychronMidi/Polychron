@@ -27,6 +27,7 @@ async function handleSessionStateRoute(req, res) {
   try { data = JSON.parse(await _body(req)); } catch (_e) { data = {}; }
   if (action === 'phase') return _json(res, 200, sessionState.recordPhase(data.phase, { ...data.meta, session_id: sid }));
   if (action === 'write') return _json(res, 200, sessionState.recordWrite(data.payload || {}, data.decision || {}));
+  if (action === 'read') return _json(res, 200, sessionState.recordRead(data.payload || {}, { ...data.meta, session_id: sid }));
   if (action === 'verification-evidence') return _json(res, 200, sessionState.recordVerificationEvidence({ ...data, session_id: sid }));
   if (action === 'detector-outcome') return _json(res, 200, sessionState.recordDetectorOutcome(data.name, data.verdict, { ...data.meta, session_id: sid }));
   return _json(res, 404, { error: 'unknown_session_action' });
