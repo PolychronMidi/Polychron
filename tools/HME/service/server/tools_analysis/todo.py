@@ -61,9 +61,16 @@ from .todo_store import (
 
 logger = logging.getLogger("HME")
 
-_GRAPH_FILE = os.path.join(
-    ENV.require("PROJECT_ROOT"), "src", "output", "metrics", "todo-graph.md"
+_PROJECT_ROOT = ENV.require("PROJECT_ROOT")
+_HME_RUNTIME_DIR = ENV.optional(
+    "HME_RUNTIME_DIR",
+    os.path.join(_PROJECT_ROOT, "tools", "HME", "runtime"),
 )
+_HME_METRICS_DIR = ENV.optional(
+    "HME_METRICS_DIR",
+    os.path.join(_HME_RUNTIME_DIR, "metrics"),
+)
+_GRAPH_FILE = os.path.join(_HME_METRICS_DIR, "todo-graph.md")
 
 # Lifecycle triggers the on_done field may reference. Arbitrary shell is NOT
 # allowed -- only entries in this dispatch table fire. Each value is a callable
