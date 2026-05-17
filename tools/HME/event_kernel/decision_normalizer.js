@@ -121,7 +121,10 @@ function claudeRelayFields(event, result) {
   }
   if ((event === 'PreToolUse' || event === 'Stop') && code === 0) {
     const reason = denyReason(stdout);
-    if (reason) { code = 2; stderr = reason; }
+    if (reason) {
+      code = 2;
+      stderr = event === 'Stop' ? systemReminder(reason) : reason;
+    }
   }
   if (code === 0 && !stderr) stderr = ' ';
   return { stdout, stderr, exit_code: code };
