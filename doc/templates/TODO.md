@@ -4,12 +4,15 @@
 
 ## Now
 
-- [ ] [E3] Check whether interrupted pipeline is still running
+- [ ] [E3] Inspect current adapter/path/metric assumptions and running state
 
 ## Next
 
-- [ ] [E3] Run or finish clean post-fix pipeline
-- [ ] [E3] Inspect pipeline summary and clear remaining failures
+- [ ] [E3] Add project adapter schema/helpers and env roots
+- [ ] [E3] Introduce HME metrics/state ownership helpers and migrate HME references safely
+- [ ] [E3] Add portability doctors/invariants/tests/fixtures
+- [ ] [E3] Genericize docs and project-scope KB/TODO contracts
+- [ ] [E3] Run targeted tests only, no full pipeline
 
 ## Done
 
