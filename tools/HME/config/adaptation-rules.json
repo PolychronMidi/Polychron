@@ -19,15 +19,6 @@
       "value_when_dormant": "0"
     },
     {
-      "id": "relax_streak_when_turn_velocity_high",
-      "description": "When lots of productive events fire per turn, allow a slightly longer raw-tool streak before the HME-tool reminder (rewards focused work).",
-      "window": 30,
-      "trigger": "count_event(event='file_written') >= 8",
-      "export": "HME_STREAK_BLOCK_BUMP",
-      "value_when_fired": "10",
-      "value_when_dormant": "0"
-    },
-    {
       "id": "cache_hot_modules",
       "description": "If the same 3 modules are briefed repeatedly, extend their KB cache TTL so we don't re-enrich on every read.",
       "window": 50,
