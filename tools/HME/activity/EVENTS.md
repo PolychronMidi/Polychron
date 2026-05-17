@@ -6,7 +6,7 @@ Generated from `event_registry.json`; edit the registry, then run:
 python3 tools/HME/activity/render_events_doc.py
 ```
 
-Reference for events emitted to `output/metrics/hme-activity.jsonl` (`activity`) and `output/metrics/hme-signals.jsonl` (`signal`).
+Reference for events emitted to `src/output/metrics/hme-activity.jsonl` (`activity`) and `src/output/metrics/hme-signals.jsonl` (`signal`).
 
 ## File-system / edit lifecycle
 

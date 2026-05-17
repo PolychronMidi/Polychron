@@ -9,12 +9,31 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
 const SRC  = path.join(ROOT, 'src');
 const METRICS  = path.join(METRICS_DIR);
 const GRAPH_PATH = path.join(METRICS, 'feedback_graph.json');
 
 const CHECK_MODE = process.argv.includes('--check');
+
+const DEFAULT_FIREWALLS = {
+  CONDUCTOR_BLINDNESS: {
+    purpose: 'Cross-layer code cannot register or read conductor state directly.',
+    enforcement: ['no-conductor-registration-from-crosslayer', 'no-direct-conductor-state-from-crosslayer']
+  },
+  SIGNAL_DELAY: {
+    purpose: 'Signal reads must flow through declared delayed channels.',
+    enforcement: ['no-direct-signal-read']
+  },
+  REGISTRY_DAMPENING: {
+    purpose: 'Every feedback loop is registered before topology validation.',
+    enforcement: ['no-unregistered-feedback-loop']
+  }
+};
+
+function mergeFirewalls(existing = {}) {
+  return { ...DEFAULT_FIREWALLS, ...existing };
+}
 
 // -Filesystem helpers -
 
@@ -183,7 +202,7 @@ function buildGraph(existingGraph, sourceLoops) {
     title: existingGraph.title || 'Polychron Feedback Topology',
     description: existingGraph.description ||
       'A machine-readable map of the closed loops, firewalls, and emergence boundaries governing the polychron composition engine.',
-    firewalls: existingGraph.firewalls || {},
+    firewalls: mergeFirewalls(existingGraph.firewalls),
     feedbackLoops: mergedLoops
   };
   // Preserve firewallPorts section if present (manually curated)

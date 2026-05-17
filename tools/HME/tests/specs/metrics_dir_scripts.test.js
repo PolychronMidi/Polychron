@@ -23,7 +23,7 @@ function runNode(script, metricsDir, cwd = PROJECT_ROOT) {
 
 test('trace-summary writes to METRICS_DIR and never cwd/metrics', () => {
   const root = sandbox('trace-summary-metrics-');
-  const metricsDir = path.join(root, 'output', 'metrics');
+  const metricsDir = path.join(root, 'src', 'output', 'metrics');
   fs.mkdirSync(metricsDir, { recursive: true });
   fs.writeFileSync(path.join(metricsDir, 'trace.jsonl'), JSON.stringify({
     layer: 'L1', section: 0, phrase: 0, measure: 0, beat: 0, timeMs: 0,
@@ -39,7 +39,7 @@ test('trace-summary writes to METRICS_DIR and never cwd/metrics', () => {
 
 test('snapshot-run reads and writes run history through METRICS_DIR', () => {
   const root = sandbox('snapshot-run-metrics-');
-  const metricsDir = path.join(root, 'output', 'metrics');
+  const metricsDir = path.join(root, 'src', 'output', 'metrics');
   fs.mkdirSync(path.join(metricsDir, 'run-history'), { recursive: true });
   fs.writeFileSync(path.join(metricsDir, 'golden-fingerprint.json'), JSON.stringify({
     regimeDistribution: { coherent: 1, exploring: 0, evolving: 0 },

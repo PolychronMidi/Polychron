@@ -22,7 +22,7 @@ def _count_legendary_streak(project_root: str) -> int:
     most recent verdict. Used by ConjugateChannelVerifier's license-to-
     explore branch to scale band-widening proportionally to recent
     productive-territory evidence (V * VIII * IX compounding)."""
-    gt_path = os.path.join(project_root, "output", "metrics",
+    gt_path = os.path.join(project_root, "src", "output", "metrics",
                            "hme-ground-truth.jsonl")
     if not os.path.isfile(gt_path):
         return 0
@@ -47,7 +47,7 @@ class ConjugateChannelVerifier(Verifier):
     musical-correlation row and FAILing when the system is in the
     'lost' quadrant (low HCI AND low perceptual). PASS when in any
     other quadrant. The `perceptual_complexity_avg` and `hme_coherence`
-    fields exist in `output/metrics/hme-musical-correlation.json`.
+    fields exist in `src/output/metrics/hme-musical-correlation.json`.
 
     This is the FIRST verifier whose status depends on the composition
     signal -- the conjugate channel previously was a passive view
@@ -63,7 +63,7 @@ class ConjugateChannelVerifier(Verifier):
     weight = 1.5
 
     def run(self) -> VerdictResult:
-        path = os.path.join(_PROJECT, "output", "metrics",
+        path = os.path.join(_PROJECT, "src", "output", "metrics",
                             "hme-musical-correlation.json")
         if not os.path.isfile(path):
             return _result(SKIP, 1.0,
@@ -156,7 +156,7 @@ class ConjugateChannelVerifier(Verifier):
             pass  # silent-ok: best-effort fs op
         # Otherwise: PASS, with quadrant label in summary.
         try:
-            snap_path = os.path.join(_PROJECT, "output", "metrics",
+            snap_path = os.path.join(_PROJECT, "src", "output", "metrics",
                                      "hci-verifier-snapshot.json")
             if os.path.isfile(snap_path):
                 with open(snap_path) as _sf:

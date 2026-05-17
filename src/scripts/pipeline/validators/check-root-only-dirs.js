@@ -1,6 +1,6 @@
 'use strict';
 
-// Enforces canonical locations: log/ and tmp/ at project root; metrics/ at output/metrics/.
+// Enforces canonical locations: log/ and tmp/ at project root; metrics/ at src/output/metrics/.
 // Any instance elsewhere indicates a path bug writing runtime output to a non-standard location.
 
 const fs   = require('fs');
@@ -8,11 +8,13 @@ const path = require('path');
 const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
 const { execSync } = require('child_process');
 
-// log/ and tmp/ must be at root only. metrics/ is special: allowed only at output/metrics/.
+// log/ and tmp/ must be at root only. metrics/ is special: allowed only at src/output/metrics/.
+// These root names are source/runtime split violations after bifurcation.
 const ROOT_ONLY_NAMES = new Set(['log', 'tmp']);
+const ROOT_FORBIDDEN_NAMES = new Set(['output', 'i', 'runtime', 'lab']);
 const SKIP_DIRS = new Set(['node_modules', '.git', 'venv', '__pycache__']);
 const ROOT_FORBIDDEN_FILE_PATTERNS = [
-  { re: /\.jsonl$/i, reason: 'JSONL runtime/test artifacts belong under output/metrics/, runtime/, log/, or tmp/' }
+  { re: /\.jsonl$/i, reason: 'JSONL runtime/test artifacts belong under src/output/metrics/, tools/HME/runtime/, log/, or tmp/' }
 ];
 
 function walk(dir, violations) {
@@ -22,13 +24,17 @@ function walk(dir, violations) {
     if (!entry.isDirectory()) continue;
     if (SKIP_DIRS.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
+    if (path.dirname(full) === ROOT && ROOT_FORBIDDEN_NAMES.has(entry.name)) {
+      violations.push(full);
+      continue;
+    }
     if (ROOT_ONLY_NAMES.has(entry.name)) {
       violations.push(full);
       // Don't descend -- the whole subtree is the violation
     } else if (entry.name === 'metrics') {
-      // metrics/ is allowed only at output/metrics/; flag any other location
+      // metrics/ is allowed only at src/output/metrics/; flag any other location
       const rel = path.relative(ROOT, full);
-      if (rel !== path.join('output', 'metrics')) {
+      if (rel !== path.join('src', 'output', 'metrics')) {
         violations.push(full);
       }
     } else {
@@ -44,7 +50,7 @@ function getStagedDeletions() {
     const out = execSync('git status --porcelain', { cwd: ROOT, stdio: 'pipe' }).toString();
     const deletions = new Set();
     for (const line of out.split('\n')) {
-      if (line.startsWith('D ') || line.startsWith('D ')) {
+      if (line[0] === 'D' || line[1] === 'D') {
         deletions.add(line.slice(3).trim());
       }
     }
@@ -79,8 +85,6 @@ function rootFileViolations(entries, stagedDeletions) {
 }
 
 function isSafe(absPath, stagedDeletions) {
-  const rel = path.relative(ROOT, absPath);
-
   // Walk the directory contents directly. Any file that exists on disk
   // and isn't currently staged for deletion is evidence of an active
   // path bug. Directory existence with files -> violation.
@@ -114,7 +118,8 @@ function main() {
     if (!entry.isDirectory()) continue;
     if (SKIP_DIRS.has(entry.name)) continue;
     if (ROOT_ONLY_NAMES.has(entry.name)) continue; // root-level log/ and tmp/ allowed
-    // metrics/ at root level is now a violation (moved to output/metrics/)
+    if (ROOT_FORBIDDEN_NAMES.has(entry.name)) { violations.push(path.join(ROOT, entry.name)); continue; }
+    // metrics/ at root level is now a violation (moved to src/output/metrics/)
     if (entry.name === 'metrics') { violations.push(path.join(ROOT, entry.name)); continue; }
     walk(path.join(ROOT, entry.name), violations);
   }
@@ -125,7 +130,7 @@ function main() {
 
   if (unsafe.length > 0 || fileViolations.length > 0) {
     for (const v of unsafe) {
-      console.error('  VIOLATION: ' + path.relative(ROOT, v) + ' -- must not exist outside project root');
+      console.error('  VIOLATION: ' + path.relative(ROOT, v) + ' -- misplaced root/runtime directory');
     }
     for (const v of fileViolations) {
       console.error('  VIOLATION: ' + v.file + ' -- ' + v.reason);
@@ -134,7 +139,7 @@ function main() {
       'check-root-only-dirs: ' + unsafe.length + ' misplaced log/metrics/tmp director' +
       (unsafe.length === 1 ? 'y' : 'ies') + ' and ' + fileViolations.length +
       ' forbidden root file(s) found. log/ and tmp/ must be at project root; ' +
-      'metrics/ must be at output/metrics/; runtime artifacts must stay out of root.'
+      'metrics/ must be at src/output/metrics/; root output/, i/, lab/, and runtime/ are forbidden.'
     );
   }
 

@@ -19,7 +19,7 @@ Phase tracking:
       EXECUTE | phase: execute
       VERIFY  | phase: verify
       LEARN   | phase: learn
-  - Each transition is appended to output/metrics/phase_transitions.jsonl
+  - Each transition is appended to src/output/metrics/phase_transitions.jsonl
     for cross-session timeline analysis.
   - The detector reads ALL events (current turn) and finds the phase
     most recently declared. If no phase was declared and Edit/Write
@@ -51,8 +51,9 @@ from _transcript import _parse_all, event_content, iter_tool_uses, is_user  # no
 
 _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent.parent)
-_MODE_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
-_PHASE_LOG = _PROJECT / "output" / "metrics" / "phase_transitions.jsonl"
+_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_MODE_LOG = _METRICS_DIR / "mode-classifier.jsonl"
+_PHASE_LOG = _METRICS_DIR / "phase_transitions.jsonl"
 
 _PHASES = ("OBSERVE", "THINK", "PLAN", "BUILD", "EXECUTE", "VERIFY", "LEARN")
 

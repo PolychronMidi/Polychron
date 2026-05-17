@@ -2,7 +2,7 @@
 // lab/run.js - Mad scientist lab runner.
 // Each sketch runs in an isolated temp working directory so lab output
 // never touches rootDir/output/. Safe to run concurrently with npm run main.
-// Usage: node lab/run.js [sketch-name] ...
+// Usage: node src/lab/run.js [sketch-name] ...
 // No args = run all sketches.
 
 const { execSync } = require('child_process');
@@ -22,7 +22,7 @@ if (toRun.length === 0) {
 }
 
 const labDir = path.resolve(__dirname);
-const rootDir = path.resolve(__dirname, '..');
+const rootDir = path.resolve(__dirname, '..', '..');
 const labOutputDir = path.join(labDir, 'output');
 const SF = path.join(process.env.HOME, 'Downloads/SGM-v2.01-NicePianosGuitarsBass-V1.2.sf2');
 const INTERP = path.join(rootDir, 'src/scripts/fluidsynth-init.txt');
@@ -37,22 +37,26 @@ fs.mkdirSync(labOutputDir, { recursive: true });
 function createIsolatedWorkDir() {
   const tmpWork = fs.mkdtempSync(path.join(os.tmpdir(), 'polychron-lab-'));
   for (const entry of fs.readdirSync(rootDir)) {
-    if (entry === 'output') continue;
+    if (entry === 'src' || entry === 'output') continue;
     fs.symlinkSync(path.join(rootDir, entry), path.join(tmpWork, entry));
   }
-  fs.mkdirSync(path.join(tmpWork, 'output'));
-  fs.mkdirSync(path.join(tmpWork, 'output', 'metrics'));
+  fs.mkdirSync(path.join(tmpWork, 'src'));
+  for (const entry of fs.readdirSync(path.join(rootDir, 'src'))) {
+    if (entry === 'output') continue;
+    fs.symlinkSync(path.join(rootDir, 'src', entry), path.join(tmpWork, 'src', entry));
+  }
+  fs.mkdirSync(path.join(tmpWork, 'src', 'output', 'metrics'), { recursive: true });
 
   // feedback_graph.json is REQUIRED by feedbackGraphContract at main.js boot
   // but is a derived artifact (regenerated each pipeline run from src/ AST
   // annotations by src/scripts/pipeline/generators/generate-feedback-graph.js,
   // not a runtime output). Lab runs ONLY main.js, so the file is otherwise
-  // missing in the temp work dir. Copy from the real output/metrics/ —
+  // missing in the temp work dir. Copy from the real src/output/metrics/ —
   // preserves the lab's "isolated from runtime output" property while
   // satisfying the boot contract.
-  const fbGraph = path.join(rootDir, 'output', 'metrics', 'feedback_graph.json');
+  const fbGraph = path.join(rootDir, 'src', 'output', 'metrics', 'feedback_graph.json');
   if (fs.existsSync(fbGraph)) {
-    fs.copyFileSync(fbGraph, path.join(tmpWork, 'output', 'metrics', 'feedback_graph.json'));
+    fs.copyFileSync(fbGraph, path.join(tmpWork, 'src', 'output', 'metrics', 'feedback_graph.json'));
   }
   return tmpWork;
 }
@@ -140,7 +144,7 @@ for (const sketch of toRun) {
   fs.mkdirSync(sketchDir, { recursive: true });
 
   const tmpWork = createIsolatedWorkDir();
-  const tmpOut = path.join(tmpWork, 'output');
+  const tmpOut = path.join(tmpWork, 'src', 'output');
 
   const runnerFile = path.join(sketchDir, '_runner.js');
   const overridesJson = JSON.stringify(sketch.overrides || {});
@@ -157,10 +161,13 @@ for (const sketch of toRun) {
     mainLoopSrc = raw.startsWith('function') ? raw : 'function ' + raw;
   }
 
-  // Runner chdir's to the temp working dir — output/ writes go there
+  // Runner chdir's to the temp working dir — src/output/ writes go there
   fs.writeFileSync(runnerFile, `
 // Auto-generated lab runner for sketch: ${sketch.name}
 process.chdir(${JSON.stringify(tmpWork)});
+process.env.PROJECT_ROOT = ${JSON.stringify(tmpWork)};
+process.env.COMPOSITION_OUTPUT_DIR = ${JSON.stringify(path.join(tmpWork, 'src', 'output'))};
+process.env.METRICS_DIR = ${JSON.stringify(path.join(tmpWork, 'src', 'output', 'metrics'))};
 require(${JSON.stringify(path.join(rootDir, 'src/index'))});
 
 // Apply config overrides (reassign frozen globals)
@@ -215,7 +222,7 @@ if (typeof _mainLoop === 'function') {
 
   // Convert CSV -> MIDI (runs in tmpWork so c2m.py reads tmpWork/output/)
   try {
-    execSync(`python3 src/scripts/c2m.py`, { cwd: tmpWork, stdio: 'pipe' });
+    execSync(`python3 src/scripts/c2m.py`, { cwd: tmpWork, stdio: 'pipe', env: { ...process.env, COMPOSITION_OUTPUT_DIR: tmpOut } });
   } catch (e) {
     const stderr = e.stderr && e.stderr.length > 0 ? e.stderr.toString().split('\n').slice(-6).join('\n') : '';
     const msg = (stderr || e.message || 'unknown error').trim();

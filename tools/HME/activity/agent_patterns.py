@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cross-session agent-pattern DB.
 
-Single append-only JSONL at output/metrics/hme-agent-patterns.jsonl.
+Single append-only JSONL at src/output/metrics/hme-agent-patterns.jsonl.
 Every session contributes signatures about the agent's behavior in that
 session -- tool-count histograms, deferral phrases seen, race outcomes,
 review cleanliness, hook-latency p95. These accumulate across sessions
@@ -32,7 +32,7 @@ from pathlib import Path
 
 
 ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parent.parent.parent.parent)
-DB = ROOT / "output" / "metrics" / "hme-agent-patterns.jsonl"
+DB = ROOT / "src" / "output" / "metrics" / "hme-agent-patterns.jsonl"
 
 
 def record(signature: str, value: dict) -> None:

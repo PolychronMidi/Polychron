@@ -359,7 +359,7 @@ def _trigger_warm_reprime() -> None:
             # Detached: start the warm and don't wait. i/hme admin already
             # backgrounds the actual priming work and returns immediately,
             # so a 5s timeout is plenty for the wrapper round-trip.
-            wrapper = os.path.join(_PROJECT, "i", "hme")
+            wrapper = os.path.join(_PROJECT, "tools", "HME", "i", "hme")
             if os.path.isfile(wrapper) and os.access(wrapper, os.X_OK):
                 subprocess.run(
                     [wrapper, "admin", "action=warm"],

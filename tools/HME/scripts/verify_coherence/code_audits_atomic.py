@@ -109,7 +109,7 @@ class AtomicStateWritesVerifier(Verifier):
         # Shell pass: scan .sh for `cmd > "<state-path>"` redirects without
         truncate_only_re = re.compile(r'^\s*>')
         path_substr_re = re.compile(
-            r'[A-Za-z_"}\)]\s*>\s*"?[^"\s]*?(?:output/metrics/[^"\s]*\.json|'
+            r'[A-Za-z_"}\)]\s*>\s*"?[^"\s]*?(?:src/output/metrics/[^"\s]*\.json|'
             r'tmp/hme-[^"\s]*\.(?:json|state)|'
             r'feedback_graph\.json|adaptive-state\.json)"?'
         )

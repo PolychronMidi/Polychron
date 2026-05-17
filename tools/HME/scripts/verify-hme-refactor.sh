@@ -9,7 +9,7 @@ if [ -f .env ]; then
   set +a
 fi
 : "${PROJECT_ROOT:=$ROOT}"
-: "${METRICS_DIR:=$ROOT/output/metrics}"
+: "${METRICS_DIR:=$ROOT/src/output/metrics}"
 export PROJECT_ROOT METRICS_DIR
 
 run() {

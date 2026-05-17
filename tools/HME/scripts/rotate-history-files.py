@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Rotate high-volume HME history files to keep them tractable.
 
-Without rotation, `output/metrics/hme-activity.jsonl` and similar
+Without rotation, `src/output/metrics/hme-activity.jsonl` and similar
 append-only JSONL grow unbounded. Every scan over them slows linearly.
 This script rotates files exceeding a size or line-count cap by:
 
-  1. Moving the head (oldest entries) into output/metrics/archive/.
+  1. Moving the head (oldest entries) into src/output/metrics/archive/.
   2. Keeping the most recent N entries in the live file.
   3. Atomic via temp-file + os.replace (project's data-integrity
      invariant -- `atomic-state-writes` verifier enforces this for
@@ -33,10 +33,10 @@ from _common import PROJECT_ROOT
 
 
 POLICY = {
-    "output/metrics/hme-activity.jsonl":            5000,
-    "output/metrics/hme-coherence-timeseries.jsonl": 500,
-    "output/metrics/hme-fractal-history.jsonl":      200,
-    "output/metrics/hme-holograph-history.jsonl":    200,
+    "src/output/metrics/hme-activity.jsonl":            5000,
+    "src/output/metrics/hme-coherence-timeseries.jsonl": 500,
+    "src/output/metrics/hme-fractal-history.jsonl":      200,
+    "src/output/metrics/hme-holograph-history.jsonl":    200,
 }
 
 
@@ -61,7 +61,7 @@ def _rotate(rel_path: str, keep: int, dry_run: bool) -> dict:
         return {"path": rel_path, "status": "would-rotate",
                 "lines_before": n, "lines_after": keep, "archived": len(head)}
     # Archive the head
-    archive_dir = os.path.join(PROJECT_ROOT, "output", "metrics", "archive")
+    archive_dir = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "archive")
     try:
         os.makedirs(archive_dir, exist_ok=True)
     except OSError as e:
@@ -108,7 +108,7 @@ def main(argv):
         print(f"  {rel_path:50}  {before:>8}  {after:>8}  {archived:>9}  {result['status']}")
     print()
     if total_archived > 0 and not dry_run:
-        print(f"  Total {total_archived} line(s) archived to output/metrics/archive/")
+        print(f"  Total {total_archived} line(s) archived to src/output/metrics/archive/")
     elif total_archived > 0 and dry_run:
         print(f"  Would archive {total_archived} line(s) (no changes made -- dry run)")
     else:

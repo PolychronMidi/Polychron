@@ -1,6 +1,7 @@
 // init.js - global initialization & channel mapping.
 
-METRICS_DIR = process.env.METRICS_DIR || (process.cwd() + '/output/metrics');
+COMPOSITION_OUTPUT_DIR = process.env.COMPOSITION_OUTPUT_DIR || (process.cwd() + '/src/output');
+METRICS_DIR = process.env.METRICS_DIR || (COMPOSITION_OUTPUT_DIR + '/metrics');
 
 // Timing and counter variables (documented inline for brevity)
 COMPOSER_TYPE_PROFILE_SOURCES = {};

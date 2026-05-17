@@ -33,7 +33,7 @@ test('telemetry: exports the six channels + record', _withSandbox(async (_sb, t)
 
 test('telemetry: info -> JSONL append to hme-activity.jsonl', _withSandbox(async (sb, t) => {
   t.info('test_info_event', { foo: 'bar', n: 1 });
-  const file = path.join(sb, 'output', 'metrics', 'hme-activity.jsonl');
+  const file = path.join(sb, 'src', 'output', 'metrics', 'hme-activity.jsonl');
   assert.ok(fs.existsSync(file), 'info channel must create the activity log');
   const line = fs.readFileSync(file, 'utf8').trim().split('\n').pop();
   const parsed = JSON.parse(line);
@@ -91,7 +91,7 @@ test('telemetry: HME_TELEMETRY_DISABLE suppresses listed categories', _withSandb
     t2.info('should_not_appear', {});
     t2.metric('should_not_appear', {});
     t2.error('should_appear', { reason: 'x' });
-    const infoFile = path.join(sb, 'output', 'metrics', 'hme-activity.jsonl');
+    const infoFile = path.join(sb, 'src', 'output', 'metrics', 'hme-activity.jsonl');
     const errorFile = path.join(sb, 'log', 'hme-errors.log');
     const metricFile = path.join(sb, 'log', 'hme-hook-latency.jsonl');
     assert.ok(!fs.existsSync(infoFile), 'info channel must be suppressed');
@@ -106,7 +106,7 @@ test('telemetry: HME_TELEMETRY_DISABLE suppresses listed categories', _withSandb
 
 test('telemetry: ts auto-stamped if not provided in fields', _withSandbox(async (sb, t) => {
   t.info('auto_ts', { foo: 'bar' });
-  const file = path.join(sb, 'output', 'metrics', 'hme-activity.jsonl');
+  const file = path.join(sb, 'src', 'output', 'metrics', 'hme-activity.jsonl');
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8').trim());
   assert.ok(typeof parsed.ts === 'number');
   assert.ok(parsed.ts > 1700000000000, 'ts should be an epoch ms timestamp');

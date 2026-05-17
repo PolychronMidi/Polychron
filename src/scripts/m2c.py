@@ -2,7 +2,7 @@
 """Convert MIDI (.mid) files to csv_maestro CSV.
 
 Usage:
-  python m2c.py                      # converts output/output.mid -> output/output.csv
+  python m2c.py                      # converts src/output/output.mid -> src/output/output.csv
   python m2c.py somefile            # converts somefile.mid or somefile -> somefile.csv
   python m2c.py file1.mid file2     # convert multiple files
   python m2c.py --outdir csvs/ file1.mid file2
@@ -40,6 +40,10 @@ def convert_midi_to_csv(midi_path, outdir=None):
     print(f"{midi_path} converted to {csv_path}")
 
 
+def output_dir():
+    return Path(os.environ.get('COMPOSITION_OUTPUT_DIR', 'src/output'))
+
+
 def resolve_input_path(raw):
     raw = os.path.expanduser(raw)
     path = Path(raw)
@@ -51,7 +55,7 @@ def resolve_input_path(raw):
         if maybe.is_file():
             return str(maybe)
     # look in output/ directory
-    outdir = Path('output')
+    outdir = output_dir()
     tentative = outdir / path.name
     if tentative.is_file():
         return str(tentative)
@@ -68,7 +72,7 @@ def main(argv=None):
     p.add_argument('-o', '--outdir', help='Directory to write CSV outputs into.')
     args = p.parse_args(argv)
 
-    targets = args.midifile if args.midifile and len(args.midifile) > 0 else ['output/output.mid']
+    targets = args.midifile if args.midifile and len(args.midifile) > 0 else [str(output_dir() / 'output.mid')]
     targets = [os.path.expanduser(t) for t in targets]
 
     for raw in targets:

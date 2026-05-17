@@ -38,8 +38,8 @@ def _collect_deleted_files(events: list[dict], project_root: str) -> list[str]:
     skip_prefixes = (
         "/tmp/", "/var/tmp/",
         os.path.join(project_root, "tmp") + os.sep,
-        os.path.join(project_root, "runtime") + os.sep,
-        os.path.join(project_root, "output", "metrics") + os.sep,
+        os.path.join(project_root, "tools", "HME", "runtime") + os.sep,
+        os.path.join(project_root, "src", "output", "metrics") + os.sep,
     )
     out = []
     for ev in events:
@@ -74,13 +74,12 @@ def _refs_remaining(project_root: str, deleted_path: str) -> list[str]:
         ["grep", "-rln", "--include=*.js", "--include=*.ts", "--include=*.py",
          "--include=*.sh", "--include=*.json", "--include=*.md", stem,
          os.path.join(project_root, "tools"),
-         os.path.join(project_root, "scripts"),
          os.path.join(project_root, "src"),
          os.path.join(project_root, "doc")],
         capture_output=True, text=True, timeout=10,
     )
     hits = [ln for ln in (proc.stdout or "").splitlines() if ln.strip()]
-    skip = ('/polychron-references/', '/tmp/', '/runtime/', '/output/metrics/',
+    skip = ('/polychron-references/', '/tmp/', '/tools/HME/runtime/', '/src/output/metrics/',
             '/.git/', '/__pycache__/', '/node_modules/')
     return [h for h in hits if not any(s in h for s in skip)]
 

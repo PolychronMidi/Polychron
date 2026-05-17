@@ -52,12 +52,12 @@ def _read_jsonl(path: str, tail: int = 1000):
 
 def _hci_phase() -> str:
     """Horizon II -- multi-timescale HCI."""
-    snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
+    snap = _read_json(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
         return "no snapshot"
     cur = snap.get("hci")
-    rows = _read_jsonl(os.path.join(PROJECT_ROOT, "output", "metrics",
+    rows = _read_jsonl(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                     "hme-coherence-timeseries.jsonl"))
     if not rows or cur is None:
         return f"{cur}/100" if cur is not None else "?"
@@ -86,7 +86,7 @@ def _hci_phase() -> str:
 
 def _multi_axis_summary() -> str:
     """Horizon II -- per-subtag bands."""
-    snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
+    snap = _read_json(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
         return "no snapshot"
@@ -144,7 +144,7 @@ def _kb_summary() -> str:
 
 def _agent_loop_summary() -> str:
     """Horizon IV -- agent-loop quality + tier marker."""
-    snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
+    snap = _read_json(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
         return "no snapshot"
@@ -161,7 +161,7 @@ def _agent_loop_summary() -> str:
 
 def _conjugate_summary() -> str:
     """Horizon V -- composition<=>HME quadrant."""
-    snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
+    snap = _read_json(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
         return "no snapshot"
@@ -179,7 +179,7 @@ def _verifier_meta_summary() -> str:
         n = len(REGISTRY)
     except Exception:
         n = 0
-    snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
+    snap = _read_json(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
         return f"{n} verifiers . no snapshot"
@@ -219,7 +219,7 @@ def _causality_summary() -> str:
 
 def _conscience_summary() -> str:
     """Horizon VIII -- ground-truth verdict count."""
-    p = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-ground-truth.jsonl")
+    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-ground-truth.jsonl")
     rows = _read_jsonl(p, tail=200) if os.path.isfile(p) else []
     pos = sum(1 for r in rows
               if r.get("sentiment") in ("legendary", "compelling", "surprising", "moving"))
@@ -250,7 +250,7 @@ def _band_summary() -> str:
 
 def _fractal_summary() -> str:
     """Horizon X -- fractal Gini trend."""
-    p = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-fractal-history.jsonl")
+    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-fractal-history.jsonl")
     rows = _read_jsonl(p, tail=50) if os.path.isfile(p) else []
     if not rows:
         return "no measurements (run `i/why mode=fractal-shape`)"
@@ -266,7 +266,7 @@ def _fractal_summary() -> str:
 
 def _predict_summary() -> str:
     """Horizon I -- tool latency p50."""
-    activity = _read_jsonl(os.path.join(PROJECT_ROOT, "output", "metrics",
+    activity = _read_jsonl(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                         "hme-activity.jsonl"), tail=2000)
     if not activity:
         return "no activity"
@@ -284,7 +284,7 @@ def _persist_snapshot(rows: list[tuple]) -> None:
     """Append a holograph snapshot to history JSONL for trajectory view.
     Atomic-ish via append; cheap (~12 lines per row, runs at most once
     per i/status holograph invocation)."""
-    history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+    history_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                 "hme-holograph-history.jsonl")
     try:
         os.makedirs(os.path.dirname(history_path), exist_ok=True)
@@ -305,7 +305,7 @@ def _render_trajectory(n: int = 5) -> int:
     """Render the last n holograph snapshots as a trajectory -- for each
     horizon row, the value across recent invocations. Cross-horizon
     time-series in one view (Horizon X * cross-horizon compounding)."""
-    history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+    history_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                 "hme-holograph-history.jsonl")
     if not os.path.isfile(history_path):
         print("# i/status holograph mode=trajectory")

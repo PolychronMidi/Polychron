@@ -72,7 +72,7 @@ def _grep_source(keywords: list[str]) -> list[tuple[str, int, str]]:
 
 def _kb_hits(question: str) -> str:
     """Use i/learn query=... to surface KB matches."""
-    learn = os.path.join(PROJECT_ROOT, "i", "learn")
+    learn = os.path.join(PROJECT_ROOT, "tools", "HME", "i", "learn")
     if not os.path.isfile(learn):
         return ""
     try:
@@ -88,7 +88,7 @@ def _kb_hits(question: str) -> str:
 
 def _recent_activity() -> list[str]:
     import json
-    p = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
+    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
     if not os.path.isfile(p):
         return []
     try:

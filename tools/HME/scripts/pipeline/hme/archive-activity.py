@@ -21,7 +21,7 @@ PROJECT_ROOT = (
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
-METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 ACTIVITY = os.path.join(METRICS_DIR, "hme-activity.jsonl")
 ARCHIVE = os.path.join(METRICS_DIR, "hme-activity-archive.jsonl")
 KEEP_DAYS = float(os.environ.get("HME_ACTIVITY_KEEP_DAYS", "14"))

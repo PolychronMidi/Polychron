@@ -60,7 +60,7 @@
         0
       ],
       "capture_stderr": true,
-      "born_from": "R33 silent fallback incidents in /home/jah/Polychron/i/review auto-fire, list_knowledge, and get_knowledge_status",
+      "born_from": "R33 silent fallback incidents in /home/jah/Polychron/tools/HME/i/review auto-fire, list_knowledge, and get_knowledge_status",
       "context": "HME Python files must not silently return an empty default (`[]`, `None`, `False`, `{}`, `''`, `dict()`, etc.) from an `except Exception` without calling `logger.*` or `print` first. R33 found 3 instances in the wild (i/review auto-fire, list_knowledge, get_knowledge_status); each degraded a substrate capability invisibly because the fallback value LOOKED legitimate. Sibling of hme-py-no-silent-catchall but distinct: that catches `pass`, this catches silent-return-default."
     },
     {

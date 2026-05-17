@@ -1,13 +1,13 @@
 'use strict';
 const { hasMkdir, mkdirHasMisplacedMetrics, metricsMessage } = require('../../proxy/path_policy');
 /**
- * Block `mkdir <path-with-/metrics/>` outside output/metrics/. JS port of
+ * Block `mkdir <path-with-/metrics/>` outside src/output/metrics/. JS port of
  * the corresponding gate in blackbox_guards.sh.
  */
 
 module.exports = {
   name: 'block-mkdir-misplaced-metrics',
-  description: 'Block `mkdir` of metrics/ outside output/metrics/.',
+  description: 'Block `mkdir` of metrics/ outside src/output/metrics/.',
   category: 'consistency',
   defaultEnabled: true,
   match: { events: ['PreToolUse'], tools: ['Bash'] },

@@ -25,7 +25,7 @@ def _vram_report() -> str:
     import json as _json
     from datetime import datetime as _dt
 
-    hist_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "vram-history.jsonl")
+    hist_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "vram-history.jsonl")
     if not os.path.isfile(hist_path):
         return (
             "VRAM monitor has not written any samples yet. If this persists,\n"
@@ -125,7 +125,7 @@ def _freshness_report() -> str:
     def _ts(path: str) -> float:
         return os.path.getmtime(path) if os.path.exists(path) else 0.0
 
-    m = os.path.join(ctx.PROJECT_ROOT, "output", "metrics")
+    m = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics")
     sources = [
         ("trace.jsonl",          os.path.join(m, "trace.jsonl")),
         ("pipeline-summary.json", os.path.join(m, "pipeline-summary.json")),
@@ -182,11 +182,11 @@ def _freshness_report() -> str:
 
 def _budget_report() -> str:
     """Render metrics/hme-coherence-budget.json (Phase 5.2)."""
-    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-coherence-budget.json")
+    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-coherence-budget.json")
     if not os.path.exists(path):
         return (
             "# Coherence Budget\n\n"
-            "output/metrics/hme-coherence-budget.json not found.\n"
+            "src/output/metrics/hme-coherence-budget.json not found.\n"
             "Run: node tools/HME/scripts/pipeline/hme/compute-coherence-budget.js"
         )
     try:

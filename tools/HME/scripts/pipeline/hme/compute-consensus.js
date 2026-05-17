@@ -11,7 +11,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const ROOT = (process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..', '..'));
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
 const OUT = path.join(METRICS_DIR, 'hme-consensus.json');
 const DIVERGENCE_THRESHOLD = 0.4;  // stdev above this triggers divergence alert
 

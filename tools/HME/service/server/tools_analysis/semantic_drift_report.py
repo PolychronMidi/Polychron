@@ -12,7 +12,7 @@ import os
 from server import context as ctx
 from . import _track
 
-REPORT_REL = os.path.join("output", "metrics", "hme-semantic-drift.json")
+REPORT_REL = os.path.join("src", "output", "metrics", "hme-semantic-drift.json")
 
 
 def semantic_drift_report() -> str:
@@ -21,7 +21,7 @@ def semantic_drift_report() -> str:
     if not os.path.exists(path):
         return (
             "# KB Semantic Drift\n\n"
-            "output/metrics/hme-semantic-drift.json not found.\n"
+            "src/output/metrics/hme-semantic-drift.json not found.\n"
             "Run: python3 tools/HME/scripts/pipeline/hme/check-kb-semantic-drift.py\n"
             "(Bootstrap baselines first with capture-kb-signatures.py)"
         )

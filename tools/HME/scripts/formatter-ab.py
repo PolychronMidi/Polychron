@@ -31,7 +31,7 @@ from pathlib import Path
 
 
 ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
-LOG = ROOT / "output" / "metrics" / "hme-formatter-ab.jsonl"
+LOG = ROOT / "src" / "output" / "metrics" / "hme-formatter-ab.jsonl"
 
 
 # Registry: formatter_name -> list of variant strings. First entry is the

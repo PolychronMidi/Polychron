@@ -51,7 +51,7 @@ ANTIMSG
   fi
   # LIFESAVER: Scan pipeline summary for errors in non-fatal steps.
   PROJECT="$PROJECT_ROOT"
-  SUMMARY_FILE="$PROJECT/output/metrics/pipeline-summary.json"
+  SUMMARY_FILE="$PROJECT/src/output/metrics/pipeline-summary.json"
   if [ -f "$SUMMARY_FILE" ]; then
     ERROR_STEPS=$(_safe_py3 "
 import json, sys
@@ -91,7 +91,7 @@ ERRMSG
   echo "Pipeline ${PIPELINE_VERDICT}${PIPELINE_WALL:+ (${PIPELINE_WALL})}${PIPELINE_HCI:+ | HCI ${PIPELINE_HCI}/100}" >&2
 elif echo "$CMD" | grep -q 'npm run snapshot'; then
   echo 'Baseline captured. Persist any new calibration anchors or decisions to HME add_knowledge.' >&2
-elif echo "$CMD" | grep -q 'node lab/run'; then
+elif echo "$CMD" | grep -qE 'node (src/)?lab/run'; then
   echo 'LAB COMPLETE: Check results for FAIL/PASS. Every sketch must render a .wav file. Failed sketches need diagnosis and re-run before reporting verdicts.' >&2
 fi
 
@@ -101,10 +101,10 @@ if echo "$CMD" | grep -q 'npm run main'; then
   if echo "$RESULT" | grep -q 'Pipeline finished'; then
     PROJECT="$PROJECT_ROOT"
     SESSION_ID=$(_safe_jq "$INPUT" '.session_id' 'unknown')
-    PASSED=$(_safe_py3 "import json; d=json.load(open('$PROJECT/output/metrics/pipeline-summary.json')); print(d.get('failed',1))" "1")
-    FP="$PROJECT/output/metrics/fingerprint-comparison.json"
+    PASSED=$(_safe_py3 "import json; d=json.load(open('$PROJECT/src/output/metrics/pipeline-summary.json')); print(d.get('failed',1))" "1")
+    FP="$PROJECT/src/output/metrics/fingerprint-comparison.json"
     VERDICT=$(_safe_py3 "import json; print(json.load(open('$FP')).get('verdict','UNKNOWN'))" "UNKNOWN")
-    WALL_S=$(_safe_py3 "import json; d=json.load(open('$PROJECT/output/metrics/pipeline-summary.json')); print(int(d.get('wallTimeSeconds',0)))" "0")
+    WALL_S=$(_safe_py3 "import json; d=json.load(open('$PROJECT/src/output/metrics/pipeline-summary.json')); print(int(d.get('wallTimeSeconds',0)))" "0")
     # pipeline_run + round_complete + HCI are all emitted by main-pipeline.js
     if [ "$PASSED" = "0" ]; then
       _nexus_mark PIPELINE "$VERDICT"

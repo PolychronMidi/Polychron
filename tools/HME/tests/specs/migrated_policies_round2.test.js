@@ -146,12 +146,12 @@ test('mkdir-metrics: deny mkdir of misplaced metrics/', async () => {
   assert.strictEqual(r.decision, 'deny');
 });
 
-test('mkdir-metrics: allow mkdir of output/metrics/', async () => {
-  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/output/metrics/sub' } }));
+test('mkdir-metrics: allow mkdir of src/output/metrics/', async () => {
+  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/src/output/metrics/sub' } }));
   assert.strictEqual(r.decision, 'allow');
 });
 
 test('mkdir-metrics: allow mkdir without metrics/', async () => {
-  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/output/runs/abc' } }));
+  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/src/output/runs/abc' } }));
   assert.strictEqual(r.decision, 'allow');
 });

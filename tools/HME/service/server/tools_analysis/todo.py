@@ -62,7 +62,7 @@ from .todo_store import (
 logger = logging.getLogger("HME")
 
 _GRAPH_FILE = os.path.join(
-    ENV.require("PROJECT_ROOT"), "output", "metrics", "todo-graph.md"
+    ENV.require("PROJECT_ROOT"), "src", "output", "metrics", "todo-graph.md"
 )
 
 # Lifecycle triggers the on_done field may reference. Arbitrary shell is NOT
@@ -221,7 +221,7 @@ def _format_todos_mermaid(todos: list) -> str:
 
 
 def _write_graph_file(todos: list) -> None:
-    """E8: render the mermaid graph to output/metrics/todo-graph.md on every save.
+    """E8: render the mermaid graph to src/output/metrics/todo-graph.md on every save.
     Gives the human a live view of the agent's current work tree."""
     graph = _format_todos_mermaid(todos)
     os.makedirs(os.path.dirname(_GRAPH_FILE), exist_ok=True)

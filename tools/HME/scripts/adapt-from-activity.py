@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Activity-driven adaptation engine.
 
-Reads tools/HME/config/adaptation-rules.json and output/metrics/hme-activity.jsonl,
+Reads tools/HME/config/adaptation-rules.json and src/output/metrics/hme-activity.jsonl,
 evaluates each rule's trigger against the rule's recent-event window, and writes
 the rule's export into tmp/hme-adaptive-config.sh. Hooks source this file so
 behavior tightens or relaxes based on observed patterns instead of fixed defaults.
@@ -24,9 +24,9 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[3]))
 RULES = PROJECT_ROOT / "tools" / "HME" / "config" / "adaptation-rules.json"
-ACTIVITY = PROJECT_ROOT / "output" / "metrics" / "hme-activity.jsonl"
+ACTIVITY = PROJECT_ROOT / "src" / "output" / "metrics" / "hme-activity.jsonl"
 OUT = PROJECT_ROOT / "tmp" / "hme-adaptive-config.sh"
-DECISIONS = PROJECT_ROOT / "output" / "metrics" / "hme-adaptation-decisions.jsonl"
+DECISIONS = PROJECT_ROOT / "src" / "output" / "metrics" / "hme-adaptation-decisions.jsonl"
 
 _PREDICATE_RE = re.compile(r"^\s*(count_event|count_event_reason|top_k_concentration)\((.*)\)\s*(>=|>|<=|<|==)\s*([\d.]+)\s*$")
 

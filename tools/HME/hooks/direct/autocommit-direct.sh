@@ -67,12 +67,12 @@ if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE"
       >> "$_DIRECT_ROOT/log/hme-errors.log"
   fi
   # Auto-fire of `i/review mode=forget` after every commit was burning
-  if [ "${HME_AUTOCOMMIT_REVIEW:-0}" = "1" ] && [ -x "$_DIRECT_ROOT/i/review" ]; then
+  if [ "${HME_AUTOCOMMIT_REVIEW:-0}" = "1" ] && [ -x "$_DIRECT_ROOT/tools/HME/i/review" ]; then
 # silent-ok: optional fallback path.
     if git -C "$_DIRECT_ROOT" diff --name-only "$_AC_HEAD_BEFORE" "$_AC_HEAD_AFTER" 2>/dev/null \
          | /usr/bin/grep -qE '^(src|tools/HME|scripts|lab)/'; then
       (
-        timeout 600 "$_DIRECT_ROOT/i/review" mode=forget \
+        timeout 600 "$_DIRECT_ROOT/tools/HME/i/review" mode=forget \
           > "$_DIRECT_ROOT/tmp/hme-review-auto.out" 2>&1
         _AR_RC=$?
         if [ "$_AR_RC" -ne 0 ]; then

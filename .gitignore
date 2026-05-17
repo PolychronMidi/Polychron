@@ -5,7 +5,6 @@ package-lock.json
 *.env
 *.log
 /.vscode
-/output
 /.serena
 /.mcp
 .clinerules
@@ -15,8 +14,16 @@ deepwiki.config.json
 /log
 /tmp
 *.pyc
-/lab
 /.claude
+
+# Root split guards: source lives under src/ or tools/HME/; root artifacts stay untracked and banned by check-root-only-dirs.
+/output
+/i
+/lab
+/runtime
+/src/output/metrics/
+/src/lab/output/
+/src/lab/*.wav
 
 # tools - track source, ignore runtime artifacts
 /tools/*/venv/
@@ -37,10 +44,8 @@ deepwiki.config.json
 *.bak
 log/
 
-# runtime/ — durable inter-script state. Track INVENTORY.md (the contract);
+# HME runtime/ — durable inter-script state. Track INVENTORY.md (the contract);
 # ignore actual state files (regenerated per session, machine-specific).
-/runtime/*
-!/tools/HME/runtime/
 /tools/HME/runtime/*
 !/tools/HME/runtime/INVENTORY.md
 

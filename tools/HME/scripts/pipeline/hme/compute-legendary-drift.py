@@ -40,7 +40,7 @@ import time
 from typing import Any
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
-METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 SNAPSHOTS = os.path.join(METRICS_DIR, "hme-legendary-states.jsonl")
 DRIFT_OUT = os.path.join(METRICS_DIR, "hme-legendary-drift.json")
 DRIFT_THRESHOLD = 2.0  # mean |z-score| above this -> drift alert

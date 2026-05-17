@@ -3,7 +3,7 @@
 # silently erasing the signal that something drifted.
 TRIMMED_CMD=$(echo "$CMD" | sed 's/^[[:space:]]*//' | head -1)
 if echo "$TRIMMED_CMD" | grep -qE '^npm run snapshot\b'; then
-  _FP="${PROJECT_ROOT}/output/metrics/fingerprint-comparison.json"
+  _FP="${PROJECT_ROOT}/src/output/metrics/fingerprint-comparison.json"
   if [ -f "$_FP" ]; then
     _VERDICT=$(_safe_jq "$(cat "$_FP")" '.verdict' 'unknown')
     # Fail-closed: 'unknown' (which _safe_jq returns for empty / malformed /

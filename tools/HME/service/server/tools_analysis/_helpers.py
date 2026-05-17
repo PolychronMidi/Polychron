@@ -213,8 +213,8 @@ def _get_compositional_context(module_name: str) -> str:
     camelCase fragments) to find mentions even when prose uses different phrasing.
     Mtime-cached to avoid redundant file I/O across compound tool calls.
     """
-    digest_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "narrative-digest.md")
-    summary_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace-summary.json")
+    digest_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "narrative-digest.md")
+    summary_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "trace-summary.json")
     try:
         d_mt = os.path.getmtime(digest_path) if os.path.isfile(digest_path) else 0.0
         s_mt = os.path.getmtime(summary_path) if os.path.isfile(summary_path) else 0.0
@@ -331,7 +331,7 @@ def _load_trace(trace_path: str) -> list[dict]:
 
 # Journal archive freshness
 def _journal_latest_archived_round() -> int | None:
-    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
+    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "journal.md")
     if not os.path.isfile(path):
         return None
     try:
@@ -346,7 +346,7 @@ def _journal_latest_archived_round() -> int | None:
 
 
 def _activity_latest_round() -> int | None:
-    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
+    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
     if not os.path.isfile(path):
         return None
     latest = None

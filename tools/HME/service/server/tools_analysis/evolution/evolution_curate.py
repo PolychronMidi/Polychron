@@ -20,7 +20,7 @@ def _auto_curate() -> str:
     """Living memory curation: detect KB-worthy patterns from recent pipeline runs."""
     import json
 
-    history_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
+    history_dir = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "run-history")
     if not os.path.isdir(history_dir):
         return "# Auto-Curate\n\nNo run-history directory. Run pipeline first."
 
@@ -117,7 +117,7 @@ def _auto_curate() -> str:
 
     # 4. Coupling labels from trace-summary not in KB
     try:
-        ts_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace-summary.json")
+        ts_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "trace-summary.json")
         with open(ts_path, encoding="utf-8") as f:
             ts = json.load(f)
         labels = ts.get("couplingLabels", ts.get("aggregateCouplingLabels", {}))

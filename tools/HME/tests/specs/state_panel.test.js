@@ -10,7 +10,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const I_STATUS = path.join(PROJECT_ROOT, 'i', 'status');
+const I_STATUS = path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'status');
 
 function _run(args = []) {
   const r = spawnSync(I_STATUS, ['state', ...args], {
@@ -40,7 +40,7 @@ test('i/status state shows HCI line with verifier count', () => {
 
 test('i/status state shows multi-timescale phase line when timeseries exists', () => {
   // Skip gracefully if timeseries isn't there (clean checkout)
-  const ts = path.join(PROJECT_ROOT, 'output', 'metrics',
+  const ts = path.join(PROJECT_ROOT, 'src', 'output', 'metrics',
     'hme-coherence-timeseries.jsonl');
   if (!fs.existsSync(ts)) return;
   const r = _run();
@@ -94,7 +94,7 @@ test('i/status mode=hci-by-subtag renders Horizon VI subtag aggregation', () => 
   assert.match(r.stdout, /HCI by subtag|HCI \d/);
 });
 
-const I_WHY = path.join(PROJECT_ROOT, 'i', 'why');
+const I_WHY = path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'why');
 function _runWhy(args) {
   const r = spawnSync(I_WHY, args, {
     encoding: 'utf8',
@@ -222,7 +222,7 @@ test('i/why mode=causality reads activity-log caused_by field (Tier-1.5)', () =>
   // Inject a synthetic activity-log entry with explicit caused_by
   const fs = require('node:fs');
   const path = require('node:path');
-  const activityPath = path.join(PROJECT_ROOT, 'output', 'metrics', 'hme-activity.jsonl');
+  const activityPath = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'hme-activity.jsonl');
   if (!fs.existsSync(activityPath)) return;  // skip if no activity log
   const beforeLen = fs.statSync(activityPath).size;
   const testEntry = JSON.stringify({
@@ -260,7 +260,7 @@ test('i/why mode=conscience renders move-similarity threshold marker when scored
 });
 
 test('i/learn action=suggest_predecessors returns ranked similarity matches', () => {
-  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'learn'), [
+  const r = spawnSync(path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'learn'), [
     'action=suggest_predecessors',
     'title=HME multi-axis chaordic bands learned per subtag',
     'content=per-subtag verifier scores tracked against bands proposed from ground-truth verdicts',
@@ -311,15 +311,15 @@ test('conjugate-channel V-coupling: tightening file lifecycle is sane', () => {
 test('i/status holograph mode=trajectory renders horizon evolution over time', () => {
   // Run once to ensure history has at least 1 snapshot, then again so
   // we have 2 (the trajectory view requires >=2 to render side-by-side).
-  spawnSync(path.join(PROJECT_ROOT, 'i', 'status'), ['holograph'], {
+  spawnSync(path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'status'), ['holograph'], {
     encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT },
   });
-  spawnSync(path.join(PROJECT_ROOT, 'i', 'status'), ['holograph'], {
+  spawnSync(path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'status'), ['holograph'], {
     encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT },
   });
-  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'status'), ['holograph', 'mode=trajectory'], {
+  const r = spawnSync(path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'status'), ['holograph', 'mode=trajectory'], {
     encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT },
   });
@@ -328,7 +328,7 @@ test('i/status holograph mode=trajectory renders horizon evolution over time', (
 });
 
 test('i/status holograph renders all 10 horizons as one panel', () => {
-  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'status'), ['holograph'], {
+  const r = spawnSync(path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'status'), ['holograph'], {
     encoding: 'utf8',
     timeout: 30000,
     cwd: PROJECT_ROOT,
@@ -424,7 +424,7 @@ test('i/why mode=architecture-snapshot renders composite full-system report', ()
 test('rotate-history-files dry-run reports policy state without modifying', () => {
   const fs = require('node:fs');
   const path = require('node:path');
-  const activityPath = path.join(PROJECT_ROOT, 'output/metrics/hme-activity.jsonl');
+  const activityPath = path.join(PROJECT_ROOT, 'src/output/metrics/hme-activity.jsonl');
   const beforeSize = fs.existsSync(activityPath) ? fs.statSync(activityPath).size : 0;
   const r = spawnSync('python3',
     [path.join(PROJECT_ROOT, 'tools/HME/scripts/rotate-history-files.py'), '--dry-run'],
@@ -439,7 +439,7 @@ test('rotate-history-files dry-run reports policy state without modifying', () =
 });
 
 test('i/status holograph reflects tier marker + prune-candidate count', () => {
-  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'status'), ['holograph'], {
+  const r = spawnSync(path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'status'), ['holograph'], {
     encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT },
   });
@@ -597,7 +597,7 @@ test('compute-coherence-budget handles bidirectional band adjustment (widen + na
   const fs = require('node:fs');
   const path = require('node:path');
   const tighteningPath = path.join(PROJECT_ROOT, 'tmp', 'hme-band-tightening.json');
-  const outPath = path.join(PROJECT_ROOT, 'output', 'metrics', 'hme-coherence-budget.json');
+  const outPath = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'hme-coherence-budget.json');
   const tighteningExisted = fs.existsSync(tighteningPath);
   const tighteningPrev = tighteningExisted ? fs.readFileSync(tighteningPath, 'utf8') : null;
   const outExisted = fs.existsSync(outPath);
@@ -646,7 +646,7 @@ test('compute-coherence-budget consumes V->IX band-tightening proposal', () => {
   const fs = require('node:fs');
   const path = require('node:path');
   const tighteningPath = path.join(PROJECT_ROOT, 'tmp', 'hme-band-tightening.json');
-  const outPath = path.join(PROJECT_ROOT, 'output', 'metrics', 'hme-coherence-budget.json');
+  const outPath = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'hme-coherence-budget.json');
 
   // Snapshot current state so we can restore
   const tighteningExisted = fs.existsSync(tighteningPath);
@@ -771,11 +771,11 @@ test('hme-cli coerce parses bracket-CSV form (real-bug regression)', () => {
   // The shorthand `tags=[a,b,c]` should produce ['a','b','c'], not iterate
   // characters. Tested via the i/learn ground_truth path: tags[2] should
   // arrive as the third tag, not the third character of the third tag.
-  const tmpJsonl = path.join(PROJECT_ROOT, 'output', 'metrics', 'hme-ground-truth.jsonl');
+  const tmpJsonl = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'hme-ground-truth.jsonl');
   if (!require('node:fs').existsSync(tmpJsonl)) return;
   const beforeLen = require('node:fs').statSync(tmpJsonl).size;
   const round = `bracket_test_${Date.now()}`;
-  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'learn'), [
+  const r = spawnSync(path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'learn'), [
     'action=ground_truth',
     'title=S0',
     'tags=[arrival,legendary,structural-integrity]',
@@ -797,14 +797,14 @@ test('hme-cli coerce parses bracket-CSV form (real-bug regression)', () => {
     require('node:fs').truncateSync(tmpJsonl, beforeLen);
     // Remove the KB mirror so the test doesn't accumulate orphan entries
     // in the project KB on every run.
-    const search = spawnSync(path.join(PROJECT_ROOT, 'i', 'learn'),
+    const search = spawnSync(path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'learn'),
       ['action=search', `query=${round}`], {
         encoding: 'utf8', timeout: 15000, cwd: PROJECT_ROOT,
         env: { ...process.env, PROJECT_ROOT },
       });
     const idMatch = (search.stdout || '').match(/id:\s*([a-f0-9]{12})/);
     if (idMatch) {
-      spawnSync(path.join(PROJECT_ROOT, 'i', 'learn'), [`remove=${idMatch[1]}`], {
+      spawnSync(path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'learn'), [`remove=${idMatch[1]}`], {
         encoding: 'utf8', timeout: 15000, cwd: PROJECT_ROOT,
         env: { ...process.env, PROJECT_ROOT },
       });

@@ -17,7 +17,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT   = path.join(__dirname, '..', '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
 const SRC    = path.join(ROOT, 'src');
 const OUTPUT = path.join(METRICS_DIR, 'dependency-graph.json');
 const BOOT_ORDER_PATH = path.join(METRICS_DIR, 'boot-order.json');

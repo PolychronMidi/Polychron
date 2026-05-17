@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SatisfactionAnalyzer -- aggregator for satisfaction_capture.py output.
 
-Reads output/metrics/satisfaction.jsonl (one entry per turn, never null
+Reads src/output/metrics/satisfaction.jsonl (one entry per turn, never null
 per the PAI rule) and reports rolling-window trends:
 
   - mean / median over recent N turns
@@ -31,7 +31,8 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent)
-_IN_FILE = _PROJECT / "output" / "metrics" / "satisfaction.jsonl"
+_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_IN_FILE = _METRICS_DIR / "satisfaction.jsonl"
 
 
 def _load() -> list[dict]:

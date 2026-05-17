@@ -8,7 +8,7 @@ if [ -f .env ]; then
   source .env
   set +a
 fi
-: "${METRICS_DIR:=${ROOT}/output/metrics}"
+: "${METRICS_DIR:=${ROOT}/src/output/metrics}"
 export PROJECT_ROOT="$ROOT" METRICS_DIR
 node src/scripts/pipeline/trace-summary.js
 node src/scripts/pipeline/snapshot-run.js

@@ -4,14 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Inspect current output/ and i/ state plus references
+- [ ] [E3] Diagnose active lifesaver/autocommit state and root artifacts
 
 ## Next
 
-- [ ] [E3] Move remaining root output/ to src/output and update defaults
-- [ ] [E3] Move/route root i/ to HME-owned location and update references
-- [ ] [E3] Update guards/gitignore/docs for no root output/i
-- [ ] [E3] Run targeted checks and fix path fallout
+- [ ] [E3] Run focused verification and report evidence
+- [ ] [E3] Fix remaining output/i path references and guards
+- [ ] [E3] Clean generated tracking/ignore state and remove root artifacts
 
 ## Done
 

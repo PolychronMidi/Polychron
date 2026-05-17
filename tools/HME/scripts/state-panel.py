@@ -72,7 +72,7 @@ def main(argv):
         out.append(f"  pipeline           idle")
 
     # 3. Last fingerprint verdict
-    fp = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
+    fp = _read_json(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                  "fingerprint-comparison.json"))
     if fp:
         verdict = fp.get("verdict", "?")
@@ -116,7 +116,7 @@ def main(argv):
         out.append(f"  KB freshness       (no lance directories found)")
 
     # 6. Latest activity event
-    activity = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
+    activity = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
     if os.path.isfile(activity):
         try:
             with open(activity) as f:
@@ -130,7 +130,7 @@ def main(argv):
             pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 7. HCI score with multi-timescale phase view. A single delta throws
-    snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
+    snap = _read_json(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if snap:
         hci = snap.get("hci", "?")
@@ -152,10 +152,10 @@ def main(argv):
             else:
                 conf_str = f"  conf=fragile (min={min_score:.2f})"
         out.append(f"  HCI                {hci}/100 ({n} verifiers){conf_str}")
-        ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+        ts_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                "hme-coherence-timeseries.jsonl")
         if os.path.isfile(ts_path) and hci_num is not None:
-            rows = load_jsonl_all("output/metrics/hme-coherence-timeseries.jsonl")
+            rows = load_jsonl_all("src/output/metrics/hme-coherence-timeseries.jsonl")
             rows = [r for r in rows if r.get("hci") is not None]
             if len(rows) >= 2:
                 now = time.time()
@@ -191,7 +191,7 @@ def main(argv):
                 out.append(f"                     {' . '.join(segments)}")
         # Always check for PASS->non-PASS verifier flips, even when the
         prev_snap = _read_json(
-            os.path.join(PROJECT_ROOT, "output", "metrics",
+            os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                          "hci-verifier-snapshot.json.prev")
         )
         if prev_snap:
@@ -220,7 +220,7 @@ def main(argv):
             pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
     # 8b. Agent-loop-quality verifier (Horizon IV asymptote-deepening).
-    snap2 = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
+    snap2 = _read_json(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                     "hci-verifier-snapshot.json"))
     if snap2:
         alq = (snap2.get("verifiers") or {}).get("agent-loop-quality")

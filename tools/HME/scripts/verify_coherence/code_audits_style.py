@@ -156,7 +156,7 @@ class AgentLoopQualityVerifier(Verifier):
 
     def run(self) -> VerdictResult:
         import time as _time
-        path = os.path.join(_PROJECT, "output", "metrics", "hme-activity.jsonl")
+        path = os.path.join(_PROJECT, "src", "output", "metrics", "hme-activity.jsonl")
         if not os.path.isfile(path):
             return _result(SKIP, 1.0, "no activity log yet")
         try:

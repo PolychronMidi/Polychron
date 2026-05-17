@@ -44,7 +44,7 @@ PROJECT_ROOT = (
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
-METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
 # Tools/HME subtrees ALSO count as project territory -- edits to them should

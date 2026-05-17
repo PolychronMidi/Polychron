@@ -250,9 +250,9 @@ responses. The tension becomes structure.
 
 Bridge workflow:
 
-1. Detect candidates from `output/metrics/trace.jsonl`.
+1. Detect candidates from `src/output/metrics/trace.jsonl`.
 2. Record candidates, confirmed bridges, and refutations in
-   `output/metrics/hme-suspected-upstreams.json`.
+   `src/output/metrics/hme-suspected-upstreams.json`.
 3. Add a falsifier before wiring a hypothesis.
 4. Re-check correlation after the bridge exists.
 
@@ -356,7 +356,7 @@ and independence; falling arcs tend to release and converge.
 
 ## Diagnostics
 
-Composition runs write the useful truth to `output/metrics/`:
+Composition runs write the useful truth to `src/output/metrics/`:
 
 - `trace-summary.json`
 - `trace.jsonl`

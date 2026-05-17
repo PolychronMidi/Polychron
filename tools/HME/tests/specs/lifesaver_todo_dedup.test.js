@@ -31,7 +31,7 @@ function _runPython(sandbox, body, extraEnv = {}) {
 function _withSandboxedTodoStore(fn) {
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-todo-test-'));
   fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'KB'), { recursive: true });
-  fs.mkdirSync(path.join(sandbox, 'output', 'metrics'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'src', 'output', 'metrics'), { recursive: true });
   // hme_env requires a .env file in PROJECT_ROOT and a doc/templates/AGENTS.md file
   // to resolve project root. The synthesis import chain validates many
   // model-alias keys at import time, so a minimal stub doesn't suffice.

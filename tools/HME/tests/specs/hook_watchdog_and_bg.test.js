@@ -13,7 +13,7 @@ function sandbox(prefix) {
   const base = path.join(os.tmpdir(), 'hme-test-sandboxes');
   fs.mkdirSync(base, { recursive: true });
   const root = fs.mkdtempSync(path.join(base, prefix));
-  for (const d of ['src', 'tmp', 'log', 'output/metrics', 'tools/HME/runtime', '.git', 'bin']) {
+  for (const d of ['src', 'tmp', 'log', 'src/output/metrics', 'tools/HME/runtime', '.git', 'bin']) {
     fs.mkdirSync(path.join(root, d), { recursive: true });
   }
   for (const d of ['scripts', 'config']) fs.symlinkSync(path.join(REPO, d), path.join(root, d));

@@ -109,7 +109,7 @@ def _current_git_commit() -> str:
 def _current_hci_score() -> float | None:
     path = os.path.join(
         ENV.require("PROJECT_ROOT"),
-        "output", "metrics", "hci-verifier-snapshot.json",
+        "src", "output", "metrics", "hci-verifier-snapshot.json",
     )
     try:
         with open(path, encoding="utf-8") as f:

@@ -4,7 +4,7 @@
 Scans recent activity + hook-latency + detector stats for RECURRING
 patterns that could be formalized as new hooks, invariants, or
 detector rules. Emits proposals to
-`output/metrics/hme-self-improvement-proposals.jsonl` -- each proposal
+`src/output/metrics/hme-self-improvement-proposals.jsonl` -- each proposal
 is a JSON object the agent can read and decide whether to accept.
 
 Closing the bootstrapping loop: the system scans its own traces,
@@ -42,7 +42,7 @@ from pathlib import Path
 ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
 ERRORS_LOG = ROOT / "log" / "hme-errors.log"
 LATENCY_LOG = ROOT / "log" / "hme-hook-latency.jsonl"
-OUT = ROOT / "output" / "metrics" / "hme-self-improvement-proposals.jsonl"
+OUT = ROOT / "src" / "output" / "metrics" / "hme-self-improvement-proposals.jsonl"
 
 
 _ERR_TS_RE = re.compile(r"\[(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)\]")

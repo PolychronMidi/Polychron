@@ -95,7 +95,7 @@ def _gather_marker_events(now: float, window_s: float) -> list[dict]:
 
 def _gather_activity_events(now: float, window_s: float) -> list[dict]:
     """Read tail of activity log; events since (now - window_s)."""
-    p = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
+    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
     if not os.path.isfile(p):
         return []
     try:

@@ -372,16 +372,16 @@ def forge_bridges(top_n: int = 2) -> str:
             if unknown_refs:
                 parts.append(f"  [!] **API WARNING**: {len(unknown_refs)} unverified method call(s): {', '.join(unknown_refs[:5])}")
                 parts.append(f"    Verify these methods exist before running the sketch.")
-            parts.append(f"  Add to `lab/sketches.js` array, then: `node lab/run.js forge-{pair_a}-{pair_b}`")
+            parts.append(f"  Add to `src/lab/sketches.js` array, then: `node src/lab/run.js forge-{pair_a}-{pair_b}`")
             parts.append(f"  If STABLE: integrate bridge code into src/{pair_a}.js and src/{pair_b}.js")
         else:
             parts.append(_algorithmic_fallback(b, pair_a, pair_b))
         parts.append("")
 
     parts.append("## Forge Workflow")
-    parts.append("  1. Copy sketch into lab/sketches.js array")
-    parts.append("  2. Run: node lab/run.js forge-NAME")
-    parts.append("  3. Listen to lab/output/forge-NAME.wav")
+    parts.append("  1. Copy sketch into src/lab/sketches.js array")
+    parts.append("  2. Run: node src/lab/run.js forge-NAME")
+    parts.append("  3. Listen to src/lab/output/forge-NAME.wav")
     parts.append("  4. If STABLE: integrate bridge code into src/ modules")
     parts.append("  5. learn() the verified bridge as a calibration anchor")
 

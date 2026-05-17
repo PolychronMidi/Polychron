@@ -11,7 +11,7 @@
     }
   ],
   "atomic_write_path_patterns": [
-    "output/metrics/.*\\.json$",
+    "src/output/metrics/.*\\.json$",
     "feedback_graph\\.json$",
     "adaptive-state\\.json$",
     "manifest.*\\.json$",

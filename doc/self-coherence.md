@@ -20,7 +20,7 @@ rules, RAG stack, local LLM notes, and testing runbook.
   and project-root `i/`.
 - **KB:** Lance-backed knowledge in `tools/HME/KB/`.
 - **Coherence:** HCI verifiers, invariants, activity logs, and holograph
-  snapshots under `tools/HME/scripts/` and `output/metrics/`.
+  snapshots under `tools/HME/scripts/` and `src/output/metrics/`.
 
 ## Current Command Surface
 

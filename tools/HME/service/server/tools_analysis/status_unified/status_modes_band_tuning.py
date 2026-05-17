@@ -25,7 +25,7 @@ logger = logging.getLogger("HME")
 def _mode_band_tuning():
     """Horizon IX seed -- chaordic band as a learned controllable.
 
-    Reads output/metrics/hme-ground-truth.jsonl (human verdicts with
+    Reads src/output/metrics/hme-ground-truth.jsonl (human verdicts with
     sentiment tags) and joins each verdict against the HCI timeseries
     at its timestamp. Computes the HCI distribution per sentiment
     bucket. Proposes new band bounds from the data: upper bound near
@@ -40,8 +40,8 @@ def _mode_band_tuning():
     from .. import ctx as _ctx_mod
     _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
 
-    gt_path = _os.path.join(_root, "output", "metrics", "hme-ground-truth.jsonl")
-    ts_path = _os.path.join(_root, "output", "metrics", "hme-coherence-timeseries.jsonl")
+    gt_path = _os.path.join(_root, "src", "output", "metrics", "hme-ground-truth.jsonl")
+    ts_path = _os.path.join(_root, "src", "output", "metrics", "hme-coherence-timeseries.jsonl")
 
     if not _os.path.isfile(gt_path):
         try:
@@ -50,7 +50,7 @@ def _mode_band_tuning():
         except ImportError:
             _hint = "i/learn action=ground_truth"  # tool-form-ok: fallback
         return ("# i/status mode=band-tuning\n"
-                "No ground-truth log at output/metrics/hme-ground-truth.jsonl yet.\n"
+                "No ground-truth log at src/output/metrics/hme-ground-truth.jsonl yet.\n"
                 f"Add verdicts via `{_hint}` first.")
     if not _os.path.isfile(ts_path):
         return ("# i/status mode=band-tuning\n"
@@ -146,7 +146,7 @@ def _mode_band_tuning():
     proposal_path = _os.path.join(_root, "tmp", "hme-band-proposal.json")
     per_axis: dict[str, list[float]] = {}
     # Read the snapshot to get current per-subtag scores; use them as
-    snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
+    snap_path = _os.path.join(_root, "src", "output", "metrics", "hci-verifier-snapshot.json")
     if _os.path.isfile(snap_path):
         try:
             with open(snap_path) as _sf:

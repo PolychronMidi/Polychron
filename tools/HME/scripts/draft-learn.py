@@ -2,8 +2,8 @@
 """Generate a draft KB entry from the most recent pipeline outputs.
 
 Reads:
-- output/metrics/fingerprint-comparison.json (verdict + delta)
-- output/metrics/pipeline-summary.json (passed/failed + wall time)
+- src/output/metrics/fingerprint-comparison.json (verdict + delta)
+- src/output/metrics/pipeline-summary.json (passed/failed + wall time)
 - git log (last commit's changed files + message)
 
 Writes:
@@ -52,8 +52,8 @@ def main() -> int:
     p.add_argument("--out", required=True)
     args = p.parse_args()
 
-    fp = _read_json("output/metrics/fingerprint-comparison.json") or {}
-    summary = _read_json("output/metrics/pipeline-summary.json") or {}
+    fp = _read_json("src/output/metrics/fingerprint-comparison.json") or {}
+    summary = _read_json("src/output/metrics/pipeline-summary.json") or {}
     git = _git_log_summary()
 
     delta = fp.get("delta") or fp.get("driftScore") or "?"

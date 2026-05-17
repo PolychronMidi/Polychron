@@ -84,13 +84,13 @@ def _check_project_root(project_root: str) -> None:
 
 
 def _check_required_metrics_dirs(project_root: str) -> None:
-    """output/metrics/ and log/ directories must be creatable -- needed for all pipeline outputs.
+    """src/output/metrics/ and log/ directories must be creatable -- needed for all pipeline outputs.
     Previously this created `metrics/` at project root, contradicting the doc-string AND
     seeding the very `/metrics/` directory the verifier was supposed to forbid. The path-bug
     that all the other writers were chasing originated HERE: every server startup recreated
     the wrong directory, and .gitignore + check-root-only-dirs.js's gitignore-aware safety
-    gate combined to silence the violation. Fixed: actually create output/metrics/."""
-    for relpath in (("output", "metrics"), ("log",)):
+    gate combined to silence the violation. Fixed: actually create src/output/metrics/."""
+    for relpath in (("src", "output", "metrics"), ("log",)):
         dirpath = os.path.join(project_root, *relpath)
         try:
             os.makedirs(dirpath, exist_ok=True)

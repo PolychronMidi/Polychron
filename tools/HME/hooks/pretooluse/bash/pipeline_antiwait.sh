@@ -1,7 +1,7 @@
 # Anti-wait enforcement: pipeline commands MUST use run_in_background=true.
 # Only triggers when the command itself starts with the pipeline command (not when
 # the string appears inside a heredoc, commit message, or other argument).
-if echo "${TRIMMED_CMD:-}" | grep -qE '^(npm run (main|snapshot)|node lab/run)'; then
+if echo "${TRIMMED_CMD:-}" | grep -qE '^(npm run (main|snapshot)|node (src/)?lab/run)'; then
   RUN_BG=$(_safe_jq "${INPUT:-}" '.tool_input.run_in_background' 'false')
   if [[ "$RUN_BG" != "true" ]]; then
     _emit_block "ANTI-WAIT: npm run main must use run_in_background=true. Re-issue this Bash call with run_in_background: true, then CONTINUE with parallel work (HME indexing, doc updates, src/ improvements). Stopping to wait for the pipeline is the antipattern."

@@ -48,7 +48,8 @@ from _transcript import (  # noqa: E402
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parent.parent.parent.parent)
-_MODE_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
+_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_MODE_LOG = _METRICS_DIR / "mode-classifier.jsonl"
 _ADVISOR_LOG = _PROJECT / "tmp" / "hme-advisor-conflicts.jsonl"
 
 # Phase markers in assistant text (PAI emits these; Polychron may emit a

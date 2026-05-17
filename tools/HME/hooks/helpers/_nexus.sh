@@ -58,7 +58,7 @@ _nexus_get() {
   local type="$1"
   # Canonical pipeline verdict lives in pipeline-summary.json (not nexus cache).
   if [ "$type" = "PIPELINE" ]; then
-    local ps="$PROJECT_ROOT/output/metrics/pipeline-summary.json"
+    local ps="$PROJECT_ROOT/src/output/metrics/pipeline-summary.json"
     if [ -f "$ps" ]; then
       python3 -c "import json,sys; d=json.load(open('$ps')); print(d.get('verdict',''))" 2>/dev/null && return  # silent-ok: optional fallback path.
     fi

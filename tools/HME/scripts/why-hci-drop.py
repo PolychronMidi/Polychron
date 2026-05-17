@@ -17,14 +17,14 @@ from _common import PROJECT_ROOT, load_jsonl_all
 
 
 def main(argv):
-    ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+    ts_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                            "hme-coherence-timeseries.jsonl")
     if not os.path.isfile(ts_path):
         print("# i/why mode=hci-drop")
-        print("No timeseries file at output/metrics/hme-coherence-timeseries.jsonl.")
+        print("No timeseries file at src/output/metrics/hme-coherence-timeseries.jsonl.")
         return 1
 
-    rows = load_jsonl_all("output/metrics/hme-coherence-timeseries.jsonl")
+    rows = load_jsonl_all("src/output/metrics/hme-coherence-timeseries.jsonl")
 
     if len(rows) < 2:
         print("# i/why mode=hci-drop")

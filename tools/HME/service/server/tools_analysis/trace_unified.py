@@ -135,7 +135,7 @@ def _trace_delta(focus: str = "") -> str:
     If focus is a module name, filters trust analysis to that module.
     If empty, auto-detects changed modules from git diff.
     """
-    history_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
+    history_dir = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "run-history")
     if not os.path.isdir(history_dir):
         return "No run-history directory. Need at least 2 pipeline runs for delta."
 
@@ -222,7 +222,7 @@ def _trace_delta(focus: str = "") -> str:
 
     # Trust score changes for changed modules
     if changed_modules:
-        trace_jsonl = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
+        trace_jsonl = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "trace.jsonl")
         records = _load_trace(trace_jsonl)
         if records:
             parts.append(f"## Changed Module Trust ({', '.join(sorted(changed_modules))})")
@@ -248,7 +248,7 @@ def _trace_delta(focus: str = "") -> str:
         parts.append(f"## Verdict: {pv or 'none'} -> {cv or 'none'}")
 
     # Trace-replay section comparison (if available, richer than run-history sections)
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace-replay.json")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "trace-replay.json")
     if os.path.isfile(trace_path):
         try:
             with open(trace_path, encoding="utf-8") as f:
@@ -287,7 +287,7 @@ def _round_trace(round_id: str) -> str:
     produced them. Requires deterministic round IDs (commit a-of-10-point
     sweep) to work -- rounds without IDs won't match.
     """
-    corr_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-musical-correlation.json")
+    corr_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-musical-correlation.json")
     if not os.path.isfile(corr_path):
         return f"Error: metrics/hme-musical-correlation.json not found -- no round history."
     try:
@@ -314,7 +314,7 @@ def _round_trace(round_id: str) -> str:
             parts.append(f"  {key:<30} {v}")
     parts.append("")
     # Find activity window: events between this round's pipeline_start and pipeline_run
-    act_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
+    act_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
     if os.path.isfile(act_path):
         try:
             # Map round_id -> approximate ts from timestamp field

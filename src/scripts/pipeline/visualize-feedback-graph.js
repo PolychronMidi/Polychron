@@ -12,7 +12,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
 const GRAPH_PATH = path.join(METRICS_DIR, 'feedback_graph.json');
 const OUTPUT_DIR = METRICS_DIR;
 const HTML_PATH  = path.join(OUTPUT_DIR, 'feedback-graph.html');

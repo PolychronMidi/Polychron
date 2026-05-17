@@ -11,7 +11,7 @@ passes" for hooks that fire on >95% benign inputs). Hooks with high
 predictability are candidates for retirement -- their signal is redundant
 with the trivial prior. Hooks with low predictability are load-bearing.
 
-Output: output/metrics/hme-hook-signal-value.json
+Output: src/output/metrics/hme-hook-signal-value.json
   {
     "<hook_name>": {
       "n": int,
@@ -34,7 +34,7 @@ from pathlib import Path
 
 ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
 LATENCY_LOG = ROOT / "log" / "hme-hook-latency.jsonl"
-OUT = ROOT / "output" / "metrics" / "hme-hook-signal-value.json"
+OUT = ROOT / "src" / "output" / "metrics" / "hme-hook-signal-value.json"
 
 # Hooks we KNOW fire verdicts (not latency-only telemetry). Extend as
 # verdict capture lands for more hooks.

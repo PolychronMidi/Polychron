@@ -136,16 +136,16 @@ function gitRewrite(tokens) {
 
 function statusRewrite(tokens, cmd, root) {
   const name = path.basename(tokens[0] || '');
-  if (name === 'pgrep' || name === 'ps') return `${root}/i/hme admin action=health`;
-  if (name === 'curl' && /127\.0\.0\.1|localhost/.test(cmd) && /\/health\b|\/v1\/models\b/.test(cmd)) return `${root}/i/hme admin action=health`;
-  if (['tail', 'cat', 'head', 'grep'].includes(name) && /\blog\//.test(cmd)) return `${root}/i/status mode=activity`;
+  if (name === 'pgrep' || name === 'ps') return `${root}/tools/HME/i/hme admin action=health`;
+  if (name === 'curl' && /127\.0\.0\.1|localhost/.test(cmd) && /\/health\b|\/v1\/models\b/.test(cmd)) return `${root}/tools/HME/i/hme admin action=health`;
+  if (['tail', 'cat', 'head', 'grep'].includes(name) && /\blog\//.test(cmd)) return `${root}/tools/HME/i/status mode=activity`;
   return '';
 }
 
 
 function controlStatusRewrite(cmd, root) {
-  if (/\bps\s+-[A-Za-z]*[ef][A-Za-z]*\b.*\|\s*grep\b/.test(cmd)) return `${root}/i/hme admin action=health`;
-  if (/\b(tail|cat|head|grep)\b.*\blog\//.test(cmd)) return `${root}/i/status mode=activity`;
+  if (/\bps\s+-[A-Za-z]*[ef][A-Za-z]*\b.*\|\s*grep\b/.test(cmd)) return `${root}/tools/HME/i/hme admin action=health`;
+  if (/\b(tail|cat|head|grep)\b.*\blog\//.test(cmd)) return `${root}/tools/HME/i/status mode=activity`;
   return '';
 }
 

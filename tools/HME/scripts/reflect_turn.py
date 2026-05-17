@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Per-turn reflection writer -- appends one structured line to
-output/metrics/reflections.jsonl summarising the turn just completed.
+src/output/metrics/reflections.jsonl summarising the turn just completed.
 
 Schema (every line):
     {
@@ -55,9 +55,10 @@ from pathlib import Path
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parents[3])
-_REFLECTIONS = _PROJECT / "output" / "metrics" / "reflections.jsonl"
+_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_REFLECTIONS = _METRICS_DIR / "reflections.jsonl"
 _DETECTOR_VERDICTS = _PROJECT / "tools" / "HME" / "runtime" / "stop-detector-verdicts.env"
-_MODE_CLASSIFIER_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
+_MODE_CLASSIFIER_LOG = _METRICS_DIR / "mode-classifier.jsonl"
 
 
 def _read_detector_verdicts() -> dict:

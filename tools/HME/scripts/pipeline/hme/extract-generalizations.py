@@ -5,7 +5,7 @@ patterns (depend on Polychron's particular architecture) from structurally
 general ones (would apply to any similar topological system).
 
 Output:
-  output/metrics/hme-generalizations.json -- machine-readable, per-pattern
+  src/output/metrics/hme-generalizations.json -- machine-readable, per-pattern
   scores + candidate list for status(mode=generalizations).
 
 Scoring fix: vocabulary is now built dynamically from three sources
@@ -37,7 +37,7 @@ PROJECT_ROOT = (
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
 METRICS_DIR = os.environ.get(
-    "METRICS_DIR", os.path.join(PROJECT_ROOT, "output", "metrics")
+    "METRICS_DIR", os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 )
 CRYSTALLIZED = os.path.join(METRICS_DIR, "hme-crystallized.json")
 OUT_JSON = os.path.join(METRICS_DIR, "hme-generalizations.json")

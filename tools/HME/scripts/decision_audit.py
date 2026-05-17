@@ -10,7 +10,7 @@ from collections import Counter
 
 def main(argv: list[str]) -> int:
     project_root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
-    log = os.path.join(project_root, "output", "metrics", "decision-audit.jsonl")
+    log = os.path.join(project_root, "src", "output", "metrics", "decision-audit.jsonl")
     if not os.path.isfile(log):
         print(f"decision-audit: no log at {log} (no architectural edits yet)")
         return 0

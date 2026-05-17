@@ -40,7 +40,7 @@ class LogSizeVerifier(Verifier):
         "log/hme-proxy.out",
         "log/hme-errors.log",
         "log/hme-proxy-lifecycle.log",
-        "output/metrics/hme-activity.jsonl",
+        "src/output/metrics/hme-activity.jsonl",
     )
 
     def run(self) -> VerdictResult:

@@ -6,7 +6,7 @@ agent has not since either (a) done >= 20 real tool calls, or (b) the
 pipeline output file signals completion, print "idle". Otherwise "ok".
 
 Background job markers:
-  - Pipeline: npm run main / npm run snapshot / node lab/run
+  - Pipeline: npm run main / npm run snapshot / node src/lab/run
   - Training / install: python3 with train/merge/convert/finetune,
     pip install, nohup, accelerate, axolotl, unsloth, trainer.train,
     stress-test
@@ -24,7 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from _transcript import iter_tool_results, iter_tool_uses, load_turn_events  # noqa: E402
 
-PIPELINE_MARKERS = ("npm run main", "npm run snapshot", "node lab/run")
+PIPELINE_MARKERS = ("npm run main", "npm run snapshot", "node src/lab/run")
 GENERIC_MARKERS = (
     "stress-test", "accelerate launch", "unsloth", "axolotl",
     "pip3 install", "pip install", "nohup", "trainer.train",

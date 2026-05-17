@@ -17,7 +17,7 @@ This module is the Polychron-side scaffold:
   - fail-safe: any error path defaults to ALGORITHM E3 (under-escalation
     is the failure mode this system was built to prevent)
   - telemetry: every classification appended to
-    output/metrics/mode-classifier.jsonl with prompt excerpt + tier +
+    src/output/metrics/mode-classifier.jsonl with prompt excerpt + tier +
     reason + source + latency
 
 The heuristic baseline is intentionally simple -- pattern-match against
@@ -40,7 +40,8 @@ from pathlib import Path
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parents[3])
-_TELEMETRY = (_PROJECT / "output" / "metrics" / "mode-classifier.jsonl")
+_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_TELEMETRY = _METRICS_DIR / "mode-classifier.jsonl"
 
 _TIER_OVERRIDE_RE = re.compile(r"(?i)\B/e([1-5])\b")
 
@@ -193,7 +194,7 @@ def main(argv: list) -> int:
     if args.why:
         import os as _os
         log = _os.path.join(_os.environ.get("PROJECT_ROOT") or ".",
-                            "output", "metrics", "mode-classifier.jsonl")
+                            "src", "output", "metrics", "mode-classifier.jsonl")
         if not _os.path.isfile(log):
             print(f"tier_classifier --why: {log} missing")
             return 0

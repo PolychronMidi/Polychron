@@ -201,10 +201,10 @@ function evaluateBashInput(input = {}, opts = {}) {
   }
   if (/^npm run snapshot\b/.test(trimmed)) {
     let verdict = 'unknown';
-    try { verdict = JSON.parse(fs.readFileSync(path.join(root, 'output/metrics/fingerprint-comparison.json'), 'utf8')).verdict || 'unknown'; } catch (_e) { /* silent-ok: missing fingerprint file denies snapshot. */ }
+    try { verdict = JSON.parse(fs.readFileSync(path.join(root, 'src/output/metrics/fingerprint-comparison.json'), 'utf8')).verdict || 'unknown'; } catch (_e) { /* silent-ok: missing fingerprint file denies snapshot. */ }
     if (verdict !== 'STABLE') return deny(`SNAPSHOT GATE: fingerprint verdict is ${verdict}, not STABLE. Diagnose or rerun until STABLE, then snapshot.`);
   }
-  if (/^(npm run (main|snapshot)|node lab\/run)/.test(trimmed)) {
+  if (/^(npm run (main|snapshot)|node (?:src\/)?lab\/run)/.test(trimmed)) {
     if (/\s&\s*$/.test(cmd)) return deny('BLOCKED: Do NOT use & for pipeline commands; use the host background/session mechanism instead.');
     const supportsRunInBackground = opts.supportsRunInBackground === true;
     if (supportsRunInBackground && next.run_in_background !== true) {
@@ -226,7 +226,7 @@ function evaluateBashInput(input = {}, opts = {}) {
     if (/catch\s*(\([^)]*\))?\s*\{\s*\}|\.catch\(\s*(function\s*\(\)|\([^)]*\)\s*=>)\s*\{\s*\}\)|(\btsc\b|\bnpm run\b|\bnode scripts\/|\beslint\b\s)[^|;&]*2>\/dev\/null/.test(stripped)) return deny('FAIL FAST VIOLATION -- silent error suppression detected. Errors must bubble or be explicitly logged.');
   }
   if (root && new RegExp(`(^|[\\s;&|(])i/${I_TOOLS}\\b`).test(cmd)) {
-    cmd = cmd.replace(new RegExp(`(^|[\\s;&|(])i/${I_TOOLS}\\b`, 'g'), (_m, lead, tool) => `${lead}${root}/i/${tool}`);
+    cmd = cmd.replace(new RegExp(`(^|[\\s;&|(])i/${I_TOOLS}\\b`, 'g'), (_m, lead, tool) => `${lead}${root}/tools/HME/i/${tool}`);
     return allow(setCommandInput(next, cmd), '', true);
   }
   return allow(next, '', timeoutChanged);

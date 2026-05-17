@@ -18,7 +18,7 @@
 //
 //   3. The manifest's `reads` (when declared) cross-subsystem references
 //      MUST be either (a) same-subsystem, or (b) declared as firewall
-//      ports in output/metrics/feedback_graph.json. This is the same
+//      ports in src/output/metrics/feedback_graph.json. This is the same
 //      enforcement check applied to import-time cross-layer reads, but
 //      shifted from runtime to declarative.
 //

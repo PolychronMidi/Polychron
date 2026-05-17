@@ -54,7 +54,7 @@ def status(mode: str = "all") -> str:
     # Sits above individual arc surfaces because it's the synthesis.
     try:
         import json as _json_na
-        _na_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-next-actions.json")
+        _na_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-next-actions.json")
         if os.path.isfile(_na_path):
             with open(_na_path) as _nf:
                 _na = _json_na.load(_nf)
@@ -72,7 +72,7 @@ def status(mode: str = "all") -> str:
     # Arc III: Legendary state drift -- preemptive detection from inverse
     try:
         import json as _json_drift
-        _drift_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-legendary-drift.json")
+        _drift_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-legendary-drift.json")
         if os.path.isfile(_drift_path):
             with open(_drift_path) as _df:
                 _drift = _json_drift.load(_df)
@@ -104,7 +104,7 @@ def status(mode: str = "all") -> str:
     # Arc II: Matched patterns -- the MOST actionable surface in status output.
     try:
         import json as _json_pat
-        _pat_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-pattern-matches.json")
+        _pat_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-pattern-matches.json")
         if os.path.isfile(_pat_path):
             with open(_pat_path) as _pf:
                 _pat = _json_pat.load(_pf)
@@ -124,7 +124,7 @@ def status(mode: str = "all") -> str:
     # Arc IV: Meta-measurement efficacy summary. Surfaces which invariants
     try:
         import json as _json_eff
-        _eff_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-invariant-efficacy.json")
+        _eff_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-invariant-efficacy.json")
         if os.path.isfile(_eff_path):
             with open(_eff_path) as _ef:
                 _eff = _json_eff.load(_ef)
@@ -148,7 +148,7 @@ def status(mode: str = "all") -> str:
     # above HCI alert) since divergence is the most actionable hidden signal.
     try:
         import json as _json_con
-        _con_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-consensus.json")
+        _con_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-consensus.json")
         if os.path.isfile(_con_path):
             with open(_con_path) as _cf:
                 _con = _json_con.load(_cf)
@@ -170,8 +170,8 @@ def status(mode: str = "all") -> str:
     # R17 #9: Legacy-override retirement summary. One-line status: N active,
     try:
         import json as _json_ret
-        _retire_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "legacy-override-retirement-log.jsonl")
-        _juris_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hypermeta-jurisdiction.json")
+        _retire_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "legacy-override-retirement-log.jsonl")
+        _juris_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hypermeta-jurisdiction.json")
         _active_count = None
         if os.path.isfile(_juris_path):
             with open(_juris_path) as _jf:
@@ -207,7 +207,7 @@ def status(mode: str = "all") -> str:
     # automatically by compute-musical-correlation.js when HCI stabilizes.
     try:
         import json as _json_alert
-        _alert_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hci-regression-alert.json")
+        _alert_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hci-regression-alert.json")
         if os.path.isfile(_alert_path):
             with open(_alert_path) as _af:
                 _alert = _json_alert.load(_af)
@@ -224,7 +224,7 @@ def status(mode: str = "all") -> str:
     try:
         import glob as _gl
         from datetime import datetime as _dt
-        _m = os.path.join(ctx.PROJECT_ROOT, "output", "metrics")
+        _m = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics")
         _key_files = [
             ("trace.jsonl", os.path.join(_m, "trace.jsonl")),
             ("pipeline-summary", os.path.join(_m, "pipeline-summary.json")),
@@ -258,7 +258,7 @@ def status(mode: str = "all") -> str:
     # VRAM snapshot -- one-line summary from the monitor's latest sample
     try:
         import json as _json_vram
-        _vram_hist = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "vram-history.jsonl")
+        _vram_hist = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "vram-history.jsonl")
         if os.path.isfile(_vram_hist):
             with open(_vram_hist) as _vf:
                 _last = None

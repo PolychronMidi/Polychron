@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# HME unified signal bus -- append-only JSONL at output/metrics/hme-signals.jsonl.
+# HME unified signal bus -- append-only JSONL at src/output/metrics/hme-signals.jsonl.
 # Schema: {ts, event, source, scope:turn|session|round|pipeline, payload, requires_ack}
 # API: _signal_emit / _signal_tail <n> / _signal_last <event> [n].
 # Self-rotates at 10000 lines (keeps 5000).
 
-_SIGNAL_BUS="${PROJECT_ROOT:-}/output/metrics/hme-signals.jsonl"
+_SIGNAL_BUS="${PROJECT_ROOT:-}/src/output/metrics/hme-signals.jsonl"
 _SIGNAL_ROTATE_AT=10000
 _SIGNAL_KEEP=5000
 

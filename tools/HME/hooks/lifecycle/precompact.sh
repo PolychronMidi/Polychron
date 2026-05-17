@@ -61,7 +61,7 @@ fi
 
 # Log compact event for context meter calibration.
 CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
-LOG="${METRICS_DIR:-$PROJECT/output/metrics}/compact-log.jsonl"
+LOG="${METRICS_DIR:-$PROJECT/src/output/metrics}/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
   # FAIL-LOUD: capture jq stderr; corrupted statusline JSON would silently
@@ -86,7 +86,7 @@ fi
 
 # if preemption didn't fire at 70%, at
 CHAIN_SCRIPT="$PROJECT/tools/HME/scripts/chain-snapshot.py"
-LATEST_LINK="${METRICS_DIR:-$PROJECT/output/metrics}/chain-history/latest.yaml"
+LATEST_LINK="${METRICS_DIR:-$PROJECT/src/output/metrics}/chain-history/latest.yaml"
 _NEEDS_FALLBACK=1
 if [ -f "$LATEST_LINK" ]; then
   # If a link exists and is < 10 min old, assume preemption fired

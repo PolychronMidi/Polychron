@@ -16,8 +16,10 @@ const { execSync, spawnSync } = cp;
 const fs   = require('fs');
 const path = require('path');
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
-const METRICS_DIR = path.join(PROJECT_ROOT, 'output', 'metrics');
+const COMPOSITION_OUTPUT_DIR = path.join(PROJECT_ROOT, 'src', 'output');
+const METRICS_DIR = path.join(COMPOSITION_OUTPUT_DIR, 'metrics');
 process.env.PROJECT_ROOT = PROJECT_ROOT;
+process.env.COMPOSITION_OUTPUT_DIR = COMPOSITION_OUTPUT_DIR;
 process.env.METRICS_DIR = METRICS_DIR;
 
 const MEASURE_TIMEOUT_SEC = 30;
@@ -262,7 +264,7 @@ function writeSummaryJSON(wallTime, extra) {
   try {
     fs.mkdirSync(METRICS_DIR, { recursive: true });
     fs.writeFileSync(path.join(METRICS_DIR, 'pipeline-summary.json'), JSON.stringify(summary, null, 2) + '\n');
-    console.log('  Pipeline summary -> output/metrics/pipeline-summary.json');
+    console.log('  Pipeline summary -> src/output/metrics/pipeline-summary.json');
   } catch (e) {
     console.error('  FAILFAST: pipeline-summary.json write failed: ' + (e && e.message ? e.message : e));
     console.error('  Summary dump: ' + JSON.stringify(summary));

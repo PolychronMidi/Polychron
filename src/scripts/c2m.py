@@ -2,9 +2,9 @@
 """Convert CSV (csv_maestro) files to .mid - accepts filenames as arguments.
 
 Usage:
-  python c2m.py                 # converts output/output1.csv and output/output2.csv (legacy behavior)
-  python c2m.py outputSHRED     # converts output/outputSHRED.csv -> output/outputSHRED.mid
-  python c2m.py output/outputSHRED.csv
+  python c2m.py                 # converts src/output/output1.csv and src/output/output2.csv (legacy behavior)
+  python c2m.py outputSHRED     # converts src/output/outputSHRED.csv -> src/output/outputSHRED.mid
+  python c2m.py src/output/outputSHRED.csv
   python c2m.py file1.csv file2 # convert multiple files
 """
 
@@ -34,6 +34,10 @@ def convert_csv_to_midi(csv_path):
     print(f"{csv_path} converted to {midi_path}")
 
 
+def output_dir():
+    return Path(os.environ.get('COMPOSITION_OUTPUT_DIR', 'src/output'))
+
+
 def resolve_input_path(raw):
     # Accept bare names without extension and try sensible fallbacks.  This
     # function expands ``~`` and returns an absolute path if a file exists.
@@ -51,7 +55,7 @@ def resolve_input_path(raw):
             return str(maybe)
 
     # try in the ``output`` directory (mirrors legacy behaviour)
-    outdir = Path('output')
+    outdir = output_dir()
     tentative = outdir / path.name
     if tentative.is_file():
         return str(tentative)
@@ -68,7 +72,7 @@ def main(argv=None):
     p.add_argument('csvfile', nargs='*', help='CSV file(s) to convert (basename or path).')
     args = p.parse_args(argv)
 
-    targets = args.csvfile if args.csvfile and len(args.csvfile) > 0 else ['output/output1.csv', 'output/output2.csv']
+    targets = args.csvfile if args.csvfile and len(args.csvfile) > 0 else [str(output_dir() / 'output1.csv'), str(output_dir() / 'output2.csv')]
     # expand user/home markers in CLI arguments because Windows and Linux
     # shells behave differently; this keeps behaviour consistent.
     targets = [os.path.expanduser(t) for t in targets]

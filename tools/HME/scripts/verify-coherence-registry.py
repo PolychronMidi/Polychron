@@ -3,7 +3,7 @@
 
 Reads tools/HME/config/coherence-registry.json and checks each subsystem's
 declared artifacts exist (and are fresh where freshness is specified).
-Reports per-subsystem health. Writes output/metrics/hme-coherence-health.json
+Reports per-subsystem health. Writes src/output/metrics/hme-coherence-health.json
 so consumers (status tool, session banner) can surface coherence gaps.
 
 This is distinct from verify-coherence.py (the HCI verifier substrate) --
@@ -22,7 +22,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[3]))
 REGISTRY = PROJECT_ROOT / "tools" / "HME" / "config" / "coherence-registry.json"
-OUTPUT = PROJECT_ROOT / "output" / "metrics" / "hme-coherence-health.json"
+OUTPUT = PROJECT_ROOT / "src" / "output" / "metrics" / "hme-coherence-health.json"
 
 
 def _check_artifact(art: dict, ceilings: dict) -> tuple[bool, str]:

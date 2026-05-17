@@ -37,7 +37,7 @@ def _mode_tool_latency():
     from collections import defaultdict
     from .. import ctx as _ctx_mod
     _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
-    activity = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
+    activity = _os.path.join(_root, "src", "output", "metrics", "hme-activity.jsonl")
     if not _os.path.isfile(activity):
         return "# i/status mode=tool-latency\nNo activity log."
     try:
@@ -87,7 +87,7 @@ def _mode_tool_latency():
         out.append("  (no generic tool-call events in window -- falling back to inference cadence)")
         last_tool_call_ts = None
         try:
-            full_path = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
+            full_path = _os.path.join(_root, "src", "output", "metrics", "hme-activity.jsonl")
             with open(full_path) as _af:
                 for ln in _af:
                     try:
@@ -152,7 +152,7 @@ def _mode_agent_loop():
     from collections import Counter, defaultdict
     from .. import ctx as _ctx_mod
     _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
-    activity = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
+    activity = _os.path.join(_root, "src", "output", "metrics", "hme-activity.jsonl")
     if not _os.path.isfile(activity):
         return "# i/status mode=agent-loop\nNo activity log found."
     try:

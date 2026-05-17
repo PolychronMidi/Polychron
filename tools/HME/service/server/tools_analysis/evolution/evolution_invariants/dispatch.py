@@ -68,7 +68,7 @@ def _persist_invariant_history(results: list) -> None:
     """
     import json as _json
     import time as _time
-    history_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-invariant-history.json")
+    history_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-invariant-history.json")
     history: dict = {}
     if os.path.isfile(history_path):
         try:

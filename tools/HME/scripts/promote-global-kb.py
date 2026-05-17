@@ -33,7 +33,7 @@ import urllib.request
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", "metrics")
+METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "src", "output", "metrics")
 _OUTPUT = os.path.join(METRICS_DIR, "hme-global-kb-promotions.json")
 sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "scripts"))
 from service_registry import service_map, service_url  # noqa: E402

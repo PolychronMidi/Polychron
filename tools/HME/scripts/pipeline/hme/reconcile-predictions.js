@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
 
 const PREDICTIONS = path.join(METRICS_DIR, 'hme-predictions.jsonl');
 const FINGERPRINT = path.join(METRICS_DIR, 'fingerprint-comparison.json');

@@ -18,7 +18,7 @@ function projectRoot() {
 }
 
 function latestClassifier(root) {
-  const file = path.join(root, 'output', 'metrics', 'mode-classifier.jsonl');
+  const file = path.join(root, 'src', 'output', 'metrics', 'mode-classifier.jsonl');
   try {
     const text = fs.readFileSync(file, 'utf8').trim().split(/\r?\n/).filter(Boolean).slice(-1)[0];
     if (!text) return '';

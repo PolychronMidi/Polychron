@@ -23,7 +23,7 @@ else if (p.mkdirHasMisplacedMetrics(cmd)) console.log('metrics');
     exit 2
   fi
   if [ "$_MKDIR_VERDICT" = "metrics" ] && _policy_enabled block-mkdir-misplaced-metrics; then
-    _emit_block "BLOCKED: metrics/ only exists at output/metrics/. Do not mkdir any other metrics/ directory."
+    _emit_block "BLOCKED: metrics/ only exists at src/output/metrics/. Do not mkdir any other metrics/ directory."
     exit 2
   fi
 fi

@@ -65,7 +65,7 @@ def _mode_hme():
     out.append(f"  onboarding: {onb_state}")
 
     # Pipeline verdict
-    verdict_file = _os.path.join(_root, "output", "metrics", "fingerprint-comparison.json")
+    verdict_file = _os.path.join(_root, "src", "output", "metrics", "fingerprint-comparison.json")
     if _os.path.isfile(verdict_file):
         try:
             with open(verdict_file) as _f:
@@ -75,7 +75,7 @@ def _mode_hme():
             pass  # silent-ok: best-effort fs op
 
     # Recent activity (last 15 events, run-length-collapsed)
-    activity_file = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
+    activity_file = _os.path.join(_root, "src", "output", "metrics", "hme-activity.jsonl")
     if _os.path.isfile(activity_file):
         try:
             with open(activity_file) as _f:
@@ -244,7 +244,7 @@ def _list_modes():
 
 def _mode_perceptual():
     # Status is a "quick look" surface -- reading the cached report from the
-    cache_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "perceptual-report.json")
+    cache_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "perceptual-report.json")
     if os.path.exists(cache_path):
         try:
             with open(cache_path, encoding="utf-8") as _f:
@@ -281,11 +281,11 @@ def _mode_signals() -> str:
     """Tail the unified signal bus -- the one-file truth of hook + middleware
     + lifecycle events for the current and recent sessions."""
     import json as _json
-    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-signals.jsonl")
+    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-signals.jsonl")
     if not os.path.isfile(path):
         return (
             "# HME Signal Bus\n\n"
-            "output/metrics/hme-signals.jsonl not yet produced. Hooks emit to it "
+            "src/output/metrics/hme-signals.jsonl not yet produced. Hooks emit to it "
             "via _signal_emit (sourced by helpers/_signals.sh). Trigger a few "
             "tool calls and re-check."
         )
@@ -307,7 +307,7 @@ def _mode_signals() -> str:
     lines = [
         "# HME Signal Bus",
         "",
-        f"Tailing last {len(parsed)} entries from output/metrics/hme-signals.jsonl.",
+        f"Tailing last {len(parsed)} entries from src/output/metrics/hme-signals.jsonl.",
         "",
         "## Event frequency (this tail)",
     ]

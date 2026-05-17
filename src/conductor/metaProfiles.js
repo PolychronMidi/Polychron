@@ -313,7 +313,7 @@ moduleLifecycle.declare({
 
   // Record an outcome attribution: which profile was active during a
   // section + the section's score / HCI / arbitrary metadata. Append-
-  // only JSONL at output/metrics/metaprofile-attribution.jsonl. Caller
+  // only JSONL at src/output/metrics/metaprofile-attribution.jsonl. Caller
   // (typically main.js per-section close-out, or post-pipeline analysis
   // script) supplies the score signals it can attribute.
   //

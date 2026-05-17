@@ -22,7 +22,7 @@ design primitives.
 - Lab sketches must contain audible implementation. A profile-only `postBoot()`
   is an empty sketch.
 - A pipeline step with exit 0 can still contain real failures. Check
-  `output/metrics/pipeline-summary.json` and error-pattern output.
+  `src/output/metrics/pipeline-summary.json` and error-pattern output.
 
 ## Fast Links
 

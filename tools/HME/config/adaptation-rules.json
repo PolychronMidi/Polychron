@@ -1,5 +1,5 @@
 {
-  "_doc": "Activity-driven adaptation rules. A lightweight analyzer reads output/metrics/hme-activity.jsonl, evaluates each rule against the recent N events, and writes exports into tmp/hme-adaptive-config.sh. Hooks source this file at fire time so behavior responds to observed patterns instead of fixed defaults.",
+  "_doc": "Activity-driven adaptation rules. A lightweight analyzer reads src/output/metrics/hme-activity.jsonl, evaluates each rule against the recent N events, and writes exports into tmp/hme-adaptive-config.sh. Hooks source this file at fire time so behavior responds to observed patterns instead of fixed defaults.",
   "_schema": {
     "id": "stable identifier",
     "window": "how many recent events to consider",

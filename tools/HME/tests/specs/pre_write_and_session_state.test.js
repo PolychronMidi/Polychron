@@ -7,8 +7,12 @@ const path = require('path');
 
 const ORIGINAL_PATH = process.env.PATH || '';
 
+function runtimeDir(projectRoot) { return path.join(projectRoot, 'tmp', 'hme-runtime'); }
+
 function fresh(projectRoot) {
   process.env.PROJECT_ROOT = projectRoot;
+  process.env.HME_RUNTIME_DIR = runtimeDir(projectRoot);
+  fs.mkdirSync(process.env.HME_RUNTIME_DIR, { recursive: true });
   process.env.PATH = path.join(projectRoot, 'bin') + path.delimiter + ORIGINAL_PATH;
   const roots = [
     path.resolve(__dirname, '..', '..', 'event_kernel'),
@@ -26,7 +30,7 @@ function _withSandbox(prefix = 'hme-hooks-') {
   const base = path.join(os.tmpdir(), 'hme-test-sandboxes');
   fs.mkdirSync(base, { recursive: true });
   const root = fs.mkdtempSync(path.join(base, prefix));
-  for (const d of ['src', 'tmp', 'log', 'output/metrics', '.git', 'bin']) fs.mkdirSync(path.join(root, d), { recursive: true });
+  for (const d of ['src', 'tmp', 'log', 'src/output/metrics', '.git', 'bin']) fs.mkdirSync(path.join(root, d), { recursive: true });
   for (const d of ['tools', 'scripts', 'config']) fs.symlinkSync(path.join(repo, d), path.join(root, d));
   fs.writeFileSync(path.join(root, 'README.md'), 'test sandbox\n');
   const fakeGit = path.join(root, 'bin', 'git');
@@ -216,7 +220,7 @@ test('raw-streak unlock no longer blocks repeated same i command', async () => {
     const res = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
       session_id: 's3c',
-      tool_input: { command: `${root}/i/review -- mode=forget` },
+      tool_input: { command: `${root}/tools/HME/i/review -- mode=forget` },
     });
     assert.strictEqual(res.exit_code, 0);
     assert.doesNotMatch(res.stdout, /permissionDecision":\s*"deny"|unlock loop detected|Raw tool streak/);
@@ -238,7 +242,7 @@ test('raw-streak unlock allows a different i command', async () => {
     const res = await dispatch(root, 'PreToolUse', {
       tool_name: 'Bash',
       session_id: 's3d',
-      tool_input: { command: `${root}/i/status` },
+      tool_input: { command: `${root}/tools/HME/i/status` },
     });
     assert.strictEqual(res.exit_code, 0);
     assert.doesNotMatch(res.stdout, /unlock loop detected/);

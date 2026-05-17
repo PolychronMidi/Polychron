@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
 
 const ACTIVITY = path.join(METRICS_DIR, 'hme-activity.jsonl');
 const STALENESS = path.join(METRICS_DIR, 'kb-staleness.json');

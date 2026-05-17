@@ -18,7 +18,7 @@ detectable:
      or waiting for their moment; explicit coverage tracking prevents
      the selftest suite from growing into ritual.
 
-File: output/metrics/hme-coherence-timeseries.jsonl
+File: src/output/metrics/hme-coherence-timeseries.jsonl
 Format: one JSON object per line, newest at end. Each row:
   {
     "ts": 1745000000.0,
@@ -45,7 +45,10 @@ _MAX_ROWS = 1000  # hard cap; older rows trimmed on write
 
 
 def _timeseries_path(project_root: str) -> Path:
-    return Path(project_root) / "output" / "metrics" / "hme-coherence-timeseries.jsonl"
+    metrics_dir = os.environ.get("METRICS_DIR")
+    if metrics_dir:
+        return Path(metrics_dir) / "hme-coherence-timeseries.jsonl"
+    return Path(project_root) / "src" / "output" / "metrics" / "hme-coherence-timeseries.jsonl"
 
 
 def _parse_result_line(line: str) -> tuple[str, str, str]:

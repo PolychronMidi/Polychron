@@ -6,7 +6,7 @@ const path = require('path');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 const REGISTRY_PATH = path.join(REPO_ROOT, 'tools', 'HME', 'i_registry.json');
-const I_DIR = path.join(REPO_ROOT, 'i');
+const I_DIR = path.join(REPO_ROOT, 'tools', 'HME', 'i');
 
 let _reg = null;
 function _registry() {

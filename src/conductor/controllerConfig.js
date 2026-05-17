@@ -1,5 +1,5 @@
 // controllerConfig.js -- Loads externalized meta-controller constants from
-// output/metrics/controller-config.json (a pipeline-run artifact). Controllers
+// src/output/metrics/controller-config.json (a pipeline-run artifact). Controllers
 // read their section at boot; each call passes its own per-key fallback.
 // Missing file -> empty config (first-run or fresh-clone case; callers supply
 // defaults). Malformed JSON -> throw (corruption is not a graceful-degradation

@@ -29,8 +29,8 @@ at `~/Downloads/SGM-v2.01-NicePianosGuitarsBass-V1.2.sf2`.
 Lab sketches:
 
 ```bash
-node lab/run.js
-node lab/run.js sketch-name
+node src/lab/run.js
+node src/lab/run.js sketch-name
 ```
 
 ## Core Structure
@@ -66,7 +66,7 @@ Hook/autocommit wiring:
 tools/HME/scripts/hme-doctor.py --hooks
 ```
 
-Generated artifacts live in `output/metrics/`:
+Generated artifacts live in `src/output/metrics/`:
 
 - `trace-summary.json` - beat, signal, regime, coupling, and trust summary.
 - `fingerprint-comparison.json` - STABLE / EVOLVED / DRIFTED verdict.

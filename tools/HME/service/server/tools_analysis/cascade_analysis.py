@@ -32,9 +32,9 @@ from . import _track
 
 logger = logging.getLogger("HME")
 
-DEP_GRAPH_REL = os.path.join("output", "metrics", "dependency-graph.json")
-FEEDBACK_GRAPH_REL = os.path.join("output", "metrics", "feedback_graph.json")
-PREDICTIONS_LOG_REL = os.path.join("output", "metrics", "hme-predictions.jsonl")
+DEP_GRAPH_REL = os.path.join("src", "output", "metrics", "dependency-graph.json")
+FEEDBACK_GRAPH_REL = os.path.join("src", "output", "metrics", "feedback_graph.json")
+PREDICTIONS_LOG_REL = os.path.join("src", "output", "metrics", "hme-predictions.jsonl")
 
 _CACHE: dict[str, Any] = {}
 

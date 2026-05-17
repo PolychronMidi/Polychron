@@ -3,8 +3,8 @@
 status by surfacing source + recent timeseries.
 
 Reads:
-- output/metrics/hci-verifier-snapshot.json (current status)
-- output/metrics/hme-coherence-timeseries.jsonl (last 3 runs of this verifier)
+- src/output/metrics/hci-verifier-snapshot.json (current status)
+- src/output/metrics/hme-coherence-timeseries.jsonl (last 3 runs of this verifier)
 - tools/HME/scripts/verify_coherence/*.py (the verifier's source)
 
 Output: status + score + last-3 results + first ~30 lines of the
@@ -97,7 +97,7 @@ def main(argv):
         print("  e.g. i/why mode=verifier doc-drift", file=sys.stderr)
         return 2
 
-    snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
+    snap = _read_json(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
         print(f"# i/why mode=verifier {name}")
@@ -138,7 +138,7 @@ def main(argv):
             print(f"  (re-run failed: {type(_re).__name__}: {_re})")
 
     # Last 3 runs from timeseries
-    ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+    ts_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                            "hme-coherence-timeseries.jsonl")
     if os.path.isfile(ts_path):
         try:

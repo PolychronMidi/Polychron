@@ -53,6 +53,7 @@ export default [
       'tmp/**',
       'eslint-rules/**',
       'lab/**',
+      'src/lab/**',
       'tools/**',
       'tools/HME/chat/**',
       'tools/HME/service/**',
@@ -99,7 +100,7 @@ export default [
   {
     files: ['src/**/*.js', 'src/**'],
     ignores: [
-      'src/scripts/**', 'src/tests/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**',
+      'src/scripts/**', 'src/tests/**', 'src/lab/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**',
       '**/*.mjs',
       'node_modules/**',
       'csv_maestro/**',

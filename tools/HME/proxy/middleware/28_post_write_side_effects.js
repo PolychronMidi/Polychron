@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { PROJECT_ROOT } = require('../shared');
-const METRICS_DIR = process.env.METRICS_DIR || path.resolve(PROJECT_ROOT, 'output/metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.resolve(PROJECT_ROOT, 'src/output/metrics');
 const STALENESS_PATH = path.join(METRICS_DIR, 'kb-staleness.json');
 
 function reportFailure(ctx, toolResult, message) {

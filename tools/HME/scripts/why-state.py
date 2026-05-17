@@ -4,7 +4,7 @@ advanced HME into it.
 
 Reads:
 - tmp/hme-onboarding.state (current state)
-- output/metrics/hme-activity.jsonl (events that drove transitions)
+- src/output/metrics/hme-activity.jsonl (events that drove transitions)
 - doc/templates/ONBOARDING.md (state-machine reference, optional)
 
 Output: current state, what tool calls advance it, what would graduate.
@@ -45,7 +45,7 @@ def main(argv):
     print(f"  Meaning: {_STATE_DESC.get(state, '(unknown state)')}")
     print()
 
-    activity_file = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
+    activity_file = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
     if os.path.isfile(activity_file):
         try:
             with open(activity_file) as f:

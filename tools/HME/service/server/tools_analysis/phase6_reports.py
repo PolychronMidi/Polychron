@@ -9,10 +9,10 @@ import os
 from server import context as ctx
 from . import _track
 
-CONSTITUTION_REL = os.path.join("output", "metrics", "hme-constitution.json")
-DOC_DRIFT_REL = os.path.join("output", "metrics", "hme-doc-drift.json")
-GENERALIZATIONS_REL = os.path.join("output", "metrics", "hme-generalizations.json")
-ACCURACY_REL = os.path.join("output", "metrics", "hme-prediction-accuracy.json")
+CONSTITUTION_REL = os.path.join("src", "output", "metrics", "hme-constitution.json")
+DOC_DRIFT_REL = os.path.join("src", "output", "metrics", "hme-doc-drift.json")
+GENERALIZATIONS_REL = os.path.join("src", "output", "metrics", "hme-generalizations.json")
+ACCURACY_REL = os.path.join("src", "output", "metrics", "hme-prediction-accuracy.json")
 
 
 def _load(rel: str):
@@ -32,7 +32,7 @@ def constitution_report() -> str:
     if not data:
         return (
             "# HME Constitution\n\n"
-            "output/metrics/hme-constitution.json not found.\n"
+            "src/output/metrics/hme-constitution.json not found.\n"
             "Run: python3 tools/HME/scripts/pipeline/hme/derive-constitution.py"
         )
     meta = data.get("meta", {}) or {}
@@ -72,7 +72,7 @@ def doc_drift_report() -> str:
     if not data:
         return (
             "# HME Doc Drift\n\n"
-            "output/metrics/hme-doc-drift.json not found.\n"
+            "src/output/metrics/hme-doc-drift.json not found.\n"
             "Run: python3 tools/HME/scripts/pipeline/hme/detect-doc-drift.py"
         )
     meta = data.get("meta", {}) or {}
@@ -117,7 +117,7 @@ def reflexivity_report() -> str:
     if not data:
         return (
             "# HME Reflexivity\n\n"
-            "output/metrics/hme-prediction-accuracy.json not found yet."
+            "src/output/metrics/hme-prediction-accuracy.json not found yet."
         )
     rounds = data.get("rounds") or []
     if not rounds:

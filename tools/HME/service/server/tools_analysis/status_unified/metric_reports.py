@@ -14,11 +14,11 @@ logger = logging.getLogger("HME")
 
 def _staleness_report() -> str:
     """Render metrics/kb-staleness.json. Phase 2.2 of openshell feature mapping."""
-    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "kb-staleness.json")
+    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "kb-staleness.json")
     if not os.path.exists(path):
         return (
             "# KB Staleness Index\n\n"
-            "output/metrics/kb-staleness.json not found.\n"
+            "src/output/metrics/kb-staleness.json not found.\n"
             "Run: python3 tools/HME/scripts/pipeline/hme/build-kb-staleness-index.py"
         )
     try:
@@ -70,11 +70,11 @@ def _staleness_report() -> str:
 
 def _coherence_report() -> str:
     """Render metrics/hme-coherence.json. Phase 2.3 of openshell feature mapping."""
-    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-coherence.json")
+    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-coherence.json")
     if not os.path.exists(path):
         return (
             "# Round Coherence Score\n\n"
-            "output/metrics/hme-coherence.json not found.\n"
+            "src/output/metrics/hme-coherence.json not found.\n"
             "Run: node tools/HME/scripts/pipeline/hme/compute-coherence-score.js"
         )
     try:

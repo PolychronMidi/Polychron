@@ -18,7 +18,7 @@ This controller PERTURBS the system on demand:
     routes all types correctly.
 
 Use: invoke manually when HCI has been flat for N sessions. Each
-perturbation logs to `output/metrics/hme-controlled-incoherence.jsonl`
+perturbation logs to `src/output/metrics/hme-controlled-incoherence.jsonl`
 with:
   - timestamp
   - perturbation_type
@@ -52,7 +52,7 @@ from pathlib import Path
 
 
 ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
-LOG = ROOT / "output" / "metrics" / "hme-controlled-incoherence.jsonl"
+LOG = ROOT / "src" / "output" / "metrics" / "hme-controlled-incoherence.jsonl"
 
 
 def _record(entry: dict) -> None:

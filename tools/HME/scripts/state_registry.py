@@ -122,7 +122,7 @@ def repair_command_issues(root: Path | None = None) -> list[str]:
 def unregistered_state_candidates(root: Path | None = None) -> list[str]:
     root = root or PROJECT_ROOT
     registered = {str(e.get("path", "")) for e in iter_entries(root)}
-    scan_roots = [root / "tools" / "HME" / "runtime", root / "log", root / "output" / "metrics"]
+    scan_roots = [root / "tools" / "HME" / "runtime", root / "log", root / "src" / "output" / "metrics"]
     candidates: list[str] = []
     for scan_root in scan_roots:
         if not scan_root.exists():

@@ -2,7 +2,7 @@
 """i/why mode=verifier-utility -- Horizon VI seed (meta-meta verifiers).
 
 Reads the per-verifier status history from
-output/metrics/hme-coherence-timeseries.jsonl and computes
+src/output/metrics/hme-coherence-timeseries.jsonl and computes
 signal-to-noise per verifier:
   - always-PASS (no information ever)
   - always-FAIL (broken or alarmist)
@@ -32,7 +32,7 @@ def main(argv):
         a in ("verbose=true", "--verbose", "-v")
         for a in argv[1:]
     )
-    ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+    ts_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                            "hme-coherence-timeseries.jsonl")
     if not os.path.isfile(ts_path):
         print("# i/why mode=verifier-utility")
@@ -49,7 +49,7 @@ def main(argv):
     except Exception:
         pass  # silent-ok: diagnostic; failure non-fatal
 
-    rows = load_jsonl_all("output/metrics/hme-coherence-timeseries.jsonl")
+    rows = load_jsonl_all("src/output/metrics/hme-coherence-timeseries.jsonl")
 
     # Per-verifier history: name -> list of (status, score)
     history: dict[str, list[tuple[str, float]]] = defaultdict(list)

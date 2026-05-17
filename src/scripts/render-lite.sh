@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
+OUT="${COMPOSITION_OUTPUT_DIR:-src/output}"
+mkdir -p "$OUT"
 python3 src/scripts/c2m.py
 
 SF="$HOME/Downloads/SGM-v2.01-NicePianosGuitarsBass-V1.2.sf2"
 INTERP="src/scripts/fluidsynth-init.txt"
 
-fluidsynth -ni -f "$INTERP" -T wav -O s16 -F output/output1.wav \
+fluidsynth -ni -f "$INTERP" -T wav -O s16 -F "$OUT/output1.wav" \
   -r 22050 \
   -o synth.sample-rate=22050 \
   -o synth.polyphony=65535 \
@@ -23,9 +25,9 @@ fluidsynth -ni -f "$INTERP" -T wav -O s16 -F output/output1.wav \
   -o synth.chorus.active=0 \
   -o audio.period-size=1024 -o audio.periods=4 \
   -o audio.sample-format=s16 \
-  "$SF" output/output1.mid
+  "$SF" "$OUT/output1.mid"
 
-fluidsynth -ni -f "$INTERP" -T wav -O s16 -F output/output2.wav \
+fluidsynth -ni -f "$INTERP" -T wav -O s16 -F "$OUT/output2.wav" \
   -r 22050 \
   -o synth.sample-rate=22050 \
   -o synth.polyphony=65535 \
@@ -40,8 +42,8 @@ fluidsynth -ni -f "$INTERP" -T wav -O s16 -F output/output2.wav \
   -o synth.chorus.active=0 \
   -o audio.period-size=1024 -o audio.periods=4 \
   -o audio.sample-format=s16 \
-  "$SF" output/output2.mid
+  "$SF" "$OUT/output2.mid"
 
-ffmpeg -i output/output1.wav -i output/output2.wav \
+ffmpeg -i "$OUT/output1.wav" -i "$OUT/output2.wav" \
   -filter_complex amix=inputs=2:duration=longest:dropout_transition=0 \
-  -c:a pcm_f32le output/combined.wav -y
+  -c:a pcm_f32le "$OUT/combined.wav" -y

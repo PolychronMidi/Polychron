@@ -4,7 +4,7 @@ const assert = require('node:assert');
 const path = require('node:path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const TEST_METRICS_DIR = global.METRICS_DIR || path.join(PROJECT_ROOT, 'output', 'metrics');
+const TEST_METRICS_DIR = global.METRICS_DIR || path.join(PROJECT_ROOT, 'src', 'output', 'metrics');
 
 require('../../../../src/utils');
 require('../../../../src/conductor/controllerConfig');

@@ -34,7 +34,7 @@ from _common import PROJECT_ROOT
 
 
 def _load_timeseries():
-    p = os.path.join(PROJECT_ROOT, "output", "metrics",
+    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                      "hme-coherence-timeseries.jsonl")
     if not os.path.isfile(p):
         return []
@@ -56,7 +56,7 @@ def _load_activity_files(window_back: int = 3600):
     Per-file granularity (Horizon I maturity): same data the per-dir
     correlation uses, but exposed at the finest grain so per-file
     history can be queried alongside per-dir."""
-    p = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
+    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
     if not os.path.isfile(p):
         return []
     out = []

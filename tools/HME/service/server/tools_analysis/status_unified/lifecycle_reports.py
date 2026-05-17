@@ -32,7 +32,7 @@ def _resume_briefing() -> str:
 
     # 2. Pipeline verdict + timing
     try:
-        summary_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "pipeline-summary.json")
+        summary_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "pipeline-summary.json")
         with open(summary_path, encoding="utf-8") as f:
             ps = json.load(f)
         verdict = ps.get("verdict")
@@ -114,7 +114,7 @@ def _resume_briefing() -> str:
 def _evolution_priority_report() -> str:
     """Render metrics/hme-evolution-priority.json -- HME's self-directed roadmap."""
     _track("evolution_priority_report")
-    ppath = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-evolution-priority.json")
+    ppath = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-evolution-priority.json")
     if not os.path.exists(ppath):
         return "# Evolution Priorities\n\nNo priority data -- run pipeline first.\n"
     try:
@@ -166,11 +166,11 @@ def _evolution_priority_report() -> str:
 
 def _trajectory_report() -> str:
     """Render metrics/hme-trajectory.json (Phase 5.1)."""
-    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-trajectory.json")
+    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-trajectory.json")
     if not os.path.exists(path):
         return (
             "# Compositional Trajectory\n\n"
-            "output/metrics/hme-trajectory.json not found.\n"
+            "src/output/metrics/hme-trajectory.json not found.\n"
             "Run: node tools/HME/scripts/pipeline/hme/compute-compositional-trajectory.js"
         )
     try:

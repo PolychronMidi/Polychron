@@ -12,7 +12,7 @@ const primer = path.join(repoRoot, 'tools', 'HME', 'hooks', 'pretooluse', 'preto
 function runPrimer() {
   return spawnSync('bash', [primer], {
     cwd: repoRoot,
-    input: JSON.stringify({ tool_name: 'Bash', tool_input: { command: './i/status' } }),
+    input: JSON.stringify({ tool_name: 'Bash', tool_input: { command: './tools/HME/i/status' } }),
     env: { ...process.env, PROJECT_ROOT: repoRoot, HME_PRIMER_REPEAT_WINDOW_SEC: '43200' },
     encoding: 'utf8',
   });

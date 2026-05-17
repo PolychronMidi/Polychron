@@ -1,6 +1,6 @@
 """Shared detector-stats emitter.
 
-Single source of truth for `output/metrics/detector-stats.jsonl` appends. Pre-extraction, 7 detector scripts duplicated this with subtle variance: psycho_stop carried fcntl.flock + 5000-line trim (concurrent-write safe), the other 6 used plain append (lossy under stop-chain parallelism). The shared version adopts the robust pattern so every detector inherits concurrent-safety.
+Single source of truth for `src/output/metrics/detector-stats.jsonl` appends. Pre-extraction, 7 detector scripts duplicated this with subtle variance: psycho_stop carried fcntl.flock + 5000-line trim (concurrent-write safe), the other 6 used plain append (lossy under stop-chain parallelism). The shared version adopts the robust pattern so every detector inherits concurrent-safety.
 
 Usage:
     from _detector_stats import emit_stats
@@ -35,7 +35,7 @@ def emit_stats(detector: str, verdict: str, detail: str) -> None:
     root = _resolve_project_root()
     if not root:
         return
-    out_path = os.path.join(root, "output", "metrics", "detector-stats.jsonl")
+    out_path = os.path.join(root, "src", "output", "metrics", "detector-stats.jsonl")
     try:
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "a", encoding="utf-8") as f:

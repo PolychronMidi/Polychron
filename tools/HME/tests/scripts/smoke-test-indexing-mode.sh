@@ -76,7 +76,7 @@ _pass "coder healthy again after $((_tend - _t0))s"
 
 # --- Assertion 5: selftest still READY ---
 echo "[5/5] selftest reports READY"
-_selftest=$(cd "$_PROJECT_ROOT" && ./i/hme admin action=selftest 2>&1)
+_selftest=$(cd "$_PROJECT_ROOT" && ./tools/HME/i/hme admin action=selftest 2>&1)
 # Match the verdict inside the banner: "(READY)" on success, "(N FAIL)" on failure.
 if echo "$_selftest" | grep -qE "Self-Test:.*\(READY\)"; then
   _pass "selftest READY"

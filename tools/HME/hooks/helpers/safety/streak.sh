@@ -141,7 +141,7 @@ for i, tok in enumerate(tokens):
     base = os.path.basename(tok)
     norm = ""
     start = i + 1
-    if base in tools and (tok.startswith("i/") or tok.startswith("./i/") or "/i/" in tok):
+    if base in tools and (tok.startswith("i/") or tok.startswith("./tools/HME/i/") or "/i/" in tok):
         norm = f"i/{base}"
     elif tok.endswith("tools/HME/scripts/hme-cli.js") or tok == "tools/HME/scripts/hme-cli.js":
         tool = tokens[i + 1] if i + 1 < len(tokens) else ""

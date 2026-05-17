@@ -7,7 +7,7 @@
  * the appropriate channels updated together.
  *
  * Categories:
- *   info     -> activity stream JSONL (output/metrics/hme-activity.jsonl)
+ *   info     -> activity stream JSONL (src/output/metrics/hme-activity.jsonl)
  *   error    -> log/hme-errors.log (LIFESAVER scans this; surface fast)
  *   metric   -> log/hme-hook-latency.jsonl (used by universal_pulse for p95)
  *   audit    -> log/hme-audit.jsonl (forensic trail; never read by hot path)
@@ -32,7 +32,7 @@ const PROJECT_ROOT = process.env.PROJECT_ROOT
   || path.resolve(__dirname, '..', '..', '..');
 
 const PATHS = {
-  info:    path.join(PROJECT_ROOT, 'output', 'metrics', 'hme-activity.jsonl'),
+  info:    path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'hme-activity.jsonl'),
   error:   path.join(PROJECT_ROOT, 'log', 'hme-errors.log'),
   metric:  path.join(PROJECT_ROOT, 'log', 'hme-hook-latency.jsonl'),
   audit:   path.join(PROJECT_ROOT, 'log', 'hme-audit.jsonl'),

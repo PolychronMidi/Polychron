@@ -18,8 +18,8 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
-const COMPOSITION_DIR = path.join(ROOT, 'output');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const COMPOSITION_DIR = path.join(ROOT, 'src', 'output');
 const SUMMARY_PATH = path.join(METRICS_DIR, 'trace-summary.json');
 const MANIFEST_PATH = path.join(METRICS_DIR, 'system-manifest.json');
 const TRACE_PATH = path.join(METRICS_DIR, 'trace.jsonl');
@@ -161,7 +161,7 @@ function generateNarrative() {
     // Read actual musical duration from CSV end_track time
     let musicalDurationSec = '?';
     try {
-      for (const csvFile of ['output/output1.csv', 'output/output2.csv']) {
+      for (const csvFile of ['src/output/output1.csv', 'src/output/output2.csv']) {
         const csvPath = path.join(ROOT, csvFile);
         if (fs.existsSync(csvPath)) {
           const lastLine = fs.readFileSync(csvPath, 'utf8').trim().split('\n').pop();

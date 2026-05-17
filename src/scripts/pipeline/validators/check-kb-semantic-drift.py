@@ -33,7 +33,7 @@ PROJECT_ROOT = (
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 )
-METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 SIGNATURES_PATH = os.path.join(METRICS_DIR, "kb-signatures.json")
 DRIFT_OUT = os.path.join(METRICS_DIR, "hme-semantic-drift.json")
 DEP_GRAPH = os.path.join(METRICS_DIR, "dependency-graph.json")

@@ -136,7 +136,7 @@ Directly invoked shell entrypoints:
 - `_autocommit.sh` -- 4-channel failsafe wrapper around `git commit`; called by `userpromptsubmit.sh`, `lifecycle/stop/autocommit.sh`, `direct/autocommit-direct.sh`.
 - `_nexus.sh` -- read/write `tmp/hme-nexus.state` for EDIT/BRIEF/REVIEW tracking.
 - `_check_errors_inline.sh` -- inline mid-turn `hme-errors.log` scan; fires from `posttooluse_*.sh`.
-- `_signals.sh` -- append-only event bus at `output/metrics/hme-signals.jsonl`.
+- `_signals.sh` -- append-only event bus at `src/output/metrics/hme-signals.jsonl`.
 - `_resolve_bg_stub.sh` -- resolve Claude Code's "Command running in background" stubs to real output.
 
 ### Long-running supervisors (started by `direct/`)
@@ -155,6 +155,6 @@ rules:
   - Every hook MUST `source helpers/_safety.sh` first -- provides emit/block/latency/streak machinery used by every other helper
   - Reactive tool-result enrichment belongs in `tools/HME/proxy/middleware/` -- only shell hooks for pre-execution blocks + lifecycle events
   - Use `_emit_block` sparingly -- it's a hard denial that interrupts the agent; prefer `_emit_enrich_allow` or silent activity events for soft guidance
-  - Hooks must never log to `output/metrics/` -- operational logs go to `log/`; metrics/ is composition data only
+  - Hooks must never log to `src/output/metrics/` -- operational logs go to `log/`; metrics/ is composition data only
   - Lifecycle hooks (stop, precompact, postcompact, sessionstart) are the ONLY reliable way to run Claude Code lifecycle logic; use the right hook for the event
 -->

@@ -6,7 +6,7 @@ detectors. This script closes the loop -- Rung 4 of the hypermeta ladder.
 
 Two modes:
 
-(1) DRIFT MODE (default): reads `output/metrics/detector-stats.jsonl` and
+(1) DRIFT MODE (default): reads `src/output/metrics/detector-stats.jsonl` and
     reports per-detector fire-rate, rescue-rate, drift, and notable signals.
 
 (2) CORPUS MODE (--corpus): runs each detector against an in-memory corpus
@@ -40,10 +40,8 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
 _PROJECT = _HERE.parent.parent.parent.parent
-_STATS_FILE = (
-    Path(os.environ.get("PROJECT_ROOT") or _PROJECT)
-    / "output" / "metrics" / "detector-stats.jsonl"
-)
+_ROOT = Path(os.environ.get("PROJECT_ROOT") or _PROJECT)
+_STATS_FILE = Path(os.environ.get("METRICS_DIR") or (_ROOT / "src" / "output" / "metrics")) / "detector-stats.jsonl"
 
 
 def _load_events(path: Path) -> list[dict]:

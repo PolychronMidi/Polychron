@@ -193,11 +193,11 @@ class HookMatcherValidityVerifier(Verifier):
         import re
 
         project_root = os.environ.get("PROJECT_ROOT", _PROJECT)
-        i_dir = os.path.join(project_root, "i")
+        i_dir = os.path.join(project_root, "tools", "HME", "i")
         if not os.path.isdir(i_dir):
-            return _result(FAIL, 0.0, "i/ directory missing -- HME tool wrappers not installed")
+            return _result(FAIL, 0.0, "tools/HME/i directory missing -- HME tool wrappers not installed")
 
-        # Enumerate wrappers (executable shell scripts in i/).
+        # Enumerate wrappers (executable shell scripts in tools/HME/i/).
         wrappers = set()
         try:
             for name in os.listdir(i_dir):

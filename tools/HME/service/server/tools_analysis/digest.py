@@ -51,7 +51,7 @@ from .digest_pipeline_status import check_pipeline  # noqa: F401, E402
 
 def _load_trace() -> list[dict]:
     """Wrapper: loads from the canonical trace.jsonl path for this project."""
-    return _load_trace_impl(os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl"))
+    return _load_trace_impl(os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "trace.jsonl"))
 
 
 def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
@@ -82,7 +82,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     if not _pipeline_outputs_fresh():
         stale_summary = ""
         try:
-            summary_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace-summary.json")
+            summary_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "trace-summary.json")
             if os.path.isfile(summary_path):
                 with open(summary_path) as _sf:
                     summary = json.load(_sf)
@@ -93,7 +93,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
                 regime_str = ", ".join(f"{k}:{v/total_regime:.0%}" for k, v in sorted(regimes.items(), key=lambda x: -x[1]))
                 top_trust = summary.get("trustDominance", {}).get("dominantSystems", [])
                 trust_str = ", ".join(f"{s['system']}({s.get('score',0):.2f})" for s in top_trust[:3]) if top_trust else "?"
-                fp_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "fingerprint-comparison.json")
+                fp_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "fingerprint-comparison.json")
                 fp_verdict = "?"
                 if os.path.isfile(fp_path):
                     with open(fp_path) as _fp:
@@ -268,7 +268,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
         out.append("## Regime Health: [ok] ALL CLEAR\n")
 
     #  Run Delta (last 2 snapshots)
-    history_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
+    history_dir = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "run-history")
     if os.path.isdir(history_dir):
         snaps = sorted([f for f in os.listdir(history_dir) if f.endswith(".json")], reverse=True)
         if len(snaps) >= 2:

@@ -16,7 +16,7 @@ from _common import PROJECT_ROOT
 
 
 def main(argv):
-    activity = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
+    activity = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
     hme_log = os.path.join(PROJECT_ROOT, "log", "hme.log")
 
     out = ["# i/why mode=hook -- recent hook activity"]

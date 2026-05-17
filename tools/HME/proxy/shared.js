@@ -7,9 +7,17 @@ const { loadJsonc } = require('./config_loader');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
 const EMIT_PY = path.join(PROJECT_ROOT, 'tools/HME/activity/emit.py');
+
+function explicitRuntimeDir(root) {
+  const dir = process.env.HME_RUNTIME_DIR;
+  if (!dir) return '';
+  const absRoot = path.resolve(root);
+  const absDir = path.resolve(dir);
+  return absDir === absRoot || absDir.startsWith(absRoot + path.sep) ? absDir : '';
+}
 // Durable inter-script state lives here, NOT in tmp/. tmp/ is genuinely
 // throwaway (rotating dumps, scratch). See tools/HME/runtime/INVENTORY.md.
-const RUNTIME_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime');
+const RUNTIME_DIR = explicitRuntimeDir(PROJECT_ROOT) || path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime');
 
 function emit(fields) {
   try {

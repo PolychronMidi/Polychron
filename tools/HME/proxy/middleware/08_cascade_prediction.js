@@ -7,7 +7,7 @@
  * /cascade_predict endpoint with the changed file path. The endpoint
  * (a) computes which modules are likely-affected via dep + feedback
  * graph traversal, (b) records the prediction with `injected=true` to
- * tmp/output/metrics/hme-predictions.jsonl, (c) returns the prediction
+ * tmp/src/output/metrics/hme-predictions.jsonl, (c) returns the prediction
  * for footer rendering. The agent sees a `[HME cascade]` footer
  * naming the predicted ripple-modules; the post-pipeline reconciler
  * later compares the prediction to actual fingerprint shifts and

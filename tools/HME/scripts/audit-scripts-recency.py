@@ -15,9 +15,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT_PREFIXES = ["src/scripts", "tools/HME/scripts", "tools/HME/tests/scripts"]
-LOG_ROOTS = [ROOT / "log", ROOT / "output" / "metrics", ROOT / "tools" / "HME" / "runtime"]
+LOG_ROOTS = [ROOT / "log", ROOT / "src" / "output" / "metrics", ROOT / "tools" / "HME" / "runtime"]
 RUN_EVIDENCE_METRICS = {"hme-activity.jsonl", "hme-activity-archive.jsonl", "hme-tool-usage.jsonl"}
-SOURCE_SKIP_PREFIXES = ("log/", "output/", "runtime/", "tmp/", "tools/models/")
+SOURCE_SKIP_PREFIXES = ("log/", "tmp/", "src/output/metrics/", "tools/HME/runtime/", "tools/models/")
 RUN_SUFFIXES = {".py", ".js", ".sh"}
 
 COLD_CLASSIFICATIONS = {
@@ -200,9 +200,9 @@ def _is_run_evidence_log(path: Path) -> bool:
         return True
     if rel.startswith("log/"):
         return path.suffix == ".jsonl"
-    if rel.startswith("output/metrics/archive/"):
+    if rel.startswith("src/output/metrics/archive/"):
         return path.name.startswith("hme-activity") and path.suffix == ".archive"
-    if rel.startswith("output/metrics/"):
+    if rel.startswith("src/output/metrics/"):
         return path.name in RUN_EVIDENCE_METRICS
     if rel.startswith("tools/HME/runtime/"):
         return path.suffix == ".jsonl"

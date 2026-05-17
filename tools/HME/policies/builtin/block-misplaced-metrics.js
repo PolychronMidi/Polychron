@@ -2,12 +2,12 @@
 const { isMisplacedMetricsPath, metricsMessage } = require('../../proxy/path_policy');
 /**
  * Block writes to misplaced metrics/ directories. metrics/ exists only at
- * output/metrics/. Other paths usually mean a path-derivation bug.
+ * src/output/metrics/. Other paths usually mean a path-derivation bug.
  */
 
 module.exports = {
   name: 'block-misplaced-metrics',
-  description: 'Block writes to metrics/ outside output/metrics/.',
+  description: 'Block writes to metrics/ outside src/output/metrics/.',
   category: 'consistency',
   defaultEnabled: true,
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },

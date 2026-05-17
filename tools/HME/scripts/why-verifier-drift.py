@@ -79,14 +79,16 @@ def main(argv):
             except ValueError:
                 pass  # silent-ok: best-effort parse
 
-    ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+    requested_runs = n_runs
+
+    ts_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                            "hme-coherence-timeseries.jsonl")
     if not os.path.isfile(ts_path):
         print("# i/why mode=verifier-drift")
         print(f"No timeseries at {ts_path}")
         return 1
 
-    rows = load_jsonl_all("output/metrics/hme-coherence-timeseries.jsonl")
+    rows = load_jsonl_all("src/output/metrics/hme-coherence-timeseries.jsonl")
 
     if len(rows) < n_runs:
         n_runs = len(rows)
@@ -124,7 +126,10 @@ def main(argv):
     order = {"FAIL": 0, "ERROR": 1, "WARN": 2, "PASS": 3, "SKIP": 4}
     frozen.sort(key=lambda f: (order.get(f["status"], 9), f["name"]))
 
-    print(f"# i/why mode=verifier-drift  (lookback: {n_runs} runs)")
+    if requested_runs == n_runs:
+        print(f"# i/why mode=verifier-drift  (lookback: {n_runs} runs)")
+    else:
+        print(f"# i/why mode=verifier-drift  (lookback: {requested_runs} runs; available: {n_runs})")
     print()
     if not frozen and not frozen_selftest:
         print(f"  No verifier carries a status frozen across all {n_runs} recent runs.")

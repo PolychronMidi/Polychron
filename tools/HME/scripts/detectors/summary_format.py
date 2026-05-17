@@ -26,7 +26,7 @@ Verdicts:
   summary_missing        tier >= E3 AND no closing block detected
   summary_malformed      tier >= E3 AND block present but missing fields
 
-The detector reads tier from output/metrics/mode-classifier.jsonl
+The detector reads tier from src/output/metrics/mode-classifier.jsonl
 (latest line) or the SUMMARY_FORMAT_TIER env override (used by tests).
 
 Usage: summary_format.py <transcript_path>
@@ -78,7 +78,8 @@ def _has_substantive_work(events: list) -> bool:
 
 _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent.parent)
-_MODE_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
+_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_MODE_LOG = _METRICS_DIR / "mode-classifier.jsonl"
 
 # E5 only; E3/E4 fired too often, became ceremony-spam. E5 is the narrow case worth it.
 _TRIGGER_TIERS = {"E5"}

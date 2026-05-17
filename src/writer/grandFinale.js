@@ -64,7 +64,7 @@ grandFinale = () => {
     }
     fs.mkdirSync(METRICS_DIR, { recursive: true });
     fs.writeFileSync(path.join(METRICS_DIR, 'l0-dump.json'), JSON.stringify(l0Dump, null, 2));
-    console.log('Wrote file: output/metrics/l0-dump.json');
+    console.log('Wrote file: src/output/metrics/l0-dump.json');
     // CIM, stutter variant, and correlation shuffler telemetry snapshots
     const runtimeSnap = {
       cim: coordinationIndependenceManager.getSnapshot(),
@@ -142,6 +142,7 @@ grandFinale = () => {
       buffer: layer.buffer
     };
   });
+  const outputDir = process.env.COMPOSITION_OUTPUT_DIR || 'src/output';
   layerData.forEach(({ name, buffer }) => {
     // L0 is an in-memory-only layer; never written to CSV output.
     if (name === 'L0') return;
@@ -230,7 +231,7 @@ grandFinale = () => {
       throw new Error(`grandFinale: layer "${name}" produced no valid events (finalTimeInSeconds=${finalTimeInSeconds})`);
     }
     globalFinalTimeInSeconds = m.max(globalFinalTimeInSeconds, finalTimeInSeconds);
-    const outputFilename = name === 'L1' ? 'output/output1.csv' : name === 'L2' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
+    const outputFilename = name === 'L1' ? `${outputDir}/output1.csv` : name === 'L2' ? `${outputDir}/output2.csv` : `${outputDir}/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
     pendingWrites.push({ composition, outputFilename });
 
   });
@@ -238,7 +239,7 @@ grandFinale = () => {
   // Write all layers with unified end_track time
   const endTrackTime = `${globalFinalTimeInSeconds + SILENT_OUTRO_SECONDS}s`;
   const cutoffTime = `${globalFinalTimeInSeconds + SILENT_OUTRO_SECONDS - 0.01}s`;
-  fs.mkdirSync('output', { recursive: true });
+  fs.mkdirSync(outputDir, { recursive: true });
   for (let wi = 0; wi < pendingWrites.length; wi++) {
     const { composition, outputFilename } = pendingWrites[wi];
     // Force-kill soundfont release tails so FluidSynth stops at end_track

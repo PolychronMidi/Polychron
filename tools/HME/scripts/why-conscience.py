@@ -2,7 +2,7 @@
 """i/why mode=conscience -- Horizon VIII seed (architectural conscience).
 
 The user's verdicts ("legendary", "compelling", "surprising", "moving",
-"flat", "mechanical", ...) live in output/metrics/hme-ground-truth.jsonl.
+"flat", "mechanical", ...) live in src/output/metrics/hme-ground-truth.jsonl.
 This seed turns those verdicts into queryable patterns:
   - Which file paths were edited in approved rounds vs neutral ones?
   - Which verifier statuses were prevalent at the moment of approval?
@@ -31,7 +31,7 @@ _NEGATIVE = {"flat", "mechanical", "boring", "broken"}
 
 
 def _load_verdicts():
-    p = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-ground-truth.jsonl")
+    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-ground-truth.jsonl")
     if not os.path.isfile(p):
         return []
     out = []
@@ -70,9 +70,9 @@ def _files_in_window(activity_path: str, ts_lo: float, ts_hi: float) -> list[str
 def main(argv):
     verdicts = _load_verdicts()
     if not verdicts:
-        print("# i/why mode=conscience")
-        print("No ground-truth verdicts at output/metrics/hme-ground-truth.jsonl")
-        return 1
+        print("# Architectural conscience (0 verdicts)")
+        print("No ground-truth verdicts at src/output/metrics/hme-ground-truth.jsonl")
+        return 0
 
     # Bucket by sentiment
     pos_verdicts = [v for v in verdicts if v.get("sentiment") in _POSITIVE]
@@ -101,7 +101,7 @@ def main(argv):
                 return 0.0
         return 0.0
 
-    activity = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
+    activity = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
     pos_dirs: Counter = Counter()
     pos_files: Counter = Counter()
     matched_verdicts = 0

@@ -123,7 +123,7 @@ pulse as a fallback scanner. The HME layer adds the following transparently:
 - **on_done triggers.** Pass `on_done='reindex'|'learn'|'commit'` to fire a lifecycle hook when the item is marked done. `reindex` runs `i/hme admin action=index` in the background. `learn` queues a reminder to call `i/learn` at the next turn. `commit` flags a commit nudge in the nexus.
 - **Onboarding stays separate.** The current walkthrough step appears in status output, not as persistent tasks.
 - **Cross-session persistence.** Open items from the previous session surface at `SessionStart` with a diff view. Completed items live in the store history until auto-pruned or archived.
-- **Live mermaid graph.** The store writes a live rendering to [output/metrics/todo-graph.md](../../output/metrics/todo-graph.md) on every change. Use this to see the work tree as a diagram.
+- **Live mermaid graph.** The store writes a live rendering to [src/output/metrics/todo-graph.md](../../src/output/metrics/todo-graph.md) on every change. Use this to see the work tree as a diagram.
 
 ## Rules and boundaries -- authoritative source
 
@@ -140,7 +140,7 @@ A set of post-composition instrumentation features -- musical correlation, coher
           tags=[moment_type,sentiment] query=ROUND_TAG
    (SECTION: S0..S6 or 'all'. moment_type: convergence|climax|breath|
    arrival|misfire|... sentiment: compelling|surprising|moving|flat|
-   mechanical|... Writes output/metrics/hme-ground-truth.jsonl + mirrors to
+   mechanical|... Writes src/output/metrics/hme-ground-truth.jsonl + mirrors to
    KB with tag `human_ground_truth` -> unconditional HIGH trust tier)
 
 2. i/learn title="RNN ..." content="..." category=decision
@@ -222,4 +222,4 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 - `python3 tools/HME/scripts/audit-core-principles.py` -- survey `src/` against the five core principles. Fires via the `core-principles-audit` HCI verifier every pipeline run. Critical violations (files >400 LOC, subsystems without `index.js`) drop HCI; 200-line warnings are informational.
 - `python3 tools/HME/scripts/audit-shell-hooks.py` -- static scan of `tools/HME/hooks/**/*.sh` for cache-trap patterns (BASH_SOURCE-relative ascents that resolve INTO the plugin cache when hooks are invoked from it). Fires via the `shell-hook-audit` HCI verifier every pipeline run. Sister-audit to ESLint-for-JS and `_scan_python_bug_patterns`-for-Python.
 - Proxy middleware substrate at [tools/HME/proxy/middleware/](../../tools/HME/proxy/middleware/) owns tool-result transformation. Export `onToolResult({toolUse, toolResult, ctx})` to append, replace, or enrich any Claude-native tool's result before the model sees it. `ctx.replaceResult` swaps content entirely; `ctx.retryNextTurn(toolUseId)` defers unfinished work to a future turn (bounded, 3-retry max). Working examples: `background_dominance.js` resolves backgrounded `i/*` stubs into real output, `bash_enrichment.js` surfaces error snippets. Load failures are caught by the `proxy-middleware-registry` HCI verifier. Tests live next to the code they exercise (`test_*.js`), excluded from middleware registration by the loader.
-- Calibration anchors live in KB (`i/learn query=...`). The historical `output/metrics/journal.md` is a retired archive.
+- Calibration anchors live in KB (`i/learn query=...`). The historical `src/output/metrics/journal.md` is a retired archive.

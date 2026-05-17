@@ -213,7 +213,7 @@ def _race_local_vs_cloud(prompt: str, system: str, max_tokens: int,
 
 def _emit_race_outcome(profile: str, max_tokens: int, winner: str | None,
                        latencies: dict, had_result: bool) -> None:
-    """Append one JSONL line to output/metrics/hme-race-outcomes.jsonl so
+    """Append one JSONL line to src/output/metrics/hme-race-outcomes.jsonl so
     `status mode=race_stats` can summarize local-vs-cloud win rates over
     time. Bounded-logged via common.bounded_log."""
     import json as _json

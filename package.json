@@ -18,7 +18,7 @@
     "main": "node src/scripts/utils/run-with-log.js pipeline.log node src/scripts/pipeline/main-pipeline.js",
     "render": "bash src/scripts/render.sh",
     "render-lite": "bash src/scripts/render-lite.sh",
-    "lab": "node src/scripts/utils/run-with-log.js lab.log node lab/run.js",
+    "lab": "node src/scripts/utils/run-with-log.js lab.log node src/lab/run.js",
     "dashboard": "node src/scripts/live-dashboard.js",
     "replay": "node src/scripts/trace-replay.js",
     "snapshot": "node src/scripts/pipeline/compare-runs.js --snapshot",

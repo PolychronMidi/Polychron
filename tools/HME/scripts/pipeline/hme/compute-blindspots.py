@@ -3,7 +3,7 @@
 
 The blindspots logic already exists in tools_analysis/blindspots.py but
 emits markdown for the status tool. This script computes the same data
-and writes JSON at output/metrics/hme-blindspots.json so the action
+and writes JSON at src/output/metrics/hme-blindspots.json so the action
 proposer (and any other consumer) has structured input.
 
 Schema (matches propose-next-actions.py's reader):
@@ -24,9 +24,9 @@ from collections import Counter
 from pathlib import Path
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[5]))
-ACTIVITY = PROJECT_ROOT / "output" / "metrics" / "hme-activity.jsonl"
-STALENESS = PROJECT_ROOT / "output" / "metrics" / "kb-staleness.json"
-OUT = PROJECT_ROOT / "output" / "metrics" / "hme-blindspots.json"
+ACTIVITY = PROJECT_ROOT / "src" / "output" / "metrics" / "hme-activity.jsonl"
+STALENESS = PROJECT_ROOT / "src" / "output" / "metrics" / "kb-staleness.json"
+OUT = PROJECT_ROOT / "src" / "output" / "metrics" / "hme-blindspots.json"
 WINDOW = int(os.environ.get("HME_BLINDSPOT_WINDOW", "10"))
 
 SUBSYSTEMS = ["utils", "conductor", "rhythm", "time", "composers",

@@ -148,7 +148,7 @@ def _adversarial_stress() -> str:
         results.append(("hooks.json: parseable", False, str(e)))
 
     # Probe 9: Feedback graph exists and declares loops
-    fg_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "feedback_graph.json")
+    fg_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "feedback_graph.json")
     try:
         with open(fg_path, encoding="utf-8") as f:
             fg = json.load(f)
@@ -239,7 +239,7 @@ def _adversarial_stress() -> str:
         results.append(("L0_CHANNELS: l0Channels.js readable", False, str(e)))
 
     # Probe 15: Pipeline summary exists and has verdict
-    ps_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "pipeline-summary.json")
+    ps_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "pipeline-summary.json")
     try:
         with open(ps_path, encoding="utf-8") as f:
             ps = json.load(f)
@@ -251,22 +251,22 @@ def _adversarial_stress() -> str:
             results.append(("Pipeline summary: error patterns detected",
                             False, f"{len(ps['errorPatterns'])} error pattern(s) in last run"))
     except FileNotFoundError:
-        results.append(("Pipeline summary: exists", False, "output/metrics/pipeline-summary.json missing"))
+        results.append(("Pipeline summary: exists", False, "src/output/metrics/pipeline-summary.json missing"))
     except Exception as e:
         results.append(("Pipeline summary: parseable", False, str(e)))
 
     # Probe 16: Run-history has recent snapshots
-    rh_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
+    rh_dir = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "run-history")
     if os.path.isdir(rh_dir):
         snapshots = sorted([f for f in os.listdir(rh_dir) if f.endswith(".json")])
         results.append((f"Run-history: {len(snapshots)} snapshots",
                         len(snapshots) >= 5, "" if len(snapshots) >= 5 else f"only {len(snapshots)}"))
     else:
-        results.append(("Run-history: directory exists", False, "output/metrics/run-history/ missing"))
+        results.append(("Run-history: directory exists", False, "src/output/metrics/run-history/ missing"))
 
     # Probe 17: Journal archive exists and has historical rounds
     # Journal is a deprecated archive -- live round state is in the activity bridge.
-    journal_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
+    journal_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "journal.md")
     try:
         with open(journal_path, encoding="utf-8") as f:
             journal = f.read()
@@ -278,7 +278,7 @@ def _adversarial_stress() -> str:
         results.append(("Journal archive: readable", False, str(e)))
 
     # Probe 18: Adaptive state file exists and has valid structure
-    as_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "adaptive-state.json")
+    as_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "adaptive-state.json")
     try:
         with open(as_path, encoding="utf-8") as f:
             astate = json.load(f)
@@ -286,7 +286,7 @@ def _adversarial_stress() -> str:
         results.append(("Adaptive state: valid structure",
                         has_emas, "" if has_emas else "missing EMA fields"))
     except FileNotFoundError:
-        results.append(("Adaptive state: exists", False, "output/metrics/adaptive-state.json missing"))
+        results.append(("Adaptive state: exists", False, "src/output/metrics/adaptive-state.json missing"))
     except Exception as e:
         results.append(("Adaptive state: parseable", False, str(e)))
 
@@ -362,7 +362,7 @@ def _adversarial_stress() -> str:
             suggestions.append(f"[LOW] Startup EMA {startup_ms:.0f}ms -- shim cold-start is slow; consider keepalive")
 
         # Coherence trend from JSONL
-        coherence_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-coherence.jsonl")
+        coherence_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-coherence.jsonl")
         if os.path.isfile(coherence_path):
             with open(coherence_path) as f:
                 raw_lines = f.readlines()[-20:]

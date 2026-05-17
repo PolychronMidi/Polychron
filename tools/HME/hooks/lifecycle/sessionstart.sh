@@ -121,7 +121,7 @@ fi
 # Build orientation message
 MSG=""
 # Pipeline verdict + wall time
-PS="${METRICS_DIR:-$PROJECT/output/metrics}/pipeline-summary.json"
+PS="${METRICS_DIR:-$PROJECT/src/output/metrics}/pipeline-summary.json"
 if [ -f "$PS" ]; then
   VERDICT=$(_safe_py3 "import json; print(json.load(open('$PS')).get('verdict',''))" '')
   WALL=$(_safe_py3 "import json; d=json.load(open('$PS')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
@@ -283,7 +283,7 @@ fi
 SUBSTRATE_BRIEF=$(python3 - <<'PY' 2>/dev/null || true  # silent-ok: optional fallback path.
 import json, os
 root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR") or "."
-metrics_dir = os.environ.get("METRICS_DIR", os.path.join(root, "output", "metrics"))
+metrics_dir = os.environ.get("METRICS_DIR", os.path.join(root, "src", "output", "metrics"))
 def _j(name):
     try:
         with open(os.path.join(metrics_dir, name), encoding="utf-8") as f:

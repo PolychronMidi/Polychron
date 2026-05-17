@@ -22,7 +22,7 @@ import sys
 import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
-METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 PATTERNS_DIR = os.path.join(PROJECT_ROOT, "tools", "HME", "patterns")
 OUT_PATH = os.path.join(METRICS_DIR, "hme-pattern-matches.json")
 

@@ -29,7 +29,7 @@ const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
 
-const METRICS = path.join(PROJECT_ROOT, 'output', 'metrics', 'hme-enricher-efficacy.jsonl');
+const METRICS = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'hme-enricher-efficacy.jsonl');
 const RATES = path.join(PROJECT_ROOT, 'tmp', 'hme-enricher-efficacy-rates.json');
 
 const ENRICHER_MARKERS = {

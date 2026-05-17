@@ -19,7 +19,7 @@ Heuristics, in priority order:
   6. Neutral / unmatched -> 5
 
 Output: append one JSONL line per scored prompt to
-output/metrics/satisfaction.jsonl. Schema:
+src/output/metrics/satisfaction.jsonl. Schema:
   {ts, turn_index, score, signal_type, prompt_excerpt}
 
 Usage:
@@ -42,7 +42,8 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent)
-_OUT_FILE = _PROJECT / "output" / "metrics" / "satisfaction.jsonl"
+_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_OUT_FILE = _METRICS_DIR / "satisfaction.jsonl"
 
 # Heuristic markers. Order: explicit number first, then strong signals,
 _NUMERIC_RE = re.compile(

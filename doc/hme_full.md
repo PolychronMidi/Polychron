@@ -37,17 +37,17 @@ HME watches two coherences at once:
 - **Self-coherence:** whether HME's own rules, docs, tools, state, and
   measurements still describe reality.
 
-The agent acts through native tools and [`i/`](../i/) commands. The proxy, event kernel,
+The agent acts through native tools and [`i/`](../tools/HME/i/) commands. The proxy, event kernel,
 hooks, policies, worker, KB, and verifiers convert those actions into a
 measured evolution loop.
 
 ## Surfaces
 
-- [`i/`](../i/) wrappers: deliberate HME commands.
+- [`i/`](../tools/HME/i/) wrappers: deliberate HME commands.
 - Native Read/Edit/Grep/Glob/TodoWrite: enriched or replaced by proxy
   middleware where appropriate.
 - Codex fallback bridge: when a host lacks native Read/Edit, adapter-owned
-  internals may synthesize native events; this is not a public [`i/`](../i/) surface.
+  internals may synthesize native events; this is not a public [`i/`](../tools/HME/i/) surface.
 - Codex `update_plan`: synced into the same TODO store by `codex_proxy` while
   Responses events stream; universal pulse remains the fallback session-log
   scanner. There is no normal manual sync command; sync failures are repaired
@@ -56,7 +56,7 @@ measured evolution loop.
 - Event kernel: portable routing for lifecycle and tool events.
 - Hooks: host-specific adapters and remaining shell lifecycle stages.
 - Worker service: KB, review, learn, trace, status, policies, admin actions.
-- Metrics: JSON/JSONL state in `output/metrics/`, `tmp/`, [`tools/HME/runtime/`](../tools/HME/runtime/), and
+- Metrics: JSON/JSONL state in `src/output/metrics/`, `tmp/`, [`tools/HME/runtime/`](../tools/HME/runtime/), and
   `log/`.
 
 ## Event Kernel
@@ -155,7 +155,7 @@ it directly.
 
 ## Command Surface
 
-Keep [`i/`](../i/) commands for explicit actions:
+Keep [`i/`](../tools/HME/i/) commands for explicit actions:
 
 - `i/hme admin action=selftest|health|reload|index|clear_index|warm|todo_status|todo_validate|todo_repair|todo_archive`
 - `i/review mode=forget|docs|health|convention`
@@ -177,7 +177,7 @@ automatically.
 2. Edit through native tools; HME enriches context automatically.
 3. `i/review mode=forget` after changes.
 4. Run the project pipeline for behavioral changes.
-5. Accept or write a KB entry with [`i/learn`](../i/learn).
+5. Accept or write a KB entry with [`i/learn`](../tools/HME/i/learn).
 6. For HME substrate changes, run `i/hme admin action=selftest`.
 
 The onboarding walkthrough in [templates/ONBOARDING.md](templates/ONBOARDING.md)
@@ -239,7 +239,7 @@ Stop policies catch abandonment and malformed final behavior:
 - `ceremony_dodge`
 - `phase_gate`
 
-Telemetry lands in `output/metrics/detector-stats.jsonl`.
+Telemetry lands in `src/output/metrics/detector-stats.jsonl`.
 
 ## HCI And Holograph
 
@@ -318,9 +318,9 @@ iteration count or done signal is reached.
 
 Generated metric files are state, not source. Keep them quiet and predictable:
 
-- `output/metrics/` is the only metrics directory; callers use `METRICS_DIR`.
+- `src/output/metrics/` is the only metrics directory; callers use `METRICS_DIR`.
 - Pipeline analyzers may update committed metric snapshots when verification runs.
-- Runtime-only caches stay in `tmp/`, [`tools/HME/runtime/`](../tools/HME/runtime/), or `log/`, never nested `tools/tmp` or `output/metrics`.
+- Runtime-only caches stay in `tmp/`, [`tools/HME/runtime/`](../tools/HME/runtime/), or `log/`, never nested `tools/tmp` or `src/output/metrics`.
 - Migration baselines such as `hardcoded_metrics_baseline.json` must only shrink; new findings fail.
 - Repair stale trace/run-history state with [`tools/HME/scripts/repair-trace-run-history-sync.sh`](../tools/HME/scripts/repair-trace-run-history-sync.sh).
 
@@ -354,7 +354,7 @@ without a declared owner is a coherence failure.
 - Services: [`tools/HME/config/services.json`](../tools/HME/config/services.json); Python, JS, and shell helpers
   derive ports, health URLs, supervision edges, PID labels, process patterns,
   logs, and starts from it.
-- [`i/`](../i/) surface: [`tools/HME/i_registry.json`](../tools/HME/i_registry.json); [`tools/HME/scripts/generate-i-shims.js`](../tools/HME/scripts/generate-i-shims.js)
+- [`i/`](../tools/HME/i/) surface: [`tools/HME/i_registry.json`](../tools/HME/i_registry.json); [`tools/HME/scripts/generate-i-shims.js`](../tools/HME/scripts/generate-i-shims.js)
   generates/checks the public shims, and [`tools/HME/scripts/hme-i-dispatch.js`](../tools/HME/scripts/hme-i-dispatch.js) owns
   behavior.
 - Agent jobs: `tools/HME/runtime/agent-jobs/<role>/<job_id>/` contains

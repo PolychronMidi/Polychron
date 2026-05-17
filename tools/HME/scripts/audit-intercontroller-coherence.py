@@ -2,7 +2,7 @@
 """Inter-controller coherence -- are hypermeta controllers reinforcing
 or cancelling each other?
 
-Reads `output/metrics/runtime-snapshots.json` for per-controller effects
+Reads `src/output/metrics/runtime-snapshots.json` for per-controller effects
 on each of the 6 composition axes (trust, coupling, flicker, coherent,
 entropy, progressive). Computes pairwise cancellation:
 
@@ -29,8 +29,8 @@ from pathlib import Path
 
 
 ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
-SNAPSHOTS = ROOT / "output" / "metrics" / "runtime-snapshots.json"
-OUT = ROOT / "output" / "metrics" / "hme-intercontroller-coherence.json"
+SNAPSHOTS = ROOT / "src" / "output" / "metrics" / "runtime-snapshots.json"
+OUT = ROOT / "src" / "output" / "metrics" / "hme-intercontroller-coherence.json"
 
 
 def _pairwise_cancellation(effects: dict) -> list[dict]:

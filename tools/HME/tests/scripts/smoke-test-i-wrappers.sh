@@ -90,12 +90,12 @@ else
   _fail "tools/HME/config/invariants.json does not parse as JSON"
 fi
 
-# log/ and tmp/ must be at project root; metrics/ must be at output/metrics/ only
+# log/ and tmp/ must be at project root; metrics/ must be at src/output/metrics/ only
 ORPHAN_DIRS=$(find . -type d \( -name log -o -name tmp \) \
   -not -path "./log*" -not -path "./tmp*" \
   -not -path "*/node_modules/*" -not -path "./.git/*" 2>/dev/null; \
   find . -type d -name metrics \
-  -not -path "./output/metrics*" \
+  -not -path "./src/output/metrics*" \
   -not -path "*/node_modules/*" -not -path "./.git/*" 2>/dev/null)
 if [ -z "$ORPHAN_DIRS" ]; then
   _ok "no misplaced log/tmp/metrics directories"
@@ -152,16 +152,16 @@ trap 'rm -rf "$SMOKE_TMP"' EXIT
 
 # Launch all nine in parallel. Slots 1..8 are plain tool runs; slot 9 is
 # the verbose selftest we also need for the HCI-score checks below.
-_tool_check_bg 1 "i/status" ./i/status &
-_tool_check_bg 2 "i/review mode=digest" ./i/review mode=digest &
-_tool_check_bg 3 "i/trace target=conductorState mode=impact" ./i/trace target=conductorState mode=impact &
-_tool_check_bg 4 "i/evolve focus=all" ./i/evolve focus=all &
-_tool_check_bg 5 "i/hme admin action=selftest" ./i/hme admin action=selftest &
-_tool_check_bg 6 "i/learn action=list" ./i/learn action=list &
-_tool_check_bg 7 "i/hme selftest" ./i/hme selftest &
-_tool_check_bg 8 "i/audit" ./i/audit &
+_tool_check_bg 1 "i/status" ./tools/HME/i/status &
+_tool_check_bg 2 "i/review mode=digest" ./tools/HME/i/review mode=digest &
+_tool_check_bg 3 "i/trace target=conductorState mode=impact" ./tools/HME/i/trace target=conductorState mode=impact &
+_tool_check_bg 4 "i/evolve focus=all" ./tools/HME/i/evolve focus=all &
+_tool_check_bg 5 "i/hme admin action=selftest" ./tools/HME/i/hme admin action=selftest &
+_tool_check_bg 6 "i/learn action=list" ./tools/HME/i/learn action=list &
+_tool_check_bg 7 "i/hme selftest" ./tools/HME/i/hme selftest &
+_tool_check_bg 8 "i/audit" ./tools/HME/i/audit &
 # Slot 9 -- verbose selftest, reused for HCI/symlink checks.
-( ./i/hme admin action=selftest modules=verbose > "$SMOKE_TMP/selftest-verbose.out" 2>&1 ) &
+( ./tools/HME/i/hme admin action=selftest modules=verbose > "$SMOKE_TMP/selftest-verbose.out" 2>&1 ) &
 
 wait
 
@@ -261,12 +261,12 @@ _correct_check() {
 # Inline cd && i/tool
 _correct_check "inline cd && i/status rewrites to absolute" \
   "cd tools/HME/scripts && i/status" "" \
-  "/home/jah/Polychron/i/status"
+  "/home/jah/Polychron/tools/HME/i/status"
 
 # tool_input.cwd to subdir
 INPUT=$(jq -n '{"tool_input":{"command":"i/status","cwd":"/home/jah/Polychron/tools/HME/scripts"}}')
 OUT=$(echo "$INPUT" | bash tools/HME/hooks/pretooluse/pretooluse_bash.sh 2>&1)
-if echo "$OUT" | grep -qF "/home/jah/Polychron/i/status"; then
+if echo "$OUT" | grep -qF "/home/jah/Polychron/tools/HME/i/status"; then
   _ok "auto-correct: tool_input.cwd to subdir rewrites"
 else
   _fail "auto-correct tool_input.cwd: expected rewrite, got: $OUT"

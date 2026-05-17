@@ -20,7 +20,8 @@ logger = logging.getLogger("HME")
 
 
 def _get_wav_path() -> str:
-    return os.path.join(ctx.PROJECT_ROOT, "output", "combined.wav")
+    output_dir = os.environ.get("COMPOSITION_OUTPUT_DIR") or os.path.join(ctx.PROJECT_ROOT, "src", "output")
+    return os.path.join(output_dir, "combined.wav")
 
 
 def _load_audio_sections(wav_path: str, sr: int = 22050) -> list[tuple[int, any]]:
@@ -31,7 +32,7 @@ def _load_audio_sections(wav_path: str, sr: int = 22050) -> list[tuple[int, any]
     duration = len(y) / sr
 
     # Get section boundaries from trace
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "trace.jsonl")
     section_times: dict = {}
     with open(trace_path, encoding="utf-8") as f:
         for line in f:
@@ -97,7 +98,7 @@ def _run_intent_loop(max_runs: int = 6) -> str:
     """Track CLAP section character across consecutive run-history snapshots.
     Detects whether the perceptual feedback loop (CLAP->sectionIntentCurves->character)
     is converging, oscillating, or stalled per section."""
-    history_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
+    history_dir = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "run-history")
     if not os.path.isdir(history_dir):
         return "No run-history directory. Run `node src/scripts/pipeline/snapshot-run.js --perceptual` to build history."
 
@@ -186,7 +187,7 @@ def evolution_delta() -> str:
     ctx.ensure_ready_sync()
     _track("evolution_delta")
 
-    history_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
+    history_dir = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "run-history")
     if not os.path.isdir(history_dir):
         return "No run-history directory found. Run `npm run main` to generate snapshots."
 

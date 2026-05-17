@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analyze output/metrics/detector-stats.jsonl -- surface dead phrase
+"""Analyze src/output/metrics/detector-stats.jsonl -- surface dead phrase
 lists, firing patterns, and coverage gaps in the stop-hook detectors.
 
 Each detector that writes telemetry (psycho_stop, early_stop, etc.)
@@ -26,7 +26,7 @@ from pathlib import Path
 
 
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-_STATS = os.path.join(_PROJECT_ROOT, "output", "metrics", "detector-stats.jsonl")
+_STATS = os.path.join(_PROJECT_ROOT, "src", "output", "metrics", "detector-stats.jsonl")
 
 
 def _load_rows() -> list[dict]:

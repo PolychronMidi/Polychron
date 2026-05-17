@@ -40,7 +40,7 @@ def _mode_multi_axis_band():
     from collections import defaultdict
     from .. import ctx as _ctx_mod
     _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
-    snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
+    snap_path = _os.path.join(_root, "src", "output", "metrics", "hci-verifier-snapshot.json")
     if not _os.path.isfile(snap_path):
         return ("# i/status mode=multi-axis-band\n"
                 "No snapshot -- run `python3 tools/HME/scripts/verify-coherence.py` first.")
@@ -163,10 +163,10 @@ def _mode_conjugate():
     import json as _json
     from .. import ctx as _ctx_mod
     _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
-    mc_path = _os.path.join(_root, "output", "metrics", "hme-musical-correlation.json")
+    mc_path = _os.path.join(_root, "src", "output", "metrics", "hme-musical-correlation.json")
     if not _os.path.isfile(mc_path):
         return ("# i/status mode=conjugate\n"
-                "No musical-correlation file at output/metrics/hme-musical-correlation.json")
+                "No musical-correlation file at src/output/metrics/hme-musical-correlation.json")
     try:
         with open(mc_path) as _f:
             mc = _json.load(_f)

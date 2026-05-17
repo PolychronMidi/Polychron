@@ -15,7 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT, mtimeCache } = require('../shared');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'src', 'output', 'metrics');
 
 const INTENT_PATH = path.join(METRICS_DIR, 'hme-dir-intent.json');
 const MAX_RULES_INJECTED = 2;

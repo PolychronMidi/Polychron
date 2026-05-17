@@ -16,7 +16,7 @@ test('shared Bash policy rewrites i commands and strips timeout', () => {
   const out = evaluateBashInput({ command: 'i/status mode=health', timeout: 1000 }, { projectRoot: root });
   assert.equal(out.decision, 'allow');
   assert.equal(out.changed, true);
-  assert.equal(out.input.command, `${root}/i/status mode=health`);
+  assert.equal(out.input.command, `${root}/tools/HME/i/status mode=health`);
   assert.equal(Object.hasOwn(out.input, 'timeout'), false);
 });
 

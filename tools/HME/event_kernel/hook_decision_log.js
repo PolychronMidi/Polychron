@@ -4,6 +4,16 @@ const fs = require('fs');
 const path = require('path');
 const { parseJson, decisionFields, reasonHash } = require('./decision_normalizer');
 
+function runtimeDir(root) {
+  const dir = process.env.HME_RUNTIME_DIR;
+  if (dir) {
+    const absRoot = path.resolve(root);
+    const absDir = path.resolve(dir);
+    if (absDir === absRoot || absDir.startsWith(absRoot + path.sep)) return absDir;
+  }
+  return path.join(root, 'tools', 'HME', 'runtime');
+}
+
 function append(file, line) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.appendFileSync(file, line.endsWith('\n') ? line : `${line}\n`);
@@ -34,7 +44,7 @@ function hookDecisionSummary(host, event, rawStdout, sanitizedStdout, payload = 
 function recordHookDecision(root, host, event, rawStdout, sanitizedStdout, payload = {}) {
   const summary = hookDecisionSummary(host, event, rawStdout, sanitizedStdout, payload);
   if (!summary || !root) return;
-  append(path.join(root, 'tools', 'HME', 'runtime', 'hook-decisions.jsonl'), JSON.stringify(summary));
+  append(path.join(runtimeDir(root), 'hook-decisions.jsonl'), JSON.stringify(summary));
 }
 
 module.exports = { hookDecisionSummary, recordHookDecision };

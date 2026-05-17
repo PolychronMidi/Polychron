@@ -28,8 +28,8 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
-const COMPOSITION_DIR = path.join(ROOT, 'output');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const COMPOSITION_DIR = path.join(ROOT, 'src', 'output');
 const FINGERPRINT_PATH = path.join(METRICS_DIR, 'golden-fingerprint.json');
 const PREV_PATH = path.join(METRICS_DIR, 'golden-fingerprint.prev.json');
 const COMPARISON_PATH = path.join(METRICS_DIR, 'fingerprint-comparison.json');

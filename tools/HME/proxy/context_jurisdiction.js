@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'src', 'output', 'metrics');
 const REFRESH_INTERVAL_MS = 60_000;
 
 const BIAS_MANIFEST = path.join(PROJECT_ROOT, 'src/scripts/pipeline/bias-bounds-manifest.json');

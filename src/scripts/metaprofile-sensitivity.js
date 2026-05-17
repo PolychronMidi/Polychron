@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // metaprofile-sensitivity: aggregate metaprofile-attribution.jsonl into
 // per-profile mean/std/quantiles + per-section-type breakdowns.
-// Output: output/metrics/metaprofile-sensitivity.json + stdout Markdown.
+// Output: src/output/metrics/metaprofile-sensitivity.json + stdout Markdown.
 
 'use strict';
 
@@ -9,8 +9,8 @@ const fs = require('fs');
 const path = require('path');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..');
-const ATTRIBUTION_FILE = path.join(PROJECT_ROOT, 'output', 'metrics', 'metaprofile-attribution.jsonl');
-const OUTPUT_FILE = path.join(PROJECT_ROOT, 'output', 'metrics', 'metaprofile-sensitivity.json');
+const ATTRIBUTION_FILE = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'metaprofile-attribution.jsonl');
+const OUTPUT_FILE = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'metaprofile-sensitivity.json');
 
 function readJsonl(file) {
   if (!fs.existsSync(file)) return [];
@@ -135,7 +135,7 @@ function markdown(report) {
   const lines = [];
   lines.push('# Metaprofile Sensitivity Report');
   lines.push('');
-  lines.push(`Source: \`output/metrics/metaprofile-attribution.jsonl\` (${report.totalEntries} entries, ${report.profileCount} profiles)`);
+  lines.push(`Source: \`src/output/metrics/metaprofile-attribution.jsonl\` (${report.totalEntries} entries, ${report.profileCount} profiles)`);
   lines.push('');
   lines.push('## Per-profile score distribution');
   lines.push('');

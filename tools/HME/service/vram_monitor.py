@@ -28,7 +28,7 @@ PID_FILE = "/tmp/hme-vram-monitor.pid"
 POLL_INTERVAL = ENV.require_int("HME_VRAM_POLL_S")
 MAX_SAMPLES = ENV.require_int("HME_VRAM_MAX_SAMPLES")
 PROJECT_ROOT = ENV.require("PROJECT_ROOT")
-METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
 HISTORY_FILE = os.path.join(METRICS_DIR, "vram-history.jsonl")
 
 

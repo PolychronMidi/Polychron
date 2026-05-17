@@ -91,8 +91,8 @@ test('metrics: deny misplaced metrics/', async () => {
   assert.strictEqual(r.decision, 'deny');
 });
 
-test('metrics: allow output/metrics/', async () => {
-  const r = await metrics.fn(_ctx({ toolInput: { file_path: '/home/jah/Polychron/output/metrics/run-history.json' } }));
+test('metrics: allow src/output/metrics/', async () => {
+  const r = await metrics.fn(_ctx({ toolInput: { file_path: '/home/jah/Polychron/src/output/metrics/run-history.json' } }));
   assert.strictEqual(r.decision, 'allow');
 });
 

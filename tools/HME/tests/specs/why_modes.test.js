@@ -10,7 +10,7 @@ const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const I_WHY = path.join(PROJECT_ROOT, 'i', 'why');
+const I_WHY = path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'why');
 
 function _run(args) {
   const r = spawnSync(I_WHY, args, {

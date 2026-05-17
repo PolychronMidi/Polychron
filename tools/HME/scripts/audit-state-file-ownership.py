@@ -10,7 +10,7 @@ unregistered writer.
 The registry is `tools/HME/config/state-files.json`. Files listed under
 `single_owner` must have writes only from the declared owner. Files listed
 under `multi_writer` must have all writers enumerated. New files writing into
-`tmp/`, `log/`, `tools/HME/runtime/`, or `output/metrics/` should be added there
+`tmp/`, `log/`, `tools/HME/runtime/`, or `src/output/metrics/` should be added there
 before the writer lands.
 
 This is a heuristic verifier -- grep-based, not AST-aware. False

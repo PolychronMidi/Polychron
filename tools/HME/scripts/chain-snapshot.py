@@ -35,7 +35,7 @@ from pathlib import Path
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_METRICS = Path(os.environ.get("METRICS_DIR", os.path.join(_PROJECT, "output", "metrics")))
+_METRICS = Path(os.environ.get("METRICS_DIR", os.path.join(_PROJECT, "src", "output", "metrics")))
 _HISTORY = _METRICS / "chain-history"
 _SESSION_SHA = Path(_PROJECT) / "tmp" / "hme-session-sha.txt"
 _CORRECTIONS = Path(_PROJECT) / "tmp" / "hme-user-corrections.jsonl"

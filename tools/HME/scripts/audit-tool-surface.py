@@ -241,7 +241,7 @@ def _rate_tool(name: str, entry: dict) -> dict:
     safe = entry.get("safe_no_args", name in SAFE_NO_ARGS_ALLOWLIST)
     score = {"name": name, "category": entry.get("category", ""),
              "checks": {}, "skipped": False, "score": 0, "max": 5}
-    bin_path = PROJECT_ROOT / "i" / name
+    bin_path = PROJECT_ROOT / "tools" / "HME" / "i" / name
     if not bin_path.exists() or not os.access(bin_path, os.X_OK):
         score["skipped"] = True
         score["reason"] = "not executable / missing"

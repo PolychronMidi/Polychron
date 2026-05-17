@@ -161,7 +161,7 @@ def get_top_bridges(n: int = 3, threshold: float = -0.30) -> list:
     threshold: r-value cutoff (default -0.30 for global views; pass -0.20 for module-specific
     lookups to surface weaker-but-real virgin tensions like feedbackOscillator<->motifEcho)."""
     try:
-        trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
+        trace_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "trace.jsonl")
         trace_mtime = os.path.getmtime(trace_path) if os.path.isfile(trace_path) else 0
         src_root_b = os.path.join(ctx.PROJECT_ROOT, "src")
         cl_dir = os.path.join(src_root_b, "crossLayer")

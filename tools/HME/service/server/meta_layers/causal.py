@@ -138,7 +138,7 @@ def _load_run_history() -> list[dict]:
         root = ENV.optional("PROJECT_ROOT", "")
         if not root:
             return []
-        _shared._run_history_dir = os.path.join(root, "output", "metrics", "run-history")
+        _shared._run_history_dir = os.path.join(root, "src", "output", "metrics", "run-history")
     try:
         filenames = sorted(os.listdir(_shared._run_history_dir))
     except OSError:

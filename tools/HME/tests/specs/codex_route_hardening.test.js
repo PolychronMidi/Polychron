@@ -10,8 +10,12 @@ const { spawnSync } = require('child_process');
 const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
 const originalPath = process.env.PATH || '';
 
+function runtimeDir(root) { return path.join(root, 'tmp', 'hme-runtime'); }
+
 function fresh(projectRoot) {
   process.env.PROJECT_ROOT = projectRoot;
+  process.env.HME_RUNTIME_DIR = runtimeDir(projectRoot);
+  fs.mkdirSync(process.env.HME_RUNTIME_DIR, { recursive: true });
   process.env.PATH = path.join(projectRoot, 'bin') + path.delimiter + originalPath;
   for (const k of Object.keys(require.cache)) {
     if (k.includes('/tools/HME/event_kernel/') || k.includes('/tools/HME/proxy/')) delete require.cache[k];
@@ -22,7 +26,7 @@ function sandbox(prefix = 'codex-hardening-') {
   const base = path.join(os.tmpdir(), 'hme-test-sandboxes');
   fs.mkdirSync(base, { recursive: true });
   const root = fs.mkdtempSync(path.join(base, prefix));
-  for (const d of ['src', 'tmp', 'log', 'output/metrics', '.git', 'bin']) fs.mkdirSync(path.join(root, d), { recursive: true });
+  for (const d of ['src', 'tmp', 'log', 'src/output/metrics', '.git', 'bin']) fs.mkdirSync(path.join(root, d), { recursive: true });
   for (const d of ['tools', 'scripts', 'config']) fs.symlinkSync(path.join(repoRoot, d), path.join(root, d));
   const fakeGit = path.join(root, 'bin', 'git');
   fs.writeFileSync(fakeGit, '#!/usr/bin/env bash\nexit 0\n');
@@ -63,7 +67,7 @@ test('Codex hook decision compact logs hash/channels without raw reason text', (
   });
   const clean = sanitizeStdout('PreToolUse', raw);
   recordHookDecision(root, 'PreToolUse', raw, clean, { tool_name: 'Bash', session_id: 's1' });
-  const log = fs.readFileSync(path.join(root, 'tools', 'HME', 'runtime', 'hook-decisions.jsonl'), 'utf8');
+  const log = fs.readFileSync(path.join(runtimeDir(root), 'hook-decisions.jsonl'), 'utf8');
   const row = JSON.parse(log.trim());
   assert.equal(row.duplicate_systemMessage_stripped, true);
   assert.deepEqual(row.surfaced_channels, ['permissionDecisionReason']);
@@ -79,7 +83,7 @@ test('Codex PreToolUse payload fixtures route for Read/Grep/Edit/Write', async (
   fs.writeFileSync(path.join(root, 'tmp', 'hme-streak', 'codex-Read.score'), '20');
   const read = await dispatch(root, 'Read', { file_path: file });
   assert.equal(read.exit_code, 0);
-  const signals = fs.readFileSync(path.join(root, 'output', 'metrics', 'hme-signals.jsonl'), 'utf8');
+  const signals = fs.readFileSync(path.join(root, 'src', 'output', 'metrics', 'hme-signals.jsonl'), 'utf8');
   assert.match(signals, /raw_streak_reset/);
   const grep = await dispatch(root, 'Grep', { pattern: 'const', path: path.join(root, 'src'), output_mode: 'files_with_matches' });
   assert.equal(grep.exit_code, 0);
@@ -92,9 +96,9 @@ test('Codex PreToolUse payload fixtures route for Read/Grep/Edit/Write', async (
 
 test('codex-route and hook-decision status views are compact and API-only', () => {
   const root = sandbox('codex-status-');
-  fs.mkdirSync(path.join(root, 'tools', 'HME', 'runtime'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'tools', 'HME', 'runtime', 'codex-proxy-events.jsonl'), `${JSON.stringify({ kind: 'request', route: 'omniroute', upstream: 'http://127.0.0.1:20128/v1/responses', after: { model: 'gpt-5.5', tool_names: ['exec_command', 'Read', 'Edit', 'update_plan'] } })}\n${JSON.stringify({ kind: 'response', route: 'omniroute', status: 200, model: 'cx/gpt-5.5' })}\n`);
-  fs.writeFileSync(path.join(root, 'tools', 'HME', 'runtime', 'hook-decisions.jsonl'), `${JSON.stringify({ ts: 't', host: 'codex', event: 'PreToolUse', tool: 'Bash', decision: 'deny', reason_hash: 'abc', surfaced_channels: ['permissionDecisionReason'], duplicate_systemMessage_stripped: true })}\n`);
+  fs.mkdirSync(runtimeDir(root), { recursive: true });
+  fs.writeFileSync(path.join(runtimeDir(root), 'codex-proxy-events.jsonl'), `${JSON.stringify({ kind: 'request', route: 'omniroute', upstream: 'http://127.0.0.1:20128/v1/responses', after: { model: 'gpt-5.5', tool_names: ['exec_command', 'Read', 'Edit', 'update_plan'] } })}\n${JSON.stringify({ kind: 'response', route: 'omniroute', status: 200, model: 'cx/gpt-5.5' })}\n`);
+  fs.writeFileSync(path.join(runtimeDir(root), 'hook-decisions.jsonl'), `${JSON.stringify({ ts: 't', host: 'codex', event: 'PreToolUse', tool: 'Bash', decision: 'deny', reason_hash: 'abc', surfaced_channels: ['permissionDecisionReason'], duplicate_systemMessage_stripped: true })}\n`);
   const script = `
 import importlib.util, os, sys, types
 os.environ['HME_CODEX_ROUTE_SMOKE_ACTIVE'] = '0'

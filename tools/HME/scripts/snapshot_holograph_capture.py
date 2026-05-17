@@ -18,7 +18,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 _HOOKS_DIR = os.path.join(_PROJECT, "tools", "HME", "hooks")
 _SERVER_DIR = os.path.join(_PROJECT, "tools", "HME", "service", "server")
 _SCRIPTS_DIR = os.path.join(_PROJECT, "tools", "HME", "scripts")
-METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", "metrics")
+METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "src", "output", "metrics")
 
 
 def capture_hci() -> dict:
@@ -26,11 +26,11 @@ def capture_hci() -> dict:
 
     Latency gate: verify-coherence.py takes ~8s. When HOLOGRAPH_FAST=1
     (Stop-hook path), prefer the most recent cached snapshot from
-    output/metrics/hci-verifier-snapshot.json instead of re-running.
+    src/output/metrics/hci-verifier-snapshot.json instead of re-running.
     The session-start capture (no env var) still does the live run.
     """
     if os.environ.get("HOLOGRAPH_FAST") == "1":
-        cache = os.path.join(_PROJECT, "output", "metrics",
+        cache = os.path.join(_PROJECT, "src", "output", "metrics",
                              "hci-verifier-snapshot.json")
         if os.path.isfile(cache):
             try:

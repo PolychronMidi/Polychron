@@ -20,7 +20,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
-const I_WHY = path.join(PROJECT_ROOT, 'i', 'why');
+const I_WHY = path.join(PROJECT_ROOT, 'tools', 'HME', 'i', 'why');
 const QUEUE_DIR = path.join(PROJECT_ROOT, 'tmp', 'hme-subagent-queue');
 const { MARKERS } = require('../../proxy/middleware/_markers.js');
 

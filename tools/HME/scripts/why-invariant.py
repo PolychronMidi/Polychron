@@ -35,7 +35,7 @@ def main(argv):
     if len(argv) < 2:
         # Surface available invariant IDs instead of just printing usage
         # -- the user has no way to discover valid IDs otherwise.
-        eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
+        eff = _load("src/output/metrics/hme-invariant-efficacy.json") or {}
         ids = sorted((eff.get("per_invariant") or {}).keys())
         print("Usage: i/why <invariant-id>", file=sys.stderr)
         if ids:
@@ -45,13 +45,13 @@ def main(argv):
             if len(ids) > 30:
                 print(f"  ... +{len(ids) - 30} more", file=sys.stderr)
         else:
-            print("  (no efficacy report found at output/metrics/hme-invariant-efficacy.json -- run pipeline first)",
+            print("  (no efficacy report found at src/output/metrics/hme-invariant-efficacy.json -- run pipeline first)",
                   file=sys.stderr)
         return 2
     inv_id = argv[1]
 
-    hist = _load("output/metrics/hme-invariant-history.json") or {}
-    eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
+    hist = _load("src/output/metrics/hme-invariant-history.json") or {}
+    eff = _load("src/output/metrics/hme-invariant-efficacy.json") or {}
     per_inv = eff.get("per_invariant", {}).get(inv_id)
     if not per_inv:
         # Suggest near-matches when the user typo'd an ID.

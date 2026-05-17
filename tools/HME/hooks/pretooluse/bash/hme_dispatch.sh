@@ -5,7 +5,7 @@
 # they want to deny/redirect the call.
 
 # Pipeline-status polling guard -- fires on `i/status`.
-# Match form: `i/status`, `./i/status`, `bash i/status`, etc.
+# Match form: `i/status`, `./tools/HME/i/status`, `bash i/status`, etc.
 if echo "$CMD" | grep -qE '(^|[[:space:]/])i/status\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/pretooluse_check_pipeline.sh" || true
 fi

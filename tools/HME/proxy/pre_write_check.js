@@ -111,7 +111,7 @@ function _runTddGate(file) {
 function _decisionAudit(file) {
   if (!/(CLAUDE\.md|doc\/templates\/TODO\.md|\.claude\/agents\/.*\.md|tools\/HME\/scripts\/detectors\/.*\.py|tools\/HME\/proxy\/stop_chain\/policies\/.*\.js)$/.test(file || '')) return;
   try {
-    const log = path.join(PROJECT_ROOT, 'output/metrics/decision-audit.jsonl');
+    const log = path.join(PROJECT_ROOT, 'src/output/metrics/decision-audit.jsonl');
     fs.mkdirSync(path.dirname(log), { recursive: true });
     fs.appendFileSync(log, JSON.stringify({ ts: new Date().toISOString(), file, reviewed: false, consulted: false, skip_reason: '' }) + '\n');
   } catch (_err) { /* silent-ok: optional audit sink. */ }

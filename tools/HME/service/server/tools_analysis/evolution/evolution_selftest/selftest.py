@@ -806,7 +806,7 @@ def hme_selftest(verbose: bool = False) -> str:
     # detector will say "ok" and the antipatterns go uncaught.
     try:
         import json as _json_ds
-        stats_path = os.path.join(_project_root, "output", "metrics", "detector-stats.jsonl")
+        stats_path = os.path.join(_project_root, "src", "output", "metrics", "detector-stats.jsonl")
         if not os.path.isfile(stats_path):
             results.append("INFO: detector telemetry -- stats file not yet created")
         else:

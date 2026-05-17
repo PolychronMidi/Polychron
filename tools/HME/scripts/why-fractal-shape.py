@@ -219,14 +219,14 @@ def _measure_policies_by_event() -> dict:
 
 def _append_history(scales: list[dict]) -> None:
     """Append a per-run snapshot of per-scale Gini values to
-    output/metrics/hme-fractal-history.jsonl. Enables `mode=fractal-shape
+    src/output/metrics/hme-fractal-history.jsonl. Enables `mode=fractal-shape
     history=true` to render the trend over time -- is the architecture
     becoming MORE or LESS tensegrity-shaped over rounds? Atomic write
     via temp+os.replace pattern (matches the project's data-integrity
     invariant)."""
     import json
     import time
-    history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+    history_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                 "hme-fractal-history.jsonl")
     try:
         os.makedirs(os.path.dirname(history_path), exist_ok=True)
@@ -253,7 +253,7 @@ def _render_history() -> str:
     recent runs. Detects whether the architecture's tensegrity-shape is
     rising, falling, or steady."""
     import json
-    history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+    history_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
                                 "hme-fractal-history.jsonl")
     if not os.path.isfile(history_path):
         return "  (no history yet -- run `i/why mode=fractal-shape` more times to accumulate)"

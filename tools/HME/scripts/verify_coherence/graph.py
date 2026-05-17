@@ -16,7 +16,7 @@ from ._base import (
 
 
 class FeedbackGraphVerifier(Verifier):
-    """output/metrics/feedback_graph.json validates against src/scripts/pipeline/validate-feedback-graph.js"""
+    """src/output/metrics/feedback_graph.json validates against src/scripts/pipeline/validate-feedback-graph.js"""
     name = "feedback-graph"
     category = "topology"
     subtag = "structural-integrity"
