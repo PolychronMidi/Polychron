@@ -27,11 +27,10 @@ const { createFpGateScanner } = require('./hme_proxy_fp_gate');
 const { handleUpstreamFailureOrSuccess } = require('./hme_proxy_upstream_failure');
 const { prepareUpstreamHeaders } = require('./hme_proxy_headers');
 const { mutateClaudeRequest } = require('./hme_proxy_request_mutation');
-const {
-  lifecycleInactive: _lifecycleInactive,
-  runInlineFallback: _runInlineFallback,
-  handleLifecycleRoute: _handleLifecycleRoute,
-} = require('./lifecycle_bridge');
+
+function lifecycleBridge() {
+  return require('./lifecycle_bridge');
+}
 
 function createClaudeHandler(deps) {
   const {
