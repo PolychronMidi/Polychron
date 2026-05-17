@@ -47,13 +47,7 @@ function createIsolatedWorkDir() {
   }
   fs.mkdirSync(path.join(tmpWork, 'src', 'output', 'metrics'), { recursive: true });
 
-  // feedback_graph.json is REQUIRED by feedbackGraphContract at main.js boot
-  // but is a derived artifact (regenerated each pipeline run from src/ AST
-  // annotations by src/scripts/pipeline/generators/generate-feedback-graph.js,
-  // not a runtime output). Lab runs ONLY main.js, so the file is otherwise
-  // missing in the temp work dir. Copy from the real src/output/metrics/ --
-  // preserves the lab's "isolated from runtime output" property while
-  // satisfying the boot contract.
+  // Lab runs main.js only, so copy the derived feedback graph boot contract.
   const fbGraph = path.join(rootDir, 'src', 'output', 'metrics', 'feedback_graph.json');
   if (fs.existsSync(fbGraph)) {
     fs.copyFileSync(fbGraph, path.join(tmpWork, 'src', 'output', 'metrics', 'feedback_graph.json'));
@@ -95,15 +89,8 @@ if (missingPatches.length > 0) {
   process.exit(1);
 }
 
-// Cross-check declared patches: against actual assignment patterns in postBoot.
-// Regex scans the stringified function body for `X.Y = function` and `X = function`
-// assignment patterns; anything not in the declared array is drift. This turns
-// patches: from documentation into a real invariant -- you can't patch a global
-// without declaring it.
-// False-positive scenarios accepted: assignments to non-global targets (local
-// variables, closures) would need ESLint-level AST parsing to filter out. For
-// now, we list-compare exact tokens; if a sketch trips a false positive it can
-// add the local-looking name to patches:.
+// Cross-check declared patches against assignment patterns in postBoot.
+// This keeps patches: as an enforced invariant instead of passive docs.
 const _ASSIGN_RE = /(?:^|\n)\s*(?:const\s+\w+\s*=\s*)?([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)?)\s*=\s*function\b/g;
 const patchesDrift = [];
 for (const s of toRun) {
