@@ -1,7 +1,6 @@
 'use strict';
 
 const { stripStaleToolResults, sanitizeMessages } = require('./conversation_graph');
-const { shrinkForPassthrough } = require('./passthrough_compact');
 const hmeDispatcher = require('./hme_dispatcher');
 
 const HME_PREFIX = /^mcp__HME__/;
