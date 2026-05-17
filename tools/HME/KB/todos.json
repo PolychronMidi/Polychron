@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3570,
-      "updated_ts": 1778990868.7970243,
-      "codex_plan_synced_ts": 1778990868.7969127,
+      "updated_ts": 1778993358.8169122,
+      "codex_plan_synced_ts": 1778993358.8168,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T04:07:18.771Z"
+      "codex_plan_ts": "2026-05-17T04:49:17.560Z"
     }
   },
   {
@@ -8543,8 +8543,8 @@
     "id": 3566,
     "text": "Verify inherited patches and inspect current dirty state",
     "activeForm": "Verify inherited patches and inspect current dirty state",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8553,13 +8553,13 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T04:07:18.771Z"
+    "codex_plan_ts": "2026-05-17T04:49:17.560Z"
   },
   {
     "id": 3567,
     "text": "Implement stale-lock repair, freshness/restart contracts, metric-path/orphan audits, and status noise cleanup",
     "activeForm": "Implement stale-lock repair, freshness/restart contracts, metric-path/orphan audits, and status noise cleanup",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "codex_plan",
@@ -8569,14 +8569,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T04:07:18.771Z"
+    "codex_plan_ts": "2026-05-17T04:49:17.560Z"
   },
   {
     "id": 3568,
     "text": "Expand swap-contract tests and capability matrix",
     "activeForm": "Expand swap-contract tests and capability matrix",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8585,7 +8585,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T04:07:18.771Z"
+    "codex_plan_ts": "2026-05-17T04:49:17.560Z"
   },
   {
     "id": 3569,
@@ -8601,7 +8601,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T04:07:18.771Z"
+    "codex_plan_ts": "2026-05-17T04:49:17.560Z"
   },
   {
     "id": 3570,
@@ -8617,6 +8617,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T04:07:18.771Z"
+    "codex_plan_ts": "2026-05-17T04:49:17.560Z"
   }
 ]

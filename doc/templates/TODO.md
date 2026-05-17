@@ -4,12 +4,10 @@
 
 ## Now
 
-- [ ] [E3] Verify inherited patches and inspect current dirty state
+- [ ] [E3] Implement stale-lock repair, freshness/restart contracts, metric-path/orphan audits, and status noise cleanup
 
 ## Next
 
-- [ ] [E3] Implement stale-lock repair, freshness/restart contracts, metric-path/orphan audits, and status noise cleanup
-- [ ] [E3] Expand swap-contract tests and capability matrix
 - [ ] [E3] Refresh indexes/docs drift/KB signals and package hme:swap-contract
 - [ ] [E3] Run targeted and full verification, then report evidence
 
