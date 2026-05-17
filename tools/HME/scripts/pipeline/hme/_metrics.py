@@ -1,8 +1,41 @@
-"""Shared METRICS_DIR accessor for pipeline HME scripts."""
+"""Routed metric paths for pipeline HME scripts."""
 from __future__ import annotations
 
-import os
+from pathlib import Path
 
-METRICS_DIR = os.environ.get("METRICS_DIR")
-if not METRICS_DIR:
-    raise RuntimeError("METRICS_DIR is required")
+from hme_paths import (
+    COMPOSITION_METRICS_DIR,
+    HME_METRICS_DIR,
+    is_hme_metric_name,
+    metric_path as _metric_path,
+    project_metric,
+    read_metric_path as _read_metric_path,
+    write_metric_path as _write_metric_path,
+)
+
+METRICS_DIR = str(HME_METRICS_DIR)
+PROJECT_METRICS_DIR = str(COMPOSITION_METRICS_DIR)
+
+
+def metric_path(*parts: str) -> str:
+    return str(_metric_path(*parts))
+
+
+def read_metric_path(*parts: str) -> str:
+    return str(_read_metric_path(*parts))
+
+
+def write_metric_path(*parts: str) -> str:
+    return str(_write_metric_path(*parts))
+
+
+def project_metric_path(*parts: str) -> str:
+    return str(project_metric(*parts))
+
+
+def is_hme_metric(*parts: str) -> bool:
+    return is_hme_metric_name(*parts)
+
+
+def ensure_parent(pathish: str) -> None:
+    Path(pathish).parent.mkdir(parents=True, exist_ok=True)
