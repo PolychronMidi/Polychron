@@ -181,9 +181,18 @@ let _lastInputTokensRemaining = null; // updated by response handler
 let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from headers
 let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
 let _lastPayloadBytes = 0;            // last OmniRoute payload size for context monitoring
-const _BYTES_PER_TOKEN_EST = Number(process.env.HME_PROXY_BYTES_PER_TOKEN_EST || '3.5');
+function _envNumber(name, fallback) {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+const _BYTES_PER_TOKEN_EST = _envNumber('HME_PROXY_BYTES_PER_TOKEN_EST', 3.5);
+// Context-window estimates use a denser conversion than rate-limit body
+// budgeting: tool-heavy JSON histories routinely tokenize below 3.5B/token.
+const _CONTEXT_BYTES_PER_TOKEN_EST = _envNumber('HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST', 2.75);
 const _DYNAMIC_THRESHOLD_FLOOR_BYTES = parseInt(process.env.HME_PROXY_COMPACT_FLOOR_BYTES || '999000', 10);
-const _MODEL_CONTEXT_FRACTION = Number(process.env.HME_PROXY_CONTEXT_FRACTION || '0.90');
+const _MODEL_CONTEXT_FRACTION = _envNumber('HME_PROXY_CONTEXT_FRACTION', 0.90);
+const _CONTEXT_PREFLIGHT_FRACTION = _envNumber('HME_PROXY_CONTEXT_PREFLIGHT_FRACTION', _MODEL_CONTEXT_FRACTION);
+const _CONTEXT_SIGNAL_REMAINING_FRACTION = _envNumber('HME_PROXY_CONTEXT_SIGNAL_REMAINING_FRACTION', 0.25);
 function _effectiveCompactThreshold() {
   // CEILING: HME_PROXY_COMPACT_BYTES (explicit) honored as hard cap.
   // Otherwise: % of learned ITPM cap (leaves room for response +
