@@ -20,12 +20,10 @@ const {
   _injectStopReminderSystem,
   _stopGateHealth,
 } = require('./hme_proxy_core');
-const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
-const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
 const { createFpGateScanner } = require('./hme_proxy_fp_gate');
-const { handleUpstreamFailureOrSuccess } = require('./hme_proxy_upstream_failure');
 const { prepareUpstreamHeaders } = require('./hme_proxy_headers');
 const { mutateClaudeRequest } = require('./hme_proxy_request_mutation');
+const { handleAnthropicResponseComplete } = require('./hme_proxy_anthropic_response');
 const { handleMidResponseError, handleConnectionError } = require('./hme_proxy_connection_errors');
 
 function lifecycleBridge() {
