@@ -25,10 +25,8 @@ test('stop reminder injects into payload.system and consumes staged file', () =>
     fs.writeFileSync(file, JSON.stringify({ text: 'AUTO-COMPLETENESS CHECK: continue' }));
     const prevRoot = process.env.PROJECT_ROOT;
     const prevExport = process.env.HME_PROXY_EXPORT_INTERNALS;
-    const prevQuiet = process.env.HME_PROXY_QUIET_IMPORT;
     process.env.PROJECT_ROOT = root;
     process.env.HME_PROXY_EXPORT_INTERNALS = '1';
-    process.env.HME_PROXY_QUIET_IMPORT = '1';
     clearProxyCache();
     const { __hmeProxyInternals } = require(path.join(repo, 'tools/HME/proxy/hme_proxy.js'));
     const payload = { messages: [{ role: 'user', content: 'next' }] };
