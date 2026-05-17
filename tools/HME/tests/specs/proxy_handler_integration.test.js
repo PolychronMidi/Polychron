@@ -112,6 +112,9 @@ test('Claude handler forwards to fake Anthropic upstream and returns success wit
       getLastInputTokensLimit() { return lastLimit; },
       setLastInputTokensLimit(n) { lastLimit = n; },
       setLastPayloadBytes() {},
+      lifecycleInactive() { return false; },
+      runInlineFallback() { throw new Error('inline fallback should not run'); },
+      skipStopFallback: true,
     }));
     const proxyPort = await listen(proxy);
     const payload = JSON.stringify({ model: 'claude-test', max_tokens: 16, messages: [{ role: 'user', content: 'hi' }] });
