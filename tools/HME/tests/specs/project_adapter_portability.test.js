@@ -121,3 +121,47 @@ test('metric path helpers split HME and composition outputs', () => {
   assert.match(hmePaths.writeMetricPath('pipeline-summary.json'), /src[\/]output[\/]metrics/);
   assert.match(hmePaths.writeMetricPath('trace.jsonl'), /src[\/]output[\/]metrics/);
 });
+
+
+test('perceptual-dependent analyzers skip under generic fixture', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-capability-skip-'));
+  try {
+    copyDir(path.join(repo, 'tools/HME/tests/fixtures/generic-project'), tmp);
+    const metrics = path.join(tmp, 'src', 'output', 'metrics');
+    const hmeMetrics = path.join(tmp, 'tools', 'HME', 'runtime', 'metrics');
+    fs.mkdirSync(metrics, { recursive: true });
+    for (const script of [
+      'compute-compositional-trajectory.js',
+      'compute-coherence-budget.js',
+    ]) {
+      const proc = childProcess.spawnSync(
+        'node',
+        [path.join(repo, 'tools/HME/scripts/pipeline/hme', script)],
+        {
+          cwd: tmp,
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            PROJECT_ROOT: tmp,
+            METRICS_DIR: metrics,
+            HME_PROJECT_ADAPTER: path.join(tmp, 'config/project-adapter.json'),
+          },
+        },
+      );
+      assert.equal(proc.status, 0, proc.stderr || proc.stdout);
+      assert.match(proc.stdout, /SKIPPED/);
+    }
+    const trajectory = JSON.parse(fs.readFileSync(
+      path.join(hmeMetrics, 'hme-trajectory.json'),
+      'utf8',
+    ));
+    const budget = JSON.parse(fs.readFileSync(
+      path.join(hmeMetrics, 'hme-coherence-budget.json'),
+      'utf8',
+    ));
+    assert.equal(trajectory.skipped, true);
+    assert.equal(budget.skipped, true);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
