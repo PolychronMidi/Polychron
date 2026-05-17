@@ -56,7 +56,8 @@ function createProxyRouteDispatcher({
       return true;
     }
     if (url.startsWith('/hme/pre-write-check')) {
-      require('./pre_write_route').handlePreWriteCheckRoute(clientReq, clientRes);
+      const handler = handlePreWriteCheckRoute || require('./pre_write_route').handlePreWriteCheckRoute;
+      handler(clientReq, clientRes);
       return true;
     }
     if (url.startsWith('/hme/session/')) {
