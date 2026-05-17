@@ -201,6 +201,7 @@ def main() -> int:
 
     modules_out: list[dict] = []
     status_counts = {"FRESH": 0, "STALE": 0, "MISSING": 0}
+    territory_counts: dict[str, dict[str, int]] = {}
 
     for module, (rel_path, mtime) in sorted(src_files.items()):
         activity_ts = activity_writes.get(module, 0.0)
@@ -220,10 +221,16 @@ def main() -> int:
             status = "STALE" if delta > STALE_SECONDS else "FRESH"
 
         status_counts[status] += 1
+        territory = "project" if rel_path.startswith("src/") else "hme"
+        bucket = territory_counts.setdefault(
+            territory, {"FRESH": 0, "STALE": 0, "MISSING": 0}
+        )
+        bucket[status] += 1
         modules_out.append(
             {
                 "module": module,
                 "file_path": rel_path,
+                "territory": territory,
                 "last_kb_update_ts": last_kb_update_ts if last_kb_update_ts > 0 else None,
                 "last_file_write_ts": last_file_write_ts,
                 "staleness_delta_s": delta,
@@ -242,6 +249,7 @@ def main() -> int:
             "kb_entries_total": len(kb_entries),
             "stale_days_threshold": STALE_DAYS,
             "by_status": status_counts,
+            "by_territory_status": territory_counts,
         },
         "modules": modules_out,
     }

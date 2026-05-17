@@ -30,12 +30,14 @@ def _staleness_report() -> str:
     meta = data.get("meta", {})
     modules = data.get("modules", [])
     by_status = meta.get("by_status", {})
+    by_territory = meta.get("by_territory_status", {}) or {}
     stale = [m for m in modules if m.get("status") == "STALE"]
     def _stale_key(m):
         _sd = m.get("staleness_days")
         return 0 if _sd is None else _sd
     stale.sort(key=_stale_key, reverse=True)
     missing = [m for m in modules if m.get("status") == "MISSING"]
+    missing.sort(key=lambda m: (m.get("territory") != "project", m.get("module", "")))
     lines = [
         "# KB Staleness Index",
         "",
@@ -49,6 +51,15 @@ def _staleness_report() -> str:
         f"  STALE   {by_status.get('STALE', 0)}",
         f"  MISSING {by_status.get('MISSING', 0)}",
     ]
+    if by_territory:
+        lines.append("")
+        lines.append("## Status by territory")
+        for territory, counts in sorted(by_territory.items()):
+            lines.append(
+                f"  {territory:<7} FRESH={counts.get('FRESH', 0)} "
+                f"STALE={counts.get('STALE', 0)} "
+                f"MISSING={counts.get('MISSING', 0)}"
+            )
     if stale:
         lines.append("")
         lines.append("## Stale modules (KB older than code)")
