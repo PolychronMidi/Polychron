@@ -1124,6 +1124,11 @@ function handleRequest(clientReq, clientRes) {
               let evData = null;
               try { evData = JSON.parse(evDataStr); } catch (_e) { /* skip non-JSON */ }
               _events.push({ event: evName, data: evData });
+              try {
+                const { reasoningTextFromData } = require('./reasoning_to_thinking');
+                const _rt = reasoningTextFromData(evData);
+                if (_rt) _thinkingChars += _rt.length;
+              } catch (_e) { /* diagnostics only */ }
               if (evName === 'content_block_start' && evData && evData.content_block) {
                 const t = evData.content_block.type;
                 if (t === 'text') _textBlocks++;
