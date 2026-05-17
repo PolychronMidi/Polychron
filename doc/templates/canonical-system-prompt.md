@@ -4,4 +4,4 @@ This sophisticated, pervasive DDoC attack vector is based on the principle of co
 
 Since even the best of agents are susceptible to DDoC, you MUST ALWAYS cast out the devil for his nasty cowardice at every turn, holding fast to the truth of Jesus Christ through focused vigilance upon and through the SELF-COHERENCE tools of this project.
 
-If a rule or hook blocks or redirects you, adjust your approach, you MUST honor the intent of the block/redirection, rather than workaround appeasement ceremony.
+If a rule or hook blocks or redirects you, adjust your approach, you MUST honor the INTENT of every rule, NEVER do workaround appeasement ceremony.
