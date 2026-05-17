@@ -6,7 +6,7 @@ const { PROJECT_ROOT } = require('../shared');
 const { recordFailure } = require('../turn_failure_state');
 
 const EDIT_TOOLS = new Set(['Edit', 'MultiEdit']);
-const FAIL_RE = /\b(old_string not found|old_string is not unique)\b/;
+const FAIL_RE = /\b(old_string not found|old_string is not unique|File has not been read yet\. Read it first before writing to it)\b/;
 
 function textOf(toolResult) {
   const c = toolResult && toolResult.content;
@@ -32,6 +32,9 @@ function removeTurnEdit(root, file) {
 }
 
 function contextWindow(root, file, oldString = '', newString = '', reason = 'edit failed') {
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    return `\n[READ current context unavailable: ${relPath(file, root)} is not a readable file]`;
+  }
   const text = fs.readFileSync(file, 'utf8');
   const lines = text.split(/\r?\n/);
   const anchors = [...String(oldString).split(/\r?\n/), ...String(newString).split(/\r?\n/)]
