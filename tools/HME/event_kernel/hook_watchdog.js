@@ -35,8 +35,37 @@ function parse(raw) {
   try { return JSON.parse(raw || '{}'); } catch (_e) { return {}; }
 }
 
+function _sessionField(obj) {
+  if (!obj || typeof obj !== 'object') return '';
+  for (const k of ['session_id', 'sessionId', 'thread_id', 'threadId', 'conversation_id', 'conversationId']) {
+    if (typeof obj[k] === 'string' && obj[k].trim()) return obj[k].trim();
+  }
+  return '';
+}
+
+function _sessionFromJsonString(value) {
+  if (typeof value !== 'string' || !value.trim().startsWith('{')) return '';
+  try { return _sessionField(JSON.parse(value)); }
+  catch (_e) { return ''; }
+}
+
 function sessionId(payload) {
-  return payload.session_id || payload.thread_id || payload.conversation_id || '';
+  const direct = _sessionField(payload);
+  if (direct) return direct;
+  const metadata = payload && payload.metadata;
+  const fromMetadata = _sessionField(metadata);
+  if (fromMetadata) return fromMetadata;
+  if (metadata && typeof metadata === 'object') {
+    for (const k of ['user_id', 'userId', 'user']) {
+      const sid = _sessionFromJsonString(metadata[k]);
+      if (sid) return sid;
+    }
+  }
+  for (const k of ['user_id', 'userId']) {
+    const sid = _sessionFromJsonString(payload && payload[k]);
+    if (sid) return sid;
+  }
+  return '';
 }
 
 function readState(root) {
