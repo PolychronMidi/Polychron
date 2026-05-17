@@ -60,6 +60,33 @@ def _thread_alive() -> bool:
     return _JOB_THREAD is not None and _JOB_THREAD.is_alive()
 
 
+def _iso_to_epoch(value: str) -> float:
+    try:
+        return time.mktime(time.strptime(value, "%Y-%m-%dT%H:%M:%SZ"))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _repair_stale_running(project_root: str, status: dict) -> dict:
+    if status.get("state") != "running" or _thread_alive():
+        return status
+    started = _iso_to_epoch(str(status.get("started_at") or ""))
+    age = time.time() - started if started else 0
+    if age and age < 300:
+        return status
+    status.update({
+        "state": "stale",
+        "finished_at": _now(),
+        "updated_at": _now(),
+        "error": "running index job has no live worker thread; previous worker likely restarted",
+        "live_in_process": False,
+    })
+    status_path, _log_path = _paths(project_root)
+    _write_json(status_path, status)
+    _append_log(project_root, f"{status.get('action', 'index')}: marked stale")
+    return status
+
+
 def read_index_job(project_root: str) -> dict:
     status_path, log_path = _paths(project_root)
     if not os.path.exists(status_path):
@@ -77,7 +104,7 @@ def read_index_job(project_root: str) -> dict:
     status.setdefault("status_path", status_path)
     status.setdefault("log_path", log_path)
     status["live_in_process"] = _thread_alive()
-    return status
+    return _repair_stale_running(project_root, status)
 
 
 def _run_index_job(project_root: str, action: str, runner: Callable[[str], str]) -> None:
