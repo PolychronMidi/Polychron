@@ -1061,6 +1061,17 @@ function handleRequest(clientReq, clientRes) {
         let outStatus = status;
         let outHeaders = headers;
         let outBuf = fullBody;
+        if (_isOmniRouteSwap && status >= 200 && status < 300
+            && (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream')) {
+          const _s = outBuf.toString('utf8');
+          if (!_s.includes('event: message_start') && /input exceeds the context window/i.test(_s)) {
+            const _msg = 'Context window exceeded upstream before Claude Code could compact. Please send /compact or start a fresh turn; hme-proxy will preflight-shrink future near-limit OmniRoute requests.';
+            console.error(`[hme-proxy] OmniRoute context-window SSE normalized to Anthropic text event (${outBuf.length}B error body)`);
+            outBuf = _anthropicTextSseBuffer(_swapModel, _msg);
+            outHeaders = { ...outHeaders, 'content-type': 'text/event-stream; charset=utf-8' };
+            delete outHeaders['content-length'];
+          }
+        }
         if (final) {
           outStatus = final.finalStatus;
           outHeaders = { ...final.finalHeaders };
