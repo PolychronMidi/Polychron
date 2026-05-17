@@ -25,10 +25,23 @@
  *   read tmp/claude-full-payload.json and look at the `tools[].name` list.
  */
 
-const _RAW = (process.env.HME_FILTER_TOOLS_DROP ?? '').trim();
-const DROP_SET = new Set(
-  _RAW.split(',').map((s) => s.trim()).filter(Boolean),
-);
+const fs = require('fs');
+const path = require('path');
+
+function _stripInlineComment(value) {
+  return String(value || '').replace(/\s+#.*$/, '').trim();
+}
+
+function _dropSet(projectRoot) {
+  const raw = [process.env.HME_FILTER_TOOLS_DROP || ''];
+  try {
+    const envPath = path.join(projectRoot || process.cwd(), '.env');
+    const text = fs.readFileSync(envPath, 'utf8');
+    const line = text.split(/\r?\n/).find((l) => /^\s*HME_FILTER_TOOLS_DROP\s*=/.test(l));
+    if (line) raw.push(line.replace(/^\s*HME_FILTER_TOOLS_DROP\s*=\s*/, ''));
+  } catch (_err) { /* optional config */ }
+  return new Set(raw.flatMap((s) => _stripInlineComment(s).split(',')).map((s) => s.trim()).filter(Boolean));
+}
 
 module.exports = {
   name: 'filter_tools',
