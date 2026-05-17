@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3523,
-      "updated_ts": 1778980824.708108,
-      "codex_plan_synced_ts": 1778980824.708007,
-      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-      "codex_plan_ts": "2026-05-17T01:20:24.257Z"
+      "updated_ts": 1778980848.7603197,
+      "codex_plan_synced_ts": 1778980848.760219,
+      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+      "codex_plan_ts": "2026-05-17T01:20:24.262Z"
     }
   },
   {
@@ -7756,8 +7756,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-    "codex_plan_ts": "2026-05-17T01:20:24.257Z"
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
   },
   {
     "id": 3519,
@@ -7772,8 +7772,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-    "codex_plan_ts": "2026-05-17T01:20:24.257Z"
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
   },
   {
     "id": 3520,
@@ -7788,8 +7788,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-    "codex_plan_ts": "2026-05-17T01:20:24.257Z"
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
   },
   {
     "id": 3521,
@@ -7804,8 +7804,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-    "codex_plan_ts": "2026-05-17T01:20:24.257Z"
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
   },
   {
     "id": 3522,
@@ -7820,8 +7820,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-    "codex_plan_ts": "2026-05-17T01:20:24.257Z"
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
   },
   {
     "id": 3523,
@@ -7836,7 +7836,7 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
-    "codex_plan_ts": "2026-05-17T01:20:24.257Z"
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
   }
 ]
