@@ -4,14 +4,14 @@
 
 ## Now
 
-- [ ] [E3] Inventory existing health/admin/status/test surfaces for the 15 requested hardening items
+- [ ] [E3] Verify inherited patches and inspect current dirty state
 
 ## Next
 
-- [ ] [E3] Implement runtime freshness, stale-lock repair, restart contract, and metric-path invariants/audits
-- [ ] [E3] Expand portability fixtures/capability tests and add swap-contract wrapper
-- [ ] [E3] Fix status/doc/KB drift and HCI fail clusters targeted by current reports
-- [ ] [E3] Run index refresh and full targeted verification, then fix any failures
+- [ ] [E3] Implement stale-lock repair, freshness/restart contracts, metric-path/orphan audits, and status noise cleanup
+- [ ] [E3] Expand swap-contract tests and capability matrix
+- [ ] [E3] Refresh indexes/docs drift/KB signals and package hme:swap-contract
+- [ ] [E3] Run targeted and full verification, then report evidence
 
 ## Done
 
