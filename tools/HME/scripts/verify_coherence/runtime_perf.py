@@ -269,7 +269,7 @@ class ToolResponseLatencyVerifier(Verifier):
         except Exception as e:
             return _result(ERROR, 0.0, f"read error: {e}")
         raw_ema_ms = float(ops.get("tool_response_ms_ema", 0.0) or 0.0)
-        interactive_ms = _recent_interactive_tool_latency_ms()
+        interactive_ms = _recent_interactive_latency_ms()
         latency_note = ""
         ema_ms = raw_ema_ms
         if interactive_ms is not None and (raw_ema_ms <= 0 or interactive_ms < raw_ema_ms):
