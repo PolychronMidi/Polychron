@@ -314,7 +314,12 @@ function hasSameTurnEvidence(turnStartMs) {
   const floor = Math.max(Number(turnStartMs) || 0, writeMs || 0);
   return sessionState.recentVerificationEvidence(30 * 60 * 1000).some((e) => {
     const ts = Date.parse(e && e.ts || '');
-    return Number.isFinite(ts) && ts >= floor && (e.exit_code === 0 || e.artifact || e.excerpt);
+    if (!Number.isFinite(ts) || ts < floor) return false;
+    const cmd = String(e && e.command || '').trim();
+    const source = String(e && e.source || '');
+    if (!cmd || !/^(PostToolUse:|tool_use:)/.test(source)) return false;
+    if (e.exit_code !== null && e.exit_code !== undefined && e.exit_code !== 0) return false;
+    return Boolean(e.artifact || e.excerpt || cmd);
   });
 }
 
