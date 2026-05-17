@@ -17,20 +17,7 @@ function stripHookNoiseText(text, stats = {}) {
   const lines = String(text || '').split(/\r?\n/);
   const kept = [];
   let sawStop = false;
-  let lastRawBlock = '';
   for (let i = 0; i < lines.length; i += 1) {
-    const block = rawBlock(lines, i);
-    if (block) {
-      if (block.payload === lastRawBlock) {
-        recordStrip(stats, 'duplicate_raw_tool_blocks', lines.slice(i, block.end));
-        i = block.end - 1;
-        continue;
-      }
-      lastRawBlock = block.payload;
-      kept.push(...lines.slice(i, block.end));
-      i = block.end - 1;
-      continue;
-    }
     let category = '';
     if (HOOK_SUCCESS_RE.test(lines[i])) category = 'hook_success_lines';
     else if (WRAPPER_AUTOCORRECT_RE.test(lines[i])) category = 'autocorrect_lines';
