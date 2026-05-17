@@ -142,7 +142,7 @@ function run(label, cmd, fatal) {
     if (fatal) {
       execSync(cmd, { stdio: 'inherit', env: process.env });
       var elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-      timings.push({ label: label, elapsed: elapsed, ok: true });
+      timings.push({ label: label, elapsed: elapsed, ok: true, status: 'OK' });
       console.log('\n  ' + label + ' OK (' + elapsed + 's)');
     } else {
       // Capture stdout+stderr for non-fatal steps to scan for error keywords
@@ -153,16 +153,18 @@ function run(label, cmd, fatal) {
       scanForErrors(label, combined);
       var elapsed2 = ((Date.now() - t0) / 1000).toFixed(1);
       if (result.status === 0) {
-        timings.push({ label: label, elapsed: elapsed2, ok: true });
-        console.log('\n  ' + label + ' OK (' + elapsed2 + 's)');
+        var skipped = /\bSKIPPED\b/.test(combined);
+        var status = skipped ? 'SKIPPED' : 'OK';
+        timings.push({ label: label, elapsed: elapsed2, ok: true, status: status });
+        console.log('\n  ' + label + ' ' + status + ' (' + elapsed2 + 's)');
       } else {
-        timings.push({ label: label, elapsed: elapsed2, ok: false });
+        timings.push({ label: label, elapsed: elapsed2, ok: false, status: 'FAIL' });
         console.warn('\n  WARNING: ' + label + ' failed (exit ' + (result.status || '?') + ') -- continuing.\n');
       }
     }
   } catch (err) {
     var elapsed3 = ((Date.now() - t0) / 1000).toFixed(1);
-    timings.push({ label: label, elapsed: elapsed3, ok: false });
+    timings.push({ label: label, elapsed: elapsed3, ok: false, status: 'FAIL' });
     if (fatal) {
       console.error('\n  FATAL: ' + label + ' failed (exit ' + (err.status || 1) + '). Pipeline aborted.\n');
       printSummary();
@@ -179,7 +181,7 @@ function printSummary() {
   var total = 0;
   for (var i = 0; i < timings.length; i++) {
     var t = timings[i];
-    var status = t.ok ? 'OK' : 'FAIL';
+    var status = t.status || (t.ok ? 'OK' : 'FAIL');
     var padLabel = (t.label + ' ').padEnd(36, '.');
     console.log('  ' + padLabel + ' ' + status.padEnd(4) + '  ' + t.elapsed + 's');
     total += Number(t.elapsed);
@@ -204,10 +206,17 @@ function writeSummaryJSON(wallTime, extra) {
     wallTimeSeconds: Number(wallTime),
     verdict: (extra && extra.verdict) || 'UNKNOWN',
     steps: timings.map(function (t) {
-      return { label: t.label, elapsedSeconds: Number(t.elapsed), ok: t.ok };
+      return {
+        label: t.label,
+        elapsedSeconds: Number(t.elapsed),
+        ok: t.ok,
+        status: t.status || (t.ok ? 'OK' : 'FAIL'),
+        skipped: (t.status || '') === 'SKIPPED',
+      };
     }),
     passed: timings.filter(function (t) { return t.ok; }).length,
     failed: timings.filter(function (t) { return !t.ok; }).length,
+    skipped: timings.filter(function (t) { return t.status === 'SKIPPED'; }).length,
     errorPatterns: errorPatterns.length > 0 ? errorPatterns : undefined
   };
   // Compute HCI inline so pipeline-summary.json always carries both the
