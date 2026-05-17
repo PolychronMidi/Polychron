@@ -270,11 +270,12 @@ def _daemon_health_snapshot() -> dict:
         last_ok = inst.get("last_health_ok", 0) or 0
         age = now - last_ok if last_ok else float("inf")
         pid = inst.get("pid")
-        if age < 120 and pid:
+        url = inst.get("url")
+        if age < 120 and (pid or url):
             statuses[name] = f"healthy (alias={alias})"
             if alias:
                 ready_aliases.append(alias)
-        elif pid:
+        elif pid or url:
             statuses[name] = f"loading (alias={alias}, last_ok_age={age:.0f}s)"
         else:
             statuses[name] = f"unreachable (alias={alias})"
