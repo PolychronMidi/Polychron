@@ -122,7 +122,7 @@ function _attemptCommit(root, caller) {
   const lockPath = path.join(root, LOCK_REL);
   try { fs.mkdirSync(path.dirname(lockPath), { recursive: true }); } catch (_) {}
   const tstamp = new Date().toISOString().slice(0, 19);
-  // Forbid `git add -A` / `git add .` per doc/templates/AGENTS.md (sensitive-file leak risk).
+  // Forbid broad git add forms per AGENTS.md.
   // Stage tracked-only via -u, then add untracked files matching safe extensions.
   const stageScript = [
     'git add -u',

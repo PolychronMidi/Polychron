@@ -9,7 +9,7 @@
 #
 # Usage:
 #   bash tools/HME/scripts/audit-all.sh             # report-only, always exit 0
-#   bash tools/HME/scripts/audit-all.sh --strict    # exit 1 if any audit reports findings
+#   bash tools/HME/scripts/audit-all.sh --strict
 set -uo pipefail
 
 cd "$(dirname "$0")/../../.."
@@ -112,7 +112,7 @@ run "verify-detector-registry"   python3 tools/HME/scripts/detectors/verify_regi
 # Review-verdict producer/hook contract.
 run "test-hook-contracts"        python3 tools/HME/scripts/test-hook-contracts.py
 
-# Root scripts/ run/reference recency: catches stale pipeline refs and cold deletion candidates.
+# Root scripts/ run/reference recency.
 run "audit-scripts-recency"      python3 tools/HME/scripts/audit-scripts-recency.py --limit 25 $([ "$STRICT" = "1" ] && echo --strict)
 
 # HME scripts dead-code classification.
