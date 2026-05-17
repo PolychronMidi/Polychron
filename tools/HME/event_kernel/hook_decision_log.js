@@ -3,15 +3,15 @@
 const fs = require('fs');
 const path = require('path');
 const { parseJson, decisionFields, reasonHash } = require('./decision_normalizer');
+const hmePaths = require('../proxy/hme_paths');
 
 function runtimeDir(root) {
-  const dir = process.env.HME_RUNTIME_DIR;
-  if (dir) {
-    const absRoot = path.resolve(root);
-    const absDir = path.resolve(dir);
-    if (absDir === absRoot || absDir.startsWith(absRoot + path.sep)) return absDir;
-  }
-  return path.join(root, 'tools', 'HME', 'runtime');
+  const rootText = String(root || '');
+  const base = rootText.includes('$') ? hmePaths.PROJECT_ROOT : (root || hmePaths.PROJECT_ROOT);
+  const absRoot = path.resolve(base);
+  const absDir = path.resolve(hmePaths.HME_RUNTIME_DIR);
+  if (absDir === absRoot || absDir.startsWith(absRoot + path.sep)) return absDir;
+  return path.join(absRoot, 'tools', 'HME', 'runtime');
 }
 
 function append(file, line) {
