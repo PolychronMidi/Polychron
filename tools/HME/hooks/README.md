@@ -3,7 +3,7 @@
 Claude Code and Codex lifecycle hooks both route through the event-kernel
 adapter for their host. The kernel routes to native handlers or the remaining
 shell stages. Every remaining shell hook sources `helpers/_safety.sh` first for
-the standard emit/block/streak/latency machinery.
+the standard emit/block/latency machinery.
 
 Most reactive enrichment has migrated to the proxy middleware (`tools/HME/proxy/middleware/`). What stays here: **true pre-execution rejection** (block a tool before it runs), **lifecycle events** that Claude Code delivers only via hooks, and **user-facing output** that belongs in the terminal, not the agent's context.
 
