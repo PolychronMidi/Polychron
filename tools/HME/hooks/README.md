@@ -136,7 +136,7 @@ Directly invoked shell entrypoints:
 - `_autocommit.sh` -- 4-channel failsafe wrapper around `git commit`; called by `userpromptsubmit.sh`, `lifecycle/stop/autocommit.sh`, `direct/autocommit-direct.sh`.
 - `_nexus.sh` -- read/write `tmp/hme-nexus.state` for EDIT/BRIEF/REVIEW tracking.
 - `_check_errors_inline.sh` -- inline mid-turn `hme-errors.log` scan; fires from `posttooluse_*.sh`.
-- `_signals.sh` -- append-only event bus at `src/output/metrics/hme-signals.jsonl`.
+- `_signals.sh` -- append-only event bus at `tools/HME/runtime/metrics/hme-signals.jsonl`.
 - `_resolve_bg_stub.sh` -- resolve Claude Code's "Command running in background" stubs to real output.
 
 ### Long-running supervisors (started by `direct/`)

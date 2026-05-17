@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cross-session agent-pattern DB.
 
-Single append-only JSONL at src/output/metrics/hme-agent-patterns.jsonl.
+Single append-only JSONL at tools/HME/runtime/metrics/hme-agent-patterns.jsonl.
 Every session contributes signatures about the agent's behavior in that
 session -- tool-count histograms, deferral phrases seen, race outcomes,
 review cleanliness, hook-latency p95. These accumulate across sessions
