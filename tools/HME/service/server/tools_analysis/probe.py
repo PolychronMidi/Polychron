@@ -30,17 +30,17 @@ import time
 from typing import Any
 
 from server import context as ctx
+from paths import hme_metric, project_metric
 from . import _track
 
-BLINDSPOTS_REL = os.path.join("src", "output", "metrics", "hme-blindspots.json")  # informational
-ACCURACY_REL = os.path.join("src", "output", "metrics", "hme-prediction-accuracy.json")
-TRUST_REL = os.path.join("src", "output", "metrics", "kb-trust-weights.json")
-DEP_GRAPH_REL = os.path.join("src", "output", "metrics", "dependency-graph.json")
-OUT_REL = os.path.join("src", "output", "metrics", "hme-probes.json")
+BLINDSPOTS_PATH = hme_metric("hme-blindspots.json")
+ACCURACY_PATH = hme_metric("hme-prediction-accuracy.json")
+TRUST_PATH = hme_metric("kb-trust-weights.json")
+DEP_GRAPH_PATH = project_metric("dependency-graph.json")
+OUT_PATH = hme_metric("hme-probes.json")
 
 
-def _load_json(rel: str):
-    path = os.path.join(ctx.PROJECT_ROOT, rel)
+def _load_json(path: str):
     if not os.path.exists(path):
         return None
     try:
@@ -54,7 +54,7 @@ def _collect_intersection_modules() -> list[dict]:
     """Return modules whose forward edges span >=3 distinct subsystems.
     These are structural intersection points where cascade confidence is
     most likely to be wrong."""
-    dep = _load_json(DEP_GRAPH_REL) or {}
+    dep = _load_json(DEP_GRAPH_PATH) or {}
     edges = dep.get("edges", []) or []
     nodes = dep.get("nodes", {}) or {}
 
@@ -99,7 +99,7 @@ def _collect_intersection_modules() -> list[dict]:
 def _trust_by_module() -> dict[str, str]:
     """Map module-stem -> best-tier KB entry we have. Stems with no matching
     entry get tier 'NONE'."""
-    trust = _load_json(TRUST_REL) or {}
+    trust = _load_json(TRUST_PATH) or {}
     entries = trust.get("entries", {}) or {}
     out: dict[str, str] = {}
     tier_order = {"HIGH": 2, "MED": 1, "LOW": 0, "NONE": -1}
@@ -117,7 +117,7 @@ def _trust_by_module() -> dict[str, str]:
 
 
 def _cascade_accuracy_estimate() -> float | None:
-    data = _load_json(ACCURACY_REL) or {}
+    data = _load_json(ACCURACY_PATH) or {}
     ema = data.get("ema")
     if isinstance(ema, (int, float)):
         return float(ema)
@@ -180,7 +180,7 @@ def generate_probes(max_candidates: int = 5) -> dict:
         },
         "candidates": candidates,
     }
-    out_path = os.path.join(ctx.PROJECT_ROOT, OUT_REL)
+    out_path = OUT_PATH
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
