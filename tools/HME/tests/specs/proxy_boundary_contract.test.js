@@ -20,6 +20,7 @@ test('proxy modules stay below monolith line ceilings', () => {
     'hme_proxy_routes.js': 120,
     'hme_proxy_opus_gate.js': 80,
     'hme_proxy_request_mutation.js': 220,
+    'hme_proxy_anthropic_response.js': 220,
     'hme_proxy_connection_errors.js': 180,
   };
   for (const [rel, ceiling] of Object.entries(ceilings)) {
