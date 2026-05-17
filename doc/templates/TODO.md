@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Report changes with evidence
+(empty)
 
 ## Next
 
