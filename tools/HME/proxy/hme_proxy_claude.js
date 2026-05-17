@@ -242,8 +242,9 @@ function createClaudeHandler(deps) {
             setLastInputTokensLimit,
             injectContextHeader: _injectContextHeader,
             anthropicTextSseBuffer: _anthropicTextSseBuffer,
-            lifecycleInactive: (event) => lifecycleBridge().lifecycleInactive(event),
-            runInlineFallback: (event, stdinJson) => lifecycleBridge().runInlineFallback(event, stdinJson),
+            lifecycleInactive: deps.lifecycleInactive || ((event) => lifecycleBridge().lifecycleInactive(event)),
+            runInlineFallback: deps.runInlineFallback || ((event, stdinJson) => lifecycleBridge().runInlineFallback(event, stdinJson)),
+            skipStopFallback: deps.skipStopFallback === true,
           });
         });
         upstreamRes.on('error', (err) => handleMidResponseError({
