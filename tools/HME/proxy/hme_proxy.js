@@ -186,9 +186,9 @@ function _envNumber(name, fallback) {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 const _BYTES_PER_TOKEN_EST = _envNumber('HME_PROXY_BYTES_PER_TOKEN_EST', 3.5);
-// Context-window estimates use a denser conversion than rate-limit body
-// budgeting: tool-heavy JSON histories routinely tokenize below 3.5B/token.
-const _CONTEXT_BYTES_PER_TOKEN_EST = _envNumber('HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST', 2.75);
+// Conservative OmniRoute preflight: dumps near 2.75MB were already rejected
+// as >1M context after provider translation.
+const _CONTEXT_BYTES_PER_TOKEN_EST = _envNumber('HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST', 2.2);
 const _DYNAMIC_THRESHOLD_FLOOR_BYTES = parseInt(process.env.HME_PROXY_COMPACT_FLOOR_BYTES || '999000', 10);
 const _MODEL_CONTEXT_FRACTION = _envNumber('HME_PROXY_CONTEXT_FRACTION', 0.90);
 const _CONTEXT_PREFLIGHT_FRACTION = _envNumber('HME_PROXY_CONTEXT_PREFLIGHT_FRACTION', _MODEL_CONTEXT_FRACTION);
