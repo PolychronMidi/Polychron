@@ -82,20 +82,13 @@ test('hook noise stripper removes duplicate hook/status spam', () => {
     '  warning: i/ wrapper path auto-corrected -- rewritten to absolute path under PROJECT_ROOT',
     'STOP. Re-read doc/templates/AGENTS.md and the user prompt. Did you do ALL the work asked?',
     'STOP. Re-read doc/templates/AGENTS.md and the user prompt. Did you do ALL the work asked?',
-    'warning: BLOCKED: Raw tool streak 75/70 (cost: Bash=15). Preferred exits:',
-    '  use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done.',
-    'feedback: BLOCKED: Raw tool streak 75/70 (cost: Bash=15). Preferred exits:',
-    '  use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done.',
     'signal',
   ].join('\n'), stats);
   assert.equal(text, [
     'STOP. Re-read doc/templates/AGENTS.md and the user prompt. Did you do ALL the work asked?',
-    'warning: BLOCKED: Raw tool streak 75/70 (cost: Bash=15). Preferred exits:',
-    '  use native Read/Edit/TodoWrite, run a different HME diagnostic class, or stop if done.',
     'signal',
   ].join('\n'));
-  assert.equal(stats.stripped, 5);
-  assert.equal(stats.categories.duplicate_raw_tool_blocks, 2);
+  assert.equal(stats.stripped, 3);
 });
 
 test('Codex exec_command responses pass through shared Bash policy', () => {

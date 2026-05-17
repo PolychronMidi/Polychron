@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const { sanitizeStdout } = require('../../event_kernel/codex_adapter');
 
 test('Codex PreToolUse deny strips duplicate systemMessage', () => {
-  const reason = 'BLOCKED: Raw tool streak 75/70';
+  const reason = 'BLOCKED: synthetic duplicate reason';
   const out = sanitizeStdout('PreToolUse', JSON.stringify({
     hookSpecificOutput: {
       permissionDecision: 'deny',
