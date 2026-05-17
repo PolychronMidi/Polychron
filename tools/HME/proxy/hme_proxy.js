@@ -296,6 +296,21 @@ function _injectContextHeader(headers, swapModel) {
   }
 }
 
+function _anthropicTextSseBuffer(model, text) {
+  const id = `proxy_${Date.now()}`;
+  const m = String(model || 'hme-proxy');
+  const t = String(text || '');
+  const chunks = [
+    ['message_start', { type: 'message_start', message: { id, type: 'message', role: 'assistant', model: m, content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 0, output_tokens: 0 } } }],
+    ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }],
+    ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: t } }],
+    ['content_block_stop', { type: 'content_block_stop', index: 0 }],
+    ['message_delta', { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 0 } }],
+    ['message_stop', { type: 'message_stop' }],
+  ];
+  return Buffer.from(chunks.map(([ev, data]) => `event: ${ev}\ndata: ${JSON.stringify(data)}\n\n`).join(''), 'utf8');
+}
+
 // Strip tool_result blocks older than the configured retention horizon.
 function _stripStaleToolResults(payload) {
   if (_STALE_TOOL_KEEP_TURNS <= 0) return 0;
