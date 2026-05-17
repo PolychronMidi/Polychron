@@ -234,13 +234,21 @@ function scanIncompleteCompletionClaims(text) {
   return out;
 }
 
+function entryTimestampMs(entry) {
+  const raw = entry && (entry.timestamp || entry.created_at || entry.time || entry.ts);
+  if (typeof raw === 'number') return raw > 10_000_000_000 ? raw : raw * 1000;
+  const parsed = Date.parse(String(raw || ''));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function lastRealUserPrompt(transcriptPath) {
-  if (!transcriptPath) return { text: '', turnIndex: 0 };
+  if (!transcriptPath) return { text: '', turnIndex: 0, tsMs: 0 };
   let lines;
   try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); }
-  catch (_e) { return { text: '', turnIndex: 0 }; }
+  catch (_e) { return { text: '', turnIndex: 0, tsMs: 0 }; }
   let last = '';
   let lastTurnIndex = 0;
+  let lastTsMs = 0;
   let turnIndex = 0;
   for (const line of lines) {
     if (!line) continue;
@@ -266,8 +274,9 @@ function lastRealUserPrompt(transcriptPath) {
     turnIndex++;
     last = text;
     lastTurnIndex = turnIndex;
+    lastTsMs = entryTimestampMs(entry) || lastTsMs;
   }
-  return { text: last, turnIndex: lastTurnIndex };
+  return { text: last, turnIndex: lastTurnIndex, tsMs: lastTsMs };
 }
 
 function loadComplStore() {
