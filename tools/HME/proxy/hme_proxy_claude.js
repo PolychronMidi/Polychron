@@ -136,8 +136,8 @@ function createClaudeHandler(deps) {
         injectHmeTools: _injectHmeTools,
         sanitizePayload: _sanitizePayload,
         injectStopReminderSystem: _injectStopReminderSystem,
-        lifecycleInactive: _lifecycleInactive,
-        runInlineFallback: _runInlineFallback,
+        lifecycleInactive: (event) => lifecycleBridge().lifecycleInactive(event),
+        runInlineFallback: (event, stdinJson) => lifecycleBridge().runInlineFallback(event, stdinJson),
         middleware,
       });
       outBody = mutation.outBody;
