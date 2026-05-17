@@ -38,6 +38,7 @@ test('split proxy modules parse cleanly with node -c', () => {
     'hme_proxy_request_mutation.js',
     'hme_proxy_headers.js',
     'hme_proxy_context_budget.js',
+    'hme_proxy_anthropic_response.js',
     'hme_proxy_connection_errors.js',
     'hme_proxy_response_trace.js',
     'hme_proxy_response_send.js',
