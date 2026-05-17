@@ -99,3 +99,22 @@ test('stop_chain: runStopChain handles malformed JSON without throwing',
       );
     }
   }));
+
+
+test('nexus_pending: summary verdict overrides stale FAILED marker',
+  _withChainSandbox(async (chain, sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'src', 'output', 'metrics'), {
+      recursive: true,
+    });
+    fs.writeFileSync(
+      path.join(sandbox, 'tmp', 'hme-nexus.state'),
+      'PIPELINE:1:FAILED\nCOMMIT:2:ok\n',
+    );
+    fs.writeFileSync(
+      path.join(sandbox, 'src', 'output', 'metrics', 'pipeline-summary.json'),
+      JSON.stringify({ verdict: 'STABLE', failed: 5 }) + '\n',
+    );
+    const policy = require('../../proxy/stop_chain/policies/nexus_pending');
+    const result = await policy.run(chain);
+    assert.strictEqual(result.decision, 'allow');
+  }));
