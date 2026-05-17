@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3584,
-      "updated_ts": 1779030616.137158,
-      "codex_plan_synced_ts": 1779030616.1370473,
-      "codex_plan_source": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
-      "codex_plan_ts": "2026-05-17T15:10:15.701Z"
+      "updated_ts": 1779030637.082131,
+      "codex_plan_synced_ts": 1779030637.0820186,
+      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+      "codex_plan_ts": "2026-05-17T15:10:15.704Z"
     }
   },
   {
@@ -8815,8 +8815,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
-    "codex_plan_ts": "2026-05-17T15:10:15.701Z"
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:10:15.704Z"
   },
   {
     "id": 3583,
@@ -8831,8 +8831,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
-    "codex_plan_ts": "2026-05-17T15:10:15.701Z"
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:10:15.704Z"
   },
   {
     "id": 3584,
@@ -8847,7 +8847,7 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
-    "codex_plan_ts": "2026-05-17T15:10:15.701Z"
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:10:15.704Z"
   }
 ]
