@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Check live proxy listeners and Claude URL config
 
 ## Next
 
-(empty)
+- [ ] [E3] Patch binding/startup mismatch
+- [ ] [E3] Restart proxy and verify Claude-facing endpoint
 
 ## Done
 
