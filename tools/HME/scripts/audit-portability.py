@@ -15,7 +15,10 @@ CODE_EXTS = {".js", ".mjs", ".cjs", ".ts", ".py", ".sh", ".bash"}
 SKIP_PARTS = {"node_modules", "__pycache__", ".git", "runtime", "KB"}
 HME_ALLOW_PARTS = {"adapters", "tests"}
 SRC_IMPORT_RE = re.compile(r"(?:require\(|from\s+|import\s+).*['\"](?:\.\./)*src[/'\"]")
-HME_IMPORT_RE = re.compile(r"tools/HME|require\([^)]*tools[\\/]HME|from\s+tools\.HME")
+HME_IMPORT_RE = re.compile(
+    r"(?:require\s*\(|import\s+.*from\s+|from\s+)[\"'][^\"']*tools[\\/]HME|"
+    r"from\s+tools\.HME"
+)
 
 
 def iter_files(root: Path, base: Path):
