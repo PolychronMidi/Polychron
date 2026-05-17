@@ -1,6 +1,6 @@
 # Agent Primer
 
-Self-evolving algorithmic composition. A ~500-file JavaScript engine produces MIDI -> WAV -> neural analysis. HME is the evolutionary nervous system; you invoke it as `i/<tool>` shell wrappers (e.g. `i/review`, `i/learn`, `i/status`). The proxy middleware translates those into the underlying MCP tool calls -- you never connect to the MCP server yourself. The music and HME co-evolve: improving one improves the other.
+HME is the self-coherence substrate for this project. In Polychron, it wraps a composition engine; in another repo, project facts come from `config/project-adapter.json`. Invoke logical `i/<tool>` commands (for example `i/review`, `i/learn`, `i/status`); proxy middleware translates them into the underlying tool calls.
 
 **Where this primer sits in the agent's context surface.** Three documents share the load, and they are not redundant:
 

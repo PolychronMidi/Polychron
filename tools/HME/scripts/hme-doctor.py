@@ -205,13 +205,31 @@ def hooks_doctor():
     return ok
 
 
+
+def portable_doctor():
+    ok = True
+    ok &= run_check(
+        'project_adapter_health',
+        ['node', str(ROOT / 'tools/HME/scripts/project-health.js')],
+        fix='edit config/project-adapter.json or run tools/HME/scripts/init-project-profile.js',
+    )
+    ok &= run_check(
+        'portable_boundary',
+        [sys.executable, str(ROOT / 'tools/HME/scripts/audit-portability.py')],
+        fix='move project assumptions into config/project-adapter.json or tools/HME/adapters/',
+    )
+    return ok
+
 def main():
     ap = argparse.ArgumentParser(description='HME local health checks')
     ap.add_argument('--hooks', action='store_true', help='run only hook wiring/autocommit checks')
+    ap.add_argument('--portable', action='store_true', help='run project-swap portability checks')
     args = ap.parse_args()
 
     if args.hooks:
         return 0 if hooks_doctor() else 1
+    if args.portable:
+        return 0 if portable_doctor() else 1
 
     ok = True
     ok &= service_checks()

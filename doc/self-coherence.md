@@ -20,7 +20,25 @@ rules, RAG stack, local LLM notes, and testing runbook.
   in `tools/HME/i/`.
 - **KB:** Lance-backed knowledge in `tools/HME/KB/`.
 - **Coherence:** HCI verifiers, invariants, activity logs, and holograph
-  snapshots under `tools/HME/scripts/` and `src/output/metrics/`.
+  snapshots under `tools/HME/scripts/` and HME runtime metrics. Project
+  artifacts are discovered through `config/project-adapter.json`.
+
+
+## Project Adapter
+
+HME core is project-agnostic. Project facts live in
+`config/project-adapter.json`: source roots, project docs, pipeline commands,
+artifacts, optional capabilities, and health expectations. For a new project,
+replace `src/` and `doc/composition.md`, then run:
+
+```bash
+tools/HME/scripts/init-project-profile.js --name="My Project"
+tools/HME/scripts/hme-doctor.py --portable
+```
+
+Logical `i/<tool>` commands remain stable. Physical shims live in
+`tools/HME/i/`; shell/proxy setup makes `i/status`, `i/review`, and related
+commands invocable without a root `i/` directory.
 
 ## Current Command Surface
 

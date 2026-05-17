@@ -33,6 +33,9 @@
     "test:hme": "node tools/HME/tests/run.js",
     "audit": "npm audit",
     "deps:check": "depcheck",
-    "deps:audit": "npm audit && depcheck"
+    "deps:audit": "npm audit && depcheck",
+    "test:hme:core": "node --test tools/HME/tests/specs/project_adapter_portability.test.js",
+    "hme:project-health": "node tools/HME/scripts/project-health.js",
+    "hme:portable": "python3 tools/HME/scripts/hme-doctor.py --portable"
   }
 }

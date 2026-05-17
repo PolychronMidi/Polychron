@@ -6,6 +6,11 @@ Anything that constitutes a CONTRACT between two scripts — a flag the
 writer expects the reader to consume, a state file the lifecycle depends
 on — belongs here, where it survives a `tmp/` flush.
 
+## Runtime subdirectories
+
+- `metrics/` -- HME-owned metrics and self-coherence time series.
+- `state/` -- durable state shared by HME scripts and proxy middleware.
+
 ## Naming convention
 
 - File names match the constants in `tools/HME/proxy/shared.js`

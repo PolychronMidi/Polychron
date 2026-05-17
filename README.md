@@ -12,6 +12,10 @@ Development has two interleaving domains:
 - **HME substrate:** `tools/HME/`, documented from [doc/self-coherence.md](doc/self-coherence.md) into
   [doc/self-coherence-full.md](doc/self-coherence-full.md).
 
+HME reads project facts from [config/project-adapter.json](config/project-adapter.json).
+A new project should be able to replace `src/` and `doc/composition.md`, then
+update that adapter instead of editing HME internals.
+
 [AGENTS.md](doc/templates/AGENTS.md) is the concise operational rule file loaded by agents.
 Mechanical rules belong in lint, hooks, validators, and HME policies.
 
@@ -60,10 +64,11 @@ Templates and long-form theory remain in [doc/templates/](doc/templates/) and
 
 ## Diagnostics
 
-Hook/autocommit wiring:
+Hook/autocommit wiring and portability:
 
 ```bash
 tools/HME/scripts/hme-doctor.py --hooks
+tools/HME/scripts/hme-doctor.py --portable
 ```
 
 Generated artifacts live in `src/output/metrics/`:
