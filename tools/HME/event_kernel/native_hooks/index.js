@@ -2,7 +2,6 @@
 
 const agent = require('./agent');
 const diagnostics = require('./diagnostics');
-const streak = require('./streak');
 const todo = require('./todo');
 
 const preToolHandlers = {
