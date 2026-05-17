@@ -16,8 +16,8 @@ rules, RAG stack, local LLM notes, and testing runbook.
   `tools/HME/event_kernel/`.
 - **Hooks:** Claude Code and Codex lifecycle entrypoints in
   `tools/HME/hooks/`, routed through the event kernel.
-- **Worker and tools:** HME service and `i/` wrappers in `tools/HME/service/`
-  and project-root `i/`.
+- **Worker and tools:** HME service in `tools/HME/service/` and `i/` wrappers
+  in `tools/HME/i/`.
 - **KB:** Lance-backed knowledge in `tools/HME/KB/`.
 - **Coherence:** HCI verifiers, invariants, activity logs, and holograph
   snapshots under `tools/HME/scripts/` and `src/output/metrics/`.
