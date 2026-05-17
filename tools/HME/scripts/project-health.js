@@ -43,8 +43,9 @@ function main() {
   }
   const primary = adapterLib.resolvePath(root, adapter.primary_doc || 'doc/composition.md');
   check(results, 'primary_doc', fs.existsSync(primary) && fs.statSync(primary).isFile(), primary);
-  const runtimeOutside = sourceDirs.every((src) => !underPath(hmePaths.HME_RUNTIME_DIR, src));
-  check(results, 'hme_runtime_outside_sources', runtimeOutside, hmePaths.HME_RUNTIME_DIR);
+  const hmeRuntime = path.join(root, 'tools', 'HME', 'runtime');
+  const runtimeOutside = sourceDirs.every((src) => !underPath(hmeRuntime, src));
+  check(results, 'hme_runtime_outside_sources', runtimeOutside, hmeRuntime);
   check(results, 'pipeline.main', typeof (adapter.pipeline || {}).main === 'string' && adapter.pipeline.main.length > 0, (adapter.pipeline || {}).main || '');
   for (const [name, rel] of Object.entries(adapter.artifacts || {})) {
     try {
