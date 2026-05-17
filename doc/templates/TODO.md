@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Fix remaining HCI/pipeline-bg failures at root cause
+- [ ] [E3] Harden structured Grep against missing paths and bad path lists
 
 ## Next
 
-- [ ] [E3] Repair/refresh stale coherence-registry artifacts cleanly
-- [ ] [E3] Harden tool-latency metric semantics and status noise
-- [ ] [E3] Run final swap-contract, selftest, status, and workspace verification
+- [ ] [E3] Repair/finish stuck index job status behavior
+- [ ] [E3] Run targeted and full verification without noisy path sprays
+- [ ] [E3] Report only verified state and remaining actionable items
 
 ## Done
 

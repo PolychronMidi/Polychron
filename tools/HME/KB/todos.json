@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3574,
-      "updated_ts": 1778994468.832419,
-      "codex_plan_synced_ts": 1778994468.8323052,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T05:07:47.811Z"
+      "max_id": 3578,
+      "updated_ts": 1778996978.4036653,
+      "codex_plan_synced_ts": 1778996978.4035542,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T05:49:37.947Z"
     }
   },
   {
@@ -8626,8 +8626,8 @@
     "id": 3571,
     "text": "Fix remaining HCI/pipeline-bg failures at root cause",
     "activeForm": "Fix remaining HCI/pipeline-bg failures at root cause",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8636,14 +8636,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T05:07:47.811Z"
+    "codex_plan_ts": "2026-05-17T05:07:47.811Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3572,
     "text": "Repair/refresh stale coherence-registry artifacts cleanly",
     "activeForm": "Repair/refresh stale coherence-registry artifacts cleanly",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8652,14 +8653,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T05:07:47.811Z"
+    "codex_plan_ts": "2026-05-17T05:07:47.811Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3573,
     "text": "Harden tool-latency metric semantics and status noise",
     "activeForm": "Harden tool-latency metric semantics and status noise",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8668,14 +8670,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T05:07:47.811Z"
+    "codex_plan_ts": "2026-05-17T05:07:47.811Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3574,
     "text": "Run final swap-contract, selftest, status, and workspace verification",
     "activeForm": "Run final swap-contract, selftest, status, and workspace verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8684,6 +8687,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T05:07:47.811Z"
+    "codex_plan_ts": "2026-05-17T05:07:47.811Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3575,
+    "text": "Harden structured Grep against missing paths and bad path lists",
+    "activeForm": "Harden structured Grep against missing paths and bad path lists",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778996978.4025214,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T05:49:37.947Z"
+  },
+  {
+    "id": 3576,
+    "text": "Repair/finish stuck index job status behavior",
+    "activeForm": "Repair/finish stuck index job status behavior",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778996978.402527,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T05:49:37.947Z"
+  },
+  {
+    "id": 3577,
+    "text": "Run targeted and full verification without noisy path sprays",
+    "activeForm": "Run targeted and full verification without noisy path sprays",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778996978.402532,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T05:49:37.947Z"
+  },
+  {
+    "id": 3578,
+    "text": "Report only verified state and remaining actionable items",
+    "activeForm": "Report only verified state and remaining actionable items",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778996978.4025352,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T05:49:37.947Z"
   }
 ]
