@@ -112,6 +112,7 @@ async function runHostAdapter(opts) {
     opts.onProxyResult({ result, root, port, event, body, ts });
   }
   watchdog.end(watch, result);
+  if (opts.beforeFinalRelay) result = opts.beforeFinalRelay({ event, result, body, root }) || result;
   opts.finalRelay(event, result, body);
 }
 
