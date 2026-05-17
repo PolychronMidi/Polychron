@@ -182,7 +182,7 @@ test('synthetic PreToolUse Bash no-ops on harmless command', async () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('synthetic PreToolUse Bash rewrites reader without raw-streak state', async () => {
+test('synthetic PreToolUse Bash rewrites reader without retired streak state', async () => {
   const root = _withSandbox('hme-hook-bash-read-rewrite-');
   fs.mkdirSync(path.join(root, 'doc', 'templates'), { recursive: true });
   fs.writeFileSync(path.join(root, 'doc', 'templates', 'AGENTS.md'), '# agent\n');
@@ -200,7 +200,7 @@ test('synthetic PreToolUse Bash rewrites reader without raw-streak state', async
   }
 });
 
-test('synthetic PreToolUse Bash allows HME i commands without raw-streak state', async () => {
+test('synthetic PreToolUse Bash allows HME i commands without retired streak state', async () => {
   const root = _withSandbox('hme-hook-bash-i-command-');
   try {
     const res = await dispatch(root, 'PreToolUse', {

@@ -183,7 +183,6 @@ test('successful PreToolUse Bash no-op emits no hook budget output', () => {
     env: {
       ...process.env,
       PROJECT_ROOT: root,
-      HME_STREAK_BLOCK_BUMP: '1000',
       PATH: path.join(root, 'bin') + path.delimiter + ORIGINAL_PATH,
     },
   });

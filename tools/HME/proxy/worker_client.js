@@ -40,8 +40,8 @@ const _cache = new Map();
 
 // Rolling failure telemetry. After STREAK_WARN consecutive failures in a
 let _failStreak = 0;
-// Shared with _safe_curl in hooks/helpers/_safety.sh via HME_STREAK_WARN in .env.
-const STREAK_WARN = parseInt(process.env.HME_STREAK_WARN || '5', 10);
+// Shared with _safe_curl failure threshold; override only for local diagnostics.
+const STREAK_WARN = parseInt(process.env.HME_CURL_STREAK_WARN || '5', 10);
 const _errLogPath = (() => {
   const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
   return path.join(root, 'log', 'hme-errors.log');
