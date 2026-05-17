@@ -7,7 +7,7 @@ const { PROJECT_ROOT } = require('./shared');
 function shrinkForPassthrough(payload, opts = {}) {
   const env = opts.env || process.env;
   const log = opts.log || console.error;
-  const keepMin = Number(opts.keepMin || 7);
+  const keepMin = Number(opts.keepMin || 10);
   const threshold = Number(typeof opts.effectiveThreshold === 'function' ? opts.effectiveThreshold() : opts.threshold || 250000);
   const projectRoot = opts.projectRoot || PROJECT_ROOT;
   if (env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
