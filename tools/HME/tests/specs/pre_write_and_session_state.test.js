@@ -113,8 +113,7 @@ test('pre-write denial names cause and blocks retry loops', async () => {
   const root = _withSandbox('hme-pre-write-repeat-');
   const { preWriteCheck } = require('../../proxy/pre_write_check');
   const target = path.join(root, 'script.sh');
-  const content = '# ' + 'x'.repeat(90) + '
-';
+  const content = '# ' + 'x'.repeat(90) + '\n';
   const payload = JSON.stringify({
     tool_name: 'Write',
     session_id: 's-repeat',
@@ -137,8 +136,7 @@ test('pre-write hardcoded-root denial names offending line', async () => {
     session_id: 's-root-line',
     tool_input: {
       file_path: path.join(root, 'probe.sh'),
-      content: `echo "${root}/tools/HME/i/status"
-`,
+      content: `echo "${root}/tools/HME/i/status"\n`,
     },
   }));
   assert.strictEqual(decision.permissionDecision, 'deny');
