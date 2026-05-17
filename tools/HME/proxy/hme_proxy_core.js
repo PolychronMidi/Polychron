@@ -123,34 +123,6 @@ function _effectiveCompactThreshold() {
   const eff = Math.min(panicCap, remainingCap);
   return Math.max(_DYNAMIC_THRESHOLD_FLOOR_BYTES, eff);
 }
-// Opus serializer: OAuth Bearer + opus-* has a small OTPM bucket; concurrent
-// requests reserve max_tokens and 429 each other. Gate: 1 in-flight + min-gap
-// between requests. HME_PROXY_OPUS_MIN_GAP_MS (default 6000), OFF=1 disables.
-let _opusInflight = Promise.resolve();
-let _lastOpusFinishedAt = 0;
-const OPUS_MIN_GAP_MS = parseInt(process.env.HME_PROXY_OPUS_MIN_GAP_MS || '6000', 10);
-const OPUS_GATE_OFF = process.env.HME_PROXY_OPUS_GATE_OFF === '1';
-async function _acquireOpusSlot() {
-  if (OPUS_GATE_OFF) return () => {};
-  const prev = _opusInflight;
-  let release;
-  _opusInflight = new Promise((r) => { release = r; });
-  try { await prev; } catch (_) { /* prior failure shouldn't block successor */ }
-  const sinceLast = Date.now() - _lastOpusFinishedAt;
-  if (_lastOpusFinishedAt > 0 && sinceLast < OPUS_MIN_GAP_MS) {
-    const delay = OPUS_MIN_GAP_MS - sinceLast;
-    console.error(`Opus-gate: queuing ${delay}ms (rolling-window protection)`);
-    await new Promise((r) => setTimeout(r, delay));
-  }
-  let released = false;
-  return () => {
-    if (released) return;
-    released = true;
-    _lastOpusFinishedAt = Date.now();
-    release();
-  };
-}
-
 // Context monitoring: injects anthropic-ratelimit-input-tokens-remaining header
 // to trigger Claude Code's native /compact when context approaches model limits.
 const _MODEL_CTX = {
