@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3584,
-      "updated_ts": 1779030697.0705583,
-      "codex_plan_synced_ts": 1779030697.0704439,
+      "max_id": 3587,
+      "updated_ts": 1779030877.072935,
+      "codex_plan_synced_ts": 1779030877.072821,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-      "codex_plan_ts": "2026-05-17T15:11:10.317Z"
+      "codex_plan_ts": "2026-05-17T15:14:35.408Z"
     }
   },
   {
@@ -8849,5 +8849,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
     "codex_plan_ts": "2026-05-17T15:11:10.317Z"
+  },
+  {
+    "id": 3585,
+    "text": "Inspect proxy files and Claude route wiring",
+    "activeForm": "Inspect proxy files and Claude route wiring",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779030875.8370922,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:14:35.408Z"
+  },
+  {
+    "id": 3586,
+    "text": "Patch Claude-specific proxy regression",
+    "activeForm": "Patch Claude-specific proxy regression",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779030875.8370972,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:14:35.408Z"
+  },
+  {
+    "id": 3587,
+    "text": "Run focused tests and status evidence",
+    "activeForm": "Run focused tests and status evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779030875.8371007,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:14:35.408Z"
   }
 ]
