@@ -120,11 +120,6 @@ class _LoggingMCP:
         def wrapper(fn):
             @functools.wraps(fn)
             def logged(*args, **kwargs):
-                try:
-                    with open("/tmp/hme-non-hme-streak.count", "w") as _f:
-                        _f.write("0")
-                except OSError:  # silent-ok: non-HME-streak marker is cosmetic; skipping reset doesn't affect correctness
-                    pass
                 name = fn.__name__
                 t0 = time.time()
                 try:
