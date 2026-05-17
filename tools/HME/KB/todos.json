@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3560,
-      "updated_ts": 1778990058.8019059,
-      "codex_plan_synced_ts": 1778990058.8017945,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T03:54:10.409Z"
+      "max_id": 3565,
+      "updated_ts": 1778990303.4976437,
+      "codex_plan_synced_ts": 1778990303.4975355,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T03:58:23.061Z"
     }
   },
   {
@@ -8453,5 +8453,85 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-17T03:54:10.409Z"
+  },
+  {
+    "id": 3561,
+    "text": "Inventory existing health/admin/status/test surfaces for the 15 requested hardening items",
+    "activeForm": "Inventory existing health/admin/status/test surfaces for the 15 requested hardening items",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778990303.4965427,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T03:58:23.061Z"
+  },
+  {
+    "id": 3562,
+    "text": "Implement runtime freshness, stale-lock repair, restart contract, and metric-path invariants/audits",
+    "activeForm": "Implement runtime freshness, stale-lock repair, restart contract, and metric-path invariants/audits",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778990303.4965496,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T03:58:23.061Z"
+  },
+  {
+    "id": 3563,
+    "text": "Expand portability fixtures/capability tests and add swap-contract wrapper",
+    "activeForm": "Expand portability fixtures/capability tests and add swap-contract wrapper",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778990303.4965537,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T03:58:23.061Z"
+  },
+  {
+    "id": 3564,
+    "text": "Fix status/doc/KB drift and HCI fail clusters targeted by current reports",
+    "activeForm": "Fix status/doc/KB drift and HCI fail clusters targeted by current reports",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778990303.4965584,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T03:58:23.061Z"
+  },
+  {
+    "id": 3565,
+    "text": "Run index refresh and full targeted verification, then fix any failures",
+    "activeForm": "Run index refresh and full targeted verification, then fix any failures",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778990303.4965622,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T03:58:23.061Z"
   }
 ]

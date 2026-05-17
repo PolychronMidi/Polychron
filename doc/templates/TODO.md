@@ -4,11 +4,14 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inventory existing health/admin/status/test surfaces for the 15 requested hardening items
 
 ## Next
 
-(empty)
+- [ ] [E3] Implement runtime freshness, stale-lock repair, restart contract, and metric-path invariants/audits
+- [ ] [E3] Expand portability fixtures/capability tests and add swap-contract wrapper
+- [ ] [E3] Fix status/doc/KB drift and HCI fail clusters targeted by current reports
+- [ ] [E3] Run index refresh and full targeted verification, then fix any failures
 
 ## Done
 
