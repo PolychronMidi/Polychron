@@ -87,7 +87,7 @@ async function handleAnthropicResponseComplete({
     headers,
     fullBody,
     outBody,
-    clientReq: null,
+    clientReq,
     upstreamHeaders,
     upstreamOpts,
     transport,
