@@ -15,19 +15,13 @@ if [ -n "$_POLICY_OUT" ]; then
       _POLICY_CMD=$(_safe_jq "$_POLICY_OUT" '.hookSpecificOutput.updatedInput.command // .hookSpecificOutput.updatedInput.cmd' "$CMD")
       _POLICY_HAS_UPDATE=$(_safe_jq "$_POLICY_OUT" 'has("hookSpecificOutput") and (.hookSpecificOutput | has("updatedInput"))' 'false')
       if [ "$_POLICY_HAS_UPDATE" = "true" ] && { [[ "$_POLICY_CMD" == *codex_structured_tool.js* ]] || [ "$_POLICY_CMD" = ":" ]; }; then
-        _streak_reset "$_POLICY_CMD"
         printf '%s
 ' "$_POLICY_OUT"
         exit 0
       fi
-      set +e
-      _streak_hme_precheck "$_POLICY_CMD"
-      _HME_PRECHECK_RC=$?
-      set -e
-      if [ "$_HME_PRECHECK_RC" -eq 1 ]; then exit 0; fi
+      if [ -n "$(_hme_command_name "$_POLICY_CMD")" ]; then exit 0; fi
       if [ "$_POLICY_HAS_UPDATE" = "true" ]; then printf '%s
 ' "$_POLICY_OUT"; exit 0; fi
-      if [ "$_HME_PRECHECK_RC" -eq 0 ]; then exit 0; fi
       ;;
   esac
   printf '%s
