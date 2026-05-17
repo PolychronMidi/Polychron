@@ -178,7 +178,7 @@ let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from he
 let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
 let _lastPayloadBytes = 0;            // last OmniRoute payload size for context monitoring
 const _BYTES_PER_TOKEN_EST = 3.5;
-const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 70_000;
+const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 80_000;
 function _effectiveCompactThreshold() {
   // CEILING: HME_PROXY_COMPACT_BYTES (explicit) honored as hard cap.
   // Otherwise: 50% of learned ITPM cap (leaves room for response +
