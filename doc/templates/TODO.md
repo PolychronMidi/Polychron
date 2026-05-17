@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect failing non-fatal pipeline steps
+(empty)
 
 ## Next
 
-- [ ] [E3] Patch baseline/run-history/registry-missing behavior
-- [ ] [E3] Run targeted checks and rerun affected pipeline slice
+(empty)
 
 ## Done
 

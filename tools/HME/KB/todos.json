@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3511,
-      "updated_ts": 1778980218.7508411,
-      "codex_plan_synced_ts": 1778980218.7507405,
+      "updated_ts": 1778980368.7603931,
+      "codex_plan_synced_ts": 1778980368.7602928,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T01:10:05.598Z"
+      "codex_plan_ts": "2026-05-17T01:12:42.530Z"
     }
   },
   {
@@ -7591,14 +7591,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:10:05.598Z"
+    "codex_plan_ts": "2026-05-17T01:12:42.530Z"
   },
   {
     "id": 3509,
     "text": "Inspect failing non-fatal pipeline steps",
     "activeForm": "Inspect failing non-fatal pipeline steps",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7607,14 +7607,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:10:05.598Z"
+    "codex_plan_ts": "2026-05-17T01:12:42.530Z"
   },
   {
     "id": 3510,
     "text": "Patch baseline/run-history/registry-missing behavior",
     "activeForm": "Patch baseline/run-history/registry-missing behavior",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7623,14 +7623,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:10:05.598Z"
+    "codex_plan_ts": "2026-05-17T01:12:42.530Z"
   },
   {
     "id": 3511,
     "text": "Run targeted checks and rerun affected pipeline slice",
     "activeForm": "Run targeted checks and rerun affected pipeline slice",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7639,6 +7639,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:10:05.598Z"
+    "codex_plan_ts": "2026-05-17T01:12:42.530Z"
   }
 ]
