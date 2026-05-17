@@ -93,6 +93,16 @@ test('watchdog treats later successful hooks as recovered session activity', () 
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+test('watchdog extracts real session id from Anthropic metadata.user_id', () => {
+  const wd = require('../../event_kernel/hook_watchdog');
+  const payload = {
+    metadata: {
+      user_id: JSON.stringify({ device_id: 'dev', session_id: 'real-session-id' }),
+    },
+  };
+  assert.strictEqual(wd.sessionId(payload), 'real-session-id');
+});
+
 test('codex adapter SessionStart path stays below the client timeout', async () => {
   const root = sandbox('hme-adapter-session-');
   const started = Date.now();
