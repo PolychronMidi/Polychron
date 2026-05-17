@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3596,
-      "updated_ts": 1779032677.188183,
-      "codex_plan_synced_ts": 1779032677.188065,
+      "max_id": 3599,
+      "updated_ts": 1779032707.0812607,
+      "codex_plan_synced_ts": 1779032707.081146,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-      "codex_plan_ts": "2026-05-17T15:37:55.074Z"
+      "codex_plan_ts": "2026-05-17T15:44:52.268Z"
     }
   },
   {
@@ -8998,8 +8998,8 @@
     "id": 3594,
     "text": "Check live proxy listeners and Claude URL config",
     "activeForm": "Check live proxy listeners and Claude URL config",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9008,14 +9008,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:37:55.074Z"
+    "codex_plan_ts": "2026-05-17T15:37:55.074Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3595,
     "text": "Patch binding/startup mismatch",
     "activeForm": "Patch binding/startup mismatch",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9024,14 +9025,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:37:55.074Z"
+    "codex_plan_ts": "2026-05-17T15:37:55.074Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3596,
     "text": "Restart proxy and verify Claude-facing endpoint",
     "activeForm": "Restart proxy and verify Claude-facing endpoint",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9040,6 +9042,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:37:55.074Z"
+    "codex_plan_ts": "2026-05-17T15:37:55.074Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3597,
+    "text": "Inspect error watermarks and pending segment",
+    "activeForm": "Inspect error watermarks and pending segment",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779032692.7028427,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:44:52.268Z"
+  },
+  {
+    "id": 3598,
+    "text": "Fix stale or active alarm source",
+    "activeForm": "Fix stale or active alarm source",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779032692.702848,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:44:52.268Z"
+  },
+  {
+    "id": 3599,
+    "text": "Verify clean hook state and repo",
+    "activeForm": "Verify clean hook state and repo",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779032692.7028515,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:44:52.268Z"
   }
 ]

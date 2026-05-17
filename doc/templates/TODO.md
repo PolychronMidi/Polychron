@@ -4,12 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Check live proxy listeners and Claude URL config
+- [ ] [E3] Inspect error watermarks and pending segment
 
 ## Next
 
-- [ ] [E3] Patch binding/startup mismatch
-- [ ] [E3] Restart proxy and verify Claude-facing endpoint
+- [ ] [E3] Fix stale or active alarm source
+- [ ] [E3] Verify clean hook state and repo
 
 ## Done
 
