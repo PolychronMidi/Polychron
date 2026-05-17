@@ -134,6 +134,10 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     console.error(`[hme-proxy] swap pre-omni: chainLen=${result.swapChain.length} model=${result.swapModel} provider=${result.omniProvider} targetFormat=${targetFormat}`);
     try { stripStaleToolResults(payload); stripClaudeIdentity(payload); }
     catch (err) { console.error(`[hme-proxy] OmniRoute payload strip failed: ${err.message}`); }
+    if (typeof shrinkForContext === 'function') {
+      try { shrinkForContext(payload, result.swapModel); }
+      catch (err) { console.error(`[hme-proxy] OmniRoute context preflight failed: ${err.message}`); }
+    }
     payload.model = `${result.omniProvider}/${result.swapModel}`;
     try { result.outBody = Buffer.from(JSON.stringify(payload), 'utf8'); }
     catch (err) {
