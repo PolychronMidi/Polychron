@@ -11,6 +11,7 @@ import re as _re_budget
 import time as _time_git
 
 from server import context as ctx
+from paths import hme_metric
 
 logger = logging.getLogger("HME")
 
@@ -346,7 +347,7 @@ def _journal_latest_archived_round() -> int | None:
 
 
 def _activity_latest_round() -> int | None:
-    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
+    path = hme_metric("hme-activity.jsonl")
     if not os.path.isfile(path):
         return None
     latest = None

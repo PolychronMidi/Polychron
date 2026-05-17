@@ -183,7 +183,7 @@ def _freshness_report() -> str:
 
 def _budget_report() -> str:
     """Render metrics/hme-coherence-budget.json (Phase 5.2)."""
-    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-coherence-budget.json")
+    path = hme_metric("hme-coherence-budget.json")
     if not os.path.exists(path):
         return (
             "# Coherence Budget\n\n"

@@ -6,6 +6,7 @@ import logging
 import os
 
 from server import context as ctx
+from paths import hme_metric
 from .. import _track, get_session_intent, _budget_gate, _budget_section, _git_run, BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION
 from ..synthesis_session import append_session_narrative, get_session_narrative, get_think_history_context
 import datetime
@@ -114,7 +115,7 @@ def _resume_briefing() -> str:
 def _evolution_priority_report() -> str:
     """Render metrics/hme-evolution-priority.json -- HME's self-directed roadmap."""
     _track("evolution_priority_report")
-    ppath = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-evolution-priority.json")
+    ppath = hme_metric("hme-evolution-priority.json")
     if not os.path.exists(ppath):
         return "# Evolution Priorities\n\nNo priority data -- run pipeline first.\n"
     try:
@@ -166,7 +167,7 @@ def _evolution_priority_report() -> str:
 
 def _trajectory_report() -> str:
     """Render metrics/hme-trajectory.json (Phase 5.1)."""
-    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-trajectory.json")
+    path = hme_metric("hme-trajectory.json")
     if not os.path.exists(path):
         return (
             "# Compositional Trajectory\n\n"

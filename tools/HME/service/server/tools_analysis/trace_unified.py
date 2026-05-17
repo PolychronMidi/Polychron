@@ -6,6 +6,7 @@ import json
 import logging
 import os
 from server import context as ctx
+from paths import hme_metric
 from server.onboarding_chain import chained
 from . import _track, _load_trace, _budget_gate, _git_run, BUDGET_TOOL
 from .synthesis_session import append_session_narrative
@@ -287,7 +288,7 @@ def _round_trace(round_id: str) -> str:
     produced them. Requires deterministic round IDs (commit a-of-10-point
     sweep) to work -- rounds without IDs won't match.
     """
-    corr_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-musical-correlation.json")
+    corr_path = hme_metric("hme-musical-correlation.json")
     if not os.path.isfile(corr_path):
         return f"Error: metrics/hme-musical-correlation.json not found -- no round history."
     try:
@@ -314,7 +315,7 @@ def _round_trace(round_id: str) -> str:
             parts.append(f"  {key:<30} {v}")
     parts.append("")
     # Find activity window: events between this round's pipeline_start and pipeline_run
-    act_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
+    act_path = hme_metric("hme-activity.jsonl")
     if os.path.isfile(act_path):
         try:
             # Map round_id -> approximate ts from timestamp field

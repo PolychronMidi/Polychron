@@ -11,6 +11,7 @@ import logging
 import threading as _threading
 
 from server import context as ctx
+from paths import hme_metric
 from .synthesis_config import _THINK_SYSTEM
 from .synthesis_llamacpp import (  # noqa: F401
     _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
@@ -57,7 +58,7 @@ def _load_patterns_cache() -> dict | None:
     if _patterns_cache is not None and now - _patterns_cache_ts < _PATTERNS_CACHE_TTL:
         return _patterns_cache
     try:
-        path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-synthesis-patterns.json")
+        path = hme_metric("hme-synthesis-patterns.json")
         with open(path) as f:
             _patterns_cache = json.load(f)
         _patterns_cache_ts = now

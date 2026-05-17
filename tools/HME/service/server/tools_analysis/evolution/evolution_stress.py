@@ -9,6 +9,7 @@ import json
 import logging
 
 from server import context as ctx
+from paths import hme_metric
 from .. import _track, _budget_gate, BUDGET_COMPOUND, BUDGET_TOOL
 
 logger = logging.getLogger("HME")
@@ -362,7 +363,7 @@ def _adversarial_stress() -> str:
             suggestions.append(f"[LOW] Startup EMA {startup_ms:.0f}ms -- shim cold-start is slow; consider keepalive")
 
         # Coherence trend from JSONL
-        coherence_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-coherence.jsonl")
+        coherence_path = hme_metric("hme-coherence.jsonl")
         if os.path.isfile(coherence_path):
             with open(coherence_path) as f:
                 raw_lines = f.readlines()[-20:]
