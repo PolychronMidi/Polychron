@@ -168,7 +168,9 @@ async function handleAnthropicResponseComplete({
   outBuf = traced.outBuf;
 
   sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, outBuf });
-  maybeRunStopFallback({ isAnthropic, payload, outBuf, lifecycleInactive, runInlineFallback });
+  if (!skipStopFallback) {
+    maybeRunStopFallback({ isAnthropic, payload, outBuf, lifecycleInactive, runInlineFallback });
+  }
 }
 
 module.exports = {
