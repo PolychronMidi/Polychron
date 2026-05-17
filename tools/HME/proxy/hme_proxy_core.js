@@ -56,6 +56,11 @@ const {
   alertCooldownActive: _alertCooldownActive,
 } = require('./failure_classification');
 
+const _STALE_TOOL_KEEP_TURNS = parseInt(
+  process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS || process.env.HME_PROXY_COMPACT_KEEP_MIN || '100',
+  10,
+);
+
 function _anthropicTextSseBuffer(model, text) {
   const id = `proxy_${Date.now()}`;
   const m = String(model || 'hme-proxy');
