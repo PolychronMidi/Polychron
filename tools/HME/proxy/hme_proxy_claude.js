@@ -10,7 +10,6 @@ const {
 const { applyOverdriveRoute } = require('./overdrive_route');
 const { handleLegacySwapResponse } = require('./legacy_swap_response');
 const middleware = require('./middleware/index');
-const hmeDispatcher = require('./hme_dispatcher');
 const { createProxyRouteDispatcher } = require('./hme_proxy_routes');
 const {
   _stripHmePrefixOutgoing,
