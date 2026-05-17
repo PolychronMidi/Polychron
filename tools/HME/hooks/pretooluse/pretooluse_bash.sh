@@ -44,12 +44,5 @@ for _part in gates; do
   fi
 done
 
-set +e
-_streak_hme_precheck "$CMD"
-_HME_PRECHECK_RC=$?
-set -u -e
-if [ "$_HME_PRECHECK_RC" -eq 0 ]; then exit 0; fi
-if [ "$_HME_PRECHECK_RC" -eq 1 ]; then exit 0; fi
-_streak_tick 15
-if ! _streak_check; then exit 0; fi
+if [ -n "$(_hme_command_name "$CMD")" ]; then exit 0; fi
 exit 0

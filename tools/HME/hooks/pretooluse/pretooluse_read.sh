@@ -6,11 +6,6 @@ if [ -n "$_POLICY_OUT" ]; then
   printf '%s\n' "$_POLICY_OUT"
   case "$_POLICY_OUT" in *'"permissionDecision":"deny"'*) exit 0;; esac
 fi
-_STREAK_BEFORE=$(_streak_score)
-_streak_reset
-if [ "$_STREAK_BEFORE" -gt 0 ] 2>/dev/null; then
-  _signal_emit raw_streak_reset pretooluse_read session "{\"score_before\":${_STREAK_BEFORE}}"
-fi
 if [ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ]; then
   PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" || exit 2
 fi

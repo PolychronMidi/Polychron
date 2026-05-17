@@ -54,19 +54,11 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _IS_HME_CALL=1
   _HME_TOOL="${TOOL_NAME#mcp__HME__}"
 elif [[ "$TOOL_NAME" == "Bash" ]]; then
-  # Match i/<tool> ONLY when it appears in an invocation position -- start of
-  if [ -n "$(_streak_unlock_key "$TOOL_CMD")" ]; then
+  _HME_CMD=$(_hme_command_name "$TOOL_CMD")
+  if [ -n "$_HME_CMD" ]; then
     _IS_HME_CALL=1
-    # Extract the tool name from the matched invocation (not from any other
-    # i/X substring that might appear as an arg elsewhere in the command).
-    _HME_TOOL=$(_streak_unlock_key "$TOOL_CMD" | awk '{print $1}' | cut -d/ -f2)
+    _HME_TOOL="${_HME_CMD#i/}"
   fi
-fi
-
-# LIFESAVER FAIL-scan + hme.log ERROR watermark moved to proxy middleware
-# (mcp_fail_scan.js + hme_log_watermark.js). Shell hook keeps only streak reset.
-if [ "$_IS_HME_CALL" = "1" ]; then
-  _streak_reset "$TOOL_CMD"
 fi
 
 # LIFESAVER threshold: warn when HME synthesis exceeds expected duration

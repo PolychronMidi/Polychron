@@ -100,6 +100,4 @@ if [ "$MODE" = "forget" ]; then
   fi
 fi
 
-_streak_reset
-
 exit 0
