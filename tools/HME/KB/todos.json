@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3544,
-      "updated_ts": 1778984028.7645652,
-      "codex_plan_synced_ts": 1778984028.764457,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T02:13:36.912Z"
+      "max_id": 3549,
+      "updated_ts": 1778984275.5459416,
+      "codex_plan_synced_ts": 1778984275.5458362,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T02:17:55.108Z"
     }
   },
   {
@@ -8187,5 +8187,85 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-17T02:13:36.912Z"
+  },
+  {
+    "id": 3545,
+    "text": "Inventory remaining HME/project metric coupling",
+    "activeForm": "Inventory remaining HME/project metric coupling",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778984275.544868,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T02:17:55.108Z"
+  },
+  {
+    "id": 3546,
+    "text": "Add compatibility path layer and migrate HME telemetry access",
+    "activeForm": "Add compatibility path layer and migrate HME telemetry access",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778984275.5448742,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T02:17:55.108Z"
+  },
+  {
+    "id": 3547,
+    "text": "Capability-gate remaining project-specific analyzers",
+    "activeForm": "Capability-gate remaining project-specific analyzers",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778984275.5448778,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T02:17:55.108Z"
+  },
+  {
+    "id": 3548,
+    "text": "Add invariants/tests preventing regression",
+    "activeForm": "Add invariants/tests preventing regression",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778984275.5448804,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T02:17:55.108Z"
+  },
+  {
+    "id": 3549,
+    "text": "Update docs/config and run targeted verification",
+    "activeForm": "Update docs/config and run targeted verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778984275.544884,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T02:17:55.108Z"
   }
 ]

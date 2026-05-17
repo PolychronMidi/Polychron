@@ -4,11 +4,14 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inventory remaining HME/project metric coupling
 
 ## Next
 
-(empty)
+- [ ] [E3] Add compatibility path layer and migrate HME telemetry access
+- [ ] [E3] Capability-gate remaining project-specific analyzers
+- [ ] [E3] Add invariants/tests preventing regression
+- [ ] [E3] Update docs/config and run targeted verification
 
 ## Done
 
