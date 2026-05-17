@@ -37,7 +37,7 @@ function createProxyRouteDispatcher({
         git_sha: PROXY_GIT_SHA,
         started_at: PROXY_STARTED_AT,
         routes: routeMetrics,
-        supervisor: supervisorStatus(),
+        supervisor: statusFn(),
       });
       return true;
     }
