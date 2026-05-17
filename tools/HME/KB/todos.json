@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3554,
-      "updated_ts": 1778987688.7759228,
-      "codex_plan_synced_ts": 1778987688.775812,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T03:14:34.559Z"
+      "max_id": 3557,
+      "updated_ts": 1778989569.6440325,
+      "codex_plan_synced_ts": 1778989569.643927,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T03:46:09.215Z"
     }
   },
   {
@@ -8277,8 +8277,8 @@
     "id": 3550,
     "text": "Inventory remaining HME/composition coupling and path helper gaps",
     "activeForm": "Inventory remaining HME/composition coupling and path helper gaps",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8287,14 +8287,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T03:14:34.559Z"
+    "codex_plan_ts": "2026-05-17T03:14:34.559Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3551,
     "text": "Implement HME metric/path compatibility and migrate primary telemetry writers/readers",
     "activeForm": "Implement HME metric/path compatibility and migrate primary telemetry writers/readers",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8303,14 +8304,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T03:14:34.559Z"
+    "codex_plan_ts": "2026-05-17T03:14:34.559Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3552,
     "text": "Gate project-specific HME analyzers through project adapter capabilities",
     "activeForm": "Gate project-specific HME analyzers through project adapter capabilities",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8319,14 +8321,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T03:14:34.559Z"
+    "codex_plan_ts": "2026-05-17T03:14:34.559Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3553,
     "text": "Update invariants/docs/tests to enforce bifurcation",
     "activeForm": "Update invariants/docs/tests to enforce bifurcation",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8335,14 +8338,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T03:14:34.559Z"
+    "codex_plan_ts": "2026-05-17T03:14:34.559Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3554,
     "text": "Run targeted verification and fix any failures",
     "activeForm": "Run targeted verification and fix any failures",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8351,6 +8355,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T03:14:34.559Z"
+    "codex_plan_ts": "2026-05-17T03:14:34.559Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3555,
+    "text": "Locate the unaddressed LIFESAVER error source via HME status surfaces",
+    "activeForm": "Locate the unaddressed LIFESAVER error source via HME status surfaces",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778989569.6429398,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T03:46:09.215Z"
+  },
+  {
+    "id": 3556,
+    "text": "Patch the root cause or clear stale state only through approved HME paths",
+    "activeForm": "Patch the root cause or clear stale state only through approved HME paths",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778989569.6429467,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T03:46:09.215Z"
+  },
+  {
+    "id": 3557,
+    "text": "Re-run targeted verification and HME review",
+    "activeForm": "Re-run targeted verification and HME review",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778989569.6429508,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T03:46:09.215Z"
   }
 ]

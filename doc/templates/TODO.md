@@ -4,14 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Inventory remaining HME/composition coupling and path helper gaps
+- [ ] [E3] Locate the unaddressed LIFESAVER error source via HME status surfaces
 
 ## Next
 
-- [ ] [E3] Implement HME metric/path compatibility and migrate primary telemetry writers/readers
-- [ ] [E3] Gate project-specific HME analyzers through project adapter capabilities
-- [ ] [E3] Update invariants/docs/tests to enforce bifurcation
-- [ ] [E3] Run targeted verification and fix any failures
+- [ ] [E3] Patch the root cause or clear stale state only through approved HME paths
+- [ ] [E3] Re-run targeted verification and HME review
 
 ## Done
 
