@@ -114,11 +114,6 @@ function claudeRelayFields(event, result) {
   let stdout = result.stdout || '';
   let stderr = result.stderr || '';
   let code = Number.isInteger(result.exit_code) ? result.exit_code : 0;
-  if (stdout.includes('STREAK_RESET') || stderr.includes('BLOCKED: Raw tool streak')) {
-    if (!stdout) stdout = 'NOTICE: My raw tool streak is too high. To continue, I must run an HME command such as `i/review mode=forget` or use native Read to refresh context.';
-    stderr = 'Streak limit hit. Redirecting agent to HME tools.';
-    code = 0;
-  }
   if (event === 'PreToolUse' && code === 0) {
     const reason = denyReason(stdout);
     if (reason) {
