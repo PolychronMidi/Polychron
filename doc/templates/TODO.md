@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Verify clean status and proxy guards
+(empty)
 
 ## Next
 
