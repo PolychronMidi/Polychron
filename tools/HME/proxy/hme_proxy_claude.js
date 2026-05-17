@@ -3,7 +3,7 @@
 const http = require('http');
 const https = require('https');
 
-const { sessionKey, emit } = require('./shared');
+const { sessionKey } = require('./shared');
 const {
   resolveUpstream, recordUpstreamFailure, isPassthroughMode,
 } = require('./upstream');
