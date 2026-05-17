@@ -205,14 +205,18 @@ class PipelineBgScriptHealthVerifier(Verifier):
                 continue
             if summary_mtime and os.path.getmtime(path) < summary_mtime:
                 continue
-            # Read first ~400 bytes for a snippet.
-            snippet = ""
-            try:
-                with open(path) as f:
-                    snippet = f.read(400).strip().replace("\n", " | ")
-            except OSError:
-                pass  # silent-ok: best-effort fs op
             script = name[len("hme-bg-"):-len(".err")]
+            content = ""
+            try:
+                with open(path, encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+            except OSError:
+                content = ""  # silent-ok: best-effort fs op
+            last_start = content.rfind(" start ")
+            segment = content[last_start:] if last_start >= 0 else content
+            if re.search(r"\bend\s+[^\n]*\s+exit=0\b", segment):
+                continue
+            snippet = segment[:400].strip().replace("\n", " | ")
             failing.append((script, size, snippet))
         total = len(err_files)
         if not failing:
