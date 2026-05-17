@@ -58,6 +58,8 @@ Exit `0` = clean, `1` = violation.
 - `hme_proxy_core.js` -- shared helper functions, stop-reminder health, compaction helpers
 - `hme_proxy_claude.js` -- Claude/Anthropic request handler and upstream orchestration
 - `hme_proxy_codex.js` -- OmniRoute/Codex fallback helpers used by the Claude path
+- `hme_proxy_routes.js` -- health, admin, lifecycle, session, and MCP route dispatch
+- `hme_proxy_opus_gate.js` -- single-flight/min-gap serializer for interactive Opus requests
 - `hme_proxy_response_trace.js` -- response dump/blank-response diagnostics
 - `hme_proxy_response_send.js` -- SSE/non-SSE final response rewriting and Stop fallback
 - `hme_proxy_fp_gate.js` -- FP-check upstream kill scanner
