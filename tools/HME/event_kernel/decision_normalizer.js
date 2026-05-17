@@ -123,7 +123,7 @@ function claudeRelayFields(event, result) {
     const reason = denyReason(stdout);
     if (reason) {
       code = 2;
-      stderr = event === 'Stop' ? systemReminder(reason) : reason;
+      stderr = event === 'Stop' ? '' : reason;
     }
   }
   if (code === 0 && !stderr) stderr = ' ';
