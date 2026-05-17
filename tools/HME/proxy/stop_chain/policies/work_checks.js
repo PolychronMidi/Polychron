@@ -347,7 +347,7 @@ function scanUnfinishedTaskReminder(text) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     if (!/\b(in_progress|pending)\b/i.test(trimmed)) continue;
-    if (!/(^|[^A-Za-z])(task|todo|status|subject|description|activeForm|Here are the existing tasks|<system-reminder>)/i.test(trimmed)) continue;
+    if (!/(^|[^A-Za-z])(task|todo|status|subject|description|activeForm|Here are the existing tasks|<system-reminder>)|^#\d+\.?\s*\[(?:in_progress|pending)\]/i.test(trimmed)) continue;
     hits.push(trimmed.slice(0, 240));
     if (hits.length >= 6) break;
   }
