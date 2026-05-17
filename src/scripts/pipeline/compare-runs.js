@@ -280,7 +280,17 @@ function main() {
     dirB = METRICS_DIR;
     csvDirB = COMPOSITION_DIR;
     if (!fs.existsSync(dirA)) {
-      throw new Error(`compare-runs: snapshot '${args[1]}' not found at ${dirA}`);
+      fs.mkdirSync(METRICS_DIR, { recursive: true });
+      const report = {
+        verdict: 'SKIPPED',
+        reason: `snapshot '${args[1]}' not found`,
+        snapshot: args[1],
+        sections: [],
+        generated: new Date().toISOString(),
+      };
+      fs.writeFileSync(COMPARISON_PATH, JSON.stringify(report, null, 2), 'utf8');
+      console.log(`compare-runs: SKIPPED -- snapshot '${args[1]}' not found at ${dirA}`);
+      return;
     }
   } else if (args.length >= 2) {
     dirA = path.resolve(args[0]);

@@ -267,6 +267,7 @@ print(json.dumps(result))
     }
   }
 
+  fs.mkdirSync(HISTORY_DIR, { recursive: true });
   const outPath = path.join(HISTORY_DIR, `${timestamp}.json`);
   fs.writeFileSync(outPath, JSON.stringify(snapshot, null, 2));
   // Unified current-run pointer -- tools always read metrics/current-run.json for fresh data

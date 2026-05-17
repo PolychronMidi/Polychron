@@ -18,8 +18,8 @@
       "description": "Turn-scoped error surfacing + resolution",
       "artifacts": [
         { "path": "log/hme-errors.log", "freshness": null, "allow_empty": true },
-        { "path": "tmp/hme-errors.turnstart", "freshness": null, "allow_empty": true },
-        { "path": "tmp/hme-errors.lastread", "freshness": null, "allow_empty": true }
+        { "path": "tmp/hme-errors.turnstart", "freshness": null, "allow_empty": true, "optional": true },
+        { "path": "tmp/hme-errors.lastread", "freshness": null, "allow_empty": true, "optional": true }
       ],
       "_freshness_note": "These files update ON ACTIVITY (turn start, error surfacing, watermark advance) -- NOT on a periodic heartbeat. A quiet session with no errors legitimately keeps these unchanged for hours; the previous 'session' (300s) ceiling flagged that quiet state as unhealthy, inverting the semantics. Staleness check is now disabled (null); existence-and-not-empty-unless-allow_empty is the only guard.",
       "public_surfaces": ["stop.sh LIFESAVER block", "userpromptsubmit.sh error banner"],

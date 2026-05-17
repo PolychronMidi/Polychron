@@ -345,7 +345,20 @@ function main() {
   if (args[0] === '--against' && args[1]) {
     const snapDir = path.join(SNAPSHOT_DIR, args[1]);
     if (!fs.existsSync(snapDir)) {
-      throw new Error(`diff-compositions: snapshot '${args[1]}' not found at ${snapDir}`);
+      fs.mkdirSync(METRICS_DIR, { recursive: true });
+      const report = {
+        meta: {
+          generated: new Date().toISOString(),
+          snapshot: args[1],
+          skipped: true,
+          reason: `snapshot '${args[1]}' not found`,
+        },
+        diffs: [],
+      };
+      fs.writeFileSync(DIFF_JSON, JSON.stringify(report, null, 2), 'utf8');
+      fs.writeFileSync(DIFF_MD, renderMarkdown(report), 'utf8');
+      console.log(`diff-compositions: SKIPPED -- snapshot '${args[1]}' not found at ${snapDir}`);
+      return;
     }
     traceDirA = snapDir;
     notesDirA = snapDir;

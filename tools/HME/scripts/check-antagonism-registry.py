@@ -48,14 +48,21 @@ def main() -> None:
         # No trace yet -- skip (pre-first-run).
         sys.exit(0)
     if not REGISTRY_PATH.is_file():
-        print(f"FAIL: registry missing at {REGISTRY_PATH}", file=sys.stderr)
-        sys.exit(1)
+        if "--auto-append" not in sys.argv:
+            print(f"FAIL: registry missing at {REGISTRY_PATH}", file=sys.stderr)
+            sys.exit(1)
+        reg = {"candidates": [], "confirmed": [], "refuted": []}
+    else:
+        try:
+            reg = json.load(open(REGISTRY_PATH))
+        except Exception as e:
+            print(f"FAIL: registry parse error: {e}", file=sys.stderr)
+            sys.exit(1)
 
     try:
-        reg = json.load(open(REGISTRY_PATH))
-    except Exception as e:
-        print(f"FAIL: registry parse error: {e}", file=sys.stderr)
-        sys.exit(1)
+        pass
+    except Exception:
+        pass
 
     registered = set()
     for bucket in ("candidates", "confirmed", "refuted"):

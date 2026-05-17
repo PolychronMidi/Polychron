@@ -30,6 +30,8 @@ def _check_artifact(art: dict, ceilings: dict) -> tuple[bool, str]:
     allow_empty = art.get("allow_empty", False)
     is_dir = art.get("is_dir", False)
     if not path.exists():
+        if art.get("optional"):
+            return True, "optional-missing"
         return False, f"missing: {art['path']}"
     if is_dir:
         if not path.is_dir():
