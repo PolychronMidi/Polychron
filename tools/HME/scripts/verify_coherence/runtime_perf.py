@@ -15,6 +15,23 @@ from ._base import (
 )
 
 
+def _recent_service_restart(seconds: int = 300) -> tuple[bool, str]:
+    import datetime as _dt
+    import urllib.request as _ur
+    try:
+        port = os.environ.get("HME_PROXY_PORT", "9099")
+        with _ur.urlopen(f"http://127.0.0.1:{port}/health", timeout=1) as resp:
+            data = json.loads(resp.read().decode())
+        raw = data.get("started_at")
+        if not raw:
+            return False, ""
+        ts = _dt.datetime.fromisoformat(str(raw).replace("Z", "+00:00")).timestamp()
+        age = time.time() - ts
+        return 0 <= age <= seconds, f"proxy restarted {age:.0f}s ago"
+    except Exception:
+        return False, ""
+
+
 class HookLatencyVerifier(Verifier):
     """H3: flag hooks whose p95 wall-time exceeds a per-hook budget.
 
@@ -273,6 +290,13 @@ class ToolResponseLatencyVerifier(Verifier):
         ]
 
         if ratio_med >= 3.0 or ratio_p75 >= 3.0:
+            recent_restart, restart_detail = _recent_service_restart()
+            if recent_restart:
+                return _result(
+                    WARN, 0.65,
+                    f"latency spike during startup grace: {ema_ms:.0f}ms",
+                    details + [restart_detail],
+                )
             recent = [float(h.get("ema_ms", 0)) for h in history[-3:]]
             spike_count = sum(1 for v in recent + [ema_ms] if median > 0 and v / median >= 3.0)
             if spike_count < 2:
