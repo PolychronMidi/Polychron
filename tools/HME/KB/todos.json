@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3530,
-      "updated_ts": 1778982438.7617254,
-      "codex_plan_synced_ts": 1778982438.761622,
+      "max_id": 3533,
+      "updated_ts": 1778982918.769806,
+      "codex_plan_synced_ts": 1778982918.769701,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T01:46:49.983Z"
+      "codex_plan_ts": "2026-05-17T01:55:12.866Z"
     }
   },
   {
@@ -6051,8 +6051,8 @@
     "id": 3416,
     "text": "Report evidence",
     "activeForm": "Report evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6061,7 +6061,8 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:46:49.983Z"
+    "codex_plan_ts": "2026-05-17T01:46:49.983Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3417,
@@ -7913,8 +7914,8 @@
     "id": 3528,
     "text": "Read current pipeline failure evidence",
     "activeForm": "Read current pipeline failure evidence",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7923,14 +7924,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:46:49.983Z"
+    "codex_plan_ts": "2026-05-17T01:46:49.983Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3529,
     "text": "Fix or verify stale pipeline failure",
     "activeForm": "Fix or verify stale pipeline failure",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7939,14 +7941,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:46:49.983Z"
+    "codex_plan_ts": "2026-05-17T01:46:49.983Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3530,
     "text": "Run the smallest check that clears the lifecycle condition",
     "activeForm": "Run the smallest check that clears the lifecycle condition",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7955,6 +7958,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:46:49.983Z"
+    "codex_plan_ts": "2026-05-17T01:46:49.983Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3531,
+    "text": "Stop blocked polling pattern and repair stale pipeline status logic",
+    "activeForm": "Stop blocked polling pattern and repair stale pipeline status logic",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778982913.3074565,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:55:12.866Z"
+  },
+  {
+    "id": 3532,
+    "text": "Use allowed status surface only for verification",
+    "activeForm": "Use allowed status surface only for verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778982913.3074627,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:55:12.866Z"
+  },
+  {
+    "id": 3533,
+    "text": "Report concise corrective evidence",
+    "activeForm": "Report concise corrective evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778982913.307466,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:55:12.866Z"
   }
 ]

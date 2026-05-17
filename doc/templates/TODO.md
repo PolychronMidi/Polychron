@@ -4,13 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Read current pipeline failure evidence
+- [ ] [E3] Stop blocked polling pattern and repair stale pipeline status logic
 
 ## Next
 
-- [ ] [E3] Report evidence
-- [ ] [E3] Fix or verify stale pipeline failure
-- [ ] [E3] Run the smallest check that clears the lifecycle condition
+- [ ] [E3] Use allowed status surface only for verification
+- [ ] [E3] Report concise corrective evidence
 
 ## Done
 
