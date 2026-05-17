@@ -100,20 +100,24 @@ def _autocommit_clear_ts(root: Path) -> float:
         return 0.0
 
 
-def _resolved_epoch_error(line: str, autocommit_clear_ts: float) -> bool:
+def _resolved_epoch_error(line: str, autocommit_clear_ts: float, clear_after_ts: float) -> bool:
     stripped = line.strip()
     if stripped in {"throw new Error(", "^"}:
         return True
+    ts = _line_ts(line)
+    if clear_after_ts > 0 and ts and ts <= clear_after_ts:
+        return True
+    text = line.lower()
+    if clear_after_ts > 0 and ("idle timeout" in text or "controller is already closed" in text):
+        return True
     if autocommit_clear_ts <= 0:
         return False
-    text = line.lower()
     if "autocommit" in text and "fail" in text:
-        ts = _line_ts(line)
         return bool(ts and ts <= autocommit_clear_ts)
     return "check-root-only-dirs" in text or "misplaced root/runtime directory" in text
 
 
-def _epoch_errors(root: Path, rel: str, marker: str) -> list[str]:
+def _epoch_errors(root: Path, rel: str, marker: str, clear_after_ts: float = 0.0) -> list[str]:
     path = root / rel
     if not path.exists():
         return []
