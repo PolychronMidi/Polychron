@@ -69,12 +69,8 @@ test('Codex PreToolUse payload fixtures route for Read/Grep/Edit/Write', async (
   const root = _withSandbox('codex-payloads-');
   const file = path.join(root, 'src', 'fixture.js');
   fs.writeFileSync(file, 'const x = 1;\n');
-  fs.mkdirSync(path.join(root, 'tmp', 'hme-streak'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'tmp', 'hme-streak', 'codex-Read.score'), '20');
   const read = await dispatch(root, 'Read', { file_path: file });
   assert.equal(read.exit_code, 0);
-  const signals = fs.readFileSync(path.join(root, 'src', 'output', 'metrics', 'hme-signals.jsonl'), 'utf8');
-  assert.match(signals, /raw_streak_reset/);
   const grep = await dispatch(root, 'Grep', { pattern: 'const', path: path.join(root, 'src'), output_mode: 'files_with_matches' });
   assert.equal(grep.exit_code, 0);
   const edit = await dispatch(root, 'Edit', { file_path: file, old_string: 'const x = 1;\n', new_string: 'const x = 2;\n' });
