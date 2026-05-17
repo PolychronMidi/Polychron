@@ -113,7 +113,8 @@ test('telemetry: HME_TELEMETRY_DISABLE suppresses listed categories', _withSandb
 
 test('telemetry: ts auto-stamped if not provided in fields', _withSandbox(async (sb, t) => {
   t.info('auto_ts', { foo: 'bar' });
-  const file = path.join(sb, 'src', 'output', 'metrics', 'hme-activity.jsonl');
+  const file = t.PATHS.info;
+  assert.ok(file.startsWith(sb + path.sep), 'info path must stay inside sandbox');
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8').trim());
   assert.ok(typeof parsed.ts === 'number');
   assert.ok(parsed.ts > 1700000000000, 'ts should be an epoch ms timestamp');
