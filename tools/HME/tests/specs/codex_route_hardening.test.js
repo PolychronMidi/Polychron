@@ -109,7 +109,7 @@ print(mod._mode_hook_decisions())
   assert.match(res.stdout, /verdict=PASS/);
   assert.match(res.stdout, /api=\/api\/usage\/call-logs db=unused/);
   assert.match(res.stdout, /codex native Read\/Edit: present/);
-  assert.match(res.stdout, /duplicate_systemMessage_stripped=True/);
+  assert.match(res.stdout, /Hook decision compact/);
   assert.doesNotMatch(res.stdout, /storage\.sqlite|\.omniroute/);
   fs.rmSync(root, { recursive: true, force: true });
 });
