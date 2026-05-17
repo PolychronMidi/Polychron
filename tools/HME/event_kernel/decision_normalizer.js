@@ -119,11 +119,11 @@ function claudeRelayFields(event, result) {
     stderr = 'Streak limit hit. Redirecting agent to HME tools.';
     code = 0;
   }
-  if ((event === 'PreToolUse' || event === 'Stop') && code === 0) {
+  if (event === 'PreToolUse' && code === 0) {
     const reason = denyReason(stdout);
     if (reason) {
       code = 2;
-      stderr = event === 'Stop' ? '' : reason;
+      stderr = reason;
     }
   }
   if (code === 0 && !stderr) stderr = ' ';
