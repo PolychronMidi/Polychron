@@ -105,6 +105,21 @@ function recordWrite(payload = {}, decision = {}) {
   }, payload.session_id || '');
 }
 
+function recordRead(payload = {}, meta = {}) {
+  return update((s) => {
+    const input = payload.tool_input || payload.input || {};
+    const entry = {
+      ts: nowIso(),
+      session_id: payload.session_id || meta.session_id || s.session_id || '',
+      tool: payload.tool_name || meta.tool || 'Read',
+      file: input.file_path || payload.file_path || meta.file || '',
+      source: meta.source || 'native',
+      reason: meta.reason || '',
+    };
+    _pushBounded(s.files_read, entry, MAX_WRITES);
+  }, payload.session_id || meta.session_id || '');
+}
+
 function recordDetectorOutcome(name, verdict, meta = {}) {
   if (!name) return readState(meta.session_id || '');
   return update((s) => {
