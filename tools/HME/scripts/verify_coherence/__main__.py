@@ -111,7 +111,7 @@ def _persist_snapshot(report: dict) -> None:
                 for name, info in (report.get("verifiers") or {}).items()
             },
         }
-        snap_path = os.path.join(METRICS_DIR, PROJECT_METRICS_DIR, "hci-verifier-snapshot.json")
+        snap_path = os.path.join(PROJECT_METRICS_DIR, "hci-verifier-snapshot.json")
         if os.path.isfile(snap_path):
             try:
                 os.replace(snap_path, snap_path + ".prev")
