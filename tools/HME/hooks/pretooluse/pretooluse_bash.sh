@@ -19,9 +19,9 @@ if [ -n "$_POLICY_OUT" ]; then
 ' "$_POLICY_OUT"
         exit 0
       fi
-      if [ -n "$(_hme_command_name "$_POLICY_CMD")" ]; then exit 0; fi
       if [ "$_POLICY_HAS_UPDATE" = "true" ]; then printf '%s
 ' "$_POLICY_OUT"; exit 0; fi
+      if [ -n "$(_hme_command_name "$_POLICY_CMD")" ]; then exit 0; fi
       ;;
   esac
   printf '%s
