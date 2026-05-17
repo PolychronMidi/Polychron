@@ -110,6 +110,30 @@ test('passthrough microcompaction honors configured stale tool horizon', () => {
     payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(20000) }] });
   }
   const changed = shrinkForPassthrough(payload, {
+    threshold: 400000,
+    keepMin: 3,
+    maxToolResultAge: 4,
+    toolResultByteFloor: 1000,
+    env: {},
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.ok(JSON.stringify(payload).length <= 400000);
+  const results = payload.messages.flatMap((m) => Array.isArray(m.content) ? m.content.filter((b) => b.type === 'tool_result') : []);
+  assert.ok(results.slice(0, -4).every((b) => String(b.content).includes('content elided by hme-proxy precompact')));
+  assert.ok(results.slice(-4).every((b) => String(b.content).length === 20000));
+});
+
+
+test('passthrough compaction drops oldest messages when microcompaction cannot hit threshold', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 10; i += 1) {
+    const id = `tool-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(20000) }] });
+  }
+  const changed = shrinkForPassthrough(payload, {
     threshold: 1000,
     keepMin: 3,
     maxToolResultAge: 4,
@@ -119,9 +143,8 @@ test('passthrough microcompaction honors configured stale tool horizon', () => {
     projectRoot: os.tmpdir(),
   });
   assert.ok(changed > 0);
-  const results = payload.messages.flatMap((m) => Array.isArray(m.content) ? m.content.filter((b) => b.type === 'tool_result') : []);
-  assert.ok(results.slice(0, -4).every((b) => String(b.content).includes('content elided by hme-proxy precompact')));
-  assert.ok(results.slice(-4).every((b) => String(b.content).length === 20000));
+  assert.ok(JSON.stringify(payload).length <= 1000);
+  assert.ok(payload.messages.length <= 4);
 });
 
 test('legacy swap auth failure emits Anthropic stop SSE instead of surfacing 401', () => quiet(() => {
