@@ -328,7 +328,14 @@ module.exports = {
     for (const [field, value, reasonKey] of FIRING_RULES) {
       if (v[field] === value) firing.push({ name: reasonKey, reason: REASONS[reasonKey] });
     }
-    if (firing.some((f) => f.name === 'CLAIM_WITHOUT_EVIDENCE') && sessionState.recentVerificationEvidence(5 * 60 * 1000).some((e) => (e.exit_code === 0 || e.artifact || e.excerpt))) {
+    let transcriptPath = ctx.payload && ctx.payload.transcript_path;
+    if (!transcriptPath) {
+      try {
+        transcriptPath = fs.readFileSync(path.join(PROJECT_ROOT, 'tmp', 'hme-transcript-path.txt'), 'utf8').trim();
+      } catch(_) {}
+    }
+    const lastUserInfo = lastRealUserPrompt(transcriptPath);
+    if (firing.some((f) => f.name === 'CLAIM_WITHOUT_EVIDENCE') && hasSameTurnEvidence(lastUserInfo.tsMs)) {
       firing = firing.filter((f) => f.name !== 'CLAIM_WITHOUT_EVIDENCE');
     }
     if (firing.length === 1) {
