@@ -322,6 +322,23 @@ function _shrinkForPassthrough(payload) {
   });
 }
 
+function _shrinkForOmniContext(payload, swapModel) {
+  const threshold = _omniContextThresholdBytes(swapModel);
+  const before = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+  if (before <= threshold) return 0;
+  const changed = shrinkForPassthrough(payload, {
+    threshold,
+    keepMin: _PASSTHROUGH_COMPACT_KEEP_MIN,
+    maxToolResultAge: _STALE_TOOL_KEEP_TURNS,
+    env: { ...process.env, HME_PROXY_LOCAL_SUMMARY: process.env.HME_PROXY_OMNI_LOCAL_SUMMARY || process.env.HME_PROXY_LOCAL_SUMMARY || '0' },
+    log: (msg) => console.error(`[hme-proxy] omni-context ${msg}`),
+    projectRoot: require('./shared').PROJECT_ROOT,
+  });
+  const after = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+  console.error(`[hme-proxy] omni-context preflight: ${before}B -> ${after}B threshold=${threshold}B model=${swapModel} est=${_estimatedContextTokens(after)}/${_resolveModelCtx(String(swapModel || ''))} tokens changed=${changed}`);
+  return changed;
+}
+
 
 function _sanitizePayload(payload) {
   return sanitizeMessages(payload);
