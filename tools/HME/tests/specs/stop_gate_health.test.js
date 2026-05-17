@@ -39,7 +39,6 @@ test('stop reminder injects into payload.system and consumes staged file', () =>
     assert.match(payload.system.at(-1).text, /AUTO-COMPLETENESS CHECK/);
     if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
     if (prevExport === undefined) delete process.env.HME_PROXY_EXPORT_INTERNALS; else process.env.HME_PROXY_EXPORT_INTERNALS = prevExport;
-    if (prevQuiet === undefined) delete process.env.HME_PROXY_QUIET_IMPORT; else process.env.HME_PROXY_QUIET_IMPORT = prevQuiet;
     clearProxyCache();
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
