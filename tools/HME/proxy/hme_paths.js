@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
@@ -33,9 +34,69 @@ const COMPOSITION_METRICS_DIR = underRoot(
   path.join(COMPOSITION_OUTPUT_DIR, 'metrics'),
 );
 
+const PROJECT_METRIC_NAMES = new Set([
+  'adaptive-state.json',
+  'composition-diff.json',
+  'composition-diff.md',
+  'current-run.json',
+  'feedback_graph.json',
+  'fingerprint-comparison.json',
+  'golden-fingerprint.json',
+  'golden-fingerprint.prev.json',
+  'hci-snapshot-diff.json',
+  'hci-verifier-snapshot.json',
+  'journal.md',
+  'l0-dump.json',
+  'narrative-digest.md',
+  'perceptual-report.json',
+  'pipeline-summary.json',
+  'run-comparison.json',
+  'runtime-snapshots.json',
+  'system-manifest.json',
+  'trace-summary.json',
+  'trace.jsonl',
+  'verdict-model.json',
+]);
+
+const HME_METRIC_NAMES = new Set([
+  'detector-stats.jsonl',
+  'hci-regression-alert.json',
+  'kb-signatures.json',
+  'kb-staleness.json',
+  'kb-trust-weights.json',
+  'legacy-override-history.jsonl',
+  'mode-classifier.jsonl',
+  'reflections.jsonl',
+  'satisfaction.jsonl',
+  'todo-graph.md',
+  'vram-history.jsonl',
+]);
+
+function metricName(parts) { return parts.length > 0 ? String(parts[0]) : ''; }
+
+function isHmeMetricName(...parts) {
+  const name = metricName(parts);
+  if (!name || PROJECT_METRIC_NAMES.has(name) || name === 'run-history') return false;
+  return name.startsWith('hme-') || HME_METRIC_NAMES.has(name);
+}
+
 function hmeMetric(...parts) { return path.join(HME_METRICS_DIR, ...parts); }
 function hmeState(...parts) { return path.join(HME_STATE_DIR, ...parts); }
 function projectMetric(...parts) { return path.join(COMPOSITION_METRICS_DIR, ...parts); }
+function metricPath(...parts) { return isHmeMetricName(...parts) ? hmeMetric(...parts) : projectMetric(...parts); }
+
+function readHmeMetric(...parts) {
+  const primary = hmeMetric(...parts);
+  return fs.existsSync(primary) ? primary : projectMetric(...parts);
+}
+
+function readMetricPath(...parts) {
+  return isHmeMetricName(...parts) ? readHmeMetric(...parts) : projectMetric(...parts);
+}
+
+function writeHmeMetric(...parts) { return hmeMetric(...parts); }
+function writeProjectMetric(...parts) { return projectMetric(...parts); }
+function writeMetricPath(...parts) { return metricPath(...parts); }
 
 module.exports = {
   PROJECT_ROOT,
@@ -47,4 +108,11 @@ module.exports = {
   hmeMetric,
   hmeState,
   projectMetric,
+  metricPath,
+  readHmeMetric,
+  readMetricPath,
+  writeHmeMetric,
+  writeProjectMetric,
+  writeMetricPath,
+  isHmeMetricName,
 };
