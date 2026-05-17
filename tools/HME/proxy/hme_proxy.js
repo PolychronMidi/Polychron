@@ -65,7 +65,7 @@ function getHandleRequest() {
   if (handleRequest) return handleRequest;
   const middleware = require('./middleware/index');
   loadedMiddleware = middleware.loadAll();
-  console.log(`loaded middleware: ${loadedMiddleware.join(', ')}`);
+  if (process.env.HME_PROXY_QUIET_IMPORT !== '1') console.log(`loaded middleware: ${loadedMiddleware.join(', ')}`);
   handleRequest = createClaudeHandler({
     PORT, PROXY_VERSION, PROXY_GIT_SHA, PROXY_STARTED_AT,
     routeMetrics: proxyRouteMetrics.metrics,
