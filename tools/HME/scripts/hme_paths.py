@@ -1,15 +1,30 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3]).resolve()
+_ENV_REF_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def _expand_env_refs(value: str) -> str:
+    out = value
+    for _ in range(4):
+        nxt = _ENV_REF_RE.sub(lambda m: os.environ.get(m.group(1) or m.group(2), m.group(0)), out)
+        if nxt == out:
+            break
+        out = nxt
+    return out
 
 
 def _under_root(value: str | None, fallback: Path) -> Path:
     if not value:
         return fallback
-    candidate = Path(value).expanduser().resolve()
+    expanded = _expand_env_refs(str(value))
+    if _ENV_REF_RE.search(expanded):
+        return fallback
+    candidate = Path(expanded).expanduser().resolve()
     try:
         candidate.relative_to(PROJECT_ROOT)
         return candidate

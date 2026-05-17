@@ -5,10 +5,32 @@ const path = require('path');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
 
+const ENV_REF_RE = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g;
+
+function hasEnvRef(value) {
+  return ENV_REF_RE.test(String(value || ''));
+}
+
+function expandEnvRefs(value) {
+  let out = String(value || '');
+  for (let i = 0; i < 4; i += 1) {
+    ENV_REF_RE.lastIndex = 0;
+    const next = out.replace(ENV_REF_RE, (match, braced, bare) => {
+      const replacement = process.env[braced || bare];
+      return replacement ? String(replacement) : match;
+    });
+    if (next === out) break;
+    out = next;
+  }
+  return out;
+}
+
 function underRoot(candidate, fallback) {
   const absRoot = path.resolve(PROJECT_ROOT);
   if (!candidate) return fallback;
-  const abs = path.resolve(candidate);
+  const expanded = expandEnvRefs(candidate);
+  if (hasEnvRef(expanded)) return fallback;
+  const abs = path.resolve(expanded);
   if (abs === absRoot || abs.startsWith(absRoot + path.sep)) return abs;
   return fallback;
 }
