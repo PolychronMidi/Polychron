@@ -3,7 +3,6 @@
 
 Scope: DETECTION, not generation. Cross-references architectural claims
 from the KB against the project's hand-maintained docs and surfaces
-from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
 mismatches. Never rewrites docs -- just flags where they've diverged
 from the more-current knowledge in the KB.
 
