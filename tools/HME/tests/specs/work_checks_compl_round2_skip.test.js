@@ -27,7 +27,9 @@ function _withSandbox(fn) {
     registry.detectors = registry.detectors.filter(d => d.deny || d.bash_var === 'CLAIM_WITHOUT_EVIDENCE');
     fs.writeFileSync(path.join(registryDir, 'registry.json'), JSON.stringify(registry));
     const prev = process.env.PROJECT_ROOT;
+    const prevRuntime = process.env.HME_RUNTIME_DIR;
     process.env.PROJECT_ROOT = sandbox;
+    process.env.HME_RUNTIME_DIR = path.join(sandbox, 'tools', 'HME', 'runtime');
     // Bust caches under proxy/ so PROJECT_ROOT-bound modules reload
     for (const k of Object.keys(require.cache)) {
       if (k.startsWith(PROXY_DIR)) delete require.cache[k];
