@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Harden structured Grep against missing paths and bad path lists
+(empty)
 
 ## Next
 
-- [ ] [E3] Repair/finish stuck index job status behavior
-- [ ] [E3] Run targeted and full verification without noisy path sprays
-- [ ] [E3] Report only verified state and remaining actionable items
+(empty)
 
 ## Done
 
