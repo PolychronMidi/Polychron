@@ -13,6 +13,28 @@ const AGENT_SCHEMA = {
   additionalProperties: false,
 };
 
+const TODOWRITE_SCHEMA = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  type: 'object',
+  properties: {
+    todos: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          content: { type: 'string' },
+          status: { type: 'string', enum: ['pending', 'in_progress', 'completed'] },
+          activeForm: { type: 'string' },
+        },
+        required: ['content', 'status', 'activeForm'],
+        additionalProperties: true,
+      },
+    },
+  },
+  required: ['todos'],
+  additionalProperties: false,
+};
+
 const COMPACT = {
   Read: `Read a file by absolute path. Supports offset/limit for long text, images, PDFs (use pages for large PDFs), and notebooks. Returns numbered lines. Use for screenshots when given a path. Does not read directories.`,
   Bash: `Run a bash command and return output. Prefer Read/Edit/Write for file ops. Quote paths with spaces. Use absolute paths; avoid cd unless requested. Use timeout for long commands. Use run_in_background only when notification is enough. Never run destructive git/gh or bypass hooks unless explicitly requested.`,
