@@ -39,6 +39,8 @@ function _withSandbox(fn) {
     } finally {
       if (prev === undefined) delete process.env.PROJECT_ROOT;
       else process.env.PROJECT_ROOT = prev;
+      if (prevRuntime === undefined) delete process.env.HME_RUNTIME_DIR;
+      else process.env.HME_RUNTIME_DIR = prevRuntime;
       for (const k of Object.keys(require.cache)) {
         if (k.startsWith(PROXY_DIR)) delete require.cache[k];
       }
