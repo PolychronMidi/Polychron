@@ -1341,7 +1341,7 @@ function handleRequest(clientReq, clientRes) {
             // fpGateMarker FIRST -- handles [FP-CHECK: yes/no] marker (yes ->
             // truncate to `.`; no -> strip marker line). soloRationaleTrim
             // LAST -- surgical trim of trailing rationale paragraph.
-            rewriters: [readInputNormalizeRewrite, fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, bashPolicyRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
+            rewriters: [readInputNormalizeRewrite, providerReasoningToThinkingRewrite, fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, bashPolicyRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
           });
           // Populate priorUserWasDeny flag for the ack-strip rewriter:
           // last user message matches a hook-deny payload marker.
