@@ -43,6 +43,7 @@ async function handleAnthropicResponseComplete({
   chunks,
   upstreamRes,
   clientRes,
+  clientReq,
   payload,
   headers,
   bodyBuf,
