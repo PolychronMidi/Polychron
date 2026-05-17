@@ -44,6 +44,7 @@ const {
 const { recordOmniRouteFailureAdvance } = require('./hme_proxy_codex');
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
+const { createFpGateScanner } = require('./hme_proxy_fp_gate');
 
 function createClaudeHandler(deps) {
   const {
@@ -397,75 +398,14 @@ function createClaudeHandler(deps) {
         // continuation loop until a final HME-free response, then forward it.
         const chunks = [];
 
-        // FP-CHECK upstream-kill: detect `[FP-CHECK: yes]` in TEXT-block
-        // text_delta-only marker scan: bare-substring matched thinking blocks
-        // and killed streams when the model reasoned ABOUT the marker. Regex
-        // requires `text_delta` and marker in the same SSE event line.
-        let _fpKillTriggered = false;
-        let _fpTrailingBuf = '';
-        let _fpEligible = false;
-        try {
-          const _fpMsgs = (payload && payload.messages) || [];
-          let _fpLastUserText = '';
-          for (const m of _fpMsgs) {
-            if (!m || m.role !== 'user') continue;
-            const c = m.content;
-            if (typeof c === 'string') {
-              _fpLastUserText = c;
-            } else if (Array.isArray(c)) {
-              _fpLastUserText = c.filter((b) => b && b.type === 'text')
-                .map((b) => b.text || '').join(' ') || lastUserText;
-            }
-          }
-          const _fpDenyMarkers = [
-            'Stop hook feedback:',
-            'Stop hook blocking error from command:',
-            'AUTO-COMPLETENESS',
-            'EXHAUST PROTOCOL',
-            'PSYCHOPATHIC-STOP',
-            'STOP-WORK ANTIPATTERN',
-            'ADVISOR DOCTRINE',
-            'PHANTOM CAPABILITY',
-            'PHANTOM PARAPHRASE',
-            'SPECULATION-DEBT SCAN',
-            'SCOPE-ESCAPE VIOLATION',
-            'NEXUS --',
-            'VERIFICATION DOCTRINE',
-            'SYSTEMATIC-DEBUGGING PHASE GATE',
-          ];
-          _fpEligible = _fpLastUserText && _fpDenyMarkers.some((m) => _fpLastUserText.includes(m));
-        } catch (_e) { /* best-effort -- if we can't detect eligibility, no kill */ }
-
-        // text_delta event contains both the discriminator and the marker
-        // text in the same JSON line. thinking_delta uses field "thinking"
-        const _FP_TEXT_DELTA_RE = /"type"\s*:\s*"text_delta"[\s\S]{0,200}\[FP-CHECK:\s*yes\]|\[FP-CHECK:\s*yes\][\s\S]{0,200}"type"\s*:\s*"text_delta"/;
-
+        const scanFpGateChunk = createFpGateScanner({
+          payload,
+          chunks,
+          destroyUpstream: () => upstreamReq.destroy(),
+        });
         upstreamRes.on('data', (c) => {
           chunks.push(c);
-          if (!_fpEligible || _fpKillTriggered) return;
-          try {
-            const chunkStr = c.toString('utf8');
-            const scan = _fpTrailingBuf + chunkStr;
-            if (_FP_TEXT_DELTA_RE.test(scan)) {
-              _fpKillTriggered = true;
-              try {
-                const fs2 = require('fs');
-                const path2 = require('path');
-                fs2.appendFileSync(
-                  path2.join(PROJECT_ROOT, 'log', 'hme-fp-gate-kills.jsonl'),
-                  JSON.stringify({
-                    ts: new Date().toISOString(),
-                    bytes_before_kill: chunks.reduce((acc, b) => acc + b.length, 0),
-                  }) + '\n',
-                );
-              } catch (_e) { /* stat is best-effort */ }
-              try { upstreamReq.destroy(); } catch (_e) { /* ignore */ }
-            } else {
-              // Trailing buffer must cover both the regex window AND the
-              // marker length. 600 bytes covers a text_delta + 200-char
-              _fpTrailingBuf = scan.slice(-600);
-            }
-          } catch (_e) { /* scan is best-effort */ }
+          scanFpGateChunk(c);
         });
         upstreamRes.on('end', async () => {
           try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
