@@ -131,7 +131,7 @@ def _epoch_errors(root: Path, rel: str, marker: str, clear_after_ts: float = 0.0
     clear_ts = _autocommit_clear_ts(root)
     return [
         line[:180] for line in lines[start:]
-        if err_re.search(line) and not _resolved_epoch_error(line, clear_ts, marker, clear_after)
+        if err_re.search(line) and not _resolved_epoch_error(line, clear_ts, clear_after_ts)
     ][-3:]
 
 
