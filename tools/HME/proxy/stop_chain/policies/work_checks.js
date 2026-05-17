@@ -371,11 +371,11 @@ function scanUnfinishedTaskReminder(text) {
   return hits;
 }
 
-function unfinishedTaskDebt(transcriptPath) {
-  if (!transcriptPath) return null;
+function unfinishedTaskDebtFromTranscript(transcriptPath) {
+  if (!transcriptPath) return [];
   let lines;
   try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); }
-  catch (_e) { return null; }
+  catch (_e) { return []; }
   let debt = [];
   for (const line of lines) {
     if (!line) continue;
@@ -390,6 +390,53 @@ function unfinishedTaskDebt(transcriptPath) {
     const hits = scanUnfinishedTaskReminder(text);
     if (hits.length) debt = hits;
   }
+  return debt;
+}
+
+function sessionIdFromTranscriptPath(transcriptPath) {
+  const base = path.basename(String(transcriptPath || ''));
+  const m = base.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  return m ? m[1] : '';
+}
+
+function _taskStoreRoots() {
+  const roots = [];
+  const home = process.env.HOME || os.homedir();
+  if (home) roots.push(path.join(home, '.claude', 'tasks'));
+  const config = process.env.CLAUDE_CONFIG_DIR;
+  if (config) roots.push(path.join(config, 'tasks'));
+  return [...new Set(roots.map((p) => path.resolve(p)))];
+}
+
+function unfinishedTaskDebtFromStore(transcriptPath) {
+  const sessionId = sessionIdFromTranscriptPath(transcriptPath);
+  if (!sessionId) return [];
+  const debt = [];
+  for (const root of _taskStoreRoots()) {
+    const dir = path.join(root, sessionId);
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+    catch (_e) { continue; }
+    for (const ent of entries) {
+      if (!ent.isFile() || !ent.name.endsWith('.json')) continue;
+      let task;
+      try { task = JSON.parse(fs.readFileSync(path.join(dir, ent.name), 'utf8')); }
+      catch (_e) { continue; }
+      const status = String(task && task.status || '').trim();
+      if (status !== 'pending' && status !== 'in_progress') continue;
+      const id = String(task.id || ent.name.replace(/\.json$/, '')).trim();
+      const subject = String(task.subject || task.description || task.content || '').replace(/\s+/g, ' ').trim();
+      debt.push(`#${id} [${status}] ${subject}`.trim().slice(0, 240));
+      if (debt.length >= 6) return debt;
+    }
+  }
+  return debt;
+}
+
+function unfinishedTaskDebt(transcriptPath) {
+  const debt = unfinishedTaskDebtFromStore(transcriptPath).concat(
+    unfinishedTaskDebtFromTranscript(transcriptPath),
+  );
   if (!debt.length) return null;
   return `${REASONS.UNFINISHED_TASKS}\n\nOpen task evidence:\n${debt.map((s, i) => `  ${i + 1}. ${s}`).join('\n')}`;
 }
