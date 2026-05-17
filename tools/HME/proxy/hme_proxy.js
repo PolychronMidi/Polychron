@@ -414,6 +414,11 @@ const __hmeProxyInternals = {
 // lifecycle_bridge.js respectively. Bound at the top of this file.
 
 function handleRequest(clientReq, clientRes) {
+  if (clientReq.url === '/hme/stop-gate/health') {
+    clientRes.writeHead(200, { 'Content-Type': 'application/json' });
+    clientRes.end(JSON.stringify({ status: 'ok', component: 'hme-stop-gate', ..._stopGateHealth() }));
+    return;
+  }
   if (clientReq.url === '/health') {
     clientRes.writeHead(200, { 'Content-Type': 'application/json' });
     clientRes.end(JSON.stringify({
