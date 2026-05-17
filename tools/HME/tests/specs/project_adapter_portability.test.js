@@ -165,3 +165,37 @@ test('perceptual-dependent analyzers skip under generic fixture', () => {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+
+test('feedback-graph analyzer skips under generic fixture', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-feedback-skip-'));
+  try {
+    copyDir(path.join(repo, 'tools/HME/tests/fixtures/generic-project'), tmp);
+    const metrics = path.join(tmp, 'src', 'output', 'metrics');
+    const hmeMetrics = path.join(tmp, 'tools', 'HME', 'runtime', 'metrics');
+    fs.mkdirSync(metrics, { recursive: true });
+    const proc = childProcess.spawnSync(
+      'python3',
+      [path.join(repo, 'tools/HME/scripts/pipeline/hme/derive-constitution.py')],
+      {
+        cwd: tmp,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PROJECT_ROOT: tmp,
+          METRICS_DIR: metrics,
+          HME_PROJECT_ADAPTER: path.join(tmp, 'config/project-adapter.json'),
+        },
+      },
+    );
+    assert.equal(proc.status, 0, proc.stderr || proc.stdout);
+    assert.match(proc.stdout, /SKIPPED/);
+    const out = JSON.parse(fs.readFileSync(
+      path.join(hmeMetrics, 'hme-constitution.json'),
+      'utf8',
+    ));
+    assert.equal(out.skipped, true);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
