@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Run bifurcation and portability verification
 
 ## Next
 
-(empty)
+- [ ] [E3] Run HME review and clean worktree evidence
+- [ ] [E3] Answer with exact completion status and evidence
 
 ## Done
 
