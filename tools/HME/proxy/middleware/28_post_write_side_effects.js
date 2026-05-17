@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { PROJECT_ROOT } = require('../shared');
-const METRICS_DIR = process.env.METRICS_DIR || path.resolve(PROJECT_ROOT, 'src/output/metrics');
-const STALENESS_PATH = path.join(METRICS_DIR, 'kb-staleness.json');
+const hmePaths = require('../hme_paths');
+const STALENESS_PATH = hmePaths.hmeMetric('kb-staleness.json');
 
 function reportFailure(ctx, toolResult, message) {
   const text = `[HME] post-write side effect failed: ${message}`;

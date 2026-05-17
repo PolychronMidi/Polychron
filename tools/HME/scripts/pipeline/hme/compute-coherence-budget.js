@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp, metricPath } = require('./utils');
+const projectAdapter = require('../../../proxy/project_adapter');
 
 const MUSICAL = metricPath('hme-musical-correlation.json');
 const COHERENCE = metricPath('hme-coherence.json');
@@ -123,6 +124,17 @@ function matchGroundTruthForSnapshot(snapshotTsIso, groundTruthLatestByTs) {
 }
 
 function main() {
+  const cfg = projectAdapter.loadAdapter(ROOT);
+  if (!projectAdapter.hasCapability('perceptual_analysis', cfg)) {
+    fs.mkdirSync(path.dirname(OUT), { recursive: true });
+    fs.writeFileSync(OUT, JSON.stringify({
+      skipped: true,
+      skipped_reason: 'adapter capability perceptual_analysis=false',
+      generated: new Date().toISOString(),
+    }, null, 2) + '\n');
+    console.log('SKIPPED -- adapter capability perceptual_analysis=false');
+    return;
+  }
   const musical = loadJson(MUSICAL);
   const coherence = loadJson(COHERENCE);
   const currentCoherence =

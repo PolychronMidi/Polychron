@@ -5,13 +5,13 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'src', 'output', 'metrics');
+const hmePaths = require('./hme_paths');
 const REFRESH_INTERVAL_MS = 60_000;
 
 const BIAS_MANIFEST = path.join(PROJECT_ROOT, 'src/scripts/pipeline/bias-bounds-manifest.json');
-const STALENESS_PATH = path.join(PROJECT_ROOT, path.join(METRICS_DIR, 'kb-staleness.json'));
-const HYPOTHESES_PATH = path.join(PROJECT_ROOT, path.join(METRICS_DIR, 'hme-hypotheses.json'));
-const DRIFT_PATH = path.join(PROJECT_ROOT, path.join(METRICS_DIR, 'hme-semantic-drift.json'));
+const STALENESS_PATH = hmePaths.hmeMetric('kb-staleness.json');
+const HYPOTHESES_PATH = hmePaths.hmeMetric('hme-hypotheses.json');
+const DRIFT_PATH = hmePaths.hmeMetric('hme-semantic-drift.json');
 const JURISDICTION_ZONES = [
   'src/conductor/signal/meta/',
   'src/conductor/signal/profiling/',

@@ -27,7 +27,7 @@ import time
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "src", "output", "metrics")
+METRICS_DIR = os.environ.get("HME_METRICS_DIR") or os.path.join(_PROJECT, "tools", "HME", "runtime", "metrics")
 _AGENTS_MD = os.path.join(_PROJECT, "doc", "templates", "AGENTS.md")
 _OUTPUT = os.path.join(METRICS_DIR, "hme-memetic-drift.json")
 

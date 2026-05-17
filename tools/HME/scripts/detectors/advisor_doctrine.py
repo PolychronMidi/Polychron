@@ -48,7 +48,7 @@ from _transcript import (  # noqa: E402
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parent.parent.parent.parent)
-_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_METRICS_DIR = Path(os.environ.get("HME_METRICS_DIR") or (_PROJECT / "tools" / "HME" / "runtime" / "metrics"))
 _MODE_LOG = _METRICS_DIR / "mode-classifier.jsonl"
 _ADVISOR_LOG = _PROJECT / "tmp" / "hme-advisor-conflicts.jsonl"
 

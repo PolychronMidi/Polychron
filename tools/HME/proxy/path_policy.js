@@ -29,7 +29,11 @@ function isMisplacedMetricsPath(filePath, root = PROJECT_ROOT) {
   const full = normalizeTarget(filePath, root);
   if (!full) return false;
   if (!_segments(full).includes('metrics')) return false;
-  return !_isUnder(full, path.join(root, 'src', 'output', 'metrics'));
+  const allowed = [
+    path.join(root, 'src', 'output', 'metrics'),
+    path.join(root, 'tools', 'HME', 'runtime', 'metrics'),
+  ];
+  return !allowed.some((dir) => _isUnder(full, dir));
 }
 
 function _tokens(cmd) {
@@ -80,7 +84,7 @@ function rootOnlyDirMessage(verb, root = PROJECT_ROOT, extra = '') {
 
 function metricsMessage(verb, filePath = '') {
   const suffix = filePath ? ` Path: ${filePath}` : '';
-  return `BLOCKED: metrics/ only exists at src/output/metrics/. Do not ${verb} any other metrics/ directory.${suffix}`;
+  return `BLOCKED: metrics/ only exists at src/output/metrics/ or tools/HME/runtime/metrics/. Do not ${verb} any other metrics/ directory.${suffix}`;
 }
 
 module.exports = {

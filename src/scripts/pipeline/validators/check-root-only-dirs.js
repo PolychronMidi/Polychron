@@ -1,6 +1,6 @@
 'use strict';
 
-// Enforces canonical locations: log/ and tmp/ at project root; metrics/ at src/output/metrics/.
+// Enforces canonical log/tmp plus approved project and HME metrics roots.
 // Any instance elsewhere indicates a path bug writing runtime output to a non-standard location.
 
 const fs   = require('fs');
@@ -8,10 +8,14 @@ const path = require('path');
 const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
 const { execSync } = require('child_process');
 
-// log/ and tmp/ must be at root only. metrics/ is special: allowed only at src/output/metrics/.
+// log/ and tmp/ stay root-only; metrics has project and HME roots.
 // These root names are source/runtime split violations after bifurcation.
 const ROOT_ONLY_NAMES = new Set(['log', 'tmp']);
 const ROOT_FORBIDDEN_NAMES = new Set(['output', 'i', 'runtime', 'lab']);
+const ALLOWED_METRICS_RELS = new Set([
+  path.join('src', 'output', 'metrics'),
+  path.join('tools', 'HME', 'runtime', 'metrics'),
+]);
 const SKIP_DIRS = new Set(['node_modules', '.git', 'venv', '__pycache__']);
 const ROOT_FORBIDDEN_FILE_PATTERNS = [
   { re: /\.jsonl$/i, reason: 'JSONL runtime/test artifacts belong under src/output/metrics/, tools/HME/runtime/, log/, or tmp/' }
@@ -32,9 +36,8 @@ function walk(dir, violations) {
       violations.push(full);
       // Don't descend -- the whole subtree is the violation
     } else if (entry.name === 'metrics') {
-      // metrics/ is allowed only at src/output/metrics/; flag any other location
       const rel = path.relative(ROOT, full);
-      if (rel !== path.join('src', 'output', 'metrics')) {
+      if (!ALLOWED_METRICS_RELS.has(rel)) {
         violations.push(full);
       }
     } else {
@@ -119,7 +122,7 @@ function main() {
     if (SKIP_DIRS.has(entry.name)) continue;
     if (ROOT_ONLY_NAMES.has(entry.name)) continue; // root-level log/ and tmp/ allowed
     if (ROOT_FORBIDDEN_NAMES.has(entry.name)) { violations.push(path.join(ROOT, entry.name)); continue; }
-    // metrics/ at root level is now a violation (moved to src/output/metrics/)
+    // metrics/ at root level is a violation.
     if (entry.name === 'metrics') { violations.push(path.join(ROOT, entry.name)); continue; }
     walk(path.join(ROOT, entry.name), violations);
   }
@@ -139,7 +142,7 @@ function main() {
       'check-root-only-dirs: ' + unsafe.length + ' misplaced log/metrics/tmp director' +
       (unsafe.length === 1 ? 'y' : 'ies') + ' and ' + fileViolations.length +
       ' forbidden root file(s) found. log/ and tmp/ must be at project root; ' +
-      'metrics/ must be at src/output/metrics/; root output/, i/, lab/, and runtime/ are forbidden.'
+      'metrics/ must be in approved project/HME roots; root output/, i/, lab/, and runtime/ are forbidden.'
     );
   }
 

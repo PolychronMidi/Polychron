@@ -6,17 +6,17 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'src', 'output', 'metrics');
+const hmePaths = require('./hme_paths');
 
 const CACHE_STABLE_MS = 4 * 60 * 1000;
 let _statusSnapshot = null;
 let _statusSnapshotAt = 0;
 
-const COHERENCE_BUDGET_PATH = path.join(METRICS_DIR, 'hme-coherence-budget.json');
+const COHERENCE_BUDGET_PATH = hmePaths.hmeMetric('hme-coherence-budget.json');
 const ERRORS_LOG = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
-const ACTIVITY_LOG = path.join(METRICS_DIR, 'hme-activity.jsonl');
-const GROUND_TRUTH_LOG = path.join(METRICS_DIR, 'hme-ground-truth.jsonl');
-const DIR_INTENT_PATH = path.join(METRICS_DIR, 'hme-dir-intent.json');
+const ACTIVITY_LOG = hmePaths.hmeMetric('hme-activity.jsonl');
+const GROUND_TRUTH_LOG = hmePaths.hmeMetric('hme-ground-truth.jsonl');
+const DIR_INTENT_PATH = hmePaths.hmeMetric('hme-dir-intent.json');
 
 function _dirIntentHealthLine() {
   try {

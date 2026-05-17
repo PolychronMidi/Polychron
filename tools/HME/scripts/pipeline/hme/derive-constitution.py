@@ -33,6 +33,7 @@ import sys
 import time
 
 from _metrics import METRICS_DIR, PROJECT_METRICS_DIR, metric_path, project_metric_path
+from project_adapter import has_capability, load_adapter
 PROJECT_ROOT = (
     os.environ.get("CLAUDE_PROJECT_DIR")
     or os.environ.get("PROJECT_ROOT")
@@ -228,6 +229,19 @@ def extract_claims_from_feedback_graph() -> list[dict]:
 
 
 def main() -> int:
+    if not has_capability("feedback_graph", adapter=load_adapter()):
+        report = {
+            "skipped": True,
+            "skipped_reason": "adapter capability feedback_graph=false",
+            "generated": int(time.time()),
+            "claims": [],
+        }
+        os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
+        with open(OUT_PATH, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2)
+            f.write("\n")
+        print("derive-constitution: SKIPPED -- feedback_graph=false")
+        return 0
     crystallized = _load_json(CRYSTALLIZED_PATH) or {}
     patterns = crystallized.get("patterns") or []
 

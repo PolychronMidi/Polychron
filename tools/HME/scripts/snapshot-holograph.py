@@ -12,7 +12,7 @@ JSON file that can be:
 Captured dimensions live in snapshot_holograph_capture.py. Diff/replay live
 in snapshot_holograph_diff.py.
 
-Output: holograph-YYYYMMDD-HHMMSS.json in metrics/holograph/
+Output: holograph JSON under HME runtime metrics/holograph/
 
 Usage:
     python3 tools/HME/scripts/snapshot-holograph.py            # write file

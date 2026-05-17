@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """HME activity event emitter -- Phase 1 of openshell_features_to_mimic.md.
 
-Appends one JSON line per invocation to metrics/hme-activity.jsonl. Used by
+Appends one JSON line per invocation to HME runtime metrics. Used by
 bash hooks and the inference proxy (Phase 2) as the shared write channel for
 the native activity bridge -- the HME-scoped equivalent of OpenShell's OCSF
 event stream.
@@ -85,11 +85,13 @@ def main(argv: list[str]) -> int:
     if skip_append:
         return 0
 
-    # PROJECT_ROOT fallback: callers who don't source .env (manual
     project_root = os.environ.get("PROJECT_ROOT") or os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "..", "..")
     )
-    out_path = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "src", "output", "metrics")), "hme-activity.jsonl")
+    hme_metrics = os.environ.get("HME_METRICS_DIR") or os.path.join(
+        project_root, "tools", "HME", "runtime", "metrics"
+    )
+    out_path = os.path.join(hme_metrics, "hme-activity.jsonl")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     line = json.dumps(fields, separators=(",", ":"), sort_keys=True) + "\n"

@@ -119,12 +119,12 @@ test('secret-content: allow code without secret-shaped pattern', async () => {
 const mkdirLogTmp = require('../../policies/builtin/block-mkdir-misplaced-log-tmp');
 
 test('mkdir-log-tmp: deny mkdir of nested log/', async () => {
-  const r = await mkdirLogTmp.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/src/log/foo' } }));
+  const r = await mkdirLogTmp.fn(_ctx({ toolInput: { command: 'mkdir -p $PROJECT_ROOT/src/log/foo' } }));
   assert.strictEqual(r.decision, 'deny');
 });
 
 test('mkdir-log-tmp: allow mkdir of project-root tmp/', async () => {
-  const r = await mkdirLogTmp.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/tmp/scratch' } }));
+  const r = await mkdirLogTmp.fn(_ctx({ toolInput: { command: 'mkdir -p $PROJECT_ROOT/tmp/scratch' } }));
   assert.strictEqual(r.decision, 'allow');
 });
 
@@ -134,7 +134,7 @@ test('mkdir-log-tmp: allow non-mkdir command containing log/', async () => {
 });
 
 test('mkdir-log-tmp: allow mkdir without log or tmp', async () => {
-  const r = await mkdirLogTmp.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/src/something' } }));
+  const r = await mkdirLogTmp.fn(_ctx({ toolInput: { command: 'mkdir -p $PROJECT_ROOT/src/something' } }));
   assert.strictEqual(r.decision, 'allow');
 });
 
@@ -142,16 +142,22 @@ test('mkdir-log-tmp: allow mkdir without log or tmp', async () => {
 const mkdirMetrics = require('../../policies/builtin/block-mkdir-misplaced-metrics');
 
 test('mkdir-metrics: deny mkdir of misplaced metrics/', async () => {
-  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/src/metrics/foo' } }));
+  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p $PROJECT_ROOT/src/metrics/foo' } }));
   assert.strictEqual(r.decision, 'deny');
 });
 
 test('mkdir-metrics: allow mkdir of src/output/metrics/', async () => {
-  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/src/output/metrics/sub' } }));
+  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p $PROJECT_ROOT/src/output/metrics/sub' } }));
+  assert.strictEqual(r.decision, 'allow');
+});
+
+test('mkdir-metrics: allow mkdir of HME runtime metrics/', async () => {
+  const cmd = 'mkdir -p $PROJECT_ROOT/tools/HME/runtime/metrics/sub';
+  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: cmd } }));
   assert.strictEqual(r.decision, 'allow');
 });
 
 test('mkdir-metrics: allow mkdir without metrics/', async () => {
-  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p /home/jah/Polychron/src/output/runs/abc' } }));
+  const r = await mkdirMetrics.fn(_ctx({ toolInput: { command: 'mkdir -p $PROJECT_ROOT/src/output/runs/abc' } }));
   assert.strictEqual(r.decision, 'allow');
 });

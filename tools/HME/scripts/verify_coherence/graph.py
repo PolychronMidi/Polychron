@@ -11,7 +11,7 @@ import time
 from ._base import (
     Verifier, VerdictResult, _result, _run_subprocess,
     PASS, WARN, FAIL, SKIP, ERROR,
-    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR, PROJECT_METRICS_DIR,
 )
 
 
@@ -23,7 +23,7 @@ class FeedbackGraphVerifier(Verifier):
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        graph = os.path.join(METRICS_DIR, "feedback_graph.json")
+        graph = os.path.join(METRICS_DIR, PROJECT_METRICS_DIR, "feedback_graph.json")
         if not os.path.isfile(graph):
             return _result(SKIP, 1.0, "no feedback_graph.json")
         try:

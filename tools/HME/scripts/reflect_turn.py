@@ -55,7 +55,7 @@ from pathlib import Path
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parents[3])
-_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_METRICS_DIR = Path(os.environ.get("HME_METRICS_DIR") or (_PROJECT / "tools" / "HME" / "runtime" / "metrics"))
 _REFLECTIONS = _METRICS_DIR / "reflections.jsonl"
 _DETECTOR_VERDICTS = _PROJECT / "tools" / "HME" / "runtime" / "stop-detector-verdicts.env"
 _MODE_CLASSIFIER_LOG = _METRICS_DIR / "mode-classifier.jsonl"

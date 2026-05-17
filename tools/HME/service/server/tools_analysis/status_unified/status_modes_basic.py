@@ -7,6 +7,7 @@ import json
 import logging
 import os
 
+from paths import hme_metric
 from server import context as ctx
 from .. import (
     _track, get_session_intent, _budget_gate, _budget_section, _git_run,
@@ -281,11 +282,11 @@ def _mode_signals() -> str:
     """Tail the unified signal bus -- the one-file truth of hook + middleware
     + lifecycle events for the current and recent sessions."""
     import json as _json
-    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-signals.jsonl")
+    path = hme_metric("hme-signals.jsonl")
     if not os.path.isfile(path):
         return (
             "# HME Signal Bus\n\n"
-            "src/output/metrics/hme-signals.jsonl not yet produced. Hooks emit to it "
+            "tools/HME/runtime/metrics/hme-signals.jsonl not yet produced. Hooks emit to it "
             "via _signal_emit (sourced by helpers/_signals.sh). Trigger a few "
             "tool calls and re-check."
         )
@@ -307,7 +308,7 @@ def _mode_signals() -> str:
     lines = [
         "# HME Signal Bus",
         "",
-        f"Tailing last {len(parsed)} entries from src/output/metrics/hme-signals.jsonl.",
+        f"Tailing last {len(parsed)} entries from HME runtime hme-signals.jsonl.",
         "",
         "## Event frequency (this tail)",
     ]

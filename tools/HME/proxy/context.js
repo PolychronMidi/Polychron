@@ -5,12 +5,12 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'src', 'output', 'metrics');
+const hmePaths = require('./hme_paths');
 
 const INJECT = (process.env.HME_PROXY_INJECT ?? '1') !== '0';
 const REFRESH_INTERVAL_MS = 60_000;
 
-const COHERENCE_BUDGET_PATH = path.join(METRICS_DIR, 'hme-coherence-budget.json');
+const COHERENCE_BUDGET_PATH = hmePaths.hmeMetric('hme-coherence-budget.json');
 let _budgetState = null;
 let _budgetLoadedAt = 0;
 

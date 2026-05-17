@@ -13,7 +13,8 @@ from hme_env import ENV
 from server import context as ctx
 
 _PROJECT_ROOT_FALLBACK = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", ".."))
-METRICS_DIR = ENV.require("METRICS_DIR")
+METRICS_DIR = ENV.optional("HME_METRICS_DIR", os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "runtime", "metrics"))
+PROJECT_METRICS_DIR = ENV.require("METRICS_DIR")
 _CONFIG_REL = os.path.join("tools", "HME", "config", "invariants.json")
 
 

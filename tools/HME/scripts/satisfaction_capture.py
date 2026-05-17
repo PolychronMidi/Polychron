@@ -42,7 +42,7 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent)
-_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_METRICS_DIR = Path(os.environ.get("HME_METRICS_DIR") or (_PROJECT / "tools" / "HME" / "runtime" / "metrics"))
 _OUT_FILE = _METRICS_DIR / "satisfaction.jsonl"
 
 # Heuristic markers. Order: explicit number first, then strong signals,

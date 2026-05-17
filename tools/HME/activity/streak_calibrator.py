@@ -31,7 +31,7 @@ Opposing responses. Same signal. Classic antagonism bridge.
 This script:
   - Reads tmp/hme-errors.* state to compute resolution_velocity
   - Emits a recommended HME_STREAK_WARN value based on recent history
-  - Writes src/output/metrics/hme-streak-calibration.json for audit
+  - Writes HME runtime metrics for audit
   - Does NOT auto-apply changes; sessionstart.sh can optionally source the
     recommendation. OBSERVE-ONLY first run -- the user confirms whether the
     recommendations track reality before we wire in auto-application.
@@ -48,7 +48,7 @@ from pathlib import Path
 from datetime import datetime, UTC
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parent.parent.parent.parent))
-METRICS_DIR = Path(os.environ.get("METRICS_DIR", PROJECT_ROOT / "src" / "output" / "metrics"))
+METRICS_DIR = Path(os.environ.get("HME_METRICS_DIR", PROJECT_ROOT / "tools" / "HME" / "runtime" / "metrics"))
 ERROR_LOG = PROJECT_ROOT / "log" / "hme-errors.log"
 WATERMARK = PROJECT_ROOT / "tmp" / "hme-errors.lastread"
 TURNSTART = PROJECT_ROOT / "tmp" / "hme-errors.turnstart"
@@ -194,7 +194,7 @@ def main() -> None:
         json.dump(result, f, indent=2)
 
     # rationale: write calibrated threshold to tmp/ for _safety.sh active feedback loop
-    decisions_log = PROJECT_ROOT / "src" / "output" / "metrics" / "hme-calibration-decisions.jsonl"
+    decisions_log = METRICS_DIR / "hme-calibration-decisions.jsonl"
     streak_file = PROJECT_ROOT / "tmp" / "hme-streak-warn.txt"
     try:
         streak_file.parent.mkdir(parents=True, exist_ok=True)

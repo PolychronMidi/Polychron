@@ -8,11 +8,16 @@ import re
 import sys
 from pathlib import Path
 
+SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+from hme_paths import read_metric_path
+
 ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[4])
 
 
 def _json(rel: str, default=None):
-    path = ROOT / rel
+    path = read_metric_path(*Path(rel).parts[3:]) if rel.startswith("src/output/metrics/") else ROOT / rel
     if not path.is_file():
         return default
     try:
@@ -23,7 +28,7 @@ def _json(rel: str, default=None):
 
 
 def _jsonl(rel: str) -> list[dict]:
-    path = ROOT / rel
+    path = read_metric_path(*Path(rel).parts[3:]) if rel.startswith("src/output/metrics/") else ROOT / rel
     if not path.is_file():
         return []
     out: list[dict] = []
@@ -147,7 +152,7 @@ def no_duplicate_output_dirs() -> None:
         rel = path.relative_to(ROOT).as_posix()
         if path.name in {"log", "tmp"} and rel not in {"log", "tmp"}:
             print(f"./{rel}")
-        if path.name == "metrics" and rel != "src/output/metrics":
+        if path.name == "metrics" and rel not in {"src/output/metrics", "tools/HME/runtime/metrics"}:
             print(f"./{rel}")
 
 

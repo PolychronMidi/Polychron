@@ -10,11 +10,11 @@ Implements optimizations 2-13 from the compaction design. Optimization 1
 (preemption trigger) lives in event_kernel/statusline.js / posttooluse hooks which
 invoke this script when used_pct crosses 70%.
 
-Output: metrics/chain-history/link-<seq>-<timestamp>.yaml
+Output: HME runtime chain-history/link-<seq>-<timestamp>.yaml
 Also updates:
-  - metrics/chain-history/latest.yaml (symlink to newest)
-  - metrics/chain-session-diff.txt (git diff from session start)
-  - metrics/chain-session-commits.txt (commits this session)
+  - HME runtime chain-history/latest.yaml
+  - HME runtime chain-session-diff.txt
+  - HME runtime chain-session-commits.txt
   - tmp/hme-session-sha.txt (session start SHA for next snapshot)
 
 Invocation modes:
@@ -35,7 +35,7 @@ from pathlib import Path
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_METRICS = Path(os.environ.get("METRICS_DIR", os.path.join(_PROJECT, "src", "output", "metrics")))
+_METRICS = Path(os.environ.get("HME_METRICS_DIR", os.path.join(_PROJECT, "tools", "HME", "runtime", "metrics")))
 _HISTORY = _METRICS / "chain-history"
 _SESSION_SHA = Path(_PROJECT) / "tmp" / "hme-session-sha.txt"
 _CORRECTIONS = Path(_PROJECT) / "tmp" / "hme-user-corrections.jsonl"

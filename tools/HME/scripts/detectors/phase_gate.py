@@ -51,7 +51,7 @@ from _transcript import _parse_all, event_content, iter_tool_uses, is_user  # no
 
 _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent.parent)
-_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_METRICS_DIR = Path(os.environ.get("HME_METRICS_DIR") or (_PROJECT / "tools" / "HME" / "runtime" / "metrics"))
 _MODE_LOG = _METRICS_DIR / "mode-classifier.jsonl"
 _PHASE_LOG = _METRICS_DIR / "phase_transitions.jsonl"
 

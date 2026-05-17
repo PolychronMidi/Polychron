@@ -37,9 +37,6 @@ PROJECT_ROOT = (
     or os.environ.get("PROJECT_ROOT")
     or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 )
-METRICS_DIR = os.environ.get(
-    "METRICS_DIR", os.path.join(PROJECT_ROOT, "src", "output", "metrics")
-)
 CRYSTALLIZED = metric_path("hme-crystallized.json")
 OUT_JSON = metric_path("hme-generalizations.json")
 

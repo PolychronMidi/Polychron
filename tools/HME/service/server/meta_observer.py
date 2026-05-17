@@ -26,6 +26,7 @@ _mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from hme_env import ENV  # noqa: E402
+from paths import hme_metric  # noqa: E402
 
 logger = logging.getLogger("HME")
 
@@ -63,13 +64,13 @@ def start(project_root: str) -> None:
         return
     _ms = MetaState(
         heartbeat_file=os.path.join(project_root, "tmp", "hme-meta-observer.heartbeat"),
-        coherence_file=os.path.join(ENV.require("METRICS_DIR"), "hme-coherence.jsonl"),
-        narrative_file=os.path.join(ENV.require("METRICS_DIR"), "hme-narrative.jsonl"),
+        coherence_file=hme_metric("hme-coherence.jsonl"),
+        narrative_file=hme_metric("hme-narrative.jsonl"),
         ops_file=os.path.join(project_root, "tmp", "hme-ops.json"),
-        counterfactual_file=os.path.join(ENV.require("METRICS_DIR"), _COUNTERFACTUAL_FILE_SUFFIX),
+        counterfactual_file=hme_metric(_COUNTERFACTUAL_FILE_SUFFIX),
         entanglement_file=os.path.join(project_root, "tmp", "hme-entanglement.json"),
-        synthesis_file=os.path.join(ENV.require("METRICS_DIR"), "hme-synthesis.jsonl"),
-        synthesis_patterns_file=os.path.join(ENV.require("METRICS_DIR"), "hme-synthesis-patterns.json"),
+        synthesis_file=hme_metric("hme-synthesis.jsonl"),
+        synthesis_patterns_file=hme_metric("hme-synthesis-patterns.json"),
     )
     os.makedirs(os.path.dirname(_ms.heartbeat_file), exist_ok=True)
     os.makedirs(os.path.dirname(_ms.narrative_file), exist_ok=True)

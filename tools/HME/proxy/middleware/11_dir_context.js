@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Directory-intent enrichment -- reads metrics/hme-dir-intent.json and injects
+ * Directory-intent enrichment -- reads HME runtime intent and injects
  * the closest ancestor directory's local rules when a tool touches a file.
  *
  * Fires on Read/Edit/Write/Grep/Glob. Walks up from the target path to the
@@ -15,9 +15,9 @@
 const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT, mtimeCache } = require('../shared');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'src', 'output', 'metrics');
+const hmePaths = require('../hme_paths');
 
-const INTENT_PATH = path.join(METRICS_DIR, 'hme-dir-intent.json');
+const INTENT_PATH = hmePaths.hmeMetric('hme-dir-intent.json');
 const MAX_RULES_INJECTED = 2;
 const MAX_FOOTER_CHARS = 180;
 

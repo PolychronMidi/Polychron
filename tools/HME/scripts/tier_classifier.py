@@ -40,7 +40,7 @@ from pathlib import Path
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parents[3])
-_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_METRICS_DIR = Path(os.environ.get("HME_METRICS_DIR") or (_PROJECT / "tools" / "HME" / "runtime" / "metrics"))
 _TELEMETRY = _METRICS_DIR / "mode-classifier.jsonl"
 
 _TIER_OVERRIDE_RE = re.compile(r"(?i)\B/e([1-5])\b")

@@ -2,7 +2,7 @@
 """Lightweight background VRAM monitor.
 
 Samples free/used memory on each GPU every 30 seconds and appends a JSONL
-record to metrics/vram-history.jsonl. Self-trims to keep the file bounded
+record to HME runtime metrics. Self-trims to keep the file bounded
 (~2000 most recent samples = 16 hours of history at 30s intervals).
 
 Purpose: give us historical data to decide if/when to switch to partial
@@ -28,7 +28,7 @@ PID_FILE = "/tmp/hme-vram-monitor.pid"
 POLL_INTERVAL = ENV.require_int("HME_VRAM_POLL_S")
 MAX_SAMPLES = ENV.require_int("HME_VRAM_MAX_SAMPLES")
 PROJECT_ROOT = ENV.require("PROJECT_ROOT")
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
+METRICS_DIR = ENV.optional("HME_METRICS_DIR", os.path.join(PROJECT_ROOT, "tools", "HME", "runtime", "metrics"))
 HISTORY_FILE = os.path.join(METRICS_DIR, "vram-history.jsonl")
 
 

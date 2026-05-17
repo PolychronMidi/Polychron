@@ -305,7 +305,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "src/output/metrics/detector-stats.jsonl",
+      "path": "tools/HME/runtime/metrics/detector-stats.jsonl",
       "owner": "each detector _emit_stats",
       "readers": [
         "tools/HME/scripts/audit-detector-stats.py"
@@ -320,7 +320,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "src/output/metrics/hme-predictions.jsonl",
+      "path": "tools/HME/runtime/metrics/hme-predictions.jsonl",
       "owner": "tools/HME/service/server/tools_analysis/cascade_analysis.py",
       "readers": [
         "prediction reconciler"
@@ -335,7 +335,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "src/output/metrics/hme-enricher-efficacy.jsonl",
+      "path": "tools/HME/runtime/metrics/hme-enricher-efficacy.jsonl",
       "owner": "tools/HME/proxy/middleware/context_budget.js",
       "readers": [
         "reports"
@@ -350,7 +350,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "src/output/metrics/hme-activity.jsonl",
+      "path": "tools/HME/runtime/metrics/hme-activity.jsonl",
       "owner": "tools/HME/activity/emit.py",
       "readers": [
         "i/status",

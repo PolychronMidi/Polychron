@@ -69,17 +69,17 @@ test('secrets: allow non-credential filename containing "key" word', async () =>
 const logTmp = require('../../policies/builtin/block-misplaced-log-tmp');
 
 test('log-tmp: deny nested log/ outside project root', async () => {
-  const r = await logTmp.fn(_ctx({ toolInput: { file_path: '/home/jah/Polychron/src/log/foo' } }));
+  const r = await logTmp.fn(_ctx({ toolInput: { file_path: '$PROJECT_ROOT/src/log/foo' } }));
   assert.strictEqual(r.decision, 'deny');
 });
 
 test('log-tmp: allow project-root log/', async () => {
-  const r = await logTmp.fn(_ctx({ toolInput: { file_path: '/home/jah/Polychron/log/foo.log' } }));
+  const r = await logTmp.fn(_ctx({ toolInput: { file_path: '$PROJECT_ROOT/log/foo.log' } }));
   assert.strictEqual(r.decision, 'allow');
 });
 
 test('log-tmp: allow project-root tmp/', async () => {
-  const r = await logTmp.fn(_ctx({ toolInput: { file_path: '/home/jah/Polychron/tmp/x' } }));
+  const r = await logTmp.fn(_ctx({ toolInput: { file_path: '$PROJECT_ROOT/tmp/x' } }));
   assert.strictEqual(r.decision, 'allow');
 });
 
@@ -87,12 +87,17 @@ test('log-tmp: allow project-root tmp/', async () => {
 const metrics = require('../../policies/builtin/block-misplaced-metrics');
 
 test('metrics: deny misplaced metrics/', async () => {
-  const r = await metrics.fn(_ctx({ toolInput: { file_path: '/home/jah/Polychron/src/metrics/x.json' } }));
+  const r = await metrics.fn(_ctx({ toolInput: { file_path: '$PROJECT_ROOT/src/metrics/x.json' } }));
   assert.strictEqual(r.decision, 'deny');
 });
 
 test('metrics: allow src/output/metrics/', async () => {
-  const r = await metrics.fn(_ctx({ toolInput: { file_path: '/home/jah/Polychron/src/output/metrics/run-history.json' } }));
+  const r = await metrics.fn(_ctx({ toolInput: { file_path: '$PROJECT_ROOT/src/output/metrics/run-history.json' } }));
+  assert.strictEqual(r.decision, 'allow');
+});
+
+test('metrics: allow tools/HME/runtime/metrics/', async () => {
+  const r = await metrics.fn(_ctx({ toolInput: { file_path: '$PROJECT_ROOT/tools/HME/runtime/metrics/hme-activity.jsonl' } }));
   assert.strictEqual(r.decision, 'allow');
 });
 

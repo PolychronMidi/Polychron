@@ -104,11 +104,20 @@ test('project-specific HME analyzer skips when adapter capability is off', () =>
     assert.equal(proc.status, 0, proc.stderr || proc.stdout);
     assert.match(proc.stdout, /SKIPPED/);
     const out = JSON.parse(fs.readFileSync(
-      path.join(metrics, 'hme-musical-correlation.json'),
+      path.join(tmp, 'tools/HME/runtime/metrics/hme-musical-correlation.json'),
       'utf8',
     ));
     assert.equal(out.skipped, true);
+    assert.equal(fs.existsSync(path.join(metrics, 'hme-musical-correlation.json')), false);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
+});
+
+
+test('metric path helpers split HME and composition outputs', () => {
+  assert.match(hmePaths.writeMetricPath('hme-activity.jsonl'), /tools[\/]HME[\/]runtime[\/]metrics/);
+  assert.match(hmePaths.writeMetricPath('kb-staleness.json'), /tools[\/]HME[\/]runtime[\/]metrics/);
+  assert.match(hmePaths.writeMetricPath('pipeline-summary.json'), /src[\/]output[\/]metrics/);
+  assert.match(hmePaths.writeMetricPath('trace.jsonl'), /src[\/]output[\/]metrics/);
 });

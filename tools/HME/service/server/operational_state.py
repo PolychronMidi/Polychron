@@ -32,6 +32,7 @@ import threading
 import logging
 
 from hme_env import ENV
+from paths import hme_metric
 
 logger = logging.getLogger("HME")
 
@@ -59,8 +60,8 @@ def init(project_root: str) -> dict:
     if _STATE_FILE:
         return snapshot()  # already initialized
     _STATE_FILE = os.path.join(project_root, "tmp", "hme-ops.json")
-    _SYNTHESIS_FILE = os.path.join(ENV.require("METRICS_DIR"), "hme-synthesis.jsonl")
-    _SESSIONS_FILE = os.path.join(ENV.require("METRICS_DIR"), "hme-sessions.jsonl")
+    _SYNTHESIS_FILE = hme_metric("hme-synthesis.jsonl")
+    _SESSIONS_FILE = hme_metric("hme-sessions.jsonl")
     os.makedirs(os.path.dirname(_STATE_FILE), exist_ok=True)
     os.makedirs(os.path.dirname(_SYNTHESIS_FILE), exist_ok=True)
     today = time.strftime("%Y-%m-%d")

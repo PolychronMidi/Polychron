@@ -18,7 +18,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 _HOOKS_DIR = os.path.join(_PROJECT, "tools", "HME", "hooks")
 _SERVER_DIR = os.path.join(_PROJECT, "tools", "HME", "service", "server")
 _SCRIPTS_DIR = os.path.join(_PROJECT, "tools", "HME", "scripts")
-METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "src", "output", "metrics")
+METRICS_DIR = os.environ.get("HME_METRICS_DIR") or os.path.join(_PROJECT, "tools", "HME", "runtime", "metrics")
 
 
 def capture_hci() -> dict:
@@ -182,7 +182,7 @@ def capture_kb_summary() -> dict:
 
 
 def capture_pipeline_history() -> dict:
-    summary = os.path.join(METRICS_DIR, "pipeline-summary.json")
+    summary = os.path.join(_PROJECT, "src", "output", "metrics", "pipeline-summary.json")
     if not os.path.isfile(summary):
         return {"_skipped": "no pipeline summary"}
     try:

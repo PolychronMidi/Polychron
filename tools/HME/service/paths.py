@@ -67,6 +67,22 @@ def runtime_dir() -> str:
     return os.path.join(project_root(), "tools", "HME", "runtime")
 
 
+def hme_metrics_dir() -> str:
+    return ENV.optional("HME_METRICS_DIR", os.path.join(runtime_dir(), "metrics"))
+
+
+def hme_metric(*parts: str) -> str:
+    return os.path.join(hme_metrics_dir(), *parts)
+
+
+def composition_metrics_dir() -> str:
+    return ENV.optional("COMPOSITION_METRICS_DIR", ENV.require("METRICS_DIR"))
+
+
+def project_metric(*parts: str) -> str:
+    return os.path.join(composition_metrics_dir(), *parts)
+
+
 def supervisor_abandoned_sentinel() -> str:
     return os.path.join(runtime_dir(), "supervisor-abandoned")
 

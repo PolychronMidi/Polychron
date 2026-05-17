@@ -11,7 +11,7 @@ import sys
 import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-METRICS_DIR = os.path.join(PROJECT_ROOT, "src", "output", "metrics")
+METRICS_DIR = os.environ.get("HME_METRICS_DIR") or os.path.join(PROJECT_ROOT, "tools", "HME", "runtime", "metrics")
 LOG = os.path.join(METRICS_DIR, "hme-tool-usage.jsonl")
 
 

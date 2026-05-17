@@ -78,7 +78,7 @@ def _has_substantive_work(events: list) -> bool:
 
 _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent.parent)
-_METRICS_DIR = Path(os.environ.get("METRICS_DIR") or (_PROJECT / "src" / "output" / "metrics"))
+_METRICS_DIR = Path(os.environ.get("HME_METRICS_DIR") or (_PROJECT / "tools" / "HME" / "runtime" / "metrics"))
 _MODE_LOG = _METRICS_DIR / "mode-classifier.jsonl"
 
 # E5 only; E3/E4 fired too often, became ceremony-spam. E5 is the narrow case worth it.
