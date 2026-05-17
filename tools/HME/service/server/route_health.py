@@ -131,7 +131,7 @@ def _epoch_errors(root: Path, rel: str, marker: str, clear_after_ts: float = 0.0
     clear_ts = _autocommit_clear_ts(root)
     return [
         line[:180] for line in lines[start:]
-        if err_re.search(line) and not _resolved_epoch_error(line, clear_ts)
+        if err_re.search(line) and not _resolved_epoch_error(line, clear_ts, marker, clear_after)
     ][-3:]
 
 
@@ -153,6 +153,7 @@ def route_snapshot(root: Path) -> dict[str, Any]:
     from omniroute_recent import injection_advisory_counts, recent_requests  # noqa: WPS433
     recent = recent_requests(limit=5, model_contains="codex/")
     latest_age = _age_minutes(recent[0].get("timestamp") if recent else "")
+    latest_success_ts = _parse_ts(recent[0].get("timestamp")) if recent and recent[0].get("status") == 200 else 0.0
     proxy_stale = _newer_than_started(root, proxy.get("started_at") if proxy else None, [
         "tools/HME/proxy/hme_proxy.js", "tools/HME/proxy/overdrive_route.js",
         "tools/HME/proxy/proxy_route_metrics.js", "tools/HME/proxy/start_marker.js",
@@ -166,7 +167,7 @@ def route_snapshot(root: Path) -> dict[str, Any]:
     epoch_errors = {
         "proxy": _epoch_errors(root, "log/hme-proxy.out", "hme_proxy"),
         "codex_proxy": _epoch_errors(root, "log/hme-codex-proxy.out", "codex_proxy"),
-        "omniroute": _epoch_errors(root, "log/omniroute.out", "omniroute"),
+        "omniroute": _epoch_errors(root, "log/omniroute.out", "omniroute", latest_success_ts),
     }
     return {
         "overdrive_mode": ENV.optional("OVERDRIVE_MODE", ""),
