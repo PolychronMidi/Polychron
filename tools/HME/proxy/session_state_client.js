@@ -36,6 +36,7 @@ async function call(action, sessionId = '', payload = {}) {
   try {
     const sid = encodeURIComponent(sessionId || '_');
     if (action === 'read') return await _http('GET', `/hme/session/${sid}/state`);
+    if (action === 'record-read') return await _http('POST', `/hme/session/${sid}/read`, payload);
     return await _http('POST', `/hme/session/${sid}/${action}`, payload);
   } catch (_e) {
     // silent-ok: optional fallback path.
