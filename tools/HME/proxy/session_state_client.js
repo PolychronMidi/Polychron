@@ -26,6 +26,7 @@ async function call(action, sessionId = '', payload = {}) {
   if (process.env.HME_SESSION_IPC !== 'http') {
     try {
       if (action === 'read') return sessionState.readState(sessionId);
+      if (action === 'record-read') return sessionState.recordRead(payload.payload || {}, { ...payload.meta, session_id: sessionId });
       if (action === 'phase') return sessionState.recordPhase(payload.phase, { ...payload.meta, session_id: sessionId });
       if (action === 'write') return sessionState.recordWrite(payload.payload || {}, payload.decision || {});
       if (action === 'verification-evidence') return sessionState.recordVerificationEvidence({ ...payload, session_id: sessionId });
