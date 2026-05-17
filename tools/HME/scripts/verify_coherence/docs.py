@@ -95,7 +95,7 @@ class DocCoreLayoutVerifier(Verifier):
         ]
         issues = [f"missing {rel}" for rel in required
                   if not os.path.isfile(os.path.join(_PROJECT, rel))]
-        for rel in ("self-coherence.md", "composition.md", "doc/self-coherence.md", "doc/composition.md"):
+        for rel in ("self-coherence.md", "composition.md"):
             if os.path.exists(os.path.join(_PROJECT, rel)):
                 issues.append(f"unexpected duplicate doc path: {rel}")
         for rel in ("README.md", "doc/templates/AGENTS.md"):

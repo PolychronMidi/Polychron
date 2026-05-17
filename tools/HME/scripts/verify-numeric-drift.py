@@ -154,7 +154,7 @@ def count_crosslayer_js_files():
 
 
 def count_eslint_rules():
-    d = os.path.join(_PROJECT, "scripts", "eslint-rules")
+    d = os.path.join(_PROJECT, "src", "scripts", "eslint-rules")
     return sum(
         1 for f in os.listdir(d)
         if f.endswith(".js") and f != "index.js"

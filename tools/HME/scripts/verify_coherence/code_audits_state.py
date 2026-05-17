@@ -174,7 +174,7 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
             if f.startswith("_"):
                 return False
             return True
-        prefix_re = _re_mw.compile(r"^\d+_")
+        prefix_re = _re_mw.compile(r"^\d+[a-z]?_")
         files = sorted(f for f in os.listdir(mw_dir) if _is_middleware(f))
         unprefixed = [f for f in files if not prefix_re.match(f)]
         phase_issues = []
@@ -194,7 +194,7 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
                 m = prefix_re.match(fname)
                 if not m:
                     continue
-                n = int(fname.split("_", 1)[0])
+                n = int(_re_mw.match(r"^\d+", fname).group(0))
                 hits = []
                 for phase in phases:
                     r = phase.get("range") if isinstance(phase, dict) else None

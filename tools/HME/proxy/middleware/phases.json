@@ -28,7 +28,7 @@
     },
     {
       "id": "commit",
-      "range": [21, 27],
+      "range": [21, 29],
       "description": "Autocommit, lifesaver surfacing, false-positive gates, dumps, and result hygiene"
     }
   ]

@@ -254,7 +254,7 @@ class AgentJobContractVerifier(Verifier):
 
     def run(self) -> VerdictResult:
         helper = os.path.join(_SCRIPTS_DIR, "agent_jobs.py")
-        wrapper = os.path.join(_PROJECT, "scripts", "hme", "codex-agent-job.py")
+        wrapper = os.path.join(_SCRIPTS_DIR, "codex-agent-job.py")
         missing = [p for p in (helper, wrapper) if not os.path.isfile(p)]
         if missing:
             return _result(FAIL, 0.0, "agent job contract file(s) missing", missing)

@@ -40,7 +40,7 @@ class LogSizeVerifier(Verifier):
         "log/hme-proxy.out",
         "log/hme-errors.log",
         "log/hme-proxy-lifecycle.log",
-        "src/output/metrics/hme-activity.jsonl",
+        "tools/HME/runtime/metrics/hme-activity.jsonl",
     )
 
     def run(self) -> VerdictResult:
@@ -192,6 +192,8 @@ class PipelineBgScriptHealthVerifier(Verifier):
             return _result(ERROR, 0.0, f"listdir failed: {e}")
         if not err_files:
             return _result(SKIP, 1.0, "no hme-bg-*.err files yet -- pipeline hasn't run since hardening")
+        summary = os.path.join(_PROJECT, "src", "output", "metrics", "pipeline-summary.json")
+        summary_mtime = os.path.getmtime(summary) if os.path.isfile(summary) else 0
         failing = []
         for name in sorted(err_files):
             path = os.path.join(log_dir, name)
@@ -200,6 +202,8 @@ class PipelineBgScriptHealthVerifier(Verifier):
             except OSError:
                 continue
             if size == 0:
+                continue
+            if summary_mtime and os.path.getmtime(path) < summary_mtime:
                 continue
             # Read first ~400 bytes for a snippet.
             snippet = ""

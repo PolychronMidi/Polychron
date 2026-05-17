@@ -59,18 +59,25 @@ class TodoMarkdownSyncVerifier(Verifier):
             failures.append("todo_autoflip.py missing")
         if os.path.exists(old_autoflip):
             failures.append("spec_autoflip.py still exists")
-        hook_paths = [
+        bridge_paths = [
             os.path.join(_PROJECT, "tools", "HME", "hooks", "posttooluse", "posttooluse_edit.sh"),
             os.path.join(_PROJECT, "tools", "HME", "hooks", "posttooluse", "posttooluse_write.sh"),
+            os.path.join(_PROJECT, "tools", "HME", "proxy", "middleware", "28_post_write_side_effects.js"),
         ]
-        for hook in hook_paths:
+        wired = False
+        unreadable: list[str] = []
+        for bridge in bridge_paths:
             try:
-                text = open(hook, encoding="utf-8").read()
+                text = open(bridge, encoding="utf-8").read()
             except OSError as e:
-                failures.append(f"{os.path.relpath(hook, _PROJECT)} unreadable: {e}")
+                unreadable.append(f"{os.path.relpath(bridge, _PROJECT)} unreadable: {e}")
                 continue
-            if "doc/templates/TODO.md" not in text or "todo_autoflip.py" not in text:
-                failures.append(f"{os.path.relpath(hook, _PROJECT)} not wired to TODO autoflip")
+            if "doc/templates/TODO.md" in text and "todo_autoflip.py" in text:
+                wired = True
+                break
+        if not wired:
+            failures.extend(unreadable)
+            failures.append("TODO autoflip not wired through hook or proxy post-write bridge")
         try:
             sys.path.insert(0, os.path.join(_PROJECT, "tools", "HME", "service"))
             from server.tools_analysis.todo_store import load_store

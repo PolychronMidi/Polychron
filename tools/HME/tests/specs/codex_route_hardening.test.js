@@ -22,7 +22,7 @@ function fresh(projectRoot) {
   }
 }
 
-function sandbox(prefix = 'codex-hardening-') {
+function _withSandbox(prefix = 'codex-hardening-') {
   const base = path.join(os.tmpdir(), 'hme-test-sandboxes');
   fs.mkdirSync(base, { recursive: true });
   const root = fs.mkdtempSync(path.join(base, prefix));
@@ -58,7 +58,7 @@ test('raw-streak policy is observational after block retirement', () => {
 });
 
 test('Codex hook decision compact logs hash/channels without raw reason text', () => {
-  const root = sandbox('codex-decision-');
+  const root = _withSandbox('codex-decision-');
   const { sanitizeStdout, recordHookDecision } = require('../../event_kernel/codex_adapter');
   const reason = 'BLOCKED: secret reason payload';
   const raw = JSON.stringify({
@@ -76,7 +76,7 @@ test('Codex hook decision compact logs hash/channels without raw reason text', (
 });
 
 test('Codex PreToolUse payload fixtures route for Read/Grep/Edit/Write', async () => {
-  const root = sandbox('codex-payloads-');
+  const root = _withSandbox('codex-payloads-');
   const file = path.join(root, 'src', 'fixture.js');
   fs.writeFileSync(file, 'const x = 1;\n');
   fs.mkdirSync(path.join(root, 'tmp', 'hme-streak'), { recursive: true });
@@ -95,7 +95,7 @@ test('Codex PreToolUse payload fixtures route for Read/Grep/Edit/Write', async (
 });
 
 test('codex-route and hook-decision status views are compact and API-only', () => {
-  const root = sandbox('codex-status-');
+  const root = _withSandbox('codex-status-');
   fs.mkdirSync(runtimeDir(root), { recursive: true });
   fs.writeFileSync(path.join(runtimeDir(root), 'codex-proxy-events.jsonl'), `${JSON.stringify({ kind: 'request', route: 'omniroute', upstream: 'http://127.0.0.1:20128/v1/responses', after: { model: 'gpt-5.5', tool_names: ['exec_command', 'Read', 'Edit', 'update_plan'] } })}\n${JSON.stringify({ kind: 'response', route: 'omniroute', status: 200, model: 'cx/gpt-5.5' })}\n`);
   fs.writeFileSync(path.join(runtimeDir(root), 'hook-decisions.jsonl'), `${JSON.stringify({ ts: 't', host: 'codex', event: 'PreToolUse', tool: 'Bash', decision: 'deny', reason_hash: 'abc', surfaced_channels: ['permissionDecisionReason'], duplicate_systemMessage_stripped: true })}\n`);
@@ -129,7 +129,7 @@ print(mod._mode_hook_decisions())
 });
 
 test('Codex structured read/edit shims route synthetic native events', () => {
-  const root = sandbox('codex-structured-shim-');
+  const root = _withSandbox('codex-structured-shim-');
   const file = path.join(root, 'src', 'shim.js');
   fs.writeFileSync(file, 'const x = 1;\n');
   fs.mkdirSync(path.join(root, 'tmp', 'hme-streak'), { recursive: true });
@@ -166,7 +166,7 @@ test('Codex structured read/edit shims route synthetic native events', () => {
 });
 
 test('Codex structured git marks empty success explicitly', () => {
-  const root = sandbox('codex-structured-git-');
+  const root = _withSandbox('codex-structured-git-');
   const env = {
     ...process.env,
     PROJECT_ROOT: root,
@@ -182,7 +182,7 @@ test('Codex structured git marks empty success explicitly', () => {
 });
 
 test('Codex Bash hook treats internal structured bridge as structured exit', async () => {
-  const root = sandbox('codex-structured-bash-');
+  const root = _withSandbox('codex-structured-bash-');
   fs.mkdirSync(path.join(root, 'tmp', 'hme-streak'), { recursive: true });
   fs.writeFileSync(path.join(root, 'tmp', 'hme-streak', 'codex-Bash.score'), '70');
   const { dispatchEvent } = require('../../event_kernel/dispatcher');
