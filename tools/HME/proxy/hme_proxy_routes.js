@@ -12,7 +12,12 @@ function createProxyRouteDispatcher({
   PROXY_STARTED_AT,
   routeMetrics,
   stopGateHealth,
+  supervisorStatus,
+  handleSpawnRoute,
   handleLifecycleRoute,
+  handlePreWriteCheckRoute,
+  handleSessionStateRoute,
+  handleMcpRequest,
 }) {
   const uselessPaths = new Set(['/', '/favicon.ico', '/robots.txt']);
 
