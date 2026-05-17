@@ -92,7 +92,11 @@ function mtimeCache({ ttlMs = 0 } = {}) {
 
 function projectPathSegments(filePath, root = PROJECT_ROOT) {
   if (!filePath || !root) return [];
-  const rel = path.relative(path.resolve(root), path.resolve(String(filePath)));
+  const rootAbs = path.resolve(root);
+  const expanded = String(filePath)
+    .replace(/\$\{PROJECT_ROOT\}/g, rootAbs)
+    .replace(/\$PROJECT_ROOT/g, rootAbs);
+  const rel = path.relative(rootAbs, path.resolve(expanded));
   if (!rel || rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel)) return [];
   return rel.split(path.sep).filter(Boolean);
 }
