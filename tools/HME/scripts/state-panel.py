@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import time
+import re
 
 from _common import PROJECT_ROOT, load_jsonl_all
 
@@ -36,6 +37,20 @@ def _read_json(path: str) -> dict | None:
             return json.load(f)
     except (OSError, ValueError):
         return None
+
+
+def _pid_alive(raw: str) -> bool | None:
+    m = re.search(r"\d+", raw or "")
+    if not m:
+        return None
+    pid = int(m.group(0))
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
 
 
 def _age(path: str) -> str:
@@ -67,7 +82,13 @@ def main(argv):
     lock = os.path.join(PROJECT_ROOT, "tmp", "run.lock")
     if os.path.isfile(lock):
         pid = _read_text(lock)
-        out.append(f"  pipeline           RUNNING (pid={pid}, started {_age(lock)})")
+        alive = _pid_alive(pid)
+        if alive is False:
+            out.append(f"  pipeline           stale lock (dead pid={pid}, age {_age(lock)})")
+        elif alive is True:
+            out.append(f"  pipeline           RUNNING (pid={pid}, started {_age(lock)})")
+        else:
+            out.append(f"  pipeline           lock present (unparseable pid, age {_age(lock)})")
     else:
         out.append(f"  pipeline           idle")
 
