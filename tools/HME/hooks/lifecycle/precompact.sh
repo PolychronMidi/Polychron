@@ -36,7 +36,7 @@ if [[ -n "$FOUND" ]]; then
     base="$(basename "$f")"
     case "$base" in
       claude-system-prompt-*|hme-agent-*|hme-canary-*|hme-native-read-*) continue ;;
-      hme-note-tabs.txt|hme-streak-*|hme-transcript-*|hme-turn-*) continue ;;
+      hme-note-tabs.txt|hme-transcript-*|hme-turn-*) continue ;;
       omniroute-config-*|todo-turn-start.md) continue ;;
     esac
     grep -qFx "$f" "$TAB" 2>/dev/null || UNTRACKED+="  $f"$'\n'  # silent-ok: optional fallback path.
