@@ -29,7 +29,7 @@ function createProxyRouteDispatcher({
       return true;
     }
     if (url === '/health') {
-      const { status: supervisorStatus } = require('./supervisor/index');
+      const statusFn = supervisorStatus || require('./supervisor/index').status;
       json(clientRes, 200, {
         status: 'ok',
         port: PORT,
