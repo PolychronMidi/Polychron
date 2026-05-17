@@ -52,57 +52,18 @@ function createClaudeHandler(deps) {
     setLastInputTokensLimit,
     setLastPayloadBytes,
   } = deps;
+  const dispatchProxyRoute = createProxyRouteDispatcher({
+    PORT,
+    PROXY_VERSION,
+    PROXY_GIT_SHA,
+    PROXY_STARTED_AT,
+    routeMetrics: _routeMetrics,
+    stopGateHealth: _stopGateHealth,
+    handleLifecycleRoute: _handleLifecycleRoute,
+  });
 
   function handleRequest(clientReq, clientRes) {
-    if (clientReq.url === '/hme/stop-gate/health') {
-      clientRes.writeHead(200, { 'Content-Type': 'application/json' });
-      clientRes.end(JSON.stringify({ status: 'ok', component: 'hme-stop-gate', ..._stopGateHealth() }));
-      return;
-    }
-    if (clientReq.url === '/health') {
-      clientRes.writeHead(200, { 'Content-Type': 'application/json' });
-      clientRes.end(JSON.stringify({
-        status: 'ok', port: PORT, version: PROXY_VERSION, git_sha: PROXY_GIT_SHA, started_at: PROXY_STARTED_AT, routes: _routeMetrics, supervisor: supervisorStatus(),
-      }));
-      return;
-    }
-    if (clientReq.url === '/version') {
-      clientRes.writeHead(200, { 'Content-Type': 'application/json' });
-      clientRes.end(JSON.stringify({ version: PROXY_VERSION, component: 'hme-proxy' }));
-      return;
-    }
-    // Ad-hoc spawn API: POST /hme/spawn, GET /hme/spawn, GET/DELETE /hme/spawn/<id>
-    if (clientReq.url && clientReq.url.startsWith('/hme/spawn')) {
-      _handleSpawnRoute(clientReq, clientRes);
-      return;
-    }
-    // Lifecycle bridge: proxy-dispatch Claude Code hook events.
-    if (clientReq.url && clientReq.url.startsWith('/hme/lifecycle')) {
-      _handleLifecycleRoute(clientReq, clientRes);
-      return;
-    }
-    if (clientReq.url && clientReq.url.startsWith('/hme/pre-write-check')) {
-      _handlePreWriteCheckRoute(clientReq, clientRes);
-      return;
-    }
-    if (clientReq.url && clientReq.url.startsWith('/hme/session/')) {
-      _handleSessionStateRoute(clientReq, clientRes);
-      return;
-    }
-    // Route MCP requests to the proxy-native MCP server.
-    if (clientReq.url && clientReq.url.startsWith('/mcp')) {
-      handleMcpRequest(clientReq, clientRes);
-      return;
-    }
-    // Short-circuit useless probes BEFORE forwarding -- they burn the
-    // Cloudflare per-IP rate budget and 429 real interactive requests.
-    // Routine browser/monitor probes; drop silently.
-    const _USELESS_PATHS = ['/', '/favicon.ico', '/robots.txt'];
-    if (clientReq.url && _USELESS_PATHS.includes(clientReq.url)) {
-      clientRes.writeHead(404, { 'Content-Type': 'application/json' });
-      clientRes.end(JSON.stringify({ error: 'not_found', note: 'hme-proxy: useless-path probe short-circuited (not forwarded to Anthropic)' }));
-      return;
-    }
+    if (dispatchProxyRoute(clientReq, clientRes)) return;
     const chunks = [];
     clientReq.on('data', (c) => chunks.push(c));
     clientReq.on('end', async () => {
