@@ -4,12 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Inspect current denied-Edit handling and runtime state
+- [ ] [E3] Inspect failing non-fatal pipeline steps
 
 ## Next
 
-- [ ] [E3] Add actionable denied-Edit context and repeat-denial guard
-- [ ] [E3] Run focused tests and resume migration verification
+- [ ] [E3] Patch baseline/run-history/registry-missing behavior
+- [ ] [E3] Run targeted checks and rerun affected pipeline slice
 
 ## Done
 

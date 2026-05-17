@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3507,
-      "updated_ts": 1778978718.7414804,
-      "codex_plan_synced_ts": 1778978718.7413816,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T00:45:00.965Z"
+      "max_id": 3511,
+      "updated_ts": 1778980206.0546227,
+      "codex_plan_synced_ts": 1778980206.0545247,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T01:10:05.593Z"
     }
   },
   {
@@ -7530,8 +7530,8 @@
     "id": 3505,
     "text": "Inspect current denied-Edit handling and runtime state",
     "activeForm": "Inspect current denied-Edit handling and runtime state",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7540,14 +7540,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T00:45:00.965Z"
+    "codex_plan_ts": "2026-05-17T00:45:00.965Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3506,
     "text": "Add actionable denied-Edit context and repeat-denial guard",
     "activeForm": "Add actionable denied-Edit context and repeat-denial guard",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7556,14 +7557,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T00:45:00.965Z"
+    "codex_plan_ts": "2026-05-17T00:45:00.965Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3507,
     "text": "Run focused tests and resume migration verification",
     "activeForm": "Run focused tests and resume migration verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7572,6 +7574,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T00:45:00.965Z"
+    "codex_plan_ts": "2026-05-17T00:45:00.965Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3508,
+    "text": "Run npm run main and capture verdict",
+    "activeForm": "Run npm run main and capture verdict",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778980206.0536134,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:10:05.593Z"
+  },
+  {
+    "id": 3509,
+    "text": "Inspect failing non-fatal pipeline steps",
+    "activeForm": "Inspect failing non-fatal pipeline steps",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778980206.053619,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:10:05.593Z"
+  },
+  {
+    "id": 3510,
+    "text": "Patch baseline/run-history/registry-missing behavior",
+    "activeForm": "Patch baseline/run-history/registry-missing behavior",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778980206.0536222,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:10:05.593Z"
+  },
+  {
+    "id": 3511,
+    "text": "Run targeted checks and rerun affected pipeline slice",
+    "activeForm": "Run targeted checks and rerun affected pipeline slice",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778980206.0536253,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:10:05.593Z"
   }
 ]
