@@ -181,13 +181,13 @@ const _BYTES_PER_TOKEN_EST = 3.5;
 const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 120_000;
 function _effectiveCompactThreshold() {
   // CEILING: HME_PROXY_COMPACT_BYTES (explicit) honored as hard cap.
-  // Otherwise: 50% of learned ITPM cap (leaves room for response +
+  // Otherwise: 75% of learned ITPM cap (leaves room for response +
   // parallel sub-calls). Falls back to 250 KB pre-first-response.
   let ceiling;
   if (_COMPACT_BYTES_EXPLICIT) {
     ceiling = _PASSTHROUGH_COMPACT_BYTES;
   } else if (_lastInputTokensLimit != null && _lastInputTokensLimit > 0) {
-    ceiling = Math.floor(_lastInputTokensLimit * 0.50 * _BYTES_PER_TOKEN_EST);
+    ceiling = Math.floor(_lastInputTokensLimit * 0.75 * _BYTES_PER_TOKEN_EST);
   } else {
     ceiling = _PASSTHROUGH_COMPACT_BYTES;
   }
