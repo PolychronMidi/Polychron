@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3497,
-      "updated_ts": 1778977488.7398129,
-      "codex_plan_synced_ts": 1778977488.7397046,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T00:24:37.364Z"
+      "max_id": 3500,
+      "updated_ts": 1778977910.6054907,
+      "codex_plan_synced_ts": 1778977910.605396,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T00:31:50.157Z"
     }
   },
   {
@@ -7407,5 +7407,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-17T00:24:37.364Z"
+  },
+  {
+    "id": 3498,
+    "text": "Inspect current tree and locate remaining output/ and i/ references",
+    "activeForm": "Inspect current tree and locate remaining output/ and i/ references",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778977910.6045194,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T00:31:50.157Z"
+  },
+  {
+    "id": 3499,
+    "text": "Patch paths and scripts for src/output and relocated i tooling",
+    "activeForm": "Patch paths and scripts for src/output and relocated i tooling",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778977910.6045256,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T00:31:50.157Z"
+  },
+  {
+    "id": 3500,
+    "text": "Run targeted checks and npm run main",
+    "activeForm": "Run targeted checks and npm run main",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778977910.6045296,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T00:31:50.157Z"
   }
 ]

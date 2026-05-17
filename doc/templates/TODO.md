@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect current tree and locate remaining output/ and i/ references
 
 ## Next
 
-(empty)
+- [ ] [E3] Patch paths and scripts for src/output and relocated i tooling
+- [ ] [E3] Run targeted checks and npm run main
 
 ## Done
 
