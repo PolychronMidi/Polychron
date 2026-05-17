@@ -20,6 +20,46 @@ function _permission(decision, reason = '', context = '') {
   return { permissionDecision: decision, reason, contextualRules: context ? [context] : [] };
 }
 
+function _shortLine(line, max = 160) {
+  const s = String(line || '').trim();
+  return s.length > max ? s.slice(0, max - 3) + '...' : s;
+}
+
+function _offendingLine(content, predicate) {
+  const lines = String(content || '').split('\n');
+  for (let i = 0; i < lines.length; i += 1) {
+    if (predicate(lines[i])) return { line: i + 1, text: _shortLine(lines[i]) };
+  }
+  return null;
+}
+
+function _repeatDeny(payload, decision) {
+  if (!decision || decision.permissionDecision !== 'deny') return decision;
+  const input = payload.tool_input || {};
+  const key = crypto.createHash('sha256').update(JSON.stringify({
+    tool: payload.tool_name || '',
+    file: input.file_path || '',
+    old: input.old_string || '',
+    next: input.new_string || input.content || '',
+    reason: decision.reason || '',
+  })).digest('hex').slice(0, 16);
+  const dir = path.join(PROJECT_ROOT, 'tmp', 'hme-edit-denies');
+  const safeSession = String(payload.session_id || 'default').replace(/[^a-zA-Z0-9_.-]/g, '_');
+  const statePath = path.join(dir, safeSession + '.json');
+  let state = {};
+  try { state = JSON.parse(fs.readFileSync(statePath, 'utf8')); } catch (_e) { state = {}; }
+  const count = state.key === key ? Number(state.count || 1) + 1 : 1;
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(statePath, JSON.stringify({ key, count, ts: Date.now() }) + '\n');
+  } catch (_e) { /* silent-ok: retry memory is advisory. */ }
+  if (count <= 1) return decision;
+  return {
+    ...decision,
+    reason: decision.reason + `\nREPEATED DENIED EDIT #${count}: stop retrying this call. Change the edit to satisfy BLOCKED, read the target, or re-plan.`,
+  };
+}
+
 function _loadPolicies() {
   registry.loadBuiltins();
   const cfg = config.get();
