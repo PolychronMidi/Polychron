@@ -32,6 +32,33 @@ def _recent_service_restart(seconds: int = 300) -> tuple[bool, str]:
         return False, ""
 
 
+_LATENCY_EXCLUDED_TOOLS = {"hme_admin", "hme_selftest", "hme_hot_reload"}
+_RESP_RE = re.compile(r"RESP\\s+(\\w+)\\s+\\[([0-9.]+)s\\]")
+
+
+def _recent_interactive_latency_ms(limit: int = 20) -> float | None:
+    path = os.path.join(_PROJECT, "log", "hme.log")
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()[-2000:]
+    except OSError:
+        return None
+    values: list[float] = []
+    for line in reversed(lines):
+        m = _RESP_RE.search(line)
+        if not m or m.group(1) in _LATENCY_EXCLUDED_TOOLS:
+            continue
+        values.append(float(m.group(2)) * 1000)
+        if len(values) >= limit:
+            break
+    if len(values) < 3:
+        return None
+    values.sort()
+    return max(1.0, values[len(values) // 2])
+
+
 class HookLatencyVerifier(Verifier):
     """H3: flag hooks whose p95 wall-time exceeds a per-hook budget.
 
