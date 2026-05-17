@@ -13,22 +13,6 @@ function recordStrip(stats, category, lines) {
     + dropped.reduce((sum, line) => sum + Buffer.byteLength(line) + 1, 0);
 }
 
-function rawBlock(lines, idx) {
-  const m = lines[idx].match(RAW_CHANNEL_RE);
-  if (!m) return null;
-  const payload = [m[2].trim()];
-  let end = idx + 1;
-  while (end < lines.length) {
-    const line = lines[end];
-    if (!line.trim()) break;
-    if (HOOK_SUCCESS_RE.test(line) || WRAPPER_AUTOCORRECT_RE.test(line) || DUP_STOP_RE.test(line) || RAW_CHANNEL_RE.test(line)) break;
-    if (!/^\s+/.test(line) && !RAW_CONTINUATION_RE.test(line)) break;
-    payload.push(line.trim());
-    end += 1;
-  }
-  return { end, payload: payload.join('\n') };
-}
-
 function stripHookNoiseText(text, stats = {}) {
   const lines = String(text || '').split(/\r?\n/);
   const kept = [];
