@@ -30,10 +30,9 @@ function main() {
   let failed = 0;
   for (const r of results) {
     const ok = r.code === 0 || r.code === 2;
-    const expectedBlock = r.code === 1 && /Raw tool streak/.test(r.stderr || r.stdout);
-    if (!ok && !expectedBlock) failed += 1;
-    console.log(`${ok || expectedBlock ? 'ok' : 'not ok'} - ${r.name} (${r.event}) code=${r.code}${expectedBlock ? ' expected-block' : ''}`);
-    if (!ok && !expectedBlock) console.log((r.stderr || r.stdout).slice(0, 1000));
+    if (!ok) failed += 1;
+    console.log(`${ok ? 'ok' : 'not ok'} - ${r.name} (${r.event}) code=${r.code}`);
+    if (!ok) console.log((r.stderr || r.stdout).slice(0, 1000));
   }
   if (failed) process.exit(1);
 }
