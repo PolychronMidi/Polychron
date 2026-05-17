@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3533,
-      "updated_ts": 1778982918.769806,
-      "codex_plan_synced_ts": 1778982918.769701,
+      "max_id": 3537,
+      "updated_ts": 1778982978.7562203,
+      "codex_plan_synced_ts": 1778982978.7561162,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T01:55:12.866Z"
+      "codex_plan_ts": "2026-05-17T01:56:17.638Z"
     }
   },
   {
@@ -7965,8 +7965,8 @@
     "id": 3531,
     "text": "Stop blocked polling pattern and repair stale pipeline status logic",
     "activeForm": "Stop blocked polling pattern and repair stale pipeline status logic",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7975,14 +7975,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:55:12.866Z"
+    "codex_plan_ts": "2026-05-17T01:55:12.866Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3532,
     "text": "Use allowed status surface only for verification",
     "activeForm": "Use allowed status surface only for verification",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7991,14 +7992,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:55:12.866Z"
+    "codex_plan_ts": "2026-05-17T01:55:12.866Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3533,
     "text": "Report concise corrective evidence",
     "activeForm": "Report concise corrective evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8007,6 +8009,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:55:12.866Z"
+    "codex_plan_ts": "2026-05-17T01:55:12.866Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3534,
+    "text": "Locate stop-hook pipeline failure source",
+    "activeForm": "Locate stop-hook pipeline failure source",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778982978.0714414,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:56:17.638Z"
+  },
+  {
+    "id": 3535,
+    "text": "Fix stale or overbroad failure diagnosis",
+    "activeForm": "Fix stale or overbroad failure diagnosis",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778982978.0714474,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:56:17.638Z"
+  },
+  {
+    "id": 3536,
+    "text": "Verify via allowed status/targeted checks",
+    "activeForm": "Verify via allowed status/targeted checks",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778982978.0714512,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:56:17.638Z"
+  },
+  {
+    "id": 3537,
+    "text": "Return concise evidence",
+    "activeForm": "Return concise evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778982978.0714533,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
+    "codex_plan_ts": "2026-05-17T01:56:17.638Z"
   }
 ]

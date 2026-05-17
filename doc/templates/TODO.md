@@ -4,12 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Stop blocked polling pattern and repair stale pipeline status logic
+- [ ] [E3] Locate stop-hook pipeline failure source
 
 ## Next
 
-- [ ] [E3] Use allowed status surface only for verification
-- [ ] [E3] Report concise corrective evidence
+- [ ] [E3] Fix stale or overbroad failure diagnosis
+- [ ] [E3] Verify via allowed status/targeted checks
+- [ ] [E3] Return concise evidence
 
 ## Done
 
