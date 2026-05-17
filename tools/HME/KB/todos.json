@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3581,
-      "updated_ts": 1779030547.08729,
-      "codex_plan_synced_ts": 1779030547.0871692,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-      "codex_plan_ts": "2026-05-17T15:09:00.464Z"
+      "max_id": 3584,
+      "updated_ts": 1779030616.137158,
+      "codex_plan_synced_ts": 1779030616.1370473,
+      "codex_plan_source": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+      "codex_plan_ts": "2026-05-17T15:10:15.701Z"
     }
   },
   {
@@ -8801,5 +8801,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
     "codex_plan_ts": "2026-05-17T15:09:00.464Z"
+  },
+  {
+    "id": 3582,
+    "text": "Inspect dirty state and recent errors",
+    "activeForm": "Inspect dirty state and recent errors",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779030616.1360095,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:10:15.701Z"
+  },
+  {
+    "id": 3583,
+    "text": "Fix any unresolved prior-turn artifacts",
+    "activeForm": "Fix any unresolved prior-turn artifacts",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779030616.136015,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:10:15.701Z"
+  },
+  {
+    "id": 3584,
+    "text": "Verify hooks/guards and final status",
+    "activeForm": "Verify hooks/guards and final status",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779030616.1360195,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:10:15.701Z"
   }
 ]

@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect dirty state and recent errors
 
 ## Next
 
-(empty)
+- [ ] [E3] Fix any unresolved prior-turn artifacts
+- [ ] [E3] Verify hooks/guards and final status
 
 ## Done
 
