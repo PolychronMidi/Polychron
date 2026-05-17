@@ -105,7 +105,7 @@ def status(mode: str = "all") -> str:
     # Arc II: Matched patterns -- the MOST actionable surface in status output.
     try:
         import json as _json_pat
-        _pat_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-pattern-matches.json")
+        _pat_path = str(hme_metric("hme-pattern-matches.json"))
         if os.path.isfile(_pat_path):
             with open(_pat_path) as _pf:
                 _pat = _json_pat.load(_pf)
