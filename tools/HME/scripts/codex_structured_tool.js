@@ -236,7 +236,24 @@ async function runGrep(argv) {
   await pre('Grep', input);
   const flags = input.ignore_case ? 'i' : '';
   const re = input.fixed ? null : new RegExp(input.pattern, flags);
-  const bases = (input.paths || [input.path]).map((p) => absPath(p));
+  const bases = [];
+  const skipped = [];
+  for (const p of (input.paths || [input.path])) {
+    try { bases.push(absPath(p)); }
+    catch (err) {
+      if (err && err.code === 'ENOENT') skipped.push(String(p));
+      else {
+        const msg = `Error: invalid grep path '${String(p).slice(0, 120)}': ${err.message}`;
+        await finishStructured('Grep', input, msg, { isError: true, rawStderr: msg });
+        return;
+      }
+    }
+  }
+  if (!bases.length) {
+    const msg = `Error: no valid grep path(s); skipped ${skipped.length}: ${skipped.slice(0, 8).join(', ')}`;
+    await finishStructured('Grep', input, msg, { isError: true, rawStderr: msg });
+    return;
+  }
   const lines = [];
   for (const b of bases) {
     for (const fp of walk(b, 10)) {
