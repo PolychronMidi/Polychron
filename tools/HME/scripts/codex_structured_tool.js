@@ -10,7 +10,8 @@ const { recordFailure, clearFailure } = require('../proxy/turn_failure_state');
 
 const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
 const SESSION = process.env.HME_SESSION_ID || process.env.CODEX_SESSION_ID || 'codex-structured';
-const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', '__pycache__', 'tmp', 'runtime', 'log']);
+const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', '__pycache__', 'tmp', 'runtime', 'log', 'KB']);
+const GREP_MAX_BYTES = 1024 * 1024;
 const DISPLAY_REDACTED_RE = /<display-redacted:|<omitted by proxy>/i;
 
 function usage() {
