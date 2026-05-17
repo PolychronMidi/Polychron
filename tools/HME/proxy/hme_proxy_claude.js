@@ -16,7 +16,10 @@ const { requestTelemetry } = require('./request_telemetry');
 const { routeDecision } = require('./model_route_resolver');
 const { applyOverdriveRoute } = require('./overdrive_route');
 const { handleLegacySwapResponse } = require('./legacy_swap_response');
-const { _detectUpstreamFailure, _alertCooldownActive } = require('./failure_classification');
+const {
+  detectUpstreamFailure: _detectUpstreamFailure,
+  alertCooldownActive: _alertCooldownActive,
+} = require('./failure_classification');
 const middleware = require('./middleware/index');
 const hmeDispatcher = require('./hme_dispatcher');
 const { handleMcpRequest } = require('./mcp_server/index');
