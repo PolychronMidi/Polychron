@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3527,
-      "updated_ts": 1778982348.7540832,
-      "codex_plan_synced_ts": 1778982348.7539828,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T01:45:47.084Z"
+      "max_id": 3530,
+      "updated_ts": 1778982410.420319,
+      "codex_plan_synced_ts": 1778982410.4202173,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T01:46:49.979Z"
     }
   },
   {
@@ -6051,8 +6051,8 @@
     "id": 3416,
     "text": "Report evidence",
     "activeForm": "Report evidence",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -6060,8 +6060,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T17:14:41.684Z"
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:46:49.979Z"
   },
   {
     "id": 3417,
@@ -7908,5 +7908,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
     "codex_plan_ts": "2026-05-17T01:45:47.084Z"
+  },
+  {
+    "id": 3528,
+    "text": "Read current pipeline failure evidence",
+    "activeForm": "Read current pipeline failure evidence",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778982410.4192705,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:46:49.979Z"
+  },
+  {
+    "id": 3529,
+    "text": "Fix or verify stale pipeline failure",
+    "activeForm": "Fix or verify stale pipeline failure",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778982410.419276,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:46:49.979Z"
+  },
+  {
+    "id": 3530,
+    "text": "Run the smallest check that clears the lifecycle condition",
+    "activeForm": "Run the smallest check that clears the lifecycle condition",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778982410.41928,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:46:49.979Z"
   }
 ]

@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Read current pipeline failure evidence
 
 ## Next
 
-(empty)
+- [ ] [E3] Report evidence
+- [ ] [E3] Fix or verify stale pipeline failure
+- [ ] [E3] Run the smallest check that clears the lifecycle condition
 
 ## Done
 
