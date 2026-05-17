@@ -325,16 +325,21 @@ async function _injectHmeTools(payload) {
   }
 }
 
-function _consumeStopReminderSystemText() {
+const STOP_REMINDER_FILE = require('path').join(require('./shared').PROJECT_ROOT, 'tmp', 'hme-stop-reminder.json');
+
+function _consumeStopReminderSystemText(file = STOP_REMINDER_FILE) {
   const fs = require('fs');
-  const path = require('path');
-  const file = path.join(require('./shared').PROJECT_ROOT, 'tmp', 'hme-stop-reminder.json');
   let raw = '';
   try { raw = fs.readFileSync(file, 'utf8'); } catch (_err) { return ''; }
   try { fs.unlinkSync(file); } catch (_err) { /* silent-ok: best-effort consume once */ }
   let data = {};
   try { data = JSON.parse(raw); } catch (_err) { return ''; }
   return String((data && data.text) || '').trim();
+}
+
+function _stopReminderPending(file = STOP_REMINDER_FILE) {
+  try { return require('fs').existsSync(file); }
+  catch (_err) { return false; }
 }
 
 function _extractTextContent(content) {
