@@ -1,0 +1,43 @@
+'use strict';
+
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+function prepareUpstreamHeaders({ clientReq, upstream, outBody, isAnthropic, isOmniRouteSwap }) {
+  const upstreamHeaders = { ...clientReq.headers };
+  delete upstreamHeaders.host;
+  delete upstreamHeaders['content-length'];
+  delete upstreamHeaders['x-hme-upstream'];
+  upstreamHeaders.host = upstream.host;
+  if (outBody.length > 0) upstreamHeaders['content-length'] = String(outBody.length);
+
+  if (isAnthropic) delete upstreamHeaders['accept-encoding'];
+
+  if (isAnthropic && typeof upstreamHeaders.authorization === 'string'
+      && upstreamHeaders.authorization.startsWith('Bearer ')) {
+    if (!upstreamHeaders['anthropic-beta']) upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
+  }
+
+  if (isAnthropic && !isOmniRouteSwap && !upstreamHeaders.authorization && !upstreamHeaders['x-api-key']) {
+    const remoteAddr = (clientReq.socket && clientReq.socket.remoteAddress) || '';
+    const isLoopback = remoteAddr === '127.0.0.1' || remoteAddr === '::1' || remoteAddr === '::ffff:127.0.0.1';
+    if (isLoopback) {
+      try {
+        const credsPath = path.join(os.homedir(), '.claude/.credentials.json');
+        const creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
+        const token = creds && creds.claudeAiOauth && creds.claudeAiOauth.accessToken;
+        if (token) {
+          upstreamHeaders.authorization = `Bearer ${token}`;
+          if (!upstreamHeaders['anthropic-beta']) upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
+          console.error(`injected OAuth token for loopback request (path=${clientReq.url})`);
+        }
+      } catch (err) {
+        console.error(`auth injection failed: ${err.message}`);
+      }
+    }
+  }
+  return upstreamHeaders;
+}
+
+module.exports = { prepareUpstreamHeaders };
