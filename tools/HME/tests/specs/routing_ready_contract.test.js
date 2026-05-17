@@ -23,10 +23,10 @@ test('Claude proxy binds dual-stack localhost', () => {
 });
 
 
-test('Claude proxy imports failure classification under call-site aliases', () => {
-  const claudeSource = fs.readFileSync(path.join(repo, 'tools/HME/proxy/hme_proxy_claude.js'), 'utf8');
-  assert.match(claudeSource, /detectUpstreamFailure:\s*_detectUpstreamFailure/);
-  assert.match(claudeSource, /alertCooldownActive:\s*_alertCooldownActive/);
+test('Claude upstream-failure module imports failure classification under call-site aliases', () => {
+  const failureSource = fs.readFileSync(path.join(repo, 'tools/HME/proxy/hme_proxy_upstream_failure.js'), 'utf8');
+  assert.match(failureSource, /detectUpstreamFailure:\s*_detectUpstreamFailure/);
+  assert.match(failureSource, /alertCooldownActive:\s*_alertCooldownActive/);
 });
 
 test('routing health clears resolved autocommit epoch errors', () => {
