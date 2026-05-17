@@ -1,14 +1,26 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
 const { PROJECT_ROOT } = require('./shared');
 const { stripStaleToolResults, sanitizeMessages } = require('./conversation_graph');
 const { shrinkForPassthrough } = require('./passthrough_compact');
 const hmeDispatcher = require('./hme_dispatcher');
 
 const HME_PREFIX = /^mcp__HME__/;
+const PROXY_STARTED_AT = new Date().toISOString();
+const PROXY_GIT_SHA = (() => {
+  try {
+    const { execSync } = require('child_process');
+    return execSync('git rev-parse --short HEAD', {
+      cwd: require('path').resolve(__dirname, '..', '..', '..'),
+      encoding: 'utf8',
+      timeout: 1000,
+    }).trim();
+  } catch (_) { return 'unknown'; }
+})();
+function _loadedMiddleware() {
+  try { return require('./middleware/index').loadedNames(); }
+  catch (_) { return []; }
+}
 function _stripHmePrefixOutgoing(payload) {
   // Backward-compat: message histories may still contain mcp__HME__ tool_uses
   // from prior sessions. Rename to HME_ so the model sees a consistent name.
@@ -337,7 +349,7 @@ function _stopGateHealth() {
     reminder_file: STOP_REMINDER_FILE,
     reminder_pending: _stopReminderPending(),
     registry_hash: require('crypto').createHash('sha256').update(registry).digest('hex').slice(0, 16),
-    middleware: _loadedMiddleware,
+    middleware: _loadedMiddleware(),
     started_at: PROXY_STARTED_AT,
     git_sha: PROXY_GIT_SHA,
   };
@@ -349,6 +361,10 @@ const __hmeProxyInternals = {
   _stopReminderPending,
   _normalizeSystemArray,
   _extractTextContent,
+  _appendTextContent,
+  _injectStopReminderSystem,
+  _stopGateHealth,
+};
 module.exports = {
   _stripHmePrefixOutgoing,
   _envNumber,
