@@ -87,6 +87,8 @@ const REASONS = {
     'PILE-ON ANTIPATTERN: This turn edited 2+ detector / policy / hook files. Endless rule-stacking is itself the failure mode -- each detector firing produces another rule edit, each rule edit creates new firings, the cycle accumulates ceremony without resolving the underlying issue. STOP editing detectors. The fix for a noisy detector firing is rarely another rule; usually the right move is discretion (let the imperfect rule fire, continue the actual work). If a real detector bug exists, fix THAT specific bug and stop -- do not also tighten three neighboring detectors in the same turn. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   CLAIM_WITHOUT_EVIDENCE:
     "VERIFICATION DOCTRINE (Iron Law): Final text claimed completion (`tests pass`, `lands`, `live at`, `now works`, `verified`, etc.) WITHOUT a same-turn evidence-producing tool call. Claim without verification is dishonesty, not efficiency. Either (a) run the verification command NOW (Bash test/curl/build/probe, or Read of the claimed-modified file) and re-emit the claim WITH the evidence inline, or (b) drop the claim language and state actual status (e.g. `code change made; not yet verified`). The phrase `should pass`, `probably works`, or `looks correct` is also a violation -- evidence before claims, always. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.",
+  UNFINISHED_TASKS:
+    'UNFINISHED TASK-LIST VIOLATION: The active task list still contains pending or in_progress items. Do not end the turn with open tasks. Complete them now, or if a task is genuinely obsolete, update/delete it with an explicit task tool before stopping. Acknowledgement text is not completion evidence.',
   FIX_WITHOUT_INVESTIGATION:
     'SYSTEMATIC-DEBUGGING PHASE GATE: User reported a bug / broken behavior / failure, and your turn made Edit/Write/MultiEdit calls WITHOUT a prior investigation-shape tool call (Read/Grep/Glob/Bash with grep/cat/log/git-diff/i-status/curl-health/etc.). NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST. The fastest path to a real fix is: reproduce the symptom, trace the causal chain, identify the failing component, THEN edit. Skipping straight to a guessed fix produces symptom-patching (the next bug surfaces in the same area within hours). Either (a) investigate now -- read the relevant logs/code/state, then propose the fix with the causal chain stated, or (b) explicitly note this was a one-line obvious fix (typo, clear stack-trace pointer) where investigation would be ceremony. If the work is actually done and there is nothing left, silence is the correct response -- do NOT write ceremony text to dodge this gate.',
   COMMENT_BLOAT:
@@ -316,6 +318,60 @@ function hasSameTurnEvidence(turnStartMs) {
   });
 }
 
+function _entryText(entry) {
+  const content = (entry && entry.message && entry.message.content) || (entry && entry.content);
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content.map((b) => {
+      if (!b) return '';
+      if (typeof b === 'string') return b;
+      if (b.type === 'text') return b.text || '';
+      if (b.text) return b.text;
+      if (b.content && typeof b.content === 'string') return b.content;
+      return '';
+    }).filter(Boolean).join('\n');
+  }
+  return '';
+}
+
+function scanUnfinishedTaskReminder(text) {
+  if (!text) return [];
+  const lines = String(text).split(/\r?\n/);
+  const hits = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (!/\b(in_progress|pending)\b/i.test(trimmed)) continue;
+    if (!/(^|[^A-Za-z])(task|todo|status|subject|description|activeForm|Here are the existing tasks|<system-reminder>)/i.test(trimmed)) continue;
+    hits.push(trimmed.slice(0, 240));
+    if (hits.length >= 6) break;
+  }
+  return hits;
+}
+
+function unfinishedTaskDebt(transcriptPath) {
+  if (!transcriptPath) return null;
+  let lines;
+  try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); }
+  catch (_e) { return null; }
+  let debt = [];
+  for (const line of lines) {
+    if (!line) continue;
+    let entry;
+    try { entry = JSON.parse(line); } catch (_e) { continue; }
+    const role = entry.type || entry.role;
+    if (role !== 'user') continue;
+    const text = _entryText(entry);
+    if (!text) continue;
+    const looksTaskReminder = /Here are the existing tasks|TaskList|task list|existing tasks/i.test(text);
+    if (!looksTaskReminder && !/<system-reminder>[\s\S]*\b(in_progress|pending)\b/i.test(text)) continue;
+    const hits = scanUnfinishedTaskReminder(text);
+    if (hits.length) debt = hits;
+  }
+  if (!debt.length) return null;
+  return `${REASONS.UNFINISHED_TASKS}\n\nOpen task evidence:\n${debt.map((s, i) => `  ${i + 1}. ${s}`).join('\n')}`;
+}
+
 module.exports = {
   name: 'work_checks',
   async run(ctx) {
@@ -348,6 +404,8 @@ module.exports = {
     }
 
     if (!transcriptPath) return ctx.allow();
+    const taskDebt = unfinishedTaskDebt(transcriptPath);
+    if (taskDebt) { armFpGate('UNFINISHED_TASKS'); return ctx.deny(taskDebt); }
     const { text: lastUser, turnIndex } = lastUserInfo;
     if (!lastUser) return ctx.allow();
     ctx.shared.lastRealUserText = lastUser;
