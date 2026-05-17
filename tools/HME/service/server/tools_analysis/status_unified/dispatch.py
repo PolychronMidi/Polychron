@@ -125,7 +125,7 @@ def status(mode: str = "all") -> str:
     # Arc IV: Meta-measurement efficacy summary. Surfaces which invariants
     try:
         import json as _json_eff
-        _eff_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-invariant-efficacy.json")
+        _eff_path = str(hme_metric("hme-invariant-efficacy.json"))
         if os.path.isfile(_eff_path):
             with open(_eff_path) as _ef:
                 _eff = _json_eff.load(_ef)
