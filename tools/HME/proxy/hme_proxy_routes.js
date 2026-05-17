@@ -46,7 +46,8 @@ function createProxyRouteDispatcher({
       return true;
     }
     if (url.startsWith('/hme/spawn')) {
-      require('./routes_admin').handleSpawnRoute(clientReq, clientRes);
+      const handler = handleSpawnRoute || require('./routes_admin').handleSpawnRoute;
+      handler(clientReq, clientRes);
       return true;
     }
     if (url.startsWith('/hme/lifecycle')) {
