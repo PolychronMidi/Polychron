@@ -18,3 +18,8 @@ test('sub-pipeline upstream failures do not write lifesaver errors', () => {
   assert.match(proxy, /_suppressLifesaver = _coolingDown \|\| _pathLabel === 'sub-pipeline'/);
   assert.equal(proxy.includes("if (_pathLabel === 'interactive') {\n          const errLog"), true);
 });
+
+test('structured path parsing strips accidental trailing punctuation after miss', () => {
+  assert.match(structured, /function pathCandidates/);
+  assert.match(structured, /replace\(\/\^\['/);
+});
