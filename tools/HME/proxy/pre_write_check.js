@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const registry = require('../policies/registry');
 const config = require('../policies/config');
