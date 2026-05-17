@@ -45,6 +45,43 @@ test('compact_tool_descriptions rewrites verbose tool descriptions only', () => 
   assert.ok(payload.tools[5].description.length < 220);
 });
 
+test('compact_tool_descriptions inserts canonical TodoWrite when missing', () => {
+  const payload = { tools: [
+    { name: 'Read', description: 'very long read description' },
+    { name: 'TaskCreate', description: 'task create should have been filtered earlier' },
+  ] };
+  assert.equal(run(payload), true);
+  const names = payload.tools.map((t) => t.name);
+  assert.deepEqual(names, ['Read', 'TaskCreate', 'TodoWrite']);
+  const todo = payload.tools.find((t) => t.name === 'TodoWrite');
+  assert.match(todo.description, /^Maintain a session task list/);
+  assert.deepEqual(Object.keys(todo.input_schema.properties), ['todos']);
+  assert.deepEqual(todo.input_schema.required, ['todos']);
+});
+
+test('filter_tools reads current .env drop list and strips task-tool surface', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-filter-tools-'));
+  try {
+    fs.writeFileSync(path.join(root, '.env'), 'HME_FILTER_TOOLS_DROP=TaskCreate,TaskGet,TaskList,TaskStop,TaskUpdate,TaskOutput # comment\n');
+    const filter = require('../../proxy/middleware/03_filter_tools');
+    const payload = { tools: [
+      { name: 'Read' },
+      { name: 'TaskCreate' },
+      { name: 'TaskGet' },
+      { name: 'TaskList' },
+      { name: 'TaskStop' },
+      { name: 'TaskUpdate' },
+      { name: 'Write' },
+    ] };
+    let dirty = false;
+    filter.onRequest({ payload, ctx: { PROJECT_ROOT: root, markDirty: () => { dirty = true; } } });
+    assert.equal(dirty, true);
+    assert.deepEqual(payload.tools.map((t) => t.name), ['Read', 'Write']);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('compact_tool_descriptions is no-op when tools are absent', () => {
   assert.equal(run({}), false);
 });
