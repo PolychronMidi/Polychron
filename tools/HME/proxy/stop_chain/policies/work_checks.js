@@ -238,6 +238,20 @@ function scanIncompleteCompletionClaims(text) {
   return out;
 }
 
+function scanNextActionDebt(text) {
+  if (!text) return [];
+  const stripped = text.replace(/```[\s\S]*?```/g, ' ');
+  const re = /\bnext\s+(action|step)\s+(is|would\s+be|will\s+be|should\s+be|remains?|needed|to\s+do)\b[^.!?\n]{0,160}/gi;
+  const out = [];
+  let m;
+  while ((m = re.exec(stripped)) !== null) {
+    const s = m[0].trim().replace(/\s+/g, ' ');
+    if (s) out.push(s);
+    if (out.length >= 4) break;
+  }
+  return out;
+}
+
 function entryTimestampMs(entry) {
   const raw = entry && (entry.timestamp || entry.created_at || entry.time || entry.ts);
   if (typeof raw === 'number') return raw > 10_000_000_000 ? raw : raw * 1000;
