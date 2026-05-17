@@ -86,7 +86,7 @@
       "outage_link": null
     },
     {
-      "name": "stop_work",
+      "name": "stop_work_dismissive",
       "module": "stop_work",
       "fires_when": "DISMISSIVE",
       "bash_var": "STOP_WORK",
@@ -97,6 +97,20 @@
       "owning_invariant": "universal agent-work hygiene",
       "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
       "why": "Protects transcript against stop work failures.",
+      "outage_link": null
+    },
+    {
+      "name": "stop_work_text_only",
+      "module": "stop_work",
+      "fires_when": "TEXT_ONLY_SHORT",
+      "bash_var": "STOP_WORK",
+      "deny": true,
+      "reason_key": "STOP_WORK_TEXT_ONLY",
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Protects transcript against text-only short stop failures.",
       "outage_link": null
     },
     {
