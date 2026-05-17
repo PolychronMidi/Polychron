@@ -10,6 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const cp = require('child_process');
 const { PROJECT_ROOT } = require('../../shared');
 
 const NEXUS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-nexus.state');
