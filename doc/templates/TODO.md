@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Trace alarm source and stale state
 
 ## Next
 
-(empty)
+- [ ] [E3] Patch alarm clear logic
+- [ ] [E3] Add regression and verify
 
 ## Done
 

@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3590,
-      "updated_ts": 1779031387.083206,
-      "codex_plan_synced_ts": 1779031387.0830922,
+      "max_id": 3593,
+      "updated_ts": 1779031507.1059551,
+      "codex_plan_synced_ts": 1779031507.1058385,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-      "codex_plan_ts": "2026-05-17T15:23:00.766Z"
+      "codex_plan_ts": "2026-05-17T15:25:06.623Z"
     }
   },
   {
@@ -8945,5 +8945,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
     "codex_plan_ts": "2026-05-17T15:23:00.766Z"
+  },
+  {
+    "id": 3591,
+    "text": "Trace alarm source and stale state",
+    "activeForm": "Trace alarm source and stale state",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779031507.0666792,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:25:06.623Z"
+  },
+  {
+    "id": 3592,
+    "text": "Patch alarm clear logic",
+    "activeForm": "Patch alarm clear logic",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779031507.0666847,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:25:06.623Z"
+  },
+  {
+    "id": 3593,
+    "text": "Add regression and verify",
+    "activeForm": "Add regression and verify",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779031507.0666883,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:25:06.623Z"
   }
 ]
