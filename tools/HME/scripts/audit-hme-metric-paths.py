@@ -43,7 +43,7 @@ def audit() -> list[str]:
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
         for no, line in enumerate(text.splitlines(), 1):
-            if LEGACY_RE.search(line):
+            if any(pat.search(line) for pat in LEGACY_PATTERNS):
                 issues.append(f"{rel}:{no}: legacy HME metric path")
     return issues
 
