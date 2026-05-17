@@ -6,7 +6,6 @@ const todo = require('./todo');
 
 const preToolHandlers = {
   Agent: agent.pretoolAgent,
-  Glob: streak.pretoolGlob,
   TodoWrite: todo.pretoolTodoWrite,
 };
 
