@@ -48,7 +48,6 @@ test('stop reminder injects into payload.system and consumes staged file', () =>
 test('Claude handler serves stop-gate health route', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stop-route-'));
   const prevRoot = process.env.PROJECT_ROOT;
-  const prevQuiet = process.env.HME_PROXY_QUIET_IMPORT;
   try {
     fs.mkdirSync(path.join(root, 'tools/HME/scripts/detectors'), { recursive: true });
     fs.writeFileSync(path.join(root, 'tools/HME/scripts/detectors/registry.json'), JSON.stringify({ detectors: [] }));
