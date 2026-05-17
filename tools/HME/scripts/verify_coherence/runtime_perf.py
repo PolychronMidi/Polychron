@@ -273,11 +273,19 @@ class ToolResponseLatencyVerifier(Verifier):
         ]
 
         if ratio_med >= 3.0 or ratio_p75 >= 3.0:
+            recent = [float(h.get("ema_ms", 0)) for h in history[-3:]]
+            spike_count = sum(1 for v in recent + [ema_ms] if median > 0 and v / median >= 3.0)
+            if spike_count < 2:
+                return _result(
+                    WARN, 0.65,
+                    f"latency spike: {ema_ms:.0f}ms vs {median:.0f}ms baseline",
+                    details + ["single-sample spike; FAIL requires persistence"],
+                )
             score = max(0.0, 1.0 - (ratio_med - 1.5) / 3.0)
             return _result(
                 FAIL, score,
                 f"latency regression: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}*)",
-                details + ["latency spiked -- investigate recent changes"],
+                details + ["latency spike persisted -- investigate recent changes"],
             )
         if ratio_med >= 1.5:
             return _result(
