@@ -123,7 +123,7 @@ pulse as a fallback scanner. The HME layer adds the following transparently:
 - **on_done triggers.** Pass `on_done='reindex'|'learn'|'commit'` to fire a lifecycle hook when the item is marked done. `reindex` runs `i/hme admin action=index` in the background. `learn` queues a reminder to call `i/learn` at the next turn. `commit` flags a commit nudge in the nexus.
 - **Onboarding stays separate.** The current walkthrough step appears in status output, not as persistent tasks.
 - **Cross-session persistence.** Open items from the previous session surface at `SessionStart` with a diff view. Completed items live in the store history until auto-pruned or archived.
-- **Live mermaid graph.** The store writes a live rendering to [src/output/metrics/todo-graph.md](../../src/output/metrics/todo-graph.md) on every change. Use this to see the work tree as a diagram.
+- **Live mermaid graph.** The store writes a live rendering to `tools/HME/runtime/metrics/todo-graph.md` on every change. Use this to see the work tree as a diagram.
 
 ## Rules and boundaries -- authoritative source
 
