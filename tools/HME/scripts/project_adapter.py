@@ -62,3 +62,8 @@ def source_roots(root: Path = PROJECT_ROOT, adapter: dict | None = None) -> list
 def project_docs(root: Path = PROJECT_ROOT, adapter: dict | None = None) -> list[Path]:
     cfg = adapter or load_adapter(root)
     return [resolve_path(root, p) for p in cfg.get("project_docs", [])]
+
+
+def has_capability(name: str, root: Path = PROJECT_ROOT, adapter: dict | None = None) -> bool:
+    cfg = adapter or load_adapter(root)
+    return bool(cfg.get("capabilities", {}).get(name))
