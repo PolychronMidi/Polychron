@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect error watermarks and pending segment
+(empty)
 
 ## Next
 
-- [ ] [E3] Fix stale or active alarm source
-- [ ] [E3] Verify clean hook state and repo
+(empty)
 
 ## Done
 

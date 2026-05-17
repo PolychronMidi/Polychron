@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3599,
-      "updated_ts": 1779032707.0812607,
-      "codex_plan_synced_ts": 1779032707.081146,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-      "codex_plan_ts": "2026-05-17T15:44:52.268Z"
+      "updated_ts": 1779032741.4257574,
+      "codex_plan_synced_ts": 1779032741.425644,
+      "codex_plan_source": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+      "codex_plan_ts": "2026-05-17T15:45:40.995Z"
     }
   },
   {
@@ -9049,8 +9049,8 @@
     "id": 3597,
     "text": "Inspect error watermarks and pending segment",
     "activeForm": "Inspect error watermarks and pending segment",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9058,15 +9058,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:44:52.268Z"
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:45:40.995Z"
   },
   {
     "id": 3598,
     "text": "Fix stale or active alarm source",
     "activeForm": "Fix stale or active alarm source",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9074,15 +9074,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:44:52.268Z"
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:45:40.995Z"
   },
   {
     "id": 3599,
     "text": "Verify clean hook state and repo",
     "activeForm": "Verify clean hook state and repo",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9090,7 +9090,7 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:44:52.268Z"
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:45:40.995Z"
   }
 ]
