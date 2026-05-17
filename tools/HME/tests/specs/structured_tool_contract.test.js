@@ -13,6 +13,12 @@ test('structured Grep accepts whitespace-separated path lists', () => {
   assert.match(structured, /paths: d\.paths \|\| splitPathList\(rawPath\)/);
 });
 
+test('structured Grep skips missing path-list entries without aborting valid roots', () => {
+  assert.match(structured, /const bases = \[\]/);
+  assert.match(structured, /skipped\.push\(String\(p\)\)/);
+  assert.match(structured, /Error: no valid grep path\(s\)/);
+});
+
 test('sub-pipeline upstream failures do not write lifesaver errors', () => {
   assert.match(proxy, /_pathLabel === 'sub-pipeline'/);
   assert.match(proxy, /_suppressLifesaver = _coolingDown \|\| _pathLabel === 'sub-pipeline'/);
