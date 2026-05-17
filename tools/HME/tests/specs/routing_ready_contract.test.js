@@ -19,7 +19,7 @@ test('Claude proxy binds dual-stack localhost', () => {
   const proxySource = fs.readFileSync(path.join(repo, 'tools/HME/proxy/hme_proxy.js'), 'utf8');
   assert.match(proxySource, /host: '::'/);
   assert.match(proxySource, /ipv6Only: false/);
-  assert.match(proxySource, /localhost\/:\/: compatibility/);
+  assert.match(proxySource, /http:\/\/\[::1\]/);
 });
 
 test('routing health clears resolved autocommit epoch errors', () => {
