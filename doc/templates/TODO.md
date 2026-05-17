@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Trace current work-check enforcement path
+(empty)
 
 ## Next
 
-- [ ] [E3] Identify the missed-list failure mode
-- [ ] [E3] Patch checks/tests to block scoped-complete evasions
-- [ ] [E3] Verify targeted work-check tests
+(empty)
 
 ## Done
 
