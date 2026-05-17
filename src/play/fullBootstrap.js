@@ -474,6 +474,7 @@ moduleLifecycle.declare({
     // -- node / timing --
     'fs',
     'path',
+    'COMPOSITION_OUTPUT_DIR',
     'METRICS_DIR',
     'minMidi',
     'maxMidi',
