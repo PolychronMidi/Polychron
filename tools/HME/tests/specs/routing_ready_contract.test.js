@@ -25,7 +25,7 @@ root = Path(tempfile.mkdtemp(prefix='route-health-clear-'))
 state = root / 'tools/HME/runtime'
 state.mkdir(parents=True)
 log = root / 'log/hme-codex-proxy.out'
-log.write_text('''=== codex_proxy start 2026-05-17T15:00:00Z ===\n[autocommit:proxy FAIL 2026-05-17T15:02:25Z] [onRequest] git commit failed twice: VIOLATION: ${HME_RUNTIME_DIR}/metrics -- misplaced root/runtime directory\n    throw new Error(\nError: check-root-only-dirs: 1 misplaced log/metrics/tmp directory and 0 forbidden root file(s) found.\n''')
+log.write_text('''=== codex_proxy start 2026-05-17T15:00:00Z ===\n[autocommit:proxy FAIL 2026-05-17T15:02:25Z] [onRequest] git commit failed twice: VIOLATION: \${HME_RUNTIME_DIR}/metrics -- misplaced root/runtime directory\n    throw new Error(\nError: check-root-only-dirs: 1 misplaced log/metrics/tmp directory and 0 forbidden root file(s) found.\n''')
 (state / 'autocommit.counter').write_text('0')
 (state / 'autocommit.last-success').write_text('2026-05-17T15:03:25Z')
 assert _epoch_errors(root, 'log/hme-codex-proxy.out', 'codex_proxy') == []
