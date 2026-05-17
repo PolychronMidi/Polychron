@@ -43,6 +43,7 @@ const {
 } = require('./hme_proxy_core');
 const { recordOmniRouteFailureAdvance } = require('./hme_proxy_codex');
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
+const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
 
 function createClaudeHandler(deps) {
   const {
@@ -684,181 +685,14 @@ function createClaudeHandler(deps) {
           outHeaders = traced.outHeaders;
           outBuf = traced.outBuf;
 
-          // Strip content-length on ANY SSE-mutation path. SseTransform
-          // changes byte count; stale CL stalls or truncates the client.
-          const _willSseTransform = !final
-            && (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
-          // Strip stale content-length on EITHER mutation path: SSE transform
-          // changes byte count, AND the non-SSE bare-ack-strip rewrite
-          // (below) can shrink the body. Without strip, clients see length
-          // mismatch and stall or truncate. Cost: chunked encoding.
-          if (_willSseTransform || !final) {
-            outHeaders = { ...outHeaders };
-            delete outHeaders['content-length'];
-          }
-
-          clientRes.writeHead(outStatus, outHeaders);
-
-          // Apply SSE transforms only if this is an SSE response being forwarded.
-          const isSseFinal = (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
-          if (isSseFinal && !final) {
-            // Original streaming path (no HME interception happened) -- pipe
-            // through the Transform for Bash run_in_background rewriting.
-            const { SseTransform } = require('./sse_transform');
-            const { readInputNormalizeRewrite, bashPolicyRewrite, runInBackgroundRewrite, longLeadingSleepRewrite, ackStripRewrite, slopStripRewrite, hallucinatedTurnPrefixStripRewrite, stopHookCeremonyStripRewrite, fpGateMarkerRewrite, soloRationaleTrimRewrite } = require('./sse_rewriters');
-            const { providerReasoningToThinkingRewrite } = require('./reasoning_to_thinking');
-            // Order: longLeadingSleep rewrites BEFORE runInBackground reads
-            // (both keyed by content-block index for consistent state).
-            // Chain order is encoded in the rewriters[] array below.
-            const xform = new SseTransform({
-              // fpGateMarker FIRST -- handles [FP-CHECK: yes/no] marker (yes ->
-              // truncate to `.`; no -> strip marker line). soloRationaleTrim
-              // LAST -- surgical trim of trailing rationale paragraph.
-              rewriters: [readInputNormalizeRewrite, providerReasoningToThinkingRewrite, fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, bashPolicyRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
-            });
-            // Populate priorUserWasDeny flag for the ack-strip rewriter:
-            // last user message matches a hook-deny payload marker.
-            try {
-              const msgs = (payload && payload.messages) || [];
-              let lastUserText = '';
-              for (const m of msgs) {
-                if (!m || m.role !== 'user') continue;
-                const c = m.content;
-                if (typeof c === 'string') {
-                  lastUserText = c;
-                } else if (Array.isArray(c)) {
-                  lastUserText = c.filter((b) => b && b.type === 'text')
-                    .map((b) => b.text || '').join(' ') || lastUserText;
-                }
-              }
-              const denyMarkers = [
-                'Stop hook feedback:',
-                'Stop hook blocking error from command:',
-                'AUTO-COMPLETENESS',
-                'EXHAUST PROTOCOL',
-                'PreToolUse:',
-                'PostToolUse:',
-              ];
-              const _denyHit = lastUserText && denyMarkers.some((m) => lastUserText.includes(m));
-              if (_denyHit) {
-                xform._ctx.set('priorUserWasDeny', true);
-              }
-              // Diagnostic: log every SSE response we set up the strip
-              // for, so we can verify the path is being reached and
-              // priorUserWasDeny is being set correctly.
-              try {
-                const fs = require('fs');
-                const path = require('path');
-                fs.appendFileSync(
-                  path.join(PROJECT_ROOT, 'log', 'hme-proxy-ackstrip.log'),
-                  `[${new Date().toISOString()}] sse-setup priorUserWasDeny=${_denyHit} lastUserHead=${JSON.stringify(lastUserText.slice(0,80))}\n`,
-                );
-              } catch (_e) { /* best-effort */ }
-            } catch (_e) { /* best-effort */ }
-            xform.pipe(clientRes);
-            xform.end(outBuf);
-          } else {
-            // Non-streaming: scan body for bare-ack text blocks; emit a
-            // LIFESAVER entry on detection so next turn sees it. Strip also
-            // runs when conditions match (defense in depth).
-            try {
-              const msgs = (payload && payload.messages) || [];
-              let lastUserText = '';
-              for (const m of msgs) {
-                if (!m || m.role !== 'user') continue;
-                const c = m.content;
-                if (typeof c === 'string') {
-                  lastUserText = c;
-                } else if (Array.isArray(c)) {
-                  lastUserText = c.filter((b) => b && b.type === 'text')
-                    .map((b) => b.text || '').join(' ') || lastUserText;
-                }
-              }
-              const denyMarkers = [
-                'Stop hook feedback:',
-                'Stop hook blocking error from command:',
-                'AUTO-COMPLETENESS',
-                'EXHAUST PROTOCOL',
-                'PreToolUse:',
-                'PostToolUse:',
-              ];
-              const userIsDeny = lastUserText && denyMarkers.some((m) => lastUserText.includes(m));
-              const outStr = outBuf.toString('utf8');
-              if (outStr.trimStart().startsWith('{')) {
-                const parsed = JSON.parse(outStr);
-                if (parsed && Array.isArray(parsed.content)) {
-                  // Use the canonical ack detector from sse_rewriters so the
-                  // SSE and non-SSE paths stay in sync. Keyword templates
-                  // PLUS minimal/punctuation-only/empty fall under one
-                  // _isBareAck function.
-                  const { _isBareAck } = require('./sse_rewriters');
-                  let detectedAck = false;
-                  for (const b of parsed.content) {
-                    if (b && b.type === 'text' && typeof b.text === 'string'
-                        && _isBareAck(b.text)) {
-                      detectedAck = true;
-                      break;
-                    }
-                  }
-                  if (detectedAck) {
-                    // Stat-only -- write to a SEPARATE log (mirrors SSE-path
-                    // policy in sse_rewriters.js). Strip is the cure; logging
-                    // to errors.log re-fired the alert every turn.
-                    try {
-                      const fs = require('fs');
-                      const path = require('path');
-                      const _ackContext = userIsDeny ? 'cascade-after-deny' : 'cascade-no-deny';
-                      fs.appendFileSync(
-                        path.join(PROJECT_ROOT, 'log', 'hme-bare-ack-strips.jsonl'),
-                        JSON.stringify({
-                          ts: new Date().toISOString(),
-                          path: 'non-sse',
-                          context: _ackContext,
-                        }) + '\n',
-                      );
-                    } catch (_e2) { /* stat is best-effort */ }
-                    if (userIsDeny) {
-                      parsed.content = parsed.content.filter((b) => {
-                        if (!b || b.type !== 'text' || typeof b.text !== 'string') return true;
-                        return !_isBareAck(b.text);
-                      });
-                      const newBuf = Buffer.from(JSON.stringify(parsed), 'utf8');
-                      clientRes.end(newBuf);
-                      return;
-                    }
-                  }
-                }
-              }
-            } catch (_e) { /* best-effort -- fall through to verbatim */ }
-            clientRes.end(outBuf);
-          }
-          // Stop-hook fallback (post-response, after recent /hme/lifecycle Stop
-          // miss): only fire when final assistant message has no tool_use --
-          // approximates real turn end and avoids mid-turn retrigger.
-          const _hasToolUse = (() => {
-            try {
-              // Non-streaming: outBuf is the JSON message with .content blocks.
-              // Parse-fail defaults to no-tool-use so the fallback still fires.
-              const outStr = (outBuf && typeof outBuf.toString === 'function')
-                ? outBuf.toString('utf8') : '';
-              if (!outStr || !outStr.trimStart().startsWith('{')) return false;
-              const parsed = JSON.parse(outStr);
-              if (!parsed || !Array.isArray(parsed.content)) return false;
-              for (const b of parsed.content) {
-                if (b && b.type === 'tool_use') return true;
-              }
-              return false;
-            } catch (_) { return false; }
-          })();
-          if (isAnthropic && !_hasToolUse && _lifecycleInactive('Stop')) {
-            try {
-              const stopSession = payload ? sessionKey(payload) : 'unknown';
-              const stdin = JSON.stringify({ session_id: stopSession, transcript_path: '' });
-              _runInlineFallback('Stop', stdin);
-            } catch (e) {
-              console.error('inline Stop threw:', e.message);
-            }
-          }
+          sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, outBuf });
+          maybeRunStopFallback({
+            isAnthropic,
+            payload,
+            outBuf,
+            lifecycleInactive: _lifecycleInactive,
+            runInlineFallback: _runInlineFallback,
+          });
         });
         upstreamRes.on('error', (err) => {
           try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
