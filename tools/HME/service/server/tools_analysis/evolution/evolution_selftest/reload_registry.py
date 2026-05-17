@@ -27,7 +27,7 @@ RELOADABLE = [
     "evolution_evolve", "evolution_invariants", "search_unified", "review_unified",
     "read_unified", "learn_unified", "status_unified", "trace_unified",
     "agent_unified",
-    "todo_store", "todo_sources", "todo_md_sync", "todo_archive",
+    "todo_store", "todo_state_guard", "todo_sources", "todo_md_sync", "todo_archive",
     "todo_markdown_ingest", "todo_close", "todo_lifesaver", "todo_native_merge", "todo",
     "enrich_prompt", "tools_passthru", "activity_digest", "blindspots",
     "cascade_analysis", "hypothesis_registry", "prediction_accuracy",
