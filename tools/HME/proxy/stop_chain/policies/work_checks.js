@@ -217,7 +217,7 @@ function scanSpeculation(text) {
 }
 
 function isBroadCompletionPrompt(text) {
-  return /\b(do\s+all|all\s+fully|complete\s+fully|are\s+all\s+\d+|completion\s+for\s+the\s+\d+(st|nd|rd|th)\s+time)\b/i.test(text || '');
+  return /\b(do\s+all|all\s+fully|complete\s+fully|complete\s+all|full\s+list|entire\s+list|everything|anything\s+missing|all\s+suggestions|complete\s+the\s+suggestions|does\s+that\s+complete\s+all|are\s+all\s+\d+|completion\s+for\s+the\s+\d+(st|nd|rd|th)\s+time)\b/i.test(text || '');
 }
 
 function scanIncompleteCompletionClaims(text) {
