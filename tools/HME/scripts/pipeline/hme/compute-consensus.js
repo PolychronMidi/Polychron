@@ -6,13 +6,14 @@
 
 'use strict';
 
+const { metricPath } = require('./utils');
+
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
 const ROOT = (process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..', '..'));
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
-const OUT = path.join(METRICS_DIR, 'hme-consensus.json');
+const OUT = metricPath('hme-consensus.json');
 const DIVERGENCE_THRESHOLD = 0.4;  // stdev above this triggers divergence alert
 
 // R32: voters extracted to consensus_voters.js. Adding a new voter = define
@@ -66,10 +67,10 @@ function main() {
   // R25 #10: time-averaged per-voter metrics. Compute rolling mean + slope
   const voterTrajectories = {};
   try {
-    const tsPath = path.join(METRICS_DIR, 'hme-arc-timeseries.jsonl');
+    const tsPath = metricPath('hme-arc-timeseries.jsonl');
     if (fs.existsSync(tsPath)) {
       // Timeseries doesn't carry per-voter scalars (just outlier_voters array).
-      const histPath = path.join(METRICS_DIR, 'hme-consensus-history.jsonl');
+      const histPath = metricPath('hme-consensus-history.jsonl');
       const prevLines = fs.existsSync(histPath)
         ? fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean)
         : [];
@@ -115,8 +116,8 @@ function main() {
   // R29 #4: composition_reality_overrides_substrate_divergence.
   let overrideApplied = false;
   try {
-    const gtPath = path.join(METRICS_DIR, 'hme-ground-truth.jsonl');
-    const sumPath = path.join(METRICS_DIR, 'pipeline-summary.json');
+    const gtPath = metricPath('hme-ground-truth.jsonl');
+    const sumPath = metricPath('pipeline-summary.json');
     if (fs.existsSync(gtPath) && fs.existsSync(sumPath)) {
       const gtLines = fs.readFileSync(gtPath, 'utf8').split('\n').filter(Boolean);
       const recentGt = gtLines.slice(-3).map((l) => {
@@ -166,7 +167,7 @@ function main() {
   // R23 #6: consensus_regression event when stdev rises >0.3 vs prior round.
   // Distinct from one-round high-divergence: this catches ACCELERATION.
   try {
-    const tsPath = path.join(METRICS_DIR, 'hme-arc-timeseries.jsonl');
+    const tsPath = metricPath('hme-arc-timeseries.jsonl');
     if (fs.existsSync(tsPath)) {
       const tsLines = fs.readFileSync(tsPath, 'utf8').split('\n').filter(Boolean);
       if (tsLines.length >= 1) {
@@ -192,7 +193,7 @@ function main() {
 
   // R23 #5: axis_cost_trend forecaster -- linear extrapolation from
   try {
-    const tsPath = path.join(METRICS_DIR, 'hme-arc-timeseries.jsonl');
+    const tsPath = metricPath('hme-arc-timeseries.jsonl');
     if (fs.existsSync(tsPath)) {
       const tsLines = fs.readFileSync(tsPath, 'utf8').split('\n').filter(Boolean);
       const tsRows = tsLines.map((l) => { try { return JSON.parse(l); } catch (_e) { return null; } }).filter(Boolean);
@@ -220,7 +221,7 @@ function main() {
   // R23 #9: harvester action acted-on accounting. For each previous round's
   try {
     const { execSync } = require('child_process');
-    const naPath = path.join(METRICS_DIR, 'hme-next-actions.json');
+    const naPath = metricPath('hme-next-actions.json');
     if (fs.existsSync(naPath)) {
       const naData = JSON.parse(fs.readFileSync(naPath, 'utf8'));
       const prevIds = (naData.actions || []).map((a) => a.id).filter(Boolean);

@@ -7,12 +7,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const { ROOT, loadJson, loadJsonl, clamp, metricPath } = require('./utils');
 
 const TODOS = path.join(ROOT, 'tools', 'HME', 'KB', 'todos.json');
-const ACTIVITY = path.join(METRICS_DIR, 'hme-activity.jsonl');
-const OUT = path.join(METRICS_DIR, 'hme-intention-gap.json');
+const ACTIVITY = metricPath('hme-activity.jsonl');
+const OUT = metricPath('hme-intention-gap.json');
 
 const ROLLING_WINDOW = 30;
 const EMA_ALPHA = 0.2;

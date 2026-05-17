@@ -10,13 +10,14 @@
 
 'use strict';
 
+const { metricPath } = require('./utils');
+
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = (process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..', '..'));
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
-const TRACE = path.join(METRICS_DIR, 'trace-summary.json');
-const OUT = path.join(METRICS_DIR, 'legacy-override-history.jsonl');
+const TRACE = metricPath('trace-summary.json');
+const OUT = metricPath('legacy-override-history.jsonl');
 
 function loadJson(p) {
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
@@ -115,7 +116,7 @@ function main() {
 
     // R15 #10: Wire sustained deviations (3+ consecutive rounds) to the
     try {
-      const histPath = path.join(METRICS_DIR, 'legacy-override-history.jsonl');
+      const histPath = metricPath('legacy-override-history.jsonl');
       const lines = fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean);
       const recent = lines.slice(-3).map((l) => {
         try { return JSON.parse(l); } catch (_e) { return null; }
@@ -136,7 +137,7 @@ function main() {
           })
         );
         if (persistent.length > 0) {
-          const alertPath = path.join(METRICS_DIR, 'hci-regression-alert.json');
+          const alertPath = metricPath('hci-regression-alert.json');
           fs.writeFileSync(alertPath, JSON.stringify({
             ts: new Date().toISOString(),
             kind: 'axis_share_persistent_deviation',

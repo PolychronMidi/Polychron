@@ -7,13 +7,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const { ROOT, loadJson, loadJsonl, clamp, metricPath } = require('./utils');
 
-const ACTIVITY = path.join(METRICS_DIR, 'hme-activity.jsonl');
-const STALENESS = path.join(METRICS_DIR, 'kb-staleness.json');
-const VIOLATIONS = path.join(METRICS_DIR, 'hme-violations.json');
-const OUT = path.join(METRICS_DIR, 'hme-coherence.json');
+const ACTIVITY = metricPath('hme-activity.jsonl');
+const STALENESS = metricPath('kb-staleness.json');
+const VIOLATIONS = metricPath('hme-violations.json');
+const OUT = metricPath('hme-coherence.json');
 
 function readEvents() {
   if (!fs.existsSync(ACTIVITY)) return [];

@@ -7,12 +7,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
+const { ROOT, loadJson, loadJsonl, clamp, metricPath } = require('./utils');
 
-const PREDICTIONS = path.join(METRICS_DIR, 'hme-predictions.jsonl');
-const FINGERPRINT = path.join(METRICS_DIR, 'fingerprint-comparison.json');
-const ACCURACY_OUT = path.join(METRICS_DIR, 'hme-prediction-accuracy.json');
+const PREDICTIONS = metricPath('hme-predictions.jsonl');
+const FINGERPRINT = metricPath('fingerprint-comparison.json');
+const ACCURACY_OUT = metricPath('hme-prediction-accuracy.json');
 const EMA_ALPHA = 0.2; // 20% weight on newest round, 80% on history
 const HISTORY_CAP = 50;
 
@@ -70,7 +69,7 @@ function main() {
   const CURRENT_ROUND_WINDOW_MS = 30 * 60 * 1000;
   let windowStart = Date.now() - CURRENT_ROUND_WINDOW_MS;
   try {
-    const activityPath = path.join(METRICS_DIR, 'hme-activity.jsonl');
+    const activityPath = metricPath('hme-activity.jsonl');
     if (fs.existsSync(activityPath)) {
       const raw = fs.readFileSync(activityPath, 'utf8');
       const lines = raw.split('\n').reverse();
