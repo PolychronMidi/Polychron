@@ -360,18 +360,26 @@ function _appendTextContent(content, text) {
   return [block];
 }
 
-function _injectStopReminderSystem(payload) {
-  const text = _consumeStopReminderSystemText();
-  if (!text || !payload || !Array.isArray(payload.messages)) return false;
+function _normalizeSystemArray(payload) {
+  if (!payload || payload.system == null) {
+    payload.system = [];
+    return true;
+  }
+  if (typeof payload.system === 'string') {
+    payload.system = [{ type: 'text', text: payload.system }];
+    return true;
+  }
+  if (Array.isArray(payload.system)) return true;
+  return false;
+}
+
+function _injectStopReminderSystem(payload, file = STOP_REMINDER_FILE) {
+  const text = _consumeStopReminderSystemText(file);
+  if (!text || !payload || !_normalizeSystemArray(payload)) return false;
   const marker = 'HME Stop Hook Feedback (proxy-injected)';
-  const wrapped = /^<system-reminder>[\s\S]*<\/system-reminder>$/.test(text)
-    ? text
-    : `<system-reminder>\n${text}\n</system-reminder>`;
-  const block = `${marker}\n${wrapped}`;
-  const last = payload.messages[payload.messages.length - 1];
-  if (!last || last.role !== 'user') return false;
-  if (_extractTextContent(last.content).includes(marker)) return false;
-  last.content = _appendTextContent(last.content, block);
+  if (payload.system.some((b) => String((b && b.text) || b || '').includes(marker))) return false;
+  const cleanText = text.replace(/^<system-reminder>\s*/i, '').replace(/\s*<\/system-reminder>$/i, '').trim();
+  payload.system.push({ type: 'text', text: `<system-reminder>\n${marker}\n${cleanText}\n</system-reminder>` });
   return true;
 }
 
