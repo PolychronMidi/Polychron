@@ -16,7 +16,14 @@ on — belongs here, where it survives a `tmp/` flush.
 - File names match the constants in `tools/HME/proxy/shared.js`
   (`RUNTIME_DIR`-prefixed) and `tools/HME/service/paths.py`
   (`runtime_dir()`-prefixed).
-- No `hme-` prefix needed (the directory already implies it).
+- Metrics may keep legacy `hme-` names; new durable state can omit the prefix.
+
+## Metric split
+
+- `tools/HME/runtime/metrics/` is the HME self-coherence metrics root.
+- `src/output/metrics/` is the composition/project metrics root.
+- HME readers prefer runtime metrics and fall back to legacy project paths.
+- HME writers write runtime metrics only.
 
 ## Migrated state files
 
