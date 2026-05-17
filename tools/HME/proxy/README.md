@@ -62,7 +62,7 @@ Exit `0` = clean, `1` = violation.
 - `hme_proxy_connection_errors.js` -- retry, snapshots, and shaped 502s
 - `hme_proxy_response_trace.js` -- response dump/blank-response diagnostics
 - `hme_proxy_response_send.js` -- SSE/non-SSE final response rewriting and Stop fallback
-- `hme_proxy_fp_gate.js` -- FP-check upstream kill scanner
+- `hme_proxy_fp_gate.js` -- FP kill scanner
 - `hme_proxy_upstream_failure.js` -- upstream failure classification, snapshots, retry
 - `hme_proxy_codex.js` -- OmniRoute/Codex fallback helpers
 - `hme_proxy_core.js` -- shared HME payload helpers and stop-reminder health
