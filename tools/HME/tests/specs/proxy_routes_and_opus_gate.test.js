@@ -80,10 +80,15 @@ test('non-lifecycle route dispatch does not import lifecycle bridge', () => {
   assert.equal(require.cache[lifecyclePath], undefined, 'lifecycle bridge stays unloaded');
 });
 
-test('lifecycle route uses injected handler lazily', () => {
+test('admin route handlers are injectable and lazy', () => {
   clearProxyCache();
   const { createProxyRouteDispatcher } = require('../../proxy/hme_proxy_routes');
-  let called = false;
+  const calls = [];
+  const handler = (name) => (_req, res) => {
+    calls.push(name);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ name }));
+  };
   const dispatch = createProxyRouteDispatcher({
     PORT: 9099,
     PROXY_VERSION: 'test-version',
@@ -91,16 +96,24 @@ test('lifecycle route uses injected handler lazily', () => {
     PROXY_STARTED_AT: 'test-start',
     routeMetrics: {},
     stopGateHealth: () => ({}),
-    handleLifecycleRoute: (req, res) => {
-      called = true;
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end('{"ok":true}');
-    },
+    handleSpawnRoute: handler('spawn'),
+    handleLifecycleRoute: handler('lifecycle'),
+    handlePreWriteCheckRoute: handler('prewrite'),
+    handleSessionStateRoute: handler('session'),
+    handleMcpRequest: handler('mcp'),
   });
-  const res = fakeRes();
-  assert.equal(dispatch(fakeReq('/hme/lifecycle?event=SessionStart', 'POST'), res), true);
-  assert.equal(called, true);
-  assert.equal(JSON.parse(res.body).ok, true);
+  for (const [url, name] of [
+    ['/hme/spawn', 'spawn'],
+    ['/hme/lifecycle?event=SessionStart', 'lifecycle'],
+    ['/hme/pre-write-check', 'prewrite'],
+    ['/hme/session/state', 'session'],
+    ['/mcp', 'mcp'],
+  ]) {
+    const res = fakeRes();
+    assert.equal(dispatch(fakeReq(url, 'POST'), res), true);
+    assert.equal(JSON.parse(res.body).name, name);
+  }
+  assert.deepEqual(calls, ['spawn', 'lifecycle', 'prewrite', 'session', 'mcp']);
 });
 
 test('Opus gate disabled returns an idempotent release immediately', async () => {
