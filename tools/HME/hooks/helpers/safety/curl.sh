@@ -3,24 +3,8 @@
 # the next failure appends to hme-errors.log so LIFESAVER surfaces it at the
 # next turn. Previously this fire-and-forgot with `2>/dev/null || echo ''`
 # and silent 100% failure rates masqueraded as "worker returned nothing."
-# Threshold sourced from (in order): the streak calibrator's adaptive file
-# at tmp/hme-streak-warn.txt (written by activity/streak_calibrator.py each
-# round -- closes the observation->action loop), then .env's HME_STREAK_WARN,
-# then 5 as final fallback. The calibrator file overrides .env so the system
-# self-tunes without requiring a manual .env edit.
-_hme_load_streak_warn() {
-  local calibrated_file="${PROJECT_ROOT:-}/tmp/hme-streak-warn.txt"
-  if [ -n "${PROJECT_ROOT:-}" ] && [ -f "$calibrated_file" ]; then
-    local v
-    v=$(head -c 8 "$calibrated_file" 2>/dev/null | tr -cd '0-9')  # silent-ok: optional fallback path.
-    if [ -n "$v" ] && [ "$v" -ge 1 ] && [ "$v" -le 99 ]; then
-      echo "$v"
-      return
-    fi
-  fi
-  echo "${HME_STREAK_WARN:-5}"
-}
-_HME_CURL_STREAK_WARN="$(_hme_load_streak_warn)"
+# Curl failure threshold is fixed unless overridden explicitly.
+_HME_CURL_STREAK_WARN="${HME_CURL_STREAK_WARN:-5}"
 # Streak file lives under $PROJECT_ROOT/tmp/ per the "no duplicate output dirs"
 _hme_curl_streak_path() {
   if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/tmp" ]; then
