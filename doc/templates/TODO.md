@@ -4,12 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Run pipeline to expose current migration failures
+- [ ] [E3] Identify why the 91-char comment edit block was repeated
 
 ## Next
 
-- [ ] [E3] Patch paths and scripts for src/output and relocated i tooling
-- [ ] [E3] Run targeted checks and npm run main
+- [ ] [E3] Patch the immediate stale i-wrapper/root reference docs/tests safely
+- [ ] [E3] Resume pipeline wait/verification after current run finishes
 
 ## Done
 

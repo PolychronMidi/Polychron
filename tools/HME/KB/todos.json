@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3501,
-      "updated_ts": 1778977998.7272758,
-      "codex_plan_synced_ts": 1778977998.727178,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T00:33:17.045Z"
+      "max_id": 3504,
+      "updated_ts": 1778978436.9133773,
+      "codex_plan_synced_ts": 1778978436.9132822,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T00:40:36.452Z"
     }
   },
   {
@@ -7428,8 +7428,8 @@
     "id": 3499,
     "text": "Patch paths and scripts for src/output and relocated i tooling",
     "activeForm": "Patch paths and scripts for src/output and relocated i tooling",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7438,14 +7438,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T00:33:17.045Z"
+    "codex_plan_ts": "2026-05-17T00:33:17.045Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3500,
     "text": "Run targeted checks and npm run main",
     "activeForm": "Run targeted checks and npm run main",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7454,14 +7455,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T00:33:17.045Z"
+    "codex_plan_ts": "2026-05-17T00:33:17.045Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3501,
     "text": "Run pipeline to expose current migration failures",
     "activeForm": "Run pipeline to expose current migration failures",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7470,6 +7472,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T00:33:17.045Z"
+    "codex_plan_ts": "2026-05-17T00:33:17.045Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3502,
+    "text": "Identify why the 91-char comment edit block was repeated",
+    "activeForm": "Identify why the 91-char comment edit block was repeated",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778978436.9123943,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T00:40:36.452Z"
+  },
+  {
+    "id": 3503,
+    "text": "Patch the immediate stale i-wrapper/root reference docs/tests safely",
+    "activeForm": "Patch the immediate stale i-wrapper/root reference docs/tests safely",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778978436.9124005,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T00:40:36.452Z"
+  },
+  {
+    "id": 3504,
+    "text": "Resume pipeline wait/verification after current run finishes",
+    "activeForm": "Resume pipeline wait/verification after current run finishes",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778978436.9124055,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T00:40:36.452Z"
   }
 ]
