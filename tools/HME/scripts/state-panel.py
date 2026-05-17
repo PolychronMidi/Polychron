@@ -17,6 +17,7 @@ import time
 import re
 
 from _common import PROJECT_ROOT, load_jsonl_all
+from hme_paths import hme_metric
 
 
 def _read_text(path: str) -> str:
@@ -137,7 +138,7 @@ def main(argv):
         out.append(f"  KB freshness       (no lance directories found)")
 
     # 6. Latest activity event
-    activity = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
+    activity = str(hme_metric("hme-activity.jsonl"))
     if os.path.isfile(activity):
         try:
             with open(activity) as f:
@@ -173,10 +174,9 @@ def main(argv):
             else:
                 conf_str = f"  conf=fragile (min={min_score:.2f})"
         out.append(f"  HCI                {hci}/100 ({n} verifiers){conf_str}")
-        ts_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
-                               "hme-coherence-timeseries.jsonl")
+        ts_path = str(hme_metric("hme-coherence-timeseries.jsonl"))
         if os.path.isfile(ts_path) and hci_num is not None:
-            rows = load_jsonl_all("src/output/metrics/hme-coherence-timeseries.jsonl")
+            rows = load_jsonl_all(str(hme_metric("hme-coherence-timeseries.jsonl")))
             rows = [r for r in rows if r.get("hci") is not None]
             if len(rows) >= 2:
                 now = time.time()
@@ -252,7 +252,7 @@ def main(argv):
             out.append(f"  agent-loop {marker}      {status}  score={score:.2f}  (i/status mode=agent-loop for detail)")
 
     # 9. Last hot-reload -- auto-reload fires on .py edits under
-    reload_marker = os.path.join(PROJECT_ROOT, "tmp", "hme-last-reload.json")
+    reload_marker = os.path.join(PROJECT_ROOT, "tools", "HME", "runtime", "last-reload.json")
     reload_info = _read_json(reload_marker)
     if reload_info:
         try:
