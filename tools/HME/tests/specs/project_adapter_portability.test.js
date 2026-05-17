@@ -32,6 +32,34 @@ test('HME runtime metrics default outside src', () => {
   assert.match(hmePaths.HME_METRICS_DIR, /tools[\/]HME[\/]runtime[\/]metrics$/);
 });
 
+test('activity emitter resolves template metrics env to HME runtime', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-emit-env-'));
+  try {
+    const proc = childProcess.spawnSync(
+      'python3',
+      [path.join(repo, 'tools/HME/activity/emit.py'), '--event=env_path_test'],
+      {
+        cwd: tmp,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PROJECT_ROOT: tmp,
+          HME_RUNTIME_DIR: '${PROJECT_ROOT}/tools/HME/runtime',
+          HME_METRICS_DIR: '${HME_RUNTIME_DIR}/metrics',
+        },
+      },
+    );
+    assert.equal(proc.status, 0, proc.stderr || proc.stdout);
+    assert.equal(
+      fs.existsSync(path.join(tmp, 'tools/HME/runtime/metrics/hme-activity.jsonl')),
+      true,
+    );
+    assert.equal(fs.existsSync(path.join(tmp, '${HME_RUNTIME_DIR}')), false);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('generic project fixture passes project health and portability audit', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-generic-project-'));
   copyDir(path.join(repo, 'tools/HME/tests/fixtures/generic-project'), tmp);
