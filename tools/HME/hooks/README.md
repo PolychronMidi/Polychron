@@ -27,25 +27,11 @@ Use `_emit_block "reason"` only for rules the agent MUST NOT violate. For soft g
 
 ## Dispatch
 
-`hooks.json` and `codex_hooks.json` are the live manifests. Sync them with:
-
-```bash
-tools/HME/scripts/sync-claude-settings.py
-tools/HME/scripts/sync-codex-settings.py
-```
-
-Audit drift with the matching `audit-*settings.py` scripts. Codex user hooks may need one-time approval from `/hooks`; provider routing remains active independently through `codex_proxy`.
-
-Proxy-up path:
+`hooks.json` and `codex_hooks.json` are the live manifests. Sync them with `sync-claude-settings.py` / `sync-codex-settings.py`; audit with the matching `audit-*settings.py` scripts. Codex user hooks may need one-time approval from `/hooks`.
 
 ```text
-Host event -> *_adapter.js -> POST /hme/lifecycle -> proxy/lifecycle_bridge.js -> event_kernel/dispatcher.js
-```
-
-Proxy-down fallback:
-
-```text
-Host event -> *_adapter.js -> event_kernel/dispatcher.js
+proxy up:   Host event -> *_adapter.js -> POST /hme/lifecycle -> lifecycle_bridge.js -> dispatcher.js
+proxy down: Host event -> *_adapter.js -> dispatcher.js
 ```
 
 Both paths use the same dispatcher and policy order. Proxy HTTP middleware is absent only while the daemon is down.
@@ -54,7 +40,7 @@ Both paths use the same dispatcher and policy order. Proxy HTTP middleware is ab
 
 | Event | Scripts fired | Notes |
 |---|---|---|
-| `SessionStart` | `lifecycle/sessionstart.sh` | Session orientation, state reset, bundle health. |
+| `SessionStart` | `lifecycle/sessionstart.sh` | Orientation, state reset, bundle health. |
 | `UserPromptSubmit` | `lifecycle/userpromptsubmit.sh` | Stale-state sweep, lifesaver scan, autocommit. |
 | `PreToolUse` | native JS or `pretooluse/pretooluse_<tool>.sh` | Pre-execution gates can deny. |
 | `PermissionRequest` | JS policy registry | Codex approval prompts reuse deny policies. |
@@ -62,14 +48,6 @@ Both paths use the same dispatcher and policy order. Proxy HTTP middleware is ab
 | `PreCompact` | `lifecycle/precompact.sh` | Flush KB and snapshot. |
 | `PostCompact` | `lifecycle/postcompact.sh` | Reload KB. |
 | `Stop` | `proxy/stop_chain` + shell fallback | First-deny-wins stop policy chain. |
-
-### Shell entrypoints
-
-- `log-tool-call.sh`
-- `sessionstart.sh`, `userpromptsubmit.sh`, `precompact.sh`, `postcompact.sh`, `canary.sh`
-- `pretooluse_bash.sh`, `pretooluse_check_pipeline.sh`, `pretooluse_edit.sh`, `pretooluse_grep.sh`, `pretooluse_hme_primer.sh`, `pretooluse_read.sh`, `pretooluse_write.sh`
-- `posttooluse_addknowledge.sh`, `posttooluse_bash.sh`, `posttooluse_edit.sh`, `posttooluse_hme_review.sh`, `posttooluse_pipeline_kb.sh`, `posttooluse_read_kb.sh`, `posttooluse_write.sh`
-- `autocommit-direct.sh`, `proxy-maintenance.sh`, `proxy-supervisor.sh`, `codex-proxy-supervisor.sh`, `proxy-watchdog.sh`, `universal-pulse-supervisor.sh`
 
 ### Helpers
 
