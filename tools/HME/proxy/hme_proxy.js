@@ -73,6 +73,7 @@ function getHandleRequest() {
     recordProxyError: proxyRouteMetrics.recordError,
     WORKER_PORT, SUPERVISE,
     ...contextBudget,
+    ...opusGate,
     anthropicTextSseBuffer: core._anthropicTextSseBuffer,
     loadedMiddleware,
   });
