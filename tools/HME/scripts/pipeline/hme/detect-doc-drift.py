@@ -234,7 +234,8 @@ _BUILTINS = {
     "GraphQL", "ThreadPool", "GitHub", "TypeScriptTypes", "NodeJS",
     "coherentThresholdScale", "conductorScopes", "contourShape",
     "crossLayerScopes", "directionBias", "densityBias", "phaseProfile",
-    "tensionBias", "textureProfile",
+    "tensionBias", "textureProfile", "stateProvider",
+    "stutterScale", "playScale",
 }
 
 
