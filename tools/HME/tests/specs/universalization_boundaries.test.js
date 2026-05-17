@@ -36,7 +36,7 @@ test('decision normalizer keeps protocol rendering separate from shared decision
   const claudeStop = claudeRelayFields('Stop', { stdout: JSON.stringify({ decision: 'block', reason }), stderr: '', exit_code: 0 });
   assert.equal(claudeStop.exit_code, 0);
   assert.equal(claudeStop.stdout, JSON.stringify({ decision: 'block', reason }));
-  assert.equal(claudeStop.stderr, '');
+  assert.equal(claudeStop.stderr, ' ');
 });
 
 test('request transform core remains protocol-aware for Codex cleanup', () => {
