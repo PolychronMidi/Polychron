@@ -214,36 +214,6 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "tmp/hme-non-hme-streak.score",
-      "owner": "tools/HME/hooks/helpers/_safety.sh",
-      "readers": [
-        "tools/HME/hooks/helpers/_safety.sh"
-      ],
-      "writers": [
-        "tools/HME/hooks/helpers/_safety.sh"
-      ],
-      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
-      "generated": true,
-      "committed": false,
-      "schema": "owner-defined",
-      "repair": "run tools/HME/scripts/hme-doctor.py"
-    },
-    {
-      "path": "tmp/hme-streak-warn.txt",
-      "owner": "tools/HME/scripts/streak_calibrator.py",
-      "readers": [
-        "tools/HME/hooks/helpers/_safety.sh"
-      ],
-      "writers": [
-        "tools/HME/scripts/streak_calibrator.py"
-      ],
-      "retention": "bounded by owner; stale files repaired by owner-specific cleanup",
-      "generated": true,
-      "committed": false,
-      "schema": "owner-defined",
-      "repair": "run tools/HME/scripts/hme-doctor.py"
-    },
-    {
       "path": "tmp/hme-onboarding.state",
       "owner": "tools/HME/hooks/helpers/_onboarding.sh",
       "readers": [
