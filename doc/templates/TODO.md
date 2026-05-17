@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Inspect current tree and locate remaining output/ and i/ references
+- [ ] [E3] Run pipeline to expose current migration failures
 
 ## Next
 
