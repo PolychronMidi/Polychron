@@ -10,10 +10,8 @@
 const { metricPath } = require('./utils');
 
 const fs = require('fs');
-const path = require('path');
 
 function makeVoters(ROOT) {
-  const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'src', 'output', 'metrics');
   function loadJson(p) {
     try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
     catch (_e) { return null; }
