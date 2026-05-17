@@ -171,8 +171,6 @@ function createClaudeHandler(deps) {
       }
 
       const transport = upstream.tls ? https : http;
-      const _CONNRETRY_ENABLED = process.env.HME_PROXY_CONNRESET_RETRY === '1';
-      const _CONNRETRY_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE']);
       let _connAttempt = 0;
       let upstreamReq;
 
