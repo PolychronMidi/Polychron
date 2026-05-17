@@ -11,7 +11,7 @@ PARTS=()
 
 if [[ -f "$TAB" && -s "$TAB" ]]; then
   # Pending KB anchors
-  KB_LINES=$(grep '^KB:' "$TAB" 2>/dev/null)  # silent-ok: optional fallback path.
+  KB_LINES=$(grep '^KB:' "$TAB" 2>/dev/null || true)  # silent-ok: optional fallback path.
   if [[ -n "$KB_LINES" ]]; then
     PARTS+=("PENDING KB ANCHORS -- save with add_knowledge before compaction:")
     PARTS+=("$KB_LINES")
