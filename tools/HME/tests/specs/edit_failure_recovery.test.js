@@ -163,15 +163,21 @@ test('edit failure middleware removes stale verify-landed marker and appends cur
 });
 
 
-test('edit failure middleware appends current context for native read-before-edit gate', () => {
+test('edit failure middleware appends current context and records read-equivalent for native read-before-edit gate', () => {
   const root = sandbox('hme-edit-read-gate-mw-');
   const file = path.join(root, 'src', 'target.js');
   fs.writeFileSync(file, 'first line\ncurrent context line\nlast line\n');
+  const prevRoot = process.env.PROJECT_ROOT;
+  process.env.PROJECT_ROOT = root;
+  delete require.cache[require.resolve('../../proxy/session_state')];
+  delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
   const mw = require('../../proxy/middleware/29_edit_failure_context');
+  const sessionState = require('../../proxy/session_state');
   const toolResult = { content: 'Error: File has not been read yet. Read it first before writing to it.', is_error: true };
   const events = [];
   const ctx = {
     PROJECT_ROOT: root,
+    session: 'read-gate-test',
     appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
     markDirty() {},
     warn(message) { throw new Error(message); },
@@ -187,7 +193,16 @@ test('edit failure middleware appends current context for native read-before-edi
     assert.match(toolResult.content, /\[READ current context src\/target\.js:/);
     assert.match(toolResult.content, /current context line/);
     assert.equal(events[0].event, 'edit_failure_context_appended');
+    assert.equal(events[0].read_equivalent, true);
+    const state = sessionState.readState('read-gate-test');
+    const read = state.files_read.at(-1);
+    assert.equal(read.file, file);
+    assert.equal(read.source, 'edit_failure_auto_context');
+    assert.match(read.reason, /File has not been read yet/);
   } finally {
+    if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
+    delete require.cache[require.resolve('../../proxy/session_state')];
+    delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
