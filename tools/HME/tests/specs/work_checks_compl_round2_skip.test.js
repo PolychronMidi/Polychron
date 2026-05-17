@@ -217,3 +217,86 @@ test('work_checks: unfinished task reminder blocks stopping before auto-complete
     assert.match(result.reason, /UNFINISHED TASK-LIST VIOLATION/);
     assert.match(result.reason, /status: in_progress/);
   }));
+
+test('work_checks: unfinished tasks still block the nothing-missed round-2 skip',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'do all' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Started.' }] } },
+      { type: 'user', message: { content:
+        '<system-reminder>\nHere are the existing tasks:\n' +
+        '#11 [in_progress] Harden work-check completion gates\n' +
+        '</system-reminder>' } },
+      { type: 'user', message: { content: 'AUTO-COMPLETENESS INJECT (round 1/2): ...' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Nothing missed.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const ctx1 = _ctxStub(sandbox, transcript);
+    await policy.run(ctx1);
+    const ctx2 = _ctxStub(sandbox, transcript);
+    const result = await policy.run(ctx2);
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /UNFINISHED TASK-LIST VIOLATION/);
+    assert.match(result.reason, /#11 \[in_progress\]/);
+  }));
+
+test('work_checks: text-only short verdict maps to STOP_WORK_TEXT_ONLY reason',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'STOP_WORK=TEXT_ONLY_SHORT\n');
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'do all' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Looks good.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /short text-only response/);
+  }));
+
+test('work_checks: claim evidence must come from same-turn tool use, not synthetic stale state',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'CLAIM_WITHOUT_EVIDENCE=claim_without_evidence\n');
+    const state = require(path.join(PROXY_DIR, 'session_state.js'));
+    state.recordVerificationEvidence({
+      command: 'node --test unrelated.test.js',
+      exit_code: 0,
+      excerpt: 'pass',
+      artifact: 'unrelated.test.js',
+      source: 'synthetic-test',
+    });
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', timestamp: new Date().toISOString(), message: { content: 'fix and verify' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Fixed; tests pass.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /Claim without verification|VERIFICATION DOCTRINE/);
+  }));
+
+test('work_checks: claim evidence accepts same-turn PostToolUse evidence',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'CLAIM_WITHOUT_EVIDENCE=claim_without_evidence\n');
+    const state = require(path.join(PROXY_DIR, 'session_state.js'));
+    state.recordVerificationEvidence({
+      command: 'node --test work_checks.test.js',
+      exit_code: 0,
+      excerpt: 'pass',
+      artifact: 'work_checks.test.js',
+      source: 'PostToolUse:Bash',
+    });
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', timestamp: new Date(Date.now() - 1000).toISOString(), message: { content: 'fix and verify' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Fixed; tests pass.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.notStrictEqual(result.reason, undefined);
+    assert.doesNotMatch(result.reason || '', /VERIFICATION DOCTRINE/);
+  }));
