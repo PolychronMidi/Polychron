@@ -325,6 +325,45 @@ async function _injectHmeTools(payload) {
   }
 }
 
+function _consumeStopReminderSystemText() {
+  const fs = require('fs');
+  const path = require('path');
+  const file = path.join(require('./shared').PROJECT_ROOT, 'tmp', 'hme-stop-reminder.json');
+  let raw = '';
+  try { raw = fs.readFileSync(file, 'utf8'); } catch (_err) { return ''; }
+  try { fs.unlinkSync(file); } catch (_err) { /* silent-ok: best-effort consume once */ }
+  let data = {};
+  try { data = JSON.parse(raw); } catch (_err) { return ''; }
+  const text = String((data && data.text) || '').trim();
+  if (!text) return '';
+  const reminder = /^<system-reminder>[\s\S]*<\/system-reminder>$/.test(text)
+    ? text
+    : `<system-reminder>\n${text}\n</system-reminder>`;
+  return `\n\n[HME Stop Hook Feedback (proxy-injected)]\n${reminder}\n`;
+}
+
+function _injectStopReminderSystem(payload) {
+  const block = _consumeStopReminderSystemText();
+  if (!block) return false;
+  const marker = 'HME Stop Hook Feedback (proxy-injected)';
+  if (typeof payload.system === 'string') {
+    if (payload.system.includes(marker)) return false;
+    payload.system = `${payload.system}${block}`;
+    return true;
+  }
+  if (Array.isArray(payload.system)) {
+    const exists = payload.system.some((b) => {
+      const text = typeof b === 'string' ? b : b && b.text;
+      return typeof text === 'string' && text.includes(marker);
+    });
+    if (exists) return false;
+    payload.system.push({ type: 'text', text: block });
+    return true;
+  }
+  payload.system = [{ type: 'text', text: block }];
+  return true;
+}
+
 // _handleSpawnRoute + _handleLifecycleRoute moved to routes_admin.js +
 // lifecycle_bridge.js respectively. Bound at the top of this file.
 
