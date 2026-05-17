@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect git status and HME error artifacts
+(empty)
 
 ## Next
 
-- [ ] [E3] Fix misplaced runtime directory and env/root cause
-- [ ] [E3] Run validation/autocommit evidence
+(empty)
 
 ## Done
 

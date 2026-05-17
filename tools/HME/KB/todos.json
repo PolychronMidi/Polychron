@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3581,
-      "updated_ts": 1779030097.0736425,
-      "codex_plan_synced_ts": 1779030097.0735266,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-      "codex_plan_ts": "2026-05-17T15:01:16.054Z"
+      "updated_ts": 1779030540.890544,
+      "codex_plan_synced_ts": 1779030540.8904335,
+      "codex_plan_source": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+      "codex_plan_ts": "2026-05-17T15:09:00.461Z"
     }
   },
   {
@@ -8758,8 +8758,8 @@
     "id": 3579,
     "text": "Inspect git status and HME error artifacts",
     "activeForm": "Inspect git status and HME error artifacts",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8767,15 +8767,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:01:16.054Z"
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:09:00.461Z"
   },
   {
     "id": 3580,
     "text": "Fix misplaced runtime directory and env/root cause",
     "activeForm": "Fix misplaced runtime directory and env/root cause",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8783,15 +8783,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:01:16.054Z"
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:09:00.461Z"
   },
   {
     "id": 3581,
     "text": "Run validation/autocommit evidence",
     "activeForm": "Run validation/autocommit evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8799,7 +8799,7 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:01:16.054Z"
+    "codex_session": "codex-proxy:019e3674-2e31-7651-8bd0-2a6da41ebedf",
+    "codex_plan_ts": "2026-05-17T15:09:00.461Z"
   }
 ]
