@@ -337,35 +337,13 @@ function createClaudeHandler(deps) {
             runInlineFallback: (event, stdinJson) => lifecycleBridge().runInlineFallback(event, stdinJson),
           });
         });
-        upstreamRes.on('error', (err) => {
-          try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
-          // Mid-response failures (connection reset while streaming, TLS
-          // mid-frame, etc). Same lifesaver discipline as the connection-
-          // time and response-complete error paths.
-          const _errCode = err.code || 'mid_response';
-          const _pathLabel = _isInteractivePath ? 'interactive' : 'sub-pipeline';
-          const _errMsg = `upstream ${_errCode} mid-response [${_pathLabel}]: ${err.message}`;
-          console.error(`upstream read error: ${_errMsg}`);
-          if (_isInteractivePath) {
-            recordUpstreamFailure(_errMsg);
-          }
-          try {
-            const fs = require('fs');
-            const path = require('path');
-            const { PROJECT_ROOT } = require('./shared');
-            const _stamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
-            fs.appendFileSync(errLog,
-              `[${_stamp}] UPSTREAM_${_errCode}_${_pathLabel.toUpperCase()}_MIDRESPONSE: ${_errMsg}\n`);
-          } catch (_e) { /* lifesaver write best-effort; the console log above already surfaced it */ }
-          emit({ event: 'upstream_midresponse_error', code: _errCode, message: err.message, path_label: _pathLabel });
-          if (!clientRes.headersSent) {
-            clientRes.writeHead(502, { 'Content-Type': 'application/json' });
-            clientRes.end(JSON.stringify({ type: 'error', error: { type: 'hme_proxy_upstream_midresponse', code: _errCode, message: err.message } }));
-          } else {
-            clientRes.end();
-          }
-        });
+        upstreamRes.on('error', (err) => handleMidResponseError({
+          err,
+          clientRes,
+          isInteractivePath: _isInteractivePath,
+          releaseOpusSlot: _releaseOpusSlot,
+          recordFailure: recordUpstreamFailure,
+        }));
       });
 
       const isStreaming = payload && payload.stream === true;
