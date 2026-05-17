@@ -58,7 +58,7 @@ function createClaudeHandler(deps) {
     PROXY_STARTED_AT,
     routeMetrics: _routeMetrics,
     stopGateHealth: _stopGateHealth,
-    handleLifecycleRoute: _handleLifecycleRoute,
+    handleLifecycleRoute: (req, res) => lifecycleBridge().handleLifecycleRoute(req, res),
   });
 
   function handleRequest(clientReq, clientRes) {
