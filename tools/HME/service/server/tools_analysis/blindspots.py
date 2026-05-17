@@ -25,9 +25,8 @@ from typing import Any
 from server import context as ctx
 from . import _track
 from hme_env import ENV
+from paths import hme_metric
 
-ACTIVITY_PATH_REL = os.path.join("src", "output", "metrics", "hme-activity.jsonl")
-STALENESS_PATH_REL = os.path.join("src", "output", "metrics", "kb-staleness.json")
 
 DEFAULT_WINDOW = ENV.require_int("HME_BLINDSPOT_WINDOW")
 
@@ -45,7 +44,7 @@ SUBSYSTEMS = [
 
 
 def _load_events() -> list[dict]:
-    path = os.path.join(ctx.PROJECT_ROOT, ACTIVITY_PATH_REL)
+    path = hme_metric("hme-activity.jsonl")
     if not os.path.exists(path):
         return []
     out: list[dict] = []
@@ -95,7 +94,7 @@ def _subsystem_for_path(path: str) -> str | None:
 
 
 def _load_staleness_modules() -> dict[str, str]:
-    path = os.path.join(ctx.PROJECT_ROOT, STALENESS_PATH_REL)
+    path = hme_metric("kb-staleness.json")
     if not os.path.exists(path):
         return {}
     try:

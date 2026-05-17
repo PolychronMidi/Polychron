@@ -27,11 +27,11 @@ def _load(name: str):
 
 def constitution_report() -> str:
     _track("constitution_report")
-    data = _load(CONSTITUTION_REL)
+    data = _load(CONSTITUTION_NAME)
     if not data:
         return (
             "# HME Constitution\n\n"
-            "src/output/metrics/hme-constitution.json not found.\n"
+            "tools/HME/runtime/metrics/hme-constitution.json not found.\n"
             "Run: python3 tools/HME/scripts/pipeline/hme/derive-constitution.py"
         )
     meta = data.get("meta", {}) or {}
@@ -67,11 +67,11 @@ def constitution_report() -> str:
 
 def doc_drift_report() -> str:
     _track("doc_drift_report")
-    data = _load(DOC_DRIFT_REL)
+    data = _load(DOC_DRIFT_NAME)
     if not data:
         return (
             "# HME Doc Drift\n\n"
-            "src/output/metrics/hme-doc-drift.json not found.\n"
+            "tools/HME/runtime/metrics/hme-doc-drift.json not found.\n"
             "Run: python3 tools/HME/scripts/pipeline/hme/detect-doc-drift.py"
         )
     meta = data.get("meta", {}) or {}
@@ -112,11 +112,11 @@ def reflexivity_report() -> str:
     """Phase 6.1 -- show how much of this round's prediction accuracy was
     contaminated by proxy injection vs clean post-hoc scoring."""
     _track("reflexivity_report")
-    data = _load(ACCURACY_REL)
+    data = _load(ACCURACY_NAME)
     if not data:
         return (
             "# HME Reflexivity\n\n"
-            "src/output/metrics/hme-prediction-accuracy.json not found yet."
+            "tools/HME/runtime/metrics/hme-prediction-accuracy.json not found yet."
         )
     rounds = data.get("rounds") or []
     if not rounds:

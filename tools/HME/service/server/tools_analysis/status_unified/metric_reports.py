@@ -6,6 +6,7 @@ import logging
 import os
 
 from server import context as ctx
+from paths import hme_metric
 from .. import _track, get_session_intent, _budget_gate, _budget_section, _git_run, BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION
 from ..synthesis_session import append_session_narrative, get_session_narrative, get_think_history_context
 
@@ -14,11 +15,11 @@ logger = logging.getLogger("HME")
 
 def _staleness_report() -> str:
     """Render metrics/kb-staleness.json. Phase 2.2 of openshell feature mapping."""
-    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "kb-staleness.json")
+    path = hme_metric("kb-staleness.json")
     if not os.path.exists(path):
         return (
             "# KB Staleness Index\n\n"
-            "src/output/metrics/kb-staleness.json not found.\n"
+            "tools/HME/runtime/metrics/kb-staleness.json not found.\n"
             "Run: python3 tools/HME/scripts/pipeline/hme/build-kb-staleness-index.py"
         )
     try:
@@ -70,11 +71,11 @@ def _staleness_report() -> str:
 
 def _coherence_report() -> str:
     """Render metrics/hme-coherence.json. Phase 2.3 of openshell feature mapping."""
-    path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "hme-coherence.json")
+    path = hme_metric("hme-coherence.json")
     if not os.path.exists(path):
         return (
             "# Round Coherence Score\n\n"
-            "src/output/metrics/hme-coherence.json not found.\n"
+            "tools/HME/runtime/metrics/hme-coherence.json not found.\n"
             "Run: node tools/HME/scripts/pipeline/hme/compute-coherence-score.js"
         )
     try:
