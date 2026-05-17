@@ -5,8 +5,7 @@ const https = require('https');
 
 const { sessionKey, emit, PROJECT_ROOT } = require('./shared');
 const {
-  resolveUpstream, recordUpstreamSuccess, recordUpstreamFailure, isPassthroughMode,
-  refreshOauthToken,
+  resolveUpstream, recordUpstreamFailure, isPassthroughMode,
 } = require('./upstream');
 const { shouldInject, consumeStatusContext, buildJurisdictionContext, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
@@ -16,10 +15,6 @@ const { requestTelemetry } = require('./request_telemetry');
 const { routeDecision } = require('./model_route_resolver');
 const { applyOverdriveRoute } = require('./overdrive_route');
 const { handleLegacySwapResponse } = require('./legacy_swap_response');
-const {
-  detectUpstreamFailure: _detectUpstreamFailure,
-  alertCooldownActive: _alertCooldownActive,
-} = require('./failure_classification');
 const middleware = require('./middleware/index');
 const hmeDispatcher = require('./hme_dispatcher');
 const { handleMcpRequest } = require('./mcp_server/index');
@@ -41,10 +36,10 @@ const {
   _injectStopReminderSystem,
   _stopGateHealth,
 } = require('./hme_proxy_core');
-const { recordOmniRouteFailureAdvance } = require('./hme_proxy_codex');
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
 const { createFpGateScanner } = require('./hme_proxy_fp_gate');
+const { handleUpstreamFailureOrSuccess } = require('./hme_proxy_upstream_failure');
 
 function createClaudeHandler(deps) {
   const {
@@ -436,134 +431,34 @@ function createClaudeHandler(deps) {
             console.error(`rate-limit headers: limit=${_hdrTokLimit||'?'} remaining=${_hdrTokRemaining||'?'} reset=${_hdrTokReset||'?'} retry-after=${headers['retry-after']||'?'}`);
           }
 
-          // Detect upstream failure: HTTP 4xx JSON error OR HTTP 200 + SSE
-          // error event. First-hit escape-hatch trip + LIFESAVER alert +
-          // body snapshot. Without SSE coverage, streamed errors bypassed.
-          const _proxyMutatedBody = isAnthropic && !_passthrough;
-          if (_proxyMutatedBody) {
-            const _errInfo = _detectUpstreamFailure(status, headers, fullBody);
-            if (_errInfo) {
-              const _isOmniRouteErr = _isOmniRouteSwap;
-              const _provider = _isOmniRouteErr ? 'omniroute' : 'anthropic';
-              const _pathLabel = _isInteractivePath ? 'interactive' : 'sub-pipeline';
-              const _errMsg = `${_provider} ${status} ${_errInfo.type || 'error'} [${_pathLabel}]: ${_errInfo.message || '<no message>'}`;
-              const _stamp = new Date().toISOString().replace(/[:.]/g, '-');
-              const _snapshotRel = `tmp/claude-${status}-${_pathLabel}-payload-${_stamp}.json`;
-              console.error(`UPSTREAM FAILURE detected: ${_errMsg}`);
-              // Only INTERACTIVE-path 4xx/5xx trips the global escape hatch.
-              // Sub-pipeline failures self-handle via internal circuit breakers;
-              // global trip on them puts Claude Code into passthrough.
-              const _coolingDown = _alertCooldownActive(_errInfo.type || `http_${status}`, _pathLabel);
-              const _shouldRetry = headers['x-should-retry'] === 'true';
-              const _isRateLimit = _errInfo.type === 'rate_limit_error';
+          const failureResult = await handleUpstreamFailureOrSuccess({
+            status,
+            headers,
+            fullBody,
+            outBody,
+            clientReq,
+            upstreamHeaders,
+            upstreamOpts,
+            transport,
+            payload,
+            isAnthropic,
+            passthrough: _passthrough,
+            isOmniRouteSwap: _isOmniRouteSwap,
+            swapChain: _swapChain,
+            odMode: _odMode,
+            omniProvider: _omniProvider,
+            swapModel: _swapModel,
+            isInteractivePath: _isInteractivePath,
+            sessionForTelemetry: _sessionForTelemetry,
+            effectiveCompactThreshold: _effectiveCompactThreshold,
+            getConsecutive429s,
+            setConsecutive429s,
+            incConsecutive429s,
+          });
+          status = failureResult.status;
+          headers = failureResult.headers;
+          fullBody = failureResult.fullBody;
 
-              // MODE=1 OmniRoute fallback: advance to next model in E5 chain on failure.
-              recordOmniRouteFailureAdvance({
-                isOmniRouteSwap: _isOmniRouteSwap,
-                swapChain: _swapChain,
-                odMode: _odMode,
-                omniProvider: _omniProvider,
-                swapModel: _swapModel,
-                status,
-                isRateLimit: _isRateLimit,
-                projectRoot: PROJECT_ROOT,
-              });
-
-              // ITPM-exhaustion bumps panic-shrink so next request is smaller.
-              if (_isRateLimit && !_shouldRetry) {
-                incConsecutive429s();
-                console.error(`rate_limit_error (ITPM-exhaustion) -- panic-shrink counter=${getConsecutive429s()}, next threshold=${_effectiveCompactThreshold()}B`);
-              } else if (_isRateLimit && _shouldRetry) {
-                console.error(`rate_limit_error (Cloudflare per-IP throttle) -- skip panic-shrink (size irrelevant)`);
-              }
-              // Trip escape hatch on every interactive 4xx (incl x-should-retry
-              // 429s -- user wants the lifesaver alert as recovery signal).
-              // MODE=1: never trip the escape hatch (OmniRoute errors must not
-              // cause passthrough to api.anthropic.com).
-              if (_isInteractivePath && !_coolingDown && process.env.OVERDRIVE_MODE !== '1') {
-                recordUpstreamFailure(_errMsg);
-              } else if (_isInteractivePath) {
-                console.error(`escape hatch SUPPRESSED (OVERDRIVE_MODE=${process.env.OVERDRIVE_MODE || '0'}, _isOmniRouteSwap=${_isOmniRouteSwap}) -- passthrough blocked`);
-              } else if (!_isInteractivePath) {
-                console.error(`sub-pipeline failure -- NOT tripping escape hatch (interactive path unaffected)`);
-              }
-              try {
-                const fs = require('fs');
-                const path = require('path');
-                const { PROJECT_ROOT } = require('./shared');
-                const outFile = path.join(PROJECT_ROOT, _snapshotRel);
-                fs.mkdirSync(path.dirname(outFile), { recursive: true });
-                fs.writeFileSync(outFile, outBody);
-                fs.writeFileSync(outFile.replace('.json', '.response'), fullBody);
-                fs.writeFileSync(outFile.replace('.json', '.headers.json'), JSON.stringify(headers, null, 2));
-                try {
-                  const _reqHdrSnap = {
-                    method: clientReq.method,
-                    url: clientReq.url,
-                    incoming_headers: clientReq.headers,
-                    outgoing_headers: upstreamHeaders,
-                  };
-                  fs.writeFileSync(outFile.replace('.json', '.request-headers.json'), JSON.stringify(_reqHdrSnap, null, 2));
-                } catch (_e) { /* best-effort */ }
-                console.error(`payload snapshotted to ${outFile}`);
-                // Sub-pipeline failures are diagnostic noise; interactive failures alert.
-                const _suppressLifesaver = _coolingDown || _pathLabel === 'sub-pipeline';
-                if (!_suppressLifesaver) {
-                  const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
-                  fs.appendFileSync(errLog,
-                    `[${_stamp}] UPSTREAM_${status}_${_pathLabel.toUpperCase()}: ${_errMsg} (request_id=${_errInfo.requestId || '?'}, snapshot=${_snapshotRel})\n`);
-                }
-              } catch (err) {
-                console.error(`snapshot/lifesaver write failed: ${err.message}`);
-              }
-              emit({ event: 'upstream_error', session: _sessionForTelemetry, status, type: _errInfo.type, message: _errInfo.message, path_label: _pathLabel });
-              // No retry on 429: Cloudflare's sustained throttle window means
-              // retries extend it.
-              const _isBearerAuth = typeof upstreamHeaders['authorization'] === 'string'
-                && upstreamHeaders['authorization'].startsWith('Bearer ');
-              if (status === 401 && _isBearerAuth && payload && Array.isArray(payload.messages)) {
-                try {
-                  console.error('got 401, attempting token refresh + retry');
-                  const newToken = await refreshOauthToken();
-                  const retryHeaders = { ...upstreamHeaders, 'authorization': `Bearer ${newToken}` };
-                  retryHeaders['content-length'] = String(outBody.length);
-                  const retryOpts = { ...upstreamOpts, headers: retryHeaders };
-                  const retry = await new Promise((resolve, reject) => {
-                    const req = transport.request(retryOpts, (res) => {
-                      const cs = [];
-                      res.on('data', (c) => cs.push(c));
-                      res.on('end', () => resolve({ statusCode: res.statusCode || 502, headers: { ...res.headers }, body: Buffer.concat(cs) }));
-                      res.on('error', reject);
-                    });
-                    req.on('error', reject);
-                    req.write(outBody);
-                    req.end();
-                  });
-                  console.error(`401-retry response: ${retry.statusCode}`);
-                  if (retry.statusCode >= 200 && retry.statusCode < 300) {
-                    status = retry.statusCode;
-                    headers = retry.headers;
-                    fullBody = retry.body;
-                    recordUpstreamSuccess();
-                  }
-                } catch (refreshErr) {
-                  console.error(`401-refresh failed: ${refreshErr.message}`);
-                }
-              }
-            } else {
-              recordUpstreamSuccess();
-              if (getConsecutive429s() > 0) {
-                console.error(`success -- resetting panic-shrink counter (was ${getConsecutive429s()})`);
-                setConsecutive429s(0);
-              }
-            }
-          } else if (status >= 200 && status < 300) {
-            recordUpstreamSuccess();
-            if (getConsecutive429s() > 0) {
-              console.error(`success -- resetting panic-shrink counter (was ${getConsecutive429s()})`);
-              setConsecutive429s(0);
-            }
-          }
 
           let final = null;
           if (status >= 200 && status < 300 && payload) {
