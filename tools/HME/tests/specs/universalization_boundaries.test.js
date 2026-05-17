@@ -39,6 +39,19 @@ test('decision normalizer keeps protocol rendering separate from shared decision
   assert.equal(claudeStop.stderr, ' ');
 });
 
+test('Claude Stop denies stay off stderr while preserving structured block stdout', () => {
+  const { claudeRelayFields } = require('../../event_kernel/decision_normalizer');
+  const reason = 'Stop hook feedback: AUTO-COMPLETENESS CHECK compacted by hme-proxy.';
+  const relayed = claudeRelayFields('Stop', {
+    stdout: JSON.stringify({ decision: 'block', reason }),
+    stderr: '',
+    exit_code: 0,
+  });
+  assert.equal(relayed.exit_code, 0);
+  assert.equal(relayed.stderr, ' ');
+  assert.deepEqual(JSON.parse(relayed.stdout), { decision: 'block', reason });
+});
+
 test('request transform core remains protocol-aware for Codex cleanup', () => {
   const { applyRequestTransform } = require('../../proxy/codex_payload');
   const result = applyRequestTransform({
