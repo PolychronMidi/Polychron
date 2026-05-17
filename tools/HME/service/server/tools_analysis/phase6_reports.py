@@ -4,20 +4,19 @@ reflexivity. Thin markdown renderers.
 from __future__ import annotations
 
 import json
-import os
 
-from server import context as ctx
+from paths import hme_metric
 from . import _track
 
-CONSTITUTION_REL = os.path.join("src", "output", "metrics", "hme-constitution.json")
-DOC_DRIFT_REL = os.path.join("src", "output", "metrics", "hme-doc-drift.json")
-GENERALIZATIONS_REL = os.path.join("src", "output", "metrics", "hme-generalizations.json")
-ACCURACY_REL = os.path.join("src", "output", "metrics", "hme-prediction-accuracy.json")
+CONSTITUTION_REL = "hme-constitution.json"
+DOC_DRIFT_REL = "hme-doc-drift.json"
+GENERALIZATIONS_REL = "hme-generalizations.json"
+ACCURACY_REL = "hme-prediction-accuracy.json"
 
 
-def _load(rel: str):
-    path = os.path.join(ctx.PROJECT_ROOT, rel)
-    if not os.path.exists(path):
+def _load(name: str):
+    path = hme_metric(name)
+    if not path or not os.path.exists(path):
         return None
     try:
         with open(path, encoding="utf-8") as f:
