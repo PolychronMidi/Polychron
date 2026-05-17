@@ -161,3 +161,33 @@ test('edit failure middleware removes stale verify-landed marker and appends cur
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+
+test('edit failure middleware appends current context for native read-before-edit gate', () => {
+  const root = sandbox('hme-edit-read-gate-mw-');
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'first line\ncurrent context line\nlast line\n');
+  const mw = require('../../proxy/middleware/29_edit_failure_context');
+  const toolResult = { content: 'Error: File has not been read yet. Read it first before writing to it.', is_error: true };
+  const events = [];
+  const ctx = {
+    PROJECT_ROOT: root,
+    appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
+    markDirty() {},
+    warn(message) { throw new Error(message); },
+    emit(row) { events.push(row); },
+  };
+  try {
+    mw.onToolResult({
+      toolUse: { name: 'Edit', input: { file_path: file, old_string: 'missing prior read', new_string: 'replacement' } },
+      toolResult,
+      ctx,
+    });
+    assert.match(toolResult.content, /File has not been read yet/);
+    assert.match(toolResult.content, /\[READ current context src\/target\.js:/);
+    assert.match(toolResult.content, /current context line/);
+    assert.equal(events[0].event, 'edit_failure_context_appended');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
