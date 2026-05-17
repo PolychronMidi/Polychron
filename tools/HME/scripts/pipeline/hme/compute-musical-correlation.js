@@ -134,14 +134,14 @@ function main() {
   try {
     const { execSync } = require('child_process');
     const sha = execSync('git rev-parse --short HEAD', {
-      cwd: require('path').dirname(OUT) + '/..', stdio: ['ignore', 'pipe', 'ignore'],
+      cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'],
     }).toString().trim();
     if (sha) {
       currentSha = sha;
       // Tree hash: two runs from the same working tree (even different commits)
       try {
         currentTreeHash = execSync('git rev-parse HEAD^{tree}', {
-          cwd: require('path').dirname(OUT) + '/..', stdio: ['ignore', 'pipe', 'ignore'],
+          cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'],
         }).toString().trim().slice(0, 12);
       } catch (_te) { /* tree hash optional */ }
       const priorCount = Array.isArray(prev && prev.history)
