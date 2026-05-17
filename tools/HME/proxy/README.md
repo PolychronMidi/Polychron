@@ -58,6 +58,7 @@ Exit `0` = clean, `1` = violation.
 - `hme_proxy_headers.js` -- upstream header shaping and loopback OAuth injection
 - `hme_proxy_context_budget.js` -- compaction thresholds and context-window estimates
 - `hme_proxy_opus_gate.js` -- single-flight/min-gap serializer for interactive Opus
+- `hme_proxy_connection_errors.js` -- retry decisions, snapshots, and shaped 502s
 - `hme_proxy_response_trace.js` -- response dump/blank-response diagnostics
 - `hme_proxy_response_send.js` -- SSE/non-SSE final response rewriting and Stop fallback
 - `hme_proxy_fp_gate.js` -- FP-check upstream kill scanner
