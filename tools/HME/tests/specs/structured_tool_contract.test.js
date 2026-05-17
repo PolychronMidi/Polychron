@@ -9,13 +9,12 @@ const proxy = fs.readFileSync(path.join(repo, 'tools/HME/proxy/hme_proxy.js'), '
 
 test('structured Grep accepts whitespace-separated path lists', () => {
   assert.match(structured, /function splitPathList/);
-  assert.match(structured, /s\.split\(\/\\s\+\//);
+  assert.equal(structured.includes('s.split(/\\s+/).filter(Boolean)'), true);
   assert.match(structured, /paths: d\.paths \|\| splitPathList\(rawPath\)/);
 });
 
 test('sub-pipeline upstream failures do not write lifesaver errors', () => {
   assert.match(proxy, /_pathLabel === 'sub-pipeline'/);
   assert.match(proxy, /_suppressLifesaver = _coolingDown \|\| _pathLabel === 'sub-pipeline'/);
-  assert.match(proxy, /if \(_pathLabel === 'interactive'\) \{
-\s+const errLog/);
+  assert.equal(proxy.includes("if (_pathLabel === 'interactive') {\n          const errLog"), true);
 });
