@@ -4,9 +4,15 @@
 const fs = require('fs');
 const path = require('path');
 const adapterLib = require('../proxy/project_adapter');
+const hmePaths = require('../proxy/hme_paths');
 
 function check(results, name, ok, detail = '') {
   results.push({ name, ok, detail });
+}
+
+function underPath(child, parent) {
+  const rel = path.relative(path.resolve(parent), path.resolve(child));
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }
 
 function main() {
@@ -24,12 +30,21 @@ function main() {
     adapter = adapterLib.DEFAULT_ADAPTER;
   }
   check(results, 'project_id', /^[a-z0-9_.-]+$/.test(String(adapter.project_id || '')), String(adapter.project_id || ''));
+  const sourceDirs = [];
   for (const rel of adapter.source_roots || []) {
     const abs = adapterLib.resolvePath(root, rel);
+    sourceDirs.push(abs);
     check(results, `source:${rel}`, fs.existsSync(abs) && fs.statSync(abs).isDirectory(), abs);
+  }
+  const docs = adapter.project_docs || [adapter.primary_doc || 'doc/composition.md'];
+  for (const rel of docs) {
+    const abs = adapterLib.resolvePath(root, rel);
+    check(results, `project_doc:${rel}`, fs.existsSync(abs) && fs.statSync(abs).isFile(), abs);
   }
   const primary = adapterLib.resolvePath(root, adapter.primary_doc || 'doc/composition.md');
   check(results, 'primary_doc', fs.existsSync(primary) && fs.statSync(primary).isFile(), primary);
+  const runtimeOutside = sourceDirs.every((src) => !underPath(hmePaths.HME_RUNTIME_DIR, src));
+  check(results, 'hme_runtime_outside_sources', runtimeOutside, hmePaths.HME_RUNTIME_DIR);
   check(results, 'pipeline.main', typeof (adapter.pipeline || {}).main === 'string' && adapter.pipeline.main.length > 0, (adapter.pipeline || {}).main || '');
   for (const [name, rel] of Object.entries(adapter.artifacts || {})) {
     try {
@@ -37,6 +52,13 @@ function main() {
       check(results, `artifact:${name}`, true, abs);
     } catch (err) {
       check(results, `artifact:${name}`, false, err.message);
+    }
+  }
+  for (const rel of adapter.optional_artifacts || []) {
+    try {
+      check(results, `optional_artifact:${rel}`, true, adapterLib.resolvePath(root, rel));
+    } catch (err) {
+      check(results, `optional_artifact:${rel}`, false, err.message);
     }
   }
   const ok = results.every((r) => r.ok);
