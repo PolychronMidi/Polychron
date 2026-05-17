@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HME project adapter",
+  "type": "object",
+  "required": [
+    "project_id",
+    "project_name",
+    "source_roots",
+    "primary_doc",
+    "pipeline",
+    "artifacts"
+  ],
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_.-]+$"
+    },
+    "project_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "domain": {
+      "type": "string"
+    },
+    "source_roots": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "project_docs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "primary_doc": {
+      "type": "string"
+    },
+    "pipeline": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "optional_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "health": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}
