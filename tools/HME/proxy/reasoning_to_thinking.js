@@ -16,7 +16,7 @@ function reasoningTextFromData(data) {
     push(delta.reasoning);
     push(delta.reasoning_summary);
     push(delta.summary);
-    push(delta.text);
+    if (/reasoning|thinking/.test(String(data.type || ''))) push(delta.text);
   }
   if (item) {
     push(item.reasoning_content);
