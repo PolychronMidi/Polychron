@@ -124,10 +124,12 @@ def main() -> int:
     paths_checked = 0
     for path in registry:
         paths_checked += 1
+        if "*" in path:
+            continue
         # Take the basename for grep -- full paths get computed at runtime
         # via PROJECT_ROOT/$file patterns and won't appear literally.
         basename = os.path.basename(path.rstrip("/*"))
-        if not basename or "*" in basename:
+        if not basename:
             continue
         writers = _find_writers(basename)
         # Find the registry entry for this path (substring match -- registry
