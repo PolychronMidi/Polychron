@@ -154,7 +154,7 @@ function createClaudeHandler(deps) {
       }
 
       const upstream = resolveUpstream(clientReq);
-      _recordProxyRoute(_isOmniRouteSwap ? 'omniroute' : (_isLegacySwap ? 'legacy_swap' : (isPassthroughMode() ? 'passthrough' : 'direct')), payload && payload.model);
+      recordProxyRoute(_isOmniRouteSwap ? 'omniroute' : (_isLegacySwap ? 'legacy_swap' : (isPassthroughMode() ? 'passthrough' : 'direct')), payload && payload.model);
       const isAnthropic = upstream.provider === 'anthropic' || _isOmniRouteSwap;
 
       // Discriminator: only INTERACTIVE-path 429s trip the global escape
