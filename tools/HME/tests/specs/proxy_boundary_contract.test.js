@@ -1,0 +1,67 @@
+'use strict';
+
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+
+const repo = process.env.PROJECT_ROOT || process.cwd();
+const proxyDir = path.join(repo, 'tools/HME/proxy');
+
+function lineCount(rel) {
+  return fs.readFileSync(path.join(proxyDir, rel), 'utf8').split('\n').length;
+}
+
+test('proxy modules stay below monolith line ceilings', () => {
+  const ceilings = {
+    'hme_proxy.js': 200,
+    'hme_proxy_claude.js': 500,
+    'hme_proxy_routes.js': 120,
+    'hme_proxy_opus_gate.js': 80,
+    'hme_proxy_request_mutation.js': 220,
+    'hme_proxy_connection_errors.js': 180,
+  };
+  for (const [rel, ceiling] of Object.entries(ceilings)) {
+    assert.ok(fs.existsSync(path.join(proxyDir, rel)), `${rel} exists`);
+    assert.ok(lineCount(rel) < ceiling, `${rel} should stay under ${ceiling} lines`);
+  }
+});
+
+test('split proxy modules parse cleanly with node -c', () => {
+  const modules = [
+    'hme_proxy.js',
+    'hme_proxy_claude.js',
+    'hme_proxy_routes.js',
+    'hme_proxy_opus_gate.js',
+    'hme_proxy_request_mutation.js',
+    'hme_proxy_headers.js',
+    'hme_proxy_context_budget.js',
+    'hme_proxy_connection_errors.js',
+    'hme_proxy_response_trace.js',
+    'hme_proxy_response_send.js',
+    'hme_proxy_upstream_failure.js',
+  ];
+  for (const rel of modules) {
+    const full = path.join(proxyDir, rel);
+    assert.ok(fs.existsSync(full), `${rel} exists`);
+    const result = spawnSync(process.execPath, ['-c', full], { encoding: 'utf8' });
+    assert.equal(result.status, 0, `${rel} parses: ${result.stderr || result.stdout}`);
+  }
+});
+
+test('hme_proxy_core no longer owns context-budget state', () => {
+  const core = fs.readFileSync(path.join(proxyDir, 'hme_proxy_core.js'), 'utf8');
+  for (const needle of [
+    '_envNumber',
+    '_resolveModelCtx',
+    '_estimatedContextTokens',
+    '_effectiveCompactThreshold',
+    '_shrinkForPassthrough',
+    '_shrinkForOmniContext',
+    '_lastInputTokensRemaining',
+    '_lastPayloadBytes',
+  ]) {
+    assert.equal(core.includes(needle), false, `${needle} should live outside hme_proxy_core.js`);
+  }
+});
