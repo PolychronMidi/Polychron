@@ -424,7 +424,7 @@ test('i/why mode=architecture-snapshot renders composite full-system report', ()
 test('rotate-history-files dry-run reports policy state without modifying', () => {
   const fs = require('node:fs');
   const path = require('node:path');
-  const activityPath = path.join(PROJECT_ROOT, 'src/output/metrics/hme-activity.jsonl');
+  const activityPath = path.join(PROJECT_ROOT, 'tools/HME/runtime/metrics/hme-activity.jsonl');
   const beforeSize = fs.existsSync(activityPath) ? fs.statSync(activityPath).size : 0;
   const r = spawnSync('python3',
     [path.join(PROJECT_ROOT, 'tools/HME/scripts/rotate-history-files.py'), '--dry-run'],

@@ -252,7 +252,7 @@ Bridge workflow:
 
 1. Detect candidates from `src/output/metrics/trace.jsonl`.
 2. Record candidates, confirmed bridges, and refutations in
-   `src/output/metrics/hme-suspected-upstreams.json`.
+   `tools/HME/runtime/metrics/hme-suspected-upstreams.json`.
 3. Add a falsifier before wiring a hypothesis.
 4. Re-check correlation after the bridge exists.
 

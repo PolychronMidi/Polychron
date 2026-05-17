@@ -170,8 +170,8 @@ test('post_write_side_effects keeps successful side effects model-silent', () =>
 }));
 
 test('post_write_side_effects emits staleness-based write coherence events', () => withProject((root) => {
-  fs.mkdirSync(path.join(root, 'src/output/metrics'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'src/output/metrics/kb-staleness.json'), JSON.stringify({
+  fs.mkdirSync(path.join(root, 'tools/HME/runtime/metrics'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tools/HME/runtime/metrics/kb-staleness.json'), JSON.stringify({
     modules: [
       { module: 'freshMissing', status: 'MISSING' },
       { module: 'staleThing', status: 'STALE' },
