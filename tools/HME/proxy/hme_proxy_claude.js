@@ -3,16 +3,11 @@
 const http = require('http');
 const https = require('https');
 
-const { sessionKey, emit, PROJECT_ROOT } = require('./shared');
+const { sessionKey, emit } = require('./shared');
 const {
   resolveUpstream, recordUpstreamFailure, isPassthroughMode,
 } = require('./upstream');
-const { shouldInject, consumeStatusContext, buildJurisdictionContext, injectIntoLastUserMessage, stripSystemCacheControl, normalizeCacheControlTtls } = require('./context');
-const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
-const { applyAnthropicCommonTransforms } = require('./request_transform_core');
 const { servicePort } = require('./service_registry');
-const { requestTelemetry } = require('./request_telemetry');
-const { routeDecision } = require('./model_route_resolver');
 const { applyOverdriveRoute } = require('./overdrive_route');
 const { handleLegacySwapResponse } = require('./legacy_swap_response');
 const middleware = require('./middleware/index');
@@ -41,6 +36,7 @@ const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_respons
 const { createFpGateScanner } = require('./hme_proxy_fp_gate');
 const { handleUpstreamFailureOrSuccess } = require('./hme_proxy_upstream_failure');
 const { prepareUpstreamHeaders } = require('./hme_proxy_headers');
+const { mutateClaudeRequest } = require('./hme_proxy_request_mutation');
 
 function createClaudeHandler(deps) {
   const {
@@ -174,133 +170,26 @@ function createClaudeHandler(deps) {
 
       const _passthrough = isPassthroughMode();
 
-      if (_passthrough && isAnthropic && _isInteractivePath && payload && Array.isArray(payload.messages)) {
-        const _dropped = _shrinkForPassthrough(payload);
-        if (_dropped > 0) {
-          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
-        }
-        const _otpmCapRaw = process.env.HME_PROXY_MAX_OUTPUT_TOKENS;
-        if (_otpmCapRaw) {
-          const _otpmCap = parseInt(_otpmCapRaw, 10);
-          const _maxTokensCap = _otpmCap + 2048;
-          let _capChanged = false;
-          if (payload.thinking && typeof payload.thinking === 'object') {
-            if (typeof payload.thinking.budget_tokens === 'number' && payload.thinking.budget_tokens > _otpmCap) {
-              console.error(`OTPM-cap (explicit): thinking.budget_tokens ${payload.thinking.budget_tokens} -> ${_otpmCap}`);
-              payload.thinking.budget_tokens = _otpmCap;
-              _capChanged = true;
-            }
-          }
-          if (typeof payload.max_tokens === 'number' && payload.max_tokens > _maxTokensCap) {
-            console.error(`OTPM-cap (explicit): max_tokens ${payload.max_tokens} -> ${_maxTokensCap}`);
-            payload.max_tokens = _maxTokensCap;
-            _capChanged = true;
-          }
-          if (_capChanged) {
-            outBody = Buffer.from(JSON.stringify(payload), 'utf8');
-          }
-        }
-      }
-
-      if (payload && Array.isArray(payload.messages) && !_passthrough) {
-        const session = sessionKey(payload);
-        let bodyDirtiedByStrip = false;
-        if (isAnthropic) {
-          try {
-            require('./_dump').writeDump(
-              payload, require('./shared').PROJECT_ROOT, 'pre',
-              (m) => console.warn('Acceptable warning: [middleware]', m),
-            );
-          } catch (err) {
-            console.error(`pre-dump failed: ${err.message}`);
-          }
-          if (process.env.HME_REPLACE_SYSTEM_PROMPT === '1') {
-            if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
-          }
-          const common = applyAnthropicCommonTransforms(payload);
-          const iw = common.i.command_rewrites + common.i.text_rewrites;
-          const hns = common.hook_noise;
-          const b = stripBoilerplate(payload);
-          const s = stripSemanticRedundancy(payload);
-          const r = _stripHmePrefixOutgoing(payload);
-          const n = await _injectHmeTools(payload);
-          _sanitizePayload(payload);
-          if (iw > 0 || hns.stripped > 0 || common.sanitized > 0 || b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
-        }
-
-        let scan = null;
-        if (isAnthropic) {
-          scan = scanMessages(payload);
-          if (_lifecycleInactive('UserPromptSubmit')) {
-            const last = payload && Array.isArray(payload.messages)
-              ? payload.messages[payload.messages.length - 1] : null;
-            if (last && last.role === 'user') {
-              let promptText = '';
-              if (typeof last.content === 'string') promptText = last.content;
-              else if (Array.isArray(last.content)) {
-                promptText = last.content
-                  .filter((b) => b && b.type === 'text' && typeof b.text === 'string')
-                  .map((b) => b.text).join('\n');
-              }
-              if (promptText) {
-                const stdin = JSON.stringify({ user_prompt: promptText, session_id: session });
-                _runInlineFallback('UserPromptSubmit', stdin);
-              }
-            }
-          }
-          try {
-            const mwDirtied = await middleware.runPipeline(payload, scan, session);
-            if (mwDirtied) bodyDirtiedByStrip = true;
-          } catch (err) {
-            console.error('middleware pipeline error:', err.message);
-          }
-          if (_injectStopReminderSystem(payload)) {
-            emit({ event: 'stop_reminder_inject', session });
-            bodyDirtiedByStrip = true;
-          }
-          if (shouldInject()) {
-            const statusBlock = consumeStatusContext(session);
-            if (statusBlock) {
-              const injectedStatus = injectIntoLastUserMessage(payload, statusBlock.trim(), 'HME Session Status (proxy-injected)');
-              if (injectedStatus) {
-                emit({ event: 'status_inject', session });
-                bodyDirtiedByStrip = true;
-              }
-            }
-            if (scan.jurisdictionTargets.length > 0) {
-              const block = buildJurisdictionContext(scan.jurisdictionTargets);
-              injected = injectIntoLastUserMessage(payload, block, 'HME Jurisdiction Context (proxy-injected)');
-              if (injected) {
-                emit({
-                  event: 'jurisdiction_inject',
-                  session,
-                  targets: scan.jurisdictionTargets.length,
-                  first_target: (scan.jurisdictionTargets[0] || '').replace(/[,=\s]/g, '_'),
-                });
-                bodyDirtiedByStrip = true;
-              }
-            }
-          }
-          const ccChanged = normalizeCacheControlTtls(payload);
-          if (ccChanged > 0) {
-            bodyDirtiedByStrip = true;
-            emit({ event: 'cache_control_normalized', session, count: ccChanged });
-          }
-          if (bodyDirtiedByStrip) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
-        }
-
-        emit({
-          event: 'inference_call',
-          session,
-          provider: upstream.provider,
-          path: clientReq.url || '?',
-          model: (payload.model || 'unknown').replace(/[,=\s]/g, '_'),
-          messages: payload.messages.length,
-          injected: injected,
-          route_decision: routeDecision({ host: 'claude', requestedModel: payload.model || '', provider: upstream.provider, protocol: 'anthropic-messages', route: upstream.provider }),
-          telemetry: requestTelemetry({ host: 'claude', protocol: 'anthropic-messages', provider: upstream.provider, route: upstream.provider, path: clientReq.url || '?', body: payload, stream: payload.stream }),
-        });
-      }
+      const mutation = await mutateClaudeRequest({
+        payload,
+        outBody,
+        injected,
+        upstream,
+        clientReq,
+        isAnthropic,
+        isInteractivePath: _isInteractivePath,
+        shrinkForPassthrough: _shrinkForPassthrough,
+        stripHmePrefixOutgoing: _stripHmePrefixOutgoing,
+        injectHmeTools: _injectHmeTools,
+        sanitizePayload: _sanitizePayload,
+        injectStopReminderSystem: _injectStopReminderSystem,
+        lifecycleInactive: _lifecycleInactive,
+        runInlineFallback: _runInlineFallback,
+        middleware,
+      });
+      outBody = mutation.outBody;
+      injected = mutation.injected;
+      const _passthrough = mutation.passthrough;
 
       const upstreamHeaders = prepareUpstreamHeaders({
         clientReq,
