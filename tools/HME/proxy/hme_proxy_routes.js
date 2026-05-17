@@ -66,7 +66,8 @@ function createProxyRouteDispatcher({
       return true;
     }
     if (url.startsWith('/mcp')) {
-      require('./mcp_server/index').handleMcpRequest(clientReq, clientRes);
+      const handler = handleMcpRequest || require('./mcp_server/index').handleMcpRequest;
+      handler(clientReq, clientRes);
       return true;
     }
 
