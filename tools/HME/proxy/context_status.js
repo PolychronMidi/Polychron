@@ -61,7 +61,7 @@ function tailFileLines(filepath, maxLines, maxBytes = 500_000) {
 function recentLifesaverErrors() {
   // Turn-aware: show only errors added since userpromptsubmit.sh recorded
   // the turn-start line count in tools/HME/runtime/errors-turnstart.
-  const TURNSTART_PATH = path.join(PROJECT_ROOT, 'tmp', 'hme-errors.turnstart');
+  const TURNSTART_PATH = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'errors-turnstart');
   let turnStartLine = null;
   try {
     const raw = fs.readFileSync(TURNSTART_PATH, 'utf8').trim();

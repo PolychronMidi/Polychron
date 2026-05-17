@@ -90,7 +90,7 @@ class ErrorLogVerifier(Verifier):
                 lines = [l for l in f if l.strip()]
         except Exception as e:
             return _result(ERROR, 0.0, f"could not read error log: {e}")
-        watermark = os.path.join(_PROJECT, "tmp", "hme-errors.lastread")
+        watermark = os.path.join(_PROJECT, "tools", "HME", "runtime", "errors-lastread")
         last = 0
         if os.path.isfile(watermark):
             try:
