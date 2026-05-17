@@ -167,7 +167,7 @@ const {
 const _PASSTHROUGH_COMPACT_BYTES = parseInt(process.env.HME_PROXY_COMPACT_BYTES || '250000', 10);
 const _COMPACT_BYTES_EXPLICIT = process.env.HME_PROXY_COMPACT_BYTES != null
   && process.env.HME_PROXY_COMPACT_BYTES !== '';
-const _PASSTHROUGH_COMPACT_KEEP_MIN = 7;
+const _PASSTHROUGH_COMPACT_KEEP_MIN = 10;
 
 // Dynamic threshold: track the most recent ITPM-remaining from Anthropic
 // response headers and shrink the byte budget when we're close to the
@@ -272,9 +272,9 @@ function _injectContextHeader(headers, swapModel) {
   }
 }
 
-// Strip tool_result blocks older than 7 turns to prevent context bloat.
+// Strip tool_result blocks older than _PASSTHROUGH_COMPACT_KEEP_MIN turns to prevent context bloat.
 function _stripStaleToolResults(payload) {
-  return stripStaleToolResults(payload, 7);
+  return stripStaleToolResults(payload, _PASSTHROUGH_COMPACT_KEEP_MIN);
 }
 
 // Strip the Claude Code identity sentence from the system prompt array
