@@ -14,10 +14,27 @@ _hme_bg() {
   ) </dev/null >>"$log_file" 2>&1 &
 }
 
+_hme_timeout_runner() {
+  local seconds="$1"
+  shift
+  "$@" &
+  local pid=$! waited=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge "$seconds" ]; then
+      kill "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+      return 124
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  wait "$pid"
+}
+
 _hme_bg_timeout() {
   local seconds="$1" name="$2" log_file="$3"
   shift 3
-  _hme_bg "$name" "$log_file" timeout "${seconds}s" "$@"
+  _hme_bg "$name" "$log_file" _hme_timeout_runner "$seconds" "$@"
 }
 
 _hme_bg_shell_timeout() {
