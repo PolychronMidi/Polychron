@@ -57,6 +57,7 @@ const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
 const { WORKER_PORT } = require('./supervisor/children');
 
 const contextBudget = createContextBudget();
+const opusGate = createOpusGate();
 
 let loadedMiddleware = null;
 let handleRequest = null;
