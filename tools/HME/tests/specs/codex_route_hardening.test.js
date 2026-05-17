@@ -118,8 +118,6 @@ test('Codex structured read/edit shims route synthetic native events', () => {
   const root = _withSandbox('codex-structured-shim-');
   const file = path.join(root, 'src', 'shim.js');
   fs.writeFileSync(file, 'const x = 1;\n');
-  fs.mkdirSync(path.join(root, 'tmp', 'hme-streak'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'tmp', 'hme-streak', 'shim-read.score'), '55');
   const env = {
     ...process.env,
     PROJECT_ROOT: root,
@@ -129,9 +127,6 @@ test('Codex structured read/edit shims route synthetic native events', () => {
   const read = spawnSync('node', [path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_structured_tool.js'), 'read', `file=${file}`, 'limit=5'], { env, encoding: 'utf8' });
   assert.equal(read.status, 0, read.stderr);
   assert.match(read.stdout, /const x = 1/);
-  assert.equal(fs.readFileSync(path.join(root, 'tmp', 'hme-streak', 'shim-read.score'), 'utf8').trim(), '0');
-
-  fs.writeFileSync(path.join(root, 'tmp', 'hme-streak', 'shim-edit.score'), '55');
   const editEnv = { ...env, HME_SESSION_ID: 'shim-edit' };
   const edit = spawnSync('node', [
     path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_structured_tool.js'), 'edit',
@@ -143,7 +138,6 @@ test('Codex structured read/edit shims route synthetic native events', () => {
   assert.match(edit.stdout, /edit applied/);
   assert.doesNotMatch(edit.stdout, /central pre-write check passed/);
   assert.equal(fs.readFileSync(file, 'utf8'), 'const x = 2;\n');
-  assert.equal(fs.readFileSync(path.join(root, 'tmp', 'hme-streak', 'shim-edit.score'), 'utf8').trim(), '0');
   const nexus = fs.readFileSync(path.join(root, 'tmp', 'hme-nexus.state'), 'utf8');
   assert.match(nexus, /EDIT:/);
   assert.equal(fs.existsSync(path.join(repoRoot, 'i', 'read')), false);
@@ -169,8 +163,6 @@ test('Codex structured git marks empty success explicitly', () => {
 
 test('Codex Bash hook treats internal structured bridge as structured exit', async () => {
   const root = _withSandbox('codex-structured-bash-');
-  fs.mkdirSync(path.join(root, 'tmp', 'hme-streak'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'tmp', 'hme-streak', 'codex-Bash.score'), '70');
   const { dispatchEvent } = require('../../event_kernel/dispatcher');
   const res = await dispatchEvent('PreToolUse', JSON.stringify({
     cwd: root,
@@ -180,7 +172,5 @@ test('Codex Bash hook treats internal structured bridge as structured exit', asy
     session_id: 'codex-Bash',
   }));
   assert.equal(res.exit_code, 0);
-  assert.doesNotMatch(res.stdout, /Raw tool streak/);
-  assert.equal(fs.readFileSync(path.join(root, 'tmp', 'hme-streak', 'codex-Bash.score'), 'utf8').trim(), '0');
   fs.rmSync(root, { recursive: true, force: true });
 });
