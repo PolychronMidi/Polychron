@@ -1546,7 +1546,9 @@ function runTestMode() {
   });
 }
 
-if (process.argv.includes('--test')) {
+if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
+  module.exports = { __hmeProxyInternals, handleRequest };
+} else if (process.argv.includes('--test')) {
   runTestMode();
 } else {
   // Always require supervisor -- its signal handlers (SIGHUP, uncaughtException,
