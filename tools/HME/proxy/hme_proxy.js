@@ -178,7 +178,7 @@ let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from he
 let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
 let _lastPayloadBytes = 0;            // last OmniRoute payload size for context monitoring
 const _BYTES_PER_TOKEN_EST = 3.5;
-const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 750_000;
+const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 999_000;
 function _effectiveCompactThreshold() {
   // CEILING: HME_PROXY_COMPACT_BYTES (explicit) honored as hard cap.
   // Otherwise: % of learned ITPM cap (leaves room for response +
@@ -205,7 +205,7 @@ function _effectiveCompactThreshold() {
   // of remaining lets us fit the request and leave headroom.
   let remainingCap = ceiling;
   if (_lastInputTokensRemaining != null && _lastInputTokensRemaining > 0) {
-    remainingCap = Math.floor(_lastInputTokensRemaining * 0.70 * _BYTES_PER_TOKEN_EST);
+    remainingCap = Math.floor(_lastInputTokensRemaining * 0.50 * _BYTES_PER_TOKEN_EST);
   }
 
   const eff = Math.min(panicCap, remainingCap);
