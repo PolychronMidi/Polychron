@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3593,
-      "updated_ts": 1779031507.1059551,
-      "codex_plan_synced_ts": 1779031507.1058385,
+      "updated_ts": 1779032047.0821247,
+      "codex_plan_synced_ts": 1779032047.082007,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-      "codex_plan_ts": "2026-05-17T15:25:06.623Z"
+      "codex_plan_ts": "2026-05-17T15:34:05.583Z"
     }
   },
   {
@@ -8950,8 +8950,8 @@
     "id": 3591,
     "text": "Trace alarm source and stale state",
     "activeForm": "Trace alarm source and stale state",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8960,14 +8960,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:25:06.623Z"
+    "codex_plan_ts": "2026-05-17T15:34:05.583Z"
   },
   {
     "id": 3592,
     "text": "Patch alarm clear logic",
     "activeForm": "Patch alarm clear logic",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8976,14 +8976,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:25:06.623Z"
+    "codex_plan_ts": "2026-05-17T15:34:05.583Z"
   },
   {
     "id": 3593,
     "text": "Add regression and verify",
     "activeForm": "Add regression and verify",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -8992,6 +8992,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:25:06.623Z"
+    "codex_plan_ts": "2026-05-17T15:34:05.583Z"
   }
 ]
