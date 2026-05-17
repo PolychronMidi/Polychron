@@ -242,38 +242,6 @@ if [ -f "$TRAJ_SCRIPT" ]; then
   [ -n "$TRAJ_LINE" ] && echo "$TRAJ_LINE" >&2
 fi
 
-# Antagonism bridge: surface observe-only streak threshold recommendations.
-CALIB_SCRIPT="$PROJECT/tools/HME/activity/streak_calibrator.py"
-if [ -f "$CALIB_SCRIPT" ]; then
-  _SS_CALIB_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_calib_err_$$")  # silent-ok: optional fallback path.
-  set +e
-  CALIB_JSON=$(PROJECT_ROOT="$PROJECT" python3 "$CALIB_SCRIPT" 2>"$_SS_CALIB_ERR")
-  _SS_CALIB_RC=$?
-  set -e
-  if [ "$_SS_CALIB_RC" -ne 0 ] && [ -s "$_SS_CALIB_ERR" ] && [ -d "$PROJECT/log" ]; then
-    _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
-    while IFS= read -r _ss_line; do
-      [ -n "$_ss_line" ] && echo "[$_SS_TS] [sessionstart:streak_calibrator] python3 failed: $_ss_line" \
-        >> "$PROJECT/log/hme-errors.log"
-    done < "$_SS_CALIB_ERR"
-  fi
-  rm -f "$_SS_CALIB_ERR" 2>/dev/null
-  if [ -n "$CALIB_JSON" ]; then
-    CALIB_LINE=$(echo "$CALIB_JSON" | python3 -c "
-import json, os, sys
-try: d = json.load(sys.stdin)
-except Exception: sys.exit(0)
-cur = int(os.environ.get('HME_STREAK_WARN', 5))
-rec = d.get('recommended_streak_warn')
-vel = d.get('resolution_velocity', 0.5)
-n   = d.get('history_samples', 0)
-if rec is not None and rec != cur and n >= 5:
-    print(f\"Streak calibrator: recommends HME_STREAK_WARN={rec} (current={cur}, resolution_velocity={vel:.2f}, n={n})\")
-" 2>/dev/null || true)  # silent-ok: optional fallback path.
-    [ -n "$CALIB_LINE" ] && echo "$CALIB_LINE" >&2
-  fi
-fi
-
 # Previous session pending items (surfaced as a warning after main message)
 if [ -n "$PREV_PENDING" ]; then
   echo -e "\nPrevious session left unfinished:$PREV_PENDING" >&2
