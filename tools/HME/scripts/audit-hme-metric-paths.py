@@ -9,7 +9,10 @@ ROOT = Path(__file__).resolve().parents[3]
 CODE_EXTS = {".js", ".cjs", ".mjs", ".py", ".sh", ".bash"}
 SKIP_PARTS = {".git", "node_modules", "runtime", "KB", "__pycache__"}
 SCAN_ROOTS = ["tools/HME/scripts", "tools/HME/service", "tools/HME/proxy", "tools/HME/hooks"]
-LEGACY_RE = re.compile(r"src/output/metrics/(?:hme-|kb-staleness|kb-trust|detector-stats)")
+LEGACY_PATTERNS = [
+    re.compile(r"src/output/metrics/(?:hme-|kb-staleness|kb-trust|detector-stats|mode-classifier)"),
+    re.compile(r"['\"]src['\"]\s*,\s*['\"]output['\"]\s*,\s*['\"]metrics['\"]\s*,\s*['\"](?:hme-|kb-staleness|kb-trust|detector-stats|mode-classifier)"),
+]
 ALLOW = {
     "tools/HME/scripts/_common.py",
     "tools/HME/scripts/hme_paths.py",
