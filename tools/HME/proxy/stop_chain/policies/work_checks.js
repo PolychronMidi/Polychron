@@ -298,6 +298,24 @@ function saveComplStore(store) {
   } catch (_e) { /* best-effort */ }
 }
 
+function latestWriteMs() {
+  let latest = 0;
+  for (const w of sessionState.readState().files_written) {
+    const ts = Date.parse(w && w.ts || '');
+    if (Number.isFinite(ts) && ts > latest) latest = ts;
+  }
+  return latest;
+}
+
+function hasSameTurnEvidence(turnStartMs) {
+  const writeMs = latestWriteMs();
+  const floor = Math.max(Number(turnStartMs) || 0, writeMs || 0);
+  return sessionState.recentVerificationEvidence(30 * 60 * 1000).some((e) => {
+    const ts = Date.parse(e && e.ts || '');
+    return Number.isFinite(ts) && ts >= floor && (e.exit_code === 0 || e.artifact || e.excerpt);
+  });
+}
+
 module.exports = {
   name: 'work_checks',
   async run(ctx) {
