@@ -153,7 +153,7 @@ function createClaudeHandler(deps) {
         _swapChain = overdriveRoute.swapChain;
         _swapModel = overdriveRoute.swapModel;
         _omniProvider = overdriveRoute.omniProvider;
-        if (overdriveRoute.lastPayloadBytes) _lastPayloadBytes = overdriveRoute.lastPayloadBytes;
+        if (overdriveRoute.lastPayloadBytes) setLastPayloadBytes(overdriveRoute.lastPayloadBytes);
       }
 
       const upstream = resolveUpstream(clientReq);
@@ -483,11 +483,11 @@ function createClaudeHandler(deps) {
           const _hdrTokReset = headers['anthropic-ratelimit-input-tokens-reset'];
           if (_hdrTokRemaining != null) {
             const n = parseInt(_hdrTokRemaining, 10);
-            if (Number.isFinite(n) && n >= 0) _lastInputTokensRemaining = n;
+            if (Number.isFinite(n) && n >= 0) setLastInputTokensRemaining(n);
           }
           if (_hdrTokLimit != null) {
             const n = parseInt(_hdrTokLimit, 10);
-            if (Number.isFinite(n) && n > 0) _lastInputTokensLimit = n;
+            if (Number.isFinite(n) && n > 0) setLastInputTokensLimit(n);
           }
           // On any 4xx, dump the rate-limit telemetry so we can SEE what
           // Anthropic told us (instead of the unhelpful "Error" body).
@@ -530,8 +530,8 @@ function createClaudeHandler(deps) {
 
               // ITPM-exhaustion bumps panic-shrink so next request is smaller.
               if (_isRateLimit && !_shouldRetry) {
-                _consecutive429s = Math.min(_consecutive429s + 1, 4);
-                console.error(`rate_limit_error (ITPM-exhaustion) -- panic-shrink counter=${_consecutive429s}, next threshold=${_effectiveCompactThreshold()}B`);
+                incConsecutive429s();
+                console.error(`rate_limit_error (ITPM-exhaustion) -- panic-shrink counter=${getConsecutive429s()}, next threshold=${_effectiveCompactThreshold()}B`);
               } else if (_isRateLimit && _shouldRetry) {
                 console.error(`rate_limit_error (Cloudflare per-IP throttle) -- skip panic-shrink (size irrelevant)`);
               }
@@ -611,16 +611,16 @@ function createClaudeHandler(deps) {
               }
             } else {
               recordUpstreamSuccess();
-              if (_consecutive429s > 0) {
-                console.error(`success -- resetting panic-shrink counter (was ${_consecutive429s})`);
-                _consecutive429s = 0;
+              if (getConsecutive429s() > 0) {
+                console.error(`success -- resetting panic-shrink counter (was ${getConsecutive429s()})`);
+                setConsecutive429s(0);
               }
             }
           } else if (status >= 200 && status < 300) {
             recordUpstreamSuccess();
-            if (_consecutive429s > 0) {
-              console.error(`success -- resetting panic-shrink counter (was ${_consecutive429s})`);
-              _consecutive429s = 0;
+            if (getConsecutive429s() > 0) {
+              console.error(`success -- resetting panic-shrink counter (was ${getConsecutive429s()})`);
+              setConsecutive429s(0);
             }
           }
 
@@ -829,9 +829,9 @@ function createClaudeHandler(deps) {
               // Proxy state at the time of the response.
               proxy_state: {
                 passthrough_mode: _passthrough,
-                consecutive_429s: typeof _consecutive429s !== 'undefined' ? _consecutive429s : null,
-                last_input_tokens_remaining: typeof _lastInputTokensRemaining !== 'undefined' ? _lastInputTokensRemaining : null,
-                last_input_tokens_limit: typeof _lastInputTokensLimit !== 'undefined' ? _lastInputTokensLimit : null,
+                consecutive_429s: getConsecutive429s(),
+                last_input_tokens_remaining: getLastInputTokensRemaining(),
+                last_input_tokens_limit: getLastInputTokensLimit(),
                 proxy_pid: process.pid,
                 proxy_uptime_s: Math.round(process.uptime()),
               },
