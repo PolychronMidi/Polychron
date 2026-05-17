@@ -18,8 +18,13 @@ const path = require('path');
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 const COMPOSITION_OUTPUT_DIR = path.join(PROJECT_ROOT, 'src', 'output');
 const METRICS_DIR = path.join(COMPOSITION_OUTPUT_DIR, 'metrics');
+const HME_RUNTIME_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime');
+const HME_METRICS_DIR = path.join(HME_RUNTIME_DIR, 'metrics');
 process.env.PROJECT_ROOT = PROJECT_ROOT;
 process.env.COMPOSITION_OUTPUT_DIR = COMPOSITION_OUTPUT_DIR;
+process.env.COMPOSITION_METRICS_DIR = METRICS_DIR;
+process.env.HME_RUNTIME_DIR = HME_RUNTIME_DIR;
+process.env.HME_METRICS_DIR = HME_METRICS_DIR;
 process.env.METRICS_DIR = METRICS_DIR;
 
 const MEASURE_TIMEOUT_SEC = 30;
