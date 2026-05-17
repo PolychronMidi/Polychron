@@ -60,7 +60,7 @@ async function handleUpstreamFailureOrSuccess({
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const snapshotRel = `tmp/claude-${status}-${pathLabel}-payload-${stamp}.json`;
   console.error(`UPSTREAM FAILURE detected: ${errMsg}`);
-  const coolingDown = alertCooldownActive(errInfo.type || `http_${status}`, pathLabel);
+  const coolingDown = _alertCooldownActive(errInfo.type || `http_${status}`, pathLabel);
   const shouldRetry = headers['x-should-retry'] === 'true';
   const isRateLimit = errInfo.type === 'rate_limit_error';
 
