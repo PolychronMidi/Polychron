@@ -59,10 +59,6 @@ def main() -> None:
             print(f"FAIL: registry parse error: {e}", file=sys.stderr)
             sys.exit(1)
 
-    try:
-        pass
-    except Exception:
-        pass
 
     registered = set()
     for bucket in ("candidates", "confirmed", "refuted"):
