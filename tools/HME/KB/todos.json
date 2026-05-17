@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3497,
-      "updated_ts": 1778975148.1904316,
-      "codex_plan_synced_ts": 1778975148.1903343,
+      "updated_ts": 1778977488.7398129,
+      "codex_plan_synced_ts": 1778977488.7397046,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-16T23:45:33.939Z"
+      "codex_plan_ts": "2026-05-17T00:24:37.364Z"
     }
   },
   {
@@ -1153,8 +1153,8 @@
     "id": 3117,
     "text": "Run focused verification and report evidence",
     "activeForm": "Run focused verification and report evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1163,7 +1163,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T23:45:33.939Z"
+    "codex_plan_ts": "2026-05-17T00:24:37.364Z"
   },
   {
     "id": 3118,
@@ -7364,8 +7364,8 @@
     "id": 3495,
     "text": "Diagnose active lifesaver/autocommit state and root artifacts",
     "activeForm": "Diagnose active lifesaver/autocommit state and root artifacts",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7374,14 +7374,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T23:45:33.939Z"
+    "codex_plan_ts": "2026-05-17T00:24:37.364Z"
   },
   {
     "id": 3496,
     "text": "Fix remaining output/i path references and guards",
     "activeForm": "Fix remaining output/i path references and guards",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7390,14 +7390,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T23:45:33.939Z"
+    "codex_plan_ts": "2026-05-17T00:24:37.364Z"
   },
   {
     "id": 3497,
     "text": "Clean generated tracking/ignore state and remove root artifacts",
     "activeForm": "Clean generated tracking/ignore state and remove root artifacts",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7406,6 +7406,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T23:45:33.939Z"
+    "codex_plan_ts": "2026-05-17T00:24:37.364Z"
   }
 ]

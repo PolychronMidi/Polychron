@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Diagnose active lifesaver/autocommit state and root artifacts
+(empty)
 
 ## Next
 
-- [ ] [E3] Run focused verification and report evidence
-- [ ] [E3] Fix remaining output/i path references and guards
-- [ ] [E3] Clean generated tracking/ignore state and remove root artifacts
+(empty)
 
 ## Done
 
