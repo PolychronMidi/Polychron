@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Re-run targeted verification and HME review
+(empty)
 
 ## Next
 
