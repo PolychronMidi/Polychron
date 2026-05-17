@@ -259,7 +259,7 @@
       "module": "claim_without_evidence",
       "fires_when": "claim_without_evidence",
       "bash_var": "CLAIM_WITHOUT_EVIDENCE",
-      "deny": false,
+      "deny": true,
       "_note": "permanent soft-flag (reviewed 2026-05-10): same VSCode renderer reason as advisor_silently_skipped. Auditor exemption: non-temporal.",
       "category": "security",
       "scope": "transcript",
