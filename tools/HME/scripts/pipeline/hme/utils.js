@@ -1,8 +1,6 @@
 // Shared utilities for HME pipeline steps.
 'use strict';
 
-const { metricPath } = require('./utils');
-
 const fs = require('fs');
 const path = require('path');
 const hmePaths = require('../../../proxy/hme_paths');
