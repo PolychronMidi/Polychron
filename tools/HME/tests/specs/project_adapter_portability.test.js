@@ -199,3 +199,45 @@ test('feedback-graph analyzer skips under generic fixture', () => {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+
+test('swapped fixture passes health and portability contracts', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-swapped-project-'));
+  try {
+    copyDir(path.join(repo, 'tools/HME/tests/fixtures/swapped-project'), tmp);
+    const cfg = adapter.loadAdapter(tmp);
+    assert.equal(cfg.project_id, 'swapped-fixture');
+    assert.deepEqual(cfg.source_roots, ['src']);
+    assert.deepEqual(cfg.project_docs, ['doc/composition.md']);
+    const health = childProcess.spawnSync(
+      'node',
+      [path.join(repo, 'tools/HME/scripts/project-health.js'), `--root=${tmp}`],
+      { encoding: 'utf8' },
+    );
+    assert.equal(health.status, 0, health.stderr || health.stdout);
+    const audit = runAudit(tmp);
+    assert.equal(audit.status, 0, audit.stderr || audit.stdout);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+
+test('adapter capability matrix defaults closed and honors opt-ins', () => {
+  const cfg = adapter.loadAdapter(path.join(repo, 'tools/HME/tests/fixtures/swapped-project'));
+  for (const cap of [
+    'pipeline_summary',
+    'trace',
+    'run_history',
+    'structured_events',
+    'audio_render',
+    'perceptual_analysis',
+    'feedback_graph',
+  ]) {
+    assert.equal(adapter.hasCapability(cap, cfg), false, cap);
+  }
+  const enabled = { capabilities: { trace: true, audio_render: true } };
+  assert.equal(adapter.hasCapability('trace', enabled), true);
+  assert.equal(adapter.hasCapability('audio_render', enabled), true);
+  assert.equal(adapter.hasCapability('feedback_graph', enabled), false);
+});
