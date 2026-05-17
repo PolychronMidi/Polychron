@@ -90,7 +90,6 @@ test('Claude handler serves stop-gate health route', async () => {
     assert.equal(JSON.parse(res.body).component, 'hme-stop-gate');
   } finally {
     if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
-    if (prevQuiet === undefined) delete process.env.HME_PROXY_QUIET_IMPORT; else process.env.HME_PROXY_QUIET_IMPORT = prevQuiet;
     clearProxyCache();
     fs.rmSync(root, { recursive: true, force: true });
   }
