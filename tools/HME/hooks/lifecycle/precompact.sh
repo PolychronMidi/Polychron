@@ -33,7 +33,12 @@ if [[ -n "$FOUND" ]]; then
   # Filter out files already tracked in tab
   UNTRACKED=""
   while IFS= read -r f; do
-    # Match whole line, not substring. Previously a path like
+    base="$(basename "$f")"
+    case "$base" in
+      claude-system-prompt-*|hme-agent-*|hme-canary-*|hme-native-read-*) continue ;;
+      hme-note-tabs.txt|hme-streak-*|hme-transcript-*|hme-turn-*) continue ;;
+      omniroute-config-*|todo-turn-start.md) continue ;;
+    esac
     grep -qFx "$f" "$TAB" 2>/dev/null || UNTRACKED+="  $f"$'\n'  # silent-ok: optional fallback path.
   done <<< "$FOUND"
   if [[ -n "$UNTRACKED" ]]; then
@@ -61,7 +66,7 @@ fi
 
 # Log compact event for context meter calibration.
 CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
-LOG="${METRICS_DIR:-$PROJECT/src/output/metrics}/compact-log.jsonl"
+LOG="${HME_METRICS_DIR:-$PROJECT/tools/HME/runtime/metrics}/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
   # FAIL-LOUD: capture jq stderr; corrupted statusline JSON would silently
@@ -86,7 +91,7 @@ fi
 
 # if preemption didn't fire at 70%, at
 CHAIN_SCRIPT="$PROJECT/tools/HME/scripts/chain-snapshot.py"
-LATEST_LINK="${METRICS_DIR:-$PROJECT/src/output/metrics}/chain-history/latest.yaml"
+LATEST_LINK="${HME_METRICS_DIR:-$PROJECT/tools/HME/runtime/metrics}/chain-history/latest.yaml"
 _NEEDS_FALLBACK=1
 if [ -f "$LATEST_LINK" ]; then
   # If a link exists and is < 10 min old, assume preemption fired

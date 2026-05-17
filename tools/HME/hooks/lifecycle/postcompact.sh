@@ -32,7 +32,7 @@ if [[ ${#PARTS[@]} -gt 0 ]]; then
 fi
 
 CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
-LOG="$PROJECT/src/output/metrics/compact-log.jsonl"
+LOG="${HME_METRICS_DIR:-$PROJECT/tools/HME/runtime/metrics}/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
   # FAIL-LOUD: same rationale as precompact.sh -- corrupted statusline JSON
@@ -83,7 +83,7 @@ fi
 echo -e "[PostCompact] Context compacted. Session state:$ORIENT" >&2
 
 # hydrate the new window from the latest
-LATEST_LINK="${METRICS_DIR:-$PROJECT/src/output/metrics}/chain-history/latest.yaml"
+LATEST_LINK="${HME_METRICS_DIR:-$PROJECT/tools/HME/runtime/metrics}/chain-history/latest.yaml"
 if [ -f "$LATEST_LINK" ]; then
   echo "" >&2
   echo "=== CHAIN LINK HYDRATION (PostCompact) ===" >&2
@@ -93,7 +93,7 @@ if [ -f "$LATEST_LINK" ]; then
   python3 <<'PYEOF' >&2 2>"$_POSTC_PY_ERR"
 import json, os
 project = os.environ["PROJECT_ROOT"]
-latest = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project, "src", "output", "metrics")), "chain-history", "latest.yaml")
+latest = os.path.join(os.environ.get("HME_METRICS_DIR", os.path.join(project, "tools", "HME", "runtime", "metrics")), "chain-history", "latest.yaml")
 try:
     with open(latest) as f:
         data = json.load(f)
@@ -139,7 +139,7 @@ onb = data.get("onboarding", {})
 if onb and onb.get("state") != "graduated":
     print(f"  Onboarding: state={onb.get('state')} target={onb.get('target', '')}")
 
-print("  (full link readable at src/output/metrics/chain-history/latest.yaml)")
+print("  (full link readable at tools/HME/runtime/metrics/chain-history/latest.yaml)")
 PYEOF
   if [ -s "$_POSTC_PY_ERR" ] && [ -d "$PROJECT/log" ]; then
     _POSTC_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
