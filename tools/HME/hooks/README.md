@@ -15,7 +15,7 @@ Most reactive enrichment has migrated to the proxy middleware (`tools/HME/proxy/
 - `helpers/` -- `_safety.sh`, `_onboarding.sh`, `_nexus.sh`, `_tab_helpers.sh`; shared functions sourced by every hook
 - `log-tool-call.sh` -- universal tool-call logger (session-transcript.jsonl + hme.log)
 - `../event_kernel/statusline.js` -- Claude Code status line renderer (context-meter)
-- `../event_kernel/native_hooks/` -- portable JS handlers for Agent, TodoWrite, ToolSearch, Glob streak, and diagnostics
+- `../event_kernel/native_hooks/` -- portable JS handlers for Agent, TodoWrite, Glob streak, and diagnostics
 
 ## Output channels
 
