@@ -4,11 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Run targeted verification only
+- [ ] [E3] Report changes with evidence
 
 ## Next
 
-- [ ] [E3] Report changes with evidence
+(empty)
 
 ## Done
 

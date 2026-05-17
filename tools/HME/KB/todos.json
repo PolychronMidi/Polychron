@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3527,
-      "updated_ts": 1778982228.761894,
-      "codex_plan_synced_ts": 1778982228.7617905,
+      "updated_ts": 1778982318.7591968,
+      "codex_plan_synced_ts": 1778982318.7590942,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T01:43:45.921Z"
+      "codex_plan_ts": "2026-05-17T01:45:15.954Z"
     }
   },
   {
@@ -7859,7 +7859,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:43:45.921Z"
+    "codex_plan_ts": "2026-05-17T01:45:15.954Z"
   },
   {
     "id": 3525,
@@ -7875,14 +7875,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:43:45.921Z"
+    "codex_plan_ts": "2026-05-17T01:45:15.954Z"
   },
   {
     "id": 3526,
     "text": "Run targeted verification only",
     "activeForm": "Run targeted verification only",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7891,13 +7891,13 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:43:45.921Z"
+    "codex_plan_ts": "2026-05-17T01:45:15.954Z"
   },
   {
     "id": 3527,
     "text": "Report changes with evidence",
     "activeForm": "Report changes with evidence",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "codex_plan",
@@ -7907,6 +7907,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:43:45.921Z"
+    "codex_plan_ts": "2026-05-17T01:45:15.954Z"
   }
 ]
