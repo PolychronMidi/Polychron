@@ -167,7 +167,7 @@ const {
 const _PASSTHROUGH_COMPACT_BYTES = parseInt(process.env.HME_PROXY_COMPACT_BYTES || '250000', 10);
 const _COMPACT_BYTES_EXPLICIT = process.env.HME_PROXY_COMPACT_BYTES != null
   && process.env.HME_PROXY_COMPACT_BYTES !== '';
-const _PASSTHROUGH_COMPACT_KEEP_MIN = 50;
+const _PASSTHROUGH_COMPACT_KEEP_MIN = 100;
 
 // Dynamic threshold: track the most recent ITPM-remaining from Anthropic
 // response headers and shrink the byte budget when we're close to the
