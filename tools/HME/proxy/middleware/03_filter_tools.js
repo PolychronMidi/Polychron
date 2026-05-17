@@ -46,8 +46,9 @@ function _dropSet(projectRoot) {
 module.exports = {
   name: 'filter_tools',
   onRequest({ payload, ctx }) {
-    if (DROP_SET.size === 0) return;
     if (!payload || !Array.isArray(payload.tools)) return;
+    const DROP_SET = _dropSet(ctx.PROJECT_ROOT);
+    if (DROP_SET.size === 0) return;
     const before = payload.tools.length;
     // Rescue cache_control from any dropped tool: Claude Code attaches the
     let rescuedCC = null;
