@@ -27,7 +27,7 @@ import time
 from collections import defaultdict
 from datetime import datetime
 
-from _common import PROJECT_ROOT
+from _common import HME_METRICS, PROJECT_ROOT
 
 
 def _resolve_cause(cause: str, before_ts: float, all_events: list[dict]) -> dict | None:
@@ -158,7 +158,7 @@ def main(argv):
                 print("  trigger is the operator. Watcher-driven auto-reloads do.")
                 return 0
 
-    activity = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
+    activity = os.path.join(HME_METRICS, "hme-activity.jsonl")
     if not os.path.isfile(activity):
         print(f"# i/why mode=causality {target_event}\nNo activity log.")
         return 1

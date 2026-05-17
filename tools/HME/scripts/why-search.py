@@ -17,7 +17,7 @@ import re
 import subprocess
 import sys
 
-from _common import PROJECT_ROOT
+from _common import HME_METRICS, PROJECT_ROOT
 
 
 _STOPWORDS = {
@@ -88,7 +88,7 @@ def _kb_hits(question: str) -> str:
 
 def _recent_activity() -> list[str]:
     import json
-    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
+    p = os.path.join(HME_METRICS, "hme-activity.jsonl")
     if not os.path.isfile(p):
         return []
     try:

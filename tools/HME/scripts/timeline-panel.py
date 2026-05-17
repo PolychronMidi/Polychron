@@ -21,7 +21,7 @@ import sys
 import time
 from datetime import datetime
 
-from _common import PROJECT_ROOT
+from _common import HME_METRICS, PROJECT_ROOT
 
 
 def _parse_window(arg: str) -> float:
@@ -95,7 +95,7 @@ def _gather_marker_events(now: float, window_s: float) -> list[dict]:
 
 def _gather_activity_events(now: float, window_s: float) -> list[dict]:
     """Read tail of activity log; events since (now - window_s)."""
-    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
+    p = os.path.join(HME_METRICS, "hme-activity.jsonl")
     if not os.path.isfile(p):
         return []
     try:

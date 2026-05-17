@@ -20,7 +20,7 @@ import time
 from collections import defaultdict
 from datetime import datetime
 
-from _common import PROJECT_ROOT
+from _common import HME_METRICS, PROJECT_ROOT
 
 
 def _read_json(path: str):
@@ -57,8 +57,8 @@ def _hci_phase() -> str:
     if not snap:
         return "no snapshot"
     cur = snap.get("hci")
-    rows = _read_jsonl(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
-                                    "hme-coherence-timeseries.jsonl"))
+    rows = _read_jsonl(os.path.join(HME_METRICS,
+                                   "hme-coherence-timeseries.jsonl"))
     if not rows or cur is None:
         return f"{cur}/100" if cur is not None else "?"
     rows = [r for r in rows if r.get("hci") is not None]
@@ -219,7 +219,7 @@ def _causality_summary() -> str:
 
 def _conscience_summary() -> str:
     """Horizon VIII -- ground-truth verdict count."""
-    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-ground-truth.jsonl")
+    p = os.path.join(HME_METRICS, "hme-ground-truth.jsonl")
     rows = _read_jsonl(p, tail=200) if os.path.isfile(p) else []
     pos = sum(1 for r in rows
               if r.get("sentiment") in ("legendary", "compelling", "surprising", "moving"))
@@ -250,7 +250,7 @@ def _band_summary() -> str:
 
 def _fractal_summary() -> str:
     """Horizon X -- fractal Gini trend."""
-    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-fractal-history.jsonl")
+    p = os.path.join(HME_METRICS, "hme-fractal-history.jsonl")
     rows = _read_jsonl(p, tail=50) if os.path.isfile(p) else []
     if not rows:
         return "no measurements (run `i/why mode=fractal-shape`)"
@@ -266,8 +266,8 @@ def _fractal_summary() -> str:
 
 def _predict_summary() -> str:
     """Horizon I -- tool latency p50."""
-    activity = _read_jsonl(os.path.join(PROJECT_ROOT, "src", "output", "metrics",
-                                        "hme-activity.jsonl"), tail=2000)
+    activity = _read_jsonl(os.path.join(HME_METRICS,
+                                   "hme-activity.jsonl"), tail=2000)
     if not activity:
         return "no activity"
     cutoff = time.time() - 3600 * 6
@@ -284,8 +284,8 @@ def _persist_snapshot(rows: list[tuple]) -> None:
     """Append a holograph snapshot to history JSONL for trajectory view.
     Atomic-ish via append; cheap (~12 lines per row, runs at most once
     per i/status holograph invocation)."""
-    history_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
-                                "hme-holograph-history.jsonl")
+    history_path = os.path.join(HME_METRICS,
+                                   "hme-holograph-history.jsonl")
     try:
         os.makedirs(os.path.dirname(history_path), exist_ok=True)
     except OSError:
@@ -305,8 +305,8 @@ def _render_trajectory(n: int = 5) -> int:
     """Render the last n holograph snapshots as a trajectory -- for each
     horizon row, the value across recent invocations. Cross-horizon
     time-series in one view (Horizon X * cross-horizon compounding)."""
-    history_path = os.path.join(PROJECT_ROOT, "src", "output", "metrics",
-                                "hme-holograph-history.jsonl")
+    history_path = os.path.join(HME_METRICS,
+                                   "hme-holograph-history.jsonl")
     if not os.path.isfile(history_path):
         print("# i/status holograph mode=trajectory")
         print("  No history yet. Run `i/status holograph` (default mode) several times to accumulate.")

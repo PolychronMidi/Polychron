@@ -23,7 +23,7 @@ import os
 import sys
 from collections import Counter
 
-from _common import PROJECT_ROOT
+from _common import HME_METRICS, PROJECT_ROOT
 
 
 _POSITIVE = {"legendary", "compelling", "surprising", "moving"}
@@ -31,7 +31,7 @@ _NEGATIVE = {"flat", "mechanical", "boring", "broken"}
 
 
 def _load_verdicts():
-    p = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-ground-truth.jsonl")
+    p = os.path.join(HME_METRICS, "hme-ground-truth.jsonl")
     if not os.path.isfile(p):
         return []
     out = []
@@ -101,7 +101,7 @@ def main(argv):
                 return 0.0
         return 0.0
 
-    activity = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
+    activity = os.path.join(HME_METRICS, "hme-activity.jsonl")
     pos_dirs: Counter = Counter()
     pos_files: Counter = Counter()
     matched_verdicts = 0

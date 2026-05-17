@@ -14,7 +14,7 @@ import json
 import os
 import sys
 
-from _common import PROJECT_ROOT
+from _common import HME_METRICS, PROJECT_ROOT
 
 
 _STATE_DESC = {
@@ -45,7 +45,7 @@ def main(argv):
     print(f"  Meaning: {_STATE_DESC.get(state, '(unknown state)')}")
     print()
 
-    activity_file = os.path.join(PROJECT_ROOT, "src", "output", "metrics", "hme-activity.jsonl")
+    activity_file = os.path.join(HME_METRICS, "hme-activity.jsonl")
     if os.path.isfile(activity_file):
         try:
             with open(activity_file) as f:
