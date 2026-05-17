@@ -112,12 +112,28 @@ function shrinkForPassthrough(payload, opts = {}) {
       m.content = [{ type: 'text', text: ofMatch ? `(hme-proxy compact: agent output at ${ofMatch[1]})` : '(content stripped by passthrough-compact)' }];
     }
   }
+  let tailElided = 0;
+  serialized = JSON.stringify(payload);
+  if (serialized.length > threshold) {
+    outer: for (const m of msgs) {
+      if (!m || !Array.isArray(m.content)) continue;
+      for (const b of m.content) {
+        if (!b || b.type !== 'tool_result') continue;
+        const cstr = typeof b.content === 'string' ? b.content : (Array.isArray(b.content) ? JSON.stringify(b.content) : '');
+        if (cstr.length < toolResultByteFloor) continue;
+        b.content = `(content elided by hme-proxy emergency tail-compact: original was ${cstr.length}B)`;
+        tailElided += 1;
+        serialized = JSON.stringify(payload);
+        if (serialized.length <= threshold) break outer;
+      }
+    }
+  }
   if (dropped > 0 && msgs[0] && msgs[0].role === 'assistant') {
     msgs.unshift({ role: 'user', content: `[hme-proxy passthrough-compact: ${dropped} oldest message(s) dropped to fit under TPM rate limit; restart proxy to clear escape-hatch state]` });
   }
   serialized = JSON.stringify(payload);
-  log(`passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks (now ${msgs.length} msgs, body=${serialized.length}B)`);
-  return dropped;
+  log(`passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks, emergency-elided ${tailElided} tail tool_result blocks (now ${msgs.length} msgs, body=${serialized.length}B)`);
+  return dropped + tailElided + elided;
 }
 
 module.exports = { shrinkForPassthrough };
