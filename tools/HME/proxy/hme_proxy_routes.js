@@ -61,7 +61,8 @@ function createProxyRouteDispatcher({
       return true;
     }
     if (url.startsWith('/hme/session/')) {
-      require('./session_state_route').handleSessionStateRoute(clientReq, clientRes);
+      const handler = handleSessionStateRoute || require('./session_state_route').handleSessionStateRoute;
+      handler(clientReq, clientRes);
       return true;
     }
     if (url.startsWith('/mcp')) {
