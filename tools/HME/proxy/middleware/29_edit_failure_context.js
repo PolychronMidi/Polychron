@@ -34,7 +34,7 @@ function removeTurnEdit(root, file) {
 
 function contextWindow(root, file, oldString = '', newString = '', reason = 'edit failed') {
   if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
-    return `\n[READ current context unavailable: ${relPath(file, root)} is not a readable file]`;
+    return { text: `\n[READ current context unavailable: ${relPath(file, root)} is not a readable file]`, readable: false };
   }
   const text = fs.readFileSync(file, 'utf8');
   const lines = text.split(/\r?\n/);
@@ -48,7 +48,7 @@ function contextWindow(root, file, oldString = '', newString = '', reason = 'edi
   const start = Math.max(0, hit - 20);
   const end = Math.min(lines.length, hit + 21);
   const body = lines.slice(start, end).map((line, i) => `${String(start + i + 1).padStart(5, ' ')} ${line}`).join('\n');
-  return `\n[READ current context ${relPath(file, root)}:${start + 1}-${end}]\n${body}`;
+  return { text: `\n[READ current context ${relPath(file, root)}:${start + 1}-${end}]\n${body}`, readable: true };
 }
 
 module.exports = {
