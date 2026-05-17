@@ -209,43 +209,20 @@ function createClaudeHandler(deps) {
         });
         upstreamRes.on('end', async () => {
           try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
-          let fullBody = Buffer.concat(chunks);
-          let status = upstreamRes.statusCode || 502;
-          let headers = { ...upstreamRes.headers };
-          // Context monitoring: inject synthetic token-remaining header so
-          // Claude Code's native /compact fires before hitting model context limits.
-          if (_isOmniRouteSwap) _injectContextHeader(headers, _swapModel);
-          // Capture Anthropic's rate-limit telemetry so the next request's
-          // _shrinkForPassthrough can size the byte budget dynamically
-          // instead of using the static 400KB ceiling. Header name per
-          // https://platform.claude.com/docs/en/api/rate-limits.
-          const _hdrTokRemaining = headers['anthropic-ratelimit-input-tokens-remaining'];
-          const _hdrTokLimit = headers['anthropic-ratelimit-input-tokens-limit'];
-          const _hdrTokReset = headers['anthropic-ratelimit-input-tokens-reset'];
-          if (_hdrTokRemaining != null) {
-            const n = parseInt(_hdrTokRemaining, 10);
-            if (Number.isFinite(n) && n >= 0) setLastInputTokensRemaining(n);
-          }
-          if (_hdrTokLimit != null) {
-            const n = parseInt(_hdrTokLimit, 10);
-            if (Number.isFinite(n) && n > 0) setLastInputTokensLimit(n);
-          }
-          // On any 4xx, dump the rate-limit telemetry so we can SEE what
-          // Anthropic told us (instead of the unhelpful "Error" body).
-          if (status >= 400 && status < 500 && (_hdrTokLimit || _hdrTokRemaining || _hdrTokReset || headers['retry-after'])) {
-            console.error(`rate-limit headers: limit=${_hdrTokLimit||'?'} remaining=${_hdrTokRemaining||'?'} reset=${_hdrTokReset||'?'} retry-after=${headers['retry-after']||'?'}`);
-          }
-
-          const failureResult = await handleUpstreamFailureOrSuccess({
-            status,
-            headers,
-            fullBody,
-            outBody,
+          await handleAnthropicResponseComplete({
+            chunks,
+            upstreamRes,
+            clientRes,
             clientReq,
+            payload,
+            headers: upstreamRes.headers,
+            bodyBuf,
+            outBody,
+            upstream,
+            upstreamPath,
             upstreamHeaders,
             upstreamOpts,
             transport,
-            payload,
             isAnthropic,
             passthrough: _passthrough,
             isOmniRouteSwap: _isOmniRouteSwap,
@@ -259,77 +236,12 @@ function createClaudeHandler(deps) {
             getConsecutive429s,
             setConsecutive429s,
             incConsecutive429s,
-          });
-          status = failureResult.status;
-          headers = failureResult.headers;
-          fullBody = failureResult.fullBody;
-
-
-          let final = null;
-          if (status >= 200 && status < 300 && payload) {
-            try {
-              final = await hmeDispatcher.maybeHandleHme(
-                fullBody, headers, status, payload,
-                { host: upstream.host, port: upstream.port, tls: upstream.tls,
-                  path: upstreamPath, method: 'POST', headers: upstreamHeaders },
-                (headers['content-type'] || '').toLowerCase().includes('text/event-stream'),
-              );
-            } catch (err) {
-              console.error('HME continuation failed:', err.message);
-            }
-          }
-
-          let outStatus = status;
-          let outHeaders = headers;
-          let outBuf = fullBody;
-          if (_isOmniRouteSwap && status >= 200 && status < 300
-              && (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream')) {
-            const _s = outBuf.toString('utf8');
-            if (!_s.includes('event: message_start') && /input exceeds the context window/i.test(_s)) {
-              const _msg = 'Context window exceeded upstream before Claude Code could compact. Please send /compact or start a fresh turn; hme-proxy will preflight-shrink future near-limit OmniRoute requests.';
-              console.error(`[hme-proxy] OmniRoute context-window SSE normalized to Anthropic text event (${outBuf.length}B error body)`);
-              outBuf = _anthropicTextSseBuffer(_swapModel, _msg);
-              outHeaders = { ...outHeaders, 'content-type': 'text/event-stream; charset=utf-8' };
-              delete outHeaders['content-length'];
-            }
-          }
-          if (final) {
-            outStatus = final.finalStatus;
-            outHeaders = { ...final.finalHeaders };
-            outBuf = final.finalBody;
-            emit({ event: 'hme_continuation_complete', loops: final.loops, bytes: outBuf.length });
-            // Continuation loop runs stream:false. Normalize headers.
-            delete outHeaders['content-length'];
-          }
-
-          const traced = await traceAnthropicResponse({
-            isAnthropic,
-            outStatus,
-            outHeaders,
-            outBuf,
-            clientReq,
-            upstreamHeaders,
-            bodyBuf,
-            outBody,
-            payload,
-            final,
-            passthrough: _passthrough,
-            isOmniRouteSwap: _isOmniRouteSwap,
-            swapChain: _swapChain,
-            isInteractivePath: _isInteractivePath,
-            getConsecutive429s,
             getLastInputTokensRemaining,
+            setLastInputTokensRemaining,
             getLastInputTokensLimit,
-          });
-          outStatus = traced.outStatus;
-          outHeaders = traced.outHeaders;
-          outBuf = traced.outBuf;
-
-          sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, outBuf });
-          maybeRunStopFallback({
-            isAnthropic,
-            payload,
-            outBuf,
+            setLastInputTokensLimit,
+            injectContextHeader: _injectContextHeader,
+            anthropicTextSseBuffer: _anthropicTextSseBuffer,
             lifecycleInactive: (event) => lifecycleBridge().lifecycleInactive(event),
             runInlineFallback: (event, stdinJson) => lifecycleBridge().runInlineFallback(event, stdinJson),
           });
