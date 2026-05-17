@@ -7,7 +7,7 @@ const { PROJECT_ROOT } = require('./shared');
 function shrinkForPassthrough(payload, opts = {}) {
   const env = opts.env || process.env;
   const log = opts.log || console.error;
-  const keepMin = Number(opts.keepMin || 10);
+  const keepMin = Number(opts.keepMin || 30);
   const threshold = Number(typeof opts.effectiveThreshold === 'function' ? opts.effectiveThreshold() : opts.threshold || 250000);
   const projectRoot = opts.projectRoot || PROJECT_ROOT;
   if (env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
@@ -17,8 +17,8 @@ function shrinkForPassthrough(payload, opts = {}) {
   let serialized = JSON.stringify(payload);
   if (serialized.length <= threshold) return 0;
 
-  const toolResultByteFloor = 3000;
-  const recentKeepFraction = 0.30;
+  const toolResultByteFloor = 5000;
+  const recentKeepFraction = 0.50;
   const recentStart = Math.floor(msgs.length * (1 - recentKeepFraction));
   let elided = 0;
   for (let i = 0; i < recentStart; i += 1) {
