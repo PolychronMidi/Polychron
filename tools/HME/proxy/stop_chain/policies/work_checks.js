@@ -431,7 +431,7 @@ module.exports = {
     // (advance counter to MAX, return allow). Round 1 always fires.
     if (next === 2) {
       const lastAssistant = lastAssistantText(transcriptPath);
-      if (isNothingMissedResponse(lastAssistant)) {
+      if (isNothingMissedResponse(lastAssistant) && !unfinishedTaskDebt(transcriptPath)) {
         store[turnKey] = COMPL_MAX;
         saveComplStore(store);
         return ctx.allow();
