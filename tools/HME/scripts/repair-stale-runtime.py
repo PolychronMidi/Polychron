@@ -37,8 +37,7 @@ def _event(root: Path, payload: dict) -> None:
     out = root / "tools" / "HME" / "runtime" / "stale-runtime-repairs.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(payload, sort_keys=True) + "
-")
+        f.write(json.dumps(payload, sort_keys=True) + "\n")
 
 
 def inspect(root: Path, fix: bool = False) -> dict:
