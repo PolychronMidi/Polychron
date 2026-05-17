@@ -181,8 +181,9 @@ let _lastInputTokensRemaining = null; // updated by response handler
 let _lastInputTokensLimit = null;     // user's actual ITPM cap, learned from headers
 let _consecutive429s = 0;             // panic-shrink trigger: each 429 halves threshold
 let _lastPayloadBytes = 0;            // last OmniRoute payload size for context monitoring
-const _BYTES_PER_TOKEN_EST = 3.5;
-const _DYNAMIC_THRESHOLD_FLOOR_BYTES = 999_000;
+const _BYTES_PER_TOKEN_EST = Number(process.env.HME_PROXY_BYTES_PER_TOKEN_EST || '3.5');
+const _DYNAMIC_THRESHOLD_FLOOR_BYTES = parseInt(process.env.HME_PROXY_COMPACT_FLOOR_BYTES || '999000', 10);
+const _MODEL_CONTEXT_FRACTION = Number(process.env.HME_PROXY_CONTEXT_FRACTION || '0.90');
 function _effectiveCompactThreshold() {
   // CEILING: HME_PROXY_COMPACT_BYTES (explicit) honored as hard cap.
   // Otherwise: % of learned ITPM cap (leaves room for response +
@@ -191,7 +192,7 @@ function _effectiveCompactThreshold() {
   if (_COMPACT_BYTES_EXPLICIT) {
     ceiling = _PASSTHROUGH_COMPACT_BYTES;
   } else if (_lastInputTokensLimit != null && _lastInputTokensLimit > 0) {
-    ceiling = Math.floor(_lastInputTokensLimit * 0.95 * _BYTES_PER_TOKEN_EST);
+    ceiling = Math.floor(_lastInputTokensLimit * _MODEL_CONTEXT_FRACTION * _BYTES_PER_TOKEN_EST);
   } else {
     ceiling = _PASSTHROUGH_COMPACT_BYTES;
   }
@@ -209,7 +210,8 @@ function _effectiveCompactThreshold() {
   // of remaining lets us fit the request and leave headroom.
   let remainingCap = ceiling;
   if (_lastInputTokensRemaining != null && _lastInputTokensRemaining > 0) {
-    remainingCap = Math.floor(_lastInputTokensRemaining * 0.50 * _BYTES_PER_TOKEN_EST);
+    const remainingFraction = Number(process.env.HME_PROXY_REMAINING_FRACTION || '0.80');
+    remainingCap = Math.floor(_lastInputTokensRemaining * remainingFraction * _BYTES_PER_TOKEN_EST);
   }
 
   const eff = Math.min(panicCap, remainingCap);
@@ -268,7 +270,7 @@ function _resolveModelCtx(modelId) {
 
 function _injectContextHeader(headers, swapModel) {
   const ctx = _resolveModelCtx(swapModel);
-  const estUsed = Math.ceil(_lastPayloadBytes / 3.5);
+  const estUsed = Math.ceil(_lastPayloadBytes / _BYTES_PER_TOKEN_EST);
   const remaining = Math.max(0, ctx - estUsed);
   if (remaining < ctx * 0.25) {
     headers['anthropic-ratelimit-input-tokens-remaining'] = String(remaining);
