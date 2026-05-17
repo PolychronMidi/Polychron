@@ -68,7 +68,7 @@ module.exports = {
       issues.push(`  - ${reviewIssues} unresolved review issue(s) -- fix then re-run review(mode='forget') until count drops to 0`);
     }
 
-    const verdict = nexusGet('PIPELINE');
+    const verdict = pipelineVerdict();
     if (verdict === 'STABLE' || verdict === 'EVOLVED') {
       if (!nexusHas('COMMIT')) {
         issues.push(`  - Pipeline passed (${verdict}) but changes not committed`);
