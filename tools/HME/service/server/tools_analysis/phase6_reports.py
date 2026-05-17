@@ -27,7 +27,7 @@ def _load(name: str):
 
 def constitution_report() -> str:
     _track("constitution_report")
-    data = _load(CONSTITUTION_NAME)
+    data = _load(CONSTITUTION_REL)
     if not data:
         return (
             "# HME Constitution\n\n"
@@ -67,7 +67,7 @@ def constitution_report() -> str:
 
 def doc_drift_report() -> str:
     _track("doc_drift_report")
-    data = _load(DOC_DRIFT_NAME)
+    data = _load(DOC_DRIFT_REL)
     if not data:
         return (
             "# HME Doc Drift\n\n"
@@ -112,7 +112,7 @@ def reflexivity_report() -> str:
     """Phase 6.1 -- show how much of this round's prediction accuracy was
     contaminated by proxy injection vs clean post-hoc scoring."""
     _track("reflexivity_report")
-    data = _load(ACCURACY_NAME)
+    data = _load(ACCURACY_REL)
     if not data:
         return (
             "# HME Reflexivity\n\n"
