@@ -45,7 +45,7 @@ const { emitStartMarker } = require('./start_marker');
 const { createRouteMetrics } = require('./proxy_route_metrics');
 const { requestTelemetry } = require('./request_telemetry');
 const { routeDecision } = require('./model_route_resolver');
-const { shrinkForPassthrough } = require('./anthropic_passthrough_compact');
+const { shrinkForPassthrough } = require('./passthrough_compact');
 const { applyOverdriveRoute } = require('./overdrive_route');
 const { handleLegacySwapResponse } = require('./legacy_swap_response');
 const {
