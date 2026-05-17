@@ -79,3 +79,36 @@ test('portability audit ignores prose but catches boundary imports', () => {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+
+test('project-specific HME analyzer skips when adapter capability is off', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-capability-gate-'));
+  try {
+    copyDir(path.join(repo, 'tools/HME/tests/fixtures/generic-project'), tmp);
+    const metrics = path.join(tmp, 'src', 'output', 'metrics');
+    fs.mkdirSync(metrics, { recursive: true });
+    const proc = childProcess.spawnSync(
+      'node',
+      [path.join(repo, 'tools/HME/scripts/pipeline/hme/compute-musical-correlation.js')],
+      {
+        cwd: tmp,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PROJECT_ROOT: tmp,
+          METRICS_DIR: metrics,
+          HME_PROJECT_ADAPTER: path.join(tmp, 'config/project-adapter.json'),
+        },
+      },
+    );
+    assert.equal(proc.status, 0, proc.stderr || proc.stdout);
+    assert.match(proc.stdout, /SKIPPED/);
+    const out = JSON.parse(fs.readFileSync(
+      path.join(metrics, 'hme-musical-correlation.json'),
+      'utf8',
+    ));
+    assert.equal(out.skipped, true);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
