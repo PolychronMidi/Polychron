@@ -56,7 +56,6 @@ function createClaudeHandler(deps) {
     getLastInputTokensLimit,
     setLastInputTokensLimit,
     setLastPayloadBytes,
-    loadedMiddleware,
   } = deps;
 
   function handleRequest(clientReq, clientRes) {
