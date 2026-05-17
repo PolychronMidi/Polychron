@@ -148,6 +148,7 @@ function loadModelsJson() {
 module.exports = {
   emit,
   shortHash,
+  payloadSessionId,
   sessionKey,
   PROJECT_ROOT,
   EMIT_PY,
