@@ -148,6 +148,20 @@ test('passthrough compaction drops oldest messages when microcompaction cannot h
   assert.ok(payload.messages.length <= 4);
 });
 
+test('provider reasoning fields convert to Anthropic thinking events', () => {
+  const ctx = new Map();
+  const data = { type: 'response.reasoning_summary_text.delta', delta: { text: 'reasoned path' } };
+  assert.equal(reasoningTextFromData(data), 'reasoned path');
+  const out = providerReasoningToThinkingRewrite('response.reasoning_summary_text.delta', data, ctx);
+  assert.ok(Array.isArray(out.events));
+  assert.equal(out.events[0][0], 'content_block_start');
+  assert.equal(out.events[0][1].content_block.type, 'thinking');
+  assert.equal(out.events[1][0], 'content_block_delta');
+  assert.equal(out.events[1][1].delta.type, 'thinking_delta');
+  assert.equal(out.events[1][1].delta.thinking, 'reasoned path');
+});
+
+
 test('legacy swap auth failure emits Anthropic stop SSE instead of surfacing 401', () => quiet(() => {
   const clientRes = fakeClientRes();
   let released = false;
