@@ -109,7 +109,7 @@ function shrinkForPassthrough(payload, opts = {}) {
     orphans += before - m.content.length;
     if (m.content.length === 0) {
       const ofMatch = origTexts.join(' ').match(/output_file:\s*(\S+)/);
-      m.content = [{ type: 'text', text: ofMatch ? `(hme-proxy compact: agent output at ${ofMatch[1]})` : '(content stripped by hme-proxy passthrough-compact)' }];
+      m.content = [{ type: 'text', text: ofMatch ? `(hme-proxy compact: agent output at ${ofMatch[1]})` : '(content stripped by passthrough-compact)' }];
     }
   }
   if (dropped > 0 && msgs[0] && msgs[0].role === 'assistant') {
