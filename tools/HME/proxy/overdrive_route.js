@@ -87,7 +87,7 @@ function selectedIndex(chain, projectRoot = PROJECT_ROOT) {
 
 function stripGo(id) { return String(id || '').endsWith('-go') ? String(id).slice(0, -3) : String(id || ''); }
 
-function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStaleToolResults, stripClaudeIdentity, env = process.env, projectRoot = PROJECT_ROOT }) {
+function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStaleToolResults, stripClaudeIdentity, shrinkForContext, env = process.env, projectRoot = PROJECT_ROOT }) {
   const requested = String(env.OVERDRIVE_MODE || '0');
   const mode = effectiveMode(env);
   const result = {
