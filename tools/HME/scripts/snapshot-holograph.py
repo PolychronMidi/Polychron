@@ -61,7 +61,6 @@ def build_holograph() -> dict:
         "todo_store": _safe(capture_todo_store),
         "codebase": _safe(capture_codebase),
         "git_state": _safe(capture_git_state),
-        "streak": _safe(capture_streak),
         "audit_state": _safe(capture_audit_state),
     }
 
