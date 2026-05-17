@@ -93,6 +93,7 @@ test('telemetry: HME_TELEMETRY_DISABLE suppresses listed categories', _withSandb
   process.env.HME_TELEMETRY_DISABLE = 'info,metric';
   try {
     delete require.cache[require.resolve('../../telemetry')];
+    delete require.cache[require.resolve('../../proxy/hme_paths')];
     const t2 = require('../../telemetry');
     t2.info('should_not_appear', {});
     t2.metric('should_not_appear', {});
