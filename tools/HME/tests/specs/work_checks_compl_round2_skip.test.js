@@ -206,6 +206,21 @@ test('work_checks: broad completion question blocks scoped-not-complete answer',
     assert.match(result.reason, /scoped pass|Remaining gaps/);
   }));
 
+test('work_checks: broad completion treats next-action language as incomplete debt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'complete all proxy compaction fixes' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'Implemented the first compact pass. Next action is wiring the OpenAI equivalent and shared logic.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /BROAD-SCOPE COMPLETION DEBT/);
+    assert.match(result.reason, /Next action/);
+  }));
+
+
 test('work_checks: unfinished task reminder blocks stopping before auto-completeness',
   _withSandbox(async (sandbox) => {
     const transcript = _writeTranscript(sandbox, [
