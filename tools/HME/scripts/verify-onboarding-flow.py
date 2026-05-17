@@ -39,9 +39,10 @@ def _load_onboarding_chain():
     and the verifier returned ERROR with no PASS/FAIL output (so the wrapping
     HCI verifier reported `verifier produced no PASS/FAIL output`).
     """
-    server_dir = os.path.join(
-        os.environ["PROJECT_ROOT"], "tools", "HME", "service", "server"
-    )
+    service_dir = os.path.join(os.environ["PROJECT_ROOT"], "tools", "HME", "service")
+    if service_dir not in sys.path:
+        sys.path.insert(0, service_dir)
+    server_dir = os.path.join(service_dir, "server")
     if "server" not in sys.modules or not hasattr(sys.modules["server"], "__path__"):
         server_pkg = types.ModuleType("server")
         server_pkg.__path__ = [server_dir]
