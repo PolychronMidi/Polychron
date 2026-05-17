@@ -370,6 +370,13 @@ function _injectStopReminderSystem(payload) {
   return true;
 }
 
+const __hmeProxyInternals = {
+  _consumeStopReminderSystemText,
+  _extractTextContent,
+  _appendTextContent,
+  _injectStopReminderSystem,
+};
+
 // _handleSpawnRoute + _handleLifecycleRoute moved to routes_admin.js +
 // lifecycle_bridge.js respectively. Bound at the top of this file.
 
