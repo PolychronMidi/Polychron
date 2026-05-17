@@ -67,3 +67,16 @@ def test_start_index_job_reports_already_running(tmp_path):
 
     release.set()
     assert index_jobs.wait_for_current_job(2)
+
+def test_read_index_job_marks_orphaned_running_job_stale(tmp_path):
+    status_path, _log_path = index_jobs._paths(str(tmp_path))
+    Path(status_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(status_path).write_text('{\n  "state": "running",\n  "action": "index",\n  "started_at": "2000-01-01T00:00:00Z",\n  "updated_at": "2000-01-01T00:00:00Z",\n  "pid": 99999999\n}\n')
+
+    status = index_jobs.read_index_job(str(tmp_path))
+
+    assert status["state"] == "stale"
+    assert status["live_in_process"] is False
+    assert "no live index thread" in status["error"]
+    assert "Index job status" in index_jobs.format_index_job(str(tmp_path), status)
+
