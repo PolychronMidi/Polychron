@@ -17,8 +17,8 @@ function shrinkForPassthrough(payload, opts = {}) {
   let serialized = JSON.stringify(payload);
   if (serialized.length <= threshold) return 0;
 
-  const toolResultByteFloor = 2000;
-  const recentKeepFraction = 0.20;
+  const toolResultByteFloor = 3000;
+  const recentKeepFraction = 0.30;
   const recentStart = Math.floor(msgs.length * (1 - recentKeepFraction));
   let elided = 0;
   for (let i = 0; i < recentStart; i += 1) {
