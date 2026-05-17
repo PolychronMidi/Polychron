@@ -22,6 +22,7 @@ const { emitStartMarker } = require('./start_marker');
 const { createRouteMetrics } = require('./proxy_route_metrics');
 const { createClaudeHandler } = require('./hme_proxy_claude');
 const { createContextBudget } = require('./hme_proxy_context_budget');
+const { createOpusGate } = require('./hme_proxy_opus_gate');
 const core = require('./hme_proxy_core');
 
 // Self-load .env via shared helper; parent shell may not have sourced it.
