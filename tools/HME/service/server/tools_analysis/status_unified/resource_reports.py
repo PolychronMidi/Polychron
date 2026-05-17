@@ -6,6 +6,7 @@ import logging
 import os
 
 from server import context as ctx
+from paths import hme_metric
 from .. import _track, get_session_intent, _budget_gate, _budget_section, _git_run, BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION
 from ..synthesis_session import append_session_narrative, get_session_narrative, get_think_history_context
 import datetime
@@ -25,7 +26,7 @@ def _vram_report() -> str:
     import json as _json
     from datetime import datetime as _dt
 
-    hist_path = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "vram-history.jsonl")
+    hist_path = hme_metric("vram-history.jsonl")
     if not os.path.isfile(hist_path):
         return (
             "VRAM monitor has not written any samples yet. If this persists,\n"
@@ -59,7 +60,7 @@ def _vram_report() -> str:
             per_gpu.setdefault(idx, []).append(g)
 
     parts = ["# VRAM History (last ~30 min)\n"]
-    parts.append(f"Samples: {len(samples)}  |  Polling: 30s  |  File: metrics/vram-history.jsonl\n")
+    parts.append(f"Samples: {len(samples)}  |  Polling: 30s  |  File: tools/HME/runtime/metrics/vram-history.jsonl\n")
 
     for idx in sorted(per_gpu.keys()):
         rows = per_gpu[idx]

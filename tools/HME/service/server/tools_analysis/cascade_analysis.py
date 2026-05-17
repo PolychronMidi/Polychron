@@ -29,12 +29,13 @@ from typing import Any
 
 from server import context as ctx
 from . import _track
+from paths import hme_metric, project_metric
 
 logger = logging.getLogger("HME")
 
-DEP_GRAPH_REL = os.path.join("src", "output", "metrics", "dependency-graph.json")
-FEEDBACK_GRAPH_REL = os.path.join("src", "output", "metrics", "feedback_graph.json")
-PREDICTIONS_LOG_REL = os.path.join("src", "output", "metrics", "hme-predictions.jsonl")
+DEP_GRAPH_NAME = "dependency-graph.json"
+FEEDBACK_GRAPH_NAME = "feedback_graph.json"
+PREDICTIONS_LOG_NAME = "hme-predictions.jsonl"
 
 _CACHE: dict[str, Any] = {}
 
@@ -57,7 +58,7 @@ def _log_prediction(target_module: str, affected_modules: list[str], injected: b
     try:
         import json as _json
         import time as _time
-        path = os.path.join(ctx.PROJECT_ROOT, PREDICTIONS_LOG_REL)
+        path = hme_metric(PREDICTIONS_LOG_NAME)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         record = {
             "ts": int(_time.time()),
@@ -100,7 +101,7 @@ def _stale_or_missing(cache_key: str, path: str) -> bool:
 
 
 def _load_dep_graph() -> dict:
-    path = os.path.join(ctx.PROJECT_ROOT, DEP_GRAPH_REL)
+    path = project_metric(DEP_GRAPH_NAME)
     if not _stale_or_missing("dep", path):
         return _CACHE["dep"]
     if not os.path.exists(path):
@@ -124,7 +125,7 @@ def _load_dep_graph() -> dict:
 
 
 def _load_feedback_graph() -> dict:
-    path = os.path.join(ctx.PROJECT_ROOT, FEEDBACK_GRAPH_REL)
+    path = project_metric(FEEDBACK_GRAPH_NAME)
     if not _stale_or_missing("fb", path):
         return _CACHE["fb"]
     if not os.path.exists(path):

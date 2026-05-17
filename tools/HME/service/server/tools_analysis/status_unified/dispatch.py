@@ -9,6 +9,7 @@ import logging
 import os
 
 from server import context as ctx
+from paths import hme_metric
 from .. import _track, get_session_intent, _budget_gate, _budget_section, _git_run, BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION
 from ..synthesis_session import append_session_narrative, get_session_narrative, get_think_history_context
 
@@ -258,7 +259,7 @@ def status(mode: str = "all") -> str:
     # VRAM snapshot -- one-line summary from the monitor's latest sample
     try:
         import json as _json_vram
-        _vram_hist = os.path.join(ctx.PROJECT_ROOT, "src", "output", "metrics", "vram-history.jsonl")
+        _vram_hist = hme_metric("vram-history.jsonl")
         if os.path.isfile(_vram_hist):
             with open(_vram_hist) as _vf:
                 _last = None
