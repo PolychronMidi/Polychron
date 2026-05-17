@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Answer with exact completion status and evidence
+(empty)
 
 ## Next
 
