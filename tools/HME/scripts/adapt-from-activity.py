@@ -23,10 +23,14 @@ from collections import Counter
 from pathlib import Path
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[3]))
+if str(PROJECT_ROOT / "tools" / "HME" / "scripts") not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT / "tools" / "HME" / "scripts"))
+from hme_paths import hme_metric  # noqa: E402
+
 RULES = PROJECT_ROOT / "tools" / "HME" / "config" / "adaptation-rules.json"
-ACTIVITY = PROJECT_ROOT / "src" / "output" / "metrics" / "hme-activity.jsonl"
+ACTIVITY = hme_metric("hme-activity.jsonl")
 OUT = PROJECT_ROOT / "tmp" / "hme-adaptive-config.sh"
-DECISIONS = PROJECT_ROOT / "src" / "output" / "metrics" / "hme-adaptation-decisions.jsonl"
+DECISIONS = hme_metric("hme-adaptation-decisions.jsonl")
 
 _PREDICATE_RE = re.compile(r"^\s*(count_event|count_event_reason|top_k_concentration)\((.*)\)\s*(>=|>|<=|<|==)\s*([\d.]+)\s*$")
 

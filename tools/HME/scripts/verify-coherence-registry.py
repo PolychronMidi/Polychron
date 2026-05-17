@@ -21,8 +21,12 @@ import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[3]))
+if str(PROJECT_ROOT / "tools" / "HME" / "scripts") not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT / "tools" / "HME" / "scripts"))
+from hme_paths import hme_metric  # noqa: E402
+
 REGISTRY = PROJECT_ROOT / "tools" / "HME" / "config" / "coherence-registry.json"
-OUTPUT = PROJECT_ROOT / "src" / "output" / "metrics" / "hme-coherence-health.json"
+OUTPUT = hme_metric("hme-coherence-health.json")
 
 
 def _check_artifact(art: dict, ceilings: dict) -> tuple[bool, str]:
