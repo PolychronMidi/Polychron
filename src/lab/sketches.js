@@ -78,11 +78,7 @@ module.exports = [
     }
   },
 
-  // METAPROFILE ANTHEMIC: High coherent + high coupling + arch tension.
-  // Validates: the locked-step shared-peak character. Different from `tense`
-  // (competitive) and `chaotic` (volatile peak) -- listen for synchronized
-  // crescendo with high concentration in trust ecology (incumbents dominate
-  // the climax).
+  // METAPROFILE ANTHEMIC: coherent coupling with arch tension.
   {
     name: 'metaprofile-anthemic',
     patches: [],
@@ -97,11 +93,7 @@ module.exports = [
   },
 
   {
-    // REGIME EXIT FORECAST: track velocity trend across last 8 beats. When
-    // velocity predicts regime exit in ~4 beats, pre-adapt stutter density
-    // and play probability. Coherent exit -> boost stutter (anticipatory
-    // nervousness). Exploring exit -> calm stutter (approaching settlement).
-    // The system HEARS its own regime transitions coming.
+    // REGIME EXIT FORECAST: velocity trend pre-adapts stutter/play chance.
     name: 'regime-exit-forecast',
     patches: ['playNotesEmitPick'],
     overrides: {
@@ -179,11 +171,7 @@ module.exports = [
   },
 
   {
-    // DIMENSIONALITY COLLAPSE RESPONSE: when effective dimensionality drops
-    // below 2.5, inject register spread and entropy boost to re-diversify
-    // the phase space. When dimensionality is high (>4), tighten register
-    // and reduce entropy for focused expression. The system adapts its
-    // musical palette width to match its dimensional complexity.
+    // DIMENSIONALITY RESPONSE: widen collapsed space, focus over-wide space.
     name: 'dimensionality-response',
     patches: ['playNotesEmitPick'],
     overrides: {
@@ -219,11 +207,7 @@ module.exports = [
   },
 
   {
-    // TRUST VELOCITY ANTICIPATION: when a system's trust is rapidly changing
-    // (velocity > 0.01/beat), pre-adapt the corresponding musical parameter.
-    // motifEcho trust rising -> boost motif echo probability. stutterContagion
-    // trust falling -> reduce contagion decay. The system anticipates its own
-    // trust ecology shifts and leans into them.
+    // TRUST VELOCITY: fast trust shifts pre-adapt matching musical controls.
     name: 'trust-velocity-anticipation',
     patches: ['playNotesEmitPick'],
     overrides: {
@@ -268,10 +252,7 @@ module.exports = [
   },
 
   {
-    // FORGE: convergenceHarmonicTrigger <-> verticalIntervalMonitor (r=-0.626, 3rd bridge)
-    // densitySurprise as antagonist signal: surprise events trigger MORE harmonic changes
-    // (convergenceHarmonicTrigger) AND tighten collision penalty (verticalIntervalMonitor).
-    // Same signal -> opposite structural effects: harmonic richness + harmonic discipline.
+    // FORGE: density surprise drives harmonic richness and collision discipline.
     name: 'forge-convergenceHarmonicTrigger-verticalIntervalMonitor',
     patches: ['convergenceHarmonicTrigger.onConvergence', 'verticalIntervalMonitor.process'],
     overrides: {
@@ -279,8 +260,7 @@ module.exports = [
       PHRASES_PER_SECTION: { min: 3, max: 3 }
     },
     postBoot() {
-      // Patch convergenceHarmonicTrigger: densitySurprise boosts event rarity
-      // -> flows into triggerChance = BASE * (0.5 + rarity*0.5) * ... -> more triggers during surprise
+      // densitySurprise boosts event rarity and trigger likelihood.
       const origOnConvergence = convergenceHarmonicTrigger.onConvergence;
       convergenceHarmonicTrigger.onConvergence = function(event) {
         const rhythmEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
@@ -291,8 +271,7 @@ module.exports = [
         return origOnConvergence.call(this, boostedEvent);
       };
 
-      // Patch verticalIntervalMonitor: densitySurprise tightens collision penalty (antagonist direction)
-      // result is negative (penalty), multiplying > 1 makes it more negative -> stricter
+      // densitySurprise tightens collision penalty in the antagonist direction.
       const origProcess = verticalIntervalMonitor.process;
       verticalIntervalMonitor.process = function(absoluteSeconds, layer) {
         const result = origProcess.call(this, absoluteSeconds, layer);
