@@ -234,17 +234,27 @@ if (process.env.HME_PROXY_EXPORT_INTERNALS === '1') {
   else supervisor.installShutdownHandlers();
   const server = http.createServer(handleRequest);
   supervisor.registerServer(server);
-  server.listen(PORT, '127.0.0.1', () => {
+  let listenFallbackTried = false;
+  const announceListen = (hostLabel) => {
     const scheme = DEFAULT_UPSTREAM_TLS ? 'https' : 'http';
     emitStartMarker('hme_proxy', { port: PORT, git: PROXY_GIT_SHA });
-    console.log(`hme-proxy listening on http://127.0.0.1:${PORT}`);
+    console.log(`hme-proxy listening on ${hostLabel}`);
     console.log(`  Anthropic upstream: ${scheme}://${DEFAULT_UPSTREAM_HOST}:${DEFAULT_UPSTREAM_PORT}`);
     console.log(`  worker upstream: http://127.0.0.1:${WORKER_PORT} (supervised, /mcp/* routed here)`);
     if (!SUPERVISE) console.log('  supervision: disabled (HME_PROXY_SUPERVISE=0)');
-  });
+  };
   server.on('error', (err) => {
+    if (!listenFallbackTried && ['EAFNOSUPPORT', 'EINVAL'].includes(err.code)) {
+      listenFallbackTried = true;
+      console.warn(`listen warning: IPv6 dual-stack unavailable (${err.code}); falling back to 127.0.0.1`);
+      server.listen(PORT, '127.0.0.1', () => announceListen(`http://127.0.0.1:${PORT}`));
+      return;
+    }
     proxyRouteMetrics.recordError(err);
     console.error('listen error:', err.message);
     process.exit(1);
+  });
+  server.listen({ port: PORT, host: '::', ipv6Only: false }, () => {
+    announceListen(`http://127.0.0.1:${PORT} and http://[::1]:${PORT}`);
   });
 }
