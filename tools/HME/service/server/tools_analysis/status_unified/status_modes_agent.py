@@ -8,6 +8,7 @@ import logging
 import os
 
 from server import context as ctx
+from paths import hme_metric
 from .. import (
     _track, get_session_intent, _budget_gate, _budget_section, _git_run,
     BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION,
@@ -37,7 +38,7 @@ def _mode_tool_latency():
     from collections import defaultdict
     from .. import ctx as _ctx_mod
     _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
-    activity = _os.path.join(_root, "src", "output", "metrics", "hme-activity.jsonl")
+    activity = _os.path.join(_root, hme_metric("hme-activity.jsonl")
     if not _os.path.isfile(activity):
         return "# i/status mode=tool-latency\nNo activity log."
     try:
@@ -87,7 +88,7 @@ def _mode_tool_latency():
         out.append("  (no generic tool-call events in window -- falling back to inference cadence)")
         last_tool_call_ts = None
         try:
-            full_path = _os.path.join(_root, "src", "output", "metrics", "hme-activity.jsonl")
+            full_path = _os.path.join(_root, hme_metric("hme-activity.jsonl")
             with open(full_path) as _af:
                 for ln in _af:
                     try:
@@ -152,7 +153,7 @@ def _mode_agent_loop():
     from collections import Counter, defaultdict
     from .. import ctx as _ctx_mod
     _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
-    activity = _os.path.join(_root, "src", "output", "metrics", "hme-activity.jsonl")
+    activity = _os.path.join(_root, hme_metric("hme-activity.jsonl")
     if not _os.path.isfile(activity):
         return "# i/status mode=agent-loop\nNo activity log found."
     try:

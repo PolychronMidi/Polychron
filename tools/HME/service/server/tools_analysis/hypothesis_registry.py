@@ -28,9 +28,10 @@ import time
 from typing import Any
 
 from server import context as ctx
+from paths import hme_metric
 from . import _track
 
-REGISTRY_REL = os.path.join("src", "output", "metrics", "hme-hypotheses.json")
+REGISTRY_REL = hme_metric("hme-hypotheses.json")
 
 VALID_STATUSES = {"OPEN", "CONFIRMED", "REFUTED", "INCONCLUSIVE", "ABANDONED"}
 

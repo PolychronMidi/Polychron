@@ -31,11 +31,12 @@ import time
 from collections import defaultdict
 
 from server import context as ctx
+from paths import hme_metric
 from . import _track
 
-ACTIVITY_REL = os.path.join("src", "output", "metrics", "hme-activity.jsonl")
-GAP_REL = os.path.join("src", "output", "metrics", "hme-intention-gap.json")
-OUT_REL = os.path.join("src", "output", "metrics", "hme-cognitive-load.json")
+ACTIVITY_REL = hme_metric("hme-activity.jsonl")
+GAP_REL = hme_metric("hme-intention-gap.json")
+OUT_REL = hme_metric("hme-cognitive-load.json")
 
 
 def _load(rel: str):

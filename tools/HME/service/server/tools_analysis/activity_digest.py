@@ -17,11 +17,12 @@ import os
 from collections import Counter, defaultdict
 
 from server import context as ctx
+from paths import hme_metric
 from . import _track
 
 logger = logging.getLogger("HME")
 
-ACTIVITY_PATH_REL = os.path.join("src", "output", "metrics", "hme-activity.jsonl")
+ACTIVITY_PATH_REL = hme_metric("hme-activity.jsonl")
 DEFAULT_LOOKBACK_LINES = 500
 
 

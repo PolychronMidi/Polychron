@@ -16,11 +16,12 @@ import json
 import os
 
 from server import context as ctx
+from paths import hme_metric
 from . import _track
 
-MUSICAL_REL = os.path.join("src", "output", "metrics", "hme-musical-correlation.json")
-TRUST_REL = os.path.join("src", "output", "metrics", "kb-trust-weights.json")
-GAP_REL = os.path.join("src", "output", "metrics", "hme-intention-gap.json")
+MUSICAL_REL = hme_metric("hme-musical-correlation.json")
+TRUST_REL = hme_metric("kb-trust-weights.json")
+GAP_REL = hme_metric("hme-intention-gap.json")
 
 
 def _load(rel: str):

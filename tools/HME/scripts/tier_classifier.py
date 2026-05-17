@@ -36,6 +36,7 @@ import os
 import re
 import sys
 import time
+from hme_paths import hme_metric
 from pathlib import Path
 
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or

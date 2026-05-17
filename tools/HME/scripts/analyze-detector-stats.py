@@ -21,12 +21,13 @@ from __future__ import annotations
 import json
 import os
 import sys
+from hme_paths import hme_metric
 from collections import Counter, defaultdict
 from pathlib import Path
 
 
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-_STATS = os.path.join(_PROJECT_ROOT, "src", "output", "metrics", "detector-stats.jsonl")
+_STATS = os.path.join(_PROJECT_ROOT, hme_metric("detector-stats.jsonl")
 
 
 def _load_rows() -> list[dict]:

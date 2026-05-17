@@ -31,12 +31,13 @@ import os
 from collections import Counter
 
 from server import context as ctx
+from paths import hme_metric
 from . import _track
 
 KNOWLEDGE_ACCESS_REL = os.path.join("tools", "HME", "KB", "knowledge_access.json")
-ACTIVITY_REL = os.path.join("src", "output", "metrics", "hme-activity.jsonl")
-ACCURACY_REL = os.path.join("src", "output", "metrics", "hme-prediction-accuracy.json")
-CORRELATION_REL = os.path.join("src", "output", "metrics", "hme-musical-correlation.json")
+ACTIVITY_REL = hme_metric("hme-activity.jsonl")
+ACCURACY_REL = hme_metric("hme-prediction-accuracy.json")
+CORRELATION_REL = hme_metric("hme-musical-correlation.json")
 
 
 def _load_json(rel: str):

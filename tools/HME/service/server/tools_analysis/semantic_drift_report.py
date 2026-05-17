@@ -10,9 +10,10 @@ import json
 import os
 
 from server import context as ctx
+from paths import hme_metric
 from . import _track
 
-REPORT_REL = os.path.join("src", "output", "metrics", "hme-semantic-drift.json")
+REPORT_REL = hme_metric("hme-semantic-drift.json")
 
 
 def semantic_drift_report() -> str:

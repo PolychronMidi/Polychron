@@ -5,6 +5,7 @@ import logging
 import os
 
 from server import context as ctx
+from paths import hme_metric
 from ... import _track
 from ._shared import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_RELOADABLE, ENV
 from .hot_reload import hme_hot_reload
@@ -818,7 +819,7 @@ def hme_selftest(verbose: bool = False) -> str:
     # detector will say "ok" and the antipatterns go uncaught.
     try:
         import json as _json_ds
-        stats_path = os.path.join(_project_root, "src", "output", "metrics", "detector-stats.jsonl")
+        stats_path = os.path.join(_project_root, hme_metric("detector-stats.jsonl")
         if not os.path.isfile(stats_path):
             results.append("INFO: detector telemetry -- stats file not yet created")
         else:

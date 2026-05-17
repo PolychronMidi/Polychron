@@ -33,11 +33,12 @@ import json
 import os
 
 from server import context as ctx
+from paths import hme_metric
 from . import _track
 
-ACTIVITY_REL = os.path.join("src", "output", "metrics", "hme-activity.jsonl")
-HYPOTHESES_REL = os.path.join("src", "output", "metrics", "hme-hypotheses.json")
-OUT_REL = os.path.join("src", "output", "metrics", "hme-inter-agent-coherence.json")
+ACTIVITY_REL = hme_metric("hme-activity.jsonl")
+HYPOTHESES_REL = hme_metric("hme-hypotheses.json")
+OUT_REL = hme_metric("hme-inter-agent-coherence.json")
 
 
 def _load(rel: str):

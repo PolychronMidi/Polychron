@@ -33,11 +33,12 @@ import time
 from collections import defaultdict
 
 from server import context as ctx
+from paths import hme_metric
 from . import _track
 
 DEP_GRAPH_REL = os.path.join("src", "output", "metrics", "dependency-graph.json")
 FEEDBACK_GRAPH_REL = os.path.join("src", "output", "metrics", "feedback_graph.json")
-OUT_REL = os.path.join("src", "output", "metrics", "hme-negative-space.json")
+OUT_REL = hme_metric("hme-negative-space.json")
 
 
 def _load(rel: str) -> dict | None:

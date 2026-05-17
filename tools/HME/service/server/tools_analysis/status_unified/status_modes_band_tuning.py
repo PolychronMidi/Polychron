@@ -8,6 +8,7 @@ import logging
 import os
 
 from server import context as ctx
+from paths import hme_metric
 from .. import (
     _track, get_session_intent, _budget_gate, _budget_section, _git_run,
     BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION,
@@ -40,8 +41,8 @@ def _mode_band_tuning():
     from .. import ctx as _ctx_mod
     _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
 
-    gt_path = _os.path.join(_root, "src", "output", "metrics", "hme-ground-truth.jsonl")
-    ts_path = _os.path.join(_root, "src", "output", "metrics", "hme-coherence-timeseries.jsonl")
+    gt_path = _os.path.join(_root, hme_metric("hme-ground-truth.jsonl")
+    ts_path = _os.path.join(_root, hme_metric("hme-coherence-timeseries.jsonl")
 
     if not _os.path.isfile(gt_path):
         try:
