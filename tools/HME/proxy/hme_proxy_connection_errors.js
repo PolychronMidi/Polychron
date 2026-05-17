@@ -29,6 +29,7 @@ function writeConnectionSnapshot({ errCode, label, errMsg, outBody, projectRoot 
   fs.writeFileSync(outFile, outBody);
   if (label === 'interactive') {
     const errLog = path.join(projectRoot, 'log', 'hme-errors.log');
+    fs.mkdirSync(path.dirname(errLog), { recursive: true });
     fs.appendFileSync(errLog, `[${stamp}] UPSTREAM_${errCode}_${label.toUpperCase()}: ${errMsg} (snapshot=${snapshotRel})\n`);
   }
 }
