@@ -17,6 +17,7 @@ function safeRelease(releaseOpusSlot) {
 function writeMidResponseLog({ errCode, label, errMsg, projectRoot = PROJECT_ROOT }) {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const errLog = path.join(projectRoot, 'log', 'hme-errors.log');
+  fs.mkdirSync(path.dirname(errLog), { recursive: true });
   fs.appendFileSync(errLog, `[${stamp}] UPSTREAM_${errCode}_${label.toUpperCase()}_MIDRESPONSE: ${errMsg}\n`);
 }
 
