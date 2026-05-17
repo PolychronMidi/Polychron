@@ -37,7 +37,7 @@ function normalize(state, sessionId = '') {
   const s = state && typeof state === 'object' ? { ...base, ...state } : base;
   s.schema_version = 1;
   if (sessionId && !s.session_id) s.session_id = sessionId;
-  for (const key of ['approved_gates', 'files_written', 'failed_writes', 'verification_evidence', 'quality_judgments', 'phase_transitions']) {
+  for (const key of ['approved_gates', 'files_written', 'failed_writes', 'files_read', 'verification_evidence', 'quality_judgments', 'phase_transitions']) {
     if (!Array.isArray(s[key])) s[key] = [];
   }
   for (const key of ['detector_outcomes', 'onboarding', 'advisor', 'spec']) {
