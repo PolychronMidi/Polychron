@@ -4,8 +4,8 @@
   "description": "Arc I cross-substrate consensus with stdev > 0.4 means substrates meaningfully disagree about whether the round is healthy. The disagreement itself is the signal -- typically one substrate sees a tension that the majority-voter ensemble doesn't. Outlier voter names the substrate; investigate what it sees that the others miss.",
   "trigger": {
     "kind": "consensus_threshold",
-    "source": "metrics/hme-consensus.json",
-    "check": "python3 -c \"import json, os; d=json.load(open('metrics/hme-consensus.json')) if os.path.isfile('metrics/hme-consensus.json') else {}; print(','.join(o.get('voter','') for o in d.get('outliers',[]))) if d.get('divergence')=='high' else None\"",
+    "source": "tools/HME/runtime/metrics/hme-consensus.json",
+    "check": "python3 -c \"import json, os; m=os.environ.get('HME_METRICS_DIR','tools/HME/runtime/metrics'); p=os.path.join(m,'hme-consensus.json'); d=json.load(open(p)) if os.path.isfile(p) else {}; print(','.join(o.get('voter','') for o in d.get('outliers',[]))) if d.get('divergence')=='high' else None\"",
     "matches_when": "divergence=high; stdout is comma-separated outlier voter names"
   },
   "action": {
@@ -19,6 +19,11 @@
     ]
   },
   "history": [
-    {"round": "R19", "outlier": "axis_cost_trend", "stdev": 0.787, "resolution": "rising axis rebalance cost flagged -- investigation pending"}
+    {
+      "round": "R19",
+      "outlier": "axis_cost_trend",
+      "stdev": 0.787,
+      "resolution": "rising axis rebalance cost flagged -- investigation pending"
+    }
   ]
 }

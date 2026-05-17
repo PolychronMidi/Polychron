@@ -4,8 +4,8 @@
   "description": "When prediction recall is persistently low (<=0.5) while the dependency graph looks correct, suspect cascade direction bug in generate-predictions.js::buildAdjacency. Demonstrated R14: adj[to].add(from) made BFS find upstream DEPENDENCIES instead of downstream CONSUMERS -- editing X predicted files X reads from, not files that read X. Fixed by inverting to adj[from].add(to). Pattern: low recall + known shifts = suspect cascade direction.",
   "trigger": {
     "kind": "metric_threshold",
-    "source": "metrics/hme-prediction-accuracy.json",
-    "check": "python3 -c \"import json; d=json.load(open('metrics/hme-prediction-accuracy.json')); rds=[r for r in d.get('rounds',[]) if not r.get('skipped') and r.get('recall') is not None][-3:]; print('recall low:'+str([r.get('recall') for r in rds])) if len(rds)==3 and all(r.get('recall',1) <= 0.5 for r in rds) else None\"",
+    "source": "tools/HME/runtime/metrics/hme-prediction-accuracy.json",
+    "check": "python3 -c \"import json, os; m=os.environ.get('HME_METRICS_DIR','tools/HME/runtime/metrics'); p=os.path.join(m,'hme-prediction-accuracy.json'); d=json.load(open(p)) if os.path.isfile(p) else {}; rds=[r for r in d.get('rounds',[]) if not r.get('skipped') and r.get('recall') is not None][-3:]; print('recall low:'+str([r.get('recall') for r in rds])) if len(rds)==3 and all(r.get('recall',1) <= 0.5 for r in rds) else None\"",
     "matches_when": "3+ consecutive non-skipped rounds with recall <= 0.5"
   },
   "action": {
@@ -19,6 +19,11 @@
     ]
   },
   "history": [
-    {"round": "R14", "symptom": "recall=0.5 persisted R11-R13", "fix": "adj[from].add(to) in buildAdjacency", "result": "recall jumped to 1.0 R16"}
+    {
+      "round": "R14",
+      "symptom": "recall=0.5 persisted R11-R13",
+      "fix": "adj[from].add(to) in buildAdjacency",
+      "result": "recall jumped to 1.0 R16"
+    }
   ]
 }

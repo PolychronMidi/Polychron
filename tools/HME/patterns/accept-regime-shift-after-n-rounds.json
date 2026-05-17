@@ -4,8 +4,8 @@
   "description": "When the same Arc III outlier field(s) persist for N+ consecutive rounds AND listening verdict stays legendary AND HCI stays within 1 point of historical, the composition has genuinely entered a new regime. Action: update envelope to recent-only snapshots instead of correcting the state. Distinguishes regime shift (accept) from drift-toward-failure (correct).",
   "trigger": {
     "kind": "persistent_drift_with_healthy_verdict",
-    "source": "metrics/hme-arc-timeseries.jsonl + metrics/hme-legendary-drift.json",
-    "check": "python3 -c \"import json, os; p='metrics/hme-arc-timeseries.jsonl'; d=json.load(open('metrics/hme-legendary-drift.json')) if os.path.isfile('metrics/hme-legendary-drift.json') else {}; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; tail=rows[-3:]; top_outlier=(d.get('outliers') or [{}])[0].get('field'); hci_stable=len(tail)>=3 and all(isinstance(r.get('arc_iii',{}).get('top_outlier_field'),str) and r['arc_iii']['top_outlier_field']==top_outlier for r in tail); print(f'regime shift accepted: {top_outlier} persisted 3+ rounds, verdict legendary -- envelope update recommended') if hci_stable and top_outlier else None\"",
+    "source": "tools/HME/runtime/metrics/hme-arc-timeseries.jsonl + tools/HME/runtime/metrics/hme-legendary-drift.json",
+    "check": "python3 -c \"import json, os; m=os.environ.get('HME_METRICS_DIR','tools/HME/runtime/metrics'); p=os.path.join(m,'hme-arc-timeseries.jsonl'); q=os.path.join(m,'hme-legendary-drift.json'); d=json.load(open(q)) if os.path.isfile(q) else {}; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; tail=rows[-3:]; top=(d.get('outliers') or [{}])[0].get('field'); stable=len(tail)>=3 and all(isinstance(r.get('arc_iii',{}).get('top_outlier_field'),str) and r['arc_iii']['top_outlier_field']==top for r in tail); print(f'regime shift accepted: {top} persisted 3+ rounds, verdict legendary -- envelope update recommended') if stable and top else None\"",
     "matches_when": "same top outlier field for 3+ consecutive rounds while verdict remains legendary"
   },
   "action": {
@@ -14,12 +14,28 @@
     "auto_apply_script": "tools/HME/scripts/pipeline/hme/auto-apply-regime-shift.py",
     "steps": [
       "Confirm HCI has been >=95 across the persistent-drift window.",
-      "Log the epoch transition in metrics/hme-epoch-transitions.jsonl with timestamp + reason (auto-applied).",
+      "Log the epoch transition in tools/HME/runtime/metrics/hme-epoch-transitions.jsonl with timestamp + reason (auto-applied).",
       "Exponential weighting in compute-legendary-drift.py already adapts the envelope; auto-apply verifies decay coefficient is tuned (R25: 0.7).",
       "Verify next pipeline's drift score drops toward 0 as envelope adapts."
     ]
   },
   "history": [
-    {"round": "R25", "outliers": ["smoothed_shares.density", "smoothed_shares.flicker"], "hci_trajectory": [96.4, 96.5, 96.5, 97.0, 97.0], "decision": "accept", "applied_by": "agent", "note": "First application of the pattern; follow-up rounds should auto-apply"}
+    {
+      "round": "R25",
+      "outliers": [
+        "smoothed_shares.density",
+        "smoothed_shares.flicker"
+      ],
+      "hci_trajectory": [
+        96.4,
+        96.5,
+        96.5,
+        97.0,
+        97.0
+      ],
+      "decision": "accept",
+      "applied_by": "agent",
+      "note": "First application of the pattern; follow-up rounds should auto-apply"
+    }
   ]
 }
