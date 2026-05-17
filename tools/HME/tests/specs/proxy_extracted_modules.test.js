@@ -6,6 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+const { sessionKey } = require('../../proxy/shared');
 const { shrinkForPassthrough } = require('../../proxy/passthrough_compact');
 const { handleLegacySwapResponse, writeAnthropicStopSse } = require('../../proxy/legacy_swap_response');
 const { effectiveMode, buildMode1Chain, applyOverdriveRoute } = require('../../proxy/overdrive_route');
