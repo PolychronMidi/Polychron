@@ -25,7 +25,7 @@ module.exports = [
       conductorConfig.applyPhaseProfile = function(opts) {
         if (sectionIndex === 3) {
           metaProfiles.setActive('chaotic');
-          console.log('Lab: PIVOT → metaprofile=chaotic at section 3');
+          console.log('Lab: PIVOT -> metaprofile=chaotic at section 3');
         }
         return origApply.call(conductorConfig, opts);
       };
@@ -63,7 +63,7 @@ module.exports = [
 
   // METAPROFILE ELEGIAC: Coherent + descending tension across the run.
   // Validates: the new 'descending' tension shape produces a release/denouement
-  // arc — tension should start near ceiling (0.55) and trend toward floor (0.20)
+  // arc -- tension should start near ceiling (0.55) and trend toward floor (0.20)
   // across sections. Listen for the falling pressure curve.
   {
     name: 'metaprofile-elegiac',
@@ -80,7 +80,7 @@ module.exports = [
 
   // METAPROFILE ANTHEMIC: High coherent + high coupling + arch tension.
   // Validates: the locked-step shared-peak character. Different from `tense`
-  // (competitive) and `chaotic` (volatile peak) — listen for synchronized
+  // (competitive) and `chaotic` (volatile peak) -- listen for synchronized
   // crescendo with high concentration in trust ecology (incumbents dominate
   // the climax).
   {
@@ -271,7 +271,7 @@ module.exports = [
     // FORGE: convergenceHarmonicTrigger <-> verticalIntervalMonitor (r=-0.626, 3rd bridge)
     // densitySurprise as antagonist signal: surprise events trigger MORE harmonic changes
     // (convergenceHarmonicTrigger) AND tighten collision penalty (verticalIntervalMonitor).
-    // Same signal → opposite structural effects: harmonic richness + harmonic discipline.
+    // Same signal -> opposite structural effects: harmonic richness + harmonic discipline.
     name: 'forge-convergenceHarmonicTrigger-verticalIntervalMonitor',
     patches: ['convergenceHarmonicTrigger.onConvergence', 'verticalIntervalMonitor.process'],
     overrides: {
@@ -280,7 +280,7 @@ module.exports = [
     },
     postBoot() {
       // Patch convergenceHarmonicTrigger: densitySurprise boosts event rarity
-      // → flows into triggerChance = BASE * (0.5 + rarity*0.5) * ... → more triggers during surprise
+      // -> flows into triggerChance = BASE * (0.5 + rarity*0.5) * ... -> more triggers during surprise
       const origOnConvergence = convergenceHarmonicTrigger.onConvergence;
       convergenceHarmonicTrigger.onConvergence = function(event) {
         const rhythmEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
@@ -292,7 +292,7 @@ module.exports = [
       };
 
       // Patch verticalIntervalMonitor: densitySurprise tightens collision penalty (antagonist direction)
-      // result is negative (penalty), multiplying > 1 makes it more negative → stricter
+      // result is negative (penalty), multiplying > 1 makes it more negative -> stricter
       const origProcess = verticalIntervalMonitor.process;
       verticalIntervalMonitor.process = function(absoluteSeconds, layer) {
         const result = origProcess.call(this, absoluteSeconds, layer);

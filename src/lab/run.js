@@ -51,7 +51,7 @@ function createIsolatedWorkDir() {
   // but is a derived artifact (regenerated each pipeline run from src/ AST
   // annotations by src/scripts/pipeline/generators/generate-feedback-graph.js,
   // not a runtime output). Lab runs ONLY main.js, so the file is otherwise
-  // missing in the temp work dir. Copy from the real src/output/metrics/ —
+  // missing in the temp work dir. Copy from the real src/output/metrics/ --
   // preserves the lab's "isolated from runtime output" property while
   // satisfying the boot contract.
   const fbGraph = path.join(rootDir, 'src', 'output', 'metrics', 'feedback_graph.json');
@@ -88,7 +88,7 @@ const FLUIDSYNTH_OPTS = [
 // silently running sketches whose patch surface is unknown.
 const missingPatches = toRun.filter(s => !Array.isArray(s.patches));
 if (missingPatches.length > 0) {
-  console.error(`Lab: ABORT — sketch(es) missing required patches: [] array:`);
+  console.error(`Lab: ABORT -- sketch(es) missing required patches: [] array:`);
   for (const s of missingPatches) console.error(`  - ${s.name}`);
   console.error(`Each sketch must declare patches: ['global.method', ...] listing all`);
   console.error(`globals monkey-patched in postBoot(). Use patches: [] if none.`);
@@ -98,7 +98,7 @@ if (missingPatches.length > 0) {
 // Cross-check declared patches: against actual assignment patterns in postBoot.
 // Regex scans the stringified function body for `X.Y = function` and `X = function`
 // assignment patterns; anything not in the declared array is drift. This turns
-// patches: from documentation into a real invariant — you can't patch a global
+// patches: from documentation into a real invariant -- you can't patch a global
 // without declaring it.
 // False-positive scenarios accepted: assignments to non-global targets (local
 // variables, closures) would need ESLint-level AST parsing to filter out. For
@@ -129,7 +129,7 @@ for (const s of toRun) {
   }
 }
 if (patchesDrift.length > 0) {
-  console.error(`Lab: ABORT — sketch(es) patch globals not declared in patches: []:`);
+  console.error(`Lab: ABORT -- sketch(es) patch globals not declared in patches: []:`);
   for (const { name, undeclared } of patchesDrift) {
     console.error(`  - ${name}: ${undeclared.join(', ')}`);
   }
@@ -161,7 +161,7 @@ for (const sketch of toRun) {
     mainLoopSrc = raw.startsWith('function') ? raw : 'function ' + raw;
   }
 
-  // Runner chdir's to the temp working dir — src/output/ writes go there
+  // Runner chdir's to the temp working dir -- src/output/ writes go there
   fs.writeFileSync(runnerFile, `
 // Auto-generated lab runner for sketch: ${sketch.name}
 process.chdir(${JSON.stringify(tmpWork)});
@@ -195,7 +195,7 @@ if (typeof _mainLoop === 'function') {
   console.log(`  ${sketch.name}`);
   console.log(`  [${'='.repeat(50)}]`);
 
-  // Generate — runs in isolated tmpWork dir
+  // Generate -- runs in isolated tmpWork dir
   const t0 = Date.now();
   try {
     execSync(`node ${runnerFile} --trace`, {
