@@ -183,3 +183,19 @@ test('work_checks: correction pivot allows post-correction parent audit evidence
     const result = await policy.run(_ctxStub(sandbox, transcript));
     if (result.reason) assert.doesNotMatch(result.reason, /CORRECTION-PIVOT VIOLATION/);
   }));
+
+
+test('work_checks: broad completion question blocks scoped-not-complete answer',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'does that complete all the bifurcation suggestions?' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'Short answer: it completes the scoped pass, but not the full long-term vision. ' +
+        'Remaining gaps include moving HME metrics and more adapter gates.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /BROAD-SCOPE COMPLETION DEBT/);
+    assert.match(result.reason, /scoped pass|Remaining gaps/);
+  }));
