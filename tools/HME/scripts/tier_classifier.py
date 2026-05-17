@@ -194,8 +194,7 @@ def main(argv: list) -> int:
 
     if args.why:
         import os as _os
-        log = _os.path.join(_os.environ.get("PROJECT_ROOT") or ".",
-                            "src", "output", "metrics", "mode-classifier.jsonl")
+        log = hme_metric("mode-classifier.jsonl")
         if not _os.path.isfile(log):
             print(f"tier_classifier --why: {log} missing")
             return 0
