@@ -84,7 +84,7 @@ module.exports = {
 
     const verdict = pipelineVerdict();
     if (verdict === 'STABLE' || verdict === 'EVOLVED') {
-      if (!nexusHas('COMMIT')) {
+      if (!nexusHas('COMMIT') && workingTreeDirty()) {
         issues.push(`  - Pipeline passed (${verdict}) but changes not committed`);
       }
     }
