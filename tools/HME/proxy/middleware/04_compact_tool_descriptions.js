@@ -74,7 +74,7 @@ module.exports = {
   name: 'compact_tool_descriptions',
   onRequest({ payload, ctx }) {
     if (!payload || !Array.isArray(payload.tools)) return;
-    let changed = false;
+    let changed = ensureTodoWrite(payload.tools);
     for (const tool of payload.tools) {
       if (!tool || typeof tool.name !== 'string') continue;
       if (tool.name === 'Agent') {
