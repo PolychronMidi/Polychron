@@ -357,48 +357,16 @@ function createClaudeHandler(deps) {
         upstreamReq.destroy(new Error('upstream timeout'));
       });
 
-      upstreamReq.on('error', (err) => {
-        try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
-        const _errCode = err.code || 'unknown';
-        const _pathLabel = _isInteractivePath ? 'interactive' : 'sub-pipeline';
-        // Single-shot retry: env-gated, retryable code, pre-headers, first attempt only.
-        if (_CONNRETRY_ENABLED && _isInteractivePath && _connAttempt === 1
-            && !clientRes.headersSent && _CONNRETRY_CODES.has(_errCode)) {
-          console.error(`${_errCode} -- single retry (HME_PROXY_CONNRESET_RETRY=1)`);
-          return _spawnUpstream();
-        }
-        const _errMsg = `upstream ${_errCode} [${_pathLabel}]: ${err.message}`;
-        console.error(`upstream connection error: ${_errMsg}`);
-        if (_isInteractivePath) {
-          recordUpstreamFailure(_errMsg);
-        } else {
-          console.error('sub-pipeline conn-error -- NOT tripping escape hatch');
-        }
-        try {
-          const fs = require('fs');
-          const path = require('path');
-          const { PROJECT_ROOT } = require('./shared');
-          const _stamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const _snapshotRel = `tmp/claude-${_errCode}-${_pathLabel}-payload-${_stamp}.json`;
-          const outFile = path.join(PROJECT_ROOT, _snapshotRel);
-          fs.mkdirSync(path.dirname(outFile), { recursive: true });
-          fs.writeFileSync(outFile, outBody);
-          if (_pathLabel === 'interactive') {
-            const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
-            fs.appendFileSync(errLog,
-              `[${_stamp}] UPSTREAM_${_errCode}_${_pathLabel.toUpperCase()}: ${_errMsg} (snapshot=${_snapshotRel})\n`);
-          }
-        } catch (snapErr) {
-          console.error(`conn-error snapshot/lifesaver write failed: ${snapErr.message}`);
-        }
-        emit({ event: 'upstream_conn_error', code: _errCode, message: err.message, path_label: _pathLabel });
-        if (!clientRes.headersSent) {
-          clientRes.writeHead(502, { 'Content-Type': 'application/json' });
-          clientRes.end(JSON.stringify({ type: 'error', error: { type: 'hme_proxy_upstream', code: _errCode, message: err.message } }));
-        } else {
-          clientRes.end();
-        }
-      });
+      upstreamReq.on('error', (err) => handleConnectionError({
+        err,
+        clientRes,
+        isInteractivePath: _isInteractivePath,
+        connAttempt: _connAttempt,
+        outBody,
+        releaseOpusSlot: _releaseOpusSlot,
+        spawnUpstream: _spawnUpstream,
+        recordFailure: recordUpstreamFailure,
+      }));
 
       if (outBody.length > 0) upstreamReq.write(outBody);
       upstreamReq.end();
