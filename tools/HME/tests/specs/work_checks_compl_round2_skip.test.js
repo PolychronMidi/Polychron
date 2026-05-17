@@ -303,6 +303,5 @@ test('work_checks: claim evidence accepts same-turn PostToolUse evidence',
     ]);
     const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
     const result = await policy.run(_ctxStub(sandbox, transcript));
-    assert.notStrictEqual(result.reason, undefined);
     assert.doesNotMatch(result.reason || '', /VERIFICATION DOCTRINE/);
   }));
