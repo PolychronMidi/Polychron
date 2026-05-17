@@ -4,14 +4,17 @@
 
 ## Now
 
-- [ ] [E3] Check live proxy listeners and Claude URL config
+(empty)
 
 ## Next
 
-- [ ] [E3] Patch binding/startup mismatch
-- [ ] [E3] Restart proxy and verify Claude-facing endpoint
+(empty)
 
 ## Done
+
+- [x] [E3] Check live proxy listeners and Claude URL config
+- [x] [E3] Patch binding/startup mismatch
+- [x] [E3] Restart proxy and verify Claude-facing endpoint
 
 - [x] [E3] Prove Codex update_plan bypasses TodoWrite
 - [x] [E3] Add Codex plan-to-TODO sync bridge
