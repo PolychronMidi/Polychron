@@ -517,6 +517,7 @@ function handleRequest(clientReq, clientRes) {
       outBody,
       stripStaleToolResults: _stripStaleToolResults,
       stripClaudeIdentity: _stripClaudeIdentity,
+      shrinkForContext: _shrinkForOmniContext,
     });
     if (overdriveRoute.ended) return;
     if (overdriveRoute.applied) {
