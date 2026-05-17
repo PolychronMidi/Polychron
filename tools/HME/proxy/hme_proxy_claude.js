@@ -36,6 +36,7 @@ const {
   _sanitizePayload,
   _injectHmeTools,
   _injectStopReminderSystem,
+  _stopGateHealth,
 } = require('./hme_proxy_core');
 const { recordOmniRouteFailureAdvance, retryBlankOmniRouteResponse } = require('./hme_proxy_codex');
 
