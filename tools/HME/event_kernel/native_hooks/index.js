@@ -20,7 +20,6 @@ const postToolHandlers = {
 module.exports = {
   ...agent,
   ...diagnostics,
-  ...streak,
   ...todo,
   preToolHandlers,
   postToolHandlers,
