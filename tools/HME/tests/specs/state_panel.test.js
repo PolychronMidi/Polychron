@@ -222,8 +222,9 @@ test('i/why mode=causality reads activity-log caused_by field (Tier-1.5)', () =>
   // Inject a synthetic activity-log entry with explicit caused_by
   const fs = require('node:fs');
   const path = require('node:path');
-  const activityPath = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'hme-activity.jsonl');
-  if (!fs.existsSync(activityPath)) return;  // skip if no activity log
+  const activityPath = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'metrics', 'hme-activity.jsonl');
+  fs.mkdirSync(path.dirname(activityPath), { recursive: true });
+  if (!fs.existsSync(activityPath)) fs.writeFileSync(activityPath, '');
   const beforeLen = fs.statSync(activityPath).size;
   const testEntry = JSON.stringify({
     event: 'caused_by_smoke_test',
