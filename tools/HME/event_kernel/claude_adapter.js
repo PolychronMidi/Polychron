@@ -9,6 +9,20 @@ const { buildHostPayload, writeJsonAtomic } = require('./lifecycle_payload');
 const { claudeRelayFields } = require('./decision_normalizer');
 const { recordHookDecision } = require('./hook_decision_log');
 
+function denyReason(stdout) {
+  try {
+    const obj = JSON.parse(stdout || '{}');
+    return obj && obj.decision === 'block' && typeof obj.reason === 'string' ? obj.reason : '';
+  } catch (_err) { return ''; }
+}
+
+function stageStopReminder(root, reason) {
+  if (!root || !reason) return;
+  const file = path.join(root, 'tmp', 'hme-stop-reminder.json');
+  const text = reason.replace(/^\s*Stop hook feedback:\s*/i, '').trim();
+  writeJsonAtomic(file, JSON.stringify({ ts: new Date().toISOString(), text }));
+}
+
 function proxyDownBanner(port) {
   return `[ALERT] LIFESAVER - HME PROXY OFFLINE - LOCAL EVENT KERNEL ACTIVE
 
