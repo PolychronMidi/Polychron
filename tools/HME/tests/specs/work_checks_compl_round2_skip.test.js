@@ -206,6 +206,21 @@ test('work_checks: broad completion question blocks scoped-not-complete answer',
     assert.match(result.reason, /scoped pass|Remaining gaps/);
   }));
 
+test('work_checks: next-action language blocks stopping even without broad prompt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix the proxy thinking display' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'Added diagnostics. Next action is patching OmniRoute emission directly.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /NEXT-ACTION DEBT/);
+    assert.match(result.reason, /Next action/);
+  }));
+
+
 test('work_checks: broad completion treats next-action language as incomplete debt',
   _withSandbox(async (sandbox) => {
     const transcript = _writeTranscript(sandbox, [
