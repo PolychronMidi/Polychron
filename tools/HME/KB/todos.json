@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3523,
-      "updated_ts": 1778980848.7603197,
-      "codex_plan_synced_ts": 1778980848.760219,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T01:20:24.262Z"
+      "max_id": 3527,
+      "updated_ts": 1778981288.452091,
+      "codex_plan_synced_ts": 1778981288.4519892,
+      "codex_plan_source": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+      "codex_plan_ts": "2026-05-17T01:28:08.014Z"
     }
   },
   {
@@ -7747,8 +7747,8 @@
     "id": 3518,
     "text": "Inspect current adapter/path/metric assumptions and running state",
     "activeForm": "Inspect current adapter/path/metric assumptions and running state",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7757,14 +7757,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3519,
     "text": "Add project adapter schema/helpers and env roots",
     "activeForm": "Add project adapter schema/helpers and env roots",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7773,14 +7774,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3520,
     "text": "Introduce HME metrics/state ownership helpers and migrate HME references safely",
     "activeForm": "Introduce HME metrics/state ownership helpers and migrate HME references safely",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7789,14 +7791,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3521,
     "text": "Add portability doctors/invariants/tests/fixtures",
     "activeForm": "Add portability doctors/invariants/tests/fixtures",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7805,14 +7808,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3522,
     "text": "Genericize docs and project-scope KB/TODO contracts",
     "activeForm": "Genericize docs and project-scope KB/TODO contracts",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7821,14 +7825,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3523,
     "text": "Run targeted tests only, no full pipeline",
     "activeForm": "Run targeted tests only, no full pipeline",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7837,6 +7842,71 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:20:24.262Z"
+    "codex_plan_ts": "2026-05-17T01:20:24.262Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3524,
+    "text": "Fix current portability audit failure without weakening real boundary checks",
+    "activeForm": "Fix current portability audit failure without weakening real boundary checks",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778981288.4510548,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:28:08.014Z"
+  },
+  {
+    "id": 3525,
+    "text": "Finish remaining adapter/runtime portability hardening",
+    "activeForm": "Finish remaining adapter/runtime portability hardening",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778981288.4510608,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:28:08.014Z"
+  },
+  {
+    "id": 3526,
+    "text": "Run targeted verification only",
+    "activeForm": "Run targeted verification only",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778981288.451064,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:28:08.014Z"
+  },
+  {
+    "id": 3527,
+    "text": "Report changes with evidence",
+    "activeForm": "Report changes with evidence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1778981288.4510663,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d",
+    "codex_plan_ts": "2026-05-17T01:28:08.014Z"
   }
 ]

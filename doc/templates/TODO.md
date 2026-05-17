@@ -4,15 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Inspect current adapter/path/metric assumptions and running state
+- [ ] [E3] Fix current portability audit failure without weakening real boundary checks
 
 ## Next
 
-- [ ] [E3] Add project adapter schema/helpers and env roots
-- [ ] [E3] Introduce HME metrics/state ownership helpers and migrate HME references safely
-- [ ] [E3] Add portability doctors/invariants/tests/fixtures
-- [ ] [E3] Genericize docs and project-scope KB/TODO contracts
-- [ ] [E3] Run targeted tests only, no full pipeline
+- [ ] [E3] Finish remaining adapter/runtime portability hardening
+- [ ] [E3] Run targeted verification only
+- [ ] [E3] Report changes with evidence
 
 ## Done
 
