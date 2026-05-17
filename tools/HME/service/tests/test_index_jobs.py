@@ -80,3 +80,8 @@ def test_read_index_job_marks_orphaned_running_job_stale(tmp_path):
     assert "no live worker thread" in status["error"]
     assert "Index job status" in index_jobs.format_index_job(str(tmp_path), status)
 
+
+
+def test_index_job_utc_parser_is_timezone_safe():
+    assert index_jobs._iso_to_epoch("1970-01-01T00:00:00Z") == 0.0
+
