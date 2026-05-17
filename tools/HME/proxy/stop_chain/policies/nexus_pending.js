@@ -40,6 +40,16 @@ function nexusCount(type) {
   return readNexusState().split('\n').filter((l) => l.startsWith(`${type}:`)).length;
 }
 
+function pipelineVerdict() {
+  const summary = path.join(PROJECT_ROOT, 'src', 'output', 'metrics', 'pipeline-summary.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(summary, 'utf8'));
+    const verdict = String(data.verdict || '').trim();
+    if (verdict) return verdict;
+  } catch (_e) { /* fallback to nexus marker */ }
+  return nexusGet('PIPELINE');
+}
+
 module.exports = {
   name: 'nexus_pending',
   async run(ctx) {
