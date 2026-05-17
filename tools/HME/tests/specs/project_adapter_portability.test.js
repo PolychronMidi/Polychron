@@ -43,3 +43,39 @@ test('generic project fixture passes project health and portability audit', () =
   assert.equal(audit.status, 0, audit.stderr || audit.stdout);
   fs.rmSync(tmp, { recursive: true, force: true });
 });
+
+
+function runAudit(root) {
+  return childProcess.spawnSync(
+    'python3',
+    [path.join(repo, 'tools/HME/scripts/audit-portability.py'), `--root=${root}`],
+    { encoding: 'utf8' },
+  );
+}
+
+test('portability audit ignores prose but catches boundary imports', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-boundary-audit-'));
+  try {
+    copyDir(path.join(repo, 'tools/HME/tests/fixtures/generic-project'), tmp);
+    const hmeDir = path.join(tmp, 'tools', 'HME', 'scripts');
+    fs.mkdirSync(hmeDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(hmeDir, 'core.js'),
+      "'use strict';\nconst example = \"allowed='src/foo'\";\n",
+    );
+    assert.equal(runAudit(tmp).status, 0);
+    fs.writeFileSync(
+      path.join(hmeDir, 'bad-core.js'),
+      "'use strict';\nconst x = require('../../../src/index.js');\n",
+    );
+    assert.notEqual(runAudit(tmp).status, 0);
+    fs.rmSync(path.join(hmeDir, 'bad-core.js'));
+    fs.writeFileSync(
+      path.join(tmp, 'src', 'bad.js'),
+      "'use strict';\nconst x = require('../tools/HME/scripts/core.js');\n",
+    );
+    assert.notEqual(runAudit(tmp).status, 0);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
