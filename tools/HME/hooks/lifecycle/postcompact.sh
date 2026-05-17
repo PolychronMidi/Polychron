@@ -13,14 +13,14 @@ TAB="$PROJECT/tmp/hme-tab.txt"
 PARTS=()
 
 if [[ -f "$TAB" && -s "$TAB" ]]; then
-  KB_LINES=$(grep '^KB:' "$TAB" 2>/dev/null)  # silent-ok: optional fallback path.
+  KB_LINES=$(grep '^KB:' "$TAB" 2>/dev/null || true)  # silent-ok: optional fallback path.
   if [[ -n "$KB_LINES" ]]; then
     PARTS+=("POST-COMPACT: pending KB anchors still unsaved:")
     PARTS+=("$KB_LINES")
     PARTS+=("")
   fi
 
-  FILE_LINES=$(grep '^FILE:' "$TAB" 2>/dev/null)  # silent-ok: optional fallback path.
+  FILE_LINES=$(grep '^FILE:' "$TAB" 2>/dev/null || true)  # silent-ok: optional fallback path.
   if [[ -n "$FILE_LINES" ]]; then
     PARTS+=("Tracked note files from this session:")
     PARTS+=("$FILE_LINES")
