@@ -8,7 +8,7 @@ function shrinkForPassthrough(payload, opts = {}) {
   const env = opts.env || process.env;
   const log = opts.log || console.error;
   const keepMin = Number(opts.keepMin || 30);
-  const maxToolResultAge = Number(opts.maxToolResultAge || 0);
+  const maxToolResultAge = Number(opts.maxToolResultAge == null ? 0 : opts.maxToolResultAge);
   const toolResultByteFloor = Number(opts.toolResultByteFloor || 15000);
   const threshold = Number(typeof opts.effectiveThreshold === 'function' ? opts.effectiveThreshold() : opts.threshold || 250000);
   const projectRoot = opts.projectRoot || PROJECT_ROOT;
