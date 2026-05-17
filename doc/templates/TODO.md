@@ -4,11 +4,12 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Compare completed work against bifurcation suggestions
 
 ## Next
 
-(empty)
+- [ ] [E3] Identify remaining gaps or confirm scoped completion
+- [ ] [E3] Answer with clear status
 
 ## Done
 
