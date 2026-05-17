@@ -25,6 +25,11 @@ import sys
 import time
 import uuid
 
+SCRIPTS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts"))
+if SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, SCRIPTS_DIR)
+from hme_paths import HME_METRICS_DIR
+
 
 def _coerce(v: str):
     if v in ("true", "True"):
