@@ -832,10 +832,8 @@ function handleRequest(clientReq, clientRes) {
                 fs.writeFileSync(outFile.replace('.json', '.request-headers.json'), JSON.stringify(_reqHdrSnap, null, 2));
               } catch (_e) { /* best-effort */ }
               console.error(`payload snapshotted to ${outFile}`);
-              // Skip lifesaver for sub-pipeline 404 probes + cooldown dupes.
-              // x-should-retry 429s DO alert (user-visible recovery signal).
-              const _suppressLifesaver = _coolingDown
-                || (status === 404 && _pathLabel === 'sub-pipeline');
+              // Sub-pipeline failures are diagnostic noise; interactive failures alert.
+              const _suppressLifesaver = _coolingDown || _pathLabel === 'sub-pipeline';
               if (!_suppressLifesaver) {
                 const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
                 fs.appendFileSync(errLog,
@@ -1392,9 +1390,11 @@ function handleRequest(clientReq, clientRes) {
         const outFile = path.join(PROJECT_ROOT, _snapshotRel);
         fs.mkdirSync(path.dirname(outFile), { recursive: true });
         fs.writeFileSync(outFile, outBody);
-        const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
-        fs.appendFileSync(errLog,
-          `[${_stamp}] UPSTREAM_${_errCode}_${_pathLabel.toUpperCase()}: ${_errMsg} (snapshot=${_snapshotRel})\n`);
+        if (_pathLabel === 'interactive') {
+          const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+          fs.appendFileSync(errLog,
+            `[${_stamp}] UPSTREAM_${_errCode}_${_pathLabel.toUpperCase()}: ${_errMsg} (snapshot=${_snapshotRel})\n`);
+        }
       } catch (snapErr) {
         console.error(`conn-error snapshot/lifesaver write failed: ${snapErr.message}`);
       }
