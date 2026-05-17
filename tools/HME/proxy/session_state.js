@@ -20,6 +20,7 @@ function defaultState(sessionId = '') {
     approved_gates: [],
     files_written: [],
     failed_writes: [],
+    files_read: [],
     verification_evidence: [],
     quality_judgments: [],
     detector_outcomes: {},
