@@ -20,7 +20,6 @@ const { scanMessages } = require('./messages');
 const { servicePort } = require('./service_registry');
 const { emitStartMarker } = require('./start_marker');
 const { createRouteMetrics } = require('./proxy_route_metrics');
-const { createClaudeHandler } = require('./hme_proxy_claude');
 const { createContextBudget } = require('./hme_proxy_context_budget');
 const { createOpusGate } = require('./hme_proxy_opus_gate');
 const core = require('./hme_proxy_core');
