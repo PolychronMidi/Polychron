@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Locate stop-hook pipeline failure source
+(empty)
 
 ## Next
 
-- [ ] [E3] Fix stale or overbroad failure diagnosis
-- [ ] [E3] Verify via allowed status/targeted checks
-- [ ] [E3] Return concise evidence
+(empty)
 
 ## Done
 
