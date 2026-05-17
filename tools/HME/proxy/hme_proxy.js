@@ -383,11 +383,31 @@ function _injectStopReminderSystem(payload, file = STOP_REMINDER_FILE) {
   return true;
 }
 
+function _stopGateHealth() {
+  const registry = require('fs').readFileSync(
+    require('path').join(require('./shared').PROJECT_ROOT, 'tools', 'HME', 'scripts', 'detectors', 'registry.json'),
+    'utf8',
+  );
+  return {
+    transport_mode: 'structured-stop-decision-with-proxy-system-injection',
+    reminder_file: STOP_REMINDER_FILE,
+    reminder_pending: _stopReminderPending(),
+    registry_hash: require('crypto').createHash('sha256').update(registry).digest('hex').slice(0, 16),
+    middleware: _loadedMiddleware,
+    started_at: PROXY_STARTED_AT,
+    git_sha: PROXY_GIT_SHA,
+  };
+}
+
 const __hmeProxyInternals = {
+  STOP_REMINDER_FILE,
   _consumeStopReminderSystemText,
+  _stopReminderPending,
+  _normalizeSystemArray,
   _extractTextContent,
   _appendTextContent,
   _injectStopReminderSystem,
+  _stopGateHealth,
 };
 
 // _handleSpawnRoute + _handleLifecycleRoute moved to routes_admin.js +
