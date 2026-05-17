@@ -4,8 +4,9 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const { loadJsonc } = require('./config_loader');
+const hmePaths = require('./hme_paths');
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+const PROJECT_ROOT = hmePaths.PROJECT_ROOT;
 const EMIT_PY = path.join(PROJECT_ROOT, 'tools/HME/activity/emit.py');
 
 function explicitRuntimeDir(root) {
@@ -17,7 +18,7 @@ function explicitRuntimeDir(root) {
 }
 // Durable inter-script state lives here, NOT in tmp/. tmp/ is genuinely
 // throwaway (rotating dumps, scratch). See tools/HME/runtime/INVENTORY.md.
-const RUNTIME_DIR = explicitRuntimeDir(PROJECT_ROOT) || path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime');
+const RUNTIME_DIR = explicitRuntimeDir(PROJECT_ROOT) || hmePaths.HME_RUNTIME_DIR;
 
 function emit(fields) {
   try {
@@ -112,6 +113,9 @@ module.exports = {
   PROJECT_ROOT,
   EMIT_PY,
   RUNTIME_DIR,
+  HME_METRICS_DIR: hmePaths.HME_METRICS_DIR,
+  HME_STATE_DIR: hmePaths.HME_STATE_DIR,
+  COMPOSITION_METRICS_DIR: hmePaths.COMPOSITION_METRICS_DIR,
   mtimeCache,
   projectPathSegments,
   hasMisplacedRootOnlyDir,
