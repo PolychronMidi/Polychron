@@ -33,7 +33,7 @@ def _recent_service_restart(seconds: int = 300) -> tuple[bool, str]:
 
 
 _LATENCY_EXCLUDED_TOOLS = {"hme_admin", "hme_selftest", "hme_hot_reload"}
-_RESP_RE = re.compile(r"RESP\\s+(\\w+)\\s+\\[([0-9.]+)s\\]")
+_RESP_RE = re.compile(r"RESP\s+(\w+)\s+\[([0-9.]+)s\]")
 
 
 def _recent_interactive_latency_ms(limit: int = 20) -> float | None:
