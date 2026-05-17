@@ -4,12 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Inspect live Claude processes and environment
+- [ ] [E3] Inspect Claude config semantics and active process
 
 ## Next
 
-- [ ] [E3] Reproduce the exact Claude API request path
-- [ ] [E3] Patch actual refactor regression and verify
+- [ ] [E3] Trace whether Claude requests reach proxy
+- [ ] [E3] Patch actual launcher/config bridge if broken
 
 ## Done
 

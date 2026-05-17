@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3602,
-      "updated_ts": 1779032767.083958,
-      "codex_plan_synced_ts": 1779032767.0838404,
+      "max_id": 3605,
+      "updated_ts": 1779033487.091041,
+      "codex_plan_synced_ts": 1779033487.0909238,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-      "codex_plan_ts": "2026-05-17T15:45:59.836Z"
+      "codex_plan_ts": "2026-05-17T15:57:55.176Z"
     }
   },
   {
@@ -9097,8 +9097,8 @@
     "id": 3600,
     "text": "Inspect live Claude processes and environment",
     "activeForm": "Inspect live Claude processes and environment",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9107,14 +9107,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:45:59.836Z"
+    "codex_plan_ts": "2026-05-17T15:45:59.836Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3601,
     "text": "Reproduce the exact Claude API request path",
     "activeForm": "Reproduce the exact Claude API request path",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9123,14 +9124,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:45:59.836Z"
+    "codex_plan_ts": "2026-05-17T15:45:59.836Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3602,
     "text": "Patch actual refactor regression and verify",
     "activeForm": "Patch actual refactor regression and verify",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9139,6 +9141,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-    "codex_plan_ts": "2026-05-17T15:45:59.836Z"
+    "codex_plan_ts": "2026-05-17T15:45:59.836Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3603,
+    "text": "Inspect Claude config semantics and active process",
+    "activeForm": "Inspect Claude config semantics and active process",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779033475.609052,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:57:55.176Z"
+  },
+  {
+    "id": 3604,
+    "text": "Trace whether Claude requests reach proxy",
+    "activeForm": "Trace whether Claude requests reach proxy",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779033475.6090574,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:57:55.176Z"
+  },
+  {
+    "id": 3605,
+    "text": "Patch actual launcher/config bridge if broken",
+    "activeForm": "Patch actual launcher/config bridge if broken",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779033475.609061,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
+    "codex_plan_ts": "2026-05-17T15:57:55.176Z"
   }
 ]
