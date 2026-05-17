@@ -74,6 +74,7 @@ async function handleAnthropicResponseComplete({
   anthropicTextSseBuffer,
   lifecycleInactive,
   runInlineFallback,
+  skipStopFallback = false,
 }) {
   let fullBody = Buffer.concat(chunks);
   let status = upstreamRes.statusCode || 502;
