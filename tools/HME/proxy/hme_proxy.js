@@ -219,8 +219,7 @@ function runTestMode() {
       jurisdiction_targets: scan.jurisdictionTargets,
       jurisdiction_block_preview: jurisdictionBlock ? jurisdictionBlock.slice(0, 500) : null,
     };
-    process.stdout.write(JSON.stringify(out, null, 2) + '
-');
+    process.stdout.write(JSON.stringify(out, null, 2) + '\n');
     process.exit(out.violation ? 1 : 0);
   });
 }
