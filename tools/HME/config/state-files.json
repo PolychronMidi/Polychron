@@ -585,7 +585,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "tmp/hme-errors.turnstart",
+      "path": "tools/HME/runtime/errors-turnstart",
       "coordination": "single actor per event class; shared tmp across parallel sessions is unsupported",
       "writers": [
         "tools/HME/hooks/lifecycle/userpromptsubmit.sh"
@@ -601,7 +601,7 @@
       "repair": "run tools/HME/scripts/hme-doctor.py"
     },
     {
-      "path": "tmp/hme-errors.lastread",
+      "path": "tools/HME/runtime/errors-lastread",
       "coordination": "single actor per event class; shared tmp across parallel sessions is unsupported",
       "writers": [
         "tools/HME/hooks/lifecycle/userpromptsubmit.sh",

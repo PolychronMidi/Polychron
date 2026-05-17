@@ -50,8 +50,8 @@ from datetime import datetime, UTC
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parent.parent.parent.parent))
 METRICS_DIR = Path(os.environ.get("HME_METRICS_DIR", PROJECT_ROOT / "tools" / "HME" / "runtime" / "metrics"))
 ERROR_LOG = PROJECT_ROOT / "log" / "hme-errors.log"
-WATERMARK = PROJECT_ROOT / "tmp" / "hme-errors.lastread"
-TURNSTART = PROJECT_ROOT / "tmp" / "hme-errors.turnstart"
+WATERMARK = PROJECT_ROOT / "tools" / "HME" / "runtime" / "errors-lastread"
+TURNSTART = PROJECT_ROOT / "tools" / "HME" / "runtime" / "errors-turnstart"
 HISTORY = METRICS_DIR / "hme-streak-calibration-history.jsonl"
 OUTPUT = METRICS_DIR / "hme-streak-calibration.json"
 
