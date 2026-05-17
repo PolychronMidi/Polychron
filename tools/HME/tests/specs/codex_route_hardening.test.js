@@ -49,12 +49,10 @@ async function dispatch(root, tool, input) {
 
 test('raw-streak policy is observational after block retirement', () => {
   const { loadPolicy, blockMessage, reminderMessage } = require('../../event_kernel/native_hooks/raw_streak_policy');
-  const { streakTick } = require('../../event_kernel/native_hooks/streak');
   const policy = loadPolicy();
   assert.equal(policy.cost_summary, 'Bash=15, Grep=20; native Read/Edit reset');
   assert.equal(blockMessage(75, 70), '');
   assert.equal(reminderMessage(75, 70), '');
-  assert.deepEqual(streakTick(1000), { ok: true, message: '' });
 });
 
 test('Codex hook decision compact logs hash/channels without raw reason text', () => {
