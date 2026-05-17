@@ -4,7 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
 const { recordUpstreamSuccess, recordUpstreamFailure, refreshOauthToken } = require('./upstream');
-const { detectUpstreamFailure, alertCooldownActive } = require('./failure_classification');
+const {
+  detectUpstreamFailure: _detectUpstreamFailure,
+  alertCooldownActive: _alertCooldownActive,
+} = require('./failure_classification');
 const { recordOmniRouteFailureAdvance } = require('./hme_proxy_codex');
 
 function recordSuccessAndReset({ getConsecutive429s, setConsecutive429s }) {
