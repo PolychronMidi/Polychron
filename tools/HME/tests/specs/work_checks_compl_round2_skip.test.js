@@ -221,7 +221,7 @@ test('work_checks: next-action language blocks stopping even without broad promp
   }));
 
 
-test('work_checks: broad completion treats next-action language as incomplete debt',
+test('work_checks: broad completion treats next-action language as next-action debt',
   _withSandbox(async (sandbox) => {
     const transcript = _writeTranscript(sandbox, [
       { type: 'user', message: { content: 'complete all proxy compaction fixes' } },
