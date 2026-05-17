@@ -1,6 +1,6 @@
 # HME
 
-Hypermeta Ecstasy is Polychron's self-coherence substrate. It wraps agent
+Hypermeta Ecstasy is the repo's self-coherence substrate. It wraps agent
 workflows with a proxy, event kernel, lifecycle hooks, KB retrieval, verifiers,
 metrics, and a small `i/` command surface.
 
