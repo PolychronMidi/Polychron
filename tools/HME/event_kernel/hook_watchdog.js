@@ -234,4 +234,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { BUDGETS, begin, budgetFor, end, hookContext, readState, userPromptAlert };
+module.exports = { BUDGETS, begin, budgetFor, end, hookContext, readState, sessionId, userPromptAlert };
