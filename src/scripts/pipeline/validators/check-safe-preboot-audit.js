@@ -39,7 +39,7 @@ function findJsFiles(dir) {
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (full === path.join(SRC, 'scripts')) continue;
+      if (full === path.join(SRC, 'scripts') || full === path.join(SRC, 'tests') || full === path.join(SRC, 'lab')) continue;
       results.push(...findJsFiles(full));
     } else if (entry.name.endsWith('.js')) results.push(full);
   }
