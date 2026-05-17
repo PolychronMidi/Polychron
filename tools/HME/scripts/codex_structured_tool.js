@@ -109,7 +109,24 @@ function walk(base, maxDepth, out = [], depth = 0) {
   return out;
 }
 function globToRe(pattern) { return new RegExp(`^${String(pattern || '*').replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*')}$`); }
-function parseGrep(argv) { const d = jsonData(argv); return { pattern: String(d.pattern || d._?.[0] || ''), path: d.path || d._?.[1] || '.', paths: d.paths || null, ignore_case: Boolean(d.ignore_case), fixed: Boolean(d.fixed), limit: Number(d.limit || 200) }; }
+function splitPathList(raw) {
+  if (Array.isArray(raw)) return raw;
+  const s = String(raw || '.');
+  if (!/\s/.test(s)) return [s];
+  return s.split(/\s+/).filter(Boolean);
+}
+function parseGrep(argv) {
+  const d = jsonData(argv);
+  const rawPath = d.path || d._?.[1] || '.';
+  return {
+    pattern: String(d.pattern || d._?.[0] || ''),
+    path: rawPath,
+    paths: d.paths || splitPathList(rawPath),
+    ignore_case: Boolean(d.ignore_case),
+    fixed: Boolean(d.fixed),
+    limit: Number(d.limit || 200),
+  };
+}
 function parseGlob(argv) { const d = jsonData(argv); return { pattern: String(d.pattern || d._?.[0] || '*'), path: d.path || d._?.[1] || '.', max_depth: Number(d.max_depth ?? 8), type: d.type || '', limit: Number(d.limit || 500) }; }
 
 async function runRead(argv) { const input = parseRead(argv); await pre('Read', input); const text = readSlice(fs.readFileSync(input.file_path, 'utf8'), input); await finishStructured('Read', input, text); }
