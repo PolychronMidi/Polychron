@@ -95,9 +95,12 @@ test('telemetry: HME_TELEMETRY_DISABLE suppresses listed categories', _withSandb
     t2.info('should_not_appear', {});
     t2.metric('should_not_appear', {});
     t2.error('should_appear', { reason: 'x' });
-    const infoFile = path.join(sb, 'src', 'output', 'metrics', 'hme-activity.jsonl');
-    const errorFile = path.join(sb, 'log', 'hme-errors.log');
-    const metricFile = path.join(sb, 'log', 'hme-hook-latency.jsonl');
+    const infoFile = t2.PATHS.info;
+    const errorFile = t2.PATHS.error;
+    const metricFile = t2.PATHS.metric;
+    assert.ok(infoFile.startsWith(sb + path.sep));
+    assert.ok(errorFile.startsWith(sb + path.sep));
+    assert.ok(metricFile.startsWith(sb + path.sep));
     assert.ok(!fs.existsSync(infoFile), 'info channel must be suppressed');
     assert.ok(!fs.existsSync(metricFile), 'metric channel must be suppressed');
     assert.ok(fs.existsSync(errorFile), 'error channel must NOT be suppressed');
