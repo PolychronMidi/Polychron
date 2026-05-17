@@ -147,8 +147,11 @@ function handleLifecycleRoute(clientReq, clientRes) {
   });
 }
 
-// Side effect: fire SessionStart inline at module load. If Claude Code
-runInlineFallback('SessionStart', '{}');
+// Side effect: fire SessionStart inline at module load. Suppress only when
+// tests explicitly request quiet imports; live runtime keeps the lifesaver.
+if (process.env.HME_PROXY_QUIET_IMPORT !== '1') {
+  runInlineFallback('SessionStart', '{}');
+}
 
 module.exports = {
   recordLifecycleHit,
