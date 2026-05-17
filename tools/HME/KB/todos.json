@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3527,
-      "updated_ts": 1778981298.755173,
-      "codex_plan_synced_ts": 1778981298.7550697,
+      "updated_ts": 1778982228.761894,
+      "codex_plan_synced_ts": 1778982228.7617905,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-      "codex_plan_ts": "2026-05-17T01:28:08.019Z"
+      "codex_plan_ts": "2026-05-17T01:43:45.921Z"
     }
   },
   {
@@ -7849,8 +7849,8 @@
     "id": 3524,
     "text": "Fix current portability audit failure without weakening real boundary checks",
     "activeForm": "Fix current portability audit failure without weakening real boundary checks",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7859,14 +7859,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:28:08.019Z"
+    "codex_plan_ts": "2026-05-17T01:43:45.921Z"
   },
   {
     "id": 3525,
     "text": "Finish remaining adapter/runtime portability hardening",
     "activeForm": "Finish remaining adapter/runtime portability hardening",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -7875,13 +7875,13 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:28:08.019Z"
+    "codex_plan_ts": "2026-05-17T01:43:45.921Z"
   },
   {
     "id": 3526,
     "text": "Run targeted verification only",
     "activeForm": "Run targeted verification only",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "codex_plan",
@@ -7891,7 +7891,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:28:08.019Z"
+    "codex_plan_ts": "2026-05-17T01:43:45.921Z"
   },
   {
     "id": 3527,
@@ -7907,6 +7907,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-17T01:28:08.019Z"
+    "codex_plan_ts": "2026-05-17T01:43:45.921Z"
   }
 ]

@@ -4,12 +4,10 @@
 
 ## Now
 
-- [ ] [E3] Fix current portability audit failure without weakening real boundary checks
+- [ ] [E3] Run targeted verification only
 
 ## Next
 
-- [ ] [E3] Finish remaining adapter/runtime portability hardening
-- [ ] [E3] Run targeted verification only
 - [ ] [E3] Report changes with evidence
 
 ## Done
