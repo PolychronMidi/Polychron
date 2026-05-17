@@ -211,8 +211,10 @@ async function runGrep(argv) {
   for (const b of bases) {
     for (const fp of walk(b, 10)) {
       let text;
-      try { text = fs.readFileSync(fp, 'utf8'); }
-      catch (_e) { continue; }
+      try {
+        if (fs.statSync(fp).size > GREP_MAX_BYTES) continue;
+        text = fs.readFileSync(fp, 'utf8');
+      } catch (_e) { continue; }
       const rel = relPath(fp);
       text.split(/\r?\n/).some((line, idx) => {
         const hit = input.fixed
