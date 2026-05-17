@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect proxy files and Claude route wiring
+(empty)
 
 ## Next
 
-- [ ] [E3] Patch Claude-specific proxy regression
-- [ ] [E3] Run focused tests and status evidence
+(empty)
 
 ## Done
 
