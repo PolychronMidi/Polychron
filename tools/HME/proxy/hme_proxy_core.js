@@ -1,6 +1,5 @@
 'use strict';
 
-const { PROJECT_ROOT } = require('./shared');
 const { stripStaleToolResults, sanitizeMessages } = require('./conversation_graph');
 const { shrinkForPassthrough } = require('./passthrough_compact');
 const hmeDispatcher = require('./hme_dispatcher');
