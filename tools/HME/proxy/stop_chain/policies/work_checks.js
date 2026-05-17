@@ -225,7 +225,7 @@ function isBroadCompletionPrompt(text) {
 function scanIncompleteCompletionClaims(text) {
   if (!text) return [];
   const stripped = text.replace(/```[\s\S]*?```/g, ' ');
-  const re = /\b(partial|not\s+complete|not\s+done|remaining|still\s+needs?|todo|pending|scaffold|foundation|next\s+step|would\s+need)\b[^.!?\n]{0,120}/gi;
+  const re = /\b(partial|not\s+complete|not\s+done|remaining|still\s+needs?|todo|pending|scaffold|foundation|next\s+(step|action)|would\s+need)\b[^.!?\n]{0,120}/gi;
   const out = [];
   let m;
   while ((m = re.exec(stripped)) !== null) {
