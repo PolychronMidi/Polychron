@@ -162,6 +162,13 @@ test('provider reasoning fields convert to Anthropic thinking events', () => {
 });
 
 
+test('non-reasoning delta text is not converted to thinking', () => {
+  const data = { type: 'response.output_text.delta', delta: { text: 'visible answer' } };
+  assert.equal(reasoningTextFromData(data), '');
+  assert.equal(providerReasoningToThinkingRewrite('response.output_text.delta', data, new Map()), data);
+});
+
+
 test('legacy swap auth failure emits Anthropic stop SSE instead of surfacing 401', () => quiet(() => {
   const clientRes = fakeClientRes();
   let released = false;
