@@ -334,8 +334,8 @@ function createClaudeHandler(deps) {
             isAnthropic,
             payload,
             outBuf,
-            lifecycleInactive: _lifecycleInactive,
-            runInlineFallback: _runInlineFallback,
+            lifecycleInactive: (event) => lifecycleBridge().lifecycleInactive(event),
+            runInlineFallback: (event, stdinJson) => lifecycleBridge().runInlineFallback(event, stdinJson),
           });
         });
         upstreamRes.on('error', (err) => {
