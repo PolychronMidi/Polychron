@@ -321,6 +321,8 @@ class ToolResponseLatencyVerifier(Verifier):
             f"baseline_median={median:.0f}ms ({len(history)} samples)",
             f"ratio={ratio_med:.2f}* median",
         ]
+        if latency_note:
+            details.append(latency_note)
 
         if ratio_med >= 3.0 or ratio_p75 >= 3.0:
             recent_restart, restart_detail = _recent_service_restart()
