@@ -58,7 +58,8 @@ test('telemetry: error -> human-readable line + JSON tail in hme-errors.log', _w
 
 test('telemetry: metric -> JSONL append to hme-hook-latency.jsonl', _withSandbox(async (sb, t) => {
   t.metric('hook_latency_test', { hook: 'stop', duration_ms: 117 });
-  const file = path.join(sb, 'log', 'hme-hook-latency.jsonl');
+  const file = t.PATHS.metric;
+  assert.ok(file.startsWith(sb + path.sep), 'metric path must stay inside sandbox');
   assert.ok(fs.existsSync(file));
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8').trim());
   assert.strictEqual(parsed.event, 'hook_latency_test');
