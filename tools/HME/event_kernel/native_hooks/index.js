@@ -24,7 +24,6 @@ module.exports = {
   ...diagnostics,
   ...streak,
   ...todo,
-  ...toolsearch,
   preToolHandlers,
   postToolHandlers,
 };
