@@ -334,33 +334,39 @@ function _consumeStopReminderSystemText() {
   try { fs.unlinkSync(file); } catch (_err) { /* silent-ok: best-effort consume once */ }
   let data = {};
   try { data = JSON.parse(raw); } catch (_err) { return ''; }
-  const text = String((data && data.text) || '').trim();
-  if (!text) return '';
-  const reminder = /^<system-reminder>[\s\S]*<\/system-reminder>$/.test(text)
-    ? text
-    : `<system-reminder>\n${text}\n</system-reminder>`;
-  return `\n\n[HME Stop Hook Feedback (proxy-injected)]\n${reminder}\n`;
+  return String((data && data.text) || '').trim();
+}
+
+function _extractTextContent(content) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content.map((b) => {
+    if (!b) return '';
+    if (typeof b === 'string') return b;
+    if (typeof b.text === 'string') return b.text;
+    return '';
+  }).filter(Boolean).join('\n');
+}
+
+function _appendTextContent(content, text) {
+  const block = { type: 'text', text };
+  if (typeof content === 'string') return `${content}\n\n${text}`;
+  if (Array.isArray(content)) return [...content, block];
+  return [block];
 }
 
 function _injectStopReminderSystem(payload) {
-  const block = _consumeStopReminderSystemText();
-  if (!block) return false;
+  const text = _consumeStopReminderSystemText();
+  if (!text || !payload || !Array.isArray(payload.messages)) return false;
   const marker = 'HME Stop Hook Feedback (proxy-injected)';
-  if (typeof payload.system === 'string') {
-    if (payload.system.includes(marker)) return false;
-    payload.system = `${payload.system}${block}`;
-    return true;
-  }
-  if (Array.isArray(payload.system)) {
-    const exists = payload.system.some((b) => {
-      const text = typeof b === 'string' ? b : b && b.text;
-      return typeof text === 'string' && text.includes(marker);
-    });
-    if (exists) return false;
-    payload.system.push({ type: 'text', text: block });
-    return true;
-  }
-  payload.system = [{ type: 'text', text: block }];
+  const wrapped = /^<system-reminder>[\s\S]*<\/system-reminder>$/.test(text)
+    ? text
+    : `<system-reminder>\n${text}\n</system-reminder>`;
+  const block = `${marker}\n${wrapped}`;
+  const last = payload.messages[payload.messages.length - 1];
+  if (!last || last.role !== 'user') return false;
+  if (_extractTextContent(last.content).includes(marker)) return false;
+  last.content = _appendTextContent(last.content, block);
   return true;
 }
 
