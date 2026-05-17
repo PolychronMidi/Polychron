@@ -33,7 +33,8 @@ test('telemetry: exports the six channels + record', _withSandbox(async (_sb, t)
 
 test('telemetry: info -> JSONL append to hme-activity.jsonl', _withSandbox(async (sb, t) => {
   t.info('test_info_event', { foo: 'bar', n: 1 });
-  const file = path.join(sb, 'src', 'output', 'metrics', 'hme-activity.jsonl');
+  const file = t.PATHS.info;
+  assert.ok(file.startsWith(sb + path.sep), 'info path must stay inside sandbox');
   assert.ok(fs.existsSync(file), 'info channel must create the activity log');
   const line = fs.readFileSync(file, 'utf8').trim().split('\n').pop();
   const parsed = JSON.parse(line);
