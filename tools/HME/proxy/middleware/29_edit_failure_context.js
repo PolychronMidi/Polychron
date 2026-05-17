@@ -67,9 +67,13 @@ module.exports = {
     recordFailure(root, { tool: toolUse.name, reason, file });
     if (text.includes('[READ current context')) return;
     try {
-      ctx.appendToResult(toolResult, contextWindow(root, file, input.old_string || '', input.new_string || '', reason));
+      const currentContext = contextWindow(root, file, input.old_string || '', input.new_string || '', reason);
+      ctx.appendToResult(toolResult, currentContext.text);
+      if (currentContext.readable && /File has not been read yet\. Read it first before writing to it/.test(text)) {
+        sessionState.recordRead({ session_id: ctx.session || ctx.session_id || '', tool_name: 'Read', tool_input: { file_path: file } }, { source: 'edit_failure_auto_context', reason });
+      }
       ctx.markDirty();
-      ctx.emit({ event: 'edit_failure_context_appended', tool: toolUse.name, file: relPath(file, root), reason });
+      ctx.emit({ event: 'edit_failure_context_appended', tool: toolUse.name, file: relPath(file, root), reason, read_equivalent: currentContext.readable });
     } catch (err) {
       ctx.warn(`edit failure context unavailable: ${err.message}`);
     }
