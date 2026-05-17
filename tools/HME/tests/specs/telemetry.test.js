@@ -46,7 +46,8 @@ test('telemetry: info -> JSONL append to hme-activity.jsonl', _withSandbox(async
 
 test('telemetry: error -> human-readable line + JSON tail in hme-errors.log', _withSandbox(async (sb, t) => {
   t.error('test_error_event', { reason: 'something broke', context: 'in unit test' });
-  const file = path.join(sb, 'log', 'hme-errors.log');
+  const file = t.PATHS.error;
+  assert.ok(file.startsWith(sb + path.sep), 'error path must stay inside sandbox');
   assert.ok(fs.existsSync(file), 'error channel must create hme-errors.log');
   const line = fs.readFileSync(file, 'utf8').trim();
   // Format: [ts] [event] reason  {json}
