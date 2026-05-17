@@ -268,7 +268,13 @@ class ToolResponseLatencyVerifier(Verifier):
                 ops = json.load(f)
         except Exception as e:
             return _result(ERROR, 0.0, f"read error: {e}")
-        ema_ms = ops.get("tool_response_ms_ema", 0.0)
+        raw_ema_ms = float(ops.get("tool_response_ms_ema", 0.0) or 0.0)
+        interactive_ms = _recent_interactive_tool_latency_ms()
+        latency_note = ""
+        ema_ms = raw_ema_ms
+        if interactive_ms is not None and (raw_ema_ms <= 0 or interactive_ms < raw_ema_ms):
+            ema_ms = interactive_ms
+            latency_note = f"recent interactive median={interactive_ms:.0f}ms"
         if ema_ms <= 0:
             return _result(SKIP, 1.0, "no tool_response_ms_ema data")
 
