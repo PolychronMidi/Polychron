@@ -66,6 +66,12 @@ async function main() {
       try { fs.unlinkSync(flag); } catch (_err) { /* best effort */ }
       append(path.join(root, 'log', 'hme-proxy-lifecycle.log'), `[${ts}] [claude-adapter] proxy recovered on 127.0.0.1:${port} (event=${ev})`);
     },
+    beforeFinalRelay: ({ event: ev, result, root }) => {
+      if (ev !== 'Stop') return result;
+      const reason = denyReason(result.stdout || '');
+      if (reason) stageStopReminder(root, reason);
+      return result;
+    },
     finalRelay,
   });
 }
