@@ -30,6 +30,8 @@ import re
 import sys
 import time
 
+from _metrics import metric_path
+
 PROJECT_ROOT = (
     os.environ.get("CLAUDE_PROJECT_DIR")
     or os.environ.get("PROJECT_ROOT")
