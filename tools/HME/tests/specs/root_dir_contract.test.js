@@ -29,15 +29,13 @@ test('root-dir contract allows only canonical metrics roots', () => withRoot((ro
   fs.mkdirSync(path.join(root, 'tools/HME/runtime/metrics'), { recursive: true });
   assert.equal(run(root).status, 0);
   fs.mkdirSync(path.join(root, 'metrics'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'metrics/bad.json'), '{}
-');
+  fs.writeFileSync(path.join(root, 'metrics/bad.json'), '{}\n');
   assert.notEqual(run(root).status, 0);
 }));
 
 test('root-dir contract rejects nested tmp but allows HME metrics files', () => withRoot((root) => {
   fs.mkdirSync(path.join(root, 'tools/HME/runtime/metrics'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'tools/HME/runtime/metrics/hme-ok.json'), '{}
-');
+  fs.writeFileSync(path.join(root, 'tools/HME/runtime/metrics/hme-ok.json'), '{}\n');
   assert.equal(run(root).status, 0);
   fs.mkdirSync(path.join(root, 'tools/HME/runtime/tmp'), { recursive: true });
   fs.writeFileSync(path.join(root, 'tools/HME/runtime/tmp/nope.txt'), 'x');
