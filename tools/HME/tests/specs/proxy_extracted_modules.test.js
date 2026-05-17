@@ -9,6 +9,7 @@ const path = require('path');
 const { shrinkForPassthrough } = require('../../proxy/passthrough_compact');
 const { handleLegacySwapResponse, writeAnthropicStopSse } = require('../../proxy/legacy_swap_response');
 const { effectiveMode, buildMode1Chain, applyOverdriveRoute } = require('../../proxy/overdrive_route');
+const { reasoningTextFromData, providerReasoningToThinkingRewrite } = require('../../proxy/reasoning_to_thinking');
 
 function quiet(fn) {
   const orig = console.error;
