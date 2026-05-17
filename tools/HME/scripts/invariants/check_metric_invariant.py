@@ -45,7 +45,7 @@ def _jsonl(rel: str) -> list[dict]:
 
 
 def predictions_log_gap_bounded() -> None:
-    rounds = (_json("src/output/metrics/hme-prediction-accuracy.json", {}) or {}).get("rounds") or []
+    rounds = (_json("tools/HME/runtime/metrics/hme-prediction-accuracy.json", {}) or {}).get("rounds") or []
     if len(rounds) < 2:
         print("insufficient history")
         return
@@ -67,7 +67,7 @@ def retirement_log_consistent() -> None:
 
 
 def legacy_override_chronically_zero() -> None:
-    rows = _jsonl("src/output/metrics/legacy-override-history.jsonl")[-5:]
+    rows = _jsonl("tools/HME/runtime/metrics/legacy-override-history.jsonl")[-5:]
     retired = {
         row.get("id") for row in _jsonl("src/output/metrics/legacy-override-retirement-log.jsonl")
         if row.get("action") != "keep" and row.get("id")
@@ -94,7 +94,7 @@ def hypermeta_legacy_overrides_covered() -> None:
 
 
 def envelope_shift_bounded() -> None:
-    data = _json("src/output/metrics/hme-envelope-shift.json", {}) or {}
+    data = _json("tools/HME/runtime/metrics/hme-envelope-shift.json", {}) or {}
     shift = data.get("average_relative_shift")
     top = (data.get("top_shifted_fields") or [{}])[0].get("field", "?")
     if isinstance(shift, (int, float)) and shift > 0.5:
@@ -102,8 +102,8 @@ def envelope_shift_bounded() -> None:
 
 
 def cross_arc_hidden_drift_detector() -> None:
-    consensus = _json("src/output/metrics/hme-consensus.json", {}) or {}
-    drift = _json("src/output/metrics/hme-legendary-drift.json", {}) or {}
+    consensus = _json("tools/HME/runtime/metrics/hme-consensus.json", {}) or {}
+    drift = _json("tools/HME/runtime/metrics/hme-legendary-drift.json", {}) or {}
     if consensus.get("divergence") == "low" and drift.get("status") == "drift_detected":
         print(
             f"hidden drift: consensus-low divergence BUT drift detected (score {drift.get('drift_score')}). "
@@ -112,29 +112,29 @@ def cross_arc_hidden_drift_detector() -> None:
 
 
 def legendary_drift_bounded() -> None:
-    data = _json("src/output/metrics/hme-legendary-drift.json", {}) or {}
+    data = _json("tools/HME/runtime/metrics/hme-legendary-drift.json", {}) or {}
     if data.get("status") == "drift_detected":
         outs = ",".join(o.get("field", "") for o in (data.get("outliers") or [])[:3])
         print(f"drift={data.get('drift_score')} > {data.get('drift_threshold')} top_outliers=[{outs}]")
 
 
 def patterns_have_action_on_match() -> None:
-    data = _json("src/output/metrics/hme-pattern-matches.json", {}) or {}
+    data = _json("tools/HME/runtime/metrics/hme-pattern-matches.json", {}) or {}
     for match in data.get("matches") or []:
         if not match.get("action_summary") or not match.get("action_steps"):
             print(f"pattern matched without action: {match.get('id')}")
 
 
 def invariant_efficacy_not_flappy_excessive() -> None:
-    data = _json("src/output/metrics/hme-invariant-efficacy.json", {}) or {}
+    data = _json("tools/HME/runtime/metrics/hme-invariant-efficacy.json", {}) or {}
     flappy = (data.get("class_counts") or {}).get("flappy", 0)
     if flappy > 3:
         print(f"flappy count {flappy} > 3 (threshold); candidates: {data.get('retirement_candidates', [])}")
 
 
 def consensus_not_divergent() -> None:
-    data = _json("src/output/metrics/hme-consensus.json", {}) or {}
-    rows = _jsonl("src/output/metrics/hme-arc-timeseries.jsonl")
+    data = _json("tools/HME/runtime/metrics/hme-consensus.json", {}) or {}
+    rows = _jsonl("tools/HME/runtime/metrics/hme-arc-timeseries.jsonl")
     tail = rows[-2:] if len(rows) >= 2 else []
     cur_outs = sorted(o.get("voter", "") for o in data.get("outliers", []))
     persistent = len(tail) == 2 and len(cur_outs) > 0 and all(
@@ -157,7 +157,7 @@ def no_duplicate_output_dirs() -> None:
 
 
 def antagonism_registry_schema_valid() -> None:
-    data = _json("src/output/metrics/hme-suspected-upstreams.json", {}) or {}
+    data = _json("tools/HME/runtime/metrics/hme-suspected-upstreams.json", {}) or {}
     missing = [k for k in ("candidates", "confirmed", "refuted") if k not in data]
     if missing:
         print(f"missing registry bucket(s): {', '.join(missing)}")

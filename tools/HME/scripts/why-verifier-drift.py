@@ -88,7 +88,7 @@ def main(argv):
         print(f"No timeseries at {ts_path}")
         return 1
 
-    rows = load_jsonl_all("src/output/metrics/hme-coherence-timeseries.jsonl")
+    rows = load_jsonl_all("tools/HME/runtime/metrics/hme-coherence-timeseries.jsonl")
 
     if len(rows) < n_runs:
         n_runs = len(rows)

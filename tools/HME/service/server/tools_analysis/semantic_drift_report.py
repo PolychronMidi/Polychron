@@ -21,7 +21,7 @@ def semantic_drift_report() -> str:
     if not os.path.exists(path):
         return (
             "# KB Semantic Drift\n\n"
-            "src/output/metrics/hme-semantic-drift.json not found.\n"
+            "tools/HME/runtime/metrics/hme-semantic-drift.json not found.\n"
             "Run: python3 tools/HME/scripts/pipeline/hme/check-kb-semantic-drift.py\n"
             "(Bootstrap baselines first with capture-kb-signatures.py)"
         )

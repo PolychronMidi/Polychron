@@ -4,7 +4,7 @@
 Scans recent activity + hook-latency + detector stats for RECURRING
 patterns that could be formalized as new hooks, invariants, or
 detector rules. Emits proposals to
-`src/output/metrics/hme-self-improvement-proposals.jsonl` -- each proposal
+`tools/HME/runtime/metrics/hme-self-improvement-proposals.jsonl` -- each proposal
 is a JSON object the agent can read and decide whether to accept.
 
 Closing the bootstrapping loop: the system scans its own traces,

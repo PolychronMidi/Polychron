@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analyze src/output/metrics/detector-stats.jsonl -- surface dead phrase
+"""Analyze tools/HME/runtime/metrics/detector-stats.jsonl -- surface dead phrase
 lists, firing patterns, and coverage gaps in the stop-hook detectors.
 
 Each detector that writes telemetry (psycho_stop, early_stop, etc.)

@@ -2,7 +2,7 @@
 """Exploration-rate tuner -- generalizes `productive_incoherence` into a
 session-level exploration/exploitation balance signal.
 
-Inputs from src/output/metrics/hme-activity.jsonl:
+Inputs from tools/HME/runtime/metrics/hme-activity.jsonl:
   - file_written events:         total edits
   - productive_incoherence:      edits into KB-uncovered territory
   - coherence_violation (legacy, now disabled): was "lazy" edits
@@ -19,7 +19,7 @@ Meta-controller side: three regimes:
     capture findings; re-read KB for modules you've been editing.
 
 Written as a one-liner file so _safety.sh can `source` it or a hook can
-cat it cheaply. Full report at src/output/metrics/hme-exploration-rate.json.
+cat it cheaply. Full report at tools/HME/runtime/metrics/hme-exploration-rate.json.
 """
 from __future__ import annotations
 

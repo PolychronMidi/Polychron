@@ -24,7 +24,7 @@ fi
 
 _signal_emit turn_start userpromptsubmit turn '{}'
 
-# SatisfactionCapture: score the prompt 1-10 -> src/output/metrics/satisfaction.jsonl
+# SatisfactionCapture: score the prompt 1-10 -> tools/HME/runtime/metrics/satisfaction.jsonl
 # (neutral=5, never null). Best-effort; never blocks the turn.
 if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$PROMPT" ]; then
   PROJECT_ROOT="$PROJECT_ROOT" python3 "$PROJECT_ROOT/tools/HME/scripts/satisfaction_capture.py" "$PROMPT" 2>/dev/null || true  # silent-ok: optional fallback path.

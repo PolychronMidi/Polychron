@@ -21,10 +21,10 @@ def main(argv):
                            "hme-coherence-timeseries.jsonl")
     if not os.path.isfile(ts_path):
         print("# i/why mode=hci-drop")
-        print("No timeseries file at src/output/metrics/hme-coherence-timeseries.jsonl.")
+        print("No timeseries file at tools/HME/runtime/metrics/hme-coherence-timeseries.jsonl.")
         return 1
 
-    rows = load_jsonl_all("src/output/metrics/hme-coherence-timeseries.jsonl")
+    rows = load_jsonl_all("tools/HME/runtime/metrics/hme-coherence-timeseries.jsonl")
 
     if len(rows) < 2:
         print("# i/why mode=hci-drop")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rotate high-volume HME history files to keep them tractable.
 
-Without rotation, `src/output/metrics/hme-activity.jsonl` and similar
+Without rotation, `tools/HME/runtime/metrics/hme-activity.jsonl` and similar
 append-only JSONL grow unbounded. Every scan over them slows linearly.
 This script rotates files exceeding a size or line-count cap by:
 
@@ -33,10 +33,10 @@ from _common import PROJECT_ROOT
 
 
 POLICY = {
-    "src/output/metrics/hme-activity.jsonl":            5000,
-    "src/output/metrics/hme-coherence-timeseries.jsonl": 500,
-    "src/output/metrics/hme-fractal-history.jsonl":      200,
-    "src/output/metrics/hme-holograph-history.jsonl":    200,
+    "tools/HME/runtime/metrics/hme-activity.jsonl":            5000,
+    "tools/HME/runtime/metrics/hme-coherence-timeseries.jsonl": 500,
+    "tools/HME/runtime/metrics/hme-fractal-history.jsonl":      200,
+    "tools/HME/runtime/metrics/hme-holograph-history.jsonl":    200,
 }
 
 

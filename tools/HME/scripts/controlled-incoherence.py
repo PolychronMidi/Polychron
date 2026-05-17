@@ -18,7 +18,7 @@ This controller PERTURBS the system on demand:
     routes all types correctly.
 
 Use: invoke manually when HCI has been flat for N sessions. Each
-perturbation logs to `src/output/metrics/hme-controlled-incoherence.jsonl`
+perturbation logs to `tools/HME/runtime/metrics/hme-controlled-incoherence.jsonl`
 with:
   - timestamp
   - perturbation_type

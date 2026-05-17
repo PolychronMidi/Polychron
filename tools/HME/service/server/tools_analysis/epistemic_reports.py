@@ -40,7 +40,7 @@ def music_truth_report() -> str:
     if not data:
         return (
             "# HME Musical Ground Truth\n\n"
-            "src/output/metrics/hme-musical-correlation.json not found.\n"
+            "tools/HME/runtime/metrics/hme-musical-correlation.json not found.\n"
             "Runs automatically post-composition "
             "(`tools/HME/scripts/pipeline/hme/compute-musical-correlation.js`)."
         )
@@ -130,7 +130,7 @@ def kb_trust_report() -> str:
     if not data:
         return (
             "# KB Trust Weights\n\n"
-            "src/output/metrics/kb-trust-weights.json not found.\n"
+            "tools/HME/runtime/metrics/kb-trust-weights.json not found.\n"
             "Runs automatically post-composition "
             "(`tools/HME/scripts/pipeline/hme/compute-kb-trust-weights.py`)."
         )
@@ -170,7 +170,7 @@ def intention_gap_report() -> str:
     if not data:
         return (
             "# HME Intention-Execution Gap\n\n"
-            "src/output/metrics/hme-intention-gap.json not found.\n"
+            "tools/HME/runtime/metrics/hme-intention-gap.json not found.\n"
             "Runs automatically post-composition "
             "(`tools/HME/scripts/pipeline/hme/compute-intention-gap.js`)."
         )

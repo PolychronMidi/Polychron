@@ -19,7 +19,7 @@ Heuristics, in priority order:
   6. Neutral / unmatched -> 5
 
 Output: append one JSONL line per scored prompt to
-src/output/metrics/satisfaction.jsonl. Schema:
+tools/HME/runtime/metrics/satisfaction.jsonl. Schema:
   {ts, turn_index, score, signal_type, prompt_excerpt}
 
 Usage:

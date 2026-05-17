@@ -230,7 +230,7 @@ def crystallized_report() -> str:
     if not os.path.exists(path):
         return (
             "# Crystallized Patterns\n\n"
-            "src/output/metrics/hme-crystallized.json not found.\n"
+            "tools/HME/runtime/metrics/hme-crystallized.json not found.\n"
             "Run: `learn(action='crystallize')` or wait for next pipeline."
         )
     try:

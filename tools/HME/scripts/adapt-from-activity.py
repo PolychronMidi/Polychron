@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Activity-driven adaptation engine.
 
-Reads tools/HME/config/adaptation-rules.json and src/output/metrics/hme-activity.jsonl,
+Reads tools/HME/config/adaptation-rules.json and tools/HME/runtime/metrics/hme-activity.jsonl,
 evaluates each rule's trigger against the rule's recent-event window, and writes
 the rule's export into tmp/hme-adaptive-config.sh. Hooks source this file so
 behavior tightens or relaxes based on observed patterns instead of fixed defaults.

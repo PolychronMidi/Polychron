@@ -26,7 +26,7 @@ Verdicts:
   summary_missing        tier >= E3 AND no closing block detected
   summary_malformed      tier >= E3 AND block present but missing fields
 
-The detector reads tier from src/output/metrics/mode-classifier.jsonl
+The detector reads tier from tools/HME/runtime/metrics/mode-classifier.jsonl
 (latest line) or the SUMMARY_FORMAT_TIER env override (used by tests).
 
 Usage: summary_format.py <transcript_path>

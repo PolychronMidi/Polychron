@@ -186,7 +186,7 @@ def _budget_report() -> str:
     if not os.path.exists(path):
         return (
             "# Coherence Budget\n\n"
-            "src/output/metrics/hme-coherence-budget.json not found.\n"
+            "tools/HME/runtime/metrics/hme-coherence-budget.json not found.\n"
             "Run: node tools/HME/scripts/pipeline/hme/compute-coherence-budget.js"
         )
     try:

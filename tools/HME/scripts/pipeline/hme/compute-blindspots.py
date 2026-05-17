@@ -3,7 +3,7 @@
 
 The blindspots logic already exists in tools_analysis/blindspots.py but
 emits markdown for the status tool. This script computes the same data
-and writes JSON at src/output/metrics/hme-blindspots.json so the action
+and writes JSON at tools/HME/runtime/metrics/hme-blindspots.json so the action
 proposer (and any other consumer) has structured input.
 
 Schema (matches propose-next-actions.py's reader):

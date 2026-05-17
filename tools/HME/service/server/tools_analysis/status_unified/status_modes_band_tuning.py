@@ -25,7 +25,7 @@ logger = logging.getLogger("HME")
 def _mode_band_tuning():
     """Horizon IX seed -- chaordic band as a learned controllable.
 
-    Reads src/output/metrics/hme-ground-truth.jsonl (human verdicts with
+    Reads tools/HME/runtime/metrics/hme-ground-truth.jsonl (human verdicts with
     sentiment tags) and joins each verdict against the HCI timeseries
     at its timestamp. Computes the HCI distribution per sentiment
     bucket. Proposes new band bounds from the data: upper bound near
@@ -50,7 +50,7 @@ def _mode_band_tuning():
         except ImportError:
             _hint = "i/learn action=ground_truth"  # tool-form-ok: fallback
         return ("# i/status mode=band-tuning\n"
-                "No ground-truth log at src/output/metrics/hme-ground-truth.jsonl yet.\n"
+                "No ground-truth log at tools/HME/runtime/metrics/hme-ground-truth.jsonl yet.\n"
                 f"Add verdicts via `{_hint}` first.")
     if not _os.path.isfile(ts_path):
         return ("# i/status mode=band-tuning\n"

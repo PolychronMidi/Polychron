@@ -4,7 +4,7 @@ status by surfacing source + recent timeseries.
 
 Reads:
 - src/output/metrics/hci-verifier-snapshot.json (current status)
-- src/output/metrics/hme-coherence-timeseries.jsonl (last 3 runs of this verifier)
+- tools/HME/runtime/metrics/hme-coherence-timeseries.jsonl (last 3 runs of this verifier)
 - tools/HME/scripts/verify_coherence/*.py (the verifier's source)
 
 Output: status + score + last-3 results + first ~30 lines of the

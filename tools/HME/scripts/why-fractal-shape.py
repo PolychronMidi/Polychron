@@ -219,7 +219,7 @@ def _measure_policies_by_event() -> dict:
 
 def _append_history(scales: list[dict]) -> None:
     """Append a per-run snapshot of per-scale Gini values to
-    src/output/metrics/hme-fractal-history.jsonl. Enables `mode=fractal-shape
+    tools/HME/runtime/metrics/hme-fractal-history.jsonl. Enables `mode=fractal-shape
     history=true` to render the trend over time -- is the architecture
     becoming MORE or LESS tensegrity-shaped over rounds? Atomic write
     via temp+os.replace pattern (matches the project's data-integrity

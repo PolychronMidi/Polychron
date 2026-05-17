@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Per-turn reflection writer -- appends one structured line to
-src/output/metrics/reflections.jsonl summarising the turn just completed.
+tools/HME/runtime/metrics/reflections.jsonl summarising the turn just completed.
 
 Schema (every line):
     {

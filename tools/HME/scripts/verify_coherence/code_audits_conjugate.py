@@ -47,7 +47,7 @@ class ConjugateChannelVerifier(Verifier):
     musical-correlation row and FAILing when the system is in the
     'lost' quadrant (low HCI AND low perceptual). PASS when in any
     other quadrant. The `perceptual_complexity_avg` and `hme_coherence`
-    fields exist in `src/output/metrics/hme-musical-correlation.json`.
+    fields exist in `tools/HME/runtime/metrics/hme-musical-correlation.json`.
 
     This is the FIRST verifier whose status depends on the composition
     signal -- the conjugate channel previously was a passive view

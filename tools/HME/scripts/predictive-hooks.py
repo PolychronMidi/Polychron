@@ -11,7 +11,7 @@ passes" for hooks that fire on >95% benign inputs). Hooks with high
 predictability are candidates for retirement -- their signal is redundant
 with the trivial prior. Hooks with low predictability are load-bearing.
 
-Output: src/output/metrics/hme-hook-signal-value.json
+Output: tools/HME/runtime/metrics/hme-hook-signal-value.json
   {
     "<hook_name>": {
       "n": int,

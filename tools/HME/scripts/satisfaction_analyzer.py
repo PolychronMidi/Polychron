@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SatisfactionAnalyzer -- aggregator for satisfaction_capture.py output.
 
-Reads src/output/metrics/satisfaction.jsonl (one entry per turn, never null
+Reads tools/HME/runtime/metrics/satisfaction.jsonl (one entry per turn, never null
 per the PAI rule) and reports rolling-window trends:
 
   - mean / median over recent N turns

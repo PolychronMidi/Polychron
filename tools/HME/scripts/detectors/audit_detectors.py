@@ -6,7 +6,7 @@ detectors. This script closes the loop -- Rung 4 of the hypermeta ladder.
 
 Two modes:
 
-(1) DRIFT MODE (default): reads `src/output/metrics/detector-stats.jsonl` and
+(1) DRIFT MODE (default): reads `tools/HME/runtime/metrics/detector-stats.jsonl` and
     reports per-detector fire-rate, rescue-rate, drift, and notable signals.
 
 (2) CORPUS MODE (--corpus): runs each detector against an in-memory corpus

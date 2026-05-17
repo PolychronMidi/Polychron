@@ -166,7 +166,7 @@ def _mode_conjugate():
     mc_path = _os.path.join(_root, "src", "output", "metrics", "hme-musical-correlation.json")
     if not _os.path.isfile(mc_path):
         return ("# i/status mode=conjugate\n"
-                "No musical-correlation file at src/output/metrics/hme-musical-correlation.json")
+                "No musical-correlation file at tools/HME/runtime/metrics/hme-musical-correlation.json")
     try:
         with open(mc_path) as _f:
             mc = _json.load(_f)

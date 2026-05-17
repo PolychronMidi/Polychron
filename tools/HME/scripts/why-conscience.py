@@ -2,7 +2,7 @@
 """i/why mode=conscience -- Horizon VIII seed (architectural conscience).
 
 The user's verdicts ("legendary", "compelling", "surprising", "moving",
-"flat", "mechanical", ...) live in src/output/metrics/hme-ground-truth.jsonl.
+"flat", "mechanical", ...) live in tools/HME/runtime/metrics/hme-ground-truth.jsonl.
 This seed turns those verdicts into queryable patterns:
   - Which file paths were edited in approved rounds vs neutral ones?
   - Which verifier statuses were prevalent at the moment of approval?
@@ -71,7 +71,7 @@ def main(argv):
     verdicts = _load_verdicts()
     if not verdicts:
         print("# Architectural conscience (0 verdicts)")
-        print("No ground-truth verdicts at src/output/metrics/hme-ground-truth.jsonl")
+        print("No ground-truth verdicts at tools/HME/runtime/metrics/hme-ground-truth.jsonl")
         return 0
 
     # Bucket by sentiment

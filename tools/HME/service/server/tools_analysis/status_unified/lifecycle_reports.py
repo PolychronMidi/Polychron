@@ -170,7 +170,7 @@ def _trajectory_report() -> str:
     if not os.path.exists(path):
         return (
             "# Compositional Trajectory\n\n"
-            "src/output/metrics/hme-trajectory.json not found.\n"
+            "tools/HME/runtime/metrics/hme-trajectory.json not found.\n"
             "Run: node tools/HME/scripts/pipeline/hme/compute-compositional-trajectory.js"
         )
     try:

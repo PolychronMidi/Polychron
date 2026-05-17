@@ -17,7 +17,7 @@ This module is the Polychron-side scaffold:
   - fail-safe: any error path defaults to ALGORITHM E3 (under-escalation
     is the failure mode this system was built to prevent)
   - telemetry: every classification appended to
-    src/output/metrics/mode-classifier.jsonl with prompt excerpt + tier +
+    tools/HME/runtime/metrics/mode-classifier.jsonl with prompt excerpt + tier +
     reason + source + latency
 
 The heuristic baseline is intentionally simple -- pattern-match against

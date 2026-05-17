@@ -3,7 +3,7 @@
 
 Reads tools/HME/config/coherence-registry.json and checks each subsystem's
 declared artifacts exist (and are fresh where freshness is specified).
-Reports per-subsystem health. Writes src/output/metrics/hme-coherence-health.json
+Reports per-subsystem health. Writes tools/HME/runtime/metrics/hme-coherence-health.json
 so consumers (status tool, session banner) can surface coherence gaps.
 
 This is distinct from verify-coherence.py (the HCI verifier substrate) --

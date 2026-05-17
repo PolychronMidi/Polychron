@@ -5,7 +5,7 @@ patterns (depend on Polychron's particular architecture) from structurally
 general ones (would apply to any similar topological system).
 
 Output:
-  src/output/metrics/hme-generalizations.json -- machine-readable, per-pattern
+  tools/HME/runtime/metrics/hme-generalizations.json -- machine-readable, per-pattern
   scores + candidate list for status(mode=generalizations).
 
 Scoring fix: vocabulary is now built dynamically from three sources
