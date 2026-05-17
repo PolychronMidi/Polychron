@@ -37,6 +37,6 @@
     "test:hme:core": "node --test tools/HME/tests/specs/project_adapter_portability.test.js",
     "hme:project-health": "node tools/HME/scripts/project-health.js",
     "hme:portable": "python3 tools/HME/scripts/hme-doctor.py --portable",
-    "hme:swap-contract": "node --test tools/HME/tests/specs/project_adapter_portability.test.js tools/HME/tests/specs/root_dir_contract.test.js tools/HME/tests/specs/routing_ready_contract.test.js tools/HME/tests/specs/state_panel_freshness_contract.test.js && python3 tools/HME/scripts/hme-doctor.py --portable && python3 tools/HME/scripts/audit-portability.py && node src/scripts/pipeline/validators/check-root-only-dirs.js && python3 tools/HME/scripts/audit-hme-metric-paths.py && python3 tools/HME/scripts/audit-runtime-metric-orphans.py --strict"
+    "hme:swap-contract": "node --test tools/HME/tests/specs/project_adapter_portability.test.js tools/HME/tests/specs/root_dir_contract.test.js tools/HME/tests/specs/routing_ready_contract.test.js tools/HME/tests/specs/state_panel_freshness_contract.test.js tools/HME/tests/specs/structured_tool_contract.test.js && python3 tools/HME/scripts/hme-doctor.py --portable && python3 tools/HME/scripts/audit-portability.py && node src/scripts/pipeline/validators/check-root-only-dirs.js && python3 tools/HME/scripts/audit-hme-metric-paths.py && python3 tools/HME/scripts/audit-runtime-metric-orphans.py --strict"
   }
 }
