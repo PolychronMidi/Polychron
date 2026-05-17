@@ -60,6 +60,16 @@ function rewriteAgent(tool) {
   return changed;
 }
 
+function ensureTodoWrite(tools) {
+  if (tools.some((tool) => tool && tool.name === 'TodoWrite')) return false;
+  tools.push({
+    name: 'TodoWrite',
+    description: COMPACT.TodoWrite,
+    input_schema: JSON.parse(JSON.stringify(TODOWRITE_SCHEMA)),
+  });
+  return true;
+}
+
 module.exports = {
   name: 'compact_tool_descriptions',
   onRequest({ payload, ctx }) {
