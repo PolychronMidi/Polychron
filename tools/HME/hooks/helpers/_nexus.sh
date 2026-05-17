@@ -105,6 +105,13 @@ _nexus_prune_clean_edits() {
   fi
 }
 
+_nexus_worktree_dirty() {
+  [ -z "${PROJECT_ROOT:-}" ] && return 0
+  command -v git >/dev/null 2>&1 || return 0
+  [ -d "$PROJECT_ROOT/.git" ] || return 0
+  [ -n "$(git -C "$PROJECT_ROOT" status --porcelain 2>/dev/null)" ]
+}
+
 _nexus_pending() {
   _nexus_ensure
   local issues=""
@@ -118,7 +125,7 @@ _nexus_pending() {
   fi
   local verdict; verdict=$(_nexus_get PIPELINE)
   if [ "$verdict" = "STABLE" ] || [ "$verdict" = "EVOLVED" ]; then
-    if ! _nexus_has COMMIT; then
+    if ! _nexus_has COMMIT && _nexus_worktree_dirty; then
       issues="${issues}\n  - Pipeline passed ($verdict) but changes not committed"
     fi
   fi
