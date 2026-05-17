@@ -22,9 +22,9 @@ test('structured Grep skips missing path-list entries without aborting valid roo
 });
 
 test('sub-pipeline upstream failures do not write lifesaver errors', () => {
-  assert.match(proxy, /_pathLabel === 'sub-pipeline'/);
-  assert.match(proxy, /_suppressLifesaver = _coolingDown \|\| _pathLabel === 'sub-pipeline'/);
-  assert.match(proxy, /if \(_pathLabel === 'interactive'\) \{[\s\S]{0,160}const errLog/);
+  assert.match(proxy, /pathLabel = isInteractivePath \? 'interactive' : 'sub-pipeline'/);
+  assert.match(proxy, /suppressLifesaver = coolingDown \|\| pathLabel === 'sub-pipeline'/);
+  assert.match(proxy, /if \(!suppressLifesaver\) \{[\s\S]{0,160}const errLog/);
 });
 
 test('structured path parsing strips accidental trailing punctuation after miss', () => {
