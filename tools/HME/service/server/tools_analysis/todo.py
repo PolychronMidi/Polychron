@@ -228,8 +228,7 @@ def _format_todos_mermaid(todos: list) -> str:
 
 
 def _write_graph_file(todos: list) -> None:
-    """E8: render the mermaid graph to src/output/metrics/todo-graph.md on every save.
-    Gives the human a live view of the agent's current work tree."""
+    """Render the HME todo graph into HME runtime metrics."""
     graph = _format_todos_mermaid(todos)
     os.makedirs(os.path.dirname(_GRAPH_FILE), exist_ok=True)
     body = (
