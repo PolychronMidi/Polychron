@@ -164,7 +164,7 @@ def _mode_conjugate():
     import json as _json
     from .. import ctx as _ctx_mod
     _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
-    mc_path = _os.path.join(_root, hme_metric("hme-musical-correlation.json")
+    mc_path = hme_metric("hme-musical-correlation.json")
     if not _os.path.isfile(mc_path):
         return ("# i/status mode=conjugate\n"
                 "No musical-correlation file at tools/HME/runtime/metrics/hme-musical-correlation.json")

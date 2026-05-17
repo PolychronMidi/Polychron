@@ -76,7 +76,7 @@ def _mode_hme():
             pass  # silent-ok: best-effort fs op
 
     # Recent activity (last 15 events, run-length-collapsed)
-    activity_file = _os.path.join(_root, hme_metric("hme-activity.jsonl")
+    activity_file = hme_metric("hme-activity.jsonl")
     if _os.path.isfile(activity_file):
         try:
             with open(activity_file) as _f:

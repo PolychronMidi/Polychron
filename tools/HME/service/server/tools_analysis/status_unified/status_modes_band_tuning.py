@@ -41,8 +41,8 @@ def _mode_band_tuning():
     from .. import ctx as _ctx_mod
     _root = getattr(_ctx_mod, "PROJECT_ROOT", "") or "."
 
-    gt_path = _os.path.join(_root, hme_metric("hme-ground-truth.jsonl")
-    ts_path = _os.path.join(_root, hme_metric("hme-coherence-timeseries.jsonl")
+    gt_path = hme_metric("hme-ground-truth.jsonl")
+    ts_path = hme_metric("hme-coherence-timeseries.jsonl")
 
     if not _os.path.isfile(gt_path):
         try:
