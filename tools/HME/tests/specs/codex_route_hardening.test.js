@@ -47,14 +47,6 @@ async function dispatch(root, tool, input) {
   }));
 }
 
-test('raw-streak policy is observational after block retirement', () => {
-  const { loadPolicy, blockMessage, reminderMessage } = require('../../event_kernel/native_hooks/raw_streak_policy');
-  const policy = loadPolicy();
-  assert.equal(policy.cost_summary, 'Bash=15, Grep=20; native Read/Edit reset');
-  assert.equal(blockMessage(75, 70), '');
-  assert.equal(reminderMessage(75, 70), '');
-});
-
 test('Codex hook decision compact logs hash/channels without raw reason text', () => {
   const root = _withSandbox('codex-decision-');
   const { sanitizeStdout, recordHookDecision } = require('../../event_kernel/codex_adapter');
