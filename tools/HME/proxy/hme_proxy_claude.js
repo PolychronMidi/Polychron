@@ -41,7 +41,8 @@ const {
   _injectStopReminderSystem,
   _stopGateHealth,
 } = require('./hme_proxy_core');
-const { recordOmniRouteFailureAdvance, retryBlankOmniRouteResponse } = require('./hme_proxy_codex');
+const { recordOmniRouteFailureAdvance } = require('./hme_proxy_codex');
+const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 
 function createClaudeHandler(deps) {
   const {
@@ -660,199 +661,28 @@ function createClaudeHandler(deps) {
             delete outHeaders['content-length'];
           }
 
-          // EXHAUSTIVE RESPONSE DUMPER: complete bodies/headers/events per
-          // transaction. Rotates last 200; each dump self-contained.
-          try {
-            if (!isAnthropic) throw new Error('skip-non-anthropic');
-            const _bdPath = require('path');
-            const _bdFs = require('fs');
-            const { PROJECT_ROOT: _bdRoot } = require('./shared');
-            const _dumpDir = _bdPath.join(_bdRoot, 'tmp', 'blank-debug');
-            try { _bdFs.mkdirSync(_dumpDir, { recursive: true }); } catch (_e) { /* ignore */ }
-            // Rotate: keep newest 199 (about to write #200).
-            try {
-              const _existing = _bdFs.readdirSync(_dumpDir)
-                .filter((n) => n.startsWith('hme-resp-') && (n.endsWith('.json') || n.endsWith('.body')))
-                .map((n) => ({ n, t: _bdFs.statSync(_bdPath.join(_dumpDir, n)).mtimeMs }))
-                .sort((a, b) => b.t - a.t);
-              for (const { n } of _existing.slice(199 * 2)) {
-                try { _bdFs.unlinkSync(_bdPath.join(_dumpDir, n)); } catch (_e) { /* ignore */ }
-              }
-            } catch (_e) { /* ignore rotation errors */ }
-
-            const _isSse = (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
-            const _bodyStr = outBuf.toString('utf8');
-            let _textChars = 0;
-            let _textBlocks = 0;
-            let _thinkingChars = 0;
-            let _thinkingBlocks = 0;
-            let _toolUseBlocks = 0;
-            let _stopReason = null;
-            let _errorEventsSeen = [];
-            const _events = [];
-            if (_isSse) {
-              for (const evRaw of _bodyStr.split('\n\n')) {
-                if (!evRaw.trim()) continue;
-                let evName = '';
-                let evDataLines = [];
-                for (const line of evRaw.split('\n')) {
-                  if (line.startsWith('event: ')) evName = line.slice(7).trim();
-                  else if (line.startsWith('data: ')) evDataLines.push(line.slice(6));
-                }
-                const evDataStr = evDataLines.join('\n');
-                let evData = null;
-                try { evData = JSON.parse(evDataStr); } catch (_e) { /* skip non-JSON */ }
-                _events.push({ event: evName, data: evData });
-                try {
-                  const { reasoningTextFromData } = require('./reasoning_to_thinking');
-                  const _rt = reasoningTextFromData(evData);
-                  if (_rt) _thinkingChars += _rt.length;
-                } catch (_e) { /* diagnostics only */ }
-                if (evName === 'content_block_start' && evData && evData.content_block) {
-                  const t = evData.content_block.type;
-                  if (t === 'text') _textBlocks++;
-                  else if (t === 'thinking') _thinkingBlocks++;
-                  else if (t === 'tool_use') _toolUseBlocks++;
-                } else if (evName === 'content_block_delta' && evData && evData.delta) {
-                  if (evData.delta.type === 'text_delta' && typeof evData.delta.text === 'string') {
-                    _textChars += evData.delta.text.length;
-                  } else if (evData.delta.type === 'thinking_delta' && typeof evData.delta.thinking === 'string') {
-                    _thinkingChars += evData.delta.thinking.length;
-                  }
-                } else if (evName === 'message_delta' && evData && evData.delta && evData.delta.stop_reason) {
-                  _stopReason = evData.delta.stop_reason;
-                } else if (evName === 'error') {
-                  _errorEventsSeen.push(evData);
-                }
-              }
-            }
-            // Verdict: visible to user? text_chars>0 OR tool_use blocks present.
-            const _isBlank = _textChars === 0 && _toolUseBlocks === 0;
-            const _verdict = _isBlank ? 'BLANK' : 'OK';
-            console.error(`[hme-proxy] verdict=${_verdict} omni=${_isOmniRouteSwap} chain=${_swapChain.length} blank=${_isBlank} text=${_textChars} tools=${_toolUseBlocks}`);
-
-            const _blankRetry = await retryBlankOmniRouteResponse({
-              isBlank: _isBlank,
-              isOmniRouteSwap: _isOmniRouteSwap,
-              swapChain: _swapChain,
-              payload,
-              outStatus,
-              outBuf,
-              outHeaders,
-              projectRoot: _bdRoot,
-            });
-            if (_blankRetry) {
-              outStatus = _blankRetry.outStatus;
-              outBuf = _blankRetry.outBuf;
-              outHeaders = _blankRetry.outHeaders;
-            }
-
-            const _ts = new Date().toISOString().replace(/[:.]/g, '-');
-            const _path_label = _isInteractivePath ? 'interactive' : 'sub';
-            const _corrId = `${_ts}-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
-            const _dumpFile = _bdPath.join(_dumpDir, `hme-resp-${_corrId}-${_verdict}-${_path_label}.json`);
-            const _bodyFile = _bdPath.join(_dumpDir, `hme-resp-${_corrId}-${_verdict}-${_path_label}.body`);
-            const _reqBodyFile = _bdPath.join(_dumpDir, `hme-resp-${_corrId}-${_verdict}-${_path_label}.reqBody`);
-            // Filter env to relevant vars (avoid dumping secrets like OAuth
-            // tokens or API keys, but keep behaviour-influencing config).
-            const _envSnap = {};
-            for (const [k, v] of Object.entries(process.env)) {
-              if (/^(HME_|CLAUDE_CODE_|ANTHROPIC_(BASE_URL|MODEL|VERSION|BETA))/.test(k)) {
-                _envSnap[k] = v;
-              }
-            }
-            // Sanitize headers: scrub auth bearer / api-key but keep header
-            // PRESENCE (key-listed) so we can tell whether Claude Code sent
-            // auth at all.
-            const _sanitize = (h) => {
-              const out = {};
-              for (const [k, v] of Object.entries(h || {})) {
-                const lk = String(k).toLowerCase();
-                if (lk === 'authorization' || lk === 'x-api-key' || lk === 'cookie') {
-                  out[k] = typeof v === 'string'
-                    ? `<redacted len=${v.length} prefix=${v.slice(0, 12)}...>`
-                    : '<redacted>';
-                } else { out[k] = v; }
-              }
-              return out;
-            };
-            const _dump = {
-              ts: new Date().toISOString(),
-              corr_id: _corrId,
-              verdict: _verdict,
-              path_label: _path_label,
-              request: {
-                method: clientReq.method,
-                url: clientReq.url,
-                client_headers: _sanitize(clientReq.headers),
-                upstream_outgoing_headers: _sanitize(upstreamHeaders),
-                body_bytes: bodyBuf.length,
-                outBody_bytes: outBody.length,
-                proxy_mutated_body: outBody.length !== bodyBuf.length,
-                payload_summary: payload ? {
-                  model: payload.model,
-                  thinking: payload.thinking,
-                  output_config: payload.output_config,
-                  max_tokens: payload.max_tokens,
-                  stream: payload.stream,
-                  temperature: payload.temperature,
-                  messages_count: Array.isArray(payload.messages) ? payload.messages.length : 0,
-                  system_block_count: Array.isArray(payload.system) ? payload.system.length : (payload.system ? 1 : 0),
-                  system_total_chars: Array.isArray(payload.system)
-                    ? payload.system.reduce((acc, b) => acc + ((b && b.text) ? b.text.length : 0), 0)
-                    : (typeof payload.system === 'string' ? payload.system.length : 0),
-                  tools_count: Array.isArray(payload.tools) ? payload.tools.length : 0,
-                  betas: payload.betas,
-                  tool_choice: payload.tool_choice,
-                  metadata: payload.metadata,
-                } : null,
-              },
-              response: {
-                status: outStatus,
-                headers: outHeaders,
-                body_bytes: outBuf.length,
-                is_sse: _isSse,
-                had_continuation: !!final,
-                text_chars: _textChars,
-                thinking_chars: _thinkingChars,
-                text_blocks: _textBlocks,
-                thinking_blocks: _thinkingBlocks,
-                tool_use_blocks: _toolUseBlocks,
-                total_events: _events.length,
-                stop_reason: _stopReason,
-                error_events: _errorEventsSeen,
-              },
-              // Full parsed event log so we can see EXACTLY what came back,
-              // event-by-event. No truncation.
-              events: _events,
-              // Proxy state at the time of the response.
-              proxy_state: {
-                passthrough_mode: _passthrough,
-                consecutive_429s: getConsecutive429s(),
-                last_input_tokens_remaining: getLastInputTokensRemaining(),
-                last_input_tokens_limit: getLastInputTokensLimit(),
-                proxy_pid: process.pid,
-                proxy_uptime_s: Math.round(process.uptime()),
-              },
-              env_snapshot: _envSnap,
-            };
-            try {
-              // Write the structured JSON dump.
-              _bdFs.writeFileSync(_dumpFile, JSON.stringify(_dump, null, 2));
-              // Write FULL raw response body alongside (binary-safe). This
-              // is the unmodified bytes the client receives, so any encoding
-              // weirdness is preserved exactly. No size cap.
-              _bdFs.writeFileSync(_bodyFile, outBuf);
-              // Write FULL incoming request body too (post any proxy
-              // mutation -- this is what's about to be sent upstream OR was
-              // received from Claude Code, depending on outBody === bodyBuf).
-              _bdFs.writeFileSync(_reqBodyFile, outBody);
-              console.error(`dump ${_verdict}/${_path_label} status=${outStatus} sse=${_isSse} textC=${_textChars} thC=${_thinkingChars} blocks=${_textBlocks}t/${_thinkingBlocks}th/${_toolUseBlocks}tu stop=${_stopReason} bodyB=${outBuf.length} reqB=${outBody.length} -> ${_dumpFile}`);
-            } catch (_e) { console.error(`dump write failed: ${_e.message} stack=${_e.stack}`); }
-          } catch (_e) {
-            if (_e && _e.message === 'skip-non-anthropic') { /* expected */ }
-            else { console.error(`response-trace dumper threw: ${_e.message} stack=${_e.stack}`); }
-          }
+          const traced = await traceAnthropicResponse({
+            isAnthropic,
+            outStatus,
+            outHeaders,
+            outBuf,
+            clientReq,
+            upstreamHeaders,
+            bodyBuf,
+            outBody,
+            payload,
+            final,
+            passthrough: _passthrough,
+            isOmniRouteSwap: _isOmniRouteSwap,
+            swapChain: _swapChain,
+            isInteractivePath: _isInteractivePath,
+            getConsecutive429s,
+            getLastInputTokensRemaining,
+            getLastInputTokensLimit,
+          });
+          outStatus = traced.outStatus;
+          outHeaders = traced.outHeaders;
+          outBuf = traced.outBuf;
 
           // Strip content-length on ANY SSE-mutation path. SseTransform
           // changes byte count; stale CL stalls or truncates the client.
