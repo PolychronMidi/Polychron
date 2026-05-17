@@ -168,7 +168,6 @@ function createClaudeHandler(deps) {
       // the `if (payload && messages && !_passthrough)` block.
       const _sessionForTelemetry = (payload ? sessionKey(payload) : 'no-payload');
 
-      const _passthrough = isPassthroughMode();
 
       const mutation = await mutateClaudeRequest({
         payload,
