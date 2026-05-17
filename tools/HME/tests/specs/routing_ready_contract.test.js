@@ -15,6 +15,13 @@ test('routing health makes stale proxy sources actionable', () => {
   assert.match(source, /codex_proxy stale sources/);
 });
 
+test('Claude proxy binds dual-stack localhost', () => {
+  const proxySource = fs.readFileSync(path.join(repo, 'tools/HME/proxy/hme_proxy.js'), 'utf8');
+  assert.match(proxySource, /host: '\\:\\:'/);
+  assert.match(proxySource, /ipv6Only: false/);
+  assert.match(proxySource, /localhost\/:\/: compatibility/);
+});
+
 test('routing health clears resolved autocommit epoch errors', () => {
   const code = String.raw`
 from pathlib import Path
