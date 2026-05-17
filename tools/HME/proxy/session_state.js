@@ -158,6 +158,7 @@ module.exports = {
   update,
   recordPhase,
   recordWrite,
+  recordRead,
   recordDetectorOutcome,
   recordVerificationEvidence,
   recentVerificationEvidence,
