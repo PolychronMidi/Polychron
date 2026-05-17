@@ -387,7 +387,7 @@ module.exports = {
     const willDeny = FIRING_RULES.some(([f, val]) => v[f] === val);
     let firing = [];
     for (const [field, value, reasonKey] of FIRING_RULES) {
-      if (v[field] === value) firing.push({ name: reasonKey, reason: REASONS[reasonKey] });
+      if (v[field] === value) firing.push({ name: reasonKey || field, reason: REASONS[reasonKey] || REASONS[field] });
     }
     let transcriptPath = ctx.payload && ctx.payload.transcript_path;
     if (!transcriptPath) {
