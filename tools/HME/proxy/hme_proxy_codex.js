@@ -135,4 +135,4 @@ async function retryBlankOmniRouteResponse({
   return { outStatus, outBuf, outHeaders };
 }
 
-module.exports = { recordOmniRouteFailureAdvance, retryBlankOmniRouteResponse, upstreamModelId, chainSignature, isManualTopActive };
+module.exports = { recordOmniRouteFailureAdvance, retryBlankOmniRouteResponse, upstreamModelId, chainSignature, isManualTopActive, blankRetryDisabledReason };
