@@ -327,4 +327,14 @@ test('synthetic hooks manifest maps lifecycle through Claude adapter', () => {
   }
 });
 
+test('Claude SessionStart is explicit for startup/resume/clear/compact', () => {
+  const hooksPath = path.resolve(__dirname, '..', '..', 'hooks', 'hooks.json');
+  const data = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+  const entries = data.hooks.SessionStart || [];
+  assert.deepStrictEqual(entries.map((entry) => entry.matcher).sort(), ['clear', 'compact', 'resume', 'startup']);
+  for (const entry of entries) {
+    assert.match(JSON.stringify(entry.hooks), /event_kernel\/claude_adapter\.js SessionStart/);
+  }
+});
+
 
