@@ -4,20 +4,31 @@ const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
 
+function normalizePlan(raw) {
+  const plan = raw && typeof raw === 'object' ? raw : { threshold: raw };
+  const threshold = Number(plan.threshold == null ? 250000 : plan.threshold);
+  const maxTier = Number(plan.maxTier == null ? 4 : plan.maxTier);
+  return {
+    threshold: threshold === Infinity || Number.isFinite(threshold) ? threshold : 250000,
+    maxTier: Number.isFinite(maxTier) ? maxTier : 4,
+  };
+}
+
 function shrinkForPassthrough(payload, opts = {}) {
   const env = opts.env || process.env;
   const log = opts.log || console.error;
   const keepMin = Number(opts.keepMin || 10);
   const maxToolResultAge = Number(opts.maxToolResultAge == null ? 0 : opts.maxToolResultAge);
   const toolResultByteFloor = Number(opts.toolResultByteFloor || 15000);
-  const threshold = Number(typeof opts.effectiveThreshold === 'function' ? opts.effectiveThreshold() : opts.threshold || 250000);
   const projectRoot = opts.projectRoot || PROJECT_ROOT;
   if (env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
   if (!payload || !Array.isArray(payload.messages)) return 0;
+  const rawPlan = typeof opts.effectiveThreshold === 'function' ? opts.effectiveThreshold(payload) : opts.threshold || 250000;
+  const { threshold, maxTier } = normalizePlan(rawPlan);
   const msgs = payload.messages;
   if (msgs.length <= keepMin) return 0;
   let serialized = JSON.stringify(payload);
-  if (serialized.length <= threshold) return 0;
+  if (maxTier <= 0 || serialized.length <= threshold) return 0;
 
   const recentStart = maxToolResultAge > 0 ? Math.max(0, msgs.length - maxToolResultAge) : 0;
   let elided = 0;
