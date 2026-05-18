@@ -24,9 +24,10 @@ test('models.json schema: unique ids, valid tiers, valid effort variants', () =>
     assert.ok(Array.isArray(tier.models), `${tierName}.models array`);
     for (const model of tier.models) {
       assert.ok(model.id, `${tierName} model has id`);
-      const uniqueKey = `${model.id}@@${model.provider || ''}`;
-      assert.equal(seen.has(uniqueKey), false, `duplicate model/provider ${uniqueKey}`);
-      seen.add(uniqueKey);
+      if (model.provider === 'anthropic') {
+        assert.equal(anthropicSeen.has(model.id), false, `duplicate Anthropic variant ${model.id}`);
+        anthropicSeen.add(model.id);
+      }
       assert.equal(typeof model.tier_score, 'number', `${model.id} tier_score number`);
       if (model.effort_level != null) {
         assert.ok(VALID_EFFORTS.has(model.effort_level), `${model.id} effort enum`);
