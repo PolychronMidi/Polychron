@@ -80,7 +80,7 @@ function createContextBudget() {
   }
 
   function resolveModelCtx(modelId) {
-    // Budget is derived from context_length minus max_output_tokens.
+    // Budget prefers effective_context_length, then context minus output cap.
     const id = String(modelId || '');
     const reg = loadModelCtxRegistry();
     if (reg.has(id)) return reg.get(id);
