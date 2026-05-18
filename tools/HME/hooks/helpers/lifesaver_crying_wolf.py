@@ -12,7 +12,7 @@ from pathlib import Path
 OBSERVATION_RE = re.compile(r"\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b")
 SELF_TAG_RE = re.compile(
     r"^\[(?:_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|"
-    r"hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|"
+    r"hme-proxy|proxy-bridge|proxy-watchdog|hook-watchdog|proxy-supervisor|"
     r"llamacpp_supervisor|llamacpp_offload_invariant|"
     r"llamacpp_indexing_mode_resume|meta_observer|model_init|"
     r"rag_proxy\.project|startup_chain|worker_client|worker:[^\]]+)\]"

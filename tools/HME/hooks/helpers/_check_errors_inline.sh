@@ -36,7 +36,7 @@ _hme_check_errors_inline() {
   # Severity-based classifier (mirrors lifesaver.sh).
   local _OBS_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
   # Self-origin source tags -- same list as lifesaver.sh _SELF_TAG_RE.
-  local _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
+  local _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|hook-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
   local _CANARY_RE='\[CANARY-'
   local NEW_RAW AGENT_ERRORS SELF_ERRORS CANARY_LINES
   NEW_RAW=$(awk "NR > $WATERMARK" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
