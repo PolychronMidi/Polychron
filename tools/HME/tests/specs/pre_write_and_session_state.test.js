@@ -109,7 +109,7 @@ test('pre-write check denies malformed or display-redacted Edit input', async ()
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('pre-write denial names cause and blocks retry loops', async () => {
+test('pre-write rewrites long comment lines instead of denying', async () => {
   const root = _withSandbox('hme-pre-write-repeat-');
   const { preWriteCheck } = require('../../proxy/pre_write_check');
   const target = path.join(root, 'script.sh');
@@ -120,11 +120,10 @@ test('pre-write denial names cause and blocks retry loops', async () => {
     tool_input: { file_path: target, content },
   });
   const first = await preWriteCheck(payload);
-  assert.strictEqual(first.permissionDecision, 'deny');
-  assert.match(first.reason, /Offending line 1/);
-  assert.doesNotMatch(first.reason, /REPEATED DENIED EDIT/);
-  const second = await preWriteCheck(payload);
-  assert.match(second.reason, /REPEATED DENIED EDIT #2/);
+  assert.strictEqual(first.permissionDecision, 'allow');
+  assert.ok(first.updatedInput, 'rewrite should populate updatedInput');
+  assert.ok(first.updatedInput.content.length < content.length, 'content should be trimmed');
+  assert.match((first.contextualRules || []).join('\n'), /DDoC stripped: chars/);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
