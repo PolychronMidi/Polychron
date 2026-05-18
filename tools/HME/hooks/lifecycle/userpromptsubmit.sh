@@ -115,6 +115,10 @@ ERROR_LOG="$PROJECT/log/hme-errors.log"
 WATERMARK="$PROJECT/tools/HME/runtime/errors-lastread"
 TURNSTART="$PROJECT/tools/HME/runtime/errors-turnstart"
 
+# crying_wolf: consume stale self-health lines before emergency bannering.
+python3 "$PROJECT_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py" \
+  --mode self-only --reason userpromptsubmit --quiet >/dev/null 2>&1 || true
+
 mkdir -p "$PROJECT/tmp"
 
 if [ -f "$ERROR_LOG" ]; then
