@@ -139,10 +139,7 @@ def _positive_int(value) -> int:
     return n if n > 0 else 0
 
 
-def _effective_context_limit(meta: dict) -> int:
-    explicit = _positive_int(meta.get("effective_context_length"))
-    if explicit:
-        return explicit
+def _input_budget(meta: dict) -> int:
     ctx_limit = _positive_int(meta.get("context_length"))
     output_limit = _positive_int(meta.get("max_output_tokens"))
     if ctx_limit and output_limit and ctx_limit > output_limit:
@@ -152,7 +149,7 @@ def _effective_context_limit(meta: dict) -> int:
 
 def _context_limits_for(model_id: str) -> tuple[int, int | None]:
     meta = _resolve_model_meta(model_id)
-    ctx_limit = _effective_context_limit(meta)
+    ctx_limit = _input_budget(meta)
     output_limit = _positive_int(meta.get("max_output_tokens"))
     return (ctx_limit if ctx_limit > 0 else 128000, output_limit if output_limit > 0 else None)
 
