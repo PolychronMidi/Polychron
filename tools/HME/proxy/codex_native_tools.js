@@ -194,6 +194,13 @@ function rewriteSseEvent(raw, stats) {
   try { parsed = JSON.parse(text); } catch (_e) { return `${raw}\n\n`; }
   const rewritten = rewriteCodexResponseObject(parsed);
   stats.calls += rewritten.stats.calls;
+  if (rewritten.stats.unknown_calls) {
+    stats.unknown_calls = (stats.unknown_calls || 0) + rewritten.stats.unknown_calls;
+    stats.unknown_names = stats.unknown_names || [];
+    for (const n of rewritten.stats.unknown_names || []) {
+      if (stats.unknown_names.length < 16 && !stats.unknown_names.includes(n)) stats.unknown_names.push(n);
+    }
+  }
   return rewritten.stats.calls ? serializeSse(lines, rewritten.body) : `${raw}\n\n`;
 }
 
