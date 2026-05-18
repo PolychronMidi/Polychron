@@ -82,8 +82,9 @@
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; max effort variant.",
           "tier_score": 9,
-          "context_length": 200000,
-          "max_output_tokens": 128000
+          "context_length": 1000000,
+          "max_output_tokens": 128000,
+          "effective_context_length": 872000
         },
         {
           "id": "deepseek-v4-pro-go",
@@ -107,7 +108,8 @@
           "notes": "OpenCode Go subscription. Autonomous agent model at flat rate.",
           "tier_score": 4,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "deepseek-v4-pro",
@@ -131,7 +133,8 @@
           "notes": "Built for autonomous agents; 1M context, top agentic benchmarks.",
           "tier_score": 4,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "gpt-5.2",
@@ -143,7 +146,8 @@
           "notes": "General-purpose frontier reasoning.",
           "tier_score": 4,
           "context_length": 400000,
-          "max_output_tokens": 128000
+          "max_output_tokens": 128000,
+          "effective_context_length": 272000
         },
         {
           "id": "gpt-5.5-xhigh",
@@ -154,8 +158,9 @@
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Max reasoning effort, best for architecture/planning.",
           "tier_score": 8,
-          "context_length": 400000,
-          "max_output_tokens": 128000
+          "context_length": 1000000,
+          "max_output_tokens": 128000,
+          "effective_context_length": 272000
         },
         {
           "id": "gpt-5.5-high",
@@ -166,8 +171,9 @@
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. High reasoning effort.",
           "tier_score": 7,
-          "context_length": 400000,
-          "max_output_tokens": 128000
+          "context_length": 1000000,
+          "max_output_tokens": 128000,
+          "effective_context_length": 272000
         }
       ]
     },
@@ -186,8 +192,9 @@
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; xhigh effort variant.",
           "tier_score": 9,
-          "context_length": 200000,
-          "max_output_tokens": 128000
+          "context_length": 1000000,
+          "max_output_tokens": 128000,
+          "effective_context_length": 872000
         },
         {
           "id": "claude-opus-4-7-high-e4",
@@ -200,8 +207,9 @@
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; high effort variant.",
           "tier_score": 7,
-          "context_length": 200000,
-          "max_output_tokens": 128000
+          "context_length": 1000000,
+          "max_output_tokens": 128000,
+          "effective_context_length": 872000
         },
         {
           "id": "gpt-5.5-medium",
@@ -212,8 +220,9 @@
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Balanced reasoning effort.",
           "tier_score": 8,
-          "context_length": 400000,
-          "max_output_tokens": 128000
+          "context_length": 1000000,
+          "max_output_tokens": 128000,
+          "effective_context_length": 272000
         },
         {
           "id": "gpt-5.5-low",
@@ -224,8 +233,9 @@
           "cost_amt": 0,
           "notes": "ChatGPT Plus via Codex OAuth. Fast frontier for simpler tasks. 1M context.",
           "tier_score": 7,
-          "context_length": 400000,
-          "max_output_tokens": 128000
+          "context_length": 1000000,
+          "max_output_tokens": 128000,
+          "effective_context_length": 272000
         },
         {
           "id": "gpt-5.4",
@@ -237,7 +247,8 @@
           "notes": "ChatGPT Plus via Codex OAuth. Strong general-purpose coding.",
           "tier_score": 5,
           "context_length": 400000,
-          "max_output_tokens": 128000
+          "max_output_tokens": 128000,
+          "effective_context_length": 272000
         },
         {
           "id": "gemini-2.5-pro",
@@ -249,7 +260,8 @@
           "notes": "Cascade free tier. Strong multi-modal; solid coding and planning.",
           "tier_score": 6,
           "context_length": 1048576,
-          "max_output_tokens": 65536
+          "max_output_tokens": 65536,
+          "effective_context_length": 983040
         },
         {
           "id": "mistral-large-latest",
@@ -273,7 +285,8 @@
           "notes": "OpenRouter free tier. Gemini 2.5 Pro with 1M context.",
           "tier_score": 5,
           "context_length": 1048576,
-          "max_output_tokens": 65536
+          "max_output_tokens": 65536,
+          "effective_context_length": 983040
         },
         {
           "id": "llama-4-maverick",
@@ -285,7 +298,8 @@
           "notes": "OpenRouter free tier. Strong open-source reasoning model.",
           "tier_score": 4,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         },
         {
           "id": "glm-5.1-go",
@@ -309,7 +323,8 @@
           "notes": "OpenCode Go subscription. Agentic coding at flat rate.",
           "tier_score": 4,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "glm-5.1",
@@ -333,7 +348,8 @@
           "notes": "Superior needle-in-haystack at 1M tokens; rarely forgets context.",
           "tier_score": 7,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "minimax-m2.7",
@@ -357,7 +373,8 @@
           "notes": "Highly consistent for coding; excellent at complex system prompts.",
           "tier_score": 5,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "mimo-v2-pro",
@@ -369,7 +386,8 @@
           "notes": "Top agentic model; reliable for routine coding.",
           "tier_score": 3,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "llama-3.3-70b-versatile",
@@ -436,8 +454,9 @@
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; medium effort variant.",
           "tier_score": 9,
-          "context_length": 200000,
-          "max_output_tokens": 128000
+          "context_length": 1000000,
+          "max_output_tokens": 128000,
+          "effective_context_length": 872000
         },
         {
           "id": "claude-opus-4-7-low-e3",
@@ -450,8 +469,9 @@
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; low effort variant.",
           "tier_score": 7,
-          "context_length": 200000,
-          "max_output_tokens": 128000
+          "context_length": 1000000,
+          "max_output_tokens": 128000,
+          "effective_context_length": 872000
         },
         {
           "id": "claude-sonnet-4-6-max-e3",
@@ -465,7 +485,8 @@
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; max effort variant.",
           "tier_score": 6,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "claude-sonnet-4-6-xhigh-e3",
@@ -479,7 +500,8 @@
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; xhigh effort variant.",
           "tier_score": 5,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "gpt-5.3-codex",
@@ -491,7 +513,8 @@
           "notes": "ChatGPT Plus via Codex OAuth. Solid coding/review model.",
           "tier_score": 8,
           "context_length": 400000,
-          "max_output_tokens": 128000
+          "max_output_tokens": 128000,
+          "effective_context_length": 272000
         },
         {
           "id": "gpt-5.3-codex-spark",
@@ -503,7 +526,8 @@
           "notes": "ChatGPT Plus via Codex OAuth. Fast spark variant for quick iterations.",
           "tier_score": 8,
           "context_length": 400000,
-          "max_output_tokens": 128000
+          "max_output_tokens": 128000,
+          "effective_context_length": 272000
         },
         {
           "id": "gpt-5.4-mini",
@@ -515,7 +539,8 @@
           "notes": "ChatGPT Plus via Codex OAuth. Fast, lightweight.",
           "tier_score": 7,
           "context_length": 400000,
-          "max_output_tokens": 128000
+          "max_output_tokens": 128000,
+          "effective_context_length": 272000
         },
         {
           "id": "gpt-4o-mini",
@@ -527,7 +552,8 @@
           "notes": "OpenRouter free tier. GPT-4o mini, strong general-purpose.",
           "tier_score": 9,
           "context_length": 128000,
-          "max_output_tokens": 16384
+          "max_output_tokens": 16384,
+          "effective_context_length": 111616
         },
         {
           "id": "deepseek-v4-flash",
@@ -539,7 +565,8 @@
           "notes": "Gold standard for free models; punches above its weight in coding.",
           "tier_score": 8,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "codestral-latest",
@@ -575,7 +602,8 @@
           "notes": "Gemini free tier. Fast, strong tool-calling with 1M context.",
           "tier_score": 6,
           "context_length": 1048576,
-          "max_output_tokens": 65536
+          "max_output_tokens": 65536,
+          "effective_context_length": 983040
         },
         {
           "id": "deepseek-chat",
@@ -611,7 +639,8 @@
           "notes": "OpenCode Go subscription. Stable repo maintenance at flat rate.",
           "tier_score": 9,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "mimo-v2.5-go",
@@ -623,7 +652,8 @@
           "notes": "OpenCode Go subscription. General coding at flat rate.",
           "tier_score": 7,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "glm-5",
@@ -635,7 +665,8 @@
           "notes": "Stable for everyday repo maintenance and structured coding.",
           "tier_score": 7,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "mimo-v2.5",
@@ -647,7 +678,8 @@
           "notes": "Great for general coding tasks.",
           "tier_score": 6,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "minimax-m2.5",
@@ -659,7 +691,8 @@
           "notes": "Slightly less clever than M2.7; identical context handling.",
           "tier_score": 5,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "gemini-3-flash",
@@ -671,7 +704,8 @@
           "notes": "Exceptional speed and context; struggles with complex agentic loops.",
           "tier_score": 5,
           "context_length": 131072,
-          "max_output_tokens": 32768
+          "max_output_tokens": 32768,
+          "effective_context_length": 98304
         },
         {
           "id": "qwen3-32b",
@@ -715,7 +749,8 @@
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; high effort variant.",
           "tier_score": 8,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "claude-sonnet-4-6-medium-e2",
@@ -729,7 +764,8 @@
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; medium effort variant.",
           "tier_score": 7,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "claude-sonnet-4-6-low-e2",
@@ -743,7 +779,8 @@
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; low effort variant.",
           "tier_score": 6,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "claude-haiku-4-5-max-e2",
@@ -769,7 +806,8 @@
           "notes": "OpenRouter free tier. GPT-4o mini, fast and capable.",
           "tier_score": 7,
           "context_length": 128000,
-          "max_output_tokens": 16384
+          "max_output_tokens": 16384,
+          "effective_context_length": 111616
         },
         {
           "id": "nemotron-3-super",
@@ -781,7 +819,8 @@
           "notes": "Strong instruction following; less creative on debugging.",
           "tier_score": 6,
           "max_output_tokens": 32768,
-          "context_length": 262144
+          "context_length": 262144,
+          "effective_context_length": 229376
         },
         {
           "id": "gemini-2.0-flash",
@@ -793,7 +832,8 @@
           "notes": "Gemini free tier. Fast general-purpose with 1M context.",
           "tier_score": 8,
           "context_length": 1048576,
-          "max_output_tokens": 65536
+          "max_output_tokens": 65536,
+          "effective_context_length": 983040
         },
         {
           "id": "gemini-2.5-flash",
@@ -805,7 +845,8 @@
           "notes": "OpenRouter free tier. Gemini 2.5 Flash via OpenRouter.",
           "tier_score": 6,
           "context_length": 1048576,
-          "max_output_tokens": 65536
+          "max_output_tokens": 65536,
+          "effective_context_length": 983040
         },
         {
           "id": "mimo-v2-omni",
@@ -817,7 +858,8 @@
           "notes": "OpenCode Go subscription. Multi-modal optimized; 512K context.",
           "tier_score": 5,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "qwen3.5-plus",
@@ -829,7 +871,8 @@
           "notes": "Very cheap; notably less agentic than 3.6.",
           "tier_score": 5,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "llama3.1-8b",
@@ -897,7 +940,8 @@
           "notes": "Cascade free tier. Ultra-fast; log summarization and single-line edits.",
           "tier_score": 9,
           "context_length": 1048576,
-          "max_output_tokens": 65536
+          "max_output_tokens": 65536,
+          "effective_context_length": 983040
         },
         {
           "id": "big-pickle",
@@ -909,7 +953,8 @@
           "notes": "Large free context; reasoning inconsistent for complex codebases.",
           "tier_score": 4,
           "context_length": 200000,
-          "max_output_tokens": 128000
+          "max_output_tokens": 128000,
+          "effective_context_length": 72000
         },
         {
           "id": "ring-2.6-1t",
@@ -921,7 +966,8 @@
           "notes": "Basic script translation and data extraction only.",
           "tier_score": 3,
           "context_length": 262000,
-          "max_output_tokens": 66000
+          "max_output_tokens": 66000,
+          "effective_context_length": 196000
         },
         {
           "id": "gemini-2.5-flash-lite",
@@ -933,7 +979,8 @@
           "notes": "Gemini free tier. Lightweight with 1M context.",
           "tier_score": 9,
           "context_length": 1048576,
-          "max_output_tokens": 65536
+          "max_output_tokens": 65536,
+          "effective_context_length": 983040
         },
         {
           "id": "gpt-5.4-nano",
