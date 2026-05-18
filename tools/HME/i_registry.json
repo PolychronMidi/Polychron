@@ -160,7 +160,8 @@
         "multi-axis-band",
         "tool-latency",
         "codex-route",
-        "codex-proxy"
+        "codex-proxy",
+        "codex-unknown-calls"
       ],
       "examples": [
         "i/status",
@@ -171,6 +172,7 @@
         "i/status team summary",
         "i/status mode=coherence",
         "i/status codex-route",
+        "i/status codex-unknown-calls",
         "i/status mode=list"
       ],
       "safe_no_args": true
