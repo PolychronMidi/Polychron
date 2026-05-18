@@ -20,35 +20,22 @@
 // Sync script always applies catalog values first, then folds these in.
 {
   "by_id": {
-    // OmniRoute's bundled codex catalog only spreads the rich (1.05M ctx,
-    // 128K out) config onto the gpt-5.5-* effort variants. Every other Codex
-    // model falls through to provider defaults of (400K ctx, 8K out). The 8K
-    // output figure is a fallback sentinel, not OpenAI's true cap -- every
-    // canonical aggregator (azure/openai/openrouter/vercel/o‍pencode) reports
-    // max_output=128000 for the GPT-5.* generation.
-    "gpt-5.2":             { "max_output_tokens": 128000, "effective_context_length": 200000 },
-    "gpt-5.3-codex":       { "max_output_tokens": 128000, "effective_context_length": 200000 },
-    "gpt-5.3-codex-spark": { "max_output_tokens": 128000, "effective_context_length": 200000 },
-    "gpt-5.4":             { "max_output_tokens": 128000, "effective_context_length": 200000 },
-    "gpt-5.4-mini":        { "max_output_tokens": 128000, "effective_context_length": 200000 },
-    "gpt-5.4-nano":        { "max_output_tokens": 128000, "effective_context_length": 200000 },
+    // OmniRoute's bundled codex catalog emits an 8K output fallback for some
+    // GPT-5.* rows. Preserve catalog context; correct the output cap.
+    "gpt-5.2":             { "max_output_tokens": 128000 },
+    "gpt-5.3-codex":       { "max_output_tokens": 128000 },
+    "gpt-5.3-codex-spark": { "max_output_tokens": 128000 },
+    "gpt-5.4":             { "max_output_tokens": 128000 },
+    "gpt-5.4-mini":        { "max_output_tokens": 128000 },
+    "gpt-5.4-nano":        { "max_output_tokens": 128000 },
 
-    // GPT-5.5 family has correct catalog ctx/out; only the effective ceiling
-    // needs a separate value (Codex 1M-tier accepts the input, but coherence
-    // degrades past ~256K in practice).
-    "gpt-5.5-xhigh":       { "effective_context_length": 256000 },
-    "gpt-5.5-high":        { "effective_context_length": 256000 },
-    "gpt-5.5-medium":      { "effective_context_length": 256000 },
-    "gpt-5.5-low":         { "effective_context_length": 256000 }
+    // GitHub Copilot/POE expose the practical GPT-5.5 total window as 400K.
+    // Consumers derive the input budget as context_length - max_output_tokens.
+    "gpt-5.5-xhigh":       { "context_length": 400000, "max_input_tokens": 272000 },
+    "gpt-5.5-high":        { "context_length": 400000, "max_input_tokens": 272000 },
+    "gpt-5.5-medium":      { "context_length": 400000, "max_input_tokens": 272000 },
+    "gpt-5.5-low":         { "context_length": 400000, "max_input_tokens": 272000 }
   },
   "by_api_model": {
-    // Effective context windows for the Anthropic family. The catalog
-    // context_length is the API contract maximum (or 1M with the
-    // context-1m-2025-08-07 beta header for Sonnet); these pin the planning
-    // ceiling used by hme_proxy + synthesis_overdrive when long-context
-    // coherence is what we're actually rationing.
-    "claude-opus-4-7":     { "effective_context_length": 200000 },
-    "claude-sonnet-4-6":   { "effective_context_length": 200000 },
-    "claude-haiku-4-5":    { "effective_context_length": 200000 }
   }
 }
