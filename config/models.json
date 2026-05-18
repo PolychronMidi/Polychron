@@ -249,7 +249,7 @@
           "notes": "Cascade free tier. Strong multi-modal; solid coding and planning.",
           "tier_score": 6,
           "context_length": 1048576,
-          "max_output_tokens": 8192
+          "max_output_tokens": 65536
         },
         {
           "id": "mistral-large-latest",
@@ -273,7 +273,7 @@
           "notes": "OpenRouter free tier. Gemini 2.5 Pro with 1M context.",
           "tier_score": 5,
           "context_length": 1048576,
-          "max_output_tokens": 8192
+          "max_output_tokens": 65536
         },
         {
           "id": "llama-4-maverick",
@@ -575,7 +575,7 @@
           "notes": "Gemini free tier. Fast, strong tool-calling with 1M context.",
           "tier_score": 6,
           "context_length": 1048576,
-          "max_output_tokens": 8192
+          "max_output_tokens": 65536
         },
         {
           "id": "deepseek-chat",
@@ -805,7 +805,7 @@
           "notes": "OpenRouter free tier. Gemini 2.5 Flash via OpenRouter.",
           "tier_score": 6,
           "context_length": 1048576,
-          "max_output_tokens": 8192
+          "max_output_tokens": 65536
         },
         {
           "id": "mimo-v2-omni",
@@ -897,7 +897,7 @@
           "notes": "Cascade free tier. Ultra-fast; log summarization and single-line edits.",
           "tier_score": 9,
           "context_length": 1048576,
-          "max_output_tokens": 8192
+          "max_output_tokens": 65536
         },
         {
           "id": "big-pickle",
@@ -933,7 +933,7 @@
           "notes": "Gemini free tier. Lightweight with 1M context.",
           "tier_score": 9,
           "context_length": 1048576,
-          "max_output_tokens": 8192
+          "max_output_tokens": 65536
         },
         {
           "id": "gpt-5.4-nano",
