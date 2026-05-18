@@ -30,15 +30,27 @@ module.exports = {
   description: 'Rewrite Write content containing comment-ellipsis stub placeholders.',
   category: 'security',
   defaultEnabled: true,
-  match: { events: ['PreToolUse'], tools: ['Write'] },
+  match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {
     const ti = ctx.toolInput || {};
-    const content = typeof ti.content === 'string' ? ti.content : '';
-    if (!content) return ctx.allow();
-    const hit = _scanAndStrip(content);
+    let payload = typeof ti.content === 'string' ? ti.content : (typeof ti.new_string === 'string' ? ti.new_string : '');
+    if (!payload && Array.isArray(ti.edits)) {
+      payload = ti.edits.map((e) => (e && e.new_string) || '').join('\n');
+    }
+    if (!payload) return ctx.allow();
+    const hit = _scanAndStrip(payload);
     if (!hit) return ctx.allow();
-    const updated = { ...ti, content: hit.content };
+    const updated = { ...ti };
+    if ('content' in ti && typeof ti.content === 'string') updated.content = hit.content;
+    if ('new_string' in ti && typeof ti.new_string === 'string') updated.new_string = hit.content;
+    if (Array.isArray(ti.edits)) {
+      updated.edits = ti.edits.map((e) => {
+        if (!e || typeof e.new_string !== 'string') return e;
+        const sub = _scanAndStrip(e.new_string);
+        return sub ? { ...e, new_string: sub.content } : e;
+      });
+    }
     return ctx.rewrite(updated, `DDoC stripped: ellipsis stub - lines [${hit.removed.join(',')}] removed; if elision intended, write COMPLETE file or use Edit`);
   },
 };
