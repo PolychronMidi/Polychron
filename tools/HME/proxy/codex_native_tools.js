@@ -3,6 +3,7 @@
 const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
 const { evaluateReadInput } = require('./read_policy');
 const { replaceToolsWithUniform, uniformToolList } = require('./codex_uniform_tools');
+const { isInvalidEditInput, editToReadFallback } = require('./edit_validation');
 
 const BRIDGE = 'node tools/HME/scripts/codex_structured_tool.js';
 const TARGET_TOOL = 'exec_command';
