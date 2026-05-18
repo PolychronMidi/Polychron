@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect current repo-owned search/web fallback surfaces
 
 ## Next
 
-(empty)
+- [ ] [E3] Add regression coverage
+- [ ] [E3] Patch guard against repeated failed web-search retries
+- [ ] [E3] Verify and report exact boundary
 
 ## Done
 
