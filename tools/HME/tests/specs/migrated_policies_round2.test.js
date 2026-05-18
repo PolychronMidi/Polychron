@@ -10,7 +10,7 @@ const registry = require('../../policies/registry');
 function _ctx(overrides = {}) {
   return {
     toolInput: {},
-    deny: registry.deny, instruct: registry.instruct, allow: registry.allow,
+    deny: registry.deny, instruct: registry.instruct, allow: registry.allow, rewrite: registry.rewrite,
     ...overrides,
   };
 }
