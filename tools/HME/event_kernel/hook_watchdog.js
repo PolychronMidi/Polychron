@@ -207,6 +207,7 @@ function userPromptAlert(root, body) {
       `[ALERT] Previous SessionStart exited ${latest.exit_code} before this prompt.\nSession: ${sid}`);
   }
   if (!success && !latest && !activity) {
+    if (_recentSessionStartSuccess(state, now)) return '';
     return _markAlerted(root, state, `missing:${sid}`,
       `[ALERT] UserPromptSubmit fired before successful SessionStart.\nSession: ${sid}`);
   }
