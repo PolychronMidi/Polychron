@@ -14,6 +14,29 @@
 // sees HME tool_uses (the proxy handles dispatch internally and strips them
 // from the response before forwarding). No restoration needed.
 
+
+const DROP_TOOL_USE_NAMES = new Set(['TodoWrite']);
+
+function dropToolUseRewrite(eventName, data, ctx) {
+  let drops = ctx.get('drop_tool_use_indices');
+  if (!drops) { drops = new Set(); ctx.set('drop_tool_use_indices', drops); }
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') {
+    if (DROP_TOOL_USE_NAMES.has(data.content_block.name)) {
+      drops.add(data.index);
+      return null;
+    }
+    return data;
+  }
+  if (data && drops.has(data.index)) {
+    if (eventName === 'content_block_stop') drops.delete(data.index);
+    return null;
+  }
+  if (eventName === 'message_delta' && data && data.delta && data.delta.stop_reason === 'tool_use' && drops.size === 0) {
+    data = { ...data, delta: { ...data.delta, stop_reason: 'end_turn' } };
+  }
+  return data;
+}
+
 // Bash run_in_background -> /hme/spawn; avoids task-notification spam.
 
 const { serviceUrl } = require('./service_registry');
@@ -933,6 +956,7 @@ function soloRationaleTrimRewrite(eventName, data, ctx) {
 }
 
 module.exports = {
+  dropToolUseRewrite,
   readInputNormalizeRewrite,
   bashPolicyRewrite,
   runInBackgroundRewrite,
