@@ -8,6 +8,14 @@ source "${_HME_HELPERS_DIR}/_onboarding.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
+# rationale: petulance pre-gate runs BEFORE policy block so the policy's
+# rationale: allow-and-exit short-circuit doesn't bypass no-op spiral detection.
+set +u +e
+source "${SCRIPT_DIR}/bash/noop_petulance.sh"
+_npg_rc=$?
+set -u -e
+[ "$_npg_rc" = "0" ] || exit "$_npg_rc"
+
 _POLICY_OUT=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const p=require(process.env.PROJECT_ROOT + '/tools/HME/proxy/bash_command_policy'); const raw=JSON.parse(fs.readFileSync(0,'utf8')||'{}'); const out=p.toHookResponse(p.evaluateBashInput(raw.tool_input||{}, {projectRoot:process.env.PROJECT_ROOT, supportsRunInBackground:(raw._hme_host==='claude'||(raw.tool_input&&raw.tool_input.run_in_background===true))})); if(out) process.stdout.write(out);" 2>/dev/null || true)
 if [ -n "$_POLICY_OUT" ]; then
   case "$_POLICY_OUT" in
