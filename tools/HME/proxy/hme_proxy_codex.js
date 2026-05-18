@@ -1,22 +1,17 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
 const http = require('http');
 const { servicePort } = require('./service_registry');
 const { omniProviderForConfigProvider, omniTargetFormat } = require('./omniroute_protocol');
+const swapStore = require('./swap_state_store');
+const { chainSignature } = swapStore;
+// rationale: single source-of-truth lives in overdrive_route.js; re-export here.
+const { isManualTopActive } = require('./overdrive_route');
 
 function upstreamModelId(model) {
   const raw = model && (model.api_model || model.id || model);
   return String(raw || '').endsWith('-go') ? String(raw).slice(0, -3) : String(raw || '');
 }
-
-function chainSignature(chain) {
-  return (chain || []).map((m) => `${m.provider || ''}:${m.api_model || m.id || ''}`).join('|');
-}
-
-// rationale: single source-of-truth lives in overdrive_route.js; re-export here.
-const { isManualTopActive } = require('./overdrive_route');
 
 function recordOmniRouteFailureAdvance({
   isOmniRouteSwap,
