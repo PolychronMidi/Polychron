@@ -421,6 +421,20 @@
       "outage_link": null
     },
     {
+      "name": "flabbergasted_by_autocommit",
+      "module": "spiralling_petulance",
+      "fires_when": "flabbergasted_by_autocommit",
+      "bash_var": "SPIRALLING_PETULANCE",
+      "deny": true,
+      "reason_key": "FLABBERGASTED_BY_AUTOCOMMIT",
+      "category": "universal",
+      "scope": "transcript",
+      "owning_invariant": "universal agent-work hygiene",
+      "fixture_path": "tools/HME/scripts/detectors/test_detector_chain.py",
+      "why": "Blocks repeated clean git status/diff/log probing after autocommit already consumed the diff.",
+      "outage_link": null
+    },
+    {
       "name": "boyscout_clean",
       "module": "boyscout_clean",
       "fires_when": "comment_bloat",
