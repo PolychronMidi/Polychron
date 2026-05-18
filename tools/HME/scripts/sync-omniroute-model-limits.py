@@ -299,10 +299,7 @@ def sync(
                 continue
             hit = next((idx[c] for c in _candidates(model) if c in idx), None)
             limits = _desired_limits(model, hit, overrides)
-            retire_keys = RETIRED_KEYS
-            if "effective_context_length" not in limits:
-                retire_keys = RETIRED_KEYS + ("effective_context_length",)
-            new_text, notes = patch_text(text, mid, limits, retire_keys=retire_keys)
+            new_text, notes = patch_text(text, mid, limits, retire_keys=RETIRED_KEYS)
             if not notes:
                 continue
             changed_models += 1
