@@ -190,6 +190,7 @@ module.exports = {
   deny,
   instruct,
   allow,
+  rewrite,
   PROJECT_ROOT,
   BUILTIN_DIR,
 };
