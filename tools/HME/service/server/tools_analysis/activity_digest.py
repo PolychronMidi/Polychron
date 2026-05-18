@@ -89,11 +89,6 @@ def activity_digest(window: str = "round") -> str:
     # Coherence violations
     violations = [e for e in events if e.get("event") == "coherence_violation"]
 
-    # File writes with hme_read_prior flag
-    writes = [e for e in events if e.get("event") == "file_written"]
-    writes_with_read = sum(1 for w in writes if w.get("hme_read_prior") is True)
-    writes_without_read = len(writes) - writes_with_read
-
     # Pipeline runs in window
     pipelines = [e for e in events if e.get("event") == "pipeline_run"]
 
