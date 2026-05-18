@@ -52,29 +52,29 @@ function modelTier(modelId) {
   return 'E5';
 }
 
-function providerKey(provider) {
-  return omniProviderForConfigProvider(provider).replace(/_/g, '-');
+function providerKey(provider, env = process.env) {
+  return omniProviderForConfigProvider(provider, env).replace(/_/g, '-');
 }
 
-function providerSkipSet(cfg) {
+function providerSkipSet(cfg, env = process.env) {
   const raw = cfg && cfg.providers_to_skip && Array.isArray(cfg.providers_to_skip.providers)
     ? cfg.providers_to_skip.providers : [];
-  return new Set(raw.map(providerKey));
+  return new Set(raw.map((provider) => providerKey(provider, env)));
 }
 
 function hasOmniCredential(model, env = process.env) {
-  const provider = providerKey(model && model.provider);
+  const provider = providerKey(model && model.provider, env);
   if (provider === 'anthropic') return !!env.ANTHROPIC_API_KEY || env.HME_OMNIROUTE_TRUST_STORED_CREDS === '1';
   return true;
 }
 
 function availableModel(model, skipSet, env = process.env) {
   if (!model) return false;
-  return !skipSet.has(providerKey(model.provider)) && hasOmniCredential(model, env);
+  return !skipSet.has(providerKey(model.provider, env)) && hasOmniCredential(model, env);
 }
 
 function rankedForTier(cfg, tier, env = process.env) {
-  const skipSet = providerSkipSet(cfg);
+  const skipSet = providerSkipSet(cfg, env);
   const models = ((cfg.tiers && cfg.tiers[tier] && cfg.tiers[tier].models) || [])
     .filter((m) => availableModel(m, skipSet, env));
   const costOrder = (cfg.ranking_rules && cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
@@ -90,7 +90,7 @@ function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
   const spec = key && cfg.team_role_models ? cfg.team_role_models[key] : null;
   const specTier = spec && spec.tier === 'role' ? tier : ((spec && spec.tier) || tier);
   const base = rankedForTier(cfg, specTier, env);
-  const skipSet = providerSkipSet(cfg);
+  const skipSet = providerSkipSet(cfg, env);
   let front = [];
   if (spec && spec.source === 'manually_toprank') front = (cfg.manually_toprank && cfg.manually_toprank[specTier]) || [];
   const frontSet = new Set(front);
@@ -154,7 +154,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   if (result.swapChain.length > 0) {
     const idx = selectedIndex(result.swapChain, projectRoot);
     result.swapModel = upstreamModelId(result.swapChain[idx]);
-    result.omniProvider = omniProviderForConfigProvider(result.swapChain[idx].provider || '');
+    result.omniProvider = omniProviderForConfigProvider(result.swapChain[idx].provider || '', env);
     result.swapMeta = result.swapChain[idx];
   }
   result.swapModel = upstreamModelId(result.swapModel);
@@ -197,7 +197,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     }
     console.error(`[hme-proxy] MODE=1 legacy: skipping Codex responses target ${result.omniProvider}/${result.swapModel}; chat translator requires non-Codex target`);
     result.swapModel = upstreamModelId(legacy.model);
-    result.omniProvider = omniProviderForConfigProvider(legacy.model.provider || '');
+    result.omniProvider = omniProviderForConfigProvider(legacy.model.provider || '', env);
     result.swapMeta = legacy.model;
   }
   applyEffortParams(payload, result.swapMeta, result.omniProvider);
