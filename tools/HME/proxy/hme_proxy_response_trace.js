@@ -66,6 +66,51 @@ function _sseStats(bodyStr) {
   return { events, textChars, textBlocks, thinkingChars, thinkingBlocks, toolUseBlocks, stopReason, errorEventsSeen };
 }
 
+function _jsonStats(bodyStr) {
+  const stats = {
+    events: [],
+    textChars: 0,
+    textBlocks: 0,
+    thinkingChars: 0,
+    thinkingBlocks: 0,
+    toolUseBlocks: 0,
+    stopReason: null,
+    errorEventsSeen: [],
+  };
+  let data = null;
+  try { data = JSON.parse(String(bodyStr || '')); } catch (_e) { return stats; }
+  if (!data || typeof data !== 'object') return stats;
+
+  if (data.error) stats.errorEventsSeen.push(data.error);
+  if (data.stop_reason) stats.stopReason = data.stop_reason;
+  if (typeof data.completion === 'string' && data.completion.trim() !== '(empty response)') {
+    stats.textBlocks++;
+    stats.textChars += data.completion.length;
+  }
+  if (typeof data.content === 'string' && data.content.trim() !== '(empty response)') {
+    stats.textBlocks++;
+    stats.textChars += data.content.length;
+  }
+
+  const blocks = Array.isArray(data.content) ? data.content : [];
+  for (const block of blocks) {
+    if (!block || typeof block !== 'object') continue;
+    const type = String(block.type || '');
+    if (type === 'text') {
+      stats.textBlocks++;
+      if (typeof block.text === 'string' && block.text.trim() !== '(empty response)') {
+        stats.textChars += block.text.length;
+      }
+    } else if (type === 'thinking') {
+      stats.thinkingBlocks++;
+      if (typeof block.thinking === 'string') stats.thinkingChars += block.thinking.length;
+    } else if (type === 'tool_use' || type === 'server_tool_use') {
+      stats.toolUseBlocks++;
+    }
+  }
+  return stats;
+}
+
 async function traceAnthropicResponse({
   isAnthropic,
   outStatus,
