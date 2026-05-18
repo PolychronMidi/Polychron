@@ -94,7 +94,7 @@ print(json.dumps({"result": sr.call(prompt="test", tier="E3"), "captured": captu
   const a = JSON.parse(active.stdout.trim().split('\n').pop());
   assert.equal(a.result, 'ok');
   assert.deepEqual(a.captured.head, EXPECTED_E5_HEAD);
-  assert.equal(a.captured.allow_subagent, false);
+  assert.equal(a.captured.allow_subagent, true);
   assert.equal(a.source, 'overdrive/mode1');
 
   const off = run({ OVERDRIVE_MODE: '0' }, `
