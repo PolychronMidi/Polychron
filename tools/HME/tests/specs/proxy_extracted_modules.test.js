@@ -67,7 +67,7 @@ test('Anthropic registry variants route with api_model instead of registry id', 
   assert.equal(upstreamModelId({ id: 'deepseek-v4-pro-go' }), 'deepseek-v4-pro');
 });
 
-test('mode 1 chain skips configured providers and Anthropic without OmniRoute key', () => {
+test('mode 1 chain skips configured providers and keeps Anthropic top', () => {
   const cfg = {
     providers_to_skip: { providers: ['opencode_go'] },
     ranking_rules: { cost_order: ['subscription', 'free'] },
@@ -79,12 +79,30 @@ test('mode 1 chain skips configured providers and Anthropic without OmniRoute ke
       { id: 'codex-ok', provider: 'codex', cost: 'free', tier_score: 1 },
     ] } },
   };
-  const payload = { model: 'claude-opus-4-7', messages: [] };
-  const noKey = buildMode1Chain(payload, { HME_TEAM_ROLE: 'driver' }, cfg);
-  assert.deepEqual(noKey.chain.map((m) => m.id), ['codex-ok']);
-  const withKey = buildMode1Chain(payload, { HME_TEAM_ROLE: 'driver', ANTHROPIC_API_KEY: 'fake' }, cfg);
-  assert.deepEqual(withKey.chain.map((m) => m.id), ['anthropic-top', 'codex-ok']);
+  const result = buildMode1Chain({ model: 'claude-opus-4-7', messages: [] }, { HME_TEAM_ROLE: 'driver' }, cfg);
+  assert.deepEqual(result.chain.map((m) => m.id), ['anthropic-top', 'codex-ok']);
 });
+
+test('mode 1 Anthropic registry uses Claude OAuth provider without API key', () => quiet(() => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-claude-oauth-'));
+  try {
+    const payload = { model: 'claude-opus-4-7', stream: false, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    const result = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes: fakeClientRes(),
+      outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {},
+      stripClaudeIdentity: () => {},
+      shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
+      projectRoot: tmp,
+    });
+    assert.equal(result.applied, true);
+    assert.match(payload.model, /^claude\/claude-opus-4-7/);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}));
 
 test('mode 1 OmniRoute path applies Anthropic effort params when provider is not overridden', () => quiet(() => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-effort-'));
