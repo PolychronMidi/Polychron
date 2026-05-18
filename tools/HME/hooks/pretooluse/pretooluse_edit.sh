@@ -336,7 +336,6 @@ if [ -n "$_MODULE_BASE" ] && [ -n "${PROJECT_ROOT:-}" ]; then
   echo "$_MODULE_BASE" >> "$_TURN_EDIT_STATE"
 fi
 
-_streak_tick 10
-if ! _streak_check; then exit 1; fi
+# streak helpers removed 2026-05-17 (5f0b98ef8); call sites pruned.
 [ -n "$_AUTO_BRIEF_JSON" ] && printf '%s\n' "$_AUTO_BRIEF_JSON"
 exit 0
