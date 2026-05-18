@@ -128,7 +128,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   console.error(`[hme-proxy] MODE=1 ${chainInfo.tier} chain built (role=${chainInfo.role || 'none'} model=${payload.model}): ${result.swapChain.map((m) => m.id).join(' -> ')} (${result.swapChain.length} models)`);
   if (result.swapChain.length > 0) {
     const idx = selectedIndex(result.swapChain, projectRoot);
-    result.swapModel = result.swapChain[idx].id;
+    result.swapModel = upstreamModelId(result.swapChain[idx]);
     result.omniProvider = omniProviderForConfigProvider(result.swapChain[idx].provider || '');
   }
   result.swapModel = stripGo(result.swapModel);
