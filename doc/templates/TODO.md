@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect local model ranking and routing
 
 ## Next
 
-(empty)
+- [ ] [E3] Run focused verification
+- [ ] [E3] Verify current Sonnet context metadata
+- [ ] [E3] Patch config/routing mismatch
 
 ## Done
 

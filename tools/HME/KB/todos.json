@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3619,
-      "updated_ts": 1779069890.6519346,
-      "codex_plan_synced_ts": 1779069890.6518116,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-      "codex_plan_ts": "2026-05-18T02:04:46.983Z"
+      "max_id": 3622,
+      "updated_ts": 1779070919.7469199,
+      "codex_plan_synced_ts": 1779070919.7467964,
+      "codex_plan_source": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+      "codex_plan_ts": "2026-05-18T02:21:59.294Z"
     }
   },
   {
@@ -1710,8 +1710,8 @@
     "id": 3151,
     "text": "Run focused verification",
     "activeForm": "Run focused verification",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1719,8 +1719,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-    "codex_plan_ts": "2026-05-18T02:04:46.983Z"
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:21:59.294Z"
   },
   {
     "id": 3152,
@@ -9424,5 +9424,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
     "codex_plan_ts": "2026-05-18T02:04:46.983Z"
+  },
+  {
+    "id": 3620,
+    "text": "Inspect local model ranking and routing",
+    "activeForm": "Inspect local model ranking and routing",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779070919.7456737,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:21:59.294Z"
+  },
+  {
+    "id": 3621,
+    "text": "Verify current Sonnet context metadata",
+    "activeForm": "Verify current Sonnet context metadata",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779070919.7456796,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:21:59.294Z"
+  },
+  {
+    "id": 3622,
+    "text": "Patch config/routing mismatch",
+    "activeForm": "Patch config/routing mismatch",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779070919.745683,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:21:59.294Z"
   }
 ]
