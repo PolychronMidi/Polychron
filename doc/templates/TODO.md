@@ -4,16 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Add/adjust regression tests
 
 ## Next
 
-(empty)
+- [ ] [E3] Run focused checks and restart proxy
 
 ## Done
-
-- [x] [E3] Add/adjust regression tests
-- [x] [E3] Run focused checks and restart proxy
 
 - [x] [E3] Prove Codex update_plan bypasses TodoWrite
 - [x] [E3] Add Codex plan-to-TODO sync bridge
