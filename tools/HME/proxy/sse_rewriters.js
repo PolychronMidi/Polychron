@@ -118,6 +118,89 @@ function runInBackgroundRewrite(eventName, data, ctx) {
   return data;
 }
 
+// Edit/MultiEdit missing required params -> rewrite to Read of the same file.
+// Claude Code's client-side schema validator rejects Edit calls without
+// old_string/new_string with InputValidationError, forcing a retry-loop.
+// Convert the tool_use block in-flight: if the model emitted Edit-without-
+// required-fields, the call almost always meant "I need to see what's in
+// this file first". Synthesize a Read call (using offset/limit if the Edit
+// hinted at them, else first 50 lines) so the model gets the content
+// instead of a hard error.
+const EDIT_FALLBACK_TOOL_NAMES = new Set(['Edit', 'MultiEdit']);
+const EDIT_FALLBACK_DEFAULT_LIMIT = 50;
+const EDIT_FALLBACK_MAX_LIMIT = 500;
+
+function _editToReadFallback(editInput) {
+  const ti = editInput && typeof editInput === 'object' ? editInput : {};
+  const file = String(ti.file_path || ti.path || '').trim();
+  const out = { file_path: file };
+  const offsetRaw = Number(ti.offset || ti.line || ti.start_line || 0);
+  const limitRaw = Number(ti.limit || ti.lines || 0);
+  let limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, EDIT_FALLBACK_MAX_LIMIT) : EDIT_FALLBACK_DEFAULT_LIMIT;
+  if (Number.isFinite(offsetRaw) && offsetRaw > 1) out.offset = Math.floor(offsetRaw);
+  if (Number.isFinite(Number(ti.end_line)) && Number(ti.end_line) > 0 && out.offset) {
+    const span = Math.floor(Number(ti.end_line)) - out.offset + 1;
+    if (span > 0) limit = Math.min(span, EDIT_FALLBACK_MAX_LIMIT);
+  }
+  out.limit = limit;
+  return out;
+}
+
+function _isInvalidEditInput(input) {
+  if (!input || typeof input !== 'object') return true;
+  if (Array.isArray(input.edits)) {
+    if (input.edits.length === 0) return true;
+    for (const edit of input.edits) {
+      if (!edit || typeof edit !== 'object') return true;
+      if (typeof edit.old_string !== 'string' || edit.old_string.length === 0) return true;
+      if (typeof edit.new_string !== 'string') return true;
+    }
+    return false;
+  }
+  if (typeof input.old_string !== 'string' || input.old_string.length === 0) return true;
+  if (typeof input.new_string !== 'string') return true;
+  return false;
+}
+
+function editFallbackToReadRewrite(eventName, data, ctx) {
+  let holds = ctx.get('edit_fallback_hold');
+  if (!holds) { holds = new Map(); ctx.set('edit_fallback_hold', holds); }
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') {
+    if (EDIT_FALLBACK_TOOL_NAMES.has(data.content_block.name)) {
+      holds.set(data.index, { id: data.content_block.id, name: data.content_block.name, startData: data, partial: '' });
+      return null; // suppress start; re-emit on stop after we know if rewrite is needed
+    }
+    return data;
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'input_json_delta') {
+    const state = holds.get(data.index);
+    if (state) { state.partial += (data.delta.partial_json || ''); return null; }
+    return data;
+  }
+  if (eventName !== 'content_block_stop' || !data) return data;
+  const state = holds.get(data.index);
+  if (!state) return data;
+  holds.delete(data.index);
+  const parsed = _parseToolInput(state);
+  if (!_isInvalidEditInput(parsed)) {
+    return { events: [
+      ['content_block_start', state.startData],
+      _inputDeltaEvent(data.index, state.partial || JSON.stringify(parsed)),
+      ['content_block_stop', data],
+    ]};
+  }
+  const readInput = _editToReadFallback(parsed || {});
+  const readStart = {
+    ...state.startData,
+    content_block: { ...state.startData.content_block, name: 'Read', input: {} },
+  };
+  return { events: [
+    ['content_block_start', readStart],
+    _inputDeltaEvent(data.index, JSON.stringify(readInput)),
+    ['content_block_stop', data],
+  ]};
+}
+
 function _normalizeReadInput(input) {
   if (!input || typeof input !== 'object') return input;
   const next = { ...input };
