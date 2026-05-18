@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Inspect model/provider config and credential resolution
 
 ## Next
 
-(empty)
+- [ ] [E3] Run focused verification
+- [ ] [E3] Identify why Anthropic credentials are missing
+- [ ] [E3] Patch config/code or document exact env setup
 
 ## Done
 

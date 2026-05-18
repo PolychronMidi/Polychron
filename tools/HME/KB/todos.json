@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3605,
-      "updated_ts": 1779033547.1164901,
-      "codex_plan_synced_ts": 1779033547.1163692,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
-      "codex_plan_ts": "2026-05-17T15:58:39.047Z"
+      "max_id": 3608,
+      "updated_ts": 1779065660.6233494,
+      "codex_plan_synced_ts": 1779065660.623215,
+      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+      "codex_plan_ts": "2026-05-18T00:54:15.893Z"
     }
   },
   {
@@ -1710,8 +1710,8 @@
     "id": 3151,
     "text": "Run focused verification",
     "activeForm": "Run focused verification",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1719,8 +1719,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T02:34:11.828Z"
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T00:54:15.893Z"
   },
   {
     "id": 3152,
@@ -9192,5 +9192,53 @@
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T10-00-44-019e3674-2e31-7651-8bd0-2a6da41ebedf.jsonl",
     "codex_plan_ts": "2026-05-17T15:57:55.176Z",
     "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3606,
+    "text": "Inspect model/provider config and credential resolution",
+    "activeForm": "Inspect model/provider config and credential resolution",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779065656.3275816,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T00:54:15.893Z"
+  },
+  {
+    "id": 3607,
+    "text": "Identify why Anthropic credentials are missing",
+    "activeForm": "Identify why Anthropic credentials are missing",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779065656.3275871,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T00:54:15.893Z"
+  },
+  {
+    "id": 3608,
+    "text": "Patch config/code or document exact env setup",
+    "activeForm": "Patch config/code or document exact env setup",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779065656.327591,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T00:54:15.893Z"
   }
 ]
