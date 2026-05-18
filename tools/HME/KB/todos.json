@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3638,
-      "updated_ts": 1779072890.65445,
-      "codex_plan_synced_ts": 1779072890.6543202,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-      "codex_plan_ts": "2026-05-18T02:54:21.089Z"
+      "max_id": 3642,
+      "updated_ts": 1779073659.9502287,
+      "codex_plan_synced_ts": 1779073659.950102,
+      "codex_plan_source": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+      "codex_plan_ts": "2026-05-18T03:07:39.488Z"
     }
   },
   {
@@ -9734,5 +9734,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
     "codex_plan_ts": "2026-05-18T02:54:21.089Z"
+  },
+  {
+    "id": 3639,
+    "text": "Inspect updated models.json and recent route logs",
+    "activeForm": "Inspect updated models.json and recent route logs",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779073659.9489517,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T03:07:39.488Z"
+  },
+  {
+    "id": 3640,
+    "text": "Identify initial-vs-followup role/tier divergence",
+    "activeForm": "Identify initial-vs-followup role/tier divergence",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779073659.9489574,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T03:07:39.488Z"
+  },
+  {
+    "id": 3641,
+    "text": "Patch routing/state if needed",
+    "activeForm": "Patch routing/state if needed",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779073659.9489608,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T03:07:39.488Z"
+  },
+  {
+    "id": 3642,
+    "text": "Run regression/live checks",
+    "activeForm": "Run regression/live checks",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779073659.9489634,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T03:07:39.488Z"
   }
 ]
