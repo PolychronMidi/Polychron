@@ -82,13 +82,15 @@ function shrinkForPassthrough(payload, opts = {}) {
   } catch (_err) { /* best effort */ }
 
   let dropped = 0;
-  while (msgs.length > keepMin) {
-    msgs.shift();
-    dropped += 1;
-    serialized = JSON.stringify(payload);
-    if (serialized.length <= threshold) break;
+  if (maxTier >= 3) {
+    while (msgs.length > keepMin) {
+      msgs.shift();
+      dropped += 1;
+      serialized = JSON.stringify(payload);
+      if (serialized.length <= threshold) break;
+    }
   }
-  while (msgs.length > keepMin) {
+  while (maxTier >= 3 && msgs.length > keepMin) {
     const first = msgs[0];
     if (!first || !Array.isArray(first.content)) break;
     const onlyOrphanResults = first.role === 'user'
