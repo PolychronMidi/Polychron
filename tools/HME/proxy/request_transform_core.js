@@ -5,7 +5,6 @@ const path = require('path');
 const { normalizeStructuredBridgeCalls } = require('./codex_tool_text');
 const { normalizeICommandsInValue } = require('./i_command_text');
 const { stripHookNoiseInValue } = require('./hook_noise_text');
-const { stripCodexSystemNoise } = require('./codex_system_noise');
 const { sanitizeMessages } = require('./conversation_graph');
 
 const EMPTY_TEXT_TYPES = new Set(['input_text', 'output_text', 'text']);
@@ -155,8 +154,6 @@ function applyCodexRequestTransform(body, deps, injectNativeToolSchemas) {
   transformed = bridgeNormalized.body;
   const hookNoiseStats = {};
   transformed = stripHookNoiseInValue(transformed, hookNoiseStats);
-  const systemNoiseStats = {};
-  transformed = stripCodexSystemNoise(transformed, systemNoiseStats);
   const cleaned = cleanPayload(transformed, cfg);
   transformed = cleaned.body;
   const after = requestStats(transformed);
@@ -169,7 +166,7 @@ function applyCodexRequestTransform(body, deps, injectNativeToolSchemas) {
     body: transformed,
     before,
     after,
-    cleanup: { ...cleanup, bridge_calls: bridgeNormalized.stats.call_rewrites, bridge_text: bridgeNormalized.stats.text_rewrites, native_tools_added: nativeTools.stats.added, hook_noise_lines: hookNoiseStats.stripped || 0, i_commands: iCommandStats.command_rewrites, i_text: iCommandStats.text_rewrites, codex_system_noise: systemNoiseStats.dropped || 0, codex_system_noise_bytes: systemNoiseStats.removed_bytes || 0, codex_system_noise_categories: systemNoiseStats.categories || {} },
+    cleanup: { ...cleanup, bridge_calls: bridgeNormalized.stats.call_rewrites, bridge_text: bridgeNormalized.stats.text_rewrites, native_tools_added: nativeTools.stats.added, hook_noise_lines: hookNoiseStats.stripped || 0, i_commands: iCommandStats.command_rewrites, i_text: iCommandStats.text_rewrites },
     payload_log: logOpts.enabled ? { target: 'codex-responses-log-only', before: requestStats(body, logOpts.previewChars), after: requestStats(transformed, logOpts.previewChars) } : null,
   };
 }
