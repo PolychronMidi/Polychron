@@ -52,39 +52,6 @@ function modelTier(modelId) {
   return 'E5';
 }
 
-function normalizedProvider(provider) {
-  return omniProviderForConfigProvider(provider).replace(/_/g, '-');
-}
-
-function skippedProviderSet(cfg) {
-  const raw = cfg.providers_to_skip && Array.isArray(cfg.providers_to_skip.providers)
-    ? cfg.providers_to_skip.providers : [];
-  return new Set(raw.map(normalizedProvider));
-}
-
-function providerCredentialOk(provider, env = process.env) {
-  const p = normalizedProvider(provider);
-  if (p === 'anthropic') return !!env.ANTHROPIC_API_KEY;
-  return true;
-}
-
-function modelRouteAvailable(model, skipSet, env = process.env) {
-  if (!model) return false;
-  const provider = normalizedProvider(model.provider || '');
-  if (skipSet.has(provider)) return false;
-  return providerCredentialOk(provider, env);
-}
-
-function rankedForTier(cfg, tier, env = process.env) {
-  const skipSet = providerSkipSet(cfg);
-  const available = (m) => availableModel(m, skipSet, env);
-  const models = ((cfg.tiers && cfg.tiers[tier] && cfg.tiers[tier].models) || []).filter(available);
-  const costOrder = (cfg.ranking_rules && cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
-  const ranked = [];
-  for (const cost of costOrder) ranked.push(...models.filter((m) => m.cost === cost).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
-  return { models, ranked };
-}
-
 function providerKey(provider) {
   return omniProviderForConfigProvider(provider).replace(/_/g, '-');
 }
@@ -95,15 +62,25 @@ function providerSkipSet(cfg) {
   return new Set(raw.map(providerKey));
 }
 
-function hasOmniCredential(model, env) {
+function hasOmniCredential(model, env = process.env) {
   const provider = providerKey(model && model.provider);
   if (provider === 'anthropic') return !!env.ANTHROPIC_API_KEY || env.HME_OMNIROUTE_TRUST_STORED_CREDS === '1';
   return true;
 }
 
-function availableModel(model, skipSet, env) {
+function availableModel(model, skipSet, env = process.env) {
   if (!model) return false;
   return !skipSet.has(providerKey(model.provider)) && hasOmniCredential(model, env);
+}
+
+function rankedForTier(cfg, tier, env = process.env) {
+  const skipSet = providerSkipSet(cfg);
+  const models = ((cfg.tiers && cfg.tiers[tier] && cfg.tiers[tier].models) || [])
+    .filter((m) => availableModel(m, skipSet, env));
+  const costOrder = (cfg.ranking_rules && cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
+  const ranked = [];
+  for (const cost of costOrder) ranked.push(...models.filter((m) => m.cost === cost).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
+  return { models, ranked };
 }
 
 function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
