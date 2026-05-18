@@ -32,15 +32,20 @@ function collectSourcedFiles(absStart, visited = new Set()) {
   let text;
   try { text = fs.readFileSync(absStart, 'utf8'); } catch { return visited; }
   const dir = path.dirname(absStart);
-  const re = /source\s+"?([^"\s]+)"?/g;
+  // rationale: capture quoted strings (including ones with embedded $() spans).
+  const re = /source\s+(?:"((?:[^"]|\\")+)"|([^\s;]+))/g;
   let m;
   while ((m = re.exec(text))) {
-    let target = m[1]
+    let raw = m[1] || m[2] || '';
+    let target = raw
+      .replace(/\$\(\s*cd\s+"?\$\(\s*dirname\s+"?\$\{BASH_SOURCE\[0\]\}"?\s*\)"?\s*&&\s*pwd\s*\)/g, dir)
       .replace(/\$\{?_HBOOT_DIR\}?/g, dir)
       .replace(/\$\{?_HME_HELPERS_DIR\}?/g, path.join(ROOT, 'tools/HME/hooks/helpers'))
       .replace(/\$\{?_HME_SAFETY_DIR\}?/g, path.join(ROOT, 'tools/HME/hooks/helpers/safety'))
       .replace(/\$\{?SCRIPT_DIR\}?/g, dir)
+      .replace(/\$\{?HOOKS_DIR\}?/g, path.join(ROOT, 'tools/HME/hooks'))
       .replace(/\$\(.*?BASH_SOURCE.*?\)/g, dir);
+    if (!target || target.includes('$')) continue;
     if (!target.startsWith('/')) target = path.resolve(dir, target);
     collectSourcedFiles(target, visited);
   }
