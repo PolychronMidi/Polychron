@@ -7,7 +7,7 @@
 // Keep max_input_tokens, but cap it to context_length - max_output_tokens.
 //
 // Override keys recognized:
-//   context_length, max_input_tokens, max_output_tokens, effective_context_length
+//   context_length, max_input_tokens, max_output_tokens
 //
 // Match precedence (first hit wins):
 //   1. by_id[<model.id>]
