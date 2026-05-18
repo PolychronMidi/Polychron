@@ -109,6 +109,10 @@ async function handleUpstreamFailureOrSuccess({
 
   if (isRateLimit && !shouldRetry) {
     incConsecutive429s();
+    if (provider === 'anthropic') {
+      console.error(`[429-AUTO-REFRESH] Detected 429 for Anthropic. Invoking internal oauth token refresh...`);
+      refreshOauthToken().then(() => console.error(`[429-AUTO-REFRESH] Successfully refreshed OAuth credentials.`)).catch(e => console.error(`[429-AUTO-REFRESH] Failed: ${e.message}`));
+    }
     const nextPlan = effectiveCompactThreshold();
     const nextThreshold = typeof nextPlan === 'object' ? nextPlan.threshold : nextPlan;
     console.error(`rate_limit_error (ITPM-exhaustion) -- panic-shrink counter=${getConsecutive429s()}, next threshold=${nextThreshold}B`);
