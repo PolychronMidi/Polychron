@@ -14,21 +14,31 @@ function effectiveMode(env = process.env) {
   return mode === '1' ? '1' : '0';
 }
 
+function messageTextForRoleDetection(message) {
+  if (!message || message.role !== 'user') return '';
+  const c = message.content;
+  const parts = Array.isArray(c) ? c : [{ type: 'text', text: c }];
+  const out = [];
+  for (const p of parts) {
+    if (!p || (p.type && p.type !== 'text')) continue;
+    const text = typeof p.text === 'string' ? p.text : (typeof p.content === 'string' ? p.content : '');
+    if (!text || text.includes('<system-reminder>') || text.includes('This session is being continued from a previous conversation')) continue;
+    out.push(text);
+  }
+  return out.join('\n');
+}
+
 function roleFromPayload(payload, env = process.env) {
-  const msgText = (payload.messages || []).map((m) => {
-    const c = m && m.content;
-    if (typeof c === 'string') return c;
-    if (Array.isArray(c)) return c.map((p) => (p && (p.text || p.content)) || '').join('\n');
-    return '';
-  }).join('\n');
-  if (msgText.includes('You are Blue Lead')) return 'blue_lead';
-  if (msgText.includes('You are Red Lead')) return 'red_lead';
-  if (msgText.includes('You are Blue Purple')) return 'blue_purple';
-  if (msgText.includes('You are Red Purple')) return 'red_purple';
-  const crew = /\bcrew_e[1-4]_[01]\b/.exec(msgText);
-  if (crew) return crew[0].toLowerCase();
   const envRole = String(env.HME_TEAM_ROLE || '').trim().toLowerCase();
-  return envRole || 'driver';
+  if (envRole) return envRole;
+  const msgText = (payload.messages || []).map(messageTextForRoleDetection).filter(Boolean).join('\n');
+  if (/^\s*You are Blue Lead\b/m.test(msgText)) return 'blue_lead';
+  if (/^\s*You are Red Lead\b/m.test(msgText)) return 'red_lead';
+  if (/^\s*You are Blue Purple\b/m.test(msgText)) return 'blue_purple';
+  if (/^\s*You are Red Purple\b/m.test(msgText)) return 'red_purple';
+  const crew = /^\s*(crew_e[1-4]_[01])\b/m.exec(msgText);
+  if (crew) return crew[1].toLowerCase();
+  return 'driver';
 }
 
 function roleTier(role, modelTier) {
