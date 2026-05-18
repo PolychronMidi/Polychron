@@ -26,7 +26,9 @@ function roleFromPayload(payload, env = process.env) {
   if (msgText.includes('You are Blue Purple')) return 'blue_purple';
   if (msgText.includes('You are Red Purple')) return 'red_purple';
   const crew = /\bcrew_e[1-4]_[01]\b/.exec(msgText);
-  return (crew ? crew[0] : (env.HME_TEAM_ROLE || '')).toLowerCase();
+  if (crew) return crew[0].toLowerCase();
+  const envRole = String(env.HME_TEAM_ROLE || '').trim().toLowerCase();
+  return envRole || 'driver';
 }
 
 function roleTier(role, modelTier) {
@@ -73,6 +75,16 @@ function availableModel(model, skipSet, env = process.env) {
   return !skipSet.has(providerKey(model.provider, env)) && hasOmniCredential(model, env);
 }
 
+function findModelById(cfg, id) {
+  const wanted = String(id || '');
+  for (const tier of Object.values((cfg && cfg.tiers) || {})) {
+    for (const model of (tier && tier.models) || []) {
+      if (model && model.id === wanted) return model;
+    }
+  }
+  return null;
+}
+
 function rankedForTier(cfg, tier, env = process.env) {
   const skipSet = providerSkipSet(cfg, env);
   const models = ((cfg.tiers && cfg.tiers[tier] && cfg.tiers[tier].models) || [])
@@ -95,17 +107,21 @@ function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
   if (spec && spec.source === 'manually_toprank') front = (cfg.manually_toprank && cfg.manually_toprank[specTier]) || [];
   const frontSet = new Set(front);
   const chain = [
-    ...front.map((id) => base.models.find((m) => m.id === id)).filter((m) => availableModel(m, skipSet, env)),
+    ...front.map((id) => findModelById(cfg, id)).filter((m) => availableModel(m, skipSet, env)),
     ...base.ranked.filter((m) => !frontSet.has(m.id) && availableModel(m, skipSet, env)),
   ];
   return { chain, role, tier: specTier };
 }
 
 function stateFile(projectRoot = PROJECT_ROOT) { return path.join(projectRoot, 'tmp', 'hme-omni-swap-state.json'); }
+function chainSignature(chain) {
+  return (chain || []).map((m) => `${m.provider || ''}:${m.api_model || m.id || ''}`).join('|');
+}
 function selectedIndex(chain, projectRoot = PROJECT_ROOT) {
   if (!chain.length) return 0;
   try {
     const st = JSON.parse(fs.readFileSync(stateFile(projectRoot), 'utf8'));
+    if (st.chain !== chainSignature(chain)) return 0;
     return Math.min(st.idx || 0, chain.length - 1);
   } catch (_err) { return 0; }
 }
@@ -232,4 +248,4 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   return result;
 }
 
-module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, rankedForTier, buildMode1Chain, upstreamModelId, applyOverdriveRoute };
+module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, findModelById, rankedForTier, buildMode1Chain, chainSignature, selectedIndex, upstreamModelId, applyOverdriveRoute };
