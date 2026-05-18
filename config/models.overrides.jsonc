@@ -26,12 +26,11 @@
     "gpt-5.4-mini":        { "max_output_tokens": 128000 },
     "gpt-5.4-nano":        { "max_output_tokens": 128000 },
 
-    // GitHub Copilot/POE expose the practical GPT-5.5 total window as 400K.
-    // Consumers derive the input budget as context_length - max_output_tokens.
-    "gpt-5.5-xhigh":       { "context_length": 400000, "max_input_tokens": 272000 },
-    "gpt-5.5-high":        { "context_length": 400000, "max_input_tokens": 272000 },
-    "gpt-5.5-medium":      { "context_length": 400000, "max_input_tokens": 272000 },
-    "gpt-5.5-low":         { "context_length": 400000, "max_input_tokens": 272000 }
+    // Route reality: use the 400K GPT-5.5 window, not marketing 1M rows.
+    "gpt-5.5-xhigh":       { "context_length": 400000 },
+    "gpt-5.5-high":        { "context_length": 400000 },
+    "gpt-5.5-medium":      { "context_length": 400000 },
+    "gpt-5.5-low":         { "context_length": 400000 }
   },
   "by_api_model": {
   }
