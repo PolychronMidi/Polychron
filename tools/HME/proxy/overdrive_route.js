@@ -120,7 +120,6 @@ function stripGo(id) { return upstreamModelId(id); }
 function stripOmniUnsupportedRequestFields(payload, omniProvider) {
   if (!payload || typeof payload !== 'object') return false;
   let changed = false;
-  const provider = String(omniProvider || '');
   if (payload.thinking && typeof payload.thinking === 'object') {
     const thinkingType = String(payload.thinking.type || '').toLowerCase();
     if (thinkingType === 'adaptive') {
@@ -128,8 +127,7 @@ function stripOmniUnsupportedRequestFields(payload, omniProvider) {
       changed = true;
     }
   }
-  if ((provider === 'claude' || provider === 'anthropic')
-      && Object.prototype.hasOwnProperty.call(payload, 'output_config')) {
+  if (Object.prototype.hasOwnProperty.call(payload, 'output_config')) {
     delete payload.output_config;
     changed = true;
   }

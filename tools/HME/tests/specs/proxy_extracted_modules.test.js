@@ -108,7 +108,7 @@ test('mode 1 OmniRoute path strips Claude Code adaptive thinking extras', () => 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-thinking-'));
   try {
     const payload = {
-      model: 'claude-haiku-4-5',
+      model: 'claude-opus-4-7'
       stream: true,
       messages: [{ role: 'user', content: 'hi' }],
       system: '',
@@ -129,7 +129,7 @@ test('mode 1 OmniRoute path strips Claude Code adaptive thinking extras', () => 
       projectRoot: tmp,
     });
     assert.equal(result.applied, true);
-    assert.match(payload.model, /^claude\/claude-haiku-4-5/);
+    assert.match(payload.model, /^claude\/claude-opus-4-7/);
     assert.equal(Object.prototype.hasOwnProperty.call(payload, 'thinking'), false);
     assert.equal(Object.prototype.hasOwnProperty.call(payload, 'output_config'), false);
     assert.doesNotMatch(result.outBody.toString('utf8'), /adaptive|output_config/);
