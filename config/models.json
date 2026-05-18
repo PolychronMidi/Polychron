@@ -36,15 +36,16 @@
   },
 
 
-// manually_toprank and team_role_models both fall back to ranking_rules if models here are either blank or unavailable.
+// manually_toprank and team_role_models both fall back to ranking_rules if models here are either blank or unavailable. A manually_toprank value for a team_role will override whatever tier manually_toprank would otherwise apply.
   "manually_toprank": {
     "E5": [
-      "claude-sonnet-4-6-max-e3"
+      "gpt-5.5-xhigh"
     ],
     "E4": [],
     "E3": [],
     "E2": [],
-    "E1": []
+    "E1": [],
+    "driver": ["claude-sonnet-4-6-max-e3"]
   },
   "team_role_models": {
     "driver": { // manually_toprank E5, then E5 ranking_rules
