@@ -33,6 +33,7 @@ const MEASURE_TIMEOUT_SEC = 30;
 
 const PRE_COMPOSITION = [
   { label: 'check-root-only-dirs',         cmd: 'node src/scripts/pipeline/validators/check-root-only-dirs.js' },
+  { label: 'check-merge-markers',          cmd: 'node src/scripts/pipeline/validators/check-merge-markers.js' },
   { label: 'check-alert-chain-flags',      cmd: 'node src/scripts/pipeline/validators/check-alert-chain-flags.js' },
   { label: 'check-heartbeat-freshness',    cmd: 'node src/scripts/pipeline/validators/check-heartbeat-freshness.js' },
   { label: 'check-canary-consumption',     cmd: 'node src/scripts/pipeline/validators/check-canary-consumption.js' },
