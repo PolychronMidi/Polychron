@@ -63,6 +63,38 @@ async function handleUpstreamFailureOrSuccess({
   const coolingDown = _alertCooldownActive(errInfo.type || `http_${status}`, pathLabel);
   const shouldRetry = headers['x-should-retry'] === 'true';
   const isRateLimit = errInfo.type === 'rate_limit_error';
+  // OmniRoute returns 502 stream_timeout (STREAM_READINESS_TIMEOUT) when upstream
+  // closes the SSE before any tokens. Retry same target once before advancing chain.
+  const isStreamTimeout502 = isOmniRouteSwap && status === 502 && errInfo.type === 'stream_timeout';
+  if (isStreamTimeout502 && payload && Array.isArray(payload.messages)) {
+    try {
+      console.error(`omniroute 502 stream_timeout -- same-target retry on ${omniProvider}/${swapModel} before chain advance`);
+      const retryHeaders = { ...upstreamHeaders, 'content-length': String(outBody.length) };
+      const retryOpts = { ...upstreamOpts, headers: retryHeaders };
+      const retry = await new Promise((resolve, reject) => {
+        const req = transport.request(retryOpts, (res) => {
+          const chunks = [];
+          res.on('data', (c) => chunks.push(c));
+          res.on('end', () => resolve({ statusCode: res.statusCode || 502, headers: { ...res.headers }, body: Buffer.concat(chunks) }));
+          res.on('error', reject);
+        });
+        req.on('error', reject);
+        req.write(outBody);
+        req.end();
+      });
+      if (retry.statusCode >= 200 && retry.statusCode < 300) {
+        console.error(`stream_timeout retry succeeded (${retry.statusCode}) -- chain advance skipped`);
+        recordSuccessAndReset({ getConsecutive429s, setConsecutive429s });
+        emit({ event: 'upstream_stream_timeout_retry', session: sessionForTelemetry, status: retry.statusCode, path_label: pathLabel, outcome: 'success' });
+        return { status: retry.statusCode, headers: retry.headers, fullBody: retry.body };
+      }
+      console.error(`stream_timeout retry still failing (${retry.statusCode}) -- advancing chain`);
+      emit({ event: 'upstream_stream_timeout_retry', session: sessionForTelemetry, status: retry.statusCode, path_label: pathLabel, outcome: 'retry_failed' });
+    } catch (retryErr) {
+      console.error(`stream_timeout retry threw: ${retryErr.message}`);
+      emit({ event: 'upstream_stream_timeout_retry', session: sessionForTelemetry, status: 0, path_label: pathLabel, outcome: `error:${retryErr.message}` });
+    }
+  }
 
   recordOmniRouteFailureAdvance({
     isOmniRouteSwap,
