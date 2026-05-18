@@ -341,7 +341,9 @@ function toHookResponse(decision) {
     return JSON.stringify({ hookSpecificOutput: { permissionDecision: 'ask', permissionDecisionReason: decision.reason } });
   }
   if (decision.contextualRules && decision.contextualRules.length) {
-    return JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', additionalContext: decision.contextualRules.join('\n\n') } });
+    const out = { hookEventName: 'PreToolUse', permissionDecision: 'allow', additionalContext: decision.contextualRules.join('\n\n') };
+    if (decision.updatedInput && typeof decision.updatedInput === 'object') out.updatedInput = decision.updatedInput;
+    return JSON.stringify({ hookSpecificOutput: out });
   }
   return '';
 }
