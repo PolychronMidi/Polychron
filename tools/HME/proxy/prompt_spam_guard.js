@@ -65,9 +65,9 @@ function jsonResponse(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-function anthropicQuotaProbeResponse(payload) {
+function anthropicEmptyResponse(payload, prefix = 'hme_empty') {
   return {
-    id: `hme_quota_probe_${Date.now()}`,
+    id: `${prefix}_${Date.now()}`,
     type: 'message',
     role: 'assistant',
     model: payload && payload.model ? payload.model : 'hme-proxy',
@@ -76,6 +76,10 @@ function anthropicQuotaProbeResponse(payload) {
     stop_sequence: null,
     usage: { input_tokens: 0, output_tokens: 0 },
   };
+}
+
+function anthropicQuotaProbeResponse(payload) {
+  return anthropicEmptyResponse(payload, 'hme_quota_probe');
 }
 
 function blockQuotaProbe({ res, payload, record, source = {}, component = 'hme-proxy' }) {
