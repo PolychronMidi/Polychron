@@ -81,7 +81,8 @@ async function retryBlankOmniRouteResponse({
   let st = { idx: 0, chain: '' };
   try { st = JSON.parse(fs.readFileSync(stFile, 'utf8')); } catch (_) {}
   const sig = chainSignature(swapChain);
-  if (st.chain !== sig || isManualTopActive(swapChain)) st = { idx: 0, chain: sig };
+  // manually_toprank only fronts the chain; blank retry still cascades.
+  if (st.chain !== sig) st = { idx: 0, chain: sig };
   for (let ri = 1; ri < swapChain.length; ri++) {
     const candidate = swapChain[(st.idx + ri) % swapChain.length];
     const tp = omniProviderForConfigProvider(candidate.provider || '');
