@@ -131,6 +131,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     const idx = selectedIndex(result.swapChain, projectRoot);
     result.swapModel = upstreamModelId(result.swapChain[idx]);
     result.omniProvider = omniProviderForConfigProvider(result.swapChain[idx].provider || '');
+    result.swapMeta = result.swapChain[idx];
   }
   result.swapModel = upstreamModelId(result.swapModel);
   if (env.HME_OMNIROUTE_PROVIDER) result.omniProvider = env.HME_OMNIROUTE_PROVIDER;
