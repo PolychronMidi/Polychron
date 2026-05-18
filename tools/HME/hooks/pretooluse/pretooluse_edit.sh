@@ -106,46 +106,7 @@ case "$FILE" in
     ;;
 esac
 
-if _policy_enabled block-comment-bloat; then
-  _BLOAT_HIT=$(FILE="$FILE" NEW_STRING="$NEW_STRING" THRESHOLD="${COMMENT_BLOAT_WARN:-3}" LONG_LINE="${COMMENT_BLOAT_LONG_LINE:-90}" _safe_py3 "
-import os
-fp = os.environ.get('FILE', '').lower()
-content = os.environ.get('NEW_STRING', '')
-threshold = int(os.environ.get('THRESHOLD', '3'))
-long_line = int(os.environ.get('LONG_LINE', '90'))
-prefixes = ('//',) if fp.endswith(('.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs')) else ('#',) if fp.endswith(('.py', '.sh', '.bash', '.yaml', '.yml', '.toml')) else ()
-if not prefixes: raise SystemExit
-ANNOTATIONS = ('# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa')
-run = 0
-for ln in content.split('\n'):
-    s = ln.lstrip()
-    if any(s.startswith(p) for p in prefixes) and not s.startswith('#!'):
-        if len(ln) >= long_line:
-            print(f'LONG:{len(ln)}')
-            break
-        if not any(s.startswith(a) for a in ANNOTATIONS):
-            run += 1
-            if run >= threshold:
-                print(f'BLOCK:{run}')
-                break
-        else:
-            run = 0
-    else: run = 0
-" "")
-  if [ -n "$_BLOAT_HIT" ]; then
-    case "$_BLOAT_HIT" in
-      LONG:*)
-        _BLOAT_LEN="${_BLOAT_HIT#LONG:}"
-        _emit_block "BLOCKED: Edit new_string contains a comment line of $_BLOAT_LEN chars (>= ${COMMENT_BLOAT_LONG_LINE:-90} char limit). CLAUDE.md: \"Inline comments single-line and terse. Elaboration goes in doc/.\" Long rationale lines belong in doc/."
-        ;;
-      BLOCK:*)
-        _BLOAT_LEN="${_BLOAT_HIT#BLOCK:}"
-        _emit_block "BLOCKED: Edit new_string contains a $_BLOAT_LEN-line consecutive inline-comment block. CLAUDE.md: \"Inline comments single-line and terse. Elaboration goes in doc/.\" Trim to <=2 lines OR move the prose into doc/."
-        ;;
-    esac
-    exit 2
-  fi
-fi
+# Rule retired: block-comment-bloat now rewrites in the JS policy framework.
 
 # CONSTITUTION rule 3: naked except:pass without silent-ok annotation.
 if echo "$FILE" | grep -qE '\.py$'; then
