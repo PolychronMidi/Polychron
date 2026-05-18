@@ -50,7 +50,9 @@ function recordHookDecision(root, host, event, rawStdout, sanitizedStdout, paylo
 function recordPolicyRewrite(root, payload = {}, rewrites = []) {
   if (!root || !Array.isArray(rewrites) || rewrites.length === 0) return;
   const row = {
-    ts: new Date().toISOString(),
+    ts: Math.floor(Date.now() / 1000),
+    ts_iso: new Date().toISOString(),
+    event: 'policy_rewrite',
     kind: 'policy_rewrite',
     host: payload._hme_host || '',
     tool: payload.tool_name || '',
