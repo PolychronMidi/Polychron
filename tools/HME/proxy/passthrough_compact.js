@@ -69,7 +69,7 @@ function shrinkForPassthrough(payload, opts = {}) {
 
   try {
     const notesPath = path.join(projectRoot, 'tmp', 'hme-session-notes.txt');
-    if (fs.existsSync(notesPath) && msgs.length > keepMin * 2) {
+    if (maxTier >= 2 && fs.existsSync(notesPath) && msgs.length > keepMin * 2) {
       const notes = fs.readFileSync(notesPath, 'utf8');
       if (notes) {
         const half = Math.floor(msgs.length / 2);
