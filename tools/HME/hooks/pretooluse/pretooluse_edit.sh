@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_hooks_bootstrap.sh"
 INPUT=$(cat)
 _DECISION=$(printf '%s' "$INPUT" | node -e "const fs=require('fs'); const {preWriteCheck,toHookResponse}=require(process.env.PROJECT_ROOT + '/tools/HME/proxy/pre_write_check'); (async()=>{const d=await preWriteCheck(fs.readFileSync(0,'utf8')); const out=toHookResponse(d); if(out) process.stdout.write(out);})().catch(e=>{process.stderr.write(e.stack||String(e)); process.exit(1);});" 2>/tmp/hme-prewrite-edit.err)
 _RC=$?
