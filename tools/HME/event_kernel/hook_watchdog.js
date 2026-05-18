@@ -181,6 +181,10 @@ function _markAlerted(root, state, key, text) {
   return text;
 }
 
+function _recentSessionStartSuccess(state, now, windowMs = 30_000) {
+  return Object.values(state.success || {}).some((row) => now - (row.ended_ms || 0) <= windowMs);
+}
+
 function userPromptAlert(root, body) {
   const sid = sessionId(parse(body));
   if (!sid) return '';
