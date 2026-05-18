@@ -193,8 +193,8 @@ test('mode 1 same-chain fallback index cannot override manual top rank', () => q
       stripStaleToolResults: () => {}, stripClaudeIdentity: () => {}, shrinkForContext: () => {},
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' }, projectRoot: tmp,
     });
-    assert.equal(result.swapMeta.id, 'claude-opus-4-7-max-e5');
-    assert.match(payload.model, /^claude\/claude-opus-4-7/);
+    assert.equal(result.swapMeta.id, 'gpt-5.5-xhigh');
+    assert.match(payload.model, /^cx\/gpt-5.5/);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
