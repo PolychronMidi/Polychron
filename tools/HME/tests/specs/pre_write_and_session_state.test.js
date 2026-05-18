@@ -127,7 +127,7 @@ test('pre-write rewrites long comment lines instead of denying', async () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('pre-write hardcoded-root denial names offending line', async () => {
+test('pre-write hardcoded-root: rewrites literal root to $PROJECT_ROOT', async () => {
   const root = _withSandbox('hme-pre-write-root-line-');
   const { preWriteCheck } = require('../../proxy/pre_write_check');
   const decision = await preWriteCheck(JSON.stringify({
@@ -138,10 +138,10 @@ test('pre-write hardcoded-root denial names offending line', async () => {
       content: `echo "${root}/tools/HME/i/status"\n`,
     },
   }));
-  assert.strictEqual(decision.permissionDecision, 'deny');
-  assert.match(decision.reason, /hardcoded project root/);
-  assert.match(decision.reason, /Offending line 1/);
-  assert.match(decision.reason, /Action: remove that literal path/);
+  assert.strictEqual(decision.permissionDecision, 'allow');
+  assert.ok(decision.updatedInput, 'rewrite should populate updatedInput');
+  assert.match(decision.updatedInput.content, /\$PROJECT_ROOT\/tools/);
+  assert.match((decision.contextualRules || []).join('\n'), /DDoC stripped: hardcoded project root/);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
