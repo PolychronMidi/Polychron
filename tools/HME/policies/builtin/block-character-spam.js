@@ -1,68 +1,60 @@
 'use strict';
-/**
- * Block Write/Edit tool calls whose content contains 4+ identical
- * non-word, non-whitespace, non-paren/bracket characters in a row --
- * targets visual-decoration spam (runs of dashes, equals, hashes,
- * pipes, tildes, slashes, unicode box-drawing).
- *
- * Word characters, whitespace, and paren/bracket/brace pairs are exempt
- * so identifiers, indentation, and stacked code structure don't trip
- * the rule. Per-line opt-out via the literal token `spam-ok`.
- *
- * Companion to the `repeated-char-spam` HCI verifier: the verifier
- * scans the codebase post-hoc; this policy blocks new spam at write
- * time so existing-clean files stay clean.
- */
+// Rewrite (was: block) Write/Edit content containing 4+ identical decoration chars.
+// Strips the offending runs in-place. Per-line opt-out via the literal token `spam-ok`.
 
-const PATTERN = /([^\w\s()\[\]{}])\1{3,}/;
+const PATTERN = /([^\w\s()\[\]{}])\1{3,}/g;
 const ALLOW_TOKEN = 'spam-ok';
 
-function _scan(content) {
+function _scanAndStrip(content) {
   if (!content) return null;
   const lines = content.split('\n');
+  const firstHits = [];
+  let mutated = false;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.includes(ALLOW_TOKEN)) continue;
-    const m = line.match(PATTERN);
-    if (m) return { lineNum: i + 1, run: m[0], char: m[1] };
+    if (!PATTERN.test(line)) { PATTERN.lastIndex = 0; continue; }
+    PATTERN.lastIndex = 0;
+    let next = line;
+    let local;
+    while ((local = PATTERN.exec(next)) !== null) {
+      if (firstHits.length < 3) firstHits.push(local[1]);
+      next = next.slice(0, local.index) + next.slice(local.index + local[0].length);
+      PATTERN.lastIndex = 0;
+    }
+    lines[i] = next;
+    mutated = true;
   }
-  return null;
+  if (!mutated) return null;
+  return { content: lines.join('\n'), firstHits };
 }
 
-const REASON_PREFIX =
-  'BLOCKED: content contains a run of 4+ identical decoration characters ' +
-  '(line {LINE}: {CHAR}*{LEN}). Visual-decoration spam -- runs of ' +
-  'dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing -- ' +
-  'is banned across the project. Use plain text instead of divider bars; ' +
-  'normalize markdown table separators to 3 dashes per cell (`| --- |`); ' +
-  'demote headings to depth <=3. If the run is genuinely required (e.g. ' +
-  'discussing git conflict markers), append the inline marker `' + ALLOW_TOKEN + '` ' +
-  'to that line to opt out.';
-
-function _formatReason(hit) {
-  return REASON_PREFIX
-    .replace('{LINE}', hit.lineNum)
-    .replace('{CHAR}', JSON.stringify(hit.char))
-    .replace('{LEN}', hit.run.length);
+function _rewriteInput(toolInput, hit) {
+  const out = { ...toolInput };
+  if ('content' in toolInput && typeof toolInput.content === 'string') out.content = hit.content;
+  if ('new_string' in toolInput && typeof toolInput.new_string === 'string') out.new_string = hit.content;
+  if (Array.isArray(toolInput.edits)) {
+    out.edits = toolInput.edits.map((e) => (e && typeof e.new_string === 'string') ? { ...e, new_string: hit.content } : e);
+  }
+  return out;
 }
 
 module.exports = {
   name: 'block-character-spam',
-  description:
-    'Block Write/Edit content containing 4+ identical decoration characters in a row.',
+  description: 'Rewrite Write/Edit content containing 4+ identical decoration characters (strip runs in place).',
   category: 'style',
   defaultEnabled: true,
   match: { events: ['PreToolUse'], tools: ['Write', 'Edit', 'MultiEdit'] },
   params: {},
   async fn(ctx) {
     const ti = ctx.toolInput || {};
-    // Write/Edit/MultiEdit expose text in different tool_input fields.
     let payload = ti.content || ti.new_string || '';
     if (!payload && Array.isArray(ti.edits)) {
       payload = ti.edits.map((e) => (e && e.new_string) || '').join('\n');
     }
-    const hit = _scan(payload);
-    if (hit) return ctx.deny(_formatReason(hit));
-    return ctx.allow();
+    const hit = _scanAndStrip(payload);
+    if (!hit) return ctx.allow();
+    const sample = hit.firstHits.map((c) => JSON.stringify(c)).join(',');
+    return ctx.rewrite(_rewriteInput(ti, hit), `DDoC stripped: char spam(${sample})`);
   },
 };
