@@ -80,6 +80,10 @@ function createClaudeHandler(deps) {
         blockQuotaProbe({ res: clientRes, payload });
         return;
       }
+      if (isTodoWriteOnlyProbe(payload)) {
+        blockTodoWriteOnlyProbe({ res: clientRes, payload });
+        return;
+      }
 
       let outBody = bodyBuf;
       let injected = false;
