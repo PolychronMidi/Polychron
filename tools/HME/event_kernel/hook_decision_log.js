@@ -61,7 +61,7 @@ function recordPolicyRewrite(root, payload = {}, rewrites = []) {
     policies: rewrites.map((r) => r.policy).filter(Boolean),
     last_message: String((rewrites[rewrites.length - 1] || {}).message || '').slice(0, 240),
   };
-  append(path.join(runtimeDir(root), 'metrics', 'hme-activity.jsonl'), JSON.stringify(row));
+  append(path.join(runtimeDir(root), 'hook-decisions.jsonl'), JSON.stringify(row));
 }
 
 module.exports = { hookDecisionSummary, recordHookDecision, recordPolicyRewrite };
