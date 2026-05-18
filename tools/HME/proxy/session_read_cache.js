@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const hmePaths = require('./hme_paths');
 
-const CACHE_DIR = path.join(hmePaths.HME_RUNTIME_DIR, 'session-read-cache');
+const CACHE_DIR = process.env.HME_SESSION_READ_CACHE_DIR || path.join(hmePaths.HME_RUNTIME_DIR, 'session-read-cache');
 const TTL_MS = 6 * 60 * 60 * 1000; // 6h; sessions rarely outlive this
 
 function _cachePath(sessionId) {
