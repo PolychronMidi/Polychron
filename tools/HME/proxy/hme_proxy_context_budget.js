@@ -66,19 +66,11 @@ function createContextBudget() {
   }
 
   function resolveModelCtx(modelId) {
-    const map = {
-      'deepseek-v4-pro': 1048576, 'deepseek-v4-flash': 1048576,
-      'mimo-v2.5-pro': 1048576, 'mimo-v2-pro': 1048576,
-      'glm-5.1': 1048576, 'glm-5': 1048576,
-      'kimi-k2.6': 1048576, 'kimi-k2.5': 1048576,
-      'minimax-m2.7': 1048576, 'minimax-m2.5': 1048576,
-      'qwen3.6-plus': 1048576, 'qwen3.5-plus': 1048576,
-      'mistral-large-latest': 131072, 'gemini-2.5-flash': 1048576,
-      'llama-4-maverick': 1048576, 'llama-3.3-70b': 131072,
-      'gpt-5.5': 1050000, 'gpt-5.4': 400000, 'gpt-5.3': 400000, 'gpt-5.2': 400000,
-      'gpt-4o': 200000, 'nemotron-super-49b': 131072, 'nemotron-3-nano': 131072,
-    };
-    for (const [k, v] of Object.entries(map)) if (String(modelId || '').includes(k)) return v;
+    // effective_context_length || context_length from config/models.json.
+    const id = String(modelId || '');
+    const reg = loadModelCtxRegistry();
+    if (reg.has(id)) return reg.get(id);
+    for (const [k, v] of reg) if (id.includes(k)) return v;
     return 1000000;
   }
 
