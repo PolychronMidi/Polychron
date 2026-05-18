@@ -8,7 +8,7 @@
 // effective_context_length is the sanitized max_input_tokens planning budget.
 //
 // Override keys recognized:
-//   context_length, max_output_tokens, effective_context_length
+//   context_length, max_input_tokens, max_output_tokens, effective_context_length
 //
 // Match precedence (first hit wins):
 //   1. by_id[<model.id>]
