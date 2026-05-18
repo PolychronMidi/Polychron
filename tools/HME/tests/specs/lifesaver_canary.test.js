@@ -183,6 +183,7 @@ test('lifesaver: source-tag self-origin overrides CRITICAL severity', () => {
     // signal the agent has no causal path to fix.
     '[2026-04-26T07:00:02Z] [_safe_curl] ERROR http://127.0.0.1:9098/transcript failed (rc=7, streak=5)',
     '[2026-04-26T07:00:03Z] [_safe_jq] jq parse failed: malformed input',
+    '[2026-04-26T07:00:04Z] [hook-watchdog] [ALERT] UserPromptSubmit fired before successful SessionStart.',
   ]);
   try {
     assert.ok(
@@ -197,6 +198,10 @@ test('lifesaver: source-tag self-origin overrides CRITICAL severity', () => {
       assert.ok(
         r.stdout.includes('_safe_curl'),
         '_safe_curl line must surface in self-origin observation',
+      );
+      assert.ok(
+        r.stdout.includes('hook-watchdog'),
+        'hook-watchdog alert must surface as self-origin observation',
       );
     }
   } finally {
