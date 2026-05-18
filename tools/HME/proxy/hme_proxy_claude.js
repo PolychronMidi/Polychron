@@ -28,8 +28,10 @@ const { handleMidResponseError, handleConnectionError } = require('./hme_proxy_c
 const {
   isSingleQuotaProbe,
   isTodoWriteOnlyProbe,
+  isStructuredOutputsProbe,
   blockQuotaProbe,
   blockTodoWriteOnlyProbe,
+  blockStructuredOutputsProbe,
 } = require('./prompt_spam_guard');
 
 function lifecycleBridge() {
