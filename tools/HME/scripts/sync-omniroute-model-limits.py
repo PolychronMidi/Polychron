@@ -67,9 +67,9 @@ MODEL_ALIASES = {
 
 
 SYNC_KEYS = ("context_length", "max_output_tokens")
-OVERRIDE_KEYS = SYNC_KEYS
+OVERRIDE_KEYS = SYNC_KEYS + ("effective_context_length",)
 DEFAULT_OUTPUT = 8192
-RETIRED_KEYS = ("max_context", "max_input_tokens", "effective_context_length")
+RETIRED_KEYS = ("max_context", "max_input_tokens")
 DEFAULT_OVERRIDES_PATH = "config/models.overrides.jsonc"
 
 
