@@ -5,9 +5,23 @@ const path = require('path');
 const { shrinkForPassthrough } = require('./passthrough_compact');
 const { PROJECT_ROOT } = require('./shared');
 
-// Lazy-loaded registry of {model_id -> effective_context_length || context_length}.
+// Lazy-loaded model context budget registry.
 // Reloads when the source file mtime changes (no daemon restart needed after sync).
 let _modelCtxRegistry = { mtimeMs: 0, map: new Map() };
+
+function positiveNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function effectiveContextLength(model) {
+  const explicit = positiveNumber(model.effective_context_length);
+  if (explicit) return explicit;
+  const ctx = positiveNumber(model.context_length);
+  const output = positiveNumber(model.max_output_tokens);
+  if (ctx && output && ctx > output) return ctx - output;
+  return ctx;
+}
 function loadModelCtxRegistry() {
   const modelsPath = path.join(PROJECT_ROOT, 'config', 'models.json');
   let stat; try { stat = fs.statSync(modelsPath); } catch { return _modelCtxRegistry.map; }
