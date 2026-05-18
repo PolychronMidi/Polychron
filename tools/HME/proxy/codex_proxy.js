@@ -296,6 +296,10 @@ async function handleResponses(req, res) {
   const meta = parseCodexMetadata(req);
   guardSession(meta.session_id || '');
   const source = { session_id: meta.session_id || '', thread_id: meta.thread_id || '', turn_id: meta.turn_id || '', originator: req.headers.originator || '' };
+  if (isSingleQuotaProbe(body)) {
+    blockQuotaProbe({ res, payload: body, record, source, component: 'hme-codex-proxy' });
+    return;
+  }
   const autocommit = runCodexAutocommit();
   const lifesaver = injectCodexLifesaver(body);
   const { body: transformed, before, after, cleanup, payload_log: payloadLog } = applyRequestTransform(lifesaver.body, {
