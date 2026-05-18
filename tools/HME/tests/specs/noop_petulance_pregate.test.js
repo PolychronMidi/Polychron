@@ -54,7 +54,7 @@ test('petulance pregate denies the 2nd no-op Bash this turn', () => {
     transcriptEntries: [userMsg(), noopBashEvent(':')],
   });
   assert.ok(out.stdout.includes('SPIRALLING_PETULANCE'), `expected deny, got: ${out.stdout}`);
-  assert.ok(out.stdout.includes('"permissionDecision":"deny"'), 'deny verdict present');
+  assert.match(out.stdout, /"permissionDecision":\s*"deny"/, 'deny verdict present');
 });
 
 test('petulance pregate allows real commands even after a prior no-op', () => {
