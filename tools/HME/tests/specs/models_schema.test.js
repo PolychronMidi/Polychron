@@ -18,7 +18,7 @@ function loadModels() {
 test('models.json schema: unique ids, valid tiers, valid effort variants', () => {
   const cfg = loadModels();
   assert.ok(cfg.tiers && typeof cfg.tiers === 'object');
-  const seen = new Set();
+  const anthropicSeen = new Set();
   for (const [tierName, tier] of Object.entries(cfg.tiers)) {
     assert.ok(VALID_TIERS.has(tierName), `valid tier ${tierName}`);
     assert.ok(Array.isArray(tier.models), `${tierName}.models array`);
