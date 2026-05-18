@@ -10,8 +10,6 @@ const WEB_SEARCH_TOOL = 'web_search';
 const BRIDGE_NAMES = new Set(['Read', 'Edit', 'Write', 'WebFetch', 'Agent']);
 const RENAME_TARGETS = { Bash: TARGET_TOOL, WebSearch: WEB_SEARCH_TOOL };
 
-const { uniformToolList } = require('./codex_uniform_tools');
-
 function toolName(tool) {
   if (!tool || typeof tool !== 'object') return '';
   return tool.name || (tool.function && tool.function.name) || '';
