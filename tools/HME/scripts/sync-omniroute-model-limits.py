@@ -275,7 +275,13 @@ def patch_text(
     return text, deduped
 
 
-def sync(path: Path, catalog: dict, *, dry_run: bool) -> int:
+def sync(
+    path: Path,
+    catalog: dict,
+    *,
+    dry_run: bool,
+    overrides: dict | None = None,
+) -> int:
     text = path.read_text(encoding="utf-8")
     cfg = loads_jsonc(text)
     idx = _catalog_index(catalog)
@@ -286,7 +292,7 @@ def sync(path: Path, catalog: dict, *, dry_run: bool) -> int:
             if not mid:
                 continue
             hit = next((idx[c] for c in _candidates(model) if c in idx), None)
-            limits = _desired_limits(model, hit)
+            limits = _desired_limits(model, hit, overrides)
             new_text, notes = patch_text(text, mid, limits)
             if not notes:
                 continue
