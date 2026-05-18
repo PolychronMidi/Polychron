@@ -73,11 +73,16 @@ RETIRED_KEYS = ("max_context",)
 
 def _candidates(model: dict) -> list[str]:
     mid = model.get("id", "")
+    api_model = model.get("api_model", "")
     provider = model.get("provider", "")
     raw = mid[:-3] if mid.endswith("-go") else mid
     raws = [raw] + MODEL_ALIASES.get(raw, [])
+    if api_model and api_model not in raws:
+        raws.insert(0, api_model)
     providers = [provider] + PROVIDER_ALIASES.get(provider, [])
     vals = [mid]
+    if api_model:
+        vals.append(api_model)
     for item in raws:
         vals.append(item)
         for prov in providers:
