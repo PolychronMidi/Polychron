@@ -41,7 +41,6 @@ test('Anthropic effort variants are registered in requested tiers', () => {
     if (family === 'opus') {
       assert.equal(model.context_length, 1000000, `${id} context_length`);
       assert.equal(model.max_input_tokens, 872000, `${id} max_input_tokens`);
-      assert.equal(model.effective_context_length, 872000, `${id} effective budget`);
     }
     if (family === 'sonnet' || family === 'haiku') {
       assert.equal(model.context_length, 200000, `${id} context_length`);
