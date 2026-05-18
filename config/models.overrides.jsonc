@@ -30,7 +30,14 @@
     "gpt-5.5-xhigh":       { "context_length": 400000 },
     "gpt-5.5-high":        { "context_length": 400000 },
     "gpt-5.5-medium":      { "context_length": 400000 },
-    "gpt-5.5-low":         { "context_length": 400000 }
+    "gpt-5.5-low":         { "context_length": 400000 },
+
+    // Anthropic Opus 1M rows require a beta path; default route is 200K.
+    "claude-opus-4-7-max-e5":    { "context_length": 200000 },
+    "claude-opus-4-7-xhigh-e4":  { "context_length": 200000 },
+    "claude-opus-4-7-high-e4":   { "context_length": 200000 },
+    "claude-opus-4-7-medium-e3": { "context_length": 200000 },
+    "claude-opus-4-7-low-e3":    { "context_length": 200000 }
   },
   "by_api_model": {
   }
