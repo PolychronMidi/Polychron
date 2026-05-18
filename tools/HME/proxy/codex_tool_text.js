@@ -38,16 +38,22 @@ function bridgeFromTokens(tokens) {
   const idx = tokens.findIndex((t) => /(^|\/)codex_structured_tool\.js$/.test(t));
   if (idx < 0) return null;
   const action = tokens[idx + 1];
-  if (!['read', 'edit', 'grep', 'glob'].includes(action)) return null;
+  if (!ACTION_TO_TOOL[action]) return null;
   const { kv, pos } = kvArgs(tokens.slice(idx + 2));
   if (action === 'grep') return { tool: 'Grep', input: { pattern: kv.pattern || pos[0] || '', path: kv.path || pos[1] || '.' } };
   if (action === 'glob') return { tool: 'Glob', input: { pattern: kv.pattern || pos[0] || '*', path: kv.path || pos[1] || '.' } };
+  if (action === 'web_fetch') return { tool: 'WebFetch', input: { url: kv.url || pos[0] || '', prompt: kv.prompt || pos[1] || '' } };
+  if (action === 'agent') return { tool: 'Agent', input: { prompt: kv.prompt || pos[0] || '', level: kv.level ? Number(kv.level) : 3 } };
   const file = kv.file_path || kv.file || pos[0] || '';
   const input = file ? { file_path: file } : {};
   if (action === 'read') {
     if (kv.offset !== undefined) input.offset = Number(kv.offset);
     if (kv.limit !== undefined) input.limit = Number(kv.limit);
     return { tool: 'Read', input };
+  }
+  if (action === 'write') {
+    input.content = WRITE_CONTENT_REDACTION;
+    return { tool: 'Write', input };
   }
   input.old_string = EDIT_REDACTION;
   input.new_string = EDIT_REDACTION;
