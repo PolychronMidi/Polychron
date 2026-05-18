@@ -155,6 +155,8 @@ function applyCodexRequestTransform(body, deps, injectNativeToolSchemas) {
   transformed = bridgeNormalized.body;
   const hookNoiseStats = {};
   transformed = stripHookNoiseInValue(transformed, hookNoiseStats);
+  const systemNoiseStats = {};
+  transformed = stripCodexSystemNoise(transformed, systemNoiseStats);
   const cleaned = cleanPayload(transformed, cfg);
   transformed = cleaned.body;
   const after = requestStats(transformed);
