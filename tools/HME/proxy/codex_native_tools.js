@@ -2,10 +2,13 @@
 
 const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
 const { evaluateReadInput } = require('./read_policy');
+const { replaceToolsWithUniform } = require('./codex_uniform_tools');
 
 const BRIDGE = 'node tools/HME/scripts/codex_structured_tool.js';
 const TARGET_TOOL = 'exec_command';
-const NATIVE_NAMES = new Set(['Read', 'Edit', 'Grep', 'Glob']);
+const WEB_SEARCH_TOOL = 'web_search';
+const BRIDGE_NAMES = new Set(['Read', 'Edit', 'Write', 'WebFetch', 'Agent']);
+const RENAME_TARGETS = { Bash: TARGET_TOOL, WebSearch: WEB_SEARCH_TOOL };
 
 const READ_TOOL = {
   type: 'function',
