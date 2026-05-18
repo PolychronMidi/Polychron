@@ -70,7 +70,7 @@ Service metadata lives in `tools/HME/config/services.json`; doctors and pulse pr
 
 <!-- HME-DIR-INTENT
 rules:
-  - Every hook MUST `source helpers/_hooks_bootstrap.sh` first -- it transitively loads `_safety.sh` (emit/block/latency machinery) plus `_policy_enabled.sh`, `_onboarding.sh`, `_nexus.sh`, and exposes `_hook_decision_deny|allow|rewrite_bash` envelope helpers
+  - Every hook MUST `source helpers/_hooks_bootstrap.sh` first; it loads safety/policy/onboarding/nexus helpers and `_hook_decision_*` envelopes
   - Reactive tool-result enrichment belongs in `tools/HME/proxy/middleware/` -- only shell hooks for pre-execution blocks + lifecycle events
   - Use `_emit_block` only for hard denials; prefer `_emit_enrich_allow` or silent activity events for soft guidance
   - Hooks must never log to `src/output/metrics/`; operational logs go to `log/`, HME metrics to tools/HME/runtime/metrics
