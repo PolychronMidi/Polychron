@@ -295,6 +295,7 @@ async function preWriteCheck(stdinJson) {
       params: {},
     };
     const { firstDeny, instructs, rewrites, errors } = await registry.runChain(policies, ctx);
+    const _rewriteMessages = (rewrites || []).map((r) => r.message).filter(Boolean);
     if (rewrites && rewrites.length) payload.tool_input = ctx.toolInput;
     if (firstDeny) {
       const out = _repeatDeny(payload, _permission('deny', firstDeny.reason, `policy:${firstDeny.policy}`));
