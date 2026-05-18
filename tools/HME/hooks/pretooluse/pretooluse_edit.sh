@@ -103,7 +103,7 @@ fi
 # existing decision-audit readers can still parse historical rows.
 case "$FILE" in
   *CONSTITUTION.md|*CLAUDE.md|*doc/templates/SPEC.md|*.claude/agents/*.md|*tools/HME/scripts/detectors/*.py|*tools/HME/proxy/stop_chain/policies/*.js)
-    _DA_LOG="$PROJECT_ROOT/output/metrics/decision-audit.jsonl"
+    _DA_LOG="$PROJECT_ROOT/src/output/metrics/decision-audit.jsonl"
     mkdir -p "$(dirname "$_DA_LOG")" 2>/dev/null
     _DA_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     printf '{"ts":"%s","file":"%s","consulted":%s,"skip_reason":"%s"}\n' \
