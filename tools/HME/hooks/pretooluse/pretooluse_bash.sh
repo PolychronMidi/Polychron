@@ -3,8 +3,7 @@
 # Each sub-script may `exit 0` / `exit 2` after emitting a decision.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _HME_HELPERS_DIR="${SCRIPT_DIR}/../helpers"
-source "${_HME_HELPERS_DIR}/_safety.sh"
-source "${_HME_HELPERS_DIR}/_onboarding.sh"
+source "${_HME_HELPERS_DIR}/_hooks_bootstrap.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
