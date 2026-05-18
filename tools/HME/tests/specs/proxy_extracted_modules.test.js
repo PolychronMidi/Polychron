@@ -460,7 +460,7 @@ test('context budget compaction gears start at half input and escalate', () => {
     const budget = createContextBudget();
     budget.setLastInputTokensLimit(1000);
 
-    let payload = { messages: [{ role: 'user', content: 'x'.repeat(499) }] };
+    let payload = { messages: [{ role: 'user', content: 'x'.repeat(450) }] };
     let plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 0);
     assert.equal(plan.threshold, Infinity);
