@@ -11,20 +11,27 @@ function normalizePlan(raw) {
   return {
     threshold: threshold === Infinity || Number.isFinite(threshold) ? threshold : 250000,
     maxTier: Number.isFinite(maxTier) ? maxTier : 4,
+    keepMin: Number(plan.keepMin),
+    maxToolResultAge: Number(plan.maxToolResultAge),
+    toolResultByteFloor: Number(plan.toolResultByteFloor),
   };
 }
 
 function shrinkForPassthrough(payload, opts = {}) {
   const env = opts.env || process.env;
   const log = opts.log || console.error;
-  const keepMin = Number(opts.keepMin || 10);
-  const maxToolResultAge = Number(opts.maxToolResultAge == null ? 0 : opts.maxToolResultAge);
-  const toolResultByteFloor = Number(opts.toolResultByteFloor || 15000);
+  let keepMin = Number(opts.keepMin || 10);
+  let maxToolResultAge = Number(opts.maxToolResultAge == null ? 0 : opts.maxToolResultAge);
+  let toolResultByteFloor = Number(opts.toolResultByteFloor || 15000);
   const projectRoot = opts.projectRoot || PROJECT_ROOT;
   if (env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
   if (!payload || !Array.isArray(payload.messages)) return 0;
   const rawPlan = typeof opts.effectiveThreshold === 'function' ? opts.effectiveThreshold(payload) : opts.threshold || 250000;
-  const { threshold, maxTier } = normalizePlan(rawPlan);
+  const plan = normalizePlan(rawPlan);
+  const { threshold, maxTier } = plan;
+  if (Number.isFinite(plan.keepMin) && plan.keepMin > 0) keepMin = Math.floor(plan.keepMin);
+  if (Number.isFinite(plan.maxToolResultAge) && plan.maxToolResultAge >= 0) maxToolResultAge = Math.floor(plan.maxToolResultAge);
+  if (Number.isFinite(plan.toolResultByteFloor) && plan.toolResultByteFloor > 0) toolResultByteFloor = Math.floor(plan.toolResultByteFloor);
   const msgs = payload.messages;
   if (msgs.length <= keepMin) return 0;
   let serialized = JSON.stringify(payload);
