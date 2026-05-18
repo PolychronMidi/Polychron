@@ -146,8 +146,7 @@ def _apply_effort_params(payload: dict, meta: dict, provider: str | None) -> Non
     if effort not in _VALID_EFFORTS:
         return
     p = str(provider or meta.get("provider") or "")
-    if p == "anthropic":
-        payload["thinkingLevel"] = effort
+    if p in {"anthropic", "claude"}:
         return
     value = _REASONING_EFFORT[effort]
     if p in {"codex", "cx", "openai", "openai-responses"}:
@@ -155,7 +154,7 @@ def _apply_effort_params(payload: dict, meta: dict, provider: str | None) -> Non
         payload["reasoning_summary"] = "detailed"
         payload["reasoning"] = {"effort": value, "summary": "detailed"}
         return
-    payload["thinkingLevel"] = effort
+    return
 
 
 def _try_overdrive_model(model_id: str, prompt: str, system: str,
@@ -210,7 +209,12 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     if _api_model.endswith("-go"):
         _api_model = _api_model[:-3]
     # Prefix with OmniRoute provider (codex uses "cx" alias, others match)
-    _omni_prefix = "cx" if _provider == "codex" else (_provider or "opencode-go")
+    if _provider == "codex":
+        _omni_prefix = "cx"
+    elif _provider == "anthropic" and not ENV.optional("ANTHROPIC_API_KEY", ""):
+        _omni_prefix = "claude"
+    else:
+        _omni_prefix = _provider or "opencode-go"
     _api_model = f"{_omni_prefix}/{_api_model}"
     payload = {
         "model": _api_model,

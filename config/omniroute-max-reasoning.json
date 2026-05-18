@@ -8,21 +8,24 @@
     "default": [
       {
         "models": [
-          { "name": "cx/*" },
-          { "name": "codex/*" },
-          { "name": "openai/*" }
+          {
+            "name": "cx/*"
+          },
+          {
+            "name": "codex/*"
+          },
+          {
+            "name": "openai/*"
+          }
         ],
-        "params": { "reasoning_effort": "xhigh", "reasoning_summary": "detailed", "reasoning": { "effort": "xhigh", "summary": "detailed" } }
-      },
-      {
-        "models": [
-          { "name": "claude*" },
-          { "name": "anthropic/*" },
-          { "name": "gemini*" },
-          { "name": "google/*" },
-          { "name": "*-thinking" }
-        ],
-        "params": { "thinkingLevel": "xhigh" }
+        "params": {
+          "reasoning_effort": "xhigh",
+          "reasoning_summary": "detailed",
+          "reasoning": {
+            "effort": "xhigh",
+            "summary": "detailed"
+          }
+        }
       }
     ],
     "override": [],

@@ -25,12 +25,12 @@ function effortParamsForProvider(model, provider) {
   const effort = normalizedEffort(model);
   if (!effort) return null;
   const p = String(provider || model.provider || '').trim();
-  if (p === 'anthropic') return { thinkingLevel: THINKING_LEVEL[effort] };
+  if (p === 'anthropic' || p === 'claude') return null;
   if (p === 'codex' || p === 'cx' || p === 'openai' || p === 'openai-responses') {
     const value = REASONING_EFFORT[effort];
     return { reasoning_effort: value, reasoning_summary: 'detailed', reasoning: { effort: value, summary: 'detailed' } };
   }
-  return { thinkingLevel: THINKING_LEVEL[effort] };
+  return null;
 }
 
 function applyEffortParams(payload, model, provider) {
