@@ -33,7 +33,7 @@ function loadModelCtxRegistry() {
   const map = new Map();
   for (const tier of Object.values(cfg.tiers || {})) {
     for (const m of tier.models || []) {
-      const eff = Number(m.effective_context_length) || Number(m.context_length) || 0;
+      const eff = effectiveContextLength(m);
       if (eff > 0 && m.id) map.set(String(m.id), eff);
       if (eff > 0 && m.api_model) map.set(String(m.api_model), eff);
     }
