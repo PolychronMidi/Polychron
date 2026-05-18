@@ -110,6 +110,11 @@ def _desired_limits(
     for key, val in _override_lookup(model, overrides).items():
         if key in OVERRIDE_KEYS and isinstance(val, int) and val > 0:
             out[key] = val
+    if "effective_context_length" not in out:
+        ctx = out.get("context_length") or 0
+        output = out.get("max_output_tokens") or 0
+        if ctx > output > 0:
+            out["effective_context_length"] = ctx - output
     return out
 
 
