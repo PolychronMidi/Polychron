@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3653,
-      "updated_ts": 1779111219.0329413,
-      "codex_plan_synced_ts": 1779111219.0328093,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T08-23-02-019e3b41-1919-7e52-9edf-faea1bd3462e.jsonl",
-      "codex_plan_ts": "2026-05-18T13:33:14.511Z"
+      "max_id": 3657,
+      "updated_ts": 1779118636.869347,
+      "codex_plan_synced_ts": 1779118636.8689773,
+      "codex_plan_source": "codex-proxy:019e3bbb-6af6-7362-a61a-e05ecf3770ce",
+      "codex_plan_ts": "2026-05-18T15:37:15.582Z"
     }
   },
   {
@@ -9981,5 +9981,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T08-23-02-019e3b41-1919-7e52-9edf-faea1bd3462e.jsonl",
     "codex_plan_ts": "2026-05-18T13:33:14.511Z"
+  },
+  {
+    "id": 3654,
+    "text": "Find MCP configuration and codex_apps entry",
+    "activeForm": "Find MCP configuration and codex_apps entry",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779118636.8660474,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3bbb-6af6-7362-a61a-e05ecf3770ce",
+    "codex_plan_ts": "2026-05-18T15:37:15.582Z"
+  },
+  {
+    "id": 3655,
+    "text": "Run the server startup path directly",
+    "activeForm": "Run the server startup path directly",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779118636.8660557,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3bbb-6af6-7362-a61a-e05ecf3770ce",
+    "codex_plan_ts": "2026-05-18T15:37:15.582Z"
+  },
+  {
+    "id": 3656,
+    "text": "Fix config/server issue or report exact blocker",
+    "activeForm": "Fix config/server issue or report exact blocker",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779118636.8660762,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3bbb-6af6-7362-a61a-e05ecf3770ce",
+    "codex_plan_ts": "2026-05-18T15:37:15.582Z"
+  },
+  {
+    "id": 3657,
+    "text": "Verify MCP startup command",
+    "activeForm": "Verify MCP startup command",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779118636.8660786,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3bbb-6af6-7362-a61a-e05ecf3770ce",
+    "codex_plan_ts": "2026-05-18T15:37:15.582Z"
   }
 ]
