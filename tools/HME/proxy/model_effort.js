@@ -1,13 +1,6 @@
 'use strict';
 
 const VALID_EFFORTS = new Set(['max', 'xhigh', 'high', 'medium', 'low']);
-const THINKING_LEVEL = {
-  max: 'max',
-  xhigh: 'xhigh',
-  high: 'high',
-  medium: 'medium',
-  low: 'low',
-};
 const REASONING_EFFORT = {
   max: 'xhigh',
   xhigh: 'xhigh',
