@@ -248,4 +248,4 @@ async function traceAnthropicResponse({
   return { outStatus, outHeaders, outBuf };
 }
 
-module.exports = { traceAnthropicResponse, _sseStats, _sanitizeHeaders };
+module.exports = { traceAnthropicResponse, _sseStats, _jsonStats, _sanitizeHeaders };
