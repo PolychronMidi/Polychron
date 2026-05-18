@@ -39,10 +39,11 @@ if [ -n "$_POLICY_OUT" ]; then
   exit 0
 fi
 
-# Defense-in-depth: wrap each source in `set +u +e` so a stray unbound-var
-for _part in gates; do
+# rationale: post-policy gates auto-load from bash/post/*.sh (refinements).
+for _post in "${SCRIPT_DIR}/bash/post/"*.sh; do
+  [ -f "$_post" ] || continue
   set +u +e
-  source "${SCRIPT_DIR}/bash/${_part}.sh"
+  source "$_post"
   _rc=$?
   set -u -e
   if [ "$_rc" -ne 0 ] && [ "$_rc" -ne 2 ]; then
@@ -50,7 +51,7 @@ for _part in gates; do
     _log="${PROJECT_ROOT:-/tmp}/log/hme-errors.log"
     mkdir -p "$(dirname "$_log")" 2>/dev/null
     printf '[%s] [pretooluse_bash.sh] sub-file %s exited rc=%d -- downstream gates may have been skipped; investigate\n' \
-      "$_ts" "$_part" "$_rc" >> "$_log" 2>/dev/null  # silent-ok: optional fallback path.
+      "$_ts" "$(basename "$_post")" "$_rc" >> "$_log" 2>/dev/null  # silent-ok: optional fallback path.
   fi
 done
 
