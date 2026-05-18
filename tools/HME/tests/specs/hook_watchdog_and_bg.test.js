@@ -93,14 +93,15 @@ test('watchdog treats later successful hooks as recovered session activity', () 
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('watchdog accepts recent SessionStart when host session ids diverge', () => {
-  const root = sandbox('hme-watchdog-recent-sessionstart-');
+test('watchdog requires UserPromptSubmit to match its SessionStart id', () => {
+  const root = sandbox('hme-watchdog-strict-sessionstart-');
   fresh(root);
   const wd = require('../../event_kernel/hook_watchdog');
   const tok = wd.begin(root, 'SessionStart', JSON.stringify({ session_id: 'sessionstart-id' }), { host: 'test' });
   wd.end(tok, { exit_code: 0 });
-  assert.strictEqual(wd.userPromptAlert(root, JSON.stringify({ session_id: 'prompt-id' })), '');
-  assert.ok(!fs.existsSync(path.join(root, 'log/hme-errors.log')), 'recent success must not write hme-errors');
+  const alert = wd.userPromptAlert(root, JSON.stringify({ session_id: 'prompt-id' }));
+  assert.match(alert, /before successful SessionStart/);
+  assert.match(fs.readFileSync(path.join(root, 'log/hme-errors.log'), 'utf8'), /prompt-id/);
   fs.rmSync(root, { recursive: true, force: true });
 });
 

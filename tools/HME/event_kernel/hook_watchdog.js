@@ -181,9 +181,6 @@ function _markAlerted(root, state, key, text) {
   return text;
 }
 
-function _recentSessionStartSuccess(state, now, windowMs = 30_000) {
-  return Object.values(state.success || {}).some((row) => now - (row.ended_ms || 0) <= windowMs);
-}
 
 function userPromptAlert(root, body) {
   const sid = sessionId(parse(body));
@@ -207,7 +204,6 @@ function userPromptAlert(root, body) {
       `[ALERT] Previous SessionStart exited ${latest.exit_code} before this prompt.\nSession: ${sid}`);
   }
   if (!success && !latest && !activity) {
-    if (_recentSessionStartSuccess(state, now)) return '';
     return _markAlerted(root, state, `missing:${sid}`,
       `[ALERT] UserPromptSubmit fired before successful SessionStart.\nSession: ${sid}`);
   }
