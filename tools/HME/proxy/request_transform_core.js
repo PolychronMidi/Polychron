@@ -169,7 +169,7 @@ function applyCodexRequestTransform(body, deps, injectNativeToolSchemas) {
     body: transformed,
     before,
     after,
-    cleanup: { ...cleanup, bridge_calls: bridgeNormalized.stats.call_rewrites, bridge_text: bridgeNormalized.stats.text_rewrites, native_tools_added: nativeTools.stats.added, hook_noise_lines: hookNoiseStats.stripped || 0, i_commands: iCommandStats.command_rewrites, i_text: iCommandStats.text_rewrites },
+    cleanup: { ...cleanup, bridge_calls: bridgeNormalized.stats.call_rewrites, bridge_text: bridgeNormalized.stats.text_rewrites, native_tools_added: nativeTools.stats.added, hook_noise_lines: hookNoiseStats.stripped || 0, i_commands: iCommandStats.command_rewrites, i_text: iCommandStats.text_rewrites, codex_system_noise: systemNoiseStats.dropped || 0, codex_system_noise_bytes: systemNoiseStats.removed_bytes || 0, codex_system_noise_categories: systemNoiseStats.categories || {} },
     payload_log: logOpts.enabled ? { target: 'codex-responses-log-only', before: requestStats(body, logOpts.previewChars), after: requestStats(transformed, logOpts.previewChars) } : null,
   };
 }
