@@ -50,6 +50,7 @@ async function handleUpstreamFailureOrSuccess({
   }
 
   const errInfo = _detectUpstreamFailure(status, headers, fullBody);
+  console.error(`[DEBUG-429] status=${status} type=${errInfo?.type} message=${errInfo?.message}`);
   if (!errInfo) {
     recordSuccessAndReset({ getConsecutive429s, setConsecutive429s });
     return { status, headers, fullBody };
@@ -110,8 +111,28 @@ async function handleUpstreamFailureOrSuccess({
   if (isRateLimit && !shouldRetry) {
     incConsecutive429s();
     if (provider === 'anthropic') {
-      console.error(`[429-AUTO-REFRESH] Detected 429 for Anthropic. Invoking internal oauth token refresh...`);
-      refreshOauthToken().then(() => console.error(`[429-AUTO-REFRESH] Successfully refreshed OAuth credentials.`)).catch(e => console.error(`[429-AUTO-REFRESH] Failed: ${e.message}`));
+      console.error(`[429-AUTO-REFRESH] Detected 429 for Anthropic. Attempting OAuth token refresh and retry...`);
+      try {
+        await refreshOauthToken();
+        console.error(`[429-AUTO-REFRESH] Successfully refreshed and persisted OAuth credentials. Retrying original request.`);
+        
+        // Retry the request by re-sending it via the transport layer
+        const retry = await new Promise((resolve, reject) => {
+          const req = transport.request({ ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(outBody.length) } }, (res) => {
+            const chunks = [];
+            res.on('data', (c) => chunks.push(c));
+            res.on('end', () => resolve({ status: res.statusCode || 502, headers: { ...res.headers }, body: Buffer.concat(chunks) }));
+            res.on('error', reject);
+          });
+          req.on('error', reject);
+          req.write(outBody);
+          req.end();
+        });
+        
+        return { status: retry.status, headers: retry.headers, fullBody: retry.body };
+      } catch (e) {
+        console.error(`[429-AUTO-REFRESH] Refresh and retry failed: ${e.message}`);
+      }
     }
     const nextPlan = effectiveCompactThreshold();
     const nextThreshold = typeof nextPlan === 'object' ? nextPlan.threshold : nextPlan;
