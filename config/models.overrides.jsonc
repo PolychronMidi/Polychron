@@ -48,7 +48,7 @@
     "ring-2.6-1t":               { "context_length": 262000, "max_output_tokens": 66000 },
     "gemini-2.5-pro":            { "context_length": 1048576, "max_output_tokens": 65536 },
     "gemini-2.5-flash":          { "context_length": 1048576, "max_output_tokens": 65536 },
-    "gemini-2.0-flash":          { "context_length": 1048576, "max_output_tokens": 8192 },
+    "gemini-2.0-flash":          { "context_length": 1048576, "max_output_tokens": 65536 },
     "gemini-2.5-flash-lite":     { "context_length": 1048576, "max_output_tokens": 65536 }
   },
   "by_api_model": {
