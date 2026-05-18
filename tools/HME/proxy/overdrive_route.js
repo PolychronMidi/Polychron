@@ -85,7 +85,12 @@ function selectedIndex(chain, projectRoot = PROJECT_ROOT) {
   } catch (_err) { return 0; }
 }
 
-function stripGo(id) { return String(id || '').endsWith('-go') ? String(id).slice(0, -3) : String(id || ''); }
+function upstreamModelId(model) {
+  const raw = typeof model === 'string' ? model : (model && (model.api_model || model.id));
+  return String(raw || '').endsWith('-go') ? String(raw).slice(0, -3) : String(raw || '');
+}
+
+function stripGo(id) { return upstreamModelId(id); }
 
 function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStaleToolResults, stripClaudeIdentity, shrinkForContext, env = process.env, projectRoot = PROJECT_ROOT }) {
   const requested = String(env.OVERDRIVE_MODE || '0');
