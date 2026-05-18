@@ -21,31 +21,21 @@
 {
   "by_id": {},
   "by_api_model": {
-    // OmniRoute bundled codex catalog only spreads the rich (1.05M ctx, 128K out)
-    // config onto the gpt-5.5-* effort variants. Every other Codex model
-    // falls through to provider defaults of (400K ctx, 8K out). The 8K
-    // output figure is a fallback sentinel, not OpenAI's true cap -- every
-    // canonical aggregator (azure/openai/openrouter/vercel/o‍pencode) reports
-    // max_output=128000 for the GPT-5.* generation.
-    "gpt-5.4":              { "max_output_tokens": 128000 },
-    "gpt-5.4-mini":         { "max_output_tokens": 128000 },
-    "gpt-5.3-codex":        { "max_output_tokens": 128000 },
-    "gpt-5.3-codex-spark":  { "max_output_tokens": 128000 },
-    "gpt-5.2":              { "max_output_tokens": 128000 },
-
-    // Effective context windows (provider nameplate -> measured useful ceiling).
-    // Source: empirical degradation thresholds for long-context coherence; the
-    // catalog's context_length is the API contract maximum, not where the model
-    // still reasons reliably. Update from benchmark runs as available.
-    // These pin the budgetary ceiling used by hme_proxy and synthesis_overdrive.
-    "claude-opus-4-7":      { "effective_context_length": 200000 },
-    "claude-sonnet-4-6":    { "effective_context_length": 200000 },
-    "claude-haiku-4-5":     { "effective_context_length": 200000 },
-    "gpt-5.5":              { "effective_context_length": 256000 },
-    "gpt-5.4":              { "effective_context_length": 200000 },
-    "gpt-5.4-mini":         { "effective_context_length": 200000 },
-    "gpt-5.3-codex":        { "effective_context_length": 200000 },
-    "gpt-5.3-codex-spark":  { "effective_context_length": 200000 },
-    "gpt-5.2":              { "effective_context_length": 200000 }
+    // GPT-5 family: catalog max_output_tokens=8192 is an OmniRoute fallback
+    // sentinel (only the gpt-5.5-* variants get the rich 128K-output config in
+    // the bundled codex provider). True OpenAI/Codex output cap is 128000 per
+    // every canonical aggregator in o‍pencode/models.json.
+    // effective_context_length pins the long-context reasoning ceiling that
+    // the context budget + synthesis planner use; the nameplate context_length
+    // remains the API contract maximum.
+    "claude-opus-4-7":     { "effective_context_length": 200000 },
+    "claude-sonnet-4-6":   { "effective_context_length": 200000 },
+    "claude-haiku-4-5":    { "effective_context_length": 200000 },
+    "gpt-5.5":             { "effective_context_length": 256000 },
+    "gpt-5.4":             { "max_output_tokens": 128000, "effective_context_length": 200000 },
+    "gpt-5.4-mini":        { "max_output_tokens": 128000, "effective_context_length": 200000 },
+    "gpt-5.3-codex":       { "max_output_tokens": 128000, "effective_context_length": 200000 },
+    "gpt-5.3-codex-spark": { "max_output_tokens": 128000, "effective_context_length": 200000 },
+    "gpt-5.2":             { "max_output_tokens": 128000, "effective_context_length": 200000 }
   }
 }
