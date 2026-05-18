@@ -222,9 +222,10 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
       deny: registry.deny,
       instruct: registry.instruct,
       allow: registry.allow,
+      rewrite: registry.rewrite,
       params: {},
     };
-    const { firstDeny, instructs, errors } = await registry.runChain(policies, ctx);
+    const { firstDeny, instructs, rewrites, errors } = await registry.runChain(policies, ctx);
     let combinedStderr = '';
     for (const e of errors) combinedStderr += `[unified-policies] ${e.policy}: ${e.error}\n`;
     if (firstDeny) {
@@ -241,6 +242,18 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
           hookSpecificOutput: { additionalContext: firstDeny.reason },
         });
       }
+      if (!combinedStderr) combinedStderr = ' ';
+      return { stdout, stderr: combinedStderr, exit_code: 0 };
+    }
+    if (rewrites && rewrites.length && eventName === 'PreToolUse') {
+      const stdout = JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'allow',
+          updatedInput: ctx.toolInput,
+          additionalContext: [...rewrites.map((r) => r.message).filter(Boolean), ...instructs.map((i) => i.message)].join('\n'),
+        },
+      });
       if (!combinedStderr) combinedStderr = ' ';
       return { stdout, stderr: combinedStderr, exit_code: 0 };
     }
