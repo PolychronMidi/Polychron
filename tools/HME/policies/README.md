@@ -44,6 +44,7 @@ module.exports = {
   async fn(ctx) {
     // ctx.toolInput, ctx.toolName, ctx.sessionId, ctx.payload
     // ctx.deny(reason), ctx.instruct(message), ctx.allow(message?)
+    // ctx.rewrite(updatedInput, message) -- allow + mutate tool_input + terse note
     // ctx.params (default-merged with config overrides)
     if (/* condition */) return ctx.deny('reason text');
     return ctx.allow();
@@ -52,7 +53,14 @@ module.exports = {
 ```
 
 Decision aggregation: first `deny` wins; subsequent policies still run
-for side effects (mirrors `stop_chain/index.js`).
+for side effects (mirrors `stop_chain/index.js`). Rewrites compose:
+the chain mutates `ctx.toolInput` in flight so each downstream policy
+sees the updated input; the dispatcher emits one `permissionDecision:
+'allow'` with the final `updatedInput` plus all rewrite messages
+joined as `additionalContext`. Rule of thumb: prefer `ctx.rewrite`
+over `ctx.deny` when the fix is mechanical (strip spam, truncate
+long line, substitute literal path, auto-fill missing arg) -- denies
+force a retry loop and burn context.
 
 ## Configuration
 
