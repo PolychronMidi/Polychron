@@ -276,7 +276,13 @@ async function preWriteCheck(stdinJson) {
     };
     const { firstDeny, instructs, rewrites, errors } = await registry.runChain(policies, ctx);
     const _rewriteMessages = (rewrites || []).map((r) => r.message).filter(Boolean);
-    if (rewrites && rewrites.length) payload.tool_input = ctx.toolInput;
+    if (rewrites && rewrites.length) {
+      payload.tool_input = ctx.toolInput;
+      try {
+        const { recordPolicyRewrite } = require('../event_kernel/hook_decision_log');
+        recordPolicyRewrite(PROJECT_ROOT, payload, rewrites);
+      } catch (_e) { /* silent-ok: telemetry must never block */ }
+    }
     if (firstDeny) {
       const out = _repeatDeny(payload, _permission('deny', firstDeny.reason, `policy:${firstDeny.policy}`));
       await stateClient.call('write', payload.session_id || '', { payload, decision: out });
