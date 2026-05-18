@@ -162,6 +162,21 @@ test('mode 1 real models.json driver override beats E5 manual fallback', () => {
   assert.notEqual(result.chain[0].id, 'gpt-5.5-xhigh');
 });
 
+test('role detection ignores stale role text in system-reminder continuation context', () => {
+  const payload = {
+    model: 'claude-sonnet-4-6',
+    messages: [
+      { role: 'user', content: [{ type: 'text', text: '<system-reminder>\nold transcript said You are Blue Lead\n</system-reminder>' }] },
+      { role: 'user', content: [{ type: 'text', text: 'restarted to see if sonnet only is being properly used now' }] },
+    ],
+  };
+  assert.equal(roleFromPayload(payload, {}), 'driver');
+});
+
+test('role detection still honors explicit live team lead prompts', () => {
+  assert.equal(roleFromPayload({ messages: [{ role: 'user', content: 'You are Blue Lead\nRun this check.' }] }, {}), 'blue_lead');
+});
+
 test('mode 1 same-chain fallback index cannot override manual top rank', () => quiet(() => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-manual-same-chain-'));
   try {
