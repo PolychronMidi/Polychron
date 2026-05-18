@@ -37,6 +37,10 @@ test('Anthropic effort variants are registered in requested tiers', () => {
     assert.equal(model.effort_level, effort);
     assert.equal(model.tier_score, score);
     assert.match(model.api_model, new RegExp(`claude-${family}`));
+    if (family === 'opus') {
+      assert.equal(model.max_context, 1000000, `${id} max_context`);
+      assert.equal(model.context_length, 1000000, `${id} context_length`);
+    }
   }
 });
 
