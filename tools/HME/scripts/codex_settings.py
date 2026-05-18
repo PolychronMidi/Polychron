@@ -218,6 +218,7 @@ def compare_config(live_text: str, *, port: int) -> list[str]:
 def expected_model_catalog(
     *,
     source_path: Path = CODEX_MODELS_CACHE_JSON,
+    canonical_path: Path = CANONICAL_SYSTEM_PROMPT,
     agents_path: Path = AGENTS_MD,
     context_window: int = CODEX_CONTEXT_WINDOW,
 ) -> tuple[dict[str, Any], dict[str, int]]:
