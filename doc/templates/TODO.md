@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect detector wiring for subvariant addition
+- [ ] [E3] Run focused verification
 
 ## Next
 
-- [ ] [E3] Run focused verification
-- [ ] [E3] Add flabbergasted_by_autocommit detection and reason
-- [ ] [E3] Add regression fixtures
+(empty)
 
 ## Done
 
