@@ -65,6 +65,8 @@ _STATUS_MODES: dict[str, callable] = {
     "codex_proxy": _mode_codex_proxy,
     "codex-route": _mode_codex_route,
     "codex_route": _mode_codex_route,
+    "codex-unknown-calls": _mode_codex_unknown_calls,
+    "codex_unknown_calls": _mode_codex_unknown_calls,
     "hook-decisions": _mode_hook_decisions,
     "hook_decisions": _mode_hook_decisions,
     "staleness": lambda: _staleness_report(),
