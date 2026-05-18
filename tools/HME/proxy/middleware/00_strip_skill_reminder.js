@@ -17,7 +17,11 @@ const STOP_HOOK_COMPACTS = [STOP_HOOK_COMPACT, STOP_HOOK_COMPACT_AUTO, STOP_HOOK
 
 // full-block strips remove the entire content block; tail strips
 // rewrite the text in place; the stop-hook entry is delegated to its compactor.
+// rationale: canonical envelope from proxy/agent_feedback.js drives the universal strip.
+const RE_AGENT_FEEDBACK = /^<system-reminder kind="[^"]+" source="[^"]+">\n[\s\S]*?\n<\/system-reminder>\s*$/;
+
 const STRIP_RULES = [
+  { name: 'agent-feedback-canonical', re: RE_AGENT_FEEDBACK, action: 'remove-block' },
   { name: 'skill', re: RE_SKILL, action: 'remove-block' },
   { name: 'context-full', re: RE_CONTEXT_FULL, action: 'remove-block' },
   { name: 'stop-hook-proxy-echo', re: RE_STOP_HOOK_PROXY, action: 'remove-block' },
