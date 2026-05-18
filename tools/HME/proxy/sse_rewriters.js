@@ -208,7 +208,7 @@ function editFallbackToReadRewrite(eventName, data, ctx) {
   if (!state) return data;
   holds.delete(data.index);
   const parsed = _parseToolInput(state);
-  if (!_isInvalidEditInput(parsed)) {
+  if (!_isInvalidEditInput(parsed, { checkFs: true })) {
     return { events: [
       ['content_block_start', state.startData],
       _inputDeltaEvent(data.index, state.partial || JSON.stringify(parsed)),
