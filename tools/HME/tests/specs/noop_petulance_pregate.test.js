@@ -13,7 +13,7 @@ function runHook({ cmd, transcriptEntries = [], env = {} }) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'noop-petulance-'));
   const transcriptPath = path.join(tmp, 'transcript.jsonl');
   fs.writeFileSync(transcriptPath, transcriptEntries.map((e) => JSON.stringify(e)).join('\n') + (transcriptEntries.length ? '\n' : ''));
-  const input = { transcript_path: transcriptPath, tool_input: { command: cmd } };
+  const input = { transcript_path: transcriptPath, tool_name: 'Bash', tool_input: { command: cmd } };
   try {
     const stdout = execFileSync('bash', [HOOK], {
       input: JSON.stringify(input),
