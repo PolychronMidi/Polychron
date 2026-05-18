@@ -100,6 +100,22 @@ function toolNames(payload) {
     : [];
 }
 
+function headerHas(headers, name, needle) {
+  const raw = headers && headers[name];
+  if (!raw) return false;
+  const value = Array.isArray(raw) ? raw.join(',') : String(raw);
+  return value.toLowerCase().includes(String(needle).toLowerCase());
+}
+
+function isStructuredOutputsProbe(payload, headers) {
+  if (!payload || !Array.isArray(payload.messages) || payload.messages.length !== 1) return false;
+  if (!headerHas(headers, 'anthropic-beta', 'structured-outputs')) return false;
+  const names = toolNames(payload);
+  if (names.length === 0) return true;
+  if (names.length === 1 && names[0] === 'TodoWrite') return true;
+  return false;
+}
+
 function isTodoWriteOnlyProbe(payload) {
   const names = toolNames(payload);
   return names.length === 1 && names[0] === 'TodoWrite'
