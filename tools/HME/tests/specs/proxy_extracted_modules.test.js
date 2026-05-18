@@ -104,6 +104,38 @@ test('mode 1 Anthropic registry uses Claude OAuth provider without API key', () 
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
+test('mode 1 OmniRoute path strips Claude Code adaptive thinking extras', () => quiet(() => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-thinking-'));
+  try {
+    const payload = {
+      model: 'claude-haiku-4-5',
+      stream: true,
+      messages: [{ role: 'user', content: 'hi' }],
+      system: '',
+      tools: [],
+      thinking: { type: 'adaptive', display: 'summarized' },
+      output_config: { effort: 'high' },
+    };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    const result = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes: fakeClientRes(),
+      outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {},
+      stripClaudeIdentity: () => {},
+      shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
+      projectRoot: tmp,
+    });
+    assert.equal(result.applied, true);
+    assert.match(payload.model, /^claude\/claude-haiku-4-5/);
+    assert.equal(Object.prototype.hasOwnProperty.call(payload, 'thinking'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(payload, 'output_config'), false);
+    assert.doesNotMatch(result.outBody.toString('utf8'), /adaptive|output_config/);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}));
+
 test('mode 1 OmniRoute path omits schema-extra thinkingLevel for Anthropic models', () => quiet(() => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-effort-'));
   try {
