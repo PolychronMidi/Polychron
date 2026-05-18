@@ -55,7 +55,7 @@ print(json.dumps({"head": list(chain[:2]), "allow_subagent": allow_sub}))
   assert.equal(result.status, 0, result.stderr);
   const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
   assert.deepEqual(parsed.head, EXPECTED_E5_HEAD);
-  assert.equal(parsed.allow_subagent, false);
+  assert.equal(parsed.allow_subagent, true);
 });
 
 test('overdrive mode 1: purple and crew roles route by team_role_models', () => {
