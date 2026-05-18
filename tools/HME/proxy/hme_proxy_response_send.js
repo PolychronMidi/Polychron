@@ -92,6 +92,7 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
   if (isSseFinal && !final) {
     const { SseTransform } = require('./sse_transform');
     const {
+      dropToolUseRewrite,
       readInputNormalizeRewrite,
       bashPolicyRewrite,
       runInBackgroundRewrite,
