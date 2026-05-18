@@ -123,10 +123,19 @@ function policyCommandArgs(args) {
   return { ...args, cmd: verdict.input.command || cmd };
 }
 
+const KNOWN_PASSTHROUGH = new Set([TARGET_TOOL, 'functions.exec_command', WEB_SEARCH_TOOL]);
+
 function rewriteCallObject(obj, stats) {
   const name = callName(obj);
   const isNative = name === TARGET_TOOL || name === 'functions.exec_command';
-  if (!BRIDGE_NAMES.has(name) && !RENAME_TARGETS[name] && !isNative) return obj;
+  if (!BRIDGE_NAMES.has(name) && !RENAME_TARGETS[name] && !isNative) {
+    if (name && obj.type === 'function_call' && !KNOWN_PASSTHROUGH.has(name)) {
+      stats.unknown_calls = (stats.unknown_calls || 0) + 1;
+      stats.unknown_names = stats.unknown_names || [];
+      if (stats.unknown_names.length < 16 && !stats.unknown_names.includes(name)) stats.unknown_names.push(name);
+    }
+    return obj;
+  }
   const args = parseArgs(argsText(obj));
   if (BRIDGE_NAMES.has(name)) {
     let cmd = bridgeCommand(name, args);
