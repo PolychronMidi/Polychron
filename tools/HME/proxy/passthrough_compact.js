@@ -59,7 +59,7 @@ function shrinkForPassthrough(payload, opts = {}) {
     }
   }
 
-  if (env.HME_PROXY_LOCAL_SUMMARY === '1' && msgs.length > keepMin * 2) {
+  if (maxTier >= 2 && env.HME_PROXY_LOCAL_SUMMARY === '1' && msgs.length > keepMin * 2) {
     const half = Math.floor(msgs.length / 2);
     msgs.splice(0, half, { role: 'user', content: `(hme-proxy local-summary placeholder: ${half} oldest messages compacted)` });
     serialized = JSON.stringify(payload);
