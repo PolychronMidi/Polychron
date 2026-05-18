@@ -21,6 +21,9 @@ function usage() {
     '  codex_structured_tool.js edit file=<file> old=<text>|old_file=<path> new=<text>|new_file=<path>',
     '  codex_structured_tool.js grep pattern=<pat> [path=<file-or-dir>] [limit=N]',
     '  codex_structured_tool.js glob pattern=<glob> [path=<dir>] [max_depth=N]',
+    '  codex_structured_tool.js write --json < {"file_path":"...","content":"..."}',
+    '  codex_structured_tool.js web_fetch --json < {"url":"...","prompt":"..."}',
+    '  codex_structured_tool.js agent --json < {"prompt":"...","level":3}',
     '  codex_structured_tool.js git --json < {"args":["status","--short"]}',
   ].join('\n'));
   process.exit(2);
