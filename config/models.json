@@ -23,7 +23,7 @@
   "providers_to_skip": {
     "description": "Pause provider usage in case of credit shortage.",
     "providers": [
-      ""
+      "anthropic"
     ]
   },
   "ranking_rules": {
@@ -87,6 +87,32 @@
           "max_input_tokens": 872000
         },
         {
+          "id": "gpt-5.5-xhigh",
+          "name": "GPT 5.5 (xhigh)",
+          "maker": "OpenAI",
+          "provider": "codex",
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "ChatGPT Plus via Codex OAuth. Max reasoning effort, best for architecture/planning.",
+          "tier_score": 8,
+          "context_length": 400000,
+          "max_output_tokens": 128000,
+          "max_input_tokens": 272000
+        },
+        {
+          "id": "gpt-5.5-high",
+          "name": "GPT 5.5 (high)",
+          "maker": "OpenAI",
+          "provider": "codex",
+          "cost": "subscription",
+          "cost_amt": 0,
+          "notes": "ChatGPT Plus via Codex OAuth. High reasoning effort.",
+          "tier_score": 7,
+          "context_length": 400000,
+          "max_output_tokens": 128000,
+          "max_input_tokens": 272000
+        },
+        {
           "id": "deepseek-v4-pro-go",
           "name": "DeepSeek V4 Pro",
           "maker": "DeepSeek",
@@ -147,32 +173,6 @@
           "cost_amt": 1.1,
           "notes": "General-purpose frontier reasoning.",
           "tier_score": 4,
-          "context_length": 400000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 272000
-        },
-        {
-          "id": "gpt-5.5-xhigh",
-          "name": "GPT 5.5 (xhigh)",
-          "maker": "OpenAI",
-          "provider": "codex",
-          "cost": "subscription",
-          "cost_amt": 0,
-          "notes": "ChatGPT Plus via Codex OAuth. Max reasoning effort, best for architecture/planning.",
-          "tier_score": 8,
-          "context_length": 400000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 272000
-        },
-        {
-          "id": "gpt-5.5-high",
-          "name": "GPT 5.5 (high)",
-          "maker": "OpenAI",
-          "provider": "codex",
-          "cost": "subscription",
-          "cost_amt": 0,
-          "notes": "ChatGPT Plus via Codex OAuth. High reasoning effort.",
-          "tier_score": 7,
           "context_length": 400000,
           "max_output_tokens": 128000,
           "max_input_tokens": 272000
