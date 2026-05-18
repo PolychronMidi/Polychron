@@ -120,8 +120,6 @@ def _desired_limits(
     raw_input = out.get("max_input_tokens") or 0
     if derived_input:
         out["max_input_tokens"] = min(raw_input, derived_input) if raw_input else derived_input
-    if "effective_context_length" not in out and out.get("max_input_tokens"):
-        out["effective_context_length"] = out["max_input_tokens"]
     return out
 
 
