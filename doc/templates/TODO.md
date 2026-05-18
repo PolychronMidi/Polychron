@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect updated models.json and recent route logs
+(empty)
 
 ## Next
 
-- [ ] [E3] Identify initial-vs-followup role/tier divergence
-- [ ] [E3] Patch routing/state if needed
-- [ ] [E3] Run regression/live checks
+(empty)
 
 ## Done
 
