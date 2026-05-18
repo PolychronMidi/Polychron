@@ -99,6 +99,10 @@ def _desired_limits(
     overrides: dict | None = None,
 ) -> dict[str, int]:
     out: dict[str, int] = {}
+    for key in SYNC_KEYS:
+        val = model.get(key)
+        if isinstance(val, int) and val > 0:
+            out[key] = val
     if catalog_hit:
         for key in SYNC_KEYS:
             val = catalog_hit.get(key)
