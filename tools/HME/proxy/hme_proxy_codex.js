@@ -6,6 +6,15 @@ const http = require('http');
 const { servicePort } = require('./service_registry');
 const { omniProviderForConfigProvider, omniTargetFormat } = require('./omniroute_protocol');
 
+function upstreamModelId(model) {
+  const raw = model && (model.api_model || model.id || model);
+  return String(raw || '').endsWith('-go') ? String(raw).slice(0, -3) : String(raw || '');
+}
+
+function chainSignature(chain) {
+  return (chain || []).map((m) => `${m.provider || ''}:${m.api_model || m.id || ''}`).join('|');
+}
+
 function recordOmniRouteFailureAdvance({
   isOmniRouteSwap,
   swapChain,
@@ -19,9 +28,11 @@ function recordOmniRouteFailureAdvance({
   console.error(`[hme-proxy] fallback probe: _isOmniRouteSwap=${isOmniRouteSwap} chainLen=${swapChain.length} _isRateLimit=${isRateLimit} status=${status}`);
   if (!isOmniRouteSwap || swapChain.length <= 1) return;
   const stFile = path.join(projectRoot, 'tmp', 'hme-omni-swap-state.json');
-  let st = { idx: 0, ts: 0, fail: 0 };
+  let st = { idx: 0, ts: 0, fail: 0, chain: '' };
   try { st = JSON.parse(fs.readFileSync(stFile, 'utf8')); } catch (_) {}
   const now = Date.now();
+  const sig = chainSignature(swapChain);
+  if (st.chain !== sig) st = { idx: 0, ts: 0, fail: 0, chain: sig };
   // Advance on failure; reset to start after 5min success window.
   if (st.fail > 0 || st.ts > 0 && (now - st.ts) < 300000) {
     st.idx = (st.idx + 1) % swapChain.length;
@@ -30,6 +41,7 @@ function recordOmniRouteFailureAdvance({
   }
   st.ts = now;
   st.fail++;
+  st.chain = sig;
   fs.writeFileSync(stFile, JSON.stringify(st));
   const next = swapChain[st.idx];
   const np = omniProviderForConfigProvider(next.provider || '');
@@ -49,13 +61,14 @@ async function retryBlankOmniRouteResponse({
 }) {
   if (!isBlank || !isOmniRouteSwap || swapChain.length <= 1) return null;
   const stFile = path.join(projectRoot, 'tmp', 'hme-omni-swap-state.json');
-  let st = { idx: 0 };
+  let st = { idx: 0, chain: '' };
   try { st = JSON.parse(fs.readFileSync(stFile, 'utf8')); } catch (_) {}
+  const sig = chainSignature(swapChain);
+  if (st.chain !== sig) st = { idx: 0, chain: sig };
   for (let ri = 1; ri < swapChain.length; ri++) {
     const candidate = swapChain[(st.idx + ri) % swapChain.length];
-    const tp = candidate.provider === 'codex' ? 'cx' : candidate.provider === 'opencode_go' ? 'opencode-go' : 'opencode';
-    let tid = candidate.id;
-    if (tid.endsWith('-go')) tid = tid.slice(0, -3);
+    const tp = omniProviderForConfigProvider(candidate.provider || '');
+    const tid = upstreamModelId(candidate);
     const retryPayload = JSON.parse(JSON.stringify(payload));
     retryPayload.model = `${tp}/${tid}`;
     retryPayload.stream = false;
@@ -89,6 +102,7 @@ async function retryBlankOmniRouteResponse({
             st.idx = (st.idx + ri) % swapChain.length;
             st.ts = Date.now();
             st.fail = 0;
+            st.chain = sig;
             fs.writeFileSync(stFile, JSON.stringify(st));
             const headers = { ...outHeaders, 'content-type': 'application/json' };
             delete headers['transfer-encoding'];
@@ -105,4 +119,4 @@ async function retryBlankOmniRouteResponse({
   return { outStatus, outBuf, outHeaders };
 }
 
-module.exports = { recordOmniRouteFailureAdvance, retryBlankOmniRouteResponse };
+module.exports = { recordOmniRouteFailureAdvance, retryBlankOmniRouteResponse, upstreamModelId, chainSignature };
