@@ -124,23 +124,22 @@ function bridgeInput(name, args) {
     if (args.limit != null) out.limit = Number(args.limit);
     return out;
   }
-  if (name === 'Grep') {
-    const out = { pattern: args.pattern || '', path: args.path || '.' };
-    if (args.ignore_case != null) out.ignore_case = Boolean(args.ignore_case);
-    if (args.fixed != null) out.fixed = Boolean(args.fixed);
-    if (args.limit != null) out.limit = Number(args.limit);
-    return out;
+  if (name === 'Write') {
+    return { file_path: file, content: typeof args.content === 'string' ? args.content : '' };
   }
-  if (name === 'Glob') {
-    const out = { pattern: args.pattern || '*', path: args.path || '.' };
-    if (args.max_depth != null) out.max_depth = Number(args.max_depth);
-    if (args.limit != null) out.limit = Number(args.limit);
+  if (name === 'WebFetch') {
+    return { url: String(args.url || ''), prompt: String(args.prompt || '') };
+  }
+  if (name === 'Agent') {
+    const out = { prompt: String(args.prompt || '') };
+    if (args.level != null) out.level = Number(args.level);
     return out;
   }
   return {
     file_path: file,
     old_string: args.old_string || '',
     new_string: args.new_string || '',
+    ...(args.replace_all ? { replace_all: true } : {}),
   };
 }
 
@@ -148,9 +147,27 @@ function jsonHeredoc(input) {
   return `<<'HME_CODEX_JSON'\n${JSON.stringify(input)}\nHME_CODEX_JSON`;
 }
 
+const BRIDGE_ACTIONS = { Read: 'read', Edit: 'edit', Write: 'write', WebFetch: 'web_fetch', Agent: 'agent' };
+
 function bridgeCommand(name, args) {
-  const action = ({ Read: 'read', Edit: 'edit', Grep: 'grep', Glob: 'glob' })[name] || 'read';
+  const action = BRIDGE_ACTIONS[name] || 'read';
   return `${BRIDGE} ${action} --json ${jsonHeredoc(bridgeInput(name, args))}`;
+}
+
+function bashCommandArgs(args) {
+  const cmd = typeof args.command === 'string' ? args.command : (typeof args.cmd === 'string' ? args.cmd : '');
+  const out = { cmd };
+  if (args.timeout != null) out.timeout_ms = Number(args.timeout);
+  if (args.run_in_background) out.run_in_background = true;
+  if (typeof args.description === 'string' && args.description) out.justification = args.description;
+  return out;
+}
+
+function webSearchArgs(args) {
+  const out = { query: String(args.query || '') };
+  if (Array.isArray(args.allowed_domains) && args.allowed_domains.length) out.allowed_domains = args.allowed_domains.map(String);
+  if (Array.isArray(args.blocked_domains) && args.blocked_domains.length) out.blocked_domains = args.blocked_domains.map(String);
+  return out;
 }
 
 function callName(obj) {
