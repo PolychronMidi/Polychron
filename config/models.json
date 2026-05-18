@@ -280,17 +280,18 @@
           "max_input_tokens": 122880
         },
         {
-          "id": "gemini-2.5-pro",
-          "name": "Gemini 2.5 Pro",
-          "maker": "Google",
+          "id": "deepseek-v4-flash-openrouter-free",
+          "name": "DeepSeek V4 Flash",
+          "maker": "DeepSeek",
           "provider": "openrouter",
+          "api_model": "deepseek/deepseek-v4-flash:free",
           "cost": "free",
           "cost_amt": 0,
-          "notes": "OpenRouter free tier. Gemini 2.5 Pro with 1M context.",
+          "notes": "OpenRouter free catalog. Large-context reasoning and coding model.",
           "tier_score": 5,
           "context_length": 1048576,
-          "max_output_tokens": 65536,
-          "max_input_tokens": 983040
+          "max_output_tokens": 384000,
+          "max_input_tokens": 664576
         },
         {
           "id": "llama-4-maverick",
