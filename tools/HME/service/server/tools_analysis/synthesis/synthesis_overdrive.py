@@ -133,7 +133,8 @@ def _resolve_model_provider(model_id: str) -> str | None:
 
 def _context_limits_for(model_id: str) -> tuple[int, int | None]:
     meta = _resolve_model_meta(model_id)
-    ctx_limit = int(meta.get("context_length") or 0)
+    # Prefer effective ceiling over provider nameplate (see models.overrides.jsonc).
+    ctx_limit = int(meta.get("effective_context_length") or meta.get("context_length") or 0)
     output_limit = int(meta.get("max_output_tokens") or 0)
     return (ctx_limit if ctx_limit > 0 else 128000, output_limit if output_limit > 0 else None)
 
