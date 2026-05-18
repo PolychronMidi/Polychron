@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect middleware/tool-result rewrite pipeline
+(empty)
 
 ## Next
 
-- [ ] [E3] Add focused tests
-- [ ] [E3] Add web-search failure loop guard/rewrite
-- [ ] [E3] Run verification
+(empty)
 
 ## Done
 
