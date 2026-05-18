@@ -1,8 +1,9 @@
 'use strict';
 
-function omniProviderForConfigProvider(provider) {
+function omniProviderForConfigProvider(provider, env = process.env) {
   const p = String(provider || '').trim();
   if (p === 'codex') return 'cx';
+  if (p === 'anthropic' && !env.ANTHROPIC_API_KEY) return 'claude';
   if (p === 'opencode_go' || p === 'opencode-go') return 'opencode-go';
   if (p === 'opencode') return 'opencode';
   return p || 'opencode-go';
