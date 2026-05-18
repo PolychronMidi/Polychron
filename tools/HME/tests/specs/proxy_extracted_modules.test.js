@@ -172,14 +172,16 @@ test('role detection still honors explicit live team lead prompts', () => {
   assert.equal(roleFromPayload({ messages: [{ role: 'user', content: 'You are Blue Lead\nRun this check.' }] }, {}), 'blue_lead');
 });
 
-test('mode 1 same-chain fallback index cannot override manual top rank', () => quiet(() => {
+test('mode 1 same-chain fallback index advances even when chain has a manual top', () => quiet(() => {
+  // manually_toprank only fronts the chain; failover still progresses through it.
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-manual-same-chain-'));
   try {
     const { chainSignature } = require('../../proxy/overdrive_route');
     const cfg = require('../../proxy/shared').loadModelsJson();
     const chainInfo = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
     fs.mkdirSync(path.join(tmp, 'tmp'), { recursive: true });
-    fs.writeFileSync(path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 1, chain: chainSignature(chainInfo.chain), fail: 0, ts: Date.now() }));
+    // fail>0 + recent ts triggers honoring idx from state.
+    fs.writeFileSync(path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 1, chain: chainSignature(chainInfo.chain), fail: 1, ts: Date.now() }));
     const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
     const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
     const result = applyOverdriveRoute({
@@ -187,8 +189,7 @@ test('mode 1 same-chain fallback index cannot override manual top rank', () => q
       stripStaleToolResults: () => {}, stripClaudeIdentity: () => {}, shrinkForContext: () => {},
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' }, projectRoot: tmp,
     });
-    assert.equal(result.swapMeta.id, 'gpt-5.5-xhigh');
-    assert.match(payload.model, /^cx\/gpt-5.5/);
+    assert.equal(result.swapMeta.id, chainInfo.chain[1].id, 'fallback index 1 selects chain[1]');
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
