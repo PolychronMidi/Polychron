@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3622,
-      "updated_ts": 1779070940.6491911,
-      "codex_plan_synced_ts": 1779070940.6490624,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-      "codex_plan_ts": "2026-05-18T02:21:59.297Z"
+      "max_id": 3625,
+      "updated_ts": 1779071157.7263162,
+      "codex_plan_synced_ts": 1779071157.7261934,
+      "codex_plan_source": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+      "codex_plan_ts": "2026-05-18T02:25:57.288Z"
     }
   },
   {
@@ -1719,8 +1719,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-    "codex_plan_ts": "2026-05-18T02:21:59.297Z"
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:25:57.288Z"
   },
   {
     "id": 3152,
@@ -9429,8 +9429,8 @@
     "id": 3620,
     "text": "Inspect local model ranking and routing",
     "activeForm": "Inspect local model ranking and routing",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9439,14 +9439,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-    "codex_plan_ts": "2026-05-18T02:21:59.297Z"
+    "codex_plan_ts": "2026-05-18T02:21:59.297Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3621,
     "text": "Verify current Sonnet context metadata",
     "activeForm": "Verify current Sonnet context metadata",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9455,14 +9456,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-    "codex_plan_ts": "2026-05-18T02:21:59.297Z"
+    "codex_plan_ts": "2026-05-18T02:21:59.297Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3622,
     "text": "Patch config/routing mismatch",
     "activeForm": "Patch config/routing mismatch",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9471,6 +9473,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-    "codex_plan_ts": "2026-05-18T02:21:59.297Z"
+    "codex_plan_ts": "2026-05-18T02:21:59.297Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3623,
+    "text": "Inspect SessionStart contract and payload evidence",
+    "activeForm": "Inspect SessionStart contract and payload evidence",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779071157.725051,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:25:57.288Z"
+  },
+  {
+    "id": 3624,
+    "text": "Patch strict SessionStart/resume semantics",
+    "activeForm": "Patch strict SessionStart/resume semantics",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779071157.725056,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:25:57.288Z"
+  },
+  {
+    "id": 3625,
+    "text": "Update regressions",
+    "activeForm": "Update regressions",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779071157.725059,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:25:57.288Z"
   }
 ]
