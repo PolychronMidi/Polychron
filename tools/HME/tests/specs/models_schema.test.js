@@ -34,9 +34,9 @@ test('models.json schema: unique ids, valid tiers, valid effort variants', () =>
         assert.ok(model.api_model, `${model.id} effort variant requires api_model`);
       }
       if (/^claude-opus-/.test(model.id)) {
-        assert.equal(model.max_context, 1000000, `${model.id} opus max_context`);
         assert.equal(model.context_length, 1000000, `${model.id} opus context_length`);
       }
+      assert.equal(model.max_context, undefined, `${model.id} max_context retired`);
     }
   }
 });
