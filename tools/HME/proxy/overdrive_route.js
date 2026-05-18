@@ -7,6 +7,7 @@ const {
   omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat, firstLegacyChatCandidate,
 } = require('./omniroute_protocol');
 const { servicePort } = require('./service_registry');
+const { applyEffortParams } = require('./model_effort');
 
 function effectiveMode(env = process.env) {
   const mode = String(env.OVERDRIVE_MODE || '0');
