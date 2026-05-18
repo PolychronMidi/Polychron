@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3608,
-      "updated_ts": 1779066710.6294606,
-      "codex_plan_synced_ts": 1779066710.6293364,
+      "max_id": 3612,
+      "updated_ts": 1779066920.6411161,
+      "codex_plan_synced_ts": 1779066920.6409903,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-      "codex_plan_ts": "2026-05-18T01:11:36.922Z"
+      "codex_plan_ts": "2026-05-18T01:15:11.977Z"
     }
   },
   {
@@ -9240,5 +9240,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
     "codex_plan_ts": "2026-05-18T01:11:36.922Z"
+  },
+  {
+    "id": 3609,
+    "text": "Locate `thinkingLevel` injection path",
+    "activeForm": "Locate `thinkingLevel` injection path",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779066912.4149392,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T01:15:11.977Z"
+  },
+  {
+    "id": 3610,
+    "text": "Patch effort params for Claude OAuth route",
+    "activeForm": "Patch effort params for Claude OAuth route",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779066912.414945,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T01:15:11.977Z"
+  },
+  {
+    "id": 3611,
+    "text": "Add/adjust regression tests",
+    "activeForm": "Add/adjust regression tests",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779066912.414948,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T01:15:11.977Z"
+  },
+  {
+    "id": 3612,
+    "text": "Run focused checks and restart proxy",
+    "activeForm": "Run focused checks and restart proxy",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779066912.4149508,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T01:15:11.977Z"
   }
 ]
