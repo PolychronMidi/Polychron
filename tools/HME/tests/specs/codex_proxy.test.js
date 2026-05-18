@@ -265,6 +265,68 @@ print(mod._mode_codex_route())
   }
 });
 
+test('Codex unknown-calls status mode rolls up codex-unknown-tool-call events', () => {
+  const sandbox = withSandbox();
+  const eventsPath = path.join(sandbox, 'tools', 'HME', 'runtime', 'codex-proxy-events.jsonl');
+  fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
+  const ev1 = JSON.stringify({ ts: '2026-05-15T21:00:00.000Z', kind: 'codex-unknown-tool-call', route: 'omniroute', count: 2, names: ['apply_patch', 'spawn_agent'] });
+  const ev2 = JSON.stringify({ ts: '2026-05-15T21:01:00.000Z', kind: 'codex-unknown-tool-call', route: 'omniroute', count: 1, names: ['apply_patch'] });
+  fs.writeFileSync(eventsPath, `${ev1}\n${ev2}\n`);
+  const script = `
+import importlib.util, sys, types
+import os
+os.environ["HME_CODEX_ROUTE_SMOKE_ACTIVE"] = "0"
+server = types.ModuleType("server")
+server.context = types.SimpleNamespace(PROJECT_ROOT="${sandbox}")
+sys.modules["server"] = server
+sys.modules["server.context"] = server.context
+spec = importlib.util.spec_from_file_location("status_modes_codex", "${path.join(repoRoot, 'tools', 'HME', 'service', 'server', 'tools_analysis', 'status_unified', 'status_modes_codex.py')}")
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+print(mod._mode_codex_unknown_calls())
+`;
+  const res = spawnSync('python3', ['-c', script], { encoding: 'utf8' });
+  try {
+    assert.strictEqual(res.status, 0, res.stderr);
+    assert.match(res.stdout, /Codex unknown tool calls/);
+    assert.match(res.stdout, /2 events  total_calls=3/);
+    assert.match(res.stdout, /apply_patch/);
+    assert.match(res.stdout, /spawn_agent/);
+    assert.match(res.stdout, /omniroute/);
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
+
+test('Codex unknown-calls status mode reports zero drift when log empty', () => {
+  const sandbox = withSandbox();
+  const eventsPath = path.join(sandbox, 'tools', 'HME', 'runtime', 'codex-proxy-events.jsonl');
+  fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
+  fs.writeFileSync(eventsPath, '');
+  const script = `
+import importlib.util, sys, types
+import os
+os.environ["HME_CODEX_ROUTE_SMOKE_ACTIVE"] = "0"
+server = types.ModuleType("server")
+server.context = types.SimpleNamespace(PROJECT_ROOT="${sandbox}")
+sys.modules["server"] = server
+sys.modules["server.context"] = server.context
+spec = importlib.util.spec_from_file_location("status_modes_codex", "${path.join(repoRoot, 'tools', 'HME', 'service', 'server', 'tools_analysis', 'status_unified', 'status_modes_codex.py')}")
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+print(mod._mode_codex_unknown_calls())
+`;
+  const res = spawnSync('python3', ['-c', script], { encoding: 'utf8' });
+  try {
+    assert.strictEqual(res.status, 0, res.stderr);
+    assert.match(res.stdout, /Tool surface drift = 0/);
+  } finally {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
+
 test('Codex proxy routes through OmniRoute Responses for dashboard visibility', async () => {
   const sandbox = withSandbox();
   const proxyPort = await freePort();
