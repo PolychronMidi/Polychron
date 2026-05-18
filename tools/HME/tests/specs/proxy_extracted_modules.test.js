@@ -8,6 +8,7 @@ const path = require('path');
 
 const { sessionKey } = require('../../proxy/shared');
 const { shrinkForPassthrough } = require('../../proxy/passthrough_compact');
+const { createContextBudget } = require('../../proxy/hme_proxy_context_budget');
 const { handleLegacySwapResponse, writeAnthropicStopSse } = require('../../proxy/legacy_swap_response');
 const { effectiveMode, buildMode1Chain, applyOverdriveRoute, upstreamModelId, roleFromPayload } = require('../../proxy/overdrive_route');
 const { reasoningTextFromData, providerReasoningToThinkingRewrite } = require('../../proxy/reasoning_to_thinking');
