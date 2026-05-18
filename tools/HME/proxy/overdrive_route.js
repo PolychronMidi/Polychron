@@ -138,7 +138,8 @@ function isManualTopActive(chain) {
   return !!(chain && chain[0] && chain[0]._manual_toprank === true);
 }
 function selectedIndex(chain, projectRoot = PROJECT_ROOT) {
-  if (!chain.length || isManualTopActive(chain)) return 0;
+  // manually_toprank only fronts the chain; failover still progresses through it.
+  if (!chain.length) return 0;
   try {
     const st = JSON.parse(fs.readFileSync(stateFile(projectRoot), 'utf8'));
     if (st.chain !== chainSignature(chain)) return 0;
