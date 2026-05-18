@@ -36,13 +36,35 @@ test('stop-hook compaction preserves exhaust discriminator', () => {
 
 test('existing compacted stop-hook sentinel is stripped', () => {
   const input = 'Stop hook feedback: repeated auto-completeness/exhaust gate compacted by hme-proxy.';
-  const policy = require('../../proxy/middleware/00_strip_skill_reminder');
   const content = [{ type: 'text', text: input }];
-  let dirty = false;
-  policy.onRequest({
-    payload: { messages: [{ role: 'user', content }] },
-    ctx: { markDirty: () => { dirty = true; }, emit: () => {} },
-  });
-  assert.strictEqual(dirty, true);
+  const out = runOnContent(content);
+  assert.strictEqual(out.dirty, true);
+  assert.deepStrictEqual(content, []);
+});
+
+test('user email date system-reminder is stripped with trailing blank line', () => {
+  const input = '<system-reminder>\n'
+    + "As you answer the user's questions, you can use the following context:\n"
+    + '# userEmail\n'
+    + "The user's email address is five.4.3.2.one@gmail.com.\n"
+    + '# currentDate\n'
+    + "Today's date is 2026-05-18.\n\n"
+    + '      IMPORTANT: this context may or may not be relevant to your tasks. '
+    + 'You should not respond to this context unless it is highly relevant to your task.\n'
+    + '</system-reminder>\n\n';
+  const content = [{ type: 'text', text: input }];
+  const out = runOnContent(content);
+  assert.strictEqual(out.dirty, true);
+  assert.deepStrictEqual(content, []);
+});
+
+test('proxy-injected hme stop hook reminder echo is stripped', () => {
+  const input = '<system-reminder>\n'
+    + 'HME Stop Hook Feedback (proxy-injected)\n'
+    + 'EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items.\n'
+    + '</system-reminder>';
+  const content = [{ type: 'text', text: input }];
+  const out = runOnContent(content);
+  assert.strictEqual(out.dirty, true);
   assert.deepStrictEqual(content, []);
 });
