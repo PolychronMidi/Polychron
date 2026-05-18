@@ -85,10 +85,11 @@ test('recordFailure twice in window advances idx', () => {
 test('recordFailure wraps around chain', () => {
   const root = tmpRoot();
   try {
-    for (let i = 0; i < CHAIN.length + 1; i++) store.recordFailure(CHAIN, root);
+    // 4 failures: idx walks 0 -> 1 -> 2 -> 0 (wrap on the 4th).
+    for (let i = 0; i < 4; i++) store.recordFailure(CHAIN, root);
     const st = store.peek(root);
-    assert.equal(st.idx, 1, 'wrapped past chain.length');
-    assert.equal(st.fail, CHAIN.length + 1);
+    assert.equal(st.idx, 0, 'wrapped past chain.length');
+    assert.equal(st.fail, 4);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
