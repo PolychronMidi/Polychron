@@ -1,7 +1,32 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { shrinkForPassthrough } = require('./passthrough_compact');
 const { PROJECT_ROOT } = require('./shared');
+
+// Lazy-loaded registry of {model_id -> effective_context_length || context_length}.
+// Reloads when the source file mtime changes (no daemon restart needed after sync).
+let _modelCtxRegistry = { mtimeMs: 0, map: new Map() };
+function loadModelCtxRegistry() {
+  const modelsPath = path.join(PROJECT_ROOT, 'config', 'models.json');
+  let stat; try { stat = fs.statSync(modelsPath); } catch { return _modelCtxRegistry.map; }
+  if (stat.mtimeMs === _modelCtxRegistry.mtimeMs) return _modelCtxRegistry.map;
+  const text = fs.readFileSync(modelsPath, 'utf8');
+  // Strip // line + /* */ block comments before JSON.parse (mirrors jsonc.py).
+  const stripped = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  let cfg; try { cfg = JSON.parse(stripped); } catch { return _modelCtxRegistry.map; }
+  const map = new Map();
+  for (const tier of Object.values(cfg.tiers || {})) {
+    for (const m of tier.models || []) {
+      const eff = Number(m.effective_context_length) || Number(m.context_length) || 0;
+      if (eff > 0 && m.id) map.set(String(m.id), eff);
+      if (eff > 0 && m.api_model) map.set(String(m.api_model), eff);
+    }
+  }
+  _modelCtxRegistry = { mtimeMs: stat.mtimeMs, map };
+  return map;
+}
 
 function envNumber(name, fallback) {
   const n = Number(process.env[name]);
