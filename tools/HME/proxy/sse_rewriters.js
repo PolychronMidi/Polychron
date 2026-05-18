@@ -146,7 +146,27 @@ function _editToReadFallback(editInput) {
   return out;
 }
 
-function _isInvalidEditInput(input) {
+// Sentinel signaling content has been display-redacted by an upstream
+// truncation pass; if it ends up inside old_string, the model's view of
+// the file is stale and the Edit cannot match. Treat as invalid.
+const _DISPLAY_REDACTED_MARK = '<' + 'display-redacted' + '>';
+
+function _editIsStale(input) {
+  if (!input || typeof input !== 'object') return false;
+  const fp = String(input.file_path || input.path || '').trim();
+  const old = input.old_string;
+  if (!fp || typeof old !== 'string' || old.length === 0) return false;
+  if (!fp.startsWith('/')) return false; // only absolute paths; relative is ambiguous
+  let text;
+  try {
+    const fs = require('fs');
+    if (!fs.existsSync(fp) || !fs.statSync(fp).isFile()) return false;
+    text = fs.readFileSync(fp, 'utf8');
+  } catch (_e) { return false; }
+  return !text.includes(old);
+}
+
+function _isInvalidEditInput(input, options = {}) {
   if (!input || typeof input !== 'object') return true;
   if (Array.isArray(input.edits)) {
     if (input.edits.length === 0) return true;
@@ -154,11 +174,17 @@ function _isInvalidEditInput(input) {
       if (!edit || typeof edit !== 'object') return true;
       if (typeof edit.old_string !== 'string' || edit.old_string.length === 0) return true;
       if (typeof edit.new_string !== 'string') return true;
+      if (edit.old_string === edit.new_string) return true; // no-op
+      if (edit.old_string.includes(_DISPLAY_REDACTED_MARK)) return true;
     }
+    if (options.checkFs && _editIsStale({ ...input, old_string: input.edits[0] && input.edits[0].old_string })) return true;
     return false;
   }
   if (typeof input.old_string !== 'string' || input.old_string.length === 0) return true;
   if (typeof input.new_string !== 'string') return true;
+  if (input.old_string === input.new_string) return true; // no-op; rewrite to Read
+  if (input.old_string.includes(_DISPLAY_REDACTED_MARK)) return true;
+  if (options.checkFs && _editIsStale(input)) return true;
   return false;
 }
 
