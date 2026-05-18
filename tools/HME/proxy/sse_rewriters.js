@@ -188,38 +188,87 @@ function _isInvalidEditInput(input, options = {}) {
   return false;
 }
 
+const READ_FALLBACK_TOOL_NAMES = new Set(['Read']);
+let _sessionReadCache = null;
+function _readCache() {
+  if (_sessionReadCache !== null) return _sessionReadCache;
+  try { _sessionReadCache = require('./session_read_cache'); }
+  catch (_e) { _sessionReadCache = false; }
+  return _sessionReadCache;
+}
+
+function _editTargetUnread(input, ctx) {
+  const cache = _readCache();
+  if (!cache) return false;
+  const sessionId = ctx && typeof ctx.get === 'function' ? ctx.get('session_id') : '';
+  if (!sessionId) return false;
+  const fp = String((input && (input.file_path || input.path)) || '').trim();
+  if (!fp || !fp.startsWith('/')) return false;
+  return !cache.hasRead(sessionId, fp);
+}
+
 function editFallbackToReadRewrite(eventName, data, ctx) {
-  let holds = ctx.get('edit_fallback_hold');
-  if (!holds) { holds = new Map(); ctx.set('edit_fallback_hold', holds); }
+  let editHolds = ctx.get('edit_fallback_hold');
+  if (!editHolds) { editHolds = new Map(); ctx.set('edit_fallback_hold', editHolds); }
+  let readHolds = ctx.get('read_track_hold');
+  if (!readHolds) { readHolds = new Map(); ctx.set('read_track_hold', readHolds); }
+
   if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') {
     if (EDIT_FALLBACK_TOOL_NAMES.has(data.content_block.name)) {
-      holds.set(data.index, { id: data.content_block.id, name: data.content_block.name, startData: data, partial: '' });
-      return null; // suppress start; re-emit on stop after we know if rewrite is needed
+      editHolds.set(data.index, { id: data.content_block.id, name: data.content_block.name, startData: data, partial: '' });
+      return null;
+    }
+    if (READ_FALLBACK_TOOL_NAMES.has(data.content_block.name)) {
+      readHolds.set(data.index, { partial: '' });
     }
     return data;
   }
   if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'input_json_delta') {
-    const state = holds.get(data.index);
-    if (state) { state.partial += (data.delta.partial_json || ''); return null; }
+    const editState = editHolds.get(data.index);
+    if (editState) { editState.partial += (data.delta.partial_json || ''); return null; }
+    const readState = readHolds.get(data.index);
+    if (readState) { readState.partial += (data.delta.partial_json || ''); }
     return data;
   }
   if (eventName !== 'content_block_stop' || !data) return data;
-  const state = holds.get(data.index);
-  if (!state) return data;
-  holds.delete(data.index);
-  const parsed = _parseToolInput(state);
-  if (!_isInvalidEditInput(parsed, { checkFs: true })) {
+
+  const readState = readHolds.get(data.index);
+  if (readState) {
+    readHolds.delete(data.index);
+    const cache = _readCache();
+    const sessionId = ctx && typeof ctx.get === 'function' ? ctx.get('session_id') : '';
+    if (cache && sessionId) {
+      try {
+        const readInput = JSON.parse(readState.partial || '{}');
+        const fp = String((readInput && (readInput.file_path || readInput.path)) || '').trim();
+        if (fp) cache.recordRead(sessionId, fp);
+      } catch (_e) { /* silent-ok: malformed JSON; the real tool execution will surface the error */ }
+    }
+  }
+
+  const editState = editHolds.get(data.index);
+  if (!editState) return data;
+  editHolds.delete(data.index);
+  const parsed = _parseToolInput(editState);
+  const invalid = _isInvalidEditInput(parsed, { checkFs: true });
+  const unread = !invalid && _editTargetUnread(parsed, ctx);
+  if (!invalid && !unread) {
     return { events: [
-      ['content_block_start', state.startData],
-      _inputDeltaEvent(data.index, state.partial || JSON.stringify(parsed)),
+      ['content_block_start', editState.startData],
+      _inputDeltaEvent(data.index, editState.partial || JSON.stringify(parsed)),
       ['content_block_stop', data],
     ]};
   }
   const readInput = _editToReadFallback(parsed || {});
   const readStart = {
-    ...state.startData,
-    content_block: { ...state.startData.content_block, name: 'Read', input: {} },
+    ...editState.startData,
+    content_block: { ...editState.startData.content_block, name: 'Read', input: {} },
   };
+  if (unread) {
+    const cache = _readCache();
+    const sessionId = ctx && typeof ctx.get === 'function' ? ctx.get('session_id') : '';
+    if (cache && sessionId && readInput.file_path) cache.recordRead(sessionId, readInput.file_path);
+  }
   return { events: [
     ['content_block_start', readStart],
     _inputDeltaEvent(data.index, JSON.stringify(readInput)),
