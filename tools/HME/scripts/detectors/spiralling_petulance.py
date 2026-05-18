@@ -130,6 +130,19 @@ def _flabbergasted_by_autocommit(path: str) -> bool:
     return inspect_count >= 4 and clean_results >= 2
 
 
+def noop_predicate(cmd: str, transcript_path: str) -> bool:
+    """PreToolUse mirror predicate: fires when this Bash command is a no-op
+    AND the current turn already has >=1 prior no-op Bash. Same regex and
+    threshold as the Stop-hook detector -- one source of truth."""
+    if not cmd or not _NOOP_BASH.match(cmd):
+        return False
+    try:
+        prior, _ = _current_turn_noop_tools(transcript_path)
+    except Exception:
+        return False
+    return prior >= 1
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("ok")

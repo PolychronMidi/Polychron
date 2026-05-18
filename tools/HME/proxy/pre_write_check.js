@@ -125,7 +125,7 @@ function _commentBloatDecision(file, content, writeVerb) {
   if (!prefixes.length) return null;
   const threshold = Number(process.env.COMMENT_BLOAT_WARN || 3);
   const longLine = Number(process.env.COMMENT_BLOAT_LONG_LINE || 90);
-  const annotations = ['# rationale:', '# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// rationale:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa'];
+  const annotations = ['# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa'];
   let run = 0;
   const lines = String(content || '').split('\n');
   for (let i = 0; i < lines.length; i += 1) {
