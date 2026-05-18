@@ -4,11 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Add/adjust regression tests
+- [ ] [E3] Inspect lifesaver/log state and existing detector wiring
 
 ## Next
 
-- [ ] [E3] Run focused checks and restart proxy
+- [ ] [E3] Implement crying_wolf stale-alert reconciliation
+- [ ] [E3] Add focused tests/registry wiring if needed
+- [ ] [E3] Run verification and apply reconciliation
 
 ## Done
 
