@@ -5,8 +5,6 @@ const assert = require('node:assert');
 const registry = require('../../policies/registry');
 const policy = require('../../policies/builtin/block-character-spam');
 
-// Build spam fixtures at runtime so this source file does not itself match
-// the policy it tests. Same trick used by block-comment-ellipsis-stub.
 const _eq = (n) => '='.repeat(n);
 const _dash = (n) => '-'.repeat(n);
 const _hash = (n) => '#'.repeat(n);
@@ -15,38 +13,41 @@ const _box = (n) => '-'.repeat(n);
 function _ctx(overrides = {}) {
   return {
     toolInput: {},
-    deny: registry.deny, instruct: registry.instruct, allow: registry.allow,
+    deny: registry.deny, instruct: registry.instruct, allow: registry.allow, rewrite: registry.rewrite,
     ...overrides,
   };
 }
 
-test('block-character-spam: deny on equals-decoration in Write content', async () => {
+test('block-character-spam: rewrite equals-decoration in Write content', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: 'hello\n// ' + _eq(5) + '\nworld' },
   }));
-  assert.strictEqual(r.decision, 'deny');
-  assert.match(r.reason, /4\+ identical decoration/);
+  assert.strictEqual(r.decision, 'rewrite');
+  assert.match(r.message, /DDoC stripped: char spam/);
+  assert.equal(r.updatedInput.content, 'hello\n// \nworld');
 });
 
-test('block-character-spam: deny on dash-divider', async () => {
+test('block-character-spam: rewrite dash-divider in-place', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: 'a\nb' + _dash(5) + 'c\n' },
   }));
-  assert.strictEqual(r.decision, 'deny');
+  assert.strictEqual(r.decision, 'rewrite');
+  assert.equal(r.updatedInput.content, 'a\nbc\n');
 });
 
-test('block-character-spam: deny on unicode box-drawing run', async () => {
+test('block-character-spam: rewrite unicode box-drawing run', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: '// ' + _box(8) + '\n' },
   }));
-  assert.strictEqual(r.decision, 'deny');
+  assert.strictEqual(r.decision, 'rewrite');
 });
 
-test('block-character-spam: deny on markdown depth-4 heading (4 hashes)', async () => {
+test('block-character-spam: rewrite markdown depth-4 heading (4 hashes)', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { content: _hash(4) + ' Section\n' },
   }));
-  assert.strictEqual(r.decision, 'deny');
+  assert.strictEqual(r.decision, 'rewrite');
+  assert.equal(r.updatedInput.content, ' Section\n');
 });
 
 test('block-character-spam: allow stacked closing parens (code structure)', async () => {
@@ -77,18 +78,19 @@ test('block-character-spam: per-line opt-out via spam-ok marker', async () => {
   assert.strictEqual(r.decision, 'allow');
 });
 
-test('block-character-spam: deny on Edit new_string', async () => {
+test('block-character-spam: rewrite Edit new_string', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { new_string: '// ' + _eq(4) + '\n' },
   }));
-  assert.strictEqual(r.decision, 'deny');
+  assert.strictEqual(r.decision, 'rewrite');
+  assert.equal(r.updatedInput.new_string, '// \n');
 });
 
-test('block-character-spam: deny on MultiEdit edits[]', async () => {
+test('block-character-spam: rewrite MultiEdit edits[]', async () => {
   const r = await policy.fn(_ctx({
     toolInput: { edits: [{ new_string: 'ok' }, { new_string: '// ' + _dash(4) }] },
   }));
-  assert.strictEqual(r.decision, 'deny');
+  assert.strictEqual(r.decision, 'rewrite');
 });
 
 test('block-character-spam: allow empty content', async () => {
