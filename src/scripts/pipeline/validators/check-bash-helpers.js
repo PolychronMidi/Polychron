@@ -7,7 +7,11 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
-const HOOK_ROOTS = [path.join(ROOT, 'tools/HME/hooks')];
+// rationale: scoped to pretool/post hooks where the streak-helper bug class lives.
+const HOOK_ROOTS = [
+  path.join(ROOT, 'tools/HME/hooks/pretooluse'),
+  path.join(ROOT, 'tools/HME/hooks/posttooluse'),
+];
 
 const KNOWN_OK = new Set([
   '_HBOOT_DIR', '_HME_SAFETY_DIR', '_HME_HELPERS_DIR', '_HME_LOG', '_HME_LATENCY',
