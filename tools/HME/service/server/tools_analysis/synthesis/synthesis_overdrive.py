@@ -192,7 +192,8 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
     from . import synthesis_reasoning as _sr
     timeout_secs = _sr._overdrive_timeout()
-    _provider = _resolve_model_provider(model_id)
+    _meta = _resolve_model_meta(model_id)
+    _provider = _meta.get("provider")
     _limit, _output_limit = _context_limits_for(model_id)
     _reserve = 4096
     _max_output = _output_limit or max(256, _limit - _reserve)
