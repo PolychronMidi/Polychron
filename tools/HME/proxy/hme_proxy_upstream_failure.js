@@ -113,12 +113,15 @@ async function handleUpstreamFailureOrSuccess({
     if (provider === 'anthropic') {
       console.error(`[429-AUTO-REFRESH] Detected 429 for Anthropic. Attempting OAuth token refresh and retry...`);
       try {
-        await refreshOauthToken();
+        const newToken = await refreshOauthToken();
         console.error(`[429-AUTO-REFRESH] Successfully refreshed and persisted OAuth credentials. Retrying original request.`);
         
-        // Retry the request by re-sending it via the transport layer
+        // Retry with the new token (same as 401 handler pattern)
+        const retryHeaders = { ...upstreamHeaders, authorization: `Bearer ${newToken}` };
+        retryHeaders['content-length'] = String(outBody.length);
+        const retryOpts = { ...upstreamOpts, headers: retryHeaders };
         const retry = await new Promise((resolve, reject) => {
-          const req = transport.request({ ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(outBody.length) } }, (res) => {
+          const req = transport.request(retryOpts, (res) => {
             const chunks = [];
             res.on('data', (c) => chunks.push(c));
             res.on('end', () => resolve({ status: res.statusCode || 502, headers: { ...res.headers }, body: Buffer.concat(chunks) }));
