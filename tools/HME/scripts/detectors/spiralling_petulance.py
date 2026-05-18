@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _transcript import event_content, is_assistant, is_user, iter_tool_results, iter_tool_uses, load_full_turn_with_user, load_turn_events  # noqa: E402
+from _transcript import event_content, is_assistant, is_user, iter_tool_results, iter_tool_uses, load_turn_events  # noqa: E402
 
 DECLARED_VERDICTS = {"ok", "spiralling_petulance"}
 
