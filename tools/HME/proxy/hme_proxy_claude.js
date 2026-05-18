@@ -71,6 +71,11 @@ function createClaudeHandler(deps) {
         try { payload = JSON.parse(bodyBuf.toString('utf8')); } catch (_err) { /* pass through */ }
       }
 
+      if (isSingleQuotaProbe(payload)) {
+        blockQuotaProbe({ res: clientRes, payload });
+        return;
+      }
+
       let outBody = bodyBuf;
       let injected = false;
 
