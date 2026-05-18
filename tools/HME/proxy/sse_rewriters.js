@@ -127,7 +127,7 @@ function runInBackgroundRewrite(eventName, data, ctx) {
 // hinted at them, else first 50 lines) so the model gets the content
 // instead of a hard error.
 const EDIT_FALLBACK_TOOL_NAMES = new Set(['Edit', 'MultiEdit']);
-const { editToReadFallback: _editToReadFallback, editIsStale: _editIsStale, isInvalidEditInput: _isInvalidEditInput } = require('./edit_validation');
+const { editToReadFallback, isInvalidEditInput } = require('./edit_validation');
 
 const READ_FALLBACK_TOOL_NAMES = new Set(['Read']);
 let _sessionReadCache = null;
