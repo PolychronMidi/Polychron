@@ -4,12 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Inspect Codex hook config and referenced scripts
+- [ ] [E3] Patch Codex adapter normalization to emit one valid object
 
 ## Next
 
-- [ ] [E3] Reproduce or validate hook JSON output
-- [ ] [E3] Fix root cause if in local files and verify
+- [ ] [E3] Add focused regression test
+- [ ] [E3] Run hook/test evidence
 
 ## Done
 
