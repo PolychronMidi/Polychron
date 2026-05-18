@@ -128,7 +128,8 @@ test('non-streaming Anthropic JSON response with tool use is not blank', () => {
   assert.equal(stats.stopReason, 'tool_use');
 });
 
-test('blank retry is disabled for max_tokens probes and manual top-rank chains', () => {
+test('blank retry is disabled for max_tokens probes but NOT for manual top-rank chains', () => {
+  // manually_toprank only fronts the chain; blank retry still cascades.
   assert.equal(
     codexFallback.blankRetryDisabledReason({
       payload: { max_tokens: 1 },
@@ -143,15 +144,8 @@ test('blank retry is disabled for max_tokens probes and manual top-rank chains',
       swapChain: [{ id: 'manual-sonnet', _manual_toprank: true }, { id: 'ranked-opus' }],
       env: {},
     }),
-    'manual_top_active',
-  );
-  assert.equal(
-    codexFallback.blankRetryDisabledReason({
-      payload: { max_tokens: 200 },
-      swapChain: [{ id: 'manual-sonnet', _manual_toprank: true }, { id: 'ranked-opus' }],
-      env: { HME_PROXY_ALLOW_MANUAL_TOP_BLANK_RETRY: '1' },
-    }),
     '',
+    'manual top-rank no longer cancels blank-retry cascade',
   );
 });
 
