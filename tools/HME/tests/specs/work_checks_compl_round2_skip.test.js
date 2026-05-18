@@ -349,6 +349,22 @@ test('work_checks: text-only short verdict maps to STOP_WORK_TEXT_ONLY reason',
     assert.match(result.reason, /short text-only response/);
   }));
 
+test('work_checks: spiralling_petulance verdict maps to named reason',
+  _withSandbox(async (sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
+    const verdicts = path.join(sandbox, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
+    fs.writeFileSync(verdicts, 'SPIRALLING_PETULANCE=spiralling_petulance
+');
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'fix the hook loop' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text: '.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /SPIRALLING_PETULANCE/);
+  }));
+
 test('work_checks: claim evidence must come from same-turn tool use, not synthetic stale state',
   _withSandbox(async (sandbox) => {
     fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime'), { recursive: true });
