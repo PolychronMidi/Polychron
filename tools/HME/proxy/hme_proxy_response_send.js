@@ -127,7 +127,21 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
     return;
   }
   const stripped = maybeStripNonSseBareAck({ payload, outBuf });
-  clientRes.end(stripped || outBuf);
+  const rewritten = _maybeRewriteNonSseEdit(stripped || outBuf);
+  clientRes.end(rewritten);
+}
+
+function _maybeRewriteNonSseEdit(buf) {
+  const text = typeof buf === 'string' ? buf : Buffer.isBuffer(buf) ? buf.toString('utf8') : '';
+  if (!text || text.charAt(0) !== '{') return buf;
+  let body;
+  try { body = JSON.parse(text); } catch (_e) { return buf; }
+  if (!body || typeof body !== 'object') return buf;
+  const { rewriteNonSseEditFallback } = require('./edit_validation');
+  const { body: next, count } = rewriteNonSseEditFallback(body, { checkFs: true });
+  if (!count) return buf;
+  const out = JSON.stringify(next);
+  return Buffer.isBuffer(buf) ? Buffer.from(out, 'utf8') : out;
 }
 
 function maybeRunStopFallback({ isAnthropic, payload, outBuf, lifecycleInactive, runInlineFallback }) {
