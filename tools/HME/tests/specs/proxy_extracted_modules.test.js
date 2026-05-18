@@ -11,6 +11,7 @@ const { shrinkForPassthrough } = require('../../proxy/passthrough_compact');
 const { handleLegacySwapResponse, writeAnthropicStopSse } = require('../../proxy/legacy_swap_response');
 const { effectiveMode, buildMode1Chain, applyOverdriveRoute, upstreamModelId } = require('../../proxy/overdrive_route');
 const { reasoningTextFromData, providerReasoningToThinkingRewrite } = require('../../proxy/reasoning_to_thinking');
+const codexFallback = require('../../proxy/hme_proxy_codex');
 
 function quiet(fn) {
   const orig = console.error;
@@ -85,6 +86,17 @@ test('mode 1 top-level requests default to driver E5 manual top rank', () => {
   assert.equal(result.role, 'driver');
   assert.equal(result.tier, 'E5');
   assert.deepEqual(result.chain.map((m) => m.id), ['manual-sonnet-e3', 'ranked-opus-e5']);
+});
+
+test('OmniRoute fallback helpers use api_model for Anthropic variants', () => {
+  assert.equal(
+    codexFallback.upstreamModelId({ id: 'claude-sonnet-4-6-high-e2', api_model: 'claude-sonnet-4-6' }),
+    'claude-sonnet-4-6',
+  );
+  assert.notEqual(
+    codexFallback.chainSignature([{ provider: 'anthropic', id: 'a', api_model: 'claude-sonnet-4-6' }]),
+    codexFallback.chainSignature([{ provider: 'anthropic', id: 'a', api_model: 'claude-haiku-4-5' }]),
+  );
 });
 
 test('mode 1 stale fallback index cannot skip driver manual top rank', () => quiet(() => {
