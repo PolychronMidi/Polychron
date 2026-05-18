@@ -60,6 +60,27 @@ function rankedForTier(cfg, tier) {
   return { models, ranked };
 }
 
+function providerKey(provider) {
+  return omniProviderForConfigProvider(provider).replace(/_/g, '-');
+}
+
+function providerSkipSet(cfg) {
+  const raw = cfg && cfg.providers_to_skip && Array.isArray(cfg.providers_to_skip.providers)
+    ? cfg.providers_to_skip.providers : [];
+  return new Set(raw.map(providerKey));
+}
+
+function hasOmniCredential(model, env) {
+  const provider = providerKey(model && model.provider);
+  if (provider === 'anthropic') return !!env.ANTHROPIC_API_KEY;
+  return true;
+}
+
+function availableModel(model, skipSet, env) {
+  if (!model) return false;
+  return !skipSet.has(providerKey(model.provider)) && hasOmniCredential(model, env);
+}
+
 function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
   const role = roleFromPayload(payload, env);
   const tier = roleTier(role, modelTier(payload.model));
@@ -67,12 +88,13 @@ function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
   const spec = key && cfg.team_role_models ? cfg.team_role_models[key] : null;
   const specTier = spec && spec.tier === 'role' ? tier : ((spec && spec.tier) || tier);
   const base = rankedForTier(cfg, specTier);
+  const skipSet = providerSkipSet(cfg);
   let front = [];
   if (spec && spec.source === 'manually_toprank') front = (cfg.manually_toprank && cfg.manually_toprank[specTier]) || [];
   const frontSet = new Set(front);
   const chain = [
-    ...front.map((id) => base.models.find((m) => m.id === id)).filter(Boolean),
-    ...base.ranked.filter((m) => !frontSet.has(m.id)),
+    ...front.map((id) => base.models.find((m) => m.id === id)).filter((m) => availableModel(m, skipSet, env)),
+    ...base.ranked.filter((m) => !frontSet.has(m.id) && availableModel(m, skipSet, env)),
   ];
   return { chain, role, tier: specTier };
 }
