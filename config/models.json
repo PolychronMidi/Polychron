@@ -82,9 +82,8 @@
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; max effort variant.",
           "tier_score": 9,
-          "context_length": 1000000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 1000000
+          "context_length": 200000,
+          "max_output_tokens": 128000
         },
         {
           "id": "deepseek-v4-pro-go",
@@ -156,8 +155,7 @@
           "notes": "ChatGPT Plus via Codex OAuth. Max reasoning effort, best for architecture/planning.",
           "tier_score": 8,
           "context_length": 400000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 272000
+          "max_output_tokens": 128000
         },
         {
           "id": "gpt-5.5-high",
@@ -169,8 +167,7 @@
           "notes": "ChatGPT Plus via Codex OAuth. High reasoning effort.",
           "tier_score": 7,
           "context_length": 400000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 272000
+          "max_output_tokens": 128000
         }
       ]
     },
@@ -189,9 +186,8 @@
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; xhigh effort variant.",
           "tier_score": 9,
-          "context_length": 1000000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 1000000
+          "context_length": 200000,
+          "max_output_tokens": 128000
         },
         {
           "id": "claude-opus-4-7-high-e4",
@@ -204,9 +200,8 @@
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; high effort variant.",
           "tier_score": 7,
-          "context_length": 1000000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 1000000
+          "context_length": 200000,
+          "max_output_tokens": 128000
         },
         {
           "id": "gpt-5.5-medium",
@@ -218,8 +213,7 @@
           "notes": "ChatGPT Plus via Codex OAuth. Balanced reasoning effort.",
           "tier_score": 8,
           "context_length": 400000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 272000
+          "max_output_tokens": 128000
         },
         {
           "id": "gpt-5.5-low",
@@ -231,8 +225,7 @@
           "notes": "ChatGPT Plus via Codex OAuth. Fast frontier for simpler tasks. 1M context.",
           "tier_score": 7,
           "context_length": 400000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 272000
+          "max_output_tokens": 128000
         },
         {
           "id": "gpt-5.4",
@@ -443,9 +436,8 @@
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; medium effort variant.",
           "tier_score": 9,
-          "context_length": 1000000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 1000000
+          "context_length": 200000,
+          "max_output_tokens": 128000
         },
         {
           "id": "claude-opus-4-7-low-e3",
@@ -458,9 +450,8 @@
           "cost_amt": 0,
           "notes": "Anthropic Claude Opus via OmniRoute/direct Anthropic; low effort variant.",
           "tier_score": 7,
-          "context_length": 1000000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 1000000
+          "context_length": 200000,
+          "max_output_tokens": 128000
         },
         {
           "id": "claude-sonnet-4-6-max-e3",
