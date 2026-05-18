@@ -185,7 +185,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
     # Zen requires content-blocks form; Anthropic accepts both. Use blocks uniformly.
     _user_content = [{"type": "text", "text": prompt}]
-    _api_model = model_id
+    _api_model = str(_meta.get("api_model") or model_id)
     if _api_model.endswith("-go"):
         _api_model = _api_model[:-3]
     # Prefix with OmniRoute provider (codex uses "cx" alias, others match)
