@@ -107,8 +107,8 @@ test('Bash dispatcher does not source retired per-gate fragments', () => {
     'snapshot_gate', 'pipeline_antiwait', 'polling_redirects', 'failfast', 'kb_spam',
     'verify_landed_block', 'polling_counter',
   ];
-  assert.match(dispatcher, /for _part in gates;/);
-  for (const name of retired) assert.doesNotMatch(dispatcher, new RegExp(`bash/\$\{_part\}\.sh.*${name}|for _part in .*${name}`));
+  assert.match(dispatcher, /for _pre in "\$\{SCRIPT_DIR\}\/bash\/pre\/"\*\.sh/);
+  for (const name of retired) assert.doesNotMatch(dispatcher, new RegExp(`(^|/)${name}\\.sh`));
 });
 
 
