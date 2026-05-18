@@ -56,18 +56,15 @@ if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
   exit 2
 fi
 
-# Block edits to misplaced log/, metrics/, or tmp/ directories
-if echo "$FILE" | grep -qE '/(log|tmp)/'; then
-  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/(log|tmp)/'; then
-    _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not edit files inside subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
-    exit 2
-  fi
+# Block edits to misplaced log/, metrics/, or tmp/ dirs (rel to PROJECT_ROOT).
+_REL="${FILE#$PROJECT_ROOT/}"
+if echo "$_REL" | grep -qE '/(log|tmp)/'; then
+  _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not edit files inside subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
+  exit 2
 fi
-if echo "$FILE" | grep -qE '/metrics/'; then
-  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/output/metrics/'; then
-    _emit_block "BLOCKED: metrics/ only exists at output/metrics/. Do not edit files in any other metrics/ directory."
-    exit 2
-  fi
+if echo "$_REL" | grep -qE '(^|/)metrics/' && ! echo "$_REL" | grep -qE '^output/metrics/'; then
+  _emit_block "BLOCKED: metrics/ only exists at output/metrics/. Do not edit files in any other metrics/ directory."
+  exit 2
 fi
 
 if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
