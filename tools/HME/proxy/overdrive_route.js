@@ -130,23 +130,13 @@ function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
   return { chain, role, tier: specTier };
 }
 
-function stateFile(projectRoot = PROJECT_ROOT) { return path.join(projectRoot, 'tmp', 'hme-omni-swap-state.json'); }
-function chainSignature(chain) {
-  return (chain || []).map((m) => `${m.provider || ''}:${m.api_model || m.id || ''}`).join('|');
-}
+const swapStore = require('./swap_state_store');
+const { chainSignature } = swapStore;
 function isManualTopActive(chain) {
   return !!(chain && chain[0] && chain[0]._manual_toprank === true);
 }
 function selectedIndex(chain, projectRoot = PROJECT_ROOT) {
-  // manually_toprank only fronts the chain; failover still progresses through it.
-  if (!chain.length) return 0;
-  try {
-    const st = JSON.parse(fs.readFileSync(stateFile(projectRoot), 'utf8'));
-    if (st.chain !== chainSignature(chain)) return 0;
-    if (st.fail <= 0) return 0;
-    if (st.ts && Date.now() - st.ts > 300000) return 0;
-    return Math.min(st.idx || 0, chain.length - 1);
-  } catch (_err) { return 0; }
+  return swapStore.currentIndex(chain, projectRoot);
 }
 
 function upstreamModelId(model) {
