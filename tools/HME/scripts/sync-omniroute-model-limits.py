@@ -4,9 +4,10 @@
 Persisted fields:
   - context_length
   - max_output_tokens
-  - effective_context_length (derived as context_length - max_output_tokens)
+  - max_input_tokens (sanitized input ceiling)
+  - effective_context_length (derived from max_input_tokens)
 
-Noisy upstream max_input_tokens is retired on every sync.
+Upstream max_input_tokens is capped to context_length - max_output_tokens.
 
 JSONC-aware: the file may contain ``//`` and ``/* */`` comments. Edits are
 performed surgically per-model block so all comments outside model bodies are
