@@ -221,6 +221,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
         payload["temperature"] = 1.0  # Anthropic requires temperature=1.0 with thinking
     if system:
         payload["system"] = system
+    _apply_effort_params(payload, _meta, _provider)
 
     # Everything goes through OmniRoute -- uniform compression, translation, auth.
     headers = {"Content-Type": "application/json", "anthropic-version": "2023-06-01"}
