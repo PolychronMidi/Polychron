@@ -68,16 +68,19 @@ test('mid-pipeline: allow non-src path even with run.lock present', async () => 
 // -- block-comment-ellipsis-stub --------------------------------------
 const stub = require('../../policies/builtin/block-comment-ellipsis-stub');
 
-test('ellipsis-stub: deny on classic comment-stub', async () => {
+test('ellipsis-stub: rewrites classic comment-stub by stripping line', async () => {
   const trigger = '// ' + 'rest of fi' + 'le';
   const r = await stub.fn(_ctx({ toolInput: { content: 'function foo() {\n  ' + trigger + '\n}' } }));
-  assert.strictEqual(r.decision, 'deny');
+  assert.strictEqual(r.decision, 'rewrite');
+  assert.doesNotMatch(r.updatedInput.content, /rest of/);
+  assert.match(r.message, /DDoC stripped: ellipsis stub/);
 });
 
-test('ellipsis-stub: deny on python hash-stub', async () => {
+test('ellipsis-stub: rewrites python hash-stub by stripping line', async () => {
   const trigger = '# ' + 'existing co' + 'de';
   const r = await stub.fn(_ctx({ toolInput: { content: 'def foo():\n    ' + trigger + '\n    return 1' } }));
-  assert.strictEqual(r.decision, 'deny');
+  assert.strictEqual(r.decision, 'rewrite');
+  assert.doesNotMatch(r.updatedInput.content, /existing/);
 });
 
 test('ellipsis-stub: allow normal code', async () => {
