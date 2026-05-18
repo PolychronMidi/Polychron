@@ -31,9 +31,9 @@ function loadModelCtxRegistry() {
   const map = new Map();
   for (const tier of Object.values(cfg.tiers || {})) {
     for (const m of tier.models || []) {
-      const eff = effectiveContextLength(m);
-      if (eff > 0 && m.id) map.set(String(m.id), eff);
-      if (eff > 0 && m.api_model) map.set(String(m.api_model), eff);
+      const budget = inputBudget(m);
+      if (budget > 0 && m.id) map.set(String(m.id), budget);
+      if (budget > 0 && m.api_model) map.set(String(m.api_model), budget);
     }
   }
   _modelCtxRegistry = { mtimeMs: stat.mtimeMs, map };
