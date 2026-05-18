@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Find MCP configuration and codex_apps entry
+(empty)
 
 ## Next
 
-- [ ] [E3] Run the server startup path directly
-- [ ] [E3] Fix config/server issue or report exact blocker
-- [ ] [E3] Verify MCP startup command
+(empty)
 
 ## Done
 

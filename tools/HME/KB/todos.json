@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3657,
-      "updated_ts": 1779118683.0243704,
-      "codex_plan_synced_ts": 1779118683.0242379,
+      "updated_ts": 1779118923.0407262,
+      "codex_plan_synced_ts": 1779118923.0405958,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
-      "codex_plan_ts": "2026-05-18T15:37:15.591Z"
+      "codex_plan_ts": "2026-05-18T15:41:45.981Z"
     }
   },
   {
@@ -9986,8 +9986,8 @@
     "id": 3654,
     "text": "Find MCP configuration and codex_apps entry",
     "activeForm": "Find MCP configuration and codex_apps entry",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9996,14 +9996,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
-    "codex_plan_ts": "2026-05-18T15:37:15.591Z"
+    "codex_plan_ts": "2026-05-18T15:41:45.981Z"
   },
   {
     "id": 3655,
     "text": "Run the server startup path directly",
     "activeForm": "Run the server startup path directly",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -10012,14 +10012,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
-    "codex_plan_ts": "2026-05-18T15:37:15.591Z"
+    "codex_plan_ts": "2026-05-18T15:41:45.981Z"
   },
   {
     "id": 3656,
     "text": "Fix config/server issue or report exact blocker",
     "activeForm": "Fix config/server issue or report exact blocker",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -10028,14 +10028,14 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
-    "codex_plan_ts": "2026-05-18T15:37:15.591Z"
+    "codex_plan_ts": "2026-05-18T15:41:45.981Z"
   },
   {
     "id": 3657,
     "text": "Verify MCP startup command",
     "activeForm": "Verify MCP startup command",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -10044,6 +10044,6 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
-    "codex_plan_ts": "2026-05-18T15:37:15.591Z"
+    "codex_plan_ts": "2026-05-18T15:41:45.981Z"
   }
 ]
