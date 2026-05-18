@@ -96,7 +96,8 @@
           "notes": "OpenCode Go subscription. Repository-scale coding at flat rate.",
           "tier_score": 5,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "mimo-v2.5-pro-go",
@@ -121,7 +122,8 @@
           "notes": "Repository-scale coding; deep logic and system architecture.",
           "tier_score": 5,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "mimo-v2.5-pro",
@@ -273,7 +275,8 @@
           "notes": "Mistral free tier via OmniRoute. Strong reasoning at frontier level.",
           "tier_score": 7,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         },
         {
           "id": "gemini-2.5-pro",
@@ -311,7 +314,8 @@
           "notes": "OpenCode Go subscription. Near-frontier reasoning at flat rate.",
           "tier_score": 7,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "mimo-v2-pro-go",
@@ -336,7 +340,8 @@
           "notes": "Nearly on par with frontier models for reasoning-heavy tasks.",
           "tier_score": 7,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "kimi-k2.6",
@@ -361,7 +366,8 @@
           "notes": "Smartest-for-price on Zen; rivals high-end reasoning at low cost.",
           "tier_score": 6,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "qwen3.6-plus",
@@ -399,7 +405,8 @@
           "notes": "Groq free tier. Strong general-purpose reasoning.",
           "tier_score": 4,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         },
         {
           "id": "llama-4-scout-17b-16e-instruct",
@@ -411,7 +418,8 @@
           "notes": "Groq free tier. Fast reasoning model.",
           "tier_score": 3,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         },
         {
           "id": "llama-4-maverick-17b-128e-instruct",
@@ -423,7 +431,8 @@
           "notes": "NVIDIA free credits. Strong open-source reasoning.",
           "tier_score": 4,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         },
         {
           "id": "nemotron-super-49b",
@@ -435,7 +444,8 @@
           "notes": "NVIDIA free credits. Advanced reasoning model.",
           "tier_score": 5,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         }
       ]
     },
@@ -578,7 +588,8 @@
           "notes": "Mistral free tier. Coding-specialized model.",
           "tier_score": 5,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         },
         {
           "id": "mistral-medium-latest",
@@ -590,7 +601,8 @@
           "notes": "Mistral free tier. Balanced performance model.",
           "tier_score": 6,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         },
         {
           "id": "gemini-2.5-flash",
@@ -615,7 +627,8 @@
           "notes": "OpenRouter free tier. DeepSeek V3 chat model.",
           "tier_score": 5,
           "context_length": 131072,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 122880
         },
         {
           "id": "mistral-large",
@@ -627,7 +640,8 @@
           "notes": "OpenRouter free tier. Mistral Large via OpenRouter.",
           "tier_score": 5,
           "context_length": 131072,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 122880
         },
         {
           "id": "glm-5-go",
@@ -717,7 +731,8 @@
           "notes": "Groq free tier. Strong coding and reasoning.",
           "tier_score": 5,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         },
         {
           "id": "llama-3.3-70b-instruct",
@@ -729,7 +744,8 @@
           "notes": "NVIDIA free credits. Solid general-purpose model.",
           "tier_score": 4,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         }
       ]
     },
@@ -794,7 +810,8 @@
           "notes": "Anthropic Claude Haiku via OmniRoute/direct Anthropic; max effort variant.",
           "tier_score": 3,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "gpt-4o-mini",
@@ -884,7 +901,8 @@
           "notes": "Cerebras free tier. Ultra-fast small model.",
           "tier_score": 4,
           "max_output_tokens": 8192,
-          "context_length": 131072
+          "context_length": 131072,
+          "effective_context_length": 122880
         },
         {
           "id": "nemotron-3-nano-30b-a3b",
@@ -896,7 +914,8 @@
           "notes": "NVIDIA free credits. Fast lightweight model.",
           "tier_score": 6,
           "context_length": 131072,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 122880
         },
         {
           "id": "llama-3.2-3b-instruct",
@@ -908,7 +927,8 @@
           "notes": "NVIDIA free credits. Ultra-fast tiny model.",
           "tier_score": 5,
           "context_length": 131072,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 122880
         }
       ]
     },
@@ -928,7 +948,8 @@
           "notes": "Anthropic Claude Haiku via OmniRoute/direct Anthropic; max effort variant.",
           "tier_score": 3,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 191808
         },
         {
           "id": "gemini-2.5-flash-lite",
@@ -992,7 +1013,8 @@
           "notes": "Extremely fast; single-file edits and log summarization only.",
           "tier_score": 7,
           "context_length": 524288,
-          "max_output_tokens": 128000
+          "max_output_tokens": 128000,
+          "effective_context_length": 396288
         }
       ]
     }
