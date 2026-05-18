@@ -90,7 +90,7 @@ class Resp:
 def fake_urlopen(req, timeout=None):
     captured["payload"] = json.loads(req.data.decode())
     return Resp()
-urllib.request.urlopen = fake_urlopen
+so._req.urlopen = fake_urlopen
 text, rate = so._try_overdrive_model('claude-opus-4-7-max-e5', 'prompt', '', 4096)
 print(json.dumps({"text": text, "rate": rate, "payload": captured["payload"]}))
 `);
