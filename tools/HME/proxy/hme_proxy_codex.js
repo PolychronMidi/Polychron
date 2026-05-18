@@ -36,9 +36,10 @@ function recordOmniRouteFailureAdvance({
   try { st = JSON.parse(fs.readFileSync(stFile, 'utf8')); } catch (_) {}
   const now = Date.now();
   const sig = chainSignature(swapChain);
-  if (st.chain !== sig || isManualTopActive(swapChain)) st = { idx: 0, ts: 0, fail: 0, chain: sig };
+  // manually_toprank only fronts the chain; failover still progresses through it.
+  if (st.chain !== sig) st = { idx: 0, ts: 0, fail: 0, chain: sig };
   // Advance on failure; reset to start after 5min success window.
-  if (!isManualTopActive(swapChain) && (st.fail > 0 || st.ts > 0 && (now - st.ts) < 300000)) {
+  if (st.fail > 0 || st.ts > 0 && (now - st.ts) < 300000) {
     st.idx = (st.idx + 1) % swapChain.length;
   } else {
     st.idx = 0;
