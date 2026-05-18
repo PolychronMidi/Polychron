@@ -39,7 +39,7 @@
 // manually_toprank and team_role_models both fall back to ranking_rules if models here are either blank or unavailable.
   "manually_toprank": {
     "E5": [
-      "claude-sonnet-4-6-max-e3"
+      "gpt-5.5-xhigh"
     ],
     "E4": [],
     "E3": [],
