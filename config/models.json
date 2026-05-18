@@ -84,7 +84,8 @@
           "tier_score": 9,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "max_input_tokens": 1000000
+          "max_input_tokens": 1000000,
+          "effective_context_length": 200000
         },
         {
           "id": "deepseek-v4-pro-go",
@@ -144,7 +145,8 @@
           "notes": "General-purpose frontier reasoning.",
           "tier_score": 4,
           "context_length": 400000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 128000,
+          "effective_context_length": 200000
         },
         {
           "id": "gpt-5.5-xhigh",
@@ -157,7 +159,8 @@
           "tier_score": 8,
           "context_length": 1050000,
           "max_output_tokens": 128000,
-          "max_input_tokens": 1050000
+          "max_input_tokens": 1050000,
+          "effective_context_length": 256000
         },
         {
           "id": "gpt-5.5-high",
@@ -170,7 +173,8 @@
           "tier_score": 7,
           "context_length": 1050000,
           "max_output_tokens": 128000,
-          "max_input_tokens": 1050000
+          "max_input_tokens": 1050000,
+          "effective_context_length": 256000
         }
       ]
     },
@@ -191,7 +195,8 @@
           "tier_score": 9,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "max_input_tokens": 1000000
+          "max_input_tokens": 1000000,
+          "effective_context_length": 200000
         },
         {
           "id": "claude-opus-4-7-high-e4",
@@ -206,7 +211,8 @@
           "tier_score": 7,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "max_input_tokens": 1000000
+          "max_input_tokens": 1000000,
+          "effective_context_length": 200000
         },
         {
           "id": "gpt-5.5-medium",
@@ -219,7 +225,8 @@
           "tier_score": 8,
           "context_length": 1050000,
           "max_output_tokens": 128000,
-          "max_input_tokens": 1050000
+          "max_input_tokens": 1050000,
+          "effective_context_length": 256000
         },
         {
           "id": "gpt-5.5-low",
@@ -232,7 +239,8 @@
           "tier_score": 7,
           "context_length": 1050000,
           "max_output_tokens": 128000,
-          "max_input_tokens": 1050000
+          "max_input_tokens": 1050000,
+          "effective_context_length": 256000
         },
         {
           "id": "gpt-5.4",
@@ -244,7 +252,8 @@
           "notes": "ChatGPT Plus via Codex OAuth. Strong general-purpose coding.",
           "tier_score": 5,
           "context_length": 400000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 128000,
+          "effective_context_length": 200000
         },
         {
           "id": "gemini-2.5-pro",
@@ -445,7 +454,8 @@
           "tier_score": 9,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "max_input_tokens": 1000000
+          "max_input_tokens": 1000000,
+          "effective_context_length": 200000
         },
         {
           "id": "claude-opus-4-7-low-e3",
@@ -460,7 +470,8 @@
           "tier_score": 7,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "max_input_tokens": 1000000
+          "max_input_tokens": 1000000,
+          "effective_context_length": 200000
         },
         {
           "id": "claude-sonnet-4-6-max-e3",
@@ -474,7 +485,8 @@
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; max effort variant.",
           "tier_score": 6,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 200000
         },
         {
           "id": "claude-sonnet-4-6-xhigh-e3",
@@ -488,7 +500,8 @@
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; xhigh effort variant.",
           "tier_score": 5,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 200000
         },
         {
           "id": "gpt-5.3-codex",
@@ -500,7 +513,8 @@
           "notes": "ChatGPT Plus via Codex OAuth. Solid coding/review model.",
           "tier_score": 8,
           "context_length": 400000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 128000,
+          "effective_context_length": 200000
         },
         {
           "id": "gpt-5.3-codex-spark",
@@ -512,7 +526,8 @@
           "notes": "ChatGPT Plus via Codex OAuth. Fast spark variant for quick iterations.",
           "tier_score": 8,
           "context_length": 400000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 128000,
+          "effective_context_length": 200000
         },
         {
           "id": "gpt-5.4-mini",
@@ -524,7 +539,8 @@
           "notes": "ChatGPT Plus via Codex OAuth. Fast, lightweight.",
           "tier_score": 7,
           "context_length": 400000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 128000,
+          "effective_context_length": 200000
         },
         {
           "id": "gpt-4o-mini",
@@ -724,7 +740,8 @@
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; high effort variant.",
           "tier_score": 8,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 200000
         },
         {
           "id": "claude-sonnet-4-6-medium-e2",
@@ -738,7 +755,8 @@
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; medium effort variant.",
           "tier_score": 7,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 200000
         },
         {
           "id": "claude-sonnet-4-6-low-e2",
@@ -752,7 +770,8 @@
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; low effort variant.",
           "tier_score": 6,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 200000
         },
         {
           "id": "claude-haiku-4-5-max-e2",
@@ -766,7 +785,8 @@
           "notes": "Anthropic Claude Haiku via OmniRoute/direct Anthropic; max effort variant.",
           "tier_score": 3,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 200000
         },
         {
           "id": "gpt-4o-mini",
@@ -894,7 +914,8 @@
           "notes": "Anthropic Claude Haiku via OmniRoute/direct Anthropic; max effort variant.",
           "tier_score": 3,
           "context_length": 200000,
-          "max_output_tokens": 8192
+          "max_output_tokens": 8192,
+          "effective_context_length": 200000
         },
         {
           "id": "gemini-2.5-flash-lite",
@@ -954,7 +975,8 @@
           "notes": "Extremely fast; single-file edits and log summarization only.",
           "tier_score": 7,
           "context_length": 524288,
-          "max_output_tokens": 8192
+          "max_output_tokens": 128000,
+          "effective_context_length": 200000
         }
       ]
     }
