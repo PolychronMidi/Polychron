@@ -1074,8 +1074,5 @@ module.exports = {
   _trimSoloRationaleParagraph, // exported for tests
   _rewriteLongLeadingSleep,    // exported for tests
   _normalizeReadInput,         // exported for tests
-  _editToReadFallback,         // exported for tests
-  _isInvalidEditInput,         // exported for tests
-  _editIsStale,                // exported for tests
   _stripSlop,                  // exported for tests
 };
