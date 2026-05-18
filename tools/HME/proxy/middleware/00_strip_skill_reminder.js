@@ -37,7 +37,9 @@ function _stripFromContent(content) {
   for (let i = content.length - 1; i >= 0; i--) {
     const block = content[i];
     if (!block || block.type !== 'text' || typeof block.text !== 'string') continue;
-    if (SKILL_REMINDER_RE.test(block.text)) {
+    if (SKILL_REMINDER_RE.test(block.text)
+      || CONTEXT_REMINDER_RE.test(block.text)
+      || STOP_HOOK_PROXY_RE.test(block.text)) {
       content.splice(i, 1);
       stripped++;
       continue;
