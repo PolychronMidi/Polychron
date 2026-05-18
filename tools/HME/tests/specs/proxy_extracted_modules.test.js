@@ -104,7 +104,7 @@ test('mode 1 Anthropic registry uses Claude OAuth provider without API key', () 
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
-test('mode 1 OmniRoute path applies Anthropic effort params when provider is not overridden', () => quiet(() => {
+test('mode 1 OmniRoute path omits schema-extra thinkingLevel for Anthropic models', () => quiet(() => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-effort-'));
   try {
     const payload = { model: 'claude-opus-4-7', stream: false, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
@@ -122,7 +122,7 @@ test('mode 1 OmniRoute path applies Anthropic effort params when provider is not
     });
     assert.equal(result.applied, true);
     assert.match(payload.model, /^anthropic\/claude-opus-4-7/);
-    assert.equal(payload.thinkingLevel, 'max');
+    assert.equal(Object.prototype.hasOwnProperty.call(payload, 'thinkingLevel'), false);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 

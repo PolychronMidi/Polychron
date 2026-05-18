@@ -98,8 +98,8 @@ print(json.dumps({"text": text, "rate": rate, "payload": captured["payload"]}))
   const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
   assert.equal(parsed.text, 'ok');
   assert.equal(parsed.rate, false);
-  assert.equal(parsed.payload.model, 'anthropic/claude-opus-4-7');
-  assert.equal(parsed.payload.thinkingLevel, 'max');
+  assert.equal(parsed.payload.model, 'claude/claude-opus-4-7');
+  assert.equal(Object.prototype.hasOwnProperty.call(parsed.payload, 'thinkingLevel'), false);
 });
 
 test('overdrive mode 1 dispatches through registry chain; mode 0 does not', () => {
