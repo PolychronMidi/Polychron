@@ -25,7 +25,12 @@ const { prepareUpstreamHeaders } = require('./hme_proxy_headers');
 const { mutateClaudeRequest } = require('./hme_proxy_request_mutation');
 const { handleAnthropicResponseComplete } = require('./hme_proxy_anthropic_response');
 const { handleMidResponseError, handleConnectionError } = require('./hme_proxy_connection_errors');
-const { isSingleQuotaProbe, blockQuotaProbe } = require('./prompt_spam_guard');
+const {
+  isSingleQuotaProbe,
+  isTodoWriteOnlyProbe,
+  blockQuotaProbe,
+  blockTodoWriteOnlyProbe,
+} = require('./prompt_spam_guard');
 
 function lifecycleBridge() {
   return require('./lifecycle_bridge');
