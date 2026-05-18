@@ -488,12 +488,12 @@
           "provider": "anthropic",
           "api_model": "claude-sonnet-4-6",
           "effort_level": "max",
-          "max_context": 200000,
+          "max_context": 1000000,
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; max effort variant.",
           "tier_score": 6,
-          "context_length": 200000,
+          "context_length": 1000000,
           "max_output_tokens": 64000
         },
         {
@@ -503,12 +503,12 @@
           "provider": "anthropic",
           "api_model": "claude-sonnet-4-6",
           "effort_level": "xhigh",
-          "max_context": 200000,
+          "max_context": 1000000,
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; xhigh effort variant.",
           "tier_score": 5,
-          "context_length": 200000,
+          "context_length": 1000000,
           "max_output_tokens": 64000
         },
         {
@@ -758,12 +758,12 @@
           "provider": "anthropic",
           "api_model": "claude-sonnet-4-6",
           "effort_level": "high",
-          "max_context": 200000,
+          "max_context": 1000000,
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; high effort variant.",
           "tier_score": 8,
-          "context_length": 200000,
+          "context_length": 1000000,
           "max_output_tokens": 64000
         },
         {
@@ -773,12 +773,12 @@
           "provider": "anthropic",
           "api_model": "claude-sonnet-4-6",
           "effort_level": "medium",
-          "max_context": 200000,
+          "max_context": 1000000,
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; medium effort variant.",
           "tier_score": 7,
-          "context_length": 200000,
+          "context_length": 1000000,
           "max_output_tokens": 64000
         },
         {
@@ -788,12 +788,12 @@
           "provider": "anthropic",
           "api_model": "claude-sonnet-4-6",
           "effort_level": "low",
-          "max_context": 200000,
+          "max_context": 1000000,
           "cost": "subscription",
           "cost_amt": 0,
           "notes": "Anthropic Claude Sonnet via OmniRoute/direct Anthropic; low effort variant.",
           "tier_score": 6,
-          "context_length": 200000,
+          "context_length": 1000000,
           "max_output_tokens": 64000
         },
         {
