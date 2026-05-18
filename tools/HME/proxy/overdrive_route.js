@@ -185,4 +185,4 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   return result;
 }
 
-module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, rankedForTier, buildMode1Chain, applyOverdriveRoute };
+module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, rankedForTier, buildMode1Chain, upstreamModelId, applyOverdriveRoute };
