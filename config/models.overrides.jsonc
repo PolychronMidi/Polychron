@@ -4,8 +4,8 @@
 //   1. Upstream catalog reports a default sentinel value that's wrong.
 //   2. A provider-specific catalog row better matches the route we use.
 //
-// Do not persist upstream max_input_tokens; it duplicates the derivation.
-// effective_context_length is the planning budget: context - output.
+// Keep max_input_tokens, but cap it to context_length - max_output_tokens.
+// effective_context_length is the sanitized max_input_tokens planning budget.
 //
 // Override keys recognized:
 //   context_length, max_output_tokens, effective_context_length
