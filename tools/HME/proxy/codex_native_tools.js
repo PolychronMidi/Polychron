@@ -205,9 +205,10 @@ function policyCommandArgs(args) {
 
 function rewriteCallObject(obj, stats) {
   const name = callName(obj);
-  if (!NATIVE_NAMES.has(name) && name !== TARGET_TOOL && name !== 'functions.exec_command') return obj;
+  const isNative = name === TARGET_TOOL || name === 'functions.exec_command';
+  if (!BRIDGE_NAMES.has(name) && !RENAME_TARGETS[name] && !isNative) return obj;
   const args = parseArgs(argsText(obj));
-  if (NATIVE_NAMES.has(name)) {
+  if (BRIDGE_NAMES.has(name)) {
     let cmd = bridgeCommand(name, args);
     if (name === 'Read') {
       const readVerdict = evaluateReadInput(bridgeInput(name, args));
@@ -216,6 +217,15 @@ function rewriteCallObject(obj, stats) {
     const commandArgs = JSON.stringify(policyCommandArgs({ cmd }));
     stats.calls += 1;
     return setCallArgs(obj, TARGET_TOOL, commandArgs);
+  }
+  if (name === 'Bash') {
+    const commandArgs = JSON.stringify(policyCommandArgs(bashCommandArgs(args)));
+    stats.calls += 1;
+    return setCallArgs(obj, TARGET_TOOL, commandArgs);
+  }
+  if (name === 'WebSearch') {
+    stats.calls += 1;
+    return setCallArgs(obj, WEB_SEARCH_TOOL, JSON.stringify(webSearchArgs(args)));
   }
   const nextArgs = policyCommandArgs(args);
   if (JSON.stringify(nextArgs) === JSON.stringify(args)) return obj;
