@@ -93,12 +93,13 @@ test('Codex native Read response rewrites to executable bridge and back to Read 
 
 
 test('Codex native Bash response rewrites to exec_command with command->cmd shape', () => {
-  const response = { output: [{ type: 'function_call', name: 'Bash', arguments: JSON.stringify({ command: 'ls -la', description: 'list' }) }] };
+  const response = { output: [{ type: 'function_call', name: 'Bash', arguments: JSON.stringify({ command: 'echo hello', description: 'greet' }) }] };
   const rewritten = rewriteCodexResponseObject(response);
   const call = rewritten.body.output[0];
   assert.equal(call.name, 'exec_command');
   const args = JSON.parse(call.arguments);
-  assert.equal(args.cmd, 'ls -la');
+  assert.equal(args.cmd, 'echo hello');
+  assert.equal(args.justification, 'greet');
   assert.equal(rewritten.stats.calls, 1);
 });
 
