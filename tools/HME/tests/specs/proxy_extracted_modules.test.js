@@ -101,6 +101,59 @@ test('OmniRoute fallback helpers use api_model for Anthropic variants', () => {
   );
 });
 
+test('non-streaming Anthropic JSON response with text is not blank', () => {
+  const stats = _jsonStats(JSON.stringify({
+    model: 'claude-sonnet-4-6',
+    type: 'message',
+    role: 'assistant',
+    content: [{ type: 'text', text: 'hello' }],
+    stop_reason: 'end_turn',
+  }));
+  assert.equal(stats.textChars, 5);
+  assert.equal(stats.textBlocks, 1);
+  assert.equal(stats.toolUseBlocks, 0);
+  assert.equal(stats.stopReason, 'end_turn');
+});
+
+test('non-streaming Anthropic JSON response with tool use is not blank', () => {
+  const stats = _jsonStats(JSON.stringify({
+    type: 'message',
+    role: 'assistant',
+    content: [{ type: 'tool_use', id: 'toolu_1', name: 'Read', input: {} }],
+    stop_reason: 'tool_use',
+  }));
+  assert.equal(stats.textChars, 0);
+  assert.equal(stats.toolUseBlocks, 1);
+  assert.equal(stats.stopReason, 'tool_use');
+});
+
+test('blank retry is disabled for max_tokens probes and manual top-rank chains', () => {
+  assert.equal(
+    codexFallback.blankRetryDisabledReason({
+      payload: { max_tokens: 1 },
+      swapChain: [{ id: 'manual-sonnet', _manual_toprank: true }, { id: 'ranked-opus' }],
+      env: {},
+    }),
+    'max_tokens_probe',
+  );
+  assert.equal(
+    codexFallback.blankRetryDisabledReason({
+      payload: { max_tokens: 200 },
+      swapChain: [{ id: 'manual-sonnet', _manual_toprank: true }, { id: 'ranked-opus' }],
+      env: {},
+    }),
+    'manual_top_active',
+  );
+  assert.equal(
+    codexFallback.blankRetryDisabledReason({
+      payload: { max_tokens: 200 },
+      swapChain: [{ id: 'manual-sonnet', _manual_toprank: true }, { id: 'ranked-opus' }],
+      env: { HME_PROXY_ALLOW_MANUAL_TOP_BLANK_RETRY: '1' },
+    }),
+    '',
+  );
+});
+
 test('mode 1 real models.json driver override beats E5 manual fallback', () => {
   const cfg = require('../../proxy/shared').loadModelsJson();
   const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
