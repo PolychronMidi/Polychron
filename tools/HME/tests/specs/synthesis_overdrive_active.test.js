@@ -24,9 +24,10 @@ function run(envOverrides, body) {
   } finally { fs.rmSync(sandbox, { recursive: true, force: true }); }
 }
 
+// cost_order is subscription > free > usage (see config/models.json ranking_rules).
 const EXPECTED_E5_HEAD = ['claude-opus-4-7-max-e5', 'gpt-5.5-xhigh'];
-const EXPECTED_E4_HEAD = ['mistral-large-latest', 'gemini-2.5-pro'];
-const EXPECTED_E2_HEAD = ['gemini-2.0-flash', 'gpt-4o-mini'];
+const EXPECTED_E4_HEAD = ['claude-opus-4-7-xhigh-e4', 'gpt-5.5-medium'];
+const EXPECTED_E2_HEAD = ['claude-sonnet-4-6-high-e2', 'claude-sonnet-4-6-medium-e2'];
 
 test('registry helper still resolves tier chains for mode 1', () => {
   const result = run({ OVERDRIVE_MODE: '1' }, `
