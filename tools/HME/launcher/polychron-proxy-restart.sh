@@ -185,5 +185,7 @@ _worker_status=$(curl -sf --max-time 3 "${WORKER_URL}/health" 2>/dev/null \
   | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'), d.get('phase',''))" 2>/dev/null \
   || echo "starting...")
 echo "[proxy-restart]   worker -> ${_worker_status}" >&2
+python3 "$PROJECT_ROOT/tools/HME/hooks/helpers/lifesaver_crying_wolf.py" \
+  --mode proxy-restart-success --reason proxy-restart-success --quiet >/dev/null 2>&1 || true
 
 echo "[proxy-restart] proxy-only restart complete -- llama-server and VSCode untouched" >&2
