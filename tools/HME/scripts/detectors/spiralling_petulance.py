@@ -9,12 +9,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from _transcript import event_content, is_assistant, is_user, iter_tool_results, iter_tool_uses, load_turn_events  # noqa: E402
 
-DECLARED_VERDICTS = {"ok", "spiralling_petulance"}
+DECLARED_VERDICTS = {"ok", "spiralling_petulance", "flabbergasted_by_autocommit"}
 
 _NOOP_BASH = re.compile(r"^\s*(?::|true|printf\s+['\"]?['\"]?|echo\s*['\"]?['\"]?)\s*$")
 _HOOK_DIRECTIVE = re.compile(r"(<hook_prompt|stop hook feedback|antipattern:|scope-stacked antipattern|auto-completeness)", re.I)
 _NOOP_TEXT = re.compile(r"^\s*(?:\.|ok(?:ay)?|done|fixed|nothing remains|all set)?\s*$", re.I)
 _READ_FAILURE = re.compile(r"(enoent|no such file|verify-landed antipattern|blocked: verify-landed|read failed|not found)", re.I)
+_GIT_INSPECT = re.compile(r"(codex_structured_tool\.js\s+git|\bgit\s+(?:status|diff|log|show)\b)", re.I | re.S)
+_CLEAN_GIT_TEXT = re.compile(r"(\[SUCCESS\]|\(no stdout\)|nothing to commit|working tree clean|no changes|\bclean\b)", re.I)
+_STATUS_OR_DIFF = re.compile(r"(\bgit\s+(?:status|diff)\b|[\"\'](?:status|diff)[\"\'])", re.I | re.S)
 
 
 def _text(event: dict) -> str:
@@ -65,6 +68,16 @@ def _hook_noop_pairs(path: str) -> int:
     return count
 
 
+def _commands_from_tool(tu: dict) -> list[str]:
+    inp = tu.get("input") or {}
+    cmds = [str(inp.get(k, "")) for k in ("command", "cmd") if inp.get(k)]
+    for nested in inp.get("tool_uses", []) if isinstance(inp.get("tool_uses"), list) else []:
+        params = nested.get("parameters") or {}
+        if "exec_command" in str(nested.get("recipient_name", "")):
+            cmds.append(str(params.get("cmd") or params.get("command") or ""))
+    return [c for c in cmds if c]
+
+
 def _current_turn_noop_tools(path: str) -> tuple[int, int]:
     noop_bash = 0
     read_ids: set[str] = set()
@@ -72,10 +85,10 @@ def _current_turn_noop_tools(path: str) -> tuple[int, int]:
     for event in load_turn_events(path):
         for tu in iter_tool_uses(event):
             name = tu.get("name", "")
-            if name == "Bash":
-                cmd = str((tu.get("input") or {}).get("command", ""))
-                if _NOOP_BASH.match(cmd):
-                    noop_bash += 1
+            if name in {"Bash", "functions.exec_command", "exec_command"}:
+                for cmd in _commands_from_tool(tu):
+                    if _NOOP_BASH.match(cmd):
+                        noop_bash += 1
             if name == "Read" and tu.get("id"):
                 read_ids.add(tu["id"])
         for tr in iter_tool_results(event):
@@ -84,13 +97,48 @@ def _current_turn_noop_tools(path: str) -> tuple[int, int]:
     return noop_bash, failed_reads
 
 
+def _clean_autocommit_result(cmd: str, text: str) -> bool:
+    if not _STATUS_OR_DIFF.search(cmd):
+        return False
+    stripped = text.strip()
+    if not stripped:
+        return True
+    if "[SUCCESS]" in stripped and "codex_structured_tool.js git" in cmd:
+        return True
+    return bool(_CLEAN_GIT_TEXT.search(stripped))
+
+
+def _flabbergasted_by_autocommit(path: str) -> bool:
+    git_cmds: dict[str, str] = {}
+    inspect_count = 0
+    clean_results = 0
+    for event in load_turn_events(path):
+        for tu in iter_tool_uses(event):
+            cmds = _commands_from_tool(tu)
+            if not cmds:
+                continue
+            joined = "\n".join(cmds)
+            if not _GIT_INSPECT.search(joined):
+                continue
+            inspect_count += 1
+            if tu.get("id"):
+                git_cmds[tu["id"]] = joined
+        for tr in iter_tool_results(event):
+            tid = tr.get("tool_use_id", "")
+            if tid in git_cmds and _clean_autocommit_result(git_cmds[tid], tr.get("text", "")):
+                clean_results += 1
+    return inspect_count >= 4 and clean_results >= 2
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
         return 0
     path = sys.argv[1]
     noop_bash, failed_reads = _current_turn_noop_tools(path)
-    if _hook_noop_pairs(path) >= 2 or noop_bash >= 2 or failed_reads >= 2:
+    if _flabbergasted_by_autocommit(path):
+        print("flabbergasted_by_autocommit")
+    elif _hook_noop_pairs(path) >= 2 or noop_bash >= 2 or failed_reads >= 2:
         print("spiralling_petulance")
     else:
         print("ok")
