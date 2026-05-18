@@ -47,4 +47,19 @@ function recordHookDecision(root, host, event, rawStdout, sanitizedStdout, paylo
   append(path.join(runtimeDir(root), 'hook-decisions.jsonl'), JSON.stringify(summary));
 }
 
-module.exports = { hookDecisionSummary, recordHookDecision };
+function recordPolicyRewrite(root, payload = {}, rewrites = []) {
+  if (!root || !Array.isArray(rewrites) || rewrites.length === 0) return;
+  const row = {
+    ts: new Date().toISOString(),
+    kind: 'policy_rewrite',
+    host: payload._hme_host || '',
+    tool: payload.tool_name || '',
+    session_id: payload.session_id || '',
+    count: rewrites.length,
+    policies: rewrites.map((r) => r.policy).filter(Boolean),
+    last_message: String((rewrites[rewrites.length - 1] || {}).message || '').slice(0, 240),
+  };
+  append(path.join(runtimeDir(root), 'metrics', 'hme-activity.jsonl'), JSON.stringify(row));
+}
+
+module.exports = { hookDecisionSummary, recordHookDecision, recordPolicyRewrite };
