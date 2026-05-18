@@ -356,6 +356,16 @@ function parseAgent(argv) {
   return { prompt: String(d.prompt || ''), level: Number.isFinite(Number(d.level)) ? Number(d.level) : 3 };
 }
 
+function agentRoleForLevel(level) {
+  const lv = Number.isFinite(level) && level >= 1 && level <= 5 ? Math.trunc(level) : 3;
+  return `codex_agent_e${lv}`;
+}
+
+function agentTimeoutForLevel(level) {
+  const map = { 1: 120, 2: 240, 3: 480, 4: 900, 5: 1500 };
+  return map[Math.trunc(level)] || 480;
+}
+
 async function runAgent(argv) {
   const input = parseAgent(argv);
   if (!input.prompt) {
@@ -365,9 +375,18 @@ async function runAgent(argv) {
   }
   await pre('Agent', input);
   const script = path.join(ROOT, 'tools', 'HME', 'scripts', 'codex-agent-job.py');
-  const r = spawnSync('python3', [script, '--prompt', input.prompt, '--level', String(input.level)], { cwd: ROOT, encoding: 'utf8', timeout: 600000 });
+  const role = agentRoleForLevel(input.level);
+  const timeoutS = agentTimeoutForLevel(input.level);
+  const runArgs = [script, 'run', '--role', role, '--prompt', input.prompt, '--timeout', String(timeoutS)];
+  const r = spawnSync('python3', runArgs, { cwd: ROOT, encoding: 'utf8', timeout: (timeoutS + 30) * 1000 });
   const code = Number.isInteger(r.status) ? r.status : (r.error ? 1 : 0);
-  const text = ((r.stdout || '') + (r.stderr || '')).slice(0, 200000) || `[agent level=${input.level}] no output`;
+  const jobPath = String(r.stdout || '').trim().split('\n').pop() || '';
+  let result = '';
+  if (code === 0 && jobPath) {
+    try { result = fs.readFileSync(path.join(jobPath, 'output.txt'), 'utf8'); }
+    catch (_e) { result = `[agent level=${input.level} role=${role}] job=${jobPath} (no output.txt)`; }
+  }
+  const text = (code === 0 ? (result || `[agent level=${input.level} role=${role}] completed; job=${jobPath}`) : `Error: agent failed (exit ${code}): ${(r.stderr || '').slice(0, 1000)}`).slice(0, 200000);
   await finishStructured('Agent', input, text, { isError: code !== 0, rawStdout: text, rawStderr: text });
 }
 
