@@ -67,6 +67,28 @@ test('Anthropic registry variants route with api_model instead of registry id', 
   assert.equal(upstreamModelId({ id: 'deepseek-v4-pro-go' }), 'deepseek-v4-pro');
 });
 
+test('mode 1 OmniRoute path applies Anthropic effort params when provider is not overridden', () => quiet(() => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-effort-'));
+  try {
+    const payload = { model: 'claude-opus-4-7', stream: false, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    const result = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes: fakeClientRes(),
+      outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {},
+      stripClaudeIdentity: () => {},
+      shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'driver' },
+      projectRoot: tmp,
+    });
+    assert.equal(result.applied, true);
+    assert.match(payload.model, /^anthropic\/claude-opus-4-7/);
+    assert.equal(payload.thinkingLevel, 'max');
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}));
+
 test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () => quiet(() => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-'));
   try {
