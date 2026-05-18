@@ -142,6 +142,8 @@ function selectedIndex(chain, projectRoot = PROJECT_ROOT) {
   try {
     const st = JSON.parse(fs.readFileSync(stateFile(projectRoot), 'utf8'));
     if (st.chain !== chainSignature(chain)) return 0;
+    if (st.fail <= 0) return 0;
+    if (st.ts && Date.now() - st.ts > 300000) return 0;
     return Math.min(st.idx || 0, chain.length - 1);
   } catch (_err) { return 0; }
 }
