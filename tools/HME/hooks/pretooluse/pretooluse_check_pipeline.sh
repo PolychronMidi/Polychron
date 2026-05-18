@@ -86,7 +86,7 @@ CALL_COUNT="${CALL_COUNT:-0}"
 if [[ "$CALL_COUNT" -ge 1 ]]; then
   # permissionDecisionReason surfaces to Claude on deny; systemMessage is
   REASON='ANTI-POLLING: `i/status` already called this turn. The pipeline runs in background and fires a task notification when done.\n\nInstead:\n- Wait for the background task notification\n- Do real work: implement next evolution, run `i/review -- mode=forget`, update KB/docs\n- If you must check freshness, run `i/review -- mode=digest` which has its own freshness guard'
-  jq -n --arg reason "$REASON" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
+  _hook_decision_deny "$REASON" 1
   exit 0
 fi
 
