@@ -26,11 +26,11 @@
     "gpt-5.4-mini":        { "max_output_tokens": 128000 },
     "gpt-5.4-nano":        { "max_output_tokens": 128000 },
 
-    // Route reality: keep 1M catalog context, plan around 400K minus output.
-    "gpt-5.5-xhigh":       { "context_length": 1000000, "effective_context_length": 272000 },
-    "gpt-5.5-high":        { "context_length": 1000000, "effective_context_length": 272000 },
-    "gpt-5.5-medium":      { "context_length": 1000000, "effective_context_length": 272000 },
-    "gpt-5.5-low":         { "context_length": 1000000, "effective_context_length": 272000 },
+    // Route reality: GPT-5.5 practical context is 400K, not 1M.
+    "gpt-5.5-xhigh":       { "context_length": 400000, "effective_context_length": 272000 },
+    "gpt-5.5-high":        { "context_length": 400000, "effective_context_length": 272000 },
+    "gpt-5.5-medium":      { "context_length": 400000, "effective_context_length": 272000 },
+    "gpt-5.5-low":         { "context_length": 400000, "effective_context_length": 272000 },
 
     // Anthropic Opus advertises 1M, but plan on context minus output.
     "claude-opus-4-7-max-e5":    { "context_length": 1000000 },
