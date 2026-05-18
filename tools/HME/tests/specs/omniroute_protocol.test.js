@@ -23,6 +23,11 @@ test('non-codex providers keep provider-default target format', () => {
   assert.equal(omniTargetFormat('openrouter'), 'provider-default');
 });
 
+test('Anthropic config provider prefers Claude OAuth unless API key is present', () => {
+  assert.equal(omniProviderForConfigProvider('anthropic', {}), 'claude');
+  assert.equal(omniProviderForConfigProvider('anthropic', { ANTHROPIC_API_KEY: 'fake' }), 'anthropic');
+});
+
 test('legacy chat fallback skips codex responses models', () => {
   const chain = [
     { id: 'gpt-5.5-xhigh', provider: 'codex' },
