@@ -291,5 +291,98 @@ async function runGit(argv) {
   await finishStructured('Bash', { command: `git ${args.join(' ')}` }, raw, { isError: code !== 0, rawStdout: raw, rawStderr: raw });
 }
 
-async function main() { const mode = process.argv[2] || ''; if (mode === 'read') return runRead(process.argv.slice(3)); if (mode === 'edit') return runEdit(process.argv.slice(3)); if (mode === 'grep') return runGrep(process.argv.slice(3)); if (mode === 'glob') return runGlob(process.argv.slice(3)); if (mode === 'count') return runCount(process.argv.slice(3)); if (mode === 'git') return runGit(process.argv.slice(3)); usage(); }
+function absFilePathOrCreate(p) {
+  if (malformedPath(p)) throw new Error(`invalid file_path: ${String(p ?? '').slice(0, 80) || '(empty)'}`);
+  const abs = path.resolve(ROOT, String(p).trim().replace(/^['"`]+|['"`.,;:]+$/g, ''));
+  const rel = path.relative(ROOT, abs);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) throw new Error(`path outside PROJECT_ROOT: ${abs}`);
+  return abs;
+}
+
+function parseWrite(argv) {
+  const data = jsonData(argv);
+  return {
+    file_path: absFilePathOrCreate(data.file_path || data.file || data._?.[0]),
+    content: typeof data.content === 'string' ? data.content : (data.content_file ? fs.readFileSync(String(data.content_file), 'utf8') : ''),
+  };
+}
+
+async function runWrite(argv) {
+  let input;
+  try { input = parseWrite(argv); }
+  catch (err) {
+    const message = `Error: ${err.message}`;
+    recordFailure(ROOT, { tool: 'Write', reason: err.message, file: '', session_id: SESSION });
+    await finishStructured('Write', { file_path: '' }, message, { isError: true, rawStderr: message });
+    return;
+  }
+  const context = await pre('Write', input);
+  try {
+    fs.mkdirSync(path.dirname(input.file_path), { recursive: true });
+    fs.writeFileSync(input.file_path, input.content);
+    const label = `[SUCCESS] wrote ${input.content.length} bytes to ${relPath(input.file_path)}`;
+    if (context) process.stdout.write(`${context}\n`);
+    await finishStructured('Write', input, label);
+  } catch (err) {
+    const message = `Error: ${err.message}`;
+    recordFailure(ROOT, { tool: 'Write', reason: err.message, file: input.file_path, session_id: SESSION });
+    await finishStructured('Write', input, message, { isError: true, rawStderr: message });
+  }
+}
+
+function parseWebFetch(argv) {
+  const d = jsonData(argv);
+  return { url: String(d.url || ''), prompt: String(d.prompt || '') };
+}
+
+async function runWebFetch(argv) {
+  const input = parseWebFetch(argv);
+  if (!input.url) {
+    const msg = 'Error: url is required';
+    await finishStructured('WebFetch', input, msg, { isError: true, rawStderr: msg });
+    return;
+  }
+  await pre('WebFetch', input);
+  const r = spawnSync('curl', ['-fsSL', '--max-time', '30', '--max-filesize', '2000000', '-A', 'HME-WebFetch/1', input.url], { encoding: 'utf8', timeout: 35000 });
+  const code = Number.isInteger(r.status) ? r.status : (r.error ? 1 : 0);
+  const body = String(r.stdout || '').slice(0, 200000);
+  const header = `# WebFetch ${input.url}\n# prompt: ${input.prompt}\n# bytes: ${body.length}\n\n`;
+  const text = code === 0 ? header + body : `Error: curl exit ${code}: ${(r.stderr || '').slice(0, 500)}`;
+  await finishStructured('WebFetch', input, text, { isError: code !== 0, rawStdout: text, rawStderr: text });
+}
+
+function parseAgent(argv) {
+  const d = jsonData(argv);
+  return { prompt: String(d.prompt || ''), level: Number.isFinite(Number(d.level)) ? Number(d.level) : 3 };
+}
+
+async function runAgent(argv) {
+  const input = parseAgent(argv);
+  if (!input.prompt) {
+    const msg = 'Error: prompt is required';
+    await finishStructured('Agent', input, msg, { isError: true, rawStderr: msg });
+    return;
+  }
+  await pre('Agent', input);
+  const script = path.join(ROOT, 'tools', 'HME', 'scripts', 'codex-agent-job.py');
+  const r = spawnSync('python3', [script, '--prompt', input.prompt, '--level', String(input.level)], { cwd: ROOT, encoding: 'utf8', timeout: 600000 });
+  const code = Number.isInteger(r.status) ? r.status : (r.error ? 1 : 0);
+  const text = ((r.stdout || '') + (r.stderr || '')).slice(0, 200000) || `[agent level=${input.level}] no output`;
+  await finishStructured('Agent', input, text, { isError: code !== 0, rawStdout: text, rawStderr: text });
+}
+
+async function main() {
+  const mode = process.argv[2] || '';
+  const slice = process.argv.slice(3);
+  if (mode === 'read') return runRead(slice);
+  if (mode === 'edit') return runEdit(slice);
+  if (mode === 'grep') return runGrep(slice);
+  if (mode === 'glob') return runGlob(slice);
+  if (mode === 'count') return runCount(slice);
+  if (mode === 'git') return runGit(slice);
+  if (mode === 'write') return runWrite(slice);
+  if (mode === 'web_fetch') return runWebFetch(slice);
+  if (mode === 'agent') return runAgent(slice);
+  usage();
+}
 main().catch((err) => { console.error(err.stack || err.message); process.exit(1); });
