@@ -69,8 +69,8 @@ test('codex Agent dispatch: emits policy_rewrite telemetry to hme-activity.jsonl
     tool_name: 'Agent',
     tool_input: { prompt: 'Spot-check the rewriter', level: 3 },
   }));
-  const activityPath = path.join(process.env.HME_RUNTIME_DIR, 'metrics', 'hme-activity.jsonl');
-  assert.ok(fs.existsSync(activityPath), 'activity log should exist after dispatch');
+  const activityPath = path.join(process.env.HME_RUNTIME_DIR, 'hook-decisions.jsonl');
+  assert.ok(fs.existsSync(activityPath), 'hook-decisions log should exist after dispatch');
   const rows = fs.readFileSync(activityPath, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   const rewriteRow = rows.find((r) => r.kind === 'policy_rewrite' && r.tool === 'Agent');
   assert.ok(rewriteRow, 'should have an Agent policy_rewrite row');
