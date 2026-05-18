@@ -277,11 +277,7 @@ except Exception: pass" 2>/dev/null || echo "")  # silent-ok: optional fallback 
 fi
 
 _PD="$PROJECT_ROOT/tools/HME/scripts/project_detect.py"
-<<<<<<< Updated upstream
-[ -x "$_PD" ] && PROJECT_ROOT="$PROJECT_ROOT" python3 "$_PD" --tag 2>/dev/null >&2 || true  # silent-ok: optional fallback path.
-=======
 [ -x "$_PD" ] && PROJECT_ROOT="$PROJECT_ROOT" python3 "$_PD" --tag 2>/dev/null >&2 || true
->>>>>>> Stashed changes
 
 # inject auto-todo reminders from last turn's ingest
 _AUTO_TODO_REMINDER="$PROJECT_ROOT/tmp/hme-auto-todos.reminder"

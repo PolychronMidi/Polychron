@@ -107,8 +107,6 @@ def _allocate_id(meta: dict) -> int:
     return meta["max_id"]
 
 
-<<<<<<< Updated upstream
-=======
 _VALID_TIERS = ("E1", "E2", "E3", "E4", "E5")
 # Legacy easy/medium/hard auto-translate on read.
 _LEGACY_TIER_MAP = {"easy": "E2", "medium": "E3", "hard": "E4"}
@@ -127,7 +125,6 @@ def _normalize_tier(tier: str) -> str:
     return "E3"
 
 
->>>>>>> Stashed changes
 def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
                       active_form: str = "", critical: bool = False,
                       source: str = "hme_todo", on_done: str = "",
@@ -314,12 +311,6 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
     action='clear': remove completed main todos. When TODO.md has task lines and
         all are `[x]`, clear auto-archives TODO.md + todos.json and resets TODO.md.
     action='critical': list only critical open items (used by turn-start hook).
-<<<<<<< Updated upstream
-    action='ingest_from_todo': ingests open TODO.md task lines.
-    action='promote_to_todo': keeps #todo_id visible in TODO.md.
-    action='close_with_todo_update': marks #todo_id done and flips the matching
-        TODO.md task line if present.
-=======
     action='ingest_from_spec': materialize SPEC/TODO entries as i/todo entries
         (source='spec', tier=<label>). Default reads doc/templates/TODO.md
         "Next up". Pass text="N" or todo_id=N to instead read open `- [ ]`
@@ -338,7 +329,6 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         to doc/templates/SPEC.md Phase N. Pass phase number via todo_id arg, completion
         paragraph via text arg. Refuses if phase still has open `[ ]` items.
         When all phases gain sentinels, next clear auto-archives the set.
->>>>>>> Stashed changes
 
     Changes to this store propagate back to native TodoWrite via the
     native TodoWrite merge -- items appear in the agent's native view
@@ -574,11 +564,6 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 _mark_status(main, "completed")
             _save_todos(meta, todos)
             note = ""
-<<<<<<< Updated upstream
-            if todo_flipped:
-                note = f" (flipped TODO.md item: {todo_flipped[:80]})"
-            return f"Closed #{todo_id}{note}\nShipped: {shipped_line}\n"
-=======
             if spec_flipped:
                 note = f" (flipped doc/templates/SPEC.md item: {spec_flipped[:80]})"
             # Phase-completion detection: if this flip closed the last
@@ -599,7 +584,6 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                         f"citations + test-count delta)."
                     )
             return f"Closed #{todo_id}{note}\nShipped: {shipped_line}{phase_complete_msg}\n"
->>>>>>> Stashed changes
 
         return ("Unknown action. Use: list, add, done, undo, remove, clear, critical, "
                 "ingest_from_todo, promote_to_todo, close_with_todo_update.")

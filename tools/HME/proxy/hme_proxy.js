@@ -80,8 +80,6 @@ function getHandleRequest() {
   return handleRequest;
 }
 
-<<<<<<< Updated upstream
-=======
 function _shrinkForPassthrough(payload) {
   if (process.env.HME_NO_PASSTHROUGH_COMPACT === '1') return 0;
   if (!payload || !Array.isArray(payload.messages)) return 0;
@@ -1578,7 +1576,6 @@ if (_mode4WasStreaming) {
     try { clientRes.end(); } catch (_e) { /* ignore */ }
   });
 }
->>>>>>> Stashed changes
 
 function runTestMode() {
   let raw = '';

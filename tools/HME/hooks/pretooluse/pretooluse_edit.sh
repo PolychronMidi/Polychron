@@ -8,9 +8,6 @@ if [ -n "$_DECISION" ]; then
   printf '%s\n' "$_DECISION"
   case "$_DECISION" in *'"permissionDecision":"deny"'*|*'"permissionDecision":"ask"'*) exit 0;; esac
 fi
-<<<<<<< Updated upstream
-[ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
-=======
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 
@@ -341,5 +338,4 @@ fi
 _streak_tick 10
 if ! _streak_check; then exit 1; fi
 [ -n "$_AUTO_BRIEF_JSON" ] && printf '%s\n' "$_AUTO_BRIEF_JSON"
->>>>>>> Stashed changes
 exit 0

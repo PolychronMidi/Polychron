@@ -34,11 +34,7 @@ const MARKERS = {
   HME_AGENT_TASK: {
     producer: 'tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py',
     consumers: [
-<<<<<<< Updated upstream
-      'tools/HME/proxy/middleware/13_agent_jobs.js',
-=======
       'tools/HME/proxy/middleware/13_subagent_bridge.js',
->>>>>>> Stashed changes
       'tools/HME/service/server/tools_analysis/synthesis/synthesis_overdrive.py',
     ],
     sentinel: '[[HME_AGENT_TASK req_id=<hex12+> prompt_file=tmp/hme-subagent-queue/<reqId>.json subagent_type=<type>...]]',

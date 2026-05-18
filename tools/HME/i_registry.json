@@ -132,8 +132,6 @@
       ],
       "safe_no_args": true
     },
-<<<<<<< Updated upstream
-=======
     "holograph": {
       "description": "Interstellar overview -- single ~12-line panel summarizing all 10 HME horizons (HCI phase, agent-loop, conjugate quadrant, KB graph density, fractal Gini trend, ground-truth verdicts, band proposal, causality marker, etc). Pure composition over existing data. The asymptote of the observability triad -- when you want every dimension at once. `mode=trajectory` shows horizon evolution over recent invocations.",
       "category": "diagnostic",
@@ -167,7 +165,6 @@
       ],
       "safe_no_args": true
     },
->>>>>>> Stashed changes
     "status": {
       "description": "Status hub. Bare command shows the substrate brief; local modes cover state/timeline/holograph/team/project/forks/decision-audit/freeze/patterns; worker modes still use mode=<name>.",
       "category": "diagnostic",
@@ -215,11 +212,6 @@
       "category": "evolution",
       "usage": "i/evolve [focus=...] | i/evolve spec <dir> [--md]",
       "examples": [
-<<<<<<< Updated upstream
-        "i/evolve",
-        "i/evolve focus=invariants",
-        "i/evolve spec src/conductor --md"
-=======
         "i/evolve"
       ],
       "safe_no_args": true
@@ -370,7 +362,6 @@
         "patterns",
         "diff",
         "invariants"
->>>>>>> Stashed changes
       ],
       "safe_no_args": true
     },
@@ -398,8 +389,6 @@
     },
     "help": {
       "description": "List all i/ tools grouped by category, with descriptions and usage.",
-<<<<<<< Updated upstream
-=======
       "category": "meta"
     },
     "sensitivity": {
@@ -413,42 +402,14 @@
     },
     "audit-tools": {
       "description": "UX stress test for i/* CLI surface. Each probe runs inside a transient systemd-run --scope cgroup (MemoryMax=512M, TasksMax=64) so disown'd/double-forked descendants of HME posttooluse hooks die atomically with the scope. Crashed the host twice before this isolation landed; treat with caution on first re-enable.",
->>>>>>> Stashed changes
       "category": "meta",
       "usage": "i/help [command|--json|--all]",
       "safe_no_args": true
     },
-<<<<<<< Updated upstream
-    "hme": {
-      "description": "Low-level dispatcher for worker tools that do not have a curated i/* wrapper; also hosts admin actions.",
-      "category": "meta",
-      "usage": "i/hme admin action=<selftest|reload|restart|index|clear_index|warm|introspect|validate|fix_antipattern|health|both> | i/hme <worker-tool-name> [key=value ...]",
-      "modes": [
-        "admin",
-        "selftest",
-        "reload",
-        "restart",
-        "index",
-        "clear_index",
-        "warm",
-        "introspect",
-        "validate",
-        "fix_antipattern",
-        "health",
-        "both"
-      ],
-      "examples": [
-        "i/hme admin action=selftest",
-        "i/hme selftest",
-        "i/hme admin action=index"
-      ],
-      "safe_no_args": true
-=======
     "_dispatch.sh": {
       "description": "Private helper shared by thin i/* wrappers that call repo-local Python scripts.",
       "category": "orchestration",
       "usage": "i/_dispatch.sh <internal>"
->>>>>>> Stashed changes
     }
   },
   "scripts": []

@@ -17,17 +17,12 @@ BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub.sh" 10 "" || true)
 [ -n "$_RESOLVED" ] && INPUT="$_RESOLVED"
 
-<<<<<<< Updated upstream
-# Dispatch HME shell-command post-processors. These used to be triggered via
-if echo "$CMD" | grep -qE '(^|[[:space:]/])i/learn\b|tools/HME/scripts/hme-cli\.js learn\b'; then
-=======
 # Dispatch HME shell-wrapper post-processors. These used to be triggered via
 # hooks.json matchers on mcp__HME__{learn,read,review} back when HME was an
 # MCP server; now HME tools run as Bash(i/<tool>) shell wrappers and the
 # dispatch happens here. Each handler reads stdin (the same hook JSON) and
 # returns additionalContext / systemMessage / permissionDecisionReason.
 if echo "$CMD" | grep -qE '(^|[[:space:]/])i/learn\b|scripts/hme-cli\.js learn\b'; then
->>>>>>> Stashed changes
   echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_addknowledge.sh" || true
 fi
 if echo "$CMD" | grep -qE '(^|[[:space:]/])i/review\b|tools/HME/scripts/hme-cli\.js review\b'; then
