@@ -251,6 +251,7 @@ function forwardResponses(req, res, targets, source, visibility) {
       const full = Buffer.concat(chunks).toString('utf8');
       const parsed = safeJson(full);
       const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
+      if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [] });
       const finalBody = rewritten && rewritten.stats.calls ? JSON.stringify(rewritten.body) : full;
       const finalParsed = rewritten ? rewritten.body : parsed;
       if (finalParsed && typeof finalParsed === 'object') planScanner.scanObjectForPlan(finalParsed, source);
