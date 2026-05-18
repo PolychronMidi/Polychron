@@ -110,6 +110,8 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
       rewriters: [dropToolUseRewrite, editFallbackToReadRewrite, readInputNormalizeRewrite, providerReasoningToThinkingRewrite, fpGateMarkerRewrite, stopHookCeremonyStripRewrite, hallucinatedTurnPrefixStripRewrite, bashPolicyRewrite, longLeadingSleepRewrite, runInBackgroundRewrite, ackStripRewrite, slopStripRewrite, soloRationaleTrimRewrite],
     });
     try {
+      const sessionId = payload ? sessionKey(payload) : '';
+      if (sessionId) xform._ctx.set('session_id', sessionId);
       const text = lastUserText(payload);
       const denyHit = Boolean(text && DENY_MARKERS.some((m) => text.includes(m)));
       if (denyHit) xform._ctx.set('priorUserWasDeny', true);
