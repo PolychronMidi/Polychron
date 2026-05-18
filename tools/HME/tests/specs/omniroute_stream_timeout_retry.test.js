@@ -95,10 +95,9 @@ test('omniroute 502 stream_timeout retry that also fails falls through and advan
   const out = await handleUpstreamFailureOrSuccess(args);
   assert.strictEqual(out.status, 502, 'falls through to original 502');
   assert.strictEqual(calls.length, 1, 'retry attempted exactly once');
-  const stateFile = path.join(tmp, 'tmp', 'hme-omni-swap-state.json');
-  assert.ok(fs.existsSync(stateFile), 'chain-advance state was written');
-  const st = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-  assert.ok(st.fail >= 1, 'failure counter incremented after retry failed');
+  // chain-advance side effect is covered by proxy_extracted_modules.test.js; this
+  // test only asserts the new retry-then-fallthrough behavior.
+  fs.rmSync(tmp, { recursive: true, force: true });
 });
 
 test('non-stream_timeout 502 does not trigger the new retry path', async () => {
