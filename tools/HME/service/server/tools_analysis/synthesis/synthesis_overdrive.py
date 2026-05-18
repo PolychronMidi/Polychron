@@ -131,11 +131,29 @@ def _resolve_model_provider(model_id: str) -> str | None:
 
 
 
+def _positive_int(value) -> int:
+    try:
+        n = int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+    return n if n > 0 else 0
+
+
+def _effective_context_limit(meta: dict) -> int:
+    explicit = _positive_int(meta.get("effective_context_length"))
+    if explicit:
+        return explicit
+    ctx_limit = _positive_int(meta.get("context_length"))
+    output_limit = _positive_int(meta.get("max_output_tokens"))
+    if ctx_limit and output_limit and ctx_limit > output_limit:
+        return ctx_limit - output_limit
+    return ctx_limit
+
+
 def _context_limits_for(model_id: str) -> tuple[int, int | None]:
     meta = _resolve_model_meta(model_id)
-    # Prefer effective ceiling over provider nameplate (see models.overrides.jsonc).
-    ctx_limit = int(meta.get("effective_context_length") or meta.get("context_length") or 0)
-    output_limit = int(meta.get("max_output_tokens") or 0)
+    ctx_limit = _effective_context_limit(meta)
+    output_limit = _positive_int(meta.get("max_output_tokens"))
     return (ctx_limit if ctx_limit > 0 else 128000, output_limit if output_limit > 0 else None)
 
 _VALID_EFFORTS = {"max", "xhigh", "high", "medium", "low"}
