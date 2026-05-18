@@ -1040,6 +1040,7 @@ function soloRationaleTrimRewrite(eventName, data, ctx) {
 
 module.exports = {
   dropToolUseRewrite,
+  editFallbackToReadRewrite,
   readInputNormalizeRewrite,
   bashPolicyRewrite,
   runInBackgroundRewrite,
