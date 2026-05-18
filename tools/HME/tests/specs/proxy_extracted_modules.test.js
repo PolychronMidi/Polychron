@@ -105,7 +105,7 @@ test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () 
       stripStaleToolResults: () => { strippedTools = true; },
       stripClaudeIdentity: () => { strippedIdentity = true; },
       shrinkForContext: () => { contextPreflight = true; },
-      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'driver', HME_OMNIROUTE_PROVIDER: 'openai-responses' },
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew', HME_OMNIROUTE_PROVIDER: 'openai-responses' },
       projectRoot: tmp,
     });
     assert.equal(result.applied, true);
