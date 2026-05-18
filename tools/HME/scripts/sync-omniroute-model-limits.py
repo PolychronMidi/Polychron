@@ -313,12 +313,14 @@ def main() -> int:
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", default="config/models.json")
+    ap.add_argument("--overrides", default=DEFAULT_OVERRIDES_PATH)
     ap.add_argument("--port", default=str(service_port(service_map()["omniroute"])))
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
     path = Path(args.models)
+    overrides = _load_overrides(Path(args.overrides))
     catalog = _fetch_catalog(args.port)
-    changed = sync(path, catalog, dry_run=args.dry_run)
+    changed = sync(path, catalog, dry_run=args.dry_run, overrides=overrides)
     print(f"models_limit_fields_changed={changed}")
     return 0
 
