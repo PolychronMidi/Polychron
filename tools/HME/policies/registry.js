@@ -157,6 +157,7 @@ function matchingFor(event, tool, configResolver) {
 async function runChain(policies, ctx) {
   let firstDeny = null;
   const instructs = [];
+  const rewrites = [];
   const errors = [];
   for (const p of policies) {
     let res;
@@ -170,8 +171,12 @@ async function runChain(policies, ctx) {
     if (!res) continue;
     if (res.decision === 'deny' && !firstDeny) firstDeny = { ...res, policy: p.name };
     else if (res.decision === 'instruct' && res.message) instructs.push({ policy: p.name, message: res.message });
+    else if (res.decision === 'rewrite') {
+      rewrites.push({ policy: p.name, message: res.message || '', updatedInput: res.updatedInput });
+      ctx.toolInput = res.updatedInput;
+    }
   }
-  return { firstDeny, instructs, errors };
+  return { firstDeny, instructs, rewrites, errors };
 }
 
 module.exports = {
