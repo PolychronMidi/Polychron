@@ -108,6 +108,26 @@ test('mode 1 real models.json driver override beats E5 manual fallback', () => {
   assert.notEqual(result.chain[0].id, 'gpt-5.5-xhigh');
 });
 
+test('mode 1 same-chain fallback index cannot override manual top rank', () => quiet(() => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-manual-same-chain-'));
+  try {
+    const { chainSignature } = require('../../proxy/overdrive_route');
+    const cfg = require('../../proxy/shared').loadModelsJson();
+    const chainInfo = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
+    fs.mkdirSync(path.join(tmp, 'tmp'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 1, chain: chainSignature(chainInfo.chain), fail: 0, ts: Date.now() }));
+    const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    const result = applyOverdriveRoute({
+      payload, clientReq, clientRes: fakeClientRes(), outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {}, stripClaudeIdentity: () => {}, shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' }, projectRoot: tmp,
+    });
+    assert.equal(result.swapMeta.id, 'claude-sonnet-4-6-max-e3');
+    assert.match(payload.model, /^claude\/claude-sonnet-4-6/);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}));
+
 test('mode 1 stale fallback index cannot skip driver manual top rank', () => quiet(() => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-manual-top-'));
   try {
