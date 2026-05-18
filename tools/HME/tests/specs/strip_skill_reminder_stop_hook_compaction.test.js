@@ -2,15 +2,20 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 
-function runOnText(text) {
+function runOnContent(content) {
   const policy = require('../../proxy/middleware/00_strip_skill_reminder');
-  const block = { type: 'text', text };
   let dirty = false;
   policy.onRequest({
-    payload: { messages: [{ role: 'user', content: [block] }] },
+    payload: { messages: [{ role: 'user', content }] },
     ctx: { markDirty: () => { dirty = true; }, emit: () => {} },
   });
-  return { text: block.text, dirty };
+  return { content, dirty };
+}
+
+function runOnText(text) {
+  const block = { type: 'text', text };
+  const out = runOnContent([block]);
+  return { text: block.text, dirty: out.dirty };
 }
 
 test('stop-hook compaction preserves auto-completeness discriminator', () => {
