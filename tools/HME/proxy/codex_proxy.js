@@ -16,6 +16,7 @@ const { requestTelemetry } = require('./request_telemetry');
 const { servicePort } = require('./service_registry');
 const { emitStartMarker } = require('./start_marker');
 const { ensureSession, reapDuplicates } = require('./codex_session_guard');
+const { isSingleQuotaProbe, blockQuotaProbe } = require('./prompt_spam_guard');
 
 const PORT = servicePort('codex_proxy');
 const PROXY_VERSION = 'hme-codex-proxy/1';
