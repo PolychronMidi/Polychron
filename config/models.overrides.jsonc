@@ -26,18 +26,18 @@
     "gpt-5.4-mini":        { "max_output_tokens": 128000 },
     "gpt-5.4-nano":        { "max_output_tokens": 128000 },
 
-    // Route reality: use the 400K GPT-5.5 window, not marketing 1M rows.
-    "gpt-5.5-xhigh":       { "context_length": 400000 },
-    "gpt-5.5-high":        { "context_length": 400000 },
-    "gpt-5.5-medium":      { "context_length": 400000 },
-    "gpt-5.5-low":         { "context_length": 400000 },
+    // Route reality: keep 1M catalog context, plan around 400K minus output.
+    "gpt-5.5-xhigh":       { "context_length": 1000000, "effective_context_length": 272000 },
+    "gpt-5.5-high":        { "context_length": 1000000, "effective_context_length": 272000 },
+    "gpt-5.5-medium":      { "context_length": 1000000, "effective_context_length": 272000 },
+    "gpt-5.5-low":         { "context_length": 1000000, "effective_context_length": 272000 },
 
-    // Anthropic Opus 1M rows require a beta path; default route is 200K.
-    "claude-opus-4-7-max-e5":    { "context_length": 200000 },
-    "claude-opus-4-7-xhigh-e4":  { "context_length": 200000 },
-    "claude-opus-4-7-high-e4":   { "context_length": 200000 },
-    "claude-opus-4-7-medium-e3": { "context_length": 200000 },
-    "claude-opus-4-7-low-e3":    { "context_length": 200000 },
+    // Anthropic Opus advertises 1M, but plan on context minus output.
+    "claude-opus-4-7-max-e5":    { "context_length": 1000000 },
+    "claude-opus-4-7-xhigh-e4":  { "context_length": 1000000 },
+    "claude-opus-4-7-high-e4":   { "context_length": 1000000 },
+    "claude-opus-4-7-medium-e3": { "context_length": 1000000 },
+    "claude-opus-4-7-low-e3":    { "context_length": 1000000 },
 
     // Replace aggregator sentinel 1M rows with route-credible catalog caps.
     "gpt-4o-mini":               { "context_length": 128000, "max_output_tokens": 16384 },
