@@ -29,9 +29,10 @@ def _text(event: dict) -> str:
                 parts.append(block)
             elif isinstance(block, dict) and block.get("type") == "text":
                 parts.append(str(block.get("text", "")))
-    for block in event_content(event):
-        if isinstance(block, dict) and block.get("type") == "text":
-            parts.append(str(block.get("text", "")))
+    if not parts:
+        for block in event_content(event):
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(str(block.get("text", "")))
     return "\n".join(p for p in parts if p)
 
 
