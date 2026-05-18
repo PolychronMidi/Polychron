@@ -200,7 +200,7 @@ function editFallbackToReadRewrite(eventName, data, ctx) {
       ['content_block_stop', data],
     ]};
   }
-  const readInput = _editToReadFallback(parsed || {});
+  const readInput = editToReadFallback(parsed || {});
   const readStart = {
     ...editState.startData,
     content_block: { ...editState.startData.content_block, name: 'Read', input: {} },
