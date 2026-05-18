@@ -78,6 +78,30 @@ print(json.dumps({"head": list(chain[:2]), "allow_subagent": allow_sub}))
   assert.deepEqual(JSON.parse(crew.stdout.trim().split('\n').pop()).head, EXPECTED_E2_HEAD);
 });
 
+test('Python overdrive applies registry effort params to payload', () => {
+  const result = run({ OVERDRIVE_MODE: '1' }, `
+from server.tools_analysis.synthesis import synthesis_overdrive as so
+import json, urllib.request
+captured = {}
+class Resp:
+    def __enter__(self): return self
+    def __exit__(self, *args): return False
+    def read(self): return json.dumps({"content":[{"type":"text","text":"ok"}]}).encode()
+def fake_urlopen(req, timeout=None):
+    captured["payload"] = json.loads(req.data.decode())
+    return Resp()
+urllib.request.urlopen = fake_urlopen
+text, rate = so._try_overdrive_model('claude-opus-4-7-max-e5', 'prompt', '', 4096)
+print(json.dumps({"text": text, "rate": rate, "payload": captured["payload"]}))
+`);
+  assert.equal(result.status, 0, result.stderr);
+  const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+  assert.equal(parsed.text, 'ok');
+  assert.equal(parsed.rate, false);
+  assert.equal(parsed.payload.model, 'anthropic/claude-opus-4-7');
+  assert.equal(parsed.payload.thinkingLevel, 'max');
+});
+
 test('overdrive mode 1 dispatches through registry chain; mode 0 does not', () => {
   const active = run({ OVERDRIVE_MODE: '1', HME_TEAM_ROLE: 'driver' }, `
 from server.tools_analysis.synthesis import synthesis_reasoning as sr
