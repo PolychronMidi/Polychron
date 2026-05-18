@@ -80,7 +80,7 @@ test('mode 1 OmniRoute path applies Anthropic effort params when provider is not
       stripStaleToolResults: () => {},
       stripClaudeIdentity: () => {},
       shrinkForContext: () => {},
-      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'driver' },
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
       projectRoot: tmp,
     });
     assert.equal(result.applied, true);
