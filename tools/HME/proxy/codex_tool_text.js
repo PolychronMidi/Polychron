@@ -62,17 +62,23 @@ function bridgeFromTokens(tokens) {
 
 function bridgeFromJsonCommand(text) {
   const src = String(text || '');
-  const m = /codex_structured_tool\.js\s+(read|edit|grep|glob)\s+--json\s+<<['\"]?([A-Za-z0-9_:-]+)['\"]?\n([\s\S]*?)\n\2(?:\s|$)/.exec(src);
+  const m = /codex_structured_tool\.js\s+(read|edit|grep|glob|write|web_fetch|agent)\s+--json\s+<<['\"]?([A-Za-z0-9_:-]+)['\"]?\n([\s\S]*?)\n\2(?:\s|$)/.exec(src);
   if (!m) return null;
   let data;
   try { data = JSON.parse(m[3]); } catch (_e) { return null; }
   if (m[1] === 'grep') return { tool: 'Grep', input: { pattern: data.pattern || '', path: data.path || '.' } };
   if (m[1] === 'glob') return { tool: 'Glob', input: { pattern: data.pattern || '*', path: data.path || '.' } };
+  if (m[1] === 'web_fetch') return { tool: 'WebFetch', input: { url: data.url || '', prompt: data.prompt || '' } };
+  if (m[1] === 'agent') return { tool: 'Agent', input: { prompt: data.prompt || '', level: Number.isFinite(Number(data.level)) ? Number(data.level) : 3 } };
   const input = { file_path: data.file_path || data.file || '' };
   if (m[1] === 'read') {
     if (data.offset !== undefined) input.offset = Number(data.offset);
     if (data.limit !== undefined) input.limit = Number(data.limit);
     return { tool: 'Read', input };
+  }
+  if (m[1] === 'write') {
+    input.content = WRITE_CONTENT_REDACTION;
+    return { tool: 'Write', input };
   }
   input.old_string = EDIT_REDACTION;
   input.new_string = EDIT_REDACTION;
