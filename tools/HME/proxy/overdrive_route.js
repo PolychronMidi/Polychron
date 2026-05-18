@@ -52,8 +52,33 @@ function modelTier(modelId) {
   return 'E5';
 }
 
-function rankedForTier(cfg, tier) {
-  const models = (cfg.tiers && cfg.tiers[tier] && cfg.tiers[tier].models) || [];
+function normalizedProvider(provider) {
+  return omniProviderForConfigProvider(provider).replace(/_/g, '-');
+}
+
+function skippedProviderSet(cfg) {
+  const raw = cfg.providers_to_skip && Array.isArray(cfg.providers_to_skip.providers)
+    ? cfg.providers_to_skip.providers : [];
+  return new Set(raw.map(normalizedProvider));
+}
+
+function providerCredentialOk(provider, env = process.env) {
+  const p = normalizedProvider(provider);
+  if (p === 'anthropic') return !!env.ANTHROPIC_API_KEY;
+  return true;
+}
+
+function modelRouteAvailable(model, skipSet, env = process.env) {
+  if (!model) return false;
+  const provider = normalizedProvider(model.provider || '');
+  if (skipSet.has(provider)) return false;
+  return providerCredentialOk(provider, env);
+}
+
+function rankedForTier(cfg, tier, env = process.env) {
+  const skipSet = skippedProviderSet(cfg);
+  const available = (m) => modelRouteAvailable(m, skipSet, env);
+  const models = ((cfg.tiers && cfg.tiers[tier] && cfg.tiers[tier].models) || []).filter(available);
   const costOrder = (cfg.ranking_rules && cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
   const ranked = [];
   for (const cost of costOrder) ranked.push(...models.filter((m) => m.cost === cost).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
