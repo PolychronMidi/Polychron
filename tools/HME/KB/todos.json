@@ -3,7 +3,7 @@
     "id": 0,
     "_meta": {
       "max_id": 3612,
-      "updated_ts": 1779067250.6343162,
+      "updated_ts": 1779067271.778087,
       "codex_plan_synced_ts": 1779067250.6341813,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
       "codex_plan_ts": "2026-05-18T01:17:46.408Z"
@@ -9277,8 +9277,8 @@
     "id": 3611,
     "text": "Add/adjust regression tests",
     "activeForm": "Add/adjust regression tests",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9288,14 +9288,14 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
     "codex_plan_ts": "2026-05-18T01:17:46.408Z",
-    "completed_ts": 1779067241.978677
+    "completed_ts": 1779067271.778087
   },
   {
     "id": 3612,
     "text": "Run focused checks and restart proxy",
     "activeForm": "Run focused checks and restart proxy",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9305,6 +9305,6 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
     "codex_plan_ts": "2026-05-18T01:17:46.408Z",
-    "completed_ts": 1779067241.978677
+    "completed_ts": 1779067271.778087
   }
 ]
