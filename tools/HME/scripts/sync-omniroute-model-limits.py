@@ -93,7 +93,11 @@ def _candidates(model: dict) -> list[str]:
     return vals
 
 
-def _desired_limits(model: dict, catalog_hit: dict | None) -> dict[str, int]:
+def _desired_limits(
+    model: dict,
+    catalog_hit: dict | None,
+    overrides: dict | None = None,
+) -> dict[str, int]:
     out: dict[str, int] = {}
     if catalog_hit:
         for key in SYNC_KEYS:
@@ -102,7 +106,36 @@ def _desired_limits(model: dict, catalog_hit: dict | None) -> dict[str, int]:
                 out[key] = val
     if "max_output_tokens" not in out:
         out["max_output_tokens"] = DEFAULT_OUTPUT
+    # Fold overrides last so they win over catalog sentinels.
+    for key, val in _override_lookup(model, overrides).items():
+        if key in OVERRIDE_KEYS and isinstance(val, int) and val > 0:
+            out[key] = val
     return out
+
+
+def _load_overrides(path: Path) -> dict:
+    if not path.is_file():
+        return {"by_id": {}, "by_api_model": {}}
+    data = loads_jsonc(path.read_text(encoding="utf-8"))
+    return {
+        "by_id": dict(data.get("by_id") or {}),
+        "by_api_model": dict(data.get("by_api_model") or {}),
+    }
+
+
+def _override_lookup(model: dict, overrides: dict | None) -> dict:
+    if not overrides:
+        return {}
+    mid = model.get("id") or ""
+    api = model.get("api_model") or ""
+    merged: dict = {}
+    api_hit = overrides.get("by_api_model", {}).get(api) if api else None
+    if isinstance(api_hit, dict):
+        merged.update(api_hit)
+    id_hit = overrides.get("by_id", {}).get(mid) if mid else None
+    if isinstance(id_hit, dict):
+        merged.update(id_hit)  # id wins over api_model on key collision
+    return merged
 
 
 def _enclosing_object_span(text: str, target: int) -> tuple[int, int] | None:
