@@ -14,9 +14,7 @@ function positiveNumber(value) {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function effectiveContextLength(model) {
-  const explicit = positiveNumber(model.effective_context_length);
-  if (explicit) return explicit;
+function inputBudget(model) {
   const ctx = positiveNumber(model.context_length);
   const output = positiveNumber(model.max_output_tokens);
   if (ctx && output && ctx > output) return ctx - output;
