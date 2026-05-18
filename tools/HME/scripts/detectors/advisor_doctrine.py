@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
+<<<<<<< Updated upstream
 """Retired advisor-doctrine detector.
+=======
+"""Legacy advisor-call detector.
+>>>>>>> Stashed changes
 
 Historical PAI v6.3.0 doctrine: on Extended+ effort (E2+) tasks, the
 advisor had to leave a record at:
@@ -81,8 +85,13 @@ DECLARED_VERDICTS = {
 }
 
 
+<<<<<<< Updated upstream
 def _legacy_advisor_available() -> bool:
     return False
+=======
+def _legacy_consult_available() -> bool:
+    return (_PROJECT / "i" / "consult").is_file()
+>>>>>>> Stashed changes
 
 
 def _last_assistant_text(events: list) -> str:
@@ -131,7 +140,11 @@ def _solo_rescue(text: str) -> bool:
     return any(pat.search(text) for pat in _SOLO_RES)
 
 
+<<<<<<< Updated upstream
 def _advisor_invocations(events: list) -> int:
+=======
+def _consult_invocations(events: list) -> int:
+>>>>>>> Stashed changes
     """Count this turn's legacy advisor Bash invocations."""
     count = 0
     for ev in events:
@@ -225,7 +238,11 @@ def main() -> int:
         # Doctrine only fires at E2+.
         print("ok")
         return 0
+<<<<<<< Updated upstream
     if not os.environ.get("ADVISOR_DOCTRINE_TIER") and not _legacy_advisor_available():
+=======
+    if not os.environ.get("ADVISOR_DOCTRINE_TIER") and not _legacy_consult_available():
+>>>>>>> Stashed changes
         print("ok")
         return 0
 

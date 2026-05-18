@@ -132,6 +132,42 @@
       ],
       "safe_no_args": true
     },
+<<<<<<< Updated upstream
+=======
+    "holograph": {
+      "description": "Interstellar overview -- single ~12-line panel summarizing all 10 HME horizons (HCI phase, agent-loop, conjugate quadrant, KB graph density, fractal Gini trend, ground-truth verdicts, band proposal, causality marker, etc). Pure composition over existing data. The asymptote of the observability triad -- when you want every dimension at once. `mode=trajectory` shows horizon evolution over recent invocations.",
+      "category": "diagnostic",
+      "usage": "i/holograph  |  i/holograph mode=trajectory",
+      "examples": [
+        "i/holograph",
+        "i/holograph mode=trajectory"
+      ]
+    },
+    "timeline": {
+      "description": "Unified audit trail -- chronological view of HME's silent automations (auto-reload, KB draft writes, posttooluse hooks, fs_watcher events) joined into one timeline. Answers 'what has HME done in the last N minutes?' without reading 5+ files.",
+      "category": "diagnostic",
+      "usage": "i/timeline [window=<5m|1h|30s>]",
+      "examples": [
+        "i/timeline",
+        "i/timeline window=5m",
+        "i/timeline window=1h"
+      ]
+    },
+    "state": {
+      "description": "Unified state panel -- every state machine HME tracks, in one ~10-line view.",
+      "category": "diagnostic",
+      "usage": "i/state  |  i/state mode=brief",
+      "modes": [
+        "full (default)",
+        "brief"
+      ],
+      "examples": [
+        "i/state",
+        "i/state mode=brief"
+      ],
+      "safe_no_args": true
+    },
+>>>>>>> Stashed changes
     "status": {
       "description": "Status hub. Bare command shows the substrate brief; local modes cover state/timeline/holograph/team/project/forks/decision-audit/freeze/patterns; worker modes still use mode=<name>.",
       "category": "diagnostic",
@@ -179,9 +215,162 @@
       "category": "evolution",
       "usage": "i/evolve [focus=...] | i/evolve spec <dir> [--md]",
       "examples": [
+<<<<<<< Updated upstream
         "i/evolve",
         "i/evolve focus=invariants",
         "i/evolve spec src/conductor --md"
+=======
+        "i/evolve"
+      ],
+      "safe_no_args": true
+    },
+    "hme-read": {
+      "description": "Pre-edit briefing: read a target with KB context, callers, structure.",
+      "category": "review-discipline",
+      "usage": "i/hme-read target=<path|module|function> [mode=before|story|impact|both|lines|function|structure|callers|deps] [fast=true]",
+      "modes": [
+        "before",
+        "story",
+        "impact",
+        "both",
+        "lines",
+        "function",
+        "structure",
+        "callers",
+        "deps"
+      ],
+      "examples": [
+        "i/hme-read target=adaptiveTrustScores",
+        "i/hme-read target=src/conductor/conductorState.js mode=structure"
+      ],
+      "safe_no_args": true
+    },
+    "hme-admin": {
+      "description": "Admin: selftest, reload, restart, index/clear_index, warm, introspect, validate, fix_antipattern, health.",
+      "category": "infra",
+      "usage": "i/hme-admin action=<selftest|reload|restart|index|clear_index|warm|introspect|validate|fix_antipattern|health|both>",
+      "modes": [
+        "selftest",
+        "reload",
+        "restart",
+        "index",
+        "clear_index",
+        "warm",
+        "introspect",
+        "validate",
+        "fix_antipattern",
+        "health",
+        "both"
+      ],
+      "examples": [
+        "i/hme-admin action=health",
+        "i/hme-admin action=index"
+      ]
+    },
+    "hme": {
+      "description": "Convenience wrapper that dispatches to other i/* tools by subcommand.",
+      "category": "meta",
+      "safe_no_args": true
+    },
+    "freeze": {
+      "description": "Show arc-freeze marker; optionally check a query against the forbidden-pattern list.",
+      "category": "review-discipline",
+      "usage": "i/freeze [query-string]",
+      "examples": [
+        "i/freeze",
+        "i/freeze \"never disable trust ceiling\""
+      ],
+      "safe_no_args": true
+    },
+    "pattern": {
+      "description": "Pattern catalogue: list, matched, or fetch by id.",
+      "category": "knowledge",
+      "usage": "i/pattern [list|matched|<id>]"
+    },
+    "why": {
+      "description": "Explain something the system did or is in. Three tiers: deterministic modes (block/state/verifier/hci-drop/hook), Tier-2 retrieval catch-all on multi-word questions (grep + KB + activity), Tier-3 subagent synthesis with --deep.",
+      "category": "review-discipline",
+      "usage": "i/why <invariant-id>  |  i/why mode=<block|state|verifier|hci-drop|hook|causality>  |  i/why mode=causality <event> [--chain] [depth=N]  |  i/why \"<question>\" [--deep]",
+      "modes": [
+        "invariant (default)",
+        "block",
+        "state",
+        "verifier",
+        "hci-drop",
+        "hook",
+        "verifier-utility",
+        "verifier-coverage",
+        "verifier-drift",
+        "kb-graph",
+        "kb-context",
+        "predict",
+        "conscience",
+        "causality (with --chain / --root-cause)",
+        "fractal-shape",
+        "architecture-snapshot",
+        "search (auto on multi-word)"
+      ],
+      "examples": [
+        "i/why nexus-state-integrity",
+        "i/why mode=block",
+        "i/why mode=state",
+        "i/why mode=verifier doc-drift",
+        "i/why mode=hci-drop",
+        "i/why mode=hook",
+        "i/why mode=verifier-utility",
+        "i/why \"where is the spam verifier defined\"",
+        "i/why \"what caused the HCI drop yesterday\" --deep"
+      ]
+    },
+    "todo": {
+      "description": "Hierarchical todo store + SPEC/TODO bridge + KB devlog archive on set completion.",
+      "category": "review-discipline",
+      "usage": "i/todo <action> [text=...] [todo_id=N] [parent_id=N] [tier=easy|medium|hard] [critical=true]",
+      "modes": [
+        "list",
+        "add",
+        "done",
+        "show",
+        "update"
+      ],
+      "examples": [
+        "i/todo list",
+        "i/todo add text=\"refactor X\" tier=hard",
+        "i/todo done todo_id=42",
+        "i/todo ingest_from_spec",
+        "i/todo close_with_spec_update todo_id=42",
+        "i/todo phase_complete todo_id=2 text=\"Phase 2 complete: <summary>\"",
+        "i/todo clear text=\"set name for archive\""
+      ],
+      "actions": [
+        "list",
+        "add",
+        "done",
+        "undo",
+        "remove",
+        "clear",
+        "critical",
+        "ingest_from_spec",
+        "promote_to_spec",
+        "close_with_spec_update",
+        "phase_complete"
+      ]
+    },
+    "substrate": {
+      "description": "Substrate browser: brief, detail, actions, drift, consensus, efficacy, patterns, diff, invariants.",
+      "category": "diagnostic",
+      "usage": "i/substrate [mode=brief|detail|actions|drift|consensus|efficacy|patterns|diff|invariants] [filter=<substring>]",
+      "modes": [
+        "brief",
+        "detail",
+        "actions",
+        "drift",
+        "consensus",
+        "efficacy",
+        "patterns",
+        "diff",
+        "invariants"
+>>>>>>> Stashed changes
       ],
       "safe_no_args": true
     },
@@ -209,10 +398,27 @@
     },
     "help": {
       "description": "List all i/ tools grouped by category, with descriptions and usage.",
+<<<<<<< Updated upstream
+=======
+      "category": "meta"
+    },
+    "sensitivity": {
+      "description": "Metaprofile attribution aggregator  per-profile score distribution, per-(profile, sectionType) breakdown, and ranking by mean score.",
+      "category": "diagnostic",
+      "usage": "i/sensitivity",
+      "examples": [
+        "i/sensitivity"
+      ],
+      "safe_no_args": true
+    },
+    "audit-tools": {
+      "description": "UX stress test for i/* CLI surface. Each probe runs inside a transient systemd-run --scope cgroup (MemoryMax=512M, TasksMax=64) so disown'd/double-forked descendants of HME posttooluse hooks die atomically with the scope. Crashed the host twice before this isolation landed; treat with caution on first re-enable.",
+>>>>>>> Stashed changes
       "category": "meta",
       "usage": "i/help [command|--json|--all]",
       "safe_no_args": true
     },
+<<<<<<< Updated upstream
     "hme": {
       "description": "Low-level dispatcher for worker tools that do not have a curated i/* wrapper; also hosts admin actions.",
       "category": "meta",
@@ -237,6 +443,12 @@
         "i/hme admin action=index"
       ],
       "safe_no_args": true
+=======
+    "_dispatch.sh": {
+      "description": "Private helper shared by thin i/* wrappers that call repo-local Python scripts.",
+      "category": "orchestration",
+      "usage": "i/_dispatch.sh <internal>"
+>>>>>>> Stashed changes
     }
   },
   "scripts": []

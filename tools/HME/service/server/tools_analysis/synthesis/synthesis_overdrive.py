@@ -426,3 +426,7 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
     # Every model in the chain rate-limited or was in cooldown.
     logger.warning("OVERDRIVE: every model in chain rate-limited -- falling through to cascade")
     return None
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes

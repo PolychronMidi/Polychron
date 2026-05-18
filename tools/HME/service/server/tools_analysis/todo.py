@@ -107,6 +107,27 @@ def _allocate_id(meta: dict) -> int:
     return meta["max_id"]
 
 
+<<<<<<< Updated upstream
+=======
+_VALID_TIERS = ("E1", "E2", "E3", "E4", "E5")
+# Legacy easy/medium/hard auto-translate on read.
+_LEGACY_TIER_MAP = {"easy": "E2", "medium": "E3", "hard": "E4"}
+
+
+def _normalize_tier(tier: str) -> str:
+    """Coerce to E1..E5. Legacy easy/medium/hard translate (easy->E2,
+    medium->E3, hard->E4). Unknown/empty -> E3 (graceful default)."""
+    t = (tier or "").strip()
+    upper = t.upper()
+    if upper in _VALID_TIERS:
+        return upper
+    legacy = _LEGACY_TIER_MAP.get(t.lower())
+    if legacy:
+        return legacy
+    return "E3"
+
+
+>>>>>>> Stashed changes
 def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
                       active_form: str = "", critical: bool = False,
                       source: str = "hme_todo", on_done: str = "",
@@ -293,10 +314,31 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
     action='clear': remove completed main todos. When TODO.md has task lines and
         all are `[x]`, clear auto-archives TODO.md + todos.json and resets TODO.md.
     action='critical': list only critical open items (used by turn-start hook).
+<<<<<<< Updated upstream
     action='ingest_from_todo': ingests open TODO.md task lines.
     action='promote_to_todo': keeps #todo_id visible in TODO.md.
     action='close_with_todo_update': marks #todo_id done and flips the matching
         TODO.md task line if present.
+=======
+    action='ingest_from_spec': materialize SPEC/TODO entries as i/todo entries
+        (source='spec', tier=<label>). Default reads doc/templates/TODO.md
+        "Next up". Pass text="N" or todo_id=N to instead read open `- [ ]`
+        items from doc/templates/SPEC.md Phase N (spec-kit-style auto-tasks
+        from Phase). Pass text="latest" to ingest the highest-numbered Phase.
+        Dedup against existing open i/todo entries.
+    action='promote_to_spec': move ephemeral i/todo #todo_id into doc/templates/TODO.md
+        "Next up" with a Reason: cite. Promotes one-off operational state
+        into the durable cross-cycle continuity queue.
+    action='close_with_spec_update': atomically flip the matching `- [ ] [tier]
+        <text>` in doc/templates/SPEC.md to `[x]` (longest-common-prefix match), append
+        to doc/templates/TODO.md "Just shipped" (rolling-10 trim), mark i/todo #todo_id
+        done. Surfaces phase-completion notice when the flip closes the last
+        open item in a phase block.
+    action='phase_complete': append a `_Phase N complete_` sentinel paragraph
+        to doc/templates/SPEC.md Phase N. Pass phase number via todo_id arg, completion
+        paragraph via text arg. Refuses if phase still has open `[ ]` items.
+        When all phases gain sentinels, next clear auto-archives the set.
+>>>>>>> Stashed changes
 
     Changes to this store propagate back to native TodoWrite via the
     native TodoWrite merge -- items appear in the agent's native view
@@ -532,9 +574,32 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 _mark_status(main, "completed")
             _save_todos(meta, todos)
             note = ""
+<<<<<<< Updated upstream
             if todo_flipped:
                 note = f" (flipped TODO.md item: {todo_flipped[:80]})"
             return f"Closed #{todo_id}{note}\nShipped: {shipped_line}\n"
+=======
+            if spec_flipped:
+                note = f" (flipped doc/templates/SPEC.md item: {spec_flipped[:80]})"
+            # Phase-completion detection: if this flip closed the last
+            # `[ ]` in any Phase block, surface that to the caller so a
+            # caller can append the completion-ritual paragraph
+            # via `i/todo phase_complete phase=N summary=\"...\"`.
+            phase_complete_msg = ""
+            if spec_flipped and os.path.exists(_spec_file()):
+                with open(_spec_file(), encoding="utf-8") as f:
+                    spec_md = f.read()
+                completed = _detect_phase_complete(spec_md)
+                if completed:
+                    headers = "\n  ".join(c["header"] for c in completed)
+                    phase_complete_msg = (
+                        f"\n\n[DONE] Phase complete (no remaining `[ ]` items):\n  {headers}\n"
+                        f"Run `i/todo phase_complete phase=<N> summary=\"...\"` to append "
+                        f"the completion paragraph (1-paragraph result + bulleted file "
+                        f"citations + test-count delta)."
+                    )
+            return f"Closed #{todo_id}{note}\nShipped: {shipped_line}{phase_complete_msg}\n"
+>>>>>>> Stashed changes
 
         return ("Unknown action. Use: list, add, done, undo, remove, clear, critical, "
                 "ingest_from_todo, promote_to_todo, close_with_todo_update.")
