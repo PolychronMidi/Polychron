@@ -67,6 +67,25 @@ test('Anthropic registry variants route with api_model instead of registry id', 
   assert.equal(upstreamModelId({ id: 'deepseek-v4-pro-go' }), 'deepseek-v4-pro');
 });
 
+test('mode 1 chain skips configured providers and Anthropic without OmniRoute key', () => {
+  const cfg = {
+    providers_to_skip: { providers: ['opencode_go'] },
+    ranking_rules: { cost_order: ['subscription', 'free'] },
+    manually_toprank: { E5: ['anthropic-top'] },
+    team_role_models: { driver: { tier: 'E5', source: 'manually_toprank' } },
+    tiers: { E5: { models: [
+      { id: 'anthropic-top', provider: 'anthropic', cost: 'subscription', tier_score: 9 },
+      { id: 'opencode-skip', provider: 'opencode-go', cost: 'free', tier_score: 10 },
+      { id: 'codex-ok', provider: 'codex', cost: 'free', tier_score: 1 },
+    ] } },
+  };
+  const payload = { model: 'claude-opus-4-7', messages: [] };
+  const noKey = buildMode1Chain(payload, { HME_TEAM_ROLE: 'driver' }, cfg);
+  assert.deepEqual(noKey.chain.map((m) => m.id), ['codex-ok']);
+  const withKey = buildMode1Chain(payload, { HME_TEAM_ROLE: 'driver', ANTHROPIC_API_KEY: 'fake' }, cfg);
+  assert.deepEqual(withKey.chain.map((m) => m.id), ['anthropic-top', 'codex-ok']);
+});
+
 test('mode 1 OmniRoute path applies Anthropic effort params when provider is not overridden', () => quiet(() => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-effort-'));
   try {
@@ -80,7 +99,7 @@ test('mode 1 OmniRoute path applies Anthropic effort params when provider is not
       stripStaleToolResults: () => {},
       stripClaudeIdentity: () => {},
       shrinkForContext: () => {},
-      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', ANTHROPIC_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
       projectRoot: tmp,
     });
     assert.equal(result.applied, true);
