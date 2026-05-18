@@ -137,6 +137,26 @@ def _context_limits_for(model_id: str) -> tuple[int, int | None]:
     output_limit = int(meta.get("max_output_tokens") or 0)
     return (ctx_limit if ctx_limit > 0 else 128000, output_limit if output_limit > 0 else None)
 
+_VALID_EFFORTS = {"max", "xhigh", "high", "medium", "low"}
+_REASONING_EFFORT = {"max": "xhigh", "xhigh": "xhigh", "high": "high", "medium": "medium", "low": "low"}
+
+
+def _apply_effort_params(payload: dict, meta: dict, provider: str | None) -> None:
+    effort = str(meta.get("effort_level") or "").strip().lower()
+    if effort not in _VALID_EFFORTS:
+        return
+    p = str(provider or meta.get("provider") or "")
+    if p == "anthropic":
+        payload["thinkingLevel"] = effort
+        return
+    value = _REASONING_EFFORT[effort]
+    if p in {"codex", "cx", "openai", "openai-responses"}:
+        payload["reasoning_effort"] = value
+        payload["reasoning_summary"] = "detailed"
+        payload["reasoning"] = {"effort": value, "summary": "detailed"}
+        return
+    payload["thinkingLevel"] = effort
+
 
 def _try_overdrive_model(model_id: str, prompt: str, system: str,
                          max_tokens: int) -> tuple[str | None, bool]:
