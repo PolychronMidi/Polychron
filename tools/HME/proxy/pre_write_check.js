@@ -237,15 +237,15 @@ function _shellParityDecision(payload) {
     'BLOCKED: Potential secret/credential detected in write content. Review before writing.');
   if (d) return d;
 
-  if (/\.py$/.test(file) && /except[^:\n]*:\s*\n[ \t]*pass\b/.test(content) && !/silent-ok/.test(content)) {
-    return _permission('deny', "BLOCKED: content contains naked 'except: pass' without '# silent-ok: <reason>' annotation. CONSTITUTION rule 3 requires propagating errors or naming why silence is safe.");
-  }
+  // Rule retired: naked except:pass now rewrites via the JS policy framework
+  // (policies/builtin/rewrite-except-pass-silent-ok.js).
 
   if (srcPath) {
     if (/\bglobalThis\.|(^|[^a-zA-Z_])global\.[a-zA-Z_]/.test(content)) return _permission('deny', 'BLOCKED: content uses global. or globalThis. -- reference the declared global directly.');
     if (/\|\|\s*(0|\[\]|\{})([^a-zA-Z0-9_]|$)/.test(content)) return _permission('deny', 'BLOCKED: content uses || fallback -- use validator checks/fail-fast handling.');
     if (/\.getSnapshot\(\)\s*\.\s*couplingMatrix/.test(content)) return _permission('deny', 'BLOCKED: content reads .couplingMatrix off getSnapshot() -- register a bias instead.');
-    if (/\bconsole\.warn\b/.test(content) && !/console\.warn\([^)]*['"]Acceptable warning:/.test(content)) return _permission('deny', "BLOCKED: console.warn without 'Acceptable warning:' prefix.");
+    // Rule retired: console.warn prefix now rewrites via the JS policy
+    // framework (policies/builtin/rewrite-console-warn-prefix.js).
     if (/setBinaural\s*\(\s*([0-7](\.[0-9]+)?|1[3-9]|[2-9][0-9])\b/.test(content)) return _permission('deny', 'BLOCKED: setBinaural called outside alpha range 8-12Hz.');
   }
 
