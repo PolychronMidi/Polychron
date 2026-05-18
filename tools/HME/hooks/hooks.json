@@ -3,42 +3,121 @@
   "hooks": {
     "SessionStart": [
       {
-        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js SessionStart", "timeout": 15}]
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js SessionStart",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js SessionStart",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js SessionStart",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js SessionStart",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "PreToolUse": [
       {
-        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PreToolUse", "timeout": 15}]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PreToolUse",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "PostToolUse": [
       {
-        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PostToolUse", "timeout": 15}]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PostToolUse",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
       {
-        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js UserPromptSubmit", "timeout": 15}]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js UserPromptSubmit",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "PreCompact": [
       {
-        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PreCompact", "timeout": 15}]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PreCompact",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "PostCompact": [
       {
-        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PostCompact", "timeout": 15}]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js PostCompact",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "Stop": [
       {
-        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js Stop", "timeout": 60}]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/claude_adapter.js Stop",
+            "timeout": 60
+          }
+        ]
       }
     ],
     "StatusLine": [
       {
-        "hooks": [{"type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/statusline.js", "timeout": 5}]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/event_kernel/statusline.js",
+            "timeout": 5
+          }
+        ]
       }
     ]
   }
