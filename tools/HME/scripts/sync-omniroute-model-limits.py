@@ -103,12 +103,8 @@ def _desired_limits(model: dict, catalog_hit: dict | None) -> dict[str, int]:
     return out
 
 
-def _find_block_for_id(text: str, model_id: str) -> tuple[int, int] | None:
-    """Locate the JSON object block ``{ ... }`` that contains ``"id": "<model_id>"``."""
-    needle = re.search(rf'"id"\s*:\s*"{re.escape(model_id)}"', text)
-    if not needle:
-        return None
-    target = needle.start()
+def _enclosing_object_span(text: str, target: int) -> tuple[int, int] | None:
+    """Return ``(open, close)`` for the JSON object containing ``target``."""
     stack: list[int] = []
     in_str = False
     esc = False
@@ -153,6 +149,19 @@ def _find_block_for_id(text: str, model_id: str) -> tuple[int, int] | None:
             if depth == 0:
                 return (start, j)
     return None
+
+
+def _find_all_blocks_for_id(text: str, model_id: str) -> list[tuple[int, int]]:
+    """Return spans for every block whose ``"id"`` matches ``model_id``."""
+    pat = re.compile(rf'"id"\s*:\s*"{re.escape(model_id)}"')
+    spans: list[tuple[int, int]] = []
+    seen: set[int] = set()
+    for m in pat.finditer(text):
+        span = _enclosing_object_span(text, m.start())
+        if span and span[0] not in seen:
+            spans.append(span)
+            seen.add(span[0])
+    return spans
 
 
 def _detect_field_indent(block: str) -> str:
