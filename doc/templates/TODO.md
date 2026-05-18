@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Find Codex/Claude route normalization code
 
 ## Next
 
-(empty)
+- [ ] [E3] Run focused verification
+- [ ] [E3] Reuse existing Claude noise/tool definitions for Codex
+- [ ] [E3] Add tests or fixtures for stripped input_text and tools
 
 ## Done
 
