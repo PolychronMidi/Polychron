@@ -64,9 +64,8 @@ async function handleUpstreamFailureOrSuccess({
   const coolingDown = _alertCooldownActive(errInfo.type || `http_${status}`, pathLabel);
   const shouldRetry = headers['x-should-retry'] === 'true';
   const isRateLimit = errInfo.type === 'rate_limit_error';
-  // OmniRoute returns 502 stream_timeout (STREAM_READINESS_TIMEOUT) when upstream
-  // closes the SSE before any tokens. Retry same target once before advancing chain.
-  const isStreamTimeout502 = isOmniRouteSwap && status === 502 && errInfo.type === 'stream_timeout';
+  // rationale: omniroute_client classifies OmniRoute-transient failures in one place.
+  const isStreamTimeout502 = isOmniRouteSwap && omniroute.isTransientStreamTimeout({ status, errInfo, body: fullBody });
   if (isStreamTimeout502 && payload && Array.isArray(payload.messages)) {
     try {
       console.error(`omniroute 502 stream_timeout -- same-target retry on ${omniProvider}/${swapModel} before chain advance`);
