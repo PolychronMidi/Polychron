@@ -5,7 +5,6 @@ Persisted fields:
   - context_length
   - max_output_tokens
   - max_input_tokens (sanitized input ceiling)
-  - effective_context_length (derived from max_input_tokens)
 
 Upstream max_input_tokens is capped to context_length - max_output_tokens.
 
