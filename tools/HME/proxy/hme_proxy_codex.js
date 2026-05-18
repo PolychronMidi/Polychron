@@ -53,6 +53,12 @@ function recordOmniRouteFailureAdvance({
   console.error(`[hme-proxy] MODE=${odMode} fallback: rate-limited on ${omniProvider}/${swapModel} -> advancing to ${np}/${next.id} targetFormat=${ntf} (chain pos ${st.idx}/${swapChain.length}, fail count ${st.fail})`);
 }
 
+function blankRetryDisabledReason({ payload, swapChain, env = process.env }) {
+  if (payload && typeof payload.max_tokens === 'number' && payload.max_tokens <= 1) return 'max_tokens_probe';
+  if (isManualTopActive(swapChain) && env.HME_PROXY_ALLOW_MANUAL_TOP_BLANK_RETRY !== '1') return 'manual_top_active';
+  return '';
+}
+
 async function retryBlankOmniRouteResponse({
   isBlank,
   isOmniRouteSwap,
@@ -62,8 +68,14 @@ async function retryBlankOmniRouteResponse({
   outBuf,
   outHeaders,
   projectRoot,
+  env = process.env,
 }) {
   if (!isBlank || !isOmniRouteSwap || swapChain.length <= 1) return null;
+  const disabledReason = blankRetryDisabledReason({ payload, swapChain, env });
+  if (disabledReason) {
+    console.error(`[hme-proxy] BLANK retry skipped: ${disabledReason}`);
+    return null;
+  }
   const stFile = path.join(projectRoot, 'tmp', 'hme-omni-swap-state.json');
   let st = { idx: 0, chain: '' };
   try { st = JSON.parse(fs.readFileSync(stFile, 'utf8')); } catch (_) {}
