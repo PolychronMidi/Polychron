@@ -10,7 +10,10 @@
         "note": "Go subscription, $10/month"
       },
       "anthropic": {
-        "note": "Claude/Anthropic models; effort variants use api_model for upstream routing"
+        "note": "Claude/Anthropic subcription."
+      },
+      "codex": {
+        "note": "ChatGPT/OpenAI subcription."
       }
     },
     "toprank_rationale": {
@@ -24,10 +27,10 @@
     ]
   },
   "ranking_rules": {
-    "description": "Per-tier: rank each cost type independently by tier_score descending (free > subscription > usage). Tiers E5/E4 tier_score capped at 5/7 due to value focus and exclusion of premium models.",
+    "description": "Per-tier: rank each cost type independently by tier_score descending (subscription > free > usage).",
     "cost_order": [
-      "free",
       "subscription",
+      "free",
       "usage"
     ]
   },
