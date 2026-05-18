@@ -2,9 +2,9 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3657,
-      "updated_ts": 1779118923.0407262,
-      "codex_plan_synced_ts": 1779118923.0405958,
+      "max_id": 3661,
+      "updated_ts": 1779119403.0547385,
+      "codex_plan_synced_ts": 1779119403.0546043,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
       "codex_plan_ts": "2026-05-18T15:41:45.981Z"
     }
@@ -10045,5 +10045,73 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T10-36-38-019e3bbb-6af6-7362-a61a-e05ecf3770ce.jsonl",
     "codex_plan_ts": "2026-05-18T15:41:45.981Z"
+  },
+  {
+    "id": 3658,
+    "text": "Locate Claude cleanup and Codex routing code",
+    "activeForm": "Locate Claude cleanup and Codex routing code",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779119385.9494367,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3bbb-6af6-7362-a61a-e05ecf3770ce",
+    "codex_plan_ts": "2026-05-18T15:49:45.502Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3659,
+    "text": "Identify noisy Codex request fields from logs",
+    "activeForm": "Identify noisy Codex request fields from logs",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779119385.949443,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3bbb-6af6-7362-a61a-e05ecf3770ce",
+    "codex_plan_ts": "2026-05-18T15:49:45.502Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3660,
+    "text": "Implement equivalent Codex cleanup",
+    "activeForm": "Implement equivalent Codex cleanup",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779119385.9494467,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3bbb-6af6-7362-a61a-e05ecf3770ce",
+    "codex_plan_ts": "2026-05-18T15:49:45.502Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3661,
+    "text": "Run targeted validation and inspect evidence",
+    "activeForm": "Run targeted validation and inspect evidence",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779119385.9494498,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3bbb-6af6-7362-a61a-e05ecf3770ce",
+    "codex_plan_ts": "2026-05-18T15:49:45.502Z",
+    "resolved_reason": "superseded-by-codex-plan"
   }
 ]
