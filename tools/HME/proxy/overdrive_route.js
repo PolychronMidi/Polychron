@@ -169,7 +169,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
       return result;
     }
     console.error(`[hme-proxy] MODE=1 legacy: skipping Codex responses target ${result.omniProvider}/${result.swapModel}; chat translator requires non-Codex target`);
-    result.swapModel = stripGo(legacy.model.id);
+    result.swapModel = upstreamModelId(legacy.model);
     result.omniProvider = omniProviderForConfigProvider(legacy.model.provider || '');
   }
   const { translateRequestToOpenAI } = require('./zen_translator');
