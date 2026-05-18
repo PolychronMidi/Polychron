@@ -15,7 +15,12 @@ source "${_HBOOT_DIR}/cwd_guard.sh"
 # Decision-response helpers (item #10): canonical JSON envelopes.
 _hook_decision_deny() {
   local reason="$1"
-  jq -n --arg r "$reason" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":$r}}'
+  local include_system_message="${2:-0}"
+  if [ "$include_system_message" = "1" ]; then
+    jq -n --arg r "$reason" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":$r},"systemMessage":$r}'
+  else
+    jq -n --arg r "$reason" '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":$r}}'
+  fi
 }
 
 _hook_decision_allow() {
