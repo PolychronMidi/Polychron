@@ -9,6 +9,7 @@ const {
   alertCooldownActive: _alertCooldownActive,
 } = require('./failure_classification');
 const { recordOmniRouteFailureAdvance } = require('./hme_proxy_codex');
+const omniroute = require('./omniroute_client');
 
 function recordSuccessAndReset({ getConsecutive429s, setConsecutive429s }) {
   recordUpstreamSuccess();
