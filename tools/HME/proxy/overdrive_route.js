@@ -176,6 +176,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
     result.omniProvider = omniProviderForConfigProvider(legacy.model.provider || '');
     result.swapMeta = legacy.model;
   }
+  applyEffortParams(payload, result.swapMeta, result.omniProvider);
   const { translateRequestToOpenAI } = require('./zen_translator');
   const oaPayload = translateRequestToOpenAI(payload, result.swapModel);
   clientReq.headers['x-hme-upstream'] = 'https://opencode.ai/zen/go';
