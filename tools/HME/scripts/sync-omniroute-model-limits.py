@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Sync per-model token limits in config/models.json from OmniRoute /v1/models.
+"""Sync model context/output caps in config/models.json from OmniRoute.
 
-Synced fields per model (when the catalog provides positive ints):
+Only source fields are persisted:
   - context_length
-  - max_input_tokens
   - max_output_tokens
 
-Always retires the deprecated ``max_context`` field if present.
+Derived/noisy fields are retired on every sync.
 
 JSONC-aware: the file may contain ``//`` and ``/* */`` comments. Edits are
 performed surgically per-model block so all comments outside model bodies are
