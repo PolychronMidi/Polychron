@@ -26,28 +26,32 @@ function listShellFiles(dir) {
   return out;
 }
 
+// rationale: lookup by basename avoids nested-quote parsing complexity.
+const HELPER_INDEX = new Map();
+function _indexHelpers() {
+  const root = path.join(ROOT, 'tools/HME/hooks/helpers');
+  if (!fs.existsSync(root)) return;
+  function walk(dir) {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) { if (e.name !== '__pycache__') walk(full); }
+      else if (e.name.endsWith('.sh')) HELPER_INDEX.set(e.name, full);
+    }
+  }
+  walk(root);
+}
+_indexHelpers();
+
 function collectSourcedFiles(absStart, visited = new Set()) {
   if (visited.has(absStart)) return visited;
   visited.add(absStart);
   let text;
   try { text = fs.readFileSync(absStart, 'utf8'); } catch { return visited; }
-  const dir = path.dirname(absStart);
-  // rationale: capture quoted strings (including ones with embedded $() spans).
-  const re = /source\s+(?:"((?:[^"]|\\")+)"|([^\s;]+))/g;
+  const re = /^\s*source\s+[^\n]*?([^\s"'`/]+\.sh)\b/gm;
   let m;
   while ((m = re.exec(text))) {
-    let raw = m[1] || m[2] || '';
-    let target = raw
-      .replace(/\$\(\s*cd\s+"?\$\(\s*dirname\s+"?\$\{BASH_SOURCE\[0\]\}"?\s*\)"?\s*&&\s*pwd\s*\)/g, dir)
-      .replace(/\$\{?_HBOOT_DIR\}?/g, dir)
-      .replace(/\$\{?_HME_HELPERS_DIR\}?/g, path.join(ROOT, 'tools/HME/hooks/helpers'))
-      .replace(/\$\{?_HME_SAFETY_DIR\}?/g, path.join(ROOT, 'tools/HME/hooks/helpers/safety'))
-      .replace(/\$\{?SCRIPT_DIR\}?/g, dir)
-      .replace(/\$\{?HOOKS_DIR\}?/g, path.join(ROOT, 'tools/HME/hooks'))
-      .replace(/\$\(.*?BASH_SOURCE.*?\)/g, dir);
-    if (!target || target.includes('$')) continue;
-    if (!target.startsWith('/')) target = path.resolve(dir, target);
-    collectSourcedFiles(target, visited);
+    const resolved = HELPER_INDEX.get(m[1]);
+    if (resolved) collectSourcedFiles(resolved, visited);
   }
   return visited;
 }
