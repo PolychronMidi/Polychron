@@ -140,6 +140,9 @@ def _positive_int(value) -> int:
 
 
 def _input_budget(meta: dict) -> int:
+    explicit = _positive_int(meta.get("effective_context_length"))
+    if explicit:
+        return explicit
     ctx_limit = _positive_int(meta.get("context_length"))
     output_limit = _positive_int(meta.get("max_output_tokens"))
     if ctx_limit and output_limit and ctx_limit > output_limit:
