@@ -191,7 +191,7 @@ function editFallbackToReadRewrite(eventName, data, ctx) {
   if (!editState) return data;
   editHolds.delete(data.index);
   const parsed = _parseToolInput(editState);
-  const invalid = _isInvalidEditInput(parsed, { checkFs: true });
+  const invalid = isInvalidEditInput(parsed, { checkFs: true });
   const unread = !invalid && _editTargetUnread(parsed, ctx);
   if (!invalid && !unread) {
     return { events: [
