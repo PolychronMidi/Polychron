@@ -24,7 +24,7 @@ function run(envOverrides, body) {
   } finally { fs.rmSync(sandbox, { recursive: true, force: true }); }
 }
 
-const EXPECTED_E5_HEAD = ['gpt-5.5-xhigh', 'gpt-5.5-high'];
+const EXPECTED_E5_HEAD = ['gpt-5.5-xhigh', 'claude-opus-4-7-max-e5'];
 const EXPECTED_E4_HEAD = ['mistral-large-latest', 'gemini-2.5-pro'];
 const EXPECTED_E2_HEAD = ['gemini-2.0-flash', 'gpt-4o-mini'];
 
