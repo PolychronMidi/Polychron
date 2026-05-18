@@ -157,15 +157,17 @@ test('session state records structured verification evidence', () => {
 });
 
 
-test('synthetic PreToolUse Edit denies stub content', async () => {
+test('synthetic PreToolUse Edit rewrites stub content via ellipsis-stub policy', async () => {
   const root = _withSandbox('hme-hook-edit-');
+  const target = path.join(root, 'src', 'x.js');
+  fs.writeFileSync(target, 'const x = 1;\n');
   const res = await dispatch(root, 'PreToolUse', {
     tool_name: 'Edit',
     session_id: 's2',
-    tool_input: { file_path: path.join(root, 'src', 'x.js'), old_string: 'const x = 1;', new_string: '// prev' + 'ious implementation' },
+    tool_input: { file_path: target, old_string: 'const x = 1;', new_string: '// prev' + 'ious implementation' },
   });
-  assert.match(res.stdout, /permissionDecision":"deny/);
-  assert.match(res.stdout, /stub placeholder/);
+  assert.match(res.stdout, /permissionDecision":"allow/);
+  assert.match(res.stdout, /DDoC stripped: ellipsis stub/);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
