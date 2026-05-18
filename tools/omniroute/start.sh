@@ -107,14 +107,42 @@ if [ -x "$_REASONING_CONFIG" ]; then
 fi
 
 # Configure provider credentials
-if [ "$DO_CONFIGURE" -eq 1 ]; then
-  OPENCODE_KEY="${OPENCODE_API_KEY:-}"
-  if [ -z "$OPENCODE_KEY" ]; then
-    echo "[omniroute] OPENCODE_API_KEY not set -- skipping credential setup"
-    exit 0
+_configure_provider() {
+  local _provider="$1" _key="$2" _name="$3"
+  if [ -z "$_key" ]; then
+    echo "[omniroute] ${_provider} key not set -- skipping credential setup"
+    return 0
   fi
 
-  # Login
+  local _existing
+  _existing=$(curl -sf -b /tmp/omni-setup-cookies.txt \
+    "http://127.0.0.1:${PORT}/api/providers?provider=${_provider}" 2>&1) || true
+
+  if echo "$_existing" | grep -q '"apiKey"'; then
+    echo "[omniroute] ${_provider} already configured"
+    return 0
+  fi
+
+  echo "[omniroute] adding ${_provider} connection..."
+  local _payload _result
+  _payload=$(OMNI_PROVIDER="$_provider" OMNI_KEY="$_key" OMNI_NAME="$_name" python3 - <<'PYJSON'
+import json, os
+print(json.dumps({"provider": os.environ["OMNI_PROVIDER"], "apiKey": os.environ["OMNI_KEY"], "name": os.environ["OMNI_NAME"]}))
+PYJSON
+)
+  _result=$(curl -sf -b /tmp/omni-setup-cookies.txt -X POST \
+    "http://127.0.0.1:${PORT}/api/providers" \
+    -H "Content-Type: application/json" \
+    -d "$_payload" 2>&1) || true
+
+  if echo "$_result" | grep -q '"connection"'; then
+    echo "[omniroute] ${_provider} configured successfully"
+  else
+    echo "[omniroute] ${_provider} setup failed: $_result"
+  fi
+}
+
+if [ "$DO_CONFIGURE" -eq 1 ]; then
   LOGIN=$(curl -sf -c /tmp/omni-setup-cookies.txt -X POST \
     "http://127.0.0.1:${PORT}/api/auth/login" \
     -H "Content-Type: application/json" \
@@ -125,25 +153,8 @@ if [ "$DO_CONFIGURE" -eq 1 ]; then
     exit 1
   fi
 
-  # Check if already configured
-  EXISTING=$(curl -sf -b /tmp/omni-setup-cookies.txt \
-    "http://127.0.0.1:${PORT}/api/providers?provider=opencode-go" 2>&1) || true
-
-  if echo "$EXISTING" | grep -q '"apiKey"'; then
-    echo "[omniroute] opencode-go already configured"
-  else
-    echo "[omniroute] adding opencode-go connection..."
-    RESULT=$(curl -sf -b /tmp/omni-setup-cookies.txt -X POST \
-      "http://127.0.0.1:${PORT}/api/providers" \
-      -H "Content-Type: application/json" \
-      -d "{\"provider\":\"opencode-go\",\"apiKey\":\"${OPENCODE_KEY}\",\"name\":\"Polychron HME\"}" 2>&1) || true
-
-    if echo "$RESULT" | grep -q '"connection"'; then
-      echo "[omniroute] opencode-go configured successfully"
-    else
-      echo "[omniroute] opencode-go setup failed: $RESULT"
-    fi
-  fi
+  _configure_provider "opencode-go" "${OPENCODE_API_KEY:-}" "Polychron HME"
+  _configure_provider "anthropic" "${ANTHROPIC_API_KEY:-}" "Polychron Anthropic"
   rm -f /tmp/omni-setup-cookies.txt
 fi
 
