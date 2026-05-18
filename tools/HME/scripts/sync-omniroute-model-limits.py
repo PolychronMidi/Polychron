@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Sync model context/output caps in config/models.json from OmniRoute.
 
-Only source fields are persisted:
+Persisted fields:
   - context_length
   - max_output_tokens
+  - effective_context_length (derived as context_length - max_output_tokens)
 
-Derived/noisy fields are retired on every sync.
+Noisy upstream max_input_tokens is retired on every sync.
 
 JSONC-aware: the file may contain ``//`` and ``/* */`` comments. Edits are
 performed surgically per-model block so all comments outside model bodies are
