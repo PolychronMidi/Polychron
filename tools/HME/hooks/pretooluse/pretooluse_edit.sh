@@ -120,7 +120,7 @@ threshold = int(os.environ.get('THRESHOLD', '3'))
 long_line = int(os.environ.get('LONG_LINE', '90'))
 prefixes = ('//',) if fp.endswith(('.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs')) else ('#',) if fp.endswith(('.py', '.sh', '.bash', '.yaml', '.yml', '.toml')) else ()
 if not prefixes: raise SystemExit
-ANNOTATIONS = ('# rationale:', '# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// rationale:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa')
+ANNOTATIONS = ('# silent-ok:', '# TODO:', '# FIXME:', '# noqa', '# pylint:', '# pyright:', '# type:', '// silent-ok:', '// TODO:', '// FIXME:', '// eslint-', '// noqa')
 run = 0
 for ln in content.split('\n'):
     s = ln.lstrip()
