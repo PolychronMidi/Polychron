@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3631,
-      "updated_ts": 1779072050.635377,
-      "codex_plan_synced_ts": 1779072050.6352515,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-      "codex_plan_ts": "2026-05-18T02:40:25.489Z"
+      "max_id": 3634,
+      "updated_ts": 1779072180.6512249,
+      "codex_plan_synced_ts": 1779072180.6510913,
+      "codex_plan_source": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+      "codex_plan_ts": "2026-05-18T02:43:00.211Z"
     }
   },
   {
@@ -3362,8 +3362,8 @@
     "id": 3252,
     "text": "Add focused tests",
     "activeForm": "Add focused tests",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -3371,8 +3371,8 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/15/rollout-2026-05-15T12-30-34-019e2cb0-a5ab-7b42-8d98-6fa0c3259b8d.jsonl",
-    "codex_plan_ts": "2026-05-16T01:44:28.975Z"
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:43:00.211Z"
   },
   {
     "id": 3253,
@@ -9622,5 +9622,53 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
     "codex_plan_ts": "2026-05-18T02:40:25.489Z"
+  },
+  {
+    "id": 3632,
+    "text": "Inspect middleware/tool-result rewrite pipeline",
+    "activeForm": "Inspect middleware/tool-result rewrite pipeline",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779072180.649936,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:43:00.211Z"
+  },
+  {
+    "id": 3633,
+    "text": "Add web-search failure loop guard/rewrite",
+    "activeForm": "Add web-search failure loop guard/rewrite",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779072180.649942,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:43:00.211Z"
+  },
+  {
+    "id": 3634,
+    "text": "Run verification",
+    "activeForm": "Run verification",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779072180.6499488,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "codex-proxy:019e3892-2c8a-7d50-b15a-c11b870e54e8",
+    "codex_plan_ts": "2026-05-18T02:43:00.211Z"
   }
 ]
