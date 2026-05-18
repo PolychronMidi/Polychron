@@ -238,6 +238,11 @@ def main():
     ok &= check('omniroute_max_reasoning', or_ok, or_detail, 'tools/HME/scripts/configure-omniroute-max-reasoning.py')
     missing = model_limits_ok()
     ok &= check('model_limits', not missing, f'missing={len(missing)}', 'tools/HME/scripts/sync-omniroute-model-limits.py')
+    ok &= run_check(
+        'model_registry',
+        [sys.executable, str(ROOT / 'tools/HME/scripts/verify-model-registry.py')],
+        fix='config/models.json or tools/HME/scripts/verify-model-registry.py',
+    )
     report = subprocess.run(['node', str(ROOT/'tools/HME/hooks/hook_report.js'), '--json'], text=True, capture_output=True)
     ok &= check('hook_report', report.returncode == 0, 'log/hme-hook-exec.jsonl', 'check event kernel')
     ok &= hooks_doctor()
