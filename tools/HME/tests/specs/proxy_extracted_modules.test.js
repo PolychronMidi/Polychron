@@ -193,7 +193,8 @@ test('mode 1 same-chain fallback index advances even when chain has a manual top
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
-test('mode 1 stale fallback index cannot skip driver manual top rank', () => quiet(() => {
+test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch', () => quiet(() => {
+  // Stale signature mismatch resets idx=0; manual top fronting still applies.
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-manual-top-'));
   try {
     fs.mkdirSync(path.join(tmp, 'tmp'), { recursive: true });
