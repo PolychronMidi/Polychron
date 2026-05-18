@@ -82,6 +82,10 @@ function createClaudeHandler(deps) {
         blockQuotaProbe({ res: clientRes, payload });
         return;
       }
+      if (isStructuredOutputsProbe(payload, clientReq.headers)) {
+        blockStructuredOutputsProbe({ res: clientRes, payload });
+        return;
+      }
       if (isTodoWriteOnlyProbe(payload)) {
         blockTodoWriteOnlyProbe({ res: clientRes, payload });
         return;
