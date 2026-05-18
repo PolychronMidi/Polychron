@@ -191,11 +191,11 @@ test('Codex SSE Bash and WebSearch calls rewrite to native targets', () => {
   const r1 = createNativeToolSseRewriter();
   const o1 = r1.feed(Buffer.from(`data: ${JSON.stringify(make('Bash', { command: 'echo hello' }))}\n\n`));
   assert.match(o1, /"name":"exec_command"/);
-  assert.match(o1, /"cmd":"echo hello"/);
+  assert.match(o1, /\\"cmd\\":\\"echo hello\\"/);
   const r2 = createNativeToolSseRewriter();
   const o2 = r2.feed(Buffer.from(`data: ${JSON.stringify(make('WebSearch', { query: 'foo' }))}\n\n`));
   assert.match(o2, /"name":"web_search"/);
-  assert.match(o2, /"query":"foo"/);
+  assert.match(o2, /\\"query\\":\\"foo\\"/);
 });
 
 test('Codex SSE unknown function_call name is reported in rewriter stats', () => {
