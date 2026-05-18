@@ -139,9 +139,16 @@ function rewriteCallObject(obj, stats) {
   }
   const args = parseArgs(argsText(obj));
   if (BRIDGE_NAMES.has(name)) {
-    let cmd = bridgeCommand(name, args);
-    if (name === 'Read') {
-      const readVerdict = evaluateReadInput(bridgeInput(name, args));
+    let effectiveName = name;
+    let effectiveArgs = args;
+    if ((name === 'Edit' || name === 'MultiEdit') && isInvalidEditInput(args, { checkFs: true })) {
+      effectiveName = 'Read';
+      effectiveArgs = editToReadFallback(args);
+      stats.edit_fallback_to_read = (stats.edit_fallback_to_read || 0) + 1;
+    }
+    let cmd = bridgeCommand(effectiveName, effectiveArgs);
+    if (effectiveName === 'Read') {
+      const readVerdict = evaluateReadInput(bridgeInput(effectiveName, effectiveArgs));
       if (readVerdict.decision === 'deny') cmd = blockedCommand(readVerdict.reason);
     }
     const commandArgs = JSON.stringify(policyCommandArgs({ cmd }));
