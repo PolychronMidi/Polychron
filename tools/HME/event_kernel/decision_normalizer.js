@@ -145,7 +145,11 @@ function sanitizeCodexStdout(event, stdout) {
   if (!trimmed.startsWith('{')) return stdout;
   let parsed;
   try { parsed = JSON.parse(trimmed); }
-  catch (err) { return stdout; }
+  catch (err) {
+    const seq = event === 'UserPromptSubmit' ? parseJsonSequence(trimmed) : null;
+    return seq && seq.length ? renderCodexUserPromptSubmit(seq) : stdout;
+  }
+  if (event === 'UserPromptSubmit') return renderCodexUserPromptSubmit([parsed]);
   if (event === 'PermissionRequest') {
     const converted = toPermissionRequestOutput(parsed);
     return Object.keys(converted).length ? JSON.stringify(converted) : '';
