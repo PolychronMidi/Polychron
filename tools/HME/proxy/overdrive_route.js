@@ -76,8 +76,8 @@ function modelRouteAvailable(model, skipSet, env = process.env) {
 }
 
 function rankedForTier(cfg, tier, env = process.env) {
-  const skipSet = skippedProviderSet(cfg);
-  const available = (m) => modelRouteAvailable(m, skipSet, env);
+  const skipSet = providerSkipSet(cfg);
+  const available = (m) => availableModel(m, skipSet, env);
   const models = ((cfg.tiers && cfg.tiers[tier] && cfg.tiers[tier].models) || []).filter(available);
   const costOrder = (cfg.ranking_rules && cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
   const ranked = [];
@@ -97,7 +97,7 @@ function providerSkipSet(cfg) {
 
 function hasOmniCredential(model, env) {
   const provider = providerKey(model && model.provider);
-  if (provider === 'anthropic') return !!env.ANTHROPIC_API_KEY;
+  if (provider === 'anthropic') return !!env.ANTHROPIC_API_KEY || env.HME_OMNIROUTE_TRUST_STORED_CREDS === '1';
   return true;
 }
 
@@ -112,7 +112,7 @@ function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
   const key = roleKey(role);
   const spec = key && cfg.team_role_models ? cfg.team_role_models[key] : null;
   const specTier = spec && spec.tier === 'role' ? tier : ((spec && spec.tier) || tier);
-  const base = rankedForTier(cfg, specTier);
+  const base = rankedForTier(cfg, specTier, env);
   const skipSet = providerSkipSet(cfg);
   let front = [];
   if (spec && spec.source === 'manually_toprank') front = (cfg.manually_toprank && cfg.manually_toprank[specTier]) || [];
