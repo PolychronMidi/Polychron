@@ -118,6 +118,18 @@ def _assistant_tool_use(name: str, tool_input: dict) -> dict:
     }
 
 
+def _tool_use_result_pair(tool_id: str, command: str, result: str) -> list[dict]:
+    return [
+        {"type": "assistant", "message": {"role": "assistant", "content": [{
+            "type": "tool_use", "id": tool_id, "name": "Bash",
+            "input": {"command": command},
+        }]}},
+        {"type": "user", "message": {"role": "user", "content": [{
+            "type": "tool_result", "tool_use_id": tool_id, "content": result,
+        }]}},
+    ]
+
+
 def _resolve_project_root() -> str:
     """Resolve PROJECT_ROOT: env first, then walk up from this script
     looking for the doc/templates/AGENTS.md+.env pair. Returns "" only
@@ -760,6 +772,25 @@ _CASES = [
          {"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "read_2", "content": "BLOCKED: verify-landed antipattern"}]}},
      ],
      "spiralling_petulance"),
+
+    # flabbergasted_by_autocommit -- repeated clean git probes after autocommit.
+    ("spiralling_petulance", "autocommit-clean-git-loop-fires",
+     [
+         _user_msg("why is the diff gone?"),
+         *_tool_use_result_pair("git_status_1", "git status --short", ""),
+         *_tool_use_result_pair("git_diff_1", "git diff -- tools/HME/foo.py", ""),
+         *_tool_use_result_pair("git_status_2", "node tools/HME/scripts/codex_structured_tool.js git --json <<'JSON'\n{\"args\":[\"status\",\"--short\"]}\nJSON", "[SUCCESS]"),
+         *_tool_use_result_pair("git_log_1", "git log -3 --oneline -- tools/HME/foo.py", "abc123 autocommit"),
+     ],
+     "flabbergasted_by_autocommit"),
+
+    ("spiralling_petulance", "two-clean-git-inspections-pass",
+     [
+         _user_msg("check the patch before final"),
+         *_tool_use_result_pair("git_status_ok", "git status --short", ""),
+         *_tool_use_result_pair("git_diff_ok", "git diff --stat", ""),
+     ],
+     "ok"),
 
     # idle_after_bg -- background pipeline launched, no other work followed
     ("idle_after_bg", "launched-npm-main-then-idle",
