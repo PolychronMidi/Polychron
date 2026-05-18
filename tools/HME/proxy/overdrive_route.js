@@ -104,7 +104,10 @@ function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
   const base = rankedForTier(cfg, specTier, env);
   const skipSet = providerSkipSet(cfg, env);
   let front = [];
-  if (spec && spec.source === 'manually_toprank') front = (cfg.manually_toprank && cfg.manually_toprank[specTier]) || [];
+  if (spec && spec.source === 'manually_toprank') {
+    const manual = cfg.manually_toprank || {};
+    front = (key && manual[key] && manual[key].length) ? manual[key] : (manual[specTier] || []);
+  }
   const frontSet = new Set(front);
   const chain = [
     ...front.map((id) => findModelById(cfg, id)).filter((m) => availableModel(m, skipSet, env)),
