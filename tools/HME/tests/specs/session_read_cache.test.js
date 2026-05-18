@@ -9,9 +9,9 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 
 function _isolate() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-readcache-'));
-  process.env.HME_RUNTIME_DIR = tmp;
+  process.env.HME_SESSION_READ_CACHE_DIR = tmp;
   for (const k of Object.keys(require.cache)) {
-    if (k.includes('/tools/HME/proxy/session_read_cache') || k.includes('/tools/HME/proxy/hme_paths') || k.includes('/tools/HME/proxy/sse_rewriters')) delete require.cache[k];
+    if (k.includes('/tools/HME/proxy/session_read_cache') || k.includes('/tools/HME/proxy/sse_rewriters')) delete require.cache[k];
   }
   return tmp;
 }
