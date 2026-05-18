@@ -84,7 +84,6 @@
           "tier_score": 9,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "effective_context_length": 872000,
           "max_input_tokens": 872000
         },
         {
@@ -98,7 +97,6 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -112,7 +110,6 @@
           "tier_score": 4,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -126,7 +123,6 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -140,7 +136,6 @@
           "tier_score": 4,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -154,7 +149,6 @@
           "tier_score": 4,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000,
           "max_input_tokens": 272000
         },
         {
@@ -168,7 +162,6 @@
           "tier_score": 8,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000,
           "max_input_tokens": 272000
         },
         {
@@ -182,7 +175,6 @@
           "tier_score": 7,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000,
           "max_input_tokens": 272000
         }
       ]
@@ -204,7 +196,6 @@
           "tier_score": 9,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "effective_context_length": 872000,
           "max_input_tokens": 872000
         },
         {
@@ -220,7 +211,6 @@
           "tier_score": 7,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "effective_context_length": 872000,
           "max_input_tokens": 872000
         },
         {
@@ -234,7 +224,6 @@
           "tier_score": 8,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000,
           "max_input_tokens": 272000
         },
         {
@@ -248,7 +237,6 @@
           "tier_score": 7,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000,
           "max_input_tokens": 272000
         },
         {
@@ -262,7 +250,6 @@
           "tier_score": 5,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000,
           "max_input_tokens": 272000
         },
         {
@@ -276,7 +263,6 @@
           "tier_score": 6,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040,
           "max_input_tokens": 983040
         },
         {
@@ -290,7 +276,6 @@
           "tier_score": 7,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -304,7 +289,6 @@
           "tier_score": 5,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040,
           "max_input_tokens": 983040
         },
         {
@@ -318,7 +302,6 @@
           "tier_score": 4,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -332,7 +315,6 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -346,7 +328,6 @@
           "tier_score": 4,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -360,7 +341,6 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -374,7 +354,6 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -388,7 +367,6 @@
           "tier_score": 6,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -402,7 +380,6 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -416,7 +393,6 @@
           "tier_score": 3,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -430,7 +406,6 @@
           "tier_score": 4,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -444,7 +419,6 @@
           "tier_score": 3,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -458,7 +432,6 @@
           "tier_score": 4,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -472,7 +445,6 @@
           "tier_score": 5,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         }
       ]
@@ -494,7 +466,6 @@
           "tier_score": 9,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "effective_context_length": 872000,
           "max_input_tokens": 872000
         },
         {
@@ -510,7 +481,6 @@
           "tier_score": 7,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "effective_context_length": 872000,
           "max_input_tokens": 872000
         },
         {
@@ -526,7 +496,6 @@
           "tier_score": 6,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -542,7 +511,6 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -556,7 +524,6 @@
           "tier_score": 8,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000,
           "max_input_tokens": 272000
         },
         {
@@ -570,7 +537,6 @@
           "tier_score": 8,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000,
           "max_input_tokens": 272000
         },
         {
@@ -584,7 +550,6 @@
           "tier_score": 7,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000,
           "max_input_tokens": 272000
         },
         {
@@ -598,7 +563,6 @@
           "tier_score": 9,
           "context_length": 128000,
           "max_output_tokens": 16384,
-          "effective_context_length": 111616,
           "max_input_tokens": 111616
         },
         {
@@ -612,7 +576,6 @@
           "tier_score": 8,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -626,7 +589,6 @@
           "tier_score": 5,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -640,7 +602,6 @@
           "tier_score": 6,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -654,7 +615,6 @@
           "tier_score": 6,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040,
           "max_input_tokens": 983040
         },
         {
@@ -668,7 +628,6 @@
           "tier_score": 5,
           "context_length": 131072,
           "max_output_tokens": 8192,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -682,7 +641,6 @@
           "tier_score": 5,
           "context_length": 131072,
           "max_output_tokens": 8192,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -696,7 +654,6 @@
           "tier_score": 9,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -710,7 +667,6 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -724,7 +680,6 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -738,7 +693,6 @@
           "tier_score": 6,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -752,7 +706,6 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -766,7 +719,6 @@
           "tier_score": 5,
           "context_length": 131072,
           "max_output_tokens": 32768,
-          "effective_context_length": 98304,
           "max_input_tokens": 98304
         },
         {
@@ -780,7 +732,6 @@
           "tier_score": 5,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -794,7 +745,6 @@
           "tier_score": 4,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         }
       ]
@@ -816,7 +766,6 @@
           "tier_score": 8,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -832,7 +781,6 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -848,7 +796,6 @@
           "tier_score": 6,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -864,7 +811,6 @@
           "tier_score": 3,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -878,7 +824,6 @@
           "tier_score": 7,
           "context_length": 128000,
           "max_output_tokens": 16384,
-          "effective_context_length": 111616,
           "max_input_tokens": 111616
         },
         {
@@ -892,7 +837,6 @@
           "tier_score": 6,
           "max_output_tokens": 32768,
           "context_length": 262144,
-          "effective_context_length": 229376,
           "max_input_tokens": 229376
         },
         {
@@ -906,7 +850,6 @@
           "tier_score": 8,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040,
           "max_input_tokens": 983040
         },
         {
@@ -920,7 +863,6 @@
           "tier_score": 6,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040,
           "max_input_tokens": 983040
         },
         {
@@ -934,7 +876,6 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -948,7 +889,6 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -962,7 +902,6 @@
           "tier_score": 4,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -976,7 +915,6 @@
           "tier_score": 6,
           "context_length": 131072,
           "max_output_tokens": 8192,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         },
         {
@@ -990,7 +928,6 @@
           "tier_score": 5,
           "context_length": 131072,
           "max_output_tokens": 8192,
-          "effective_context_length": 122880,
           "max_input_tokens": 122880
         }
       ]
@@ -1012,7 +949,6 @@
           "tier_score": 3,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808,
           "max_input_tokens": 191808
         },
         {
@@ -1026,7 +962,6 @@
           "tier_score": 9,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040,
           "max_input_tokens": 983040
         },
         {
@@ -1040,7 +975,6 @@
           "tier_score": 4,
           "context_length": 200000,
           "max_output_tokens": 128000,
-          "effective_context_length": 72000,
           "max_input_tokens": 72000
         },
         {
@@ -1054,7 +988,6 @@
           "tier_score": 3,
           "context_length": 262000,
           "max_output_tokens": 66000,
-          "effective_context_length": 196000,
           "max_input_tokens": 196000
         },
         {
@@ -1068,7 +1001,6 @@
           "tier_score": 9,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040,
           "max_input_tokens": 983040
         },
         {
@@ -1082,7 +1014,6 @@
           "tier_score": 7,
           "context_length": 524288,
           "max_output_tokens": 128000,
-          "effective_context_length": 396288,
           "max_input_tokens": 396288
         }
       ]
