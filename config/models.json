@@ -285,7 +285,7 @@
           "notes": "OpenRouter free tier. Strong open-source reasoning model.",
           "tier_score": 4,
           "max_output_tokens": 8192,
-          "context_length": 1048576
+          "context_length": 131072
         },
         {
           "id": "glm-5.1-go",
@@ -526,8 +526,8 @@
           "cost_amt": 0,
           "notes": "OpenRouter free tier. GPT-4o mini, strong general-purpose.",
           "tier_score": 9,
-          "context_length": 1048576,
-          "max_output_tokens": 8192
+          "context_length": 128000,
+          "max_output_tokens": 16384
         },
         {
           "id": "deepseek-v4-flash",
@@ -670,8 +670,8 @@
           "cost_amt": 0.5,
           "notes": "Exceptional speed and context; struggles with complex agentic loops.",
           "tier_score": 5,
-          "context_length": 1048576,
-          "max_output_tokens": 8192
+          "context_length": 131072,
+          "max_output_tokens": 32768
         },
         {
           "id": "qwen3-32b",
@@ -768,8 +768,8 @@
           "cost_amt": 0,
           "notes": "OpenRouter free tier. GPT-4o mini, fast and capable.",
           "tier_score": 7,
-          "context_length": 1048576,
-          "max_output_tokens": 8192
+          "context_length": 128000,
+          "max_output_tokens": 16384
         },
         {
           "id": "nemotron-3-super",
@@ -780,8 +780,8 @@
           "cost_amt": 0,
           "notes": "Strong instruction following; less creative on debugging.",
           "tier_score": 6,
-          "max_output_tokens": 8192,
-          "context_length": 1048576
+          "max_output_tokens": 32768,
+          "context_length": 262144
         },
         {
           "id": "gemini-2.0-flash",
@@ -908,8 +908,8 @@
           "cost_amt": 0,
           "notes": "Large free context; reasoning inconsistent for complex codebases.",
           "tier_score": 4,
-          "context_length": 1048576,
-          "max_output_tokens": 8192
+          "context_length": 200000,
+          "max_output_tokens": 128000
         },
         {
           "id": "ring-2.6-1t",
@@ -920,8 +920,8 @@
           "cost_amt": 0,
           "notes": "Basic script translation and data extraction only.",
           "tier_score": 3,
-          "context_length": 1048576,
-          "max_output_tokens": 8192
+          "context_length": 262000,
+          "max_output_tokens": 66000
         },
         {
           "id": "gemini-2.5-flash-lite",
