@@ -77,7 +77,9 @@ async function handleUpstreamFailureOrSuccess({
 
   if (isRateLimit && !shouldRetry) {
     incConsecutive429s();
-    console.error(`rate_limit_error (ITPM-exhaustion) -- panic-shrink counter=${getConsecutive429s()}, next threshold=${effectiveCompactThreshold()}B`);
+    const nextPlan = effectiveCompactThreshold();
+    const nextThreshold = typeof nextPlan === 'object' ? nextPlan.threshold : nextPlan;
+    console.error(`rate_limit_error (ITPM-exhaustion) -- panic-shrink counter=${getConsecutive429s()}, next threshold=${nextThreshold}B`);
   } else if (isRateLimit && shouldRetry) {
     console.error('rate_limit_error (Cloudflare per-IP throttle) -- skip panic-shrink (size irrelevant)');
   }
