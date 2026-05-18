@@ -60,14 +60,10 @@ async function retryBlankOmniRouteResponse({
     console.error(`[hme-proxy] BLANK retry skipped: ${disabledReason}`);
     return null;
   }
-  const stFile = path.join(projectRoot, 'tmp', 'hme-omni-swap-state.json');
-  let st = { idx: 0, chain: '' };
-  try { st = JSON.parse(fs.readFileSync(stFile, 'utf8')); } catch (_) {}
-  const sig = chainSignature(swapChain);
-  // manually_toprank only fronts the chain; blank retry still cascades.
-  if (st.chain !== sig) st = { idx: 0, chain: sig };
+  const startIdx = swapStore.peek(projectRoot).idx || 0;
   for (let ri = 1; ri < swapChain.length; ri++) {
-    const candidate = swapChain[(st.idx + ri) % swapChain.length];
+    const retryIdx = (startIdx + ri) % swapChain.length;
+    const candidate = swapChain[retryIdx];
     const tp = omniProviderForConfigProvider(candidate.provider || '');
     const tid = upstreamModelId(candidate);
     const retryPayload = JSON.parse(JSON.stringify(payload));
@@ -100,11 +96,7 @@ async function retryBlankOmniRouteResponse({
           const retryJson = JSON.parse(retryRes.body);
           const retryText = (retryJson.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
           if (retryText && retryText !== '(empty response)') {
-            st.idx = (st.idx + ri) % swapChain.length;
-            st.ts = Date.now();
-            st.fail = 0;
-            st.chain = sig;
-            fs.writeFileSync(stFile, JSON.stringify(st));
+            swapStore.recordSuccess(swapChain, retryIdx, projectRoot);
             const headers = { ...outHeaders, 'content-type': 'application/json' };
             delete headers['transfer-encoding'];
             console.error(`[hme-proxy] BLANK retry OK: ${tp}/${tid} -> "${retryText.slice(0,80)}"`);
