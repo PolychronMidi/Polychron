@@ -134,6 +134,18 @@ function blockTodoWriteOnlyProbe({ res, payload, record, source = {}, component 
   jsonResponse(res, 200, anthropicEmptyResponse(payload, 'hme_todowrite_probe'));
 }
 
+function blockStructuredOutputsProbe({ res, payload, record, source = {}, component = 'hme-proxy' }) {
+  if (record) {
+    record({
+      kind: 'structured-outputs-probe-blocked',
+      source,
+      model: payload && payload.model ? payload.model : '',
+      reason: 'single-message structured-outputs beta probe',
+    });
+  }
+  jsonResponse(res, 200, anthropicEmptyResponse(payload, 'hme_structured_outputs_probe'));
+}
+
 module.exports = {
   QUOTA_PROBE_TEXT,
   textFromContent,
