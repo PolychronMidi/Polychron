@@ -450,3 +450,58 @@ test('stop SSE writer includes required Anthropic stream envelope', () => {
   assert.match(body, /event: message_stop/);
   assert.match(body, /"model":"test-model"/);
 });
+
+test('context budget compaction gears start at half input and escalate', () => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
+    delete process.env.HME_PROXY_COMPACT_BYTES;
+    const budget = createContextBudget();
+    budget.setLastInputTokensLimit(1000);
+
+    let payload = { messages: [{ role: 'user', content: 'x'.repeat(499) }] };
+    let plan = budget.effectiveCompactThreshold(payload);
+    assert.equal(plan.maxTier, 0);
+    assert.equal(plan.threshold, Infinity);
+
+    payload = { messages: [{ role: 'user', content: 'x'.repeat(520) }] };
+    plan = budget.effectiveCompactThreshold(payload);
+    assert.equal(plan.maxTier, 1);
+    assert.equal(plan.threshold, 500);
+
+    payload = { messages: [{ role: 'user', content: 'x'.repeat(700) }] };
+    plan = budget.effectiveCompactThreshold(payload);
+    assert.equal(plan.maxTier, 2);
+    assert.equal(plan.threshold, 650);
+
+    payload = { messages: [{ role: 'user', content: 'x'.repeat(900) }] };
+    plan = budget.effectiveCompactThreshold(payload);
+    assert.equal(plan.maxTier, 3);
+    assert.equal(plan.threshold, 850);
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+test('gear one only elides stale lengthy tool results', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 8; i += 1) {
+    const id = `gear-tool-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(60000) }] });
+  }
+  const beforeCount = payload.messages.length;
+  const changed = shrinkForPassthrough(payload, {
+    effectiveThreshold: () => ({ threshold: 1000, maxTier: 1, maxToolResultAge: 4, toolResultByteFloor: 50000 }),
+    keepMin: 3,
+    env: { HME_PROXY_LOCAL_SUMMARY: '1' },
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.equal(payload.messages.length, beforeCount);
+  const results = payload.messages.flatMap((m) => Array.isArray(m.content) ? m.content.filter((b) => b.type === 'tool_result') : []);
+  assert.ok(results.slice(0, -2).every((b) => String(b.content).includes('content elided by hme-proxy precompact')));
+  assert.ok(results.slice(-2).every((b) => String(b.content).length === 60000));
+});
