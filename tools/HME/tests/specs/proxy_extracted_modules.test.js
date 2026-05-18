@@ -108,7 +108,7 @@ test('mode 1 OmniRoute path strips Claude Code adaptive thinking extras', () => 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-thinking-'));
   try {
     const payload = {
-      model: 'claude-opus-4-7'
+      model: 'claude-opus-4-7',
       stream: true,
       messages: [{ role: 'user', content: 'hi' }],
       system: '',
