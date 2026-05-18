@@ -20,7 +20,7 @@
   "providers_to_skip": {
     "description": "Pause provider usage in case of credit shortage.",
     "providers": [
-      "opencode_go"
+      ""
     ]
   },
   "ranking_rules": {
