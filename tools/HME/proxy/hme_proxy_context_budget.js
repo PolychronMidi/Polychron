@@ -80,7 +80,7 @@ function createContextBudget() {
   }
 
   function resolveModelCtx(modelId) {
-    // effective_context_length || context_length from config/models.json.
+    // Budget uses explicit effective_context_length or context minus output cap.
     const id = String(modelId || '');
     const reg = loadModelCtxRegistry();
     if (reg.has(id)) return reg.get(id);
