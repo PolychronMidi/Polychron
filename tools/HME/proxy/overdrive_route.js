@@ -268,4 +268,4 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   return result;
 }
 
-module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, findModelById, rankedForTier, buildMode1Chain, chainSignature, selectedIndex, isManualTopActive, upstreamModelId, applyOverdriveRoute };
+module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, findModelById, rankedForTier, buildMode1Chain, chainSignature, selectedIndex, isManualTopActive, upstreamModelId, applyOverdriveRoute, messageTextForRoleDetection };
