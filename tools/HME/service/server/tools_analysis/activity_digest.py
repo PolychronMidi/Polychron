@@ -117,17 +117,6 @@ def activity_digest(window: str = "round") -> str:
 
     lines.append("")
     lines.append("## Coherence")
-    if writes:
-        pct = (writes_with_read * 100 // max(len(writes), 1)) if writes else 0
-        lines.append(
-            f"  file_written with prior HME read: {writes_with_read}/{len(writes)} ({pct}%)"
-        )
-        if writes_without_read:
-            lines.append(
-                f"  [!] {writes_without_read} write(s) had no prior HME read this session"
-            )
-    else:
-        lines.append("  no file_written events in window")
 
     if violations:
         lines.append("")
