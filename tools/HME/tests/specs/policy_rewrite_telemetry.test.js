@@ -39,8 +39,8 @@ test('policy_rewrite telemetry: emits row to hme-activity.jsonl on rewrite', asy
     tool_input: { file_path: target, content },
   }));
   assert.strictEqual(decision.permissionDecision, 'allow');
-  const activityPath = path.join(process.env.HME_RUNTIME_DIR, 'metrics', 'hme-activity.jsonl');
-  assert.ok(fs.existsSync(activityPath), 'activity log should be written');
+  const activityPath = path.join(process.env.HME_RUNTIME_DIR, 'hook-decisions.jsonl');
+  assert.ok(fs.existsSync(activityPath), 'hook-decisions log should be written');
   const rows = fs.readFileSync(activityPath, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   const rewriteRow = rows.find((r) => r.kind === 'policy_rewrite');
   assert.ok(rewriteRow, 'should have a policy_rewrite row');
