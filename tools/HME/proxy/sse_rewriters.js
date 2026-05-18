@@ -1086,5 +1086,6 @@ module.exports = {
   _normalizeReadInput,         // exported for tests
   _editToReadFallback,         // exported for tests
   _isInvalidEditInput,         // exported for tests
+  _editIsStale,                // exported for tests
   _stripSlop,                  // exported for tests
 };
