@@ -55,7 +55,7 @@ def _model_cfg() -> dict:
 def _model_windows() -> dict[str, int]:
  global _MODEL_WINDOWS
  if _MODEL_WINDOWS is None:
-  keys = ("max_context", "context_length", "context_window", "ctx_window")
+  keys = ("context_length", "context_window", "ctx_window")
   def scan(node, name=""):
    if isinstance(node, dict):
     mid = node.get("id") or node.get("model") or node.get("name") or name
