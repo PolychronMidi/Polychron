@@ -246,6 +246,10 @@ async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
       return { stdout, stderr: combinedStderr, exit_code: 0 };
     }
     if (rewrites && rewrites.length && eventName === 'PreToolUse') {
+      try {
+        const { recordPolicyRewrite } = require('./hook_decision_log');
+        recordPolicyRewrite(PROJECT_ROOT, payload, rewrites);
+      } catch (_e) { /* silent-ok: telemetry must never block */ }
       const stdout = JSON.stringify({
         hookSpecificOutput: {
           hookEventName: 'PreToolUse',
