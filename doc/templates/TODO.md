@@ -4,7 +4,7 @@
 
 ## Now
 
-- [ ] [E3] Run focused verification
+(empty)
 
 ## Next
 
