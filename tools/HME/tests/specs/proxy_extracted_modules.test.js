@@ -71,10 +71,11 @@ test('Anthropic registry variants route with api_model instead of registry id', 
 test('mode 1 top-level requests default to driver E5 manual top rank', () => {
   const cfg = {
     ranking_rules: { cost_order: ['subscription', 'free'] },
-    manually_toprank: { E5: ['manual-sonnet-e3'] },
+    manually_toprank: { E5: ['gpt-top-e5'], driver: ['manual-sonnet-e3'] },
     team_role_models: { driver: { tier: 'E5', source: 'manually_toprank' } },
     tiers: {
       E5: { models: [
+        { id: 'gpt-top-e5', provider: 'codex', cost: 'subscription', tier_score: 10 },
         { id: 'ranked-opus-e5', provider: 'anthropic', api_model: 'claude-opus-4-7', cost: 'subscription', tier_score: 9 },
       ] },
       E3: { models: [
@@ -85,7 +86,7 @@ test('mode 1 top-level requests default to driver E5 manual top rank', () => {
   const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
   assert.equal(result.role, 'driver');
   assert.equal(result.tier, 'E5');
-  assert.deepEqual(result.chain.map((m) => m.id), ['manual-sonnet-e3', 'ranked-opus-e5']);
+  assert.deepEqual(result.chain.map((m) => m.id), ['manual-sonnet-e3', 'gpt-top-e5', 'ranked-opus-e5']);
 });
 
 test('OmniRoute fallback helpers use api_model for Anthropic variants', () => {
@@ -97,6 +98,14 @@ test('OmniRoute fallback helpers use api_model for Anthropic variants', () => {
     codexFallback.chainSignature([{ provider: 'anthropic', id: 'a', api_model: 'claude-sonnet-4-6' }]),
     codexFallback.chainSignature([{ provider: 'anthropic', id: 'a', api_model: 'claude-haiku-4-5' }]),
   );
+});
+
+test('mode 1 real models.json driver override beats E5 manual fallback', () => {
+  const cfg = require('../../proxy/shared').loadModelsJson();
+  const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
+  assert.equal(result.role, 'driver');
+  assert.equal(result.chain[0].id, 'claude-sonnet-4-6-max-e3');
+  assert.notEqual(result.chain[0].id, 'gpt-5.5-xhigh');
 });
 
 test('mode 1 stale fallback index cannot skip driver manual top rank', () => quiet(() => {
