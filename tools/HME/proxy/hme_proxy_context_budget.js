@@ -66,6 +66,9 @@ function createContextBudget() {
   const compactGear1End = envNumber('HME_PROXY_COMPACT_GEAR1_END', 0.65);
   const compactGear2End = envNumber('HME_PROXY_COMPACT_GEAR2_END', 0.85);
   const compactHardLimitFraction = envNumber('HME_PROXY_COMPACT_HARD_FRACTION', 0.97);
+  const compactGear1Target = envNumber('HME_PROXY_COMPACT_GEAR1_TARGET', 0.50);
+  const compactGear2Target = envNumber('HME_PROXY_COMPACT_GEAR2_TARGET', 0.65);
+  const compactGear3Target = envNumber('HME_PROXY_COMPACT_GEAR3_TARGET', 0.85);
 
   function pressureForFraction(usedFraction) {
     if (usedFraction < compactStartFraction) return 0;
