@@ -40,7 +40,7 @@ Both paths use the same dispatcher and policy order. Proxy HTTP middleware is ab
 
 | Event | Scripts fired | Notes |
 |---|---|---|
-| `SessionStart` | `lifecycle/sessionstart.sh` | Orientation, state reset, bundle health. |
+| `SessionStart` | `lifecycle/sessionstart.sh` | Orientation, state reset, bundle health on startup/resume/clear/compact. |
 | `UserPromptSubmit` | `lifecycle/userpromptsubmit.sh` | Stale-state sweep, lifesaver scan, autocommit. |
 | `PreToolUse` | native JS or `pretooluse/pretooluse_<tool>.sh` | Pre-execution gates can deny. |
 | `PermissionRequest` | JS policy registry | Codex approval prompts reuse deny policies. |
