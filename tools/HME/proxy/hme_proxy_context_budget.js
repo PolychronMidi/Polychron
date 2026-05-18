@@ -82,7 +82,7 @@ function createContextBudget() {
     const usedFraction = usedTokens / budgetTokens;
     const gear = pressureForFraction(usedFraction);
     if (gear <= 0) return { threshold: Infinity, maxTier: 0 };
-    const targetFraction = gear === 1 ? compactGear1End : (gear === 2 ? compactGear2End : compactHardLimitFraction);
+    const targetFraction = gear === 1 ? compactGear1Target : (gear === 2 ? compactGear2Target : compactGear3Target);
     const threshold = Math.max(1, Math.floor(budgetTokens * targetFraction * contextBytesPerTokenEst));
     const staleHorizon = gear === 1 ? keepMin * 4 : (gear === 2 ? keepMin * 2 : keepMin);
     const floor = gear === 1 ? 50000 : (gear === 2 ? 15000 : 2000);
