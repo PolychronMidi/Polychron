@@ -62,6 +62,11 @@ test('mode 1 chain builder preserves team-role tier routing', () => {
   assert.deepEqual(result.chain.map((m) => m.id), ['manual-e5', 'free-e5', 'usage-e5']);
 });
 
+test('Anthropic registry variants route with api_model instead of registry id', () => {
+  assert.equal(upstreamModelId({ id: 'claude-opus-4-7-max-e5', api_model: 'claude-opus-4-7' }), 'claude-opus-4-7');
+  assert.equal(upstreamModelId({ id: 'deepseek-v4-pro-go' }), 'deepseek-v4-pro');
+});
+
 test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () => quiet(() => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-'));
   try {
