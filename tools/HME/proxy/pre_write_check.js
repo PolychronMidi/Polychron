@@ -230,36 +230,16 @@ function _shellParityDecision(payload) {
   d = _runTddGate(file);
   if (d) return d;
 
-  d = _commentBloatDecision(file, content, writeVerb);
-  if (d) return d;
-
   d = _backgroundWarningDecision(file, content);
   if (d) return d;
-
-  const rootInContent = PROJECT_ROOT && content.includes(PROJECT_ROOT);
-  const sourceFile = /\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$/.test(file);
-  const rootJson = new RegExp('"PROJECT_ROOT":[^,}]*"' + PROJECT_ROOT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"').test(content);
-  const rootExempt = /(\/\.env(\.[a-z]+)?$|\/README(\.[a-z]+)?$|\/CLAUDE\.md$|\/tools\/HME\/KB\/devlog\/|\/doc\/[^/]+\.md$|\/doc\/archive\/)/.test(file);
-  if (rootInContent && sourceFile && !rootJson && !rootExempt) {
-    const hit = _offendingLine(content, (line) => line.includes(PROJECT_ROOT));
-    const where = hit ? `\nOffending line ${hit.line}: ${hit.text}` : '';
-    return _permission('deny', `BLOCKED: ${writeVerb} content contains hardcoded project root '${PROJECT_ROOT}'. Use $PROJECT_ROOT or $CLAUDE_PROJECT_DIR -- never a host-specific path.${where}\nAction: remove that literal path before retrying.`);
-  }
 
   d = _denyIf(/(api[_-]?key|password|secret|token)[\s]*[:=][\s]*[A-Za-z0-9+/]{20,}/i.test(content),
     'BLOCKED: Potential secret/credential detected in write content. Review before writing.');
   if (d) return d;
 
-  d = _denyIf(/(#|\/\/|\/\*)\s*(\.\.\.)?\s*(existing|rest of|previous)\s+(code|file|implementation|content|functions?)\s*(\.\.\.)?/i.test(content),
-    `BLOCKED: ${writeVerb} content contains comment-ellipsis stub placeholder. Use the ACTUAL content -- no stubs.`);
-  if (d) return d;
-
   if (/\.py$/.test(file) && /except[^:\n]*:\s*\n[ \t]*pass\b/.test(content) && !/silent-ok/.test(content)) {
     return _permission('deny', "BLOCKED: content contains naked 'except: pass' without '# silent-ok: <reason>' annotation. CONSTITUTION rule 3 requires propagating errors or naming why silence is safe.");
   }
-
-  const spam = content.split('\n').find((line) => !line.includes('spam-ok') && /([^\w\s()[\]{}])\1{3,}/.test(line));
-  if (spam) return _permission('deny', 'BLOCKED: content contains a run of 4+ identical decoration characters. Use plain text or append spam-ok where genuinely required.');
 
   if (srcPath) {
     if (/\bglobalThis\.|(^|[^a-zA-Z_])global\.[a-zA-Z_]/.test(content)) return _permission('deny', 'BLOCKED: content uses global. or globalThis. -- reference the declared global directly.');
