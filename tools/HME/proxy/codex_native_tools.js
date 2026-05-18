@@ -97,17 +97,9 @@ function nativeToolConfig(cfg) {
 }
 
 function injectNativeToolSchemas(body, cfg) {
-  const stats = { added: 0 };
-  if (!nativeToolConfig(cfg).enabled) return { body, stats };
-  const tools = Array.isArray(body.tools) ? body.tools.slice() : [];
-  const names = new Set(tools.map(toolName).filter(Boolean));
-  for (const spec of nativeToolSchemas()) {
-    if (names.has(spec.name)) continue;
-    tools.push(spec);
-    names.add(spec.name);
-    stats.added += 1;
-  }
-  return { body: { ...body, tools }, stats };
+  if (!nativeToolConfig(cfg).enabled) return { body, stats: { added: 0, dropped: 0, replaced: false, dropped_names: [] } };
+  const { body: replaced, stats } = replaceToolsWithUniform(body, cfg);
+  return { body: replaced, stats: { added: stats.kept, dropped: stats.dropped, replaced: stats.replaced, dropped_names: stats.dropped_names } };
 }
 
 function parseArgs(raw) {
