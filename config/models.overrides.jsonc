@@ -1,14 +1,11 @@
 // Per-model overrides applied AFTER catalog sync.
 //
 // Reasons to add an override here (each entry MUST cite one):
-//   1. Upstream catalog reports a default sentinel value that's wrong
-//      (e.g. OmniRoute's bundled codex provider emits max_output_tokens=8192
-//      for the entire pre-5.5 GPT-5 family even though OpenAI's true cap is
-//      128000 -- see o‍pencode models.json for the canonical figure).
-//   2. Empirically measured "effective" context window from benchmark runs
-//      (RULER/LongBench/NIAH) that the provider's nameplate context_length
-//      overstates. Wired through context budget + synthesis as the effective
-//      planning ceiling.
+//   1. Upstream catalog reports a default sentinel value that's wrong.
+//   2. A provider-specific catalog row better matches the route we use.
+//
+// Do not persist derived fields like max_input_tokens or effective context.
+// Consumers derive input budget as context_length - max_output_tokens.
 //
 // Override keys recognized:
 //   context_length, max_input_tokens, max_output_tokens, effective_context_length
