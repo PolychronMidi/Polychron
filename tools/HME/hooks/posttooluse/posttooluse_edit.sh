@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../helpers/_safety.sh"
+source "$SCRIPT_DIR/../helpers/_hooks_bootstrap.sh"
 source "$SCRIPT_DIR/../helpers/_check_errors_inline.sh"
 INPUT=$(cat)
 printf '%s' "$INPUT" | node -e '

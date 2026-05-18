@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../helpers/_safety.sh"
+source "$SCRIPT_DIR/../helpers/_hooks_bootstrap.sh"
 source "$SCRIPT_DIR/../helpers/_nexus.sh"
 source "$SCRIPT_DIR/../helpers/_check_errors_inline.sh"
 # PostToolUse: Read -- silent KB brief injection for src/ and tools/HME/ files.
