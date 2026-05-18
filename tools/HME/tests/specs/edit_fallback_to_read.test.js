@@ -5,7 +5,8 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { editFallbackToReadRewrite, _editToReadFallback, _isInvalidEditInput, _editIsStale } = require('../../proxy/sse_rewriters');
+const { editFallbackToReadRewrite } = require('../../proxy/sse_rewriters');
+const { editToReadFallback: _editToReadFallback, isInvalidEditInput: _isInvalidEditInput, editIsStale: _editIsStale } = require('../../proxy/edit_validation');
 
 function _ctx() {
   const map = new Map();
