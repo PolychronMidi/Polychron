@@ -239,6 +239,42 @@ def _mode_codex_route() -> str:
 
 
 
+def _mode_codex_unknown_calls() -> str:
+    path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "runtime", "codex-proxy-events.jsonl")
+    events = [e for e in _iter_events(path, limit=400) if e.get("kind") == "codex-unknown-tool-call"]
+    out = ["# Codex unknown tool calls", ""]
+    if not events:
+        out.append("No codex-unknown-tool-call events. Tool surface drift = 0.")
+        out.append(f"Log: {path}")
+        return "\n".join(out)
+    by_name: dict[str, int] = {}
+    by_route: dict[str, int] = {}
+    total_calls = 0
+    for event in events:
+        total_calls += int(event.get("count", 0) or 0)
+        route = str(event.get("route") or "?")
+        by_route[route] = by_route.get(route, 0) + int(event.get("count", 0) or 0)
+        for name in event.get("names") or []:
+            by_name[name] = by_name.get(name, 0) + 1
+    out.append(f"{len(events)} events  total_calls={total_calls}")
+    out.append("")
+    out.append("by tool name (occurrences across events):")
+    for name, occ in sorted(by_name.items(), key=lambda kv: -kv[1])[:16]:
+        out.append(f"  {occ:5}  {name}")
+    out.append("")
+    out.append("by route:")
+    for route, count in sorted(by_route.items(), key=lambda kv: -kv[1]):
+        out.append(f"  {count:5}  {route}")
+    out.append("")
+    out.append("last 5 events:")
+    for event in events[-5:]:
+        names = ",".join((event.get("names") or [])[:6])
+        out.append(f"  ts={str(event.get('ts', '?'))[:19]} route={event.get('route')} count={event.get('count')} names=[{names}]")
+    out.append("")
+    out.append(f"Log: {path}")
+    return "\n".join(out)
+
+
 def _mode_hook_decisions() -> str:
     path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "runtime", "hook-decisions.jsonl")
     events = _iter_events(path, limit=80)
