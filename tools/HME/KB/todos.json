@@ -3,10 +3,10 @@
     "id": 0,
     "_meta": {
       "max_id": 3653,
-      "updated_ts": 1779110979.03848,
-      "codex_plan_synced_ts": 1779110979.0383482,
-      "codex_plan_source": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T08-23-02-019e3b41-1919-7e52-9edf-faea1bd3462e.jsonl",
-      "codex_plan_ts": "2026-05-18T13:29:13.633Z"
+      "updated_ts": 1779111194.948857,
+      "codex_plan_synced_ts": 1779111194.9487295,
+      "codex_plan_source": "codex-proxy:019e3b41-1919-7e52-9edf-faea1bd3462e",
+      "codex_plan_ts": "2026-05-18T13:33:14.507Z"
     }
   },
   {
@@ -9931,15 +9931,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T08-23-02-019e3b41-1919-7e52-9edf-faea1bd3462e.jsonl",
-    "codex_plan_ts": "2026-05-18T13:29:13.633Z"
+    "codex_session": "codex-proxy:019e3b41-1919-7e52-9edf-faea1bd3462e",
+    "codex_plan_ts": "2026-05-18T13:33:14.507Z"
   },
   {
     "id": 3651,
     "text": "Patch Codex adapter normalization to emit one valid object",
     "activeForm": "Patch Codex adapter normalization to emit one valid object",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9947,15 +9947,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T08-23-02-019e3b41-1919-7e52-9edf-faea1bd3462e.jsonl",
-    "codex_plan_ts": "2026-05-18T13:29:13.633Z"
+    "codex_session": "codex-proxy:019e3b41-1919-7e52-9edf-faea1bd3462e",
+    "codex_plan_ts": "2026-05-18T13:33:14.507Z"
   },
   {
     "id": 3652,
     "text": "Add focused regression test",
     "activeForm": "Add focused regression test",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9963,15 +9963,15 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T08-23-02-019e3b41-1919-7e52-9edf-faea1bd3462e.jsonl",
-    "codex_plan_ts": "2026-05-18T13:29:13.633Z"
+    "codex_session": "codex-proxy:019e3b41-1919-7e52-9edf-faea1bd3462e",
+    "codex_plan_ts": "2026-05-18T13:33:14.507Z"
   },
   {
     "id": 3653,
     "text": "Run hook/test evidence",
     "activeForm": "Run hook/test evidence",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9979,7 +9979,7 @@
     "parent_id": 0,
     "subs": [],
     "tier": "E3",
-    "codex_session": "/home/jah/.codex/sessions/2026/05/18/rollout-2026-05-18T08-23-02-019e3b41-1919-7e52-9edf-faea1bd3462e.jsonl",
-    "codex_plan_ts": "2026-05-18T13:29:13.633Z"
+    "codex_session": "codex-proxy:019e3b41-1919-7e52-9edf-faea1bd3462e",
+    "codex_plan_ts": "2026-05-18T13:33:14.507Z"
   }
 ]

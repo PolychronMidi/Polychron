@@ -4,12 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Patch Codex adapter normalization to emit one valid object
+(empty)
 
 ## Next
 
-- [ ] [E3] Add focused regression test
-- [ ] [E3] Run hook/test evidence
+(empty)
 
 ## Done
 
