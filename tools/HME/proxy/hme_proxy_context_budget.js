@@ -174,4 +174,4 @@ function createContextBudget() {
   };
 }
 
-module.exports = { createContextBudget, envNumber };
+module.exports = { createContextBudget, envNumber, inputBudget };
