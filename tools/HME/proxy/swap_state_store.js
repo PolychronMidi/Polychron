@@ -30,7 +30,7 @@ function _write(projectRoot, st) {
 function _matchesChain(st, sig) { return st && st.chain === sig; }
 function _inWindow(st, now) { return st && st.ts > 0 && (now - st.ts) < SUCCESS_WINDOW_MS; }
 
-// rationale: manually_toprank only fronts the chain; failover still progresses.
+// manually_toprank only fronts the chain; failover still progresses.
 function currentIndex(chain, projectRoot = PROJECT_ROOT) {
   if (!chain || !chain.length) return 0;
   const st = _read(projectRoot);
@@ -41,7 +41,7 @@ function currentIndex(chain, projectRoot = PROJECT_ROOT) {
   return Math.min(st.idx || 0, chain.length - 1);
 }
 
-// rationale: record failure, advance idx; returns new state for logging.
+// record failure, advance idx; returns new state for logging.
 function recordFailure(chain, projectRoot = PROJECT_ROOT) {
   const sig = chainSignature(chain);
   let st = _read(projectRoot);
@@ -59,7 +59,7 @@ function recordFailure(chain, projectRoot = PROJECT_ROOT) {
   return st;
 }
 
-// rationale: success at idx clears fail and pins that target for next request.
+// success at idx clears fail and pins that target for next request.
 function recordSuccess(chain, idx, projectRoot = PROJECT_ROOT) {
   const sig = chainSignature(chain);
   const st = { idx: Math.min(idx || 0, Math.max(0, chain.length - 1)), ts: Date.now(), fail: 0, chain: sig };

@@ -15,7 +15,7 @@ const STOP_HOOK_COMPACT_AUTO = 'Stop hook feedback: AUTO-COMPLETENESS CHECK comp
 const STOP_HOOK_COMPACT_EXHAUST = 'Stop hook feedback: EXHAUST PROTOCOL VIOLATION compacted by hme-proxy.';
 const STOP_HOOK_COMPACTS = [STOP_HOOK_COMPACT, STOP_HOOK_COMPACT_AUTO, STOP_HOOK_COMPACT_EXHAUST];
 
-// rationale: full-block strips remove the entire content block; tail strips
+// full-block strips remove the entire content block; tail strips
 // rewrite the text in place; the stop-hook entry is delegated to its compactor.
 const STRIP_RULES = [
   { name: 'skill', re: RE_SKILL, action: 'remove-block' },
@@ -90,6 +90,6 @@ module.exports = {
       ctx.emit({ event: 'skill_reminder_stripped', session: 'proxy', count: stripped });
     } catch (_e) { /* best-effort */ }
   },
-  // rationale: STRIP_RULES exported so a future detector can audit coverage.
+  // STRIP_RULES exported so a future detector can audit coverage.
   STRIP_RULES,
 };
