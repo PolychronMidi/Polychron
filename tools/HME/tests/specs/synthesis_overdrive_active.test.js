@@ -79,7 +79,7 @@ print(json.dumps({"head": list(chain[:2]), "allow_subagent": allow_sub}))
 });
 
 test('Python overdrive applies registry effort params to payload', () => {
-  const result = run({ OVERDRIVE_MODE: '1' }, `
+  const result = run({ OVERDRIVE_MODE: '1', ANTHROPIC_BASE_URL: 'http://127.0.0.1:1' }, `
 from server.tools_analysis.synthesis import synthesis_overdrive as so
 import json, urllib.request
 captured = {}
