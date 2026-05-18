@@ -146,6 +146,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
       catch (err) { console.error(`[hme-proxy] OmniRoute context preflight failed: ${err.message}`); }
     }
     payload.model = `${result.omniProvider}/${result.swapModel}`;
+    applyEffortParams(payload, result.swapMeta, result.omniProvider);
     try { result.outBody = Buffer.from(JSON.stringify(payload), 'utf8'); }
     catch (err) {
       console.error(`[hme-proxy] OmniRoute payload serialize failed: ${err.message} (len=${JSON.stringify(payload).length}B)`);
