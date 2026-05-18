@@ -294,17 +294,18 @@
           "max_input_tokens": 664576
         },
         {
-          "id": "llama-4-maverick",
-          "name": "Llama 4 Maverick",
-          "maker": "Meta",
+          "id": "nemotron-3-super-openrouter-free",
+          "name": "Nemotron 3 Super",
+          "maker": "NVIDIA",
           "provider": "openrouter",
+          "api_model": "nvidia/nemotron-3-super-120b-a12b:free",
           "cost": "free",
           "cost_amt": 0,
-          "notes": "OpenRouter free tier. Strong open-source reasoning model.",
+          "notes": "OpenRouter free catalog. Advanced reasoning model with large context.",
           "tier_score": 4,
-          "max_output_tokens": 8192,
-          "context_length": 131072,
-          "max_input_tokens": 122880
+          "context_length": 1000000,
+          "max_output_tokens": 262144,
+          "max_input_tokens": 737856
         },
         {
           "id": "glm-5.1-go",
