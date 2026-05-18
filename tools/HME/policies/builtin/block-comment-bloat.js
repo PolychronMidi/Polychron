@@ -56,8 +56,7 @@ function _scan(fp, content) {
 const REASON =
   'BLOCKED: Edit new_string contains a {COUNT}-line consecutive inline-comment block. ' +
   'doc/templates/AGENTS.md: "Inline comments single-line and terse. Elaboration goes in doc/." ' +
-  'Trim to <=2 lines OR move the prose into doc/. Annotation prefixes ' +
-  '(# rationale:, # silent-ok:, // rationale:, etc.) reset the counter.';
+  'Trim to <=2 lines OR move the prose into doc/.';
 
 const REASON_LONG =
   'BLOCKED: Edit new_string contains a comment line of {LEN} chars (>= {LIMIT} char limit). ' +
