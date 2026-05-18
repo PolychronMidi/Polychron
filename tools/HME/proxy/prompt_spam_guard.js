@@ -156,6 +156,8 @@ module.exports = {
   isSingleQuotaOpenAiChatPayload,
   isSingleQuotaOpenAiResponsesPayload,
   isTodoWriteOnlyProbe,
+  isStructuredOutputsProbe,
   blockQuotaProbe,
   blockTodoWriteOnlyProbe,
+  blockStructuredOutputsProbe,
 };
