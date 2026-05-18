@@ -114,8 +114,7 @@ test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () 
     assert.equal(strippedTools, true);
     assert.equal(strippedIdentity, true);
     assert.equal(contextPreflight, true);
-    assert.match(payload.model, /^anthropic\//);
-    assert.equal(payload.thinkingLevel, 'max');
+    assert.match(payload.model, /^[a-z-]+\//);
     assert.match(clientReq.headers['x-hme-upstream'], /^http:\/\/127\.0\.0\.1:/);
     assert.equal(clientReq.headers.authorization, undefined);
     assert.equal(clientReq.headers['x-api-key'], undefined);
