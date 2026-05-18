@@ -30,7 +30,7 @@ if [ -n "$_POLICY_OUT" ]; then
 fi
 
 # Defense-in-depth: wrap each source in `set +u +e` so a stray unbound-var
-for _part in gates; do
+for _part in gates noop_petulance; do
   set +u +e
   source "${SCRIPT_DIR}/bash/${_part}.sh"
   _rc=$?
