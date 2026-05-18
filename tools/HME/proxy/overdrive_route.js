@@ -117,6 +117,25 @@ function upstreamModelId(model) {
 
 function stripGo(id) { return upstreamModelId(id); }
 
+function stripOmniUnsupportedRequestFields(payload, omniProvider) {
+  if (!payload || typeof payload !== 'object') return false;
+  let changed = false;
+  const provider = String(omniProvider || '');
+  if (payload.thinking && typeof payload.thinking === 'object') {
+    const thinkingType = String(payload.thinking.type || '').toLowerCase();
+    if (thinkingType === 'adaptive') {
+      delete payload.thinking;
+      changed = true;
+    }
+  }
+  if ((provider === 'claude' || provider === 'anthropic')
+      && Object.prototype.hasOwnProperty.call(payload, 'output_config')) {
+    delete payload.output_config;
+    changed = true;
+  }
+  return changed;
+}
+
 function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStaleToolResults, stripClaudeIdentity, shrinkForContext, env = process.env, projectRoot = PROJECT_ROOT }) {
   const requested = String(env.OVERDRIVE_MODE || '0');
   const mode = effectiveMode(env);
@@ -170,6 +189,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
       catch (err) { console.error(`[hme-proxy] OmniRoute context preflight failed: ${err.message}`); }
     }
     payload.model = `${result.omniProvider}/${result.swapModel}`;
+    stripOmniUnsupportedRequestFields(payload, result.omniProvider);
     applyEffortParams(payload, result.swapMeta, result.omniProvider);
     try { result.outBody = Buffer.from(JSON.stringify(payload), 'utf8'); }
     catch (err) {
