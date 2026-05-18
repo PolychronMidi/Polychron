@@ -209,7 +209,8 @@ def _remove_field_line(block: str, key: str) -> str:
         rf'^[ \t]*"{re.escape(key)}"\s*:\s*[^\n]*?\s*,?[ \t]*\n',
         re.MULTILINE,
     )
-    return pat.sub("", block, count=1)
+    block = pat.sub("", block, count=1)
+    return re.sub(r',[ \t]*(\n[ \t]*})', r'\1', block)
 
 
 def _set_field(block: str, key: str, val: int) -> tuple[str, bool]:
