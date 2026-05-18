@@ -15,8 +15,6 @@ function positiveNumber(value) {
 }
 
 function inputBudget(model) {
-  const explicit = positiveNumber(model.effective_context_length);
-  if (explicit) return explicit;
   const input = positiveNumber(model.max_input_tokens);
   if (input) return input;
   const ctx = positiveNumber(model.context_length);
