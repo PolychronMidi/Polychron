@@ -94,6 +94,30 @@ function blockQuotaProbe({ res, payload, record, source = {}, component = 'hme-p
   jsonResponse(res, 200, anthropicQuotaProbeResponse(payload));
 }
 
+function toolNames(payload) {
+  return Array.isArray(payload && payload.tools)
+    ? payload.tools.map((tool) => tool && tool.name).filter(Boolean)
+    : [];
+}
+
+function isTodoWriteOnlyProbe(payload) {
+  const names = toolNames(payload);
+  return names.length === 1 && names[0] === 'TodoWrite'
+    && payload && Array.isArray(payload.messages) && payload.messages.length === 1;
+}
+
+function blockTodoWriteOnlyProbe({ res, payload, record, source = {}, component = 'hme-proxy' }) {
+  if (record) {
+    record({
+      kind: 'todowrite-only-probe-blocked',
+      source,
+      model: payload && payload.model ? payload.model : '',
+      reason: 'single-message TodoWrite-only structured-output probe',
+    });
+  }
+  jsonResponse(res, 200, anthropicEmptyResponse(payload, 'hme_todowrite_probe'));
+}
+
 module.exports = {
   QUOTA_PROBE_TEXT,
   textFromContent,
