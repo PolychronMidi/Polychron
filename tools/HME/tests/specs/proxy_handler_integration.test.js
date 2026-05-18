@@ -52,6 +52,7 @@ test('Claude handler forwards to fake Anthropic upstream and returns success wit
     port: process.env.HME_PROXY_UPSTREAM_PORT,
     tls: process.env.HME_PROXY_UPSTREAM_TLS,
     inject: process.env.HME_INJECT_TOOLS,
+    proxyInject: process.env.HME_PROXY_INJECT,
     quiet: process.env.HME_PROXY_QUIET_IMPORT,
   };
   let upstreamBody = null;
