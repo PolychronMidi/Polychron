@@ -215,7 +215,7 @@ test('Codex proxy sends native tools upstream and translates native call respons
     }));
     const response = await requestJson(proxyPort, { model: 'gpt-5.5', tools: [], stream: false });
     assert.equal(response.status, 200);
-    assert.deepEqual(upstreamBody.tools.map((t) => t.name), ['Read', 'Edit', 'Grep', 'Glob']);
+    assert.deepEqual(upstreamBody.tools.map((t) => t.name), ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
     const call = JSON.parse(response.body).output[0];
     assert.equal(call.name, 'exec_command');
     assert.match(JSON.parse(call.arguments).cmd, /codex_structured_tool\.js read --json/);
