@@ -136,6 +136,14 @@ _ac_do_commit() {
   # is non-fatal -- `commit -a` handles tracked-file modifications below.
   git -C "$_AC_ROOT" add -A >"$_ac_err_buf" 2>&1 || true
 
+  # Refuse to commit if any staged file has unresolved git conflict markers.
+  if git -C "$_AC_ROOT" diff --cached -U0 2>/dev/null | grep -qE '^\+(<{7} |={7}$|>{7} )'; then  # spam-ok: conflict-marker regex
+    _ac_record_failure "[$caller] git commit aborted: conflict markers detected in staged diff"
+    rm -f "$_ac_err_buf" 2>/dev/null
+    exec 9>&-
+    return 1
+  fi
+
   # git commit with single retry for transient lock contention.
   local commit_msg
   commit_msg="$(date +%Y-%m-%dT%H:%M:%S 2>/dev/null || echo autocommit)"  # silent-ok: optional fallback path.
