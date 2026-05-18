@@ -5,7 +5,7 @@ const { servicePort } = require('./service_registry');
 const { omniProviderForConfigProvider, omniTargetFormat } = require('./omniroute_protocol');
 const swapStore = require('./swap_state_store');
 const { chainSignature } = swapStore;
-// rationale: single source-of-truth lives in overdrive_route.js; re-export here.
+// single source-of-truth lives in overdrive_route.js; re-export here.
 const { isManualTopActive } = require('./overdrive_route');
 
 function upstreamModelId(model) {

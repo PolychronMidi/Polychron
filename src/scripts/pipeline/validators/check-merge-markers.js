@@ -8,14 +8,14 @@ const { execSync } = require('child_process');
 
 const ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..', '..');
 
-// rationale: ours/separator/theirs marker shapes from git's default conflict style.
+// ours/separator/theirs marker shapes from git's default conflict style.
 const MARKER_RES = [
   { re: /^<{7}\s/m, label: 'ours-marker' }, // spam-ok
   { re: /^={7}$/m, label: 'separator' }, // spam-ok
   { re: /^>{7}\s/m, label: 'theirs-marker' }, // spam-ok
 ];
 
-// rationale: fixtures/tests/docs intentionally contain marker-looking strings.
+// fixtures/tests/docs intentionally contain marker-looking strings.
 const EXCLUDE_PATTERNS = [
   /\.git\//,
   /node_modules\//,

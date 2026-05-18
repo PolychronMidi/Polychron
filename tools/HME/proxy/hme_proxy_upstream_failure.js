@@ -64,7 +64,7 @@ async function handleUpstreamFailureOrSuccess({
   const coolingDown = _alertCooldownActive(errInfo.type || `http_${status}`, pathLabel);
   const shouldRetry = headers['x-should-retry'] === 'true';
   const isRateLimit = errInfo.type === 'rate_limit_error';
-  // rationale: omniroute_client classifies OmniRoute-transient failures in one place.
+  // omniroute_client classifies OmniRoute-transient failures in one place.
   const isStreamTimeout502 = isOmniRouteSwap && omniroute.isTransientStreamTimeout({ status, errInfo, body: fullBody });
   if (isStreamTimeout502 && payload && Array.isArray(payload.messages)) {
     try {

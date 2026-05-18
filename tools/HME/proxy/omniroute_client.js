@@ -6,7 +6,7 @@
 const protocol = require('./omniroute_protocol');
 const { servicePort } = require('./service_registry');
 
-// rationale: 502 stream_timeout / STREAM_READINESS_TIMEOUT = upstream SSE closed empty.
+// 502 stream_timeout / STREAM_READINESS_TIMEOUT = upstream SSE closed empty.
 const TRANSIENT_FAILURE_TYPES = new Set(['stream_timeout']);
 const TRANSIENT_FAILURE_CODES = new Set(['STREAM_READINESS_TIMEOUT']);
 
@@ -17,7 +17,7 @@ function isCodexTarget(configProvider) { return protocol.isCodexOmniTarget(confi
 function targetFormatFor(configProvider) { return protocol.omniTargetFormat(configProvider); }
 function firstLegacyChatCandidate(chain, startIdx = 0) { return protocol.firstLegacyChatCandidate(chain, startIdx); }
 
-// rationale: qualify "anthropic" + "claude-opus-4-7" -> "claude/claude-opus-4-7".
+// qualify "anthropic" + "claude-opus-4-7" -> "claude/claude-opus-4-7".
 function qualifyModel(configProvider, modelId, env = process.env) {
   const prefix = providerPrefixFor(configProvider, env);
   const raw = String(modelId || '');
@@ -26,7 +26,7 @@ function qualifyModel(configProvider, modelId, env = process.env) {
   return `${prefix}/${raw}`;
 }
 
-// rationale: classify failure as transient (same-target retry worth attempting).
+// classify failure as transient (same-target retry worth attempting).
 function isTransientStreamTimeout({ status, errInfo, body }) {
   if (status !== 502) return false;
   if (errInfo) {
