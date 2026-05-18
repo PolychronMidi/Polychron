@@ -159,8 +159,8 @@ test('mode 1 real models.json driver override beats E5 manual fallback', () => {
   const cfg = require('../../proxy/shared').loadModelsJson();
   const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
   assert.equal(result.role, 'driver');
-  assert.equal(result.chain[0].id, 'claude-sonnet-4-6-max-e3');
-  assert.notEqual(result.chain[0].id, 'gpt-5.5-xhigh');
+  assert.equal(result.chain[0].id, 'claude-opus-4-7-max-e5');
+  assert.notEqual(result.chain[0].id, 'claude-sonnet-4-6-max-e3');
 });
 
 test('role detection ignores stale role text in system-reminder continuation context', () => {
