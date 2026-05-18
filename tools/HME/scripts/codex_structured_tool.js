@@ -83,17 +83,24 @@ function hookJson(tool, input, extra = {}) { return JSON.stringify({ cwd: ROOT, 
 function jsonObjects(stdout) { return String(stdout || '').split(/\r?\n/).map((line) => { try { return JSON.parse(line.trim()); } catch (_e) { return null; } }).filter(Boolean); }
 function hookDecision(result) {
   const contexts = [];
+  let updatedInput = null;
   for (const obj of jsonObjects(result.stdout)) {
     const hso = obj.hookSpecificOutput || {};
     const decision = hso.permissionDecision || obj.decision || '';
     const reason = hso.permissionDecisionReason || hso.additionalContext || obj.systemMessage || obj.reason || '';
     if (decision === 'deny' || decision === 'ask' || obj.decision === 'block') return { ok: false, reason: String(reason || 'blocked') };
     if (hso.additionalContext) contexts.push(String(hso.additionalContext));
+    if (hso.updatedInput && typeof hso.updatedInput === 'object') updatedInput = hso.updatedInput;
   }
   if (result.exit_code && result.exit_code !== 0) return { ok: false, reason: result.stderr || `hook exit ${result.exit_code}` };
-  return { ok: true, context: contexts.join('\n\n') };
+  return { ok: true, context: contexts.join('\n\n'), updatedInput };
 }
-async function pre(tool, input) { const d = hookDecision(await dispatchEvent('PreToolUse', hookJson(tool, input))); if (!d.ok) { console.error(d.reason); process.exit(2); } return d.context || ''; }
+async function pre(tool, input) {
+  const d = hookDecision(await dispatchEvent('PreToolUse', hookJson(tool, input)));
+  if (!d.ok) { console.error(d.reason); process.exit(2); }
+  if (d.updatedInput && typeof d.updatedInput === 'object') Object.assign(input, d.updatedInput);
+  return d.context || '';
+}
 async function post(tool, input, response) { await dispatchEvent('PostToolUse', hookJson(tool, input, { tool_response: response, tool_result: response })); }
 async function enrich(tool, input, text, isError = false) { middleware.loadAll(); const id = `codex-structured-${tool}-${Date.now()}`; const toolUse = { id, name: tool, input }; const toolResult = { tool_use_id: id, content: text, is_error: isError }; await middleware.runOnToolResult(toolUse, toolResult, { session: SESSION }); return typeof toolResult.content === 'string' ? toolResult.content : JSON.stringify(toolResult.content); }
 async function finishStructured(tool, input, text, opts = {}) {
