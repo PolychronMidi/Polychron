@@ -4,12 +4,10 @@
 
 ## Now
 
-- [ ] [E3] Locate `thinkingLevel` injection path
+- [ ] [E3] Add/adjust regression tests
 
 ## Next
 
-- [ ] [E3] Patch effort params for Claude OAuth route
-- [ ] [E3] Add/adjust regression tests
 - [ ] [E3] Run focused checks and restart proxy
 
 ## Done
