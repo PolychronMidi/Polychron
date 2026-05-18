@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect SessionStart contract and payload evidence
+(empty)
 
 ## Next
 
-- [ ] [E3] Run focused verification
-- [ ] [E3] Patch strict SessionStart/resume semantics
-- [ ] [E3] Update regressions
+(empty)
 
 ## Done
 
