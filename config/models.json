@@ -84,7 +84,8 @@
           "tier_score": 9,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "effective_context_length": 872000
+          "effective_context_length": 872000,
+          "max_input_tokens": 872000
         },
         {
           "id": "deepseek-v4-pro-go",
@@ -97,7 +98,8 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "mimo-v2.5-pro-go",
@@ -110,7 +112,8 @@
           "tier_score": 4,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "deepseek-v4-pro",
@@ -123,7 +126,8 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "mimo-v2.5-pro",
@@ -136,7 +140,8 @@
           "tier_score": 4,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "gpt-5.2",
@@ -149,7 +154,8 @@
           "tier_score": 4,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000
+          "effective_context_length": 272000,
+          "max_input_tokens": 272000
         },
         {
           "id": "gpt-5.5-xhigh",
@@ -162,7 +168,8 @@
           "tier_score": 8,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000
+          "effective_context_length": 272000,
+          "max_input_tokens": 272000
         },
         {
           "id": "gpt-5.5-high",
@@ -175,7 +182,8 @@
           "tier_score": 7,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000
+          "effective_context_length": 272000,
+          "max_input_tokens": 272000
         }
       ]
     },
@@ -196,7 +204,8 @@
           "tier_score": 9,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "effective_context_length": 872000
+          "effective_context_length": 872000,
+          "max_input_tokens": 872000
         },
         {
           "id": "claude-opus-4-7-high-e4",
@@ -211,7 +220,8 @@
           "tier_score": 7,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "effective_context_length": 872000
+          "effective_context_length": 872000,
+          "max_input_tokens": 872000
         },
         {
           "id": "gpt-5.5-medium",
@@ -224,7 +234,8 @@
           "tier_score": 8,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000
+          "effective_context_length": 272000,
+          "max_input_tokens": 272000
         },
         {
           "id": "gpt-5.5-low",
@@ -237,7 +248,8 @@
           "tier_score": 7,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000
+          "effective_context_length": 272000,
+          "max_input_tokens": 272000
         },
         {
           "id": "gpt-5.4",
@@ -250,7 +262,8 @@
           "tier_score": 5,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000
+          "effective_context_length": 272000,
+          "max_input_tokens": 272000
         },
         {
           "id": "gemini-2.5-pro",
@@ -263,7 +276,8 @@
           "tier_score": 6,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040
+          "effective_context_length": 983040,
+          "max_input_tokens": 983040
         },
         {
           "id": "mistral-large-latest",
@@ -276,7 +290,8 @@
           "tier_score": 7,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "gemini-2.5-pro",
@@ -289,7 +304,8 @@
           "tier_score": 5,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040
+          "effective_context_length": 983040,
+          "max_input_tokens": 983040
         },
         {
           "id": "llama-4-maverick",
@@ -302,7 +318,8 @@
           "tier_score": 4,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "glm-5.1-go",
@@ -315,7 +332,8 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "mimo-v2-pro-go",
@@ -328,7 +346,8 @@
           "tier_score": 4,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "glm-5.1",
@@ -341,7 +360,8 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "kimi-k2.6",
@@ -354,7 +374,8 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "minimax-m2.7",
@@ -367,7 +388,8 @@
           "tier_score": 6,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "qwen3.6-plus",
@@ -380,7 +402,8 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "mimo-v2-pro",
@@ -393,7 +416,8 @@
           "tier_score": 3,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "llama-3.3-70b-versatile",
@@ -406,7 +430,8 @@
           "tier_score": 4,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "llama-4-scout-17b-16e-instruct",
@@ -419,7 +444,8 @@
           "tier_score": 3,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "llama-4-maverick-17b-128e-instruct",
@@ -432,7 +458,8 @@
           "tier_score": 4,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "nemotron-super-49b",
@@ -445,7 +472,8 @@
           "tier_score": 5,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         }
       ]
     },
@@ -466,7 +494,8 @@
           "tier_score": 9,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "effective_context_length": 872000
+          "effective_context_length": 872000,
+          "max_input_tokens": 872000
         },
         {
           "id": "claude-opus-4-7-low-e3",
@@ -481,7 +510,8 @@
           "tier_score": 7,
           "context_length": 1000000,
           "max_output_tokens": 128000,
-          "effective_context_length": 872000
+          "effective_context_length": 872000,
+          "max_input_tokens": 872000
         },
         {
           "id": "claude-sonnet-4-6-max-e3",
@@ -496,7 +526,8 @@
           "tier_score": 6,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "claude-sonnet-4-6-xhigh-e3",
@@ -511,7 +542,8 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "gpt-5.3-codex",
@@ -524,7 +556,8 @@
           "tier_score": 8,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000
+          "effective_context_length": 272000,
+          "max_input_tokens": 272000
         },
         {
           "id": "gpt-5.3-codex-spark",
@@ -537,7 +570,8 @@
           "tier_score": 8,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000
+          "effective_context_length": 272000,
+          "max_input_tokens": 272000
         },
         {
           "id": "gpt-5.4-mini",
@@ -550,7 +584,8 @@
           "tier_score": 7,
           "context_length": 400000,
           "max_output_tokens": 128000,
-          "effective_context_length": 272000
+          "effective_context_length": 272000,
+          "max_input_tokens": 272000
         },
         {
           "id": "gpt-4o-mini",
@@ -563,7 +598,8 @@
           "tier_score": 9,
           "context_length": 128000,
           "max_output_tokens": 16384,
-          "effective_context_length": 111616
+          "effective_context_length": 111616,
+          "max_input_tokens": 111616
         },
         {
           "id": "deepseek-v4-flash",
@@ -576,7 +612,8 @@
           "tier_score": 8,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "codestral-latest",
@@ -589,7 +626,8 @@
           "tier_score": 5,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "mistral-medium-latest",
@@ -602,7 +640,8 @@
           "tier_score": 6,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "gemini-2.5-flash",
@@ -615,7 +654,8 @@
           "tier_score": 6,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040
+          "effective_context_length": 983040,
+          "max_input_tokens": 983040
         },
         {
           "id": "deepseek-chat",
@@ -628,7 +668,8 @@
           "tier_score": 5,
           "context_length": 131072,
           "max_output_tokens": 8192,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "mistral-large",
@@ -641,7 +682,8 @@
           "tier_score": 5,
           "context_length": 131072,
           "max_output_tokens": 8192,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "glm-5-go",
@@ -654,7 +696,8 @@
           "tier_score": 9,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "mimo-v2.5-go",
@@ -667,7 +710,8 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "glm-5",
@@ -680,7 +724,8 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "mimo-v2.5",
@@ -693,7 +738,8 @@
           "tier_score": 6,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "minimax-m2.5",
@@ -706,7 +752,8 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "gemini-3-flash",
@@ -719,7 +766,8 @@
           "tier_score": 5,
           "context_length": 131072,
           "max_output_tokens": 32768,
-          "effective_context_length": 98304
+          "effective_context_length": 98304,
+          "max_input_tokens": 98304
         },
         {
           "id": "qwen3-32b",
@@ -732,7 +780,8 @@
           "tier_score": 5,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "llama-3.3-70b-instruct",
@@ -745,7 +794,8 @@
           "tier_score": 4,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         }
       ]
     },
@@ -766,7 +816,8 @@
           "tier_score": 8,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "claude-sonnet-4-6-medium-e2",
@@ -781,7 +832,8 @@
           "tier_score": 7,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "claude-sonnet-4-6-low-e2",
@@ -796,7 +848,8 @@
           "tier_score": 6,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "claude-haiku-4-5-max-e2",
@@ -811,7 +864,8 @@
           "tier_score": 3,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "gpt-4o-mini",
@@ -824,7 +878,8 @@
           "tier_score": 7,
           "context_length": 128000,
           "max_output_tokens": 16384,
-          "effective_context_length": 111616
+          "effective_context_length": 111616,
+          "max_input_tokens": 111616
         },
         {
           "id": "nemotron-3-super",
@@ -837,7 +892,8 @@
           "tier_score": 6,
           "max_output_tokens": 32768,
           "context_length": 262144,
-          "effective_context_length": 229376
+          "effective_context_length": 229376,
+          "max_input_tokens": 229376
         },
         {
           "id": "gemini-2.0-flash",
@@ -850,7 +906,8 @@
           "tier_score": 8,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040
+          "effective_context_length": 983040,
+          "max_input_tokens": 983040
         },
         {
           "id": "gemini-2.5-flash",
@@ -863,7 +920,8 @@
           "tier_score": 6,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040
+          "effective_context_length": 983040,
+          "max_input_tokens": 983040
         },
         {
           "id": "mimo-v2-omni",
@@ -876,7 +934,8 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "qwen3.5-plus",
@@ -889,7 +948,8 @@
           "tier_score": 5,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "llama3.1-8b",
@@ -902,7 +962,8 @@
           "tier_score": 4,
           "max_output_tokens": 8192,
           "context_length": 131072,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "nemotron-3-nano-30b-a3b",
@@ -915,7 +976,8 @@
           "tier_score": 6,
           "context_length": 131072,
           "max_output_tokens": 8192,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         },
         {
           "id": "llama-3.2-3b-instruct",
@@ -928,7 +990,8 @@
           "tier_score": 5,
           "context_length": 131072,
           "max_output_tokens": 8192,
-          "effective_context_length": 122880
+          "effective_context_length": 122880,
+          "max_input_tokens": 122880
         }
       ]
     },
@@ -949,7 +1012,8 @@
           "tier_score": 3,
           "context_length": 200000,
           "max_output_tokens": 8192,
-          "effective_context_length": 191808
+          "effective_context_length": 191808,
+          "max_input_tokens": 191808
         },
         {
           "id": "gemini-2.5-flash-lite",
@@ -962,7 +1026,8 @@
           "tier_score": 9,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040
+          "effective_context_length": 983040,
+          "max_input_tokens": 983040
         },
         {
           "id": "big-pickle",
@@ -975,7 +1040,8 @@
           "tier_score": 4,
           "context_length": 200000,
           "max_output_tokens": 128000,
-          "effective_context_length": 72000
+          "effective_context_length": 72000,
+          "max_input_tokens": 72000
         },
         {
           "id": "ring-2.6-1t",
@@ -988,7 +1054,8 @@
           "tier_score": 3,
           "context_length": 262000,
           "max_output_tokens": 66000,
-          "effective_context_length": 196000
+          "effective_context_length": 196000,
+          "max_input_tokens": 196000
         },
         {
           "id": "gemini-2.5-flash-lite",
@@ -1001,7 +1068,8 @@
           "tier_score": 9,
           "context_length": 1048576,
           "max_output_tokens": 65536,
-          "effective_context_length": 983040
+          "effective_context_length": 983040,
+          "max_input_tokens": 983040
         },
         {
           "id": "gpt-5.4-nano",
@@ -1014,7 +1082,8 @@
           "tier_score": 7,
           "context_length": 524288,
           "max_output_tokens": 128000,
-          "effective_context_length": 396288
+          "effective_context_length": 396288,
+          "max_input_tokens": 396288
         }
       ]
     }
