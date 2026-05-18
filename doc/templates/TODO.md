@@ -4,13 +4,13 @@
 
 ## Now
 
-- [ ] [E3] Inspect lifesaver/log state and existing detector wiring
+- [ ] [E3] Inspect detector wiring for subvariant addition
 
 ## Next
 
-- [ ] [E3] Implement crying_wolf stale-alert reconciliation
-- [ ] [E3] Add focused tests/registry wiring if needed
-- [ ] [E3] Run verification and apply reconciliation
+- [ ] [E3] Run focused verification
+- [ ] [E3] Add flabbergasted_by_autocommit detection and reason
+- [ ] [E3] Add regression fixtures
 
 ## Done
 

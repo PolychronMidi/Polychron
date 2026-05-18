@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3616,
-      "updated_ts": 1779069140.6554077,
-      "codex_plan_synced_ts": 1779069140.655282,
+      "max_id": 3619,
+      "updated_ts": 1779069620.6449068,
+      "codex_plan_synced_ts": 1779069620.644784,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-      "codex_plan_ts": "2026-05-18T01:52:02.744Z"
+      "codex_plan_ts": "2026-05-18T02:00:04.932Z"
     }
   },
   {
@@ -1710,8 +1710,8 @@
     "id": 3151,
     "text": "Run focused verification",
     "activeForm": "Run focused verification",
-    "status": "completed",
-    "done": true,
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -1720,7 +1720,7 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-    "codex_plan_ts": "2026-05-18T01:11:36.922Z"
+    "codex_plan_ts": "2026-05-18T02:00:04.932Z"
   },
   {
     "id": 3152,
@@ -9313,8 +9313,8 @@
     "id": 3613,
     "text": "Inspect lifesaver/log state and existing detector wiring",
     "activeForm": "Inspect lifesaver/log state and existing detector wiring",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9323,14 +9323,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-    "codex_plan_ts": "2026-05-18T01:52:02.744Z"
+    "codex_plan_ts": "2026-05-18T01:52:02.744Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3614,
     "text": "Implement crying_wolf stale-alert reconciliation",
     "activeForm": "Implement crying_wolf stale-alert reconciliation",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9339,14 +9340,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-    "codex_plan_ts": "2026-05-18T01:52:02.744Z"
+    "codex_plan_ts": "2026-05-18T01:52:02.744Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3615,
     "text": "Add focused tests/registry wiring if needed",
     "activeForm": "Add focused tests/registry wiring if needed",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9355,14 +9357,15 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-    "codex_plan_ts": "2026-05-18T01:52:02.744Z"
+    "codex_plan_ts": "2026-05-18T01:52:02.744Z",
+    "resolved_reason": "superseded-by-codex-plan"
   },
   {
     "id": 3616,
     "text": "Run verification and apply reconciliation",
     "activeForm": "Run verification and apply reconciliation",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "codex_plan",
     "on_done": "",
@@ -9371,6 +9374,55 @@
     "subs": [],
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-    "codex_plan_ts": "2026-05-18T01:52:02.744Z"
+    "codex_plan_ts": "2026-05-18T01:52:02.744Z",
+    "resolved_reason": "superseded-by-codex-plan"
+  },
+  {
+    "id": 3617,
+    "text": "Inspect detector wiring for subvariant addition",
+    "activeForm": "Inspect detector wiring for subvariant addition",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779069605.3706589,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T02:00:04.932Z"
+  },
+  {
+    "id": 3618,
+    "text": "Add flabbergasted_by_autocommit detection and reason",
+    "activeForm": "Add flabbergasted_by_autocommit detection and reason",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779069605.3706644,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T02:00:04.932Z"
+  },
+  {
+    "id": 3619,
+    "text": "Add regression fixtures",
+    "activeForm": "Add regression fixtures",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779069605.3706677,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T02:00:04.932Z"
   }
 ]
