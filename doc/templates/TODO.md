@@ -4,13 +4,11 @@
 
 ## Now
 
-- [ ] [E3] Inspect overdrive selection and fallback state
+(empty)
 
 ## Next
 
-- [ ] [E3] Patch default driver and chain-scoped selected index
-- [ ] [E3] Add regression tests for manually_toprank E5
-- [ ] [E3] Run verification and reset stale swap state
+(empty)
 
 ## Done
 
