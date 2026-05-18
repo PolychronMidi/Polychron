@@ -127,5 +127,7 @@ module.exports = {
   isSingleQuotaAnthropicPayload,
   isSingleQuotaOpenAiChatPayload,
   isSingleQuotaOpenAiResponsesPayload,
+  isTodoWriteOnlyProbe,
   blockQuotaProbe,
+  blockTodoWriteOnlyProbe,
 };
