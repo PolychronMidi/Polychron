@@ -4,13 +4,12 @@
 
 ## Now
 
-- [ ] [E3] Trace 22:15:58 Opus request in proxy/OmniRoute logs
+- [ ] [E3] Inspect Codex hook config and referenced scripts
 
 ## Next
 
-- [ ] [E3] Patch retry path to preserve manual Sonnet
-- [ ] [E3] Add regression for blank retry not using Opus
-- [ ] [E3] Verify and reset live state
+- [ ] [E3] Reproduce or validate hook JSON output
+- [ ] [E3] Fix root cause if in local files and verify
 
 ## Done
 
