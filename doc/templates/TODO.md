@@ -4,11 +4,13 @@
 
 ## Now
 
-(empty)
+- [ ] [E3] Trace 22:15:58 Opus request in proxy/OmniRoute logs
 
 ## Next
 
-(empty)
+- [ ] [E3] Patch retry path to preserve manual Sonnet
+- [ ] [E3] Add regression for blank retry not using Opus
+- [ ] [E3] Verify and reset live state
 
 ## Done
 
