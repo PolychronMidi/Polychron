@@ -15,6 +15,10 @@ function chainSignature(chain) {
   return (chain || []).map((m) => `${m.provider || ''}:${m.api_model || m.id || ''}`).join('|');
 }
 
+function isManualTopActive(chain) {
+  return !!(chain && chain[0] && chain[0]._manual_toprank === true);
+}
+
 function recordOmniRouteFailureAdvance({
   isOmniRouteSwap,
   swapChain,
@@ -32,9 +36,9 @@ function recordOmniRouteFailureAdvance({
   try { st = JSON.parse(fs.readFileSync(stFile, 'utf8')); } catch (_) {}
   const now = Date.now();
   const sig = chainSignature(swapChain);
-  if (st.chain !== sig) st = { idx: 0, ts: 0, fail: 0, chain: sig };
+  if (st.chain !== sig || isManualTopActive(swapChain)) st = { idx: 0, ts: 0, fail: 0, chain: sig };
   // Advance on failure; reset to start after 5min success window.
-  if (st.fail > 0 || st.ts > 0 && (now - st.ts) < 300000) {
+  if (!isManualTopActive(swapChain) && (st.fail > 0 || st.ts > 0 && (now - st.ts) < 300000)) {
     st.idx = (st.idx + 1) % swapChain.length;
   } else {
     st.idx = 0;
@@ -64,7 +68,7 @@ async function retryBlankOmniRouteResponse({
   let st = { idx: 0, chain: '' };
   try { st = JSON.parse(fs.readFileSync(stFile, 'utf8')); } catch (_) {}
   const sig = chainSignature(swapChain);
-  if (st.chain !== sig) st = { idx: 0, chain: sig };
+  if (st.chain !== sig || isManualTopActive(swapChain)) st = { idx: 0, chain: sig };
   for (let ri = 1; ri < swapChain.length; ri++) {
     const candidate = swapChain[(st.idx + ri) % swapChain.length];
     const tp = omniProviderForConfigProvider(candidate.provider || '');
@@ -119,4 +123,4 @@ async function retryBlankOmniRouteResponse({
   return { outStatus, outBuf, outHeaders };
 }
 
-module.exports = { recordOmniRouteFailureAdvance, retryBlankOmniRouteResponse, upstreamModelId, chainSignature };
+module.exports = { recordOmniRouteFailureAdvance, retryBlankOmniRouteResponse, upstreamModelId, chainSignature, isManualTopActive };
