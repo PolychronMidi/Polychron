@@ -58,25 +58,54 @@ function createContextBudget() {
   let consecutive429s = 0;
   let lastPayloadBytes = 0;
   const bytesPerTokenEst = envNumber('HME_PROXY_BYTES_PER_TOKEN_EST', 3.5);
-  const dynamicThresholdFloorBytes = parseInt(process.env.HME_PROXY_COMPACT_FLOOR_BYTES || '999000', 10);
   const modelContextFraction = envNumber('HME_PROXY_CONTEXT_FRACTION', 0.90);
   const contextPreflightFraction = envNumber('HME_PROXY_CONTEXT_PREFLIGHT_FRACTION', modelContextFraction);
   const contextSignalRemainingFraction = envNumber('HME_PROXY_CONTEXT_SIGNAL_REMAINING_FRACTION', 0.25);
   const contextBytesPerTokenEst = envNumber('HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST', 2.2);
+  const compactStartFraction = envNumber('HME_PROXY_COMPACT_START_FRACTION', 0.50);
+  const compactGear1End = envNumber('HME_PROXY_COMPACT_GEAR1_END', 0.65);
+  const compactGear2End = envNumber('HME_PROXY_COMPACT_GEAR2_END', 0.85);
+  const compactHardLimitFraction = envNumber('HME_PROXY_COMPACT_HARD_FRACTION', 0.97);
 
-  function effectiveCompactThreshold() {
-    let ceiling;
-    if (compactBytesExplicit) ceiling = passthroughCompactBytes;
-    else if (lastInputTokensLimit != null && lastInputTokensLimit > 0) ceiling = Math.floor(lastInputTokensLimit * modelContextFraction * bytesPerTokenEst);
-    else ceiling = passthroughCompactBytes;
-    let panicCap = ceiling;
-    if (consecutive429s > 0) panicCap = Math.max(dynamicThresholdFloorBytes, Math.floor(ceiling / Math.pow(2, consecutive429s)));
-    let remainingCap = ceiling;
-    if (lastInputTokensRemaining != null && lastInputTokensRemaining > 0) {
-      const remainingFraction = Number(process.env.HME_PROXY_REMAINING_FRACTION || '0.80');
-      remainingCap = Math.floor(lastInputTokensRemaining * remainingFraction * bytesPerTokenEst);
+  function pressureForFraction(usedFraction) {
+    if (usedFraction < compactStartFraction) return 0;
+    if (usedFraction < compactGear1End) return 1;
+    if (usedFraction < compactGear2End) return 2;
+    return 3;
+  }
+
+  function planForUsage({ usedTokens, budgetTokens, fallbackBytes }) {
+    if (!budgetTokens || budgetTokens <= 0) return { threshold: fallbackBytes, maxTier: 3 };
+    const usedFraction = usedTokens / budgetTokens;
+    const gear = pressureForFraction(usedFraction);
+    if (gear <= 0) return { threshold: Infinity, maxTier: 0 };
+    const targetFraction = gear === 1 ? compactGear1End : (gear === 2 ? compactGear2End : compactHardLimitFraction);
+    const threshold = Math.max(1, Math.floor(budgetTokens * targetFraction * contextBytesPerTokenEst));
+    const staleHorizon = gear === 1 ? keepMin * 4 : (gear === 2 ? keepMin * 2 : keepMin);
+    const floor = gear === 1 ? 50000 : (gear === 2 ? 15000 : 2000);
+    return { threshold, maxTier: gear, maxToolResultAge: staleHorizon, toolResultByteFloor: floor };
+  }
+
+  function effectiveCompactThreshold(payload = null) {
+    const bytes = payload ? Buffer.byteLength(JSON.stringify(payload), 'utf8') : lastPayloadBytes;
+    const usedTokens = Math.ceil(bytes / contextBytesPerTokenEst);
+    let budgetTokens = lastInputTokensLimit;
+    if ((!budgetTokens || budgetTokens <= 0) && lastInputTokensRemaining != null) {
+      budgetTokens = usedTokens + lastInputTokensRemaining;
     }
-    return Math.max(dynamicThresholdFloorBytes, Math.min(panicCap, remainingCap));
+    let plan;
+    if (compactBytesExplicit) plan = { threshold: passthroughCompactBytes, maxTier: 3 };
+    else plan = planForUsage({ usedTokens, budgetTokens, fallbackBytes: passthroughCompactBytes });
+    if (lastInputTokensRemaining != null && lastInputTokensRemaining >= 0 && budgetTokens > 0) {
+      const telemetryUsed = Math.max(0, budgetTokens - lastInputTokensRemaining);
+      const telemetryPlan = planForUsage({ usedTokens: telemetryUsed, budgetTokens, fallbackBytes: passthroughCompactBytes });
+      if (telemetryPlan.maxTier > plan.maxTier) plan = telemetryPlan;
+    }
+    if (consecutive429s > 0) {
+      const cap = Math.max(1, Math.floor((budgetTokens || 128000) * 0.5 * contextBytesPerTokenEst / Math.pow(2, consecutive429s)));
+      plan = { ...plan, threshold: Math.min(plan.threshold, cap), maxTier: Math.max(plan.maxTier, 3) };
+    }
+    return plan;
   }
 
   function resolveModelCtx(modelId) {
