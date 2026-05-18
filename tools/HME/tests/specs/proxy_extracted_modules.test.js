@@ -11,6 +11,7 @@ const { shrinkForPassthrough } = require('../../proxy/passthrough_compact');
 const { handleLegacySwapResponse, writeAnthropicStopSse } = require('../../proxy/legacy_swap_response');
 const { effectiveMode, buildMode1Chain, applyOverdriveRoute, upstreamModelId } = require('../../proxy/overdrive_route');
 const { reasoningTextFromData, providerReasoningToThinkingRewrite } = require('../../proxy/reasoning_to_thinking');
+const { _jsonStats } = require('../../proxy/hme_proxy_response_trace');
 const codexFallback = require('../../proxy/hme_proxy_codex');
 
 function quiet(fn) {
