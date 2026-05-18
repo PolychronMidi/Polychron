@@ -556,17 +556,18 @@
           "max_input_tokens": 272000
         },
         {
-          "id": "gpt-4o-mini",
-          "name": "GPT 4o mini",
+          "id": "gpt-oss-120b-openrouter-free",
+          "name": "GPT OSS 120B",
           "maker": "OpenAI",
           "provider": "openrouter",
+          "api_model": "openai/gpt-oss-120b:free",
           "cost": "free",
           "cost_amt": 0,
-          "notes": "OpenRouter free tier. GPT-4o mini, strong general-purpose.",
+          "notes": "OpenRouter free catalog. Large open model for general coding and reasoning.",
           "tier_score": 9,
-          "context_length": 128000,
-          "max_output_tokens": 16384,
-          "max_input_tokens": 111616
+          "context_length": 131072,
+          "max_output_tokens": 8192,
+          "max_input_tokens": 122880
         },
         {
           "id": "deepseek-v4-flash",
@@ -621,26 +622,28 @@
           "max_input_tokens": 983040
         },
         {
-          "id": "deepseek-chat",
-          "name": "DeepSeek Chat",
-          "maker": "DeepSeek",
+          "id": "minimax-m2.5-openrouter-free",
+          "name": "MiniMax M2.5",
+          "maker": "MiniMax",
           "provider": "openrouter",
+          "api_model": "minimax/minimax-m2.5:free",
           "cost": "free",
           "cost_amt": 0,
-          "notes": "OpenRouter free tier. DeepSeek V3 chat model.",
+          "notes": "OpenRouter free catalog. Efficient coding and agentic workflow model.",
           "tier_score": 5,
-          "context_length": 131072,
+          "context_length": 204800,
           "max_output_tokens": 8192,
-          "max_input_tokens": 122880
+          "max_input_tokens": 196608
         },
         {
-          "id": "mistral-large",
-          "name": "Mistral Large",
-          "maker": "Mistral",
+          "id": "llama-3.3-70b-openrouter-free",
+          "name": "Llama 3.3 70B Instruct",
+          "maker": "Meta",
           "provider": "openrouter",
+          "api_model": "meta-llama/llama-3.3-70b-instruct:free",
           "cost": "free",
           "cost_amt": 0,
-          "notes": "OpenRouter free tier. Mistral Large via OpenRouter.",
+          "notes": "OpenRouter free catalog. General-purpose open instruction model.",
           "tier_score": 5,
           "context_length": 131072,
           "max_output_tokens": 8192,
@@ -817,17 +820,18 @@
           "max_input_tokens": 191808
         },
         {
-          "id": "gpt-4o-mini",
-          "name": "GPT 5.2 Mini",
+          "id": "gpt-oss-20b-openrouter-free",
+          "name": "GPT OSS 20B",
           "maker": "OpenAI",
           "provider": "openrouter",
+          "api_model": "openai/gpt-oss-20b:free",
           "cost": "free",
           "cost_amt": 0,
-          "notes": "OpenRouter free tier. GPT-4o mini, fast and capable.",
+          "notes": "OpenRouter free catalog. Fast lightweight open model.",
           "tier_score": 7,
-          "context_length": 128000,
-          "max_output_tokens": 16384,
-          "max_input_tokens": 111616
+          "context_length": 131072,
+          "max_output_tokens": 8192,
+          "max_input_tokens": 122880
         },
         {
           "id": "nemotron-3-super",
@@ -856,17 +860,18 @@
           "max_input_tokens": 983040
         },
         {
-          "id": "gemini-2.5-flash",
-          "name": "Gemini 2.5 Flash",
-          "maker": "Google",
+          "id": "nemotron-3-nano-openrouter-free",
+          "name": "Nemotron 3 Nano 30B",
+          "maker": "NVIDIA",
           "provider": "openrouter",
+          "api_model": "nvidia/nemotron-3-nano-30b-a3b:free",
           "cost": "free",
           "cost_amt": 0,
-          "notes": "OpenRouter free tier. Gemini 2.5 Flash via OpenRouter.",
+          "notes": "OpenRouter free catalog. Lightweight reasoning and utility model.",
           "tier_score": 6,
-          "context_length": 1048576,
-          "max_output_tokens": 65536,
-          "max_input_tokens": 983040
+          "context_length": 256000,
+          "max_output_tokens": 8192,
+          "max_input_tokens": 247808
         },
         {
           "id": "mimo-v2-omni",
@@ -955,17 +960,18 @@
           "max_input_tokens": 191808
         },
         {
-          "id": "gemini-2.5-flash-lite",
-          "name": "Gemini 3 Flash Lite",
-          "maker": "Google",
+          "id": "lfm-2.5-1.2b-instruct-openrouter-free",
+          "name": "LFM 2.5 1.2B Instruct",
+          "maker": "LiquidAI",
           "provider": "openrouter",
+          "api_model": "liquid/lfm-2.5-1.2b-instruct:free",
           "cost": "free",
           "cost_amt": 0,
-          "notes": "Cascade free tier. Ultra-fast; log summarization and single-line edits.",
+          "notes": "OpenRouter free catalog. Small utility model for extraction and short edits.",
           "tier_score": 9,
-          "context_length": 1048576,
-          "max_output_tokens": 65536,
-          "max_input_tokens": 983040
+          "context_length": 32768,
+          "max_output_tokens": 8192,
+          "max_input_tokens": 24576
         },
         {
           "id": "big-pickle",
