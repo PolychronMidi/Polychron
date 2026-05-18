@@ -214,24 +214,30 @@ def patch_text(
     *,
     retire_keys: tuple[str, ...] = RETIRED_KEYS,
 ) -> tuple[str, list[str]]:
-    span = _find_block_for_id(text, model_id)
-    if not span:
+    spans = _find_all_blocks_for_id(text, model_id)
+    if not spans:
         return text, []
-    start, end = span
-    block = text[start : end + 1]
-    notes: list[str] = []
-    new_block = block
-    for retired in retire_keys:
-        if re.search(rf'"{re.escape(retired)}"\s*:', new_block):
-            new_block = _remove_field_line(new_block, retired)
-            notes.append(f"-{retired}")
-    for key, val in limits.items():
-        new_block, changed = _set_field(new_block, key, val)
-        if changed:
-            notes.append(f"{key}={val}")
-    if new_block == block:
-        return text, []
-    return text[:start] + new_block + text[end + 1 :], notes
+    # Patch right-to-left so earlier spans remain valid.
+    all_notes: list[str] = []
+    for start, end in sorted(spans, key=lambda s: s[0], reverse=True):
+        block = text[start : end + 1]
+        new_block = block
+        notes: list[str] = []
+        for retired in retire_keys:
+            if re.search(rf'"{re.escape(retired)}"\s*:', new_block):
+                new_block = _remove_field_line(new_block, retired)
+                notes.append(f"-{retired}")
+        for key, val in limits.items():
+            new_block, changed = _set_field(new_block, key, val)
+            if changed:
+                notes.append(f"{key}={val}")
+        if new_block != block:
+            text = text[:start] + new_block + text[end + 1 :]
+            all_notes.extend(notes)
+    # Deduplicate while preserving first-occurrence order.
+    seen: set[str] = set()
+    deduped = [n for n in all_notes if not (n in seen or seen.add(n))]
+    return text, deduped
 
 
 def sync(path: Path, catalog: dict, *, dry_run: bool) -> int:
