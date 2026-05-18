@@ -731,6 +731,36 @@ _CASES = [
      ],
      "ok"),
 
+    # spiralling_petulance -- repeated dots after hook directives.
+    ("spiralling_petulance", "repeated-hook-dot-replies-fire",
+     [
+         _user_msg("<hook_prompt>SCOPE-STACKED ANTIPATTERN: tick the item</hook_prompt>"),
+         _assistant_msg("."),
+         _user_msg("<hook_prompt>SCOPE-STACKED ANTIPATTERN: tick the item</hook_prompt>"),
+         _assistant_msg("."),
+     ],
+     "spiralling_petulance"),
+
+    # spiralling_petulance -- inert Bash no-ops are not work.
+    ("spiralling_petulance", "repeated-empty-bash-fire",
+     [
+         _user_msg("fix the hook state"),
+         _assistant_tool_use("Bash", {"command": ":"}),
+         _assistant_tool_use("Bash", {"command": "true"}),
+     ],
+     "spiralling_petulance"),
+
+    # spiralling_petulance -- repeated failed Read retries are a loop.
+    ("spiralling_petulance", "repeated-failed-reads-fire",
+     [
+         _user_msg("stop retrying and fix it"),
+         {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "read_1", "name": "Read", "input": {"file_path": "/missing/a"}}]}},
+         {"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "read_1", "content": "Error: ENOENT: no such file or directory"}]}},
+         {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "read_2", "name": "Read", "input": {"file_path": "/missing/b"}}]}},
+         {"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "read_2", "content": "BLOCKED: verify-landed antipattern"}]}},
+     ],
+     "spiralling_petulance"),
+
     # idle_after_bg -- background pipeline launched, no other work followed
     ("idle_after_bg", "launched-npm-main-then-idle",
      [
