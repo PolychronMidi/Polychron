@@ -109,8 +109,12 @@ function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
     front = (key && manual[key] && manual[key].length) ? manual[key] : (manual[specTier] || []);
   }
   const frontSet = new Set(front);
+  const manualModels = front.map((id) => {
+    const m = findModelById(cfg, id);
+    return m ? { ...m, _manual_toprank: true } : null;
+  }).filter((m) => availableModel(m, skipSet, env));
   const chain = [
-    ...front.map((id) => findModelById(cfg, id)).filter((m) => availableModel(m, skipSet, env)),
+    ...manualModels,
     ...base.ranked.filter((m) => !frontSet.has(m.id) && availableModel(m, skipSet, env)),
   ];
   return { chain, role, tier: specTier };
@@ -120,8 +124,11 @@ function stateFile(projectRoot = PROJECT_ROOT) { return path.join(projectRoot, '
 function chainSignature(chain) {
   return (chain || []).map((m) => `${m.provider || ''}:${m.api_model || m.id || ''}`).join('|');
 }
+function isManualTopActive(chain) {
+  return !!(chain && chain[0] && chain[0]._manual_toprank === true);
+}
 function selectedIndex(chain, projectRoot = PROJECT_ROOT) {
-  if (!chain.length) return 0;
+  if (!chain.length || isManualTopActive(chain)) return 0;
   try {
     const st = JSON.parse(fs.readFileSync(stateFile(projectRoot), 'utf8'));
     if (st.chain !== chainSignature(chain)) return 0;
@@ -251,4 +258,4 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   return result;
 }
 
-module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, findModelById, rankedForTier, buildMode1Chain, chainSignature, selectedIndex, upstreamModelId, applyOverdriveRoute };
+module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, findModelById, rankedForTier, buildMode1Chain, chainSignature, selectedIndex, isManualTopActive, upstreamModelId, applyOverdriveRoute };
