@@ -2,11 +2,11 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 3634,
-      "updated_ts": 1779072350.6427414,
-      "codex_plan_synced_ts": 1779072350.642615,
+      "max_id": 3638,
+      "updated_ts": 1779072650.6900604,
+      "codex_plan_synced_ts": 1779072650.6899288,
       "codex_plan_source": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
-      "codex_plan_ts": "2026-05-18T02:45:42.007Z"
+      "codex_plan_ts": "2026-05-18T02:50:39.486Z"
     }
   },
   {
@@ -9670,5 +9670,69 @@
     "tier": "E3",
     "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
     "codex_plan_ts": "2026-05-18T02:45:42.007Z"
+  },
+  {
+    "id": 3635,
+    "text": "Inspect overdrive selection and fallback state",
+    "activeForm": "Inspect overdrive selection and fallback state",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779072639.924542,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T02:50:39.486Z"
+  },
+  {
+    "id": 3636,
+    "text": "Patch default driver and chain-scoped selected index",
+    "activeForm": "Patch default driver and chain-scoped selected index",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779072639.9245474,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T02:50:39.486Z"
+  },
+  {
+    "id": 3637,
+    "text": "Add regression tests for manually_toprank E5",
+    "activeForm": "Add regression tests for manually_toprank E5",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779072639.924551,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T02:50:39.486Z"
+  },
+  {
+    "id": 3638,
+    "text": "Run verification and reset stale swap state",
+    "activeForm": "Run verification and reset stale swap state",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "codex_plan",
+    "on_done": "",
+    "ts": 1779072639.9245539,
+    "parent_id": 0,
+    "subs": [],
+    "tier": "E3",
+    "codex_session": "/home/jah/.codex/sessions/2026/05/17/rollout-2026-05-17T19-52-44-019e3892-2c8a-7d50-b15a-c11b870e54e8.jsonl",
+    "codex_plan_ts": "2026-05-18T02:50:39.486Z"
   }
 ]
