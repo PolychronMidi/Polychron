@@ -34,11 +34,12 @@ test('models.json schema: unique ids, valid tiers, valid effort variants', () =>
         assert.ok(model.api_model, `${model.id} effort variant requires api_model`);
       }
       assert.equal(model.max_context, undefined, `${model.id} max_context retired`);
-      assert.equal(model.max_input_tokens, undefined, `${model.id} max_input_tokens retired`);
       if (model.context_length && model.max_output_tokens) {
+        assert.equal(typeof model.max_input_tokens, 'number', `${model.id} max_input_tokens`);
         assert.equal(typeof model.effective_context_length, 'number', `${model.id} effective budget`);
-        assert.ok(model.effective_context_length > 0, `${model.id} effective positive`);
-        assert.ok(model.effective_context_length <= model.context_length, `${model.id} effective bounded`);
+        assert.ok(model.max_input_tokens > 0, `${model.id} max_input positive`);
+        assert.ok(model.max_input_tokens <= model.context_length, `${model.id} max_input bounded`);
+        assert.equal(model.effective_context_length, model.max_input_tokens, `${model.id} effective input`);
       }
     }
   }
