@@ -10,85 +10,15 @@ const WEB_SEARCH_TOOL = 'web_search';
 const BRIDGE_NAMES = new Set(['Read', 'Edit', 'Write', 'WebFetch', 'Agent']);
 const RENAME_TARGETS = { Bash: TARGET_TOOL, WebSearch: WEB_SEARCH_TOOL };
 
-const READ_TOOL = {
-  type: 'function',
-  name: 'Read',
-  description: 'Read a file from the current project. Prefer this over shell commands for file inspection.',
-  parameters: {
-    type: 'object',
-    properties: {
-      file_path: { type: 'string', description: 'Project file path to read.' },
-      offset: { type: 'number', description: 'Optional zero-based line offset.' },
-      limit: { type: 'number', description: 'Optional maximum number of lines.' },
-    },
-    required: ['file_path'],
-    additionalProperties: false,
-  },
-};
-
-const EDIT_TOOL = {
-  type: 'function',
-  name: 'Edit',
-  description: 'Replace one exact, unique string in a project file. Prefer this over shell text replacement.',
-  parameters: {
-    type: 'object',
-    properties: {
-      file_path: { type: 'string', description: 'Project file path to edit.' },
-      old_string: { type: 'string', description: 'Exact existing text to replace; must be unique.' },
-      new_string: { type: 'string', description: 'Replacement text.' },
-    },
-    required: ['file_path', 'old_string', 'new_string'],
-    additionalProperties: false,
-  },
-};
-
-
-const GREP_TOOL = {
-  type: 'function',
-  name: 'Grep',
-  description: 'Search project files with bounded, HME-enriched output. Prefer this over shell grep/rg.',
-  parameters: {
-    type: 'object',
-    properties: {
-      pattern: { type: 'string', description: 'Regex or fixed string to search for.' },
-      path: { type: 'string', description: 'Project file or directory to search. Defaults to current project.' },
-      ignore_case: { type: 'boolean', description: 'Case-insensitive search.' },
-      fixed: { type: 'boolean', description: 'Treat pattern as a fixed string.' },
-      limit: { type: 'number', description: 'Maximum matching lines to return.' },
-    },
-    required: ['pattern'],
-    additionalProperties: false,
-  },
-};
-
-const GLOB_TOOL = {
-  type: 'function',
-  name: 'Glob',
-  description: 'List project files with a bounded glob. Prefer this over shell find/ls.',
-  parameters: {
-    type: 'object',
-    properties: {
-      pattern: { type: 'string', description: 'Glob pattern such as **/*.js.' },
-      path: { type: 'string', description: 'Project directory to search from.' },
-      max_depth: { type: 'number', description: 'Optional recursion depth.' },
-      limit: { type: 'number', description: 'Maximum paths to return.' },
-    },
-    required: ['pattern'],
-    additionalProperties: false,
-  },
-};
+const { uniformToolList } = require('./codex_uniform_tools');
 
 function toolName(tool) {
   if (!tool || typeof tool !== 'object') return '';
   return tool.name || (tool.function && tool.function.name) || '';
 }
 
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
 function nativeToolSchemas() {
-  return [clone(READ_TOOL), clone(EDIT_TOOL), clone(GREP_TOOL), clone(GLOB_TOOL)];
+  return uniformToolList();
 }
 
 function nativeToolConfig(cfg) {
