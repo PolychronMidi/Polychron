@@ -239,6 +239,7 @@ function forwardResponses(req, res, targets, source, visibility) {
         const tail = rewriter.finish();
         if (tail) { scanner.feed(Buffer.from(tail)); res.write(tail); }
         scanner.finish();
+        if (rewriter.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewriter.stats.unknown_calls, names: rewriter.stats.unknown_names || [] });
         res.end();
           finishResponse(target, status);
       });
