@@ -54,9 +54,9 @@ function recordOmniRouteFailureAdvance({
   console.error(`[hme-proxy] MODE=${odMode} fallback: rate-limited on ${omniProvider}/${swapModel} -> advancing to ${np}/${next.id} targetFormat=${ntf} (chain pos ${st.idx}/${swapChain.length}, fail count ${st.fail})`);
 }
 
-function blankRetryDisabledReason({ payload, swapChain, env = process.env }) {
+function blankRetryDisabledReason({ payload, swapChain: _swapChain, env: _env = process.env }) {
+  // manually_toprank only fronts the chain; blank retry still cascades.
   if (payload && typeof payload.max_tokens === 'number' && payload.max_tokens <= 1) return 'max_tokens_probe';
-  if (isManualTopActive(swapChain) && env.HME_PROXY_ALLOW_MANUAL_TOP_BLANK_RETRY !== '1') return 'manual_top_active';
   return '';
 }
 
