@@ -15,9 +15,8 @@ function chainSignature(chain) {
   return (chain || []).map((m) => `${m.provider || ''}:${m.api_model || m.id || ''}`).join('|');
 }
 
-function isManualTopActive(chain) {
-  return !!(chain && chain[0] && chain[0]._manual_toprank === true);
-}
+// rationale: single source-of-truth lives in overdrive_route.js; re-export here.
+const { isManualTopActive } = require('./overdrive_route');
 
 function recordOmniRouteFailureAdvance({
   isOmniRouteSwap,
