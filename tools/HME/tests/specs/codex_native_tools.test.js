@@ -51,18 +51,24 @@ function requestJson(port, body) {
   });
 }
 
-test('Codex request transform injects upstream native file/search schemas', () => {
+test('Codex request transform replaces upstream tools with Claude uniform surface', () => {
   const result = applyRequestTransform({
     model: 'gpt-5.5',
     instructions: 'test',
-    tools: [{ type: 'function', name: 'exec_command' }],
+    tools: [
+      { type: 'function', name: 'exec_command' },
+      { type: 'function', name: 'apply_patch' },
+      { type: 'function', name: 'web_search' },
+      { type: 'function', name: 'spawn_agent' },
+      { type: 'function', name: 'image_generation' },
+    ],
   }, {
     loadConfig: () => ({ request_transform: { cleanup: { enabled: true } } }),
     record: () => {},
     projectRoot: repoRoot,
   });
-  assert.deepEqual(result.after.tool_names.slice(-4), ['Read', 'Edit', 'Grep', 'Glob']);
-  assert.equal(result.cleanup.native_tools_added, 4);
+  assert.deepEqual(result.after.tool_names, ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
+  assert.equal(result.cleanup.native_tools_added, 7);
 });
 
 test('Codex native Read response rewrites to executable bridge and back to Read history', () => {
