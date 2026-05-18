@@ -193,8 +193,8 @@ test('mode 1 same-chain fallback index cannot override manual top rank', () => q
       stripStaleToolResults: () => {}, stripClaudeIdentity: () => {}, shrinkForContext: () => {},
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' }, projectRoot: tmp,
     });
-    assert.equal(result.swapMeta.id, 'claude-sonnet-4-6-max-e3');
-    assert.match(payload.model, /^claude\/claude-sonnet-4-6/);
+    assert.equal(result.swapMeta.id, 'claude-opus-4-7-max-e5');
+    assert.match(payload.model, /^claude\/claude-opus-4-7/);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
@@ -217,8 +217,8 @@ test('mode 1 stale fallback index cannot skip driver manual top rank', () => qui
       projectRoot: tmp,
     });
     assert.equal(result.applied, true);
-    assert.equal(result.swapMeta.id, 'claude-sonnet-4-6-max-e3');
-    assert.match(payload.model, /^claude\/claude-sonnet-4-6/);
+    assert.equal(result.swapMeta.id, 'claude-opus-4-7-max-e5');
+    assert.match(payload.model, /^claude\/claude-opus-4-7/);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
