@@ -48,6 +48,7 @@ const BUILTIN_DIR = path.join(__dirname, 'builtin');
 function deny(reason)      { return { decision: 'deny', reason: reason || '' }; }
 function instruct(message) { return { decision: 'instruct', message: message || '' }; }
 function allow(message)    { return { decision: 'allow', message: message || null }; }
+function rewrite(updatedInput, message) { return { decision: 'rewrite', updatedInput: updatedInput || {}, message: message || '' }; }
 
 // Internal registry. Order = registration order = load order.
 const _policies = [];
