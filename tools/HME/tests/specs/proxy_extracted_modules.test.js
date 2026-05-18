@@ -67,6 +67,50 @@ test('Anthropic registry variants route with api_model instead of registry id', 
   assert.equal(upstreamModelId({ id: 'deepseek-v4-pro-go' }), 'deepseek-v4-pro');
 });
 
+test('mode 1 top-level requests default to driver E5 manual top rank', () => {
+  const cfg = {
+    ranking_rules: { cost_order: ['subscription', 'free'] },
+    manually_toprank: { E5: ['manual-sonnet-e3'] },
+    team_role_models: { driver: { tier: 'E5', source: 'manually_toprank' } },
+    tiers: {
+      E5: { models: [
+        { id: 'ranked-opus-e5', provider: 'anthropic', api_model: 'claude-opus-4-7', cost: 'subscription', tier_score: 9 },
+      ] },
+      E3: { models: [
+        { id: 'manual-sonnet-e3', provider: 'anthropic', api_model: 'claude-sonnet-4-6', cost: 'subscription', tier_score: 1 },
+      ] },
+    },
+  };
+  const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
+  assert.equal(result.role, 'driver');
+  assert.equal(result.tier, 'E5');
+  assert.deepEqual(result.chain.map((m) => m.id), ['manual-sonnet-e3', 'ranked-opus-e5']);
+});
+
+test('mode 1 stale fallback index cannot skip driver manual top rank', () => quiet(() => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-manual-top-'));
+  try {
+    fs.mkdirSync(path.join(tmp, 'tmp'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, 'tmp/hme-omni-swap-state.json'), JSON.stringify({ idx: 9, chain: 'old-chain', fail: 9, ts: Date.now() }));
+    const payload = { model: 'claude-sonnet-4-6', stream: false, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    const result = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes: fakeClientRes(),
+      outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {},
+      stripClaudeIdentity: () => {},
+      shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' },
+      projectRoot: tmp,
+    });
+    assert.equal(result.applied, true);
+    assert.equal(result.swapMeta.id, 'claude-sonnet-4-6-max-e3');
+    assert.match(payload.model, /^claude\/claude-sonnet-4-6/);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}));
+
 test('mode 1 chain skips configured providers and keeps Anthropic top', () => {
   const cfg = {
     providers_to_skip: { providers: ['opencode_go'] },
