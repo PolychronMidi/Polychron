@@ -1,6 +1,6 @@
 # HME hooks
 
-Claude Code and Codex hooks enter through `event_kernel/*_adapter.js`. The kernel chooses native JS handlers first, then shell stages. Shell hooks source `helpers/_safety.sh` before doing anything.
+Claude Code and Codex hooks enter through `event_kernel/*_adapter.js`. The kernel chooses native JS handlers first, then shell stages. Shell hooks source `helpers/_hooks_bootstrap.sh` first; it loads `_safety.sh`, `_policy_enabled.sh`, `_onboarding.sh`, `_nexus.sh` in the correct order and exposes `_hook_decision_deny|allow|rewrite_bash` envelope helpers.
 
 Keep here only what must be a hook: pre-execution denials, lifecycle events, and terminal-facing output. Reactive enrichment belongs in `tools/HME/proxy/middleware/`.
 
