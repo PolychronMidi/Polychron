@@ -54,7 +54,11 @@ function createCodexResponseForwarder(deps) {
       const depth = target.tool_loop_depth || 0;
       if (!calls.length && !forcedResults) return false;
       if (depth >= MAX_TOOL_LOOP_DEPTH) return false;
-      const results = forcedResults || toolResultInput(calls, { projectRoot, sessionId: source.session_id || '' });
+      const actionableCalls = forcedResults ? calls : calls.filter((call) => !isIncompleteToolCall(call));
+      const skipped = forcedResults ? [] : calls.filter((call) => isIncompleteToolCall(call));
+      if (!forcedResults && skipped.length) record({ kind: 'codex-incomplete-tool-call-dropped', route: target.kind, depth, calls: skipped.map((call) => ({ call_id: call.id, name: call.name })) });
+      if (!forcedResults && !actionableCalls.length) return false;
+      const results = forcedResults || toolResultInput(actionableCalls, { projectRoot, sessionId: source.session_id || '' });
       record({ kind: 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: r.is_error })) });
       const nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
       attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1 });
