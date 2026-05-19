@@ -15,7 +15,7 @@ const { servicePort } = require('./service_registry');
 const { emitStartMarker } = require('./start_marker');
 const { ensureSession, reapDuplicates } = require('./codex_session_guard');
 const { isSingleQuotaProbe, blockQuotaProbe } = require('./prompt_spam_guard');
-const { forwardResponses } = require('./codex_response_forwarder');
+const { createCodexResponseForwarder } = require('./codex_response_forwarder');
 
 const PORT = servicePort('codex_proxy');
 const PROXY_VERSION = 'hme-codex-proxy/1';
@@ -74,6 +74,7 @@ function record(row) {
 }
 
 const planScanner = createPlanScanner({ loadConfig, record, nowIso, planSync: PLAN_SYNC, projectRoot: PROJECT_ROOT });
+const forwardResponses = createCodexResponseForwarder({ record, planScanner, projectRoot: PROJECT_ROOT, upstreamUrl: UPSTREAM_URL });
 
 function updateMetrics(row) {
   if (!row || typeof row !== 'object') return;
@@ -196,10 +197,6 @@ async function handleResponses(req, res) {
   forwardResponses(req, res, targets, source, {
     source,
     model: after.model || before.model || '',
-    projectRoot: PROJECT_ROOT,
-    upstreamUrl: UPSTREAM_URL,
-    record,
-    planScanner,
   });
 }
 
