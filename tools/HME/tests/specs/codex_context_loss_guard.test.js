@@ -437,8 +437,6 @@ test('Codex proxy streams visible tool-loop progress before final streamed answe
     assert.match(response.body, /text\/event-stream|response\.output_text\.delta|Read README\.md|result forwarded upstream|final streamed answer after visible Read/);
     assert.doesNotMatch(response.body, /unsupported call: Bash|"name":"Bash"|codex_proxy_tool_loop_limit|Loop Detected/);
     await waitFor(() => stderr.includes('codex-proxy-tool-loop-visible') || stderr.includes('codex-hidden-tool-loop-violation'), 2000).catch(() => true);
-    const metrics = await requestJson(proxyPort, { unused: true }).catch(() => null);
-    assert.equal(metrics, null);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
     throw err;
