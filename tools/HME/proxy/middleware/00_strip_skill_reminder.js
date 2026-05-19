@@ -92,8 +92,5 @@ module.exports = {
     for (const msg of payload.messages) stripped += _stripFromContent(msg && msg.content);
     if (stripped === 0) return;
     ctx.markDirty();
-    try {
-      ctx.emit({ event: 'skill_reminder_stripped', session: 'proxy', count: stripped });
-    } catch (_e) { /* best-effort */ }
   },
 };
