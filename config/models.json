@@ -670,20 +670,6 @@
           "max_input_tokens": 983040
         },
         {
-          "id": "mimo-v2.5-aihubmix-free",
-          "name": "MiMo V2.5",
-          "maker": "Xiaomi",
-          "provider": "aihubmix",
-          "api_model": "xiaomi-mimo-v2.5-free",
-          "cost": "free",
-          "cost_amt": 0,
-          "notes": "AIHubMix free catalog. Million-token general coding model.",
-          "tier_score": 6,
-          "context_length": 1048576,
-          "max_output_tokens": 131072,
-          "max_input_tokens": 917504
-        },
-        {
           "id": "minimax-m2.7-aihubmix-free",
           "name": "MiniMax M2.7 Coding",
           "maker": "MiniMax",
