@@ -31,6 +31,21 @@ function fakeClientRes() {
   };
 }
 
+function anthropicOnlyCfg() {
+  return {
+    providers_to_skip: { providers: [] },
+    ranking_rules: { cost_order: ['subscription', 'free', 'usage'] },
+    manually_toprank: { E5: ['claude-opus-4-7-max-e5'], driver: [''] },
+    team_role_models: {
+      driver: { source: 'manually_toprank', tier: 'E5' },
+      stage_crew: { source: 'ranking_rules', tier: 'role' },
+    },
+    tiers: { E5: { models: [
+      { id: 'claude-opus-4-7-max-e5', provider: 'anthropic', api_model: 'claude-opus-4-7', cost: 'subscription', tier_score: 9 },
+    ] } },
+  };
+}
+
 test('sessionKey prefers stable Anthropic metadata session id over content hash', () => {
   const payload = {
     metadata: {
@@ -153,7 +168,7 @@ test('mode 1 real models.json driver override beats E5 manual fallback', () => {
   const cfg = require('../../proxy/shared').loadModelsJson();
   const result = buildMode1Chain({ model: 'claude-sonnet-4-6', messages: [] }, {}, cfg);
   assert.equal(result.role, 'driver');
-  assert.equal(result.chain[0].id, 'claude-opus-4-7-max-e5');
+  assert.equal(result.chain[0].id, 'gpt-5.5-xhigh');
   assert.notEqual(result.chain[0].id, 'claude-sonnet-4-6-max-e3');
 });
 
@@ -211,6 +226,7 @@ test('mode 1 stale fallback index resets to chain[0] on chain-signature mismatch
       shrinkForContext: () => {},
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake' },
       projectRoot: tmp,
+      cfg: anthropicOnlyCfg(),
     });
     assert.equal(result.applied, true);
     assert.equal(result.swapMeta.id, 'claude-opus-4-7-max-e5');
@@ -249,6 +265,7 @@ test('mode 1 Anthropic registry uses Claude OAuth provider without API key', () 
       shrinkForContext: () => {},
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
       projectRoot: tmp,
+      cfg: anthropicOnlyCfg(),
     });
     assert.equal(result.applied, true);
     assert.match(payload.model, /^claude\/claude-opus-4-7/);
@@ -278,6 +295,7 @@ test('mode 1 OmniRoute path strips Claude Code adaptive thinking extras', () => 
       shrinkForContext: () => {},
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
       projectRoot: tmp,
+      cfg: anthropicOnlyCfg(),
     });
     assert.equal(result.applied, true);
     assert.match(payload.model, /^claude\/claude-opus-4-7/);
@@ -302,6 +320,7 @@ test('mode 1 OmniRoute path omits schema-extra thinkingLevel for Anthropic model
       shrinkForContext: () => {},
       env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', ANTHROPIC_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew' },
       projectRoot: tmp,
+      cfg: anthropicOnlyCfg(),
     });
     assert.equal(result.applied, true);
     assert.match(payload.model, /^anthropic\/claude-opus-4-7/);
