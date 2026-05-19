@@ -200,6 +200,7 @@ function createCodexResponseForwarder(deps) {
       if (!delta) return false;
       if (!ensureClientSse(target, status, headers)) return false;
       clientSse.text += delta;
+      clientSse.progressEvents += 1;
       sseEvent({ type: 'response.output_text.delta', item_id: clientSse.itemId, output_index: 0, content_index: 0, delta }, 'response.output_text.delta');
       return true;
     }
