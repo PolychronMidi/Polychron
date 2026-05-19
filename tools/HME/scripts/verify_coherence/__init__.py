@@ -112,6 +112,9 @@ from .runtime_safety import (  # noqa: F401
 from .graph import (  # noqa: F401
     FeedbackGraphVerifier, ReloadableModuleSyncVerifier,
 )
+from .repo_hygiene import (  # noqa: F401
+    CanonicalPrecommitHookVerifier,
+)
 
 # Preserves the ordering from the original verify-coherence.py -- a few
 # downstream consumers (dashboard, diff scripts) expect this sequence.
