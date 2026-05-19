@@ -62,4 +62,7 @@ test('smolagents validation exposes required-field aliases and approval policy',
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.ok, true);
   assert.equal(parsed.requires_approval, true);
+  assert.equal(requiresApproval('Bash', { cmd: 'rm tmp/example' }), true);
+  assert.equal(requiresApproval('Bash', { command: 'printf safe' }), false);
+  assert.equal(requiresApproval('Edit', { file_path: 'x', old_string: 'a', new_string: 'b' }), true);
 });
