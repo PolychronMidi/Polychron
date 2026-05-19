@@ -135,6 +135,68 @@ test('Codex request transform scrubs assistant stalls that cite recovered adapte
   assert.equal(result.cleanup.codex_context_loss_categories.assistant_context_loss_text, 1);
 });
 
+test('Codex proxy drops incomplete empty Bash calls instead of creating adapter-notice context', async () => {
+  const proxyPort = await freePort();
+  const upstreamBodies = [];
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      upstreamBodies.push(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      if (upstreamBodies.length === 1) {
+        res.end(JSON.stringify({
+          id: 'resp_incomplete_tool',
+          output: [{ type: 'function_call', id: 'call_empty_bash', call_id: 'call_empty_bash', name: 'Bash', arguments: '{}' }],
+        }));
+        return;
+      }
+      res.end(JSON.stringify({ id: 'unexpected_retry', output: [] }));
+    });
+  });
+  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      HME_CODEX_PROXY_PORT: String(proxyPort),
+      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
+      HME_CODEX_OMNIROUTE: '0',
+      HME_CODEX_PROXY_AUTOCOMMIT: '0',
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
+  try {
+    await waitFor(() => new Promise((resolve) => {
+      const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    }));
+    const response = await requestJson(proxyPort, {
+      model: 'gpt-5.5',
+      input: [{ role: 'user', content: [{ type: 'input_text', text: 'continue fixing Codex context coherence' }] }],
+      tools: [{ type: 'function', name: 'Bash' }],
+      stream: false,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstreamBodies.length, 1);
+    assert.doesNotMatch(response.body, /adapter notice|Error: command is required|Please send/);
+  } catch (err) {
+    err.message = `${err.message}\nproxy stderr:\n${stderr}`;
+    throw err;
+  } finally {
+    child.kill('SIGTERM');
+    upstream.close();
+  }
+});
+
 test('Codex proxy retries upstream instead of returning recovered empty-command stall', async () => {
   const proxyPort = await freePort();
   const upstreamBodies = [];
