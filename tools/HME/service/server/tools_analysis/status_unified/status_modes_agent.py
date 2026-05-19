@@ -9,6 +9,7 @@ import os
 
 from server import context as ctx
 from paths import hme_metric
+from time_utils import activity_ts_seconds
 from .. import (
     _track, get_session_intent, _budget_gate, _budget_section, _git_run,
     BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION,
