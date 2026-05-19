@@ -115,6 +115,11 @@ def activity_digest(window: str = "round", verbose: bool = False) -> str:
             recent_files.append(e)
     recent_files = recent_files[-10:]
 
+    routine_total = sum(n for evt, n in counts.items() if evt in ROUTINE_EVENTS)
+    visible_counts = counts if verbose else Counter({
+        evt: n for evt, n in counts.items() if evt not in ROUTINE_EVENTS
+    })
+
     lines = [
         "# Activity Digest",
         "",
@@ -123,7 +128,9 @@ def activity_digest(window: str = "round", verbose: bool = False) -> str:
         "",
         "## Event counts",
     ]
-    for evt, n in counts.most_common():
+    if routine_total and not verbose:
+        lines.append(f"  routine_compacted      {routine_total}  (use verbose=true for full counts)")
+    for evt, n in visible_counts.most_common():
         lines.append(f"  {evt:<22} {n}")
 
     lines.append("")
