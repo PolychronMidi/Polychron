@@ -330,6 +330,20 @@ async function handleAnthropicResponseComplete({
   outHeaders = traced.outHeaders;
   outBuf = traced.outBuf;
 
+  emitContextTokenUsage({
+    headers: outHeaders,
+    status: outStatus,
+    payload,
+    outBody,
+    outBuf,
+    route: isOmniRouteSwap ? 'omni-context' : (passthrough ? 'passthrough' : 'direct'),
+    model: isOmniRouteSwap ? swapModel : payload && payload.model,
+    thresholdBytes: isOmniRouteSwap && typeof omniContextThresholdBytes === 'function' ? omniContextThresholdBytes(String(swapModel || '')) : (typeof effectiveCompactThreshold === 'function' ? effectiveCompactThreshold(payload) : 0),
+    estimatedTokensFn: estimatedContextTokens,
+    getLastInputTokensRemaining,
+    getLastInputTokensLimit,
+  });
+
   sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, outBuf });
   if (!skipStopFallback) {
     maybeRunStopFallback({ isAnthropic, payload, outBuf, lifecycleInactive, runInlineFallback });
