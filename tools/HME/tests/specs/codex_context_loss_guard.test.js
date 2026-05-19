@@ -122,15 +122,24 @@ test('Codex context-loss repair prompt carries latest user objective', () => {
   assert.doesNotMatch(body, /Please send the actual task/);
 });
 
-test('Codex request transform scrubs assistant stalls that cite recovered adapter notices', () => {
+test('Codex request transform scrubs assistant stalls that cite recovered adapter notices or missing prompts', () => {
   const bad = [
     'I only have the recovered adapter notices, not the actual prior task/session objective.',
     'They don’t contain actionable project context, file paths, commands, or requirements.',
     'I won’t repeat the empty Bash calls. Please send the current objective or the relevant prior task details, and I’ll continue from there.',
   ].join('\n');
+  const promptBad = [
+    'Got it. The only recovered tool context is:',
+    '> Error: prompt is required',
+    'So I know a previous tool call failed because it was missing a required prompt, but I don’t have the actual task objective or project/file context from before that failure.',
+    'Please send the task you want me to continue with.',
+  ].join('\n');
   const result = applyRequestTransform({
     model: 'gpt-5.5',
-    input: [{ role: 'assistant', content: [{ type: 'output_text', text: bad }] }],
+    input: [
+      { role: 'assistant', content: [{ type: 'output_text', text: bad }] },
+      { role: 'assistant', content: [{ type: 'output_text', text: promptBad }] },
+    ],
     tools: [],
   }, {
     loadConfig: () => ({ request_transform: { cleanup: { enabled: true } } }),
@@ -140,8 +149,8 @@ test('Codex request transform scrubs assistant stalls that cite recovered adapte
 
   const body = JSON.stringify(result.body);
   assert.match(body, /HME context-loss guard/);
-  assert.doesNotMatch(body, /recovered adapter notices|Please send the current objective|prior task details/);
-  assert.equal(result.cleanup.codex_context_loss_categories.assistant_context_loss_text, 1);
+  assert.doesNotMatch(body, /recovered adapter notices|Please send the current objective|prior task details|Error: prompt is required|Please send the task/);
+  assert.equal(result.cleanup.codex_context_loss_categories.assistant_context_loss_text, 2);
 });
 
 test('Codex proxy drops incomplete empty Bash calls instead of creating adapter-notice context', async () => {
