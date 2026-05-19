@@ -220,4 +220,4 @@ function followupBody(previousBody, responseBody, toolOutputs, events = []) {
   return body;
 }
 
-module.exports = { collectToolCalls, collectSseToolCalls, parseSseEvents, toolResultInput, followupBody, isIncompleteToolCall, missingRequiredToolFields, EMPTY_BASH_TOOL_RESULT };
+module.exports = { collectToolCalls, collectSseToolCalls, parseSseEvents, executeToolCall, toolResultInput, followupBody, isIncompleteToolCall, missingRequiredToolFields, EMPTY_BASH_TOOL_RESULT };
