@@ -222,9 +222,10 @@ def what_did_i_forget(changed_files: str) -> str:
     except ImportError:
         def _action_form(a): return f"i/hme admin action={a}"
         def _i_form(name, primer=False, value=""): return f"i/{name} action={value}" if value else f"i/{name}"
-    parts.append(f"\n## Reminders")
-    parts.append(f"  - `{_action_form('index')}` after batch changes (file watcher handles individual saves)")
-    parts.append(f"  - `{_i_form('learn', value='add')} title=... content=...` for any new calibration anchors or decisions")
+    if all_warnings or doc_updates_needed:
+        parts.append(f"\n## Reminders")
+        parts.append(f"  - `{_action_form('index')}` after batch changes")
+        parts.append(f"  - `{_i_form('learn', value='add')} title=... content=...` for durable decisions")
 
     # Collect git diff for synthesis context (bounded to 4000 chars).
     # This project runs a direct-autocommit hook that commits edits before the
