@@ -151,8 +151,6 @@ function runSmolTool(name, args, root) {
   return spawnSync('python3', [script, name, '--json'], { cwd: root, input, encoding: 'utf8', timeout: 120000, env: { ...process.env, PROJECT_ROOT: root, HME_SOURCE_ROOT: path.resolve(__dirname, '..', '..', '..') } });
 }
 
-function shellQuote(s) { return `'${String(s).replace(/'/g, `'\\''`)}'`; }
-
 function normalizeBashArgs(args, root) {
   const command = String(args.command || args.cmd || '');
   const verdict = evaluateBashInput({ ...args, command }, { projectRoot: root, supportsRunInBackground: false });
