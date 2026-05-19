@@ -56,6 +56,8 @@ function createClaudeHandler(deps) {
     getLastInputTokensLimit,
     setLastInputTokensLimit,
     setLastPayloadBytes,
+    estimatedContextTokens,
+    omniContextThresholdBytes,
   } = deps;
   const dispatchProxyRoute = createProxyRouteDispatcher({
     PORT,
