@@ -129,6 +129,7 @@ REGISTRY = [
     SettingsJsonVerifier(),
     LogSizeVerifier(),
     PipelineBgScriptHealthVerifier(),
+    CanonicalPrecommitHookVerifier(),
     HookCommandExistenceVerifier(),
     CorePrinciplesAuditVerifier(),
     RepeatedCharSpamVerifier(),
