@@ -424,8 +424,9 @@ function createCodexResponseForwarder(deps) {
       if (calls.length) {
         if (retryAfterFinalizationToolCalls(target, parsed, calls)) return;
         if (target.finalizing_tool_loop) return sendFinalizationFallback(target, status, headers, parsed, calls);
-        if (continueAfterTools(target.index, target, parsed, calls)) return;
-        if (calls.some((call) => !isIncompleteToolCall(call))) return sendFinalizationFallback(target, status, headers, parsed, calls);
+        const decision = runCodexToolLoopGraph({ target, source, parsed, calls, executed_call_ids: clientSse.callIds, response_kind: 'sse' }, { record });
+        if (continueAfterTools(target.index, target, parsed, calls, null, decision)) return;
+        return sendToolGraphFallback(target, status, headers, parsed, decision);
       }
       const rewriter = createNativeToolSseRewriter();
       const finalFull = rewriter.feed(Buffer.from(full)) + rewriter.finish();
