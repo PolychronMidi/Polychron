@@ -256,8 +256,9 @@ def main(argv):
     if os.path.isfile(accepted):
         try:
             age_s = time.time() - os.path.getmtime(accepted)
-            stale = "  (stale: >1d)" if age_s > 86400 else ""
-            out.append(f"  last KB accept     {_age(accepted)}{stale}")
+            if age_s <= 86400 or help_mode:
+                stale = "  (stale: >1d)" if age_s > 86400 else ""
+                out.append(f"  last KB accept     {_age(accepted)}{stale}")
         except OSError:
             pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
