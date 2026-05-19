@@ -238,7 +238,6 @@ test('Codex proxy sends native tools upstream and translates native Read call wi
     req.on('end', () => {
       const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
       upstreamBodies.push(body);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
       if (upstreamBodies.length === 1) {
         res.writeHead(200, { 'Content-Type': 'text/event-stream' });
         const call = {
