@@ -153,9 +153,7 @@ module.exports = {
     try {
       fs.writeFileSync(wmPath, String(totalLines));
     } catch (err) {
-      console.warn(
-        `Acceptable warning: [middleware] lifesaver_inject: watermark write failed (${err.message}); skipping injection to avoid perpetual re-fire`
-      );
+      ctx.emit({ event: 'lifesaver_watermark_failed', message: err.message });
       return;
     }
 
