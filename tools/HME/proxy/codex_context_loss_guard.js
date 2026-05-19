@@ -41,9 +41,8 @@ function hasMissingRequiredToolError(text) {
 function isContextLossText(text) {
   const s = String(text || '');
   if (!s.trim()) return false;
-  const mentionsEmptyCommand = hasEmptyCommandError(s);
-  const mentionsAdapterNotice = ADAPTER_NOTICE_RE.test(s);
-  const recovered = RECOVERED_RE.test(s);
+  const mentionsEmptyCommand = hasMissingRequiredToolError(s);
+  const mentionsAdapterNotice = ADAPTER_NOTICE_RE.test(s);  const recovered = RECOVERED_RE.test(s);
   const noContext = NO_CONTEXT_RE.test(s);
   const asksResend = ASK_RESEND_RE.test(s);
   const noAction = NO_ACTION_RE.test(s);
