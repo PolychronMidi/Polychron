@@ -263,4 +263,4 @@ function _sseText(bodyStr) {
   return text.join('');
 }
 
-module.exports = { runToolLoop, extractToolUses, extractSseToolUses, parseSseEvents, MAX_TOOL_LOOP_DEPTH };
+module.exports = { runToolLoop, extractToolUses, extractSseToolUses, parseSseEvents, MAX_TOOL_LOOP_DEPTH, EMPTY_BASH_TOOL_RESULT };
