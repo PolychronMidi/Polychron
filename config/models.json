@@ -287,20 +287,6 @@
           "max_input_tokens": 786612
         },
         {
-          "id": "kilo-openrouter-auto-free",
-          "name": "Kilo OpenRouter Auto",
-          "maker": "Kilo Gateway",
-          "provider": "kilo-gateway",
-          "api_model": "openrouter/auto",
-          "cost": "free",
-          "cost_amt": 0,
-          "notes": "Kilo Gateway free router. Very large context fallback across free routes.",
-          "tier_score": 6,
-          "context_length": 2000000,
-          "max_output_tokens": 32768,
-          "max_input_tokens": 1967232
-        },
-        {
           "id": "mimo-v2.5-pro-aihubmix-free",
           "name": "MiMo V2.5 Pro",
           "maker": "Xiaomi",
@@ -712,20 +698,6 @@
           "max_input_tokens": 76700
         },
         {
-          "id": "glm-5.1-aihubmix-free",
-          "name": "GLM 5.1 Coding",
-          "maker": "Z.ai",
-          "provider": "aihubmix",
-          "api_model": "coding-glm-5.1-free",
-          "cost": "free",
-          "cost_amt": 0,
-          "notes": "AIHubMix free catalog. Structured-output repo maintenance model.",
-          "tier_score": 6,
-          "context_length": 200000,
-          "max_output_tokens": 128000,
-          "max_input_tokens": 72000
-        },
-        {
           "id": "kilo-auto-free",
           "name": "Kilo Auto Free",
           "maker": "Kilo Gateway",
@@ -752,20 +724,6 @@
           "context_length": 262144,
           "max_output_tokens": 65536,
           "max_input_tokens": 196608
-        },
-        {
-          "id": "grok-code-fast-kilo-free",
-          "name": "Grok Code Fast 1",
-          "maker": "xAI",
-          "provider": "kilo-gateway",
-          "api_model": "x-ai/grok-code-fast-1:optimized:free",
-          "cost": "free",
-          "cost_amt": 0,
-          "notes": "Kilo Gateway free catalog. Fast coding-specialized fallback.",
-          "tier_score": 5,
-          "context_length": 256000,
-          "max_output_tokens": 10000,
-          "max_input_tokens": 246000
         },
         {
           "id": "qwen3-next-80b-openrouter-free",
