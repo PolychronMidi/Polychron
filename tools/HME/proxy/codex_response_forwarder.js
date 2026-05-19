@@ -41,23 +41,6 @@ function responseUsage(parsed) {
   };
 }
 
-function responseToolChoice(body) {
-  if (!body || typeof body !== 'object') return undefined;
-  return body.tool_choice ?? body.toolChoice;
-}
-
-function isForcedToolChoice(choice) {
-  if (!choice) return false;
-  if (typeof choice === 'string') return !['none', 'auto'].includes(choice);
-  if (typeof choice !== 'object') return false;
-  const type = String(choice.type || choice.name || choice.mode || '');
-  return type && !['none', 'auto'].includes(type);
-}
-
-function bodyHasTools(body) {
-  return Boolean(body && Array.isArray(body.tools) && body.tools.length);
-}
-
 function finalOutputText(parsed) {
   const chunks = [];
   function visit(value) {
