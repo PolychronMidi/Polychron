@@ -4,10 +4,11 @@ const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT, loadModelsJson } = require('./shared');
 const {
-  omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat, providerRequiresNonStream, firstLegacyChatCandidate,
+  omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat, providerRequestOverrides, firstLegacyChatCandidate,
 } = require('./omniroute_protocol');
 const { servicePort } = require('./service_registry');
 const { applyEffortParams } = require('./model_effort');
+const { loadModelRouteHealth, routeSkipReason } = require('./model_route_health');
 
 function effectiveMode(env = process.env) {
   const mode = String(env.OVERDRIVE_MODE || '0');
@@ -80,9 +81,17 @@ function hasOmniCredential(model, env = process.env) {
   return true;
 }
 
-function availableModel(model, skipSet, env = process.env) {
+function modelRouteKey(model, env = process.env) {
+  const provider = providerKey(model && model.provider, env);
+  const upstream = upstreamModelId(model);
+  return provider && upstream ? `${provider}/${upstream}` : '';
+}
+
+function availableModel(model, skipSet, env = process.env, routeHealth = {}) {
   if (!model) return false;
-  return !skipSet.has(providerKey(model.provider, env)) && hasOmniCredential(model, env);
+  if (skipSet.has(providerKey(model.provider, env))) return false;
+  if (!hasOmniCredential(model, env)) return false;
+  return !routeSkipReason(modelRouteKey(model, env), routeHealth, env);
 }
 
 function findModelById(cfg, id) {
@@ -95,23 +104,24 @@ function findModelById(cfg, id) {
   return null;
 }
 
-function rankedForTier(cfg, tier, env = process.env) {
+function rankedForTier(cfg, tier, env = process.env, routeHealth = {}) {
   const skipSet = providerSkipSet(cfg, env);
   const models = ((cfg.tiers && cfg.tiers[tier] && cfg.tiers[tier].models) || [])
-    .filter((m) => availableModel(m, skipSet, env));
+    .filter((m) => availableModel(m, skipSet, env, routeHealth));
   const costOrder = (cfg.ranking_rules && cfg.ranking_rules.cost_order) || ['free', 'subscription', 'usage'];
   const ranked = [];
   for (const cost of costOrder) ranked.push(...models.filter((m) => m.cost === cost).sort((a, b) => (b.tier_score || 0) - (a.tier_score || 0)));
   return { models, ranked };
 }
 
-function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
+function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson(), opts = {}) {
   const role = roleFromPayload(payload, env);
   const tier = roleTier(role, modelTier(payload.model));
   const key = roleKey(role);
   const spec = key && cfg.team_role_models ? cfg.team_role_models[key] : null;
   const specTier = spec && spec.tier === 'role' ? tier : ((spec && spec.tier) || tier);
-  const base = rankedForTier(cfg, specTier, env);
+  const routeHealth = opts.routeHealth || loadModelRouteHealth(opts.projectRoot || PROJECT_ROOT);
+  const base = rankedForTier(cfg, specTier, env, routeHealth);
   const skipSet = providerSkipSet(cfg, env);
   let front = [];
   if (spec && spec.source === 'manually_toprank') {
@@ -122,10 +132,10 @@ function buildMode1Chain(payload, env = process.env, cfg = loadModelsJson()) {
   const manualModels = front.map((id) => {
     const m = findModelById(cfg, id);
     return m ? { ...m, _manual_toprank: true } : null;
-  }).filter((m) => availableModel(m, skipSet, env));
+  }).filter((m) => availableModel(m, skipSet, env, routeHealth));
   const chain = [
     ...manualModels,
-    ...base.ranked.filter((m) => !frontSet.has(m.id) && availableModel(m, skipSet, env)),
+    ...base.ranked.filter((m) => !frontSet.has(m.id) && availableModel(m, skipSet, env, routeHealth)),
   ];
   return { chain, role, tier: specTier };
 }
@@ -193,7 +203,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   result.wasStreaming = payload.stream === true;
   result.injected = true;
   let chainInfo;
-  try { chainInfo = buildMode1Chain(payload, env, cfg); }
+  try { chainInfo = buildMode1Chain(payload, env, cfg, { projectRoot }); }
   catch (err) { console.error(`[hme-proxy] MODE=1 chain build failed: ${err.message}`); chainInfo = { chain: [], role: '', tier: modelTier(payload.model) }; }
   result.swapChain = chainInfo.chain || [];
   console.error(`[hme-proxy] MODE=1 ${chainInfo.tier} chain built (role=${chainInfo.role || 'none'} model=${payload.model}): ${result.swapChain.map((m) => m.id).join(' -> ')} (${result.swapChain.length} models)`);
@@ -216,7 +226,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
       catch (err) { console.error(`[hme-proxy] OmniRoute context preflight failed: ${err.message}`); }
     }
     payload.model = `${result.omniProvider}/${result.swapModel}`;
-    if (providerRequiresNonStream(result.omniProvider, env)) payload.non_stream = true;
+    Object.assign(payload, providerRequestOverrides(result.omniProvider, env, cfg));
     stripOmniUnsupportedRequestFields(payload, result.omniProvider);
     applyEffortParams(payload, result.swapMeta, result.omniProvider);
     try { result.outBody = Buffer.from(JSON.stringify(payload), 'utf8'); }
@@ -262,4 +272,4 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   return result;
 }
 
-module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, findModelById, rankedForTier, buildMode1Chain, chainSignature, selectedIndex, isManualTopActive, upstreamModelId, applyOverdriveRoute, messageTextForRoleDetection };
+module.exports = { effectiveMode, roleFromPayload, roleTier, roleKey, modelTier, findModelById, rankedForTier, buildMode1Chain, chainSignature, selectedIndex, isManualTopActive, upstreamModelId, modelRouteKey, applyOverdriveRoute, messageTextForRoleDetection };
