@@ -99,6 +99,42 @@ test('stop_chain: instruct shape', () => {
   assert.deepStrictEqual(stopChain.instruct('continue'), { decision: 'instruct', message: 'continue' });
 });
 
+test('stop_chain: mandatory work_checks exception fails closed', async () => {
+  await _withMockedStopPolicies({
+    work_checks: { name: 'work_checks', run: async () => { throw new Error('synthetic work-check crash'); } },
+  }, async (chain) => {
+    const result = await chain.runStopChain('{}');
+    const decision = JSON.parse(result.stdout);
+    assert.strictEqual(decision.decision, 'block');
+    assert.match(decision.reason, /STOP-CHAIN INTEGRITY FAILURE/);
+    assert.match(decision.reason, /work_checks/);
+    assert.match(decision.reason, /synthetic work-check crash/);
+  });
+});
+
+test('stop_chain: mandatory detectors load failure fails closed', async () => {
+  await _withMockedStopPolicies({
+    detectors: new Error('synthetic detector load crash'),
+  }, async (chain) => {
+    const result = await chain.runStopChain('{}');
+    const decision = JSON.parse(result.stdout);
+    assert.strictEqual(decision.decision, 'block');
+    assert.match(decision.reason, /STOP-CHAIN INTEGRITY FAILURE/);
+    assert.match(decision.reason, /detectors/);
+    assert.match(decision.reason, /synthetic detector load crash/);
+  });
+});
+
+test('stop_chain: optional post_hooks exception still fails open', async () => {
+  await _withMockedStopPolicies({
+    post_hooks: { name: 'post_hooks', run: async () => { throw new Error('synthetic optional crash'); } },
+  }, async (chain) => {
+    const result = await chain.runStopChain('{}');
+    assert.strictEqual(result.stdout, '');
+    assert.match(result.stderr, /synthetic optional crash/);
+  });
+});
+
 test('stop_chain: runStopChain with empty payload returns shape {stdout, stderr, exit_code}',
   _withChainSandbox(async (chain) => {
     const result = await chain.runStopChain('{}');
