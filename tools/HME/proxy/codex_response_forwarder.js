@@ -494,7 +494,7 @@ function createCodexResponseForwarder(deps) {
         if (target.fallbackDirect && target.fallbackHttpStatuses && target.fallbackHttpStatuses.has(status) && targets[index + 1]) {
           const chunks = [];
           upstreamRes.on('data', (chunk) => chunks.push(chunk));
-          upstreamRes.on('end', () => { record({ kind: 'upstream-http-fallback', route: target.kind, upstream: target.url, status, body_preview: Buffer.concat(chunks).toString('utf8').slice(0, 500) }); attemptTarget(index + 1); });
+          upstreamRes.on('end', () => { record({ kind: 'upstream-http-fallback', route: target.kind, upstream: target.url, status, body_preview: Buffer.concat(chunks).toString('utf8').slice(0, 500), ...traceFields(target) }); attemptTarget(index + 1); });
           return;
         }
         const headers = { ...upstreamRes.headers };
