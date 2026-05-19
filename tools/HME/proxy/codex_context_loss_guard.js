@@ -60,8 +60,8 @@ function bump(stats, key) {
 
 function scrubText(text, stats, ctx) {
   const raw = String(text || '');
-  if (ctx.inToolOutput && hasEmptyCommandError(raw)) {
-    bump(stats, 'empty_command_tool_output');
+  if (ctx.inToolOutput && hasMissingRequiredToolError(raw)) {
+    bump(stats, 'missing_required_tool_output');
     return EMPTY_COMMAND_NOTICE;
   }
   if (ctx.scrubAssistantText && !ctx.protectedUser && isContextLossText(raw)) {
