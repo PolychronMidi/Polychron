@@ -166,6 +166,55 @@ function createCodexResponseForwarder(deps) {
       ].join('\n');
     }
 
+    function appendFinalizationToolBlockPrompt(body, calls) {
+      const names = [...new Set(calls.map((call) => call.name).filter(Boolean))].join(', ') || 'tool calls';
+      const prompt = [
+        'HME tool-loop finalization repair: the previous upstream response emitted tool calls after repository tools were already executed and tools were disabled.',
+        `Blocked finalization-stage tool calls: ${names}.`,
+        'Do not emit function_call, tool_call, or tool_use items. Produce only the final assistant message now.',
+        'Use the tool results already present in this request and the latest user objective. Do not ask the user to resend context and do not perform more discovery.',
+      ].join('\n');
+      const next = { ...(body || {}), tools: [], tool_choice: 'none' };
+      const repairInput = { type: 'message', role: 'user', content: [{ type: 'input_text', text: prompt }] };
+      if (Array.isArray(next.input)) next.input = [...next.input, repairInput];
+      else if (typeof next.input === 'string') next.input = `${next.input}\n\n${prompt}`;
+      else next.input = [repairInput];
+      return next;
+    }
+
+    function finalizationContextText(body) {
+      const parts = [];
+      function visit(value) {
+        if (typeof value === 'string') { parts.push(value); return; }
+        if (!value || typeof value !== 'object') return;
+        if (Array.isArray(value)) { for (const item of value) visit(item); return; }
+        if (typeof value.output === 'string') parts.push(value.output);
+        if (typeof value.text === 'string') parts.push(value.text);
+        if (typeof value.content === 'string') parts.push(value.content);
+        for (const child of Object.values(value)) visit(child);
+      }
+      visit(body && body.input);
+      return parts.join('\n').slice(-8000);
+    }
+
+    function finalizationFallbackResponse(target, parsed, calls) {
+      const names = [...new Set(calls.map((call) => call.name).filter(Boolean))].join(', ') || 'tool calls';
+      const context = finalizationContextText(target.body);
+      const text = [
+        'HME stopped a non-terminating Codex tool loop after repository tools had already run.',
+        `The upstream model emitted additional tool calls after finalization disabled tools: ${names}.`,
+        'No raw tool call was forwarded to the Codex CLI and no 508 loop error was returned.',
+        context ? `\nLast tool-loop finalization context:\n${context}` : '',
+      ].filter(Boolean).join('\n');
+      return {
+        id: parsed && parsed.id ? parsed.id : `hme_tool_loop_finalized_${Date.now()}`,
+        object: 'response',
+        output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text }] }],
+        hme_tool_loop_finalized: true,
+        hme_blocked_finalization_tool_calls: calls.map((call) => ({ call_id: call.id, name: call.name })),
+      };
+    }
+
     function continueAfterTools(index, target, parsed, calls, forcedResults = null) {
       const depth = target.tool_loop_depth || 0;
       if (!calls.length && !forcedResults) return false;
