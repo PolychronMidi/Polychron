@@ -166,6 +166,20 @@ function latestUserTaskText(body) {
   return latest.length > 4000 ? latest.slice(-4000) : latest;
 }
 
+function appendUserRepairPrompt(body, prompt) {
+  const next = { ...(body || {}) };
+  if (Array.isArray(next.input)) {
+    next.input = [...next.input, { role: 'user', content: [{ type: 'input_text', text: prompt }] }];
+  } else if (typeof next.input === 'string') {
+    next.input = `${next.input}\n\n${prompt}`;
+  } else if (Array.isArray(next.messages)) {
+    next.messages = [...next.messages, { role: 'user', content: prompt }];
+  } else {
+    next.input = [{ role: 'user', content: [{ type: 'input_text', text: prompt }] }];
+  }
+  return next;
+}
+
 function repairPrompt(body) {
   const latest = latestUserTaskText(body);
   return [
@@ -178,18 +192,45 @@ function repairPrompt(body) {
 }
 
 function appendContextLossRepair(body) {
-  const prompt = repairPrompt(body);
-  const next = { ...(body || {}) };
-  if (Array.isArray(next.input)) {
-    next.input = [...next.input, { role: 'user', content: [{ type: 'input_text', text: prompt }] }];
-  } else if (typeof next.input === 'string') {
-    next.input = `${next.input}\n\n${prompt}`;
-  } else if (Array.isArray(next.messages)) {
-    next.messages = [...next.messages, { role: 'user', content: prompt }];
-  } else {
-    next.input = [{ role: 'user', content: [{ type: 'input_text', text: prompt }] }];
+  return appendUserRepairPrompt(body, repairPrompt(body));
+}
+
+function formatToolSchemaCalls(calls) {
+  const seen = new Set();
+  const lines = [];
+  for (const call of Array.isArray(calls) ? calls : []) {
+    const name = call && call.name ? String(call.name) : 'tool';
+    const missing = Array.isArray(call && call.missing) && call.missing.length
+      ? call.missing.map(String)
+      : (TOOL_REQUIRED_FIELDS[name] || []);
+    const key = `${name}:${missing.join(',')}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    lines.push(`- ${name}: missing ${missing.length ? missing.join(', ') : 'required fields'}`);
   }
-  return next;
+  return lines.join('\n');
+}
+
+function toolSchemaRepairPrompt(body, calls = []) {
+  const latest = latestUserTaskText(body);
+  const details = formatToolSchemaCalls(calls);
+  return [
+    `${TOOL_SCHEMA_REPAIR_PROMPT_PREFIX}: the previous response emitted incomplete tool calls with missing required fields.`,
+    details ? `Incomplete calls dropped by middleware:\n${details}` : '',
+    'These incomplete calls are adapter/schema noise, not task context and not evidence that repository access failed.',
+    'Do not answer with generic advice, do not ask the user to paste repo structure or key files, and do not ask the user to resend the objective solely because of dropped incomplete calls.',
+    'Continue directly from the latest user request/session objective. If repository inspection is needed, emit valid tool calls with all required fields:',
+    '- Bash requires command.',
+    '- Read requires file_path.',
+    '- Agent requires prompt.',
+    '- WebFetch requires url and prompt; WebSearch requires query.',
+    '- Write requires file_path and content; Edit requires file_path, old_string, and new_string.',
+    latest ? `\nLatest user request/session objective:\n${latest}` : '',
+  ].filter(Boolean).join('\n');
+}
+
+function appendToolSchemaRepair(body, calls = []) {
+  return appendUserRepairPrompt(body, toolSchemaRepairPrompt(body, calls));
 }
 
 function contextLossFallbackResponse(parsed) {
