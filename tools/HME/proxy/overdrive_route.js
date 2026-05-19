@@ -163,7 +163,7 @@ function stripOmniUnsupportedRequestFields(payload, omniProvider) {
   return changed;
 }
 
-function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStaleToolResults, stripClaudeIdentity, shrinkForContext, env = process.env, projectRoot = PROJECT_ROOT }) {
+function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStaleToolResults, stripClaudeIdentity, shrinkForContext, env = process.env, projectRoot = PROJECT_ROOT, cfg = loadModelsJson() }) {
   const requested = String(env.OVERDRIVE_MODE || '0');
   const mode = effectiveMode(env);
   const result = {
