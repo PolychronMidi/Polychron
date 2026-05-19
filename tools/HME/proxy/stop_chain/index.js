@@ -65,6 +65,19 @@ const POLICY_NAMES = [
   'post_hooks',
 ];
 
+const MANDATORY_POLICIES = new Set([
+  'detectors',
+  'anti_patterns',
+  'work_checks',
+]);
+
+function mandatoryPolicyFailure(name, msg) {
+  return deny(
+    `STOP-CHAIN INTEGRITY FAILURE: mandatory policy ${name} failed closed instead of allowing stop. ` +
+    `Root cause: ${msg}. Fix the stop-chain/policy failure, then re-run the requested work checks before stopping.`
+  );
+}
+
 const TRACE_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-chain.trace');
 const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-detector-verdicts.env');
 
