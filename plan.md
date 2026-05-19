@@ -15,6 +15,8 @@ HME core policy/proxy/coherence layer
 
 The already-built smolagents/LangChain bridge is still the right prerequisite. It gives HME a canonical tool contract that can be presented to LangChain-like consumers and to OMO integration surfaces without duplicating schemas.
 
+Because OMO was originally built on OpenCode, the main runtime integration target is an OpenCode-plugin host shim inside HME. HME should instantiate OMO's plugin module as a dependency, translate HME's Claude/Codex/Omni proxy lifecycle into OpenCode-like plugin hook calls, then validate and apply OMO hook outputs through HME policy.
+
 This plan replaces the earlier assimilation framing with a dependency-first architecture.
 
 ---
