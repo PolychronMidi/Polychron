@@ -171,7 +171,9 @@ function shrinkForPassthrough(payload, opts = {}) {
     msgs.unshift({ role: 'user', content: `[hme-proxy passthrough-compact: ${dropped} oldest message(s) dropped to fit configured context budget]` });
   }
   serialized = JSON.stringify(payload);
-  log(`passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks, emergency-elided ${tailElided} tail tool_result blocks (now ${msgs.length} msgs, body=${serialized.length}B)`);
+  const afterBytes = _serializedBytes(payload);
+  log(`passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks, emergency-elided ${tailElided} tail tool_result blocks (now ${msgs.length} msgs, body=${afterBytes}B)`);
+  _emitCompaction({ route, model, stage: 'message_drop', tier: maxTier, before_bytes: beforeBytes, after_bytes: afterBytes, threshold_bytes: Number.isFinite(threshold) ? threshold : 0, before_messages: beforeMessages, after_messages: msgs.length, messages_dropped: dropped, stale_tool_results_elided: elided, orphan_tool_blocks_scrubbed: orphans, emergency_tail_elided: tailElided, keep_min: keepMin }, telemetry);
   return dropped + tailElided + elided;
 }
 
