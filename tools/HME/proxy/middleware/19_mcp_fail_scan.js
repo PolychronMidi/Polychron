@@ -38,7 +38,7 @@ module.exports = {
     const body = fails.map((l) => `[${ts}] ${name}: ${l}`).join('\n') + '\n';
     try {
       fs.appendFileSync(errLogPath, body);
-      console.warn(`[middleware] mcp_fail_scan: escalated ${fails.length} FAIL line(s) from ${name}`);
+      ctx.emit({ event: 'mcp_fail_escalated', tool: name, count: fails.length });
     } catch (err) {
       ctx.warn(`mcp_fail_scan write failed: ${err.message}`);
     }
