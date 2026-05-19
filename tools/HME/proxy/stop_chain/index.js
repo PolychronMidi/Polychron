@@ -79,7 +79,7 @@ function mandatoryPolicyFailure(name, msg) {
 }
 
 const TRACE_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-chain.trace');
-const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-detector-verdicts.env');
+const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
 
 // Consolidated telemetry surface -- single record() entry that fan-outs
 let _telemetry = null;
