@@ -171,7 +171,7 @@ test('Codex bridge heredoc inside exec_command normalizes without marker leakage
   assert.doesNotMatch(JSON.stringify(normalized), /HME_CODEX_JSON|<<|codex_structured_tool/);
 });
 
-test('Codex SSE native Edit response stays visible before forwarding', () => {
+test('Codex SSE native Edit response rewrites before forwarding', () => {
   const rewriter = createNativeToolSseRewriter();
   const event = {
     type: 'response.output_item.done',
@@ -182,35 +182,35 @@ test('Codex SSE native Edit response stays visible before forwarding', () => {
     },
   };
   const out = rewriter.feed(Buffer.from(`data: ${JSON.stringify(event)}\n\n`));
-  assert.match(out, /"name":"Edit"/);
-  assert.doesNotMatch(out, /exec_command|codex_structured_tool|HME_CODEX_JSON/);
-  assert.equal(rewriter.stats.calls, 0);
+  assert.match(out, /exec_command/);
+  assert.match(out, /codex_structured_tool\.js edit --json/);
+  assert.equal(rewriter.stats.calls, 1);
 });
 
-test('Codex SSE Write/WebFetch/Agent calls stay visible', () => {
+test('Codex SSE Write/WebFetch/Agent calls rewrite to exec_command bridges', () => {
   const make = (name, args) => ({ type: 'response.output_item.done', item: { type: 'function_call', name, arguments: JSON.stringify(args) } });
-  for (const [name, args] of [
-    ['Write', { file_path: 'doc/x.md', content: 'hi' }],
-    ['WebFetch', { url: 'https://example.com', prompt: 'sum' }],
-    ['Agent', { prompt: 'go', level: 2 }],
+  for (const [name, args, pattern] of [
+    ['Write', { file_path: 'doc/x.md', content: 'hi' }, /codex_structured_tool\.js write --json/],
+    ['WebFetch', { url: 'https://example.com', prompt: 'sum' }, /codex_structured_tool\.js web_fetch --json/],
+    ['Agent', { prompt: 'go', level: 2 }, /codex_structured_tool\.js agent --json/],
   ]) {
     const rewriter = createNativeToolSseRewriter();
     const out = rewriter.feed(Buffer.from(`data: ${JSON.stringify(make(name, args))}\n\n`));
-    assert.match(out, new RegExp(`\"name\":\"${name}\"`));
-    assert.doesNotMatch(out, /exec_command|codex_structured_tool|HME_CODEX_JSON/);
-    assert.equal(rewriter.stats.calls, 0, `${name} should not need a raw-command rewrite`);
+    assert.match(out, /exec_command/, `${name} should rewrite to exec_command`);
+    assert.match(out, pattern, `${name} should use the right bridge action`);
+    assert.equal(rewriter.stats.calls, 1, `${name} should bump calls`);
   }
 });
 
-test('Codex SSE Bash and WebSearch calls stay visible', () => {
+test('Codex SSE Bash and WebSearch calls rewrite to native targets', () => {
   const make = (name, args) => ({ type: 'response.output_item.done', item: { type: 'function_call', name, arguments: JSON.stringify(args) } });
   const r1 = createNativeToolSseRewriter();
   const o1 = r1.feed(Buffer.from(`data: ${JSON.stringify(make('Bash', { command: 'echo hello' }))}\n\n`));
-  assert.match(o1, /"name":"Bash"/);
-  assert.match(o1, /\\"command\\":\\"echo hello\\"/);
+  assert.match(o1, /"name":"exec_command"/);
+  assert.match(o1, /\\"cmd\\":\\"echo hello\\"/);
   const r2 = createNativeToolSseRewriter();
   const o2 = r2.feed(Buffer.from(`data: ${JSON.stringify(make('WebSearch', { query: 'foo' }))}\n\n`));
-  assert.match(o2, /"name":"WebSearch"/);
+  assert.match(o2, /"name":"web_search"/);
   assert.match(o2, /\\"query\\":\\"foo\\"/);
 });
 
@@ -269,9 +269,8 @@ test('Codex proxy sends native tools upstream and translates native call respons
     assert.equal(response.status, 200);
     assert.deepEqual(upstreamBody.tools.map((t) => t.name), ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
     const call = JSON.parse(response.body).output[0];
-    assert.equal(call.name, 'Read');
-    assert.deepEqual(JSON.parse(call.arguments), { file_path: 'doc/self-coherence.md', limit: 2 });
-    assert.doesNotMatch(response.body, /exec_command|codex_structured_tool|HME_CODEX_JSON/);
+    assert.equal(call.name, 'exec_command');
+    assert.match(JSON.parse(call.arguments).cmd, /codex_structured_tool\.js read --json/);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
     throw err;
