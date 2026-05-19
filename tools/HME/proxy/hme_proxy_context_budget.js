@@ -173,6 +173,8 @@ function createContextBudget() {
       effectiveThreshold: effectiveCompactThreshold,
       keepMin,
       maxToolResultAge: staleToolKeepTurns,
+      route: 'proxy-passthrough',
+      model: payload && (payload.model || payload.target_model || payload.original_model) || '',
       projectRoot: PROJECT_ROOT,
     });
   }
