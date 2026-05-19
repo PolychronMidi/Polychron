@@ -253,6 +253,7 @@ module.exports = {
   EMPTY_COMMAND_NOTICE,
   CONTEXT_LOSS_NOTICE,
   REPAIR_PROMPT_PREFIX,
+  TOOL_SCHEMA_REPAIR_PROMPT_PREFIX,
   hasEmptyCommandError,
   hasMissingRequiredToolError,
   isContextLossText,
@@ -260,5 +261,7 @@ module.exports = {
   responseHasContextLoss,
   latestUserTaskText,
   appendContextLossRepair,
+  toolSchemaRepairPrompt,
+  appendToolSchemaRepair,
   contextLossFallbackResponse,
 };
