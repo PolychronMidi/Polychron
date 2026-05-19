@@ -10,6 +10,7 @@ const { sessionKey } = require('../../proxy/shared');
 const { stripStaleToolResults } = require('../../proxy/conversation_graph');
 const { shrinkForPassthrough } = require('../../proxy/passthrough_compact');
 const { createContextBudget } = require('../../proxy/hme_proxy_context_budget');
+const { mutateClaudeRequest } = require('../../proxy/hme_proxy_request_mutation');
 const { handleLegacySwapResponse, writeAnthropicStopSse } = require('../../proxy/legacy_swap_response');
 const { effectiveMode, buildMode1Chain, applyOverdriveRoute, upstreamModelId, roleFromPayload } = require('../../proxy/overdrive_route');
 const { reasoningTextFromData, providerReasoningToThinkingRewrite } = require('../../proxy/reasoning_to_thinking');
@@ -616,6 +617,58 @@ test('live-ish 90k GPT-5.5 passthrough smoke emits no compaction markers', () =>
     const logText = logs.join('\n');
     assert.match(logText, /compact-decision model=gpt-5\.5-high/);
     assert.match(logText, /gear=0/);
+    assert.doesNotMatch(logText, /passthrough-compact decision|precompact|content elided|oldest message\(s\) dropped/);
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+
+test('request mutation passthrough path leaves 90k GPT-5.5 context unelided', async () => {
+  const oldEnv = { ...process.env };
+  const logs = [];
+  try {
+    process.env.HME_PROXY_PASSTHROUGH = '1';
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_COMPACT_TRACE = '1';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '0.97';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
+    const payload = { model: 'gpt-5.5-high', messages: [{ role: 'user', content: 'x'.repeat(90000) }] };
+    const before = JSON.stringify(payload);
+    const budget = createContextBudget();
+    const origError = console.error;
+    console.error = (msg) => logs.push(String(msg));
+    try {
+      const result = await mutateClaudeRequest({
+        payload,
+        outBody: Buffer.from(before, 'utf8'),
+        injected: false,
+        upstream: { provider: 'anthropic' },
+        clientReq: { url: '/v1/messages' },
+        isAnthropic: true,
+        isInteractivePath: true,
+        shrinkForPassthrough: budget.shrinkForPassthrough,
+        stripHmePrefixOutgoing: () => false,
+        injectHmeTools: async () => 0,
+        sanitizePayload: () => {},
+        injectStopReminderSystem: () => false,
+        lifecycleInactive: () => false,
+        runInlineFallback: () => {},
+        middleware: { runPipeline: async () => false },
+      });
+      assert.equal(result.passthrough, true);
+      assert.equal(result.outBody.toString('utf8'), before);
+      assert.equal(JSON.stringify(payload), before);
+    } finally {
+      console.error = origError;
+    }
+    const logText = logs.join('\n');
+    assert.match(logText, /compact-decision model=gpt-5\.5-high/);
     assert.doesNotMatch(logText, /passthrough-compact decision|precompact|content elided|oldest message\(s\) dropped/);
   } finally {
     process.env = oldEnv;
