@@ -34,6 +34,10 @@ function hasEmptyCommandError(text) {
   return EMPTY_COMMAND_RE.test(String(text || ''));
 }
 
+function hasMissingRequiredToolError(text) {
+  return MISSING_REQUIRED_RE.test(String(text || ''));
+}
+
 function isContextLossText(text) {
   const s = String(text || '');
   if (!s.trim()) return false;
