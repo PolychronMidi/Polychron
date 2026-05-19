@@ -194,7 +194,9 @@ class AgentLoopQualityVerifier(Verifier):
                 e = json.loads(ln)
             except ValueError:
                 continue
-            if e.get("ts", 0) >= cutoff:
+            ts = _activity_ts_seconds(e.get("ts"))
+            if ts is not None and ts >= cutoff:
+                e["ts"] = ts
                 events.append(e)
         if not events:
             return _result(SKIP, 1.0, "no activity in last hour")
