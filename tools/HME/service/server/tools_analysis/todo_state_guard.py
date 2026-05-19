@@ -42,7 +42,7 @@ def _write_guard(data: dict[str, Any]) -> None:
         try:
             tmp.unlink(missing_ok=True)
         except OSError:
-            pass  # silent-ok: pending review
+            pass  # silent-ok: tmp may already be replaced or removed
 
 
 def _log_issue(message: str) -> None:
