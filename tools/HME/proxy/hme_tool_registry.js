@@ -4,6 +4,8 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
 
+const SOURCE_ROOT = path.resolve(__dirname, '..', '..', '..');
+
 let cachedSchemas = null;
 let cachedMeta = null;
 
