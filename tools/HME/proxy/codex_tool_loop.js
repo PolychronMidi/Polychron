@@ -4,6 +4,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
 const { PROJECT_ROOT } = require('./shared');
+const { canonicalToolNames, missingRequiredFields } = require('./hme_tool_registry');
 
 const TOOL_NAMES = new Set(['Read', 'Edit', 'Write', 'WebFetch', 'Agent', 'Bash']);
 const ACTIONS = { Read: 'read', Edit: 'edit', Write: 'write', WebFetch: 'web_fetch', Agent: 'agent' };
