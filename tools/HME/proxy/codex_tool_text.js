@@ -77,6 +77,10 @@ function shortPath(raw) {
   return expanded;
 }
 
+function isPdfPath(file) {
+  return /\.pdf(?:$|[?#])/i.test(String(file || '').trim());
+}
+
 function normalizeRead(input) {
   const file = cleanPath(firstValue(input, ['file_path', 'file']) || input._?.[0]);
   if (!file) return null;
@@ -84,7 +88,7 @@ function normalizeRead(input) {
   addNumber(out, input, 'offset');
   addNumber(out, input, 'limit');
   addNumber(out, input, 'tail');
-  if (input.pages != null) out.pages = String(input.pages);
+  if (input.pages != null && isPdfPath(file)) out.pages = String(input.pages);
   return out;
 }
 
