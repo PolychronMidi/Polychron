@@ -122,22 +122,35 @@ function createContextBudget() {
   function effectiveCompactThreshold(payload = null) {
     const bytes = payload ? Buffer.byteLength(JSON.stringify(payload), 'utf8') : lastPayloadBytes;
     const usedTokens = Math.ceil(bytes / contextBytesPerTokenEst);
-    let budgetTokens = lastInputTokensLimit || payloadModelBudget(payload);
+    const modelInfo = payloadModelInfo(payload);
+    let budgetTokens = lastInputTokensLimit || modelInfo.budget;
     if ((!budgetTokens || budgetTokens <= 0) && lastInputTokensRemaining != null) {
       budgetTokens = usedTokens + lastInputTokensRemaining;
     }
     let plan = planForUsage({ usedTokens, budgetTokens, fallbackBytes: passthroughCompactBytes });
-    if (compactBytesExplicit && plan.maxTier > 0) plan = { ...plan, threshold: Math.min(plan.threshold, passthroughCompactBytes) };
+    let cappedByBytes = false;
+    let telemetryLimited = false;
+    if (compactBytesExplicit && plan.maxTier > 0 && passthroughCompactBytes < plan.threshold) {
+      plan = { ...plan, threshold: passthroughCompactBytes };
+      cappedByBytes = true;
+    }
     if (lastInputTokensRemaining != null && lastInputTokensRemaining >= 0 && budgetTokens > 0) {
       const telemetryUsed = Math.max(0, budgetTokens - lastInputTokensRemaining);
       const telemetryPlan = planForUsage({ usedTokens: telemetryUsed, budgetTokens, fallbackBytes: passthroughCompactBytes });
-      if (telemetryPlan.maxTier > plan.maxTier) plan = telemetryPlan;
-      else if (telemetryPlan.maxTier === plan.maxTier && telemetryPlan.maxTier > 0) plan = { ...plan, threshold: Math.min(plan.threshold, telemetryPlan.threshold) };
+      if (telemetryPlan.maxTier > plan.maxTier) {
+        plan = telemetryPlan;
+        telemetryLimited = true;
+      } else if (telemetryPlan.maxTier === plan.maxTier && telemetryPlan.maxTier > 0 && telemetryPlan.threshold < plan.threshold) {
+        plan = { ...plan, threshold: telemetryPlan.threshold };
+        telemetryLimited = true;
+      }
     }
     if (consecutive429s > 0) {
       const cap = Math.max(1, Math.floor((budgetTokens || 128000) * 0.5 * contextBytesPerTokenEst / Math.pow(2, consecutive429s)));
       plan = { ...plan, threshold: Math.min(plan.threshold, cap), maxTier: Math.max(plan.maxTier, 3) };
+      cappedByBytes = true;
     }
+    compactDecisionTelemetry({ payload: payload && { ...payload, model: payload.model || modelInfo.model }, bytes, usedTokens, budgetTokens, plan, cappedByBytes, telemetryLimited });
     return plan;
   }
 
