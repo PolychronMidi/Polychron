@@ -32,6 +32,42 @@ function responseUsage(parsed) {
   };
 }
 
+function responseToolChoice(body) {
+  if (!body || typeof body !== 'object') return undefined;
+  return body.tool_choice ?? body.toolChoice;
+}
+
+function isForcedToolChoice(choice) {
+  if (!choice) return false;
+  if (typeof choice === 'string') return !['none', 'auto'].includes(choice);
+  if (typeof choice !== 'object') return false;
+  const type = String(choice.type || choice.name || choice.mode || '');
+  return type && !['none', 'auto'].includes(type);
+}
+
+function bodyHasTools(body) {
+  return Boolean(body && Array.isArray(body.tools) && body.tools.length);
+}
+
+function finalOutputText(parsed) {
+  const chunks = [];
+  function visit(value) {
+    if (!value || typeof value !== 'object') return;
+    if (Array.isArray(value)) { for (const item of value) visit(item); return; }
+    if (typeof value.text === 'string') chunks.push(value.text);
+    if (typeof value.content === 'string') chunks.push(value.content);
+    for (const child of Object.values(value)) visit(child);
+  }
+  visit(parsed && parsed.output);
+  return chunks.join('\n');
+}
+
+function responseAvoidedToolUse(parsed) {
+  const text = finalOutputText(parsed);
+  if (!text.trim()) return false;
+  return /\b(?:please\s+send\s+(?:the\s+)?(?:next\s+)?(?:objective|task)|specific task you want me to continue|avoid repeating the same discovery\/listing calls|avoid repeating .* calls|reuse the recovered repository context|if there(?:'s| is) no specific task)\b/i.test(text);
+}
+
 function createCodexResponseForwarder(deps) {
   const { record, planScanner, projectRoot, upstreamUrl } = deps;
 
