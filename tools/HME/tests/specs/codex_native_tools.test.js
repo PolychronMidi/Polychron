@@ -240,15 +240,17 @@ test('Codex proxy sends native tools upstream and translates native Read call wi
       upstreamBodies.push(body);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       if (upstreamBodies.length === 1) {
-        res.end(JSON.stringify({
-          id: 'resp_read',
-          output: [{
+        res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+        const call = {
+          type: 'response.output_item.done',
+          item: {
             type: 'function_call',
             name: 'Read',
             call_id: 'call_read_proxy_loop',
             arguments: JSON.stringify({ file_path: 'doc/templates/AGENTS.md', limit: 2 }),
-          }],
-        }));
+          },
+        };
+        res.end(`data: ${JSON.stringify({ type: 'response.created', response: { id: 'resp_read', output: [] } })}\n\ndata: ${JSON.stringify(call)}\n\ndata: [DONE]\n\n`);
         return;
       }
       res.end(JSON.stringify({
