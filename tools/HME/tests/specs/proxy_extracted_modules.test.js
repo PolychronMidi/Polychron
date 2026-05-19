@@ -250,6 +250,31 @@ test('mode 1 chain skips configured providers and keeps Anthropic top', () => {
   assert.deepEqual(result.chain.map((m) => m.id), ['anthropic-top', 'codex-ok']);
 });
 
+test('mode 1 route health quarantine skips routes unless forced', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-route-health-'));
+  try {
+    fs.mkdirSync(path.join(tmp, 'tools', 'HME', 'runtime'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, 'tools', 'HME', 'runtime', 'model-route-health.json'), JSON.stringify({
+      'kilo-gateway/kilo-auto/free': { status: 'blocked', reason: 'manual test' },
+    }));
+    const cfg = {
+      providers_to_skip: { providers: [] },
+      ranking_rules: { cost_order: ['free'] },
+      manually_toprank: { E5: [] },
+      team_role_models: { driver: { tier: 'E5', source: 'ranking_rules' } },
+      tiers: { E5: { models: [
+        { id: 'kilo-auto-free', provider: 'kilo-gateway', api_model: 'kilo-auto/free', cost: 'free', tier_score: 9 },
+        { id: 'step-free', provider: 'kilo-gateway', api_model: 'stepfun/step-3.5-flash:free', cost: 'free', tier_score: 5 },
+      ] } },
+    };
+    const payload = { model: 'claude-sonnet-4-6', messages: [] };
+    const normal = buildMode1Chain(payload, { HME_TEAM_ROLE: 'driver' }, cfg, { projectRoot: tmp });
+    const forced = buildMode1Chain(payload, { HME_TEAM_ROLE: 'driver', HME_FORCE_QUARANTINED_ROUTES: '1' }, cfg, { projectRoot: tmp });
+    assert.deepEqual(normal.chain.map((m) => m.id), ['step-free']);
+    assert.deepEqual(forced.chain.map((m) => m.id), ['kilo-auto-free', 'step-free']);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
 test('mode 1 Anthropic registry uses Claude OAuth provider without API key', () => quiet(() => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-claude-oauth-'));
   try {
@@ -360,27 +385,32 @@ test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () 
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
-test('mode 1 marks Kilo and AIHubMix routes non-stream', () => quiet(() => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-nonstream-'));
-  try {
-    const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
-    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
-    const result = applyOverdriveRoute({
-      payload,
-      clientReq,
-      clientRes: fakeClientRes(),
-      outBody: Buffer.from(JSON.stringify(payload)),
-      stripStaleToolResults: () => {},
-      stripClaudeIdentity: () => {},
-      shrinkForContext: () => {},
-      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew', HME_OMNIROUTE_PROVIDER: 'aihubmix' },
-      projectRoot: tmp,
-    });
-    assert.equal(result.applied, true);
-    assert.equal(result.omniProvider, 'aihubmix');
-    assert.equal(payload.non_stream, true);
-    assert.equal(JSON.parse(result.outBody.toString('utf8')).non_stream, true);
-  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+test('mode 1 provider override applies capability matrix request overrides', () => quiet(() => {
+  for (const provider of ['aihubmix', 'kilo-gateway']) {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-nonstream-'));
+    try {
+      const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+      const clientReq = { headers: { authorization: 'Bearer direct', 'x-api-key': 'direct' }, url: '/v1/messages' };
+      const result = applyOverdriveRoute({
+        payload,
+        clientReq,
+        clientRes: fakeClientRes(),
+        outBody: Buffer.from(JSON.stringify(payload)),
+        stripStaleToolResults: () => {},
+        stripClaudeIdentity: () => {},
+        shrinkForContext: () => {},
+        env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew', HME_OMNIROUTE_PROVIDER: provider },
+        projectRoot: tmp,
+      });
+      const routed = JSON.parse(result.outBody.toString('utf8'));
+      assert.equal(result.applied, true);
+      assert.equal(result.omniProvider, provider);
+      assert.equal(routed.non_stream, true);
+      assert.match(routed.model, new RegExp(`^${provider}/`));
+      assert.equal(clientReq.headers.authorization, undefined);
+      assert.equal(clientReq.headers['x-api-key'], undefined);
+    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  }
 }));
 
 test('passthrough compaction keeps Claude payload coherent after shrinking', () => {
