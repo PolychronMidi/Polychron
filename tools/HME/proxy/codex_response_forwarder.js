@@ -467,8 +467,8 @@ function createCodexResponseForwarder(deps) {
       }
       const rewriter = createNativeToolSseRewriter();
       const finalFull = rewriter.feed(Buffer.from(full)) + rewriter.finish();
-      if (rewriter.stats.calls) record({ kind: 'codex-sse-native-tool-rewrite', route: target.kind, count: rewriter.stats.calls });
-      if (rewriter.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewriter.stats.unknown_calls, names: rewriter.stats.unknown_names || [] });
+      if (rewriter.stats.calls) record({ kind: 'codex-sse-native-tool-rewrite', route: target.kind, count: rewriter.stats.calls, ...traceFields(target) });
+      if (rewriter.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewriter.stats.unknown_calls, names: rewriter.stats.unknown_names || [], ...traceFields(target) });
       const scanner = planScanner.createSseScanner(source);
       scanner.feed(Buffer.from(finalFull));
       scanner.finish();
