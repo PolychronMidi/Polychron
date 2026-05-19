@@ -16,6 +16,22 @@ import logging
 import os
 from collections import Counter, defaultdict
 
+ROUTINE_EVENTS = {
+    "inference_call",
+    "tool_call",
+    "turn_complete",
+    "cache_control_normalized",
+    "brief_recorded",
+    "enricher_fired",
+    "enricher_acted_upon",
+    "dir_context",
+    "read_context",
+    "boilerplate_stripped",
+    "semantic_redundancy_stripped",
+    "skill_reminder_stripped",
+    "cascade_prediction_empty",
+}
+
 from server import context as ctx
 from paths import hme_metric
 from . import _track
