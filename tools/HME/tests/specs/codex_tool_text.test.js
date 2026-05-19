@@ -55,6 +55,22 @@ test('Codex request transform hides bridge script calls before upstream', () => 
   assert.doesNotMatch(JSON.stringify(result.body), /codex_structured_tool/);
 });
 
+test('Codex request transform maps internal shell calls before upstream', () => {
+  const result = applyRequestTransform({
+    model: 'gpt-5.5',
+    input: [{ type: 'function_call', name: 'exec_command', arguments: JSON.stringify({ cmd: 'echo hello', justification: 'greet' }) }],
+    tools: [],
+  }, {
+    loadConfig: () => ({ request_transform: { cleanup: { enabled: true } } }),
+    record: () => {},
+    projectRoot: process.cwd(),
+  });
+  assert.strictEqual(result.body.input[0].name, 'Bash');
+  assert.deepStrictEqual(JSON.parse(result.body.input[0].arguments), { command: 'echo hello', description: 'greet' });
+  assert.strictEqual(result.cleanup.bridge_calls, 1);
+  assert.doesNotMatch(JSON.stringify(result.body), /exec_command|\"cmd\"|justification/);
+});
+
 test('normalizes edit bridge display without reusable replacement strings', () => {
   const cmd = [
     "node tools/HME/scripts/codex_structured_tool.js edit --json <<'HME_CODEX_JSON'",
