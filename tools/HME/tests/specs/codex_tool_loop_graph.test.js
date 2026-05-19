@@ -28,7 +28,6 @@ test('Codex tool-loop graph routes valid streamed tool calls through visible exe
   assert.equal(decision.requires_visible_progress, true);
   assert.deepEqual(decision.actionable_calls.map((call) => call.id), ['call_read']);
   assert.equal(events.some((event) => event.kind === 'codex-tool-loop-graph-node' && event.node === 'execute_tools'), true);
-  void dir;
 });
 
 test('Codex tool-loop graph blocks duplicate tool execution', () => {
