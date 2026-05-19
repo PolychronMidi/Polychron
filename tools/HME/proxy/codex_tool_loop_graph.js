@@ -32,23 +32,9 @@ function callSummary(call) {
   };
 }
 
-function destructiveBash(command) {
-  const cmd = String(command || '');
-  return /(^|[;&|]\s*)(rm|unlink|shred|truncate)\b/.test(cmd)
-    || /\b(git\s+(reset\s+--hard|clean\s+-[fdx]|checkout\s+[^\n]*--|push\s+(--force|-f)|rebase|filter-branch))\b/.test(cmd)
-    || /\b(chmod\s+-R|chown\s+-R|dd\s+if=|mkfs|mount|umount)\b/.test(cmd);
-}
-
 function requiresHumanApproval(call) {
   if (!call || typeof call !== 'object') return false;
-  const meta = toolMetadata(call.name);
-  const approval = meta && meta.hme && meta.hme.approval || 'never';
-  if (approval === 'always') return true;
-  if (approval === 'destructive' && call.name === 'Bash') {
-    const args = callArgs(call);
-    return destructiveBash(args.command || args.cmd || '');
-  }
-  return false;
+  return requiresApproval(call.name, callArgs(call));
 }
 
 class ToolLoopCheckpointer {
