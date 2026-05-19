@@ -51,6 +51,14 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`dir_context`** [activity] -- Directory-context middleware injected directory-intent context.
 - **`edit_context`** [activity] -- Edit-context middleware injected pre-edit KB context.
 - **`cache_control_normalized`** [activity] -- The proxy promoted short cache_control TTLs to avoid upstream ordering failures.
+- **`bias_bounds_snapshot_queued`** [activity] -- Post-write side effects queued a bias-bounds snapshot after a relevant edit.
+- **`edit_failure_context_appended`** [activity] -- Edit-failure middleware appended file context after an edit could not apply.
+- **`post_write_side_effect_failed`** [activity] -- A post-write side-effect hook failed and emitted its diagnostic surface.
+- **`policy_rewrite`** [activity] -- Policy middleware rewrote a tool payload while preserving the allowed operation.
+- **`stop_reminder_inject`** [activity] -- Stop-reminder middleware injected a compact continuity reminder.
+- **`todo_status_suppressed`** [activity] -- Todo status filtering suppressed repeated todo-state context.
+- **`upstream_stream_timeout_retry`** [activity] -- The proxy retried an upstream stream after a timeout-class failure.
+- **`web_tool_failure`** [activity] -- Web tool enrichment observed a repeated failure for a target.
 - **`inference_call`** [activity] -- A local-inference subprocess was invoked.
 - **`upstream_error`** [activity] -- The proxy classified an upstream HTTP or SSE response as failed.
 - **`upstream_conn_error`** [activity] -- A TCP/TLS-level failure occurred before an upstream HTTP response.
