@@ -18,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('../../shared');
 
-const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-detector-verdicts.env');
+const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tools', 'HME', 'runtime', 'stop-detector-verdicts.env');
 
 function readVerdicts() {
   const verdicts = {
