@@ -996,7 +996,34 @@ Default all bridges off. Enable one bridge at a time.
 
 ## Telemetry Plan
 
-Events:
+Existing HME events relevant to this integration:
+
+```text
+context_compaction
+context_token_usage
+```
+
+`context_compaction` records compaction stage/tier, before/after bytes, before/after message counts, message drops, stale tool-result elisions, orphan-tool repairs, emergency tail elision, route, model, and threshold bytes.
+
+`context_token_usage` records the response-boundary token/headroom comparison needed for safe threshold tuning:
+
+```text
+route
+model
+status
+request_bytes
+response_bytes
+estimated_input_tokens
+threshold_bytes
+header_input_tokens_limit
+header_input_tokens_remaining
+header_input_tokens_used
+usage_input_tokens
+usage_output_tokens
+estimated_vs_usage_delta
+```
+
+Planned OMO bridge events:
 
 ```text
 omo_dependency_resolved
