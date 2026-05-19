@@ -240,7 +240,7 @@ function createCodexResponseForwarder(deps) {
       const depth = target.tool_loop_depth || 0;
       const repairs = target.finalization_repairs || 0;
       record({ kind: 'codex-finalization-tool-call-blocked', route: target.kind, depth, repairs, calls: calls.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) })) });
-      if (repairs >= 1 || depth >= MAX_TOOL_LOOP_DEPTH) return false;
+      if (repairs >= 1) return false;
       const nextBody = appendFinalizationToolBlockPrompt(target.body, calls);
       attemptTarget(target.index, { ...target, body: nextBody, tool_loop_depth: depth + 1, finalizing_tool_loop: true, finalization_repairs: repairs + 1 });
       return true;
