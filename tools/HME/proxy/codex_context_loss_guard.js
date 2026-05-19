@@ -84,6 +84,10 @@ function bump(stats, key) {
 
 function scrubText(text, stats, ctx) {
   const raw = String(text || '');
+  if (ctx.inToolOutput && hasUnsupportedToolError(raw)) {
+    bump(stats, 'unsupported_tool_output');
+    return EMPTY_COMMAND_NOTICE;
+  }
   if (ctx.inToolOutput && hasMissingRequiredToolError(raw)) {
     bump(stats, 'missing_required_tool_output');
     return EMPTY_COMMAND_NOTICE;
