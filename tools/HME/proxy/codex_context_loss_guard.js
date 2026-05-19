@@ -53,14 +53,17 @@ function isContextLossText(text) {
   const s = String(text || '');
   if (!s.trim()) return false;
   const mentionsEmptyCommand = hasMissingRequiredToolError(s);
-  const mentionsAdapterNotice = ADAPTER_NOTICE_RE.test(s);  const recovered = RECOVERED_RE.test(s);
+  const mentionsAdapterNotice = ADAPTER_NOTICE_RE.test(s);
+  const recovered = RECOVERED_RE.test(s);
   const noContext = NO_CONTEXT_RE.test(s);
   const asksResend = ASK_RESEND_RE.test(s);
   const noAction = NO_ACTION_RE.test(s);
   const metaStall = META_STALL_RE.test(s);
+  const repoReadStall = REPO_READ_STALL_RE.test(s);
   const adapterAnchor = mentionsEmptyCommand || mentionsAdapterNotice;
-  return (adapterAnchor && (recovered || noContext || asksResend || noAction || metaStall))
-    || ((recovered || noContext || metaStall) && asksResend);
+  return (adapterAnchor && (recovered || noContext || asksResend || noAction || metaStall || repoReadStall))
+    || ((recovered || noContext || metaStall) && asksResend)
+    || (repoReadStall && asksResend);
 }
 
 function bump(stats, key) {
