@@ -3,8 +3,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
-const { canonicalToolSchemas, canonicalToolMetadata } = require('../../proxy/hme_tool_registry');
+const { canonicalToolSchemas, canonicalToolMetadata, missingRequiredFields } = require('../../proxy/hme_tool_registry');
 
 const ROOT = path.resolve(__dirname, '../../..', '..');
 
