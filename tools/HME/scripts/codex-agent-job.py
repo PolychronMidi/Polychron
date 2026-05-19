@@ -90,7 +90,7 @@ def _codex_cmd(args: argparse.Namespace, job: Path) -> list[str]:
 
 def cmd_run(args: argparse.Namespace) -> int:
     prompt = _prompt(args)
-    runtime_prompt = _runtime_prompt(prompt, args.system or "")
+    runtime_prompt = _runtime_prompt(prompt, args.system or "", resume=bool(args.session_id or args.last))
     job = create_job(
         args.role,
         prompt,
