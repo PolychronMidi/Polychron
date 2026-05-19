@@ -839,6 +839,8 @@ Status:
 - LangChain descriptor export exists.
 - Optional LangChain adapter exists.
 - Plan corrected to dependency-first integration.
+- OpenCode-plugin host shim model documented.
+- `context_token_usage` telemetry exists for comparing estimated input tokens, provider usage, provider remaining-token headers, and active compaction thresholds before further tuning.
 
 Validation:
 
