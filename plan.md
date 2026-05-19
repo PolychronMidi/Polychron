@@ -1162,11 +1162,12 @@ Only tune thresholds further if:
 
 ## Near-Term Next Actions
 
-1. Implement OMO dependency resolver in disabled/path modes.
-2. Add contract validator for expected OMO entrypoints.
-3. Add HME-tools-to-OMO descriptor bridge using `canonicalLangChainTools()`.
-4. Add policy adapter stubs for OMO-originated actions.
-5. Keep all bridges disabled by default until tests and telemetry are complete.
+1. Collect and review post-restart `context_token_usage` samples to calibrate estimated-vs-actual token headroom.
+2. Implement OMO dependency resolver in disabled/path modes.
+3. Add contract validator for expected OMO entrypoints.
+4. Add HME-tools-to-OMO descriptor bridge using `canonicalLangChainTools()`.
+5. Add policy adapter stubs for OMO-originated actions.
+6. Keep all bridges disabled by default until tests and telemetry are complete.
 
 ---
 
