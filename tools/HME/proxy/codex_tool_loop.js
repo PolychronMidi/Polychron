@@ -178,6 +178,9 @@ function isIncompleteToolCall(call) {
 function executeToolCall(call, opts = {}) {
   const root = opts.projectRoot || PROJECT_ROOT;
   const args = call.name === 'Bash' ? normalizeBashArgs(call.args || {}, root) : (call.args || {});
+  if (call.name === 'Bash' && !String(args.command || args.cmd || '').trim()) {
+    return { type: 'function_call_output', call_id: call.id, output: EMPTY_BASH_TOOL_RESULT, is_error: false };
+  }
   const result = runSmolTool(call.name, args, root);
   return { type: 'function_call_output', call_id: call.id, output: outputOf(result), is_error: result.status !== 0 };
 }
