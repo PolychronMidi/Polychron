@@ -78,8 +78,10 @@ def _mode_tool_latency():
             e = _json.loads(ln)
         except ValueError:
             continue
-        if e.get("ts", 0) < cutoff:
+        ts = _activity_ts_seconds(e.get("ts"))
+        if ts is None or ts < cutoff:
             continue
+        e["ts"] = ts
         ev = e.get("event", "")
         if ev in tool_names:
             tool = e.get("tool", "?")
@@ -87,7 +89,7 @@ def _mode_tool_latency():
             if "latency_ms" in e:
                 by_tool[tool].append(float(e["latency_ms"]))
         elif ev in inference_names:
-            inf_ts.append(e.get("ts", 0))
+            inf_ts.append(ts)
 
     out = ["# Tool-cost preflighting  (last 6h)"]
     out.append("")
