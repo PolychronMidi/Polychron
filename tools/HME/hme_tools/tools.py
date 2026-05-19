@@ -60,6 +60,10 @@ class AgentTool(HMETool):
     side_effect = "agent"
     approval = "never"
     idempotent = False
+    input_aliases = {}
+    passthrough_target = "exec_command"
+    bridge_action = "agent"
+    host_native = False
     visibility = {"progress_label": "Agent level={level}", "result_summary": "bytes"}
 
     def forward(self, level: int, prompt: str) -> str:
