@@ -179,8 +179,9 @@ function isIncompleteToolCall(call) {
 
 function executeToolCall(call, opts = {}) {
   const root = opts.projectRoot || PROJECT_ROOT;
-  const result = call.name === 'Bash' ? runBash(call.args, root) : runNodeTool(call.name, call.args, root);
-  return { type: 'function_call_output', call_id: call.id, output: outputOf(result) };
+  const args = call.name === 'Bash' ? normalizeBashArgs(call.args || {}, root) : (call.args || {});
+  const result = runSmolTool(call.name, args, root);
+  return { type: 'function_call_output', call_id: call.id, output: outputOf(result), is_error: result.status !== 0 };
 }
 
 function toolResultInput(calls, opts = {}) {
