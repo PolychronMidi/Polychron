@@ -96,6 +96,4 @@ module.exports = {
       ctx.emit({ event: 'skill_reminder_stripped', session: 'proxy', count: stripped });
     } catch (_e) { /* best-effort */ }
   },
-  // STRIP_RULES exported so a future detector can audit coverage.
-  STRIP_RULES,
 };
