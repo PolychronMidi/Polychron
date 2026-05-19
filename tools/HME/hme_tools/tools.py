@@ -9,7 +9,8 @@ from typing import Any
 from .base import HMETool
 
 ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[2])
-STRUCTURED_TOOL = ROOT / "tools" / "HME" / "scripts" / "codex_structured_tool.js"
+SOURCE_ROOT = Path(os.environ.get("HME_SOURCE_ROOT") or Path(__file__).resolve().parents[2])
+STRUCTURED_TOOL = SOURCE_ROOT / "tools" / "HME" / "scripts" / "codex_structured_tool.js"
 EMPTY_BASH_TOOL_RESULT = "\n".join(
     [
         "HME adapter notice: ignored an empty Bash tool call because no command was provided.",
