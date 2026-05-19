@@ -287,8 +287,10 @@ function createCodexResponseForwarder(deps) {
 
     function sendJsonFinal(target, status, headers, full) {
       const parsed = safeJson(full);
-      const calls = target.finalizing_tool_loop ? [] : collectToolCalls(parsed);
+      const calls = collectToolCalls(parsed);
       if (calls.length) {
+        if (retryAfterFinalizationToolCalls(target, parsed, calls)) return;
+        if (target.finalizing_tool_loop) return sendFinalizationFallback(target, status, headers, parsed, calls);
         if (retryAfterIncompleteOnly(target.index, target, parsed, calls)) return;
         if (continueAfterTools(target.index, target, parsed, calls)) return;
         if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target, parsed);
