@@ -65,12 +65,55 @@ function parseSseEvents(text) {
   return events;
 }
 
+function sseKeyCandidates(value) {
+  if (!value || typeof value !== 'object') return [];
+  return [value.call_id, value.id, value.item_id, value.output_index != null ? `output:${value.output_index}` : '']
+    .filter((x) => x != null && String(x) !== '')
+    .map(String);
+}
+
 function collectSseToolCalls(text) {
   const calls = [];
-  const seen = new Set();
+  const seenObjects = new Set();
+  const byKey = new Map();
+  let lastCall = null;
+
+  function remember(seed = {}) {
+    const keys = sseKeyCandidates(seed);
+    let call = keys.map((key) => byKey.get(key)).find(Boolean) || null;
+    if (!call) {
+      call = { type: 'function_call', id: seed.call_id || seed.id || seed.item_id || '', call_id: seed.call_id || seed.id || seed.item_id || '', name: seed.name || '', arguments: seed.arguments != null ? seed.arguments : '' };
+      seenObjects.add(call);
+    }
+    if (seed.name) call.name = seed.name;
+    if (seed.call_id) call.call_id = seed.call_id;
+    if (seed.id) call.id = seed.id;
+    if (seed.item_id && !call.id) call.id = seed.item_id;
+    if (seed.arguments != null && seed.arguments !== '') call.arguments = seed.arguments;
+    for (const key of sseKeyCandidates({ ...seed, call_id: call.call_id, id: call.id })) byKey.set(key, call);
+    lastCall = call;
+    return call;
+  }
+
   for (const event of parseSseEvents(text)) {
-    if (event && event.item && event.item.type === 'function_call') collectFromValue(event.item, calls, seen);
-    else if (event && event.type === 'response.output_item.done') collectFromValue(event, calls, seen);
+    if (!event || typeof event !== 'object') continue;
+    if (event.item && event.item.type === 'function_call') remember(event.item);
+    else if (event.type === 'response.output_item.done' && event.item) collectFromValue(event.item, calls, new Set());
+
+    if (/function_call_arguments\.delta$/.test(String(event.type || ''))) {
+      const call = remember(event);
+      call.arguments = `${call.arguments || ''}${event.delta || ''}`;
+    } else if (/function_call_arguments\.done$/.test(String(event.type || ''))) {
+      remember({ ...event, arguments: event.arguments != null ? event.arguments : event.delta });
+    }
+  }
+
+  const seenIds = new Set(calls.map((call) => call.id));
+  for (const call of seenObjects) {
+    const id = callId(call);
+    if (!TOOL_NAMES.has(call.name) || !id || seenIds.has(id)) continue;
+    seenIds.add(id);
+    calls.push({ id, name: call.name, args: callArgs(call) });
   }
   return calls;
 }
