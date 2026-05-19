@@ -130,6 +130,12 @@ function outputOf(result) {
   return (text || (result.error ? String(result.error.message || result.error) : '')).slice(0, MAX_OUTPUT);
 }
 
+function isIncompleteToolCall(call) {
+  if (!call || call.name !== 'Bash') return false;
+  const args = call.args && typeof call.args === 'object' ? call.args : {};
+  return !String(args.command || args.cmd || '').trim();
+}
+
 function executeToolCall(call, opts = {}) {
   const root = opts.projectRoot || PROJECT_ROOT;
   const result = call.name === 'Bash' ? runBash(call.args, root) : runNodeTool(call.name, call.args, root);
