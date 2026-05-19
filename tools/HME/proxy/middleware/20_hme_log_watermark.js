@@ -62,7 +62,7 @@ module.exports = {
         const ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
         const body = newErrors.map((l) => `[${ts}] hme.log: ${l}`).join('\n') + '\n';
         fs.appendFileSync(errLogPath, body);  // throws on failure; outer catch surfaces
-        console.warn(`[middleware] hme_log_watermark: escalated ${newErrors.length} ERROR line(s) to hme-errors.log`);
+        ctx.emit({ event: 'hme_log_error_escalated', count: newErrors.length });
       }
       try { fs.mkdirSync(path.dirname(wmPath), { recursive: true }); } catch (_e) { /* silent-ok mkdir; writeFileSync below surfaces real failures */ }
       fs.writeFileSync(wmPath, String(curSize));  // advance only AFTER append succeeded
