@@ -105,7 +105,7 @@ function runBridgedTool(name, input) {
 
 function runBashTool(args) {
   const command = String(args.command || args.cmd || '');
-  if (!command.trim()) return { status: 2, stdout: '', stderr: 'Error: command is required' };
+  if (!command.trim()) return { status: 2, stdout: EMPTY_BASH_TOOL_RESULT, stderr: '', hmeAdapterNotice: 'empty_bash_command' };
   const verdict = evaluateBashInput({ command }, { projectRoot: PROJECT_ROOT, supportsRunInBackground: false });
   let cmd = command;
   if (verdict && verdict.decision === 'deny') return { status: 1, stdout: '', stderr: blockedCommand(verdict.reason || 'blocked') };
