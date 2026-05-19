@@ -199,6 +199,7 @@ module.exports = {
   CONTEXT_LOSS_NOTICE,
   REPAIR_PROMPT_PREFIX,
   hasEmptyCommandError,
+  hasMissingRequiredToolError,
   isContextLossText,
   scrubCodexContextLossNoise,
   responseHasContextLoss,
