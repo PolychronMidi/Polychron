@@ -198,7 +198,9 @@ const ctx = {
   nexusCount,
   nexusHas,
   markDirty: () => { _pipelineDirty = true; },
-  warn: (...a) => console.warn('Acceptable warning: [middleware]', ...a),
+  warn: (...a) => {
+    emit({ event: 'middleware_warning', message: a.map(String).join(' ') });
+  },
   PROJECT_ROOT,
   // Returns true when the tool_result already contains `marker`. Each
   // middleware passes its unique marker (e.g. '[HME dir:', '[HME] KB',
