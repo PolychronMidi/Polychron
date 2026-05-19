@@ -1018,6 +1018,10 @@ threshold_bytes
 header_input_tokens_limit
 header_input_tokens_remaining
 header_input_tokens_used
+header_input_tokens_source
+context_signal_input_tokens_remaining
+cached_input_tokens_limit
+cached_input_tokens_remaining
 usage_input_tokens
 usage_output_tokens
 estimated_vs_usage_delta
