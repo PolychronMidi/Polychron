@@ -79,6 +79,7 @@ test('Codex context-loss guard detects recovered empty-command stalls', () => {
   assert.equal(isContextLossText(promptBad), true);
   assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: bad }] }] }), true);
   assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: adapterBad }] }] }), true);
+  assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: promptBad }] }] }), true);
   assert.equal(isContextLossText('Error: command is required\nreal shell stderr from an attempted command'), false);
 });
 
