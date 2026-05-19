@@ -66,34 +66,43 @@ function _extractUsageFromBody(headers, body) {
   return { input_tokens, output_tokens };
 }
 
-function emitContextTokenUsage({ headers, status, payload, outBody, outBuf, route, model, thresholdBytes, estimatedTokensFn, getLastInputTokensRemaining, getLastInputTokensLimit }) {
-  try {
-    const bodyBytes = Buffer.byteLength(outBody || Buffer.alloc(0));
-    const responseBytes = Buffer.byteLength(outBuf || Buffer.alloc(0));
-    const estimate = typeof estimatedTokensFn === 'function' ? estimatedTokensFn(bodyBytes) : null;
-    const limitHeader = _num(headers['anthropic-ratelimit-input-tokens-limit']);
-    const remainingHeader = _num(headers['anthropic-ratelimit-input-tokens-remaining']);
-    const limit = limitHeader ?? (typeof getLastInputTokensLimit === 'function' ? getLastInputTokensLimit() : null);
-    const remaining = remainingHeader ?? (typeof getLastInputTokensRemaining === 'function' ? getLastInputTokensRemaining() : null);
-    const usedFromRemaining = limit != null && remaining != null ? Math.max(0, limit - remaining) : null;
-    const usage = _extractUsageFromBody(headers, outBuf);
-    emit({
-      event: 'context_token_usage',
-      route,
-      model: model || payload && payload.model || '',
-      status,
-      request_bytes: bodyBytes,
-      response_bytes: responseBytes,
-      estimated_input_tokens: estimate,
-      threshold_bytes: thresholdBytes || 0,
-      header_input_tokens_limit: limitHeader,
-      header_input_tokens_remaining: remainingHeader,
-      header_input_tokens_used: usedFromRemaining,
-      usage_input_tokens: usage.input_tokens,
-      usage_output_tokens: usage.output_tokens,
-      estimated_vs_usage_delta: usage.input_tokens != null && estimate != null ? estimate - usage.input_tokens : null,
-    });
-  } catch (_e) { /* silent-ok: telemetry must not affect response path */ }
+function _contextTokenUsageFields({ headers, rateLimitHeaders, status, payload, outBody, outBuf, route, model, thresholdBytes, estimatedTokensFn, getLastInputTokensRemaining, getLastInputTokensLimit }) {
+  const bodyBytes = Buffer.byteLength(outBody || Buffer.alloc(0));
+  const responseBytes = Buffer.byteLength(outBuf || Buffer.alloc(0));
+  const estimate = typeof estimatedTokensFn === 'function' ? estimatedTokensFn(bodyBytes) : null;
+  const providerHeaders = rateLimitHeaders || headers || {};
+  const limitHeader = _num(providerHeaders['anthropic-ratelimit-input-tokens-limit']);
+  const remainingHeader = _num(providerHeaders['anthropic-ratelimit-input-tokens-remaining']);
+  const outboundRemainingHeader = _num((headers || {})['anthropic-ratelimit-input-tokens-remaining']);
+  const limit = limitHeader ?? (typeof getLastInputTokensLimit === 'function' ? getLastInputTokensLimit() : null);
+  const remaining = remainingHeader ?? (typeof getLastInputTokensRemaining === 'function' ? getLastInputTokensRemaining() : null);
+  const usedFromRemaining = limitHeader != null && remainingHeader != null ? Math.max(0, limitHeader - remainingHeader) : null;
+  const usage = _extractUsageFromBody(headers, outBuf);
+  return {
+    event: 'context_token_usage',
+    route,
+    model: model || payload && payload.model || '',
+    status,
+    request_bytes: bodyBytes,
+    response_bytes: responseBytes,
+    estimated_input_tokens: estimate,
+    threshold_bytes: thresholdBytes || 0,
+    header_input_tokens_limit: limitHeader,
+    header_input_tokens_remaining: remainingHeader,
+    header_input_tokens_used: usedFromRemaining,
+    header_input_tokens_source: (limitHeader != null || remainingHeader != null) ? 'upstream' : 'none',
+    context_signal_input_tokens_remaining: remainingHeader == null ? outboundRemainingHeader : null,
+    cached_input_tokens_limit: limit,
+    cached_input_tokens_remaining: remaining,
+    usage_input_tokens: usage.input_tokens,
+    usage_output_tokens: usage.output_tokens,
+    estimated_vs_usage_delta: usage.input_tokens != null && estimate != null ? estimate - usage.input_tokens : null,
+  };
+}
+
+function emitContextTokenUsage(args) {
+  try { emit(_contextTokenUsageFields(args)); }
+  catch (_e) { /* silent-ok: telemetry must not affect response path */ }
 }
 
 function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, outBuf, swapModel, anthropicTextSseBuffer, log = console.error }) {
