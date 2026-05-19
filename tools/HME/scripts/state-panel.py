@@ -86,6 +86,7 @@ def _age(path: str) -> str:
 
 def main(argv):
     brief = any(a == "mode=brief" for a in argv[1:])
+    help_mode = any(a in ("help=true", "mode=help", "mode=full", "full") for a in argv[1:])
 
     out = ["# HME state panel"]
 
