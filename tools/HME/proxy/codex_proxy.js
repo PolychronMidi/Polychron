@@ -9,6 +9,7 @@ const { loadJsonc } = require('./config_loader');
 const { runAutocommit, injectLifesaver } = require('./turn_side_effects');
 const { applyRequestTransform } = require('./codex_payload');
 const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('./codex_native_tools');
+const { extractToolCalls, executeToolCalls, nextToolRequestBody, parseSseToolCalls, MAX_TOOL_LOOP_DEPTH } = require('./codex_tool_loop');
 const { targetChain, targetSummary } = require('./codex_omniroute');
 const { createPlanScanner } = require('./codex_plan_scanner');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
