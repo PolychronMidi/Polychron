@@ -354,10 +354,14 @@ function createCodexResponseForwarder(deps) {
           const bytes = Buffer.byteLength(String(result.output || ''), 'utf8');
           writeClientText(target, `  ↳ completed; result forwarded upstream (${bytes} bytes).\n`);
         }
-        if (clientSse.started) record({ kind: 'codex-proxy-tool-loop-visible', route: target.kind, depth: depth + 1, calls: actionableCalls.map((call) => ({ call_id: call.id, name: call.name })) });
+        clientSse.callIds.push(...actionableCalls.map((call) => call.id).filter(Boolean));
+        if (clientSse.started) record({ kind: 'codex-proxy-tool-loop-visible', route: target.kind, depth: depth + 1, calls: actionableCalls.map((call) => ({ call_id: call.id, name: call.name })), ...traceFields(target, { call_ids: actionableCalls.map((call) => call.id).filter(Boolean) }) });
       }
       const finalizing = !forcedResults && depth >= FINALIZE_TOOL_LOOP_DEPTH;
-      record({ kind: finalizing ? 'codex-proxy-tool-loop-finalize' : 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: r.is_error })) });
+      clientSse.toolLoops += forcedResults ? 0 : 1;
+      const hiddenStreamLoop = Boolean(target.body && target.body.stream && !forcedResults && !clientSse.started);
+      if (hiddenStreamLoop) record({ kind: 'codex-hidden-tool-loop-violation', route: target.kind, depth: depth + 1, reason: 'streamed tool loop executed without client-visible progress', ...traceFields(target, { call_ids: actionableCalls.map((call) => call.id).filter(Boolean) }) });
+      record({ kind: finalizing ? 'codex-proxy-tool-loop-finalize' : 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: r.is_error })), client_visible: clientSse.started, ...traceFields(target, { call_ids: results.map((r) => r.call_id).filter(Boolean) }) });
       let nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
       if (finalizing) {
         const finalizeInput = { type: 'message', role: 'user', content: [{ type: 'input_text', text: finalizePrompt(target, results) }] };
