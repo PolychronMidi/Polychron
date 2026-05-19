@@ -16,8 +16,9 @@
  *     Claude Code Stop-hook protocol (which lacks a true `instruct` shape
  *     for Stop -- block-with-reason is the only user-visible channel).
  *   - `allow` continues silently.
- *   - A policy that throws is logged and treated as `allow` -- never crashes
- *     the chain.
+ *   - A policy that throws is logged. Mandatory enforcement policies fail
+ *     closed; optional side-effect policies fail open so diagnostics do not
+ *     wedge the chain.
  *
  * Process-boundary semantics: pure-JS policies cannot `exit 0` the parent
  * process the way a sourced bash sub-script could. Shell-wrapped policies
