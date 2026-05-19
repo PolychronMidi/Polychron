@@ -1,1331 +1,1066 @@
-# OMO Integration + smolagents/LangChain Synergy Plan
+# OMO Dependency Integration + smolagents/LangChain Synergy Plan
 
 ## Executive Summary
 
-Polychron/HME is moving toward a comprehensive integration of the reference project:
+Polychron/HME should integrate OMO as a substantial maintained dependency, not assimilate or copy its internals into HME.
+
+OMO is large and coherent enough to remain its own upstream project. HME's job is to depend on it through explicit adapters, versioned contracts, policy gates, and telemetry. We should avoid rewriting OMO features inside HME unless a small compatibility shim is necessary. The correct integration model is:
 
 ```text
-<reference-repo-root>
+HME core policy/proxy/coherence layer
+  -> OMO dependency boundary
+    -> OMO agents/features/plugins/context systems
+  -> HME adapters for tool contracts, session state, telemetry, and safety gates
 ```
 
-The goal is not a shallow copy. The goal is a coherent assimilation: preserve HME's existing strengths -- proxy routing, coherence guards, self-healing hooks, structured telemetry, smolagents canonical tool definitions, and Claude/Codex/OpenAI bridging -- while absorbing OMO's mature agent orchestration, context injection, dynamic pruning, compaction recovery, task/session features, team-mode concepts, and plugin-style extension surfaces.
+The already-built smolagents/LangChain bridge is still the right prerequisite. It gives HME a canonical tool contract that can be presented to LangChain-like consumers and to OMO integration surfaces without duplicating schemas.
 
-A prerequisite has already begun: HME's canonical smolagents tool registry now exports LangChain-compatible descriptors and an optional Python LangChain adapter. This creates a stable interop seam:
-
-```text
-HMETool canonical source
-  -> Codex/OpenAI schema
-  -> Claude/native-looking schema
-  -> HME policy metadata
-  -> LangChain StructuredTool-compatible descriptor
-  -> optional real StructuredTool instances when langchain_core is installed
-```
-
-This plan lays out the complete path from current state to robust OMO integration.
+This plan replaces the earlier assimilation framing with a dependency-first architecture.
 
 ---
 
-## Guiding Principles
+## Core Correction
 
-### 1. One source of truth for tool contracts
+### What we are not doing
 
-Tool schema drift is one of the highest-risk integration failures. HME must keep a single canonical tool definition source:
+We are not planning to:
+
+- copy OMO feature implementations wholesale into HME
+- fork OMO into HME modules by default
+- manually port OMO tools one by one unless dependency boundaries require wrappers
+- duplicate OMO's plugin/hook/session machinery inside HME
+- make HME's internals a shadow implementation of OMO
+- expose OMO mutating behavior directly to models without HME policy gates
+
+### What we are doing
+
+We are planning to:
+
+- add OMO as a managed dependency
+- define stable adapter boundaries between HME and OMO
+- let OMO own its own comprehensive feature set
+- let HME own proxy routing, coherence policy, tool contract normalization, telemetry, and enforcement
+- connect OMO to HME's canonical smolagents/LangChain tool bridge
+- wrap OMO behavior where necessary for safety, observability, and compatibility
+- keep OMO updateable without rewriting HME each time
+
+---
+
+## Desired Dependency Model
+
+OMO should be consumed as one of the following, in order of preference after evaluation:
+
+### Option A: package dependency
+
+If OMO exposes a package entrypoint suitable for runtime use, prefer package management:
+
+```text
+package.json / bun / npm dependency
+```
+
+Advantages:
+
+- clear versioning
+- easier updates
+- standard lockfile tracking
+- less local source noise
+- explicit upstream boundary
+
+Requirements:
+
+- exported APIs are stable enough
+- HME can import required modules without running OMO CLI side effects
+- dependency build system is compatible with HME runtime
+- license and distribution are acceptable
+
+### Option B: git submodule or pinned external checkout
+
+If OMO is not packaged cleanly but must remain as source:
+
+```text
+external/omo or references/omo as pinned dependency
+```
+
+Advantages:
+
+- upstream history preserved
+- no copied internals
+- explicit update point
+- patches can be tracked separately
+
+Requirements:
+
+- dependency path is configurable
+- no hard-coded local absolute paths
+- version/pin recorded
+- HME tests can run without requiring global path assumptions
+
+### Option C: vendored source only as last resort
+
+Vendoring is least preferred. It should only happen if:
+
+- package/submodule integration is impossible
+- only a small stable subset is needed
+- license allows it
+- update strategy is explicit
+
+Even then, vendored code must stay isolated under a dependency boundary, not intermingled with HME core.
+
+---
+
+## Architectural Boundary
+
+## HME owns
+
+- model proxy/routing
+- Anthropic/Codex/OpenAI request/response normalization
+- HME coherence hooks
+- pre-write/pre-bash policy gates
+- read-before-edit enforcement
+- structured telemetry
+- compaction policy and telemetry
+- emergency upstream handling
+- canonical HME tool definitions
+- smolagents registry
+- LangChain-compatible tool descriptors
+- session-state evidence used by HME gates
+
+## OMO owns
+
+- OMO agents
+- OMO plugin system
+- OMO context injector internals
+- OMO compaction/todo preservation logic
+- OMO task/background/team features
+- OMO command loading
+- OMO hook implementations
+- OMO internal session/task abstractions
+
+## Adapter layer owns
+
+- translating HME canonical tools into OMO-consumable tools
+- translating OMO tool/plugin descriptors into HME policy-aware wrappers where needed
+- propagating telemetry across the boundary
+- mapping session identifiers
+- mapping context injection lifecycle
+- enforcing HME policy around OMO actions
+- compatibility checks for OMO version/API changes
+
+---
+
+## Current Foundation: smolagents + LangChain Bridge
+
+HME's canonical tools live in:
 
 ```text
 tools/HME/hme_tools/
 ```
 
-The canonical tool source is currently smolagents `Tool` subclasses enriched with HME metadata. All downstream surfaces must derive from this source:
+Current exports:
 
-- Claude/native-looking tool schema
-- Codex/OpenAI Responses schema
-- HME policy metadata
-- LangChain descriptors
-- optional LangChain `StructuredTool` instances
-- OMO/plugin adapter contracts
-- validation/approval policy
-- tool execution bridge metadata
+```text
+--kind codex
+--kind claude
+--kind openai
+--kind hme
+--kind langchain
+```
 
-No manually duplicated `Read/Edit/Bash/...` tool lists except tiny test fixtures with explicit purpose.
+The new LangChain descriptor export provides a dependency-free bridge shape:
 
-### 2. Integrate through stable seams, not invasive rewrites
+```json
+{
+  "name": "Read",
+  "description": "...",
+  "args_schema": { "type": "object", "properties": {}, "required": [] },
+  "metadata": {
+    "side_effect": "read",
+    "approval": "never",
+    "bridge_action": "read",
+    "host_native": false,
+    "policy": {}
+  },
+  "return_direct": false
+}
+```
 
-OMO is comprehensive. Full integration should happen through adapter layers first:
+Optional Python adapter:
 
-- tool adapter
-- context injector adapter
-- session/task adapter
-- compaction/pruning adapter
-- plugin/hook adapter
-- telemetry adapter
+```python
+from hme_tools.langchain_adapter import (
+    langchain_tool_descriptors,
+    create_langchain_tools,
+)
+```
 
-Only after stable behavior is observed should internals be unified.
-
-### 3. Preserve HME coherence policy
-
-OMO features must not bypass HME coherence protections:
-
-- pre-write/read-before-edit enforcement
-- exact edit matching and autocorrection
-- anti-no-op/noise guards
-- context-burn minimization
-- compaction structural integrity
-- task/brief continuity
-- lifecycle hook policy
-- emergency valve behavior
-
-Any OMO feature that writes files, launches commands, mutates task state, or injects context must go through HME policy surfaces.
-
-### 4. Favor semantic pruning before message dropping
-
-Current telemetry shows HME whole-message dropping works structurally, but it is still coarse. OMO's dynamic pruning ideas should be integrated before pushing thresholds further:
-
-- duplicate tool output pruning
-- superseded write/read pruning
-- old errored tool pruning
-- protected recent turn window
-- protected tools
-- compaction survival capsule
-
-The long-term target is fewer whole-message drops and more retention of meaningful reasoning/task state.
-
-### 5. Every integration point needs telemetry
-
-Integration must be observable. Every new pruning, context injection, tool adaptation, and OMO bridge action needs structured telemetry with stable event names.
+This is important because OMO and LangChain-style systems can consume the same canonical HME tool definitions without schema drift.
 
 ---
 
-## Current HME State
+## OMO Dependency Integration Goals
 
-### Existing strengths
+### Goal 1: Establish dependency pin and loader
 
-HME already has:
-
-- proxy routing and overdrive model routing
-- OmniRoute/Codex/Claude request mutation paths
-- smolagents canonical tool registry
-- JS registry bridge for canonical tools
-- Codex native tool loop integration
-- structured pre-write and post-tool hook system
-- context budget/compaction logic
-- structured `context_compaction` telemetry
-- edit failure recovery and pre-execution Edit/Update -> Read rewrite
-- session read cache
-- emergency upstream valve
-- HME activity telemetry
-- lifecycle/precommit validation
-
-### Recent completed work
-
-#### smolagents/LangChain bridge
-
-Implemented:
+Create a small OMO dependency loader that can resolve OMO from configured sources:
 
 ```text
-tools/HME/hme_tools/base.py
-  langchain_tool_schema(tool)
+package dependency
+submodule/external checkout
+reference checkout for development
+```
 
-tools/HME/hme_tools/export.py
-  --kind langchain
+Proposed module:
 
-tools/HME/proxy/hme_tool_registry.js
-  canonicalLangChainTools()
+```text
+tools/HME/omo_bridge/dependency.js
+tools/HME/omo_bridge/dependency.py
+```
 
-tools/HME/hme_tools/langchain_adapter.py
-  langchain_tool_descriptors()
-  create_langchain_tools()
+Responsibilities:
+
+- resolve OMO root/package
+- detect version/commit
+- verify expected entrypoints
+- fail loud with actionable diagnostics
+- never assume local absolute paths
+- emit dependency health telemetry
+
+Telemetry:
+
+```json
+{
+  "event": "omo_dependency_resolved",
+  "source": "package|submodule|reference|missing",
+  "version": "...",
+  "commit": "...",
+  "status": "ok|error"
+}
+```
+
+### Goal 2: Define OMO compatibility contract
+
+Create a versioned contract file describing what HME expects from OMO:
+
+```text
+tools/HME/omo_bridge/contract.json
+```
+
+Example:
+
+```json
+{
+  "contract_version": "hme-omo/v1",
+  "required_entrypoints": [
+    "context-injector",
+    "hooks/anthropic-context-window-limit-recovery",
+    "config/schema/dynamic-context-pruning"
+  ],
+  "optional_entrypoints": [
+    "team-mode",
+    "background-agent",
+    "plugin-handlers"
+  ]
+}
+```
+
+The contract should be validated in tests against the configured OMO dependency.
+
+### Goal 3: Keep tool contracts canonical in HME
+
+HME tools should remain canonical in HMETool/smolagents. OMO should consume HME tools via descriptors/adapters rather than redefining them.
+
+Required adapters:
+
+```text
+tools/HME/omo_bridge/hme_tools_to_omo.js
+tools/HME/omo_bridge/hme_tools_to_omo.py
+```
+
+Input:
+
+```text
+canonicalLangChainTools()
+canonicalToolMetadata()
+```
+
+Output:
+
+- OMO-compatible tool descriptors
+- OMO plugin registration objects if OMO exposes a plugin API
+- policy metadata preserved
+
+### Goal 4: Wrap OMO actions in HME policy
+
+Any OMO-originated action that can mutate files, run shell commands, use network, or launch agents must pass through HME policy:
+
+```text
+OMO action request
+  -> HME policy adapter
+    -> pretool/prewrite/prebash/session checks
+      -> allowed execution backend
+```
+
+No direct OMO write/shell execution should bypass HME.
+
+### Goal 5: Bridge context systems without duplicating them
+
+If OMO has a context injector, HME should depend on it rather than reimplement it. HME needs a bridge:
+
+```text
+HME middleware context event
+  -> OMO context registration
+  -> OMO injection lifecycle
+  -> HME telemetry and budget guard
+```
+
+If OMO's injector cannot directly run in HME proxy, create a thin adapter that preserves OMO semantics.
+
+### Goal 6: Use OMO dynamic pruning as dependency feature
+
+OMO's dynamic pruning should be called as a dependency capability if available. HME should not rewrite the algorithm unless OMO cannot operate on HME payload shape.
+
+Bridge target:
+
+```text
+HME Anthropic/Codex message payload
+  -> OMO-compatible session/message representation
+  -> OMO pruning capability
+  -> HME payload patch/transform
+  -> HME telemetry
+```
+
+### Goal 7: Preserve observability
+
+Every OMO bridge call must produce HME telemetry:
+
+```text
+omo_dependency_resolved
+omo_contract_validated
+omo_context_registered
+omo_context_injected
+omo_pruning_started
+omo_pruning_completed
+omo_tool_registered
+omo_tool_invoked
+omo_tool_blocked
+omo_bridge_error
+```
+
+---
+
+## Proposed Repository Layout
+
+```text
+tools/HME/omo_bridge/
+  README or module docstring later if requested
+  dependency.js
+  dependency.py
+  contract.json
+  contract_validator.js
+  hme_tools_to_omo.js
+  hme_tools_to_omo.py
+  policy_adapter.js
+  context_adapter.js
+  pruning_adapter.js
+  telemetry.js
+  errors.js
 ```
 
 Tests:
 
 ```text
-tools/HME/tests/specs/smolagents_tool_registry.test.js
-tools/HME/tests/specs/test_langchain_adapter.py
+tools/HME/tests/specs/omo_dependency.test.js
+tools/HME/tests/specs/omo_contract.test.js
+tools/HME/tests/specs/omo_tool_bridge.test.js
+tools/HME/tests/specs/omo_policy_adapter.test.js
+tools/HME/tests/specs/omo_context_adapter.test.js
+tools/HME/tests/specs/omo_pruning_adapter.test.js
 ```
 
-#### Compaction telemetry
+---
 
-Added `context_compaction` events from `passthrough_compact.js`:
+## Dependency Resolution Strategy
 
-```js
-{
-  event: 'context_compaction',
-  route,
-  model,
-  stage,
-  tier,
-  before_bytes,
-  after_bytes,
-  threshold_bytes,
-  before_messages,
-  after_messages,
-  messages_dropped,
-  stale_tool_results_elided,
-  orphan_tool_blocks_scrubbed,
-  emergency_tail_elided,
-  keep_min
-}
-```
+### Configuration knobs
 
-#### Context tuning
-
-Current env tuning increased retained context:
+Use environment/config, not hard-coded local paths:
 
 ```env
-HME_PROXY_CONTEXT_FRACTION=0.99
-HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST=2.4
-HME_PROXY_REMAINING_FRACTION=0.85
-HME_PROXY_CONTEXT_SIGNAL_REMAINING_FRACTION=0.08
-
-HME_PROXY_COMPACT_START_FRACTION=0.88
-HME_PROXY_COMPACT_GEAR1_TARGET=0.88
-HME_PROXY_COMPACT_GEAR2_TARGET=0.94
-HME_PROXY_COMPACT_GEAR3_TARGET=0.985
-HME_PROXY_COMPACT_GEAR1_END=0.94
-HME_PROXY_COMPACT_GEAR2_END=0.985
+HME_OMO_ENABLED=0
+HME_OMO_SOURCE=package|path|disabled
+HME_OMO_PACKAGE=@.../oh-my-openagent
+HME_OMO_PATH=<optional relative or configured external path>
+HME_OMO_REQUIRED_VERSION=<semver/range>
+HME_OMO_STRICT_CONTRACT=1
 ```
 
-Effective threshold for `gpt-5.5-high/xhigh` is now approximately:
+Default should be disabled until dependency health and policy gates are complete.
+
+### Resolver behavior
+
+1. If `HME_OMO_ENABLED != 1`, return disabled state.
+2. If source is package, resolve package entrypoint.
+3. If source is path, resolve path relative to repo/config, not local absolute.
+4. Detect version:
+   - package version if available
+   - git commit if checkout
+   - fallback content hash
+5. Validate required entrypoints.
+6. Emit telemetry.
+
+### Failure behavior
+
+Failure should be loud but non-catastrophic unless OMO is required for the request path:
 
 ```text
-646,272 bytes
-```
-
-Telemetry after the prior threshold increase remained structurally clean:
-
-```text
-orphan_tool_blocks_scrubbed = 0
-emergency_tail_elided = 0
+OMO disabled/unavailable -> HME native path continues
+OMO required and unavailable -> clear diagnostic error
 ```
 
 ---
 
-## OMO Reference Surface Summary
+## Tool Bridge Plan
 
-Reference repo:
+### Current HME canonical tool exports
 
-```text
-<reference-repo-root>
+HME already exports:
+
+```js
+canonicalToolSchemas()
+canonicalToolMetadata()
+canonicalLangChainTools()
 ```
 
-Important directories discovered during quick sweep:
+### OMO bridge target
 
-```text
-src/features/context-injector/
-src/hooks/compaction-context-injector/
-src/hooks/compaction-todo-preserver/
-src/hooks/anthropic-context-window-limit-recovery/
-src/config/schema/dynamic-context-pruning.ts
-src/hooks/anthropic-context-window-limit-recovery/pruning-deduplication.ts
-src/hooks/anthropic-context-window-limit-recovery/pruning-tool-output-truncation.ts
-src/features/team-mode/
-src/features/background-agent/
-src/tools/
-src/plugin/
-src/plugin-handlers/
-src/hooks/
-src/agents/
-```
+Create an adapter that can feed OMO an HME tool surface using the closest supported OMO API.
 
-### High-value OMO features
+Pseudo-flow:
 
-#### 1. Context injector
+```js
+const { canonicalLangChainTools } = require('../proxy/hme_tool_registry');
+const { resolveOmo } = require('./dependency');
 
-OMO has a pending context collector with:
-
-- per-session context entries
-- unique source/id deduplication
-- priorities: `critical`, `high`, `normal`, `low`
-- registration order
-- consume-on-inject semantics
-
-This is highly compatible with HME middleware context injection.
-
-#### 2. Dynamic context pruning schema
-
-OMO config supports:
-
-- turn protection
-- protected tools
-- deduplication
-- supersede writes
-- purge errors
-
-This provides an excellent conceptual model for improving HME pre-drop compaction.
-
-#### 3. Deduplication pruning
-
-OMO computes stable tool signatures:
-
-```ts
-toolName::JSON.stringify(sortedInput)
-```
-
-Then keeps newest duplicate calls and truncates older duplicate outputs.
-
-This is directly useful for HME where repeated `Read`, `Grep`, `Bash`, status, and log commands can dominate context.
-
-#### 4. Tool output truncation by call ID
-
-OMO can map duplicate call IDs to stored tool outputs and truncate them.
-
-HME does not use exactly the same OpenCode storage layout, but the idea maps well to Anthropic-style `tool_use.id` and `tool_result.tool_use_id` blocks.
-
-#### 5. Context window limit recovery
-
-OMO includes:
-
-- token limit error parser
-- deduplication recovery
-- aggressive truncation
-- summarize retry
-- empty message sanitization before summarize
-
-HME has proactive compaction but can borrow these as reactive recovery paths.
-
-#### 6. Compaction context/todo preservation
-
-OMO has explicit compaction hooks to preserve important state. HME should implement a similar survival capsule.
-
----
-
-## Target Architecture
-
-### A. Canonical Tool Contract Layer
-
-#### Current
-
-```text
-tools/HME/hme_tools/tools.py
-  HMETool subclasses
-```
-
-#### Target
-
-Keep HMETool canonical, but expand exports/adapters:
-
-```text
-HMETool
-  -> hme_schema
-  -> openai/codex schema
-  -> claude schema
-  -> langchain descriptor
-  -> optional LangChain StructuredTool
-  -> OMO tool descriptor
-  -> OMO plugin tool wrapper
-```
-
-#### Required enhancements
-
-1. Add explicit OMO export kind if needed:
-
-```bash
-python3 tools/HME/hme_tools/export.py --kind omo
-```
-
-This may initially mirror `langchain` plus HME metadata.
-
-2. Add canonical tool family predicates in metadata:
-
-- edit family
-- write family
-- read family
-- shell family
-- network family
-- agent/delegation family
-
-3. Add versioned schema metadata:
-
-```json
-{
-  "schema_version": "hme-tools/v1",
-  "source": "smolagents",
-  "capabilities": [...]
+function hmeToolsForOmo() {
+  const tools = canonicalLangChainTools();
+  return tools.map(toOmoToolDescriptor);
 }
 ```
 
-4. Add compatibility tests:
+### Policy preservation
 
-- HME schema parity
-- LangChain descriptor parity
-- optional StructuredTool instantiation if dependency exists
-- OMO descriptor shape
-- no drift between registry exports
+Every descriptor must include:
 
----
+- side effect
+- approval policy
+- idempotence
+- max output bytes
+- input aliases
+- bridge action
+- host native flag
+- HME policy extras
 
-### B. Tool Execution Adapter Layer
+OMO should see these, but HME remains enforcement authority.
 
-#### Current
-
-HME uses:
-
-- `run_tool.py`
-- `validate_tool.py`
-- JS `hme_tool_registry.js`
-- Codex native tool loop
-- structured Node tool backend
-
-#### Target
-
-Add a unified adapter facade:
-
-```text
-tools/HME/hme_tools/adapters/
-  codex.py/js
-  claude.py/js
-  langchain.py
-  omo.py
-```
-
-Initial implementation can be thin wrappers around existing registry functions.
-
-#### Requirements
-
-- all tool calls validate required fields through canonical metadata
-- aliases are honored consistently
-- approval policy is preserved
-- bridge action is preserved
-- native-host tools are marked clearly
-- output byte limits are enforced
-- background/run semantics are visible in metadata
-
-#### LangChain-specific target
-
-`create_langchain_tools()` should eventually support:
-
-- sync invocation
-- optional async invocation
-- callback telemetry hooks
-- Runnable-compatible metadata
-- tool error normalization
-
-Possible future API:
-
-```python
-create_langchain_tools(
-    executor: HmeToolExecutor | None = None,
-    telemetry: Callable[[dict], None] | None = None,
-    strict: bool = True,
-)
-```
-
----
-
-### C. OMO Tool Assimilation Layer
-
-OMO has its own tools and plugin model. The integration should not blindly import everything into HME's model-facing surface.
-
-#### Phase 1: inventory
-
-Create an inventory of OMO tools:
-
-```text
-src/tools/**
-src/features/**/tools/**
-src/plugin-handlers/**
-```
-
-For each tool:
-
-- name
-- description
-- input schema
-- side effect class
-- execution backend
-- required runtime dependencies
-- maps to existing HME tool?
-- safe to expose to model?
-- needs HME policy gate?
-- test coverage present?
-
-#### Phase 2: classify
-
-Classes:
-
-1. Native equivalent exists
-   - map to HME canonical tool
-2. Safe new read-only tool
-   - add as HMETool subclass
-3. Mutating tool
-   - add only after policy gate and tests
-4. Agent/team orchestration tool
-   - expose through HME agent/task abstractions
-5. Internal helper
-   - do not expose to model
-6. Deprecated/noisy/bloat-prone
-   - skip
-
-#### Phase 3: adapter
-
-Add OMO adapter descriptors without changing model surface:
-
-```text
-omoToolDescriptors()
-```
-
-Then selectively promote tools into HMETool canonical registry.
-
----
-
-### D. Context Injector Layer
-
-#### Problem
-
-HME currently has many middleware and hooks that inject context independently. This risks:
-
-- duplicate reminders
-- noisy context
-- inconsistent priority
-- context-burn
-- stale injected state
-- weak compaction recovery
-
-#### OMO feature to adopt
-
-OMO's `ContextCollector` pattern:
-
-- register context by session/source/id
-- priority sort
-- consume-on-inject
-- dedupe by key
-
-#### HME target module
-
-Create:
-
-```text
-tools/HME/proxy/context_injector.js
-```
-
-API:
-
-```js
-registerContext(sessionId, {
-  source,
-  id,
-  content,
-  priority,       // critical/high/normal/low
-  ttl_ms,
-  phase,
-  metadata,
-})
-
-getPendingContext(sessionId, options)
-consumePendingContext(sessionId, options)
-clearContext(sessionId, filter)
-```
-
-#### Priority semantics
-
-```text
-critical: safety/coherence/current task survival
-high: active files, validation failures, current blockers
-normal: helpful project/module context
-low: tips/reminders/nonessential guidance
-```
-
-#### Required features
-
-- per-session storage
-- TTL expiration
-- max bytes per priority
-- dedupe by `source:id`
-- optional persistent backing in HME runtime
-- telemetry:
-  - `context_registered`
-  - `context_injected`
-  - `context_dropped_ttl`
-  - `context_dropped_budget`
-
-#### Migration plan
-
-Move context emissions from middleware into collector gradually:
-
-- lifesaver injection
-- todo/status injection
-- read context
-- directory context
-- background dominance
-- skill reminders
-- compaction survival capsule
-
----
-
-### E. Compaction Survival Capsule
-
-#### Problem
-
-Whole-message dropping retains recent messages but may lose important old state.
-
-#### Target
-
-Before or after compaction, inject a compact high-priority survival capsule:
-
-```text
-[HME compaction survival capsule]
-Current objective: ...
-Active phase: ...
-Recently changed files: ...
-Recently read files: ...
-Open todos: ...
-Known blockers/errors: ...
-Last validation evidence: ...
-Background jobs: ...
-Important decisions: ...
-Do not repeat dropped context unless needed.
-```
-
-#### Inputs
-
-- session_state
-- recent file writes
-- recent reads
-- todo state
-- verification evidence
-- failed writes/tool errors
-- background task registry
-- compaction telemetry
-- user request summary if available
-
-#### Placement
-
-Options:
-
-1. Insert as first surviving user message after compaction marker.
-2. Use context injector to inject into next request.
-3. Both, with dedupe.
+### Tool invocation path
 
 Preferred:
 
-- immediate compact marker for local coherence
-- context injector for next-turn state continuity
+```text
+OMO model/tool request
+  -> OMO tool descriptor
+  -> HME bridge action
+  -> HME canonical tool runner
+  -> HME hooks/policy
+  -> result returned to OMO
+```
 
-#### Telemetry
+Avoid:
 
-```js
-{
-  event: 'compaction_survival_capsule',
-  session,
-  route,
-  bytes,
-  fields_present,
-  source_messages_dropped,
-}
+```text
+OMO directly calls shell/write/network without HME policy
 ```
 
 ---
 
-### F. Dynamic Context Pruning Layer
+## LangChain Synergy Plan
 
-#### Problem
+The LangChain adapter is not the final dependency integration, but it is a bridge pattern for OMO.
 
-Current HME compaction pipeline:
+### Current state
 
-1. stale tool result microcompaction
-2. optional local summary/session notes
-3. whole-message dropping
-4. orphan scrub
-5. emergency tail elision
+Dependency-free descriptors exist.
 
-The missing middle is semantic pruning.
+Optional `StructuredTool` creation exists when `langchain_core` is installed.
 
-#### OMO-inspired strategy order
+### Next improvements
 
-Before whole-message dropping:
+1. Add async support:
 
-1. Turn-protected stale tool result microcompaction
-2. Duplicate tool result pruning
-3. Superseded write/input pruning
-4. Old errored tool pruning
-5. Oversized read/grep/bash output truncation by class
-6. Optional local summary/session notes
-7. Whole-message dropping only if still over threshold
-
-#### Config
-
-Add env/config knobs:
-
-```env
-HME_PROXY_DYNAMIC_PRUNING=1
-HME_PROXY_PRUNE_TURN_PROTECTION=3
-HME_PROXY_PRUNE_DEDUP=1
-HME_PROXY_PRUNE_SUPERSEDED_WRITES=1
-HME_PROXY_PRUNE_PURGE_ERRORS=1
-HME_PROXY_PRUNE_NOTIFICATION=minimal
+```python
+async def ainvoke(...)
 ```
 
-Protected tools:
+2. Add telemetry callback:
+
+```python
+create_langchain_tools(telemetry=emit)
+```
+
+3. Add policy-aware executor injection:
+
+```python
+create_langchain_tools(executor=HmePolicyExecutor())
+```
+
+4. Add compatibility tests with fake `StructuredTool` if real dependency absent.
+
+5. Add optional extras group if package management supports it:
 
 ```text
-TodoWrite
-TodoRead
-TaskCreate
-TaskUpdate
-Read of active edited file
-Edit
-Write
-Agent final outputs
-verification commands
-session state tools
+hme[langchain]
 ```
 
-#### Duplicate pruning algorithm
+### Why this helps OMO
 
-For each `tool_use`:
+If OMO accepts LangChain-style tools, HME can provide canonical tools directly. If OMO does not, the descriptor shape still acts as a clean intermediate contract.
 
-- extract tool name
-- canonicalize input JSON with sorted keys
-- create signature:
+---
+
+## Context Bridge Plan
+
+### Dependency-first approach
+
+Do not port OMO's context injector unless necessary. First determine:
+
+- does OMO expose context injector as importable API?
+- can it operate outside OMO CLI runtime?
+- can HME register context entries into it?
+- can HME consume the resulting context text/messages?
+
+### HME adapter responsibilities
 
 ```text
-name::stableJson(input)
+tools/HME/omo_bridge/context_adapter.js
 ```
 
-- group by signature
-- keep newest full result
-- replace older result content with:
+Should provide:
 
-```text
-(hme-proxy compact: duplicate {tool} result elided; newest duplicate retained later in context; original was N bytes)
+```js
+registerOmoContext(sessionId, entry)
+consumeOmoContext(sessionId, budget)
+clearOmoContext(sessionId, filter)
 ```
 
-Need to preserve tool_use/tool_result pairing validity.
-
-#### Superseded write pruning
-
-If a file was written/edited and later read, older write input/result can sometimes be reduced:
-
-- never remove write existence
-- never remove current active file diff evidence
-- replace large content payloads with markers when subsequent Read gives current state
-
-Marker:
-
-```text
-(hme-proxy compact: prior Write/Edit payload elided because file was read later at turn T)
-```
-
-#### Purge errored tool inputs
-
-Old failed commands often burn context. After N turns:
-
-- preserve error summary
-- drop huge command output/input if not current blocker
-
-#### Telemetry
-
-Extend `context_compaction` or emit companion events:
+### Entry shape
 
 ```js
 {
-  event: 'context_pruning',
+  source: 'hme:lifecycle' | 'hme:todo' | 'hme:compaction' | 'omo:...',
+  id: 'stable-id',
+  content: '...',
+  priority: 'critical' | 'high' | 'normal' | 'low',
+  ttl_ms: 0,
+  metadata: {}
+}
+```
+
+### HME safeguards
+
+- max bytes per injection
+- dedupe repeated entries
+- telemetry on every injection
+- no hidden context spam
+- preserve current user request priority
+
+---
+
+## Dynamic Pruning Bridge Plan
+
+### Dependency-first approach
+
+Use OMO pruning capabilities as callable dependency functions if possible.
+
+The adapter should translate HME payloads into the representation OMO expects, call OMO pruning, and translate changes back.
+
+### Bridge API
+
+```js
+pruneWithOmo(payload, {
+  sessionId,
   route,
   model,
-  stage: 'duplicate_tool_result' | 'superseded_write' | 'purge_error',
-  before_bytes,
-  after_bytes,
-  bytes_saved,
-  tool_results_pruned,
-  protected_skipped,
-  turn_protection_skipped,
+  thresholdBytes,
+  protectedTools,
+  turnProtection,
+}) -> {
+  changed,
+  beforeBytes,
+  afterBytes,
+  stats,
+  payload
 }
 ```
 
----
+### Fallback
 
-### G. Token Limit Recovery Layer
+If OMO pruning cannot operate on HME payloads, implement only a minimal compatibility shim, not a full fork.
 
-#### Current
+Fallback can do duplicate tool-result pruning only, but should remain under `omo_bridge` as compatibility glue.
 
-HME has proactive compaction and upstream emergency handling.
+### Telemetry
 
-#### Target
-
-Add OMO-inspired context-window recovery after upstream token-limit errors:
-
-1. Parse provider error.
-2. If context/token-limit:
-   - run dynamic pruning at aggressive level
-   - retry once
-3. If still too large:
-   - run summarize/survival capsule
-   - retry once
-4. If still failing:
-   - trip emergency valve/pass through or reduce request safely
-
-#### Requirements
-
-- no infinite retry loops
-- retry telemetry
-- preserve original payload dump for debugging
-- never silently drop current user request
-- never create orphan tool_result blocks
-
-#### Telemetry
-
-```js
+```json
 {
-  event: 'context_limit_recovery',
-  provider,
-  model,
-  phase,
-  before_bytes,
-  after_bytes,
-  retry_status,
-  strategy,
+  "event": "omo_pruning_completed",
+  "route": "omni-context",
+  "model": "...",
+  "before_bytes": 0,
+  "after_bytes": 0,
+  "duplicates_pruned": 0,
+  "protected_skipped": 0,
+  "source": "omo|compat"
 }
 ```
 
 ---
 
-### H. Session/Task Assimilation Layer
+## Compaction and Telemetry Relationship
 
-OMO includes session recovery, background agents, team mode, task/todo preservers.
+HME compaction remains the final authority because it sits in the proxy path and knows provider/model thresholds.
 
-HME already has:
-
-- session state
-- task tools/reminders
-- background task tracking
-- lifesaver/error escalation
-- team-role routing
-
-Integration should produce one coherent session/task state surface.
-
-#### Target module
+OMO pruning/context-preservation can become pre-compaction enrichment/pruning:
 
 ```text
-tools/HME/proxy/session_context_snapshot.js
+HME payload
+  -> OMO semantic pruning if enabled
+  -> HME passthrough/omni compaction
+  -> HME structural validation
+  -> HME telemetry
 ```
 
-API:
+Current telemetry should guide rollout.
+
+### Current useful telemetry
+
+`context_compaction` already shows:
+
+- route
+- model
+- tier
+- before/after bytes
+- threshold bytes
+- before/after messages
+- messages dropped
+- stale tool results elided
+- orphan repairs
+- emergency tail elision
+
+### Rollout success metrics
+
+After enabling OMO pruning bridge, expect:
+
+- lower `messages_dropped`
+- higher `after_messages`
+- same or lower `orphan_tool_blocks_scrubbed`
+- same or lower `emergency_tail_elided`
+- visible `omo_pruning_completed` byte savings
+- no increase in upstream context-limit errors
+
+---
+
+## Session and Task Bridge Plan
+
+OMO has substantial session/task/team/background features. HME should not copy them. It should connect through boundary APIs.
+
+### Adapter questions
+
+- Can OMO sessions be addressed by HME session id?
+- Does OMO expose task/todo state APIs?
+- Does OMO team mode expose read-only status snapshots?
+- Does OMO background-agent state have stable identifiers?
+
+### Bridge shape
 
 ```js
-snapshotSession(sessionId) -> {
-  objective,
-  phase,
+getOmoSessionSnapshot(sessionId) -> {
   todos,
-  files_read,
-  files_written,
-  verification_evidence,
-  failed_tools,
+  tasks,
+  agents,
   background_jobs,
-  active_roles,
-  compact_summary,
+  team_status,
+  context_entries,
 }
 ```
 
-This powers:
+HME can then use snapshots for:
 
-- survival capsule
-- OMO context injector
-- task recovery
-- team mailbox/status
-- final response coherence checks
+- compaction survival capsules
+- status injection
+- telemetry
+- final answer checks
 
-#### OMO team-mode integration
+### Policy
 
-Initial approach:
-
-- inspect OMO `src/features/team-mode/**`
-- map concepts to HME team roles
-- do not expose all tools immediately
-- integrate mailbox/status as read-only context first
-- promote mutating team tools later
+Session/task reads are safe. Mutations must go through HME policy or explicit OMO bridge policy.
 
 ---
 
-## Implementation Phases
+## OMO Plugin/Hook Bridge Plan
 
-## Phase 0: Stabilize current bridge
+### Goal
 
-Status: mostly complete.
+Allow OMO plugins/hooks to run where appropriate without letting them bypass HME lifecycle policy.
 
-### Deliverables
+### Bridge model
 
-- [x] LangChain descriptor export from HMETool
-- [x] JS `canonicalLangChainTools()`
-- [x] optional Python `create_langchain_tools()`
-- [x] tests for descriptor parity
-- [x] dependency-optional failure behavior
+```text
+HME lifecycle event
+  -> OMO hook adapter
+  -> OMO hook/plugin
+  -> HME validates result
+  -> HME applies or rejects mutation
+```
 
-### Follow-ups
+### HME-owned validation
 
-- [ ] Add OMO descriptor export kind if needed.
-- [ ] Add adapter docs after API settles.
-- [ ] Add version metadata to exports.
-- [ ] Add schema drift audit in precommit.
+Any OMO hook result that mutates:
 
-### Validation
+- system prompt
+- tool schema
+- messages
+- file system
+- command execution
+- session state
+
+must be validated by HME before applying.
+
+### Telemetry
+
+```json
+{
+  "event": "omo_hook_invoked",
+  "hook": "...",
+  "phase": "...",
+  "result": "applied|blocked|noop|error",
+  "bytes_added": 0
+}
+```
+
+---
+
+## Phased Implementation
+
+## Phase 0: Correct plan and stabilize bridge
+
+Status:
+
+- LangChain descriptor export exists.
+- Optional LangChain adapter exists.
+- Plan corrected to dependency-first integration.
+
+Validation:
 
 ```bash
 python3 -m pytest -q tools/HME/tests/specs/test_langchain_adapter.py
 node --test tools/HME/tests/specs/smolagents_tool_registry.test.js
 ```
 
----
+## Phase 1: OMO dependency resolver
 
-## Phase 1: OMO Inventory and Mapping
-
-### Goal
-
-Know exactly what OMO offers before importing behavior.
-
-### Tasks
-
-1. Build inventory script:
+Deliverables:
 
 ```text
-tools/HME/scripts/omo_inventory.py
+tools/HME/omo_bridge/dependency.js
+tools/HME/omo_bridge/contract.json
+tools/HME/omo_bridge/contract_validator.js
+tools/HME/tests/specs/omo_dependency.test.js
+tools/HME/tests/specs/omo_contract.test.js
 ```
 
-Input:
+Acceptance criteria:
+
+- resolves disabled state cleanly
+- resolves configured path/package without absolute path assumptions
+- detects version/commit
+- validates required entrypoints
+- emits telemetry
+- fails loud with clear diagnostic
+
+## Phase 2: HME tools to OMO bridge
+
+Deliverables:
 
 ```text
-<reference-repo-root>
+tools/HME/omo_bridge/hme_tools_to_omo.js
+tools/HME/tests/specs/omo_tool_bridge.test.js
 ```
 
-Output:
+Acceptance criteria:
+
+- all canonical HME tools are exported to OMO descriptor shape
+- metadata preserved
+- approval policy preserved
+- no duplicate tool schema definitions
+- mutating tools are clearly marked
+
+## Phase 3: Policy adapter for OMO actions
+
+Deliverables:
 
 ```text
-tools/HME/runtime/omo_inventory.json
+tools/HME/omo_bridge/policy_adapter.js
+tools/HME/tests/specs/omo_policy_adapter.test.js
 ```
 
-Fields:
+Acceptance criteria:
 
-```json
-{
-  "path": "...",
-  "kind": "tool|hook|feature|agent|schema|plugin",
-  "name": "...",
-  "description": "...",
-  "side_effect": "read|write|shell|network|agent|unknown",
-  "dependencies": [],
-  "candidate_mapping": "existing_hme_tool|new_tool|internal|skip",
-  "risk": "low|medium|high",
-  "notes": "..."
-}
-```
+- OMO shell/write/network/agent actions classified
+- write/edit actions route through HME pre-write policy
+- shell actions route through HME bash policy
+- blocked actions produce clear errors
+- telemetry emitted
 
-2. Generate summary report:
+## Phase 4: Context adapter
+
+Deliverables:
 
 ```text
-omo_inventory_summary
+tools/HME/omo_bridge/context_adapter.js
+tools/HME/tests/specs/omo_context_adapter.test.js
 ```
 
-3. Add tests for inventory parser on fixtures.
+Acceptance criteria:
 
-### Acceptance criteria
+- HME can register context into OMO if available
+- fallback disabled mode is safe
+- context injection has byte limits
+- duplicate context is avoided
+- telemetry emitted
 
-- all OMO `src/tools`, `src/hooks`, `src/features`, `src/agents`, `src/plugin*` are classified
-- no write/shell/network tool can be marked low risk without explicit policy mapping
-- inventory is reproducible
+## Phase 5: OMO pruning adapter before HME compaction
 
----
-
-## Phase 2: Context Injector Port
-
-### Goal
-
-Create HME's priority context collector inspired by OMO.
-
-### Tasks
-
-1. Implement:
+Deliverables:
 
 ```text
-tools/HME/proxy/context_injector.js
+tools/HME/omo_bridge/pruning_adapter.js
+tools/HME/tests/specs/omo_pruning_adapter.test.js
 ```
 
-2. Add tests:
+Acceptance criteria:
+
+- calls OMO pruning when available
+- compatibility fallback is minimal and explicit
+- HME structural validation runs after pruning
+- `context_compaction` still emitted
+- `omo_pruning_completed` emitted
+- message drops decrease in live telemetry
+
+## Phase 6: Session/task snapshot bridge
+
+Deliverables:
 
 ```text
-tools/HME/tests/specs/context_injector.test.js
+tools/HME/omo_bridge/session_adapter.js
+tools/HME/tests/specs/omo_session_adapter.test.js
 ```
 
-Test cases:
+Acceptance criteria:
 
-- priority ordering
-- dedupe by source/id
-- consume clears session
-- TTL expiration
-- byte budget trims low priority first
-- session isolation
+- reads OMO session/task/team state if available
+- no mutation by default
+- snapshot can feed compaction survival capsule or HME status injection
+- telemetry emitted
 
-3. Add telemetry:
+## Phase 7: Optional hook/plugin bridge
 
-- `context_registered`
-- `context_consumed`
-- `context_dropped_budget`
-- `context_dropped_ttl`
-
-4. Integrate one low-risk middleware source first, probably status/todo or lifesaver.
-
-### Acceptance criteria
-
-- no duplicate injection for same source/id
-- critical context survives budget trimming
-- middleware can register context without directly mutating payload
-
----
-
-## Phase 3: Compaction Survival Capsule
-
-### Goal
-
-Reduce coherence loss from whole-message dropping.
-
-### Tasks
-
-1. Implement:
+Deliverables:
 
 ```text
-tools/HME/proxy/compaction_survival_capsule.js
+tools/HME/omo_bridge/hook_adapter.js
+tools/HME/tests/specs/omo_hook_adapter.test.js
 ```
 
-2. Use `session_state` to build compact summary.
+Acceptance criteria:
 
-3. Integrate into `passthrough_compact.js` after message drops.
-
-4. Register capsule with context injector for next request.
-
-5. Add tests:
-
-- capsule includes current objective when present
-- includes recent writes/reads
-- includes validation evidence
-- stays under byte budget
-- inserted marker remains user-role safe
-- no orphan tool blocks
-
-6. Telemetry:
-
-```text
-compaction_survival_capsule
-```
-
-### Acceptance criteria
-
-- compaction with 900+ message drops leaves clear state capsule
-- capsule does not repeat huge logs/tool outputs
-- telemetry records byte size and fields included
+- OMO hooks can be invoked from HME lifecycle events
+- all mutations are validated by HME
+- hooks can be disabled by config
+- telemetry emitted
 
 ---
 
-## Phase 4: Dynamic Pruning Before Message Drop
+## Configuration Plan
 
-### Goal
+Proposed env/config:
 
-Adopt OMO's semantic pruning before coarse message dropping.
-
-### Tasks
-
-1. Implement stable JSON canonicalizer:
-
-```text
-tools/HME/proxy/stable_json.js
+```env
+HME_OMO_ENABLED=0
+HME_OMO_SOURCE=disabled
+HME_OMO_PATH=
+HME_OMO_PACKAGE=
+HME_OMO_REQUIRED_VERSION=
+HME_OMO_STRICT_CONTRACT=1
+HME_OMO_CONTEXT_BRIDGE=0
+HME_OMO_PRUNING_BRIDGE=0
+HME_OMO_TOOL_BRIDGE=0
+HME_OMO_HOOK_BRIDGE=0
 ```
 
-2. Implement duplicate tool result pruning:
-
-```text
-tools/HME/proxy/context_pruning.js
-```
-
-API:
-
-```js
-pruneDuplicateToolResults(payload, options) -> stats
-```
-
-3. Integrate into `shrinkForPassthrough()` between microcompact and message drop.
-
-4. Add protected tools and turn protection.
-
-5. Add tests:
-
-- duplicate Read result pruned, newest kept
-- duplicate Bash status command pruned
-- protected Todo/Write/Edit not pruned
-- recent turn protected
-- tool_use/tool_result pairing remains valid
-- byte savings telemetry emitted
-
-6. Add telemetry:
-
-```text
-context_pruning
-```
-
-### Acceptance criteria
-
-- duplicate pruning reduces bytes before message drops
-- whole-message drops decrease in telemetry
-- no orphan tool block increase
-- no emergency tail elision increase
-
----
-
-## Phase 5: Token Limit Recovery
-
-### Goal
-
-Reactive recovery when upstream rejects context.
-
-### Tasks
-
-1. Add token-limit error parser per provider.
-
-2. Add recovery strategies:
-
-- dynamic pruning retry
-- survival capsule + aggressive truncation retry
-- emergency fallback
-
-3. Integrate with upstream failure handling.
-
-4. Add tests with synthetic provider errors:
-
-- Anthropic-style token limit error
-- OpenAI/Codex context length error
-- retry succeeds
-- retry stops after bounded attempts
-- emergency valve not tripped for recoverable first attempt
-
-5. Telemetry:
-
-```text
-context_limit_recovery
-```
-
-### Acceptance criteria
-
-- no infinite retries
-- original user message preserved
-- tool block structure valid after recovery
-
----
-
-## Phase 6: OMO Tool/Plugin Adapter
-
-### Goal
-
-Prepare full OMO integration without exposing unsafe tools prematurely.
-
-### Tasks
-
-1. Add OMO adapter module:
-
-```text
-tools/HME/omo_adapter/
-```
-
-2. Add descriptor reader for OMO tools/plugins.
-
-3. Map OMO tools into categories:
-
-- existing HME canonical tool
-- new HMETool candidate
-- internal-only
-- blocked/unsafe
-
-4. Add an OMO descriptor export:
-
-```bash
-python3 tools/HME/hme_tools/export.py --kind omo
-```
-
-5. Add tests:
-
-- OMO descriptor shape
-- policy mapping exists for every mutating tool
-- no unknown side effects default to allowed
-
-### Acceptance criteria
-
-- OMO inventory can be consumed by HME without side effects
-- no OMO mutating behavior bypasses pre-write/pre-bash policy
-
----
-
-## Phase 7: Selective OMO Feature Assimilation
-
-### Candidate order
-
-1. Context injector concepts
-2. Dynamic pruning/recovery
-3. Compaction todo/context preservation
-4. Session recovery sanitizers
-5. Background task manager ideas
-6. Team-mode mailbox/status as read-only
-7. OMO command/plugin loading
-8. Agent prompt libraries
-9. Full OMO tool execution surface
-
-### Non-goals at this stage
-
-- wholesale replacement of HME proxy
-- bypassing HME hooks
-- exposing all OMO tools immediately
-- adding mandatory LangChain dependency
-- adding noisy documentation/context injection without telemetry
+Default all bridges off. Enable one bridge at a time.
 
 ---
 
 ## Telemetry Plan
 
-### Existing event
+Events:
 
 ```text
-context_compaction
-```
-
-### New proposed events
-
-```text
-context_registered
-context_consumed
-context_dropped_budget
-context_dropped_ttl
-context_pruning
-compaction_survival_capsule
-context_limit_recovery
-omo_inventory_generated
-omo_tool_mapped
+omo_dependency_resolved
+omo_contract_validated
+omo_bridge_error
+omo_tool_bridge_exported
+omo_tool_invoked
 omo_tool_blocked
-langchain_tool_invoked
-langchain_tool_error
+omo_policy_checked
+omo_context_registered
+omo_context_injected
+omo_pruning_started
+omo_pruning_completed
+omo_session_snapshot
+omo_hook_invoked
 ```
 
-### Dashboard questions
+Telemetry fields should include:
 
-1. How many bytes are saved by semantic pruning before message drop?
-2. Are whole-message drops decreasing?
-3. Are orphan/tail emergency repairs still zero?
-4. Which tools generate the most duplicate output?
-5. How often does survival capsule inject?
-6. Does context-limit recovery avoid emergency valve trips?
-7. Which OMO tools are mapped/blocked?
+- bridge name
+- OMO version/commit
+- route/model where relevant
+- before/after bytes where relevant
+- action/result
+- blocked reason
+- source: package/path/disabled
 
 ---
 
-## Safety and Coherence Gates
+## Safety Gates
 
-### Required before merging each phase
+Before enabling any OMO bridge by default:
 
-- focused tests pass
-- precommit validation passes
-- no new unchecked duplicate tool lists
-- no direct OMO mutating tool exposure without policy
-- no markdown/docs creation unless requested
-- structured telemetry exists for new behavior
-- compaction tests preserve tool-use graph validity
-
-### Invariants
-
-1. Current user message is never dropped.
-2. Assistant `tool_use` and user `tool_result` remain coherent.
-3. Protected tools are never pruned aggressively.
-4. Edit/Write never bypass prior-read/write policy.
-5. Bash destructive policy remains canonical.
-6. OMO tools cannot execute by default without classification.
-7. LangChain adapter remains optional dependency.
-8. smolagents remains tool contract source of truth unless deliberately replaced.
+1. Dependency resolver tests pass.
+2. Contract validation tests pass.
+3. OMO unavailable mode is safe.
+4. Mutating OMO actions cannot bypass HME policy.
+5. No local absolute paths are committed.
+6. No duplicate canonical tool schema list is introduced.
+7. HME precommit passes.
+8. Focused bridge tests pass.
+9. Live telemetry is available for every bridge action.
+10. Rollback is a config flip.
 
 ---
 
 ## Test Matrix
 
-### Unit tests
+### Existing tests to keep green
 
-```text
-smolagents_tool_registry.test.js
-test_langchain_adapter.py
-context_injector.test.js
-context_pruning.test.js
-compaction_survival_capsule.test.js
-context_limit_recovery.test.js
-omo_inventory.test.py
-omo_adapter.test.py
+```bash
+python3 -m pytest -q tools/HME/tests/specs/test_langchain_adapter.py
+node --test tools/HME/tests/specs/smolagents_tool_registry.test.js
+node --test tools/HME/tests/specs/codex_empty_bash_context.test.js
+node --test tools/HME/tests/specs/proxy_extracted_modules.test.js
 ```
 
-### Integration tests
+### New tests
 
 ```text
-proxy_extracted_modules.test.js
-proxy_boundary_contract.test.js
-codex_empty_bash_context.test.js
-pre_write_and_session_state.test.js
-edit_failure_recovery.test.js
+omo_dependency.test.js
+omo_contract.test.js
+omo_tool_bridge.test.js
+omo_policy_adapter.test.js
+omo_context_adapter.test.js
+omo_pruning_adapter.test.js
+omo_session_adapter.test.js
+omo_hook_adapter.test.js
 ```
 
 ### Synthetic scenarios
 
-1. Repeated Read same file 20 times.
-2. Repeated grep same query 20 times.
-3. Long Bash log output repeated.
-4. Active Edit after Read should not prune needed context.
-5. Todo state survives compaction.
-6. Background job result survives via capsule.
-7. OMO tool descriptor is blocked until classified.
-8. Token limit error triggers pruning retry.
+1. OMO disabled: HME native behavior unchanged.
+2. OMO path missing: diagnostic but no proxy crash.
+3. OMO contract mismatch: bridge disabled with telemetry.
+4. OMO tool bridge exports all HME canonical tools.
+5. OMO attempts write: HME pre-write policy applies.
+6. OMO attempts bash destructive command: HME destructive policy applies.
+7. OMO pruning reduces payload bytes before HME compaction.
+8. OMO context injection respects HME byte budget.
+9. OMO hook tries to add excessive context: HME blocks/trims.
+10. OMO dependency update changes entrypoint: contract test catches it.
+
+---
+
+## Compaction Tuning After OMO Bridge
+
+Current HME compaction telemetry shows structural safety after increasing retained context. However, further tuning should wait until OMO pruning bridge is available.
+
+Reason:
+
+- threshold tuning keeps more bytes
+- semantic pruning keeps more meaning per byte
+- OMO dynamic pruning may reduce whole-message drops more effectively than further threshold increases
+
+After OMO pruning bridge rollout, compare:
+
+```text
+before:
+  messages_dropped
+  after_messages
+  orphan_tool_blocks_scrubbed
+  emergency_tail_elided
+
+after:
+  messages_dropped
+  after_messages
+  omo_pruning_completed.bytes_saved
+  orphan_tool_blocks_scrubbed
+  emergency_tail_elided
+```
+
+Only tune thresholds further if:
+
+- OMO pruning is stable
+- context errors remain absent
+- orphan/tail repairs remain zero
+- model token telemetry still shows headroom
 
 ---
 
 ## Near-Term Next Actions
 
-### Immediate next step
-
-Implement Phase 1 inventory script for OMO:
-
-```text
-tools/HME/scripts/omo_inventory.py
-```
-
-This should be read-only and safe.
-
-### Then
-
-Implement Phase 2 context injector.
-
-### Then
-
-Implement Phase 4 duplicate tool result pruning before whole-message drop.
-
-The pruning layer should likely happen before further context-threshold tuning, because telemetry shows current message drops still remove around 900+ messages per compaction. Increasing the threshold helps, but semantic pruning will preserve more useful context per byte.
-
----
-
-## Open Questions
-
-1. Should OMO become a vendored dependency, a git submodule, or an external reference copied into HME modules?
-2. Should LangChain remain optional forever, or become an optional extra install group?
-3. Should OMO's plugin model be adapted to HME hooks, or should HME expose a compatibility plugin host?
-4. What is the canonical naming convention for OMO-derived tools?
-5. Which OMO agents map to HME team roles?
-6. Should the context injector be purely in-memory, runtime-persistent, or both?
-7. Should compaction survival capsules be inserted into payloads, injected next-turn, or both?
-8. How aggressive can duplicate pruning be before it hides important historical evidence?
+1. Implement OMO dependency resolver in disabled/path modes.
+2. Add contract validator for expected OMO entrypoints.
+3. Add HME-tools-to-OMO descriptor bridge using `canonicalLangChainTools()`.
+4. Add policy adapter stubs for OMO-originated actions.
+5. Keep all bridges disabled by default until tests and telemetry are complete.
 
 ---
 
 ## Success Criteria
 
-The integration is successful when:
+OMO integration is successful when:
 
-- HME can consume OMO tool/context/session features through typed adapters.
-- Tool schema drift is eliminated across smolagents, Codex, Claude, LangChain, and OMO.
-- Compaction retains more semantic context with fewer whole-message drops.
-- Context injection is priority-based, deduped, and observable.
-- OMO features cannot bypass HME policy gates.
-- Optional LangChain integration works when installed and fails loud when absent.
-- Telemetry makes every compaction/pruning/recovery decision explainable.
-- Precommit and focused suites remain green.
+- OMO is a managed dependency, not copied internals.
+- HME can resolve and validate OMO version/contract.
+- HME can provide canonical tools to OMO without schema drift.
+- OMO actions are policy-gated by HME.
+- OMO context/pruning/session features can be invoked through adapters.
+- OMO can be upgraded with contract tests catching breakage.
+- All bridge actions are observable through telemetry.
+- Disabling OMO instantly restores pure HME native behavior.
 
 ---
 
-## Current Baseline Commands
+## Baseline Commands
 
 ```bash
 python3 -m pytest -q tools/HME/tests/specs/test_langchain_adapter.py
@@ -1333,43 +1068,3 @@ node --test tools/HME/tests/specs/smolagents_tool_registry.test.js
 node --test tools/HME/tests/specs/proxy_extracted_modules.test.js
 PROJECT_ROOT=<repo-root> HOOK_PATH=<repo-root>/.git/hooks/pre-commit python3 tools/HME/scripts/precommit_validate.py
 ```
-
----
-
-## Appendix: Current LangChain Descriptor Shape
-
-Example descriptor shape:
-
-```json
-{
-  "name": "Read",
-  "description": "Read a file by absolute path...",
-  "args_schema": {
-    "type": "object",
-    "properties": {
-      "file_path": { "type": "string" },
-      "offset": { "type": "integer" },
-      "limit": { "type": "integer" },
-      "pages": { "type": "string" }
-    },
-    "required": ["file_path"],
-    "additionalProperties": false
-  },
-  "metadata": {
-    "side_effect": "read",
-    "approval": "never",
-    "idempotent": true,
-    "max_output_bytes": 200000,
-    "input_aliases": { "file_path": ["file"] },
-    "bridge_action": "read",
-    "host_native": false,
-    "policy": {
-      "context_guard": true,
-      "requires_absolute_path": true
-    }
-  },
-  "return_direct": false
-}
-```
-
-This descriptor should be considered the primary low-friction interop contract for LangChain and OMO until full tool execution adapters are mature.
