@@ -45,7 +45,11 @@ test('smolagents HME tool runner executes bare Bash tool name', () => {
 
 test('smolagents exported schema matches checked Codex snapshot', () => {
   const snapshot = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/HME/tests/fixtures/hme-tools-codex.snapshot.json'), 'utf8'));
-  assert.deepEqual(canonicalToolSchemas(), snapshot);
+  assert.deepEqual(
+    canonicalToolSchemas(),
+    snapshot,
+    'Codex HME tool schema drifted. If intentional, regenerate with: python3 tools/HME/hme_tools/export.py --kind codex --output tools/HME/tests/fixtures/hme-tools-codex.snapshot.json && python3 -m json.tool tools/HME/tests/fixtures/hme-tools-codex.snapshot.json > tmp/hme-tools-codex.pretty && mv tmp/hme-tools-codex.pretty tools/HME/tests/fixtures/hme-tools-codex.snapshot.json',
+  );
 });
 
 test('smolagents validation exposes required-field aliases and approval policy', () => {
