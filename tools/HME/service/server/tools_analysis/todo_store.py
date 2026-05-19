@@ -97,7 +97,7 @@ def save_store(raw: list[dict], meta: dict, path: str | None = None) -> None:
         try:
             tmp.unlink(missing_ok=True)
         except OSError:
-            pass  # silent-ok: pending review
+            pass  # silent-ok: unique temp may already be replaced or cleaned up
     record_store_state(meta, body)
 
 
