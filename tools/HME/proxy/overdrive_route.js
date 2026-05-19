@@ -193,7 +193,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
   result.wasStreaming = payload.stream === true;
   result.injected = true;
   let chainInfo;
-  try { chainInfo = buildMode1Chain(payload, env); }
+  try { chainInfo = buildMode1Chain(payload, env, cfg); }
   catch (err) { console.error(`[hme-proxy] MODE=1 chain build failed: ${err.message}`); chainInfo = { chain: [], role: '', tier: modelTier(payload.model) }; }
   result.swapChain = chainInfo.chain || [];
   console.error(`[hme-proxy] MODE=1 ${chainInfo.tier} chain built (role=${chainInfo.role || 'none'} model=${payload.model}): ${result.swapChain.map((m) => m.id).join(' -> ')} (${result.swapChain.length} models)`);
