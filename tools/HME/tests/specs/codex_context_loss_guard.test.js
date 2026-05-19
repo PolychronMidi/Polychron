@@ -177,6 +177,78 @@ test('Codex context-loss guard detects recovered pwd-only resume stalls', () => 
   assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: genericBad }] }] }), true);
 });
 
+test('Codex proxy retries tool-avoidant ask-next responses with tool-use enforcement', async () => {
+  const proxyPort = await freePort();
+  const upstreamBodies = [];
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      upstreamBodies.push(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      if (upstreamBodies.length === 1) {
+        res.end(JSON.stringify({
+          id: 'resp_tool_avoidant',
+          output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'Acknowledged. I’ll reuse the recovered repository context and avoid repeating the same discovery/listing calls unless there’s a clear need.\n\nPlease send the next objective or the specific task you want me to continue.' }] }],
+        }));
+        return;
+      }
+      res.end(JSON.stringify({
+        id: 'resp_after_tool_enforcement',
+        output: [{ type: 'function_call', name: 'Read', call_id: 'call_enforced_read', arguments: JSON.stringify({ file_path: 'README.md', limit: 1 }) }],
+      }));
+    });
+  });
+  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      HME_CODEX_PROXY_PORT: String(proxyPort),
+      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
+      HME_CODEX_OMNIROUTE: '0',
+      HME_CODEX_PROXY_AUTOCOMMIT: '0',
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
+  try {
+    await waitFor(() => new Promise((resolve) => {
+      const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    }));
+    const response = await requestJson(proxyPort, {
+      model: 'gpt-5.5',
+      input: [{ role: 'user', content: [{ type: 'input_text', text: 'overall Design Pattern optimization suggestions for cleaner intuitive comprehensibility?' }] }],
+      tools: [{ type: 'function', name: 'Bash' }, { type: 'function', name: 'Read' }, { type: 'function', name: 'Agent' }],
+      stream: false,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstreamBodies.length, 3);
+    const repairBody = JSON.stringify(upstreamBodies[1]);
+    assert.match(repairBody, /HME tool-use enforcement/);
+    assert.match(repairBody, /Use the available tools now/);
+    assert.match(repairBody, /overall Design Pattern optimization suggestions/);
+    assert.equal(upstreamBodies[2].previous_response_id, 'resp_after_tool_enforcement');
+    assert.equal(upstreamBodies[2].input[0].type, 'function_call_output');
+    assert.equal(upstreamBodies[2].input[0].call_id, 'call_enforced_read');
+    assert.doesNotMatch(response.body, /Please send the next objective|specific task you want me to continue/);
+  } catch (err) {
+    err.message = `${err.message}\nproxy stderr:\n${stderr}`;
+    throw err;
+  } finally {
+    child.kill('SIGTERM');
+    upstream.close();
+  }
+});
+
 test('Codex request transform scrubs assistant stalls that cite recovered adapter notices or missing prompts', () => {
   const bad = [
     'I only have the recovered adapter notices, not the actual prior task/session objective.',
