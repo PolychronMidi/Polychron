@@ -22,26 +22,6 @@ from .event_groups import activity_event_names
 logger = logging.getLogger("HME")
 
 
-def _activity_ts_seconds(value) -> float | None:
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        text = value.strip()
-        if not text:
-            return None
-        try:
-            return float(text)
-        except ValueError:
-            pass
-        try:
-            return datetime.datetime.fromisoformat(
-                text.replace("Z", "+00:00")
-            ).timestamp()
-        except ValueError:
-            return None
-    return None
-
-
 def _mode_activity():
     from ..activity_digest import activity_digest as _ad
     return _ad(window="round")
