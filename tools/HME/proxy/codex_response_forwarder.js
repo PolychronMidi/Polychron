@@ -54,12 +54,6 @@ function finalOutputText(parsed) {
   return chunks.join('\n');
 }
 
-function responseAvoidedToolUse(parsed) {
-  const text = finalOutputText(parsed);
-  if (!text.trim()) return false;
-  return /\b(?:(?:please\s+)?send\s+(?:the\s+)?(?:next\s+)?(?:objective|task)|specific task you want me to continue|avoid (?:calling|repeating) .*?(?:tool|read|discovery\/listing|context check|calls)|reuse the recovered repository context|if there(?:'s| is) no specific task)\b/i.test(text);
-}
-
 function sseResponseId(events) {
   for (const event of [...events].reverse()) {
     if (event && event.response && event.response.id) return event.response.id;
