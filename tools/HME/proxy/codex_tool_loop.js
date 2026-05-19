@@ -130,10 +130,34 @@ function outputOf(result) {
   return (text || (result.error ? String(result.error.message || result.error) : '')).slice(0, MAX_OUTPUT);
 }
 
-function isIncompleteToolCall(call) {
-  if (!call || call.name !== 'Bash') return false;
+function hasOwn(value, key) {
+  return Boolean(value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, key));
+}
+
+function missingRequiredToolFields(call) {
+  if (!call || typeof call !== 'object') return [];
   const args = call.args && typeof call.args === 'object' ? call.args : {};
-  return !String(args.command || args.cmd || '').trim();
+  if (call.name === 'Bash') return String(args.command || args.cmd || '').trim() ? [] : ['command'];
+  if (call.name === 'Agent') return String(args.prompt || '').trim() ? [] : ['prompt'];
+  if (call.name === 'Read') return String(args.file_path || args.file || '').trim() ? [] : ['file_path'];
+  if (call.name === 'WebFetch') {
+    return [String(args.url || '').trim() ? '' : 'url', String(args.prompt || '').trim() ? '' : 'prompt'].filter(Boolean);
+  }
+  if (call.name === 'Write') {
+    return [String(args.file_path || args.file || '').trim() ? '' : 'file_path', hasOwn(args, 'content') ? '' : 'content'].filter(Boolean);
+  }
+  if (call.name === 'Edit') {
+    return [
+      String(args.file_path || args.file || '').trim() ? '' : 'file_path',
+      String(args.old_string || '').length ? '' : 'old_string',
+      hasOwn(args, 'new_string') ? '' : 'new_string',
+    ].filter(Boolean);
+  }
+  return [];
+}
+
+function isIncompleteToolCall(call) {
+  return missingRequiredToolFields(call).length > 0;
 }
 
 function executeToolCall(call, opts = {}) {
