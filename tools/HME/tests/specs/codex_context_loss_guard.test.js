@@ -145,8 +145,15 @@ test('Codex context-loss guard detects generic no-file-read repo stalls', () => 
     'I did not successfully read the repo. My attempted file/tool reads failed, and I should have stopped there instead of producing a Polychron-specific sounding report.',
     'If you want, paste repo structure or key files and I can redo this properly.',
   ].join('\n');
+  const unsupportedBad = [
+    'All tools are currently showing as unsupported, which is a bit tricky.',
+    'I attempted to inspect the project root, but the available file/shell tools are currently returning unsupported call for Bash, Read, and Agent, so I have not successfully read the repo yet.',
+    'Please provide the files or enable access.',
+  ].join('\n');
   assert.equal(isContextLossText(bad), true);
+  assert.equal(isContextLossText(unsupportedBad), true);
   assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: bad }] }] }), true);
+  assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: unsupportedBad }] }] }), true);
 });
 
 test('Codex request transform scrubs assistant stalls that cite recovered adapter notices or missing prompts', () => {
