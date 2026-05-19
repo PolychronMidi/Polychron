@@ -153,18 +153,11 @@ function runSmolTool(name, args, root) {
 
 function shellQuote(s) { return `'${String(s).replace(/'/g, `'\\''`)}'`; }
 
-function bashCommand(args, root) {
+function normalizeBashArgs(args, root) {
   const command = String(args.command || args.cmd || '');
-  const verdict = evaluateBashInput({ command }, { projectRoot: root, supportsRunInBackground: false });
-  if (verdict && verdict.decision === 'deny') return blockedCommand(verdict.reason || 'blocked');
-  return verdict && verdict.input ? String(verdict.input.command || verdict.input.cmd || command) : command;
-}
-
-function runBash(args, root) {
-  const cmd = bashCommand(args, root);
-  if (!cmd.trim()) return { status: 2, stdout: EMPTY_BASH_TOOL_RESULT, stderr: '', hmeAdapterNotice: 'empty_bash_command' };
-  const timeout = Math.min(Math.max(Number(args.timeout || args.timeout_ms || 120000), 1), 600000);
-  return spawnSync('bash', ['-lc', cmd], { cwd: root, encoding: 'utf8', timeout, env: { ...process.env, PROJECT_ROOT: root } });
+  const verdict = evaluateBashInput({ ...args, command }, { projectRoot: root, supportsRunInBackground: false });
+  if (verdict && verdict.decision === 'deny') return { ...args, command: blockedCommand(verdict.reason || 'blocked') };
+  return verdict && verdict.input ? { ...args, ...verdict.input, command: String(verdict.input.command || verdict.input.cmd || command) } : { ...args, command };
 }
 
 function outputOf(result) {
