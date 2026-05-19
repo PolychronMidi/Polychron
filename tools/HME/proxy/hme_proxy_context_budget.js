@@ -88,20 +88,39 @@ function createContextBudget() {
     return { threshold, maxTier: gear, maxToolResultAge: staleHorizon, toolResultByteFloor: floor };
   }
 
+  function resolveModelCtx(modelId) {
+    // Budget prefers sanitized max_input_tokens.
+    const id = String(modelId || '');
+    const reg = loadModelCtxRegistry();
+    if (reg.has(id)) return reg.get(id);
+    for (const [k, v] of reg) if (id.includes(k)) return v;
+    return 1000000;
+  }
+
+  function payloadModelBudget(payload) {
+    if (!payload || typeof payload !== 'object') return 0;
+    const candidates = [payload.model, payload.original_model, payload.target_model].filter(Boolean).map(String);
+    for (const id of candidates) {
+      const ctx = resolveModelCtx(id);
+      if (ctx && ctx !== 1000000) return ctx;
+    }
+    return 0;
+  }
+
   function effectiveCompactThreshold(payload = null) {
     const bytes = payload ? Buffer.byteLength(JSON.stringify(payload), 'utf8') : lastPayloadBytes;
     const usedTokens = Math.ceil(bytes / contextBytesPerTokenEst);
-    let budgetTokens = lastInputTokensLimit;
+    let budgetTokens = lastInputTokensLimit || payloadModelBudget(payload);
     if ((!budgetTokens || budgetTokens <= 0) && lastInputTokensRemaining != null) {
       budgetTokens = usedTokens + lastInputTokensRemaining;
     }
-    let plan;
-    if (compactBytesExplicit) plan = { threshold: passthroughCompactBytes, maxTier: 3 };
-    else plan = planForUsage({ usedTokens, budgetTokens, fallbackBytes: passthroughCompactBytes });
+    let plan = planForUsage({ usedTokens, budgetTokens, fallbackBytes: passthroughCompactBytes });
+    if (compactBytesExplicit && plan.maxTier > 0) plan = { ...plan, threshold: Math.min(plan.threshold, passthroughCompactBytes) };
     if (lastInputTokensRemaining != null && lastInputTokensRemaining >= 0 && budgetTokens > 0) {
       const telemetryUsed = Math.max(0, budgetTokens - lastInputTokensRemaining);
       const telemetryPlan = planForUsage({ usedTokens: telemetryUsed, budgetTokens, fallbackBytes: passthroughCompactBytes });
       if (telemetryPlan.maxTier > plan.maxTier) plan = telemetryPlan;
+      else if (telemetryPlan.maxTier === plan.maxTier && telemetryPlan.maxTier > 0) plan = { ...plan, threshold: Math.min(plan.threshold, telemetryPlan.threshold) };
     }
     if (consecutive429s > 0) {
       const cap = Math.max(1, Math.floor((budgetTokens || 128000) * 0.5 * contextBytesPerTokenEst / Math.pow(2, consecutive429s)));
