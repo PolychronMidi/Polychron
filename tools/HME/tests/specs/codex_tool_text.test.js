@@ -50,6 +50,6 @@ test('normalizes edit bridge display without reusable replacement strings', () =
     new_string: '<display-redacted: original was sent; do not reuse>',
   });
   const out = normalizeStructuredBridgeCalls({ text: cmd });
-  assert.match(out.body.text, /Edit\(\{"file_path":"src\/x.js"/);
+  assert.match(out.body.text, /Edit src\/x\.js/);
   assert.doesNotMatch(out.body.text, /secret old|secret new|<omitted by proxy>/);
 });
