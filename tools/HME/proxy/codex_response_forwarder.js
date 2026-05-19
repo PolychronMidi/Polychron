@@ -20,6 +20,15 @@ function upstreamHeaders(req, bodyBytes, target) {
     headers['x-hme-codex-proxy'] = '1';
     if (target.apiKey) headers.authorization = `Bearer ${target.apiKey}`;
   }
+  const setTrace = (name, value) => {
+    if (value == null || value === '') return;
+    headers[name] = String(value).slice(0, 240);
+  };
+  setTrace('x-hme-codex-correlation-id', target.hme_correlation_id);
+  setTrace('x-hme-codex-session-id', target.hme_session_id);
+  setTrace('x-hme-codex-thread-id', target.hme_thread_id);
+  setTrace('x-hme-codex-turn-id', target.hme_turn_id);
+  setTrace('x-hme-codex-tool-loop-depth', target.tool_loop_depth || 0);
   headers['content-length'] = String(bodyBytes.length);
   return headers;
 }
