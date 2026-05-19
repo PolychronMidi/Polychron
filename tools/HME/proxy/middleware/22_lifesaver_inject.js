@@ -167,8 +167,6 @@ module.exports = {
       ctx.markDirty();
     }
 
-    console.warn(
-      `Acceptable warning: [middleware] lifesaver_inject: injected ${unread.length} unread error(s) into last-user-message (cache-safe path)`
-    );
+    ctx.emit({ event: 'lifesaver_injected', source: 'error_log', count: unread.length });
   },
 };
