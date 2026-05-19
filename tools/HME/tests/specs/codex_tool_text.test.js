@@ -71,6 +71,24 @@ test('Codex request transform maps internal shell calls before upstream', () => 
   assert.doesNotMatch(JSON.stringify(result.body), /exec_command|\"cmd\"|justification/);
 });
 
+test('normalizes broken heredoc Read display text', () => {
+  const broken = [
+    'Read({"file_path":"<<\'HME_CODEX_JSON\'"})',
+    JSON.stringify({ file_path: '$PROJECT_ROOT/tools/HME/service/server/tools_analysis/todo_state_guard.py', offset: 0, limit: 1300 }),
+    'HME_CODEX_JSON',
+  ].join('\n');
+  const out = normalizeStructuredBridgeCalls({ text: broken });
+  assert.equal(out.body.text, 'Read tools/HME/service/server/tools_analysis/todo_state_guard.py lines 1-1300');
+  assert.doesNotMatch(out.body.text, /HME_CODEX_JSON|<<|\{"file_path":"<</);
+});
+
+test('normalizes malformed native Read heredoc input', () => {
+  const payload = `<<'HME_CODEX_JSON'\n${JSON.stringify({ file_path: 'doc/self-coherence.md', offset: 25, limit: 10 })}\nHME_CODEX_JSON`;
+  const out = normalizeStructuredBridgeCalls({ messages: [{ role: 'assistant', content: [{ type: 'tool_use', id: 'r1', name: 'Read', input: { file_path: payload } }] }] });
+  assert.deepStrictEqual(out.body.messages[0].content[0].input, { file_path: 'doc/self-coherence.md', offset: 25, limit: 10 });
+  assert.doesNotMatch(JSON.stringify(out.body), /HME_CODEX_JSON|<</);
+});
+
 test('normalizes edit bridge display without reusable replacement strings', () => {
   const cmd = [
     "node tools/HME/scripts/codex_structured_tool.js edit --json <<'HME_CODEX_JSON'",
