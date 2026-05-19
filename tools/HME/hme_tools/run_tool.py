@@ -10,15 +10,19 @@ from pathlib import Path
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from hme_tools.base import missing_required_inputs  # type: ignore
     from hme_tools.tools import tool_by_name  # type: ignore
 else:
+    from .base import missing_required_inputs
     from .tools import tool_by_name
 
 
 def read_payload(args: argparse.Namespace) -> dict:
     if args.json:
-        return json.loads(sys.stdin.read() or "{}")
-    return json.loads(args.payload or "{}")
+        parsed = json.loads(sys.stdin.read() or "{}")
+    else:
+        parsed = json.loads(args.payload or "{}")
+    return parsed if isinstance(parsed, dict) else {}
 
 
 def main(argv: list[str] | None = None) -> int:
