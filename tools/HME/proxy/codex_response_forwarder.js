@@ -136,9 +136,12 @@ function createCodexResponseForwarder(deps) {
       const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
       if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [] });
       const finalParsed = rewritten ? rewritten.body : parsed;
-      if (responseHasContextLoss(finalParsed || full)) {
-        record({ kind: 'codex-context-loss-blocked', route: target.kind, depth: target.tool_loop_depth || 0, reason: 'empty command tool result treated as task context' });
-        const repairedBody = appendContextLossRepair(target.body);
+      const forcedToolChoice = isForcedToolChoice(responseToolChoice(target.body));
+      const avoidedToolUse = bodyHasTools(target.body) && !forcedToolChoice && responseAvoidedToolUse(finalParsed || parsed);
+      if (responseHasContextLoss(finalParsed || full) || avoidedToolUse) {
+        const reason = avoidedToolUse ? 'assistant avoided available tools despite existing objective' : 'empty command tool result treated as task context';
+        record({ kind: 'codex-context-loss-blocked', route: target.kind, depth: target.tool_loop_depth || 0, reason });
+        const repairedBody = avoidedToolUse ? appendToolUseEnforcement(target.body, reason) : appendContextLossRepair(target.body);
         const repairText = repairedBody.input?.at?.(-1)?.content?.[0]?.text || 'HME context-loss repair: continue from the latest user request/session objective.';
         const repairResult = [{ type: 'message', role: 'user', content: [{ type: 'input_text', text: repairText }] }];
         if (continueAfterTools(target.index, { ...target, body: repairedBody }, { id: (parsed && parsed.id) || '' }, [], repairResult)) return;
