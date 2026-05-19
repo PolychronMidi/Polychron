@@ -24,7 +24,12 @@ logger = logging.getLogger("HME")
 
 def _mode_activity():
     from ..activity_digest import activity_digest as _ad
-    return _ad(window="round")
+    return _ad(window="round", verbose=False)
+
+
+def _mode_activity_full():
+    from ..activity_digest import activity_digest as _ad
+    return _ad(window="round", verbose=True)
 
 
 def _mode_tool_latency():
