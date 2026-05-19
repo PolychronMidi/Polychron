@@ -88,7 +88,11 @@ class BashTool(HMETool):
     bridge_action = "bash"
     host_native = False
     visibility = {"progress_label": "Bash {description}", "result_summary": "bytes"}
-    policy = {"max_timeout_ms": 600_000, "bare_name_required": True}
+    policy = {
+        "max_timeout_ms": 600_000,
+        "bare_name_required": True,
+        "destructive_pattern": DESTRUCTIVE_BASH_RE.pattern,
+    }
 
     def requires_approval(self, payload: dict[str, Any]) -> bool:
         return bool(DESTRUCTIVE_BASH_RE.search(str(payload.get("command") or payload.get("cmd") or "")))
