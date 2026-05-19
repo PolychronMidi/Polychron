@@ -208,8 +208,19 @@ function bridgeFromTokens(tokens) {
   return normalizeInput(action, kvArgs(args));
 }
 
+function smolToolCommand(text) {
+  const src = String(text || '').trim();
+  if (!src.includes('hme_tools/run_tool.py')) return null;
+  const m = /run_tool\.py\s+([A-Za-z][A-Za-z0-9]*)\s+--json\s+<<['"]?([A-Za-z0-9_:-]+)['"]?\r?\n([\s\S]*?)\r?\n\2(?:\s|$)/.exec(src);
+  if (!m || !BARE_TOOL_NAMES.has(m[1])) return null;
+  const input = maybeJson(m[3]);
+  return input ? { tool: m[1], input } : null;
+}
+
 function bridgeCommand(text) {
   const src = String(text || '').trim();
+  const smol = smolToolCommand(src);
+  if (smol) return smol;
   if (!src.includes('codex_structured_tool.js')) return null;
   const jsonHit = bridgeFromJsonCommand(src);
   if (jsonHit) return jsonHit;
