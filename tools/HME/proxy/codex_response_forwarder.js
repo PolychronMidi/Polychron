@@ -426,11 +426,6 @@ function createCodexResponseForwarder(deps) {
         if (continueAfterTools(target.index, target, parsed, calls)) return;
         if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target, parsed);
       }
-      const forcedToolChoice = isForcedToolChoice(responseToolChoice(target.body));
-      const avoidedToolUse = bodyHasTools(target.body) && !forcedToolChoice && responseAvoidedToolUse(parsed);
-      if (responseHasContextLoss(parsed || full) || avoidedToolUse) {
-        if (retryAfterContextLoss(target, status, headers, parsed, avoidedToolUse)) return;
-      }
       const rewriter = createNativeToolSseRewriter();
       const finalFull = rewriter.feed(Buffer.from(full)) + rewriter.finish();
       if (rewriter.stats.calls) record({ kind: 'codex-sse-native-tool-rewrite', route: target.kind, count: rewriter.stats.calls, ...traceFields(target) });
