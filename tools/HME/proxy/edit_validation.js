@@ -64,6 +64,15 @@ function isInvalidEditInput(input, options = {}) {
 }
 
 const EDIT_FAMILY_TOOL_NAMES = new Set(['Edit', 'MultiEdit', 'Update']);
+const WRITE_FAMILY_TOOL_NAMES = new Set(['Write', ...EDIT_FAMILY_TOOL_NAMES]);
+
+function isEditFamilyTool(name) {
+  return EDIT_FAMILY_TOOL_NAMES.has(name);
+}
+
+function isWriteFamilyTool(name) {
+  return WRITE_FAMILY_TOOL_NAMES.has(name);
+}
 
 // Apply Edit->Read fallback to a parsed non-SSE Anthropic response body.
 // Walks body.content[], rewrites every edit-family tool_use with invalid
