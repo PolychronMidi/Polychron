@@ -67,7 +67,8 @@ function bridgeInput(name, args) {
     return { url: String(args.url || ''), prompt: String(args.prompt || '') };
   }
   if (name === 'Agent') {
-    const out = { prompt: String(args.prompt || '') };
+    const prompt = String(args.prompt || '');
+    const out = { prompt, description: String(args.description || args.justification || deriveDescription(prompt)) };
     if (args.level != null) out.level = Number(args.level);
     return out;
   }
