@@ -4,12 +4,15 @@ const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
 const { evaluateReadInput } = require('./read_policy');
 const { replaceToolsWithUniform, uniformToolList } = require('./codex_uniform_tools');
 const { isInvalidEditInput, editToReadFallback } = require('./edit_validation');
+const { canonicalToolNames, canonicalToolMetadataByName } = require('./hme_tool_registry');
 
-const BRIDGE = 'node tools/HME/scripts/codex_structured_tool.js';
+const BRIDGE = 'python3 tools/HME/hme_tools/run_tool.py';
 const TARGET_TOOL = 'exec_command';
 const WEB_SEARCH_TOOL = 'web_search';
-const BRIDGE_NAMES = new Set(['Read', 'Edit', 'Write', 'WebFetch', 'Agent']);
-const RENAME_TARGETS = { Bash: TARGET_TOOL, WebSearch: WEB_SEARCH_TOOL };
+const TOOL_META = canonicalToolMetadataByName();
+const CANONICAL_NAMES = canonicalToolNames();
+const BRIDGE_NAMES = new Set(Object.entries(TOOL_META).filter(([, meta]) => meta.hme && meta.hme.passthrough_target === TARGET_TOOL && meta.name !== 'Bash').map(([name]) => name));
+const RENAME_TARGETS = Object.fromEntries(Object.entries(TOOL_META).filter(([, meta]) => meta.hme && meta.hme.passthrough_target && !BRIDGE_NAMES.has(meta.name)).map(([name, meta]) => [name, meta.hme.passthrough_target]));
 
 function toolName(tool) {
   if (!tool || typeof tool !== 'object') return '';
