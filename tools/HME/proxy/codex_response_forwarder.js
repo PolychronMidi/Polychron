@@ -375,7 +375,7 @@ function createCodexResponseForwarder(deps) {
       if (!target.finalizing_tool_loop || !calls.length) return false;
       const depth = target.tool_loop_depth || 0;
       const repairs = target.finalization_repairs || 0;
-      record({ kind: 'codex-finalization-tool-call-blocked', route: target.kind, depth, repairs, calls: calls.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) })) });
+      record({ kind: 'codex-finalization-tool-call-blocked', route: target.kind, depth, repairs, calls: calls.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) })), ...traceFields(target, { call_ids: calls.map((call) => call.id).filter(Boolean) }) });
       if (repairs >= 1) return false;
       const nextBody = appendFinalizationToolBlockPrompt(target.body, calls);
       attemptTarget(target.index, { ...target, body: nextBody, tool_loop_depth: depth + 1, finalizing_tool_loop: true, finalization_repairs: repairs + 1 });
