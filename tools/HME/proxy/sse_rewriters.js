@@ -217,10 +217,15 @@ function editFallbackToReadRewrite(eventName, data, ctx) {
   ]};
 }
 
+function _isPdfReadPath(file) {
+  return /\.pdf(?:$|[?#])/i.test(String(file || '').trim());
+}
+
 function _normalizeReadInput(input) {
   if (!input || typeof input !== 'object') return input;
   const next = { ...input };
-  if (Object.prototype.hasOwnProperty.call(next, 'pages') && !String(next.pages || '').trim()) delete next.pages;
+  const file = next.file_path || next.path || '';
+  if (Object.prototype.hasOwnProperty.call(next, 'pages') && (!String(next.pages || '').trim() || !_isPdfReadPath(file))) delete next.pages;
   if (Number(next.limit) > 500) next.limit = 200;
   return next;
 }
