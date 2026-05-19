@@ -1,7 +1,7 @@
 'use strict';
-// Shared Edit/MultiEdit input validation + Edit->Read fallback synthesis.
+// Shared Edit/MultiEdit/Update input validation + Edit->Read fallback synthesis.
 // Used by both the Claude SSE rewriter (sse_rewriters.js) and the codex
-// response rewriter (codex_native_tools.js) so Edit-without-required-fields,
+// response rewriter (codex_native_tools.js) so Edit/Update-without-required-fields,
 // no-op Edit, display-redacted Edit, and stale-old_string Edit all fall
 // back to Read on both routes.
 
