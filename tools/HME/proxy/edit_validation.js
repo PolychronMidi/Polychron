@@ -63,16 +63,18 @@ function isInvalidEditInput(input, options = {}) {
   return false;
 }
 
+const EDIT_FAMILY_TOOL_NAMES = new Set(['Edit', 'MultiEdit', 'Update']);
+
 // Apply Edit->Read fallback to a parsed non-SSE Anthropic response body.
-// Walks body.content[], rewrites every tool_use with name=Edit/MultiEdit
-// that has invalid input into a Read tool_use. Returns { body, count }
-// where count is the number of rewrites performed.
+// Walks body.content[], rewrites every edit-family tool_use with invalid
+// input into a Read tool_use. Returns { body, count } where count is the
+// number of rewrites performed.
 function rewriteNonSseEditFallback(body, options = {}) {
   if (!body || typeof body !== 'object' || !Array.isArray(body.content)) return { body, count: 0 };
   let count = 0;
   const nextContent = body.content.map((block) => {
     if (!block || block.type !== 'tool_use') return block;
-    if (block.name !== 'Edit' && block.name !== 'MultiEdit') return block;
+    if (!EDIT_FAMILY_TOOL_NAMES.has(block.name)) return block;
     if (!isInvalidEditInput(block.input, options)) return block;
     count += 1;
     return { ...block, name: 'Read', input: editToReadFallback(block.input || {}) };
