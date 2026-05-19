@@ -169,7 +169,7 @@ async function handleAnthropicResponseComplete({
     }
   }
 
-  if (isOmniRouteSwap && status >= 200 && status < 300 && payload && Array.isArray(payload.messages)) {
+  if (isOmniRouteSwap && status >= 200 && status < 300 && payload && Array.isArray(payload.messages) && process.env.HME_OMNI_TOOL_LOOP === '1') {
     try {
       const loopResult = await _runOmniToolLoop({
         fullBody, headers, payload, transport, upstreamOpts, upstreamHeaders,
@@ -189,7 +189,8 @@ async function handleAnthropicResponseComplete({
               ? json.content.filter((b) => b && b.type === 'text').map((b) => b.text || '').join('')
               : '';
           } catch (_) { /* non-JSON body, use raw */ }
-          text = text || fullBody.toString('utf8') || '(empty response)';
+          text = text || fullBody.toString('utf8');
+          if (!text) text = '(omni model returned empty content)';
           fullBody = _anthropicTextSseBuffer(swapModel || 'omni', text);
           headers = { ...headers, 'content-type': 'text/event-stream; charset=utf-8' };
         }

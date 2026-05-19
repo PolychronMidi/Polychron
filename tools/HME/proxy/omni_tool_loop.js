@@ -208,13 +208,13 @@ async function runToolLoop({
   console.error(`[omni-tool-loop] depth=${depth} followup status=${resp.status} bodyLen=${resp.body.length} ctype=${resp.headers['content-type'] || '?'}`);
 
   if (resp.status < 200 || resp.status >= 300) {
-    console.error(`[omni-tool-loop] upstream error at depth ${depth}: ${resp.status}`);
+    console.error(`[omni-tool-loop] upstream error at depth ${depth}: ${resp.status} body=${resp.body.toString('utf8').slice(0, 300)}`);
     return null;
   }
 
   if (resp.body.length === 0) {
-    console.error(`[omni-tool-loop] empty response body at depth ${depth} -- returning upstream text fallback`);
-    return { status: resp.status, headers: { ...resp.headers, 'content-type': 'text/event-stream; charset=utf-8' }, fullBody: _emptySseFallback(bodyStr) };
+    console.error(`[omni-tool-loop] empty response body at depth ${depth} -- aborting tool loop (upstream may have failed silently)`);
+    return null;
   }
 
   const nested = await runToolLoop({
@@ -243,20 +243,6 @@ function _filterAssistantContent(content) {
     if (t === 'thinking' || t === 'redacted_thinking') return false;
     return true;
   });
-}
-
-function _emptySseFallback(originalBodyStr) {
-  const text = _sseText(originalBodyStr) || '(empty response)';
-  const id = `omni_${Date.now()}`;
-  return Buffer.from(
-    `event: message_start\ndata: ${JSON.stringify({ type: 'message_start', message: { id, type: 'message', role: 'assistant', model: 'omni', content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 0, output_tokens: 0 } } })}\n\n` +
-    `event: content_block_start\ndata: ${JSON.stringify({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } })}\n\n` +
-    `event: content_block_delta\ndata: ${JSON.stringify({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text } })}\n\n` +
-    `event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: 0 })}\n\n` +
-    `event: message_delta\ndata: ${JSON.stringify({ type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 0 } })}\n\n` +
-    `event: message_stop\ndata: ${JSON.stringify({ type: 'message_stop' })}\n\n`,
-    'utf8',
-  );
 }
 
 function _sseText(bodyStr) {
