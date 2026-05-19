@@ -29,7 +29,7 @@ from .status_modes_band import (  # noqa: F401
 )
 from .status_modes_band_tuning import _mode_band_tuning  # noqa: F401
 from .status_modes_agent import (  # noqa: F401
-    _mode_activity, _mode_tool_latency, _mode_agent_loop,
+    _mode_activity, _mode_activity_full, _mode_tool_latency, _mode_agent_loop,
 )
 from .status_modes_hci import (  # noqa: F401
     _mode_hci_by_subtag, _mode_hci_diff, _mode_race_stats,
