@@ -44,3 +44,21 @@ test('Codex SSE collector merges function-call argument deltas before incomplete
     args: { file_path: 'README.md', offset: 0, limit: 20 },
   });
 });
+
+test('Codex native Read full path executes through smolagents runner and builds follow-up body', () => {
+  const previousBody = { model: 'gpt-5.5', input: 'read AGENTS template', tools: [] };
+  const responseBody = {
+    id: 'resp_full_path_read',
+    output: [{ type: 'function_call', name: 'Read', call_id: 'call_full_path_read', arguments: JSON.stringify({ file_path: path.join(repoRoot, 'doc/templates/AGENTS.md'), limit: 2 }) }],
+  };
+  const calls = [{ id: 'call_full_path_read', name: 'Read', args: JSON.parse(responseBody.output[0].arguments) }];
+  const results = toolResultInput(calls, { projectRoot: repoRoot });
+  assert.equal(results.length, 1);
+  assert.equal(results[0].type, 'function_call_output');
+  assert.equal(results[0].call_id, 'call_full_path_read');
+  assert.match(results[0].output, /# Rules/);
+  assert.doesNotMatch(results[0].output, /missing required field/);
+  const followup = followupBody(previousBody, responseBody, results);
+  assert.equal(followup.previous_response_id, 'resp_full_path_read');
+  assert.deepEqual(followup.input, results);
+});
