@@ -119,13 +119,25 @@ function toolOutput(result) {
   return (text || (result.error ? String(result.error.message || result.error) : '')).slice(0, MAX_OUTPUT);
 }
 
+function _validateToolInput(name, input) {
+  if (name === 'Read' || name === 'Write' || name === 'Edit') {
+    const fp = input.file_path || input.file || '';
+    if (!fp.trim()) return `Error: file_path is required for ${name}. The path must be an absolute file path.`;
+  }
+  return null;
+}
+
 function executeToolUse(use, opts) {
   const root = (opts && opts.projectRoot) || PROJECT_ROOT;
   if (use.name === 'Bash') {
+    const cmd = String(use.input.command || use.input.cmd || '');
+    if (!cmd.trim()) return { type: 'tool_result', tool_use_id: use.id, content: 'Error: command is required for Bash.' };
     const result = runBashTool(use.input);
     return { type: 'tool_result', tool_use_id: use.id, content: toolOutput(result) };
   }
   const input = toolInput(use.name, use.input);
+  const validationError = _validateToolInput(use.name, input);
+  if (validationError) return { type: 'tool_result', tool_use_id: use.id, content: validationError };
   const result = runBridgedTool(use.name, input);
   return { type: 'tool_result', tool_use_id: use.id, content: toolOutput(result) };
 }

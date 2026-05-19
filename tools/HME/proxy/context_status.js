@@ -93,7 +93,7 @@ function recentLifesaverErrors() {
   // Mirror the same classification lifesaver.sh and lifesaver_inject.js
   const _CANARY_RE = /\[CANARY-/;
   const _OBSERVATION_RE = /\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b/;
-  const _SELF_TAG_RE = /\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^\]]+)\]/;
+  const _SELF_TAG_RE = /\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^\]]+|hook-failure|sessionstart:[^\]]+)\]/;
   const filtered = fresh.filter((line) => {
     if (_CANARY_RE.test(line)) return false;
     if (_SELF_TAG_RE.test(line)) return false;
