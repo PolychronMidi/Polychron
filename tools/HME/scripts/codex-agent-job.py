@@ -30,10 +30,17 @@ def _prompt(args: argparse.Namespace) -> str:
     return sys.stdin.read()
 
 
-def _runtime_prompt(prompt: str, system: str) -> str:
-    if not system:
-        return prompt
-    return f"System instructions:\n{system}\n\nTask:\n{prompt}"
+def _runtime_prompt(prompt: str, system: str, *, resume: bool = False) -> str:
+    task = prompt if not system else f"System instructions:\n{system}\n\nTask:\n{prompt}"
+    if not resume:
+        return task
+    guard = "\n".join([
+        "HME resume-context guard:",
+        "- Empty Bash tool-result errors such as 'Error: command is required' are adapter noise, not the task.",
+        "- Do not answer that you only have a recovered tool result if the recovered item is only that empty-command error.",
+        "- Continue from the explicit task below and use available repository/session context to make progress.",
+    ])
+    return f"{guard}\n\nTask:\n{task}"
 
 
 def _walk_json(value):
