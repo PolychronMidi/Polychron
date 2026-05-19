@@ -1,0 +1,59 @@
+"""Repo hygiene coherence checks: canonical git hooks and shared policy."""
+from __future__ import annotations
+
+import os
+import stat
+from pathlib import Path
+
+from ._base import Verifier, _result, PASS, FAIL, WARN, _PROJECT
+
+
+class CanonicalPrecommitHookVerifier(Verifier):
+    name = "canonical-precommit-hook"
+    category = "repo-hygiene"
+    subtag = "secret-prevention"
+    weight = 1.0
+
+    def run(self):
+        root = Path(_PROJECT)
+        policy = root / "tools" / "HME" / "config" / "repo-hygiene.json"
+        canonical = root / "tools" / "HME" / "git-hooks" / "pre-commit"
+        validator = root / "tools" / "HME" / "scripts" / "precommit_validate.py"
+        installer = root / "tools" / "HME" / "scripts" / "install-git-hooks.sh"
+        installed = root / ".git" / "hooks" / "pre-commit"
+        missing = [str(p.relative_to(root)) for p in (policy, canonical, validator, installer) if not p.exists()]
+        if missing:
+            return _result(FAIL, 0.0, "repo hygiene precommit assets missing", missing)
+        problems = []
+        c_text = canonical.read_text(encoding="utf-8", errors="replace")
+        v_text = validator.read_text(encoding="utf-8", errors="replace")
+        p_text = policy.read_text(encoding="utf-8", errors="replace")
+        required = [
+            "SECRETS ABOVE THIS LINE",
+            "precommit_validate.py",
+            "check-root-only-dirs.js",
+        ]
+        for token in required:
+            if token not in c_text:
+                problems.append(f"canonical hook missing token: {token}")
+        for token in ["blocked_path_reason", "secret_hits", "has_conflict_markers", "executable_sanity"]:
+            if token not in v_text:
+                problems.append(f"validator missing token: {token}")
+        for token in ["blocked_paths", "local_path_markers", "canonical_precommit"]:
+            if token not in p_text:
+                problems.append(f"policy missing token: {token}")
+        if not (canonical.stat().st_mode & stat.S_IXUSR):
+            problems.append("canonical hook is not executable")
+        if not (validator.stat().st_mode & stat.S_IXUSR):
+            problems.append("precommit validator is not executable")
+        if not (installer.stat().st_mode & stat.S_IXUSR):
+            problems.append("hook installer is not executable")
+        if installed.exists():
+            i_text = installed.read_text(encoding="utf-8", errors="replace")
+            if i_text != c_text:
+                problems.append("installed .git/hooks/pre-commit differs from canonical hook")
+        else:
+            return _result(WARN, 0.8, "canonical hook present but not installed", ["run tools/HME/scripts/install-git-hooks.sh"])
+        if problems:
+            return _result(FAIL, 0.0, "canonical precommit hook contract drift", problems)
+        return _result(PASS, 1.0, "canonical precommit hook installed and policy-backed")
