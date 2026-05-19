@@ -89,3 +89,28 @@ def openai_tool_schema(tool: HMETool) -> dict[str, Any]:
         "description": schema["function"]["description"],
         "parameters": schema["function"]["parameters"],
     }
+
+
+def required_input_names(tool: HMETool) -> list[str]:
+    return [name for name, spec in tool.inputs.items() if not spec.get("nullable")]
+
+
+def missing_required_inputs(tool: HMETool, payload: dict[str, Any]) -> list[str]:
+    missing: list[str] = []
+    aliases = getattr(tool, "input_aliases", {}) or {}
+    for name in required_input_names(tool):
+        candidates = [name, *aliases.get(name, [])]
+        found = False
+        for key in candidates:
+            if key not in payload:
+                continue
+            value = payload[key]
+            if isinstance(value, str) and value == "":
+                continue
+            if value is None:
+                continue
+            found = True
+            break
+        if not found:
+            missing.append(name)
+    return missing
