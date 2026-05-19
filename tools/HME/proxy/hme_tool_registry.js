@@ -37,6 +37,11 @@ function canonicalToolMetadata() {
   return JSON.parse(JSON.stringify(cachedMeta));
 }
 
+function canonicalLangChainTools() {
+  if (!cachedLangChain) cachedLangChain = runExporter('langchain');
+  return JSON.parse(JSON.stringify(cachedLangChain));
+}
+
 function canonicalToolMetadataByName() {
   if (!cachedMetaByName) cachedMetaByName = Object.fromEntries(canonicalToolMetadata().map((tool) => [tool.name, tool]));
   return JSON.parse(JSON.stringify(cachedMetaByName));
