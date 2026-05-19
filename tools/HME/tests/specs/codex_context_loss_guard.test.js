@@ -194,9 +194,16 @@ test('Codex proxy retries tool-avoidant ask-next responses with tool-use enforce
         }));
         return;
       }
+      if (upstreamBodies.length === 2) {
+        res.end(JSON.stringify({
+          id: 'resp_after_tool_enforcement',
+          output: [{ type: 'function_call', name: 'Read', call_id: 'call_enforced_read', arguments: JSON.stringify({ file_path: 'README.md', limit: 1 }) }],
+        }));
+        return;
+      }
       res.end(JSON.stringify({
-        id: 'resp_after_tool_enforcement',
-        output: [{ type: 'function_call', name: 'Read', call_id: 'call_enforced_read', arguments: JSON.stringify({ file_path: 'README.md', limit: 1 }) }],
+        id: 'resp_final_after_real_tool',
+        output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'repo-aware response after enforced Read' }] }],
       }));
     });
   });
