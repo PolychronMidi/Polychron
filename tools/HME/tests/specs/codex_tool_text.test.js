@@ -16,7 +16,7 @@ test('normalizes internal bridge function_call into native-looking Read call', (
 
 test('normalizes internal bridge text lines into native-looking display', () => {
   const out = normalizeStructuredBridgeCalls({ text: `before\n${CMD}\nafter` });
-  assert.match(out.body.text, /Read\(\{"file_path":"doc\/self-coherence.md","limit":12\}\)/);
+  assert.match(out.body.text, /Read doc\/self-coherence\.md first 12 lines/);
   assert.doesNotMatch(out.body.text, /codex_structured_tool/);
 });
 
