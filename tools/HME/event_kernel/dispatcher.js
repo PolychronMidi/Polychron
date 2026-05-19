@@ -93,6 +93,7 @@ const POSTTOOL_SCRIPTS = {
   ],
   Edit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
   MultiEdit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
+  Update: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
   Write: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
   Read: [path.join(POSTTOOLUSE, 'posttooluse_read_kb.sh')],
 };
