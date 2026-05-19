@@ -495,6 +495,14 @@ test('passthrough compaction drops oldest messages when microcompaction cannot h
   assert.ok(changed > 0);
   assert.ok(JSON.stringify(payload).length <= 1000);
   assert.ok(payload.messages.length <= 4);
+  assert.equal(telemetry.length, 1);
+  assert.equal(telemetry[0].event, 'context_compaction');
+  assert.equal(telemetry[0].route, 'drop-test');
+  assert.equal(telemetry[0].model, 'drop-model');
+  assert.equal(telemetry[0].stage, 'message_drop');
+  assert.ok(telemetry[0].messages_dropped > 0);
+  assert.ok(telemetry[0].before_messages > telemetry[0].after_messages);
+  assert.ok(telemetry[0].before_bytes > telemetry[0].after_bytes);
 });
 
 test('provider reasoning fields convert to Anthropic thinking events', () => {
