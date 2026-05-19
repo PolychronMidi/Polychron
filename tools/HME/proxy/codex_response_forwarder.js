@@ -2,7 +2,7 @@
 
 const http = require('http');
 const https = require('https');
-const { rewriteCodexResponseObject } = require('./codex_native_tools');
+const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('./codex_native_tools');
 const { responseHasContextLoss, appendContextLossRepair, appendToolSchemaRepair, appendToolUseEnforcement, contextLossFallbackResponse } = require('./codex_context_loss_guard');
 const { collectToolCalls, collectSseToolCalls, parseSseEvents, toolResultInput, followupBody, isIncompleteToolCall, missingRequiredToolFields } = require('./codex_tool_loop');
 
