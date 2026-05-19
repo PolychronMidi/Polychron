@@ -225,18 +225,45 @@ def step_index(s: str) -> int:
 
 
 def status_line() -> str:
-    """One-line suffix for tool output.
-
-    R24 #6: when graduated, prepends substrate briefing from the four-arc
-    state IF there are queued actions or high divergence. Silent when the
-    substrate reports healthy quiescent state. Agent gets the briefing
-    via normal tool output instead of needing to query status_unified.
-    """
+    """One-line suffix for tool output; only emit when the state changes."""
     s = state()
     if s == "graduated":
-        return _substrate_brief_line()
+        return ""
+    last_file = os.path.join(ctx.PROJECT_ROOT, "tmp", "hme-onboarding-status-line.last")
+    key = f"{s}|{_substrate_brief_key()}"
+    try:
+        with open(last_file, encoding="utf-8") as f:
+            if f.read().strip() == key:
+                return ""
+    except OSError:
+        pass
+    try:
+        os.makedirs(os.path.dirname(last_file), exist_ok=True)
+        with open(last_file, "w", encoding="utf-8") as f:
+            f.write(key)
+    except OSError:
+        pass
     onboard = f"\n\n[HME onboarding: step {STEP_LABELS.get(s, s)}]"
     return _substrate_brief_line() + onboard
+
+
+def _substrate_brief_key() -> str:
+    try:
+        import json as _json
+        na_path = hme_metric("hme-next-actions.json")
+        con_path = hme_metric("hme-consensus.json")
+        na = {}
+        con = {}
+        if os.path.isfile(na_path):
+            with open(na_path) as f:
+                na = _json.load(f) or {}
+        if os.path.isfile(con_path):
+            with open(con_path) as f:
+                con = _json.load(f) or {}
+        top = (na.get("actions") or [{}])[0].get("id", "")
+        return f"{na.get('total_actions', 0)}|{con.get('stdev')}|{con.get('divergence')}|{top}"
+    except Exception:
+        return ""
 
 
 def _substrate_brief_line() -> str:
