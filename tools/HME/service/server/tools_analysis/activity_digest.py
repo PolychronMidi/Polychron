@@ -100,10 +100,21 @@ def activity_digest(window: str = "round", verbose: bool = False) -> str:
     first_ts = events[0].get("ts")
     last_ts = events[-1].get("ts")
 
-    counts: Counter = Counter(e.get("event", "?") for e in events)
+    if verbose:
+        display_events = events
+    else:
+        display_events = [
+            e for e in events
+            if not (
+                e.get("event") == "coherence_violation"
+                and e.get("verdict") == "STALE"
+                and not e.get("reason")
+            )
+        ]
+    counts: Counter = Counter(e.get("event", "?") for e in display_events)
 
     # Coherence violations
-    violations = [e for e in events if e.get("event") == "coherence_violation"]
+    violations = [e for e in display_events if e.get("event") == "coherence_violation"]
 
     # Pipeline runs in window
     pipelines = [e for e in events if e.get("event") == "pipeline_run"]
