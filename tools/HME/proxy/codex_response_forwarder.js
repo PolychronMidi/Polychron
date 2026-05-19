@@ -508,7 +508,7 @@ function createCodexResponseForwarder(deps) {
         });
       });
       upstreamReq.on('error', (err) => {
-        record({ kind: 'upstream-error', route: target.kind, upstream: target.url, message: err.message });
+        record({ kind: 'upstream-error', route: target.kind, upstream: target.url, message: err.message, ...traceFields(target) });
         if (target.fallbackDirect && targets[index + 1] && !res.headersSent) return attemptTarget(index + 1);
         finishResponse(target, 502, err.message);
         if (!res.headersSent) {
