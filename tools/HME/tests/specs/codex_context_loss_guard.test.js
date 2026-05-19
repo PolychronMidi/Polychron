@@ -63,8 +63,15 @@ test('Codex context-loss guard detects recovered empty-command stalls', () => {
     '- No command was executed.',
     'Please send the actual task you want me to continue with.',
   ].join('\n');
+  const adapterBad = [
+    'I only have the recovered adapter notices, not the actual prior task/session objective.',
+    'They don’t contain actionable project context, file paths, commands, or requirements.',
+    'I won’t repeat the empty Bash calls. Please send the current objective or the relevant prior task details, and I’ll continue from there.',
+  ].join('\n');
   assert.equal(isContextLossText(bad), true);
+  assert.equal(isContextLossText(adapterBad), true);
   assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: bad }] }] }), true);
+  assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: adapterBad }] }] }), true);
   assert.equal(isContextLossText('Error: command is required\nreal shell stderr from an attempted command'), false);
 });
 
