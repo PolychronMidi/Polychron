@@ -187,7 +187,7 @@ function contextLossFallbackResponse(parsed) {
       role: 'assistant',
       content: [{
         type: 'output_text',
-        text: 'HME blocked a Codex context-loss response that treated an empty Bash tool error as the task. Continue from the latest user request/session objective; do not ask the user to resend context because of “Error: command is required”.',
+        text: 'HME blocked a Codex context-loss response that treated an incomplete tool error as the task. Continue from the latest user request/session objective; do not ask the user to resend context because of missing required tool fields such as “Error: command is required” or “Error: prompt is required”.',
       }],
     }],
     hme_context_loss_blocked: true,
