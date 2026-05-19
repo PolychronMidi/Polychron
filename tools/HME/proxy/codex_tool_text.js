@@ -273,7 +273,7 @@ function normalizeText(text, stats) {
         if (next.trim() === marker) break;
       }
       const bridge = bridgeCommand(block.join('\n'));
-      out.push(bridge ? displayCall(bridge) : `${actionToolFromLine(line)} <internal bridge hidden>`);
+      out.push(bridge ? displayCall(bridge) : actionToolFromLine(line));
       stats.text_rewrites += 1;
       continue;
     }
