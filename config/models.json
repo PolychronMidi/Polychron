@@ -21,7 +21,6 @@
       "aihubmix": {
         "note": "AIHubMix OpenAI-compatible API key via OmniRoute."
       }
-)} 鹿鹭
     },
     "toprank_rationale": {
       "E5": "gpt5.5 frontier with abundant usage credits."
