@@ -11,7 +11,8 @@
     "tools/HME/hooks/README.md",
     "tools/HME/service/server/tools_analysis/perceptual_inference.py",
     "tools/HME/service/server/tools_analysis/trust_analysis.py",
-    "tools/HME/service/server/tools_analysis/status_unified/resource_reports.py"
+    "tools/HME/service/server/tools_analysis/status_unified/resource_reports.py",
+    "tools/HME/session-state.json"
   ],
   "skip_dirs": [
     ".git",
