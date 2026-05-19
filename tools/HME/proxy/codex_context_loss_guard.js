@@ -12,6 +12,7 @@ const CONTEXT_LOSS_NOTICE = [
 
 const REPAIR_PROMPT_PREFIX = 'HME context-loss repair';
 const TOOL_SCHEMA_REPAIR_PROMPT_PREFIX = 'HME tool-call repair';
+const TOOL_USE_ENFORCEMENT_PROMPT_PREFIX = 'HME tool-use enforcement';
 const TOOL_REQUIRED_FIELDS = Object.freeze({
   Bash: ['command'],
   Agent: ['prompt'],
