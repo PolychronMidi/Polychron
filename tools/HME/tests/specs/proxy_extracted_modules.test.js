@@ -53,6 +53,44 @@ test('context token usage parser extracts Anthropic JSON and SSE usage', () => {
   );
 });
 
+test('context token usage fields separate upstream headers from synthetic context signal', () => {
+  const row = _contextTokenUsageFields({
+    headers: { 'content-type': 'application/json', 'anthropic-ratelimit-input-tokens-remaining': '2500' },
+    rateLimitHeaders: { 'content-type': 'application/json' },
+    status: 200,
+    payload: { model: 'gpt-test' },
+    outBody: Buffer.from('abcdefghij'),
+    outBuf: Buffer.from(JSON.stringify({ usage: { input_tokens: 4, output_tokens: 2 } })),
+    route: 'omni-context',
+    model: 'gpt-test',
+    thresholdBytes: 1000,
+    estimatedTokensFn: (bytes) => bytes / 2,
+    getLastInputTokensRemaining: () => null,
+    getLastInputTokensLimit: () => null,
+  });
+  assert.equal(row.header_input_tokens_source, 'none');
+  assert.equal(row.header_input_tokens_remaining, null);
+  assert.equal(row.context_signal_input_tokens_remaining, 2500);
+  assert.equal(row.estimated_input_tokens, 5);
+  assert.equal(row.usage_input_tokens, 4);
+  assert.equal(row.estimated_vs_usage_delta, 1);
+
+  const upstream = _contextTokenUsageFields({
+    headers: { 'content-type': 'application/json' },
+    rateLimitHeaders: { 'anthropic-ratelimit-input-tokens-limit': '20000', 'anthropic-ratelimit-input-tokens-remaining': '12345' },
+    status: 200,
+    payload: { model: 'claude-test' },
+    outBody: Buffer.from('abc'),
+    outBuf: Buffer.from('{}'),
+    route: 'direct',
+    thresholdBytes: 250000,
+  });
+  assert.equal(upstream.header_input_tokens_source, 'upstream');
+  assert.equal(upstream.header_input_tokens_limit, 20000);
+  assert.equal(upstream.header_input_tokens_remaining, 12345);
+  assert.equal(upstream.header_input_tokens_used, 7655);
+});
+
 function anthropicOnlyCfg() {
   return {
     providers_to_skip: { providers: [] },
