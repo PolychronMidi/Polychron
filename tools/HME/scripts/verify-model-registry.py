@@ -161,8 +161,24 @@ def live_free_catalogs(openrouter_url: str, models_dev_url: str) -> dict[str, se
     return catalogs
 
 
-def validate(cfg: dict[str, Any], *, free_by_provider: dict[str, set[str]]) -> list[str]:
+def validate_provider_capabilities(cfg: dict[str, Any]) -> list[str]:
     issues: list[str] = []
+    caps = cfg.get("provider_capabilities")
+    if not isinstance(caps, dict):
+        return ["provider_capabilities: missing capability matrix"]
+    for provider in PINNED_FREE_BY_PROVIDER:
+        if not isinstance(caps.get(provider), dict):
+            issues.append(f"provider_capabilities.{provider}: missing provider entry")
+    for provider in ("kilo-gateway", "aihubmix"):
+        cap = caps.get(provider) if isinstance(caps.get(provider), dict) else {}
+        overrides = cap.get("request_overrides") if isinstance(cap, dict) else None
+        if not isinstance(overrides, dict) or overrides.get("non_stream") is not True:
+            issues.append(f"provider_capabilities.{provider}: request_overrides.non_stream must be true")
+    return issues
+
+
+def validate(cfg: dict[str, Any], *, free_by_provider: dict[str, set[str]]) -> list[str]:
+    issues: list[str] = validate_provider_capabilities(cfg)
     seen: dict[tuple[str, str], str] = {}
     for tier, model in iter_models(cfg):
         mid = str(model.get("id") or "")
