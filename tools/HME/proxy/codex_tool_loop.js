@@ -142,13 +142,14 @@ function inputFor(name, args) {
   if (name === 'Edit') return { file_path: args.file_path || args.file || '', old_string: String(args.old_string || ''), new_string: String(args.new_string || ''), ...(args.replace_all ? { replace_all: true } : {}) };
   if (name === 'WebFetch') return { url: String(args.url || ''), prompt: String(args.prompt || '') };
   if (name === 'Agent') return { prompt: String(args.prompt || ''), ...(args.level != null ? { level: Number(args.level) } : {}) };
+  if (name === 'Bash') return { command: String(args.command || args.cmd || ''), ...(args.timeout != null ? { timeout: Number(args.timeout) } : {}), ...(args.description != null ? { description: String(args.description) } : {}), ...(args.run_in_background != null ? { run_in_background: Boolean(args.run_in_background) } : {}) };
   return args;
 }
 
-function runNodeTool(name, args, root) {
-  const script = path.join(root, 'tools', 'HME', 'scripts', 'codex_structured_tool.js');
+function runSmolTool(name, args, root) {
+  const script = path.join(__dirname, '..', 'hme_tools', 'run_tool.py');
   const input = JSON.stringify(inputFor(name, args));
-  return spawnSync(process.execPath, [script, ACTIONS[name], '--json'], { cwd: root, input, encoding: 'utf8', timeout: 120000, env: { ...process.env, PROJECT_ROOT: root } });
+  return spawnSync('python3', [script, name, '--json'], { cwd: root, input, encoding: 'utf8', timeout: 120000, env: { ...process.env, PROJECT_ROOT: root, HME_SOURCE_ROOT: path.resolve(__dirname, '..', '..', '..') } });
 }
 
 function shellQuote(s) { return `'${String(s).replace(/'/g, `'\\''`)}'`; }
