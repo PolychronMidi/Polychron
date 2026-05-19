@@ -23,6 +23,27 @@ from .code_audits_syntax import (  # noqa: F401
 
 # Verifier classes (extracted from code_audits.py).
 
+
+def _activity_ts_seconds(value) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            pass
+        try:
+            return datetime.datetime.fromisoformat(
+                text.replace("Z", "+00:00")
+            ).timestamp()
+        except ValueError:
+            return None
+    return None
+
+
 class CorePrinciplesAuditVerifier(Verifier):
     """Delegates to tools/HME/scripts/audit-core-principles.py, which surveys src/
     against the five core principles declared in doc/templates/AGENTS.md. FAILs only on
