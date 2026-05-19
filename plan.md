@@ -199,6 +199,85 @@ This is important because OMO and LangChain-style systems can consume the same c
 
 ---
 
+## OpenCode Plugin Host Shim
+
+OMO was originally built as an OpenCode plugin. Its package entrypoint exports a plugin module whose server function returns OpenCode hook handlers such as:
+
+```text
+chat.params
+chat.headers
+chat.message
+experimental.chat.messages.transform
+experimental.chat.system.transform
+tool.execute.before
+tool.execute.after
+command.execute.before
+event
+experimental.session.compacting
+experimental.compaction.autocontinue
+```
+
+HME can use OMO in a middleware-proxy style by hosting that plugin interface rather than copying its internals.
+
+Target flow:
+
+```text
+Claude/Codex/Omni request
+  -> HME normalized lifecycle event
+    -> OpenCode PluginInput shim
+      -> OMO plugin hook
+        -> HME validates hook output
+          -> HME applies allowed mutation or blocks it
+```
+
+The host shim should provide:
+
+```text
+tools/HME/omo_bridge/opencode_host.js
+tools/HME/omo_bridge/client_shim.js
+tools/HME/omo_bridge/lifecycle_map.js
+```
+
+Responsibilities:
+
+- instantiate OMO's plugin module from the configured dependency
+- provide an OpenCode-like `PluginInput` with `directory`, `client`, and session APIs
+- map HME request/middleware events into OMO hook inputs
+- map OMO hook outputs back into HME payload mutations
+- treat HME as the outer authority for policy, validation, and telemetry
+- support shadow mode where hooks execute but outputs are observed rather than applied
+
+Initial hook mapping:
+
+```text
+OMO chat.params                         -> HME request/model parameter mutation
+OMO chat.headers                        -> HME upstream header mutation
+OMO chat.message                        -> HME user/message middleware transform
+OMO experimental.chat.messages.transform -> HME request payload/message transform
+OMO experimental.chat.system.transform   -> HME system prompt transform
+OMO tool.execute.before                 -> HME PreToolUse policy lifecycle
+OMO tool.execute.after                  -> HME PostToolUse lifecycle
+OMO experimental.session.compacting      -> HME compaction lifecycle
+OMO experimental.compaction.autocontinue -> HME continuation/autocontinue lifecycle
+```
+
+High-risk areas that require shims or staged enablement:
+
+- `input.client.session.*` calls need an HME-backed OpenCode client shim or a real OpenCode sidecar.
+- OMO tool execution must route through HME canonical tools and policy gates.
+- OMO storage assumptions must be classified as supported, shimmed, disabled, or sidecar-only.
+- Message formats must be translated between Claude/Codex/HME and OpenCode-style records.
+
+Rollout order:
+
+1. Shadow-load OMO and call hooks without applying output.
+2. Enable pure transforms: params, headers, system transform, message transform.
+3. Enable tool lifecycle hooks under HME policy.
+4. Enable compaction/context hooks.
+5. Enable session/task/team/background features only after the client shim is mature.
+
+---
+
 ## OMO Dependency Integration Goals
 
 ### Goal 1: Establish dependency pin and loader
