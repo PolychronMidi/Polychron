@@ -296,6 +296,7 @@ module.exports = {
   CONTEXT_LOSS_NOTICE,
   REPAIR_PROMPT_PREFIX,
   TOOL_SCHEMA_REPAIR_PROMPT_PREFIX,
+  TOOL_USE_ENFORCEMENT_PROMPT_PREFIX,
   hasEmptyCommandError,
   hasMissingRequiredToolError,
   hasUnsupportedToolError,
