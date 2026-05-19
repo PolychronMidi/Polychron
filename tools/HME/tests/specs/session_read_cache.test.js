@@ -121,3 +121,48 @@ test('editFallbackToReadRewrite: lets valid Edit pass when target was previously
 });
 
 test('REPO_ROOT marker so test file is identifiable', () => { assert.ok(REPO_ROOT.endsWith('Polychron')); });
+
+test('readInputNormalizeRewrite: drops pages for non-PDF Read tool calls', () => {
+  const dir = _isolate();
+  try {
+    const { readInputNormalizeRewrite } = require('../../proxy/sse_rewriters');
+    const ctxMap = new Map();
+    const ctx = { get: (k) => ctxMap.get(k), set: (k, v) => ctxMap.set(k, v) };
+    const out = [];
+    const events = [
+      ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'toolu_1', name: 'Read', input: {} } }],
+      ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: JSON.stringify({ file_path: '/abs/source.js', pages: '1', limit: 5 }) } }],
+      ['content_block_stop', { type: 'content_block_stop', index: 0 }],
+    ];
+    for (const [name, data] of events) {
+      const r = readInputNormalizeRewrite(name, data, ctx);
+      if (r === null) continue;
+      if (r && r.events) { for (const e of r.events) out.push(e); continue; }
+      out.push([name, r]);
+    }
+    assert.equal(out[0][1].content_block.name, 'Read');
+    assert.deepEqual(JSON.parse(out[1][1].delta.partial_json), { file_path: '/abs/source.js', limit: 5 });
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('readInputNormalizeRewrite: preserves pages for PDF Read tool calls', () => {
+  const dir = _isolate();
+  try {
+    const { readInputNormalizeRewrite } = require('../../proxy/sse_rewriters');
+    const ctxMap = new Map();
+    const ctx = { get: (k) => ctxMap.get(k), set: (k, v) => ctxMap.set(k, v) };
+    const out = [];
+    const events = [
+      ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'toolu_1', name: 'Read', input: {} } }],
+      ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: JSON.stringify({ file_path: '/abs/doc.pdf', pages: '1-2' }) } }],
+      ['content_block_stop', { type: 'content_block_stop', index: 0 }],
+    ];
+    for (const [name, data] of events) {
+      const r = readInputNormalizeRewrite(name, data, ctx);
+      if (r === null) continue;
+      if (r && r.events) { for (const e of r.events) out.push(e); continue; }
+      out.push([name, r]);
+    }
+    assert.deepEqual(JSON.parse(out[1][1].delta.partial_json), { file_path: '/abs/doc.pdf', pages: '1-2' });
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
