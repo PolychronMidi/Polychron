@@ -516,7 +516,7 @@ function loadAll() {
   });
   const unprefixed = ordered.filter(f => !/^\d+[a-z]?_/.test(f));
   if (unprefixed.length > 0) {
-    console.warn(`Acceptable warning: [middleware] ${unprefixed.length} file(s) without numeric prefix (loaded alphabetically AFTER prefixed): ${unprefixed.join(', ')}`);
+    throw new Error(`[middleware] ${unprefixed.length} file(s) without numeric prefix: ${unprefixed.join(', ')}`);
   }
   for (const fname of ordered) {
     try {
