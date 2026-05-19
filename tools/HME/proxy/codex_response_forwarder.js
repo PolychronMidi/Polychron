@@ -342,6 +342,7 @@ function createCodexResponseForwarder(deps) {
     function sendFinalizationFallback(target, status, headers, parsed, calls) {
       const fallback = finalizationFallbackResponse(target, parsed, calls);
       const body = JSON.stringify(fallback);
+      if (sendParsedOverClientSse(target, status, headers, fallback, 'finalization tool calls blocked')) return;
       res.writeHead(status, { ...headers, 'content-type': 'application/json' });
       res.end(body);
       finishResponse(target, status, 'finalization tool calls blocked', fallback);
