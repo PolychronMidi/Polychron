@@ -40,11 +40,11 @@ function waitFor(fn, timeoutMs = 8000) {
   });
 }
 
-function requestJson(port, body) {
+function requestJson(port, body, pathName = '/v1/responses') {
   const payload = Buffer.from(JSON.stringify(body));
   return new Promise((resolve, reject) => {
     const req = http.request({
-      host: '127.0.0.1', port, path: '/v1/responses', method: 'POST',
+      host: '127.0.0.1', port, path: pathName, method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': payload.length },
     }, (res) => {
       const chunks = [];
@@ -53,6 +53,18 @@ function requestJson(port, body) {
     });
     req.on('error', reject);
     req.write(payload);
+    req.end();
+  });
+}
+
+function requestGet(port, pathName) {
+  return new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port, path: pathName, method: 'GET' }, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString('utf8') }));
+    });
+    req.on('error', reject);
     req.end();
   });
 }
