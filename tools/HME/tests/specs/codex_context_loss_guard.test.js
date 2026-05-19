@@ -568,7 +568,7 @@ test('Codex proxy returns safe fallback if finalization keeps emitting Bash call
     assert.equal(response.status, 200);
     assert.equal(upstreamBodies.length, 10);
     assert.match(response.body, /HME stopped a non-terminating Codex tool loop/);
-    assert.match(response.body, /additional tool calls after finalization disabled tools: Bash/);
+    assert.match(response.body, /kept emitting tool calls after tools were disabled/);
     assert.doesNotMatch(response.body, /unsupported call: Bash|"name":"Bash"|codex_proxy_tool_loop_limit|Loop Detected/);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
