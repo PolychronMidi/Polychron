@@ -75,8 +75,17 @@ function createCodexResponseForwarder(deps) {
       }
       const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
       if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [] });
-      const finalBody = rewritten && rewritten.stats.calls ? JSON.stringify(rewritten.body) : full;
       const finalParsed = rewritten ? rewritten.body : parsed;
+      if (responseHasContextLoss(finalParsed || full)) {
+        record({ kind: 'codex-context-loss-blocked', route: target.kind, depth, reason: 'empty command tool result treated as task context' });
+        if (continueAfterTools(target.index, { ...target, body: appendContextLossRepair(target.body) }, { id: (parsed && parsed.id) || '' }, [])) return;
+        const fallback = contextLossFallbackResponse(finalParsed);
+        res.writeHead(status, { ...headers, 'content-type': 'application/json' });
+        res.end(JSON.stringify(fallback));
+        finishResponse(target, status, 'context loss blocked', fallback);
+        return;
+      }
+      const finalBody = rewritten && rewritten.stats.calls ? JSON.stringify(rewritten.body) : full;
       if (finalParsed && typeof finalParsed === 'object') planScanner.scanObjectForPlan(finalParsed, source);
       res.writeHead(status, headers);
       res.end(finalBody);
