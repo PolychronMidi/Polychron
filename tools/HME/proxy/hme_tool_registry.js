@@ -10,12 +10,12 @@ let cachedSchemas = null;
 let cachedMeta = null;
 
 function runExporter(kind) {
-  const script = path.join(PROJECT_ROOT, 'tools', 'HME', 'hme_tools', 'export.py');
+  const script = path.join(SOURCE_ROOT, 'tools', 'HME', 'hme_tools', 'export.py');
   const result = spawnSync('python3', [script, '--kind', kind], {
     cwd: PROJECT_ROOT,
     encoding: 'utf8',
     timeout: 30000,
-    env: { ...process.env, PROJECT_ROOT },
+    env: { ...process.env, PROJECT_ROOT, HME_SOURCE_ROOT: SOURCE_ROOT },
   });
   if (result.status !== 0) {
     const msg = `${result.stderr || result.stdout || result.error && result.error.message || 'unknown exporter failure'}`.trim();
