@@ -400,6 +400,7 @@ function createCodexResponseForwarder(deps) {
       }
       const finalBody = rewritten && rewritten.stats.calls ? JSON.stringify(rewritten.body) : full;
       if (finalParsed && typeof finalParsed === 'object') planScanner.scanObjectForPlan(finalParsed, source);
+      if (sendParsedOverClientSse(target, status, headers, finalParsed, '')) return;
       res.writeHead(status, headers);
       res.end(finalBody);
       finishResponse(target, status, '', finalParsed);
