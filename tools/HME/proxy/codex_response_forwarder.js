@@ -68,6 +68,64 @@ function responseAvoidedToolUse(parsed) {
   return /\b(?:please\s+send\s+(?:the\s+)?(?:next\s+)?(?:objective|task)|specific task you want me to continue|avoid repeating the same discovery\/listing calls|avoid repeating .* calls|reuse the recovered repository context|if there(?:'s| is) no specific task)\b/i.test(text);
 }
 
+function sseResponseId(events) {
+  for (const event of [...events].reverse()) {
+    if (event && event.response && event.response.id) return event.response.id;
+    if (event && event.item && event.item.response_id) return event.item.response_id;
+    if (event && event.id && String(event.type || '').startsWith('response.')) return event.id;
+  }
+  return '';
+}
+
+function sseTextKey(event) {
+  const item = event && (event.item_id || event.id || event.call_id || '');
+  const output = event && event.output_index != null ? `output:${event.output_index}` : '';
+  const content = event && event.content_index != null ? `content:${event.content_index}` : '';
+  return [item, output, content].filter(Boolean).join(':') || 'output:0:content:0';
+}
+
+function sseFinalResponse(events) {
+  const completed = [...events].reverse().find((event) => event && event.response && Array.isArray(event.response.output) && event.response.output.length);
+  if (completed) return { ...completed.response, _sse_events: events };
+
+  const outputByKey = new Map();
+  const outputOrder = [];
+  const textByKey = new Map();
+  const textOrder = [];
+
+  function rememberOutput(item, fallbackKey = '') {
+    if (!item || typeof item !== 'object') return;
+    const key = String(item.id || item.call_id || item.item_id || fallbackKey || `output:${outputOrder.length}`);
+    if (!outputByKey.has(key)) outputOrder.push(key);
+    outputByKey.set(key, item);
+  }
+
+  function rememberText(event, text, append = false) {
+    if (typeof text !== 'string' || text.length === 0) return;
+    const key = sseTextKey(event);
+    if (!textByKey.has(key)) textOrder.push(key);
+    textByKey.set(key, append ? `${textByKey.get(key) || ''}${text}` : text);
+  }
+
+  for (const event of events) {
+    if (!event || typeof event !== 'object') continue;
+    const type = String(event.type || '');
+    if (event.item && event.item.type === 'message') rememberOutput(event.item, event.item_id || event.output_index);
+    if (type === 'response.output_item.done' && event.item) rememberOutput(event.item, event.item_id || event.output_index);
+    if (/output_text\.delta$/.test(type)) rememberText(event, String(event.delta || ''), true);
+    else if (/output_text\.done$/.test(type)) rememberText(event, String(event.text || event.delta || ''), false);
+    else if (type === 'response.content_part.done' && event.part && typeof event.part.text === 'string') rememberText(event, event.part.text, false);
+  }
+
+  const output = outputOrder.map((key) => outputByKey.get(key)).filter(Boolean);
+  const streamedText = textOrder.map((key) => textByKey.get(key)).filter(Boolean).join('\n');
+  if (streamedText && !finalOutputText({ output }).trim()) {
+    output.push({ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: streamedText }] });
+  }
+
+  return { id: sseResponseId(events), output, _sse_events: events };
+}
+
 function createCodexResponseForwarder(deps) {
   const { record, planScanner, projectRoot, upstreamUrl } = deps;
 
