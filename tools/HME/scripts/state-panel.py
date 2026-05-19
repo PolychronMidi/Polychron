@@ -145,15 +145,17 @@ def main(argv):
         for d in os.listdir(kb_dir):
             if d.endswith(".lance"):
                 lance_dirs.append(os.path.join(kb_dir, d))
-    if lance_dirs:
-        newest = max(os.path.getmtime(d) for d in lance_dirs)
-        ago_min = int((time.time() - newest) // 60)
-        out.append(
-            f"  KB freshness       updated {ago_min}m ago "
-            f"({len(lance_dirs)} lance dir(s))"
-        )
-    else:
-        out.append(f"  KB freshness       (no lance directories found)")
+    if not brief:
+        if lance_dirs:
+            newest = max(os.path.getmtime(d) for d in lance_dirs)
+            ago_min = int((time.time() - newest) // 60)
+            if ago_min < 1440:
+                out.append(
+                    f"  KB freshness       updated {ago_min}m ago "
+                    f"({len(lance_dirs)} lance dir(s))"
+                )
+        else:
+            out.append(f"  KB freshness       (no lance directories found)")
 
     # 6. Latest activity event
     activity = str(hme_metric("hme-activity.jsonl"))
