@@ -1041,7 +1041,7 @@ omo_session_snapshot
 omo_hook_invoked
 ```
 
-Telemetry fields should include:
+OMO telemetry fields should include:
 
 - bridge name
 - OMO version/commit
@@ -1050,6 +1050,8 @@ Telemetry fields should include:
 - action/result
 - blocked reason
 - source: package/path/disabled
+
+Compaction/tuning analysis should join `context_compaction` with `context_token_usage` by time window, route, and model. Further threshold changes should use actual provider usage or remaining-token headers when present, not only request byte estimates.
 
 ---
 
