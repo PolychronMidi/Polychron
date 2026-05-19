@@ -7,6 +7,7 @@ const {
   omniProviderForConfigProvider,
   isCodexOmniTarget,
   omniTargetFormat,
+  providerRequiresNonStream,
   firstLegacyChatCandidate,
 } = require('../../proxy/omniroute_protocol');
 
@@ -26,6 +27,10 @@ test('non-codex providers keep provider-default target format', () => {
   assert.equal(omniTargetFormat('openrouter'), 'provider-default');
   assert.equal(omniTargetFormat('kilo-gateway'), 'provider-default');
   assert.equal(omniTargetFormat('aihubmix'), 'provider-default');
+  assert.equal(providerRequiresNonStream('kilo'), true);
+  assert.equal(providerRequiresNonStream('kilo-gateway'), true);
+  assert.equal(providerRequiresNonStream('aihubmix'), true);
+  assert.equal(providerRequiresNonStream('openrouter'), false);
 });
 
 test('Anthropic config provider prefers Claude OAuth unless API key is present', () => {
