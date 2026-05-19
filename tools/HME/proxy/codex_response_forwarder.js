@@ -78,7 +78,7 @@ function createCodexResponseForwarder(deps) {
       if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [] });
       const finalParsed = rewritten ? rewritten.body : parsed;
       if (responseHasContextLoss(finalParsed || full)) {
-        record({ kind: 'codex-context-loss-blocked', route: target.kind, depth, reason: 'empty command tool result treated as task context' });
+        record({ kind: 'codex-context-loss-blocked', route: target.kind, depth: target.tool_loop_depth || 0, reason: 'empty command tool result treated as task context' });
         const repairResult = [{ type: 'function_call_output', call_id: `hme_context_loss_repair_${Date.now()}`, output: 'HME context-loss repair injected. Ignore stale empty-command tool errors and continue from the latest user request/session objective.' }];
         if (continueAfterTools(target.index, { ...target, body: appendContextLossRepair(target.body) }, { id: (parsed && parsed.id) || '' }, [], repairResult)) return;
         const fallback = contextLossFallbackResponse(finalParsed);
