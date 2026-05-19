@@ -1,15 +1,16 @@
 'use strict';
 
-const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
-const { evaluateReadInput } = require('./read_policy');
+const { evaluateBashInput } = require('./bash_command_policy');
 const { replaceToolsWithUniform, uniformToolList } = require('./codex_uniform_tools');
 const { isInvalidEditInput, editToReadFallback } = require('./edit_validation');
+const { bridgeCommand: parseBridgeCommand } = require('./codex_tool_text');
 
 const BRIDGE = 'node tools/HME/scripts/codex_structured_tool.js';
 const TARGET_TOOL = 'exec_command';
 const WEB_SEARCH_TOOL = 'web_search';
 const BRIDGE_NAMES = new Set(['Read', 'Edit', 'Write', 'WebFetch', 'Agent']);
-const RENAME_TARGETS = { Bash: TARGET_TOOL, WebSearch: WEB_SEARCH_TOOL };
+const VISIBLE_NAMES = new Set(['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
+const KNOWN_PASSTHROUGH = new Set([TARGET_TOOL, 'functions.exec_command', WEB_SEARCH_TOOL]);
 
 function toolName(tool) {
   if (!tool || typeof tool !== 'object') return '';
@@ -43,6 +44,7 @@ function bridgeInput(name, args) {
     const out = { file_path: file };
     if (args.offset != null) out.offset = Number(args.offset);
     if (args.limit != null) out.limit = Number(args.limit);
+    if (args.pages != null) out.pages = String(args.pages);
     return out;
   }
   if (name === 'Write') {
@@ -75,12 +77,14 @@ function bridgeCommand(name, args) {
   return `${BRIDGE} ${action} --json ${jsonHeredoc(bridgeInput(name, args))}`;
 }
 
-function bashCommandArgs(args) {
-  const cmd = typeof args.command === 'string' ? args.command : (typeof args.cmd === 'string' ? args.cmd : '');
-  const out = { cmd };
-  if (args.timeout != null) out.timeout_ms = Number(args.timeout);
+function bashVisibleArgs(args) {
+  const command = typeof args.command === 'string' ? args.command : (typeof args.cmd === 'string' ? args.cmd : '');
+  const out = { command };
+  const timeout = args.timeout != null ? args.timeout : args.timeout_ms;
+  if (timeout != null) out.timeout = Number(timeout);
   if (args.run_in_background) out.run_in_background = true;
-  if (typeof args.description === 'string' && args.description) out.justification = args.description;
+  const description = args.description || args.justification;
+  if (typeof description === 'string' && description) out.description = description;
   return out;
 }
 
@@ -108,66 +112,72 @@ function argsText(obj) {
 function setCallArgs(obj, name, args) {
   const next = { ...obj };
   if (typeof next.name === 'string') next.name = name;
-  if (next.function && typeof next.function === 'object') {
-    next.function = { ...next.function, name, arguments: args };
-  }
+  if (next.function && typeof next.function === 'object') next.function = { ...next.function, name, arguments: args };
   if (Object.prototype.hasOwnProperty.call(next, 'arguments')) next.arguments = args;
   return next;
 }
 
-function policyCommandArgs(args) {
-  const cmd = args.cmd || args.command || '';
-  if (!cmd) return args;
-  const verdict = evaluateBashInput({ command: cmd }, { supportsRunInBackground: false });
-  if (!verdict || verdict.decision === 'allow' && !verdict.changed) return args;
-  if (verdict.decision === 'deny') return { ...args, cmd: blockedCommand(verdict.reason) };
-  return { ...args, cmd: verdict.input.command || cmd };
+function sameCall(obj, name, input) {
+  return callName(obj) === name && String(argsText(obj) || '') === JSON.stringify(input);
 }
 
-const KNOWN_PASSTHROUGH = new Set([TARGET_TOOL, 'functions.exec_command', WEB_SEARCH_TOOL]);
+function visibleCall(obj, stats, name, input, force = false) {
+  if (!force && sameCall(obj, name, input)) return obj;
+  stats.calls += 1;
+  return setCallArgs(obj, name, JSON.stringify(input));
+}
+
+function bridgeAsVisible(cmd) {
+  const bridge = parseBridgeCommand(cmd);
+  return bridge && VISIBLE_NAMES.has(bridge.tool) ? bridge : null;
+}
+
+function bashAfterPolicy(args) {
+  const original = bashVisibleArgs(args);
+  const verdict = evaluateBashInput(original, { supportsRunInBackground: false });
+  if (!verdict) return original;
+  if (verdict.decision === 'deny') return { ...original, command: `printf %s\\n '${String(verdict.reason || 'blocked').replace(/'/g, `'\\''`)}' >&2; exit 2` };
+  return verdict.input ? bashVisibleArgs(verdict.input) : original;
+}
+
+function rewriteBridgeName(obj, name, args, stats) {
+  let effectiveName = name;
+  let effectiveArgs = args;
+  if ((name === 'Edit' || name === 'MultiEdit') && isInvalidEditInput(args, { checkFs: true })) {
+    effectiveName = 'Read';
+    effectiveArgs = editToReadFallback(args);
+    stats.edit_fallback_to_read = (stats.edit_fallback_to_read || 0) + 1;
+  }
+  return visibleCall(obj, stats, effectiveName, bridgeInput(effectiveName, effectiveArgs), effectiveName !== name);
+}
+
+function rewriteBash(obj, args, stats, force = false) {
+  const next = bashAfterPolicy(args);
+  const bridge = bridgeAsVisible(next.command || '');
+  if (bridge) return visibleCall(obj, stats, bridge.tool, bridge.input, true);
+  return visibleCall(obj, stats, 'Bash', next, force);
+}
+
+function rewriteExecCommand(obj, args, stats) {
+  const cmd = typeof args.cmd === 'string' ? args.cmd : (typeof args.command === 'string' ? args.command : '');
+  const bridge = bridgeAsVisible(cmd);
+  if (bridge) return visibleCall(obj, stats, bridge.tool, bridge.input, true);
+  return rewriteBash(obj, args, stats, true);
+}
 
 function rewriteCallObject(obj, stats) {
   const name = callName(obj);
-  const isNative = name === TARGET_TOOL || name === 'functions.exec_command';
-  if (!BRIDGE_NAMES.has(name) && !RENAME_TARGETS[name] && !isNative) {
-    if (name && obj.type === 'function_call' && !KNOWN_PASSTHROUGH.has(name)) {
-      stats.unknown_calls = (stats.unknown_calls || 0) + 1;
-      stats.unknown_names = stats.unknown_names || [];
-      if (stats.unknown_names.length < 16 && !stats.unknown_names.includes(name)) stats.unknown_names.push(name);
-    }
-    return obj;
-  }
   const args = parseArgs(argsText(obj));
-  if (BRIDGE_NAMES.has(name)) {
-    let effectiveName = name;
-    let effectiveArgs = args;
-    if ((name === 'Edit' || name === 'MultiEdit') && isInvalidEditInput(args, { checkFs: true })) {
-      effectiveName = 'Read';
-      effectiveArgs = editToReadFallback(args);
-      stats.edit_fallback_to_read = (stats.edit_fallback_to_read || 0) + 1;
-    }
-    let cmd = bridgeCommand(effectiveName, effectiveArgs);
-    if (effectiveName === 'Read') {
-      const readVerdict = evaluateReadInput(bridgeInput(effectiveName, effectiveArgs));
-      if (readVerdict.decision === 'deny') cmd = blockedCommand(readVerdict.reason);
-    }
-    const commandArgs = JSON.stringify(policyCommandArgs({ cmd }));
-    stats.calls += 1;
-    return setCallArgs(obj, TARGET_TOOL, commandArgs);
+  if (BRIDGE_NAMES.has(name)) return rewriteBridgeName(obj, name, args, stats);
+  if (name === 'Bash') return rewriteBash(obj, args, stats);
+  if (name === 'WebSearch' || name === WEB_SEARCH_TOOL) return visibleCall(obj, stats, 'WebSearch', webSearchArgs(args), name === WEB_SEARCH_TOOL);
+  if (name === TARGET_TOOL || name === 'functions.exec_command') return rewriteExecCommand(obj, args, stats);
+  if (name && obj.type === 'function_call' && !KNOWN_PASSTHROUGH.has(name)) {
+    stats.unknown_calls = (stats.unknown_calls || 0) + 1;
+    stats.unknown_names = stats.unknown_names || [];
+    if (stats.unknown_names.length < 16 && !stats.unknown_names.includes(name)) stats.unknown_names.push(name);
   }
-  if (name === 'Bash') {
-    const commandArgs = JSON.stringify(policyCommandArgs(bashCommandArgs(args)));
-    stats.calls += 1;
-    return setCallArgs(obj, TARGET_TOOL, commandArgs);
-  }
-  if (name === 'WebSearch') {
-    stats.calls += 1;
-    return setCallArgs(obj, WEB_SEARCH_TOOL, JSON.stringify(webSearchArgs(args)));
-  }
-  const nextArgs = policyCommandArgs(args);
-  if (JSON.stringify(nextArgs) === JSON.stringify(args)) return obj;
-  stats.calls += 1;
-  return setCallArgs(obj, TARGET_TOOL, JSON.stringify(nextArgs));
+  return obj;
 }
 
 function rewriteValue(value, stats) {
