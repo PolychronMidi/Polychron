@@ -479,7 +479,7 @@ function createCodexResponseForwarder(deps) {
     }
 
     function attemptTarget(index, overrideTarget = null) {
-      const target = { ...(overrideTarget || targets[index]), index };
+      const target = attachTrace({ ...(overrideTarget || targets[index]), index });
       const bodyBytes = Buffer.from(JSON.stringify(target.body));
       const upstream = new URL(target.url);
       const client = upstream.protocol === 'http:' ? http : https;
