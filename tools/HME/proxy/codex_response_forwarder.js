@@ -402,7 +402,6 @@ function createCodexResponseForwarder(deps) {
       if (calls.length) {
         if (retryAfterFinalizationToolCalls(target, parsed, calls)) return;
         if (target.finalizing_tool_loop) return sendFinalizationFallback(target, status, headers, parsed, calls);
-        if (retryAfterIncompleteOnly(target.index, target, parsed, calls)) return;
         if (continueAfterTools(target.index, target, parsed, calls)) return;
         if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target, parsed);
       }
@@ -429,7 +428,6 @@ function createCodexResponseForwarder(deps) {
       if (calls.length) {
         if (retryAfterFinalizationToolCalls(target, parsed, calls)) return;
         if (target.finalizing_tool_loop) return sendFinalizationFallback(target, status, headers, parsed, calls);
-        if (retryAfterIncompleteOnly(target.index, target, parsed, calls)) return;
         if (continueAfterTools(target.index, target, parsed, calls)) return;
         if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target, parsed);
       }
