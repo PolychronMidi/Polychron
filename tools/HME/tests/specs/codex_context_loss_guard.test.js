@@ -180,7 +180,7 @@ test('Codex request transform scrubs assistant stalls that cite recovered adapte
   assert.equal(result.cleanup.codex_context_loss_categories.assistant_context_loss_text, 2);
 });
 
-test('Codex proxy drops incomplete tool calls instead of creating adapter-notice context', async () => {
+test('Codex proxy retries incomplete-only tool calls instead of passing malformed tool state', async () => {
   const proxyPort = await freePort();
   const upstreamBodies = [];
   const upstream = http.createServer((req, res) => {
@@ -195,12 +195,16 @@ test('Codex proxy drops incomplete tool calls instead of creating adapter-notice
           id: 'resp_incomplete_tool',
           output: [
             { type: 'function_call', id: 'call_empty_bash', call_id: 'call_empty_bash', name: 'Bash', arguments: '{}' },
+            { type: 'function_call', id: 'call_empty_read', call_id: 'call_empty_read', name: 'Read', arguments: '{}' },
             { type: 'function_call', id: 'call_empty_agent', call_id: 'call_empty_agent', name: 'Agent', arguments: '{"level":3}' },
           ],
         }));
         return;
       }
-      res.end(JSON.stringify({ id: 'unexpected_retry', output: [] }));
+      res.end(JSON.stringify({
+        id: 'resp_after_tool_schema_repair',
+        output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'repo inspection continued with valid tool calls' }] }],
+      }));
     });
   });
   const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
@@ -229,13 +233,21 @@ test('Codex proxy drops incomplete tool calls instead of creating adapter-notice
     }));
     const response = await requestJson(proxyPort, {
       model: 'gpt-5.5',
-      input: [{ role: 'user', content: [{ type: 'input_text', text: 'continue fixing Codex context coherence' }] }],
-      tools: [{ type: 'function', name: 'Bash' }, { type: 'function', name: 'Agent' }],
+      input: [{ role: 'user', content: [{ type: 'input_text', text: 'produce repo-aware design feedback after reading files' }] }],
+      tools: [{ type: 'function', name: 'Bash' }, { type: 'function', name: 'Read' }, { type: 'function', name: 'Agent' }],
       stream: false,
     });
     assert.equal(response.status, 200);
-    assert.equal(upstreamBodies.length, 1);
-    assert.doesNotMatch(response.body, /adapter notice|Error: command is required|Error: prompt is required|Please send/);
+    assert.equal(upstreamBodies.length, 2);
+    const repairBody = JSON.stringify(upstreamBodies[1]);
+    assert.match(repairBody, /HME tool-call repair/);
+    assert.match(repairBody, /Bash: missing command/);
+    assert.match(repairBody, /Read: missing file_path/);
+    assert.match(repairBody, /Agent: missing prompt/);
+    assert.match(repairBody, /produce repo-aware design feedback after reading files/);
+    assert.match(repairBody, /do not ask the user to paste repo structure/i);
+    assert.equal(JSON.parse(response.body).output[0].content[0].text, 'repo inspection continued with valid tool calls');
+    assert.doesNotMatch(response.body, /adapter notice|Error: command is required|Error: prompt is required|Please send|paste repo structure/);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
     throw err;
