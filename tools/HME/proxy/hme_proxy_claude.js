@@ -230,43 +230,53 @@ function createClaudeHandler(deps) {
         });
         upstreamRes.on('end', async () => {
           try { _releaseOpusSlot(); } catch (_e) { /* ignore */ }
-          await handleAnthropicResponseComplete({
-            chunks,
-            upstreamRes,
-            clientRes,
-            clientReq,
-            payload,
-            headers: upstreamRes.headers,
-            bodyBuf,
-            outBody,
-            upstream,
-            upstreamPath,
-            upstreamHeaders,
-            upstreamOpts,
-            transport,
-            isAnthropic,
-            passthrough: _passthrough,
-            isOmniRouteSwap: _isOmniRouteSwap,
-            swapChain: _swapChain,
-            odMode: _odMode,
-            omniProvider: _omniProvider,
-            swapModel: _swapModel,
-            isInteractivePath: _isInteractivePath,
-            sessionForTelemetry: _sessionForTelemetry,
-            effectiveCompactThreshold: _effectiveCompactThreshold,
-            getConsecutive429s,
-            setConsecutive429s,
-            incConsecutive429s,
-            getLastInputTokensRemaining,
-            setLastInputTokensRemaining,
-            getLastInputTokensLimit,
-            setLastInputTokensLimit,
-            injectContextHeader: _injectContextHeader,
-            anthropicTextSseBuffer: _anthropicTextSseBuffer,
-            lifecycleInactive: deps.lifecycleInactive || ((event) => lifecycleBridge().lifecycleInactive(event)),
-            runInlineFallback: deps.runInlineFallback || ((event, stdinJson) => lifecycleBridge().runInlineFallback(event, stdinJson)),
-            skipStopFallback: deps.skipStopFallback === true,
-          });
+          try {
+            await handleAnthropicResponseComplete({
+              chunks,
+              upstreamRes,
+              clientRes,
+              clientReq,
+              payload,
+              headers: upstreamRes.headers,
+              bodyBuf,
+              outBody,
+              upstream,
+              upstreamPath,
+              upstreamHeaders,
+              upstreamOpts,
+              transport,
+              isAnthropic,
+              passthrough: _passthrough,
+              isOmniRouteSwap: _isOmniRouteSwap,
+              swapChain: _swapChain,
+              odMode: _odMode,
+              omniProvider: _omniProvider,
+              swapModel: _swapModel,
+              isInteractivePath: _isInteractivePath,
+              sessionForTelemetry: _sessionForTelemetry,
+              effectiveCompactThreshold: _effectiveCompactThreshold,
+              getConsecutive429s,
+              setConsecutive429s,
+              incConsecutive429s,
+              getLastInputTokensRemaining,
+              setLastInputTokensRemaining,
+              getLastInputTokensLimit,
+              setLastInputTokensLimit,
+              injectContextHeader: _injectContextHeader,
+              anthropicTextSseBuffer: _anthropicTextSseBuffer,
+              lifecycleInactive: deps.lifecycleInactive || ((event) => lifecycleBridge().lifecycleInactive(event)),
+              runInlineFallback: deps.runInlineFallback || ((event, stdinJson) => lifecycleBridge().runInlineFallback(event, stdinJson)),
+              skipStopFallback: deps.skipStopFallback === true,
+            });
+          } catch (fatalErr) {
+            console.error(`[hme-proxy] FATAL in handleAnthropicResponseComplete: ${fatalErr.message} ${fatalErr.stack}`);
+            if (!clientRes.headersSent) {
+              clientRes.writeHead(502, { 'Content-Type': 'application/json' });
+              clientRes.end(JSON.stringify({ type: 'error', error: { type: 'hme_proxy_internal', message: fatalErr.message } }));
+            } else {
+              try { clientRes.end(); } catch (_e) { /* ignore */ }
+            }
+          }
         });
         upstreamRes.on('error', (err) => handleMidResponseError({
           err,

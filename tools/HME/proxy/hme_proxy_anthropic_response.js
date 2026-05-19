@@ -179,6 +179,20 @@ async function handleAnthropicResponseComplete({
         status = loopResult.status;
         headers = loopResult.headers;
         fullBody = loopResult.fullBody;
+        const loopCtype = (loopResult.headers['content-type'] || '').toLowerCase();
+        if (payload.stream && !loopCtype.includes('text/event-stream')) {
+          const { _anthropicTextSseBuffer } = require('./hme_proxy_core');
+          let text = '';
+          try {
+            const json = JSON.parse(fullBody.toString('utf8'));
+            text = (json && Array.isArray(json.content))
+              ? json.content.filter((b) => b && b.type === 'text').map((b) => b.text || '').join('')
+              : '';
+          } catch (_) { /* non-JSON body, use raw */ }
+          text = text || fullBody.toString('utf8') || '(empty response)';
+          fullBody = _anthropicTextSseBuffer(swapModel || 'omni', text);
+          headers = { ...headers, 'content-type': 'text/event-stream; charset=utf-8' };
+        }
       }
     } catch (e) {
       console.error(`[omni-tool-loop] error: ${e.message}`);

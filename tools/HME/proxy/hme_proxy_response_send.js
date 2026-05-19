@@ -87,6 +87,11 @@ function sendFinalResponse({ clientRes, payload, final, outStatus, outHeaders, o
     outHeaders = { ...outHeaders };
     delete outHeaders['content-length'];
   }
+  if (outBuf && outBuf.length === 0) {
+    console.error('sendFinalResponse: outBuf is empty, injecting fallback error event');
+    outBuf = require('./hme_proxy_core')._anthropicTextSseBuffer('hme-proxy', 'API returned empty response body. Please retry or /compact.');
+    outHeaders['content-type'] = 'text/event-stream; charset=utf-8';
+  }
   clientRes.writeHead(outStatus, outHeaders);
   const isSseFinal = (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
   if (isSseFinal && !final) {
