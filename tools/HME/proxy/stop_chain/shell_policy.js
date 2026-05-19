@@ -27,13 +27,17 @@ const DETECTORS_DIR = path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors');
  * detects `{"decision":"block",...}` JSON anywhere in stdout.
  */
 function shellPolicy(stageName, opts = {}) {
-  const { timeoutMs = 30_000, parseDecision = defaultParseDecision } = opts;
+  const { timeoutMs = 30_000, parseDecision = defaultParseDecision, failClosed = false } = opts;
   return {
     name: stageName,
     async run(ctx) {
       const result = await spawnStage(stageName, ctx.stdinJson, timeoutMs);
       const decisionFromStdout = parseDecision(result.stdout, ctx);
       if (decisionFromStdout) return decisionFromStdout;
+      if (failClosed && (result.exit_code !== 0 || result.error || result.signal)) {
+        const detail = (result.stderr || (result.error && result.error.message) || result.signal || `exit ${result.exit_code}`).trim();
+        return ctx.deny(`STOP-CHAIN INTEGRITY FAILURE: shell policy ${stageName} failed closed (${detail.slice(0, 800)}). Fix the policy before stopping.`);
+      }
       return ctx.allow();
     },
   };
