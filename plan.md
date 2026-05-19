@@ -1151,10 +1151,12 @@ after:
 
 Only tune thresholds further if:
 
-- OMO pruning is stable
+- `context_token_usage` shows real provider headroom
+- estimated tokens are not undercounting actual/provider usage
 - context errors remain absent
 - orphan/tail repairs remain zero
-- model token telemetry still shows headroom
+- OMO pruning is stable when enabled
+- model token telemetry still shows headroom after pruning effects are included
 
 ---
 
