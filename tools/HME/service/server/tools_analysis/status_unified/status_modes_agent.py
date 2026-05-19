@@ -192,7 +192,9 @@ def _mode_agent_loop():
             e = _json.loads(ln)
         except ValueError:
             continue
-        if e.get("ts", 0) >= cutoff:
+        ts = _activity_ts_seconds(e.get("ts"))
+        if ts is not None and ts >= cutoff:
+            e["ts"] = ts
             events.append(e)
     if not events:
         return "# i/status mode=agent-loop\nNo activity in last hour."
