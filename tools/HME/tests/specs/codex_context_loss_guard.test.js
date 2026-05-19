@@ -448,7 +448,20 @@ test('Codex proxy streams visible tool-loop progress before final streamed answe
     assert.equal(upstreamBodies[1].previous_response_id, 'resp_visible_tool');
     assert.match(response.body, /text\/event-stream|response\.output_text\.delta|Read README\.md|result forwarded upstream|final streamed answer after visible Read/);
     assert.doesNotMatch(response.body, /unsupported call: Bash|"name":"Bash"|codex_proxy_tool_loop_limit|Loop Detected/);
-    await waitFor(() => stderr.includes('codex-proxy-tool-loop-visible') || stderr.includes('codex-hidden-tool-loop-violation'), 2000).catch(() => true);
+    const metrics = await requestGet(proxyPort, '/hme/codex/metrics');
+    assert.equal(metrics.status, 200);
+    const recent = JSON.parse(metrics.body).recent;
+    const visible = recent.find((event) => event.kind === 'codex-proxy-tool-loop-visible');
+    const responseEvent = [...recent].reverse().find((event) => event.kind === 'response');
+    assert.ok(visible, 'expected visible tool-loop metric');
+    assert.equal(visible.session_id, responseEvent.session_id);
+    assert.equal(visible.turn_id, responseEvent.turn_id);
+    assert.equal(visible.correlation_id, responseEvent.correlation_id);
+    assert.deepEqual(visible.call_ids, ['call_visible_read']);
+    assert.equal(responseEvent.client_sse_started, true);
+    assert.equal(responseEvent.tool_loop_count, 1);
+    assert.ok(responseEvent.client_visible_progress_events > 0);
+    assert.equal(recent.some((event) => event.kind === 'codex-hidden-tool-loop-violation'), false);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
     throw err;
