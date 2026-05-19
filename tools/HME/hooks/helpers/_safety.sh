@@ -47,7 +47,7 @@ PY
 # 3) Capture hook identity from caller at TOP LEVEL so BASH_SOURCE[1] refers
 # to the hook script that sourced _safety.sh (not a sub-helper).
 _HME_HOOK_START_NS="$(date +%s%N)"
-_HME_HOOK_NAME="$(basename "${BASH_SOURCE[1]:-unknown}" .sh)"
+_HME_HOOK_NAME="$(basename "${BASH_SOURCE[2]:-${BASH_SOURCE[1]:-unknown}}" .sh)"
 _HME_HOOK_EVENT="${HME_HOOK_EVENT:-hook}"
 _HME_HOOK_EXIT_CODE=0
 _HME_HOOK_VERDICT=""
