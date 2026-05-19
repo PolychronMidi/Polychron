@@ -241,6 +241,7 @@ function displayCall(bridge) {
   if (bridge.tool === 'Glob') return `Glob ${trunc(input.pattern || '*')} in ${shortPath(input.path || '.')}`;
   if (bridge.tool === 'WebFetch') return `WebFetch ${input.url || ''}`.trim();
   if (bridge.tool === 'Agent') return `Agent level=${input.level || 3}`;
+  if (bridge.tool === 'Bash') return `Bash ${JSON.stringify(trunc(input.command || ''))}`;
   return `${bridge.tool} ${JSON.stringify(input)}`;
 }
 
