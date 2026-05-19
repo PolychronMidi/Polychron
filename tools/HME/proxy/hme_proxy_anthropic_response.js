@@ -163,9 +163,10 @@ async function handleAnthropicResponseComplete({
   let fullBody = Buffer.concat(chunks);
   let status = upstreamRes.statusCode || 502;
   headers = { ...headers };
+  const upstreamRateLimitHeaders = { ...headers };
 
+  captureRateLimitTelemetry({ headers: upstreamRateLimitHeaders, status, setLastInputTokensRemaining, setLastInputTokensLimit });
   if (isOmniRouteSwap) injectContextHeader(headers, swapModel);
-  captureRateLimitTelemetry({ headers, status, setLastInputTokensRemaining, setLastInputTokensLimit });
 
   const failureResult = await handleUpstreamFailureOrSuccess({
     status,
