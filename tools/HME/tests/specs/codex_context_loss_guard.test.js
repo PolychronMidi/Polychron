@@ -164,8 +164,17 @@ test('Codex context-loss guard detects recovered pwd-only resume stalls', () => 
     '',
     'I don’t have the actual task details from the previous turn—only the pwd output. Tell me what you want done next in this repo, and I’ll continue from there without re-running that same context check unless needed.',
   ].join('\n');
+  const genericBad = [
+    'I think we can satisfy the user\'s intent without going into literal or overly religious topics.',
+    'It seems they might be relying on previous context rather than needing me to use the same tools again unless absolutely necessary.',
+    'If there\'s no specific task, I should ask the user.',
+    'Acknowledged. I’ll reuse the recovered repository context and avoid repeating the same discovery/listing calls unless there’s a clear need.',
+    'Please send the next objective or the specific task you want me to continue.',
+  ].join('\n');
   assert.equal(isContextLossText(bad), true);
+  assert.equal(isContextLossText(genericBad), true);
   assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: bad }] }] }), true);
+  assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: genericBad }] }] }), true);
 });
 
 test('Codex request transform scrubs assistant stalls that cite recovered adapter notices or missing prompts', () => {
