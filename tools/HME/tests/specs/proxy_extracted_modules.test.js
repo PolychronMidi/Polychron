@@ -15,7 +15,7 @@ const { handleLegacySwapResponse, writeAnthropicStopSse } = require('../../proxy
 const { effectiveMode, buildMode1Chain, applyOverdriveRoute, upstreamModelId, roleFromPayload } = require('../../proxy/overdrive_route');
 const { reasoningTextFromData, providerReasoningToThinkingRewrite } = require('../../proxy/reasoning_to_thinking');
 const { _jsonStats } = require('../../proxy/hme_proxy_response_trace');
-const { _extractUsageFromBody } = require('../../proxy/hme_proxy_anthropic_response');
+const { _contextTokenUsageFields, _extractUsageFromBody } = require('../../proxy/hme_proxy_anthropic_response');
 const codexFallback = require('../../proxy/hme_proxy_codex');
 
 function quiet(fn) {
