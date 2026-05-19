@@ -9,6 +9,11 @@ const TOOL_NAMES = new Set(['Read', 'Bash', 'Edit', 'Write', 'WebFetch', 'Agent'
 const BRIDGE_ACTIONS = { Read: 'read', Edit: 'edit', Write: 'write', WebFetch: 'web_fetch', Agent: 'agent' };
 const BRIDGE_SCRIPT = path.join(PROJECT_ROOT, 'tools', 'HME', 'scripts', 'codex_structured_tool.js');
 const MAX_OUTPUT = 200000;
+const EMPTY_BASH_TOOL_RESULT = [
+  'HME adapter notice: ignored an empty Bash tool call because no command was provided.',
+  'This notice is not task context and should not be treated as the user request.',
+  'Continue from the latest user request/session objective; do not ask the user to resend context solely because of this adapter notice.',
+].join('\n');
 const MAX_TOOL_LOOP_DEPTH = 8;
 
 function parseSseEvents(text) {
