@@ -457,6 +457,15 @@ test('passthrough microcompaction honors configured stale tool horizon', () => {
   });
   assert.ok(changed > 0);
   assert.ok(JSON.stringify(payload).length <= 400000);
+  assert.equal(telemetry.length, 1);
+  assert.equal(telemetry[0].event, 'context_compaction');
+  assert.equal(telemetry[0].route, 'test-route');
+  assert.equal(telemetry[0].model, 'test-model');
+  assert.equal(telemetry[0].stage, 'microcompact');
+  assert.equal(telemetry[0].messages_dropped, 0);
+  assert.ok(telemetry[0].stale_tool_results_elided > 0);
+  assert.ok(telemetry[0].before_bytes > telemetry[0].after_bytes);
+  assert.equal(telemetry[0].threshold_bytes, 400000);
   const results = payload.messages.flatMap((m) => Array.isArray(m.content) ? m.content.filter((b) => b.type === 'tool_result') : []);
   assert.ok(results.slice(0, -2).every((b) => String(b.content).includes('content elided by hme-proxy precompact')));
   assert.ok(results.slice(-2).every((b) => String(b.content).length === 20000));
