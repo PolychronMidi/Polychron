@@ -491,8 +491,7 @@ function validateManifest(allFiles) {
   const missingFromDisk = [...manifestFiles].filter((f) => !onDisk.has(f));
   if (missingFromManifest.length || missingFromDisk.length) {
     const msg = `[middleware] manifest drift:\n  on-disk-but-not-in-manifest: ${missingFromManifest.join(', ') || '(none)'}\n  in-manifest-but-not-on-disk: ${missingFromDisk.join(', ') || '(none)'}\n  edit tools/HME/proxy/middleware/manifest.json to reconcile.`;
-    if (process.env.HME_PROXY_MIDDLEWARE_MANIFEST_STRICT === '1') throw new Error(msg);
-    console.warn(msg);
+    throw new Error(msg);
   }
 }
 
