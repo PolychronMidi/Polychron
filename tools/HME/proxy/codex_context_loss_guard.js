@@ -61,10 +61,11 @@ function isContextLossText(text) {
   const noAction = NO_ACTION_RE.test(s);
   const metaStall = META_STALL_RE.test(s);
   const repoReadStall = REPO_READ_STALL_RE.test(s);
+  const pasteContext = PASTE_CONTEXT_RE.test(s);
   const adapterAnchor = mentionsEmptyCommand || mentionsAdapterNotice;
-  return (adapterAnchor && (recovered || noContext || asksResend || noAction || metaStall || repoReadStall))
+  return (adapterAnchor && (recovered || noContext || asksResend || noAction || metaStall || repoReadStall || pasteContext))
     || ((recovered || noContext || metaStall) && asksResend)
-    || (repoReadStall && asksResend);
+    || (repoReadStall && (asksResend || pasteContext));
 }
 
 function bump(stats, key) {
