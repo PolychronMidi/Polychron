@@ -197,3 +197,17 @@ test('editFallbackToReadRewrite: ignores non-Edit tool_use blocks', () => {
   assert.equal(out.length, 3);
   assert.equal(out[0][1].content_block.name, 'Bash');
 });
+
+test('editFallbackToReadRewrite: converts Update-without-prior-Read to Read before native edit can fail', () => {
+  const ctx = _ctx();
+  const input = JSON.stringify({ file_path: '/abs/update-target.js', old_string: 'a', new_string: 'b' });
+  const events = [
+    ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'toolu_update', name: 'Update', input: {} } }],
+    ['content_block_delta', { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: input } }],
+    ['content_block_stop', { type: 'content_block_stop', index: 0 }],
+  ];
+  const out = _drive(editFallbackToReadRewrite, ctx, events);
+  assert.equal(out[0][1].content_block.name, 'Read');
+  const readInput = JSON.parse(out[1][1].delta.partial_json);
+  assert.deepEqual(readInput, { file_path: '/abs/update-target.js', limit: 50 });
+});
