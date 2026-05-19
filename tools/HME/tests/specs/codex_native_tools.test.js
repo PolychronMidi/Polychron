@@ -150,9 +150,32 @@ test('Codex bridge heredoc text normalizes without leaking heredoc header', () =
   const normalized = normalizeStructuredBridgeCalls({ text: cmd });
   assert.equal(
     normalized.body.text,
-    'Read({"file_path":"doc/templates/AGENTS.md","offset":0,"limit":5})\nafter',
+    'Read doc/templates/AGENTS.md lines 1-5\nafter',
   );
   assert.equal(normalized.stats.text_rewrites, 1);
+});
+
+test('Codex bridge heredoc inside exec_command normalizes without marker leakage', () => {
+  const cmd = [
+    "node tools/HME/scripts/codex_structured_tool.js read --json <<'HME_CODEX_JSON'",
+    JSON.stringify({ file_path: '$PROJECT_ROOT/tools/HME/runtime/INVENTORY.md', offset: 25, limit: 10 }),
+    'HME_CODEX_JSON',
+  ].join('\n');
+  const input = {
+    output: [{
+      type: 'function_call',
+      name: 'exec_command',
+      arguments: JSON.stringify({ cmd }),
+    }],
+  };
+  const normalized = normalizeStructuredBridgeCalls(input).body.output[0];
+  assert.equal(normalized.name, 'Read');
+  assert.deepEqual(JSON.parse(normalized.arguments), {
+    file_path: '$PROJECT_ROOT/tools/HME/runtime/INVENTORY.md',
+    offset: 25,
+    limit: 10,
+  });
+  assert.doesNotMatch(JSON.stringify(normalized), /HME_CODEX_JSON|<<|codex_structured_tool/);
 });
 
 test('Codex SSE native Edit response rewrites before forwarding', () => {
