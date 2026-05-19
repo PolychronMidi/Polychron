@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { PROJECT_ROOT } = require('./shared');
+const { PROJECT_ROOT, emit } = require('./shared');
 
 function normalizePlan(raw) {
   const plan = raw && typeof raw === 'object' ? raw : { threshold: raw };
