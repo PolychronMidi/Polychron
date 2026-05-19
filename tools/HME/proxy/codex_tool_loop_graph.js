@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { RUNTIME_DIR } = require('./shared');
 const { missingRequiredToolFields } = require('./codex_tool_loop');
+const { toolMetadata } = require('./hme_tool_registry');
 
 const MAX_TOOL_LOOP_DEPTH = 8;
 const FINALIZE_TOOL_LOOP_DEPTH = MAX_TOOL_LOOP_DEPTH - 1;
