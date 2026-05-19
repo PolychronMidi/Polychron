@@ -369,11 +369,6 @@ function createCodexResponseForwarder(deps) {
       finishResponse(target, status, 'finalization tool calls blocked', fallback);
     }
 
-    function toolLoopLimit(target, parsed = null) {
-      res.writeHead(508, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'codex_proxy_tool_loop_limit', message: 'Tool loop limit reached before a final assistant response.' }));
-      finishResponse(target, 508, 'tool loop limit', parsed);
-    }
 
     function sendJsonFinal(target, status, headers, full) {
       const parsed = safeJson(full);
