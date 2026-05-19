@@ -182,7 +182,9 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                                 verdict = "warnings"
                     else:
                         verdict = "clean"  # No explicit warnings -> treat as clean
-                    parts.append(emit_review_verdict_marker(verdict))
+                    marker = emit_review_verdict_marker(verdict)
+                    if verdict != "clean":
+                        parts.append(marker)
                 except Exception as _err3:
                     logger.debug(f'silent-except review_unified.py:116: {type(_err3).__name__}: {_err3}')
             except Exception as _fe:
