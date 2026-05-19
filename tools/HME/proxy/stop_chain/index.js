@@ -283,14 +283,15 @@ async function runStopChain(stdinJson) {
         continue;
       }
     }
-    try {
-      result = await policyMod.run(ctx);
-    } catch (err) {
-      // silent-ok: optional fallback path.
-      const msg = `threw: ${err.stack || err.message}`;
-      combinedStderr += `[stop_chain] ${name}: ${msg}\n`;
-      logError(name, msg);
-      result = allow();
+    if (!result) {
+      try {
+        result = await policyMod.run(ctx);
+      } catch (err) {
+        const msg = `threw: ${err.stack || err.message}`;
+        combinedStderr += `[stop_chain] ${name}: ${msg}\n`;
+        logError(name, msg);
+        result = MANDATORY_POLICIES.has(name) ? mandatoryPolicyFailure(name, msg) : allow();
+      }
     }
 
     if (!result || !result.decision) {
