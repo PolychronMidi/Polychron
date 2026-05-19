@@ -629,7 +629,7 @@ test('request mutation passthrough path leaves 90k GPT-5.5 context unelided', as
   const logs = [];
   try {
     process.env.OVERDRIVE_MODE = '0';
-    recordUpstreamFailure('test passthrough smoke');
+    process.env.HME_PROXY_FORCE_PASSTHROUGH = '1';
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_BYTES = '3000000';
     process.env.HME_PROXY_COMPACT_TRACE = '1';
