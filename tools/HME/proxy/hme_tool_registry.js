@@ -8,6 +8,8 @@ const SOURCE_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 let cachedSchemas = null;
 let cachedMeta = null;
+let cachedMetaByName = null;
+let cachedRequiredByName = null;
 
 function runExporter(kind) {
   const script = path.join(SOURCE_ROOT, 'tools', 'HME', 'hme_tools', 'export.py');
