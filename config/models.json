@@ -32,6 +32,49 @@
       "anthropic"
     ]
   },
+  "provider_capabilities": {
+    "anthropic": {
+      "chat_completions": false,
+      "responses": false,
+      "streaming": "native",
+      "route_source": "omniroute-native"
+    },
+    "codex": {
+      "chat_completions": false,
+      "responses": true,
+      "streaming": "supported",
+      "route_source": "omniroute-responses"
+    },
+    "opencode-go": {
+      "chat_completions": true,
+      "responses": false,
+      "streaming": "supported",
+      "route_source": "omniroute-native"
+    },
+    "openrouter": {
+      "chat_completions": true,
+      "responses": false,
+      "streaming": "supported",
+      "catalog_source": "openrouter",
+      "route_source": "omniroute-native"
+    },
+    "kilo-gateway": {
+      "chat_completions": true,
+      "responses": false,
+      "streaming": "unstable",
+      "request_overrides": { "non_stream": true },
+      "catalog_source": "models.dev",
+      "route_source": "omniroute-native"
+    },
+    "aihubmix": {
+      "chat_completions": true,
+      "responses": false,
+      "streaming": "unstable",
+      "request_overrides": { "non_stream": true },
+      "catalog_source": "models.dev",
+      "route_source": "omniroute-openai-compatible"
+    }
+  },
   "ranking_rules": {
     "description": "Per-tier: rank each cost type independently by tier_score descending (subscription > free > usage).",
     "cost_order": [
