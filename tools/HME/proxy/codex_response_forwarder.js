@@ -315,8 +315,19 @@ function createCodexResponseForwarder(deps) {
       const skipped = forcedResults ? [] : calls.filter((call) => isIncompleteToolCall(call));
       if (!forcedResults && skipped.length) droppedIncompleteCalls(skipped, target);
       if (!forcedResults && !actionableCalls.length) return false;
-      const results = forcedResults || toolResultInput(actionableCalls, { projectRoot, sessionId: source.session_id || '' });
-      if (!forcedResults) writeToolLoopVisibility(target, actionableCalls, results);
+      let results;
+      if (forcedResults) results = forcedResults;
+      else {
+        results = [];
+        for (const call of actionableCalls) {
+          writeClientText(target, `\n• ${displayToolCall(call)}\n`);
+          const result = executeToolCall(call, { projectRoot, sessionId: source.session_id || '' });
+          results.push(result);
+          const bytes = Buffer.byteLength(String(result.output || ''), 'utf8');
+          writeClientText(target, `  ↳ completed; result forwarded upstream (${bytes} bytes).\n`);
+        }
+        if (clientSse.started) record({ kind: 'codex-proxy-tool-loop-visible', route: target.kind, depth: depth + 1, calls: actionableCalls.map((call) => ({ call_id: call.id, name: call.name })) });
+      }
       const finalizing = !forcedResults && depth >= FINALIZE_TOOL_LOOP_DEPTH;
       record({ kind: finalizing ? 'codex-proxy-tool-loop-finalize' : 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: r.is_error })) });
       let nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
