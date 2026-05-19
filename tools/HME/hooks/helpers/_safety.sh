@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Shared safety preamble for all HME hooks.
 # Source this at the top of every hook script.
 # Logic lives in helpers/safety/*.sh; this dispatcher sources them in order.
@@ -54,7 +53,10 @@ _HME_HOOK_EXIT_CODE=0
 _HME_HOOK_VERDICT=""
 
 # 4) Tunable constants -- set before any sub-file references them.
-_HME_HTTP_PORT="$(_hme_service_port worker)"
+# Keep bootstrap hot path shell-only: service_registry.py startup was a frequent
+# >1s latency source in PreToolUse. The worker default is stable and env may
+# override it; deeper service metadata remains available through _hme_service_*.
+_HME_HTTP_PORT="${HME_WORKER_PORT:-9098}"
 _HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 
