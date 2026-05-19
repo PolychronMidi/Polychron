@@ -95,6 +95,18 @@ def openai_tool_schema(tool: HMETool) -> dict[str, Any]:
     }
 
 
+def langchain_tool_schema(tool: HMETool) -> dict[str, Any]:
+    """LangChain StructuredTool-compatible descriptor from canonical HMETool metadata."""
+    schema = openai_tool_schema(tool)
+    return {
+        "name": schema["name"],
+        "description": schema["description"],
+        "args_schema": schema["parameters"],
+        "metadata": tool.hme_metadata(),
+        "return_direct": False,
+    }
+
+
 def required_input_names(tool: HMETool) -> list[str]:
     return [name for name, spec in tool.inputs.items() if not spec.get("nullable")]
 
