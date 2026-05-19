@@ -41,6 +41,7 @@ on — belongs here, where it survives a `tmp/` flush.
 | `autocommit.{counter,last-success,fail,lock}` | `_autocommit.sh` | self + `userpromptsubmit.sh` (fail-flag check) + `autocommit_health.py` | Counter increments per attempt; reset on success; lock held during git ops | Lock with no live holder → unlinked by stale-recovery |
 | `canary-pending.txt` | `lifecycle/canary.sh` | `lifesaver.sh` (consume + advance) | Per-canary | Watchdog detects via consumed-vs-pending diff |
 | `heartbeat-{autocommit,canary,inline-check,lifesaver}.ts` | matching writer | `universal_pulse.py` | Liveness markers; touched per-fire | >90s stale → universal-pulse alerts |
+| `model-route-health.json` | `scripts/model-route-health.py` | `proxy/overdrive_route.js` | Optional route quarantine/cooldown map | `cooldown.until` expired → ignored |
 
 ## Genuinely-throwaway tmp/ files (KEEP)
 
