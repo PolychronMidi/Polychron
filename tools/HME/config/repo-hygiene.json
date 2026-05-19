@@ -1,0 +1,63 @@
+{
+  "max_file_bytes": 5242880,
+  "blocked_paths": [
+    ".env",
+    ".env.*",
+    "tools/HME/runtime/**",
+    "tools/HME/session-state.json",
+    "**/session-state.json",
+    "tmp/**",
+    "*.log"
+  ],
+  "blocked_path_reasons": {
+    ".env": "env files are never committed",
+    ".env.*": "env files are never committed",
+    "tools/HME/runtime/**": "HME runtime state is never committed",
+    "tools/HME/session-state.json": "session-state files are runtime state",
+    "**/session-state.json": "session-state files are runtime state",
+    "tmp/**": "tmp/ is runtime scratch space",
+    "*.log": "log files are runtime output"
+  },
+  "path_allowlist": [
+    "tools/HME/runtime/INVENTORY.md"
+  ],
+  "blocked_jsonl_dirs": [
+    "runtime",
+    "metrics",
+    "log",
+    "logs",
+    "tmp"
+  ],
+  "syntax_check_extensions": [
+    ".py",
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".json",
+    ".sh",
+    ".bash"
+  ],
+  "syntax_skip_dirs": [
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "tmp",
+    "runtime",
+    "log",
+    "logs",
+    "output"
+  ],
+  "local_path_markers": [
+    "HOME_ABSOLUTE",
+    "TMP_ABSOLUTE",
+    "MNT_ABSOLUTE"
+  ],
+  "local_path_allow_token": "local-path-ok",
+  "env_secret_marker": "SECRETS ABOVE THIS LINE",
+  "canonical_precommit": "tools/HME/git-hooks/pre-commit",
+  "precommit_validator": "tools/HME/scripts/precommit_validate.py"
+}
