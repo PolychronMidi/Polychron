@@ -152,6 +152,20 @@ function createCodexResponseForwarder(deps) {
       return dropped;
     }
 
+    function finalizePrompt(target, results) {
+      const visible = results.map((result) => [
+        `tool ${result.call_id}:`,
+        String(result.output || '').slice(0, 8000),
+      ].join('\n')).join('\n\n');
+      return [
+        'HME tool-loop finalization: the repository tools have already run and returned results below.',
+        'Do not call another tool. Produce the final concise assistant answer now from these results and the latest user objective.',
+        'If the results are partial, summarize what is known instead of continuing tool discovery.',
+        '',
+        visible,
+      ].join('\n');
+    }
+
     function continueAfterTools(index, target, parsed, calls, forcedResults = null) {
       const depth = target.tool_loop_depth || 0;
       if (!calls.length && !forcedResults) return false;
@@ -161,9 +175,14 @@ function createCodexResponseForwarder(deps) {
       if (!forcedResults && skipped.length) droppedIncompleteCalls(skipped, target);
       if (!forcedResults && !actionableCalls.length) return false;
       const results = forcedResults || toolResultInput(actionableCalls, { projectRoot, sessionId: source.session_id || '' });
-      record({ kind: 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: r.is_error })) });
-      const nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
-      attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1 });
+      const finalizing = !forcedResults && depth >= FINALIZE_TOOL_LOOP_DEPTH;
+      record({ kind: finalizing ? 'codex-proxy-tool-loop-finalize' : 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: r.is_error })) });
+      let nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
+      if (finalizing) {
+        const finalizeInput = { type: 'message', role: 'user', content: [{ type: 'input_text', text: finalizePrompt(target, results) }] };
+        nextBody = { ...nextBody, input: [...results, finalizeInput], tools: [], tool_choice: 'none' };
+      }
+      attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1, finalizing_tool_loop: finalizing || target.finalizing_tool_loop });
       return true;
     }
 
