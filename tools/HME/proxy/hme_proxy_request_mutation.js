@@ -133,7 +133,6 @@ async function mutateClaudeRequest({
       const ccChanged = normalizeCacheControlTtls(payload);
       if (ccChanged > 0) {
         bodyDirtiedByStrip = true;
-        emit({ event: 'cache_control_normalized', session, count: ccChanged });
       }
       if (bodyDirtiedByStrip) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
     }
