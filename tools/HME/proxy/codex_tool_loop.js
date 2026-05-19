@@ -7,7 +7,6 @@ const { PROJECT_ROOT } = require('./shared');
 const { canonicalToolNames, missingRequiredFields } = require('./hme_tool_registry');
 
 const TOOL_NAMES = canonicalToolNames();
-const ACTIONS = { Read: 'read', Edit: 'edit', Write: 'write', WebFetch: 'web_fetch', Agent: 'agent' };
 const MAX_OUTPUT = 200000;
 const EMPTY_BASH_TOOL_RESULT = [
   'HME adapter notice: ignored an empty Bash tool call because no command was provided.',
