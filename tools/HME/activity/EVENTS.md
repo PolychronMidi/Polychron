@@ -59,6 +59,11 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`todo_status_suppressed`** [activity] -- Todo status filtering suppressed repeated todo-state context.
 - **`upstream_stream_timeout_retry`** [activity] -- The proxy retried an upstream stream after a timeout-class failure.
 - **`web_tool_failure`** [activity] -- Web tool enrichment observed a repeated failure for a target.
+- **`hme_log_error_escalated`** [activity] -- HME log watermark escalated ERROR lines into the lifesaver error log.
+- **`lifesaver_injected`** [activity] -- Lifesaver middleware injected an actionable error or autocommit failure into the request.
+- **`lifesaver_watermark_failed`** [activity] -- Lifesaver middleware could not advance its error-log watermark.
+- **`mcp_fail_escalated`** [activity] -- MCP fail-scan escalated FAIL lines into the lifesaver error log.
+- **`middleware_warning`** [activity] -- Middleware recorded a non-fatal warning in telemetry instead of printing into tool output.
 - **`inference_call`** [activity] -- A local-inference subprocess was invoked.
 - **`upstream_error`** [activity] -- The proxy classified an upstream HTTP or SSE response as failed.
 - **`upstream_conn_error`** [activity] -- A TCP/TLS-level failure occurred before an upstream HTTP response.
