@@ -41,9 +41,13 @@ function destructiveBash(command) {
 
 function requiresHumanApproval(call) {
   if (!call || typeof call !== 'object') return false;
-  const args = callArgs(call);
-  if (call.name === 'Edit' || call.name === 'Write') return true;
-  if (call.name === 'Bash') return destructiveBash(args.command || args.cmd || '');
+  const meta = toolMetadata(call.name);
+  const approval = meta && meta.hme && meta.hme.approval || 'never';
+  if (approval === 'always') return true;
+  if (approval === 'destructive' && call.name === 'Bash') {
+    const args = callArgs(call);
+    return destructiveBash(args.command || args.cmd || '');
+  }
   return false;
 }
 
