@@ -2,6 +2,23 @@
   "_doc": "Canonical ownership registry for shared filesystem state. tools/HME/scripts/audit-state-file-ownership.py parses this file; docs should summarize it, not duplicate it.",
   "single_owner": [
     {
+      "path": "tools/HME/runtime/model-route-health.json",
+      "owner": "tools/HME/scripts/model-route-health.py",
+      "readers": [
+        "tools/HME/proxy/overdrive_route.js",
+        "operators"
+      ],
+      "writers": [
+        "tools/HME/scripts/model-route-health.py",
+        "operators"
+      ],
+      "retention": "manual route quarantine; expired cooldowns are ignored by readers",
+      "generated": true,
+      "committed": false,
+      "schema": "JSON object keyed by provider/model route with status, reason, until",
+      "repair": "tools/HME/scripts/model-route-health.py clear <route>"
+    },
+    {
       "path": "tools/HME/runtime/proxy-supervisor.pid",
       "owner": "tools/HME/hooks/direct/proxy-supervisor.sh",
       "readers": [
