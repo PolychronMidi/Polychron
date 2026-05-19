@@ -17,9 +17,23 @@ function normalizePlan(raw) {
   };
 }
 
+function _emitCompaction(row, telemetry) {
+  try {
+    const sink = telemetry === false ? null : (typeof telemetry === 'function' ? telemetry : emit);
+    if (sink) sink({ event: 'context_compaction', ...row });
+  } catch (_e) { /* silent-ok: telemetry must not affect request path */ }
+}
+
+function _serializedBytes(payload) {
+  return Buffer.byteLength(JSON.stringify(payload), 'utf8');
+}
+
 function shrinkForPassthrough(payload, opts = {}) {
   const env = opts.env || process.env;
   const log = opts.log || console.error;
+  const telemetry = opts.telemetry;
+  const route = opts.route || 'passthrough';
+  const model = opts.model || payload && (payload.model || payload.target_model || payload.original_model) || '';
   let keepMin = Number(opts.keepMin || 10);
   let maxToolResultAge = Number(opts.maxToolResultAge == null ? 0 : opts.maxToolResultAge);
   let toolResultByteFloor = Number(opts.toolResultByteFloor || 15000);
