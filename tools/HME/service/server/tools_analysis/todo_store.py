@@ -87,11 +87,17 @@ def save_store(raw: list[dict], meta: dict, path: str | None = None) -> None:
         raw[0]["_meta"] = meta
     store_path = Path(path or _todo_store_file())
     store_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = store_path.with_suffix(store_path.suffix + ".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(raw, f, indent=2)
-        f.write("\n")
-    os.replace(tmp, store_path)
+    tmp = store_path.with_name(f"{store_path.name}.{os.getpid()}.{time.time_ns()}.tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(raw, f, indent=2)
+            f.write("\n")
+        os.replace(tmp, store_path)
+    finally:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass  # silent-ok: pending review
     record_store_state(meta, body)
 
 
