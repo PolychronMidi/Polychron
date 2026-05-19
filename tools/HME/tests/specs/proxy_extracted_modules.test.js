@@ -595,6 +595,7 @@ test('live-ish 90k GPT-5.5 passthrough smoke emits no compaction markers', () =>
   try {
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_COMPACT_TRACE = '1';
     process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
     process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
     process.env.HME_PROXY_COMPACT_GEAR2_END = '0.97';
