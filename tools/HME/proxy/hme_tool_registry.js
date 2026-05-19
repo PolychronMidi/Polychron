@@ -73,4 +73,20 @@ function missingRequiredFields(name, args = {}) {
   });
 }
 
-module.exports = { canonicalToolSchemas, canonicalToolMetadata, canonicalToolMetadataByName, canonicalRequiredFieldsByName, canonicalToolNames, toolMetadata, requiredFields, inputAliases, missingRequiredFields };
+function approvalPolicy(name) {
+  const meta = toolMetadata(name);
+  const hme = meta && meta.hme || {};
+  return { approval: hme.approval || 'never', policy: hme.policy || {} };
+}
+
+function requiresApproval(name, args = {}) {
+  const { approval, policy } = approvalPolicy(name);
+  if (approval === 'always') return true;
+  if (approval !== 'destructive') return false;
+  if (name === 'Bash' && policy.destructive_pattern) {
+    return new RegExp(policy.destructive_pattern).test(String(args.command || args.cmd || ''));
+  }
+  return false;
+}
+
+module.exports = { canonicalToolSchemas, canonicalToolMetadata, canonicalToolMetadataByName, canonicalRequiredFieldsByName, canonicalToolNames, toolMetadata, requiredFields, inputAliases, missingRequiredFields, approvalPolicy, requiresApproval };
