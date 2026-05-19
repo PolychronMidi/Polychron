@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const { repairMalformedNativeCall, rewriteBrokenReadDisplays } = require('./codex_tool_display_artifacts');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
 const TARGET_NAMES = new Set(['exec_command', 'functions.exec_command']);
