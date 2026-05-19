@@ -396,7 +396,7 @@ function createCodexResponseForwarder(deps) {
       if (!calls.length || calls.some((call) => !isIncompleteToolCall(call))) return false;
       if (depth >= MAX_TOOL_LOOP_DEPTH) return false;
       const dropped = droppedIncompleteCalls(calls, target);
-      record({ kind: 'codex-incomplete-tool-call-repair', route: target.kind, depth, calls: dropped });
+      record({ kind: 'codex-incomplete-tool-call-repair', route: target.kind, depth, calls: dropped, ...traceFields(target, { call_ids: dropped.map((call) => call.call_id).filter(Boolean) }) });
       const repairedBody = appendToolSchemaRepair(target.body, dropped);
       attemptTarget(index, { ...target, body: repairedBody, tool_loop_depth: depth + 1 });
       return true;
