@@ -335,7 +335,7 @@ function createCodexResponseForwarder(deps) {
         clientSse.callIds.push(...actionableCalls.map((call) => call.id).filter(Boolean));
         if (clientSse.started) record({ kind: 'codex-proxy-tool-loop-visible', route: target.kind, depth: depth + 1, calls: actionableCalls.map((call) => ({ call_id: call.id, name: call.name })), ...traceFields(target, { call_ids: actionableCalls.map((call) => call.id).filter(Boolean) }) });
       }
-      const finalizing = !forcedResults && depth >= FINALIZE_TOOL_LOOP_DEPTH;
+      const finalizing = !forcedResults && decision.finalizing;
       clientSse.toolLoops += forcedResults ? 0 : 1;
       const hiddenStreamLoop = Boolean(target.body && target.body.stream && !forcedResults && clientSse.progressEvents === 0);
       if (hiddenStreamLoop) record({ kind: 'codex-hidden-tool-loop-violation', route: target.kind, depth: depth + 1, reason: 'streamed tool loop executed without client-visible progress', ...traceFields(target, { call_ids: actionableCalls.map((call) => call.id).filter(Boolean) }) });
