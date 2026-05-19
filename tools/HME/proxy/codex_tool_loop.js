@@ -147,4 +147,4 @@ function followupBody(previousBody, responseBody, toolOutputs, events = []) {
   return body;
 }
 
-module.exports = { collectToolCalls, collectSseToolCalls, parseSseEvents, toolResultInput, followupBody };
+module.exports = { collectToolCalls, collectSseToolCalls, parseSseEvents, toolResultInput, followupBody, EMPTY_BASH_TOOL_RESULT };
