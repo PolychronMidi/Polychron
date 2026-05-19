@@ -209,17 +209,6 @@ function createCodexResponseForwarder(deps) {
       return trunc(call.name || 'tool');
     }
 
-    function writeToolLoopVisibility(target, calls, results) {
-      if (!(target && target.body && target.body.stream) || !calls.length) return;
-      const depth = target.tool_loop_depth || 0;
-      for (let i = 0; i < calls.length; i += 1) {
-        const result = results[i] || {};
-        const bytes = Buffer.byteLength(String(result.output || ''), 'utf8');
-        writeClientText(target, `\n• ${displayToolCall(calls[i])}\n  ↳ completed; result forwarded upstream (${bytes} bytes).\n`);
-      }
-      if (clientSse.started) record({ kind: 'codex-proxy-tool-loop-visible', route: target.kind, depth: depth + 1, calls: calls.map((call) => ({ call_id: call.id, name: call.name })) });
-    }
-
     function sendParsedOverClientSse(target, status, headers, parsed, errorSummary = '') {
       if (!clientSse.started) return false;
       const text = finalOutputText(parsed);
