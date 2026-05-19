@@ -3,7 +3,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const { toolResultInput, collectSseToolCalls, EMPTY_BASH_TOOL_RESULT: codexNotice } = require('../../proxy/codex_tool_loop');
+const { toolResultInput, collectSseToolCalls, followupBody, EMPTY_BASH_TOOL_RESULT: codexNotice } = require('../../proxy/codex_tool_loop');
 const { EMPTY_BASH_TOOL_RESULT: omniNotice } = require('../../proxy/omni_tool_loop');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
