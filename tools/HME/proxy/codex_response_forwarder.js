@@ -272,7 +272,7 @@ function createCodexResponseForwarder(deps) {
     function droppedIncompleteCalls(calls, target) {
       const depth = target.tool_loop_depth || 0;
       const dropped = calls.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) }));
-      record({ kind: 'codex-incomplete-tool-call-dropped', route: target.kind, depth, calls: dropped });
+      record({ kind: 'codex-incomplete-tool-call-dropped', route: target.kind, depth, calls: dropped, ...traceFields(target, { call_ids: dropped.map((call) => call.call_id).filter(Boolean) }) });
       return dropped;
     }
 
