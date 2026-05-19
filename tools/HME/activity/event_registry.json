@@ -303,6 +303,41 @@
       "summary": "Web tool enrichment observed a repeated failure for a target."
     },
     {
+      "name": "hme_log_error_escalated",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "error_surface"],
+      "summary": "HME log watermark escalated ERROR lines into the lifesaver error log."
+    },
+    {
+      "name": "lifesaver_injected",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "error_surface"],
+      "summary": "Lifesaver middleware injected an actionable error or autocommit failure into the request."
+    },
+    {
+      "name": "lifesaver_watermark_failed",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "error_surface"],
+      "summary": "Lifesaver middleware could not advance its error-log watermark."
+    },
+    {
+      "name": "mcp_fail_escalated",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "error_surface"],
+      "summary": "MCP fail-scan escalated FAIL lines into the lifesaver error log."
+    },
+    {
+      "name": "middleware_warning",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "error_surface"],
+      "summary": "Middleware recorded a non-fatal warning in telemetry instead of printing into tool output."
+    },
+    {
       "name": "inference_call",
       "category": "Tool / proxy lifecycle",
       "streams": ["activity"],
