@@ -83,7 +83,7 @@ function rewriteNonSseEditFallback(body, options = {}) {
   let count = 0;
   const nextContent = body.content.map((block) => {
     if (!block || block.type !== 'tool_use') return block;
-    if (!EDIT_FAMILY_TOOL_NAMES.has(block.name)) return block;
+    if (!isEditFamilyTool(block.name)) return block;
     if (!isInvalidEditInput(block.input, options)) return block;
     count += 1;
     return { ...block, name: 'Read', input: editToReadFallback(block.input || {}) };
