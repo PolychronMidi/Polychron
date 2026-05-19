@@ -1111,13 +1111,24 @@ omo_hook_adapter.test.js
 
 ---
 
-## Compaction Tuning After OMO Bridge
+## Compaction Tuning Gates
 
-Current HME compaction telemetry shows structural safety after increasing retained context. However, further tuning should wait until OMO pruning bridge is available.
+Current HME compaction telemetry shows structural safety after increasing retained context. The live threshold has already been raised substantially, so future tuning must be gated by measured token/headroom telemetry, not just byte estimates.
+
+Immediate gate before any additional threshold bump:
+
+1. Collect several live `context_token_usage` samples after the latest proxy restart.
+2. Compare `estimated_input_tokens` with `usage_input_tokens` when response usage exists.
+3. Compare `estimated_input_tokens` with `header_input_tokens_used` and `header_input_tokens_remaining` when provider headers exist.
+4. Confirm stream health remains stable: no increase in blank responses, context-window errors, or upstream stream terminations.
+5. Confirm `context_compaction` remains structurally clean: `orphan_tool_blocks_scrubbed=0` and `emergency_tail_elided=0`.
+
+OMO pruning remains the preferred next structural improvement before large further threshold increases.
 
 Reason:
 
 - threshold tuning keeps more bytes
+- token telemetry verifies real headroom
 - semantic pruning keeps more meaning per byte
 - OMO dynamic pruning may reduce whole-message drops more effectively than further threshold increases
 
