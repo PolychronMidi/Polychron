@@ -10,10 +10,10 @@ from typing import Any
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from hme_tools.base import openai_tool_schema  # type: ignore
+    from hme_tools.base import langchain_tool_schema, openai_tool_schema  # type: ignore
     from hme_tools.tools import canonical_tools  # type: ignore
 else:
-    from .base import openai_tool_schema
+    from .base import langchain_tool_schema, openai_tool_schema
     from .tools import canonical_tools
 
 
