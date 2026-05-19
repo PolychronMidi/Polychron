@@ -410,7 +410,7 @@ function createCodexResponseForwarder(deps) {
 
     function retryAfterContextLoss(target, status, headers, parsed, avoidedToolUse) {
       const reason = avoidedToolUse ? 'assistant avoided available tools despite existing objective' : 'empty command tool result treated as task context';
-      record({ kind: 'codex-context-loss-blocked', route: target.kind, depth: target.tool_loop_depth || 0, reason });
+      record({ kind: 'codex-context-loss-blocked', route: target.kind, depth: target.tool_loop_depth || 0, reason, ...traceFields(target) });
       const repairedBody = avoidedToolUse ? appendToolUseEnforcement(target.body, reason) : appendContextLossRepair(target.body);
       const repairText = repairedBody.input?.at?.(-1)?.content?.[0]?.text || 'HME context-loss repair: continue from the latest user request/session objective.';
       const repairResult = [{ type: 'message', role: 'user', content: [{ type: 'input_text', text: repairText }] }];
