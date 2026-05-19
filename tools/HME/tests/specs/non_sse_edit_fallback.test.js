@@ -64,3 +64,16 @@ test('rewriteNonSseEditFallback: returns body unchanged for missing content[]', 
   const { count } = rewriteNonSseEditFallback(body);
   assert.equal(count, 0);
 });
+
+test('rewriteNonSseEditFallback: invalid Update tool_use rewrites to Read in content[]', () => {
+  const body = {
+    type: 'message',
+    content: [
+      { type: 'tool_use', id: 'toolu_update', name: 'Update', input: { file_path: '/x.js' } },
+    ],
+  };
+  const { body: out, count } = rewriteNonSseEditFallback(body);
+  assert.equal(count, 1);
+  assert.equal(out.content[0].name, 'Read');
+  assert.deepEqual(out.content[0].input, { file_path: '/x.js', limit: 50 });
+});
