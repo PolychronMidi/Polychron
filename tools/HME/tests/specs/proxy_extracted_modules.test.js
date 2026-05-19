@@ -588,6 +588,58 @@ test('explicit compact byte cap does not force emergency tier below high-water',
   }
 });
 
+test('live-ish 90k GPT-5.5 passthrough smoke emits no compaction markers', () => {
+  const oldEnv = { ...process.env };
+  const logs = [];
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '0.97';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
+    const origError = console.error;
+    console.error = (msg) => logs.push(String(msg));
+    try {
+      const budget = createContextBudget();
+      const payload = { model: 'gpt-5.5-high', messages: [{ role: 'user', content: 'x'.repeat(90000) }] };
+      const before = JSON.stringify(payload);
+      assert.equal(budget.shrinkForPassthrough(payload), 0);
+      assert.equal(JSON.stringify(payload), before);
+    } finally {
+      console.error = origError;
+    }
+    const logText = logs.join('\n');
+    assert.match(logText, /compact-decision model=gpt-5\.5-high/);
+    assert.match(logText, /gear=0/);
+    assert.doesNotMatch(logText, /passthrough-compact decision|precompact|content elided|oldest message\(s\) dropped/);
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+test('message dropping is disabled until gear three', () => {
+  const payload = { messages: [] };
+  for (let i = 0; i < 20; i += 1) {
+    const id = `gear-two-tool-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(60000) }] });
+  }
+  const beforeCount = payload.messages.length;
+  const changed = shrinkForPassthrough(payload, {
+    effectiveThreshold: () => ({ threshold: 1000, maxTier: 2, maxToolResultAge: 4, toolResultByteFloor: 50000 }),
+    keepMin: 3,
+    env: { HME_PROXY_LOCAL_SUMMARY: '0' },
+    log: () => {},
+    projectRoot: os.tmpdir(),
+  });
+  assert.ok(changed > 0);
+  assert.equal(payload.messages.length, beforeCount);
+  assert.doesNotMatch(JSON.stringify(payload), /passthrough-compact: .*oldest message/);
+});
+
 test('gear one only elides stale lengthy tool results', () => {
   const payload = { messages: [] };
   for (let i = 0; i < 8; i += 1) {
