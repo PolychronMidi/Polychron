@@ -429,6 +429,7 @@ function createCodexResponseForwarder(deps) {
       const scanner = planScanner.createSseScanner(source);
       scanner.feed(Buffer.from(finalFull));
       scanner.finish();
+      if (clientSse.started) return sendParsedOverClientSse(target, status, headers, parsed, '');
       res.writeHead(status, headers);
       res.end(finalFull);
       finishResponse(target, status, '', parsed);
