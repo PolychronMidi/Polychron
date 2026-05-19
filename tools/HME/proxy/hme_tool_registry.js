@@ -8,6 +8,7 @@ const SOURCE_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 let cachedSchemas = null;
 let cachedMeta = null;
+let cachedLangChain = null;
 let cachedMetaByName = null;
 let cachedRequiredByName = null;
 
