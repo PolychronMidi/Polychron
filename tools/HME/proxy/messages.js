@@ -278,14 +278,6 @@ function stripSemanticRedundancy(payload) {
     }
   }
 
-  if (strippedCount > 0) {
-    emit({
-      event: 'semantic_redundancy_stripped',
-      session: 'proxy',
-      count: strippedCount,
-      patterns: Object.entries(patterns).map(([k, v]) => `${k}=${v}`).join(','),
-    });
-  }
   return strippedCount;
 }
 
