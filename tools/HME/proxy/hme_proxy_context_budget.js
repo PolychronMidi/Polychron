@@ -119,10 +119,6 @@ function createContextBudget() {
     console.error(`[hme-proxy] compact-decision model=${model || 'unknown'} bytes=${bytes} est_tokens=${usedTokens} budget=${budgetTokens || 'unknown'} used=${pct} gear=${plan.maxTier || 0} threshold=${threshold} explicit_byte_cap=${cappedByBytes ? 'yes' : 'no'} telemetry_limited=${telemetryLimited ? 'yes' : 'no'}`);
   }
 
-  function compactDecision(payload = null) {
-    return effectiveCompactThreshold(payload);
-  }
-
   function effectiveCompactThreshold(payload = null) {
     const bytes = payload ? Buffer.byteLength(JSON.stringify(payload), 'utf8') : lastPayloadBytes;
     const usedTokens = Math.ceil(bytes / contextBytesPerTokenEst);
