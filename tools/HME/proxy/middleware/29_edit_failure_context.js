@@ -5,8 +5,7 @@ const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
 const { recordFailure } = require('../turn_failure_state');
 const sessionState = require('../session_state');
-
-const EDIT_TOOLS = new Set(['Edit', 'MultiEdit', 'Update']);
+const { isEditFamilyTool } = require('../edit_validation');
 const FAIL_RE = /\b(old_string not found|old_string is not unique|File has not been read yet\. Read it first before writing to it|File has been modified since read[^\n]*)\b/;
 
 function textOf(toolResult) {
