@@ -28,6 +28,7 @@ def status(mode: str = "all") -> str:
     """System health hub. 35+ modes surface Phase 2-6 observability signals.
     mode='all' (default): pipeline + selftest + auto-warm + cascade status.
     Other modes: pipeline, health, coupling, trust, perceptual, hme, activity,
+    activity-full,
     staleness, coherence, blindspots, hypotheses, drift, accuracy, crystallized,
     music_truth, kb_trust, intention_gap, self_audit, probes, trajectory, budget,
     negative_space, cognitive_load, ground_truth, constitution, doc_drift,
