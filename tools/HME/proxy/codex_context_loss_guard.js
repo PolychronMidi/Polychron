@@ -30,6 +30,7 @@ const ASK_RESEND_RE = /\bplease\s+(?:send|provide)\s+(?:the\s+)?(?:current\s+obj
 const NO_ACTION_RE = /\b(?:no command was executed|no files were read or modified|there(?:'s| is) no additional actionable|won[’']t repeat the empty Bash calls)\b/i;
 const META_STALL_RE = /\bI need to handle the situation where the user expects me to continue\b/i;
 const REPO_READ_STALL_RE = /\b(?:did not successfully read the repo|have not inspected the codebase|haven[’']t inspected the codebase|attempted file\/tool reads failed|paste repo structure|paste key files|if tool access works later|generic architecture answer dressed up like repo-aware)\b/i;
+const PASTE_CONTEXT_RE = /\bpaste\s+(?:repo\s+structure|key\s+files|file\/tree\s+excerpts|the\s+output)\b/i;
 
 function textOf(value) {
   if (typeof value === 'string') return value;
