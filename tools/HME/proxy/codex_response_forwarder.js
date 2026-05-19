@@ -3,10 +3,9 @@
 const http = require('http');
 const https = require('https');
 const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('./codex_native_tools');
-const { collectToolCalls, collectSseToolCalls, parseSseEvents, executeToolCall, toolResultInput, followupBody, isIncompleteToolCall, missingRequiredToolFields } = require('./codex_tool_loop');
+const { collectToolCalls, collectSseToolCalls, parseSseEvents, executeToolCall, followupBody, isIncompleteToolCall, missingRequiredToolFields } = require('./codex_tool_loop');
+const { MAX_TOOL_LOOP_DEPTH, FINALIZE_TOOL_LOOP_DEPTH, runCodexToolLoopGraph } = require('./codex_tool_loop_graph');
 
-const MAX_TOOL_LOOP_DEPTH = 8;
-const FINALIZE_TOOL_LOOP_DEPTH = MAX_TOOL_LOOP_DEPTH - 1;
 
 function safeJson(value) { try { return JSON.parse(value || '{}'); } catch (_e) { return {}; } }
 
