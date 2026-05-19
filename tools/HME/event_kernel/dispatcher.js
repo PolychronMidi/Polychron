@@ -317,7 +317,7 @@ async function dispatchEvent(eventName, stdinJson) {
       return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty, 30_000, 'PostCompact');
     case 'PreToolUse': {
       const tool = _toolName(empty);
-      if (['Write', 'Edit', 'MultiEdit', 'Update'].includes(tool)) {
+      if (isWriteFamilyTool(tool)) {
         const decision = await preWriteCheck(empty);
         const stdout = toHookResponse(decision);
         if (decision.permissionDecision !== 'allow') return { stdout, stderr: ' ', exit_code: 0 };
