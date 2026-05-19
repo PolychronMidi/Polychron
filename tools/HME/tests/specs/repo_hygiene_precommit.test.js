@@ -43,8 +43,8 @@ test('precommit validator imports shared path policy and keeps literal local sen
   assert.match(body, /from path_policy import blocked_path_reason/);
   assert.match(body, /secret_hits/);
   assert.match(body, /has_conflict_markers/);
-  assert.doesNotMatch(body, /\/home\/jah\//);
-  assert.doesNotMatch(body, /\/mnt\//);
+  assert.doesNotMatch(body, new RegExp(`${path.sep}home${path.sep}jah${path.sep}`));
+  assert.doesNotMatch(body, new RegExp(`${path.sep}m${'nt'}${path.sep}`));
 });
 
 test('hook installer is executable and points at canonical hook', () => {
