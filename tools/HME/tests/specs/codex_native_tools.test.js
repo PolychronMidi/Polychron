@@ -231,20 +231,29 @@ test('Codex SSE unknown function_call name is reported in rewriter stats', () =>
 
 test('Codex proxy sends native tools upstream and translates native call response', async () => {
   const proxyPort = await freePort();
-  let upstreamBody = null;
+  const upstreamBodies = [];
   const upstream = http.createServer((req, res) => {
     const chunks = [];
     req.on('data', (chunk) => chunks.push(chunk));
     req.on('end', () => {
-      upstreamBody = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      upstreamBodies.push(body);
       res.writeHead(200, { 'Content-Type': 'application/json' });
+      if (upstreamBodies.length === 1) {
+        res.end(JSON.stringify({
+          id: 'resp_read',
+          output: [{
+            type: 'function_call',
+            name: 'Read',
+            call_id: 'call_read_proxy_loop',
+            arguments: JSON.stringify({ file_path: 'doc/templates/AGENTS.md', limit: 2 }),
+          }],
+        }));
+        return;
+      }
       res.end(JSON.stringify({
-        id: 'resp_read',
-        output: [{
-          type: 'function_call',
-          name: 'Read',
-          arguments: JSON.stringify({ file_path: 'doc/self-coherence.md', limit: 2 }),
-        }],
+        id: 'resp_final',
+        output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'done' }] }],
       }));
     });
   });
@@ -274,10 +283,14 @@ test('Codex proxy sends native tools upstream and translates native call respons
     }));
     const response = await requestJson(proxyPort, { model: 'gpt-5.5', tools: [], stream: false });
     assert.equal(response.status, 200);
-    assert.deepEqual(upstreamBody.tools.map((t) => t.name), ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
-    const call = JSON.parse(response.body).output[0];
-    assert.equal(call.name, 'exec_command');
-    assert.match(JSON.parse(call.arguments).cmd, /codex_structured_tool\.js read --json/);
+    assert.deepEqual(upstreamBodies[0].tools.map((t) => t.name), ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
+    assert.equal(upstreamBodies.length, 2);
+    assert.equal(upstreamBodies[1].previous_response_id, 'resp_read');
+    assert.equal(upstreamBodies[1].input[0].type, 'function_call_output');
+    assert.equal(upstreamBodies[1].input[0].call_id, 'call_read_proxy_loop');
+    assert.match(upstreamBodies[1].input[0].output, /# Rules/);
+    assert.equal(JSON.parse(response.body).output[0].content[0].text, 'done');
+    assert.doesNotMatch(response.body, /exec_command|codex_structured_tool|HME_CODEX_JSON/);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
     throw err;
