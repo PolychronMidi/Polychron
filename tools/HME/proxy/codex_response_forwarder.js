@@ -50,18 +50,36 @@ function createCodexResponseForwarder(deps) {
       });
     }
 
+    function droppedIncompleteCalls(calls, target) {
+      const depth = target.tool_loop_depth || 0;
+      const dropped = calls.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) }));
+      record({ kind: 'codex-incomplete-tool-call-dropped', route: target.kind, depth, calls: dropped });
+      return dropped;
+    }
+
     function continueAfterTools(index, target, parsed, calls, forcedResults = null) {
       const depth = target.tool_loop_depth || 0;
       if (!calls.length && !forcedResults) return false;
       if (depth >= MAX_TOOL_LOOP_DEPTH) return false;
       const actionableCalls = forcedResults ? calls : calls.filter((call) => !isIncompleteToolCall(call));
       const skipped = forcedResults ? [] : calls.filter((call) => isIncompleteToolCall(call));
-      if (!forcedResults && skipped.length) record({ kind: 'codex-incomplete-tool-call-dropped', route: target.kind, depth, calls: skipped.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) })) });
+      if (!forcedResults && skipped.length) droppedIncompleteCalls(skipped, target);
       if (!forcedResults && !actionableCalls.length) return false;
       const results = forcedResults || toolResultInput(actionableCalls, { projectRoot, sessionId: source.session_id || '' });
       record({ kind: 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: r.is_error })) });
       const nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
       attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1 });
+      return true;
+    }
+
+    function retryAfterIncompleteOnly(index, target, parsed, calls) {
+      const depth = target.tool_loop_depth || 0;
+      if (!calls.length || calls.some((call) => !isIncompleteToolCall(call))) return false;
+      if (depth >= MAX_TOOL_LOOP_DEPTH) return false;
+      const dropped = droppedIncompleteCalls(calls, target);
+      record({ kind: 'codex-incomplete-tool-call-repair', route: target.kind, depth, calls: dropped });
+      const repairedBody = appendToolSchemaRepair(target.body, dropped);
+      attemptTarget(index, { ...target, body: repairedBody, tool_loop_depth: depth + 1 });
       return true;
     }
 
