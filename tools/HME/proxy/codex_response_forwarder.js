@@ -316,6 +316,7 @@ function createCodexResponseForwarder(deps) {
       if (!forcedResults && skipped.length) droppedIncompleteCalls(skipped, target);
       if (!forcedResults && !actionableCalls.length) return false;
       const results = forcedResults || toolResultInput(actionableCalls, { projectRoot, sessionId: source.session_id || '' });
+      if (!forcedResults) writeToolLoopVisibility(target, actionableCalls, results);
       const finalizing = !forcedResults && depth >= FINALIZE_TOOL_LOOP_DEPTH;
       record({ kind: finalizing ? 'codex-proxy-tool-loop-finalize' : 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: r.is_error })) });
       let nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
