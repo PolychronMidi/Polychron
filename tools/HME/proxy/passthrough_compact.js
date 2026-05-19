@@ -48,9 +48,11 @@ function shrinkForPassthrough(payload, opts = {}) {
   if (Number.isFinite(plan.toolResultByteFloor) && plan.toolResultByteFloor > 0) toolResultByteFloor = Math.floor(plan.toolResultByteFloor);
   const msgs = payload.messages;
   if (msgs.length <= keepMin) return 0;
+  const beforeMessages = msgs.length;
+  let beforeBytes = _serializedBytes(payload);
   let serialized = JSON.stringify(payload);
-  if (maxTier <= 0 || serialized.length <= threshold) return 0;
-  log(`passthrough-compact decision: tier=${maxTier} threshold=${Number.isFinite(threshold) ? `${threshold}B` : 'none'} body=${serialized.length}B keepMin=${keepMin}`);
+  if (maxTier <= 0 || beforeBytes <= threshold) return 0;
+  log(`passthrough-compact decision: tier=${maxTier} threshold=${Number.isFinite(threshold) ? `${threshold}B` : 'none'} body=${beforeBytes}B keepMin=${keepMin}`);
 
   const recentStart = maxToolResultAge > 0 ? Math.max(0, msgs.length - maxToolResultAge) : 0;
   let elided = 0;
