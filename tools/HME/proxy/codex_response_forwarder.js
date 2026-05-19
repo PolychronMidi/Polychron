@@ -211,17 +211,7 @@ function createCodexResponseForwarder(deps) {
       const forcedToolChoice = isForcedToolChoice(responseToolChoice(target.body));
       const avoidedToolUse = bodyHasTools(target.body) && !forcedToolChoice && responseAvoidedToolUse(finalParsed || parsed);
       if (responseHasContextLoss(finalParsed || full) || avoidedToolUse) {
-        const reason = avoidedToolUse ? 'assistant avoided available tools despite existing objective' : 'empty command tool result treated as task context';
-        record({ kind: 'codex-context-loss-blocked', route: target.kind, depth: target.tool_loop_depth || 0, reason });
-        const repairedBody = avoidedToolUse ? appendToolUseEnforcement(target.body, reason) : appendContextLossRepair(target.body);
-        const repairText = repairedBody.input?.at?.(-1)?.content?.[0]?.text || 'HME context-loss repair: continue from the latest user request/session objective.';
-        const repairResult = [{ type: 'message', role: 'user', content: [{ type: 'input_text', text: repairText }] }];
-        if (continueAfterTools(target.index, { ...target, body: repairedBody }, { id: (parsed && parsed.id) || '' }, [], repairResult)) return;
-        const fallback = contextLossFallbackResponse(finalParsed);
-        res.writeHead(status, { ...headers, 'content-type': 'application/json' });
-        res.end(JSON.stringify(fallback));
-        finishResponse(target, status, 'context loss blocked', fallback);
-        return;
+        if (retryAfterContextLoss(target, status, headers, finalParsed || parsed, avoidedToolUse)) return;
       }
       const finalBody = rewritten && rewritten.stats.calls ? JSON.stringify(rewritten.body) : full;
       if (finalParsed && typeof finalParsed === 'object') planScanner.scanObjectForPlan(finalParsed, source);
