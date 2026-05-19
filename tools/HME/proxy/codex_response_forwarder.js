@@ -124,6 +124,7 @@ function createCodexResponseForwarder(deps) {
       const calls = collectSseToolCalls(full);
       const parsed = { _sse_events: events };
       if (calls.length) {
+        if (retryAfterIncompleteOnly(target.index, target, parsed, calls)) return;
         if (continueAfterTools(target.index, target, parsed, calls)) return;
         if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target);
       }
