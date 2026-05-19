@@ -106,7 +106,7 @@ function createCodexResponseForwarder(deps) {
       const parsed = { _sse_events: events };
       if (calls.length) {
         if (continueAfterTools(target.index, target, parsed, calls)) return;
-        return toolLoopLimit(target);
+        if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target);
       }
       const scanner = planScanner.createSseScanner(source);
       scanner.feed(Buffer.from(full));
