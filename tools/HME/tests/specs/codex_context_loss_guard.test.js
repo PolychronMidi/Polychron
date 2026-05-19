@@ -93,6 +93,7 @@ test('Codex request transform scrubs stale empty-command tool outputs and assist
     model: 'gpt-5.5',
     input: [
       { type: 'function_call_output', call_id: 'call_x', output: 'Error: command is required' },
+      { type: 'function_call_output', call_id: 'call_agent', output: 'Error: prompt is required' },
       { role: 'assistant', content: [{ type: 'output_text', text: bad }] },
     ],
     tools: [],
@@ -105,9 +106,9 @@ test('Codex request transform scrubs stale empty-command tool outputs and assist
   const body = JSON.stringify(result.body);
   assert.match(body, /HME adapter notice/);
   assert.match(body, /HME context-loss guard/);
-  assert.doesNotMatch(body, /Current recovered state|Please send the actual task|Error: command is required/);
-  assert.equal(result.cleanup.codex_context_loss, 2);
-  assert.equal(result.cleanup.codex_context_loss_categories.empty_command_tool_output, 1);
+  assert.doesNotMatch(body, /Current recovered state|Please send the actual task|Error: command is required|Error: prompt is required/);
+  assert.equal(result.cleanup.codex_context_loss, 3);
+  assert.equal(result.cleanup.codex_context_loss_categories.missing_required_tool_output, 2);
   assert.equal(result.cleanup.codex_context_loss_categories.assistant_context_loss_text, 1);
   assert.equal(EMPTY_COMMAND_NOTICE.includes('not task context'), true);
   assert.equal(CONTEXT_LOSS_NOTICE.includes('latest user request'), true);
