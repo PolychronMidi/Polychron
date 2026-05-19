@@ -35,7 +35,7 @@ const REPO_READ_STALL_RE = /\b(?:did not successfully read the repo|have not ins
 const PASTE_CONTEXT_RE = /\bpaste\s+(?:repo\s+structure|key\s+files|file\/tree\s+excerpts|the\s+output|(?:the\s+)?files?)\b/i;
 const RECOVERED_WORKDIR_RE = /\b(?:recovered\s+)?working directory\s+is\b|\brecovered working directory\b/i;
 const TASK_DETAILS_MISSING_RE = /\b(?:don[’']t have|do not have|lack|missing)\s+(?:the\s+)?actual task details\b|\bactual task details from the previous turn\b|\bonly the pwd output\b|\bonly\s+(?:have\s+)?(?:the\s+)?pwd output\b/i;
-const ASK_NEXT_RE = /\b(?:tell me what you want done next|what do you want(?: me)? to do next|what should (?:we|i) work on|send (?:the\s+)?(?:task|objective)|provide (?:the\s+)?(?:task|objective))\b/i;
+const ASK_NEXT_RE = /\b(?:tell me what you want done next|what do you want(?: me)? to do next|what should (?:we|i) work on|send (?:the\s+)?(?:next\s+)?(?:task|objective)|provide (?:the\s+)?(?:task|objective)|please send the next objective|specific task you want me to continue)\b/i;
 
 function textOf(value) {
   if (typeof value === 'string') return value;
