@@ -10,6 +10,7 @@
   ],
   "modules": [
     { "file": "00_strip_skill_reminder.js", "phase": "strip", "name": "strip_skill_reminder" },
+    { "file": "00a_shortcuts_rewriter.js", "phase": "strip", "name": "shortcuts_rewriter" },
     { "file": "01_replace_system.js", "phase": "normalize", "name": "replace_system" },
     { "file": "02_thinking_rewrite.js", "phase": "normalize", "name": "thinking_rewrite" },
     { "file": "03_filter_tools.js", "phase": "normalize", "name": "filter_tools" },

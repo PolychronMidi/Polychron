@@ -111,6 +111,63 @@ async function handleAnthropicResponseComplete({
   headers = failureResult.headers;
   fullBody = failureResult.fullBody;
 
+  if (status >= 200 && status < 300 && payload && payload.__shortcut_compact) {
+    try {
+      console.error('[shortcuts] compact response received, auto-submitting continue...');
+      const respStr = fullBody.toString('utf8');
+      let assistantContent;
+      const ctype = (headers['content-type'] || '').toLowerCase();
+      if (ctype.includes('text/event-stream')) {
+        const text = [];
+        for (const ev of respStr.split('\n\n')) {
+          for (const line of ev.split('\n')) {
+            if (line.startsWith('data: ')) {
+              try {
+                const d = JSON.parse(line.slice(6));
+                if (d && d.delta && d.delta.text) text.push(d.delta.text);
+              } catch (_) {}
+            }
+          }
+        }
+        assistantContent = [{ type: 'text', text: text.join('') || '(compact completed)' }];
+      } else if (respStr.trimStart().startsWith('{')) {
+        try {
+          const json = JSON.parse(respStr);
+          assistantContent = json.content || [{ type: 'text', text: respStr }];
+        } catch (_) {
+          assistantContent = [{ type: 'text', text: respStr }];
+        }
+      } else {
+        assistantContent = [{ type: 'text', text: respStr }];
+      }
+
+      payload.messages.push({ role: 'assistant', content: assistantContent });
+      payload.messages.push({ role: 'user', content: [{ type: 'text', text: 'continue' }] });
+      delete payload.__shortcut_compact;
+
+      const continueBody = Buffer.from(JSON.stringify(payload), 'utf8');
+      const continueOpts = { ...upstreamOpts, headers: { ...upstreamHeaders, 'content-length': String(continueBody.length) } };
+      const retry = await new Promise((res, rej) => {
+        const req = transport.request(continueOpts, (r) => {
+          const cs = [];
+          r.on('data', (c) => cs.push(c));
+          r.on('end', () => res({ status: r.statusCode || 502, headers: { ...r.headers }, body: Buffer.concat(cs) }));
+          r.on('error', rej);
+        });
+        req.on('error', rej);
+        req.write(continueBody);
+        req.end();
+      });
+
+      status = retry.status;
+      headers = retry.headers;
+      fullBody = retry.body;
+      console.error(`[shortcuts] compact + continue result: ${status}`);
+    } catch (e) {
+      console.error(`[shortcuts] compact-continue failed: ${e.message}`);
+    }
+  }
+
   let final = null;
   if (status >= 200 && status < 300 && payload) {
     try {
