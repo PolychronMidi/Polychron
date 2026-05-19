@@ -83,6 +83,7 @@ function _currentBackoffMs() {
 }
 
 function isPassthroughMode() {
+  if (process.env.HME_PROXY_FORCE_PASSTHROUGH === '1') return true;
   if (!_valveTripped) return false;
   // Auto-clear after backoff; next failure re-trips at the next level.
   const elapsed = Date.now() - _valveTrippedAt;
