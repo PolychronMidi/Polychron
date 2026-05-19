@@ -98,14 +98,25 @@ function createContextBudget() {
     return 1000000;
   }
 
-  function payloadModelBudget(payload) {
-    if (!payload || typeof payload !== 'object') return 0;
+  function payloadModelInfo(payload) {
+    if (!payload || typeof payload !== 'object') return { model: '', budget: 0 };
     const candidates = [payload.model, payload.original_model, payload.target_model].filter(Boolean).map(String);
     for (const id of candidates) {
       const ctx = resolveModelCtx(id);
-      if (ctx && ctx !== 1000000) return ctx;
+      if (ctx && ctx !== 1000000) return { model: id, budget: ctx };
     }
-    return 0;
+    return { model: candidates[0] || '', budget: 0 };
+  }
+
+  function compactDecisionTelemetry({ payload, bytes, usedTokens, budgetTokens, plan, cappedByBytes, telemetryLimited }) {
+    const model = payload && payload.model || '';
+    const frac = budgetTokens > 0 ? usedTokens / budgetTokens : 0;
+    const key = [model, usedTokens, budgetTokens || 0, plan.maxTier || 0, Number.isFinite(plan.threshold) ? plan.threshold : 'inf', cappedByBytes ? 1 : 0, telemetryLimited ? 1 : 0].join(':');
+    if (key === lastCompactDecisionKey) return;
+    lastCompactDecisionKey = key;
+    const pct = budgetTokens > 0 ? `${(frac * 100).toFixed(1)}%` : 'unknown';
+    const threshold = Number.isFinite(plan.threshold) ? `${plan.threshold}B` : 'none';
+    console.error(`[hme-proxy] compact-decision model=${model || 'unknown'} bytes=${bytes} est_tokens=${usedTokens} budget=${budgetTokens || 'unknown'} used=${pct} gear=${plan.maxTier || 0} threshold=${threshold} explicit_byte_cap=${cappedByBytes ? 'yes' : 'no'} telemetry_limited=${telemetryLimited ? 'yes' : 'no'}`);
   }
 
   function effectiveCompactThreshold(payload = null) {
