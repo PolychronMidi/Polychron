@@ -220,6 +220,10 @@ class WriteTool(HMETool):
     side_effect = "write"
     approval = "always"
     idempotent = False
+    input_aliases = {"file_path": ["file"]}
+    passthrough_target = "exec_command"
+    bridge_action = "write"
+    host_native = False
     visibility = {"progress_label": "Write {file_path}", "result_summary": "status"}
     policy = {"requires_prior_read_for_overwrite": True}
 
