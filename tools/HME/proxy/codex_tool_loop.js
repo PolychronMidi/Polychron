@@ -118,7 +118,7 @@ function bashCommand(args, root) {
 
 function runBash(args, root) {
   const cmd = bashCommand(args, root);
-  if (!cmd.trim()) return { status: 2, stdout: '', stderr: 'Error: command is required' };
+  if (!cmd.trim()) return { status: 2, stdout: EMPTY_BASH_TOOL_RESULT, stderr: '', hmeAdapterNotice: 'empty_bash_command' };
   const timeout = Math.min(Math.max(Number(args.timeout || args.timeout_ms || 120000), 1), 600000);
   return spawnSync('bash', ['-lc', cmd], { cwd: root, encoding: 'utf8', timeout, env: { ...process.env, PROJECT_ROOT: root } });
 }
