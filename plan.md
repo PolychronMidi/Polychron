@@ -1055,7 +1055,7 @@ OMO telemetry fields should include:
 - blocked reason
 - source: package/path/disabled
 
-Compaction/tuning analysis should join `context_compaction` with `context_token_usage` by time window, route, and model. Further threshold changes should use actual provider usage or remaining-token headers when present, not only request byte estimates.
+Compaction/tuning analysis should join `context_compaction` with `context_token_usage` by time window, route, and model. Further threshold changes should use actual provider usage or upstream remaining-token headers when present, not only request byte estimates. For OmniRoute, HME may inject a synthetic Anthropic-style remaining-token header for Claude Code's context signal; that value must be treated as `context_signal_input_tokens_remaining`, not upstream provider headroom.
 
 ---
 
