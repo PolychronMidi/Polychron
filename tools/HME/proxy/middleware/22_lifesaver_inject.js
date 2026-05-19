@@ -82,9 +82,7 @@ module.exports = {
       `\n\n[lifesaver inject from proxy]\n${acFailure.banner}\n`,
     )) {
       ctx.markDirty();
-      console.warn(
-        `Acceptable warning: [middleware] lifesaver_inject: injected autocommit fail flag (${acFailure.flagPath})`
-      );
+      ctx.emit({ event: 'lifesaver_injected', source: 'autocommit', flag: acFailure.flagPath });
     }
 
     const errLogPath = path.join(ctx.PROJECT_ROOT, ERR_LOG);
