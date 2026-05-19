@@ -273,7 +273,7 @@ function heredocMarker(line) {
 
 function normalizeText(text, stats) {
   const src = rewriteBrokenReadDisplays(String(text), displayCall, stats);
-  if (!src.includes('codex_structured_tool.js')) return src;
+  if (!src.includes('codex_structured_tool.js') && !src.includes('hme_tools/run_tool.py')) return src;
   const lines = src.split(/\r?\n/);
   const out = [];
   for (let i = 0; i < lines.length; i += 1) {
