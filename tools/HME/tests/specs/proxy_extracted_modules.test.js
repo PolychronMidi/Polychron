@@ -341,6 +341,29 @@ test('mode 1 OmniRoute path rewrites Claude payload and strips direct auth', () 
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }));
 
+test('mode 1 marks Kilo and AIHubMix routes non-stream', () => quiet(() => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-od-route-nonstream-'));
+  try {
+    const payload = { model: 'claude-sonnet-4-6', stream: true, messages: [{ role: 'user', content: 'hi' }], system: '', tools: [] };
+    const clientReq = { headers: { authorization: 'Bearer direct' }, url: '/v1/messages' };
+    const result = applyOverdriveRoute({
+      payload,
+      clientReq,
+      clientRes: fakeClientRes(),
+      outBody: Buffer.from(JSON.stringify(payload)),
+      stripStaleToolResults: () => {},
+      stripClaudeIdentity: () => {},
+      shrinkForContext: () => {},
+      env: { OVERDRIVE_MODE: '1', OPENCODE_API_KEY: 'fake', HME_TEAM_ROLE: 'stage_crew', HME_OMNIROUTE_PROVIDER: 'aihubmix' },
+      projectRoot: tmp,
+    });
+    assert.equal(result.applied, true);
+    assert.equal(result.omniProvider, 'aihubmix');
+    assert.equal(payload.non_stream, true);
+    assert.equal(JSON.parse(result.outBody.toString('utf8')).non_stream, true);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}));
+
 test('passthrough compaction keeps Claude payload coherent after shrinking', () => {
   const logs = [];
   const payload = { messages: [] };
