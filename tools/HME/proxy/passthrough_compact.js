@@ -149,7 +149,7 @@ function shrinkForPassthrough(payload, opts = {}) {
     }
   }
   if (dropped > 0 && msgs[0] && msgs[0].role === 'assistant') {
-    msgs.unshift({ role: 'user', content: `[hme-proxy passthrough-compact: ${dropped} oldest message(s) dropped to fit under TPM rate limit; restart proxy to clear escape-hatch state]` });
+    msgs.unshift({ role: 'user', content: `[hme-proxy passthrough-compact: ${dropped} oldest message(s) dropped to fit configured context budget]` });
   }
   serialized = JSON.stringify(payload);
   log(`passthrough-compact: dropped ${dropped} oldest messages, scrubbed ${orphans} orphan tool blocks, emergency-elided ${tailElided} tail tool_result blocks (now ${msgs.length} msgs, body=${serialized.length}B)`);
