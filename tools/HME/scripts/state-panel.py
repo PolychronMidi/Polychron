@@ -313,14 +313,14 @@ def main(argv):
         except OSError:
             pass  # silent-ok: diagnostic; failure non-fatal  # silent-ok: best-effort fs op
 
-    if not brief:
+    if help_mode:
         out.append("")
         out.append("# Drill-in:")
         out.append("  i/why mode=state                  onboarding state explanation")
         out.append("  i/hme admin action=selftest       full readiness check")
         out.append("  i/status mode=hme                 session-state + recent activity")
         out.append("  i/status mode=hci-diff            verifier deltas since last run")
-        out.append("  i/status mode=hci-by-subtag       what KIND of broken everything is")
+        out.append("  i/status mode=hci-by-subtag       verifier classes")
 
     print("\n".join(out))
     return 0
