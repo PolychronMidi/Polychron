@@ -19,7 +19,7 @@ const STOP_HOOK_COMPACTS = [STOP_HOOK_COMPACT, STOP_HOOK_COMPACT_AUTO, STOP_HOOK
 // rewrite the text in place; the stop-hook entry is delegated to its compactor.
 // rationale: canonical envelope from proxy/agent_feedback.js drives the universal strip.
 const RE_AGENT_FEEDBACK = /^<system-reminder kind="[^"]+" source="[^"]+">\n[\s\S]*?\n<\/system-reminder>\s*$/;
-const RE_LIFESAVER_BANNER = /^\[lifesaver inject from proxy\]\n[\s\S]*$/;
+const RE_LIFESAVER_BANNER = /\[lifesaver inject from proxy\]\n[\s\S]*$/;
 
 const STRIP_RULES = [
   { name: 'agent-feedback-canonical', re: RE_AGENT_FEEDBACK, action: 'remove-block' },
