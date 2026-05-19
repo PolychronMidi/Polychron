@@ -189,6 +189,8 @@ function createContextBudget() {
       maxToolResultAge: staleToolKeepTurns,
       env: { ...process.env, HME_PROXY_LOCAL_SUMMARY: process.env.HME_PROXY_OMNI_LOCAL_SUMMARY || process.env.HME_PROXY_LOCAL_SUMMARY || '0' },
       log: (msg) => console.error(`[hme-proxy] omni-context ${msg}`),
+      route: 'omni-context',
+      model: String(swapModel || ''),
       projectRoot: PROJECT_ROOT,
     });
     const after = Buffer.byteLength(JSON.stringify(payload), 'utf8');
