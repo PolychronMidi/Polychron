@@ -4,6 +4,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const Module = require('module');
 
 const stopChain = require('../../proxy/stop_chain');
 
