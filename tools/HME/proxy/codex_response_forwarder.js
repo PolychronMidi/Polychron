@@ -223,18 +223,23 @@ function createCodexResponseForwarder(deps) {
     function sendSseFinal(target, status, headers, full) {
       const events = parseSseEvents(full);
       const calls = collectSseToolCalls(full);
-      const parsed = { _sse_events: events };
+      const parsed = sseFinalResponse(events);
       if (calls.length) {
         if (retryAfterIncompleteOnly(target.index, target, parsed, calls)) return;
         if (continueAfterTools(target.index, target, parsed, calls)) return;
-        if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target);
+        if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target, parsed);
+      }
+      const forcedToolChoice = isForcedToolChoice(responseToolChoice(target.body));
+      const avoidedToolUse = bodyHasTools(target.body) && !forcedToolChoice && responseAvoidedToolUse(parsed);
+      if (responseHasContextLoss(parsed || full) || avoidedToolUse) {
+        if (retryAfterContextLoss(target, status, headers, parsed, avoidedToolUse)) return;
       }
       const scanner = planScanner.createSseScanner(source);
       scanner.feed(Buffer.from(full));
       scanner.finish();
       res.writeHead(status, headers);
       res.end(full);
-      finishResponse(target, status);
+      finishResponse(target, status, '', parsed);
     }
 
     function attemptTarget(index, overrideTarget = null) {
