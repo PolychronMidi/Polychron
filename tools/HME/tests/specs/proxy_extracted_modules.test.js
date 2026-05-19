@@ -519,7 +519,7 @@ test('stop SSE writer includes required Anthropic stream envelope', () => {
   assert.match(body, /"model":"test-model"/);
 });
 
-test('context budget compaction gears start at half input and escalate', () => {
+test('context budget compaction gears start near context high-water and escalate', () => {
   const oldEnv = { ...process.env };
   try {
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
@@ -528,25 +528,61 @@ test('context budget compaction gears start at half input and escalate', () => {
     const budget = createContextBudget();
     budget.setLastInputTokensLimit(1000);
 
-    let payload = { messages: [{ role: 'user', content: 'x'.repeat(450) }] };
+    let payload = { messages: [{ role: 'user', content: 'x'.repeat(750) }] };
     let plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 0);
     assert.equal(plan.threshold, Infinity);
 
-    payload = { messages: [{ role: 'user', content: 'x'.repeat(520) }] };
+    payload = { messages: [{ role: 'user', content: 'x'.repeat(830) }] };
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 1);
-    assert.equal(plan.threshold, 500);
+    assert.equal(plan.threshold, 800);
 
-    payload = { messages: [{ role: 'user', content: 'x'.repeat(700) }] };
+    payload = { messages: [{ role: 'user', content: 'x'.repeat(930) }] };
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 2);
-    assert.equal(plan.threshold, 650);
+    assert.equal(plan.threshold, 900);
 
-    payload = { messages: [{ role: 'user', content: 'x'.repeat(900) }] };
+    payload = { messages: [{ role: 'user', content: 'x'.repeat(990) }] };
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 3);
-    assert.equal(plan.threshold, 850);
+    assert.equal(plan.threshold, 970);
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+test('context budget does not compact 90k token GPT-5.5 payload below high-water', () => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
+    delete process.env.HME_PROXY_COMPACT_BYTES;
+    const budget = createContextBudget();
+    const payload = { model: 'gpt-5.5-high', messages: [{ role: 'user', content: 'x'.repeat(90000) }] };
+    const plan = budget.effectiveCompactThreshold(payload);
+    assert.equal(plan.maxTier, 0);
+    assert.equal(plan.threshold, Infinity);
+    const changed = budget.shrinkForPassthrough(payload);
+    assert.equal(changed, 0);
+    assert.equal(payload.messages.length, 1);
+  } finally {
+    process.env = oldEnv;
+  }
+});
+
+test('explicit compact byte cap does not force emergency tier below high-water', () => {
+  const oldEnv = { ...process.env };
+  try {
+    process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
+    process.env.HME_PROXY_COMPACT_BYTES = '250000';
+    const budget = createContextBudget();
+    budget.setLastInputTokensLimit(272000);
+    const payload = { model: 'gpt-5.5-high', messages: [{ role: 'user', content: 'x'.repeat(90000) }] };
+    const plan = budget.effectiveCompactThreshold(payload);
+    assert.equal(plan.maxTier, 0);
+    assert.equal(plan.threshold, Infinity);
+    assert.equal(budget.shrinkForPassthrough(payload), 0);
   } finally {
     process.env = oldEnv;
   }
