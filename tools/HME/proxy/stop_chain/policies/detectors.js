@@ -9,4 +9,4 @@
 // COORDINATES WITH: anti_patterns, work_checks
 // (writes the verdicts file both downstream policies read.)
 const { shellPolicy } = require('../shell_policy');
-module.exports = shellPolicy('detectors');
+module.exports = shellPolicy('detectors', { failClosed: true });
