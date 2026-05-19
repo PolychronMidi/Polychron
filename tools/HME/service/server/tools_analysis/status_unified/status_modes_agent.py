@@ -3,7 +3,6 @@ mode_handlers.py imports back and registers in _STATUS_MODES.
 """
 from __future__ import annotations
 
-import datetime
 import json
 import logging
 import os
