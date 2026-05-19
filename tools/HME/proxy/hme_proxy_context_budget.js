@@ -62,12 +62,12 @@ function createContextBudget() {
   const contextPreflightFraction = envNumber('HME_PROXY_CONTEXT_PREFLIGHT_FRACTION', modelContextFraction);
   const contextSignalRemainingFraction = envNumber('HME_PROXY_CONTEXT_SIGNAL_REMAINING_FRACTION', 0.25);
   const contextBytesPerTokenEst = envNumber('HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST', 2.2);
-  const compactStartFraction = envNumber('HME_PROXY_COMPACT_START_FRACTION', 0.50);
-  const compactGear1End = envNumber('HME_PROXY_COMPACT_GEAR1_END', 0.65);
-  const compactGear2End = envNumber('HME_PROXY_COMPACT_GEAR2_END', 0.85);
-  const compactGear1Target = envNumber('HME_PROXY_COMPACT_GEAR1_TARGET', 0.50);
-  const compactGear2Target = envNumber('HME_PROXY_COMPACT_GEAR2_TARGET', 0.65);
-  const compactGear3Target = envNumber('HME_PROXY_COMPACT_GEAR3_TARGET', 0.85);
+  const compactStartFraction = envNumber('HME_PROXY_COMPACT_START_FRACTION', 0.80);
+  const compactGear1End = envNumber('HME_PROXY_COMPACT_GEAR1_END', 0.90);
+  const compactGear2End = envNumber('HME_PROXY_COMPACT_GEAR2_END', 0.97);
+  const compactGear1Target = envNumber('HME_PROXY_COMPACT_GEAR1_TARGET', 0.80);
+  const compactGear2Target = envNumber('HME_PROXY_COMPACT_GEAR2_TARGET', 0.90);
+  const compactGear3Target = envNumber('HME_PROXY_COMPACT_GEAR3_TARGET', 0.97);
 
   function pressureForFraction(usedFraction) {
     if (usedFraction < compactStartFraction) return 0;
