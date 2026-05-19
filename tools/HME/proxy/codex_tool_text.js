@@ -136,10 +136,17 @@ function normalizeWebFetch(input) {
   return out;
 }
 
+function deriveDescription(prompt) {
+  const text = String(prompt || '').trim();
+  if (!text) return 'Subagent task';
+  const first = text.split(/\r?\n/)[0].trim() || text;
+  return first.length > 60 ? `${first.slice(0, 57).trimEnd()}...` : first;
+}
+
 function normalizeAgent(input) {
   const prompt = String(input.prompt || '').trim();
   if (!prompt) return null;
-  const out = { prompt };
+  const out = { prompt, description: String(input.description || input.justification || deriveDescription(prompt)) };
   const level = numberValue(input.level);
   if (level != null) out.level = level;
   return out;
