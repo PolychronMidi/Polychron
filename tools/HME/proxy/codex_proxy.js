@@ -9,7 +9,7 @@ const { loadJsonc } = require('./config_loader');
 const { runAutocommit, injectLifesaver } = require('./turn_side_effects');
 const { applyRequestTransform } = require('./codex_payload');
 const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('./codex_native_tools');
-const { extractToolCalls, executeToolCalls, nextToolRequestBody, parseSseToolCalls, MAX_TOOL_LOOP_DEPTH } = require('./codex_tool_loop');
+const { collectToolCalls, collectSseToolCalls, parseSseEvents, toolResultInput, followupBody } = require('./codex_tool_loop');
 const { targetChain, targetSummary } = require('./codex_omniroute');
 const { createPlanScanner } = require('./codex_plan_scanner');
 const { PROJECT_ROOT, RUNTIME_DIR } = require('./shared');
@@ -198,17 +198,17 @@ function forwardResponses(req, res, targets, source, visibility) {
 
   function continueAfterTools(index, target, parsed, calls) {
     const depth = target.tool_loop_depth || 0;
-    if (!calls.length || depth >= MAX_TOOL_LOOP_DEPTH) return false;
-    const results = executeToolCalls(calls, { projectRoot: PROJECT_ROOT, sessionId: source.session_id || '' });
+    if (!calls.length || depth >= 8) return false;
+    const results = toolResultInput(calls, { projectRoot: PROJECT_ROOT, sessionId: source.session_id || '' });
     record({ kind: 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ tool: r.name, call_id: r.call_id, is_error: r.is_error })) });
-    const nextBody = nextToolRequestBody(target.body, parsed, results);
+    const nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
     attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1 });
     return true;
   }
 
   function sendJsonFinal(target, status, headers, full) {
     const parsed = safeJson(full);
-    const calls = extractToolCalls(parsed);
+    const calls = collectToolCalls(parsed);
     if (continueAfterTools(target.index, target, parsed, calls)) return;
     const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
     if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [] });
@@ -221,8 +221,10 @@ function forwardResponses(req, res, targets, source, visibility) {
   }
 
   function sendSseFinal(target, status, headers, full) {
-    const parsed = parseSseToolCalls(full);
-    if (continueAfterTools(target.index, target, { id: parsed.response_id }, parsed.calls)) return;
+    const events = parseSseEvents(full);
+    const calls = collectSseToolCalls(full);
+    const parsed = { _sse_events: events };
+    if (continueAfterTools(target.index, target, parsed, calls)) return;
     const scanner = planScanner.createSseScanner(source);
     scanner.feed(Buffer.from(full));
     scanner.finish();
