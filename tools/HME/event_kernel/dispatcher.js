@@ -31,6 +31,7 @@ const { PROJECT_ROOT } = require('../proxy/shared');
 const { appendHookExec } = require('../hooks/hook_report');
 const { shouldSkipForNestedHooks } = require('../hooks/cwd_guard');
 const { preWriteCheck, toHookResponse } = require('../proxy/pre_write_check');
+const { isWriteFamilyTool } = require('../proxy/edit_validation');
 const stateClient = require('../proxy/session_state_client');
 const { normalize } = require('./envelope');
 const { recordFailure } = require('../proxy/turn_failure_state');
