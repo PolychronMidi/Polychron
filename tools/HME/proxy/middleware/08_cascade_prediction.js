@@ -80,7 +80,11 @@ module.exports = {
     const result = await _post('/cascade_predict', { target_file: fp });
     if (!result || !result.logged) return;
     const predicted = Array.isArray(result.predicted) ? result.predicted : [];
-    if (predicted.length === 0) return;
+    if (predicted.length === 0) {
+      // Logged but no affected modules -- not worth a footer.
+      ctx.emit({ event: 'cascade_prediction_empty', target: result.target || path.basename(fp) });
+      return;
+    }
     const shown = predicted.slice(0, MAX_PREDICTED_SHOWN).join(', ');
     const tail = predicted.length > MAX_PREDICTED_SHOWN
       ? ` +${predicted.length - MAX_PREDICTED_SHOWN}` : '';
