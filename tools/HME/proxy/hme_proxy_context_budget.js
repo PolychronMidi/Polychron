@@ -202,6 +202,8 @@ function createContextBudget() {
     effectiveCompactThreshold,
     shrinkForPassthrough: shrinkForProxyPassthrough,
     shrinkForContext: shrinkForOmniContext,
+    estimatedContextTokens,
+    omniContextThresholdBytes,
     injectContextHeader,
     getConsecutive429s: () => consecutive429s,
     setConsecutive429s: (n) => { consecutive429s = n; },
