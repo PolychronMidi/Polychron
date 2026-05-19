@@ -258,6 +258,11 @@ function createCodexResponseForwarder(deps) {
       finished = true;
       record({
         kind: 'response', route: target.kind, upstream: target.url, status,
+        ...traceFields(target, { upstream_response_id: parsed && (parsed.id || parsed.response_id || parsed.response?.id) || '' }),
+        client_sse_started: clientSse.started,
+        client_visible_progress_events: clientSse.progressEvents,
+        tool_loop_count: clientSse.toolLoops,
+        call_ids: clientSse.callIds.slice(-32),
         duration_ms: Date.now() - started, error_summary: errorSummary,
         ...responseUsage(parsed),
         model: target.body && target.body.model ? target.body.model : visibility.model,
