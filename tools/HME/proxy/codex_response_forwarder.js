@@ -310,7 +310,34 @@ function createCodexResponseForwarder(deps) {
       };
     }
 
-    function continueAfterTools(index, target, parsed, calls, forcedResults = null) {
+    function toolGraphFallbackResponse(parsed, decision) {
+      const action = decision && decision.action || 'tool_graph_fallback';
+      const text = action === 'interrupt_before_tool'
+        ? `HME paused before executing a tool that requires human approval. No tool was executed. Checkpoint: ${decision.checkpoint_id || 'unavailable'}.`
+        : `HME blocked an invalid Codex tool-loop transition (${action}) instead of forwarding raw tool calls or returning a 508 loop error.`;
+      return {
+        id: parsed && parsed.id ? parsed.id : `hme_tool_graph_${Date.now()}`,
+        object: 'response',
+        output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text }] }],
+        hme_tool_loop_graph: {
+          action,
+          reason: decision && decision.reason || '',
+          invariant: decision && decision.invariant || '',
+          checkpoint_id: decision && decision.checkpoint_id || '',
+        },
+      };
+    }
+
+    function sendToolGraphFallback(target, status, headers, parsed, decision) {
+      record({ kind: 'codex-tool-loop-graph-fallback', route: target.kind, action: decision.action, reason: decision.reason, invariant: decision.invariant, checkpoint_id: decision.checkpoint_id || '', ...traceFields(target, { call_ids: (decision.calls || []).map((call) => call.id).filter(Boolean) }) });
+      const fallback = toolGraphFallbackResponse(parsed, decision);
+      if (sendParsedOverClientSse(target, status, headers, fallback, `tool graph ${decision.action}`)) return;
+      res.writeHead(status, { ...headers, 'content-type': 'application/json' });
+      res.end(JSON.stringify(fallback));
+      finishResponse(target, status, `tool graph ${decision.action}`, fallback);
+    }
+
+    function continueAfterTools(index, target, parsed, calls, forcedResults = null, graphDecision = null) {
       const decision = forcedResults ? { action: 'execute_tools', actionable_calls: calls, skipped_calls: [], finalizing: false, next_depth: (target.tool_loop_depth || 0) + 1, reason: 'forced tool results' } : runCodexToolLoopGraph({ target, source, parsed, calls, executed_call_ids: clientSse.callIds, response_kind: 'model_response' }, { record });
       const depth = target.tool_loop_depth || 0;
       if (!calls.length && !forcedResults) return false;
