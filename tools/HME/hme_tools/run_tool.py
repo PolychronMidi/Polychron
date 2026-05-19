@@ -34,6 +34,10 @@ def main(argv: list[str] | None = None) -> int:
     os.environ.setdefault("PROJECT_ROOT", str(Path(__file__).resolve().parents[2]))
     tool = tool_by_name(parsed.name)
     payload = read_payload(parsed)
+    missing = missing_required_inputs(tool, payload)
+    if missing:
+        print(f"missing required field(s): {', '.join(missing)}", file=sys.stderr)
+        return 2
     try:
         result = tool(payload)
     except Exception as exc:  # explicit top-level tool error surface
