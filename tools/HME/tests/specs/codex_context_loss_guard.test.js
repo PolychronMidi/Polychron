@@ -153,7 +153,7 @@ test('Codex request transform scrubs assistant stalls that cite recovered adapte
   assert.equal(result.cleanup.codex_context_loss_categories.assistant_context_loss_text, 2);
 });
 
-test('Codex proxy drops incomplete empty Bash calls instead of creating adapter-notice context', async () => {
+test('Codex proxy drops incomplete tool calls instead of creating adapter-notice context', async () => {
   const proxyPort = await freePort();
   const upstreamBodies = [];
   const upstream = http.createServer((req, res) => {
@@ -166,7 +166,10 @@ test('Codex proxy drops incomplete empty Bash calls instead of creating adapter-
       if (upstreamBodies.length === 1) {
         res.end(JSON.stringify({
           id: 'resp_incomplete_tool',
-          output: [{ type: 'function_call', id: 'call_empty_bash', call_id: 'call_empty_bash', name: 'Bash', arguments: '{}' }],
+          output: [
+            { type: 'function_call', id: 'call_empty_bash', call_id: 'call_empty_bash', name: 'Bash', arguments: '{}' },
+            { type: 'function_call', id: 'call_empty_agent', call_id: 'call_empty_agent', name: 'Agent', arguments: '{"level":3}' },
+          ],
         }));
         return;
       }
@@ -200,12 +203,12 @@ test('Codex proxy drops incomplete empty Bash calls instead of creating adapter-
     const response = await requestJson(proxyPort, {
       model: 'gpt-5.5',
       input: [{ role: 'user', content: [{ type: 'input_text', text: 'continue fixing Codex context coherence' }] }],
-      tools: [{ type: 'function', name: 'Bash' }],
+      tools: [{ type: 'function', name: 'Bash' }, { type: 'function', name: 'Agent' }],
       stream: false,
     });
     assert.equal(response.status, 200);
     assert.equal(upstreamBodies.length, 1);
-    assert.doesNotMatch(response.body, /adapter notice|Error: command is required|Please send/);
+    assert.doesNotMatch(response.body, /adapter notice|Error: command is required|Error: prompt is required|Please send/);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
     throw err;
