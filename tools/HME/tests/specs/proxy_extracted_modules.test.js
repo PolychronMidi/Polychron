@@ -7,6 +7,7 @@ const os = require('os');
 const path = require('path');
 
 const { sessionKey } = require('../../proxy/shared');
+const { tripEmergencyValve } = require('../../proxy/upstream');
 const { stripStaleToolResults } = require('../../proxy/conversation_graph');
 const { shrinkForPassthrough } = require('../../proxy/passthrough_compact');
 const { createContextBudget } = require('../../proxy/hme_proxy_context_budget');
@@ -628,7 +629,8 @@ test('request mutation passthrough path leaves 90k GPT-5.5 context unelided', as
   const oldEnv = { ...process.env };
   const logs = [];
   try {
-    process.env.HME_PROXY_PASSTHROUGH = '1';
+    process.env.OVERDRIVE_MODE = '0';
+    tripEmergencyValve('test passthrough smoke');
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_BYTES = '3000000';
     process.env.HME_PROXY_COMPACT_TRACE = '1';
