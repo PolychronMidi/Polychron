@@ -154,7 +154,7 @@ function editFallbackToReadRewrite(eventName, data, ctx) {
   if (!readHolds) { readHolds = new Map(); ctx.set('read_track_hold', readHolds); }
 
   if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') {
-    if (EDIT_FALLBACK_TOOL_NAMES.has(data.content_block.name)) {
+    if (isEditFamilyTool(data.content_block.name)) {
       editHolds.set(data.index, { id: data.content_block.id, name: data.content_block.name, startData: data, partial: '' });
       return null;
     }
