@@ -7,7 +7,6 @@ const os = require('os');
 const path = require('path');
 
 const { sessionKey } = require('../../proxy/shared');
-const { recordUpstreamFailure } = require('../../proxy/upstream');
 const { stripStaleToolResults } = require('../../proxy/conversation_graph');
 const { shrinkForPassthrough } = require('../../proxy/passthrough_compact');
 const { createContextBudget } = require('../../proxy/hme_proxy_context_budget');
