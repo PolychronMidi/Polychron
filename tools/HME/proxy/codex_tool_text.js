@@ -139,6 +139,18 @@ function normalizeAgent(input) {
   return out;
 }
 
+function normalizeBash(input) {
+  const command = String(input.cmd || input.command || '').trim();
+  if (!command) return null;
+  const out = { command };
+  const timeout = numberValue(input.timeout_ms ?? input.timeout);
+  if (timeout != null) out.timeout = timeout;
+  if (input.run_in_background) out.run_in_background = true;
+  const description = input.justification || input.description;
+  if (description) out.description = String(description);
+  return out;
+}
+
 function normalizeInput(action, input) {
   const tool = ACTION_TO_TOOL[action];
   if (!tool || !input || typeof input !== 'object') return null;
