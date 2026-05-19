@@ -95,4 +95,4 @@ function requiresApproval(name, args = {}) {
   return false;
 }
 
-module.exports = { canonicalToolSchemas, canonicalToolMetadata, canonicalToolMetadataByName, canonicalRequiredFieldsByName, canonicalToolNames, toolMetadata, requiredFields, inputAliases, missingRequiredFields, approvalPolicy, requiresApproval };
+module.exports = { canonicalToolSchemas, canonicalToolMetadata, canonicalLangChainTools, canonicalToolMetadataByName, canonicalRequiredFieldsByName, canonicalToolNames, toolMetadata, requiredFields, inputAliases, missingRequiredFields, approvalPolicy, requiresApproval };
