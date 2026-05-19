@@ -73,10 +73,15 @@ function isContextLossText(text) {
   const pasteContext = PASTE_CONTEXT_RE.test(s);
   const unsupportedTool = UNSUPPORTED_TOOL_RE.test(s);
   const toolAccessStall = TOOL_ACCESS_STALL_RE.test(s);
+  const recoveredWorkdir = RECOVERED_WORKDIR_RE.test(s);
+  const taskDetailsMissing = TASK_DETAILS_MISSING_RE.test(s);
+  const asksNext = ASK_NEXT_RE.test(s);
+  const workdirResumeStall = recoveredWorkdir && taskDetailsMissing && (asksNext || asksResend);
   const adapterAnchor = mentionsEmptyCommand || mentionsAdapterNotice || unsupportedTool || toolAccessStall;
   return (adapterAnchor && (recovered || noContext || asksResend || noAction || metaStall || repoReadStall || pasteContext || toolAccessStall))
     || ((recovered || noContext || metaStall) && asksResend)
-    || (repoReadStall && (asksResend || pasteContext || unsupportedTool || toolAccessStall));
+    || (repoReadStall && (asksResend || pasteContext || unsupportedTool || toolAccessStall))
+    || workdirResumeStall;
 }
 
 function bump(stats, key) {
