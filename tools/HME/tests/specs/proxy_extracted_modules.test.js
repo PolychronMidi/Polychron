@@ -538,7 +538,7 @@ test('context budget compaction gears start near context high-water and escalate
     assert.equal(plan.maxTier, 1);
     assert.equal(plan.threshold, 800);
 
-    payload = { messages: [{ role: 'user', content: 'x'.repeat(930) }] };
+    payload = { messages: [{ role: 'user', content: 'x'.repeat(880) }] };
     plan = budget.effectiveCompactThreshold(payload);
     assert.equal(plan.maxTier, 2);
     assert.equal(plan.threshold, 900);
