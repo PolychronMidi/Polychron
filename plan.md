@@ -5,7 +5,7 @@
 Polychron/HME is moving toward a comprehensive integration of the reference project:
 
 ```text
-$BASE_ROOT_PATH/polychron-references/oh-my-openagent-dev
+<reference-repo-root>
 ```
 
 The goal is not a shallow copy. The goal is a coherent assimilation: preserve HME's existing strengths -- proxy routing, coherence guards, self-healing hooks, structured telemetry, smolagents canonical tool definitions, and Claude/Codex/OpenAI bridging -- while absorbing OMO's mature agent orchestration, context injection, dynamic pruning, compaction recovery, task/session features, team-mode concepts, and plugin-style extension surfaces.
@@ -205,7 +205,7 @@ emergency_tail_elided = 0
 Reference repo:
 
 ```text
-$BASE_ROOT_PATH/polychron-references/oh-my-openagent-dev
+<reference-repo-root>
 ```
 
 Important directories discovered during quick sweep:
@@ -883,7 +883,7 @@ tools/HME/scripts/omo_inventory.py
 Input:
 
 ```text
-$BASE_ROOT_PATH/polychron-references/oh-my-openagent-dev
+<reference-repo-root>
 ```
 
 Output:
@@ -1331,7 +1331,7 @@ The integration is successful when:
 python3 -m pytest -q tools/HME/tests/specs/test_langchain_adapter.py
 node --test tools/HME/tests/specs/smolagents_tool_registry.test.js
 node --test tools/HME/tests/specs/proxy_extracted_modules.test.js
-PROJECT_ROOT=$PROJECT_ROOT HOOK_PATH=$PROJECT_ROOT/.git/hooks/pre-commit python3 tools/HME/scripts/precommit_validate.py
+PROJECT_ROOT=<repo-root> HOOK_PATH=<repo-root>/.git/hooks/pre-commit python3 tools/HME/scripts/precommit_validate.py
 ```
 
 ---
