@@ -107,23 +107,87 @@ if [ -x "$_REASONING_CONFIG" ]; then
 fi
 
 # Configure provider credentials
+_provider_connection_exists() {
+  local _provider="$1"
+  curl -sf -b /tmp/omni-setup-cookies.txt \
+    "http://127.0.0.1:${PORT}/api/providers" 2>/dev/null | \
+    OMNI_PROVIDER="$_provider" python3 -c 'import json, os, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+wanted = os.environ["OMNI_PROVIDER"]
+found = any(isinstance(c, dict) and c.get("provider") == wanted for c in data.get("connections", []))
+sys.exit(0 if found else 1)'
+}
+
+_provider_node_id_by_prefix() {
+  local _prefix="$1" _api_type="${2:-chat}"
+  curl -sf -b /tmp/omni-setup-cookies.txt \
+    "http://127.0.0.1:${PORT}/api/provider-nodes" 2>/dev/null | \
+    OMNI_PREFIX="$_prefix" OMNI_API_TYPE="$_api_type" python3 -c 'import json, os, sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+for node in data.get("nodes", []):
+    if not isinstance(node, dict):
+        continue
+    if node.get("prefix") == os.environ["OMNI_PREFIX"] and node.get("apiType") == os.environ["OMNI_API_TYPE"]:
+        print(node.get("id") or "")
+        sys.exit(0)
+sys.exit(1)'
+}
+
+_ensure_openai_compatible_node() {
+  local _prefix="$1" _name="$2" _base_url="$3" _node_id _payload _result
+  if _node_id="$(_provider_node_id_by_prefix "$_prefix" chat)" && [ -n "$_node_id" ]; then
+    echo "$_node_id"
+    return 0
+  fi
+
+  _payload=$(OMNI_PREFIX="$_prefix" OMNI_NAME="$_name" OMNI_BASE_URL="$_base_url" python3 - <<'PYJSON'
+import json, os
+print(json.dumps({
+    "type": "openai-compatible",
+    "name": os.environ["OMNI_NAME"],
+    "prefix": os.environ["OMNI_PREFIX"],
+    "apiType": "chat",
+    "baseUrl": os.environ["OMNI_BASE_URL"],
+}))
+PYJSON
+)
+  _result=$(curl -sf -b /tmp/omni-setup-cookies.txt -X POST \
+    "http://127.0.0.1:${PORT}/api/provider-nodes" \
+    -H "Content-Type: application/json" \
+    -d "$_payload" 2>&1) || true
+  _node_id=$(printf '%s' "$_result" | python3 -c 'import json, sys
+try:
+    print((json.load(sys.stdin).get("node") or {}).get("id") or "")
+except Exception:
+    print("")')
+  if [ -n "$_node_id" ]; then
+    echo "[omniroute] ${_prefix} provider node created" >&2
+    echo "$_node_id"
+    return 0
+  fi
+  echo "[omniroute] ${_prefix} provider node setup failed: $_result" >&2
+  return 1
+}
+
 _configure_provider() {
-  local _provider="$1" _key="$2" _name="$3"
+  local _provider="$1" _key="$2" _name="$3" _label="${4:-$1}"
   if [ -z "$_key" ]; then
-    echo "[omniroute] ${_provider} key not set -- skipping credential setup"
+    echo "[omniroute] ${_label} key not set -- skipping credential setup"
     return 0
   fi
 
-  local _existing
-  _existing=$(curl -sf -b /tmp/omni-setup-cookies.txt \
-    "http://127.0.0.1:${PORT}/api/providers?provider=${_provider}" 2>&1) || true
-
-  if echo "$_existing" | grep -q '"apiKey"'; then
-    echo "[omniroute] ${_provider} already configured"
+  if _provider_connection_exists "$_provider"; then
+    echo "[omniroute] ${_label} already configured"
     return 0
   fi
 
-  echo "[omniroute] adding ${_provider} connection..."
+  echo "[omniroute] adding ${_label} connection..."
   local _payload _result
   _payload=$(OMNI_PROVIDER="$_provider" OMNI_KEY="$_key" OMNI_NAME="$_name" python3 - <<'PYJSON'
 import json, os
@@ -136,10 +200,20 @@ PYJSON
     -d "$_payload" 2>&1) || true
 
   if echo "$_result" | grep -q '"connection"'; then
-    echo "[omniroute] ${_provider} configured successfully"
+    echo "[omniroute] ${_label} configured successfully"
   else
-    echo "[omniroute] ${_provider} setup failed: $_result"
+    echo "[omniroute] ${_label} setup failed: $_result"
   fi
+}
+
+_configure_openai_compatible_provider() {
+  local _prefix="$1" _key="$2" _name="$3" _node_name="$4" _base_url="$5" _node_id
+  if [ -z "$_key" ]; then
+    echo "[omniroute] ${_prefix} key not set -- skipping credential setup"
+    return 0
+  fi
+  _node_id="$(_ensure_openai_compatible_node "$_prefix" "$_node_name" "$_base_url")" || return 0
+  _configure_provider "$_node_id" "$_key" "$_name" "$_prefix"
 }
 
 if [ "$DO_CONFIGURE" -eq 1 ]; then
