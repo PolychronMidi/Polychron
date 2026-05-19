@@ -30,7 +30,7 @@ def schemas(kind: str) -> list[dict[str, Any]]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--kind", choices=["openai", "codex", "claude", "hme"], default="codex")
+    parser.add_argument("--kind", choices=["openai", "codex", "claude", "langchain", "hme"], default="codex")
     parser.add_argument("--output", default="-")
     args = parser.parse_args(argv)
     data = schemas(args.kind)
