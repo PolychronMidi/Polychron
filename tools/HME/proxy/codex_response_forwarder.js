@@ -93,6 +93,7 @@ function createCodexResponseForwarder(deps) {
       const parsed = safeJson(full);
       const calls = collectToolCalls(parsed);
       if (calls.length) {
+        if (retryAfterIncompleteOnly(target.index, target, parsed, calls)) return;
         if (continueAfterTools(target.index, target, parsed, calls)) return;
         if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target, parsed);
       }
