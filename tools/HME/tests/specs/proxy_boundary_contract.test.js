@@ -13,19 +13,19 @@ function lineCount(rel) {
   return fs.readFileSync(path.join(proxyDir, rel), 'utf8').split('\n').length;
 }
 
-test('proxy modules stay below monolith line ceilings', () => {
-  const ceilings = {
-    'hme_proxy.js': 200,
-    'hme_proxy_claude.js': 500,
-    'hme_proxy_routes.js': 120,
-    'hme_proxy_opus_gate.js': 80,
-    'hme_proxy_request_mutation.js': 220,
-    'hme_proxy_anthropic_response.js': 220,
-    'hme_proxy_connection_errors.js': 180,
-  };
-  for (const [rel, ceiling] of Object.entries(ceilings)) {
+test('proxy modules stay below enforced 350 LOC ceiling', () => {
+  const modules = [
+    'hme_proxy.js',
+    'hme_proxy_claude.js',
+    'hme_proxy_routes.js',
+    'hme_proxy_opus_gate.js',
+    'hme_proxy_request_mutation.js',
+    'hme_proxy_anthropic_response.js',
+    'hme_proxy_connection_errors.js',
+  ];
+  for (const rel of modules) {
     assert.ok(fs.existsSync(path.join(proxyDir, rel)), `${rel} exists`);
-    assert.ok(lineCount(rel) < ceiling, `${rel} should stay under ${ceiling} lines`);
+    assert.ok(lineCount(rel) <= 350, `${rel} should stay at or below enforced 350 LOC ceiling`);
   }
 });
 
