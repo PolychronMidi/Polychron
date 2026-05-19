@@ -21,6 +21,8 @@ def schemas(kind: str) -> list[dict[str, Any]]:
     tools = canonical_tools()
     if kind in {"openai", "codex", "claude"}:
         return [openai_tool_schema(tool) for tool in tools]
+    if kind == "langchain":
+        return [langchain_tool_schema(tool) for tool in tools]
     if kind == "hme":
         return [tool.hme_schema() for tool in tools]
     raise ValueError(f"unknown schema kind: {kind}")
