@@ -135,8 +135,6 @@ function _validateToolInput(name, input) {
 function executeToolUse(use, opts) {
   const root = (opts && opts.projectRoot) || PROJECT_ROOT;
   if (use.name === 'Bash') {
-    const cmd = String(use.input.command || use.input.cmd || '');
-    if (!cmd.trim()) return { type: 'tool_result', tool_use_id: use.id, content: 'Error: command is required for Bash.' };
     const result = runBashTool(use.input);
     return { type: 'tool_result', tool_use_id: use.id, content: toolOutput(result) };
   }
