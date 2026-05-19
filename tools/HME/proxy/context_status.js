@@ -146,6 +146,7 @@ function recentActivity(n = 4, maxAgeMs = ACTIVITY_MAX_AGE_MS) {
     try {
       const e = JSON.parse(line);
       if (!ACTIONABLE.has(e.event)) continue;
+      if (e.event === 'coherence_violation' && e.verdict === 'STALE') continue;
       if (!_isFresh(e, maxAgeMs, now)) continue;
       const parts = [e.event];
       for (const k of ['verdict', 'reason', 'tool']) {
