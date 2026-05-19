@@ -16,9 +16,16 @@ const stopChain = require('../../proxy/stop_chain');
 // in the next real Stop hook's LIFESAVER scan.
 async function _withMockedStopPolicies(overrides, fn) {
   const originalLoad = Module._load;
+  const originalRoot = process.env.PROJECT_ROOT;
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stop-chain-mock-'));
+  fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'metrics'), { recursive: true });
+  process.env.PROJECT_ROOT = sandbox;
   const proxyDir = path.resolve(__dirname, '..', '..', 'proxy');
+  const telemetryDir = path.resolve(__dirname, '..', '..', 'telemetry');
   for (const k of Object.keys(require.cache)) {
-    if (k.startsWith(proxyDir)) delete require.cache[k];
+    if (k.startsWith(proxyDir) || k.startsWith(telemetryDir)) delete require.cache[k];
   }
   Module._load = function mockedLoad(request, parent, isMain) {
     if (String(request).includes(`${path.sep}stop_chain${path.sep}policies${path.sep}`)) {
@@ -34,12 +41,15 @@ async function _withMockedStopPolicies(overrides, fn) {
   };
   try {
     const chain = require('../../proxy/stop_chain');
-    await fn(chain);
+    await fn(chain, sandbox);
   } finally {
     Module._load = originalLoad;
+    if (originalRoot === undefined) delete process.env.PROJECT_ROOT;
+    else process.env.PROJECT_ROOT = originalRoot;
     for (const k of Object.keys(require.cache)) {
-      if (k.startsWith(proxyDir)) delete require.cache[k];
+      if (k.startsWith(proxyDir) || k.startsWith(telemetryDir)) delete require.cache[k];
     }
+    try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
   }
 }
 
