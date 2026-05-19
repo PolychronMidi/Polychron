@@ -182,36 +182,32 @@ function createCodexResponseForwarder(deps) {
       return next;
     }
 
-    function finalizationContextText(body) {
+    function finalizationToolResultText(body) {
       const parts = [];
       function visit(value) {
-        if (typeof value === 'string') { parts.push(value); return; }
         if (!value || typeof value !== 'object') return;
         if (Array.isArray(value)) { for (const item of value) visit(item); return; }
-        if (typeof value.output === 'string') parts.push(value.output);
-        if (typeof value.text === 'string') parts.push(value.text);
-        if (typeof value.content === 'string') parts.push(value.content);
+        if (value.type === 'function_call_output' && typeof value.output === 'string' && value.output.trim()) parts.push(value.output.trim());
         for (const child of Object.values(value)) visit(child);
       }
       visit(body && body.input);
-      return parts.join('\n').slice(-8000);
+      const text = parts.slice(-3).join('\n\n');
+      return text.length > 4000 ? text.slice(-4000) : text;
     }
 
     function finalizationFallbackResponse(target, parsed, calls) {
-      const names = [...new Set(calls.map((call) => call.name).filter(Boolean))].join(', ') || 'tool calls';
-      const context = finalizationContextText(target.body);
+      const context = finalizationToolResultText(target.body);
       const text = [
         'HME stopped a non-terminating Codex tool loop after repository tools had already run.',
-        `The upstream model emitted additional tool calls after finalization disabled tools: ${names}.`,
-        'No raw tool call was forwarded to the Codex CLI and no 508 loop error was returned.',
-        context ? `\nLast tool-loop finalization context:\n${context}` : '',
+        'The upstream model kept emitting tool calls after tools were disabled, so HME returned this bounded final response instead of forwarding raw tool calls or a 508 loop error.',
+        context ? `\nLast tool result excerpt:\n${context}` : '',
       ].filter(Boolean).join('\n');
       return {
         id: parsed && parsed.id ? parsed.id : `hme_tool_loop_finalized_${Date.now()}`,
         object: 'response',
         output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text }] }],
         hme_tool_loop_finalized: true,
-        hme_blocked_finalization_tool_calls: calls.map((call) => ({ call_id: call.id, name: call.name })),
+        hme_blocked_finalization_tool_call_count: calls.length,
       };
     }
 
