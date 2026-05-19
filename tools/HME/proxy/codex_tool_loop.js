@@ -6,7 +6,7 @@ const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
 const { PROJECT_ROOT } = require('./shared');
 const { canonicalToolNames, missingRequiredFields } = require('./hme_tool_registry');
 
-const TOOL_NAMES = new Set(['Read', 'Edit', 'Write', 'WebFetch', 'Agent', 'Bash']);
+const TOOL_NAMES = canonicalToolNames();
 const ACTIONS = { Read: 'read', Edit: 'edit', Write: 'write', WebFetch: 'web_fetch', Agent: 'agent' };
 const MAX_OUTPUT = 200000;
 const EMPTY_BASH_TOOL_RESULT = [
