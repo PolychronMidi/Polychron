@@ -261,7 +261,9 @@ function displayCall(bridge) {
 function actionToolFromLine(line) {
   const tokens = splitWords(line);
   const idx = tokens.findIndex((tok) => SCRIPT_RE.test(String(tok || '')));
-  return ACTION_TO_TOOL[tokens[idx + 1]] || 'Tool';
+  if (idx >= 0) return ACTION_TO_TOOL[tokens[idx + 1]] || 'Tool';
+  const smolIdx = tokens.findIndex((tok) => String(tok || '').endsWith('hme_tools/run_tool.py'));
+  return BARE_TOOL_NAMES.has(tokens[smolIdx + 1]) ? tokens[smolIdx + 1] : 'Tool';
 }
 
 function heredocMarker(line) {
