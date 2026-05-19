@@ -5,7 +5,7 @@ const { spawnSync } = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 
-test('model registry uses canonical OpenRouter free routes', () => {
+test('model registry uses canonical free provider routes', () => {
   const script = path.join(ROOT, 'tools/HME/scripts/verify-model-registry.py');
   const result = spawnSync('python3', [script], {
     cwd: ROOT,
