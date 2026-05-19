@@ -6,6 +6,9 @@ function omniProviderForConfigProvider(provider, env = process.env) {
   if (p === 'anthropic' && !env.ANTHROPIC_API_KEY) return 'claude';
   if (p === 'opencode_go' || p === 'opencode-go') return 'opencode-go';
   if (p === 'opencode') return 'opencode';
+  if (p === 'kilo') return 'kilo-gateway';
+  if (p === 'kilo-gateway') return 'kilo-gateway';
+  if (p === 'aihubmix') return 'aihubmix';
   return p || 'opencode-go';
 }
 
