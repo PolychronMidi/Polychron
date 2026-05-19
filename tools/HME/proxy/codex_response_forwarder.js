@@ -396,21 +396,6 @@ function createCodexResponseForwarder(deps) {
       finishResponse(target, 508, 'tool loop limit', parsed);
     }
 
-    function retryAfterContextLoss(target, status, headers, parsed, avoidedToolUse) {
-      const reason = avoidedToolUse ? 'assistant avoided available tools despite existing objective' : 'empty command tool result treated as task context';
-      record({ kind: 'codex-context-loss-blocked', route: target.kind, depth: target.tool_loop_depth || 0, reason, ...traceFields(target) });
-      const repairedBody = avoidedToolUse ? appendToolUseEnforcement(target.body, reason) : appendContextLossRepair(target.body);
-      const repairText = repairedBody.input?.at?.(-1)?.content?.[0]?.text || 'HME context-loss repair: continue from the latest user request/session objective.';
-      const repairResult = [{ type: 'message', role: 'user', content: [{ type: 'input_text', text: repairText }] }];
-      if (continueAfterTools(target.index, { ...target, body: repairedBody }, parsed || {}, [], repairResult)) return true;
-      const fallback = contextLossFallbackResponse(parsed);
-      if (sendParsedOverClientSse(target, status, headers, fallback, 'context loss blocked')) return true;
-      res.writeHead(status, { ...headers, 'content-type': 'application/json' });
-      res.end(JSON.stringify(fallback));
-      finishResponse(target, status, 'context loss blocked', fallback);
-      return true;
-    }
-
     function sendJsonFinal(target, status, headers, full) {
       const parsed = safeJson(full);
       const calls = collectToolCalls(parsed);
