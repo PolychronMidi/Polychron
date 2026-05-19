@@ -156,6 +156,18 @@ test('Codex context-loss guard detects generic no-file-read repo stalls', () => 
   assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: unsupportedBad }] }] }), true);
 });
 
+test('Codex context-loss guard detects recovered pwd-only resume stalls', () => {
+  const bad = [
+    'Understood. The recovered working directory is:',
+    '',
+    '<project-root>',
+    '',
+    'I don’t have the actual task details from the previous turn—only the pwd output. Tell me what you want done next in this repo, and I’ll continue from there without re-running that same context check unless needed.',
+  ].join('\n');
+  assert.equal(isContextLossText(bad), true);
+  assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: bad }] }] }), true);
+});
+
 test('Codex request transform scrubs assistant stalls that cite recovered adapter notices or missing prompts', () => {
   const bad = [
     'I only have the recovered adapter notices, not the actual prior task/session objective.',
