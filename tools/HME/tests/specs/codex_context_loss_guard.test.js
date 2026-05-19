@@ -68,8 +68,15 @@ test('Codex context-loss guard detects recovered empty-command stalls', () => {
     'They don’t contain actionable project context, file paths, commands, or requirements.',
     'I won’t repeat the empty Bash calls. Please send the current objective or the relevant prior task details, and I’ll continue from there.',
   ].join('\n');
+  const promptBad = [
+    'Got it. The only recovered tool context is:',
+    '> Error: prompt is required',
+    'So I know a previous tool call failed because it was missing a required prompt, but I don’t have the actual task objective or project/file context from before that failure.',
+    'Please send the task you want me to continue with.',
+  ].join('\n');
   assert.equal(isContextLossText(bad), true);
   assert.equal(isContextLossText(adapterBad), true);
+  assert.equal(isContextLossText(promptBad), true);
   assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: bad }] }] }), true);
   assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: adapterBad }] }] }), true);
   assert.equal(isContextLossText('Error: command is required\nreal shell stderr from an attempted command'), false);
