@@ -31,6 +31,23 @@ test('smolagents HME registry preserves policy metadata separately from model sc
   assert.equal(byName.Bash.parameters.required.includes('command'), true);
 });
 
+test('smolagents registry exports LangChain StructuredTool-compatible descriptors from same source', () => {
+  const schemas = canonicalToolSchemas();
+  const langchain = canonicalLangChainTools();
+  assert.deepEqual(langchain.map((tool) => tool.name), schemas.map((tool) => tool.name));
+  const read = langchain.find((tool) => tool.name === 'Read');
+  assert.ok(read);
+  assert.equal(read.args_schema.type, 'object');
+  assert.equal(read.args_schema.additionalProperties, false);
+  assert.equal(read.args_schema.properties.file_path.type, 'string');
+  assert.equal(read.metadata.side_effect, 'read');
+  assert.equal(read.metadata.bridge_action, 'read');
+  assert.equal(read.metadata.host_native, false);
+  assert.equal(read.return_direct, false);
+  const edit = langchain.find((tool) => tool.name === 'Edit');
+  assert.equal(edit.metadata.policy.requires_prior_read, true);
+});
+
 test('smolagents HME tool runner executes bare Bash tool name', () => {
   const script = path.join(ROOT, 'tools/HME/hme_tools/run_tool.py');
   const result = spawnSync('python3', [script, 'Bash', '--json'], {
