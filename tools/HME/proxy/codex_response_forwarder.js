@@ -50,10 +50,11 @@ function createCodexResponseForwarder(deps) {
       });
     }
 
-    function continueAfterTools(index, target, parsed, calls) {
+    function continueAfterTools(index, target, parsed, calls, forcedResults = null) {
       const depth = target.tool_loop_depth || 0;
-      if (!calls.length || depth >= MAX_TOOL_LOOP_DEPTH) return false;
-      const results = toolResultInput(calls, { projectRoot, sessionId: source.session_id || '' });
+      if (!calls.length && !forcedResults) return false;
+      if (depth >= MAX_TOOL_LOOP_DEPTH) return false;
+      const results = forcedResults || toolResultInput(calls, { projectRoot, sessionId: source.session_id || '' });
       record({ kind: 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: r.is_error })) });
       const nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
       attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1 });
