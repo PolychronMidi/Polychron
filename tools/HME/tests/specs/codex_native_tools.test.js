@@ -294,8 +294,12 @@ test('Codex proxy sends native tools upstream and translates native Read call wi
     assert.equal(upstreamBodies[1].input[0].type, 'function_call_output');
     assert.equal(upstreamBodies[1].input[0].call_id, 'call_read_proxy_loop');
     assert.match(upstreamBodies[1].input[0].output, /# Rules/);
-    assert.equal(JSON.parse(response.body).output[0].content[0].text, 'done');
-    assert.doesNotMatch(response.body, /exec_command|codex_structured_tool|HME_CODEX_JSON/);
+    assert.match(response.body, /response.output_text.delta/);
+    assert.match(response.body, /• Read doc\/templates\/AGENTS\.md/);
+    assert.match(response.body, /result forwarded upstream/);
+    assert.match(response.body, /done/);
+    assert.match(response.body, /data: \[DONE\]/);
+    assert.doesNotMatch(response.body, /exec_command|codex_structured_tool|HME_CODEX_JSON|bounded_fallback|loop error/);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
     throw err;
