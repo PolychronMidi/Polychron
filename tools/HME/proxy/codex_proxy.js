@@ -209,7 +209,14 @@ function forwardResponses(req, res, targets, source, visibility) {
   function sendJsonFinal(target, status, headers, full) {
     const parsed = safeJson(full);
     const calls = collectToolCalls(parsed);
-    if (continueAfterTools(target.index, target, parsed, calls)) return;
+    if (calls.length) {
+      if (continueAfterTools(target.index, target, parsed, calls)) return;
+      const body = JSON.stringify({ error: 'codex_proxy_tool_loop_limit', message: 'Tool loop limit reached before a final assistant response.' });
+      res.writeHead(508, { 'Content-Type': 'application/json' });
+      res.end(body);
+      finishResponse(target, 508, 'tool loop limit', parsed);
+      return;
+    }
     const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
     if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [] });
     const finalBody = rewritten && rewritten.stats.calls ? JSON.stringify(rewritten.body) : full;
@@ -224,7 +231,13 @@ function forwardResponses(req, res, targets, source, visibility) {
     const events = parseSseEvents(full);
     const calls = collectSseToolCalls(full);
     const parsed = { _sse_events: events };
-    if (continueAfterTools(target.index, target, parsed, calls)) return;
+    if (calls.length) {
+      if (continueAfterTools(target.index, target, parsed, calls)) return;
+      res.writeHead(508, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'codex_proxy_tool_loop_limit', message: 'Tool loop limit reached before a final assistant response.' }));
+      finishResponse(target, 508, 'tool loop limit');
+      return;
+    }
     const scanner = planScanner.createSseScanner(source);
     scanner.feed(Buffer.from(full));
     scanner.finish();
