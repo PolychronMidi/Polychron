@@ -171,7 +171,8 @@ async function runToolLoop({
     assistantMsg = { role: 'assistant', content: [{ type: 'text', text: text || '(tool calls executed by proxy)' }] };
   } else {
     const parsed = _tryParseJson(bodyStr);
-    const content = (parsed && parsed.content) || [];
+    const rawContent = (parsed && parsed.content) || [];
+    const content = _filterAssistantContent(rawContent);
     assistantMsg = { role: 'assistant', content };
   }
 
@@ -212,6 +213,16 @@ async function runToolLoop({
 
 function _tryParseJson(buf) {
   try { return JSON.parse(buf.toString('utf8')); } catch (_e) { return {}; }
+}
+
+function _filterAssistantContent(content) {
+  if (!Array.isArray(content)) return content;
+  return content.filter((block) => {
+    if (!block || typeof block !== 'object') return false;
+    const t = block.type;
+    if (t === 'thinking' || t === 'redacted_thinking') return false;
+    return true;
+  });
 }
 
 function _sseText(bodyStr) {
