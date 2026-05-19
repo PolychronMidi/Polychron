@@ -641,6 +641,19 @@ test('message dropping is disabled until gear three', () => {
   assert.doesNotMatch(JSON.stringify(payload), /passthrough-compact: .*oldest message/);
 });
 
+
+test('high keepTurns prevents stale tool stripping in long GPT-5.5 sessions', () => {
+  const payload = { model: 'gpt-5.5-high', messages: [] };
+  for (let i = 0; i < 120; i += 1) {
+    const id = `kept-tool-${i}`;
+    payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
+    payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: `result-${i}` }] });
+  }
+  const before = JSON.stringify(payload);
+  assert.equal(stripStaleToolResults(payload, 200), 0);
+  assert.equal(JSON.stringify(payload), before);
+});
+
 test('gear one only elides stale lengthy tool results', () => {
   const payload = { messages: [] };
   for (let i = 0; i < 8; i += 1) {
