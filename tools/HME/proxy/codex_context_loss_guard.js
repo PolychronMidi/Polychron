@@ -11,6 +11,16 @@ const CONTEXT_LOSS_NOTICE = [
 ].join('\n');
 
 const REPAIR_PROMPT_PREFIX = 'HME context-loss repair';
+const TOOL_SCHEMA_REPAIR_PROMPT_PREFIX = 'HME tool-call repair';
+const TOOL_REQUIRED_FIELDS = Object.freeze({
+  Bash: ['command'],
+  Agent: ['prompt'],
+  Read: ['file_path'],
+  WebFetch: ['url', 'prompt'],
+  WebSearch: ['query'],
+  Write: ['file_path', 'content'],
+  Edit: ['file_path', 'old_string', 'new_string'],
+});
 const MISSING_REQUIRED_RE = /\bError:\s*(?:command|prompt|url|file_path|old_string|new_string|content|query) is required(?:\s+for\s+[A-Za-z]+)?\.?\b/i;
 const EMPTY_COMMAND_RE = /\bError:\s*command is required(?:\s+for\s+Bash)?\.?\b/i;
 const ADAPTER_NOTICE_RE = /\b(?:HME\s+)?adapter notices?\b|\bignored an empty Bash tool call\b|\bempty Bash tool(?:-| )?result\b|\bstale empty Bash tool result\b|\brecovered tool context\b/i;
@@ -19,6 +29,7 @@ const NO_CONTEXT_RE = /\b(?:no actual context apart from a failed call|no additi
 const ASK_RESEND_RE = /\bplease\s+(?:send|provide)\s+(?:the\s+)?(?:current\s+objective|actual\s+)?(?:task|command|goal|file|bug|repository goal|instructions?|objective|prior task details?)\b/i;
 const NO_ACTION_RE = /\b(?:no command was executed|no files were read or modified|there(?:'s| is) no additional actionable|won[’']t repeat the empty Bash calls)\b/i;
 const META_STALL_RE = /\bI need to handle the situation where the user expects me to continue\b/i;
+const REPO_READ_STALL_RE = /\b(?:did not successfully read the repo|have not inspected the codebase|haven[’']t inspected the codebase|attempted file\/tool reads failed|paste repo structure|paste key files|if tool access works later|generic architecture answer dressed up like repo-aware)\b/i;
 
 function textOf(value) {
   if (typeof value === 'string') return value;
