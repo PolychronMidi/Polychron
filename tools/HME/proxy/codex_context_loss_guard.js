@@ -220,6 +220,23 @@ function appendContextLossRepair(body) {
   return appendUserRepairPrompt(body, repairPrompt(body));
 }
 
+function toolUseEnforcementPrompt(body, reason = '') {
+  const latest = latestUserTaskText(body);
+  return [
+    `${TOOL_USE_ENFORCEMENT_PROMPT_PREFIX}: the previous response asked for the next objective or avoided repository inspection even though the latest user request/session objective is already present.`,
+    reason ? `Reason blocked by middleware: ${reason}` : '',
+    'Do not ask the user to resend the task, next objective, repo structure, files, or access instructions.',
+    'Use the available tools now. For repo-aware work, inspect the repository with valid tool calls before producing conclusions.',
+    'Emit at least one valid Read, Bash, or Agent tool call with all required fields unless the latest objective is explicitly non-repository/non-tool work.',
+    'Required fields: Bash requires command; Read requires file_path; Agent requires prompt.',
+    latest ? `\nLatest user request/session objective:\n${latest}` : '',
+  ].filter(Boolean).join('\n');
+}
+
+function appendToolUseEnforcement(body, reason = '') {
+  return appendUserRepairPrompt(body, toolUseEnforcementPrompt(body, reason));
+}
+
 function formatToolSchemaCalls(calls) {
   const seen = new Set();
   const lines = [];
