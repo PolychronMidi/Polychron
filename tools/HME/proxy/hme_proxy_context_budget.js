@@ -68,6 +68,7 @@ function createContextBudget() {
   const compactGear1Target = envNumber('HME_PROXY_COMPACT_GEAR1_TARGET', 0.80);
   const compactGear2Target = envNumber('HME_PROXY_COMPACT_GEAR2_TARGET', 0.90);
   const compactGear3Target = envNumber('HME_PROXY_COMPACT_GEAR3_TARGET', 0.97);
+  let lastCompactDecisionKey = '';
 
   function pressureForFraction(usedFraction) {
     if (usedFraction < compactStartFraction) return 0;
