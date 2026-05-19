@@ -264,6 +264,8 @@ function createClaudeHandler(deps) {
               setLastInputTokensRemaining,
               getLastInputTokensLimit,
               setLastInputTokensLimit,
+              estimatedContextTokens,
+              omniContextThresholdBytes,
               injectContextHeader: _injectContextHeader,
               anthropicTextSseBuffer: _anthropicTextSseBuffer,
               lifecycleInactive: deps.lifecycleInactive || ((event) => lifecycleBridge().lifecycleInactive(event)),
