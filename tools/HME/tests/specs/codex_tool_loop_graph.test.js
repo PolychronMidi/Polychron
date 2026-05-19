@@ -21,9 +21,8 @@ function target(extra = {}) {
 const readCall = { id: 'call_read', name: 'Read', args: { file_path: 'README.md', limit: 1 } };
 
 test('Codex tool-loop graph routes valid streamed tool calls through visible execution invariant', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-codex-graph-'));
   const events = [];
-  const decision = runCodexToolLoopGraph({ target: target({ hme_correlation_id: 'corr_valid' }), calls: [readCall] }, { checkpoints: true, checkpointer: undefined, record: (event) => events.push(event) });
+  const decision = runCodexToolLoopGraph({ target: target({ hme_correlation_id: 'corr_valid' }), calls: [readCall] }, { checkpoints: false, record: (event) => events.push(event) });
   assert.equal(decision.action, 'execute_tools');
   assert.equal(decision.invariant, 'visible_progress_required');
   assert.equal(decision.requires_visible_progress, true);
