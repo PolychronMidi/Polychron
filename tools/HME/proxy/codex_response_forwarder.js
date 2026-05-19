@@ -359,7 +359,7 @@ function createCodexResponseForwarder(deps) {
       }
       const finalizing = !forcedResults && depth >= FINALIZE_TOOL_LOOP_DEPTH;
       clientSse.toolLoops += forcedResults ? 0 : 1;
-      const hiddenStreamLoop = Boolean(target.body && target.body.stream && !forcedResults && !clientSse.started);
+      const hiddenStreamLoop = Boolean(target.body && target.body.stream && !forcedResults && clientSse.progressEvents === 0);
       if (hiddenStreamLoop) record({ kind: 'codex-hidden-tool-loop-violation', route: target.kind, depth: depth + 1, reason: 'streamed tool loop executed without client-visible progress', ...traceFields(target, { call_ids: actionableCalls.map((call) => call.id).filter(Boolean) }) });
       record({ kind: finalizing ? 'codex-proxy-tool-loop-finalize' : 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ call_id: r.call_id, is_error: r.is_error })), client_visible: clientSse.started, ...traceFields(target, { call_ids: results.map((r) => r.call_id).filter(Boolean) }) });
       let nextBody = followupBody(target.body, parsed, results, parsed && parsed._sse_events || []);
