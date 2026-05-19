@@ -34,6 +34,25 @@ function fakeClientRes() {
   };
 }
 
+test('context token usage parser extracts Anthropic JSON and SSE usage', () => {
+  assert.deepEqual(
+    _extractUsageFromBody({ 'content-type': 'application/json' }, Buffer.from(JSON.stringify({ usage: { input_tokens: 123, output_tokens: 45 } }))),
+    { input_tokens: 123, output_tokens: 45 },
+  );
+  const sse = [
+    'event: message_start',
+    'data: {"type":"message_start","message":{"usage":{"input_tokens":456,"output_tokens":0}}}',
+    '',
+    'event: message_delta',
+    'data: {"type":"message_delta","usage":{"output_tokens":78}}',
+    '',
+  ].join('\n');
+  assert.deepEqual(
+    _extractUsageFromBody({ 'content-type': 'text/event-stream' }, Buffer.from(sse)),
+    { input_tokens: 456, output_tokens: 78 },
+  );
+});
+
 function anthropicOnlyCfg() {
   return {
     providers_to_skip: { providers: [] },
