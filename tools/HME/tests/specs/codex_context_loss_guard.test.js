@@ -372,6 +372,75 @@ test('Codex proxy retries streamed tool-avoidant ask-next responses with tool-us
   }
 });
 
+test('Codex proxy finalizes instead of returning 508 when upstream keeps calling tools', async () => {
+  const proxyPort = await freePort();
+  const upstreamBodies = [];
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      upstreamBodies.push(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      if (upstreamBodies.length <= 8) {
+        res.end(JSON.stringify({
+          id: `resp_loop_${upstreamBodies.length}`,
+          output: [{ type: 'function_call', name: 'Read', call_id: `call_loop_${upstreamBodies.length}`, arguments: JSON.stringify({ file_path: 'package.json', limit: 1 }) }],
+        }));
+        return;
+      }
+      res.end(JSON.stringify({
+        id: 'resp_loop_finalized',
+        output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'finalized after bounded tool loop' }] }],
+      }));
+    });
+  });
+  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      HME_CODEX_PROXY_PORT: String(proxyPort),
+      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
+      HME_CODEX_OMNIROUTE: '0',
+      HME_CODEX_PROXY_AUTOCOMMIT: '0',
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
+  try {
+    await waitFor(() => new Promise((resolve) => {
+      const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    }));
+    const response = await requestJson(proxyPort, {
+      model: 'gpt-5.5',
+      input: [{ role: 'user', content: [{ type: 'input_text', text: 'inspect package metadata and then answer' }] }],
+      tools: [{ type: 'function', name: 'Read' }],
+      stream: false,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstreamBodies.length, 9);
+    assert.equal(upstreamBodies[8].tool_choice, 'none');
+    assert.deepEqual(upstreamBodies[8].tools, []);
+    assert.match(JSON.stringify(upstreamBodies[8]), /HME tool-loop finalization/);
+    assert.match(response.body, /finalized after bounded tool loop/);
+    assert.doesNotMatch(response.body, /codex_proxy_tool_loop_limit|Loop Detected/);
+  } catch (err) {
+    err.message = `${err.message}\nproxy stderr:\n${stderr}`;
+    throw err;
+  } finally {
+    child.kill('SIGTERM');
+    upstream.close();
+  }
+});
+
 test('Codex proxy retries incomplete-only tool calls instead of passing malformed tool state', async () => {
   const proxyPort = await freePort();
   const upstreamBodies = [];
