@@ -292,37 +292,43 @@ function callName(obj) {
   return '';
 }
 
-function argsValue(obj) {
+function payloadValue(obj) {
   if (!obj || typeof obj !== 'object') return null;
   if (Object.prototype.hasOwnProperty.call(obj, 'arguments')) return obj.arguments;
   if (obj.function && Object.prototype.hasOwnProperty.call(obj.function, 'arguments')) return obj.function.arguments;
+  if (obj.input && typeof obj.input === 'object') return obj.input;
   return null;
 }
 
-function setCallArgs(obj, name, args) {
+function setCallPayload(obj, name, input) {
   const next = { ...obj };
+  const args = JSON.stringify(input);
   if (typeof next.name === 'string') next.name = name;
   if (next.function && typeof next.function === 'object') next.function = { ...next.function, name, arguments: args };
   if (Object.prototype.hasOwnProperty.call(next, 'arguments')) next.arguments = args;
+  if (Object.prototype.hasOwnProperty.call(next, 'input')) next.input = input;
   return next;
 }
 
-function bridgeFromCallObject(obj) {
+function replacementFromExecCall(obj) {
   if (!TARGET_NAMES.has(callName(obj))) return null;
-  const parsed = maybeJson(argsValue(obj));
+  const parsed = maybeJson(payloadValue(obj));
   if (!parsed) return null;
   const cmd = typeof parsed.cmd === 'string' ? parsed.cmd : (typeof parsed.command === 'string' ? parsed.command : '');
-  return bridgeCommand(cmd);
+  const bridge = bridgeCommand(cmd);
+  if (bridge) return bridge;
+  const bash = normalizeBash(parsed);
+  return bash ? { tool: 'Bash', input: bash } : null;
 }
 
 function rewriteValue(value, stats) {
   if (typeof value === 'string') return normalizeText(value, stats);
   if (!value || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map((item) => rewriteValue(item, stats));
-  const bridge = bridgeFromCallObject(value);
-  if (bridge) {
+  const replacement = replacementFromExecCall(value);
+  if (replacement) {
     stats.call_rewrites += 1;
-    return setCallArgs(value, bridge.tool, JSON.stringify(bridge.input));
+    return setCallPayload(value, replacement.tool, replacement.input);
   }
   const out = {};
   for (const [key, child] of Object.entries(value)) out[key] = rewriteValue(child, stats);
