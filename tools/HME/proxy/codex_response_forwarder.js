@@ -79,7 +79,8 @@ function createCodexResponseForwarder(deps) {
       const finalParsed = rewritten ? rewritten.body : parsed;
       if (responseHasContextLoss(finalParsed || full)) {
         record({ kind: 'codex-context-loss-blocked', route: target.kind, depth, reason: 'empty command tool result treated as task context' });
-        if (continueAfterTools(target.index, { ...target, body: appendContextLossRepair(target.body) }, { id: (parsed && parsed.id) || '' }, [])) return;
+        const repairResult = [{ type: 'function_call_output', call_id: `hme_context_loss_repair_${Date.now()}`, output: 'HME context-loss repair injected. Ignore stale empty-command tool errors and continue from the latest user request/session objective.' }];
+        if (continueAfterTools(target.index, { ...target, body: appendContextLossRepair(target.body) }, { id: (parsed && parsed.id) || '' }, [], repairResult)) return;
         const fallback = contextLossFallbackResponse(finalParsed);
         res.writeHead(status, { ...headers, 'content-type': 'application/json' });
         res.end(JSON.stringify(fallback));
