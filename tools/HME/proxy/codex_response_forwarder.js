@@ -312,9 +312,11 @@ function createCodexResponseForwarder(deps) {
 
     function sendSseFinal(target, status, headers, full) {
       const events = parseSseEvents(full);
-      const calls = target.finalizing_tool_loop ? [] : collectSseToolCalls(full);
+      const calls = collectSseToolCalls(full);
       const parsed = sseFinalResponse(events);
       if (calls.length) {
+        if (retryAfterFinalizationToolCalls(target, parsed, calls)) return;
+        if (target.finalizing_tool_loop) return sendFinalizationFallback(target, status, headers, parsed, calls);
         if (retryAfterIncompleteOnly(target.index, target, parsed, calls)) return;
         if (continueAfterTools(target.index, target, parsed, calls)) return;
         if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target, parsed);
@@ -324,11 +326,15 @@ function createCodexResponseForwarder(deps) {
       if (responseHasContextLoss(parsed || full) || avoidedToolUse) {
         if (retryAfterContextLoss(target, status, headers, parsed, avoidedToolUse)) return;
       }
+      const rewriter = createNativeToolSseRewriter();
+      const finalFull = rewriter.feed(Buffer.from(full)) + rewriter.finish();
+      if (rewriter.stats.calls) record({ kind: 'codex-sse-native-tool-rewrite', route: target.kind, count: rewriter.stats.calls });
+      if (rewriter.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewriter.stats.unknown_calls, names: rewriter.stats.unknown_names || [] });
       const scanner = planScanner.createSseScanner(source);
-      scanner.feed(Buffer.from(full));
+      scanner.feed(Buffer.from(finalFull));
       scanner.finish();
       res.writeHead(status, headers);
-      res.end(full);
+      res.end(finalFull);
       finishResponse(target, status, '', parsed);
     }
 
