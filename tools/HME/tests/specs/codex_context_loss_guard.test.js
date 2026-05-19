@@ -441,6 +441,144 @@ test('Codex proxy finalizes instead of returning 508 when upstream keeps calling
   }
 });
 
+test('Codex proxy blocks finalization-stage Bash calls instead of leaking unsupported tools', async () => {
+  const proxyPort = await freePort();
+  const upstreamBodies = [];
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      upstreamBodies.push(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      if (upstreamBodies.length <= 8) {
+        res.end(JSON.stringify({
+          id: `resp_loop_bash_${upstreamBodies.length}`,
+          output: [{ type: 'function_call', name: 'Read', call_id: `call_loop_bash_${upstreamBodies.length}`, arguments: JSON.stringify({ file_path: 'package.json', limit: 1 }) }],
+        }));
+        return;
+      }
+      if (upstreamBodies.length === 9) {
+        res.end(JSON.stringify({
+          id: 'resp_ignored_finalization_once',
+          output: [{ type: 'function_call', name: 'Bash', call_id: 'call_finalization_bash', arguments: JSON.stringify({ command: 'pwd' }) }],
+        }));
+        return;
+      }
+      res.end(JSON.stringify({
+        id: 'resp_finalization_repaired',
+        output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'final answer after blocked finalization tool call' }] }],
+      }));
+    });
+  });
+  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      HME_CODEX_PROXY_PORT: String(proxyPort),
+      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
+      HME_CODEX_OMNIROUTE: '0',
+      HME_CODEX_PROXY_AUTOCOMMIT: '0',
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
+  try {
+    await waitFor(() => new Promise((resolve) => {
+      const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    }));
+    const response = await requestJson(proxyPort, {
+      model: 'gpt-5.5',
+      input: [{ role: 'user', content: [{ type: 'input_text', text: 'inspect package metadata and then answer' }] }],
+      tools: [{ type: 'function', name: 'Read' }, { type: 'function', name: 'Bash' }],
+      stream: false,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstreamBodies.length, 10);
+    assert.equal(upstreamBodies[8].tool_choice, 'none');
+    assert.deepEqual(upstreamBodies[8].tools, []);
+    assert.equal(upstreamBodies[9].tool_choice, 'none');
+    assert.deepEqual(upstreamBodies[9].tools, []);
+    assert.match(JSON.stringify(upstreamBodies[9]), /HME tool-loop finalization repair/);
+    assert.match(response.body, /final answer after blocked finalization tool call/);
+    assert.doesNotMatch(response.body, /unsupported call: Bash|"name":"Bash"|codex_proxy_tool_loop_limit|Loop Detected/);
+  } catch (err) {
+    err.message = `${err.message}\nproxy stderr:\n${stderr}`;
+    throw err;
+  } finally {
+    child.kill('SIGTERM');
+    upstream.close();
+  }
+});
+
+test('Codex proxy returns safe fallback if finalization keeps emitting Bash calls', async () => {
+  const proxyPort = await freePort();
+  const upstreamBodies = [];
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      upstreamBodies.push(body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        id: `resp_always_tool_${upstreamBodies.length}`,
+        output: [{ type: 'function_call', name: upstreamBodies.length >= 9 ? 'Bash' : 'Read', call_id: `call_always_tool_${upstreamBodies.length}`, arguments: JSON.stringify(upstreamBodies.length >= 9 ? { command: 'pwd' } : { file_path: 'package.json', limit: 1 }) }],
+      }));
+    });
+  });
+  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      HME_CODEX_PROXY_PORT: String(proxyPort),
+      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
+      HME_CODEX_OMNIROUTE: '0',
+      HME_CODEX_PROXY_AUTOCOMMIT: '0',
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
+  try {
+    await waitFor(() => new Promise((resolve) => {
+      const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    }));
+    const response = await requestJson(proxyPort, {
+      model: 'gpt-5.5',
+      input: [{ role: 'user', content: [{ type: 'input_text', text: 'inspect package metadata and then answer' }] }],
+      tools: [{ type: 'function', name: 'Read' }, { type: 'function', name: 'Bash' }],
+      stream: false,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstreamBodies.length, 10);
+    assert.match(response.body, /HME stopped a non-terminating Codex tool loop/);
+    assert.match(response.body, /additional tool calls after finalization disabled tools: Bash/);
+    assert.doesNotMatch(response.body, /unsupported call: Bash|"name":"Bash"|codex_proxy_tool_loop_limit|Loop Detected/);
+  } catch (err) {
+    err.message = `${err.message}\nproxy stderr:\n${stderr}`;
+    throw err;
+  } finally {
+    child.kill('SIGTERM');
+    upstream.close();
+  }
+});
+
 test('Codex proxy retries incomplete-only tool calls instead of passing malformed tool state', async () => {
   const proxyPort = await freePort();
   const upstreamBodies = [];
