@@ -377,7 +377,7 @@ function createCodexResponseForwarder(deps) {
         if (retryAfterFinalizationToolCalls(target, parsed, calls)) return;
         if (target.finalizing_tool_loop) return sendFinalizationFallback(target, status, headers, parsed, calls);
         if (continueAfterTools(target.index, target, parsed, calls)) return;
-        if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target, parsed);
+        if (calls.some((call) => !isIncompleteToolCall(call))) return sendFinalizationFallback(target, status, headers, parsed, calls);
       }
       const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
       if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [], ...traceFields(target) });
@@ -398,7 +398,7 @@ function createCodexResponseForwarder(deps) {
         if (retryAfterFinalizationToolCalls(target, parsed, calls)) return;
         if (target.finalizing_tool_loop) return sendFinalizationFallback(target, status, headers, parsed, calls);
         if (continueAfterTools(target.index, target, parsed, calls)) return;
-        if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target, parsed);
+        if (calls.some((call) => !isIncompleteToolCall(call))) return sendFinalizationFallback(target, status, headers, parsed, calls);
       }
       const rewriter = createNativeToolSseRewriter();
       const finalFull = rewriter.feed(Buffer.from(full)) + rewriter.finish();
