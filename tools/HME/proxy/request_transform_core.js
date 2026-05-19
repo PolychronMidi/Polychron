@@ -6,7 +6,6 @@ const { normalizeStructuredBridgeCalls } = require('./codex_tool_text');
 const { normalizeICommandsInValue } = require('./i_command_text');
 const { stripHookNoiseInValue } = require('./hook_noise_text');
 const { stripCodexSystemNoise } = require('./codex_system_noise');
-const { scrubCodexContextLossNoise } = require('./codex_context_loss_guard');
 const { sanitizeMessages } = require('./conversation_graph');
 
 const EMPTY_TEXT_TYPES = new Set(['input_text', 'output_text', 'text']);
