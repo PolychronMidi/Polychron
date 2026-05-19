@@ -21,9 +21,27 @@ function omniTargetFormat(provider) {
   return isCodexOmniTarget(provider) ? 'openai-responses' : 'provider-default';
 }
 
-function providerRequiresNonStream(provider, env = process.env) {
+function providerCapabilitiesForConfigProvider(provider, env = process.env, cfg = null) {
+  const caps = cfg && cfg.provider_capabilities;
+  if (!caps || typeof caps !== 'object') return null;
+  const raw = String(provider || '').trim();
   const p = omniProviderForConfigProvider(provider, env);
-  return p === 'kilo-gateway' || p === 'aihubmix';
+  const hit = caps[p] || caps[raw];
+  return hit && typeof hit === 'object' ? hit : null;
+}
+
+function providerRequestOverrides(provider, env = process.env, cfg = null) {
+  const cap = providerCapabilitiesForConfigProvider(provider, env, cfg);
+  const out = {};
+  if (cap && cap.request_overrides && typeof cap.request_overrides === 'object') {
+    Object.assign(out, cap.request_overrides);
+  }
+  if (cap && cap.requires_non_stream === true && out.non_stream === undefined) out.non_stream = true;
+  return out;
+}
+
+function providerRequiresNonStream(provider, env = process.env, cfg = null) {
+  return providerRequestOverrides(provider, env, cfg).non_stream === true;
 }
 
 function firstLegacyChatCandidate(chain, startIdx = 0) {
@@ -42,6 +60,8 @@ module.exports = {
   omniProviderForConfigProvider,
   isCodexOmniTarget,
   omniTargetFormat,
+  providerCapabilitiesForConfigProvider,
+  providerRequestOverrides,
   providerRequiresNonStream,
   firstLegacyChatCandidate,
 };
