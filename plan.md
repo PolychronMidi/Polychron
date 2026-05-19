@@ -1192,5 +1192,6 @@ OMO integration is successful when:
 python3 -m pytest -q tools/HME/tests/specs/test_langchain_adapter.py
 node --test tools/HME/tests/specs/smolagents_tool_registry.test.js
 node --test tools/HME/tests/specs/proxy_extracted_modules.test.js
+node --test tools/HME/tests/specs/proxy_handler_integration.test.js
 PROJECT_ROOT=<repo-root> HOOK_PATH=<repo-root>/.git/hooks/pre-commit python3 tools/HME/scripts/precommit_validate.py
 ```
