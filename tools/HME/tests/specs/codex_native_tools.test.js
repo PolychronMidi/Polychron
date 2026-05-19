@@ -286,7 +286,7 @@ test('Codex proxy sends native tools upstream and translates native Read call wi
       req.on('timeout', () => { req.destroy(); resolve(false); });
       req.end();
     }));
-    const response = await requestJson(proxyPort, { model: 'gpt-5.5', tools: [], stream: false });
+    const response = await requestJson(proxyPort, { model: 'gpt-5.5', tools: [], stream: true });
     assert.equal(response.status, 200);
     assert.deepEqual(upstreamBodies[0].tools.map((t) => t.name), ['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
     assert.equal(upstreamBodies.length, 2);
