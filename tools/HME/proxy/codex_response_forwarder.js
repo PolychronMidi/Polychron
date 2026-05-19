@@ -133,6 +133,102 @@ function createCodexResponseForwarder(deps) {
   return function forwardResponses(req, res, targets, source, visibility) {
     const started = Date.now();
     let finished = false;
+    const clientSse = { started: false, responseId: '', itemId: '', text: '' };
+
+    function sseId(prefix) {
+      return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function sseEvent(data, eventName = '') {
+      if (!clientSse.started || res.writableEnded) return;
+      if (eventName) res.write(`event: ${eventName}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    }
+
+    function ensureClientSse(target, status = 200, headers = {}) {
+      if (!clientSse.started && !(target && target.body && target.body.stream)) return false;
+      if (res.writableEnded) return false;
+      if (clientSse.started) return true;
+      if (res.headersSent) return false;
+      clientSse.started = true;
+      clientSse.responseId = sseId('hme_visible_response');
+      clientSse.itemId = sseId('hme_visible_message');
+      const outHeaders = { ...headers, 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-cache', 'x-accel-buffering': 'no' };
+      delete outHeaders['content-length'];
+      res.writeHead(status, outHeaders);
+      sseEvent({ type: 'response.created', response: { id: clientSse.responseId, object: 'response', status: 'in_progress', output: [] } }, 'response.created');
+      sseEvent({ type: 'response.output_item.added', output_index: 0, item: { id: clientSse.itemId, type: 'message', status: 'in_progress', role: 'assistant', content: [] } }, 'response.output_item.added');
+      sseEvent({ type: 'response.content_part.added', item_id: clientSse.itemId, output_index: 0, content_index: 0, part: { type: 'output_text', text: '' } }, 'response.content_part.added');
+      return true;
+    }
+
+    function writeClientText(target, text, status = 200, headers = {}) {
+      const delta = String(text || '');
+      if (!delta) return false;
+      if (!ensureClientSse(target, status, headers)) return false;
+      clientSse.text += delta;
+      sseEvent({ type: 'response.output_text.delta', item_id: clientSse.itemId, output_index: 0, content_index: 0, delta }, 'response.output_text.delta');
+      return true;
+    }
+
+    function completeClientSse(target, status, errorSummary = '', parsed = null) {
+      if (!clientSse.started || res.writableEnded) return false;
+      const message = { id: clientSse.itemId, type: 'message', status: 'completed', role: 'assistant', content: [{ type: 'output_text', text: clientSse.text }] };
+      sseEvent({ type: 'response.output_text.done', item_id: clientSse.itemId, output_index: 0, content_index: 0, text: clientSse.text }, 'response.output_text.done');
+      sseEvent({ type: 'response.content_part.done', item_id: clientSse.itemId, output_index: 0, content_index: 0, part: { type: 'output_text', text: clientSse.text } }, 'response.content_part.done');
+      sseEvent({ type: 'response.output_item.done', output_index: 0, item: message }, 'response.output_item.done');
+      sseEvent({ type: 'response.completed', response: { id: clientSse.responseId, object: 'response', status: 'completed', output: [message] } }, 'response.completed');
+      res.write('data: [DONE]\n\n');
+      res.end();
+      finishResponse(target, status, errorSummary, parsed);
+      return true;
+    }
+
+    function redactVisible(text) {
+      return String(text || '')
+        .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/g, 'Bearer [REDACTED]')
+        .replace(/\b(?:sk|rk|pk|ghp|github_pat)_[A-Za-z0-9_:-]{12,}\b/g, '[REDACTED_KEY]')
+        .replace(/\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b/g, '[REDACTED_KEY]');
+    }
+
+    function trunc(text, max = 160) {
+      const s = redactVisible(text);
+      return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+    }
+
+    function displayToolCall(call) {
+      const args = call && call.args && typeof call.args === 'object' ? call.args : {};
+      const file = args.file_path || args.file || '';
+      if (call.name === 'Read') return `Read ${trunc(file || '<missing file>')}`;
+      if (call.name === 'Edit') return `Edit ${trunc(file || '<missing file>')}`;
+      if (call.name === 'Write') return `Write ${trunc(file || '<missing file>')}`;
+      if (call.name === 'WebFetch') return `WebFetch ${trunc(args.url || '<missing url>')}`;
+      if (call.name === 'WebSearch') return `WebSearch ${trunc(args.query || '<missing query>')}`;
+      if (call.name === 'Agent') return `Agent level=${args.level || 3}`;
+      if (call.name === 'Bash') return `Bash ${JSON.stringify(trunc(args.description || args.command || args.cmd || '<missing command>'))}`;
+      return trunc(call.name || 'tool');
+    }
+
+    function writeToolLoopVisibility(target, calls, results) {
+      if (!(target && target.body && target.body.stream) || !calls.length) return;
+      const depth = target.tool_loop_depth || 0;
+      for (let i = 0; i < calls.length; i += 1) {
+        const result = results[i] || {};
+        const bytes = Buffer.byteLength(String(result.output || ''), 'utf8');
+        writeClientText(target, `\n• ${displayToolCall(calls[i])}\n  ↳ completed; result forwarded upstream (${bytes} bytes).\n`);
+      }
+      if (clientSse.started) record({ kind: 'codex-proxy-tool-loop-visible', route: target.kind, depth: depth + 1, calls: calls.map((call) => ({ call_id: call.id, name: call.name })) });
+    }
+
+    function sendParsedOverClientSse(target, status, headers, parsed, errorSummary = '') {
+      if (!clientSse.started) return false;
+      const text = finalOutputText(parsed);
+      if (text.trim()) {
+        if (clientSse.text && !clientSse.text.endsWith('\n')) writeClientText(target, '\n', status, headers);
+        writeClientText(target, text, status, headers);
+      }
+      return completeClientSse(target, status, errorSummary, parsed);
+    }
 
     function finishResponse(target, status, errorSummary = '', parsed = null) {
       if (finished) return;
