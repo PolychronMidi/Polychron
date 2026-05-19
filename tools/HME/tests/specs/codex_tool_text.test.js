@@ -20,6 +20,25 @@ test('normalizes internal bridge text lines into native-looking display', () => 
   assert.doesNotMatch(out.body.text, /codex_structured_tool/);
 });
 
+test('normalizes internal shell function_call into Bash call', () => {
+  const input = { type: 'function_call', name: 'functions.exec_command', arguments: JSON.stringify({ cmd: 'echo hello', justification: 'greet', timeout_ms: 5000, run_in_background: true }) };
+  const out = normalizeStructuredBridgeCalls(input);
+  assert.strictEqual(out.body.name, 'Bash');
+  assert.deepStrictEqual(JSON.parse(out.body.arguments), { command: 'echo hello', timeout: 5000, run_in_background: true, description: 'greet' });
+  assert.strictEqual(out.stats.call_rewrites, 1);
+  assert.doesNotMatch(JSON.stringify(out.body), /functions\.exec_command|\"cmd\"|justification|timeout_ms/);
+});
+
+test('normalizes internal shell tool_use into Bash block', () => {
+  const input = { messages: [{ role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'exec_command', input: { cmd: 'git status --short', justification: 'check status' } }] }] };
+  const out = normalizeStructuredBridgeCalls(input);
+  const block = out.body.messages[0].content[0];
+  assert.strictEqual(block.name, 'Bash');
+  assert.deepStrictEqual(block.input, { command: 'git status --short', description: 'check status' });
+  assert.strictEqual(out.stats.call_rewrites, 1);
+  assert.doesNotMatch(JSON.stringify(out.body), /exec_command|\"cmd\"|justification/);
+});
+
 test('Codex request transform hides bridge script calls before upstream', () => {
   const result = applyRequestTransform({
     model: 'gpt-5.5',
