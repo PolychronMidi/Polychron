@@ -270,6 +270,7 @@ module.exports = {
   TOOL_SCHEMA_REPAIR_PROMPT_PREFIX,
   hasEmptyCommandError,
   hasMissingRequiredToolError,
+  hasUnsupportedToolError,
   isContextLossText,
   scrubCodexContextLossNoise,
   responseHasContextLoss,
