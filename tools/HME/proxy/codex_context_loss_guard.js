@@ -77,11 +77,13 @@ function isContextLossText(text) {
   const taskDetailsMissing = TASK_DETAILS_MISSING_RE.test(s);
   const asksNext = ASK_NEXT_RE.test(s);
   const workdirResumeStall = recoveredWorkdir && taskDetailsMissing && (asksNext || asksResend);
+  const recoveredContextStall = recovered && (asksNext || asksResend) && (noContext || mentionsAdapterNotice || noAction || taskDetailsMissing || recoveredWorkdir);
   const adapterAnchor = mentionsEmptyCommand || mentionsAdapterNotice || unsupportedTool || toolAccessStall;
-  return (adapterAnchor && (recovered || noContext || asksResend || noAction || metaStall || repoReadStall || pasteContext || toolAccessStall))
-    || ((recovered || noContext || metaStall) && asksResend)
-    || (repoReadStall && (asksResend || pasteContext || unsupportedTool || toolAccessStall))
-    || workdirResumeStall;
+  return (adapterAnchor && (recovered || noContext || asksResend || asksNext || noAction || metaStall || repoReadStall || pasteContext || toolAccessStall))
+    || ((recovered || noContext || metaStall) && (asksResend || asksNext))
+    || (repoReadStall && (asksResend || asksNext || pasteContext || unsupportedTool || toolAccessStall))
+    || workdirResumeStall
+    || recoveredContextStall;
 }
 
 function bump(stats, key) {
