@@ -352,6 +352,8 @@ async function handleAnthropicResponseComplete({
 
 module.exports = {
   captureRateLimitTelemetry,
+  emitContextTokenUsage,
+  _extractUsageFromBody,
   normalizeOmniContextWindowSse,
   handleAnthropicResponseComplete,
 };
