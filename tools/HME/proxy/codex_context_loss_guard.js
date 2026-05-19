@@ -305,6 +305,8 @@ module.exports = {
   responseHasContextLoss,
   latestUserTaskText,
   appendContextLossRepair,
+  toolUseEnforcementPrompt,
+  appendToolUseEnforcement,
   toolSchemaRepairPrompt,
   appendToolSchemaRepair,
   contextLossFallbackResponse,
