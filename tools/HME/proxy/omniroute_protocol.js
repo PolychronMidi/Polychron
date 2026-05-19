@@ -21,6 +21,11 @@ function omniTargetFormat(provider) {
   return isCodexOmniTarget(provider) ? 'openai-responses' : 'provider-default';
 }
 
+function providerRequiresNonStream(provider, env = process.env) {
+  const p = omniProviderForConfigProvider(provider, env);
+  return p === 'kilo-gateway' || p === 'aihubmix';
+}
+
 function firstLegacyChatCandidate(chain, startIdx = 0) {
   if (!Array.isArray(chain) || chain.length === 0) return null;
   const start = Number.isInteger(startIdx) ? Math.max(0, startIdx) : 0;
@@ -37,5 +42,6 @@ module.exports = {
   omniProviderForConfigProvider,
   isCodexOmniTarget,
   omniTargetFormat,
+  providerRequiresNonStream,
   firstLegacyChatCandidate,
 };

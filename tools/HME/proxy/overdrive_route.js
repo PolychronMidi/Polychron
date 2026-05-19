@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT, loadModelsJson } = require('./shared');
 const {
-  omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat, firstLegacyChatCandidate,
+  omniProviderForConfigProvider, isCodexOmniTarget, omniTargetFormat, providerRequiresNonStream, firstLegacyChatCandidate,
 } = require('./omniroute_protocol');
 const { servicePort } = require('./service_registry');
 const { applyEffortParams } = require('./model_effort');
@@ -216,6 +216,7 @@ function applyOverdriveRoute({ payload, clientReq, clientRes, outBody, stripStal
       catch (err) { console.error(`[hme-proxy] OmniRoute context preflight failed: ${err.message}`); }
     }
     payload.model = `${result.omniProvider}/${result.swapModel}`;
+    if (providerRequiresNonStream(result.omniProvider, env)) payload.non_stream = true;
     stripOmniUnsupportedRequestFields(payload, result.omniProvider);
     applyEffortParams(payload, result.swapMeta, result.omniProvider);
     try { result.outBody = Buffer.from(JSON.stringify(payload), 'utf8'); }
