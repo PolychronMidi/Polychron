@@ -68,7 +68,7 @@ def _fmt_ts(ts: int | None) -> str:
     return _dt.datetime.fromtimestamp(ts).strftime("%H:%M:%S")
 
 
-def activity_digest(window: str = "round") -> str:
+def activity_digest(window: str = "round", verbose: bool = False) -> str:
     """Summarize hme-activity.jsonl for the current session/round.
 
     window:
