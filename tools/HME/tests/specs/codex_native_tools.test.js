@@ -91,6 +91,16 @@ test('Codex native Read response rewrites to executable bridge and back to Read 
   assert.deepEqual(JSON.parse(normalized.arguments), { file_path: 'doc/self-coherence.md', limit: 5 });
 });
 
+test('Codex native Read drops pages for non-PDF paths before bridge execution', () => {
+  const response = { output: [{ type: 'function_call', name: 'Read', arguments: JSON.stringify({ file_path: 'tools/HME/proxy/codex_response_forwarder.js', pages: '1', limit: 5 }) }] };
+  const rewritten = rewriteCodexResponseObject(response);
+  const cmd = JSON.parse(rewritten.body.output[0].arguments).cmd;
+  assert.match(cmd, /codex_response_forwarder\.js/);
+  assert.doesNotMatch(cmd, /"pages"/);
+  const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
+  assert.deepEqual(JSON.parse(normalized.arguments), { file_path: 'tools/HME/proxy/codex_response_forwarder.js', limit: 5 });
+});
+
 
 test('Codex native Bash response rewrites to exec_command with command->cmd shape', () => {
   const response = { output: [{ type: 'function_call', name: 'Bash', arguments: JSON.stringify({ command: 'echo hello', description: 'greet' }) }] };
@@ -132,13 +142,19 @@ test('Codex native WebFetch response rewrites to bridge web_fetch', () => {
   assert.match(JSON.parse(call.arguments).cmd, /hme_tools\/run_tool\.py WebFetch --json/);
 });
 
-test('Codex native Agent response rewrites to bridge agent', () => {
-  const response = { output: [{ type: 'function_call', name: 'Agent', arguments: JSON.stringify({ prompt: 'go', level: 3 }) }] };
+test('Codex native Agent response rewrites to bridge agent with required description', () => {
+  const response = { output: [{ type: 'function_call', name: 'Agent', arguments: JSON.stringify({ prompt: 'go\nmore detail', level: 3 }) }] };
   const rewritten = rewriteCodexResponseObject(response);
   const call = rewritten.body.output[0];
   assert.equal(call.name, 'exec_command');
-  assert.match(JSON.parse(call.arguments).cmd, /hme_tools\/run_tool\.py Agent --json/);
+  const cmd = JSON.parse(call.arguments).cmd;
+  assert.match(cmd, /hme_tools\/run_tool\.py Agent --json/);
+  assert.match(cmd, /"description":"go"/);
+  const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
+  assert.equal(normalized.name, 'Agent');
+  assert.equal(JSON.parse(normalized.arguments).description, 'go');
 });
+
 
 test('Codex bridge heredoc text normalizes without leaking heredoc header', () => {
   const cmd = [
