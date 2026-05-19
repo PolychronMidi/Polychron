@@ -287,6 +287,91 @@ test('Codex request transform scrubs assistant stalls that cite recovered adapte
   assert.equal(result.cleanup.codex_context_loss_categories.assistant_context_loss_text, 2);
 });
 
+test('Codex proxy retries streamed tool-avoidant ask-next responses with tool-use enforcement', async () => {
+  const proxyPort = await freePort();
+  const upstreamBodies = [];
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      upstreamBodies.push(body);
+      if (upstreamBodies.length === 1) {
+        res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+        const events = [
+          { type: 'response.created', response: { id: 'resp_stream_tool_avoidant' } },
+          { type: 'response.output_text.delta', item_id: 'msg_stream_bad', output_index: 0, content_index: 0, delta: 'Acknowledged. I’ll use the recovered package.json context and avoid calling the same tool/read again unless there’s a concrete need.\n\n' },
+          { type: 'response.output_text.delta', item_id: 'msg_stream_bad', output_index: 0, content_index: 0, delta: 'I don’t have the actual prior task details in this recovered context, so send the next objective or failure output and I’ll continue from here without re-reading the same package metadata unnecessarily.' },
+          { type: 'response.completed', response: { id: 'resp_stream_tool_avoidant' } },
+        ];
+        res.end(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join('') + 'data: [DONE]\n\n');
+        return;
+      }
+      if (upstreamBodies.length === 2) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          id: 'resp_after_stream_tool_enforcement',
+          output: [{ type: 'function_call', name: 'Read', call_id: 'call_stream_enforced_read', arguments: JSON.stringify({ file_path: 'package.json', limit: 1 }) }],
+        }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        id: 'resp_final_after_stream_real_tool',
+        output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'streaming path recovered after enforced repository Read' }] }],
+      }));
+    });
+  });
+  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      HME_CODEX_PROXY_PORT: String(proxyPort),
+      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
+      HME_CODEX_OMNIROUTE: '0',
+      HME_CODEX_PROXY_AUTOCOMMIT: '0',
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
+  try {
+    await waitFor(() => new Promise((resolve) => {
+      const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    }));
+    const response = await requestJson(proxyPort, {
+      model: 'gpt-5.5',
+      input: [{ role: 'user', content: [{ type: 'input_text', text: 'Respond with one sentence only after using a repository file tool. You must first inspect package.json or README.md using available tools; do not ask me for the objective or files.' }] }],
+      tools: [{ type: 'function', name: 'Bash' }, { type: 'function', name: 'Read' }, { type: 'function', name: 'Agent' }],
+      stream: true,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstreamBodies.length, 3);
+    const repairBody = JSON.stringify(upstreamBodies[1]);
+    assert.match(repairBody, /HME tool-use enforcement/);
+    assert.match(repairBody, /Use the available tools now/);
+    assert.match(repairBody, /must first inspect package\.json or README\.md/);
+    assert.equal(upstreamBodies[2].previous_response_id, 'resp_after_stream_tool_enforcement');
+    assert.equal(upstreamBodies[2].input[0].type, 'function_call_output');
+    assert.equal(upstreamBodies[2].input[0].call_id, 'call_stream_enforced_read');
+    assert.doesNotMatch(response.body, /send the next objective|recovered package\.json context|actual prior task details/);
+    assert.match(response.body, /streaming path recovered after enforced repository Read/);
+  } catch (err) {
+    err.message = `${err.message}\nproxy stderr:\n${stderr}`;
+    throw err;
+  } finally {
+    child.kill('SIGTERM');
+    upstream.close();
+  }
+});
+
 test('Codex proxy retries incomplete-only tool calls instead of passing malformed tool state', async () => {
   const proxyPort = await freePort();
   const upstreamBodies = [];
