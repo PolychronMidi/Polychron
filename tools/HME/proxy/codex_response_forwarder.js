@@ -79,8 +79,10 @@ function createCodexResponseForwarder(deps) {
       const finalParsed = rewritten ? rewritten.body : parsed;
       if (responseHasContextLoss(finalParsed || full)) {
         record({ kind: 'codex-context-loss-blocked', route: target.kind, depth: target.tool_loop_depth || 0, reason: 'empty command tool result treated as task context' });
-        const repairResult = [{ type: 'message', role: 'user', content: [{ type: 'input_text', text: appendContextLossRepair(target.body).input?.at?.(-1)?.content?.[0]?.text || 'HME context-loss repair: continue from the latest user request/session objective.' }] }];
-        if (continueAfterTools(target.index, { ...target, body: appendContextLossRepair(target.body) }, { id: (parsed && parsed.id) || '' }, [], repairResult)) return;
+        const repairedBody = appendContextLossRepair(target.body);
+        const repairText = repairedBody.input?.at?.(-1)?.content?.[0]?.text || 'HME context-loss repair: continue from the latest user request/session objective.';
+        const repairResult = [{ type: 'message', role: 'user', content: [{ type: 'input_text', text: repairText }] }];
+        if (continueAfterTools(target.index, { ...target, body: repairedBody }, { id: (parsed && parsed.id) || '' }, [], repairResult)) return;
         const fallback = contextLossFallbackResponse(finalParsed);
         res.writeHead(status, { ...headers, 'content-type': 'application/json' });
         res.end(JSON.stringify(fallback));
