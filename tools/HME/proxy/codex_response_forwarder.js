@@ -373,6 +373,7 @@ function createCodexResponseForwarder(deps) {
       const repairResult = [{ type: 'message', role: 'user', content: [{ type: 'input_text', text: repairText }] }];
       if (continueAfterTools(target.index, { ...target, body: repairedBody }, parsed || {}, [], repairResult)) return true;
       const fallback = contextLossFallbackResponse(parsed);
+      if (sendParsedOverClientSse(target, status, headers, fallback, 'context loss blocked')) return true;
       res.writeHead(status, { ...headers, 'content-type': 'application/json' });
       res.end(JSON.stringify(fallback));
       finishResponse(target, status, 'context loss blocked', fallback);
