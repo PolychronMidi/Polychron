@@ -11,8 +11,9 @@ const CONTEXT_LOSS_NOTICE = [
 ].join('\n');
 
 const REPAIR_PROMPT_PREFIX = 'HME context-loss repair';
+const MISSING_REQUIRED_RE = /\bError:\s*(?:command|prompt|url|file_path|old_string|new_string|content|query) is required(?:\s+for\s+[A-Za-z]+)?\.?\b/i;
 const EMPTY_COMMAND_RE = /\bError:\s*command is required(?:\s+for\s+Bash)?\.?\b/i;
-const ADAPTER_NOTICE_RE = /\b(?:HME\s+)?adapter notices?\b|\bignored an empty Bash tool call\b|\bempty Bash tool(?:-| )?result\b|\bstale empty Bash tool result\b/i;
+const ADAPTER_NOTICE_RE = /\b(?:HME\s+)?adapter notices?\b|\bignored an empty Bash tool call\b|\bempty Bash tool(?:-| )?result\b|\bstale empty Bash tool result\b|\brecovered tool context\b/i;
 const RECOVERED_RE = /\b(?:only\s+(?:have\s+)?(?:the\s+)?)?recovered\s+(?:adapter\s+notices?|tool\s+)?(?:result|context|state|notices?)\b/i;
 const NO_CONTEXT_RE = /\b(?:no actual context apart from a failed call|no additional actionable project context|nothing useful came from it|failed invocation due to a missing command|not the actual prior task\/session objective|don[’']t contain actionable project context|do not contain actionable project context)\b/i;
 const ASK_RESEND_RE = /\bplease\s+(?:send|provide)\s+(?:the\s+)?(?:current\s+objective|actual\s+)?(?:task|command|goal|file|bug|repository goal|instructions?|objective|prior task details?)\b/i;
