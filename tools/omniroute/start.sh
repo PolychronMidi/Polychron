@@ -229,6 +229,8 @@ if [ "$DO_CONFIGURE" -eq 1 ]; then
 
   _configure_provider "opencode-go" "${OPENCODE_API_KEY:-}" "Polychron HME"
   _configure_provider "anthropic" "${ANTHROPIC_API_KEY:-}" "Polychron Anthropic"
+  _configure_provider "kilo-gateway" "${KILO_API_KEY:-}" "Polychron Kilo Gateway"
+  _configure_openai_compatible_provider "aihubmix" "${AIHUBMIX_API_KEY:-}" "Polychron AIHubMix" "AIHubMix Chat" "https://aihubmix.com/v1"
   rm -f /tmp/omni-setup-cookies.txt
 fi
 
