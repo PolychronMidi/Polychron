@@ -231,8 +231,27 @@ function createCodexResponseForwarder(deps) {
         const finalizeInput = { type: 'message', role: 'user', content: [{ type: 'input_text', text: finalizePrompt(target, results) }] };
         nextBody = { ...nextBody, input: [...results, finalizeInput], tools: [], tool_choice: 'none' };
       }
-      attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1, finalizing_tool_loop: finalizing || target.finalizing_tool_loop });
+      attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1, finalizing_tool_loop: finalizing || target.finalizing_tool_loop, finalization_repairs: target.finalization_repairs || 0 });
       return true;
+    }
+
+    function retryAfterFinalizationToolCalls(target, parsed, calls) {
+      if (!target.finalizing_tool_loop || !calls.length) return false;
+      const depth = target.tool_loop_depth || 0;
+      const repairs = target.finalization_repairs || 0;
+      record({ kind: 'codex-finalization-tool-call-blocked', route: target.kind, depth, repairs, calls: calls.map((call) => ({ call_id: call.id, name: call.name, missing: missingRequiredToolFields(call) })) });
+      if (repairs >= 1 || depth >= MAX_TOOL_LOOP_DEPTH) return false;
+      const nextBody = appendFinalizationToolBlockPrompt(target.body, calls);
+      attemptTarget(target.index, { ...target, body: nextBody, tool_loop_depth: depth + 1, finalizing_tool_loop: true, finalization_repairs: repairs + 1 });
+      return true;
+    }
+
+    function sendFinalizationFallback(target, status, headers, parsed, calls) {
+      const fallback = finalizationFallbackResponse(target, parsed, calls);
+      const body = JSON.stringify(fallback);
+      res.writeHead(status, { ...headers, 'content-type': 'application/json' });
+      res.end(body);
+      finishResponse(target, status, 'finalization tool calls blocked', fallback);
     }
 
     function retryAfterIncompleteOnly(index, target, parsed, calls) {
