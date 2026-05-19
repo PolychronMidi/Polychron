@@ -142,7 +142,30 @@ function createCodexResponseForwarder(deps) {
   return function forwardResponses(req, res, targets, source, visibility) {
     const started = Date.now();
     let finished = false;
-    const clientSse = { started: false, responseId: '', itemId: '', text: '' };
+    const correlationId = [source && source.session_id, source && source.turn_id, started.toString(36), Math.random().toString(36).slice(2, 8)].filter(Boolean).join(':');
+    const clientSse = { started: false, responseId: '', itemId: '', text: '', progressEvents: 0, toolLoops: 0, callIds: [] };
+
+    function attachTrace(target) {
+      return {
+        ...(target || {}),
+        hme_correlation_id: correlationId,
+        hme_session_id: source && source.session_id || '',
+        hme_thread_id: source && source.thread_id || '',
+        hme_turn_id: source && source.turn_id || '',
+      };
+    }
+
+    function traceFields(target, extra = {}) {
+      return {
+        correlation_id: correlationId,
+        session_id: source && source.session_id || '',
+        thread_id: source && source.thread_id || '',
+        turn_id: source && source.turn_id || '',
+        tool_loop_depth: target && target.tool_loop_depth || 0,
+        response_id: clientSse.responseId || '',
+        ...extra,
+      };
+    }
 
     function sseId(prefix) {
       return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
