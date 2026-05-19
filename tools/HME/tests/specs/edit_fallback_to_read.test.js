@@ -199,7 +199,10 @@ test('editFallbackToReadRewrite: ignores non-Edit tool_use blocks', () => {
 });
 
 test('editFallbackToReadRewrite: converts Update-without-prior-Read to Read before native edit can fail', () => {
-  const map = new Map([['session_id', 's-update-unread']]);
+  const sessionId = `s-update-unread-${Date.now()}-${Math.random()}`;
+  const cache = require('../../proxy/session_read_cache');
+  cache.clearSession(sessionId);
+  const map = new Map([['session_id', sessionId]]);
   const ctx = { get: (k) => map.get(k), set: (k, v) => map.set(k, v) };
   const input = JSON.stringify({ file_path: '/abs/update-target.js', old_string: 'a', new_string: 'b' });
   const events = [
