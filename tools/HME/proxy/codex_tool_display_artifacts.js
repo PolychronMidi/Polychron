@@ -43,7 +43,7 @@ function rewriteBrokenReadDisplays(text, format, stats = {}) {
       payload.push(next);
     }
     const input = readInput(jsonPayload(payload));
-    out.push(input ? format({ tool: 'Read', input }) : 'Read <internal bridge hidden>');
+    out.push(input ? format({ tool: 'Read', input }) : 'Read');
     stats.text_rewrites = (stats.text_rewrites || 0) + 1;
   }
   return out.join('\n');
