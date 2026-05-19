@@ -479,6 +479,7 @@ test('passthrough compaction drops oldest messages when microcompaction cannot h
     payload.messages.push({ role: 'assistant', content: [{ type: 'tool_use', id, name: 'Read', input: {} }] });
     payload.messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: 'x'.repeat(20000) }] });
   }
+  const telemetry = [];
   const changed = shrinkForPassthrough(payload, {
     threshold: 1000,
     keepMin: 3,
@@ -486,6 +487,9 @@ test('passthrough compaction drops oldest messages when microcompaction cannot h
     toolResultByteFloor: 1000,
     env: {},
     log: () => {},
+    telemetry: (row) => telemetry.push(row),
+    route: 'drop-test',
+    model: 'drop-model',
     projectRoot: os.tmpdir(),
   });
   assert.ok(changed > 0);
