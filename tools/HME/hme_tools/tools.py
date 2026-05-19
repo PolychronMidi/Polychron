@@ -198,6 +198,10 @@ class WebSearchTool(HMETool):
     side_effect = "network"
     approval = "never"
     idempotent = True
+    input_aliases = {}
+    passthrough_target = "web_search"
+    bridge_action = "web_search"
+    host_native = True
     visibility = {"progress_label": "WebSearch {query}", "result_summary": "sources"}
 
     def forward(self, query: str, allowed_domains: list[str] | None = None, blocked_domains: list[str] | None = None) -> str:
