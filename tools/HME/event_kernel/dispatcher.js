@@ -77,6 +77,7 @@ const POSTTOOLUSE = path.join(HOOKS_DIR, 'posttooluse');
 const PRETOOL_SCRIPTS = {
   Edit: [path.join(PRETOOLUSE, 'pretooluse_edit.sh')],
   MultiEdit: [path.join(PRETOOLUSE, 'pretooluse_edit.sh')],
+  Update: [path.join(PRETOOLUSE, 'pretooluse_edit.sh')],
   Write: [path.join(PRETOOLUSE, 'pretooluse_write.sh')],
   Bash: [path.join(PRETOOLUSE, 'pretooluse_bash.sh')],
   Read: [path.join(PRETOOLUSE, 'pretooluse_read.sh')],
