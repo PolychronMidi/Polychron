@@ -4,7 +4,7 @@ const http = require('http');
 const https = require('https');
 const { rewriteCodexResponseObject, createNativeToolSseRewriter } = require('./codex_native_tools');
 const { responseHasContextLoss, appendContextLossRepair, appendToolSchemaRepair, appendToolUseEnforcement, contextLossFallbackResponse } = require('./codex_context_loss_guard');
-const { collectToolCalls, collectSseToolCalls, parseSseEvents, toolResultInput, followupBody, isIncompleteToolCall, missingRequiredToolFields } = require('./codex_tool_loop');
+const { collectToolCalls, collectSseToolCalls, parseSseEvents, executeToolCall, toolResultInput, followupBody, isIncompleteToolCall, missingRequiredToolFields } = require('./codex_tool_loop');
 
 const MAX_TOOL_LOOP_DEPTH = 8;
 const FINALIZE_TOOL_LOOP_DEPTH = MAX_TOOL_LOOP_DEPTH - 1;
