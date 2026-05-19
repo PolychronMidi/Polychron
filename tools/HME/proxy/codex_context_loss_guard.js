@@ -1,12 +1,12 @@
 'use strict';
 
 const EMPTY_COMMAND_NOTICE = [
-  'HME adapter notice: stripped a stale empty Bash tool result: no command was provided.',
+  'HME adapter notice: stripped a stale incomplete tool result: a required tool field was missing.',
   'This is adapter noise, not task context. Continue from the latest user request/session objective.',
 ].join('\n');
 
 const CONTEXT_LOSS_NOTICE = [
-  'HME context-loss guard: stripped a stale assistant response that treated an empty Bash tool error as the whole task.',
+  'HME context-loss guard: stripped a stale assistant response that treated an incomplete tool error as the whole task.',
   'Use the latest user request/session objective instead of asking the user to resend context.',
 ].join('\n');
 
