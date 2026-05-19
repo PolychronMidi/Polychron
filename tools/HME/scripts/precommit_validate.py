@@ -161,9 +161,11 @@ def is_text(data: bytes) -> bool:
 
 def has_conflict_markers(data: bytes) -> bool:
     lines = data.splitlines()
-    has_start = any(line.startswith(b"<<<<<<<") for line in lines)
+    left_marker = b"<" * 7
+    right_marker = b">" * 7
+    has_start = any(line.startswith(left_marker) for line in lines)
     has_sep = any(re.fullmatch(br"={7,}", line.strip()) for line in lines)
-    has_end = any(line.startswith(b">>>>>>>") for line in lines)
+    has_end = any(line.startswith(right_marker) for line in lines)
     return has_start and has_sep and has_end
 
 
