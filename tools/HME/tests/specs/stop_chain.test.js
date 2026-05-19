@@ -14,6 +14,35 @@ const stopChain = require('../../proxy/stop_chain');
 // Without this, the `runStopChain('not valid json')` test pollutes the
 // production hme-errors.log with the parse-error trace, which then surfaces
 // in the next real Stop hook's LIFESAVER scan.
+async function _withMockedStopPolicies(overrides, fn) {
+  const originalLoad = Module._load;
+  const proxyDir = path.resolve(__dirname, '..', '..', 'proxy');
+  for (const k of Object.keys(require.cache)) {
+    if (k.startsWith(proxyDir)) delete require.cache[k];
+  }
+  Module._load = function mockedLoad(request, parent, isMain) {
+    if (String(request).includes(`${path.sep}stop_chain${path.sep}policies${path.sep}`)) {
+      const name = path.basename(String(request), '.js');
+      if (Object.prototype.hasOwnProperty.call(overrides, name)) {
+        const value = overrides[name];
+        if (value instanceof Error) throw value;
+        return value;
+      }
+      return { name, run: async (ctx) => ctx.allow() };
+    }
+    return originalLoad.apply(this, arguments);
+  };
+  try {
+    const chain = require('../../proxy/stop_chain');
+    await fn(chain);
+  } finally {
+    Module._load = originalLoad;
+    for (const k of Object.keys(require.cache)) {
+      if (k.startsWith(proxyDir)) delete require.cache[k];
+    }
+  }
+}
+
 function _withChainSandbox(fn) {
   return async () => {
     const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stop-chain-test-'));
