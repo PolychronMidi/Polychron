@@ -272,12 +272,16 @@ async function runStopChain(stdinJson) {
     try {
       policyMod = loadPolicy(name);
     } catch (err) {
-      // silent-ok: optional fallback path.
       const msg = `failed to load: ${err.message}`;
       combinedStderr += `[stop_chain] ${name}: ${msg}\n`;
       logError(name, msg);
-      appendTrace('exit', `${name} load_error`);
-      continue;
+      if (MANDATORY_POLICIES.has(name)) {
+        result = mandatoryPolicyFailure(name, msg);
+        appendTrace('exit', `${name} load_error_mandatory`);
+      } else {
+        appendTrace('exit', `${name} load_error_optional`);
+        continue;
+      }
     }
     try {
       result = await policyMod.run(ctx);
