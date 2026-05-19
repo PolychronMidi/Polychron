@@ -40,12 +40,24 @@ function parseArgs(raw) {
   try { return JSON.parse(String(raw)); } catch (_e) { return {}; }
 }
 
+function deriveDescription(prompt) {
+  const text = String(prompt || '').trim();
+  if (!text) return 'Subagent task';
+  const first = text.split(/\r?\n/)[0].trim() || text;
+  return first.length > 60 ? `${first.slice(0, 57).trimEnd()}...` : first;
+}
+
+function isPdfPath(file) {
+  return /\.pdf(?:$|[?#])/i.test(String(file || '').trim());
+}
+
 function bridgeInput(name, args) {
   const file = args.file_path || args.file || '';
   if (name === 'Read') {
     const out = { file_path: file };
     if (args.offset != null) out.offset = Number(args.offset);
     if (args.limit != null) out.limit = Number(args.limit);
+    if (args.pages != null && isPdfPath(file)) out.pages = String(args.pages);
     return out;
   }
   if (name === 'Write') {
