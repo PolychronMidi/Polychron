@@ -5,6 +5,7 @@ const hmeDispatcher = require('./hme_dispatcher');
 const { traceAnthropicResponse } = require('./hme_proxy_response_trace');
 const { sendFinalResponse, maybeRunStopFallback } = require('./hme_proxy_response_send');
 const { handleUpstreamFailureOrSuccess } = require('./hme_proxy_upstream_failure');
+const { runToolLoop: _runOmniToolLoop } = require('./omni_tool_loop');
 
 function captureRateLimitTelemetry({ headers, status, setLastInputTokensRemaining, setLastInputTokensLimit, log = console.error }) {
   const hdrTokRemaining = headers['anthropic-ratelimit-input-tokens-remaining'];
@@ -165,6 +166,22 @@ async function handleAnthropicResponseComplete({
       console.error(`[shortcuts] compact + continue result: ${status}`);
     } catch (e) {
       console.error(`[shortcuts] compact-continue failed: ${e.message}`);
+    }
+  }
+
+  if (isOmniRouteSwap && status >= 200 && status < 300 && payload && Array.isArray(payload.messages)) {
+    try {
+      const loopResult = await _runOmniToolLoop({
+        fullBody, headers, payload, transport, upstreamOpts, upstreamHeaders,
+        projectRoot: require('./shared').PROJECT_ROOT,
+      });
+      if (loopResult) {
+        status = loopResult.status;
+        headers = loopResult.headers;
+        fullBody = loopResult.fullBody;
+      }
+    } catch (e) {
+      console.error(`[omni-tool-loop] error: ${e.message}`);
     }
   }
 
