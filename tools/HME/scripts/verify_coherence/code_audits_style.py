@@ -15,6 +15,7 @@ from ._base import (
     _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
     telemetry_event_names,
 )
+from time_utils import activity_ts_seconds
 from .code_audits_syntax import (  # noqa: F401
     _SPAM_RE, _SPAM_ALLOW, _SPAM_EXTS, _SPAM_SKIP_DIRS, _SPAM_SKIP_FILES,
 )
