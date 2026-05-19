@@ -71,11 +71,8 @@ function jsonHeredoc(input) {
   return `<<'HME_CODEX_JSON'\n${JSON.stringify(input)}\nHME_CODEX_JSON`;
 }
 
-const BRIDGE_ACTIONS = { Read: 'read', Edit: 'edit', Write: 'write', WebFetch: 'web_fetch', Agent: 'agent' };
-
 function bridgeCommand(name, args) {
-  const action = BRIDGE_ACTIONS[name] || 'read';
-  return `${BRIDGE} ${action} --json ${jsonHeredoc(bridgeInput(name, args))}`;
+  return `${BRIDGE} ${name} --json ${jsonHeredoc(bridgeInput(name, args))}`;
 }
 
 function bashCommandArgs(args) {
