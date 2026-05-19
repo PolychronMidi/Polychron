@@ -58,6 +58,7 @@ function _withChainSandbox(fn) {
     const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-stop-chain-test-'));
     fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
     fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
+    fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'runtime', 'metrics'), { recursive: true });
     const original = process.env.PROJECT_ROOT;
     process.env.PROJECT_ROOT = sandbox;
     // Bust the require cache for any module that captured PROJECT_ROOT at load
