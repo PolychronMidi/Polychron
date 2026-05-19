@@ -36,6 +36,7 @@ function shrinkForPassthrough(payload, opts = {}) {
   if (msgs.length <= keepMin) return 0;
   let serialized = JSON.stringify(payload);
   if (maxTier <= 0 || serialized.length <= threshold) return 0;
+  log(`passthrough-compact decision: tier=${maxTier} threshold=${Number.isFinite(threshold) ? `${threshold}B` : 'none'} body=${serialized.length}B keepMin=${keepMin}`);
 
   const recentStart = maxToolResultAge > 0 ? Math.max(0, msgs.length - maxToolResultAge) : 0;
   let elided = 0;
