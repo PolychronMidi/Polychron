@@ -326,7 +326,8 @@ function rewriteValue(value, stats) {
   if (typeof value === 'string') return normalizeText(value, stats);
   if (!value || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map((item) => rewriteValue(item, stats));
-  const replacement = replacementFromExecCall(value);
+  const nativeRepair = repairMalformedNativeCall(callName(value), maybeJson(payloadValue(value)) || payloadValue(value));
+  const replacement = nativeRepair || replacementFromExecCall(value);
   if (replacement) {
     stats.call_rewrites += 1;
     return setCallPayload(value, replacement.tool, replacement.input);
