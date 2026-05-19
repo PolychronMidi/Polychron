@@ -76,7 +76,7 @@ function createCodexResponseForwarder(deps) {
       const calls = collectToolCalls(parsed);
       if (calls.length) {
         if (continueAfterTools(target.index, target, parsed, calls)) return;
-        return toolLoopLimit(target, parsed);
+        if (calls.some((call) => !isIncompleteToolCall(call))) return toolLoopLimit(target, parsed);
       }
       const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
       if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [] });
