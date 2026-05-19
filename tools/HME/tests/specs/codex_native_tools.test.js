@@ -108,7 +108,7 @@ test('Codex native Write response rewrites to bridge write and normalizes back',
   const rewritten = rewriteCodexResponseObject(response);
   const call = rewritten.body.output[0];
   assert.equal(call.name, 'exec_command');
-  assert.match(JSON.parse(call.arguments).cmd, /codex_structured_tool\.js write --json/);
+  assert.match(JSON.parse(call.arguments).cmd, /hme_tools\/run_tool\.py Write --json/);
   const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
   assert.equal(normalized.name, 'Write');
   assert.equal(JSON.parse(normalized.arguments).file_path, 'doc/x.md');
