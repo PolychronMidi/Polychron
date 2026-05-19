@@ -59,6 +59,10 @@ class HMETool(Tool):
             "idempotent": self.idempotent,
             "max_output_bytes": self.max_output_bytes,
             "aliases": dict(self.aliases),
+            "input_aliases": dict(getattr(self, "input_aliases", {}) or {}),
+            "passthrough_target": str(getattr(self, "passthrough_target", "")),
+            "bridge_action": str(getattr(self, "bridge_action", "")),
+            "host_native": bool(getattr(self, "host_native", False)),
             "visibility": dict(self.visibility),
             "policy": dict(self.policy),
         }
