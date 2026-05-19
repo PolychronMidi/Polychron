@@ -256,7 +256,7 @@ async function preWriteCheck(stdinJson) {
   const env = normalize(stdinJson);
   const payload = { ...env.raw, session_id: env.session_id, tool_name: env.tool_name, tool_input: env.tool_input };
   const tool = payload.tool_name || '';
-  if (!['Write', 'Edit', 'MultiEdit'].includes(tool)) return _permission('allow');
+  if (!['Write', 'Edit', 'MultiEdit', 'Update'].includes(tool)) return _permission('allow');
   const shapeDecision = _editShapeDecision(payload);
   if (shapeDecision) return _repeatDeny(payload, shapeDecision);
 
