@@ -1,0 +1,198 @@
+[
+    {
+        "description": "Run a subagent. Example: Agent level=3 prompt=\"Audit parser edge cases.\" Use level 1-5: 1 tiny, 2 focused, 3 standard, 4 deep, 5 principal.",
+        "name": "Agent",
+        "parameters": {
+            "additionalProperties": false,
+            "properties": {
+                "level": {
+                    "description": "Effort level 1-5.",
+                    "type": "integer"
+                },
+                "prompt": {
+                    "description": "Focused task for the agent.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "level",
+                "prompt"
+            ],
+            "type": "object"
+        },
+        "type": "function"
+    },
+    {
+        "description": "Run a bash command and return output. Prefer Read/Edit/Write for file ops. Quote paths with spaces. Use absolute paths; avoid cd unless requested. Use timeout for long commands. Use run_in_background only when notification is enough. Never run destructive git/gh or bypass hooks unless explicitly requested.",
+        "name": "Bash",
+        "parameters": {
+            "additionalProperties": false,
+            "properties": {
+                "command": {
+                    "description": "The command to execute.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Brief active-voice description of what this command does.",
+                    "nullable": true,
+                    "type": "string"
+                },
+                "run_in_background": {
+                    "description": "Set true to run in the background.",
+                    "nullable": true,
+                    "type": "boolean"
+                },
+                "timeout": {
+                    "description": "Optional timeout in milliseconds (max 600000).",
+                    "nullable": true,
+                    "type": "number"
+                }
+            },
+            "required": [
+                "command"
+            ],
+            "type": "object"
+        },
+        "type": "function"
+    },
+    {
+        "description": "Performs exact string replacement in a file. You must Read the file in this conversation before editing. old_string must match the file exactly and be unique unless replace_all is set.",
+        "name": "Edit",
+        "parameters": {
+            "additionalProperties": false,
+            "properties": {
+                "file_path": {
+                    "description": "The absolute path to the file to modify.",
+                    "type": "string"
+                },
+                "new_string": {
+                    "description": "The text to replace it with.",
+                    "type": "string"
+                },
+                "old_string": {
+                    "description": "The text to replace.",
+                    "type": "string"
+                },
+                "replace_all": {
+                    "description": "Replace all occurrences (default false).",
+                    "nullable": true,
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "file_path",
+                "old_string",
+                "new_string"
+            ],
+            "type": "object"
+        },
+        "type": "function"
+    },
+    {
+        "description": "Read a file by absolute path. Supports offset/limit for long text, images, PDFs (use pages for large PDFs), and notebooks. Returns numbered lines. Does not read directories.",
+        "name": "Read",
+        "parameters": {
+            "additionalProperties": false,
+            "properties": {
+                "file_path": {
+                    "description": "The absolute path to the file to read.",
+                    "type": "string"
+                },
+                "limit": {
+                    "description": "Number of lines to read.",
+                    "nullable": true,
+                    "type": "integer"
+                },
+                "offset": {
+                    "description": "Line number to start reading from.",
+                    "nullable": true,
+                    "type": "integer"
+                },
+                "pages": {
+                    "description": "Page range for PDFs, e.g. \"1-5\".",
+                    "nullable": true,
+                    "type": "string"
+                }
+            },
+            "required": [
+                "file_path"
+            ],
+            "type": "object"
+        },
+        "type": "function"
+    },
+    {
+        "description": "Fetch and summarize a public URL with a prompt. URL must be valid; redirects require a follow-up request. Avoid private/authenticated URLs; use authenticated MCP or gh for GitHub when available. Read-only, cached briefly, may summarize large pages.",
+        "name": "WebFetch",
+        "parameters": {
+            "additionalProperties": false,
+            "properties": {
+                "prompt": {
+                    "description": "The prompt to run on the fetched content.",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "The URL to fetch content from.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "url",
+                "prompt"
+            ],
+            "type": "object"
+        },
+        "type": "function"
+    },
+    {
+        "description": "Search the web for current or post-cutoff info. Use 2026 in recent/current queries. Supports allowed/blocked domain filters. If used, final answer must include a Sources section with relevant result links.",
+        "name": "WebSearch",
+        "parameters": {
+            "additionalProperties": false,
+            "properties": {
+                "allowed_domains": {
+                    "description": "Only include results from these domains.",
+                    "nullable": true,
+                    "type": "array"
+                },
+                "blocked_domains": {
+                    "description": "Exclude results from these domains.",
+                    "nullable": true,
+                    "type": "array"
+                },
+                "query": {
+                    "description": "The search query to use.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "query"
+            ],
+            "type": "object"
+        },
+        "type": "function"
+    },
+    {
+        "description": "Writes a file to the local filesystem, overwriting if one exists. Use for creating a new file or fully replacing one you have already Read. For partial changes, use Edit instead.",
+        "name": "Write",
+        "parameters": {
+            "additionalProperties": false,
+            "properties": {
+                "content": {
+                    "description": "The content to write to the file.",
+                    "type": "string"
+                },
+                "file_path": {
+                    "description": "The absolute path to the file to write.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "file_path",
+                "content"
+            ],
+            "type": "object"
+        },
+        "type": "function"
+    }
+]
