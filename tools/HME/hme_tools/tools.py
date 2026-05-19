@@ -12,6 +12,13 @@ from .base import HMETool
 ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[2])
 SOURCE_ROOT = Path(os.environ.get("HME_SOURCE_ROOT") or Path(__file__).resolve().parents[2])
 STRUCTURED_TOOL = SOURCE_ROOT / "tools" / "HME" / "scripts" / "codex_structured_tool.js"
+
+DESTRUCTIVE_BASH_RE = re.compile(
+    r"(^|[;&|]\s*)(rm|unlink|shred|truncate)\b"
+    r"|\b(git\s+(reset\s+--hard|clean\s+-[fdx]|checkout\s+[^\n]*--|push\s+(--force|-f)|rebase|filter-branch))\b"
+    r"|\b(chmod\s+-R|chown\s+-R|dd\s+if=|mkfs|mount|umount)\b"
+)
+
 EMPTY_BASH_TOOL_RESULT = "\n".join(
     [
         "HME adapter notice: ignored an empty Bash tool call because no command was provided.",
