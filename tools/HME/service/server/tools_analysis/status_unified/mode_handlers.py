@@ -48,6 +48,8 @@ _STATUS_MODES: dict[str, callable] = {
     "perceptual": _mode_perceptual,
     "hme": _mode_hme,
     "activity": _mode_activity,
+    "activity-full": _mode_activity_full,
+    "activity_full": _mode_activity_full,
     "hci-diff": _mode_hci_diff,
     "hci_diff": _mode_hci_diff,
     "hci-by-subtag": _mode_hci_by_subtag,
