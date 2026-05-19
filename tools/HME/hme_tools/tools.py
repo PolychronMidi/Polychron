@@ -176,6 +176,10 @@ class WebFetchTool(HMETool):
     side_effect = "network"
     approval = "never"
     idempotent = True
+    input_aliases = {}
+    passthrough_target = "exec_command"
+    bridge_action = "web_fetch"
+    host_native = False
     visibility = {"progress_label": "WebFetch {url}", "result_summary": "bytes"}
 
     def forward(self, url: str, prompt: str) -> str:
