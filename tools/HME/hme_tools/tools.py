@@ -147,6 +147,10 @@ class ReadTool(HMETool):
     side_effect = "read"
     approval = "never"
     idempotent = True
+    input_aliases = {"file_path": ["file"]}
+    passthrough_target = "exec_command"
+    bridge_action = "read"
+    host_native = False
     visibility = {"progress_label": "Read {file_path}", "result_summary": "bytes"}
     policy = {"context_guard": True, "requires_absolute_path": True}
 
