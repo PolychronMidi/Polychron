@@ -342,6 +342,7 @@ async function handleAnthropicResponseComplete({
 
   emitContextTokenUsage({
     headers: outHeaders,
+    rateLimitHeaders: upstreamRateLimitHeaders,
     status: outStatus,
     payload,
     outBody,
