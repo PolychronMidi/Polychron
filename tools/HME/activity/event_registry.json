@@ -247,6 +247,62 @@
       "summary": "The proxy promoted short cache_control TTLs to avoid upstream ordering failures."
     },
     {
+      "name": "bias_bounds_snapshot_queued",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy"],
+      "summary": "Post-write side effects queued a bias-bounds snapshot after a relevant edit."
+    },
+    {
+      "name": "edit_failure_context_appended",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "error_surface"],
+      "summary": "Edit-failure middleware appended file context after an edit could not apply."
+    },
+    {
+      "name": "post_write_side_effect_failed",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "error_surface"],
+      "summary": "A post-write side-effect hook failed and emitted its diagnostic surface."
+    },
+    {
+      "name": "policy_rewrite",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "policy"],
+      "summary": "Policy middleware rewrote a tool payload while preserving the allowed operation."
+    },
+    {
+      "name": "stop_reminder_inject",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "briefing"],
+      "summary": "Stop-reminder middleware injected a compact continuity reminder."
+    },
+    {
+      "name": "todo_status_suppressed",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "briefing"],
+      "summary": "Todo status filtering suppressed repeated todo-state context."
+    },
+    {
+      "name": "upstream_stream_timeout_retry",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "upstream_failure"],
+      "summary": "The proxy retried an upstream stream after a timeout-class failure."
+    },
+    {
+      "name": "web_tool_failure",
+      "category": "Tool / proxy lifecycle",
+      "streams": ["activity"],
+      "groups": ["proxy", "tool_invocation", "error_surface"],
+      "summary": "Web tool enrichment observed a repeated failure for a target."
+    },
+    {
       "name": "inference_call",
       "category": "Tool / proxy lifecycle",
       "streams": ["activity"],
