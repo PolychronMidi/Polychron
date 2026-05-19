@@ -229,7 +229,7 @@ test('Codex SSE unknown function_call name is reported in rewriter stats', () =>
   assert.deepEqual(rewriter.stats.unknown_names, ['spawn_agent']);
 });
 
-test('Codex proxy sends native tools upstream and translates native call response', async () => {
+test('Codex proxy sends native tools upstream and translates native Read call with visible streamed progress', async () => {
   const proxyPort = await freePort();
   const upstreamBodies = [];
   const upstream = http.createServer((req, res) => {
