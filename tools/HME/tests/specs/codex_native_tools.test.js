@@ -71,7 +71,7 @@ test('Codex request transform replaces upstream tools with Claude uniform surfac
   assert.equal(result.cleanup.native_tools_added, 7);
 });
 
-test('Codex native Read response rewrites to executable bridge and back to Read history', () => {
+test('Codex native Read response stays visible as Read', () => {
   const response = {
     output: [{
       type: 'function_call',
@@ -82,62 +82,55 @@ test('Codex native Read response rewrites to executable bridge and back to Read 
   };
   const rewritten = rewriteCodexResponseObject(response);
   const call = rewritten.body.output[0];
-  assert.equal(call.name, 'exec_command');
-  const args = JSON.parse(call.arguments);
-  assert.match(args.cmd, /codex_structured_tool\.js read --json/);
-  assert.match(args.cmd, /doc\/self-coherence\.md/);
-  const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
-  assert.equal(normalized.name, 'Read');
-  assert.deepEqual(JSON.parse(normalized.arguments), { file_path: 'doc/self-coherence.md', limit: 5 });
+  assert.equal(call.name, 'Read');
+  assert.deepEqual(JSON.parse(call.arguments), { file_path: 'doc/self-coherence.md', limit: 5 });
+  assert.equal(rewritten.stats.calls, 0);
+  assert.doesNotMatch(JSON.stringify(rewritten.body), /exec_command|codex_structured_tool|HME_CODEX_JSON/);
 });
 
 
-test('Codex native Bash response rewrites to exec_command with command->cmd shape', () => {
+test('Codex native Bash response stays visible as Bash', () => {
   const response = { output: [{ type: 'function_call', name: 'Bash', arguments: JSON.stringify({ command: 'echo hello', description: 'greet' }) }] };
   const rewritten = rewriteCodexResponseObject(response);
   const call = rewritten.body.output[0];
-  assert.equal(call.name, 'exec_command');
-  const args = JSON.parse(call.arguments);
-  assert.equal(args.cmd, 'echo hello');
-  assert.equal(args.justification, 'greet');
-  assert.equal(rewritten.stats.calls, 1);
+  assert.equal(call.name, 'Bash');
+  assert.deepEqual(JSON.parse(call.arguments), { command: 'echo hello', description: 'greet' });
+  assert.equal(rewritten.stats.calls, 0);
 });
 
-test('Codex native Write response rewrites to bridge write and normalizes back', () => {
+test('Codex native Write response stays visible as Write', () => {
   const response = { output: [{ type: 'function_call', name: 'Write', arguments: JSON.stringify({ file_path: 'doc/x.md', content: 'hello' }) }] };
   const rewritten = rewriteCodexResponseObject(response);
   const call = rewritten.body.output[0];
-  assert.equal(call.name, 'exec_command');
-  assert.match(JSON.parse(call.arguments).cmd, /codex_structured_tool\.js write --json/);
-  const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
-  assert.equal(normalized.name, 'Write');
-  assert.equal(JSON.parse(normalized.arguments).file_path, 'doc/x.md');
+  assert.equal(call.name, 'Write');
+  assert.deepEqual(JSON.parse(call.arguments), { file_path: 'doc/x.md', content: 'hello' });
+  assert.doesNotMatch(JSON.stringify(rewritten.body), /exec_command|codex_structured_tool|HME_CODEX_JSON/);
 });
 
-test('Codex native WebSearch response rewrites to codex web_search', () => {
+test('Codex native WebSearch response stays visible as WebSearch', () => {
   const response = { output: [{ type: 'function_call', name: 'WebSearch', arguments: JSON.stringify({ query: 'foo', allowed_domains: ['x.com'] }) }] };
   const rewritten = rewriteCodexResponseObject(response);
   const call = rewritten.body.output[0];
-  assert.equal(call.name, 'web_search');
+  assert.equal(call.name, 'WebSearch');
   const args = JSON.parse(call.arguments);
   assert.equal(args.query, 'foo');
   assert.deepEqual(args.allowed_domains, ['x.com']);
 });
 
-test('Codex native WebFetch response rewrites to bridge web_fetch', () => {
+test('Codex native WebFetch response stays visible as WebFetch', () => {
   const response = { output: [{ type: 'function_call', name: 'WebFetch', arguments: JSON.stringify({ url: 'https://x.com', prompt: 'summary' }) }] };
   const rewritten = rewriteCodexResponseObject(response);
   const call = rewritten.body.output[0];
-  assert.equal(call.name, 'exec_command');
-  assert.match(JSON.parse(call.arguments).cmd, /codex_structured_tool\.js web_fetch --json/);
+  assert.equal(call.name, 'WebFetch');
+  assert.deepEqual(JSON.parse(call.arguments), { url: 'https://x.com', prompt: 'summary' });
 });
 
-test('Codex native Agent response rewrites to bridge agent', () => {
+test('Codex native Agent response stays visible as Agent', () => {
   const response = { output: [{ type: 'function_call', name: 'Agent', arguments: JSON.stringify({ prompt: 'go', level: 3 }) }] };
   const rewritten = rewriteCodexResponseObject(response);
   const call = rewritten.body.output[0];
-  assert.equal(call.name, 'exec_command');
-  assert.match(JSON.parse(call.arguments).cmd, /codex_structured_tool\.js agent --json/);
+  assert.equal(call.name, 'Agent');
+  assert.deepEqual(JSON.parse(call.arguments), { prompt: 'go', level: 3 });
 });
 
 test('Codex bridge heredoc text normalizes without leaking heredoc header', () => {
