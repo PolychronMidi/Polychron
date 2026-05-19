@@ -129,15 +129,6 @@ function createContextBudget() {
     return plan;
   }
 
-  function resolveModelCtx(modelId) {
-    // Budget prefers sanitized max_input_tokens.
-    const id = String(modelId || '');
-    const reg = loadModelCtxRegistry();
-    if (reg.has(id)) return reg.get(id);
-    for (const [k, v] of reg) if (id.includes(k)) return v;
-    return 1000000;
-  }
-
   function estimatedContextTokens(bytes) { return Math.ceil(bytes / contextBytesPerTokenEst); }
   function omniContextThresholdBytes(swapModel) { return Math.floor(resolveModelCtx(String(swapModel || '')) * contextPreflightFraction * contextBytesPerTokenEst); }
 
