@@ -206,3 +206,46 @@ test('edit failure middleware appends current context and records read-equivalen
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('edit failure middleware treats file-modified-since-read as read-equivalent refresh', () => {
+  const root = sandbox('hme-edit-modified-since-read-mw-');
+  const file = path.join(root, 'src', 'target.js');
+  fs.writeFileSync(file, 'first line\ncurrent context line\nlast line\n');
+  const prevRoot = process.env.PROJECT_ROOT;
+  process.env.PROJECT_ROOT = root;
+  delete require.cache[require.resolve('../../proxy/session_state')];
+  delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
+  const mw = require('../../proxy/middleware/29_edit_failure_context');
+  const sessionState = require('../../proxy/session_state');
+  const toolResult = { content: 'Error: File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.', is_error: true };
+  const events = [];
+  const ctx = {
+    PROJECT_ROOT: root,
+    session: 'modified-since-read-test',
+    appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
+    markDirty() {},
+    warn(message) { throw new Error(message); },
+    emit(row) { events.push(row); },
+  };
+  try {
+    mw.onToolResult({
+      toolUse: { name: 'Edit', input: { file_path: file, old_string: 'stale text', new_string: 'replacement' } },
+      toolResult,
+      ctx,
+    });
+    assert.match(toolResult.content, /File has been modified since read/);
+    assert.match(toolResult.content, /\[READ current context src\/target\.js:/);
+    assert.match(toolResult.content, /current context line/);
+    assert.equal(events[0].event, 'edit_failure_context_appended');
+    assert.equal(events[0].read_equivalent, true);
+    const read = sessionState.readState('modified-since-read-test').files_read.at(-1);
+    assert.equal(read.file, file);
+    assert.equal(read.source, 'edit_failure_auto_context');
+    assert.match(read.reason, /File has been modified since read/);
+  } finally {
+    if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
+    delete require.cache[require.resolve('../../proxy/session_state')];
+    delete require.cache[require.resolve('../../proxy/middleware/29_edit_failure_context')];
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
