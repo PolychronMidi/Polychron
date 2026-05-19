@@ -196,19 +196,54 @@ function forwardResponses(req, res, targets, source, visibility) {
     });
   }
 
-  function attemptTarget(index) {
-    const target = targets[index];
+  function continueAfterTools(index, target, parsed, calls) {
+    const depth = target.tool_loop_depth || 0;
+    if (!calls.length || depth >= MAX_TOOL_LOOP_DEPTH) return false;
+    const results = executeToolCalls(calls, { projectRoot: PROJECT_ROOT, sessionId: source.session_id || '' });
+    record({ kind: 'codex-proxy-tool-loop', route: target.kind, depth: depth + 1, calls: results.map((r) => ({ tool: r.name, call_id: r.call_id, is_error: r.is_error })) });
+    const nextBody = nextToolRequestBody(target.body, parsed, results);
+    attemptTarget(index, { ...target, body: nextBody, tool_loop_depth: depth + 1 });
+    return true;
+  }
+
+  function sendJsonFinal(target, status, headers, full) {
+    const parsed = safeJson(full);
+    const calls = extractToolCalls(parsed);
+    if (continueAfterTools(target.index, target, parsed, calls)) return;
+    const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
+    if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [] });
+    const finalBody = rewritten && rewritten.stats.calls ? JSON.stringify(rewritten.body) : full;
+    const finalParsed = rewritten ? rewritten.body : parsed;
+    if (finalParsed && typeof finalParsed === 'object') planScanner.scanObjectForPlan(finalParsed, source);
+    res.writeHead(status, headers);
+    res.end(finalBody);
+    finishResponse(target, status, '', finalParsed);
+  }
+
+  function sendSseFinal(target, status, headers, full) {
+    const parsed = parseSseToolCalls(full);
+    if (continueAfterTools(target.index, target, { id: parsed.response_id }, parsed.calls)) return;
+    const scanner = planScanner.createSseScanner(source);
+    scanner.feed(Buffer.from(full));
+    scanner.finish();
+    res.writeHead(status, headers);
+    res.end(full);
+    finishResponse(target, status);
+  }
+
+  function attemptTarget(index, overrideTarget = null) {
+    const target = { ...(overrideTarget || targets[index]), index };
     const bodyBytes = Buffer.from(JSON.stringify(target.body));
     const upstream = new URL(target.url);
-  const client = upstream.protocol === 'http:' ? http : https;
-  const options = {
-    method: 'POST',
-    hostname: upstream.hostname,
-    port: upstream.port || (upstream.protocol === 'http:' ? 80 : 443),
-    path: `${upstream.pathname}${upstream.search}`,
+    const client = upstream.protocol === 'http:' ? http : https;
+    const options = {
+      method: 'POST',
+      hostname: upstream.hostname,
+      port: upstream.port || (upstream.protocol === 'http:' ? 80 : 443),
+      path: `${upstream.pathname}${upstream.search}`,
       headers: upstreamHeaders(req, bodyBytes, target),
-  };
-  const upstreamReq = client.request(options, (upstreamRes) => {
+    };
+    const upstreamReq = client.request(options, (upstreamRes) => {
       const status = upstreamRes.statusCode || 502;
       if (target.fallbackDirect && target.fallbackHttpStatuses && target.fallbackHttpStatuses.has(status) && targets[index + 1]) {
         const chunks = [];
@@ -225,61 +260,33 @@ function forwardResponses(req, res, targets, source, visibility) {
         });
         return;
       }
-    const headers = { ...upstreamRes.headers };
-    delete headers['content-length'];
-    const contentType = String(upstreamRes.headers['content-type'] || '');
-    res.writeHead(status, headers);
-    if (contentType.includes('text/event-stream')) {
-      const scanner = planScanner.createSseScanner(source);
-      const rewriter = createNativeToolSseRewriter();
-      upstreamRes.on('data', (chunk) => {
-        const out = rewriter.feed(chunk);
-        if (out) { scanner.feed(Buffer.from(out)); res.write(out); }
-      });
+      const headers = { ...upstreamRes.headers };
+      delete headers['content-length'];
+      const contentType = String(upstreamRes.headers['content-type'] || '');
+      const chunks = [];
+      upstreamRes.on('data', (chunk) => chunks.push(chunk));
       upstreamRes.on('end', () => {
-        const tail = rewriter.finish();
-        if (tail) { scanner.feed(Buffer.from(tail)); res.write(tail); }
-        scanner.finish();
-        if (rewriter.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewriter.stats.unknown_calls, names: rewriter.stats.unknown_names || [] });
-        res.end();
-          finishResponse(target, status);
+        const full = Buffer.concat(chunks).toString('utf8');
+        if (contentType.includes('text/event-stream')) sendSseFinal(target, status, headers, full);
+        else sendJsonFinal(target, status, headers, full);
       });
-      return;
-    }
-    const chunks = [];
-    upstreamRes.on('data', (chunk) => chunks.push(chunk));
-    upstreamRes.on('end', () => {
-      const full = Buffer.concat(chunks).toString('utf8');
-      const parsed = safeJson(full);
-      const rewritten = parsed && typeof parsed === 'object' ? rewriteCodexResponseObject(parsed) : null;
-      if (rewritten && rewritten.stats.unknown_calls) record({ kind: 'codex-unknown-tool-call', route: target.kind, count: rewritten.stats.unknown_calls, names: rewritten.stats.unknown_names || [] });
-      const finalBody = rewritten && rewritten.stats.calls ? JSON.stringify(rewritten.body) : full;
-      const finalParsed = rewritten ? rewritten.body : parsed;
-      if (finalParsed && typeof finalParsed === 'object') planScanner.scanObjectForPlan(finalParsed, source);
-      res.end(finalBody);
-        finishResponse(target, status, '', finalParsed);
     });
-  });
-  upstreamReq.on('error', (err) => {
+    upstreamReq.on('error', (err) => {
       record({ kind: 'upstream-error', route: target.kind, upstream: target.url, message: err.message });
       if (target.fallbackDirect && targets[index + 1] && !res.headersSent) {
         attemptTarget(index + 1);
         return;
       }
       finishResponse(target, 502, err.message);
-    if (!res.headersSent) {
-      res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        error: 'codex_proxy_upstream_error',
-        message: err.message,
-        upstream: UPSTREAM_URL,
-      }));
-    } else {
-      res.end();
-    }
-  });
-  upstreamReq.write(bodyBytes);
-  upstreamReq.end();
+      if (!res.headersSent) {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'codex_proxy_upstream_error', message: err.message, upstream: UPSTREAM_URL }));
+      } else {
+        res.end();
+      }
+    });
+    upstreamReq.write(bodyBytes);
+    upstreamReq.end();
   }
 
   attemptTarget(0);
