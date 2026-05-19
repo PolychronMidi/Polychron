@@ -24,6 +24,78 @@ function captureRateLimitTelemetry({ headers, status, setLastInputTokensRemainin
   }
 }
 
+function _num(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function _extractUsageFromJson(obj) {
+  if (!obj || typeof obj !== 'object') return {};
+  const usage = obj.usage && typeof obj.usage === 'object' ? obj.usage : {};
+  return {
+    input_tokens: _num(usage.input_tokens ?? usage.prompt_tokens),
+    output_tokens: _num(usage.output_tokens ?? usage.completion_tokens),
+  };
+}
+
+function _extractUsageFromBody(headers, body) {
+  const text = Buffer.isBuffer(body) ? body.toString('utf8') : String(body || '');
+  const ctype = String(headers && headers['content-type'] || '').toLowerCase();
+  let input_tokens = null;
+  let output_tokens = null;
+  function take(obj) {
+    const u = _extractUsageFromJson(obj);
+    if (u.input_tokens != null) input_tokens = u.input_tokens;
+    if (u.output_tokens != null) output_tokens = u.output_tokens;
+    if (obj && obj.message && typeof obj.message === 'object') {
+      const mu = _extractUsageFromJson(obj.message);
+      if (mu.input_tokens != null) input_tokens = mu.input_tokens;
+      if (mu.output_tokens != null) output_tokens = mu.output_tokens;
+    }
+  }
+  if (ctype.includes('text/event-stream')) {
+    for (const line of text.split(/\r?\n/)) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (!data || data === '[DONE]') continue;
+      try { take(JSON.parse(data)); } catch (_e) { /* ignore malformed event */ }
+    }
+  } else if (text.trimStart().startsWith('{')) {
+    try { take(JSON.parse(text)); } catch (_e) { /* ignore malformed JSON */ }
+  }
+  return { input_tokens, output_tokens };
+}
+
+function emitContextTokenUsage({ headers, status, payload, outBody, outBuf, route, model, thresholdBytes, estimatedTokensFn, getLastInputTokensRemaining, getLastInputTokensLimit }) {
+  try {
+    const bodyBytes = Buffer.byteLength(outBody || Buffer.alloc(0));
+    const responseBytes = Buffer.byteLength(outBuf || Buffer.alloc(0));
+    const estimate = typeof estimatedTokensFn === 'function' ? estimatedTokensFn(bodyBytes) : null;
+    const limitHeader = _num(headers['anthropic-ratelimit-input-tokens-limit']);
+    const remainingHeader = _num(headers['anthropic-ratelimit-input-tokens-remaining']);
+    const limit = limitHeader ?? (typeof getLastInputTokensLimit === 'function' ? getLastInputTokensLimit() : null);
+    const remaining = remainingHeader ?? (typeof getLastInputTokensRemaining === 'function' ? getLastInputTokensRemaining() : null);
+    const usedFromRemaining = limit != null && remaining != null ? Math.max(0, limit - remaining) : null;
+    const usage = _extractUsageFromBody(headers, outBuf);
+    emit({
+      event: 'context_token_usage',
+      route,
+      model: model || payload && payload.model || '',
+      status,
+      request_bytes: bodyBytes,
+      response_bytes: responseBytes,
+      estimated_input_tokens: estimate,
+      threshold_bytes: thresholdBytes || 0,
+      header_input_tokens_limit: limitHeader,
+      header_input_tokens_remaining: remainingHeader,
+      header_input_tokens_used: usedFromRemaining,
+      usage_input_tokens: usage.input_tokens,
+      usage_output_tokens: usage.output_tokens,
+      estimated_vs_usage_delta: usage.input_tokens != null && estimate != null ? estimate - usage.input_tokens : null,
+    });
+  } catch (_e) { /* silent-ok: telemetry must not affect response path */ }
+}
+
 function normalizeOmniContextWindowSse({ isOmniRouteSwap, status, outHeaders, outBuf, swapModel, anthropicTextSseBuffer, log = console.error }) {
   if (!isOmniRouteSwap || status < 200 || status >= 300
       || !(outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream')) {
