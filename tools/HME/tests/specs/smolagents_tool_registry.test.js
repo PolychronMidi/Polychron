@@ -37,8 +37,29 @@ test('smolagents HME tool runner executes bare Bash tool name', () => {
     cwd: ROOT,
     input: JSON.stringify({ command: 'printf smolagents-bare-tool' }),
     encoding: 'utf8',
-    env: { ...process.env, PROJECT_ROOT: ROOT },
+    env: { ...process.env, PROJECT_ROOT: ROOT, HME_SOURCE_ROOT: ROOT },
   });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout.trim(), 'smolagents-bare-tool');
+});
+
+test('smolagents exported schema matches checked Codex snapshot', () => {
+  const snapshot = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/HME/tests/fixtures/hme-tools-codex.snapshot.json'), 'utf8'));
+  assert.deepEqual(canonicalToolSchemas(), snapshot);
+});
+
+test('smolagents validation exposes required-field aliases and approval policy', () => {
+  assert.deepEqual(missingRequiredFields('Read', { file: 'README.md' }), []);
+  assert.deepEqual(missingRequiredFields('Read', {}), ['file_path']);
+  const script = path.join(ROOT, 'tools/HME/hme_tools/validate_tool.py');
+  const result = spawnSync('python3', [script, 'Bash', '--json'], {
+    cwd: ROOT,
+    input: JSON.stringify({ cmd: 'rm tmp/example' }),
+    encoding: 'utf8',
+    env: { ...process.env, PROJECT_ROOT: ROOT, HME_SOURCE_ROOT: ROOT },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const parsed = JSON.parse(result.stdout);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.requires_approval, true);
 });
