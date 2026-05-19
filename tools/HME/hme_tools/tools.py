@@ -123,6 +123,10 @@ class EditTool(HMETool):
     side_effect = "write"
     approval = "always"
     idempotent = False
+    input_aliases = {"file_path": ["file"]}
+    passthrough_target = "exec_command"
+    bridge_action = "edit"
+    host_native = False
     visibility = {"progress_label": "Edit {file_path}", "result_summary": "status"}
     policy = {"requires_prior_read": True, "exact_match": True}
 
