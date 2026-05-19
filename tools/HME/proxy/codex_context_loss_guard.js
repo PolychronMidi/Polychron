@@ -64,10 +64,12 @@ function isContextLossText(text) {
   const metaStall = META_STALL_RE.test(s);
   const repoReadStall = REPO_READ_STALL_RE.test(s);
   const pasteContext = PASTE_CONTEXT_RE.test(s);
-  const adapterAnchor = mentionsEmptyCommand || mentionsAdapterNotice;
-  return (adapterAnchor && (recovered || noContext || asksResend || noAction || metaStall || repoReadStall || pasteContext))
+  const unsupportedTool = UNSUPPORTED_TOOL_RE.test(s);
+  const toolAccessStall = TOOL_ACCESS_STALL_RE.test(s);
+  const adapterAnchor = mentionsEmptyCommand || mentionsAdapterNotice || unsupportedTool || toolAccessStall;
+  return (adapterAnchor && (recovered || noContext || asksResend || noAction || metaStall || repoReadStall || pasteContext || toolAccessStall))
     || ((recovered || noContext || metaStall) && asksResend)
-    || (repoReadStall && (asksResend || pasteContext));
+    || (repoReadStall && (asksResend || pasteContext || unsupportedTool || toolAccessStall));
 }
 
 function bump(stats, key) {
