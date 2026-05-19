@@ -27,3 +27,20 @@ test('Anthropic omni loop uses same empty Bash adapter notice', () => {
   assert.match(omniNotice, /ignored an empty Bash tool call/);
   assert.doesNotMatch(omniNotice, /^Error: command is required/m);
 });
+
+test('Codex SSE collector merges function-call argument deltas before incomplete filtering', () => {
+  const lines = [
+    { type: 'response.output_item.added', item: { type: 'function_call', name: 'Read', call_id: 'call_read_delta' } },
+    { type: 'response.function_call_arguments.delta', call_id: 'call_read_delta', delta: '{"file_path":"README.md"' },
+    { type: 'response.function_call_arguments.delta', call_id: 'call_read_delta', delta: ',"offset":0,"limit":20}' },
+    { type: 'response.function_call_arguments.done', call_id: 'call_read_delta', arguments: '{"file_path":"README.md","offset":0,"limit":20}' },
+  ].map((event) => `data: ${JSON.stringify(event)}\n\n`).join('');
+
+  const calls = collectSseToolCalls(lines);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0], {
+    id: 'call_read_delta',
+    name: 'Read',
+    args: { file_path: 'README.md', offset: 0, limit: 20 },
+  });
+});
