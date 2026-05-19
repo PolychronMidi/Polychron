@@ -297,7 +297,7 @@ function _validateMiddlewareShape(mod) {
   if (!hasReq && !hasTR) throw new Error(`middleware "${mod.name}" exports neither onRequest nor onToolResult -- nothing to do`);
   const ALLOWED = new Set(['name', 'onRequest', 'onToolResult']);
   const unknown = Object.keys(mod).filter((k) => !ALLOWED.has(k));
-  if (unknown.length > 0) console.warn(`Acceptable warning: [middleware] "${mod.name}" exports unknown keys ${JSON.stringify(unknown)} -- silently ignored. Mixed-concern smell; extract utilities to a sibling file (proxy/_*.js).`);
+  if (unknown.length > 0) throw new Error(`middleware "${mod.name}" exports unknown keys ${JSON.stringify(unknown)}`);
 }
 
 function register(mod, file = '') {
