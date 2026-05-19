@@ -6,8 +6,20 @@ without renaming the surface.
 """
 from __future__ import annotations
 
+import os
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+
+def _repo_root() -> Path:
+    return Path(os.environ.get("HME_SOURCE_ROOT") or Path(__file__).resolve().parents[3])
+
+
+_LOCAL_SMOLAGENTS = _repo_root() / "tools" / "smolagents" / "src"
+if _LOCAL_SMOLAGENTS.is_dir():
+    sys.path.insert(0, str(_LOCAL_SMOLAGENTS))
 
 from smolagents import Tool
 from smolagents.models import get_tool_json_schema
