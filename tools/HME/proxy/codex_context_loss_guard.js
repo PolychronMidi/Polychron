@@ -197,9 +197,9 @@ function appendUserRepairPrompt(body, prompt) {
 function repairPrompt(body) {
   const latest = latestUserTaskText(body);
   return [
-    `${REPAIR_PROMPT_PREFIX}: the previous assistant response incorrectly treated a stale empty Bash tool-result error as the whole task.`,
-    'Ignore raw or recovered tool results that only report missing required tool fields, such as “Error: command is required” or “Error: prompt is required”. They are adapter noise.',
-    'Do not ask the user to resend the task solely because of that empty-command error.',
+    `${REPAIR_PROMPT_PREFIX}: the previous assistant response incorrectly treated a stale tool/adapter error as the whole task.`,
+    'Ignore raw or recovered tool results that only report missing required tool fields, such as “Error: command is required” or “Error: prompt is required”, or unsupported-tool adapter crumbs such as “unsupported call: Read”. They are adapter noise.',
+    'Do not ask the user to resend the task or paste files solely because of that adapter/tool error.',
     'Continue directly from the latest user request/session objective and make the next useful change.',
     latest ? `\nLatest user request/session objective:\n${latest}` : '',
   ].filter(Boolean).join('\n');
