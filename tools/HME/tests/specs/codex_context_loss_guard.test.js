@@ -123,6 +123,32 @@ test('Codex context-loss repair prompt carries latest user objective', () => {
   assert.doesNotMatch(body, /Please send the actual task/);
 });
 
+test('Codex tool-schema repair prompt preserves objective and demands valid tool fields', () => {
+  const repaired = appendToolSchemaRepair({
+    input: [{ role: 'user', content: [{ type: 'input_text', text: 'produce repo-aware design feedback after reading files' }] }],
+  }, [
+    { call_id: 'call_read', name: 'Read', missing: ['file_path'] },
+    { call_id: 'call_agent', name: 'Agent', missing: ['prompt'] },
+  ]);
+  const body = JSON.stringify(repaired);
+  assert.match(body, /HME tool-call repair/);
+  assert.match(body, /Read: missing file_path/);
+  assert.match(body, /Agent: missing prompt/);
+  assert.match(body, /produce repo-aware design feedback after reading files/);
+  assert.match(body, /emit valid tool calls with all required fields/);
+  assert.match(body, /do not ask the user to paste repo structure/i);
+});
+
+test('Codex context-loss guard detects generic no-file-read repo stalls', () => {
+  const bad = [
+    'You’re right. That was a generic architecture answer dressed up like repo-aware feedback.',
+    'I did not successfully read the repo. My attempted file/tool reads failed, and I should have stopped there instead of producing a Polychron-specific sounding report.',
+    'If you want, paste repo structure or key files and I can redo this properly.',
+  ].join('\n');
+  assert.equal(isContextLossText(bad), true);
+  assert.equal(responseHasContextLoss({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: bad }] }] }), true);
+});
+
 test('Codex request transform scrubs assistant stalls that cite recovered adapter notices or missing prompts', () => {
   const bad = [
     'I only have the recovered adapter notices, not the actual prior task/session objective.',
