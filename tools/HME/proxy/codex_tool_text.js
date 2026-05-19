@@ -14,6 +14,7 @@ const ACTION_TO_TOOL = {
   web_fetch: 'WebFetch',
   agent: 'Agent',
 };
+const BARE_TOOL_NAMES = new Set(['Agent', 'Bash', 'Edit', 'Read', 'WebFetch', 'WebSearch', 'Write']);
 const REDACTED_EDIT = '<display-redacted: original was sent; do not reuse>';
 const REDACTED_CONTENT = '<display-redacted: content was sent; do not reuse>';
 const SCRIPT_RE = /(?:^|\/)codex_structured_tool\.js$/;
