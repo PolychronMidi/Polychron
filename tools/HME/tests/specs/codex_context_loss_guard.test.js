@@ -12,6 +12,7 @@ const {
   isContextLossText,
   responseHasContextLoss,
   appendContextLossRepair,
+  appendToolSchemaRepair,
 } = require('../../proxy/codex_context_loss_guard');
 
 const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
