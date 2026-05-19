@@ -372,6 +372,79 @@ test('Codex proxy retries streamed tool-avoidant ask-next responses with tool-us
   }
 });
 
+test('Codex proxy streams visible tool-loop progress before final streamed answer', async () => {
+  const proxyPort = await freePort();
+  const upstreamBodies = [];
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      upstreamBodies.push(body);
+      if (upstreamBodies.length === 1) {
+        res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+        const events = [
+          { type: 'response.created', response: { id: 'resp_visible_tool' } },
+          { type: 'response.output_item.added', item: { type: 'function_call', name: 'Read', call_id: 'call_visible_read' } },
+          { type: 'response.function_call_arguments.delta', call_id: 'call_visible_read', delta: '{"file_path":"README.md"' },
+          { type: 'response.function_call_arguments.delta', call_id: 'call_visible_read', delta: ',"limit":1}' },
+          { type: 'response.function_call_arguments.done', call_id: 'call_visible_read', arguments: '{"file_path":"README.md","limit":1}' },
+          { type: 'response.completed', response: { id: 'resp_visible_tool' } },
+        ];
+        res.end(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join('') + 'data: [DONE]\n\n');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        id: 'resp_visible_final',
+        output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'final streamed answer after visible Read' }] }],
+      }));
+    });
+  });
+  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      HME_CODEX_PROXY_PORT: String(proxyPort),
+      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
+      HME_CODEX_OMNIROUTE: '0',
+      HME_CODEX_PROXY_AUTOCOMMIT: '0',
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
+  try {
+    await waitFor(() => new Promise((resolve) => {
+      const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    }));
+    const response = await requestJson(proxyPort, {
+      model: 'gpt-5.5',
+      input: [{ role: 'user', content: [{ type: 'input_text', text: 'inspect README and answer' }] }],
+      tools: [{ type: 'function', name: 'Read' }],
+      stream: true,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(upstreamBodies.length, 2);
+    assert.equal(upstreamBodies[1].previous_response_id, 'resp_visible_tool');
+    assert.match(response.body, /text\/event-stream|response\.output_text\.delta|Read README\.md|result forwarded upstream|final streamed answer after visible Read/);
+    assert.doesNotMatch(response.body, /unsupported call: Bash|"name":"Bash"|codex_proxy_tool_loop_limit|Loop Detected/);
+  } catch (err) {
+    err.message = `${err.message}\nproxy stderr:\n${stderr}`;
+    throw err;
+  } finally {
+    child.kill('SIGTERM');
+    upstream.close();
+  }
+});
+
 test('Codex proxy finalizes instead of returning 508 when upstream keeps calling tools', async () => {
   const proxyPort = await freePort();
   const upstreamBodies = [];
