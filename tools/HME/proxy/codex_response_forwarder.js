@@ -242,7 +242,7 @@ function createCodexResponseForwarder(deps) {
 
     function sendSseFinal(target, status, headers, full) {
       const events = parseSseEvents(full);
-      const calls = collectSseToolCalls(full);
+      const calls = target.finalizing_tool_loop ? [] : collectSseToolCalls(full);
       const parsed = sseFinalResponse(events);
       if (calls.length) {
         if (retryAfterIncompleteOnly(target.index, target, parsed, calls)) return;
