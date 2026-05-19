@@ -126,7 +126,7 @@ function runInBackgroundRewrite(eventName, data, ctx) {
 // this file first". Synthesize a Read call (using offset/limit if the Edit
 // hinted at them, else first 50 lines) so the model gets the content
 // instead of a hard error.
-const EDIT_FALLBACK_TOOL_NAMES = new Set(['Edit', 'MultiEdit']);
+const EDIT_FALLBACK_TOOL_NAMES = new Set(['Edit', 'MultiEdit', 'Update']);
 const { editToReadFallback, isInvalidEditInput } = require('./edit_validation');
 
 const READ_FALLBACK_TOOL_NAMES = new Set(['Read']);
