@@ -8,6 +8,11 @@ const { PROJECT_ROOT } = require('./shared');
 const TOOL_NAMES = new Set(['Read', 'Edit', 'Write', 'WebFetch', 'Agent', 'Bash']);
 const ACTIONS = { Read: 'read', Edit: 'edit', Write: 'write', WebFetch: 'web_fetch', Agent: 'agent' };
 const MAX_OUTPUT = 200000;
+const EMPTY_BASH_TOOL_RESULT = [
+  'HME adapter notice: ignored an empty Bash tool call because no command was provided.',
+  'This notice is not task context and should not be treated as the user request.',
+  'Continue from the latest user request/session objective; do not ask the user to resend context solely because of this adapter notice.',
+].join('\n');
 
 function parseArgs(raw) {
   if (!raw) return {};
