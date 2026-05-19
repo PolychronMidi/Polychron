@@ -115,6 +115,14 @@ function stripBoilerplate(payload) {
     }
     msg.content = keepBlocks;
   }
+  if (strippedCount > 0) {
+    emit({
+      event: 'boilerplate_stripped',
+      session: 'proxy',
+      count: strippedCount,
+      patterns: Object.entries(stripped_samples).map(([k, v]) => `${k}=${v}`).join(','),
+    });
+  }
   return strippedCount;
 }
 
