@@ -27,8 +27,16 @@ function _packageJson(root) {
 }
 function _entryExists(root, entry) { return fs.existsSync(path.join(root, entry)); }
 function _detectEntrypoint(root, pkg) {
-  const candidates = [pkg.main, pkg.module, 'dist/index.js', 'index.js', 'src/index.js'].filter(Boolean);
+  const exported = pkg && pkg.exports && (typeof pkg.exports === 'string' ? pkg.exports : pkg.exports['.']);
+  const exportedPath = typeof exported === 'string' ? exported : (exported && (exported.require || exported.import || exported.default));
+  const candidates = [pkg.main, pkg.module, exportedPath, 'dist/index.js', 'index.js', 'src/index.js'].filter(Boolean);
   return candidates.find((c) => fs.existsSync(path.join(root, c))) || '';
+}
+function _checkVersion(pkg, requiredRange) {
+  if (!requiredRange) return null;
+  const version = pkg.version || '';
+  if (!version) return `package version missing; required ${requiredRange}`;
+  return satisfies(version, requiredRange, { includePrerelease: true }) ? null : `package version ${version} does not satisfy ${requiredRange}`;
 }
 function _findPackageJsonFromEntrypoint(entrypoint) {
   let dir = path.dirname(entrypoint);
