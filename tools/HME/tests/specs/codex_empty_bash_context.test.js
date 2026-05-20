@@ -61,4 +61,15 @@ test('Codex native Read full path executes through smolagents runner and builds 
   const followup = followupBody(previousBody, responseBody, results);
   assert.equal(followup.previous_response_id, 'resp_full_path_read');
   assert.deepEqual(followup.input, results);
+  assert.equal(Object.prototype.hasOwnProperty.call(followup.input[0], 'is_error'), false);
+});
+
+test('Codex follow-up body never sends unsupported is_error parameter upstream', () => {
+  const previousBody = { model: 'gpt-5.5', input: [] };
+  const responseBody = { id: 'resp_failed_tool' };
+  const results = [{ type: 'function_call_output', call_id: 'call_failed', output: 'boom', is_error: true }];
+  const followup = followupBody(previousBody, responseBody, results);
+  assert.deepEqual(followup.input, [{ type: 'function_call_output', call_id: 'call_failed', output: 'boom' }]);
+  assert.equal(JSON.stringify(followup).includes('is_error'), false);
+  assert.equal(toolOutputIsError(results[0]), true);
 });
