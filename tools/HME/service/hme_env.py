@@ -105,6 +105,7 @@ class _EnvLoader:
                 return parsed.get(ref, m.group(0))  # leave unknown as-is
             parsed[key] = _var_re.sub(_repl, val)
 
+        self._validate_template_keys(root, parsed)
         self._values = parsed
         self._path = str(env_path)
         self._loaded = True
