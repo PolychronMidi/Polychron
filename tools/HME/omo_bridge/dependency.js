@@ -46,9 +46,9 @@ function _resolvePath(configuredPath) {
 
 function resolveOmo(options = {}) {
   const telemetry = options.telemetry;
-  const enabledValue = options.enabled ?? _env('HME_OMO_ENABLED');
+  const enabledValue = options.enabled ?? _envRequired('HME_OMO_ENABLED');
   const enabled = enabledValue === true || String(enabledValue) === '1';
-  const source = String(options.source ?? (_env('HME_OMO_SOURCE') || 'disabled'));
+  const source = String(options.source ?? _envRequired('HME_OMO_SOURCE'));
   if (!enabled || source === 'disabled') {
     const result = { enabled: false, source: 'disabled', status: 'disabled' };
     emitOmo('omo_dependency_resolved', result, telemetry);
