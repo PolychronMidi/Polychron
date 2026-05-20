@@ -1,5 +1,7 @@
 'use strict';
 const { requiresApproval } = require('../proxy/hme_tool_registry');
+const { preWriteCheck } = require('../proxy/pre_write_check');
+const { dispatchEvent } = require('../event_kernel/dispatcher');
 const { emitOmo } = require('./telemetry');
 
 function classifyOmoAction(action = {}) {
