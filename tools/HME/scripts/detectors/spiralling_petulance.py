@@ -164,8 +164,14 @@ def _repeat_level(cmd: str, transcript_path: str, now: float | None = None) -> i
     if not key:
         return 0
     now = time.time() if now is None else now
+    events = _events(transcript_path)[-500:]
+    # Claude's real PreToolUse transcript may already include the pending
+    # current Bash call. Do not count that echo as the prior occurrence, or the
+    # gate blocks every first Bash command. Test fixtures do not include it.
+    if events and _event_bash_commands(events[-1]) and any(_command_key(c) == key for c in _event_bash_commands(events[-1])):
+        events = events[:-1]
     prior_same = 0
-    for event in _events(transcript_path)[-500:]:
+    for event in events:
         if _event_has_edit(event):
             prior_same = 0
             continue
