@@ -166,17 +166,12 @@ def _repeat_level(cmd: str, transcript_path: str, now: float | None = None) -> i
     now = time.time() if now is None else now
     prior_same = 0
     for event in _events(transcript_path)[-500:]:
-        edited = False
-        for tu in iter_tool_uses(event):
-            name = str(tu.get("name", ""))
-            if _is_edit_tool(name):
-                edited = True
-            if _is_bash_tool(name):
-                for prior_cmd in _commands_from_tool(tu):
-                    if _command_key(prior_cmd) == key and _recent_enough(_event_ts(event), now):
-                        prior_same += 1
-        if edited:
+        if _event_has_edit(event):
             prior_same = 0
+            continue
+        for prior_cmd in _event_bash_commands(event):
+            if _command_key(prior_cmd) == key and _recent_enough(_event_ts(event), now):
+                prior_same += 1
     return min(prior_same, 3)
 
 
