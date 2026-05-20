@@ -17,6 +17,13 @@ function _parseToolInput(state) {
   try { return JSON.parse(state.partial); } catch (_e) { return null; }
 }
 
+function _emitHeldInput(state, index, input) {
+  const events = [];
+  if (input !== null) events.push(_inputDeltaEvent(index, JSON.stringify(input)));
+  else if (state.partial) events.push(_inputDeltaEvent(index, state.partial));
+  return events;
+}
+
 // Edit/MultiEdit missing required params -> rewrite to Read of the same file.
 // Claude Code's client-side schema validator rejects Edit calls without
 // old_string/new_string with InputValidationError, forcing a retry-loop.
