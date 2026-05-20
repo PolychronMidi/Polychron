@@ -34,11 +34,32 @@ Restart: node tools/HME/proxy/hme_proxy.js
 Check:   curl -sf http://127.0.0.1:${port}/health`;
 }
 
+function validateClaudeStdout(event, stdout, root) {
+  const text = String(stdout || '').trim();
+  if (!text) return stdout || '';
+  try {
+    JSON.parse(text);
+    return stdout;
+  } catch (err) {
+    const message = `JSON validation failed for Claude ${event} hook stdout: ${err.message}`;
+    try {
+      const base = root || process.env.PROJECT_ROOT;
+      if (!base) return JSON.stringify({ decision: 'block', reason: `[ALERT] LIFESAVER: ${message}` });
+      const log = path.join(base, 'log', 'hme-errors.log');
+      fs.mkdirSync(path.dirname(log), { recursive: true });
+      fs.appendFileSync(log, `[${new Date().toISOString()}] [hook-output-validation] ${message}\n`);
+    } catch (_e) { /* best-effort lifesaver log */ }
+    return JSON.stringify({ decision: 'block', reason: `[ALERT] LIFESAVER: ${message}` });
+  }
+}
+
 function finalRelay(event, result, body = '{}') {
   const fields = claudeRelayFields(event, result);
   let payload = {};
   try { payload = JSON.parse(body || '{}'); } catch (_err) { payload = {}; }
-  recordHookDecision(payload._hme_project_root || process.env.PROJECT_ROOT, 'claude', event, result.stdout || '', fields.stdout || '', payload);
+  const root = payload._hme_project_root || process.env.PROJECT_ROOT;
+  fields.stdout = validateClaudeStdout(event, fields.stdout, root);
+  recordHookDecision(root, 'claude', event, result.stdout || '', fields.stdout || '', payload);
   if (fields.stdout) process.stdout.write(fields.stdout);
   if (fields.stderr && fields.stderr.trim()) process.stderr.write(fields.stderr.endsWith('\n') ? fields.stderr : `${fields.stderr}\n`);
   process.exit(fields.exit_code);
