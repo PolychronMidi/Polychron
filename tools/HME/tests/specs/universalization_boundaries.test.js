@@ -113,6 +113,14 @@ test('Claude adapter does not log benign ok stderr as Lifesaver error', () => {
   assert.equal(claudeRelayFields('PostToolUse', { stdout: '', stderr: 'ok\nok', exit_code: 0 }).stderr, ' ');
 });
 
+test('lifecycle status stderr is converted to context instead of error channel', () => {
+  const { lifecycleContextResult } = require('../../event_kernel/dispatcher');
+  const out = lifecycleContextResult('SessionStart', { stdout: '', stderr: 'Pipeline: STABLE\nCarried-over HME todos (0 open)', exit_code: 0 });
+  const parsed = JSON.parse(out.stdout);
+  assert.equal(out.stderr, ' ');
+  assert.match(parsed.hookSpecificOutput.additionalContext, /Pipeline: STABLE/);
+});
+
 test('request transform core remains protocol-aware for Codex cleanup', () => {
   const { applyRequestTransform } = require('../../proxy/codex_payload');
   const result = applyRequestTransform({
