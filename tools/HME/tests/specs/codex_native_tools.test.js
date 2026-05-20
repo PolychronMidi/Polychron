@@ -317,6 +317,7 @@ test('Codex proxy sends native tools upstream and translates native Read call wi
     assert.match(response.body, /result forwarded upstream/);
     assert.match(response.body, /done/);
     assert.match(response.body, /data: \[DONE\]/);
+    assert.doesNotMatch(response.body, /Render pipeline error/);
     assert.doesNotMatch(response.body, /exec_command|codex_structured_tool|HME_CODEX_JSON|bounded_fallback|loop error/);
   } catch (err) {
     err.message = `${err.message}\nproxy stderr:\n${stderr}`;
