@@ -662,7 +662,9 @@ function slopStripRewrite(eventName, data, ctx) {
     holds.delete(data.index);
     let assembled = '';
     for (const d of state.deltas) {
-      if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
+      if (!d || !d.delta) continue;
+      if (typeof d.delta.text === 'string') assembled += d.delta.text;
+      if (typeof d.delta.thinking === 'string') assembled += d.delta.thinking;
     }
     const { out, hits } = _stripSlop(assembled);
     if (hits.length > 0) _logSlopHits(hits, assembled);
