@@ -20,3 +20,9 @@ test('OMO policy adapter allows read-only actions by default', () => {
   const result = checkOmoAction({ tool: 'Read', input: { file_path: 'x' } });
   assert.equal(result.allowed, true);
 });
+
+test('OMO policy adapter can route write actions through HME pre-write policy', async () => {
+  const result = await checkOmoActionThroughHme({ tool: 'Edit', input: { file_path: '', old_string: '', new_string: 'x' } });
+  assert.equal(result.allowed, false);
+  assert.match(result.reason, /malformed Edit/);
+});
