@@ -617,7 +617,7 @@ function _stripSlop(text) {
   }
   if (hits.length > 0) out = _capFix(out);
   // Collapse any double-spaces or " ," artifacts left by the deletions.
-  out = out.replace(/ {2,}/g, ' ').replace(/\s+,/g, ',').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
+  out = out.replace(/ {2,}/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
   return { out, hits };
 }
 
