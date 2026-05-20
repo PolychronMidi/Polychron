@@ -164,11 +164,11 @@ function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') 
     timeoutMs,
     label: `${eventName}-${path.basename(scriptPath)}`,
     env: { PROJECT_ROOT, HME_HOOK_EVENT: eventName },
-  }).then((result) => _finishHook(eventName, scriptPath, startedAt, {
+  }).then((result) => lifecycleContextResult(eventName, _finishHook(eventName, scriptPath, startedAt, {
     stdout: result.stdout,
     stderr: result.stderr,
     exit_code: result.exit_code,
-  }));
+  })));
 }
 
 /**
