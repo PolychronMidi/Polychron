@@ -179,6 +179,7 @@ test('edit failure middleware appends current context and records read-equivalen
     PROJECT_ROOT: root,
     session: 'read-gate-test',
     appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
+    replaceResult(result, text) { result.content = text; },
     markDirty() {},
     warn(message) { throw new Error(message); },
     emit(row) { events.push(row); },
