@@ -179,10 +179,16 @@ function denyReason(stdout) {
   }
 }
 
+function isBenignHookStderr(stderr) {
+  const lines = String(stderr || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return lines.length > 0 && lines.every((line) => /^ok$/i.test(line));
+}
+
 function claudeRelayFields(event, result) {
   let stdout = result.stdout || '';
   let stderr = result.stderr || '';
   let code = Number.isInteger(result.exit_code) ? result.exit_code : 0;
+  if (isBenignHookStderr(stderr)) stderr = '';
   if (event === 'PreToolUse' && code === 0 && stdout) {
     const parsed = parseJson(stdout);
     if (parsed && parsed.decision === 'block' && parsed.reason) {
