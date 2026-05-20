@@ -183,11 +183,10 @@ function claudeRelayFields(event, result) {
   let stdout = result.stdout || '';
   let stderr = result.stderr || '';
   let code = Number.isInteger(result.exit_code) ? result.exit_code : 0;
-  if (event === 'PreToolUse' && code === 0) {
-    const reason = denyReason(stdout);
-    if (reason) {
-      code = 2;
-      stderr = reason;
+  if (event === 'PreToolUse' && code === 0 && stdout) {
+    const parsed = parseJson(stdout);
+    if (parsed && parsed.decision === 'block' && parsed.reason) {
+      stdout = JSON.stringify({ hookSpecificOutput: { hookEventName: event, permissionDecision: 'deny', permissionDecisionReason: parsed.reason } });
     }
   }
   if (code === 0 && !stderr) stderr = ' ';
