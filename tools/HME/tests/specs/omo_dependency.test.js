@@ -16,9 +16,11 @@ test('OMO dependency resolver returns disabled by default', () => {
 });
 
 test('OMO dependency resolver resolves configured relative path and metadata', () => {
-  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-omo-dep-'));
+  const tmpRoot = path.join(repoRoot, 'tmp');
+  fs.mkdirSync(tmpRoot, { recursive: true });
+  const sandbox = fs.mkdtempSync(path.join(tmpRoot, 'hme-omo-dep-'));
   try {
-    const rel = path.relative(path.resolve(__dirname, '..', '..', '..', '..'), sandbox);
+    const rel = path.relative(repoRoot, sandbox);
     fs.writeFileSync(path.join(sandbox, 'package.json'), JSON.stringify({ name: 'fake-omo', version: '1.2.3', main: 'index.js' }));
     fs.writeFileSync(path.join(sandbox, 'index.js'), 'module.exports = {};\n');
     const result = resolveOmo({ enabled: true, source: 'path', path: rel });
