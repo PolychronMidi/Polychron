@@ -295,7 +295,7 @@ function createCodexResponseForwarder(deps) {
       if (text.trim()) {
         if (clientSse.text && !clientSse.text.endsWith('\n')) writeClientText(target, '\n', status, headers);
         writeClientText(target, text, status, headers);
-        recordMissingFinal(target, parsed, true);
+        if (clientSse.toolLoops > 0) recordMissingFinal(target, parsed, true);
       } else {
         const diagnostic = toolSummaryOnlyDiagnostic(target, parsed);
         if (diagnostic) {
