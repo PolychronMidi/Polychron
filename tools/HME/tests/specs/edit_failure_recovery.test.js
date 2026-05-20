@@ -195,6 +195,7 @@ test('edit failure middleware appends current context and records read-equivalen
     assert.match(toolResult.content, /current context line/);
     assert.equal(events[0].event, 'edit_failure_context_appended');
     assert.equal(events[0].read_equivalent, true);
+    assert.equal(events[0].replaced_native_error, true);
     const state = sessionState.readState('read-gate-test');
     const read = state.files_read.at(-1);
     assert.equal(read.file, file);
