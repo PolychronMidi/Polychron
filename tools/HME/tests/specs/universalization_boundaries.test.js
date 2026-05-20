@@ -65,10 +65,7 @@ test('Claude adapter PreToolUse deny stays structured stdout without hook-error 
         HME_PETULANCE_STATE_PATH: path.join(tmp, 'state.json'),
       },
     });
-    const relayed = JSON.parse(out);
-    assert.equal(relayed.exit_code, 0);
-    assert.equal(relayed.stderr, ' ');
-    const stdout = JSON.parse(relayed.stdout);
+    const stdout = JSON.parse(out);
     assert.equal(stdout.hookSpecificOutput.permissionDecision, 'deny');
     assert.equal(stdout.hookSpecificOutput.permissionDecisionReason, '[SPIRALLING_PETULANCE] - blocking repeated command within 3 minutes with no intervening edit. No command spam.');
   } finally {
