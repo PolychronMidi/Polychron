@@ -7,6 +7,7 @@ schema/metadata interop.
 """
 from __future__ import annotations
 
+import inspect
 from typing import Any, Callable
 
 from pydantic import create_model
