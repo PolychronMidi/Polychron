@@ -2,12 +2,15 @@
 """Fail if active source uses inline fallback for a key declared in .env.example."""
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 ENV_TEMPLATE = ROOT / "doc" / "templates" / ".env.example"
+WAIVER_PATH = ROOT / "tools" / "HME" / "config" / "env-fallback-waivers.json"
 EXTS = {".js", ".mjs", ".cjs", ".ts", ".py", ".sh", ".bash"}
 SKIP_DIRS = {".git", "node_modules", "runtime", "tmp", "log", ".pytest_cache", "__pycache__"}
 SKIP_PREFIXES = (
