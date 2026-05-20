@@ -124,6 +124,20 @@ test('petulance pregate state tracker denies repeated command without transcript
   }
 });
 
+test('petulance pregate state tracker denies repeated command when transcript is missing', () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'petulance-missing-transcript-'));
+  const statePath = path.join(stateDir, 'state.json');
+  try {
+    const cmd = 'i/status mode=activity';
+    const first = runHook({ cmd, statePath, transcriptPathOverride: '' });
+    assert.ok(first.ok, `first command should pass without transcript, got: ${first.stdout}`);
+    const second = runHook({ cmd, statePath, transcriptPathOverride: '' });
+    assert.ok(second.stdout.includes('[SPIRALLING_PETULANCE]'), `expected state-backed deny without transcript, got: ${second.stdout}`);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test('petulance pregate state reset allows repeated command after edit reset', () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'petulance-state-reset-'));
   const statePath = path.join(stateDir, 'state.json');
