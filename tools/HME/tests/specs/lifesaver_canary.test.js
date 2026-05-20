@@ -253,3 +253,22 @@ test('lifesaver: NEW-ERRORS branch BLOCKS on agent-origin error', () => {
     r.cleanup();
   }
 });
+
+test('lifesaver: hook-output JSON validation failure is a blocking red alert', () => {
+  const r = _withLifesaverSandbox(
+    ['[2026-04-26T07:00:00Z] [hook-output-validation] JSON validation failed for Claude Stop hook stdout: Unexpected token x'],
+    { branch: 'new' },
+  );
+  try {
+    assert.ok(
+      /"decision"\s*:\s*"block"/.test(r.stdout),
+      `JSON validation failure must block. stdout: ${r.stdout}`,
+    );
+    assert.ok(
+      r.stdout.includes('JSON validation failed for Claude Stop hook stdout'),
+      'block reason must include hook-output validation failure',
+    );
+  } finally {
+    r.cleanup();
+  }
+});
