@@ -98,4 +98,4 @@ function rewriteNonSseEditFallback(body, options = {}) {
   return { body: { ...body, content: nextContent }, count };
 }
 
-module.exports = { editToReadFallback, editIsStale, isInvalidEditInput, rewriteNonSseEditFallback, EDIT_FAMILY_TOOL_NAMES, WRITE_FAMILY_TOOL_NAMES, isEditFamilyTool, isWriteFamilyTool, EDIT_FALLBACK_DEFAULT_LIMIT, EDIT_FALLBACK_MAX_LIMIT };
+module.exports = { editToReadFallback, editIsStale, isInvalidEditInput, rewriteNonSseEditFallback, EDIT_FAMILY_TOOL_NAMES, WRITE_FAMILY_TOOL_NAMES, isEditFamilyTool, isWriteTool, isWriteFamilyTool, EDIT_FALLBACK_DEFAULT_LIMIT, EDIT_FALLBACK_MAX_LIMIT };
