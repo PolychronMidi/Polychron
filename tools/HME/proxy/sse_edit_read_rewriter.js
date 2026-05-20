@@ -54,6 +54,13 @@ function _editTargetUnread(input, ctx) {
   return !cache.hasRead(sessionId, fp);
 }
 
+function _shouldRewriteWriteToRead(input, ctx) {
+  const fp = String((input && (input.file_path || input.path)) || '').trim();
+  if (!fp) return false;
+  if (!fp.startsWith('/')) return false;
+  return _editTargetUnread(input, ctx);
+}
+
 function editFallbackToReadRewrite(eventName, data, ctx) {
   let editHolds = ctx.get('edit_fallback_hold');
   if (!editHolds) { editHolds = new Map(); ctx.set('edit_fallback_hold', editHolds); }
