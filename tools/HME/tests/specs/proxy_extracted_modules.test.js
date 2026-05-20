@@ -670,7 +670,7 @@ test('context budget does not compact 90k token GPT-5.5 payload below high-water
   try {
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
-    delete process.env.HME_PROXY_COMPACT_BYTES;
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
     const budget = createContextBudget();
     const payload = { model: 'gpt-5.5-high', messages: [{ role: 'user', content: 'x'.repeat(90000) }] };
     const plan = budget.effectiveCompactThreshold(payload);
