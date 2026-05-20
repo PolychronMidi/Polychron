@@ -36,6 +36,7 @@ function dropToolUseRewrite(eventName, data, ctx) {
 
 const { serviceUrl } = require('./service_registry');
 const { evaluateBashInput, blockedCommand } = require('./bash_command_policy');
+const { slopStripRewrite, _stripSlop } = require('./sse_slop_rewriter');
 
 const SPAWN_URL = serviceUrl('proxy', { path: '/hme/spawn' });
 const BASH_TOOL_NAMES = new Set(['Bash']);
@@ -453,8 +454,6 @@ function ackStripRewrite(eventName, data, ctx) {
 
   return data;
 }
-
-const { slopStripRewrite, _stripSlop } = require('./sse_slop_rewriter');
 
 // Drop fake turn prefixes; decide after a short lookahead, then stream.
 const _TURN_PREFIX_LOOKAHEAD = 64;
