@@ -106,6 +106,7 @@ test('Claude adapter does not log benign ok stderr as Lifesaver error', () => {
   assert.equal(shouldLogHookStderr('ok'), false);
   assert.equal(shouldLogHookStderr('ok\nok'), false);
   assert.equal(shouldLogHookStderr('Stop hook error: JSON validation failed'), true);
+  assert.equal(shouldLogHookStderr('HME proxy already running on :9099\nOnboarding: 6/7 await verdict\nPipeline: STABLE'), false);
   assert.equal(isBenignHookStderr('ok\nok'), true);
   assert.equal(claudeRelayFields('PostToolUse', { stdout: '', stderr: 'ok\nok', exit_code: 0 }).stderr, ' ');
 });
