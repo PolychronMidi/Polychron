@@ -144,7 +144,8 @@ def _event_ts(event: dict) -> float | None:
         if raw is None:
             continue
         if isinstance(raw, (int, float)):
-            return float(raw)
+            value = float(raw)
+            return value / 1000.0 if value > 10_000_000_000 else value
         if isinstance(raw, str):
             try:
                 from datetime import datetime
