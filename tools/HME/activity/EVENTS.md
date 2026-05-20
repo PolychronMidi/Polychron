@@ -69,6 +69,23 @@ Reference for events emitted to `tools/HME/runtime/metrics/hme-activity.jsonl` (
 - **`upstream_conn_error`** [activity] -- A TCP/TLS-level failure occurred before an upstream HTTP response.
 - **`upstream_midresponse_error`** [activity] -- The upstream began streaming and then failed or closed prematurely.
 
+## OMO bridge
+
+- **`omo_dependency_resolved`** [activity] -- Resolved the configured OMO dependency source, version, commit, and status.
+- **`omo_contract_validated`** [activity] -- Validated the HME/OMO compatibility contract against the resolved dependency.
+- **`omo_checkout_evaluated`** [activity] -- Evaluated the configured OMO checkout/package and optional plugin entrypoint import.
+- **`omo_bridge_error`** [activity] -- An OMO bridge call failed without crashing the native HME path.
+- **`omo_tool_bridge_exported`** [activity] -- Exported canonical HME tool descriptors into OMO-facing shape.
+- **`omo_tool_invoked`** [activity] -- An OMO-originated tool action entered the HME bridge invocation path.
+- **`omo_tool_blocked`** [activity] -- An OMO-originated tool/action was blocked by HME policy.
+- **`omo_policy_checked`** [activity] -- An OMO-originated action was checked by HME policy.
+- **`omo_context_registered`** [activity] -- Registered a bounded context entry for OMO/HME context injection.
+- **`omo_context_injected`** [activity] -- Consumed OMO/HME context entries within a byte budget.
+- **`omo_pruning_started`** [activity] -- Started OMO dynamic-pruning or compatibility pruning for a payload.
+- **`omo_pruning_completed`** [activity] -- Completed OMO dynamic-pruning or compatibility pruning with byte/message stats.
+- **`omo_session_snapshot`** [activity] -- Read a read-only OMO/OpenCode session snapshot for HME use.
+- **`omo_hook_invoked`** [activity] -- Invoked an OMO/OpenCode hook through the HME adapter and validation gate.
+
 ## Subagent / supervisor lifecycle
 
 - **`agent_jobs_result_captured`** [activity] -- Agent-job capture wrote a non-empty Agent result for a queued HME task.
