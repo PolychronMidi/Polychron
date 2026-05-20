@@ -75,8 +75,8 @@ def _resolve_predicate(module_name: str, fn_name: str):
 def main() -> int:
     payload = _read_hook_payload()
     transcript = payload.get("transcript_path") or ""
-    if not transcript or not os.path.isfile(transcript):
-        return 0
+    if transcript and not os.path.isfile(transcript):
+        transcript = ""
     detectors = _load_registry()
     sys.path.insert(0, str(Path(__file__).parent))
     for entry in detectors:
