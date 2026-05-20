@@ -344,6 +344,7 @@ def main() -> int:
         if is_text(data):
             text = data.decode("utf-8", "replace")
             failures.extend(local_path_hits(path, text))
+            failures.extend(inline_env_fallback_hits(path, text, declared_env_keys))
         executable_sanity(path, staged_mode(path), data)
         syntax_check(path, data)
     if failures:
