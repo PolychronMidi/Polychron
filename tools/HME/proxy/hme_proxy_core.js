@@ -1,6 +1,7 @@
 'use strict';
 
 const { stripStaleToolResults, sanitizeMessages } = require('./conversation_graph');
+const { requireEnvInt } = require('./shared/load_env');
 const hmeDispatcher = require('./hme_dispatcher');
 
 const HME_PREFIX = /^mcp__HME__/;
@@ -16,7 +17,7 @@ const PROXY_GIT_SHA = (() => {
   } catch (_) { return 'unknown'; }
 })();
 function _loadedMiddleware() {
-  try { return require('./middleware/index').loadedNames(); }
+  try { return require('./middleware/index').listMiddleware().map((m) => m.name); }
   catch (_) { return []; }
 }
 function _stripHmePrefixOutgoing(payload) {
@@ -56,10 +57,7 @@ const {
   alertCooldownActive: _alertCooldownActive,
 } = require('./failure_classification');
 
-const _STALE_TOOL_KEEP_TURNS = parseInt(
-  process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS || process.env.HME_PROXY_COMPACT_KEEP_MIN || '100',
-  10,
-);
+const _STALE_TOOL_KEEP_TURNS = requireEnvInt('HME_PROXY_STALE_TOOL_KEEP_TURNS');
 
 function _anthropicTextSseBuffer(model, text) {
   const id = `proxy_${Date.now()}`;
