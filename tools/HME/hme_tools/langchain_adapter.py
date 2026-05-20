@@ -46,15 +46,45 @@ def _args_model(tool: HMETool):
     return create_model(f"HME{tool.name}Args", **fields)
 
 
-def _callable(tool: HMETool) -> Callable[..., str]:
+def _emit(telemetry: Callable[[dict[str, Any]], Any] | None, payload: dict[str, Any]) -> None:
+    if telemetry is not None:
+        telemetry(payload)
+
+
+def _callable(tool: HMETool, *, executor: Any = None, telemetry: Callable[[dict[str, Any]], Any] | None = None) -> Callable[..., str]:
     def invoke(**kwargs: Any) -> str:
+        _emit(telemetry, {"event": "hme_langchain_tool_invoked", "tool": tool.name})
+        if executor is not None:
+            if hasattr(executor, "invoke"):
+                return str(executor.invoke(tool.name, kwargs, tool=tool))
+            if callable(executor):
+                return str(executor(tool.name, kwargs, tool=tool))
         return tool.forward(**kwargs)
     invoke.__name__ = f"hme_{tool.name}"
     invoke.__doc__ = tool.description
     return invoke
 
 
-def create_langchain_tools() -> list[Any]:
+def _async_callable(tool: HMETool, *, executor: Any = None, telemetry: Callable[[dict[str, Any]], Any] | None = None) -> Callable[..., Any]:
+    async def ainvoke(**kwargs: Any) -> str:
+        _emit(telemetry, {"event": "hme_langchain_tool_invoked", "tool": tool.name, "async": True})
+        if executor is not None:
+            if hasattr(executor, "ainvoke"):
+                return str(await executor.ainvoke(tool.name, kwargs, tool=tool))
+            if hasattr(executor, "invoke"):
+                value = executor.invoke(tool.name, kwargs, tool=tool)
+                return str(await value) if inspect.isawaitable(value) else str(value)
+            if callable(executor):
+                value = executor(tool.name, kwargs, tool=tool)
+                return str(await value) if inspect.isawaitable(value) else str(value)
+        value = tool.forward(**kwargs)
+        return str(await value) if inspect.isawaitable(value) else str(value)
+    ainvoke.__name__ = f"hme_{tool.name}_async"
+    ainvoke.__doc__ = tool.description
+    return ainvoke
+
+
+def create_langchain_tools(*, executor: Any = None, telemetry: Callable[[dict[str, Any]], Any] | None = None) -> list[Any]:
     """Create real LangChain StructuredTool objects when langchain_core exists.
 
     Raises:
@@ -69,7 +99,8 @@ def create_langchain_tools() -> list[Any]:
     for tool in canonical_tools():
         out.append(
             StructuredTool.from_function(
-                func=_callable(tool),
+                func=_callable(tool, executor=executor, telemetry=telemetry),
+                coroutine=_async_callable(tool, executor=executor, telemetry=telemetry),
                 name=tool.name,
                 description=tool.description,
                 args_schema=_args_model(tool),
