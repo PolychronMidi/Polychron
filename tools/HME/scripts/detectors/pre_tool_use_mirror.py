@@ -91,8 +91,10 @@ def main() -> int:
         fn = _resolve_predicate(entry.get("module") or "", mirror.get("predicate_fn") or "")
         if not callable(fn):
             continue
-        if fn(_bash_cmd(payload), transcript):
-            _emit_deny(mirror.get("deny_reason") or f"{entry.get('reason_key', 'PRE_TOOL_USE_DENY')}")
+        verdict = fn(_bash_cmd(payload), transcript)
+        if verdict:
+            reason = verdict if isinstance(verdict, str) else (mirror.get("deny_reason") or f"{entry.get('reason_key', 'PRE_TOOL_USE_DENY')}")
+            _emit_deny(reason)
             return 0
     return 0
 
