@@ -599,6 +599,10 @@ function _stripExcessiveBold(text) {
   return { out: text.replace(boldRe, '$1'), hit: true };
 }
 
+function _cleanupSlopArtifacts(text) {
+  return String(text || '').replace(/ {2,}/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
+}
+
 function _stripSlop(text) {
   if (typeof text !== 'string' || !text) return { out: text, hits: [] };
   let out = text;
@@ -616,9 +620,16 @@ function _stripSlop(text) {
     hits.push('excessive_bold');
   }
   if (hits.length > 0) out = _capFix(out);
-  // Collapse any double-spaces or " ," artifacts left by the deletions.
-  out = out.replace(/ {2,}/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
+  out = _cleanupSlopArtifacts(out);
   return { out, hits };
+}
+
+function _stripCavemanCompression(text) {
+  if (typeof text !== 'string' || !text) return { out: text, hits: [] };
+  const p = _SLOP_PATTERNS.find((entry) => entry.name === 'caveman_compression');
+  if (!p || !p.re) return { out: text, hits: [] };
+  const out = _cleanupSlopArtifacts(_capFix(text.replace(p.re, p.repl)));
+  return out === text ? { out: text, hits: [] } : { out, hits: ['caveman_compression'] };
 }
 
 function _logSlopHits(hits, textPreview) {
