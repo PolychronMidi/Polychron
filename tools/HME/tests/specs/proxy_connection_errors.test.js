@@ -113,3 +113,31 @@ test('mid-response error emits shaped 502 and best-effort log', () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('interactive ECONNRESET mid-response recovers with Anthropic stop SSE', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-mid-reset-'));
+  try {
+    let recorded = '';
+    let emitted = null;
+    const res = fakeRes(false);
+    handleMidResponseError({
+      err: Object.assign(new Error('aborted'), { code: 'ECONNRESET' }),
+      clientRes: res,
+      isInteractivePath: true,
+      releaseOpusSlot: () => {},
+      recordFailure: (msg) => { recorded = msg; },
+      emitFn: (event) => { emitted = event; },
+      log: () => {},
+      projectRoot: root,
+      model: 'claude-test',
+    });
+    assert.equal(recorded, '');
+    assert.equal(emitted.event, 'upstream_midresponse_recovered');
+    assert.equal(res.statusCode, 200);
+    assert.match(res.body, /event: message_start/);
+    assert.match(res.body, /event: message_stop/);
+    assert.equal(fs.existsSync(path.join(root, 'log/hme-errors.log')), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
