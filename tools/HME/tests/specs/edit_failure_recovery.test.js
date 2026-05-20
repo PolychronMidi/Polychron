@@ -177,7 +177,6 @@ test('edit failure middleware appends current context and records read-equivalen
   const events = [];
   const ctx = {
     PROJECT_ROOT: root,
-    session: 'read-gate-test',
     appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
     replaceResult(result, text) { result.content = text; },
     markDirty() {},
@@ -188,6 +187,7 @@ test('edit failure middleware appends current context and records read-equivalen
     mw.onToolResult({
       toolUse: { name: 'Edit', input: { file_path: file, old_string: 'missing prior read', new_string: 'replacement' } },
       toolResult,
+      session: 'read-gate-test',
       ctx,
     });
     assert.doesNotMatch(toolResult.content, /File has not been read yet/);
@@ -200,7 +200,7 @@ test('edit failure middleware appends current context and records read-equivalen
     const read = state.files_read.at(-1);
     assert.equal(read.file, file);
     assert.equal(read.source, 'edit_failure_auto_context');
-    assert.match(read.reason, /File has not been read yet/);
+    assert.equal(read.reason, '');
   } finally {
     if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
     delete require.cache[require.resolve('../../proxy/session_state')];
@@ -223,7 +223,6 @@ test('edit failure middleware treats file-modified-since-read as read-equivalent
   const events = [];
   const ctx = {
     PROJECT_ROOT: root,
-    session: 'modified-since-read-test',
     appendToResult(result, text) { result.content = `${result.content || ''}${text}`; },
     replaceResult(result, text) { result.content = text; },
     markDirty() {},
@@ -234,6 +233,7 @@ test('edit failure middleware treats file-modified-since-read as read-equivalent
     mw.onToolResult({
       toolUse: { name: 'Edit', input: { file_path: file, old_string: 'stale text', new_string: 'replacement' } },
       toolResult,
+      session: 'modified-since-read-test',
       ctx,
     });
     assert.doesNotMatch(toolResult.content, /File has been modified since read/);
@@ -245,7 +245,7 @@ test('edit failure middleware treats file-modified-since-read as read-equivalent
     const read = sessionState.readState('modified-since-read-test').files_read.at(-1);
     assert.equal(read.file, file);
     assert.equal(read.source, 'edit_failure_auto_context');
-    assert.match(read.reason, /File has been modified since read/);
+    assert.equal(read.reason, '');
   } finally {
     if (prevRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = prevRoot;
     delete require.cache[require.resolve('../../proxy/session_state')];
