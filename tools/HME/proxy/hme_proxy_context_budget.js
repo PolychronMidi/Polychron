@@ -241,6 +241,11 @@ function createContextBudget() {
   }
 
   function shrinkForOmniContext(payload, swapModel) {
+    if (omoPruningBridge) pruneWithOmoSync(payload, {
+      route: 'omni-context',
+      model: String(swapModel || ''),
+      protectedTools: ['Read', 'Edit', 'Write', 'Bash', 'TodoWrite'],
+    });
     const threshold = omniContextThresholdBytes(swapModel);
     const before = Buffer.byteLength(JSON.stringify(payload), 'utf8');
     if (before <= threshold) return 0;
