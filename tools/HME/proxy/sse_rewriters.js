@@ -853,5 +853,4 @@ module.exports = {
   _trimSoloRationaleParagraph, // exported for tests
   _rewriteLongLeadingSleep,    // exported for tests
   _normalizeReadInput,         // exported for tests
-  _stripSlop,                  // exported for tests
 };
