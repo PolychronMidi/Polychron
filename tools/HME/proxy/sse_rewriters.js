@@ -566,7 +566,7 @@ const _SLOP_PATTERNS = [
     repl: '$1$2' },
   // Caveman compression: delete low-signal glue words/first-person filler.
   { name: 'caveman_compression',
-    re: /\b(?:i\s+am|i\s+will|i['’]m|i['’]ll|i|you\s+are|you['’]re|your|has|need|too|is|the|now)\b\s*/gi,
+    re: /\b(?:i\s+am|i\s+will|i['’]m|i['’]ll|i|you\s+are|you['’]re|your|right.|okay.|was|has|need|too|is|the|now)\b\s*/gi,
     repl: '' },
   {
     name: 'abbreviations',
@@ -582,6 +582,7 @@ const _SLOP_PATTERNS = [
         case 'government': return 'govt';
         case 'people': return 'ppl';
         case 'because': return 'b/c';
+        case 'and': return '&';
         default: return match;
       }
     }

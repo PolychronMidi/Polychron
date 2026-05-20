@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { shrinkForPassthrough } = require('./passthrough_compact');
 const { PROJECT_ROOT } = require('./shared');
+const { loadEnv, defaultEnvPath } = require('./shared/load_env');
 
 // Lazy-loaded model context budget registry.
 // Reloads when the source file mtime changes (no daemon restart needed after sync).
@@ -42,32 +43,84 @@ function loadModelCtxRegistry() {
   return map;
 }
 
-function envNumber(name, fallback) {
-  const n = Number(process.env[name]);
-  return Number.isFinite(n) && n > 0 ? n : fallback;
+function _ensureProcessEnvLoaded() {
+  loadEnv(defaultEnvPath(__dirname));
+}
+
+function _envValue(env, key) {
+  const value = env[key];
+  if (value === undefined || value === '') {
+    throw new Error(`missing required environment key ${key}; declare it in .env and doc/templates/.env.example`);
+  }
+  return String(value).trim();
+}
+
+function _envPositiveNumber(env, key) {
+  const raw = _envValue(env, key);
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) throw new Error(`invalid positive numeric environment key ${key}=${JSON.stringify(raw)}`);
+  return n;
+}
+
+function _envPositiveInt(env, key) {
+  const raw = _envValue(env, key);
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || String(n) !== raw || n <= 0) throw new Error(`invalid positive integer environment key ${key}=${JSON.stringify(raw)}`);
+  return n;
+}
+
+function _envBool(env, key) {
+  const raw = _envValue(env, key).toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'no', 'off'].includes(raw)) return false;
+  throw new Error(`invalid boolean environment key ${key}=${JSON.stringify(env[key])}`);
+}
+
+function parseProxyContextEnv(env = process.env) {
+  if (env === process.env) _ensureProcessEnvLoaded();
+  return {
+    passthroughCompactBytes: _envPositiveInt(env, 'HME_PROXY_COMPACT_BYTES'),
+    keepMin: _envPositiveInt(env, 'HME_PROXY_COMPACT_KEEP_MIN'),
+    staleToolKeepTurns: _envPositiveInt(env, 'HME_PROXY_STALE_TOOL_KEEP_TURNS'),
+    modelContextFraction: _envPositiveNumber(env, 'HME_PROXY_CONTEXT_FRACTION'),
+    contextPreflightFraction: _envPositiveNumber(env, 'HME_PROXY_CONTEXT_PREFLIGHT_FRACTION'),
+    contextSignalRemainingFraction: _envPositiveNumber(env, 'HME_PROXY_CONTEXT_SIGNAL_REMAINING_FRACTION'),
+    contextBytesPerTokenEst: _envPositiveNumber(env, 'HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST'),
+    compactStartFraction: _envPositiveNumber(env, 'HME_PROXY_COMPACT_START_FRACTION'),
+    compactGear1End: _envPositiveNumber(env, 'HME_PROXY_COMPACT_GEAR1_END'),
+    compactGear2End: _envPositiveNumber(env, 'HME_PROXY_COMPACT_GEAR2_END'),
+    compactGear1Target: _envPositiveNumber(env, 'HME_PROXY_COMPACT_GEAR1_TARGET'),
+    compactGear2Target: _envPositiveNumber(env, 'HME_PROXY_COMPACT_GEAR2_TARGET'),
+    compactGear3Target: _envPositiveNumber(env, 'HME_PROXY_COMPACT_GEAR3_TARGET'),
+    compactTrace: _envBool(env, 'HME_PROXY_COMPACT_TRACE'),
+    localSummary: _envBool(env, 'HME_PROXY_LOCAL_SUMMARY') ? '1' : '0',
+    omniLocalSummary: _envBool(env, 'HME_PROXY_OMNI_LOCAL_SUMMARY') ? '1' : '0',
+  };
 }
 
 function createContextBudget() {
-  const passthroughCompactBytes = parseInt(process.env.HME_PROXY_COMPACT_BYTES || '250000', 10);
-  const compactBytesExplicit = process.env.HME_PROXY_COMPACT_BYTES != null
-    && process.env.HME_PROXY_COMPACT_BYTES !== '';
-  const keepMin = parseInt(process.env.HME_PROXY_COMPACT_KEEP_MIN || '100', 10);
-  const staleToolKeepTurns = parseInt(process.env.HME_PROXY_STALE_TOOL_KEEP_TURNS || String(keepMin), 10);
+  const cfg = parseProxyContextEnv();
+  const {
+    passthroughCompactBytes,
+    keepMin,
+    staleToolKeepTurns,
+    contextPreflightFraction,
+    contextSignalRemainingFraction,
+    contextBytesPerTokenEst,
+    compactStartFraction,
+    compactGear1End,
+    compactGear2End,
+    compactGear1Target,
+    compactGear2Target,
+    compactGear3Target,
+    compactTrace,
+    omniLocalSummary,
+  } = cfg;
+  const compactBytesExplicit = true;
   let lastInputTokensRemaining = null;
   let lastInputTokensLimit = null;
   let consecutive429s = 0;
   let lastPayloadBytes = 0;
-  const bytesPerTokenEst = envNumber('HME_PROXY_BYTES_PER_TOKEN_EST', 3.5);
-  const modelContextFraction = envNumber('HME_PROXY_CONTEXT_FRACTION', 0.90);
-  const contextPreflightFraction = envNumber('HME_PROXY_CONTEXT_PREFLIGHT_FRACTION', modelContextFraction);
-  const contextSignalRemainingFraction = envNumber('HME_PROXY_CONTEXT_SIGNAL_REMAINING_FRACTION', 0.25);
-  const contextBytesPerTokenEst = envNumber('HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST', 2.2);
-  const compactStartFraction = envNumber('HME_PROXY_COMPACT_START_FRACTION', 0.80);
-  const compactGear1End = envNumber('HME_PROXY_COMPACT_GEAR1_END', 0.90);
-  const compactGear2End = envNumber('HME_PROXY_COMPACT_GEAR2_END', 0.97);
-  const compactGear1Target = envNumber('HME_PROXY_COMPACT_GEAR1_TARGET', 0.80);
-  const compactGear2Target = envNumber('HME_PROXY_COMPACT_GEAR2_TARGET', 0.90);
-  const compactGear3Target = envNumber('HME_PROXY_COMPACT_GEAR3_TARGET', 0.97);
   let lastCompactDecisionKey = '';
 
   function pressureForFraction(usedFraction) {
@@ -187,7 +240,7 @@ function createContextBudget() {
       threshold,
       keepMin,
       maxToolResultAge: staleToolKeepTurns,
-      env: { ...process.env, HME_PROXY_LOCAL_SUMMARY: process.env.HME_PROXY_OMNI_LOCAL_SUMMARY || process.env.HME_PROXY_LOCAL_SUMMARY || '0' },
+      env: { ...process.env, HME_PROXY_LOCAL_SUMMARY: omniLocalSummary },
       log: (msg) => console.error(`[hme-proxy] omni-context ${msg}`),
       route: 'omni-context',
       model: String(swapModel || ''),
