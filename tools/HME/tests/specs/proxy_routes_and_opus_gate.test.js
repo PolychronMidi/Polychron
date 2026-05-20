@@ -40,6 +40,7 @@ test('proxy route dispatcher handles health/version/stop and probe short-circuit
     routeMetrics: { direct: 1 },
     stopGateHealth: () => ({ reminder_pending: false, middleware: [] }),
     supervisorStatus: () => ({ worker: { healthy: true } }),
+    loadedMiddleware: ['shortcuts_rewriter'],
     handleLifecycleRoute: () => { throw new Error('lifecycle should not run'); },
   });
 
