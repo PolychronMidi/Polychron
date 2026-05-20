@@ -44,7 +44,7 @@ function validateClaudeStdout(event, stdout, root) {
   } catch (err) {
     const message = `JSON validation failed for Claude ${event} hook stdout: ${err.message}`;
     try {
-      const base = root || process.env.PROJECT_ROOT;
+      const base = root || requireEnv('PROJECT_ROOT');
       if (!base) return JSON.stringify({ decision: 'block', reason: `[ALERT] LIFESAVER: ${message}` });
       const log = path.join(base, 'log', 'hme-errors.log');
       fs.mkdirSync(path.dirname(log), { recursive: true });
