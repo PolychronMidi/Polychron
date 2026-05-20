@@ -35,6 +35,7 @@ function _emitHeldInput(state, index, input) {
 const { editToReadFallback, isInvalidEditInput, isEditFamilyTool } = require('./edit_validation');
 
 const READ_FALLBACK_TOOL_NAMES = new Set(['Read']);
+const READ_TOOL_NAMES = new Set(['Read']);
 let _sessionReadCache = null;
 function _readCache() {
   if (_sessionReadCache !== null) return _sessionReadCache;
