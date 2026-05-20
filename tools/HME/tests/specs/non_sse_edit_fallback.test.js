@@ -32,6 +32,19 @@ test('rewriteNonSseEditFallback: valid Edit passes through unchanged', () => {
   assert.equal(out, body);
 });
 
+test('rewriteNonSseEditFallback: valid but unread Edit rewrites to Read', () => {
+  const body = {
+    type: 'message',
+    content: [
+      { type: 'tool_use', id: 'toolu_unread', name: 'Update', input: { file_path: '/x.js', old_string: 'a', new_string: 'b' } },
+    ],
+  };
+  const { body: out, count } = rewriteNonSseEditFallback(body, { isUnread: () => true });
+  assert.equal(count, 1);
+  assert.equal(out.content[0].name, 'Read');
+  assert.deepEqual(out.content[0].input, { file_path: '/x.js', limit: 50 });
+});
+
 test('rewriteNonSseEditFallback: no-op Edit (old===new) rewrites to Read', () => {
   const body = {
     type: 'message',
