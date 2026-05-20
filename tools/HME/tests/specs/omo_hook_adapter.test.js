@@ -21,9 +21,15 @@ test('OMO hook adapter invokes hook and validates allowed pure output', async ()
   assert.deepEqual(out.output, { note: 'ok' });
 });
 
+test('OMO hook adapter supports OpenCode two-argument mutation hooks', async () => {
+  const out = await invokeOmoHook('chat.params', { sessionID: 's1' }, { enabled: true, hooks: { 'chat.params': async (_input, output) => { output.temperature = 0.2; } } });
+  assert.equal(out.result, 'applied');
+  assert.equal(out.output.temperature, 0.2);
+});
+
 test('OpenCode host shim maps lifecycle to plugin hooks', async () => {
-  const host = await createOpenCodeHost({ 'chat.params': async (input) => ({ note: input.metadata.hme_event }) }, { enabled: true });
+  const host = await createOpenCodeHost({ 'chat.params': async (input, output) => { output.note = input.metadata.hme_event; } }, { enabled: true });
   const results = await host.invoke('chat.params', { event: 'request', session_id: 's1' }, { enabled: true });
   assert.equal(results[0].result, 'applied');
-  assert.deepEqual(results[0].output, { note: 'request' });
+  assert.equal(results[0].output.note, 'request');
 });
