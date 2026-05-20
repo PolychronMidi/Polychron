@@ -58,6 +58,10 @@ test('proxy route dispatcher handles health/version/stop and probe short-circuit
     assert.equal(JSON.parse(res.body)[expected.field], expected.value, `${url} body`);
   }
 
+  const healthRes = fakeRes();
+  assert.equal(dispatch(fakeReq('/health'), healthRes), true, '/health dispatched for middleware visibility check');
+  assert.deepEqual(JSON.parse(healthRes.body).middleware, ['shortcuts_rewriter']);
+
   const res = fakeRes();
   assert.equal(dispatch(fakeReq('/v1/messages'), res), false, 'unknown path falls through');
   assert.equal(res.body, '');
