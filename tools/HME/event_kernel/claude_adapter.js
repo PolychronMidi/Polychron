@@ -39,8 +39,8 @@ function finalRelay(event, result, body = '{}') {
   let payload = {};
   try { payload = JSON.parse(body || '{}'); } catch (_err) { payload = {}; }
   recordHookDecision(payload._hme_project_root || process.env.PROJECT_ROOT, 'claude', event, result.stdout || '', fields.stdout || '', payload);
-  if (fields.exit_code === 2 && fields.stderr) process.stderr.write(`${fields.stderr}\n`);
-  process.stdout.write(JSON.stringify(fields));
+  if (fields.stdout) process.stdout.write(fields.stdout);
+  if (fields.stderr && fields.stderr.trim()) process.stderr.write(fields.stderr.endsWith('\n') ? fields.stderr : `${fields.stderr}\n`);
   process.exit(fields.exit_code);
 }
 
