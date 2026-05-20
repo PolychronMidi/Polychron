@@ -571,7 +571,7 @@ const _SLOP_PATTERNS = [
   {
     name: 'abbreviations',
     // Replaces common words with their standard short-form abbreviations
-    re: /\b(?:without|with|between|before|amount|government|people|because)\b/gi,
+    re: /\b(?:without|with|between|before|amount|because)\b/gi,
     repl: (match) => {
       switch (match.toLowerCase()) {
         case 'without': return 'w/o';
@@ -579,8 +579,6 @@ const _SLOP_PATTERNS = [
         case 'between': return 'b/w';
         case 'before': return 'b4';
         case 'amount': return 'amt';
-        case 'government': return 'govt';
-        case 'people': return 'ppl';
         case 'because': return 'b/c';
         case 'and': return '&';
         case 'into': return '2';
