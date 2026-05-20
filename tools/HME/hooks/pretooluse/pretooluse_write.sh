@@ -14,4 +14,6 @@ if [ -n "$_DECISION" ]; then
   case "$_DECISION" in *'"permissionDecision":"deny"'*|*'"permissionDecision":"ask"'*) exit 0;; esac
 fi
 [ -x "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" ] && PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/vow_bounded_reads.py" --reset 2>/dev/null || true
+[ -x "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" ] && \
+  PROJECT_ROOT="${PROJECT_ROOT}" python3 "${PROJECT_ROOT}/tools/HME/scripts/detectors/spiralling_petulance.py" --reset-edit 2>/dev/null || true
 exit 0
