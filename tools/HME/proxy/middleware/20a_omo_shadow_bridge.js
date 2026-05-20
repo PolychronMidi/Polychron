@@ -44,7 +44,7 @@ module.exports = {
     if (process.env.HME_OMO_TOOL_BRIDGE === '1') hmeToolsForOmo({ telemetry });
     if (process.env.HME_OMO_HOOK_BRIDGE !== '1') return;
     try {
-      const plugin = _loadPlugin(dep);
+      const plugin = await _loadPlugin(dep);
       if (!plugin) return;
       const host = await createOpenCodeHost(plugin, {
         enabled: true,
