@@ -81,10 +81,15 @@ function record(category, event, fields) {
   }
   if (category === 'error') {
     // hme-errors.log is line-oriented text (LIFESAVER text-scans it);
+    // hme.log is the human operational log. Error events must hit both.
     const ts = (fields && fields.ts) || new Date().toISOString();
     const reason = (fields && (fields.reason || fields.message)) || event;
     const tail = JSON.stringify({ event, ...fields });
     _append('error', `[${ts}] [${event}] ${reason}  ${tail}`);
+    try {
+      fs.mkdirSync(path.join(PROJECT_ROOT, 'log'), { recursive: true });
+      fs.appendFileSync(path.join(PROJECT_ROOT, 'log', 'hme.log'), `${ts.replace('T', ' ').replace('Z', '')} ERROR ${event}: ${reason}  ${tail}\n`);
+    } catch (_e) { /* best-effort; hme-errors.log remains primary */ }
     return;
   }
   // info / metric / audit are JSONL.
