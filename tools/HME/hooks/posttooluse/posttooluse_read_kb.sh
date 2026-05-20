@@ -22,9 +22,12 @@ _brief_add "$MODULE" "posttooluse_read_kb"
 
 # Fire KB brief async -- inject context into next response without blocking.
 WORKER="$_HME_HTTP_PORT"
-_PTRK_PY_ERR=$(mktemp "$PROJECT/tools/HME/runtime/_ptrk_py_err_XXXXXX" 2>/dev/null || echo "$PROJECT/tools/HME/runtime/_ptrk_py_err_$$")  # silent-ok: optional fallback path.
+: "${PROJECT_ROOT:?PROJECT_ROOT required}"
+_PTRK_RUNTIME_DIR="$PROJECT_ROOT/tools/HME/runtime"
+mkdir -p "$_PTRK_RUNTIME_DIR" 2>/dev/null || true
+_PTRK_PY_ERR=$(mktemp "$_PTRK_RUNTIME_DIR/_ptrk_py_err_XXXXXX" 2>/dev/null || echo "$_PTRK_RUNTIME_DIR/_ptrk_py_err_$$")  # silent-ok: optional fallback path.
 _ENCODED=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$MODULE" 2>"$_PTRK_PY_ERR" || echo "$MODULE")
-if [ -s "$_PTRK_PY_ERR" ] && [ -n "${PROJECT_ROOT}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+if [ -s "$_PTRK_PY_ERR" ] && [ -d "$PROJECT_ROOT/log" ]; then
   _PTRK_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
   while IFS= read -r _ptrk_line; do
     [ -n "$_ptrk_line" ] && echo "[$_PTRK_TS] [posttooluse_read_kb:url-encode] python3 failed: $_ptrk_line" \
