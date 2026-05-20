@@ -152,6 +152,10 @@ function sseFinalResponse(events) {
     const type = String(event.type || '');
     if (event.item && event.item.type === 'message') rememberOutput(event.item, event.item_id || event.output_index);
     if (type === 'response.output_item.done' && event.item) rememberOutput(event.item, event.item_id || event.output_index);
+    if (Array.isArray(event.choices)) {
+      const text = event.choices.map(choiceText).filter(Boolean).join('');
+      if (text) rememberText(event, text, true);
+    }
     if (/output_text\.delta$/.test(type)) rememberText(event, String(event.delta || ''), true);
     else if (/output_text\.done$/.test(type)) rememberText(event, String(event.text || event.delta || ''), false);
     else if (type === 'response.content_part.done' && event.part && typeof event.part.text === 'string') rememberText(event, event.part.text, false);
