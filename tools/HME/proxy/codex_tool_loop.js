@@ -175,25 +175,51 @@ function isIncompleteToolCall(call) {
   return missingRequiredToolFields(call).length > 0;
 }
 
+function codexToolOutput(callId, output, isError = false) {
+  const text = String(output || '');
+  return {
+    type: 'function_call_output',
+    call_id: callId,
+    output: isError && text ? `[tool-error]\n${text}` : text,
+  };
+}
+
 function executeToolCall(call, opts = {}) {
   const root = opts.projectRoot || PROJECT_ROOT;
   const args = call.name === 'Bash' ? normalizeBashArgs(call.args || {}, root) : (call.args || {});
   if (call.name === 'Bash' && !String(args.command || args.cmd || '').trim()) {
-    return { type: 'function_call_output', call_id: call.id, output: EMPTY_BASH_TOOL_RESULT, is_error: false };
+    return codexToolOutput(call.id, EMPTY_BASH_TOOL_RESULT, false);
   }
   const result = runSmolTool(call.name, args, root);
-  return { type: 'function_call_output', call_id: call.id, output: outputOf(result), is_error: result.status !== 0 };
+  return codexToolOutput(call.id, outputOf(result), result.status !== 0);
 }
 
 function toolResultInput(calls, opts = {}) {
   return calls.map((call) => executeToolCall(call, opts));
 }
 
+function sanitizeToolOutputForCodex(output) {
+  if (!output || typeof output !== 'object') return output;
+  const next = { ...output };
+  delete next.is_error;
+  return next;
+}
+
+function codexToolOutputs(outputs) {
+  return (outputs || []).map(sanitizeToolOutputForCodex);
+}
+
+function toolOutputIsError(output) {
+  if (!output || typeof output !== 'object') return false;
+  if (output.is_error === true) return true;
+  return /^\[tool-error\]\n/.test(String(output.output || ''));
+}
+
 function followupBody(previousBody, responseBody, toolOutputs, events = []) {
   const id = responseId(responseBody, events);
-  const body = { ...previousBody, input: toolOutputs };
+  const body = { ...previousBody, input: codexToolOutputs(toolOutputs) };
   if (id) body.previous_response_id = id;
   return body;
 }
 
-module.exports = { collectToolCalls, collectSseToolCalls, parseSseEvents, executeToolCall, toolResultInput, followupBody, isIncompleteToolCall, missingRequiredToolFields, EMPTY_BASH_TOOL_RESULT };
+module.exports = { collectToolCalls, collectSseToolCalls, parseSseEvents, executeToolCall, toolResultInput, followupBody, isIncompleteToolCall, missingRequiredToolFields, EMPTY_BASH_TOOL_RESULT, codexToolOutputs, sanitizeToolOutputForCodex, toolOutputIsError };
