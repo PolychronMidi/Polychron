@@ -79,9 +79,9 @@ class OpenAIProvider:
 
         self.tiers = []
         for label, model in tiers:
-            daily = ENV.optional_int(f"{name.upper()}_DAILY_LIMIT_{label}", default_daily)
-            rpm = ENV.optional_int(f"{name.upper()}_RPM_LIMIT_{label}", default_rpm)
-            rpd = ENV.optional_int(f"{name.upper()}_RPD_LIMIT_{label}", default_rpd) if uses_rpd else 0
+            daily = ENV.require_int(f"{name.upper()}_DAILY_LIMIT_{label}")
+            rpm = ENV.require_int(f"{name.upper()}_RPM_LIMIT_{label}")
+            rpd = ENV.require_int(f"{name.upper()}_RPD_LIMIT_{label}") if uses_rpd else 0
             self.tiers.append(_Tier(label, model, daily, rpm, rpd))
 
     def _api_key(self) -> str:
