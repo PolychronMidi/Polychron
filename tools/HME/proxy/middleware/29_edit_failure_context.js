@@ -52,7 +52,7 @@ function contextWindow(root, file, oldString = '', newString = '', reason = 'edi
 
 module.exports = {
   name: 'edit_failure_context',
-  onToolResult({ toolUse, toolResult, ctx }) {
+  onToolResult({ toolUse, toolResult, session, ctx }) {
     if (!toolUse || !isEditFamilyTool(toolUse.name)) return;
     const input = toolUse.input || {};
     const file = input.file_path || input.path || '';
