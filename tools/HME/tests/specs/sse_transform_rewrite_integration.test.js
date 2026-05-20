@@ -10,6 +10,9 @@ function purgeProxyModules() {
   for (const key of Object.keys(require.cache)) {
     if (key.includes('/tools/HME/proxy/session_read_cache')
       || key.includes('/tools/HME/proxy/sse_rewriters')
+      || key.includes('/tools/HME/proxy/sse_slop_rewriter')
+      || key.includes('/tools/HME/proxy/sse_edit_read_rewriter')
+      || key.includes('/tools/HME/proxy/sse_stop_hook_rewriters')
       || key.includes('/tools/HME/proxy/sse_transform')
       || key.includes('/tools/HME/proxy/hme_proxy_response_send')) delete require.cache[key];
   }
