@@ -6,6 +6,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "tools" / "HME"))
 
+import asyncio
+import types
+
 from hme_tools.langchain_adapter import create_langchain_tools, langchain_tool_descriptors  # noqa: E402
 
 
