@@ -9,12 +9,18 @@ const { createOpenCodeHost } = require('../../omo_bridge/opencode_host');
 let _loadedPlugin = null;
 let _loadedKey = '';
 
-function _loadPlugin(dep) {
+async function _loadPlugin(dep) {
   if (!dep || dep.status !== 'ok' || !dep.root || !dep.entrypoint) return null;
   const key = `${dep.root}:${dep.entrypoint}`;
   if (_loadedKey === key) return _loadedPlugin;
   _loadedKey = key;
-  const mod = require(path.join(dep.root, dep.entrypoint));
+  const entry = path.join(dep.root, dep.entrypoint);
+  let mod;
+  try { mod = require(entry); }
+  catch (err) {
+    if (err && err.code !== 'ERR_REQUIRE_ESM') throw err;
+    mod = await import(pathToFileURL(entry).href);
+  }
   _loadedPlugin = mod && (mod.default || mod.plugin || mod);
   return _loadedPlugin;
 }
