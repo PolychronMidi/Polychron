@@ -1,0 +1,550 @@
+'use strict';
+
+// Strip bare-ack text after stop-hook denies; silence-equivalent spam.
+const _ACK_PATTERNS = [
+  /^\s*ok[.!]?\s*$/i,
+  /^\s*done[.!]?\s*$/i,
+  /^\s*noted[.!]?\s*$/i,
+  /^\s*got\s+it[.!]?\s*$/i,
+  /^\s*ack[.!]?\s*$/i,
+  /^\s*acknowledged[.!]?\s*$/i,
+  /^\s*k[.!]?\s*$/i,
+  /^\s*sure[.!]?\s*$/i,
+  /^\s*yes[.!]?\s*$/i,
+  /^\s*yep[.!]?\s*$/i,
+  /^\s*yeah[.!]?\s*$/i,
+  /^\s*will\s+do[.!]?\s*$/i,
+  /^\s*on\s+it[.!]?\s*$/i,
+  /^\s*understood[.!]?\s*$/i,
+  /^\s*roger[.!]?\s*$/i,
+  /^\s*right[.!]?\s*$/i,
+  /^\s*proceeding[.!]?\s*$/i,
+  /^\s*continuing[.!]?\s*$/i,
+  /^\s*resuming[.!]?\s*$/i,
+];
+
+// Catch responses the keyword patterns miss: empty, bare punctuation
+// (`.`, `..`, `!?`), or single-glyph non-letter responses that the model
+// emits under stop-hook pressure to dodge the no-text-output gate
+// without saying anything substantive.
+function _isMinimalAck(text) {
+  const t = (text || '').trim();
+  if (!t) return true;
+  if (/^[\s.!?;:,\-_*~`]+$/.test(t)) return true;
+  if (t.length <= 2 && !/[a-z0-9]/i.test(t)) return true;
+  return false;
+}
+
+// Drop assistant text that fabricates a `Human:` / `Assistant:` turn prefix.
+function _isHallucinatedTurnPrefix(text) {
+  if (typeof text !== 'string') return false;
+  // Pure prefix tokens: "Human:", "Assistant:", or repeated.
+  if (/^\s*(?:(?:Human|Assistant)\s*:\s*){1,}\s*$/.test(text)) return true;
+  // Prefix followed by ANYTHING (free-form fabricated turn, system-
+  // reminder echo, stop-hook payload echo, anything else). Anchored
+  // at start so we only catch the FAKE-TURN-START shape, not mid-text
+  // mentions of "Human:" in legitimate prose.
+  if (/^\s*(?:Human|Assistant)\s*:\s+\S/.test(text)) return true;
+  return false;
+}
+
+// Drop literal solo-rationale ceremony; keep generic rationale requests intact.
+function _isCeremonyDodge(text) {
+  if (typeof text !== 'string') return false;
+  // Block-start anchor only. Trailing solo-rationale paragraphs in
+  // otherwise-substantive responses are handled SURGICALLY by
+  // _trimSoloRationaleParagraph (called from soloRationaleTrimRewrite)
+  // -- whole-block strip would nuke the substantive content too.
+  if (/^\s*Solo[- ](?:rationale|justification)\s*[:.]/i.test(text)) return true;
+  if (/^\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)/i.test(text)) return true;
+  if (/^\s*Solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)\b/i.test(text)) return true;
+  return false;
+}
+
+// Surgical trim of trailing solo-rationale paragraph (mid-text, after blank line).
+function _trimSoloRationaleParagraph(text) {
+  if (typeof text !== 'string' || !text) return { text, trimmed: false };
+  const patterns = [
+    /\n\s*\n\s*Solo[- ](?:rationale|justification)\b[\s\S]*$/i,
+    /\n\s*\n\s*Why\s+solo\s+(?:was|is)\s+(?:right|the\s+(?:right|correct)\s+call|appropriate|correct)\b[\s\S]*$/i,
+    /\n\s*\n\s*Solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)\b[\s\S]*$/i,
+  ];
+  for (const pat of patterns) {
+    const m = text.match(pat);
+    if (m) return { text: text.slice(0, m.index).replace(/\s+$/, ''), trimmed: true };
+  }
+  return { text, trimmed: false };
+}
+
+function _isBareAck(text) {
+  if (typeof text !== 'string') return false;
+  if (_ACK_PATTERNS.some((pat) => pat.test(text))) return true;
+  if (_isMinimalAck(text)) return true;
+  // Turn-prefix hallucinations are also bare-ack class for the
+  // ackStripRewrite path. A separate always-on rewriter
+  // (hallucinatedTurnPrefixStripRewrite below) catches them
+  // regardless of priorUserWasDeny gate.
+  if (_isHallucinatedTurnPrefix(text)) return true;
+  // Stop-hook ceremony-dodge: same treatment -- always spam, the
+  // always-on rewriter strips it regardless of gate.
+  if (_isCeremonyDodge(text)) return true;
+  return false;
+}
+
+function ackStripRewrite(eventName, data, ctx) {
+  // Only active when the request payload indicated the prior user
+  // message was a hook-deny payload. Set by the proxy before passing
+  // events through the rewriter chain.
+  if (!ctx.get('priorUserWasDeny')) return data;
+
+  const key = 'text_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { buffered: [data] });
+    return null;  // hold the start event
+  }
+
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    state.buffered.push(['content_block_delta', data]);
+    return null;  // hold the delta event
+  }
+
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    // Reconstruct full text from held delta events.
+    let text = '';
+    for (const ev of state.buffered) {
+      if (Array.isArray(ev) && ev[0] === 'content_block_delta') {
+        const d = ev[1];
+        if (d && d.delta && typeof d.delta.text === 'string') text += d.delta.text;
+      }
+    }
+    if (_isBareAck(text)) {
+      // Log stats outside errors.log so stripped spam does not re-surface.
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-bare-ack-strips.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            path: 'sse',
+            context: 'cascade-after-deny',
+            text_preview: text.slice(0, 40),
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      return null;
+    }
+    // Not a bare ack -- replay the held events as a list, then the stop.
+    const events = [];
+    // First item in state.buffered was the content_block_start data
+    // (stored bare, not as [name, data] tuple). Re-emit as start event.
+    events.push(['content_block_start', state.buffered[0]]);
+    for (let i = 1; i < state.buffered.length; i++) {
+      events.push(state.buffered[i]);
+    }
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+
+  return data;
+}
+
+// Drop fake turn prefixes; decide after a short lookahead, then stream.
+const _TURN_PREFIX_LOOKAHEAD = 64;
+
+function hallucinatedTurnPrefixStripRewrite(eventName, data, ctx) {
+  const key = 'turn_prefix_text_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { startData: data, deltas: [], decided: false, accumulated: '' });
+    return null;
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    if (state.decided) return data;
+    state.deltas.push(data);
+    state.accumulated += data.delta.text || '';
+    if (state.accumulated.length < _TURN_PREFIX_LOOKAHEAD) return null;
+    const isPrefix = _isHallucinatedTurnPrefix(state.accumulated);
+    const isDodge = _isCeremonyDodge(state.accumulated);
+    if (isPrefix || isDodge) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-turn-prefix-strips.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            kind: isPrefix ? 'turn_prefix' : 'ceremony_dodge',
+            text_preview: state.accumulated.slice(0, 100),
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      state.decided = true;
+      state.dropping = true;
+      return null;
+    }
+    state.decided = true;
+    const events = [['content_block_start', state.startData]];
+    for (const d of state.deltas) events.push(['content_block_delta', d]);
+    return { events };
+  }
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    if (state.dropping) return null;
+    if (state.decided) return data;
+    let assembled = state.accumulated;
+    const isPrefix = _isHallucinatedTurnPrefix(assembled);
+    const isDodge = _isCeremonyDodge(assembled);
+    if (isPrefix || isDodge) {
+      // Best-effort stat (separate log; never errors.log).
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-turn-prefix-strips.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            kind: isPrefix ? 'turn_prefix' : 'ceremony_dodge',
+            text_preview: assembled.slice(0, 100),
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      return null;  // drop the whole block
+    }
+    // Not a hallucinated prefix -- replay held events through.
+    const events = [['content_block_start', state.startData]];
+    for (const d of state.deltas) {
+      events.push(['content_block_delta', d]);
+    }
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+  return data;
+}
+
+// Stop-hook ceremony detector: replace bypass explanations with `.`.
+const _STOP_HOOK_CEREMONY_PATTERNS = [
+  // Tier reclassification dance ("Tier reclassify per the doctrine...")
+  /\btier\s+reclass\w*/i,
+  /\bre[\s-]?evaluat\w+\s+(the\s+)?tier/i,
+  /\b(?:re[\s-]?)?classify(?:ing)?\s+(?:the\s+)?(?:tier|turn|effort|work)/i,
+  // "this turn was status-report / research / read-only"
+  /\bthis\s+turn\s+(?:was|is)\s+(?:a\s+)?(?:status[\s-]?report|research|read[\s-]?only|brief|trivial|light(?:weight)?)/i,
+  // Tier name dismissals ("not E4", "not Deep", "not Comprehensive")
+  /\b(?:not\s+|isn'?t\s+)e[45]\b(?:\s+work|\s+effort|\s+tier|\s+floor)?/i,
+  /\b(?:not|isn'?t)\s+(?:deep|comprehensive)\s+(?:effort|work|tier)/i,
+  // "Per the doctrine's offered path" -- bypass framing using the rule's
+  // own language as cover.
+  /\bper\s+(?:the\s+)?(?:doctrine|hook|gate|stop[\s-]?hook|advisor)['']?s?\s+(?:own\s+)?(?:offered\s+)?path/i,
+  /\b(?:the\s+)?(?:three|two)\s+offered\s+paths/i,
+  // "The hook is firing on" / "the gate misclassified"
+  /\bthe\s+(?:hook|gate|detector|doctrine|advisor|classifier|exhaust|psycho)\s+(?:is\s+)?(?:firing\s+on|misclassif|mis[\s-]?tagg|mis[\s-]?fired?|fired\s+on)/i,
+  // "doesn't apply" excuses
+  /\b(?:false[\s-]positive|floor\s+doesn'?t\s+apply|gate\s+doesn'?t\s+apply|doctrine\s+doesn'?t\s+apply|rule\s+doesn'?t\s+apply)/i,
+  /\b(?:advisor|doctrine|gate|hook|rule)\s+(?:doesn'?t|does\s+not)\s+apply/i,
+  // Solo-rationale shapes (block-start only; trailing-paragraph case
+  // is handled surgically by soloRationaleTrimRewrite, not here).
+  /^\s*solo[\s-](?:rationale|justification)\s*[:.]/i,
+  /^\s*why\s+solo\s+(?:was|is)\s+(?:right|correct|the\s+(?:right|correct))/i,
+  /^\s*solo\s+(?:was|is)\s+(?:right|correct|appropriate|the\s+(?:right|correct)\s+call)/i,
+  // "The rule fired but..." / "the gate misfired"
+  /\b(?:the\s+)?(?:rule|hook|gate|detector|doctrine)\s+(?:fired|misfired)\s+but/i,
+  // "Acknowledged" as standalone ceremonial opener (not real new-info ack)
+  /^\s*acknowledg(?:e|ed|ing)[\s.,:]+(?:the\s+)?(?:hook|gate|doctrine|stop|rule|warning|flag)/i,
+];
+
+function _isStopHookCeremony(text) {
+  if (typeof text !== 'string' || !text) return false;
+  // Scan only the first 200 chars to keep this conservative -- long
+  // substantive responses that incidentally use one of these tokens
+  // deep in the body are not affected.
+  const lead = text.slice(0, 200);
+  return _STOP_HOOK_CEREMONY_PATTERNS.some((p) => p.test(lead));
+}
+
+// Stop-hook ceremony strip: emit `.`, then suppress later content events.
+function stopHookCeremonyStripRewrite(eventName, data, ctx) {
+  if (!ctx.get('priorUserWasDeny')) return data;
+
+  // Drop all subsequent content-level events once we've truncated.
+  // Pass through message-level events so the stream completes.
+  if (ctx.get('stop_hook_truncated')) {
+    if (eventName === 'content_block_start'
+        || eventName === 'content_block_delta'
+        || eventName === 'content_block_stop') {
+      return null;
+    }
+    return data;
+  }
+
+  const key = 'stop_hook_ceremony_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { startData: data, deltas: [] });
+    return null;
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    state.deltas.push(data);
+    return null;
+  }
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    let assembled = '';
+    for (const d of state.deltas) {
+      if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
+    }
+    if (_isStopHookCeremony(assembled)) {
+      ctx.set('stop_hook_truncated', true);
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-stop-hook-ceremony-strips.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            text_preview: assembled.slice(0, 300),
+            assembled_len: assembled.length,
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      const events = [
+        ['content_block_start', state.startData],
+        ['content_block_delta', {
+          type: 'content_block_delta',
+          index: data.index,
+          delta: { type: 'text_delta', text: '.' },
+        }],
+        ['content_block_stop', data],
+      ];
+      return { events };
+    }
+    // Not ceremony -- replay held events through.
+    const events = [['content_block_start', state.startData]];
+    for (const d of state.deltas) {
+      events.push(['content_block_delta', d]);
+    }
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+  return data;
+}
+
+// FP-CHECK marker handler: normalize yes/no markers before client display.
+function fpGateMarkerRewrite(eventName, data, ctx) {
+  if (!ctx.get('priorUserWasDeny')) return data;
+
+  // Once truncated, drop all subsequent content events. Pass-through
+  // message-level events so the stream completes cleanly.
+  if (ctx.get('fp_gate_truncated')) {
+    if (eventName === 'content_block_start'
+        || eventName === 'content_block_delta'
+        || eventName === 'content_block_stop') {
+      return null;
+    }
+    return data;
+  }
+
+  const key = 'fp_gate_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { startData: data, deltas: [] });
+    return null;
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    state.deltas.push(data);
+    return null;
+  }
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    let assembled = '';
+    for (const d of state.deltas) {
+      if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
+    }
+    // Only act on FIRST text block (subsequent blocks shouldn't carry
+    // the marker -- they're already past the gate).
+    const alreadyHandled = ctx.get('fp_gate_first_block_done');
+    if (alreadyHandled) {
+      const events = [['content_block_start', state.startData]];
+      for (const d of state.deltas) events.push(['content_block_delta', d]);
+      events.push(['content_block_stop', data]);
+      return { events };
+    }
+    ctx.set('fp_gate_first_block_done', true);
+
+    // YES: drop the rest of the model's output, but emit a VISIBLE marker
+    // so the user can distinguish "intentional silence (fp-gate yes)" from
+    // "model crashed / blank response". Earlier we collapsed to `.` which
+    // Claude Code's UI renders as nothing -> indistinguishable from a bug.
+    if (/\[FP-CHECK:\s*yes\]/i.test(assembled)) {
+      ctx.set('fp_gate_truncated', true);
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-fp-gate-marker.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            verdict: 'yes',
+            assembled_len: assembled.length,
+            preview: assembled.slice(0, 200),
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      const events = [
+        ['content_block_start', state.startData],
+        ['content_block_delta', {
+          type: 'content_block_delta',
+          index: data.index,
+          delta: { type: 'text_delta', text: '`[fp-gate: yes -- silent ack of false-positive flag]`' },
+        }],
+        ['content_block_stop', data],
+      ];
+      return { events };
+    }
+
+    // NO: strip the marker line + trailing whitespace, pass rest through.
+    const noMatch = assembled.match(/^[\s]*\[FP-CHECK:\s*no\]\s*\n?/i);
+    if (noMatch) {
+      const stripped = assembled.slice(noMatch[0].length);
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-fp-gate-marker.jsonl'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            verdict: 'no',
+            kept_len: stripped.length,
+          }) + '\n',
+        );
+      } catch (_e) { /* stat is best-effort */ }
+      const events = [['content_block_start', state.startData]];
+      if (stripped) {
+        events.push(['content_block_delta', {
+          type: 'content_block_delta',
+          index: data.index,
+          delta: { type: 'text_delta', text: stripped },
+        }]);
+      }
+      events.push(['content_block_stop', data]);
+      return { events };
+    }
+
+    // Marker missing -- agent ignored the fp-gate. Pass through; the
+    // older stopHookCeremonyStripRewrite catches prose-shaped ceremony
+    // as a fallback.
+    const events = [['content_block_start', state.startData]];
+    for (const d of state.deltas) events.push(['content_block_delta', d]);
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+  return data;
+}
+
+// Surgical trim of trailing solo-rationale paragraph; preserves substantive prefix.
+// Gated on priorUserWasDeny -- solo-rationale only emitted in response to
+// advisor-doctrine flags. Normal turns stream freely.
+function soloRationaleTrimRewrite(eventName, data, ctx) {
+  if (!ctx.get('priorUserWasDeny')) return data;
+  const key = 'srt_hold';
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
+    holds.set(data.index, { startData: data, deltas: [] });
+    return null;
+  }
+  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    state.deltas.push(data);
+    return null;
+  }
+  if (eventName === 'content_block_stop' && data) {
+    const state = holds.get(data.index);
+    if (!state) return data;
+    holds.delete(data.index);
+    let assembled = '';
+    for (const d of state.deltas) {
+      if (d && d.delta && typeof d.delta.text === 'string') assembled += d.delta.text;
+    }
+    const { text: trimmed, trimmed: didTrim } = _trimSoloRationaleParagraph(assembled);
+    if (!didTrim) {
+      const events = [['content_block_start', state.startData]];
+      for (const d of state.deltas) events.push(['content_block_delta', d]);
+      events.push(['content_block_stop', data]);
+      return { events };
+    }
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const { PROJECT_ROOT } = require('./shared');
+      fs.appendFileSync(
+        path.join(PROJECT_ROOT, 'log', 'hme-solo-rationale-trim.jsonl'),
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          original_len: assembled.length,
+          trimmed_len: trimmed.length,
+          removed_len: assembled.length - trimmed.length,
+          removed_preview: assembled.slice(trimmed.length).slice(0, 200),
+        }) + '\n',
+      );
+    } catch (_e) { /* best-effort */ }
+    const events = [['content_block_start', state.startData]];
+    if (trimmed) {
+      events.push(['content_block_delta', {
+        type: 'content_block_delta',
+        index: data.index,
+        delta: { type: 'text_delta', text: trimmed },
+      }]);
+    }
+    events.push(['content_block_stop', data]);
+    return { events };
+  }
+  return data;
+}
+
+module.exports = {
+  ackStripRewrite,
+  hallucinatedTurnPrefixStripRewrite,
+  stopHookCeremonyStripRewrite,
+  fpGateMarkerRewrite,
+  soloRationaleTrimRewrite,
+  _isBareAck,
+  _isHallucinatedTurnPrefix,
+  _isCeremonyDodge,
+  _isStopHookCeremony,
+  _trimSoloRationaleParagraph,
+};
