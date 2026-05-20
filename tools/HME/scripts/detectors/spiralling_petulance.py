@@ -31,10 +31,10 @@ def _state_path() -> Path:
     override = os.environ.get("HME_PETULANCE_STATE_PATH")
     if override:
         return Path(override)
-    root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
-    if root:
-        return Path(root) / "tools" / "HME" / "runtime" / "spiralling-petulance-state.json"
-    return Path("/tmp") / "hme-spiralling-petulance-state.json"
+    root = os.environ.get("PROJECT_ROOT")
+    if not root:
+        raise RuntimeError("PROJECT_ROOT required for spiralling_petulance state path")
+    return Path(root) / "tools" / "HME" / "runtime" / "spiralling-petulance-state.json"
 
 
 def _load_state() -> dict:
