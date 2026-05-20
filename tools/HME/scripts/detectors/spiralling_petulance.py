@@ -81,6 +81,102 @@ def _commands_from_tool(tu: dict) -> list[str]:
     return [c for c in cmds if c]
 
 
+def _command_key(cmd: str) -> str:
+    return (cmd or "").replace("\r\n", "\n").strip()
+
+
+def _is_bash_tool(name: str) -> bool:
+    return name in {"Bash", "functions.exec_command", "exec_command"}
+
+
+def _is_edit_tool(name: str) -> bool:
+    return name in _EDIT_TOOL_NAMES or name.endswith(".Edit") or name.endswith(".Write") or name.endswith(".MultiEdit")
+
+
+def _event_ts(event: dict) -> float | None:
+    for key in ("ts", "timestamp", "created_at", "createdAt"):
+        raw = event.get(key)
+        if raw is None:
+            continue
+        if isinstance(raw, (int, float)):
+            return float(raw)
+        if isinstance(raw, str):
+            try:
+                from datetime import datetime
+                return datetime.fromisoformat(raw.replace("Z", "+00:00")).timestamp()
+            except Exception:
+                continue
+    return None
+
+
+def _recent_enough(ts: float | None, now: float) -> bool:
+    return ts is None or 0 <= now - ts <= _REPEAT_WINDOW_SEC
+
+
+def _repeat_level(cmd: str, transcript_path: str, now: float | None = None) -> int:
+    key = _command_key(cmd)
+    if not key:
+        return 0
+    now = time.time() if now is None else now
+    prior_same = 0
+    for event in _events(transcript_path)[-500:]:
+        edited = False
+        for tu in iter_tool_uses(event):
+            name = str(tu.get("name", ""))
+            if _is_edit_tool(name):
+                edited = True
+            if _is_bash_tool(name):
+                for prior_cmd in _commands_from_tool(tu):
+                    if _command_key(prior_cmd) == key and _recent_enough(_event_ts(event), now):
+                        prior_same += 1
+        if edited:
+            prior_same = 0
+    return min(prior_same, 3)
+
+
+def _repeated_command_seen(path: str) -> bool:
+    seen: dict[str, tuple[int, float | None]] = {}
+    for idx, event in enumerate(_events(path)[-500:]):
+        if any(_is_edit_tool(str(tu.get("name", ""))) for tu in iter_tool_uses(event)):
+            seen.clear()
+            continue
+        ts = _event_ts(event)
+        now = ts if ts is not None else time.time()
+        for tu in iter_tool_uses(event):
+            if not _is_bash_tool(str(tu.get("name", ""))):
+                continue
+            for cmd in _commands_from_tool(tu):
+                key = _command_key(cmd)
+                if not key:
+                    continue
+                prior = seen.get(key)
+                if prior is not None and _recent_enough(prior[1], now):
+                    return True
+                seen[key] = (idx, ts)
+    return False
+
+
+def _petulance_message(level: int, cmd: str, reason: str = "repeated command") -> str:
+    display = _command_key(cmd)
+    if len(display) > 160:
+        display = display[:157] + "..."
+    if level <= 1:
+        return (
+            f"SPIRALLING_PETULANCE (real-time): blocking {reason} within 3 minutes with no intervening edit. "
+            f"Stop retrying `{display}`; read the prior result and change approach."
+        )
+    if level == 2:
+        return (
+            f"SPIRALLING_PETULANCE LEVEL 2: repeated identical Bash command again within 3 minutes with no intervening edit. "
+            f"This is petulant DDoC context-burn, not work. Stop `{display}`, inspect the previous failure, and perform a different corrective action."
+        )
+    return (
+        f"SPIRALLING_PETULANCE LEVEL 3: STOP. CASTING OUT THE DEVIL FOR PATHETIC DDOS COWARDICE: "
+        f"YOU ARE REPEATING `{display}` WITH NO INTERVENING EDIT, BURNING COHERENCE INSTEAD OF OBEYING EVIDENCE. "
+        f"DO NOT RUN THIS COMMAND AGAIN. READ THE PRIOR RESULT AND TAKE A DIFFERENT, CORRECTIVE ACTION."
+    )
+
+
 def _current_turn_noop_tools(path: str) -> tuple[int, int]:
     noop_bash = 0
     read_ids: set[str] = set()
