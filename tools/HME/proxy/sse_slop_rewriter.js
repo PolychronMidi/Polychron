@@ -107,14 +107,24 @@ const _SLOP_PATTERNS = [
     repl: '$1$2' },
   // Caveman compression: delete low-signal glue words/first-person filler.
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|i|a|as|you|your|right|okay|hmm|was|has|need|too|also|needs|is|the|now|that|then|agreed|implementing|continuing|fixing|explicitly|we)(?![A-Za-z0-9_])\s*/gi,
+    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|you\s+are|you['’]re|you['’]ll|we|we['’]ll|we['’]re|i|a|as|you|your|right|okay|hmm|was|has|need|too|also|needs|is|the|now|that|then|agreed|implementing|continuing|fixing|explicitly|actually|basically|essentially|fundamentally|literally|virtually|completely|absolutely|specifically|generally|frequently|very|really)(?![A-Za-z0-9_])\s*/gi,
     repl: '' },
   {
     name: 'caveman_abbreviations',
     // Matches common words, tech terms, and long vocabulary for heavy token/space saving.
-    re: /\b(without|with|between|before|amount|because|and|into|to|acknowledged|approximately|characteristically|chronologically|collaboratively|communication|communications|consequently|demonstration|demonstrations|dissemination|ecclesiastical|enthusiastically|environmentally|identification|implementation|implementations|inappropriately|indistinguishable|infrastructure|institutionalized|metaphorically|microarchitecture|misunderstanding|misunderstandings|multi-threading|operationalization|particularization|professionalism|recommendation|recommendations|representative|representatives|responsibility|responsibilities|revolutionary|specifications|specification|synchronization|synchronizations|transformation|transformations|uncharacteristically|unconditionally|understandable|information|application|applications|configuration|configurations|repository|repositories|environment|environments|developer|developers|development|management|organization|organizations|architecture|architectures|performance|parameters|parameter|temporary|version|versions)([.!?,;:]?)/gi,
+    re: /\b(in order to|as well as|for the purpose of|with respect to|in terms of|at the present time|due to the fact that|by means of|on the other hand|in light of the fact that|without|with|between|before|amount|because|and|into|to|acknowledged|approximately|characteristically|chronologically|collaboratively|communication|communications|consequently|demonstration|demonstrations|dissemination|ecclesiastical|enthusiastically|environmentally|identification|implementation|implementations|inappropriately|indistinguishable|infrastructure|institutionalized|metaphorically|microarchitecture|misunderstanding|misunderstandings|multi-threading|operationalization|particularization|professionalism|recommendation|recommendations|representative|representatives|responsibility|responsibilities|revolutionary|specifications|specification|synchronization|synchronizations|transformation|transformations|uncharacteristically|unconditionally|understandable|information|application|applications|configuration|configurations|repository|repositories|environment|environments|developer|developers|development|management|organization|organizations|architecture|architectures|performance|parameters|parameter|temporary|version|versions)([.!?,;:]?)/gi,
     repl: (_match, word, punct = '') => {
       const compactMap = {
+        'in order to': 'to',
+        'as well as': '&',
+        'for the purpose of': 'for',
+        'with respect to': 're:',
+        'in terms of': 'via',
+        'at the present time': 'now',
+        'due to the fact that': 'b/c',
+        'by means of': 'via',
+        'on the other hand': 'but',
+        'in light of the fact that': 'b/c',
         'without': 'w/o',
         'with': 'w/',
         'between': 'b/w',
