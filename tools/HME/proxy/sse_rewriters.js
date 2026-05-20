@@ -674,10 +674,13 @@ function slopStripRewrite(eventName, data, ctx) {
     // -- chunking semantics already lost by buffering.
     const events = [['content_block_start', state.startData]];
     if (out) {
+      const delta = state.blockType === 'thinking'
+        ? { type: 'thinking_delta', thinking: out }
+        : { type: 'text_delta', text: out };
       events.push(['content_block_delta', {
         type: 'content_block_delta',
         index: data.index,
-        delta: { type: 'text_delta', text: out },
+        delta,
       }]);
     }
     events.push(['content_block_stop', data]);
