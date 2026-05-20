@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { resolveOmo } = require('../../omo_bridge/dependency');
+const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
 
 test('OMO dependency resolver returns disabled by default', () => {
   const events = [];
