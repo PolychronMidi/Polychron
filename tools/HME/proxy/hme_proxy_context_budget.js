@@ -225,6 +225,11 @@ function createContextBudget() {
   }
 
   function shrinkForProxyPassthrough(payload) {
+    if (omoPruningBridge) pruneWithOmoSync(payload, {
+      route: 'proxy-passthrough',
+      model: payload && (payload.model || payload.target_model || payload.original_model) || '',
+      protectedTools: ['Read', 'Edit', 'Write', 'Bash', 'TodoWrite'],
+    });
     return shrinkForPassthrough(payload, {
       effectiveThreshold: effectiveCompactThreshold,
       keepMin,
