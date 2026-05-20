@@ -68,6 +68,7 @@ function finalRelay(event, result, body = '{}') {
   try { payload = JSON.parse(body || '{}'); } catch (_err) { payload = {}; }
   const root = payload._hme_project_root || requireEnv('PROJECT_ROOT');
   fields.stdout = validateClaudeStdout(event, fields.stdout, root);
+  if (fields.stderr && fields.stderr.trim()) logHookError(root, event, fields.stderr.trim());
   recordHookDecision(root, 'claude', event, result.stdout || '', fields.stdout || '', payload);
   if (fields.stdout) process.stdout.write(fields.stdout);
   if (fields.stderr && fields.stderr.trim()) process.stderr.write(fields.stderr.endsWith('\n') ? fields.stderr : `${fields.stderr}\n`);
