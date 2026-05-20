@@ -77,16 +77,8 @@ if [ -n "$PROMPT" ]; then
   fi
   if [ "$_IS_CORRECTION" -eq 1 ]; then
     mkdir -p "$(dirname "$_CORRECTION_FILE")"
-    CORRECTION_FILE="$_CORRECTION_FILE" PROMPT_PREVIEW="$PROMPT" python3 - <<'PYEOF' 2>/dev/null || true
-import json, os, time
-entry = {
-    "ts": int(time.time()),
-    "ts_human": time.strftime("%Y-%m-%d %H:%M:%S"),
-    "prompt_preview": os.environ.get("PROMPT_PREVIEW", "")[:500],
-}
-with open(os.environ["CORRECTION_FILE"], "a") as f:
-    f.write(json.dumps(entry) + "\n")
-PYEOF
+    python3 "$PROJECT_ROOT/tools/HME/scripts/userpromptsubmit_helper.py" \
+      capture-correction "$_CORRECTION_FILE" "$PROMPT" 2>/dev/null || true
   fi
 fi
 
