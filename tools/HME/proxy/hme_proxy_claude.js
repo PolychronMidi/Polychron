@@ -288,6 +288,7 @@ function createClaudeHandler(deps) {
           isInteractivePath: _isInteractivePath,
           releaseOpusSlot: _releaseOpusSlot,
           recordFailure: recordUpstreamFailure,
+          model: payload && payload.model || _swapModel || 'claude-proxy',
         }));
       });
 
