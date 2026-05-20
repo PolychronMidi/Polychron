@@ -9,7 +9,7 @@ function _hookShape(plugin) {
   if (!plugin || typeof plugin !== 'object') return [];
   return Object.keys(plugin).filter((k) => typeof plugin[k] === 'function').sort();
 }
-function evaluateOmoCheckout(options = {}) {
+async function evaluateOmoCheckout(options = {}) {
   const telemetry = options.telemetry;
   const dep = resolveOmo({ ...options, telemetry });
   const contract = validateOmoContract({ dependency: dep, strict: false, telemetry });
@@ -21,7 +21,13 @@ function evaluateOmoCheckout(options = {}) {
   };
   if (dep.status === 'ok' && options.loadEntrypoint === true && dep.entrypoint) {
     try {
-      const mod = require(path.join(dep.root, dep.entrypoint));
+      const entry = path.join(dep.root, dep.entrypoint);
+      let mod;
+      try { mod = require(entry); }
+      catch (err) {
+        if (err && err.code !== 'ERR_REQUIRE_ESM') throw err;
+        mod = await import(pathToFileURL(entry).href);
+      }
       const plugin = mod && (mod.default || mod.plugin || mod);
       result.import_status = 'ok';
       result.hook_shape = _hookShape(plugin);
