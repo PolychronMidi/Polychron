@@ -848,30 +848,6 @@
       "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
     },
     {
-      "hash": "eaa2df7c0ddbda22b83c1cabc125e6012099adec2f892cf39f7ade8b63ad52bd",
-      "key": "PROJECT_ROOT",
-      "path": "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
-      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
-    },
-    {
-      "hash": "4318057a9a31d09b3219377342954d47768a6f647282fee283b9b1953b004ab4",
-      "key": "PROJECT_ROOT",
-      "path": "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
-      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
-    },
-    {
-      "hash": "efdd51afbc5f855e38daee6218f83c813770a6c6024621ffe877007fdf8e730e",
-      "key": "PROJECT_ROOT",
-      "path": "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
-      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
-    },
-    {
-      "hash": "efdd51afbc5f855e38daee6218f83c813770a6c6024621ffe877007fdf8e730e",
-      "key": "PROJECT_ROOT",
-      "path": "tools/HME/hooks/lifecycle/userpromptsubmit.sh",
-      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
-    },
-    {
       "hash": "48b4abe4cbab24bcabed9e1bbacce6feb73fae810ac3556c694e4e46f330def0",
       "key": "HME_METRICS_DIR",
       "path": "tools/HME/hooks/lifecycle/precompact.sh",
