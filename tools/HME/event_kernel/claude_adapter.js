@@ -57,7 +57,7 @@ function validateClaudeStdout(event, stdout, root) {
     return stdout;
   } catch (err) {
     const message = `JSON validation failed for Claude ${event} hook stdout: ${err.message}`;
-    logHookError(root, event, message.replace(/^JSON validation failed/, 'hook-output-validation: JSON validation failed'));
+    logHookError(root, event, message, 'hook-output-validation');
     return JSON.stringify({ decision: 'block', reason: `[ALERT] LIFESAVER: ${message}` });
   }
 }
