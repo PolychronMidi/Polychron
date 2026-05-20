@@ -116,6 +116,7 @@ function createContextBudget() {
     compactGear2Target,
     compactGear3Target,
     compactTrace,
+    omoPruningBridge,
     omniLocalSummary,
   } = cfg;
   const compactBytesExplicit = true;
