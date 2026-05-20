@@ -631,7 +631,13 @@ test('context budget compaction gears start near context high-water and escalate
   try {
     process.env.HME_PROXY_CONTEXT_BYTES_PER_TOKEN_EST = '1';
     process.env.HME_PROXY_COMPACT_KEEP_MIN = '4';
-    delete process.env.HME_PROXY_COMPACT_BYTES;
+    process.env.HME_PROXY_COMPACT_BYTES = '3000000';
+    process.env.HME_PROXY_COMPACT_START_FRACTION = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR1_END = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR2_END = '0.97';
+    process.env.HME_PROXY_COMPACT_GEAR1_TARGET = '0.80';
+    process.env.HME_PROXY_COMPACT_GEAR2_TARGET = '0.90';
+    process.env.HME_PROXY_COMPACT_GEAR3_TARGET = '0.97';
     const budget = createContextBudget();
     budget.setLastInputTokensLimit(1000);
 
