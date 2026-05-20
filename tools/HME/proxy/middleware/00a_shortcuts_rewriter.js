@@ -17,10 +17,14 @@ function _withoutSystemReminders(text) {
 function _rewriteShortcutText(text, value) {
   const raw = String(text || '');
   if (SHORTCUT_RE.test(raw)) return value;
-  const replaced = raw.replace(/(^|\n)([ \t]*)(n|m|d|cc)([ \t]*)$/i, (_m, lead, indent) => `${lead}${indent}${value}`);
+  const withoutReminders = _withoutSystemReminders(raw);
+  if (SHORTCUT_RE.test(withoutReminders)) {
+    const reminders = raw.match(SYSTEM_REMINDER_RE) || [];
+    return reminders.length ? `${reminders.join('\n')}\n${value}` : value;
+  }
+  const replaced = raw.replace(/(^|\n)([ \t]*)(n|m|d|c|cc)([ \t]*)$/i, (_m, lead, indent) => `${lead}${indent}${value}`);
   if (replaced !== raw) return replaced;
-  const reminders = raw.match(SYSTEM_REMINDER_RE) || [];
-  return reminders.length ? `${reminders.join('\n')}\n${value}` : value;
+  return value;
 }
 
 function _lastUserText(payload) {
