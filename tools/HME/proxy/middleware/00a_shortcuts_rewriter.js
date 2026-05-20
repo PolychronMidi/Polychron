@@ -6,18 +6,36 @@ const SHORTCUTS = {
   'd': 'do all',
 };
 
+const SYSTEM_REMINDER_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/gi;
+const SHORTCUT_RE = /^\s*(n|m|d|cc)\s*$/;
+
+function _withoutSystemReminders(text) {
+  return String(text || '').replace(SYSTEM_REMINDER_RE, '').trim();
+}
+
+function _rewriteShortcutText(text, value) {
+  const raw = String(text || '');
+  if (SHORTCUT_RE.test(raw)) return value;
+  const replaced = raw.replace(/(^|\n)([ \t]*)(n|m|d|cc)([ \t]*)$/i, (_m, lead, indent) => `${lead}${indent}${value}`);
+  if (replaced !== raw) return replaced;
+  const reminders = raw.match(SYSTEM_REMINDER_RE) || [];
+  return reminders.length ? `${reminders.join('\n')}\n${value}` : value;
+}
+
 function _lastUserText(payload) {
   if (!payload || !Array.isArray(payload.messages)) return { text: '', block: null, msg: null };
   const userMsgs = payload.messages.filter(m => m && m.role === 'user');
   if (!userMsgs.length) return { text: '', block: null, msg: null };
   const last = userMsgs[userMsgs.length - 1];
   if (typeof last.content === 'string') {
-    return { text: last.content.trim(), block: null, msg: last, isString: true };
+    return { text: _withoutSystemReminders(last.content), block: null, msg: last, isString: true };
   }
   if (Array.isArray(last.content)) {
-    for (const block of last.content) {
+    for (let i = last.content.length - 1; i >= 0; i--) {
+      const block = last.content[i];
       if (block && block.type === 'text' && typeof block.text === 'string') {
-        return { text: block.text.trim(), block, msg: last };
+        const text = _withoutSystemReminders(block.text);
+        if (text) return { text, block, msg: last };
       }
     }
   }
@@ -26,9 +44,9 @@ function _lastUserText(payload) {
 
 function _setUserText({ msg, block, isString }, value) {
   if (block) {
-    block.text = value;
+    block.text = _rewriteShortcutText(block.text, value);
   } else if (isString && msg) {
-    msg.content = value;
+    msg.content = _rewriteShortcutText(msg.content, value);
   }
 }
 
