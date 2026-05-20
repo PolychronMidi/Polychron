@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Fail if active source uses inline fallback for a key declared in .env.example."""
+"""Fail on newly introduced inline fallbacks for keys declared in .env.example.
+
+Existing legacy fallbacks are grandfathered by comparing the working tree to
+HEAD. This keeps pre-commit strict without a giant waiver manifest.
+"""
 from __future__ import annotations
 
-import hashlib
-import json
+from collections import Counter
 import re
-import sys
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 ENV_TEMPLATE = ROOT / "doc" / "templates" / ".env.example"
-WAIVER_PATH = ROOT / "tools" / "HME" / "config" / "env-fallback-waivers.json"
 EXTS = {".js", ".mjs", ".cjs", ".ts", ".py", ".sh", ".bash"}
 SKIP_DIRS = {".git", "node_modules", "runtime", "tmp", "log", ".pytest_cache", "__pycache__"}
 SKIP_PREFIXES = (
@@ -52,27 +54,37 @@ def candidate_files(root: Path):
         yield path, rel
 
 
-def _finding_hash(rel: str, key: str, line: str) -> str:
-    payload = f"{rel}\0{key}\0{line.strip()}".encode("utf-8", "replace")
-    return hashlib.sha256(payload).hexdigest()
+def _head_text(rel: str) -> str:
+    try:
+        out = subprocess.run(
+            ["git", "show", f"HEAD:{rel}"],
+            cwd=ROOT,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except OSError:
+        return ""
+    return out.stdout if out.returncode == 0 else ""
 
 
-def load_waivers() -> dict[str, dict]:
-    if not WAIVER_PATH.exists():
-        return {}
-    data = json.loads(WAIVER_PATH.read_text(encoding="utf-8"))
-    rows = data.get("waivers") if isinstance(data, dict) else None
-    if not isinstance(rows, list):
-        raise SystemExit(f"invalid waiver manifest at {WAIVER_PATH}: expected object with waivers[]")
-    out: dict[str, dict] = {}
-    for row in rows:
-        if not isinstance(row, dict):
+def _scan_text(rel: str, text: str, keys: set[str]) -> list[dict]:
+    out: list[dict] = []
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if "env-fallback-ok" in line:
             continue
-        digest = str(row.get("hash") or "")
-        reason = str(row.get("reason") or "").strip()
-        if not digest or not reason:
-            raise SystemExit(f"invalid waiver in {WAIVER_PATH}: hash and reason required")
-        out[digest] = row
+        for pattern in PATTERNS:
+            for match in pattern.finditer(line):
+                key = match.group(1)
+                if key in keys:
+                    stripped = line.strip()
+                    out.append({
+                        "rel": rel,
+                        "lineno": lineno,
+                        "key": key,
+                        "line": stripped,
+                    })
     return out
 
 
@@ -80,48 +92,39 @@ def findings() -> list[dict]:
     keys = declared_env_keys()
     out: list[dict] = []
     for path, rel in candidate_files(ROOT):
-        text = path.read_text(encoding="utf-8", errors="replace")
-        for lineno, line in enumerate(text.splitlines(), 1):
-            if "env-fallback-ok" in line:
-                continue
-            for pattern in PATTERNS:
-                for match in pattern.finditer(line):
-                    key = match.group(1)
-                    if key in keys:
-                        stripped = line.strip()
-                        out.append({
-                            "rel": rel,
-                            "lineno": lineno,
-                            "key": key,
-                            "line": stripped,
-                            "hash": _finding_hash(rel, key, stripped),
-                        })
+        out.extend(_scan_text(rel, path.read_text(encoding="utf-8", errors="replace"), keys))
     return out
+
+
+def baseline_findings() -> list[dict]:
+    keys = declared_env_keys()
+    out: list[dict] = []
+    for _path, rel in candidate_files(ROOT):
+        out.extend(_scan_text(rel, _head_text(rel), keys))
+    return out
+
+
+def _signature(row: dict) -> tuple[str, str, str]:
+    return (str(row["rel"]), str(row["key"]), str(row["line"]))
 
 
 def main() -> int:
     rows = findings()
-    waivers = load_waivers()
-    current_hashes = {row["hash"] for row in rows}
+    baseline = Counter(_signature(row) for row in baseline_findings())
+    seen: Counter[tuple[str, str, str]] = Counter()
     problems: list[str] = []
     for row in rows:
-        if row["hash"] in waivers:
+        sig = _signature(row)
+        seen[sig] += 1
+        if seen[sig] <= baseline.get(sig, 0):
             continue
         problems.append(
-            f"{row['rel']}:{row['lineno']}: inline fallback for declared env key {row['key']}: {row['line']}"
+            f"{row['rel']}:{row['lineno']}: new inline fallback for declared env key {row['key']}: {row['line']}"
         )
-    stale = sorted(set(waivers) - current_hashes)
-    for digest in stale[:50]:
-        row = waivers[digest]
-        problems.append(
-            f"stale env-fallback waiver {digest}: {row.get('path', '<unknown>')} {row.get('key', '<unknown>')}"
-        )
-    if len(stale) > 50:
-        problems.append(f"... {len(stale) - 50} more stale env-fallback waiver(s)")
     if problems:
         print("\n".join(problems))
         return 1
-    print(f"env fail-fast ok: {len(rows)} classified legacy fallback(s), 0 unclassified")
+    print(f"env fail-fast ok: {len(rows)} legacy fallback(s) grandfathered from HEAD, 0 new")
     return 0
 
 
