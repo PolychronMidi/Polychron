@@ -57,10 +57,10 @@ function editEvent() {
   };
 }
 
-test('petulance pregate allows a first no-op Bash this turn', () => {
+test('petulance pregate denies a first inert no-op Bash this turn', () => {
   const out = runHook({ cmd: ':', transcriptEntries: [userMsg()] });
-  assert.strictEqual(out.ok, true, 'gate must not block first no-op');
-  assert.ok(!out.stdout.includes('SPIRALLING_PETULANCE'), 'no block message emitted');
+  assert.ok(out.stdout.includes('SPIRALLING_PETULANCE'), `expected immediate no-op deny, got: ${out.stdout}`);
+  assert.match(out.stdout, /inert no-op Bash spam/);
 });
 
 test('petulance pregate denies the 2nd no-op Bash this turn', () => {
