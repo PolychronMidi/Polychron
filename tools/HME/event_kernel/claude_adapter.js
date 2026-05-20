@@ -40,12 +40,13 @@ function logHookError(root, event, message, kind = 'hook-runtime-error') {
     const base = root || requireEnv('PROJECT_ROOT');
     if (!base || !message) return;
     const ts = new Date().toISOString();
-    const tail = JSON.stringify({ event: kind, message, hook_event: event });
+    const clean = String(message || '').replace(/\s*\r?\n\s*/g, ' ');
+    const tail = JSON.stringify({ event: kind, message: clean, hook_event: event });
     const errLog = path.join(base, 'log', 'hme-errors.log');
     const hmeLog = path.join(base, 'log', 'hme.log');
     fs.mkdirSync(path.dirname(errLog), { recursive: true });
-    fs.appendFileSync(errLog, `[${ts}] [${kind}] ${message}  ${tail}\n`);
-    fs.appendFileSync(hmeLog, `${ts.replace('T', ' ').replace('Z', '')} ERROR ${kind}: ${message}  ${tail}\n`);
+    fs.appendFileSync(errLog, `[${ts}] [${kind}] ${clean}  ${tail}\n`);
+    fs.appendFileSync(hmeLog, `${ts.replace('T', ' ').replace('Z', '')} ERROR ${kind}: ${clean}  ${tail}\n`);
   } catch (_e) { /* best-effort lifesaver log */ }
 }
 
