@@ -210,5 +210,6 @@ module.exports = {
   toPermissionRequestOutput,
   sanitizeCodexStdout,
   denyReason,
+  isBenignHookStderr,
   claudeRelayFields,
 };
