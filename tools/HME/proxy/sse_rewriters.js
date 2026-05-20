@@ -564,6 +564,10 @@ const _SLOP_PATTERNS = [
   { name: 'parallel_dramatic',
     re: /(\b(?:You|I|We|It|This|That|They)\b)([^.!?\n]{1,50}[.!?])\s+\1[^.!?\n]{1,50}[.!?]\s+\1[^.!?\n]{1,50}[.!?]/g,
     repl: '$1$2' },
+  // Caveman compression: delete low-signal glue words/first-person filler.
+  { name: 'caveman_compression',
+    re: /\b(?:i\s+am|i\s+will|i['’]m|i['’]ll|i|has|too|is|the|now)\b\s*/gi,
+    repl: '' },
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',
     re: null,  // handled in _stripExcessiveBold below
