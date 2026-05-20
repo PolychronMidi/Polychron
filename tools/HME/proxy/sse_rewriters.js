@@ -676,13 +676,16 @@ function slopStripRewrite(eventName, data, ctx) {
       if (typeof d.delta.text === 'string') assembled += d.delta.text;
       if (typeof d.delta.thinking === 'string') assembled += d.delta.thinking;
     }
-    const { out, hits } = _stripSlop(assembled);
-    if (hits.length > 0) _logSlopHits(hits, assembled);
-    // Re-emit: the original start, ONE replacement delta with stripped
-    // text, then the stop. Original deltas dropped (replaced by single
-    // corrected delta) regardless of whether stripping changed anything
-    // -- chunking semantics already lost by buffering.
+    const { out, hits } = fullSlop ? _stripSlop(assembled) : _stripCavemanCompression(assembled);
     const events = [['content_block_start', state.startData]];
+    if (hits.length === 0) {
+      for (const d of state.deltas) events.push(['content_block_delta', d]);
+      events.push(['content_block_stop', data]);
+      return { events };
+    }
+    _logSlopHits(hits, assembled);
+    // Re-emit: the original start, ONE replacement delta with stripped text,
+    // then the stop. Original deltas dropped only when stripping changed text.
     if (out) {
       const delta = state.blockType === 'thinking'
         ? { type: 'thinking_delta', thinking: out }
