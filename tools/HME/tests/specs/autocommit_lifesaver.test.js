@@ -14,6 +14,15 @@ function git(args, cwd) {
   assert.strictEqual(result.status, 0, result.stderr || result.stdout);
 }
 
+test('UserPromptSubmit hook has no inline Python bodies', () => {
+  const script = path.join(repoRoot, 'tools', 'HME', 'hooks', 'lifecycle', 'userpromptsubmit.sh');
+  const text = fs.readFileSync(script, 'utf8');
+  assert.doesNotMatch(text, /python3\s+-c\b/);
+  assert.doesNotMatch(text, /python3\s+-\b/);
+  assert.doesNotMatch(text, /<<'PY/);
+  assert.match(text, /userpromptsubmit_helper\.py/);
+});
+
 test('UserPromptSubmit surfaces pre-existing autocommit fail flag before retry can clear it', () => {
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-autocommit-lifesaver-'));
   try {
