@@ -5,7 +5,10 @@ const { spawnSync } = require('child_process');
 const { PROJECT_ROOT } = require('../proxy/shared');
 const { emitOmo } = require('./telemetry');
 
-function _env(name) { return process.env[name] || ''; }
+function _envRequired(name) {
+  if (!Object.prototype.hasOwnProperty.call(process.env, name)) throw new Error(`missing required environment key ${name}`);
+  return process.env[name];
+}
 function _isAbsoluteInsideRoot(p) {
   const abs = path.resolve(p);
   const root = path.resolve(PROJECT_ROOT);
