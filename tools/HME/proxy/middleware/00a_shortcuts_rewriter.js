@@ -8,7 +8,7 @@ const SHORTCUTS = {
 };
 
 const SYSTEM_REMINDER_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/gi;
-const SHORTCUT_RE = /^\s*(n|m|d|cc)\s*$/;
+const SHORTCUT_RE = /^\s*(n|m|d|c|cc)\s*$/;
 
 function _withoutSystemReminders(text) {
   return String(text || '').replace(SYSTEM_REMINDER_RE, '').trim();
