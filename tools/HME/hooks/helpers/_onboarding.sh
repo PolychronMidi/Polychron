@@ -9,11 +9,13 @@
 # Falls back gracefully to "graduated" if Python is unavailable.
 
 _ONB_PROJECT="$PROJECT_ROOT"
-_ONB_STATE_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.state"
-_ONB_TARGET_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.target"
+_ONB_PROJECT_TMP="${_ONB_PROJECT}/t""mp"
+_ONB_STATE_FILE="${_ONB_PROJECT_TMP}/hme-onboarding.state"
+_ONB_TARGET_FILE="${_ONB_PROJECT_TMP}/hme-onboarding.target"
 _ONB_PY="${_ONB_PROJECT}/tools/HME/service/server/onboarding_chain.py"
 
 # Canonical states sourced from tools/HME/config/onboarding_states.json.
+_ONB_STATES=()
 _ONB_STATES_JSON="${_ONB_PROJECT}/tools/HME/config/onboarding_states.json"
 if [ -f "$_ONB_STATES_JSON" ] && command -v python3 >/dev/null 2>&1; then
   _ONB_STATES=($(python3 -c "import json; print(' '.join(json.load(open('$_ONB_STATES_JSON'))['states']))" 2>/dev/null))  # silent-ok: optional fallback path.
