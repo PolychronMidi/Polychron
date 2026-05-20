@@ -124,6 +124,17 @@ test('Codex native Write response rewrites to bridge write and normalizes back',
   assert.equal(JSON.parse(normalized.arguments).file_path, 'doc/x.md');
 });
 
+test('Codex native absolute Write response rewrites to Read before write-without-read failure', () => {
+  const response = { output: [{ type: 'function_call', name: 'Write', arguments: JSON.stringify({ file_path: '/abs/write-target.js', content: 'hello' }) }] };
+  const rewritten = rewriteCodexResponseObject(response);
+  const call = rewritten.body.output[0];
+  assert.equal(call.name, 'exec_command');
+  assert.match(JSON.parse(call.arguments).cmd, /hme_tools\/run_tool\.py Read --json/);
+  const normalized = normalizeStructuredBridgeCalls(rewritten.body).body.output[0];
+  assert.equal(normalized.name, 'Read');
+  assert.deepEqual(JSON.parse(normalized.arguments), { file_path: '/abs/write-target.js', limit: 50 });
+});
+
 test('Codex native WebSearch response rewrites to codex web_search', () => {
   const response = { output: [{ type: 'function_call', name: 'WebSearch', arguments: JSON.stringify({ query: 'foo', allowed_domains: ['x.com'] }) }] };
   const rewritten = rewriteCodexResponseObject(response);
