@@ -127,6 +127,11 @@ test('Codex structured read/edit shims route synthetic native events', () => {
   const read = spawnSync('node', [path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_structured_tool.js'), 'read', `file=${file}`, 'limit=5'], { env, encoding: 'utf8' });
   assert.equal(read.status, 0, read.stderr);
   assert.match(read.stdout, /const x = 1/);
+  const noSessionEnv = { ...env };
+  delete noSessionEnv.HME_SESSION_ID;
+  const noSessionRead = spawnSync('node', [path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_structured_tool.js'), 'read', `file=${file}`, 'limit=5'], { env: noSessionEnv, encoding: 'utf8' });
+  assert.equal(noSessionRead.status, 0, noSessionRead.stderr);
+  assert.match(noSessionRead.stdout, /const x = 1/);
   const editEnv = { ...env, HME_SESSION_ID: 'shim-edit' };
   const edit = spawnSync('node', [
     path.join(repoRoot, 'tools', 'HME', 'scripts', 'codex_structured_tool.js'), 'edit',

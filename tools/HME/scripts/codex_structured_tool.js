@@ -10,7 +10,14 @@ const middleware = require('../proxy/middleware');
 const { recordFailure, clearFailure } = require('../proxy/turn_failure_state');
 
 const ROOT = _hmeRequireEnv('PROJECT_ROOT');
-const SESSION = _hmeRequireEnv('HME_SESSION_ID');
+function runtimeSessionId() {
+  for (const key of ['HME_SESSION_ID', 'SESSION_ID', 'CODEX_SESSION_ID', 'HME_CODEX_SESSION_ID']) {
+    const value = process.env[key];
+    if (value && String(value).trim()) return String(value).trim();
+  }
+  return `codex-structured-${process.pid}`;
+}
+const SESSION = runtimeSessionId();
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', '__pycache__', 'tmp', 'runtime', 'log', 'KB']);
 const GREP_MAX_BYTES = 1024 * 1024;
 const DISPLAY_REDACTED_RE = /<display-redacted:|<omitted by proxy>/i;
