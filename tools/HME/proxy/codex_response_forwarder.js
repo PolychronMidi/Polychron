@@ -566,4 +566,4 @@ function createCodexResponseForwarder(deps) {
   };
 }
 
-module.exports = { createCodexResponseForwarder };
+module.exports = { createCodexResponseForwarder, finalOutputText, contentText };
