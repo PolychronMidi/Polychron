@@ -29,7 +29,8 @@ if [ -f "$ERROR_LOG" ]; then
   # Recompute TOTAL pre-watermark to avoid off-by-N if a writer appends mid-block.
   _OBSERVATION_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
   # Self-origin source tags: writers emit only self-health alerts (not
-  _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|hook-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker_client|worker:[^]]+)\]'
+  _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|hook-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker_client|worker:[^]]+|HCI trajectory)\]'
+  _STATUS_LINE_RE='^(Onboarding:|Pipeline:|Last commit:|Carried-over HME todos|substrate:|[[:space:]]*\[[[:space:]]?\][[:space:]]*#[0-9]+|[[:space:]]*->[[:space:]]*\[arc_v_blindspot\])'
   _CANARY_RE='\[CANARY-'
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
     NEW_RAW=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
