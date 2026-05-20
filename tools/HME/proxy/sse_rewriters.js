@@ -620,7 +620,13 @@ function _stripExcessiveBold(text) {
 }
 
 function _cleanupSlopArtifacts(text) {
-  return String(text || '').replace(/ {2,}/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
+  return String(text || '')
+    .replace(/([,.;:!?])(?:\s*\1)+/g, '$1')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    .trim();
 }
 
 function _stripSlop(text) {
