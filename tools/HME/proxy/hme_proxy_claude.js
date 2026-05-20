@@ -58,6 +58,7 @@ function createClaudeHandler(deps) {
     setLastPayloadBytes,
     estimatedContextTokens,
     omniContextThresholdBytes,
+    loadedMiddleware = [],
   } = deps;
   const dispatchProxyRoute = createProxyRouteDispatcher({
     PORT,
@@ -102,8 +103,6 @@ function createClaudeHandler(deps) {
       let _swapChain = [];
       let _swapModel = 'deepseek-v4-pro';
       let _omniProvider = 'opencode-go';
-
-      const _odMode = process.env.OVERDRIVE_MODE || '0';
 
       const overdriveRoute = applyOverdriveRoute({
         payload,
