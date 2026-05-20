@@ -9,7 +9,7 @@ const { execFileSync } = require('node:child_process');
 const HOOK = path.resolve(__dirname, '../../hooks/pretooluse/pretooluse_bash.sh');
 const PROJECT_ROOT = path.resolve(__dirname, '../../../..');
 
-function runHook({ cmd, transcriptEntries = [], env = {} }) {
+function runHook({ cmd, transcriptEntries = [], env = {}, statePath = '' }) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'noop-petulance-'));
   const transcriptPath = path.join(tmp, 'transcript.jsonl');
   fs.writeFileSync(transcriptPath, transcriptEntries.map((e) => JSON.stringify(e)).join('\n') + (transcriptEntries.length ? '\n' : ''));
