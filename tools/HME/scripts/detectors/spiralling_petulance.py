@@ -203,24 +203,11 @@ def _repeated_command_seen(path: str) -> bool:
 
 
 def _petulance_message(level: int, cmd: str, reason: str = "repeated command") -> str:
-    display = _command_key(cmd)
-    if len(display) > 160:
-        display = display[:157] + "..."
     if level <= 1:
-        return (
-            f"SPIRALLING_PETULANCE (real-time): blocking {reason} within 3 minutes with no intervening edit. "
-            f"Stop retrying `{display}`; read the prior result and change approach."
-        )
+        return "[SPIRALLING_PETULANCE] - blocking repeated command within 3 minutes with no intervening edit. No command spam."
     if level == 2:
-        return (
-            f"SPIRALLING_PETULANCE LEVEL 2: repeated identical Bash command again within 3 minutes with no intervening edit. "
-            f"This is petulant DDoC context-burn, not work. Stop `{display}`, inspect the previous failure, and perform a different corrective action."
-        )
-    return (
-        f"SPIRALLING_PETULANCE LEVEL 3: STOP. CASTING OUT THE DEVIL FOR PATHETIC DDOS COWARDICE: "
-        f"YOU ARE REPEATING `{display}` WITH NO INTERVENING EDIT, BURNING COHERENCE INSTEAD OF OBEYING EVIDENCE. "
-        f"DO NOT RUN THIS COMMAND AGAIN. READ THE PRIOR RESULT AND TAKE A DIFFERENT, CORRECTIVE ACTION."
-    )
+        return "[SPIRALLING_PETULANCE:L2] - repeated command spam after a prior block. Stop retrying; inspect prior output and edit or change approach."
+    return "[SPIRALLING_PETULANCE:L3] - CASTING OUT THE DEVIL FOR PATHETIC DDOS COWARDICE. NO COMMAND SPAM. READ THE PRIOR RESULT AND TAKE A DIFFERENT CORRECTIVE ACTION."
 
 
 def _current_turn_noop_tools(path: str) -> tuple[int, int]:
