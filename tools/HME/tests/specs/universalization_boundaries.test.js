@@ -73,7 +73,7 @@ test('Claude adapter PreToolUse deny stays structured stdout without hook-error 
   }
 });
 
-test('Claude Stop denies stay off stderr while preserving structured block stdout', () => {
+test('Claude Stop denies relay raw structured block stdout', () => {
   const { claudeRelayFields } = require('../../event_kernel/decision_normalizer');
   const reason = 'Stop hook feedback: AUTO-COMPLETENESS CHECK compacted by hme-proxy.';
   const relayed = claudeRelayFields('Stop', {
