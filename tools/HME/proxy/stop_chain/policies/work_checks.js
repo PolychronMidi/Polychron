@@ -263,7 +263,7 @@ function scanWorkDebtAdmission(text) {
   if (!text) return [];
   const stripped = text.replace(/```[\s\S]*?```/g, ' ');
   const safeNegation = /\b(no|zero|nothing)\s+(remaining|remains|left|pending|open|outstanding|unfinished|incomplete)\b/i;
-  const re = /\b(not\s+(complete|done|finished|closed)|does(?:n['’]?t|\s+not)\s+complete|not\s+fully\s+(complete|closed|done)|remaining\s+(work|gap|gaps|item|items|issue|issues|todo|todos|finding|findings|violation|violations|offender|offenders)|still\s+(needs?|pending|open|outstanding|unfinished|incomplete)|pending\s+(work|item|items|todo|todos|fix|fixes)|follow-?up\s+(needed|required|remains?)|limitation\s*:|not\s+completed\s+from|before\s+.*diversion|resume\s+exactly\s+there)\b[^.!?\n]{0,180}/gi;
+  const re = /\b(not\s+(complete|done|finished|closed)|does(?:n['’]?t|\s+not)\s+complete|not\s+fully\s+(complete|closed|done)|remaining\s+(work|gap|gaps|item|items|issue|issues|todo|todos|finding|findings|violation|violations|offender|offenders)|still\s+(needs?|pending|open|outstanding|unfinished|incomplete)|pending\s+(work|item|items|todo|todos|fix|fixes)|follow-?up\s+(needed|required|remains?)|limitation\s*:|not\s+completed\s+from|before\s+.*diversion|resume\s+exactly\s+there|(?:i['’]?m|i\s+am|i\s+will|i['’]?ll|we\s+will)\s+(fixing|going\s+to|running|patching|continuing|executing|doing|checking|verifying)|(?:fixing|patching|running|continuing|executing|doing|checking|verifying)\s+(now|next|that|this|the))\b[^.!?\n]{0,180}/gi;
   const out = [];
   let m;
   while ((m = re.exec(stripped)) !== null) {
