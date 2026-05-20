@@ -251,7 +251,7 @@ function createClaudeHandler(deps) {
               passthrough: _passthrough,
               isOmniRouteSwap: _isOmniRouteSwap,
               swapChain: _swapChain,
-              odMode: 1,
+              odMode: overdriveRoute.mode,
               omniProvider: _omniProvider,
               swapModel: _swapModel,
               isInteractivePath: _isInteractivePath,
