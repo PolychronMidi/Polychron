@@ -88,7 +88,7 @@
   },
 
 
-// manually_toprank and team_role_models both fall back to ranking_rules if models here are either blank or unavailable. A manually_toprank value for a team_role will override whatever tier manually_toprank would otherwise apply.
+
   "manually_toprank": {
     "E5": [""],
     "E4": [],
@@ -98,19 +98,19 @@
     "driver": [""]
   },
   "team_role_models": {
-    "driver": { // manually_toprank E5, then E5 ranking_rules
+    "driver": {
       "source": "manually_toprank",
       "tier": "E5"
     },
-    "team_lead": { // manually_toprank E5, then E5 ranking_rules
+    "team_lead": {
       "source": "manually_toprank",
       "tier": "E5"
     },
-    "team_purple": { // E4 ranking_rules
+    "team_purple": {
       "source": "ranking_rules",
       "tier": "E4"
     },
-    "stage_crew": { // role-tier ranking_rules
+    "stage_crew": {
       "source": "ranking_rules",
       "tier": "role"
     }
