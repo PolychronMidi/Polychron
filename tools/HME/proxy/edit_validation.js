@@ -70,6 +70,10 @@ function isEditFamilyTool(name) {
   return EDIT_FAMILY_TOOL_NAMES.has(name);
 }
 
+function isWriteTool(name) {
+  return name === 'Write';
+}
+
 function isWriteFamilyTool(name) {
   return WRITE_FAMILY_TOOL_NAMES.has(name);
 }
