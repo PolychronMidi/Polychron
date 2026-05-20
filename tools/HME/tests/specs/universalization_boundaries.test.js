@@ -94,6 +94,7 @@ test('Claude adapter converts invalid hook stdout into valid Lifesaver block JSO
     assert.equal(out.decision, 'block');
     assert.match(out.reason, /JSON validation failed/);
     assert.match(fs.readFileSync(path.join(tmp, 'log', 'hme-errors.log'), 'utf8'), /hook-output-validation/);
+    assert.match(fs.readFileSync(path.join(tmp, 'log', 'hme.log'), 'utf8'), /ERROR hook-output-validation/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
