@@ -34,6 +34,7 @@
     { "file": "18_activity_log.js", "phase": "observability", "name": "activity_log" },
     { "file": "19_mcp_fail_scan.js", "phase": "observability", "name": "mcp_fail_scan" },
     { "file": "20_hme_log_watermark.js", "phase": "observability", "name": "hme_log_watermark" },
+    { "file": "20a_omo_shadow_bridge.js", "phase": "observability", "name": "omo_shadow_bridge" },
     { "file": "21_proxy_autocommit.js", "phase": "post", "name": "proxy_autocommit" },
     { "file": "22_lifesaver_inject.js", "phase": "post", "name": "lifesaver_inject" },
     { "file": "23_stop_hook_fp_gate.js", "phase": "post", "name": "stop_hook_fp_gate" },
