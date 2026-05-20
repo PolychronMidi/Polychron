@@ -53,4 +53,4 @@ async function pruneWithOmo(payload, options = {}) {
   emitOmo('omo_pruning_completed', { route: options.route || '', model: options.model || '', before_bytes: beforeBytes, after_bytes: afterBytes, bytes_saved: beforeBytes - afterBytes, duplicates_pruned: result.duplicates_pruned || 0, protected_skipped: result.protected_skipped || 0, source }, options.telemetry);
   return out;
 }
-module.exports = { pruneWithOmo };
+module.exports = { pruneWithOmo, pruneWithOmoSync };
