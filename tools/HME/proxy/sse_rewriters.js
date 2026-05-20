@@ -621,7 +621,8 @@ function _stripExcessiveBold(text) {
 
 function _cleanupSlopArtifacts(text) {
   return String(text || '')
-    .replace(/([,.;:!?])(?:\s*\1)+/g, '$1')
+    .replace(/(?:\s*[,.;:!?]){2,}/g, '.')
+    .replace(/^\s*[,.;:!?]+\s*/g, '')
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/\s+([,.;:!?])/g, '$1')
     .replace(/\(\s+/g, '(')
