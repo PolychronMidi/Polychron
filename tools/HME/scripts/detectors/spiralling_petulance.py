@@ -24,6 +24,77 @@ _CLEAN_GIT_TEXT = re.compile(r"(\[SUCCESS\]|\(no stdout\)|nothing to commit|work
 _STATUS_OR_DIFF = re.compile(r"(\bgit\s+(?:status|diff)\b|[\"\'](?:status|diff)[\"\'])", re.I | re.S)
 _REPEAT_WINDOW_SEC = 180
 _EDIT_TOOL_NAMES = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
+_MAX_STATE_ATTEMPTS = 200
+
+
+def _state_path() -> Path:
+    override = os.environ.get("HME_PETULANCE_STATE_PATH")
+    if override:
+        return Path(override)
+    root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
+    if root:
+        return Path(root) / "tools" / "HME" / "runtime" / "spiralling-petulance-state.json"
+    return Path("/tmp") / "hme-spiralling-petulance-state.json"
+
+
+def _load_state() -> dict:
+    try:
+        data = json.loads(_state_path().read_text(encoding="utf-8"))
+    except Exception:
+        return {"last_edit_ts": 0.0, "attempts": []}
+    if not isinstance(data, dict):
+        return {"last_edit_ts": 0.0, "attempts": []}
+    attempts = data.get("attempts") if isinstance(data.get("attempts"), list) else []
+    return {"last_edit_ts": float(data.get("last_edit_ts") or 0.0), "attempts": attempts}
+
+
+def _save_state(state: dict) -> None:
+    path = _state_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        tmp.write_text(json.dumps(state, separators=(",", ":")), encoding="utf-8")
+        tmp.replace(path)
+    except Exception:
+        pass
+
+
+def _cmd_hash(cmd: str) -> str:
+    return hashlib.sha256(_command_key(cmd).encode("utf-8", "ignore")).hexdigest()
+
+
+def reset_repeat_state() -> None:
+    state = _load_state()
+    state["last_edit_ts"] = time.time()
+    state["attempts"] = []
+    _save_state(state)
+
+
+def _state_repeat_level_and_record(cmd: str, now: float | None = None) -> int:
+    key = _command_key(cmd)
+    if not key:
+        return 0
+    now = time.time() if now is None else now
+    state = _load_state()
+    last_edit = float(state.get("last_edit_ts") or 0.0)
+    h = _cmd_hash(key)
+    recent: list[dict] = []
+    prior_same = 0
+    for row in state.get("attempts", []):
+        if not isinstance(row, dict):
+            continue
+        ts = float(row.get("ts") or 0.0)
+        if ts <= last_edit or now - ts > _REPEAT_WINDOW_SEC:
+            continue
+        ch = str(row.get("hash") or "")
+        recent.append({"hash": ch, "ts": ts})
+        if ch == h:
+            prior_same += 1
+    recent.append({"hash": h, "ts": now})
+    state["attempts"] = recent[-_MAX_STATE_ATTEMPTS:]
+    state["last_edit_ts"] = last_edit
+    _save_state(state)
+    return min(prior_same, 3)
 
 
 def _text(event: dict) -> str:
