@@ -63,6 +63,10 @@ function withSandbox() {
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-codex-proxy-test-'));
   fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'KB'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'doc', 'templates'), { recursive: true });
+  fs.copyFileSync(
+    path.join(repoRoot, 'doc', 'templates', '.env.example'),
+    path.join(sandbox, 'doc', 'templates', '.env.example'),
+  );
   const prodEnv = fs.readFileSync(path.join(repoRoot, '.env'), 'utf8');
   const secretKey = (key) => [
     /_TOKEN$/, /_KEY$/, /_SECRET$/, /_PASSWORD$/, /_PASSWD$/,
