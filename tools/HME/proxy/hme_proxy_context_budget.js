@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { shrinkForPassthrough } = require('./passthrough_compact');
 const { PROJECT_ROOT } = require('./shared');
-const { loadEnv, defaultEnvPath } = require('./shared/load_env');
+const { loadEnv } = require('./shared/load_env');
 
 // Lazy-loaded model context budget registry.
 // Reloads when the source file mtime changes (no daemon restart needed after sync).
