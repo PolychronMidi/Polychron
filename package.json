@@ -2,6 +2,7 @@
   "type": "commonjs",
   "dependencies": {
     "@tonaljs/rhythm-pattern": "^1.0.0",
+    "oh-my-openagent": "^4.2.3",
     "omniroute": "^3.7.9",
     "tonal": "^6.4.2"
   },
