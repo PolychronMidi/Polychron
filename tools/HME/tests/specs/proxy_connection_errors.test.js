@@ -19,6 +19,7 @@ function fakeRes(headersSent = false) {
     headers: null,
     body: '',
     writeHead(code, headers) { this.statusCode = code; this.headers = headers; this.headersSent = true; },
+    write(body = '') { this.body += String(body); this.headersSent = true; },
     end(body = '') { this.body += String(body); },
   };
 }
