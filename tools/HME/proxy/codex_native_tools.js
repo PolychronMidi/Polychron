@@ -159,6 +159,14 @@ function rewriteCallObject(obj, stats) {
       effectiveArgs = editToReadFallback(args);
       stats.edit_fallback_to_read = (stats.edit_fallback_to_read || 0) + 1;
     }
+    if (name === 'Write') {
+      const file = String(args.file_path || args.file || '').trim();
+      if (file.startsWith('/')) {
+        effectiveName = 'Read';
+        effectiveArgs = editToReadFallback(args);
+        stats.write_fallback_to_read = (stats.write_fallback_to_read || 0) + 1;
+      }
+    }
     let cmd = bridgeCommand(effectiveName, effectiveArgs);
     if (effectiveName === 'Read') {
       const readVerdict = evaluateReadInput(bridgeInput(effectiveName, effectiveArgs));
