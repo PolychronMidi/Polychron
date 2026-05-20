@@ -364,6 +364,9 @@ def noop_predicate(cmd: str, transcript_path: str) -> str | bool:
 
 
 def main() -> int:
+    if len(sys.argv) >= 2 and sys.argv[1] == "--reset-edit":
+        reset_repeat_state()
+        return 0
     if len(sys.argv) < 2:
         print("ok")
         return 0
