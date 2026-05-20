@@ -11,7 +11,7 @@ test('slop caveman compression deletes requested glue words case-insensitively',
 
 test('slop abbreviations are case-insensitive and preserve punctuation', () => {
   const result = _stripSlop('Acknowledged. WITHOUT delay, move into tests and to prod.');
-  assert.ok(result.hits.includes('abbreviations'));
+  assert.ok(result.hits.includes('caveman_abbreviations'));
   assert.equal(result.out, 'K. W/o delay, move 2 tests & - prod.');
 });
 
