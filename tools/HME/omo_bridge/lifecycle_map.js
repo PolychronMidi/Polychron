@@ -28,7 +28,7 @@ function toOpenCodePluginInput(event = {}, options = {}) {
   };
 }
 const HOOK_MAP = {
-  request: ['chat.params', 'chat.headers', 'chat.message', 'experimental.chat.messages.transform', 'experimental.chat.system.transform'],
+  request: ['chat.params', 'chat.headers', 'experimental.chat.messages.transform', 'experimental.chat.system.transform'],
   pretool: ['tool.execute.before'],
   posttool: ['tool.execute.after'],
   compacting: ['experimental.session.compacting'],
