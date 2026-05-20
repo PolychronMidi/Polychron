@@ -15,7 +15,14 @@ test('slop abbreviations are case-insensitive and preserve punctuation', () => {
   assert.equal(result.out, 'K. W/o delay, move 2 tests & - prod.');
 });
 
-test('slop caveman punctuation words are case-insensitive and literal-dot safe', () => {
+test('slop caveman contractions are ordered before bare pronouns', () => {
+  const result = _stripSlop("You're ready and we’re done; you'll see we’ll pass.");
+  assert.ok(result.hits.includes('caveman_compression'));
+  assert.equal(result.out, 'Ready & done; see pass.');
+  assert.doesNotMatch(result.out, /['’](re|ll|m)\b/);
+});
+
+test('slop cleanup collapses punctuation left by caveman deletions', () => {
   const result = _stripSlop('RIGHT. Okay? AGREED! A plan remains.');
   assert.ok(result.hits.includes('caveman_compression'));
   assert.equal(result.out, 'Plan remains.');
