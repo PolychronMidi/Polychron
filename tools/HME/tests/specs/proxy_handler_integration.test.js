@@ -88,6 +88,7 @@ test('Claude handler forwards to fake Anthropic upstream and returns success wit
     process.env.HME_INJECT_TOOLS = '0';
     process.env.HME_PROXY_INJECT = '0';
     process.env.HME_PROXY_QUIET_IMPORT = '1';
+    process.env.OVERDRIVE_MODE = '0';
     clearProxyCache();
     const lifecyclePath = require.resolve('../../proxy/lifecycle_bridge');
     assert.equal(require.cache[lifecyclePath], undefined);
