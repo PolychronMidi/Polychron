@@ -29,10 +29,28 @@ function _detectEntrypoint(root, pkg) {
   const candidates = [pkg.main, pkg.module, 'dist/index.js', 'index.js', 'src/index.js'].filter(Boolean);
   return candidates.find((c) => fs.existsSync(path.join(root, c))) || '';
 }
+function _findPackageJsonFromEntrypoint(entrypoint) {
+  let dir = path.dirname(entrypoint);
+  const root = path.parse(dir).root;
+  while (dir && dir !== root) {
+    const candidate = path.join(dir, 'package.json');
+    if (fs.existsSync(candidate)) return candidate;
+    dir = path.dirname(dir);
+  }
+  return '';
+}
 function _resolvePackage(pkgName) {
   if (!pkgName) throw new Error('HME_OMO_PACKAGE is required when HME_OMO_SOURCE=package');
-  const pkgJsonPath = require.resolve(path.join(pkgName, 'package.json'), { paths: [PROJECT_ROOT] });
-  return path.dirname(pkgJsonPath);
+  try {
+    const pkgJsonPath = require.resolve(path.join(pkgName, 'package.json'), { paths: [PROJECT_ROOT] });
+    return path.dirname(pkgJsonPath);
+  } catch (err) {
+    if (err && err.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') throw err;
+    const entrypoint = require.resolve(pkgName, { paths: [PROJECT_ROOT] });
+    const pkgJsonPath = _findPackageJsonFromEntrypoint(entrypoint);
+    if (!pkgJsonPath) throw new Error(`could not locate package.json for ${pkgName}`);
+    return path.dirname(pkgJsonPath);
+  }
 }
 function _resolvePath(configuredPath) {
   if (!configuredPath) throw new Error('HME_OMO_PATH is required when HME_OMO_SOURCE=path');
