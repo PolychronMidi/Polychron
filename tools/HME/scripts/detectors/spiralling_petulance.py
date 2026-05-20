@@ -93,6 +93,51 @@ def _is_edit_tool(name: str) -> bool:
     return name in _EDIT_TOOL_NAMES or name.endswith(".Edit") or name.endswith(".Write") or name.endswith(".MultiEdit")
 
 
+def _compact_tool_name(event: dict) -> str:
+    summary = str(event.get("summary") or "")
+    if summary.startswith("Tool: "):
+        return summary[6:].strip()
+    content = str(event.get("content") or "")
+    if ":" in content:
+        head = content.split(":", 1)[0].strip()
+        if head:
+            return head
+    return ""
+
+
+def _compact_command(event: dict) -> str:
+    if event.get("type") != "tool_call":
+        return ""
+    if _compact_tool_name(event) != "Bash":
+        return ""
+    content = str(event.get("content") or "")
+    m = re.search(r'"command"\s*:\s*"((?:\\.|[^"\\])*)"', content, re.S)
+    if not m:
+        return ""
+    try:
+        import json
+        return json.loads('"' + m.group(1) + '"')
+    except Exception:
+        return m.group(1)
+
+
+def _event_has_edit(event: dict) -> bool:
+    if event.get("type") == "tool_call" and _is_edit_tool(_compact_tool_name(event)):
+        return True
+    return any(_is_edit_tool(str(tu.get("name", ""))) for tu in iter_tool_uses(event))
+
+
+def _event_bash_commands(event: dict) -> list[str]:
+    compact = _compact_command(event)
+    if compact:
+        return [compact]
+    out: list[str] = []
+    for tu in iter_tool_uses(event):
+        if _is_bash_tool(str(tu.get("name", ""))):
+            out.extend(_commands_from_tool(tu))
+    return out
+
+
 def _event_ts(event: dict) -> float | None:
     for key in ("ts", "timestamp", "created_at", "createdAt"):
         raw = event.get(key)
