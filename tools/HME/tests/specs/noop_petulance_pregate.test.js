@@ -110,6 +110,38 @@ test('petulance pregate denies repeated real Bash command within 3 minutes witho
   assert.match(out.stdout, /within 3 minutes with no intervening edit/);
 });
 
+test('petulance pregate state tracker denies repeated command without transcript dependency', () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'petulance-state-'));
+  const statePath = path.join(stateDir, 'state.json');
+  try {
+    const cmd = 'state-only-repeat-command';
+    const first = runHook({ cmd, transcriptEntries: [userMsg()], statePath });
+    assert.ok(first.ok, `first state-backed command should pass, got: ${first.stdout}`);
+    const second = runHook({ cmd, transcriptEntries: [userMsg()], statePath });
+    assert.ok(second.stdout.includes('[SPIRALLING_PETULANCE]'), `expected state-backed deny, got: ${second.stdout}`);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
+test('petulance pregate state reset allows repeated command after edit reset', () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'petulance-state-reset-'));
+  const statePath = path.join(stateDir, 'state.json');
+  try {
+    const cmd = 'state-reset-repeat-command';
+    assert.ok(runHook({ cmd, transcriptEntries: [userMsg()], statePath }).ok);
+    execFileSync('python3', [path.join(PROJECT_ROOT, 'tools/HME/scripts/detectors/spiralling_petulance.py'), '--reset-edit'], {
+      env: { ...process.env, PROJECT_ROOT, HME_PETULANCE_STATE_PATH: statePath },
+      encoding: 'utf8',
+    });
+    const out = runHook({ cmd, transcriptEntries: [userMsg()], statePath });
+    assert.ok(out.ok, `expected allow after state reset, got: ${out.stdout}`);
+    assert.ok(!out.stdout.includes('SPIRALLING_PETULANCE'), 'state reset must clear repeat chain');
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test('petulance pregate allows repeated command after an edit tool', () => {
   const cmd = 'i/hme admin action=health';
   const out = runHook({
