@@ -191,6 +191,51 @@ def local_path_hits(path: str, text: str) -> list[str]:
     return hits
 
 
+def env_template_keys() -> set[str]:
+    if not ENV_TEMPLATE.is_file():
+        failures.append("env invariant failed: doc/templates/.env.example is missing")
+        return set()
+    if (ROOT / ".env.example").exists():
+        failures.append("env invariant failed: .env.example must live at doc/templates/.env.example, not repo root")
+    keys: set[str] = set()
+    for line in ENV_TEMPLATE.read_text(encoding="utf-8", errors="replace").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key = stripped.split("=", 1)[0].strip()
+        if key:
+            keys.add(key)
+    return keys
+
+
+_ENV_FALLBACK_PATTERNS = [
+    re.compile(r"process\.env\.([A-Z0-9_]+)\s*(?:\|\||\?\?)"),
+    re.compile(r"process\.env\[['\"]([A-Z0-9_]+)['\"]\]\s*(?:\|\||\?\?)"),
+    re.compile(r"os\.environ\.get\(\s*['\"]([A-Z0-9_]+)['\"]\s*,"),
+    re.compile(r"os\.getenv\(\s*['\"]([A-Z0-9_]+)['\"]\s*,"),
+    re.compile(r"\bgetenv\(\s*['\"]([A-Z0-9_]+)['\"]\s*,"),
+    re.compile(r"\$\{([A-Z0-9_]+)(?::-|-)"),
+]
+
+
+def inline_env_fallback_hits(path: str, text: str, keys: set[str]) -> list[str]:
+    if Path(path).suffix.lower() not in ENV_FALLBACK_EXTS:
+        return []
+    hits: list[str] = []
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if "env-fallback-ok" in line:
+            continue
+        for pattern in _ENV_FALLBACK_PATTERNS:
+            for match in pattern.finditer(line):
+                key = match.group(1)
+                if key in keys:
+                    hits.append(
+                        f"{q(path)}:{lineno} uses inline fallback for .env key {key}; "
+                        "defaults belong in doc/templates/.env.example and runtime reads must fail fast"
+                    )
+    return hits
+
+
 def syntax_check(path: str, data: bytes) -> None:
     if skip_syntax(path, POLICY):
         return
