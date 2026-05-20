@@ -241,6 +241,7 @@ test('edit failure middleware treats file-modified-since-read as read-equivalent
     assert.match(toolResult.content, /current context line/);
     assert.equal(events[0].event, 'edit_failure_context_appended');
     assert.equal(events[0].read_equivalent, true);
+    assert.equal(events[0].replaced_native_error, true);
     const read = sessionState.readState('modified-since-read-test').files_read.at(-1);
     assert.equal(read.file, file);
     assert.equal(read.source, 'edit_failure_auto_context');
