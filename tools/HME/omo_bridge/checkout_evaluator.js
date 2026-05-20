@@ -1,5 +1,6 @@
 'use strict';
 const path = require('path');
+const { pathToFileURL } = require('url');
 const { resolveOmo } = require('./dependency');
 const { validateOmoContract } = require('./contract_validator');
 const { emitOmo } = require('./telemetry');
