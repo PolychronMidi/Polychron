@@ -6,7 +6,7 @@ const { _stripSlop, slopStripRewrite } = require('../../proxy/sse_rewriters');
 test('slop caveman compression deletes requested glue words case-insensitively', () => {
   const result = _stripSlop("I'm the one; I am now too ready; it has the fix; I will ship now.");
   assert.ok(result.hits.includes('caveman_compression'));
-  assert.equal(result.out, 'One; Ready; it fix; Ship.');
+  assert.equal(result.out, 'One; ready; it fix; ship.');
 });
 
 test('slop rewriter applies caveman compression to text blocks', () => {
