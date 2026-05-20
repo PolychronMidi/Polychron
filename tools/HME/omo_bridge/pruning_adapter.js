@@ -20,6 +20,22 @@ function _compatPrune(payload, protectedTools = []) {
   out.messages = kept;
   return { payload: out, duplicates_pruned: duplicates, protected_skipped: protectedSkipped };
 }
+function pruneWithOmoSync(payload, options = {}) {
+  const beforeBytes = _bytes(payload);
+  emitOmo('omo_pruning_started', { route: options.route || '', model: options.model || '', before_bytes: beforeBytes }, options.telemetry);
+  const result = _compatPrune(payload, options.protectedTools || []);
+  const prunedPayload = result.payload || payload;
+  const afterBytes = _bytes(prunedPayload);
+  const changed = afterBytes !== beforeBytes;
+  if (changed && payload && typeof payload === 'object') {
+    for (const key of Object.keys(payload)) delete payload[key];
+    Object.assign(payload, prunedPayload);
+  }
+  const out = { changed, beforeBytes, afterBytes, stats: result, payload };
+  emitOmo('omo_pruning_completed', { route: options.route || '', model: options.model || '', before_bytes: beforeBytes, after_bytes: afterBytes, bytes_saved: beforeBytes - afterBytes, duplicates_pruned: result.duplicates_pruned || 0, protected_skipped: result.protected_skipped || 0, source: 'compat' }, options.telemetry);
+  return out;
+}
+
 async function pruneWithOmo(payload, options = {}) {
   const beforeBytes = _bytes(payload);
   emitOmo('omo_pruning_started', { route: options.route || '', model: options.model || '', before_bytes: beforeBytes }, options.telemetry);
