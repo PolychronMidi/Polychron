@@ -325,6 +325,7 @@ def self_protect() -> None:
 def main() -> int:
     load_env_secrets()
     self_protect()
+    declared_env_keys = env_template_keys()
     for path in staged_paths():
         reason = blocked_path_reason(path, POLICY)
         if reason:
