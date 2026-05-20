@@ -259,6 +259,22 @@ function scanNextActionDebt(text) {
   return out;
 }
 
+function scanWorkDebtAdmission(text) {
+  if (!text) return [];
+  const stripped = text.replace(/```[\s\S]*?```/g, ' ');
+  const safeNegation = /\b(no|zero|nothing)\s+(remaining|remains|left|pending|open|outstanding|unfinished|incomplete)\b/i;
+  const re = /\b(not\s+(complete|done|finished|closed)|does(?:n['’]?t|\s+not)\s+complete|not\s+fully\s+(complete|closed|done)|remaining\s+(work|gap|gaps|item|items|issue|issues|todo|todos|finding|findings|violation|violations|offender|offenders)|still\s+(needs?|pending|open|outstanding|unfinished|incomplete)|pending\s+(work|item|items|todo|todos|fix|fixes)|follow-?up\s+(needed|required|remains?)|limitation\s*:|not\s+completed\s+from|before\s+.*diversion|resume\s+exactly\s+there)\b[^.!?\n]{0,180}/gi;
+  const out = [];
+  let m;
+  while ((m = re.exec(stripped)) !== null) {
+    const s = m[0].trim().replace(/\s+/g, ' ');
+    if (!s || safeNegation.test(s)) continue;
+    out.push(s);
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+
 function entryTimestampMs(entry) {
   const raw = entry && (entry.timestamp || entry.created_at || entry.time || entry.ts);
   if (typeof raw === 'number') return raw > 10_000_000_000 ? raw : raw * 1000;
