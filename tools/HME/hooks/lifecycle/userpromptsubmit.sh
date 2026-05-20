@@ -145,16 +145,8 @@ fi
 # FAIL-LOUD: python stderr -> hme-errors.log so import failures don't go silent.
 _UPS_CRIT_ERR=$(mktemp 2>/dev/null || echo "$_HME_OS_TMP/_ups_crit_err_$$")  # silent-ok: optional fallback path.
 set +e
-CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 - <<'PYEOF' 2>"$_UPS_CRIT_ERR"
-from server.tools_analysis.todo import list_critical
-items = list_critical()
-if items:
-    print("HME CRITICAL TODOS (unresolved):")
-    for i in items:
-        src = " [" + i["source"] + "]" if i.get("source") else ""
-        print("  !!! #{} {}{}".format(i["id"], i["text"], src))
-PYEOF
-)
+CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" \
+  python3 "$PROJECT_ROOT/tools/HME/scripts/userpromptsubmit_helper.py" critical-todos 2>"$_UPS_CRIT_ERR")
 _UPS_CRIT_RC=$?
 set -e
 if [ "$_UPS_CRIT_RC" -ne 0 ] && [ -s "$_UPS_CRIT_ERR" ] && [ -d "$PROJECT/log" ]; then
