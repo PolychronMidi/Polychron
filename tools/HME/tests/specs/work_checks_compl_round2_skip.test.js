@@ -266,6 +266,21 @@ test('work_checks: limitation language blocks closing as work-debt admission',
   }));
 
 
+test('work_checks: action-promise ceremony blocks closing as work-debt admission',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'harden the checks' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'Acknowledged. Fixing the work checks now and running validation.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /WORK-DEBT ADMISSION/);
+    assert.match(result.reason, /Fixing the work checks now/);
+  }));
+
+
 test('work_checks: unfinished task reminder blocks stopping before auto-completeness',
   _withSandbox(async (sandbox) => {
     const transcript = _writeTranscript(sandbox, [
