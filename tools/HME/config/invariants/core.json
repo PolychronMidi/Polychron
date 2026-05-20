@@ -324,6 +324,19 @@
       "capture_stderr": true
     },
     {
+      "id": "env-failfast-no-unclassified-fallbacks",
+      "description": "Declared .env keys must not gain unclassified inline fallbacks; legacy fallbacks require audited hash waivers and stale waivers fail.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-env-failfast.py",
+      "severity": "error",
+      "finding_label": "env fallback finding",
+      "success_detail": "no unclassified env fallback findings",
+      "allow_exit_codes": [
+        0
+      ],
+      "capture_stderr": true
+    },
+    {
       "id": "review-verdict-emitter-importable",
       "description": "emit_review_verdict_marker must be importable from server.onboarding_chain AND produce a string containing HME_REVIEW_VERDICT for the 'clean' verdict.",
       "type": "shell_output_empty",
