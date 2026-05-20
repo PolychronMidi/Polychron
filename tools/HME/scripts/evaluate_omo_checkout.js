@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 'use strict';
+const path = require('path');
+const { loadEnv } = require('../proxy/shared/load_env');
+loadEnv(path.resolve(__dirname, '..', '..', '..', '.env'));
 const { evaluateOmoCheckout } = require('../omo_bridge/checkout_evaluator');
 const result = evaluateOmoCheckout({
   enabled: true,
