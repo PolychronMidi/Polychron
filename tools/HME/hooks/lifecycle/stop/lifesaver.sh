@@ -44,7 +44,7 @@ if [ -f "$ERROR_LOG" ]; then
       done <<< "$_CANARY_LINES"
     fi
     # Strip canaries before agent/self classification.
-    _NEW_NO_CANARY=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_CANARY_RE" || true)
+    _NEW_NO_CANARY=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_CANARY_RE" | grep -vE "$_STATUS_LINE_RE" || true)
     # Self-origin = lines tagged with a known self-health writer (regardless
     SELF_BY_TAG=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -E "$_SELF_TAG_RE" || true)
     REMAINING=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -vE "$_SELF_TAG_RE" || true)
