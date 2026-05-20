@@ -17,7 +17,7 @@ function runHook({ cmd, transcriptEntries = [], env = {}, statePath = '' }) {
   try {
     const stdout = execFileSync('bash', [HOOK], {
       input: JSON.stringify(input),
-      env: { ...process.env, ...env, PROJECT_ROOT },
+      env: { ...process.env, HME_PETULANCE_STATE_PATH: statePath || path.join(tmp, 'petulance-state.json'), ...env, PROJECT_ROOT },
       encoding: 'utf8',
     });
     return { stdout, ok: true };
