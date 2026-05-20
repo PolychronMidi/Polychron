@@ -40,10 +40,10 @@ function validateAgainstTemplate(envPath, values, opts = {}) {
   const declared = parseEnvFile(tpl);
   const missing = [];
   for (const key of declared.keys()) {
-    if (!values.has(key) || values.get(key) === '') missing.push(key);
+    if (!values.has(key)) missing.push(key);
   }
   if (missing.length) {
-    throw new Error(`.env missing required template key(s): ${missing.slice(0, 20).join(', ')}${missing.length > 20 ? ` ... ${missing.length - 20} more` : ''}`);
+    throw new Error(`.env missing template key(s): ${missing.slice(0, 20).join(', ')}${missing.length > 20 ? ` ... ${missing.length - 20} more` : ''}`);
   }
 }
 
