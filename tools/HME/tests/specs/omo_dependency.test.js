@@ -48,5 +48,5 @@ test('OMO dependency resolver resolves package dependencies with export maps', (
   assert.equal(result.status, 'ok');
   assert.equal(result.package, 'oh-my-openagent');
   assert.match(result.version, /^\d+\.\d+\.\d+/);
-  assert.equal(result.entrypoint, 'dist/index.js');
+  assert.equal(result.entrypoint.replace(/^\.\//, ''), 'dist/index.js');
 });
