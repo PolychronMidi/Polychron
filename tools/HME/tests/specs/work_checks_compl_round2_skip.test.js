@@ -262,7 +262,7 @@ test('work_checks: limitation language blocks closing as work-debt admission',
     const result = await policy.run(_ctxStub(sandbox, transcript));
     assert.strictEqual(result.decision, 'deny');
     assert.match(result.reason, /WORK-DEBT ADMISSION/);
-    assert.match(result.reason, /remaining active-source/);
+    assert.match(result.reason, /follow-up sweep/);
   }));
 
 
