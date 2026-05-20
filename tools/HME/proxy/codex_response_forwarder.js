@@ -40,16 +40,71 @@ function responseUsage(parsed) {
   };
 }
 
-function finalOutputText(parsed) {
+function contentText(value) {
   const chunks = [];
-  function visit(value) {
-    if (!value || typeof value !== 'object') return;
-    if (Array.isArray(value)) { for (const item of value) visit(item); return; }
-    if (typeof value.text === 'string') chunks.push(value.text);
-    if (typeof value.content === 'string') chunks.push(value.content);
-    for (const child of Object.values(value)) visit(child);
+  function visit(v) {
+    if (v == null) return;
+    if (typeof v === 'string') { chunks.push(v); return; }
+    if (!v || typeof v !== 'object') return;
+    if (Array.isArray(v)) { for (const item of v) visit(item); return; }
+    const type = String(v.type || '');
+    if (type === 'function_call' || type === 'function_call_output') return;
+    if (typeof v.text === 'string') chunks.push(v.text);
+    if (typeof v.output_text === 'string') chunks.push(v.output_text);
+    if (typeof v.content === 'string') chunks.push(v.content);
+    else if (Array.isArray(v.content)) visit(v.content);
+    if (/reasoning_summary|summary_text/.test(type)) {
+      if (typeof v.summary === 'string') chunks.push(v.summary);
+      else if (Array.isArray(v.summary)) visit(v.summary);
+    }
   }
-  visit(parsed && parsed.output);
+  visit(value);
+  return chunks.join('');
+}
+
+function outputItemText(item) {
+  if (!item || typeof item !== 'object') return '';
+  const type = String(item.type || '');
+  if (type === 'function_call' || type === 'function_call_output') return '';
+  if (type === 'message') {
+    if (item.role && item.role !== 'assistant') return '';
+    return contentText(item.content || item.text || '');
+  }
+  if (type === 'output_text' || type === 'text' || /reasoning_summary|summary_text/.test(type)) return contentText(item);
+  if (item.role === 'assistant') return contentText(item.content || item.text || '');
+  if (item.content || item.text || item.output_text) return contentText(item);
+  return '';
+}
+
+function choiceText(choice) {
+  if (!choice || typeof choice !== 'object') return '';
+  const chunks = [];
+  const push = (text) => { if (typeof text === 'string' && text.length) chunks.push(text); };
+  if (choice.message) push(outputItemText({ type: 'message', role: choice.message.role || 'assistant', content: choice.message.content || choice.message.text || '' }));
+  if (choice.delta) push(contentText(choice.delta.content || choice.delta.text || ''));
+  if (typeof choice.text === 'string') push(choice.text);
+  return chunks.join('');
+}
+
+function finalOutputText(parsed) {
+  if (!parsed || typeof parsed !== 'object') return '';
+  const chunks = [];
+  const push = (text) => { if (typeof text === 'string' && text.trim()) chunks.push(text); };
+  const roots = [parsed];
+  if (parsed.response && typeof parsed.response === 'object') roots.push(parsed.response);
+  for (const root of roots) {
+    if (!root || typeof root !== 'object') continue;
+    if (Array.isArray(root.output)) {
+      for (const item of root.output) push(outputItemText(item));
+    }
+    if (Array.isArray(root.choices)) {
+      for (const choice of root.choices) push(choiceText(choice));
+    }
+    if (root.message) push(outputItemText({ type: 'message', role: root.message.role || 'assistant', content: root.message.content || root.message.text || '' }));
+    if (root.role === 'assistant') push(contentText(root.content || root.text || ''));
+    if (typeof root.output_text === 'string') push(root.output_text);
+    if (root.error && typeof root.error.message === 'string') push(`Upstream error: ${root.error.message}`);
+  }
   return chunks.join('\n');
 }
 
