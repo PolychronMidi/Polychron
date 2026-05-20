@@ -277,13 +277,7 @@ test('Codex proxy sends native tools upstream and translates native Read call wi
         return;
       }
       res.writeHead(200, { 'Content-Type': 'text/event-stream' });
-      const finalEvents = [
-        { type: 'response.created', response: { id: 'resp_final', output: [] } },
-        { type: 'response.output_text.delta', output_index: 0, content_index: 0, delta: 'done' },
-        { type: 'response.output_text.done', output_index: 0, content_index: 0, text: 'done' },
-        { type: 'response.completed', response: { id: 'resp_final', output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'done' }] }] } },
-      ].map((event) => `data: ${JSON.stringify(event)}\n\n`).join('');
-      res.end(`${finalEvents}data: [DONE]\n\n`);
+      res.end(`data: ${JSON.stringify({ id: 'resp_chat_final', choices: [{ message: { role: 'assistant', content: 'done' } }] })}\n\ndata: [DONE]\n\n`);
     });
   });
   const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
