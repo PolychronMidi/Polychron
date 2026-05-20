@@ -184,7 +184,7 @@ def _current_turn_noop_tools(path: str) -> tuple[int, int]:
     for event in load_turn_events(path):
         for tu in iter_tool_uses(event):
             name = tu.get("name", "")
-            if name in {"Bash", "functions.exec_command", "exec_command"}:
+            if _is_bash_tool(name):
                 for cmd in _commands_from_tool(tu):
                     if _NOOP_BASH.match(cmd):
                         noop_bash += 1
