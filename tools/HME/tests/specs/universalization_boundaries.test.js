@@ -44,6 +44,38 @@ test('decision normalizer keeps protocol rendering separate from shared decision
   assert.equal(claudeStop.stderr, ' ');
 });
 
+test('Claude adapter PreToolUse deny stays structured stdout without hook-error stderr', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-adapter-deny-'));
+  try {
+    const transcript = path.join(tmp, 'transcript.jsonl');
+    const cmd = 'adapter-repeat-command';
+    const prior = {
+      type: 'assistant',
+      message: { role: 'assistant', content: [{ type: 'tool_use', id: 'tu_adapter', name: 'Bash', input: { command: cmd } }] },
+    };
+    fs.writeFileSync(transcript, `${JSON.stringify(prior)}\n`);
+    const input = { transcript_path: transcript, tool_name: 'Bash', tool_input: { command: cmd } };
+    const out = execFileSync('node', [path.join(repoRoot, 'tools/HME/event_kernel/claude_adapter.js'), 'PreToolUse'], {
+      input: JSON.stringify(input),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PROJECT_ROOT: repoRoot,
+        HME_PROXY_PORT: '9',
+        HME_PETULANCE_STATE_PATH: path.join(tmp, 'state.json'),
+      },
+    });
+    const relayed = JSON.parse(out);
+    assert.equal(relayed.exit_code, 0);
+    assert.equal(relayed.stderr, ' ');
+    const stdout = JSON.parse(relayed.stdout);
+    assert.equal(stdout.hookSpecificOutput.permissionDecision, 'deny');
+    assert.equal(stdout.hookSpecificOutput.permissionDecisionReason, '[SPIRALLING_PETULANCE] - blocking repeated command within 3 minutes with no intervening edit. No command spam.');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('Claude Stop denies stay off stderr while preserving structured block stdout', () => {
   const { claudeRelayFields } = require('../../event_kernel/decision_normalizer');
   const reason = 'Stop hook feedback: AUTO-COMPLETENESS CHECK compacted by hme-proxy.';
