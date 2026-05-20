@@ -102,9 +102,12 @@ test('Claude adapter converts invalid hook stdout into valid Lifesaver block JSO
 
 test('Claude adapter does not log benign ok stderr as Lifesaver error', () => {
   const { shouldLogHookStderr } = require('../../event_kernel/claude_adapter');
+  const { isBenignHookStderr, claudeRelayFields } = require('../../event_kernel/decision_normalizer');
   assert.equal(shouldLogHookStderr('ok'), false);
   assert.equal(shouldLogHookStderr('ok\nok'), false);
   assert.equal(shouldLogHookStderr('Stop hook error: JSON validation failed'), true);
+  assert.equal(isBenignHookStderr('ok\nok'), true);
+  assert.equal(claudeRelayFields('PostToolUse', { stdout: '', stderr: 'ok\nok', exit_code: 0 }).stderr, ' ');
 });
 
 test('request transform core remains protocol-aware for Codex cleanup', () => {
