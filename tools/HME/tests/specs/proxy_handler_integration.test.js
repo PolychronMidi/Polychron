@@ -138,6 +138,7 @@ test('Claude handler forwards to fake Anthropic upstream and returns success wit
     if (prevEnv.inject === undefined) delete process.env.HME_INJECT_TOOLS; else process.env.HME_INJECT_TOOLS = prevEnv.inject;
     if (prevEnv.proxyInject === undefined) delete process.env.HME_PROXY_INJECT; else process.env.HME_PROXY_INJECT = prevEnv.proxyInject;
     if (prevEnv.quiet === undefined) delete process.env.HME_PROXY_QUIET_IMPORT; else process.env.HME_PROXY_QUIET_IMPORT = prevEnv.quiet;
+    if (prevEnv.overdrive === undefined) delete process.env.OVERDRIVE_MODE; else process.env.OVERDRIVE_MODE = prevEnv.overdrive;
     clearProxyCache();
     await close(proxy).catch(() => {});
     await close(upstream).catch(() => {});
