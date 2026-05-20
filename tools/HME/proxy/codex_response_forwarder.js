@@ -273,12 +273,36 @@ function createCodexResponseForwarder(deps) {
       return trunc(call.name || 'tool');
     }
 
+    function toolSummaryOnlyDiagnostic(target, parsed) {
+      const toolOnly = clientSse.toolLoops > 0 && clientSse.text && !finalOutputText(parsed).trim();
+      if (!toolOnly) return '';
+      return 'Render pipeline error: tool calls completed but no final assistant message was emitted.';
+    }
+
+    function recordMissingFinal(target, parsed, restored = false) {
+      record({
+        kind: restored ? 'codex-render-final-restored' : 'codex-render-final-missing',
+        route: target.kind,
+        visible_text_bytes: Buffer.byteLength(clientSse.text || '', 'utf8'),
+        upstream_final_bytes: Buffer.byteLength(finalOutputText(parsed) || '', 'utf8'),
+        ...traceFields(target),
+      });
+    }
+
     function sendParsedOverClientSse(target, status, headers, parsed, errorSummary = '') {
       if (!clientSse.started) return false;
       const text = finalOutputText(parsed);
       if (text.trim()) {
         if (clientSse.text && !clientSse.text.endsWith('\n')) writeClientText(target, '\n', status, headers);
         writeClientText(target, text, status, headers);
+        recordMissingFinal(target, parsed, true);
+      } else {
+        const diagnostic = toolSummaryOnlyDiagnostic(target, parsed);
+        if (diagnostic) {
+          if (clientSse.text && !clientSse.text.endsWith('\n')) writeClientText(target, '\n', status, headers);
+          writeClientText(target, diagnostic, status, headers);
+          recordMissingFinal(target, parsed, false);
+        }
       }
       return completeClientSse(target, status, errorSummary, parsed);
     }
