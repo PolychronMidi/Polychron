@@ -236,6 +236,36 @@ test('work_checks: broad completion treats next-action language as next-action d
   }));
 
 
+test('work_checks: incomplete-work admission blocks closing even without broad prompt',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'does that also complete the work in progress?' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'No. Not completed from original work-in-progress: project-wide env fail-fast invariant remains. Resume exactly there next.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /WORK-DEBT ADMISSION/);
+    assert.match(result.reason, /Not completed from/);
+  }));
+
+
+test('work_checks: limitation language blocks closing as work-debt admission',
+  _withSandbox(async (sandbox) => {
+    const transcript = _writeTranscript(sandbox, [
+      { type: 'user', message: { content: 'continue from where you left off' } },
+      { type: 'assistant', message: { content: [{ type: 'text', text:
+        'Limitation: remaining active-source env fallback findings still need a follow-up sweep.' }] } },
+    ]);
+    const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
+    const result = await policy.run(_ctxStub(sandbox, transcript));
+    assert.strictEqual(result.decision, 'deny');
+    assert.match(result.reason, /WORK-DEBT ADMISSION/);
+    assert.match(result.reason, /remaining active-source/);
+  }));
+
+
 test('work_checks: unfinished task reminder blocks stopping before auto-completeness',
   _withSandbox(async (sandbox) => {
     const transcript = _writeTranscript(sandbox, [
