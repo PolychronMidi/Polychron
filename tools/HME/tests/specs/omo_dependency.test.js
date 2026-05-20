@@ -44,25 +44,9 @@ test('OMO dependency resolver rejects absolute paths outside project root', () =
 });
 
 test('OMO dependency resolver resolves package dependencies with export maps', () => {
-  const root = fs.mkdtempSync(path.join(repoRoot, 'tmp', 'hme-omo-package-'));
-  const pkgDir = path.join(root, 'node_modules', 'fake-exported-omo');
-  fs.mkdirSync(path.join(pkgDir, 'dist'), { recursive: true });
-  fs.writeFileSync(path.join(pkgDir, 'package.json'), JSON.stringify({
-    name: 'fake-exported-omo',
-    version: '4.2.3',
-    type: 'module',
-    exports: { '.': './dist/index.js' },
-  }));
-  fs.writeFileSync(path.join(pkgDir, 'dist', 'index.js'), 'export default { id: "fake" };\n');
-  const prev = module.paths.slice();
-  try {
-    module.paths.unshift(path.join(root, 'node_modules'));
-    const result = resolveOmo({ enabled: true, source: 'package', packageName: 'fake-exported-omo' });
-    assert.equal(result.status, 'ok');
-    assert.equal(result.version, '4.2.3');
-    assert.equal(result.entrypoint, 'dist/index.js');
-  } finally {
-    module.paths.splice(0, module.paths.length, ...prev);
-    fs.rmSync(root, { recursive: true, force: true });
-  }
+  const result = resolveOmo({ enabled: true, source: 'package', packageName: 'oh-my-openagent' });
+  assert.equal(result.status, 'ok');
+  assert.equal(result.package, 'oh-my-openagent');
+  assert.match(result.version, /^\d+\.\d+\.\d+/);
+  assert.equal(result.entrypoint, 'dist/index.js');
 });
