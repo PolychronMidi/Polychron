@@ -35,6 +35,27 @@ function fakeClientRes() {
   };
 }
 
+test('env loader fails fast on missing templated keys and invalid typed reads', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-env-contract-'));
+  const prev = process.env.HME_ENV_FAILFAST_TEMPLATE;
+  try {
+    fs.mkdirSync(path.join(dir, 'doc', 'templates'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'doc', 'templates', '.env.example'), 'A=1\nB=2\nPORT=3\n');
+    fs.writeFileSync(path.join(dir, '.env'), 'A=ok\nPORT=abc\n');
+    assert.throws(
+      () => loadEnv(path.join(dir, '.env'), { overwrite: true }),
+      /missing template key\(s\): B/,
+    );
+    fs.writeFileSync(path.join(dir, '.env'), 'A=ok\nB=present\nPORT=abc\n');
+    loadEnv(path.join(dir, '.env'), { overwrite: true });
+    assert.throws(() => requireEnvInt('PORT'), /invalid integer environment key PORT/);
+  } finally {
+    if (prev === undefined) delete process.env.HME_ENV_FAILFAST_TEMPLATE;
+    else process.env.HME_ENV_FAILFAST_TEMPLATE = prev;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('context token usage parser extracts Anthropic JSON and SSE usage', () => {
   assert.deepEqual(
     _extractUsageFromBody({ 'content-type': 'application/json' }, Buffer.from(JSON.stringify({ usage: { input_tokens: 123, output_tokens: 45 } }))),
