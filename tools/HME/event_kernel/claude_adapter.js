@@ -49,6 +49,13 @@ function logHookError(root, event, message, kind = 'hook-runtime-error') {
   } catch (_e) { /* best-effort lifesaver log */ }
 }
 
+function shouldLogHookStderr(stderr) {
+  const lines = String(stderr || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length === 0) return false;
+  if (lines.every((line) => /^ok$/i.test(line))) return false;
+  return true;
+}
+
 function validateClaudeStdout(event, stdout, root) {
   const text = String(stdout || '').trim();
   if (!text) return stdout || '';
