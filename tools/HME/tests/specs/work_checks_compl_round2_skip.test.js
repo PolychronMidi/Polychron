@@ -202,8 +202,8 @@ test('work_checks: broad completion question blocks scoped-not-complete answer',
     const policy = require(path.join(POLICIES_DIR, 'work_checks.js'));
     const result = await policy.run(_ctxStub(sandbox, transcript));
     assert.strictEqual(result.decision, 'deny');
-    assert.match(result.reason, /BROAD-SCOPE COMPLETION DEBT/);
-    assert.match(result.reason, /scoped pass|Remaining gaps/);
+    assert.match(result.reason, /WORK-DEBT ADMISSION/);
+    assert.match(result.reason, /Remaining gaps/);
   }));
 
 test('work_checks: next-action language blocks stopping even without broad prompt',
