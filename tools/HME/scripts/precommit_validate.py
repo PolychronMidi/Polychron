@@ -40,6 +40,8 @@ LOCAL_PATH_NEEDLES = tuple(
 )
 LOCAL_PATH_ALLOW = POLICY.get("local_path_allow_token", "local-path-ok")
 SYNTAX_EXTS = set(POLICY.get("syntax_check_extensions", []))
+ENV_TEMPLATE = ROOT / POLICY.get("env_template", "doc/templates/.env.example")
+ENV_FALLBACK_EXTS = {".js", ".mjs", ".cjs", ".ts", ".py", ".sh", ".bash", ".json"}
 
 failures: list[str] = []
 secrets: list[tuple[int, str, bytes]] = []
