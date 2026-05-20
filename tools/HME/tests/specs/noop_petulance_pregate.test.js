@@ -90,8 +90,8 @@ test('petulance pregate override HME_PETULANCE_OK=1 bypasses the gate', () => {
   assert.ok(!out.stdout.includes('SPIRALLING_PETULANCE'), 'override must bypass');
 });
 
-test('petulance pregate matches `true`, empty printf, empty echo variants', () => {
-  for (const cmd of ['true', "printf ''", "echo ''", '  :  ']) {
+test('petulance pregate matches `true`, sleep 0, empty printf, empty echo variants', () => {
+  for (const cmd of ['true', 'builtin true', 'sleep 0', "printf ''", 'printf %s ""', "echo ''", '  :  ']) {
     const out = runHook({
       cmd,
       transcriptEntries: [userMsg(), noopBashEvent(':')],

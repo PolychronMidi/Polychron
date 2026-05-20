@@ -566,7 +566,7 @@ const _SLOP_PATTERNS = [
     repl: '$1$2' },
   // Caveman compression: delete low-signal glue words/first-person filler.
   { name: 'caveman_compression',
-    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|i|a|you|your|right|okay|hmm|was|has|need|too|is|the|now|that|then|agreed|implementing|continuing|explicitly|we)(?![A-Za-z0-9_])\s*/gi,
+    re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|i|a|as|you|your|right|okay|hmm|was|has|need|too|is|the|now|that|then|agreed|implementing|continuing|fixing|explicitly|we)(?![A-Za-z0-9_])\s*/gi,
     repl: '' },
   {
     name: 'abbreviations',
