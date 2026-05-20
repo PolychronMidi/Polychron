@@ -415,6 +415,48 @@ function unfinishedTaskDebtFromTranscript(transcriptPath) {
   return debt;
 }
 
+function _assistantToolUses(entry) {
+  const content = (entry && entry.message && entry.message.content) || (entry && entry.content);
+  if (!Array.isArray(content)) return [];
+  return content.filter((b) => b && typeof b === 'object' && b.type === 'tool_use');
+}
+
+function _todoLine(todo, fallbackId) {
+  const status = String(todo && todo.status || '').trim();
+  if (status !== 'pending' && status !== 'in_progress') return '';
+  const text = String(
+    todo.content || todo.activeForm || todo.subject || todo.description || todo.text || `task ${fallbackId}`
+  ).replace(/\s+/g, ' ').trim();
+  return `[${status}] ${text}`.trim().slice(0, 240);
+}
+
+function unfinishedTaskDebtFromTodoWrite(transcriptPath) {
+  if (!transcriptPath) return [];
+  let lines;
+  try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); }
+  catch (_e) { return []; }
+  let latestTodos = null;
+  for (const line of lines) {
+    if (!line) continue;
+    let entry;
+    try { entry = JSON.parse(line); } catch (_e) { continue; }
+    const role = entry.type || entry.role;
+    if (role !== 'assistant') continue;
+    for (const block of _assistantToolUses(entry)) {
+      if (block.name !== 'TodoWrite') continue;
+      const todos = block.input && Array.isArray(block.input.todos) ? block.input.todos : null;
+      if (todos) latestTodos = todos;
+    }
+  }
+  if (!latestTodos) return [];
+  const debt = [];
+  latestTodos.forEach((todo, i) => {
+    const line = _todoLine(todo, i + 1);
+    if (line) debt.push(line);
+  });
+  return debt.slice(0, 6);
+}
+
 function sessionIdFromTranscriptPath(transcriptPath) {
   const base = path.basename(String(transcriptPath || ''));
   const m = base.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
