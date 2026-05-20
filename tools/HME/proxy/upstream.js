@@ -4,10 +4,13 @@
 const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
+const { loadEnv, defaultEnvPath, requireEnv, requireEnvInt, requireEnvBool } = require('./shared/load_env');
 
-const DEFAULT_UPSTREAM_HOST = process.env.HME_PROXY_UPSTREAM_HOST || 'api.anthropic.com';
-const DEFAULT_UPSTREAM_PORT = parseInt(process.env.HME_PROXY_UPSTREAM_PORT || '443', 10);
-const DEFAULT_UPSTREAM_TLS = (process.env.HME_PROXY_UPSTREAM_TLS ?? '1') !== '0';
+loadEnv(defaultEnvPath(__dirname));
+
+const DEFAULT_UPSTREAM_HOST = requireEnv('HME_PROXY_UPSTREAM_HOST');
+const DEFAULT_UPSTREAM_PORT = requireEnvInt('HME_PROXY_UPSTREAM_PORT');
+const DEFAULT_UPSTREAM_TLS = requireEnvBool('HME_PROXY_UPSTREAM_TLS');
 
 // Callers pass `X-HME-Upstream: https://api.groq.com` to route through a
 // non-default upstream. Claude Code omits this header and hits the Anthropic default.
