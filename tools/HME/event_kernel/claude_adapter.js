@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { requireEnv } = require('../proxy/shared/load_env');
 const { runHostAdapter, append } = require('./host_adapter_common');
 const { buildHostPayload, writeJsonAtomic } = require('./lifecycle_payload');
 const { claudeRelayFields } = require('./decision_normalizer');
