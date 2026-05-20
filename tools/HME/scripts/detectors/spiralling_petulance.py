@@ -229,17 +229,28 @@ def _flabbergasted_by_autocommit(path: str) -> bool:
     return inspect_count >= 4 and clean_results >= 2
 
 
-def noop_predicate(cmd: str, transcript_path: str) -> bool:
-    """PreToolUse mirror predicate: fires when this Bash command is a no-op
-    AND the current turn already has >=1 prior no-op Bash. Same regex and
-    threshold as the Stop-hook detector -- one source of truth."""
-    if not cmd or not _NOOP_BASH.match(cmd):
+def noop_predicate(cmd: str, transcript_path: str) -> str | bool:
+    """PreToolUse mirror predicate.
+
+    Blocks two classes of real-time petulance:
+      1. any identical Bash command repeated within 3 minutes with no edit
+         between the previous occurrence and the current attempt;
+      2. legacy inert no-op chains (`:`, `true`, empty printf/echo) even when
+         variants differ.
+    """
+    if not cmd:
         return False
     try:
-        prior, _ = _current_turn_noop_tools(transcript_path)
+        repeat_level = _repeat_level(cmd, transcript_path)
+        if repeat_level >= 1:
+            return _petulance_message(repeat_level, cmd)
+        if _NOOP_BASH.match(cmd):
+            prior, _ = _current_turn_noop_tools(transcript_path)
+            if prior >= 1:
+                return _petulance_message(min(prior, 3), cmd, "repeated no-op Bash")
     except Exception:
         return False
-    return prior >= 1
+    return False
 
 
 def main() -> int:
