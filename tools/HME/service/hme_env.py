@@ -189,46 +189,21 @@ class _EnvLoader:
             f"(use 1/0, true/false, yes/no, on/off)"
         )
 
-    # Optional accessors (explicit opt-in to a default)
+    # Legacy optional accessors are fail-fast now. The default parameter is
+    # retained for call-site compatibility only; defaults must be materialized
+    # in doc/templates/.env.example and copied into .env.
 
     def optional(self, key: str, default: str) -> str:
-        val = self._raw(key)
-        return val if val else default
+        return self.require(key)
 
     def optional_int(self, key: str, default: int) -> int:
-        val = self._raw(key)
-        if val is None or val == "":
-            return default
-        try:
-            return int(val)
-        except ValueError as e:
-            raise ValueError(
-                f"hme_env: {key}={val!r} in {self._path} is not a valid int"
-            ) from e
+        return self.require_int(key)
 
     def optional_float(self, key: str, default: float) -> float:
-        val = self._raw(key)
-        if val is None or val == "":
-            return default
-        try:
-            return float(val)
-        except ValueError as e:
-            raise ValueError(
-                f"hme_env: {key}={val!r} in {self._path} is not a valid float"
-            ) from e
+        return self.require_float(key)
 
     def optional_bool(self, key: str, default: bool) -> bool:
-        val = self._raw(key)
-        if val is None or val == "":
-            return default
-        v = val.lower()
-        if v in ("1", "true", "yes", "on"):
-            return True
-        if v in ("0", "false", "no", "off"):
-            return False
-        raise ValueError(
-            f"hme_env: {key}={val!r} in {self._path} is not a valid bool"
-        )
+        return self.require_bool(key)
 
 
     # Runtime/transient accessors (process env by design)
