@@ -1,14 +1,16 @@
 {
   "contract_version": "hme-omo/v1",
   "required_entrypoints": [
-    "package.json"
+    "package.json",
+    "dist/index.js",
+    "dist/features/context-injector/index.d.ts",
+    "dist/hooks/anthropic-context-window-limit-recovery/index.d.ts",
+    "dist/config/schema/dynamic-context-pruning.d.ts",
+    "dist/plugin-interface.d.ts"
   ],
   "optional_entrypoints": [
-    "context-injector",
-    "hooks/anthropic-context-window-limit-recovery",
-    "config/schema/dynamic-context-pruning",
-    "team-mode",
-    "background-agent",
-    "plugin-handlers"
+    "dist/features/team-mode",
+    "dist/features/background-agent",
+    "dist/plugin-handlers/index.d.ts"
   ]
 }
