@@ -222,12 +222,8 @@ if [[ -n "$PROMPT_BODY" ]]; then
     # Dedupe: skip if the last entry already has this SHA + same verdict
     LAST_SHA_VERDICT=""
     if [[ -f "$GT_FILE" ]]; then
-      LAST_SHA_VERDICT=$(tail -1 "$GT_FILE" | python3 -c "
-import sys, json
-try:
-    d = json.loads(sys.stdin.read())
-    print(f\"{d.get('sha')}|{','.join(d.get('tags') or [])}\")
-except Exception: pass" 2>/dev/null || echo "")  # silent-ok: optional fallback path.
+      LAST_SHA_VERDICT=$(python3 "$PROJECT_ROOT/tools/HME/scripts/userpromptsubmit_helper.py" \
+        last-ground-truth "$GT_FILE" 2>/dev/null || echo "")  # silent-ok: optional fallback path.
     fi
     if [[ "$LAST_SHA_VERDICT" != "$SHA|$VERDICT" ]]; then
       echo "{\"ts\":\"$TS\",\"sha\":\"$SHA\",\"tags\":[\"$VERDICT\"],\"source\":\"userpromptsubmit_auto\",\"note\":\"Auto-captured from user prompt\"}" >> "$GT_FILE"
