@@ -120,11 +120,8 @@ ${NEW_ERRORS}"
     if [ -f "$PROJECT/tools/HME/runtime/supervisor-abandoned" ]; then
       # Cross-check: if the named child is healthy NOW, sentinel is stale.
       # Unlink it and proceed without blocking.
-      _sent_child=$(python3 - "$PROJECT/tools/HME/runtime/supervisor-abandoned" <<'PYEOF' 2>/dev/null
-import json, sys
-print(json.load(open(sys.argv[1])).get("child", ""))
-PYEOF
-)  # silent-ok: optional fallback path.
+      _sent_child=$(python3 "$PROJECT_ROOT/tools/HME/scripts/userpromptsubmit_helper.py" \
+        supervisor-child "$PROJECT/tools/HME/runtime/supervisor-abandoned" 2>/dev/null || true)  # silent-ok: optional fallback path.
       _healthy=0
       _sent_url="$(_hme_service_url "$_sent_child" 2>/dev/null || true)"  # silent-ok: optional fallback path.
       [ -n "$_sent_url" ] && curl -s -m 2 -o /dev/null -w '%{http_code}' "$_sent_url" 2>/dev/null | grep -q '^200$' && _healthy=1  # silent-ok: optional fallback path.
