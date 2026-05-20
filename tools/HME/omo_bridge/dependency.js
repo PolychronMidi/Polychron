@@ -104,6 +104,11 @@ function resolveOmo(options = {}) {
       throw new Error(`unsupported HME_OMO_SOURCE: ${source}`);
     }
     const pkg = _packageJson(root);
+    const requiredVersion = String(
+      options.requiredVersion !== undefined ? options.requiredVersion : _envRequired('HME_OMO_REQUIRED_VERSION')
+    ).trim();
+    const versionError = _checkVersion(pkg, requiredVersion);
+    if (versionError) throw new Error(versionError);
     const result = {
       enabled: true,
       source,
@@ -111,6 +116,7 @@ function resolveOmo(options = {}) {
       root,
       package: packageName || pkg.name || '',
       version: pkg.version || '',
+      required_version: requiredVersion,
       commit: _gitCommit(root),
       entrypoint: _detectEntrypoint(root, pkg),
     };
