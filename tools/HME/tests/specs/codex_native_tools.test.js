@@ -245,6 +245,14 @@ test('Codex SSE unknown function_call name is reported in rewriter stats', () =>
   assert.deepEqual(rewriter.stats.unknown_names, ['spawn_agent']);
 });
 
+test('Codex finalOutputText extracts OpenAI Responses, chat choices, and reasoning summaries', () => {
+  const { finalOutputText } = require('../../proxy/codex_response_forwarder');
+  assert.equal(finalOutputText({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'plain final' }] }] }), 'plain final');
+  assert.equal(finalOutputText({ choices: [{ message: { role: 'assistant', content: 'chat final' } }] }), 'chat final');
+  assert.equal(finalOutputText({ output: [{ type: 'reasoning_summary', summary: [{ text: 'debug summary' }] }] }), 'debug summary');
+  assert.equal(finalOutputText({ output: [{ type: 'function_call', name: 'Bash', arguments: '{}' }] }), '');
+});
+
 test('Codex proxy sends native tools upstream and translates native Read call with visible streamed progress', async () => {
   const proxyPort = await freePort();
   const upstreamBodies = [];
