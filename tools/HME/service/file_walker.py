@@ -195,8 +195,8 @@ def walk_code_files(
     else:
         project_root = _config.get("project_root")
         if not project_root:
-            logger.error("project_root not initialized -- call init_config() before walking")
-            return
+            project_root = ENV.require("PROJECT_ROOT")
+            init_config(project_root)
         roots.append(Path(project_root))
 
     for root in roots:
