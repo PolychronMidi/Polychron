@@ -67,12 +67,17 @@ module.exports = {
     if (text.includes('[READ current context')) return;
     try {
       const currentContext = contextWindow(root, file, input.old_string || '', input.new_string || '', reason);
-      ctx.appendToResult(toolResult, currentContext.text);
-      if (currentContext.readable && /File has not been read yet\. Read it first before writing to it|File has been modified since read/.test(text)) {
+      const readEquivalent = currentContext.readable && /File has not been read yet\. Read it first before writing to it|File has been modified since read/.test(text);
+      if (readEquivalent && typeof ctx.replaceResult === 'function') {
+        ctx.replaceResult(toolResult, currentContext.text.replace('[READ current context', '[AUTO-READ current context'));
+      } else {
+        ctx.appendToResult(toolResult, currentContext.text);
+      }
+      if (readEquivalent) {
         sessionState.recordRead({ session_id: ctx.session || ctx.session_id || '', tool_name: 'Read', tool_input: { file_path: file } }, { source: 'edit_failure_auto_context', reason });
       }
       ctx.markDirty();
-      ctx.emit({ event: 'edit_failure_context_appended', tool: toolUse.name, file: relPath(file, root), reason, read_equivalent: currentContext.readable });
+      ctx.emit({ event: 'edit_failure_context_appended', tool: toolUse.name, file: relPath(file, root), reason, read_equivalent: currentContext.readable, replaced_native_error: readEquivalent });
     } catch (err) {
       ctx.warn(`edit failure context unavailable: ${err.message}`);
     }
