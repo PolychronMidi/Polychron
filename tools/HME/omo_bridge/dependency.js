@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { satisfies } = require('semver');
 const { PROJECT_ROOT } = require('../proxy/shared');
 const { emitOmo } = require('./telemetry');
 
