@@ -52,9 +52,33 @@ def candidate_files(root: Path):
         yield path, rel
 
 
-def findings() -> list[str]:
+def _finding_hash(rel: str, key: str, line: str) -> str:
+    payload = f"{rel}\0{key}\0{line.strip()}".encode("utf-8", "replace")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def load_waivers() -> dict[str, dict]:
+    if not WAIVER_PATH.exists():
+        return {}
+    data = json.loads(WAIVER_PATH.read_text(encoding="utf-8"))
+    rows = data.get("waivers") if isinstance(data, dict) else None
+    if not isinstance(rows, list):
+        raise SystemExit(f"invalid waiver manifest at {WAIVER_PATH}: expected object with waivers[]")
+    out: dict[str, dict] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        digest = str(row.get("hash") or "")
+        reason = str(row.get("reason") or "").strip()
+        if not digest or not reason:
+            raise SystemExit(f"invalid waiver in {WAIVER_PATH}: hash and reason required")
+        out[digest] = row
+    return out
+
+
+def findings() -> list[dict]:
     keys = declared_env_keys()
-    out: list[str] = []
+    out: list[dict] = []
     for path, rel in candidate_files(ROOT):
         text = path.read_text(encoding="utf-8", errors="replace")
         for lineno, line in enumerate(text.splitlines(), 1):
@@ -64,17 +88,40 @@ def findings() -> list[str]:
                 for match in pattern.finditer(line):
                     key = match.group(1)
                     if key in keys:
-                        out.append(
-                            f"{rel}:{lineno}: inline fallback for declared env key {key}: {line.strip()}"
-                        )
+                        stripped = line.strip()
+                        out.append({
+                            "rel": rel,
+                            "lineno": lineno,
+                            "key": key,
+                            "line": stripped,
+                            "hash": _finding_hash(rel, key, stripped),
+                        })
     return out
 
 
 def main() -> int:
     rows = findings()
-    if rows:
-        print("\n".join(rows))
+    waivers = load_waivers()
+    current_hashes = {row["hash"] for row in rows}
+    problems: list[str] = []
+    for row in rows:
+        if row["hash"] in waivers:
+            continue
+        problems.append(
+            f"{row['rel']}:{row['lineno']}: inline fallback for declared env key {row['key']}: {row['line']}"
+        )
+    stale = sorted(set(waivers) - current_hashes)
+    for digest in stale[:50]:
+        row = waivers[digest]
+        problems.append(
+            f"stale env-fallback waiver {digest}: {row.get('path', '<unknown>')} {row.get('key', '<unknown>')}"
+        )
+    if len(stale) > 50:
+        problems.append(f"... {len(stale) - 50} more stale env-fallback waiver(s)")
+    if problems:
+        print("\n".join(problems))
         return 1
+    print(f"env fail-fast ok: {len(rows)} classified legacy fallback(s), 0 unclassified")
     return 0
 
 
