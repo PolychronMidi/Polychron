@@ -39,12 +39,23 @@ function _findPackageJsonFromEntrypoint(entrypoint) {
   }
   return '';
 }
+function _resolvePackageBySearchPath(pkgName) {
+  const searchPaths = require.resolve.paths(pkgName) || [];
+  const candidates = [path.join(PROJECT_ROOT, 'node_modules'), ...searchPaths];
+  for (const base of candidates) {
+    const pkgJsonPath = path.join(base, pkgName, 'package.json');
+    if (fs.existsSync(pkgJsonPath)) return path.dirname(pkgJsonPath);
+  }
+  return '';
+}
 function _resolvePackage(pkgName) {
   if (!pkgName) throw new Error('HME_OMO_PACKAGE is required when HME_OMO_SOURCE=package');
   try {
     const pkgJsonPath = require.resolve(path.join(pkgName, 'package.json'), { paths: [PROJECT_ROOT] });
     return path.dirname(pkgJsonPath);
   } catch (err) {
+    const bySearchPath = _resolvePackageBySearchPath(pkgName);
+    if (bySearchPath) return bySearchPath;
     if (err && err.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') throw err;
     const entrypoint = require.resolve(pkgName, { paths: [PROJECT_ROOT] });
     const pkgJsonPath = _findPackageJsonFromEntrypoint(entrypoint);
