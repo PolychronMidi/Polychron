@@ -30,8 +30,12 @@ test('decision normalizer keeps protocol rendering separate from shared decision
   assert.equal(codex.hookSpecificOutput.permissionDecisionReason, reason);
   assert.equal(Object.hasOwn(codex, 'systemMessage'), false);
   const claude = claudeRelayFields('PreToolUse', { stdout: raw, stderr: '', exit_code: 0 });
-  assert.equal(claude.exit_code, 2);
-  assert.equal(claude.stderr, reason);
+  assert.equal(claude.exit_code, 0);
+  assert.equal(claude.stderr, ' ');
+  assert.deepEqual(JSON.parse(claude.stdout).hookSpecificOutput, {
+    permissionDecision: 'deny',
+    permissionDecisionReason: reason,
+  });
 
   const claudeStop = claudeRelayFields('Stop', { stdout: JSON.stringify({ decision: 'block', reason }), stderr: '', exit_code: 0 });
   assert.equal(claudeStop.exit_code, 0);
