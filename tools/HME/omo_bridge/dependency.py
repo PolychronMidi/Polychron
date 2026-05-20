@@ -9,6 +9,13 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
+def _env_required(name: str) -> str:
+    try:
+        return os.environ[name]
+    except KeyError as exc:
+        raise ValueError(f"missing required environment key {name}") from exc
+
+
 def _git_commit(root: Path) -> str:
     try:
         proc = subprocess.run(["git", "-C", str(root), "rev-parse", "--short", "HEAD"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=2)
@@ -28,13 +35,13 @@ def _package_json(root: Path) -> dict:
 
 
 def resolve_omo(*, enabled: bool | None = None, source: str | None = None, path: str | None = None, package_name: str | None = None, required: bool = False) -> dict:
-    is_enabled = (enabled if enabled is not None else os.environ.get("HME_OMO_ENABLED") == "1")
-    src = source if source is not None else (os.environ.get("HME_OMO_SOURCE") or "disabled")
+    is_enabled = enabled if enabled is not None else _env_required("HME_OMO_ENABLED") == "1"
+    src = source if source is not None else _env_required("HME_OMO_SOURCE")
     if not is_enabled or src == "disabled":
         return {"enabled": False, "source": "disabled", "status": "disabled"}
     try:
         if src == "path":
-            configured = path if path is not None else os.environ.get("HME_OMO_PATH", "")
+            configured = path if path is not None else _env_required("HME_OMO_PATH")
             if not configured:
                 raise ValueError("HME_OMO_PATH is required when HME_OMO_SOURCE=path")
             p = Path(configured)
@@ -45,7 +52,7 @@ def resolve_omo(*, enabled: bool | None = None, source: str | None = None, path:
             if not root.exists():
                 raise ValueError(f"HME_OMO_PATH does not exist: {configured}")
         elif src == "package":
-            pkg = package_name if package_name is not None else os.environ.get("HME_OMO_PACKAGE", "")
+            pkg = package_name if package_name is not None else _env_required("HME_OMO_PACKAGE")
             if not pkg:
                 raise ValueError("HME_OMO_PACKAGE is required when HME_OMO_SOURCE=package")
             raise ValueError("Python package resolution for OMO package source is not available; use JS resolver or path mode")
