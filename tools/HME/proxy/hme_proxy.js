@@ -26,10 +26,8 @@ const core = require('./hme_proxy_core');
 
 // Self-load .env via shared helper; parent shell may not have sourced it.
 (() => {
-  try {
-    const { loadEnv } = require('./shared/load_env');
-    loadEnv(require('path').resolve(__dirname, '..', '..', '..', '.env'));
-  } catch (_e) { /* fail-soft: proxy still runs without .env knobs */ }
+  const { loadEnv } = require('./shared/load_env');
+  loadEnv(require('path').resolve(__dirname, '..', '..', '..', '.env'));
 })();
 
 const PROXY_VERSION = (() => {
