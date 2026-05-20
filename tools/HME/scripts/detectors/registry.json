@@ -423,7 +423,7 @@
         "tool": "Bash",
         "predicate_fn": "noop_predicate",
         "override_env": "HME_PETULANCE_OK",
-        "deny_reason": "SPIRALLING_PETULANCE (real-time): blocking 2nd no-op Bash this turn. The current command (`:` / `true` / empty printf|echo) is unconditional no-op spam typical of petulant retry-spiraling. Address the user, run a real command."
+        "deny_reason": "SPIRALLING_PETULANCE (real-time): blocking repeated Bash command spam. No identical command retries without an intervening edit or changed approach."
       }
     },
     {
