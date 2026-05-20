@@ -110,29 +110,114 @@ const _SLOP_PATTERNS = [
     re: /(?<![A-Za-z0-9_])(?:i\s+am|i\s+will|i['’]m|i['’]ll|you\s+are|you['’]re|you['’]ll|we['’]ll|we['’]re|i|a|as|you|your|right|okay|hmm|was|has|need|too|also|needs|is|the|now|that|then|agreed|implementing|continuing|fixing|explicitly|we)(?![A-Za-z0-9_])\s*/gi,
     repl: '' },
   {
-    name: 'abbreviations',
-    // Replaces common words with their standard short-form abbreviations.
-    re: /\b(without|with|between|before|amount|because|and|into|to|acknowledged)([.!?,;:]?)/gi,
+    name: 'caveman_abbreviations',
+    // Matches common words, tech terms, and long vocabulary for heavy token/space saving.
+    re: /\b(without|with|between|before|amount|because|and|into|to|acknowledged|approximately|characteristically|chronologically|collaboratively|communication|communications|consequently|demonstration|demonstrations|dissemination|ecclesiastical|enthusiastically|environmentally|identification|implementation|implementations|inappropriately|indistinguishable|infrastructure|institutionalized|metaphorically|microarchitecture|misunderstanding|misunderstandings|multi-threading|operationalization|particularization|professionalism|recommendation|recommendations|representative|representatives|responsibility|responsibilities|revolutionary|specifications|specification|synchronization|synchronizations|transformation|transformations|uncharacteristically|unconditionally|understandable|information|application|applications|configuration|configurations|repository|repositories|environment|environments|developer|developers|development|management|organization|organizations|architecture|architectures|performance|parameters|parameter|temporary|version|versions)([.!?,;:]?)/gi,
     repl: (_match, word, punct = '') => {
-      switch (word.toLowerCase()) {
-        case 'without': return `w/o${punct}`;
-        case 'with': return `w/${punct}`;
-        case 'between': return `b/w${punct}`;
-        case 'before': return `b4${punct}`;
-        case 'amount': return `amt${punct}`;
-        case 'because': return `b/c${punct}`;
-        case 'and': return `&${punct}`;
-        case 'into': return `2${punct}`;
-        case 'to': return `-${punct}`;
-        case 'acknowledged': return `k${punct}`;
-        default: return `${word}${punct}`;
+      const compactMap = {
+        'without': 'w/o',
+        'with': 'w/',
+        'between': 'b/w',
+        'before': 'b4',
+        'amount': 'amt',
+        'because': 'b/c',
+        'and': '&',
+        'into': '2',
+        'to': '-',
+        'acknowledged': 'k',
+
+        // Long Vocabulary Concordance
+        'approximately': '~',
+        'characteristically': 'typ',
+        'chronologically': 'by-time',
+        'collaboratively': 'team',
+        'communication': 'msg',
+        'communications': 'msgs',
+        'consequently': 'so',
+        'demonstration': 'demo',
+        'demonstrations': 'demos',
+        'dissemination': 'spread',
+        'ecclesiastical': 'church',
+        'enthusiastically': 'eagerly',
+        'environmentally': 'eco',
+        'identification': 'id',
+        'implementation': 'setup',
+        'implementations': 'setups',
+        'inappropriately': 'wrongly',
+        'indistinguishable': 'same',
+        'infrastructure': 'infra',
+        'institutionalized': 'formed',
+        'metaphorically': 'fig',
+        'microarchitecture': 'uarch',
+        'misunderstanding': 'error',
+        'misunderstandings': 'errors',
+        'multi-threading': 'mt',
+        'operationalization': 'run',
+        'particularization': 'detail',
+        'professionalism': 'pro-skill',
+        'recommendation': 'rec',
+        'recommendations': 'recs',
+        'representative': 'rep',
+        'representatives': 'reps',
+        'responsibility': 'duty',
+        'responsibilities': 'duties',
+        'revolutionary': 'new',
+        'specifications': 'specs',
+        'specification': 'spec',
+        'synchronization': 'sync',
+        'synchronizations': 'syncs',
+        'transformation': 'change',
+        'transformations': 'changes',
+        'uncharacteristically': 'oddly',
+        'unconditionally': 'always',
+        'understandable': 'clear',
+
+        // Expanded Tech & Dev Additions
+        'information': 'info',
+        'application': 'app',
+        'applications': 'apps',
+        'configuration': 'config',
+        'configurations': 'configs',
+        'repository': 'repo',
+        'repositories': 'repos',
+        'environment': 'env',
+        'environments': 'envs',
+        'developer': 'dev',
+        'developers': 'devs',
+        'development': 'dev',
+        'management': 'mgmt',
+        'organization': 'org',
+        'organizations': 'orgs',
+        'architecture': 'arch',
+        'architectures': 'archs',
+        'performance': 'perf',
+        'parameters': 'params',
+        'parameter': 'param',
+        'temporary': 'tmp',
+        'version': 'v',
+        'versions': 'vs'
+      };
+
+      const key = word.toLowerCase();
+      if (key in compactMap) {
+        // Preserves capitalization style of the original word if needed
+        const isTitleCase = word[0] === word[0].toUpperCase() && word.length > 1 && word[1] === word[1].toLowerCase();
+        let target = compactMap[key];
+
+        if (isTitleCase && target[0] !== '~' && target[0] !== '&' && target[0] !== '-') {
+          target = target[0].toUpperCase() + target.slice(1);
+        }
+        return `${target}${punct}`;
       }
+
+      return `${word}${punct}`;
     }
   },
   // #15 Excessive bold: sentinel invokes density-gated demoter below.
   { name: 'excessive_bold',
     re: null,  // handled in _stripExcessiveBold below
-    repl: null },
+    repl: null
+  }
 ];
 
 function _capFix(s) {
