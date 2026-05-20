@@ -902,18 +902,6 @@
       "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
     },
     {
-      "hash": "eff5d95c454696fe4712b5054ec1726e2b6ba4a384250d5fce76b0ed1684b27c",
-      "key": "PROJECT_ROOT",
-      "path": "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
-      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
-    },
-    {
-      "hash": "d118c2ee7dfe65856fd4778bef5ba0746af6212ba086a873ff5ce84b6de96639",
-      "key": "CLAUDE_PROJECT_DIR",
-      "path": "tools/HME/hooks/direct/codex-proxy-supervisor.sh",
-      "reason": "shell bootstrap boundary: must discover PROJECT_ROOT/.env before strict runtime env loader can run"
-    },
-    {
       "hash": "1593e6b453720eb63d964ad55129cf421ac37e7869069a44b5bda541c214f630",
       "key": "PROJECT_ROOT",
       "path": "tools/HME/hooks/direct/universal-pulse-supervisor.sh",

@@ -5,20 +5,14 @@
 set +e
 
 _SV_ROOT=""
-if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/tools/HME" ]; then
-  _SV_ROOT="$PROJECT_ROOT"
-elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/tools/HME" ]; then
-  _SV_ROOT="$CLAUDE_PROJECT_DIR"
-else
-  _try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
-  while [ -n "$_try" ] && [ "$_try" != "/" ]; do
-    if [ -d "$_try/.git" ] && [ -d "$_try/tools/HME" ]; then
-      _SV_ROOT="$_try"
-      break
-    fi
-    _try="$(dirname "$_try")"
-  done
-fi
+_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+while [ -n "$_try" ] && [ "$_try" != "/" ]; do
+  if [ -d "$_try/.git" ] && [ -d "$_try/tools/HME" ]; then
+    _SV_ROOT="$_try"
+    break
+  fi
+  _try="$(dirname "$_try")"
+done
 
 if [ -z "$_SV_ROOT" ]; then
   echo "[codex-proxy-supervisor] cannot resolve project root" >&2
@@ -41,7 +35,7 @@ _CP_PID_FILE="$_SV_ROOT/tools/HME/runtime/codex-proxy.pid"
 _CP_SCRIPT="$_SV_ROOT/tools/HME/proxy/codex_proxy.js"
 _CP_OMNI="$_SV_ROOT/tools/HME/proxy/codex_omniroute.js"
 _CP_CONFIG="$_SV_ROOT/tools/HME/config/codex-proxy.json"
-_CP_DEPS="codex_proxy.js codex_omniroute.js codex_session_guard.js start_marker.js model_route_resolver.js request_transform_core.js codex_native_tools.js codex_payload.js turn_side_effects.js request_telemetry.js"
+_CP_DEPS="codex_proxy.js codex_omniroute.js codex_session_guard.js start_marker.js model_route_resolver.js request_transform_core.js codex_native_tools.js codex_payload.js turn_side_effects.js request_telemetry.js codex_response_forwarder.js codex_tool_loop.js codex_tool_loop_graph.js codex_uniform_tools.js codex_tool_text.js"
 _CP_LOG="$_SV_ROOT/log/hme-codex-proxy.out"
 _CP_LIFECYCLE_LOG="$_SV_ROOT/log/hme-codex-proxy.log"
 _CP_POLL_INTERVAL=15
