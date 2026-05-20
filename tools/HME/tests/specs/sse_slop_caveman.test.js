@@ -18,8 +18,8 @@ test('slop rewriter applies caveman compression to text blocks without deny gate
   assert.equal(out.events[1][1].delta.text, 'Fix thing.');
 });
 
-test('slop rewriter applies caveman compression to thinking blocks', () => {
-  const ctx = new Map([['priorUserWasDeny', true]]);
+test('slop rewriter applies caveman compression to thinking blocks without deny gate', () => {
+  const ctx = new Map();
   assert.equal(slopStripRewrite('content_block_start', { type: 'content_block_start', index: 1, content_block: { type: 'thinking', thinking: '' } }, ctx), null);
   assert.equal(slopStripRewrite('content_block_delta', { type: 'content_block_delta', index: 1, delta: { type: 'thinking_delta', thinking: 'I am now checking the path.' } }, ctx), null);
   const out = slopStripRewrite('content_block_stop', { type: 'content_block_stop', index: 1 }, ctx);
