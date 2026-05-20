@@ -327,3 +327,70 @@ test('Codex proxy sends native tools upstream and translates native Read call wi
     upstream.close();
   }
 });
+
+test('Codex proxy diagnoses tool-only streamed completion instead of silently rendering only tool summaries', async () => {
+  const proxyPort = await freePort();
+  const upstreamBodies = [];
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => {
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      upstreamBodies.push(body);
+      if (upstreamBodies.length === 1) {
+        res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+        const call = {
+          type: 'response.output_item.done',
+          item: {
+            type: 'function_call',
+            name: 'Read',
+            call_id: 'call_read_tool_only',
+            arguments: JSON.stringify({ file_path: 'doc/templates/AGENTS.md', limit: 2 }),
+          },
+        };
+        res.end(`data: ${JSON.stringify({ type: 'response.created', response: { id: 'resp_read_tool_only', output: [] } })}\n\ndata: ${JSON.stringify(call)}\n\ndata: [DONE]\n\n`);
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      res.end(`data: ${JSON.stringify({ type: 'response.completed', response: { id: 'resp_no_final', output: [] } })}\n\ndata: [DONE]\n\n`);
+    });
+  });
+  const upstreamPort = await new Promise((resolve) => upstream.listen(0, '127.0.0.1', () => resolve(upstream.address().port)));
+  const child = spawn('node', [path.join(repoRoot, 'tools', 'HME', 'proxy', 'codex_proxy.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      HME_CODEX_PROXY_PORT: String(proxyPort),
+      HME_CODEX_UPSTREAM_URL: `http://127.0.0.1:${upstreamPort}/v1/responses`,
+      HME_CODEX_OMNIROUTE: '0',
+      HME_CODEX_PROXY_AUTOCOMMIT: '0',
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString('utf8'); });
+  try {
+    await waitFor(() => new Promise((resolve) => {
+      const req = http.request({ host: '127.0.0.1', port: proxyPort, path: '/health', timeout: 500 }, (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => { req.destroy(); resolve(false); });
+      req.end();
+    }));
+    const response = await requestJson(proxyPort, { model: 'gpt-5.5', tools: [], stream: true });
+    assert.equal(response.status, 200);
+    assert.equal(upstreamBodies.length, 2);
+    assert.match(response.body, /• Read doc\/templates\/AGENTS\.md/);
+    assert.match(response.body, /result forwarded upstream/);
+    assert.match(response.body, /Render pipeline error: tool calls completed but no final assistant message was emitted\./);
+    assert.match(response.body, /data: \[DONE\]/);
+  } catch (err) {
+    err.message = `${err.message}\nproxy stderr:\n${stderr}`;
+    throw err;
+  } finally {
+    child.kill('SIGTERM');
+    upstream.close();
+  }
+});
