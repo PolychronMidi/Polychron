@@ -15,7 +15,9 @@ from _transcript import event_content, is_assistant, is_user, iter_tool_results,
 
 DECLARED_VERDICTS = {"ok", "spiralling_petulance", "flabbergasted_by_autocommit"}
 
-_NOOP_BASH = re.compile(r"^\s*(?::|true|printf\s+['\"]?['\"]?|echo\s*['\"]?['\"]?)\s*$")
+_NOOP_BASH = re.compile(
+    r"^\s*(?::|true|builtin\s+true|printf\s+(?:['\"]{0,2}|%s\s+['\"]{2})|echo\s*['\"]?['\"]?|sleep\s+0(?:\.0+)?)\s*$"
+)
 _HOOK_DIRECTIVE = re.compile(r"(<hook_prompt|stop hook feedback|antipattern:|scope-stacked antipattern|auto-completeness)", re.I)
 _NOOP_TEXT = re.compile(r"^\s*(?:\.|ok(?:ay)?|done|fixed|nothing remains|all set)?\s*$", re.I)
 _READ_FAILURE = re.compile(r"(enoent|no such file|verify-landed antipattern|blocked: verify-landed|read failed|not found)", re.I)
