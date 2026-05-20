@@ -1,5 +1,14 @@
 'use strict';
 
+function _holdToolInput(ctx, key, eventName, data, names) {
+  let holds = ctx.get(key);
+  if (!holds) { holds = new Map(); ctx.set(key, holds); }
+  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'tool_use') {
+    if (names.has(data.content_block.name)) holds.set(data.index, { id: data.content_block.id, name: data.content_block.name, partial: '' });
+  }
+  return holds;
+}
+
 function _inputDeltaEvent(index, partialJson) {
   return ['content_block_delta', { type: 'content_block_delta', index, delta: { type: 'input_json_delta', partial_json: partialJson } }];
 }
