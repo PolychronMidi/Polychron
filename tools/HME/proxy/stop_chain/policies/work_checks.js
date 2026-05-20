@@ -500,6 +500,7 @@ function unfinishedTaskDebtFromStore(transcriptPath) {
 function unfinishedTaskDebt(transcriptPath) {
   const debt = unfinishedTaskDebtFromStore(transcriptPath).concat(
     unfinishedTaskDebtFromTranscript(transcriptPath),
+    unfinishedTaskDebtFromTodoWrite(transcriptPath),
   );
   if (!debt.length) return null;
   return `${REASONS.UNFINISHED_TASKS}\n\nOpen task evidence:\n${debt.map((s, i) => `  ${i + 1}. ${s}`).join('\n')}`;
