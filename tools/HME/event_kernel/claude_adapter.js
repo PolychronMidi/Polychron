@@ -105,4 +105,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { finalRelay, proxyDownBanner };
+module.exports = { finalRelay, proxyDownBanner, validateClaudeStdout };
