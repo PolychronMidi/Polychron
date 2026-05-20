@@ -3,6 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { invokeOmoHook, validateHookResult } = require('../../omo_bridge/hook_adapter');
 const { createOpenCodeHost } = require('../../omo_bridge/opencode_host');
+const { HOOK_MAP } = require('../../omo_bridge/lifecycle_map');
 
 test('OMO hook adapter blocks mutating hook output by default', () => {
   const result = validateHookResult({ messages: [] });
