@@ -145,6 +145,18 @@ function _appendHookFailure(eventName, scriptPath, code, result) {
   }
 }
 
+function lifecycleContextResult(eventName, result) {
+  const stderr = String(result && result.stderr || '').trim();
+  if (!stderr || stderr === 'ok') return result;
+  if (!new Set(['SessionStart', 'UserPromptSubmit', 'PreCompact', 'PostCompact']).has(eventName)) return result;
+  if ((result.stdout || '').trim()) return result;
+  return {
+    stdout: JSON.stringify({ hookSpecificOutput: { hookEventName: eventName, additionalContext: stderr } }),
+    stderr: ' ',
+    exit_code: result.exit_code || 0,
+  };
+}
+
 function runHook(scriptPath, stdinJson, timeoutMs = 30_000, eventName = 'hook') {
   const startedAt = Date.now();
   return spawnFileInput('bash', [scriptPath], {
