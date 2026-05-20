@@ -646,11 +646,11 @@ function slopStripRewrite(eventName, data, ctx) {
   let holds = ctx.get(key);
   if (!holds) { holds = new Map(); ctx.set(key, holds); }
 
-  if (eventName === 'content_block_start' && data && data.content_block && data.content_block.type === 'text') {
-    holds.set(data.index, { startData: data, deltas: [] });
+  if (eventName === 'content_block_start' && data && data.content_block && ['text', 'thinking'].includes(data.content_block.type)) {
+    holds.set(data.index, { startData: data, blockType: data.content_block.type, deltas: [] });
     return null;  // hold the start
   }
-  if (eventName === 'content_block_delta' && data && data.delta && data.delta.type === 'text_delta') {
+  if (eventName === 'content_block_delta' && data && data.delta && ['text_delta', 'thinking_delta'].includes(data.delta.type)) {
     const state = holds.get(data.index);
     if (!state) return data;  // not a held block (e.g. ack-strip already swallowed it)
     state.deltas.push(data);
